@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use crate::configure::{config_doc::SecurityContextKind, context::Context as ConfigContext};
+use crate::functions::{Function, FunctionArgKind, FunctionCategory, FunctionMetadata};
 use crate::DscError;
-use crate::configure::{context::Context as ConfigContext, config_doc::SecurityContextKind};
-use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
 use osinfo_lib::OsInfo;
 use rust_i18n::t;
 use serde::Serialize;

@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
+use crate::functions::{Function, FunctionArgKind, FunctionCategory, FunctionMetadata};
+use crate::DscError;
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
@@ -39,7 +39,9 @@ impl Function for Skip {
             };
 
             if let Some(array) = args[0].as_array() {
-                if count >= array.len() { return Ok(Value::Array(vec![])); }
+                if count >= array.len() {
+                    return Ok(Value::Array(vec![]));
+                }
                 let skipped = array.iter().skip(count).cloned().collect::<Vec<Value>>();
                 return Ok(Value::Array(skipped));
             }
@@ -65,8 +67,13 @@ mod tests {
     #[test]
     fn skip_array_basic() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[skip(createArray('a','b','c','d'), 2)]", &Context::new()).unwrap();
-        assert_eq!(result, Value::Array(vec![Value::String("c".into()), Value::String("d".into())]));
+        let result = parser
+            .parse_and_execute("[skip(createArray('a','b','c','d'), 2)]", &Context::new())
+            .unwrap();
+        assert_eq!(
+            result,
+            Value::Array(vec![Value::String("c".into()), Value::String("d".into())])
+        );
     }
 
     #[test]
@@ -79,19 +86,26 @@ mod tests {
     #[test]
     fn skip_more_than_length() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[skip(createArray('a','b'), 5)]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[skip(createArray('a','b'), 5)]", &Context::new())
+            .unwrap();
         assert_eq!(result, Value::Array(vec![]));
     }
 
     #[test]
     fn skip_array_negative_is_zero() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[skip(createArray('a','b','c'), -1)]", &Context::new()).unwrap();
-        assert_eq!(result, Value::Array(vec![
-            Value::String("a".into()),
-            Value::String("b".into()),
-            Value::String("c".into()),
-        ]));
+        let result = parser
+            .parse_and_execute("[skip(createArray('a','b','c'), -1)]", &Context::new())
+            .unwrap();
+        assert_eq!(
+            result,
+            Value::Array(vec![
+                Value::String("a".into()),
+                Value::String("b".into()),
+                Value::String("c".into()),
+            ])
+        );
     }
 
     #[test]

@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::DscError;
 use crate::configure::context::{Context, ProcessMode};
-use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
+use crate::functions::{Function, FunctionArgKind, FunctionCategory, FunctionMetadata};
+use crate::DscError;
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
@@ -35,17 +35,23 @@ impl Function for Reference {
         debug!("{}", t!("functions.reference.invoked"));
 
         if context.process_mode == ProcessMode::Copy {
-            return Err(DscError::Parser(t!("functions.reference.cannotUseInCopyMode").to_string()));
+            return Err(DscError::Parser(
+                t!("functions.reference.cannotUseInCopyMode").to_string(),
+            ));
         }
         if context.process_mode == ProcessMode::UserFunction {
-            return Err(DscError::Parser(t!("functions.reference.unavailableInUserFunction").to_string()));
+            return Err(DscError::Parser(
+                t!("functions.reference.unavailableInUserFunction").to_string(),
+            ));
         }
 
         if let Some(key) = args[0].as_str() {
             if context.references.contains_key(key) {
                 Ok(context.references[key].clone())
             } else {
-                Err(DscError::Parser(t!("functions.reference.keyNotFound", key = key).to_string()))
+                Err(DscError::Parser(
+                    t!("functions.reference.keyNotFound", key = key).to_string(),
+                ))
             }
         } else {
             Err(DscError::Parser(t!("functions.invalidArguments").to_string()))

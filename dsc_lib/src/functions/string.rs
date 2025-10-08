@@ -1,12 +1,12 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::DscError;
+use super::Function;
 use crate::configure::context::Context;
 use crate::functions::{FunctionArgKind, FunctionCategory, FunctionMetadata};
+use crate::DscError;
 use rust_i18n::t;
 use serde_json::Value;
-use super::Function;
 
 #[derive(Debug, Default)]
 pub struct StringFn {}
@@ -82,14 +82,18 @@ mod tests {
     #[test]
     fn string_from_array() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[string(createArray('a', 'b'))]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[string(createArray('a', 'b'))]", &Context::new())
+            .unwrap();
         assert_eq!(result, json!(["a", "b"]).to_string());
     }
 
     #[test]
     fn string_from_object() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[string(createObject('a', 'hello'))]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[string(createObject('a', 'hello'))]", &Context::new())
+            .unwrap();
         assert_eq!(result, json!({"a": "hello"}).to_string());
     }
 }

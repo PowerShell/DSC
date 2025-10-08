@@ -89,7 +89,12 @@ pub enum SubCommand {
 
     #[clap(name = "in-desired-state", about = "Specify if the resource is in the desired state")]
     InDesiredState {
-        #[clap(name = "input", short, long, help = "The input to the in desired state command as JSON")]
+        #[clap(
+            name = "input",
+            short,
+            long,
+            help = "The input to the in desired state command as JSON"
+        )]
         input: String,
     },
 
@@ -125,13 +130,16 @@ pub enum SubCommand {
     Trace,
 
     #[clap(name = "version", about = "Test multiple versions of same resource")]
-    Version {
-        version: String,
-    },
+    Version { version: String },
 
     #[clap(name = "whatif", about = "Check if it is a whatif operation")]
     WhatIf {
-        #[clap(name = "whatif", short, long, help = "Run as a whatif executionType instead of actual executionType")]
+        #[clap(
+            name = "whatif",
+            short,
+            long,
+            help = "Run as a whatif executionType instead of actual executionType"
+        )]
         what_if: bool,
-    }
+    },
 }

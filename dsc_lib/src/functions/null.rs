@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
+use crate::functions::{Function, FunctionArgKind, FunctionCategory, FunctionMetadata};
+use crate::DscError;
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
@@ -33,9 +33,9 @@ impl Function for Null {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::configure::context::Context;
     use crate::parser::Statement;
-    use super::*;
 
     #[test]
     fn direct_function_call() {
@@ -56,14 +56,18 @@ mod tests {
     #[test]
     fn null_with_coalesce() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[coalesce(null(), 'fallback')]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[coalesce(null(), 'fallback')]", &Context::new())
+            .unwrap();
         assert_eq!(result, "fallback");
     }
 
     #[test]
     fn null_in_object() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[createObject('key', null())]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[createObject('key', null())]", &Context::new())
+            .unwrap();
         assert_eq!(result.to_string(), r#"{"key":null}"#);
     }
 }

@@ -63,12 +63,10 @@ impl OsInfo {
         };
         let version = os_info.version().to_string();
         let name = if include_name {
-            Some(
-                match &architecture {
-                    Some(arch) => format!("{family} {version} {arch}"),
-                    None => format!("{family:?} {version}"),
-                }
-            )
+            Some(match &architecture {
+                Some(arch) => format!("{family} {version} {arch}"),
+                None => format!("{family:?} {version}"),
+            })
         } else {
             None
         };

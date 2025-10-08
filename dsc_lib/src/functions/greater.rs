@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
+use crate::functions::{Function, FunctionArgKind, FunctionCategory, FunctionMetadata};
+use crate::DscError;
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
@@ -84,6 +84,9 @@ mod tests {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[greater('5', 3)]", &Context::new());
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Arguments must be of the same type"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Arguments must be of the same type"));
     }
 }

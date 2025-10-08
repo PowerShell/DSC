@@ -2,10 +2,10 @@
 // Licensed under the MIT License.
 
 use crate::configure::config_doc::DataType;
-use crate::configure::parameters::{SecureObject, SecureString};
-use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
+use crate::configure::parameters::{SecureObject, SecureString};
+use crate::functions::{Function, FunctionArgKind, FunctionCategory, FunctionMetadata};
+use crate::DscError;
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::{debug, trace};
@@ -23,7 +23,14 @@ impl Function for Parameters {
             max_args: 1,
             accepted_arg_ordered_types: vec![vec![FunctionArgKind::String]],
             remaining_arg_accepted_types: None,
-            return_types: vec![FunctionArgKind::String, FunctionArgKind::Number, FunctionArgKind::Boolean, FunctionArgKind::Object, FunctionArgKind::Array, FunctionArgKind::Null],
+            return_types: vec![
+                FunctionArgKind::String,
+                FunctionArgKind::Number,
+                FunctionArgKind::Boolean,
+                FunctionArgKind::Object,
+                FunctionArgKind::Array,
+                FunctionArgKind::Null,
+            ],
         }
     }
 
@@ -38,26 +45,27 @@ impl Function for Parameters {
                 match data_type {
                     DataType::SecureString => {
                         let Some(value) = value.as_str() else {
-                            return Err(DscError::Parser(t!("functions.parameters.keyNotString", key = key).to_string()));
+                            return Err(DscError::Parser(
+                                t!("functions.parameters.keyNotString", key = key).to_string(),
+                            ));
                         };
                         let secure_string = SecureString {
                             secure_string: value.to_string(),
                         };
                         Ok(serde_json::to_value(secure_string)?)
-                    },
+                    }
                     DataType::SecureObject => {
                         let secure_object = SecureObject {
                             secure_object: value.clone(),
                         };
                         Ok(serde_json::to_value(secure_object)?)
-                    },
-                    _ => {
-                        Ok(value.clone())
                     }
+                    _ => Ok(value.clone()),
                 }
-            }
-            else {
-                Err(DscError::Parser(t!("functions.parameters.keyNotFound", key = key).to_string()))
+            } else {
+                Err(DscError::Parser(
+                    t!("functions.parameters.keyNotFound", key = key).to_string(),
+                ))
             }
         } else {
             Err(DscError::Parser(t!("functions.invalidArgType").to_string()))

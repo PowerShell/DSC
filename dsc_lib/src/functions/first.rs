@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
+use crate::functions::{Function, FunctionArgKind, FunctionCategory, FunctionMetadata};
+use crate::DscError;
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
@@ -21,13 +21,18 @@ impl Function for First {
             max_args: 1,
             accepted_arg_ordered_types: vec![vec![FunctionArgKind::Array, FunctionArgKind::String]],
             remaining_arg_accepted_types: None,
-            return_types: vec![FunctionArgKind::String, FunctionArgKind::Number, FunctionArgKind::Array, FunctionArgKind::Object],
+            return_types: vec![
+                FunctionArgKind::String,
+                FunctionArgKind::Number,
+                FunctionArgKind::Array,
+                FunctionArgKind::Object,
+            ],
         }
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.first.invoked"));
-        
+
         if let Some(array) = args[0].as_array() {
             if array.is_empty() {
                 return Err(DscError::Parser(t!("functions.first.emptyArray").to_string()));
@@ -54,21 +59,27 @@ mod tests {
     #[test]
     fn array_of_strings() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[first(createArray('hello', 'world'))]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[first(createArray('hello', 'world'))]", &Context::new())
+            .unwrap();
         assert_eq!(result.as_str(), Some("hello"));
     }
 
     #[test]
     fn array_of_numbers() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[first(createArray(1, 2, 3))]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[first(createArray(1, 2, 3))]", &Context::new())
+            .unwrap();
         assert_eq!(result.to_string(), "1");
     }
 
     #[test]
     fn array_of_single_element() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[first(array('hello'))]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[first(array('hello'))]", &Context::new())
+            .unwrap();
         assert_eq!(result.as_str(), Some("hello"));
     }
 

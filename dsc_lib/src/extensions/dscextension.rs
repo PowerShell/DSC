@@ -1,16 +1,16 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use schemars::JsonSchema;
 use std::fmt::Display;
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct DscExtension {
     /// The namespaced name of the resource.
-    #[serde(rename="type")]
+    #[serde(rename = "type")]
     pub type_name: String,
     /// The version of the resource.
     pub version: String,

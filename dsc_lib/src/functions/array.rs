@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
+use crate::functions::{Function, FunctionArgKind, FunctionCategory, FunctionMetadata};
+use crate::DscError;
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
@@ -19,9 +19,12 @@ impl Function for Array {
             category: vec![FunctionCategory::Array],
             min_args: 1,
             max_args: 1,
-            accepted_arg_ordered_types: vec![
-                vec![FunctionArgKind::String, FunctionArgKind::Number, FunctionArgKind::Object, FunctionArgKind::Array],
-            ],
+            accepted_arg_ordered_types: vec![vec![
+                FunctionArgKind::String,
+                FunctionArgKind::Number,
+                FunctionArgKind::Object,
+                FunctionArgKind::Array,
+            ]],
             remaining_arg_accepted_types: None,
             return_types: vec![FunctionArgKind::Array],
         }
@@ -29,7 +32,7 @@ impl Function for Array {
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.array.invoked"));
-        
+
         Ok(Value::Array(vec![args[0].clone()]))
     }
 }
@@ -56,14 +59,18 @@ mod tests {
     #[test]
     fn single_object() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[array(createObject('key', 'value'))]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[array(createObject('key', 'value'))]", &Context::new())
+            .unwrap();
         assert_eq!(result.to_string(), r#"[{"key":"value"}]"#);
     }
 
     #[test]
     fn single_array() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[array(createArray('a','b'))]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[array(createArray('a','b'))]", &Context::new())
+            .unwrap();
         assert_eq!(result.to_string(), r#"[["a","b"]]"#);
     }
 

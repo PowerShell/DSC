@@ -1,34 +1,38 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::configure::config_doc::{ExecutionKind, Metadata, Resource, Parameter};
+use self::config_doc::{Configuration, DataType, MicrosoftDscMetadata, Operation, SecurityContextKind};
+use self::config_result::{
+    ConfigurationExportResult, ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult,
+};
+use self::constraints::{check_allowed_values, check_length, check_number_limits};
+use self::depends_on::get_resource_invocation_order;
+use crate::configure::config_doc::{ExecutionKind, Metadata, Parameter, Resource};
 use crate::configure::context::{Context, ProcessMode};
 use crate::configure::{config_doc::RestartRequired, parameters::Input};
 use crate::discovery::discovery_trait::DiscoveryFilter;
+use crate::discovery::Discovery;
 use crate::dscerror::DscError;
 use crate::dscresources::{
-    {dscresource::{Capability, Invoke, get_diff, validate_properties, get_adapter_input_kind},
-    invoke_result::{GetResult, SetResult, TestResult, ExportResult, ResourceSetResponse}},
     resource_manifest::{AdapterInputKind, Kind},
+    {
+        dscresource::{get_adapter_input_kind, get_diff, validate_properties, Capability, Invoke},
+        invoke_result::{ExportResult, GetResult, ResourceSetResponse, SetResult, TestResult},
+    },
 };
-use crate::DscResource;
-use crate::discovery::Discovery;
 use crate::parser::Statement;
 use crate::progress::{Failure, ProgressBar, ProgressFormat};
-use self::config_doc::{Configuration, DataType, MicrosoftDscMetadata, Operation, SecurityContextKind};
-use self::depends_on::get_resource_invocation_order;
-use self::config_result::{ConfigurationExportResult, ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult};
-use self::constraints::{check_length, check_number_limits, check_allowed_values};
+use crate::DscResource;
 use rust_i18n::t;
-use security_context_lib::{SecurityContext, get_security_context};
+use security_context_lib::{get_security_context, SecurityContext};
 use serde_json::{Map, Value};
-use std::path::PathBuf;
 use std::collections::HashMap;
+use std::path::PathBuf;
 use tracing::{debug, info, trace, warn};
-pub mod context;
 pub mod config_doc;
 pub mod config_result;
 pub mod constraints;
+pub mod context;
 pub mod depends_on;
 pub mod parameters;
 
@@ -55,8 +59,11 @@ pub struct Configurator {
 /// # Errors
 ///
 /// This function will return an error if the underlying resource fails.
-pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf: &mut Configuration, input: &str) -> Result<ExportResult, DscError> {
-
+pub fn add_resource_export_results_to_configuration(
+    resource: &DscResource,
+    conf: &mut Configuration,
+    input: &str,
+) -> Result<ExportResult, DscError> {
     let export_result = resource.export(input)?;
 
     if resource.kind == Kind::Exporter {
@@ -71,14 +78,16 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf
             let mut props: Map<String, Value> = serde_json::from_value(instance.clone())?;
             if let Some(kind) = props.remove("_kind") {
                 if !kind.is_string() {
-                    return Err(DscError::Parser(t!("configure.mod.propertyNotString", name = "_kind", value = kind).to_string()));
+                    return Err(DscError::Parser(
+                        t!("configure.mod.propertyNotString", name = "_kind", value = kind).to_string(),
+                    ));
                 }
                 r.kind = kind.as_str().map(std::string::ToString::to_string);
             }
             r.name = if let Some(name) = props.remove("_name") {
-                name.as_str()
-                    .map(std::string::ToString::to_string)
-                    .ok_or_else(|| DscError::Parser(t!("configure.mod.propertyNotString", name = "_name", value = name).to_string()))?
+                name.as_str().map(std::string::ToString::to_string).ok_or_else(|| {
+                    DscError::Parser(t!("configure.mod.propertyNotString", name = "_name", value = name).to_string())
+                })?
             } else {
                 let resource_type_short = if let Some(pos) = resource.type_name.find('/') {
                     &resource.type_name[pos + 1..]
@@ -93,12 +102,10 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf
             };
             if let Some(security_context) = props.remove("_securityContext") {
                 let security_context: SecurityContextKind = serde_json::from_value(security_context)?;
-                metadata.microsoft = Some(
-                        MicrosoftDscMetadata {
-                            security_context: Some(security_context),
-                            ..Default::default()
-                        }
-                );
+                metadata.microsoft = Some(MicrosoftDscMetadata {
+                    security_context: Some(security_context),
+                    ..Default::default()
+                });
             }
             r.properties = escape_property_values(&props)?;
             let mut properties = serde_json::to_value(&r.properties)?;
@@ -126,7 +133,7 @@ fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<
             Value::Object(object) => {
                 let value = escape_property_values(&object.clone())?;
                 result.insert(name.clone(), serde_json::to_value(value)?);
-            },
+            }
             Value::Array(array) => {
                 let mut result_array: Vec<Value> = Vec::new();
                 for element in array {
@@ -134,14 +141,18 @@ fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<
                         Value::Object(object) => {
                             let value = escape_property_values(&object.clone())?;
                             result_array.push(serde_json::to_value(value)?);
-                        },
+                        }
                         Value::Array(_) => {
-                            return Err(DscError::Parser(t!("configure.mod.nestedArraysNotSupported").to_string()));
-                        },
+                            return Err(DscError::Parser(
+                                t!("configure.mod.nestedArraysNotSupported").to_string(),
+                            ));
+                        }
                         Value::String(_) => {
                             // use as_str() so that the enclosing quotes are not included for strings
                             let Some(statement) = element.as_str() else {
-                                return Err(DscError::Parser(t!("configure.mod.arrayElementCouldNotTransformAsString").to_string()));
+                                return Err(DscError::Parser(
+                                    t!("configure.mod.arrayElementCouldNotTransformAsString").to_string(),
+                                ));
                             };
                             if statement.starts_with('[') && statement.ends_with(']') {
                                 result_array.push(Value::String(format!("[{statement}")));
@@ -155,27 +166,33 @@ fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<
                     }
                 }
                 result.insert(name.clone(), serde_json::to_value(result_array)?);
-            },
+            }
             Value::String(_) => {
                 // use as_str() so that the enclosing quotes are not included for strings
                 let Some(statement) = value.as_str() else {
-                    return Err(DscError::Parser(t!("configure.mod.valueCouldNotBeTransformedAsString", value = value).to_string()));
+                    return Err(DscError::Parser(
+                        t!("configure.mod.valueCouldNotBeTransformedAsString", value = value).to_string(),
+                    ));
                 };
                 if statement.starts_with('[') && statement.ends_with(']') {
                     result.insert(name.clone(), Value::String(format!("[{statement}")));
                 } else {
                     result.insert(name.clone(), value.clone());
                 }
-            },
+            }
             _ => {
                 result.insert(name.clone(), value.clone());
-            },
+            }
         }
     }
     Ok(Some(result))
 }
 
-fn add_metadata(dsc_resource: &DscResource, mut properties: Option<Map<String, Value>>, resource_metadata: Option<Metadata> ) -> Result<String, DscError> {
+fn add_metadata(
+    dsc_resource: &DscResource,
+    mut properties: Option<Map<String, Value>>,
+    resource_metadata: Option<Metadata>,
+) -> Result<String, DscError> {
     if dsc_resource.kind == Kind::Adapter && get_adapter_input_kind(dsc_resource)? == AdapterInputKind::Full {
         // add metadata to the properties so the adapter knows this is a config
         let mut metadata: Map<String, Value> = Map::new();
@@ -204,7 +221,8 @@ fn add_metadata(dsc_resource: &DscResource, mut properties: Option<Map<String, V
         };
         props.insert("_metadata".to_string(), Value::Object(other_metadata));
         let modified_props = Value::from(props.clone());
-        if let Ok(()) = validate_properties(dsc_resource, &modified_props) {} else {
+        if let Ok(()) = validate_properties(dsc_resource, &modified_props) {
+        } else {
             warn!("{}", t!("configure.mod.schemaExcludesMetadata"));
             props.remove("_metadata");
         }
@@ -212,12 +230,8 @@ fn add_metadata(dsc_resource: &DscResource, mut properties: Option<Map<String, V
     }
 
     match properties {
-        Some(properties) => {
-            Ok(serde_json::to_string(&properties)?)
-        },
-        _ => {
-            Ok(String::new())
-        }
+        Some(properties) => Ok(serde_json::to_string(&properties)?),
+        _ => Ok(String::new()),
     }
 }
 
@@ -232,17 +246,21 @@ fn check_security_context(metadata: Option<&Metadata>) -> Result<(), DscError> {
                 match required_security_context {
                     SecurityContextKind::Current => {
                         // no check needed
-                    },
+                    }
                     SecurityContextKind::Elevated => {
                         if get_security_context() != SecurityContext::Admin {
-                            return Err(DscError::SecurityContext(t!("configure.mod.elevationRequired").to_string()));
+                            return Err(DscError::SecurityContext(
+                                t!("configure.mod.elevationRequired").to_string(),
+                            ));
                         }
-                    },
+                    }
                     SecurityContextKind::Restricted => {
                         if get_security_context() != SecurityContext::User {
-                            return Err(DscError::SecurityContext(t!("configure.mod.restrictedRequired").to_string()));
+                            return Err(DscError::SecurityContext(
+                                t!("configure.mod.restrictedRequired").to_string(),
+                            ));
                         }
-                    },
+                    }
                 }
             }
         }
@@ -251,7 +269,11 @@ fn check_security_context(metadata: Option<&Metadata>) -> Result<(), DscError> {
     Ok(())
 }
 
-fn get_metadata_from_result(mut context: Option<&mut Context>, result: &mut Value, metadata: &mut Metadata) -> Result<(), DscError> {
+fn get_metadata_from_result(
+    mut context: Option<&mut Context>,
+    result: &mut Value,
+    metadata: &mut Metadata,
+) -> Result<(), DscError> {
     if let Some(metadata_value) = result.get("_metadata") {
         if let Some(metadata_map) = metadata_value.as_object() {
             for (key, value) in metadata_map {
@@ -262,7 +284,10 @@ fn get_metadata_from_result(mut context: Option<&mut Context>, result: &mut Valu
                 if let Some(ref mut context) = context {
                     if key == "_restartRequired" {
                         if let Ok(restart_required) = serde_json::from_value::<Vec<RestartRequired>>(value.clone()) {
-                            context.restart_required.get_or_insert_with(Vec::new).extend(restart_required);
+                            context
+                                .restart_required
+                                .get_or_insert_with(Vec::new)
+                                .extend(restart_required);
                         } else {
                             warn!("{}", t!("configure.mod.metadataRestartRequiredInvalid", value = value));
                             continue;
@@ -272,7 +297,9 @@ fn get_metadata_from_result(mut context: Option<&mut Context>, result: &mut Valu
                 metadata.other.insert(key.clone(), value.clone());
             }
         } else {
-            return Err(DscError::Parser(t!("configure.mod.metadataNotObject", value = metadata_value).to_string()));
+            return Err(DscError::Parser(
+                t!("configure.mod.metadataNotObject", value = metadata_value).to_string(),
+            ));
         }
         if let Some(value_map) = result.as_object_mut() {
             value_map.remove("_metadata");
@@ -327,15 +354,17 @@ impl Configurator {
         &mut self.discovery
     }
 
-    fn get_properties(&mut self, resource: &Resource, resource_kind: &Kind) -> Result<Option<Map<String, Value>>, DscError> {
+    fn get_properties(
+        &mut self,
+        resource: &Resource,
+        resource_kind: &Kind,
+    ) -> Result<Option<Map<String, Value>>, DscError> {
         match resource_kind {
             Kind::Group => {
                 // if Group resource, we leave it to the resource to handle expressions
                 Ok(resource.properties.clone())
-            },
-            _ => {
-                Ok(self.invoke_property_expressions(resource.properties.as_ref())?)
-            },
+            }
+            _ => Ok(self.invoke_property_expressions(resource.properties.as_ref())?),
         }
     }
 
@@ -364,8 +393,12 @@ impl Configurator {
                 progress.write_increment(1);
                 continue;
             }
-            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type, resource.api_version.as_deref()) else {
-                return Err(DscError::ResourceNotFound(resource.resource_type, resource.api_version.as_deref().unwrap_or("").to_string()));
+            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type, resource.api_version.as_deref())
+            else {
+                return Err(DscError::ResourceNotFound(
+                    resource.resource_type,
+                    resource.api_version.as_deref().unwrap_or("").to_string(),
+                ));
             };
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             let filter = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
@@ -376,28 +409,36 @@ impl Configurator {
                     progress.set_failure(get_failure_from_error(&e));
                     progress.write_increment(1);
                     return Err(e);
-                },
+                }
             };
             let end_datetime = chrono::Local::now();
             let mut metadata = Metadata {
-                microsoft: Some(
-                    MicrosoftDscMetadata::new_with_duration(&start_datetime, &end_datetime)
-                ),
+                microsoft: Some(MicrosoftDscMetadata::new_with_duration(&start_datetime, &end_datetime)),
                 other: Map::new(),
             };
 
             match &mut get_result {
                 GetResult::Resource(ref mut resource_result) => {
-                    self.context.references.insert(format!("{}:{}", resource.resource_type, evaluated_name), serde_json::to_value(&resource_result.actual_state)?);
-                    get_metadata_from_result(Some(&mut self.context), &mut resource_result.actual_state, &mut metadata)?;
-                },
+                    self.context.references.insert(
+                        format!("{}:{}", resource.resource_type, evaluated_name),
+                        serde_json::to_value(&resource_result.actual_state)?,
+                    );
+                    get_metadata_from_result(
+                        Some(&mut self.context),
+                        &mut resource_result.actual_state,
+                        &mut metadata,
+                    )?;
+                }
                 GetResult::Group(group) => {
                     let mut results = Vec::<Value>::new();
                     for result in group {
                         results.push(serde_json::to_value(&result.result)?);
                     }
-                    self.context.references.insert(format!("{}:{}", resource.resource_type, evaluated_name), Value::Array(results.clone()));
-                },
+                    self.context.references.insert(
+                        format!("{}:{}", resource.resource_type, evaluated_name),
+                        Value::Array(results.clone()),
+                    );
+                }
             }
             let resource_result = config_result::ResourceGetResult {
                 metadata: Some(metadata),
@@ -410,9 +451,7 @@ impl Configurator {
             progress.write_increment(1);
         }
 
-        result.metadata = Some(
-            self.get_result_metadata(Operation::Get)
-        );
+        result.metadata = Some(self.get_result_metadata(Operation::Get));
         Ok(result)
     }
 
@@ -446,8 +485,12 @@ impl Configurator {
                 progress.write_increment(1);
                 continue;
             }
-            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type, resource.api_version.as_deref()) else {
-                return Err(DscError::ResourceNotFound(resource.resource_type, resource.api_version.as_deref().unwrap_or("").to_string()));
+            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type, resource.api_version.as_deref())
+            else {
+                return Err(DscError::ResourceNotFound(
+                    resource.resource_type,
+                    resource.api_version.as_deref().unwrap_or("").to_string(),
+                ));
             };
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
@@ -460,10 +503,8 @@ impl Configurator {
                     } else {
                         true
                     }
-                },
-                _ => {
-                    true
                 }
+                _ => true,
             };
 
             let desired = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
@@ -481,7 +522,7 @@ impl Configurator {
                         progress.set_failure(get_failure_from_error(&e));
                         progress.write_increment(1);
                         return Err(e);
-                    },
+                    }
                 };
                 end_datetime = chrono::Local::now();
             } else if dsc_resource.capabilities.contains(&Capability::Delete) {
@@ -495,7 +536,7 @@ impl Configurator {
                             progress.set_failure(get_failure_from_error(&e));
                             progress.write_increment(1);
                             return Err(e);
-                        },
+                        }
                     };
                     end_datetime = chrono::Local::now();
                 } else {
@@ -505,7 +546,7 @@ impl Configurator {
                             progress.set_failure(get_failure_from_error(&e));
                             progress.write_increment(1);
                             return Err(e);
-                        },
+                        }
                     };
                     start_datetime = chrono::Local::now();
                     if let Err(e) = dsc_resource.delete(&desired) {
@@ -519,13 +560,15 @@ impl Configurator {
                             progress.set_failure(get_failure_from_error(&e));
                             progress.write_increment(1);
                             return Err(e);
-                        },
+                        }
                     };
                     // convert get result to set result
                     set_result = match before_result {
                         GetResult::Resource(before_response) => {
                             let GetResult::Resource(after_result) = after_result else {
-                                return Err(DscError::NotSupported(t!("configure.mod.groupNotSupportedForDelete").to_string()))
+                                return Err(DscError::NotSupported(
+                                    t!("configure.mod.groupNotSupportedForDelete").to_string(),
+                                ));
                             };
                             let diff = get_diff(&before_response.actual_state, &after_result.actual_state);
                             let mut before: Map<String, Value> = serde_json::from_value(before_response.actual_state)?;
@@ -540,35 +583,43 @@ impl Configurator {
                                 after_state: after_result.actual_state,
                                 changed_properties: Some(diff),
                             })
-                        },
+                        }
                         GetResult::Group(_) => {
-                            return Err(DscError::NotSupported(t!("configure.mod.groupNotSupportedForDelete").to_string()))
-                        },
+                            return Err(DscError::NotSupported(
+                                t!("configure.mod.groupNotSupportedForDelete").to_string(),
+                            ))
+                        }
                     };
                     end_datetime = chrono::Local::now();
                 }
             } else {
-                return Err(DscError::NotImplemented(t!("configure.mod.deleteNotSupported", resource = resource.resource_type).to_string()));
+                return Err(DscError::NotImplemented(
+                    t!("configure.mod.deleteNotSupported", resource = resource.resource_type).to_string(),
+                ));
             }
 
             let mut metadata = Metadata {
-                microsoft: Some(
-                    MicrosoftDscMetadata::new_with_duration(&start_datetime, &end_datetime)
-                ),
+                microsoft: Some(MicrosoftDscMetadata::new_with_duration(&start_datetime, &end_datetime)),
                 other: Map::new(),
             };
             match &mut set_result {
                 SetResult::Resource(resource_result) => {
-                    self.context.references.insert(format!("{}:{}", resource.resource_type, evaluated_name), serde_json::to_value(&resource_result.after_state)?);
+                    self.context.references.insert(
+                        format!("{}:{}", resource.resource_type, evaluated_name),
+                        serde_json::to_value(&resource_result.after_state)?,
+                    );
                     get_metadata_from_result(Some(&mut self.context), &mut resource_result.after_state, &mut metadata)?;
-                },
+                }
                 SetResult::Group(group) => {
                     let mut results = Vec::<Value>::new();
                     for result in group {
                         results.push(serde_json::to_value(&result.result)?);
                     }
-                    self.context.references.insert(format!("{}:{}", resource.resource_type, evaluated_name), Value::Array(results.clone()));
-                },
+                    self.context.references.insert(
+                        format!("{}:{}", resource.resource_type, evaluated_name),
+                        Value::Array(results.clone()),
+                    );
+                }
             }
             let resource_result = config_result::ResourceSetResult {
                 metadata: Some(metadata),
@@ -581,9 +632,7 @@ impl Configurator {
             progress.write_increment(1);
         }
 
-        result.metadata = Some(
-            self.get_result_metadata(Operation::Set)
-        );
+        result.metadata = Some(self.get_result_metadata(Operation::Set));
         Ok(result)
     }
 
@@ -612,8 +661,12 @@ impl Configurator {
                 progress.write_increment(1);
                 continue;
             }
-            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type, resource.api_version.as_deref()) else {
-                return Err(DscError::ResourceNotFound(resource.resource_type, resource.api_version.as_deref().unwrap_or("").to_string()));
+            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type, resource.api_version.as_deref())
+            else {
+                return Err(DscError::ResourceNotFound(
+                    resource.resource_type,
+                    resource.api_version.as_deref().unwrap_or("").to_string(),
+                ));
             };
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
@@ -626,27 +679,35 @@ impl Configurator {
                     progress.set_failure(get_failure_from_error(&e));
                     progress.write_increment(1);
                     return Err(e);
-                },
+                }
             };
             let end_datetime = chrono::Local::now();
             let mut metadata = Metadata {
-                microsoft: Some(
-                    MicrosoftDscMetadata::new_with_duration(&start_datetime, &end_datetime)
-                ),
+                microsoft: Some(MicrosoftDscMetadata::new_with_duration(&start_datetime, &end_datetime)),
                 other: Map::new(),
             };
             match &mut test_result {
                 TestResult::Resource(resource_test_result) => {
-                    self.context.references.insert(format!("{}:{}", resource.resource_type, evaluated_name), serde_json::to_value(&resource_test_result.actual_state)?);
-                    get_metadata_from_result(Some(&mut self.context), &mut resource_test_result.actual_state, &mut metadata)?;
-                },
+                    self.context.references.insert(
+                        format!("{}:{}", resource.resource_type, evaluated_name),
+                        serde_json::to_value(&resource_test_result.actual_state)?,
+                    );
+                    get_metadata_from_result(
+                        Some(&mut self.context),
+                        &mut resource_test_result.actual_state,
+                        &mut metadata,
+                    )?;
+                }
                 TestResult::Group(group) => {
                     let mut results = Vec::<Value>::new();
                     for result in group {
                         results.push(serde_json::to_value(&result.result)?);
                     }
-                    self.context.references.insert(format!("{}:{}", resource.resource_type, evaluated_name), Value::Array(results.clone()));
-                },
+                    self.context.references.insert(
+                        format!("{}:{}", resource.resource_type, evaluated_name),
+                        Value::Array(results.clone()),
+                    );
+                }
             }
             let resource_result = config_result::ResourceTestResult {
                 metadata: Some(metadata),
@@ -655,13 +716,11 @@ impl Configurator {
                 result: test_result.clone(),
             };
             result.results.push(resource_result);
-            progress.set_result( &serde_json::to_value(test_result)?);
+            progress.set_result(&serde_json::to_value(test_result)?);
             progress.write_increment(1);
         }
 
-        result.metadata = Some(
-            self.get_result_metadata(Operation::Test)
-        );
+        result.metadata = Some(self.get_result_metadata(Operation::Test));
         Ok(result)
     }
 
@@ -693,21 +752,29 @@ impl Configurator {
                 progress.write_increment(1);
                 continue;
             }
-            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type, resource.api_version.as_deref()) else {
-                return Err(DscError::ResourceNotFound(resource.resource_type.clone(), resource.api_version.as_deref().unwrap_or("").to_string()));
+            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type, resource.api_version.as_deref())
+            else {
+                return Err(DscError::ResourceNotFound(
+                    resource.resource_type.clone(),
+                    resource.api_version.as_deref().unwrap_or("").to_string(),
+                ));
             };
             let properties = self.get_properties(resource, &dsc_resource.kind)?;
             let input = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
             trace!("{}", t!("configure.mod.exportInput", input = input));
-            let export_result = match add_resource_export_results_to_configuration(dsc_resource, &mut conf, input.as_str()) {
-                Ok(result) => result,
-                Err(e) => {
-                    progress.set_failure(get_failure_from_error(&e));
-                    progress.write_increment(1);
-                    return Err(e);
-                },
-            };
-            self.context.references.insert(format!("{}:{}", resource.resource_type, evaluated_name), serde_json::to_value(&export_result.actual_state)?);
+            let export_result =
+                match add_resource_export_results_to_configuration(dsc_resource, &mut conf, input.as_str()) {
+                    Ok(result) => result,
+                    Err(e) => {
+                        progress.set_failure(get_failure_from_error(&e));
+                        progress.write_increment(1);
+                        return Err(e);
+                    }
+                };
+            self.context.references.insert(
+                format!("{}:{}", resource.resource_type, evaluated_name),
+                serde_json::to_value(&export_result.actual_state)?,
+            );
             progress.set_result(&serde_json::to_value(export_result)?);
             progress.write_increment(1);
         }
@@ -717,10 +784,10 @@ impl Configurator {
             Some(mut metadata) => {
                 metadata.microsoft = export_metadata.microsoft;
                 conf.metadata = Some(metadata);
-            },
+            }
             _ => {
                 conf.metadata = Some(export_metadata);
-            },
+            }
         }
 
         result.result = Some(conf);
@@ -731,7 +798,15 @@ impl Configurator {
         if let Some(condition) = &resource.condition {
             let condition_result = self.statement_parser.parse_and_execute(condition, &self.context)?;
             if condition_result != Value::Bool(true) {
-                info!("{}", t!("configure.config_doc.skippingResource", name = resource.name, condition = condition, result = condition_result));
+                info!(
+                    "{}",
+                    t!(
+                        "configure.config_doc.skippingResource",
+                        name = resource.name,
+                        condition = condition,
+                        result = condition_result
+                    )
+                );
                 return Ok(true);
             }
         }
@@ -772,14 +847,17 @@ impl Configurator {
                 info!("{}", t!("configure.mod.noParameters"));
                 return Ok(());
             }
-            return Err(DscError::Validation(t!("configure.mod.noParametersDefined").to_string()));
+            return Err(DscError::Validation(
+                t!("configure.mod.noParametersDefined").to_string(),
+            ));
         };
 
         // process input parameters first
         if let Some(parameters_input) = parameters_input {
             trace!("parameters_input: {parameters_input}");
-            let input_parameters: HashMap<String, Value> = serde_json::from_value::<Input>(parameters_input.clone())?.parameters;
-            
+            let input_parameters: HashMap<String, Value> =
+                serde_json::from_value::<Input>(parameters_input.clone())?.parameters;
+
             for (name, value) in input_parameters {
                 if let Some(constraint) = parameters.get(&name) {
                     debug!("Validating parameter '{name}'");
@@ -790,21 +868,26 @@ impl Configurator {
                     // TODO: object constraints
 
                     validate_parameter_type(&name, &value, &constraint.parameter_type)?;
-                    if constraint.parameter_type == DataType::SecureString || constraint.parameter_type == DataType::SecureObject {
+                    if constraint.parameter_type == DataType::SecureString
+                        || constraint.parameter_type == DataType::SecureObject
+                    {
                         info!("{}", t!("configure.mod.setSecureParameter", name = name));
                     } else {
                         info!("{}", t!("configure.mod.setParameter", name = name, value = value));
                     }
 
-                    self.context.parameters.insert(name.clone(), (value.clone(), constraint.parameter_type.clone()));
+                    self.context
+                        .parameters
+                        .insert(name.clone(), (value.clone(), constraint.parameter_type.clone()));
                     if let Some(parameters) = &mut self.config.parameters {
                         if let Some(parameter) = parameters.get_mut(&name) {
                             parameter.default_value = Some(value);
                         }
                     }
-                }
-                else {
-                    return Err(DscError::Validation(t!("configure.mod.parameterNotDefined", name = name).to_string()));
+                } else {
+                    return Err(DscError::Validation(
+                        t!("configure.mod.parameterNotDefined", name = name).to_string(),
+                    ));
                 }
             }
         }
@@ -818,7 +901,7 @@ impl Configurator {
 
         while !unresolved_parameters.is_empty() {
             let mut resolved_in_this_pass = Vec::new();
-            
+
             for (name, parameter) in &unresolved_parameters {
                 debug!("{}", t!("configure.mod.processingParameter", name = name));
                 if let Some(default_value) = &parameter.default_value {
@@ -830,7 +913,9 @@ impl Configurator {
                             self.context.process_mode = ProcessMode::Normal;
                             result
                         } else {
-                            return Err(DscError::Parser(t!("configure.mod.defaultStringNotDefined").to_string()));
+                            return Err(DscError::Parser(
+                                t!("configure.mod.defaultStringNotDefined").to_string(),
+                            ));
                         }
                     } else {
                         Ok(default_value.clone())
@@ -838,7 +923,9 @@ impl Configurator {
 
                     if let Ok(value) = value_result {
                         validate_parameter_type(name, &value, &parameter.parameter_type)?;
-                        self.context.parameters.insert(name.to_string(), (value, parameter.parameter_type.clone()));
+                        self.context
+                            .parameters
+                            .insert(name.to_string(), (value, parameter.parameter_type.clone()));
                         resolved_in_this_pass.push(name.clone());
                     }
                 } else {
@@ -848,7 +935,13 @@ impl Configurator {
 
             if resolved_in_this_pass.is_empty() {
                 let unresolved_names: Vec<_> = unresolved_parameters.keys().map(std::string::String::as_str).collect();
-                return Err(DscError::Validation(t!("configure.mod.circularDependency", parameters = unresolved_names.join(", ")).to_string()));
+                return Err(DscError::Validation(
+                    t!(
+                        "configure.mod.circularDependency",
+                        parameters = unresolved_names.join(", ")
+                    )
+                    .to_string(),
+                ));
             }
 
             for name in &resolved_in_this_pass {
@@ -868,8 +961,7 @@ impl Configurator {
         for (name, value) in variables {
             let new_value = if let Some(string) = value.as_str() {
                 self.statement_parser.parse_and_execute(string, &self.context)?
-            }
-            else {
+            } else {
                 value.clone()
             };
             info!("{}", t!("configure.mod.setVariable", name = name, value = new_value));
@@ -885,11 +977,31 @@ impl Configurator {
 
         for user_function in functions {
             for (function_name, function_definition) in &user_function.members {
-                if self.context.user_functions.contains_key(&format!("{}.{}", user_function.namespace, function_name)) {
-                    return Err(DscError::Validation(t!("configure.mod.userFunctionAlreadyDefined", name = function_name, namespace = user_function.namespace).to_string()));
+                if self
+                    .context
+                    .user_functions
+                    .contains_key(&format!("{}.{}", user_function.namespace, function_name))
+                {
+                    return Err(DscError::Validation(
+                        t!(
+                            "configure.mod.userFunctionAlreadyDefined",
+                            name = function_name,
+                            namespace = user_function.namespace
+                        )
+                        .to_string(),
+                    ));
                 }
-                debug!("{}", t!("configure.mod.addingUserFunction", name = format!("{}.{}", user_function.namespace, function_name)));
-                self.context.user_functions.insert(format!("{}.{}", user_function.namespace, function_name), function_definition.clone());
+                debug!(
+                    "{}",
+                    t!(
+                        "configure.mod.addingUserFunction",
+                        name = format!("{}.{}", user_function.namespace, function_name)
+                    )
+                );
+                self.context.user_functions.insert(
+                    format!("{}.{}", user_function.namespace, function_name),
+                    function_definition.clone(),
+                );
             }
         }
         Ok(())
@@ -903,18 +1015,20 @@ impl Configurator {
             .clone()
             .unwrap_or_else(|| env!("CARGO_PKG_VERSION").to_string());
         Metadata {
-            microsoft: Some(
-                MicrosoftDscMetadata {
-                    version: Some(version),
-                    operation: Some(operation),
-                    execution_type: Some(self.context.execution_type.clone()),
-                    start_datetime: Some(self.context.start_datetime.to_rfc3339()),
-                    end_datetime: Some(end_datetime.to_rfc3339()),
-                    duration: Some(end_datetime.signed_duration_since(self.context.start_datetime).to_string()),
-                    security_context: Some(self.context.security_context.clone()),
-                    restart_required: self.context.restart_required.clone(),
-                }
-            ),
+            microsoft: Some(MicrosoftDscMetadata {
+                version: Some(version),
+                operation: Some(operation),
+                execution_type: Some(self.context.execution_type.clone()),
+                start_datetime: Some(self.context.start_datetime.to_rfc3339()),
+                end_datetime: Some(end_datetime.to_rfc3339()),
+                duration: Some(
+                    end_datetime
+                        .signed_duration_since(self.context.start_datetime)
+                        .to_string(),
+                ),
+                security_context: Some(self.context.security_context.clone()),
+                restart_required: self.context.restart_required.clone(),
+            }),
             other: Map::new(),
         }
     }
@@ -934,12 +1048,19 @@ impl Configurator {
             }
             // defer actual unrolling until parameters are available
             if let Some(copy) = &resource.copy {
-                debug!("{}", t!("configure.mod.validateCopy", name = &copy.name, count = copy.count));
+                debug!(
+                    "{}",
+                    t!("configure.mod.validateCopy", name = &copy.name, count = copy.count)
+                );
                 if copy.mode.is_some() {
-                    return Err(DscError::Validation(t!("configure.mod.copyModeNotSupported").to_string()));
+                    return Err(DscError::Validation(
+                        t!("configure.mod.copyModeNotSupported").to_string(),
+                    ));
                 }
                 if copy.batch_size.is_some() {
-                    return Err(DscError::Validation(t!("configure.mod.copyBatchSizeNotSupported").to_string()));
+                    return Err(DscError::Validation(
+                        t!("configure.mod.copyBatchSizeNotSupported").to_string(),
+                    ));
                 }
             }
         }
@@ -958,15 +1079,22 @@ impl Configurator {
         for resource in config_copy.resources {
             // if the resource contains `Copy`, unroll it
             if let Some(copy) = &resource.copy {
-                debug!("{}", t!("configure.mod.unrollingCopy", name = &copy.name, count = copy.count));
+                debug!(
+                    "{}",
+                    t!("configure.mod.unrollingCopy", name = &copy.name, count = copy.count)
+                );
                 self.context.process_mode = ProcessMode::Copy;
                 self.context.copy_current_loop_name.clone_from(&copy.name);
                 let mut copy_resources = Vec::<Resource>::new();
                 for i in 0..copy.count {
                     self.context.copy.insert(copy.name.clone(), i);
                     let mut new_resource = resource.clone();
-                    let Value::String(new_name) = self.statement_parser.parse_and_execute(&resource.name, &self.context)? else {
-                        return Err(DscError::Parser(t!("configure.mod.copyNameResultNotString").to_string()))
+                    let Value::String(new_name) =
+                        self.statement_parser.parse_and_execute(&resource.name, &self.context)?
+                    else {
+                        return Err(DscError::Parser(
+                            t!("configure.mod.copyNameResultNotString").to_string(),
+                        ));
                     };
                     new_resource.name = new_name.to_string();
 
@@ -1008,13 +1136,16 @@ impl Configurator {
 
         // evaluate the resource name (handles both expressions and literals)
         let Value::String(evaluated_name) = self.statement_parser.parse_and_execute(name, &self.context)? else {
-            return Err(DscError::Parser(t!("configure.mod.nameResultNotString").to_string()))
+            return Err(DscError::Parser(t!("configure.mod.nameResultNotString").to_string()));
         };
 
         Ok(evaluated_name)
     }
 
-    fn invoke_property_expressions(&mut self, properties: Option<&Map<String, Value>>) -> Result<Option<Map<String, Value>>, DscError> {
+    fn invoke_property_expressions(
+        &mut self,
+        properties: Option<&Map<String, Value>>,
+    ) -> Result<Option<Map<String, Value>>, DscError> {
         debug!("{}", t!("configure.mod.invokePropertyExpressions"));
         if properties.is_none() {
             return Ok(None);
@@ -1028,7 +1159,7 @@ impl Configurator {
                     Value::Object(object) => {
                         let value = self.invoke_property_expressions(Some(object))?;
                         result.insert(name.clone(), serde_json::to_value(value)?);
-                    },
+                    }
                     Value::Array(array) => {
                         let mut result_array: Vec<Value> = Vec::new();
                         for element in array {
@@ -1036,18 +1167,25 @@ impl Configurator {
                                 Value::Object(object) => {
                                     let value = self.invoke_property_expressions(Some(object))?;
                                     result_array.push(serde_json::to_value(value)?);
-                                },
+                                }
                                 Value::Array(_) => {
-                                    return Err(DscError::Parser(t!("configure.mod.nestedArraysNotSupported").to_string()));
-                                },
+                                    return Err(DscError::Parser(
+                                        t!("configure.mod.nestedArraysNotSupported").to_string(),
+                                    ));
+                                }
                                 Value::String(_) => {
                                     // use as_str() so that the enclosing quotes are not included for strings
                                     let Some(statement) = element.as_str() else {
-                                        return Err(DscError::Parser(t!("configure.mod.arrayElementCouldNotTransformAsString").to_string()));
+                                        return Err(DscError::Parser(
+                                            t!("configure.mod.arrayElementCouldNotTransformAsString").to_string(),
+                                        ));
                                     };
-                                    let statement_result = self.statement_parser.parse_and_execute(statement, &self.context)?;
+                                    let statement_result =
+                                        self.statement_parser.parse_and_execute(statement, &self.context)?;
                                     let Some(string_result) = statement_result.as_str() else {
-                                        return Err(DscError::Parser(t!("configure.mod.arrayElementCouldNotTransformAsString").to_string()));
+                                        return Err(DscError::Parser(
+                                            t!("configure.mod.arrayElementCouldNotTransformAsString").to_string(),
+                                        ));
                                     };
                                     result_array.push(Value::String(string_result.to_string()));
                                 }
@@ -1057,11 +1195,13 @@ impl Configurator {
                             }
                         }
                         result.insert(name.clone(), serde_json::to_value(result_array)?);
-                    },
+                    }
                     Value::String(_) => {
                         // use as_str() so that the enclosing quotes are not included for strings
                         let Some(statement) = value.as_str() else {
-                            return Err(DscError::Parser(t!("configure.mod.valueCouldNotBeTransformedAsString", value = value).to_string()));
+                            return Err(DscError::Parser(
+                                t!("configure.mod.valueCouldNotBeTransformedAsString", value = value).to_string(),
+                            ));
                         };
                         let statement_result = self.statement_parser.parse_and_execute(statement, &self.context)?;
                         if let Some(string_result) = statement_result.as_str() {
@@ -1069,10 +1209,10 @@ impl Configurator {
                         } else {
                             result.insert(name.clone(), statement_result);
                         }
-                    },
+                    }
                     _ => {
                         result.insert(name.clone(), value.clone());
-                    },
+                    }
                 }
             }
         }
@@ -1097,29 +1237,39 @@ pub fn validate_parameter_type(name: &str, value: &Value, parameter_type: &DataT
     match parameter_type {
         DataType::String | DataType::SecureString => {
             if !value.is_string() {
-                return Err(DscError::Validation(t!("configure.mod.parameterNotString", name = name).to_string()));
+                return Err(DscError::Validation(
+                    t!("configure.mod.parameterNotString", name = name).to_string(),
+                ));
             }
-        },
+        }
         DataType::Int => {
             if !value.is_i64() {
-                return Err(DscError::Validation(t!("configure.mod.parameterNotInteger", name = name).to_string()));
+                return Err(DscError::Validation(
+                    t!("configure.mod.parameterNotInteger", name = name).to_string(),
+                ));
             }
-        },
+        }
         DataType::Bool => {
             if !value.is_boolean() {
-                return Err(DscError::Validation(t!("configure.mod.parameterNotBoolean", name = name).to_string()));
+                return Err(DscError::Validation(
+                    t!("configure.mod.parameterNotBoolean", name = name).to_string(),
+                ));
             }
-        },
+        }
         DataType::Array => {
             if !value.is_array() {
-                return Err(DscError::Validation(t!("configure.mod.parameterNotArray", name = name).to_string()));
+                return Err(DscError::Validation(
+                    t!("configure.mod.parameterNotArray", name = name).to_string(),
+                ));
             }
-        },
+        }
         DataType::Object | DataType::SecureObject => {
             if !value.is_object() {
-                return Err(DscError::Validation(t!("configure.mod.parameterNotObject", name = name).to_string()));
+                return Err(DscError::Validation(
+                    t!("configure.mod.parameterNotObject", name = name).to_string(),
+                ));
             }
-        },
+        }
     }
 
     Ok(())
@@ -1127,18 +1277,14 @@ pub fn validate_parameter_type(name: &str, value: &Value, parameter_type: &DataT
 
 fn get_failure_from_error(err: &DscError) -> Option<Failure> {
     match err {
-        DscError::CommandExit(_resource, exit_code, reason) => {
-            Some(Failure {
-                message: reason.to_string(),
-                exit_code: *exit_code,
-            })
-        },
-        DscError::CommandExitFromManifest(_resource, exit_code, reason) => {
-            Some(Failure {
-                message: reason.to_string(),
-                exit_code: *exit_code,
-            })
-        },
+        DscError::CommandExit(_resource, exit_code, reason) => Some(Failure {
+            message: reason.to_string(),
+            exit_code: *exit_code,
+        }),
+        DscError::CommandExitFromManifest(_resource, exit_code, reason) => Some(Failure {
+            message: reason.to_string(),
+            exit_code: *exit_code,
+        }),
         _ => None,
     }
 }

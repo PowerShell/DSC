@@ -14,7 +14,7 @@ pub struct CommandInfo {
     /// metadata provided with the command
     pub metadata: Metadata,
     /// additional arguments for the call to sshd -T
-    pub sshd_args: Option<SshdCommandArgs>
+    pub sshd_args: Option<SshdCommandArgs>,
 }
 
 impl CommandInfo {
@@ -24,7 +24,7 @@ impl CommandInfo {
             include_defaults,
             input: Map::new(),
             metadata: Metadata::new(),
-            sshd_args: None
+            sshd_args: None,
         }
     }
 }
@@ -33,15 +33,13 @@ impl CommandInfo {
 pub struct Metadata {
     /// Filepath for the `sshd_config` file to be processed
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub filepath: Option<String>
+    pub filepath: Option<String>,
 }
 
 impl Metadata {
     /// Create a new `Metadata` instance.
     pub fn new() -> Self {
-        Self {
-            filepath: None
-        }
+        Self { filepath: None }
     }
 }
 

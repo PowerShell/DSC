@@ -1,10 +1,10 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::DscError;
+use super::Function;
 use crate::configure::context::Context;
 use crate::functions::{FunctionArgKind, FunctionCategory, FunctionMetadata};
-use super::Function;
+use crate::DscError;
 use rust_i18n::t;
 use serde_json::Value;
 
@@ -21,17 +21,35 @@ impl Function for If {
             max_args: 3,
             accepted_arg_ordered_types: vec![
                 vec![FunctionArgKind::Boolean],
-                vec![FunctionArgKind::String, FunctionArgKind::Number, FunctionArgKind::Array, FunctionArgKind::Object],
-                vec![FunctionArgKind::String, FunctionArgKind::Number, FunctionArgKind::Array, FunctionArgKind::Object],
+                vec![
+                    FunctionArgKind::String,
+                    FunctionArgKind::Number,
+                    FunctionArgKind::Array,
+                    FunctionArgKind::Object,
                 ],
+                vec![
+                    FunctionArgKind::String,
+                    FunctionArgKind::Number,
+                    FunctionArgKind::Array,
+                    FunctionArgKind::Object,
+                ],
+            ],
             remaining_arg_accepted_types: None,
-            return_types: vec![FunctionArgKind::String, FunctionArgKind::Number, FunctionArgKind::Array, FunctionArgKind::Object],
+            return_types: vec![
+                FunctionArgKind::String,
+                FunctionArgKind::Number,
+                FunctionArgKind::Array,
+                FunctionArgKind::Object,
+            ],
         }
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         let Some(condition) = args[0].as_bool() else {
-            return Err(DscError::Function("if".to_string(), t!("functions.if.conditionNotBoolean").to_string()));
+            return Err(DscError::Function(
+                "if".to_string(),
+                t!("functions.if.conditionNotBoolean").to_string(),
+            ));
         };
 
         if condition {
@@ -57,14 +75,18 @@ mod tests {
     #[test]
     fn condition_true() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[if(true, 'left', 'right')]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[if(true, 'left', 'right')]", &Context::new())
+            .unwrap();
         assert_eq!(result, "left");
     }
 
     #[test]
     fn condition_false() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[if(false, 'left', 'right')]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[if(false, 'left', 'right')]", &Context::new())
+            .unwrap();
         assert_eq!(result, "right");
     }
 }

@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
+use crate::functions::{Function, FunctionArgKind, FunctionCategory, FunctionMetadata};
+use crate::DscError;
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
@@ -30,10 +30,7 @@ impl Function for Join {
             category: vec![FunctionCategory::String],
             min_args: 2,
             max_args: 2,
-            accepted_arg_ordered_types: vec![
-                vec![FunctionArgKind::Array],
-                vec![FunctionArgKind::String],
-            ],
+            accepted_arg_ordered_types: vec![vec![FunctionArgKind::Array], vec![FunctionArgKind::String]],
             remaining_arg_accepted_types: None,
             return_types: vec![FunctionArgKind::String],
         }
@@ -56,29 +53,35 @@ impl Function for Join {
 
 #[cfg(test)]
 mod tests {
-    use crate::configure::context::Context;
-    use crate::parser::Statement;
     use super::Join;
+    use crate::configure::context::Context;
     use crate::functions::Function;
+    use crate::parser::Statement;
 
     #[test]
     fn join_array_of_strings() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[join(createArray('a','b','c'), '-')]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[join(createArray('a','b','c'), '-')]", &Context::new())
+            .unwrap();
         assert_eq!(result, "a-b-c");
     }
 
     #[test]
     fn join_empty_array_returns_empty() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[join(createArray(), '-')]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[join(createArray(), '-')]", &Context::new())
+            .unwrap();
         assert_eq!(result, "");
     }
 
     #[test]
     fn join_array_of_integers() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[join(createArray(1,2,3), ',')]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[join(createArray(1,2,3), ',')]", &Context::new())
+            .unwrap();
         assert_eq!(result, "1,2,3");
     }
 
@@ -88,7 +91,10 @@ mod tests {
         let result = parser.parse_and_execute("[join(createArray('a', null()), ',')]", &Context::new());
         assert!(result.is_err());
         // The error comes from argument validation, not our function
-        assert!(result.unwrap_err().to_string().contains("does not accept null arguments"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("does not accept null arguments"));
     }
 
     #[test]
@@ -103,7 +109,10 @@ mod tests {
     #[test]
     fn join_array_with_object_fails() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[join(createArray('a', createObject('key', 'value')), ',')]", &Context::new());
+        let result = parser.parse_and_execute(
+            "[join(createArray('a', createObject('key', 'value')), ',')]",
+            &Context::new(),
+        );
         assert!(result.is_err());
         let error_msg = result.unwrap_err().to_string();
         assert!(error_msg.contains("Arguments must all be") || error_msg.contains("mixed types"));
@@ -111,16 +120,16 @@ mod tests {
 
     #[test]
     fn join_direct_test_with_mixed_array() {
-        use serde_json::json;
         use crate::configure::context::Context;
-        
+        use serde_json::json;
+
         let join_fn = Join::default();
         let args = vec![
             json!(["hello", {"key": "value"}]), // Array with string and object
-            json!(",")
+            json!(","),
         ];
         let result = join_fn.invoke(&args, &Context::new());
-        
+
         assert!(result.is_err());
         let error_msg = result.unwrap_err().to_string();
         assert!(error_msg.contains("Array elements cannot be objects"));

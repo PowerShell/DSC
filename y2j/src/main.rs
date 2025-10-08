@@ -1,10 +1,13 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use std::{io::{self, Read, IsTerminal}, process::exit};
+use std::{
+    io::{self, IsTerminal, Read},
+    process::exit,
+};
 use syntect::easy::HighlightLines;
+use syntect::highlighting::{Style, ThemeSet};
 use syntect::parsing::SyntaxSet;
-use syntect::highlighting::{ThemeSet, Style};
 use syntect::util::{as_24_bit_terminal_escaped, LinesWithEndings};
 
 const EXIT_SUCCESS: i32 = 0;
@@ -27,7 +30,9 @@ fn main() {
     };
 
     let mut is_json = true;
-    let input: serde_json::Value = if let Ok(json) = serde_json::from_str(&input) { json } else {
+    let input: serde_json::Value = if let Ok(json) = serde_json::from_str(&input) {
+        json
+    } else {
         is_json = false;
         match serde_yaml::from_str(&input) {
             Ok(yaml) => yaml,

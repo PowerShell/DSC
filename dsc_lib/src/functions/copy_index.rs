@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::DscError;
 use crate::configure::context::{Context, ProcessMode};
-use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
+use crate::functions::{Function, FunctionArgKind, FunctionCategory, FunctionMetadata};
+use crate::DscError;
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
@@ -31,7 +31,9 @@ impl Function for CopyIndex {
     fn invoke(&self, args: &[Value], context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.copyIndex.invoked"));
         if context.process_mode != ProcessMode::Copy {
-            return Err(DscError::Parser(t!("functions.copyIndex.cannotUseOutsideCopy").to_string()));
+            return Err(DscError::Parser(
+                t!("functions.copyIndex.cannotUseOutsideCopy").to_string(),
+            ));
         }
         match args.len() {
             // no args, we return the current index of the current loop
@@ -48,7 +50,9 @@ impl Function for CopyIndex {
                     if let Some(index) = context.copy.get(loop_name) {
                         Ok(Value::Number((*index).into()))
                     } else {
-                        Err(DscError::Parser(t!("functions.copyIndex.loopNameNotFound", name = loop_name).to_string()))
+                        Err(DscError::Parser(
+                            t!("functions.copyIndex.loopNameNotFound", name = loop_name).to_string(),
+                        ))
                     }
                 } else {
                     Err(DscError::Parser(t!("functions.invalidArguments").to_string()))
@@ -64,7 +68,9 @@ impl Function for CopyIndex {
                             Err(DscError::Parser(t!("functions.invalidArguments").to_string()))
                         }
                     } else {
-                        Err(DscError::Parser(t!("functions.copyIndex.loopNameNotFound", name = loop_name).to_string()))
+                        Err(DscError::Parser(
+                            t!("functions.copyIndex.loopNameNotFound", name = loop_name).to_string(),
+                        ))
                     }
                 } else {
                     Err(DscError::Parser(t!("functions.invalidArguments").to_string()))

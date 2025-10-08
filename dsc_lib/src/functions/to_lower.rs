@@ -1,12 +1,12 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::DscError;
+use super::Function;
 use crate::configure::context::Context;
 use crate::functions::{FunctionArgKind, FunctionCategory, FunctionMetadata};
+use crate::DscError;
 use rust_i18n::t;
 use serde_json::Value;
-use super::Function;
 
 #[derive(Debug, Default)]
 pub struct ToLower {}
@@ -40,21 +40,27 @@ mod tests {
     #[test]
     fn test_to_lower_uppercase() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[toLower('HELLO WORLD')]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[toLower('HELLO WORLD')]", &Context::new())
+            .unwrap();
         assert_eq!(result, "hello world");
     }
 
     #[test]
     fn test_to_lower_mixed_case() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[toLower('Hello World')]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[toLower('Hello World')]", &Context::new())
+            .unwrap();
         assert_eq!(result, "hello world");
     }
 
     #[test]
     fn test_to_lower_already_lowercase() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[toLower('hello world')]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[toLower('hello world')]", &Context::new())
+            .unwrap();
         assert_eq!(result, "hello world");
     }
 
@@ -68,7 +74,9 @@ mod tests {
     #[test]
     fn test_to_lower_with_numbers_and_symbols() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[toLower('HELLO123!@#')]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[toLower('HELLO123!@#')]", &Context::new())
+            .unwrap();
         assert_eq!(result, "hello123!@#");
     }
 
@@ -82,7 +90,9 @@ mod tests {
     #[test]
     fn test_to_lower_with_spaces() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[toLower('  HELLO  WORLD  ')]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[toLower('  HELLO  WORLD  ')]", &Context::new())
+            .unwrap();
         assert_eq!(result, "  hello  world  ");
     }
 
@@ -96,7 +106,9 @@ mod tests {
     #[test]
     fn test_to_lower_nested_function() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[toLower(concat('HELLO', ' WORLD'))]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[toLower(concat('HELLO', ' WORLD'))]", &Context::new())
+            .unwrap();
         assert_eq!(result, "hello world");
     }
 }

@@ -170,7 +170,7 @@ pub enum ConfigSubCommand {
         file: Option<String>,
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
         output_format: Option<OutputFormat>,
-    }
+    },
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
@@ -226,7 +226,11 @@ pub enum ResourceSubCommand {
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
         output_format: Option<GetOutputFormat>,
     },
-    #[clap(name = "set", about = "Invoke the set operation to a resource", arg_required_else_help = true)]
+    #[clap(
+        name = "set",
+        about = "Invoke the set operation to a resource",
+        arg_required_else_help = true
+    )]
     Set {
         #[clap(short, long, help = t!("args.resource").to_string())]
         resource: String,
@@ -239,7 +243,11 @@ pub enum ResourceSubCommand {
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
         output_format: Option<OutputFormat>,
     },
-    #[clap(name = "test", about = "Invoke the test operation to a resource", arg_required_else_help = true)]
+    #[clap(
+        name = "test",
+        about = "Invoke the test operation to a resource",
+        arg_required_else_help = true
+    )]
     Test {
         #[clap(short, long, help = t!("args.resource").to_string())]
         resource: String,
@@ -252,7 +260,11 @@ pub enum ResourceSubCommand {
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
         output_format: Option<OutputFormat>,
     },
-    #[clap(name = "delete", about = "Invoke the delete operation to a resource", arg_required_else_help = true)]
+    #[clap(
+        name = "delete",
+        about = "Invoke the delete operation to a resource",
+        arg_required_else_help = true
+    )]
     Delete {
         #[clap(short, long, help = t!("args.resource").to_string())]
         resource: String,
@@ -263,7 +275,11 @@ pub enum ResourceSubCommand {
         #[clap(short = 'f', long, help = t!("args.file").to_string(), conflicts_with = "input")]
         file: Option<String>,
     },
-    #[clap(name = "schema", about = "Get the JSON schema for a resource", arg_required_else_help = true)]
+    #[clap(
+        name = "schema",
+        about = "Get the JSON schema for a resource",
+        arg_required_else_help = true
+    )]
     Schema {
         #[clap(short, long, help = t!("args.resource").to_string())]
         resource: String,
@@ -272,7 +288,11 @@ pub enum ResourceSubCommand {
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
         output_format: Option<OutputFormat>,
     },
-    #[clap(name = "export", about = "Retrieve all resource instances", arg_required_else_help = true)]
+    #[clap(
+        name = "export",
+        about = "Retrieve all resource instances",
+        arg_required_else_help = true
+    )]
     Export {
         #[clap(short, long, help = t!("args.resource").to_string())]
         resource: String,
@@ -304,5 +324,5 @@ pub enum SchemaType {
     ExtensionManifest,
     ExtensionDiscoverResult,
     FunctionDefinition,
-    RestartRequired
+    RestartRequired,
 }

@@ -39,7 +39,9 @@ impl Expression {
     /// This function will return an error if the expression node is not valid.
     pub fn new(statement_bytes: &[u8], expression: &Node) -> Result<Self, DscError> {
         let Some(function) = expression.child_by_field_name("function") else {
-            return Err(DscError::Parser(t!("parser.expression.functionNodeNotFound").to_string()));
+            return Err(DscError::Parser(
+                t!("parser.expression.functionNodeNotFound").to_string(),
+            ));
         };
         debug!("{}", t!("parser.expression.parsingFunction", name = function : {:?}));
         let function = Function::new(statement_bytes, &function)?;
@@ -47,25 +49,35 @@ impl Expression {
         if let Some(accessor) = expression.child_by_field_name("accessor") {
             debug!("{}", t!("parser.expression.parsingAccessor", name = accessor : {:?}));
             if accessor.is_error() {
-                return Err(DscError::Parser(t!("parser.expression.accessorParsingError").to_string()));
+                return Err(DscError::Parser(
+                    t!("parser.expression.accessorParsingError").to_string(),
+                ));
             }
             let mut cursor = accessor.walk();
             for accessor in accessor.named_children(&mut cursor) {
                 if accessor.is_error() {
-                    return Err(DscError::Parser(t!("parser.expression.accessorParsingError").to_string()));
+                    return Err(DscError::Parser(
+                        t!("parser.expression.accessorParsingError").to_string(),
+                    ));
                 }
                 let accessor_kind = accessor.kind();
                 let value = match accessor_kind {
                     "memberAccess" => {
-                        debug!("{}", t!("parser.expression.parsingMemberAccessor", name = accessor : {:?}));
+                        debug!(
+                            "{}",
+                            t!("parser.expression.parsingMemberAccessor", name = accessor : {:?})
+                        );
                         let Some(member_name) = accessor.child_by_field_name("name") else {
                             return Err(DscError::Parser(t!("parser.expression.memberNotFound").to_string()));
                         };
                         let member = member_name.utf8_text(statement_bytes)?;
                         Accessor::Member(member.to_string())
-                    },
+                    }
                     "index" => {
-                        debug!("{}", t!("parser.expression.parsingIndexAccessor", index = accessor : {:?}));
+                        debug!(
+                            "{}",
+                            t!("parser.expression.parsingIndexAccessor", index = accessor : {:?})
+                        );
                         let Some(index_value) = accessor.child_by_field_name("indexValue") else {
                             return Err(DscError::Parser(t!("parser.expression.indexNotFound").to_string()));
                         };
@@ -74,28 +86,29 @@ impl Expression {
                                 let value = index_value.utf8_text(statement_bytes)?;
                                 let value = serde_json::from_str(value)?;
                                 Accessor::Index(value)
-                            },
+                            }
                             "expression" => {
                                 let expression = Expression::new(statement_bytes, &index_value)?;
                                 Accessor::IndexExpression(expression)
-                            },
+                            }
                             _ => {
-                                return Err(DscError::Parser(t!("parser.expression.invalidAccessorKind", kind = accessor_kind).to_string()));
-                            },
+                                return Err(DscError::Parser(
+                                    t!("parser.expression.invalidAccessorKind", kind = accessor_kind).to_string(),
+                                ));
+                            }
                         }
-                    },
+                    }
                     _ => {
-                        return Err(DscError::Parser(t!("parser.expression.invalidAccessorKind", kind = accessor_kind).to_string()));
-                    },
+                        return Err(DscError::Parser(
+                            t!("parser.expression.invalidAccessorKind", kind = accessor_kind).to_string(),
+                        ));
+                    }
                 };
                 accessors.push(value);
             }
         }
 
-        Ok(Expression {
-            function,
-            accessors,
-        })
+        Ok(Expression { function, accessors })
     }
 
     /// Invoke the expression.
@@ -122,8 +135,7 @@ impl Expression {
         }
         if self.accessors.is_empty() {
             Ok(result)
-        }
-        else {
+        } else {
             debug!("{}", t!("parser.expression.evalAccessors"));
             let mut value = result;
             let is_secure = is_secure_value(&value);
@@ -144,7 +156,9 @@ impl Expression {
                     Accessor::Member(member) => {
                         if let Some(object) = value.as_object() {
                             if !object.contains_key(member) {
-                                return Err(DscError::Parser(t!("parser.expression.memberNameNotFound", member = member).to_string()));
+                                return Err(DscError::Parser(
+                                    t!("parser.expression.memberNameNotFound", member = member).to_string(),
+                                ));
                             }
                             if is_secure {
                                 value = convert_to_secure(&object[member]);
@@ -154,18 +168,18 @@ impl Expression {
                         } else {
                             return Err(DscError::Parser(t!("parser.expression.accessOnNonObject").to_string()));
                         }
-                    },
+                    }
                     Accessor::Index(index_value) => {
                         if is_secure {
                             index = convert_to_secure(index_value);
                         } else {
                             index = index_value.clone();
                         }
-                    },
+                    }
                     Accessor::IndexExpression(expression) => {
                         index = expression.invoke(function_dispatcher, context)?;
                         trace!("{}", t!("parser.expression.expressionResult", index = index : {:?}));
-                    },
+                    }
                 }
 
                 if index.is_number() {
@@ -185,8 +199,7 @@ impl Expression {
                     } else {
                         return Err(DscError::Parser(t!("parser.expression.indexOnNonArray").to_string()));
                     }
-                }
-                else if !index.is_null() {
+                } else if !index.is_null() {
                     return Err(DscError::Parser(t!("parser.expression.invalidIndexType").to_string()));
                 }
             }

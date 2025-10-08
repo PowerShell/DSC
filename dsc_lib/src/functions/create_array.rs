@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
+use crate::functions::{Function, FunctionArgKind, FunctionCategory, FunctionMetadata};
+use crate::DscError;
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
@@ -33,31 +33,39 @@ impl Function for CreateArray {
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.createArray.invoked"));
         let mut array_result = Vec::<Value>::new();
-        let mut input_type : Option<FunctionArgKind> = None;
+        let mut input_type: Option<FunctionArgKind> = None;
         for value in args {
             if value.is_array() {
                 if input_type.is_none() {
                     input_type = Some(FunctionArgKind::Array);
                 } else if input_type != Some(FunctionArgKind::Array) {
-                    return Err(DscError::Parser(t!("functions.createArray.argsMustAllBeArrays").to_string()));
+                    return Err(DscError::Parser(
+                        t!("functions.createArray.argsMustAllBeArrays").to_string(),
+                    ));
                 }
             } else if value.is_number() {
                 if input_type.is_none() {
                     input_type = Some(FunctionArgKind::Number);
                 } else if input_type != Some(FunctionArgKind::Number) {
-                    return Err(DscError::Parser(t!("functions.createArray.argsMustAllBeIntegers").to_string()));
+                    return Err(DscError::Parser(
+                        t!("functions.createArray.argsMustAllBeIntegers").to_string(),
+                    ));
                 }
             } else if value.is_object() {
                 if input_type.is_none() {
                     input_type = Some(FunctionArgKind::Object);
                 } else if input_type != Some(FunctionArgKind::Object) {
-                    return Err(DscError::Parser(t!("functions.createArray.argsMustAllBeObjects").to_string()));
+                    return Err(DscError::Parser(
+                        t!("functions.createArray.argsMustAllBeObjects").to_string(),
+                    ));
                 }
             } else if value.is_string() {
                 if input_type.is_none() {
                     input_type = Some(FunctionArgKind::String);
                 } else if input_type != Some(FunctionArgKind::String) {
-                    return Err(DscError::Parser(t!("functions.createArray.argsMustAllBeStrings").to_string()));
+                    return Err(DscError::Parser(
+                        t!("functions.createArray.argsMustAllBeStrings").to_string(),
+                    ));
                 }
             } else {
                 return Err(DscError::Parser(t!("functions.invalidArgType").to_string()));
@@ -77,21 +85,30 @@ mod tests {
     #[test]
     fn strings() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[createArray('a', 'b')]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[createArray('a', 'b')]", &Context::new())
+            .unwrap();
         assert_eq!(result.to_string(), r#"["a","b"]"#);
     }
 
     #[test]
     fn integers() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[createArray(1,2,3)]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[createArray(1,2,3)]", &Context::new())
+            .unwrap();
         assert_eq!(result.to_string(), "[1,2,3]");
     }
 
     #[test]
     fn arrays() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[createArray(createArray('a','b'), createArray('c','d'))]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute(
+                "[createArray(createArray('a','b'), createArray('c','d'))]",
+                &Context::new(),
+            )
+            .unwrap();
         assert_eq!(result.to_string(), r#"[["a","b"],["c","d"]]"#);
     }
 

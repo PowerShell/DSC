@@ -4,12 +4,12 @@
 use args::{Args, SubCommand};
 use clap::{CommandFactory, Parser};
 use clap_complete::generate;
+use dsc_lib::progress::ProgressFormat;
 use mcp::start_mcp_server;
 use rust_i18n::{i18n, t};
 use std::{io, io::Read, process::exit};
-use sysinfo::{Process, RefreshKind, System, get_current_pid, ProcessRefreshKind};
-use tracing::{error, info, warn, debug};
-use dsc_lib::progress::ProgressFormat;
+use sysinfo::{get_current_pid, Process, ProcessRefreshKind, RefreshKind, System};
+use tracing::{debug, error, info, warn};
 
 use crate::util::EXIT_INVALID_INPUT;
 
@@ -28,6 +28,7 @@ pub mod util;
 
 i18n!("locales", fallback = "en-us");
 
+#[allow(clippy::too_many_lines)]
 fn main() {
     #[cfg(debug_assertions)]
     check_debug();
@@ -45,29 +46,33 @@ fn main() {
 
     debug!("{}: {}", t!("main.usingDscVersion"), env!("CARGO_PKG_VERSION"));
 
-    let progress_format = args.progress_format.unwrap_or( ProgressFormat::Default );
+    let progress_format = args.progress_format.unwrap_or(ProgressFormat::Default);
 
     match args.subcommand {
         SubCommand::Completer { shell } => {
             info!("{} {:?}", t!("main.generatingCompleter"), shell);
             let mut cmd = Args::command();
             generate(shell, &mut cmd, "dsc", &mut io::stdout());
-        },
-        SubCommand::Config { subcommand, parameters, parameters_file, system_root, as_group, as_assert, as_include } => {
+        }
+        SubCommand::Config {
+            subcommand,
+            parameters,
+            parameters_file,
+            system_root,
+            as_group,
+            as_assert,
+            as_include,
+        } => {
             if let Some(file_name) = parameters_file {
                 if file_name == "-" {
                     info!("{}", t!("main.readingParametersFromStdin"));
                     let mut stdin = Vec::<u8>::new();
                     let parameters = match io::stdin().read_to_end(&mut stdin) {
-                        Ok(_) => {
-                            match String::from_utf8(stdin) {
-                                Ok(input) => {
-                                    input
-                                },
-                                Err(err) => {
-                                    error!("{}: {err}", t!("util.invalidUtf8"));
-                                    exit(EXIT_INVALID_INPUT);
-                                }
+                        Ok(_) => match String::from_utf8(stdin) {
+                            Ok(input) => input,
+                            Err(err) => {
+                                error!("{}: {err}", t!("util.invalidUtf8"));
+                                exit(EXIT_INVALID_INPUT);
                             }
                         },
                         Err(err) => {
@@ -75,28 +80,54 @@ fn main() {
                             exit(EXIT_INVALID_INPUT);
                         }
                     };
-                    subcommand::config(&subcommand, &Some(parameters), true, system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format);
+                    subcommand::config(
+                        &subcommand,
+                        &Some(parameters),
+                        true,
+                        system_root.as_ref(),
+                        &as_group,
+                        &as_assert,
+                        &as_include,
+                        progress_format,
+                    );
                     return;
                 }
                 info!("{}: {file_name}", t!("main.readingParametersFile"));
                 match std::fs::read_to_string(&file_name) {
-                    Ok(parameters) => subcommand::config(&subcommand, &Some(parameters), false, system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format),
+                    Ok(parameters) => subcommand::config(
+                        &subcommand,
+                        &Some(parameters),
+                        false,
+                        system_root.as_ref(),
+                        &as_group,
+                        &as_assert,
+                        &as_include,
+                        progress_format,
+                    ),
                     Err(err) => {
                         error!("{} '{file_name}': {err}", t!("main.failedReadingParametersFile"));
                         exit(util::EXIT_INVALID_INPUT);
                     }
                 }
+            } else {
+                subcommand::config(
+                    &subcommand,
+                    &parameters,
+                    false,
+                    system_root.as_ref(),
+                    &as_group,
+                    &as_assert,
+                    &as_include,
+                    progress_format,
+                );
             }
-            else {
-                subcommand::config(&subcommand, &parameters, false, system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format);
-            }
-        },
+        }
         SubCommand::Extension { subcommand } => {
             subcommand::extension(&subcommand, progress_format);
-        },
+        }
         SubCommand::Function { subcommand } => {
             subcommand::function(&subcommand);
-        },
+        }
         SubCommand::Mcp => {
             if let Err(err) = start_mcp_server() {
                 error!("{}", t!("main.failedToStartMcpServer", error = err));
@@ -106,8 +137,11 @@ fn main() {
         }
         SubCommand::Resource { subcommand } => {
             subcommand::resource(&subcommand, progress_format);
-        },
-        SubCommand::Schema { dsc_type , output_format } => {
+        }
+        SubCommand::Schema {
+            dsc_type,
+            output_format,
+        } => {
             let schema = util::get_schema(dsc_type);
             let json = match serde_json::to_string(&schema) {
                 Ok(json) => json,
@@ -117,7 +151,7 @@ fn main() {
                 }
             };
             util::write_object(&json, output_format.as_ref(), false);
-        },
+        }
     }
 
     exit(util::EXIT_SUCCESS);
@@ -144,21 +178,43 @@ fn ctrlc_handler() {
 }
 
 fn terminate_subprocesses(sys: &System, process: &Process) {
-    info!("{}: {:?} {}", t!("main.terminatingSubprocess"), process.name(), process.pid());
-    for subprocess in sys.processes().values().filter(|p| p.parent().is_some_and(|parent| parent == process.pid())) {
+    info!(
+        "{}: {:?} {}",
+        t!("main.terminatingSubprocess"),
+        process.name(),
+        process.pid()
+    );
+    for subprocess in sys
+        .processes()
+        .values()
+        .filter(|p| p.parent().is_some_and(|parent| parent == process.pid()))
+    {
         terminate_subprocesses(sys, subprocess);
     }
 
-    info!("{}: {:?} {}", t!("main.terminatingProcess"), process.name(), process.pid());
+    info!(
+        "{}: {:?} {}",
+        t!("main.terminatingProcess"),
+        process.name(),
+        process.pid()
+    );
     if !process.kill() {
-        error!("{}: {:?} {}", t!("main.failedTerminatingProcess"), process.name(), process.pid());
+        error!(
+            "{}: {:?} {}",
+            t!("main.failedTerminatingProcess"),
+            process.name(),
+            process.pid()
+        );
     }
 }
 
 #[cfg(debug_assertions)]
 fn check_debug() {
     if env::var("DEBUG_DSC").is_ok() {
-        eprintln!("attach debugger to pid {} and press a key to continue", std::process::id());
+        eprintln!(
+            "attach debugger to pid {} and press a key to continue",
+            std::process::id()
+        );
         loop {
             let event = match event::read() {
                 Ok(event) => event,
@@ -200,7 +256,9 @@ fn check_store() {
     };
 
     // MS Store runs app using `sihost.exe`
-    if parent_process.name().eq_ignore_ascii_case("sihost.exe") || parent_process.name().eq_ignore_ascii_case("explorer.exe") {
+    if parent_process.name().eq_ignore_ascii_case("sihost.exe")
+        || parent_process.name().eq_ignore_ascii_case("explorer.exe")
+    {
         eprintln!("{}", t!("main.storeMessage"));
         // wait for keypress
         let _ = io::stdin().read(&mut [0u8]).unwrap();

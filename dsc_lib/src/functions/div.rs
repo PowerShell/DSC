@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
+use crate::functions::{Function, FunctionArgKind, FunctionCategory, FunctionMetadata};
+use crate::DscError;
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
@@ -19,10 +19,7 @@ impl Function for Div {
             category: vec![FunctionCategory::Numeric],
             min_args: 2,
             max_args: 2,
-            accepted_arg_ordered_types: vec![
-                vec![FunctionArgKind::Number],
-                vec![FunctionArgKind::Number],
-            ],
+            accepted_arg_ordered_types: vec![vec![FunctionArgKind::Number], vec![FunctionArgKind::Number]],
             remaining_arg_accepted_types: None,
             return_types: vec![FunctionArgKind::Number],
         }
@@ -57,7 +54,9 @@ mod tests {
     #[test]
     fn nested() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[div(18, div(9, 3))]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[div(18, div(9, 3))]", &Context::new())
+            .unwrap();
         assert_eq!(result, 6);
     }
 
@@ -83,4 +82,3 @@ mod tests {
         assert!(result.is_err());
     }
 }
-

@@ -7,9 +7,9 @@ extern "C" {
 }
 
 /// # Safety
-/// 
+///
 /// This function is unsafe because it dereferences a raw pointer.
-/// 
+///
 /// # Panics
 ///
 /// Will panic if the api returns 0

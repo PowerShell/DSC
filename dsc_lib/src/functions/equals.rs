@@ -1,11 +1,11 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::DscError;
+use super::Function;
 use crate::configure::context::Context;
 use crate::functions::{FunctionArgKind, FunctionCategory, FunctionMetadata};
+use crate::DscError;
 use rust_i18n::t;
-use super::Function;
 use serde_json::Value;
 
 #[derive(Debug, Default)]
@@ -20,8 +20,18 @@ impl Function for Equals {
             min_args: 2,
             max_args: 2,
             accepted_arg_ordered_types: vec![
-                vec![FunctionArgKind::Number, FunctionArgKind::String, FunctionArgKind::Array, FunctionArgKind::Object],
-                vec![FunctionArgKind::Number, FunctionArgKind::String, FunctionArgKind::Array, FunctionArgKind::Object],
+                vec![
+                    FunctionArgKind::Number,
+                    FunctionArgKind::String,
+                    FunctionArgKind::Array,
+                    FunctionArgKind::Object,
+                ],
+                vec![
+                    FunctionArgKind::Number,
+                    FunctionArgKind::String,
+                    FunctionArgKind::Array,
+                    FunctionArgKind::Object,
+                ],
             ],
             remaining_arg_accepted_types: None,
             return_types: vec![FunctionArgKind::Boolean],
@@ -56,21 +66,27 @@ mod tests {
     #[test]
     fn string_equal() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[equals('test','test')]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[equals('test','test')]", &Context::new())
+            .unwrap();
         assert_eq!(result, Value::Bool(true));
     }
 
     #[test]
     fn string_notequal() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[equals('test','TEST')]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[equals('test','TEST')]", &Context::new())
+            .unwrap();
         assert_eq!(result, Value::Bool(false));
     }
 
     #[test]
     fn different_types() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[equals(1,'string')]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[equals(1,'string')]", &Context::new())
+            .unwrap();
         assert_eq!(result, Value::Bool(false));
     }
 

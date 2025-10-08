@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
+use crate::functions::{Function, FunctionArgKind, FunctionCategory, FunctionMetadata};
+use crate::DscError;
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
@@ -21,7 +21,12 @@ impl Function for IndexOf {
             max_args: 2,
             accepted_arg_ordered_types: vec![
                 vec![FunctionArgKind::Array],
-                vec![FunctionArgKind::String, FunctionArgKind::Number, FunctionArgKind::Array, FunctionArgKind::Object],
+                vec![
+                    FunctionArgKind::String,
+                    FunctionArgKind::Number,
+                    FunctionArgKind::Array,
+                    FunctionArgKind::Object,
+                ],
             ],
             remaining_arg_accepted_types: None,
             return_types: vec![FunctionArgKind::Number],
@@ -30,7 +35,7 @@ impl Function for IndexOf {
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.indexOf.invoked"));
-        
+
         let Some(array) = args[0].as_array() else {
             return Err(DscError::Parser(t!("functions.indexOf.invalidArrayArg").to_string()));
         };
@@ -39,9 +44,8 @@ impl Function for IndexOf {
 
         for (index, item) in array.iter().enumerate() {
             if item == item_to_find {
-                let index_i64 = i64::try_from(index).map_err(|_| {
-                    DscError::Parser("Array index too large to represent as integer".to_string())
-                })?;
+                let index_i64 = i64::try_from(index)
+                    .map_err(|_| DscError::Parser("Array index too large to represent as integer".to_string()))?;
                 return Ok(Value::Number(index_i64.into()));
             }
         }
@@ -59,42 +63,60 @@ mod tests {
     #[test]
     fn find_string_in_array() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[indexOf(createArray('apple', 'banana', 'cherry'), 'banana')]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute(
+                "[indexOf(createArray('apple', 'banana', 'cherry'), 'banana')]",
+                &Context::new(),
+            )
+            .unwrap();
         assert_eq!(result, 1);
     }
 
     #[test]
     fn find_number_in_array() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[indexOf(createArray(10, 20, 30), 20)]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[indexOf(createArray(10, 20, 30), 20)]", &Context::new())
+            .unwrap();
         assert_eq!(result, 1);
     }
 
     #[test]
     fn find_first_occurrence() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[indexOf(createArray('a', 'b', 'a', 'c'), 'a')]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[indexOf(createArray('a', 'b', 'a', 'c'), 'a')]", &Context::new())
+            .unwrap();
         assert_eq!(result, 0);
     }
 
     #[test]
     fn item_not_found() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[indexOf(createArray('apple', 'banana'), 'orange')]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[indexOf(createArray('apple', 'banana'), 'orange')]", &Context::new())
+            .unwrap();
         assert_eq!(result, -1);
     }
 
     #[test]
     fn case_sensitive_string() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[indexOf(createArray('Apple', 'Banana'), 'apple')]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[indexOf(createArray('Apple', 'Banana'), 'apple')]", &Context::new())
+            .unwrap();
         assert_eq!(result, -1);
     }
 
     #[test]
     fn find_array_in_array() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[indexOf(createArray(createArray('a', 'b'), createArray('c', 'd')), createArray('c', 'd'))]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute(
+                "[indexOf(createArray(createArray('a', 'b'), createArray('c', 'd')), createArray('c', 'd'))]",
+                &Context::new(),
+            )
+            .unwrap();
         assert_eq!(result, 1);
     }
 
@@ -108,7 +130,9 @@ mod tests {
     #[test]
     fn empty_array() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[indexOf(createArray(), 'test')]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[indexOf(createArray(), 'test')]", &Context::new())
+            .unwrap();
         assert_eq!(result, -1);
     }
 

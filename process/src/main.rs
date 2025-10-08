@@ -2,14 +2,13 @@
 // Licensed under the MIT License.
 
 mod process_info;
-use std::env;
-use std::process::exit;
-use std::io::{self, Read};
-use sysinfo::{ProcessesToUpdate, System};
 use crate::process_info::ProcessInfo;
+use std::env;
+use std::io::{self, Read};
+use std::process::exit;
+use sysinfo::{ProcessesToUpdate, System};
 
-fn get_task_list() -> Vec<ProcessInfo>
-{
+fn get_task_list() -> Vec<ProcessInfo> {
     let mut result = Vec::new();
     let mut s = System::new();
     s.refresh_processes(ProcessesToUpdate::All, true);
@@ -47,24 +46,23 @@ fn main() {
         // one argument passed
         match args[1].as_str() {
             "list" => {
-                for p in get_task_list()
-                {
+                for p in get_task_list() {
                     let json = serde_json::to_string(&p).unwrap();
                     println!("{json}");
                 }
                 exit(0);
-            },
-            "get" | "set" | "test" => { // used for testing only
+            }
+            "get" | "set" | "test" => {
+                // used for testing only
                 print_input();
                 exit(0);
-            },
+            }
             _ => {
                 help();
                 exit(1);
-            },
+            }
         }
-    }
-    else {
+    } else {
         help();
         exit(1);
     }

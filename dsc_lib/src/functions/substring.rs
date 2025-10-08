@@ -87,11 +87,7 @@ impl Function for Substring {
             length
         };
 
-        let result: String = string_to_parse
-            .chars()
-            .skip(start_index)
-            .take(length)
-            .collect();
+        let result: String = string_to_parse.chars().skip(start_index).take(length).collect();
 
         Ok(Value::String(result))
     }
@@ -215,9 +211,7 @@ mod tests {
     #[test]
     fn substring_empty_string_to_end() {
         let mut parser = Statement::new().unwrap();
-        let result = parser
-            .parse_and_execute("[substring('', 0)]", &Context::new())
-            .unwrap();
+        let result = parser.parse_and_execute("[substring('', 0)]", &Context::new()).unwrap();
         assert_eq!(result, Value::String("".to_string()));
     }
 
@@ -230,4 +224,3 @@ mod tests {
         assert_eq!(result, Value::String("".to_string()));
     }
 }
-

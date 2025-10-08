@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
+use crate::functions::{Function, FunctionArgKind, FunctionCategory, FunctionMetadata};
+use crate::DscError;
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
@@ -32,7 +32,7 @@ impl Function for Concat {
         debug!("{}", t!("functions.concat.invoked"));
         let mut string_result = String::new();
         let mut array_result: Vec<String> = Vec::new();
-        let mut input_type : Option<FunctionArgKind> = None;
+        let mut input_type: Option<FunctionArgKind> = None;
         for value in args {
             if value.is_string() {
                 if input_type.is_none() {
@@ -68,15 +68,9 @@ impl Function for Concat {
         }
 
         match input_type {
-            Some(FunctionArgKind::String) => {
-                Ok(Value::String(string_result))
-            },
-            Some(FunctionArgKind::Array) => {
-                Ok(Value::Array(array_result.into_iter().map(Value::String).collect()))
-            },
-            _ => {
-                Err(DscError::Parser(t!("functions.invalidArgType").to_string()))
-            }
+            Some(FunctionArgKind::String) => Ok(Value::String(string_result)),
+            Some(FunctionArgKind::Array) => Ok(Value::Array(array_result.into_iter().map(Value::String).collect())),
+            _ => Err(DscError::Parser(t!("functions.invalidArgType").to_string())),
         }
     }
 }
@@ -96,14 +90,18 @@ mod tests {
     #[test]
     fn strings_with_spaces() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[concat('a ', ' ', ' b')]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[concat('a ', ' ', ' b')]", &Context::new())
+            .unwrap();
         assert_eq!(result, "a   b");
     }
 
     #[test]
     fn arrays() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[concat(createArray('a','b'), createArray('c','d'))]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[concat(createArray('a','b'), createArray('c','d'))]", &Context::new())
+            .unwrap();
         assert_eq!(result.to_string(), r#"["a","b","c","d"]"#);
     }
 
@@ -117,7 +115,9 @@ mod tests {
     #[test]
     fn nested() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[concat('a', concat('b', 'c'), 'd')]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[concat('a', concat('b', 'c'), 'd')]", &Context::new())
+            .unwrap();
         assert_eq!(result, "abcd");
     }
 

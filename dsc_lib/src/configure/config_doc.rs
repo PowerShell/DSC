@@ -3,7 +3,7 @@
 
 use chrono::{DateTime, Local};
 use rust_i18n::t;
-use schemars::{JsonSchema, json_schema};
+use schemars::{json_schema, JsonSchema};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::{collections::HashMap, fmt::Display};
@@ -379,17 +379,13 @@ impl Default for Resource {
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        configure::config_doc::Configuration,
-        dscerror::DscError,
-        schemas::DscRepoSchema
-    };
+    use crate::{configure::config_doc::Configuration, dscerror::DscError, schemas::DscRepoSchema};
 
     #[test]
     fn test_validate_schema_uri_with_invalid_uri() {
         let invalid_uri = "https://invalid.schema.uri".to_string();
 
-        let manifest = Configuration{
+        let manifest = Configuration {
             schema: invalid_uri.clone(),
             ..Default::default()
         };
@@ -402,16 +398,19 @@ mod test {
             DscError::UnrecognizedSchemaUri(actual, recognized) => {
                 assert_eq!(actual, &invalid_uri);
                 assert_eq!(recognized, &Configuration::recognized_schema_uris())
-            },
+            }
             _ => {
-                panic!("Expected validate_schema_uri() to error on unrecognized schema uri, but was {:?}", result.as_ref().unwrap_err())
+                panic!(
+                    "Expected validate_schema_uri() to error on unrecognized schema uri, but was {:?}",
+                    result.as_ref().unwrap_err()
+                )
             }
         }
     }
 
     #[test]
     fn test_validate_schema_uri_with_valid_uri() {
-        let manifest = Configuration{
+        let manifest = Configuration {
             schema: Configuration::default_schema_id_uri(),
             ..Default::default()
         };
