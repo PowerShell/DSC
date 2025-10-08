@@ -1,0 +1,25 @@
+[package]
+name = "dsc-lib-registry"
+version = "0.1.0"
+edition = "2021"
+
+[package.metadata.i18n]
+available-locales = ["en-us"]
+default-locale = "en-us"
+load-path = "locales"
+
+[dependencies]
+crossterm = { workspace = true }
+registry = { workspace = true }
+rust-i18n = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+utfx = { workspace = true }
+
+[build-dependencies]
+static_vcruntime = { workspace = true }
+cc = { workspace = true }

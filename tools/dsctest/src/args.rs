@@ -14,6 +14,7 @@ pub enum Schemas {
     Get,
     InDesiredState,
     Metadata,
+    Operation,
     Sleep,
     Trace,
     Version,
@@ -98,6 +99,14 @@ pub enum SubCommand {
         input: String,
         #[clap(name = "export", short, long, help = "Use export operation")]
         export: bool,
+    },
+
+    #[clap(name = "operation", about = "Perform an operation")]
+    Operation {
+        #[clap(name = "operation", short, long, help = "The name of the operation to perform")]
+        operation: String,
+        #[clap(name = "input", short, long, help = "The input to the operation command as JSON")]
+        input: String,
     },
 
     #[clap(name = "schema", about = "Get the JSON schema for a subcommand")]

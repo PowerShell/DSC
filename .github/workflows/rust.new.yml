@@ -1,0 +1,58 @@
+name: RustNew
+
+on:
+  push:
+    branches: [ "main", "release/*" ]
+  pull_request:
+    branches: [ "main", "release/*" ]
+    paths-ignore:
+      - "docs/**"
+      - "*.md"
+      - ".vscode/*.json"
+      - ".github/ISSUE_TEMPLATE/**"
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-linux-new:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+    - name: Install prerequisites
+      shell: pwsh
+      run: ./build.new.ps1 -SkipBuild -Clippy  -Verbose
+    - name: Build
+      shell: pwsh
+      run: ./build.new.ps1 -Clippy -Verbose
+    - name: Run tests
+      shell: pwsh
+      run: ./build.new.ps1 -Test -Verbose
+
+  build-windows-new:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v5
+    - name: Install prerequisites
+      shell: pwsh
+      run: ./build.new.ps1 -SkipBuild -Clippy -Verbose
+    - name: Build
+      shell: pwsh
+      run: ./build.new.ps1 -Clippy -Verbose
+    - name: Run tests
+      shell: pwsh
+      run: ./build.new.ps1 -Test -Verbose
+
+  build-macos-new:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v5
+    - name: Install prerequisites
+      shell: pwsh
+      run: ./build.new.ps1 -SkipBuild -Clippy -Verbose
+    - name: Build
+      shell: pwsh
+      run: ./build.new.ps1 -Clippy -Verbose
+    - name: Run tests
+      shell: pwsh
+      run: ./build.new.ps1 -Test -Verbose
