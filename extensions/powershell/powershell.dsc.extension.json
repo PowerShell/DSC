@@ -1,18 +1,18 @@
 {
-    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
-    "type": "Microsoft.PowerShell/Discover",
-    "version": "0.1.0",
-    "description": "Discovers DSC resources packaged in PowerShell 7 modules.",
-    "discover": {
-        "executable": "pwsh",
-        "args": [
-            "-NoLogo",
-            "-NonInteractive",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-NoProfile",
-            "-Command",
-            "./powershell.discover.ps1"
-            ]
-    }
+  "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+  "type": "Microsoft.PowerShell/Discover",
+  "version": "0.1.0",
+  "description": "Discovers DSC resources packaged in PowerShell 7 modules.",
+  "discover": {
+    "executable": "pwsh",
+    "args": [
+      "-NoLogo",
+      "-NonInteractive",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-NoProfile",
+      "-Command",
+      "./powershell.discover.ps1"
+    ]
+  }
 }
