@@ -412,7 +412,7 @@ extends:
           displayName: Copy artifacts to release area
 
     - stage: Validation
-      dependsOn: ['ReleasePreparation', 'ReleaseUniversalPackage']
+      dependsOn: ['ReleasePreparation']
       condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))
       jobs:
       - job: ValidationJob
