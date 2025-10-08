@@ -332,13 +332,13 @@ if (!$SkipBuild -and !$SkipLinkCheck -and $IsWindows -and !(Get-Command 'link.ex
 $configuration = $Release ? 'release' : 'debug'
 $flags = @($Release ? '-r' : $null)
 if ($architecture -eq 'current') {
-    $path = ".\target\$configuration"
+    $path = Join-Path $PSScriptRoot "target" $configuration
     $target = Join-Path $PSScriptRoot 'bin' $configuration
 }
 else {
     $flags += '--target'
     $flags += $architecture
-    $path = ".\target\$architecture\$configuration"
+    $path = Join-Path $PSScriptRoot 'target' $architecture $configuration
     $target = Join-Path $PSScriptRoot 'bin' $architecture $configuration
 }
 
@@ -356,31 +356,34 @@ if (!$SkipBuild) {
     $windows_projects = @("pal", "registry_lib", "registry", "reboot_pending", "wmi-adapter", "configurations/windows", "extensions/appx", "extensions/powershell")
     $macOS_projects = @("resources/brew", "extensions/powershell")
     $linux_projects = @("resources/apt", "extensions/powershell")
+    $windows_projects = @("lib/dsc-lib-pal", "lib/dsc-lib-registry", "resources/registry", "resources/reboot_pending", "adapters/wmi", "configurations/windows", 'extensions/appx')
+    $macOS_projects = @("resources/brew")
+    $linux_projects = @("resources/apt")
 
     # projects are in dependency order
     $projects = @(
         ".",
-        "tree-sitter-dscexpression",
-        "tree-sitter-ssh-server-config",
-        "security_context_lib",
-        "lib/osinfo_lib",
-        "dsc_lib",
+        "grammars/tree-sitter-dscexpression",
+        "grammars/tree-sitter-ssh-server-config",
+        "lib/dsc-lib-security_context",
+        "lib/dsc-lib-osinfo",
+        "lib/dsc-lib",
         "dsc",
-        "dscecho",
+        "resources/dscecho",
         "extensions/bicep",
-        "osinfo",
-        "powershell-adapter",
+        "resources/osinfo",
+        "adapters/powershell",
         'resources/PSScript',
-        "process",
-        "runcommandonset",
-        "sshdconfig",
+        "resources/process",
+        "resources/runcommandonset",
+        "resources/sshdconfig",
         "tools/dsctest",
         "tools/test_group_resource",
         "y2j"
     )
     $pedantic_unclean_projects = @()
-    $clippy_unclean_projects = @("tree-sitter-dscexpression", "tree-sitter-ssh-server-config")
-    $skip_test_projects_on_windows = @("tree-sitter-dscexpression", "tree-sitter-ssh-server-config")
+    $clippy_unclean_projects = @("grammars/tree-sitter-dscexpression", "grammars/tree-sitter-ssh-server-config")
+    $skip_test_projects_on_windows = @("grammars/tree-sitter-dscexpression", "grammars/tree-sitter-ssh-server-config")
 
     if ($IsWindows) {
         $projects += $windows_projects
@@ -403,7 +406,7 @@ if (!$SkipBuild) {
             Write-Verbose -Verbose "Current directory is $(Get-Location)"
 
             # check if the project is either tree-sitter-dscexpression or tree-sitter-ssh-server-config
-            if (($project -eq 'tree-sitter-dscexpression') -or ($project -eq 'tree-sitter-ssh-server-config')) {
+            if (($project -match 'tree-sitter-dscexpression$') -or ($project -match 'tree-sitter-ssh-server-config$')) {
                 if ($UpdateLockFile) {
                     cargo generate-lockfile
                 }
@@ -425,23 +428,24 @@ if (!$SkipBuild) {
                 }
             }
 
-            if (Test-Path "./Cargo.toml")
+            if ((Test-Path "./Cargo.toml"))
             {
-                if ($Clippy) {
+                $isRepoRoot = $pwd.Path -eq $PSScriptRoot
+                if ($Clippy -and -not $isRepoRoot) {
                     if ($clippy_unclean_projects -contains $project) {
                         Write-Verbose -Verbose "Skipping clippy for $project"
                     }
                     elseif ($pedantic_unclean_projects -contains $project) {
                         Write-Verbose -Verbose "Running clippy for $project"
-                        cargo clippy @flags -- -Dwarnings
+                        cargo clippy @flags -- -Dwarnings --no-deps
                     }
                     else {
                         Write-Verbose -Verbose "Running clippy with pedantic for $project"
-                        cargo clippy @flags --% -- -Dwarnings -Dclippy::pedantic
+                        cargo clippy @flags --% -- -Dwarnings -Dclippy::pedantic --no-deps
                     }
                 }
                 else {
-                    if ($UpdateLockFile) {
+                    if ($UpdateLockFile -and $isRepoRoot) {
                         cargo generate-lockfile
                     }
                     else {
@@ -457,12 +461,14 @@ if (!$SkipBuild) {
                             cargo audit fix
                         }
 
-                        if ($Clean) {
+                        if ($Clean -and $isRepoRoot) {
                             cargo clean
                         }
 
-                        Write-Verbose -Verbose "Building $project"
-                        cargo build @flags
+                        if (-not $isRepoRoot) {
+                            Write-Verbose -Verbose "Building $project"
+                            cargo build @flags
+                        }
                     }
                 }
             }
@@ -591,6 +597,10 @@ if ($Test) {
     }
 
     foreach ($project in $projects) {
+        # Skip repository root, otherwise it tests all workspace members, failing on not-Windows
+        if ($project -eq '.') {
+            continue
+        }
         if ($IsWindows -and $skip_test_projects_on_windows -contains $project) {
             Write-Verbose -Verbose "Skipping test for $project on Windows"
             continue
