@@ -4,25 +4,25 @@
 [CmdletBinding()]
 param ()
 
-begin {
-    $psPaths = $env:PSModulePath -split [System.IO.Path]::PathSeparator | Where-Object { $_ -notmatch 'WindowsPowerShell' }
-}
-process {
-    $manifests = $psPaths | ForEach-Object -Parallel {
-        $searchPatterns = @('*.dsc.resource.json', '*.dsc.resource.yaml', '*.dsc.resource.yml')
-        $enumOptions = [System.IO.EnumerationOptions]@{ IgnoreInaccessible = $false; RecurseSubdirectories = $true }
-        foreach ($pattern in $searchPatterns) {
-            try {
-                [System.IO.Directory]::EnumerateFiles($_, $pattern, $enumOptions) | ForEach-Object {
-                    @{ manifestPath = $_ }
-                }
-            } catch { }
-        }
-    } -ThrottleLimit 10
-}
-end {
-    $manifests | ForEach-Object { $_ | ConvertTo-Json -Compress }
-}
+# begin {
+#     $psPaths = $env:PSModulePath -split [System.IO.Path]::PathSeparator | Where-Object { $_ -notmatch 'WindowsPowerShell' }
+# }
+# process {
+#     $manifests = $psPaths | ForEach-Object -Parallel {
+#         $searchPatterns = @('*.dsc.resource.json', '*.dsc.resource.yaml', '*.dsc.resource.yml')
+#         $enumOptions = [System.IO.EnumerationOptions]@{ IgnoreInaccessible = $false; RecurseSubdirectories = $true }
+#         foreach ($pattern in $searchPatterns) {
+#             try {
+#                 [System.IO.Directory]::EnumerateFiles($_, $pattern, $enumOptions) | ForEach-Object {
+#                     @{ manifestPath = $_ }
+#                 }
+#             } catch { }
+#         }
+#     } -ThrottleLimit 10
+# }
+# end {
+#     $manifests | ForEach-Object { $_ | ConvertTo-Json -Compress }
+# }
 
 
 # [CmdletBinding()]
@@ -100,66 +100,30 @@ end {
 #     }
 # }
 
-# function Invoke-DscResourceDiscovery {
-#     [CmdletBinding()]
-#     param()
+function Invoke-DscResourceDiscovery {
+    [CmdletBinding()]
+    param()
     
-#     begin {
-#         $psPaths = $env:PSModulePath -split [System.IO.Path]::PathSeparator | Where-Object { $_ -notmatch 'WindowsPowerShell' }
-#         "Discovered $($psPaths.Count) PSModulePath segments (excluding WindowsPowerShell)" | Write-DscTrace
-        
-#         $cacheFilePath = Get-CacheFilePath
-#         $useCache = Test-CacheValid -CacheFilePath $cacheFilePath -PSPaths $psPaths
-#     }
-#     process {
-#         if ($useCache) {
-#             "Using cached manifests" | Write-DscTrace
-#             $cache = Get-Content -Raw $cacheFilePath | ConvertFrom-Json
-#             $manifests = $cache.Manifests
-#             "Retrieved $($manifests.Count) manifests from cache" | Write-DscTrace
-#         } else {
-#             "Performing full discovery" | Write-DscTrace
-#             $manifests = $psPaths | ForEach-Object -Parallel {
-#                 $searchPatterns = @('*.dsc.resource.json', '*.dsc.resource.yaml', '*.dsc.resource.yml')
-#                 $enumOptions = [System.IO.EnumerationOptions]@{ IgnoreInaccessible = $false; RecurseSubdirectories = $true }
-#                 foreach ($pattern in $searchPatterns) {
-#                     try {
-#                         [System.IO.Directory]::EnumerateFiles($_, $pattern, $enumOptions) | ForEach-Object {
-#                             @{ manifestPath = $_ }
-#                         }
-#                     } catch { }
-#                 }
-#             } -ThrottleLimit 10
-            
-#             "Discovered $($manifests.Count) manifests" | Write-DscTrace
-            
-#             "Building cache" | Write-DscTrace
-#             $pathInfo = @{}
-#             foreach ($path in $psPaths) {
-#                 if (Test-Path $path) {
-#                     $pathInfo[$path] = (Get-Item $path).LastWriteTimeUtc
-#                 }
-#             }
-            
-#             $cacheObject = @{
-#                 PSModulePaths = $psPaths
-#                 PathInfo = $pathInfo
-#                 Manifests = $manifests
-#             }
-            
-#             $cacheDir = Split-Path $cacheFilePath -Parent
-#             if (-not (Test-Path $cacheDir)) {
-#                 "Creating cache directory '$cacheDir'" | Write-DscTrace
-#                 New-Item -ItemType Directory -Path $cacheDir -Force | Out-Null
-#             }
-#             "Saving cache to '$cacheFilePath'" | Write-DscTrace
-#             $cacheObject | ConvertTo-Json -Depth 10 | Set-Content -Path $cacheFilePath -Force
-#         }
-#     }
-#     end {
-#         $manifests | ForEach-Object { $_ | ConvertTo-Json -Compress }
-#     }
-# }
+    begin {
+        $psPaths = $env:PSModulePath -split [System.IO.Path]::PathSeparator | Where-Object { $_ -notmatch 'WindowsPowerShell' }
+    }
+    process {
+        $manifests = $psPaths | ForEach-Object -Parallel {
+            $searchPatterns = @('*.dsc.resource.json', '*.dsc.resource.yaml', '*.dsc.resource.yml')
+            $enumOptions = [System.IO.EnumerationOptions]@{ IgnoreInaccessible = $false; RecurseSubdirectories = $true }
+            foreach ($pattern in $searchPatterns) {
+                try {
+                    [System.IO.Directory]::EnumerateFiles($_, $pattern, $enumOptions) | ForEach-Object {
+                        @{ manifestPath = $_ }
+                    }
+                } catch { }
+            }
+        } -ThrottleLimit 10
+    }
+    end {
+        $manifests | ForEach-Object { $_ | ConvertTo-Json -Compress }
+    }
+}
 
-# Invoke-DscResourceDiscovery
+Invoke-DscResourceDiscovery
 
