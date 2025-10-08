@@ -411,9 +411,106 @@ extends:
             Write-Verbose -Verbose "Copy completed"
           displayName: Copy artifacts to release area
 
+    - stage: Validation
+      dependsOn: ['ReleasePreparation', 'ReleaseUniversalPackage']
+      condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))
+      jobs:
+      - job: ValidationJob
+        displayName: Validation job
+        pool:
+          type: agentless
+        steps:
+        - task: ManualValidation@0
+          displayName: Wait for manual validation
+          inputs:
+            notifyUsers: $(Build.RequestedForEmail)
+            instructions: Please validate the build artifacts before proceeding to release.
+            timeoutInMinutes: 1440
+
+    - stage: Release
+      dependsOn: ['BuildAndSign', 'Validation', 'ReleasePreparation']
+      condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'), eq(variables.officialBuild, true))
+      variables:
+        - name: PackageVersion
+          value: $[ stageDependencies.BuildAndSign.SetPackageVersion.outputs['Package.Version'] ]
+        - name: ob_release_environment
+          value: ${{ iif ( parameters.OfficialBuild, 'Production', 'Test' ) }}
+      jobs:
+      - job: ReleaseJob
+        displayName: Release job
+        pool:
+          type: release
+          os: windows
+        templateContext:
+          inputs:
+            - input: pipelineArtifact
+              artifactName: drop_ReleasePreparation_ReleasePreparationJob
+
+        steps:
+        - task: PowerShell@2
+          displayName: Capture downloaded artifacts and Version for release
+          inputs:
+            targetType: 'inline'
+            script: |
+              Write-Verbose -Verbose "Release version: $(PackageVersion)"
+
+              $artifacts = Get-ChildItem "$(Pipeline.Workspace)" -Recurse -Include '*.zip', '*.tar.gz', '*.msixbundle', '*.MD'
+
+              $artifacts | ForEach-Object {
+                Write-Verbose -Verbose "Found artifact: $($_.FullName)"
+              }
+
+              $ChangeLogDirectory = New-Item -ItemType Directory -Path "$(Pipeline.Workspace)/ChangeLog" -Force -ErrorAction Ignore
+              Write-Host "##vso[task.setvariable variable=ChangeLogDirectory]$ChangeLogDirectory"
+              Copy-Item -Path "$(Pipeline.Workspace)/releasePrep/CHANGELOG.md" -Destination $ChangeLogDirectory -Force -Verbose
+
+              $GitHubReleaseDirectory = New-Item -ItemType Directory -Path "$(Pipeline.Workspace)/GitHubRelease" -Force -ErrorAction Ignore
+              Write-Host "##vso[task.setvariable variable=GitHubReleaseDirectory]$GitHubReleaseDirectory"
+              $artifacts | ForEach-Object {
+                Copy-Item -Path $_.FullName -Destination $GitHubReleaseDirectory -Force -Verbose
+              }
+
+              if (-not '$(PackageVersion)') {
+                throw "PackageVersion variable is not set. Cannot proceed with release."
+              }
+
+              $packageVersion = '$(PackageVersion)'
+              if ($packageVersion -like '*-*') {
+                Write-Verbose -Verbose "Pre-release version detected: $packageVersion"
+                Write-Host "##vso[task.setvariable variable=IsPreRelease]true"
+              }
+              else {
+                Write-Verbose -Verbose "Stable release version detected: $packageVersion"
+                Write-Host "##vso[task.setvariable variable=IsPreRelease]false"
+              }
+
+              $githubReleaseVersion = "v$packageVersion"
+              Write-Verbose -Verbose "GitHub Release version: $githubReleaseVersion"
+
+              Write-Host "##vso[task.setvariable variable=GitHubReleaseVersion]$githubReleaseVersion"
+
+        - task: GitHubRelease@1
+          displayName: Create GitHub release
+          inputs:
+            gitHubConnection: github.com_SteveL-MSFT
+            repositoryName: PowerShell/DSC
+            target: main
+            action: create
+            title: $(GitHubReleaseVersion)
+            assets: |
+              $(GitHubReleaseDirectory)\*.zip
+              $(GitHubReleaseDirectory)\*.tar.gz
+            addChangeLog: true
+            changeLogType: commitBased
+            releaseNotesFilePath: '$(ChangeLogDirectory)\CHANGELOG.md'
+            tagSource: 'userSpecifiedTag'
+            tag: '$(GitHubReleaseVersion)'
+            isDraft: true
+            isPreRelease: '$(IsPreRelease)'
+
     - stage: ReleaseUniversalPackage
-      dependsOn: ['ReleasePreparation']
-      #condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'), eq(variables.officialBuild, true))
+      dependsOn: ['Release']
+      condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'), eq(variables.officialBuild, true))
       variables:
         - name: PackageVersion
           value: $[ stageDependencies.BuildAndSign.SetPackageVersion.outputs['Package.Version'] ]
@@ -526,99 +623,3 @@ extends:
               az artifacts universal publish --organization https://dev.azure.com/PowerShell/ --project PowerShell --feed PowerShell-Universal --name microsoft.dsc-macos --version $packageVersion --description "Microsoft Desired State Configuration (DSC) - Universal Package" --path "$(MacOSDirectory)" --scope project --verbose
           condition: succeeded()
 
-    - stage: Validation
-      dependsOn: ['ReleasePreparation', 'ReleaseUniversalPackage']
-      condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))
-      jobs:
-      - job: ValidationJob
-        displayName: Validation job
-        pool:
-          type: agentless
-        steps:
-        - task: ManualValidation@0
-          displayName: Wait for manual validation
-          inputs:
-            notifyUsers: $(Build.RequestedForEmail)
-            instructions: Please validate the build artifacts before proceeding to release.
-            timeoutInMinutes: 1440
-
-    - stage: Release
-      dependsOn: ['BuildAndSign', 'Validation', 'ReleasePreparation']
-      condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'), eq(variables.officialBuild, true))
-      variables:
-        - name: PackageVersion
-          value: $[ stageDependencies.BuildAndSign.SetPackageVersion.outputs['Package.Version'] ]
-        - name: ob_release_environment
-          value: ${{ iif ( parameters.OfficialBuild, 'Production', 'Test' ) }}
-      jobs:
-      - job: ReleaseJob
-        displayName: Release job
-        pool:
-          type: release
-          os: windows
-        templateContext:
-          inputs:
-            - input: pipelineArtifact
-              artifactName: drop_ReleasePreparation_ReleasePreparationJob
-
-        steps:
-        - task: PowerShell@2
-          displayName: Capture downloaded artifacts and Version for release
-          inputs:
-            targetType: 'inline'
-            script: |
-              Write-Verbose -Verbose "Release version: $(PackageVersion)"
-
-              $artifacts = Get-ChildItem "$(Pipeline.Workspace)" -Recurse -Include '*.zip', '*.tar.gz', '*.msixbundle', '*.MD'
-
-              $artifacts | ForEach-Object {
-                Write-Verbose -Verbose "Found artifact: $($_.FullName)"
-              }
-
-              $ChangeLogDirectory = New-Item -ItemType Directory -Path "$(Pipeline.Workspace)/ChangeLog" -Force -ErrorAction Ignore
-              Write-Host "##vso[task.setvariable variable=ChangeLogDirectory]$ChangeLogDirectory"
-              Copy-Item -Path "$(Pipeline.Workspace)/releasePrep/CHANGELOG.md" -Destination $ChangeLogDirectory -Force -Verbose
-
-              $GitHubReleaseDirectory = New-Item -ItemType Directory -Path "$(Pipeline.Workspace)/GitHubRelease" -Force -ErrorAction Ignore
-              Write-Host "##vso[task.setvariable variable=GitHubReleaseDirectory]$GitHubReleaseDirectory"
-              $artifacts | ForEach-Object {
-                Copy-Item -Path $_.FullName -Destination $GitHubReleaseDirectory -Force -Verbose
-              }
-
-              if (-not '$(PackageVersion)') {
-                throw "PackageVersion variable is not set. Cannot proceed with release."
-              }
-
-              $packageVersion = '$(PackageVersion)'
-              if ($packageVersion -like '*-*') {
-                Write-Verbose -Verbose "Pre-release version detected: $packageVersion"
-                Write-Host "##vso[task.setvariable variable=IsPreRelease]true"
-              }
-              else {
-                Write-Verbose -Verbose "Stable release version detected: $packageVersion"
-                Write-Host "##vso[task.setvariable variable=IsPreRelease]false"
-              }
-
-              $githubReleaseVersion = "v$packageVersion"
-              Write-Verbose -Verbose "GitHub Release version: $githubReleaseVersion"
-
-              Write-Host "##vso[task.setvariable variable=GitHubReleaseVersion]$githubReleaseVersion"
-
-        - task: GitHubRelease@1
-          displayName: Create GitHub release
-          inputs:
-            gitHubConnection: github.com_SteveL-MSFT
-            repositoryName: PowerShell/DSC
-            target: main
-            action: create
-            title: $(GitHubReleaseVersion)
-            assets: |
-              $(GitHubReleaseDirectory)\*.zip
-              $(GitHubReleaseDirectory)\*.tar.gz
-            addChangeLog: true
-            changeLogType: commitBased
-            releaseNotesFilePath: '$(ChangeLogDirectory)\CHANGELOG.md'
-            tagSource: 'userSpecifiedTag'
-            tag: '$(GitHubReleaseVersion)'
-            isDraft: true
-            isPreRelease: '$(IsPreRelease)'
