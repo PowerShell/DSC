@@ -1,0 +1,14 @@
+[package]
+name = "dsc-resource-osinfo"
+version = "1.0.0"
+edition = "2021"
+
+[[bin]]
+name = "osinfo"
+path = "src/main.rs"
+
+[dependencies]
+# external dependencies
+serde_json = { workspace = true }
+# workspace crate dependencies
+dsc-lib-osinfo = { workspace = true }
