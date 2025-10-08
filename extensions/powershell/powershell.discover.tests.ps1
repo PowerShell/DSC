@@ -33,14 +33,14 @@ BeforeAll {
 }
 
 Describe 'Tests for PowerShell resource discovery' {
-    BeforeEach {
+    BeforeAll {
         Remove-Item -Force -ErrorAction SilentlyContinue -Path $script:cacheFilePath
     }
     
     It 'Should find DSC PowerShell resources' {
         $out = dsc resource list | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
-        $out.directory | Should -Contain $TestDrive
+        $out.manifest.type | Should -Contain 'Test/FakeResource'
     }
     
     It 'Should create cache file on first run' {
