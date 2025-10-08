@@ -135,8 +135,8 @@ function Invoke-DscResourceDiscovery {
     end {
         $manifests
         if ($null -eq $manifests) {
-            "No manifests found" | Write-DscTrace
-            return
+            # explicitly return empty hash to avoid null output
+            $manifests = @{}
         }
 
         $manifests | ForEach-Object { $_ | ConvertTo-Json -Compress }

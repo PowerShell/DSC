@@ -24,16 +24,16 @@ BeforeAll {
     
     $script:discoverScript = Join-Path $PSScriptRoot "powershell.discover.ps1"
     
-    # $cacheFilePath = if ($IsWindows) {
-    #     Join-Path $env:LocalAppData "dsc\PowerShellDiscoverCache.json"
-    # } else {
-    #     Join-Path $env:HOME ".dsc" "PowerShellDiscoverCache.json"
-    # }
-    # $script:cacheFilePath = $cacheFilePath
+    $cacheFilePath = if ($IsWindows) {
+        Join-Path $env:LocalAppData "dsc\PowerShellDiscoverCache.json"
+    } else {
+        Join-Path $env:HOME ".dsc" "PowerShellDiscoverCache.json"
+    }
+    $script:cacheFilePath = $cacheFilePath
 }
 
 Describe 'Tests for PowerShell resource discovery' {
-    BeforeAll {
+    BeforeEach {
         Remove-Item -Force -ErrorAction SilentlyContinue -Path $script:cacheFilePath
     }
     
