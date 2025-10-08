@@ -102,11 +102,10 @@ function Invoke-DscResourceDiscovery {
     }
     end {
         if ($null -eq $manifests -or [string]::IsNullOrEmpty($manifests)) {
-            # explicitly return empty hash to avoid null output
-            $manifests = @{}
+            # Return nothing
+        } else {
+            $manifests | ForEach-Object { $_ | ConvertTo-Json -Compress }
         }
-
-        $manifests | ForEach-Object { $_ | ConvertTo-Json -Compress }
     }
 }
 

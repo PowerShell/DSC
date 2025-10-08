@@ -4,15 +4,15 @@
 BeforeAll {
     $fakeManifest = @{
         '$schema' = "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json"
-        type = "Test/FakeResource"
-        version = "0.1.0"
-        get = @{
+        type      = "Test/FakeResource"
+        version   = "0.1.0"
+        get       = @{
             executable = "fakeResource"
-            args = @(
+            args       = @(
                 "get",
                 @{
                     jsonInputArg = "--input"
-                    mandatory = $true
+                    mandatory    = $true
                 }
             )
         }
@@ -30,30 +30,26 @@ BeforeAll {
         Join-Path $env:HOME ".dsc" "PowerShellDiscoverCache.json"
     }
     $script:cacheFilePath = $cacheFilePath
+
+    Remove-Item -Force -ErrorAction SilentlyContinue -Path $script:cacheFilePath
 }
 
-Describe 'Tests for PowerShell resource discovery' {
-    BeforeAll {
-        Remove-Item -Force -ErrorAction SilentlyContinue -Path $script:cacheFilePath
-    }
-    
-    It 'Should find DSC PowerShell resources' {
-        $out = dsc resource list | ConvertFrom-Json
-        $LASTEXITCODE | Should -Be 0
-        $out.manifest.type | Should -Contain 'Test/FakeResource'
-    }
-    
+Describe 'Tests for PowerShell resource discovery' {    
     It 'Should create cache file on first run' {
         $script:cacheFilePath | Should -Not -Exist
-        
         $null = & $script:discoverScript 2>&1
-        
         $script:cacheFilePath | Should -Exist
         
         $cache = Get-Content -Raw $script:cacheFilePath | ConvertFrom-Json
         $cache.PSModulePaths | Should -Not -BeNullOrEmpty
         $cache.PathInfo | Should -Not -BeNullOrEmpty
         $cache.Manifests | Should -Not -BeNullOrEmpty
+    }
+
+    It 'Should find DSC PowerShell resources' {
+        $out = dsc resource list | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.manifest.type | Should -Contain 'Test/FakeResource'
     }
     
     It 'Should use cache on subsequent runs' {
