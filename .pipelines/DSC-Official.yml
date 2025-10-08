@@ -411,8 +411,121 @@ extends:
             Write-Verbose -Verbose "Copy completed"
           displayName: Copy artifacts to release area
 
-    - stage: Validation
+    - stage: ReleaseUniversalPackage
       dependsOn: ['ReleasePreparation']
+      #condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'), eq(variables.officialBuild, true))
+      variables:
+        - name: PackageVersion
+          value: $[ stageDependencies.BuildAndSign.SetPackageVersion.outputs['Package.Version'] ]
+      jobs:
+      - job: ReleaseUniversalPackageJob
+        displayName: Release Universal Package job
+        pool:
+          type: windows
+        steps:
+        - download: current
+          artifact: drop_ReleasePreparation_ReleasePreparationJob
+
+        - pwsh: |
+            $releasePrepPath = "$(Pipeline.Workspace)/drop_ReleasePreparation_ReleasePreparationJob/releasePrep"
+            if (-not (Test-Path -Path $releasePrepPath)) {
+              throw "Release preparation path '$releasePrepPath' does not exist."
+            }
+
+            $windowsFiles = Get-ChildItem -Path $releasePrepPath -Recurse -Include '*.zip'
+            if ($windowsFiles.Count -eq 0) {
+              throw "No Windows .zip files found in '$releasePrepPath'. Cannot proceed with Universal Package creation."
+            }
+
+            $linuxFiles = Get-ChildItem -Path $releasePrepPath -Recurse -Include '*linux.tar.gz'
+            if ($linuxFiles.Count -eq 0) {
+              throw "No Linux .tar.gz files found in '$releasePrepPath'. Cannot proceed with Universal Package creation."
+            }
+
+            $macosFiles = Get-ChildItem -Path $releasePrepPath -Recurse -Include '*darwin.tar.gz'
+            if ($macosFiles.Count -eq 0) {
+              throw "No macOS .tar.gz files found in '$releasePrepPath'. Cannot proceed with Universal Package creation."
+            }
+
+            $windowsDirectory = New-Item -ItemType Directory -Path "$releasePrepPath/windows" -Force -ErrorAction Ignore
+            Write-Host "##vso[task.setvariable variable=WindowsDirectory]$($windowsDirectory.FullName)"
+
+            $linuxDirectory = New-Item -ItemType Directory -Path "$releasePrepPath/linux" -Force -ErrorAction Ignore
+            Write-Host "##vso[task.setvariable variable=LinuxDirectory]$linuxDirectory"
+
+            $macosDirectory = New-Item -ItemType Directory -Path "$releasePrepPath/macos" -Force -ErrorAction Ignore
+            Write-Host "##vso[task.setvariable variable=MacOSDirectory]$macosDirectory"
+
+            $windowsFiles | ForEach-Object {
+              Move-Item -Path $_.FullName -Destination $windowsDirectory.FullName -Force -Verbose
+            }
+
+            $linuxFiles | ForEach-Object {
+              Move-Item -Path $_.FullName -Destination $linuxDirectory.FullName -Force -Verbose
+            }
+
+            $macosFiles | ForEach-Object {
+              Move-Item -Path $_.FullName -Destination $macosDirectory.FullName -Force -Verbose
+            }
+
+          displayName: Prepare files for Universal Package
+
+        - task: AzureCLI@2
+          displayName: Publish Windows - Universal Package
+          inputs:
+            azureSubscription: PS-PS-DSC-UniversalFeed
+            scriptType: pscore
+            scriptLocation: inlineScript
+            inlineScript: |
+              ## $packageVersion = '$(PackageVersion)'
+
+              $packageVersion = "0.0.1"
+
+              if (-not $packageVersion) {
+                throw "PackageVersion variable is not set. Cannot proceed with publishing Universal Package."
+              }
+              Write-Verbose -Verbose "Universal Package version: $packageVersion"
+              az artifacts universal publish --organization https://dev.azure.com/PowerShell/ --feed PowerShell-Universal --name Microsoft.DSC-Windows --version $packageVersion --description "Microsoft Desired State Configuration (DSC) - Universal Package" --path "$(WindowsDirectory)"
+          condition: succeeded()
+
+        - task: AzureCLI@2
+          displayName: Publish Linux - Universal Package
+          inputs:
+            azureSubscription: PS-PS-DSC-UniversalFeed
+            scriptType: pscore
+            scriptLocation: inlineScript
+            inlineScript: |
+              ## $packageVersion = '$(PackageVersion)'
+
+              $packageVersion = "0.0.1"
+
+              if (-not $packageVersion) {
+                throw "PackageVersion variable is not set. Cannot proceed with publishing Universal Package."
+              }
+              Write-Verbose -Verbose "Universal Package version: $packageVersion"
+              az artifacts universal publish --organization https://dev.azure.com/PowerShell/ --feed PowerShell-Universal --name Microsoft.DSC-Windows --version $packageVersion --description "Microsoft Desired State Configuration (DSC) - Universal Package" --path "$(LinuxDirectory)"
+          condition: succeeded()
+
+        - task: AzureCLI@2
+          displayName: Publish macOS - Universal Package
+          inputs:
+            azureSubscription: PS-PS-DSC-UniversalFeed
+            scriptType: pscore
+            scriptLocation: inlineScript
+            inlineScript: |
+              ## $packageVersion = '$(PackageVersion)'
+
+              $packageVersion = "0.0.1"
+
+              if (-not $packageVersion) {
+                throw "PackageVersion variable is not set. Cannot proceed with publishing Universal Package."
+              }
+              Write-Verbose -Verbose "Universal Package version: $packageVersion"
+              az artifacts universal publish --organization https://dev.azure.com/PowerShell/ --feed PowerShell-Universal --name Microsoft.DSC-Windows --version $packageVersion --description "Microsoft Desired State Configuration (DSC) - Universal Package" --path "$(MacOSDirectory)"
+          condition: succeeded()
+
+    - stage: Validation
+      dependsOn: ['ReleasePreparation', 'ReleaseUniversalPackage']
       condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))
       jobs:
       - job: ValidationJob
@@ -470,23 +583,6 @@ extends:
                 Copy-Item -Path $_.FullName -Destination $GitHubReleaseDirectory -Force -Verbose
               }
 
-              $windowsDirName = "Microsoft.DSC-Windows"
-              $linuxDirName = "Microsoft.DSC-Linux"
-
-              $WindowsReleaseDirectory = New-Item -ItemType Directory -Path "$(Pipeline.Workspace)/$windowsDirName" -Force -ErrorAction Ignore
-              Write-Host "##vso[task.setvariable variable=WindowsReleaseDirectory]$WindowsReleaseDirectory"
-
-              $artifacts | Where-Object { $_.Extension -eq '.zip' } | ForEach-Object {
-                Copy-Item -Path $_.FullName -Destination $WindowsReleaseDirectory -Force -Verbose
-              }
-
-              $LinuxReleaseDirectory = New-Item -ItemType Directory -Path "$(Pipeline.Workspace)/$linuxDirName" -Force -ErrorAction Ignore
-              Write-Host "##vso[task.setvariable variable=LinuxReleaseDirectory]$LinuxReleaseDirectory"
-
-              $artifacts | Where-Object { $_.Extension -eq '.tar.gz' } | ForEach-Object {
-                Copy-Item -Path $_.FullName -Destination $LinuxReleaseDirectory -Force -Verbose
-              }
-
               if (-not '$(PackageVersion)') {
                 throw "PackageVersion variable is not set. Cannot proceed with release."
               }
@@ -505,26 +601,6 @@ extends:
               Write-Verbose -Verbose "GitHub Release version: $githubReleaseVersion"
 
               Write-Host "##vso[task.setvariable variable=GitHubReleaseVersion]$githubReleaseVersion"
-
-        - task: UniversalPackages@0
-          displayName: Publish to Azure Artifacts Universal Packages
-          inputs:
-            command: publish
-            publishDirectory: '$(LinuxReleaseDirectory)'
-            vstsFeedPublish: 'PowerShell-DSC-Feed'
-            vstsFeedPackagePublish: 'microsoft.dsc-linux'
-            versionOption: custom
-            versionPublish: '$(PackageVersion)'
-
-        - task: UniversalPackages@0
-          displayName: Publish to Azure Artifacts Universal Packages
-          inputs:
-            command: publish
-            publishDirectory: '$(WindowsReleaseDirectory)'
-            vstsFeedPublish: 'PowerShell-DSC-Feed'
-            vstsFeedPackagePublish: 'microsoft.dsc-windows'
-            versionOption: custom
-            versionPublish: '$(PackageVersion)'
 
         - task: GitHubRelease@1
           displayName: Create GitHub release
