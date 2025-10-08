@@ -417,6 +417,8 @@ extends:
       variables:
         - name: PackageVersion
           value: $[ stageDependencies.BuildAndSign.SetPackageVersion.outputs['Package.Version'] ]
+        - name: ob_outputDirectory
+          value: '$(Build.ArtifactStagingDirectory)'
       jobs:
       - job: ReleaseUniversalPackageJob
         displayName: Release Universal Package job
