@@ -576,9 +576,7 @@ extends:
             scriptType: pscore
             scriptLocation: inlineScript
             inlineScript: |
-              ## $packageVersion = '$(PackageVersion)'
-
-              $packageVersion = "0.0.1"
+              $packageVersion = '$(PackageVersion)'
 
               if (-not $packageVersion) {
                 throw "PackageVersion variable is not set. Cannot proceed with publishing Universal Package."
@@ -594,9 +592,7 @@ extends:
             scriptType: pscore
             scriptLocation: inlineScript
             inlineScript: |
-              ## $packageVersion = '$(PackageVersion)'
-
-              $packageVersion = "0.0.1"
+              $packageVersion = '$(PackageVersion)'
 
               if (-not $packageVersion) {
                 throw "PackageVersion variable is not set. Cannot proceed with publishing Universal Package."
@@ -612,9 +608,7 @@ extends:
             scriptType: pscore
             scriptLocation: inlineScript
             inlineScript: |
-              ## $packageVersion = '$(PackageVersion)'
-
-              $packageVersion = "0.0.1"
+              $packageVersion = '$(PackageVersion)'
 
               if (-not $packageVersion) {
                 throw "PackageVersion variable is not set. Cannot proceed with publishing Universal Package."
