@@ -83,6 +83,11 @@ param(
     )]
     $PackageType,
     [switch]$Test,
+    [string[]]$Project,
+    [switch]$ExcludeRustTests,
+    [switch]$ExcludePesterTests,
+    [ValidateSet("dsc", "adapters", "extensions", "grammars", "resources")]
+    [string[]]$PesterTestGroup,
     [switch]$GetPackageVersion,
     [switch]$SkipLinkCheck,
     [switch]$UseX64MakeAppx,
@@ -110,7 +115,14 @@ begin {
     if ($usingADO -or $UseCFSAuth) {
         $UseCFS = $true
     }
+    # Import the build data
     $BuildData = Import-DscBuildData
+    # Filter projects if needed.
+    if ($Project.Count -ge 1) {
+        $BuildData.Projects = $BuildData.Projects | Where-Object -FilterScript {
+            $_.Name -in $Project
+        }
+    }
     $VerboseParam = @{}
     if ($VerbosePreference -eq 'Continue' -and -not $Quiet) {
         $VerboseParam.Verbose = $true
@@ -177,27 +189,29 @@ process {
             Write-BuildProgress @progressParams -Status 'Ensuring Rust is up-to-date'
             Update-Rust @VerboseParam
         }
-    
+
         if (!$usingADO) {
             Write-BuildProgress @progressParams -Status 'Setting RustUp to default channel'
             $rustup, $channel = Get-RustUp @VerboseParam
             & $rustup default stable
         }
-    
+
         if ($Clippy) {
             Write-BuildProgress @progressParams -Status 'Ensuring Clippy is available and updated'
             Install-Clippy -UseCFS:$UseCFS -Architecture $Architecture @VerboseParam
         }
+
+        if (-not ($SkipBuild -and $Test -and $ExcludeRustTests)) {
+            # Install Node if needed
+            Write-BuildProgress @progressParams -Status 'Ensuring Node.JS is available'
+            Install-NodeJS @VerboseParam
     
-        # Install Node if needed
-        Write-BuildProgress @progressParams -Status 'Ensuring Node.JS is available'
-        Install-NodeJS @VerboseParam
-    
-        # Ensure tree-sitter is installed
-        Write-BuildProgress @progressParams -Status 'Ensuring tree-sitter is available'
-        Install-TreeSitter -UseCFS:$UseCFS @VerboseParam
+            # Ensure tree-sitter is installed
+            Write-BuildProgress @progressParams -Status 'Ensuring tree-sitter is available'
+            Install-TreeSitter -UseCFS:$UseCFS @VerboseParam
+        }
     }
-    
+
     if (!$SkipBuild -and !$SkipLinkCheck -and $IsWindows) {
         Write-BuildProgress @progressParams -Status "Ensuring Windows C++ build tools are available"
         Install-WindowsCPlusPlusBuildTools @VerboseParam
@@ -220,29 +234,44 @@ process {
         Write-BuildProgress @progressParams -Status "Copying build artifacts"
         Copy-BuildArtifact @buildParams -ExecutableFile $BuildData.PackageFiles.Executable @VerboseParam
     }
-    
-    if (!$Clippy -and !$SkipBuild) {
+
+    # Ensure PATH includes the output artifacts after building and before testing.
+    if ((!$Clippy -and !$SkipBuild) -or $Test) {
         $progressParams.Activity = 'Updating environment variables'
         Write-BuildProgress @progressParams
         Update-PathEnvironment -Architecture $Architecture -Release:$Release @VerboseParam
     }
-    
+
     if ($Test) {
         $progressParams.Activity = 'Testing projects'
         Write-BuildProgress @progressParams
-        Write-BuildProgress @progressParams -Status "Installing PowerShell test prerequisites"
-        Install-PowerShellTestPrerequisite @VerboseParam -UsingAdo:$usingADO
-        $testParams = @{
-            Project      = $BuildData.Projects
-            Architecture = $Architecture
-            Release      = $Release
+        
+        if (-not $ExcludeRustTests) {
+            $rustTestParams = @{
+                Project      = $BuildData.Projects
+                Architecture = $Architecture
+                Release      = $Release
+            }
+            Write-BuildProgress @progressParams -Status "Testing Rust projects"
+            Test-RustProject @rustTestParams @VerboseParam
         }
-        Write-BuildProgress @progressParams -Status "Testing Rust projects"
-        Test-RustProject @testParams @VerboseParam
-        Write-BuildProgress @progressParams -Status "Invoking pester"
-        Test-ProjectWithPester -UsingADO:$usingADO @VerboseParam
+        if (-not $ExcludePesterTests) {
+            $installParams = @{
+                UsingADO = $usingADO
+            }
+            $pesterParams = @{
+                UsingADO = $usingADO
+            }
+            if ($null -ne $PesterTestGroup) {
+                $pesterParams.Group = $PesterTestGroup
+            }
+            Write-BuildProgress @progressParams -Status "Installing PowerShell test prerequisites"
+            Install-PowerShellTestPrerequisite @installParams @VerboseParam
+            Write-BuildProgress @progressParams -Status "Invoking pester"
+            Test-ProjectWithPester @pesterParams @VerboseParam
+        }
     }
-    
+
     if (-not [string]::IsNullOrEmpty($PackageType)) {
         $progressParams.Activity = "Packaging"
         $packageParams = @{
