@@ -658,6 +658,7 @@ dependencies = [
  "chrono",
  "clap",
  "derive_builder",
+ "dsc-lib-jsonschema",
  "dsc-lib-osinfo",
  "dsc-lib-security_context",
  "indicatif",
