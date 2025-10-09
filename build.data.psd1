@@ -245,6 +245,12 @@
             }
         }
         @{
+            Name = 'dsc-lib-jsonschema'
+            RelativePath = 'lib/dsc-lib-jsonschema'
+            Kind = 'Library'
+            IsRust = $true
+        }
+        @{
             Name = 'dsc-lib'
             RelativePath = 'lib/dsc-lib'
             Kind = 'Library'
