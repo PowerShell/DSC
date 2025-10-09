@@ -402,12 +402,6 @@ extends:
               Copy-Item -Path $_.FullName -Destination $outputDir -Force -Verbose
             }
 
-            if (-not (Test-Path $(Build.SourcesDirectory)\CHANGELOG.md)) {
-              throw "CHANGELOG.md file not found in source directory."
-            }
-
-            Copy-Item -Path "$(Build.SourcesDirectory)\CHANGELOG.md" -Destination $outputDir -Force -Verbose
-
             Write-Verbose -Verbose "Copy completed"
           displayName: Copy artifacts to release area
 
@@ -454,15 +448,11 @@ extends:
             script: |
               Write-Verbose -Verbose "Release version: $(PackageVersion)"
 
-              $artifacts = Get-ChildItem "$(Pipeline.Workspace)" -Recurse -Include '*.zip', '*.tar.gz', '*.msixbundle', '*.MD'
+              $artifacts = Get-ChildItem "$(Pipeline.Workspace)" -Recurse -Include '*.zip', '*.tar.gz', '*.msixbundle'
 
               $artifacts | ForEach-Object {
                 Write-Verbose -Verbose "Found artifact: $($_.FullName)"
               }
-
-              $ChangeLogDirectory = New-Item -ItemType Directory -Path "$(Pipeline.Workspace)/ChangeLog" -Force -ErrorAction Ignore
-              Write-Host "##vso[task.setvariable variable=ChangeLogDirectory]$ChangeLogDirectory"
-              Copy-Item -Path "$(Pipeline.Workspace)/releasePrep/CHANGELOG.md" -Destination $ChangeLogDirectory -Force -Verbose
 
               $GitHubReleaseDirectory = New-Item -ItemType Directory -Path "$(Pipeline.Workspace)/GitHubRelease" -Force -ErrorAction Ignore
               Write-Host "##vso[task.setvariable variable=GitHubReleaseDirectory]$GitHubReleaseDirectory"
@@ -478,15 +468,20 @@ extends:
               if ($packageVersion -like '*-*') {
                 Write-Verbose -Verbose "Pre-release version detected: $packageVersion"
                 Write-Host "##vso[task.setvariable variable=IsPreRelease]true"
+
+                Write-Verbose -verbose "Setting the ChangeLogCompareToRelease to 'lastNonDraftRelease'"
+                Write-Host "##vso[task.setvariable variable=ChangeLogCompareToRelease]lastNonDraftRelease"
               }
               else {
                 Write-Verbose -Verbose "Stable release version detected: $packageVersion"
                 Write-Host "##vso[task.setvariable variable=IsPreRelease]false"
+
+                Write-Verbose -verbose "Setting the ChangeLogCompareToRelease to 'lastFullRelease'"
+                Write-Host "##vso[task.setvariable variable=ChangeLogCompareToRelease]lastFullRelease"
               }
 
               $githubReleaseVersion = "v$packageVersion"
               Write-Verbose -Verbose "GitHub Release version: $githubReleaseVersion"
-
               Write-Host "##vso[task.setvariable variable=GitHubReleaseVersion]$githubReleaseVersion"
 
         - task: GitHubRelease@1
@@ -496,20 +491,20 @@ extends:
             repositoryName: PowerShell/DSC
             target: main
             action: create
-            title: $(GitHubReleaseVersion)
             assets: |
               $(GitHubReleaseDirectory)\*.zip
               $(GitHubReleaseDirectory)\*.tar.gz
+              $(GitHubReleaseDirectory)\*.msixbundle
             addChangeLog: true
             changeLogType: commitBased
-            releaseNotesFilePath: '$(ChangeLogDirectory)\CHANGELOG.md'
+            changeLogCompareToRelease: '$(ChangeLogCompareToRelease)'
             tagSource: 'userSpecifiedTag'
             tag: '$(GitHubReleaseVersion)'
             isDraft: true
             isPreRelease: '$(IsPreRelease)'
 
     - stage: ReleaseUniversalPackage
-      dependsOn: ['Release']
+      dependsOn: ['BuildAndSign','Release']
       condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'), eq(variables.officialBuild, true))
       variables:
         - name: PackageVersion
