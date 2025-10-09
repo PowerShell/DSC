@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use dsc_lib_jsonschema::transforms::idiomaticize_string_enum;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use schemars::JsonSchema;
@@ -33,6 +34,7 @@ pub struct DscExtension {
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
+#[schemars(transform = idiomaticize_string_enum)]
 pub enum Capability {
     /// The extension aids in discovering resources.
     Discover,
