@@ -1,0 +1,114 @@
+_version = 1
+
+[transforms.idiomaticize_externally_tagged_enum]
+applies_to = "invalid application of idiomaticize_externally_tagged_enum; missing 'oneOf' keyword in transforming schema: %{transforming_schema}"
+oneOf_array = "invalid application of idiomaticize_externally_tagged_enum; 'oneOf' isn't an array in transforming schema: %{transforming_schema}"
+oneOf_item_as_object = """
+invalid application of idiomaticize_externally_tagged_enum; items in 'oneOf' should always be objects, but encountered an invalid item in transforming schema:
+
+invalid item: %{invalid_item}
+
+transforming schema: %{transforming_schema}
+"""
+oneOf_item_define_type = """
+invalid application of idiomaticize_externally_tagged_enum; every entry in oneOf should define the 'type' keyword, but encountered an invalid item in transforming schema:
+
+invalid item: %{invalid_item}
+
+transforming schema: %{transforming_schema}
+"""
+oneOf_item_type_string = """
+invalid application of idiomaticize_externally_tagged_enum; the value for the 'type' keyword should be a string, but was invalid in transforming schema:
+
+invalid item: %{invalid_item}
+
+transforming schema: %{transforming_schema}
+"""
+oneOf_item_not_object_type = """
+invalid application of idiomaticize_externally_tagged_enum; expected type for 'oneOf' entry to be 'object' but was '%{item_data_type}' in transforming schema:
+
+invalid item: %{invalid_item}
+
+transforming schema: %{transforming_schema}
+"""
+oneOf_item_properties_missing = """
+invalid application of idiomaticize_externally_tagged_enum; expected each item in oneOf to define an object with properties, but encountered invalid item in transforming schema:
+
+invalid item: %{invalid_item}
+
+transforming schema: %{transforming_schema}
+"""
+oneOf_item_properties_not_object = """
+invalid application of idiomaticize_externally_tagged_enum; the 'properties' keyword should always be an object, but encountered invalid item in transforming schema:
+
+invalid item: %{invalid_item}
+
+transforming schema: %{transforming_schema}
+"""
+oneOf_item_properties_entry_not_object = """
+invalid application of idiomaticize_externally_tagged_enum; the property '%{name}' in the 'oneOf' item's 'properties' keyword should always be an object, but was something else in transforming schema:
+
+invalid item: %{invalid_item}
+
+transforming schema: %{transforming_schema}
+"""
+
+[transforms.idiomaticize_string_enum]
+applies_to = "invalid application of idiomaticize_string_enum; missing 'oneOf' keyword in transforming schema: %{transforming_schema}"
+oneOf_array = "invalid application of idiomaticize_string_enum; 'oneOf' isn't an array in transforming schema: %{transforming_schema}"
+oneOf_item_as_object = """
+invalid application of idiomaticize_string_enum; items in 'oneOf' should always be objects, but encountered an invalid item in transforming schema:
+
+invalid item: %{invalid_item}
+
+transforming schema: %{transforming_schema}
+"""
+oneOf_item_define_type = """
+invalid application of idiomaticize_string_enum; every entry in oneOf should define the 'type' keyword, but encountered an invalid item in transforming schema:
+
+invalid item: %{invalid_item}
+
+transforming schema: %{transforming_schema}
+"""
+oneOf_item_type_string = """
+invalid application of idiomaticize_string_enum; the value for the 'type' keyword should be a string, but was invalid in transforming schema:
+
+invalid item: %{invalid_item}
+
+transforming schema: %{transforming_schema}
+"""
+oneOf_item_not_string_type = """
+invalid application of idiomaticize_string_enum; expected type for 'oneOf' entry to be 'string' but was '%{invalid_type}' in transforming schema:
+
+invalid item: %{invalid_item}
+
+transforming schema: %{transforming_schema}
+"""
+oneOf_item_enum_not_array = """
+invalid application of idiomaticize_string_enum; the 'enum' keyword should always be an array, but encountered invalid item in transforming schema:
+
+invalid item: %{invalid_item}
+
+transforming schema: %{transforming_schema}
+"""
+oneOf_item_enum_item_not_string = """
+invalid application of idiomaticize_string_enum; every item in the 'enum' keyword should always be an array of strings, but encountered invalid item in transforming schema:
+
+invalid item: %{invalid_item}
+
+transforming schema: %{transforming_schema}
+"""
+oneOf_item_const_missing = """
+invalid application of idiomaticize_string_enum; documented items in a string enum are generated as subschemas with the 'const' keyword, but encountered invalid item in transforming schema:
+
+invalid item: %{invalid_item}
+
+transforming schema: %{transforming_schema}
+"""
+oneOf_item_const_not_string = """
+invalid application of idiomaticize_string_enum; the value for the 'const' keyword in a string enum should be a string, but encountered invalid item in transforming schema:
+
+invalid item: %{invalid_item}
+
+transforming schema: %{transforming_schema}
+"""
