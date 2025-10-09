@@ -94,4 +94,13 @@ resource invalid 'Microsoft.DSC.Extension/Bicep:1.0' = {
         $content | Should -Match "Importing file '$bicepFile' with extension 'Microsoft.DSC.Extension/Bicep'"
         $content | Should -Match "BCP033"
     }
+
+    It 'Example bicep file with condition works' -Skip:(!$foundBicep -or !$IsWindows) {
+        $params = @{ parameters = @{ restartService = $true } } | ConvertTo-Json -Compress
+        $bicepFile = Resolve-Path -Path "$PSScriptRoot\..\..\dsc\examples\file_with_condition.dsc.bicep"
+        $out = dsc -l trace config --parameters $params get -f $bicepFile 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw | Out-String)
+        $out.results[0].result.actualState.Ensure | Should -Be 'Absent' # As set is not called
+        $out.results[1].result.actualState.StartupType | Should -Be 'Automatic'
+    }
 }
