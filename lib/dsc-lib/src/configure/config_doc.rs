@@ -2,6 +2,10 @@
 // Licensed under the MIT License.
 
 use chrono::{DateTime, Local};
+use dsc_lib_jsonschema::transforms::{
+    idiomaticize_externally_tagged_enum,
+    idiomaticize_string_enum
+};
 use rust_i18n::t;
 use schemars::{JsonSchema, json_schema};
 use serde::{Deserialize, Serialize};
@@ -12,6 +16,7 @@ use crate::{dscerror::DscError, schemas::DscRepoSchema};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
+#[schemars(transform = idiomaticize_string_enum)]
 pub enum SecurityContextKind {
     Current,
     Elevated,
@@ -20,6 +25,7 @@ pub enum SecurityContextKind {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
+#[schemars(transform = idiomaticize_string_enum)]
 pub enum Operation {
     Get,
     Set,
@@ -29,6 +35,7 @@ pub enum Operation {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
+#[schemars(transform = idiomaticize_string_enum)]
 pub enum ExecutionKind {
     Actual,
     WhatIf,
@@ -43,6 +50,7 @@ pub struct Process {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
+#[schemars(transform = idiomaticize_externally_tagged_enum)]
 pub enum RestartRequired {
     System(String),
     Service(String),
@@ -190,6 +198,7 @@ pub struct Parameter {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[schemars(transform = idiomaticize_string_enum)]
 pub enum DataType {
     #[serde(rename = "string")]
     String,
@@ -223,6 +232,7 @@ impl Display for DataType {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[schemars(transform = idiomaticize_string_enum)]
 pub enum CopyMode {
     #[serde(rename = "serial")]
     Serial,
