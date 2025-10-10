@@ -52,17 +52,15 @@ fn combine_uri(base_uri: &str, relative_uri: &str) -> String {
     if base_ends_with_slash {
         if relative_starts_with_slash {
             // Combine trailing and leading slash into one
-            return format!("{}{}", base_uri, &relative_uri[1..]);
-        } else {
-            // Simply concatenate
-            return format!("{}{}", base_uri, relative_uri);
+            return format!("{base_uri}{}", &relative_uri[1..]);
         }
+        return format!("{base_uri}{relative_uri}");
     }
 
     // Case 2: baseUri doesn't end with trailing slash
     // Check if baseUri has slashes (aside from // near the front)
     let scheme_end = if base_uri.starts_with("http://") || base_uri.starts_with("https://") {
-        base_uri.find("://").map(|pos| pos + 3).unwrap_or(0)
+        base_uri.find("://").map_or(0, |pos| pos + 3)
     } else if base_uri.starts_with("//") {
         2
     } else {
@@ -72,14 +70,14 @@ fn combine_uri(base_uri: &str, relative_uri: &str) -> String {
     let after_scheme = &base_uri[scheme_end..];
     
     if let Some(last_slash_pos) = after_scheme.rfind('/') {
-        let base_without_last_segment = &base_uri[..scheme_end + last_slash_pos + 1];
+        let base_without_last_segment = &base_uri[..=(scheme_end + last_slash_pos)];
         if relative_starts_with_slash {
-            format!("{}{}", &base_without_last_segment[..base_without_last_segment.len() - 1], relative_uri)
+            format!("{}{relative_uri}", &base_without_last_segment[..base_without_last_segment.len() - 1])
         } else {
-            format!("{}{}", base_without_last_segment, relative_uri)
+            format!("{base_without_last_segment}{relative_uri}")
         }
     } else {
-        format!("{}{}", base_uri, relative_uri)
+        format!("{base_uri}{relative_uri}")
     }
 }
 

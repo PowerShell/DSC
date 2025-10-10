@@ -50,7 +50,7 @@ fn percent_encode_uri_component(input: &str) -> String {
             // Everything else gets percent-encoded
             _ => {
                 result.push('%');
-                result.push_str(&format!("{:02X}", byte));
+                result.push_str(&format!("{byte:02X}"));
             }
         }
     }
