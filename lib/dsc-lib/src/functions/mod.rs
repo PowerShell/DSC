@@ -65,6 +65,7 @@ pub mod substring;
 pub mod system_root;
 pub mod to_lower;
 pub mod to_upper;
+pub mod trim;
 pub mod r#true;
 pub mod union;
 pub mod unique_string;
@@ -186,6 +187,7 @@ impl FunctionDispatcher {
             Box::new(system_root::SystemRoot{}),
             Box::new(to_lower::ToLower{}),
             Box::new(to_upper::ToUpper{}),
+            Box::new(trim::Trim{}),
             Box::new(r#true::True{}),
             Box::new(utc_now::UtcNow{}),
             Box::new(union::Union{}),
