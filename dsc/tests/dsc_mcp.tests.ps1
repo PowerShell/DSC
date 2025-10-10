@@ -71,6 +71,7 @@ Describe 'Tests for MCP server' {
         }
 
         $tools = @{
+            'invoke_dsc_config' = $false
             'invoke_dsc_resource' = $false
             'list_dsc_functions' = $false
             'list_dsc_resources' = $false
@@ -332,5 +333,256 @@ Describe 'Tests for MCP server' {
         ($response.result.structuredContent.psobject.properties | Measure-Object).Count | Should -Be 1 -Because $because
         $response.result.structuredContent.result.$property.action | Should -BeExactly $operation -Because $because
         $response.result.structuredContent.result.$property.hello | Should -BeExactly "World" -Because $because
+    }
+
+    It 'Calling invoke_dsc_config for operation: <operation>' -TestCases @(
+        @{ operation = 'get' }
+        @{ operation = 'set' }
+        @{ operation = 'test' }
+    ) {
+        param($operation)
+
+        $config = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+            resources = @(
+                @{
+                    name = 'TestOperation'
+                    type = 'Test/Operation'
+                    properties = @{
+                        hello = 'Hello from config'
+                        action = $operation
+                    }
+                }
+            )
+        }
+
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id = 13
+            method = "tools/call"
+            params = @{
+                name = "invoke_dsc_config"
+                arguments = @{
+                    operation = $operation
+                    configuration = ($config | ConvertTo-Json -Depth 20)
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 13
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        $response.result.structuredContent.result.results | Should -Not -BeNullOrEmpty -Because $because
+        $response.result.structuredContent.result.results.Count | Should -Be 1 -Because $because
+        $response.result.structuredContent.result.results[0].name | Should -Be 'TestOperation' -Because $because
+    }
+
+    It 'Calling invoke_dsc_config for export operation' {
+        $config = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+            resources = @(
+                @{
+                    name = 'TestExport'
+                    type = 'Test/Export'
+                    properties = @{
+                        count = 2
+                    }
+                }
+            )
+        }
+
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id = 13
+            method = "tools/call"
+            params = @{
+                name = "invoke_dsc_config"
+                arguments = @{
+                    operation = 'export'
+                    configuration = ($config | ConvertTo-Json -Depth 20)
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 13
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        $response.result.structuredContent.result.result | Should -Not -BeNullOrEmpty -Because $because
+        $response.result.structuredContent.result.result.resources.Count | Should -Be 2 -Because $because
+        $response.result.structuredContent.result.result.resources[0].name | Should -Be 'TestName' -Because $because
+    }
+
+    It 'Calling invoke_dsc_config with parameters works' {
+        $config = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+            parameters = @{
+                message = @{
+                    type = 'string'
+                    defaultValue = 'default message'
+                }
+            }
+            resources = @(
+                @{
+                    name = 'TestResource'
+                    type = 'Test/Operation'
+                    properties = @{
+                        hello = "[parameters('message')]"
+                        action = 'get'
+                    }
+                }
+            )
+        }
+
+        $parameters = @{
+            message = 'custom message'
+        }
+
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id = 14
+            method = "tools/call"
+            params = @{
+                name = "invoke_dsc_config"
+                arguments = @{
+                    operation = 'get'
+                    configuration = ($config | ConvertTo-Json -Depth 20)
+                    parameters = ($parameters | ConvertTo-Json -Depth 20)
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 14
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        $response.result.structuredContent.result.results[0].result.actualState.hello | Should -Be 'custom message' -Because $because
+    }
+
+    It 'Calling invoke_dsc_config with YAML configuration works' {
+        $configYaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+  - name: TestResource
+    type: Test/Operation
+    properties:
+      hello: Hello from YAML
+      action: get
+'@
+
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id = 15
+            method = "tools/call"
+            params = @{
+                name = "invoke_dsc_config"
+                arguments = @{
+                    operation = 'get'
+                    configuration = $configYaml
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 15
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        $response.result.structuredContent.result.results[0].result.actualState.hello | Should -Be 'Hello from YAML' -Because $because
+    }
+
+    It 'Calling invoke_dsc_config with YAML parameters works' {
+        $config = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+            parameters = @{
+                greeting = @{
+                    type = 'string'
+                }
+            }
+            resources = @(
+                @{
+                    name = 'TestResource'
+                    type = 'Test/Operation'
+                    properties = @{
+                        hello = "[parameters('greeting')]"
+                        action = 'get'
+                    }
+                }
+            )
+        }
+
+        $parametersYaml = @'
+greeting: Hello from YAML parameters
+'@
+
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id = 16
+            method = "tools/call"
+            params = @{
+                name = "invoke_dsc_config"
+                arguments = @{
+                    operation = 'get'
+                    configuration = ($config | ConvertTo-Json -Depth 20)
+                    parameters = $parametersYaml
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 16
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        $response.result.structuredContent.result.results[0].result.actualState.hello | Should -Be 'Hello from YAML parameters' -Because $because
+    }
+
+    It 'Calling invoke_dsc_config with invalid configuration returns error' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id = 17
+            method = "tools/call"
+            params = @{
+                name = "invoke_dsc_config"
+                arguments = @{
+                    operation = 'get'
+                    configuration = '{ invalid json }'
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 17
+        $response.error.code | Should -Be -32600
+        $response.error.message | Should -Match 'Invalid configuration'
+    }
+
+    It 'Calling invoke_dsc_config with invalid parameters returns error' {
+        $config = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+            resources = @(
+                @{
+                    name = 'TestResource'
+                    type = 'Test/Operation'
+                    properties = @{
+                        hello = 'test'
+                        action = 'get'
+                    }
+                }
+            )
+        }
+
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id = 18
+            method = "tools/call"
+            params = @{
+                name = "invoke_dsc_config"
+                arguments = @{
+                    operation = 'get'
+                    configuration = ($config | ConvertTo-Json -Depth 20)
+                    parameters = '{[invalid'
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 18
+        $response.error.code | Should -Be -32600
+        $response.error.message | Should -Match 'Invalid parameters'
     }
 }
