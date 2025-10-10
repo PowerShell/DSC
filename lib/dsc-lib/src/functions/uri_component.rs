@@ -39,6 +39,7 @@ impl Function for UriComponent {
 /// 
 /// This follows RFC 3986 for URI component encoding.
 fn percent_encode_uri_component(input: &str) -> String {
+    use std::fmt::Write;
     let mut result = String::with_capacity(input.len() * 3);
     
     for byte in input.bytes() {
@@ -50,7 +51,7 @@ fn percent_encode_uri_component(input: &str) -> String {
             // Everything else gets percent-encoded
             _ => {
                 result.push('%');
-                result.push_str(&format!("{byte:02X}"));
+                let _ = write!(result, "{byte:02X}");
             }
         }
     }

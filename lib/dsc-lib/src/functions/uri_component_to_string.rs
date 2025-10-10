@@ -35,7 +35,7 @@ impl Function for UriComponentToString {
 /// Decodes a percent-encoded URI component string.
 /// 
 /// Decodes percent-encoded sequences (e.g., %20 to space, %40 to @).
-/// This is the inverse operation of percent_encode_uri_component.
+/// This is the inverse operation of `percent_encode_uri_component`.
 fn percent_decode_uri_component(input: &str) -> Result<String, DscError> {
     let mut result = Vec::new();
     let bytes = input.as_bytes();
