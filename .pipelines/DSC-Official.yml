@@ -468,16 +468,10 @@ extends:
               if ($packageVersion -like '*-*') {
                 Write-Verbose -Verbose "Pre-release version detected: $packageVersion"
                 Write-Host "##vso[task.setvariable variable=IsPreRelease]true"
-
-                Write-Verbose -verbose "Setting the ChangeLogCompareToRelease to 'lastNonDraftRelease'"
-                Write-Host "##vso[task.setvariable variable=ChangeLogCompareToRelease]lastNonDraftRelease"
               }
               else {
                 Write-Verbose -Verbose "Stable release version detected: $packageVersion"
                 Write-Host "##vso[task.setvariable variable=IsPreRelease]false"
-
-                Write-Verbose -verbose "Setting the ChangeLogCompareToRelease to 'lastFullRelease'"
-                Write-Host "##vso[task.setvariable variable=ChangeLogCompareToRelease]lastFullRelease"
               }
 
               $githubReleaseVersion = "v$packageVersion"
@@ -495,9 +489,7 @@ extends:
               $(GitHubReleaseDirectory)\*.zip
               $(GitHubReleaseDirectory)\*.tar.gz
               $(GitHubReleaseDirectory)\*.msixbundle
-            addChangeLog: true
-            changeLogType: commitBased
-            changeLogCompareToRelease: '$(ChangeLogCompareToRelease)'
+            addChangeLog: false
             tagSource: 'userSpecifiedTag'
             tag: '$(GitHubReleaseVersion)'
             isDraft: true
