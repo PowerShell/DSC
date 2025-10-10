@@ -863,4 +863,34 @@ Describe 'tests for function expressions' {
     $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
     $out.results[0].result.actualState.output | Should -Be $expected
   }
+
+  It 'uriComponent function works for: <expression>' -TestCases @(
+    @{ expression = "[uriComponent('hello world')]"; expected = 'hello%20world' }
+    @{ expression = "[uriComponent('hello@example.com')]"; expected = 'hello%40example.com' }
+    @{ expression = "[uriComponent('https://example.com/path?query=value')]"; expected = 'https%3A%2F%2Fexample.com%2Fpath%3Fquery%3Dvalue' }
+    @{ expression = "[uriComponent('')]"; expected = '' }
+    @{ expression = "[uriComponent('ABCabc123-_.~')]"; expected = 'ABCabc123-_.~' }
+    @{ expression = "[uriComponent(':/?#[]@!$&()*+,;=')]"; expected = '%3A%2F%3F%23%5B%5D%40%21%24%26%28%29%2A%2B%2C%3B%3D' }
+    @{ expression = "[uriComponent('café')]"; expected = 'caf%C3%A9' }
+    @{ expression = "[uriComponent('name=John Doe&age=30')]"; expected = 'name%3DJohn%20Doe%26age%3D30' }
+    @{ expression = "[uriComponent('/path/to/my file.txt')]"; expected = '%2Fpath%2Fto%2Fmy%20file.txt' }
+    @{ expression = "[uriComponent(concat('hello', ' ', 'world'))]"; expected = 'hello%20world' }
+    @{ expression = "[uriComponent('user+tag@example.com')]"; expected = 'user%2Btag%40example.com' }
+    @{ expression = "[uriComponent('1234567890')]"; expected = '1234567890' }
+    @{ expression = "[uriComponent('100%')]"; expected = '100%25' }
+  ) {
+    param($expression, $expected)
+
+    $escapedExpression = $expression -replace "'", "''"
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '$escapedExpression'
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -Be $expected
+  }
 }

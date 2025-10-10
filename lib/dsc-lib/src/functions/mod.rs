@@ -69,6 +69,7 @@ pub mod r#true;
 pub mod union;
 pub mod unique_string;
 pub mod uri;
+pub mod uri_component;
 pub mod user_function;
 pub mod utc_now;
 pub mod variables;
@@ -191,6 +192,7 @@ impl FunctionDispatcher {
             Box::new(union::Union{}),
             Box::new(unique_string::UniqueString{}),
             Box::new(uri::Uri{}),
+            Box::new(uri_component::UriComponent{}),
             Box::new(utc_now::UtcNow{}),
             Box::new(variables::Variables{}),
         ];

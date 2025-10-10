@@ -528,6 +528,9 @@ invoked = "uniqueString function"
 [functions.uri]
 description = "Creates an absolute URI by combining the baseUri and the relativeUri string"
 
+[functions.uriComponent]
+description = "Encodes a URI component using percent-encoding"
+
 [functions.userFunction]
 expectedNoParameters = "User function '%{name}' does not accept parameters"
 unknownUserFunction = "Unknown user function '%{name}'"
