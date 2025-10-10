@@ -893,4 +893,54 @@ Describe 'tests for function expressions' {
     $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
     $out.results[0].result.actualState.output | Should -Be $expected
   }
+
+  It 'uriComponentToString function works for: <expression>' -TestCases @(
+    @{ expression = "[uriComponentToString('hello%20world')]"; expected = 'hello world' }
+    @{ expression = "[uriComponentToString('hello%40example.com')]"; expected = 'hello@example.com' }
+    @{ expression = "[uriComponentToString('https%3A%2F%2Fexample.com%2Fpath%3Fquery%3Dvalue')]"; expected = 'https://example.com/path?query=value' }
+    @{ expression = "[uriComponentToString('')]"; expected = '' }
+    @{ expression = "[uriComponentToString('ABCabc123-_.~')]"; expected = 'ABCabc123-_.~' }
+    @{ expression = "[uriComponentToString('%3A%2F%3F%23%5B%5D%40%21%24%26%28%29%2A%2B%2C%3B%3D')]"; expected = ':/?#[]@!$&()*+,;=' }
+    @{ expression = "[uriComponentToString('caf%C3%A9')]"; expected = 'café' }
+    @{ expression = "[uriComponentToString('name%3DJohn%20Doe%26age%3D30')]"; expected = 'name=John Doe&age=30' }
+    @{ expression = "[uriComponentToString('%2Fpath%2Fto%2Fmy%20file.txt')]"; expected = '/path/to/my file.txt' }
+    @{ expression = "[uriComponentToString(uriComponent('hello world'))]"; expected = 'hello world' }
+    @{ expression = "[uriComponentToString(uriComponent('user+tag@example.com'))]"; expected = 'user+tag@example.com' }
+    @{ expression = "[uriComponentToString('100%25')]"; expected = '100%' }
+    @{ expression = "[uriComponentToString(concat('hello', '%20', 'world'))]"; expected = 'hello world' }
+  ) {
+    param($expression, $expected)
+
+    $escapedExpression = $expression -replace "'", "''"
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '$escapedExpression'
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -Be $expected
+  }
+
+  It 'uriComponentToString function error handling: <expression>' -TestCases @(
+    @{ expression = "[uriComponentToString('incomplete%2')]" ; expectedError = 'Invalid percent-encoding: incomplete sequence at position' }
+    @{ expression = "[uriComponentToString('invalid%ZZ')]" ; expectedError = 'Invalid percent-encoding:.*is not valid hex at position' }
+  ) {
+    param($expression, $expectedError)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: `"$expression`"
+"@
+    $null = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log
+    $LASTEXITCODE | Should -Not -Be 0
+    $errorContent = Get-Content $TestDrive/error.log -Raw
+    $errorContent | Should -Match $expectedError
+  }
 }
