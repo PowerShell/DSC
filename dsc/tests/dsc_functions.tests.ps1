@@ -831,4 +831,36 @@ Describe 'tests for function expressions' {
     $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
     $out.results[0].result.actualState.output | Should -Be $expected
   }
+
+  It 'uri function works for: <expression>' -TestCases @(
+    @{ expression = "[uri('https://example.com/', 'path/file.html')]"; expected = 'https://example.com/path/file.html' }
+    @{ expression = "[uri('https://example.com/', '/path/file.html')]"; expected = 'https://example.com/path/file.html' }
+    @{ expression = "[uri('https://example.com/api/v1', 'users')]"; expected = 'https://example.com/api/users' }
+    @{ expression = "[uri('https://example.com/api/v1', '/users')]"; expected = 'https://example.com/api/users' }
+    @{ expression = "[uri('https://example.com', 'path')]"; expected = 'https://example.compath' }
+    @{ expression = "[uri('https://example.com', '/path')]"; expected = 'https://example.com/path' }
+    @{ expression = "[uri('https://api.example.com/v2/resource/', 'item/123')]"; expected = 'https://api.example.com/v2/resource/item/123' }
+    @{ expression = "[uri('https://example.com/api/', 'search?q=test')]"; expected = 'https://example.com/api/search?q=test' }
+    @{ expression = "[uri('https://example.com/', '')]"; expected = 'https://example.com/' }
+    @{ expression = "[uri('http://example.com/', 'page.html')]"; expected = 'http://example.com/page.html' }
+    @{ expression = "[uri('https://example.com:8080/', 'api')]"; expected = 'https://example.com:8080/api' }
+    @{ expression = "[uri(concat('https://example.com', '/'), 'path')]"; expected = 'https://example.com/path' }
+    @{ expression = "[uri('//example.com/', 'path')]"; expected = '//example.com/path' }
+    @{ expression = "[uri('https://example.com/a/b/c/', 'd/e/f')]"; expected = 'https://example.com/a/b/c/d/e/f' }
+    @{ expression = "[uri('https://example.com/old/path', 'new')]"; expected = 'https://example.com/old/new' }
+  ) {
+    param($expression, $expected)
+
+    $escapedExpression = $expression -replace "'", "''"
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '$escapedExpression'
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -Be $expected
+  }
 }

@@ -525,6 +525,9 @@ invalidArgType = "All arguments must either be arrays or objects"
 description = "Returns a deterministic unique string from the given strings"
 invoked = "uniqueString function"
 
+[functions.uri]
+description = "Creates an absolute URI by combining the baseUri and the relativeUri string"
+
 [functions.userFunction]
 expectedNoParameters = "User function '%{name}' does not accept parameters"
 unknownUserFunction = "Unknown user function '%{name}'"

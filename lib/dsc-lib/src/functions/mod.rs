@@ -68,6 +68,7 @@ pub mod to_upper;
 pub mod r#true;
 pub mod union;
 pub mod unique_string;
+pub mod uri;
 pub mod user_function;
 pub mod utc_now;
 pub mod variables;
@@ -187,9 +188,10 @@ impl FunctionDispatcher {
             Box::new(to_lower::ToLower{}),
             Box::new(to_upper::ToUpper{}),
             Box::new(r#true::True{}),
-            Box::new(utc_now::UtcNow{}),
             Box::new(union::Union{}),
             Box::new(unique_string::UniqueString{}),
+            Box::new(uri::Uri{}),
+            Box::new(utc_now::UtcNow{}),
             Box::new(variables::Variables{}),
         ];
         for function in function_list {
