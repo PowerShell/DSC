@@ -7,7 +7,6 @@ use dsc_lib::{
     dscresources::{
         dscresource::Invoke,
         invoke_result::{
-            DeleteResult,
             ExportResult,
             GetResult,
             SetResult,
@@ -39,7 +38,7 @@ pub enum ResourceOperationResult {
     SetResult(SetResult),
     TestResult(TestResult),
     ExportResult(ExportResult),
-    DeleteResult(DeleteResult),
+    DeleteResult { success: bool },
 }
 
 #[derive(Serialize, JsonSchema)]
@@ -98,11 +97,10 @@ impl McpServer {
                     Ok(ResourceOperationResult::TestResult(result))
                 },
                 DscOperation::Delete => {
-                    let result = match resource.delete(&properties_json, &ExecutionKind::Actual) {
-                        Ok(res) => res,
+                    match resource.delete(&properties_json) {
+                        Ok(()) => Ok(ResourceOperationResult::DeleteResult { success: true }),
                         Err(e) => return Err(McpError::internal_error(e.to_string(), None)),
-                    };
-                    Ok(ResourceOperationResult::DeleteResult(result))
+                    }
                 },
                 DscOperation::Export => {
                     let result = match resource.export(&properties_json) {
