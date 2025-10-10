@@ -1274,6 +1274,9 @@ function Test-RustProject {
 function Test-ProjectWithPester {
     [cmdletbinding()]
     param(
+        [DscProjectDefinition[]]$Project,
+        [ValidateSet("dsc", "adapters", "extensions", "grammars", "resources")]
+        [string[]]$Group,
         [switch]$UsingADO
     )
 
@@ -1297,10 +1300,35 @@ function Test-ProjectWithPester {
 
             Write-Verbose "Updated Pester module location:`n`t$((Get-Module -Name Pester -ListAvailable).Path)"
         }
+        $pesterParams = @{
+            Output = 'Detailed'
+            ErrorAction = 'Stop'
+        }
+        if ($Project) {
+            $pesterParams.ExcludePath = $Project.RelativePath | Where-Object -FilterScript {
+                $_.Name -notin $Project.Name
+            }
+        }
+        if ($Group) {
+            $pesterParams.Path = $Group
+        }
     }
 
     process {
-        Invoke-Pester -Output Detailed -ErrorAction Stop
+        if ($Group -and $Project) {
+            Write-Verbose (@(
+                "Invoking pester for groups and projects:"
+                "Groups: [$($Group -join ', ')]"
+                "Projects: [$($Project.Name -join ', ')]"
+            ) -join "`n`t")
+        } elseif ($Group) {
+            Write-Verbose "Invoking pester for groups: [$($Group -join ', ')]"
+        } elseif ($Project) {
+            Write-Verbose "Invoking pester for projects: [$($Project.Name -join ', ')]"
+        } else {
+            Write-Verbose "Invoking pester for all groups and projects"
+        }
+        Invoke-Pester @pesterParams
     }
 }
 #endregion Test project functions
