@@ -28,6 +28,7 @@ pub enum DscOperation {
     Set,
     Test,
     Export,
+    Delete,
 }
 
 #[derive(Serialize, JsonSchema)]
@@ -37,6 +38,7 @@ pub enum ResourceOperationResult {
     SetResult(SetResult),
     TestResult(TestResult),
     ExportResult(ExportResult),
+    DeleteResult { success: bool },
 }
 
 #[derive(Serialize, JsonSchema)]
@@ -57,9 +59,9 @@ pub struct InvokeDscResourceRequest {
 #[tool_router(router = invoke_dsc_resource_router, vis = "pub")]
 impl McpServer {
     #[tool(
-        description = "Invoke a DSC resource operation (Get, Set, Test, Export) with specified properties in JSON format",
+        description = "Invoke a DSC resource operation (Get, Set, Test, Export, Delete) with specified properties in JSON format",
         annotations(
-            title = "Invoke a DSC resource operation (Get, Set, Test, Export) with specified properties in JSON format",
+            title = "Invoke a DSC resource operation (Get, Set, Test, Export, Delete) with specified properties in JSON format",
             read_only_hint = false,
             destructive_hint = true,
             idempotent_hint = true,
@@ -93,6 +95,12 @@ impl McpServer {
                         Err(e) => return Err(McpError::internal_error(e.to_string(), None)),
                     };
                     Ok(ResourceOperationResult::TestResult(result))
+                },
+                DscOperation::Delete => {
+                    match resource.delete(&properties_json) {
+                        Ok(()) => Ok(ResourceOperationResult::DeleteResult { success: true }),
+                        Err(e) => Err(McpError::internal_error(e.to_string(), None)),
+                    }
                 },
                 DscOperation::Export => {
                     let result = match resource.export(&properties_json) {
