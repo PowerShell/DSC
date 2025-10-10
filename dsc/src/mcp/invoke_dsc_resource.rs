@@ -99,7 +99,7 @@ impl McpServer {
                 DscOperation::Delete => {
                     match resource.delete(&properties_json) {
                         Ok(()) => Ok(ResourceOperationResult::DeleteResult { success: true }),
-                        Err(e) => return Err(McpError::internal_error(e.to_string(), None)),
+                        Err(e) => Err(McpError::internal_error(e.to_string(), None)),
                     }
                 },
                 DscOperation::Export => {
