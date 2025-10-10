@@ -304,6 +304,7 @@ Describe 'Tests for MCP server' {
         @{ operation = 'get'; property = 'actualState' }
         @{ operation = 'set'; property = 'beforeState' }
         @{ operation = 'test'; property = 'desiredState' }
+        @{ operation = 'delete'; property = 'beforeState' }
         @{ operation = 'export'; property = 'actualState' }
     ) {
         param($operation)

@@ -7,6 +7,7 @@ use dsc_lib::{
     dscresources::{
         dscresource::Invoke,
         invoke_result::{
+            DeleteResult,
             ExportResult,
             GetResult,
             SetResult,
@@ -28,6 +29,7 @@ pub enum DscOperation {
     Set,
     Test,
     Export,
+    Delete,
 }
 
 #[derive(Serialize, JsonSchema)]
@@ -37,6 +39,7 @@ pub enum ResourceOperationResult {
     SetResult(SetResult),
     TestResult(TestResult),
     ExportResult(ExportResult),
+    DeleteResult(DeleteResult),
 }
 
 #[derive(Serialize, JsonSchema)]
@@ -57,9 +60,9 @@ pub struct InvokeDscResourceRequest {
 #[tool_router(router = invoke_dsc_resource_router, vis = "pub")]
 impl McpServer {
     #[tool(
-        description = "Invoke a DSC resource operation (Get, Set, Test, Export) with specified properties in JSON format",
+        description = "Invoke a DSC resource operation (Get, Set, Test, Export, Delete) with specified properties in JSON format",
         annotations(
-            title = "Invoke a DSC resource operation (Get, Set, Test, Export) with specified properties in JSON format",
+            title = "Invoke a DSC resource operation (Get, Set, Test, Export, Delete) with specified properties in JSON format",
             read_only_hint = false,
             destructive_hint = true,
             idempotent_hint = true,
@@ -93,6 +96,13 @@ impl McpServer {
                         Err(e) => return Err(McpError::internal_error(e.to_string(), None)),
                     };
                     Ok(ResourceOperationResult::TestResult(result))
+                },
+                DscOperation::Delete => {
+                    let result = match resource.delete(&properties_json, &ExecutionKind::Actual) {
+                        Ok(res) => res,
+                        Err(e) => return Err(McpError::internal_error(e.to_string(), None)),
+                    };
+                    Ok(ResourceOperationResult::DeleteResult(result))
                 },
                 DscOperation::Export => {
                     let result = match resource.export(&properties_json) {

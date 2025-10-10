@@ -35,6 +35,17 @@
             }
         ]
     },
+    "delete": {
+        "executable": "dsctest",
+        "args": [
+            "operation",
+            "--operation",
+            "delete",
+            {
+                "jsonInputArg": "--input"
+            }
+        ]
+    },
     "export": {
         "executable": "dsctest",
         "args": [
