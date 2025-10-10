@@ -1,6 +1,6 @@
 @{
     PackageFiles = @{
-        Linux = @(
+        Linux      = @(
             'bicep.dsc.extension.json',
             'dsc',
             'dsc_default.settings.json',
@@ -16,6 +16,8 @@
             'osinfo',
             'osinfo.dsc.resource.json',
             'powershell.dsc.resource.json',
+            'powershell.discover.ps1',
+            'powershell.dsc.extension.json',
             'psDscAdapter/',
             'psscript.ps1',
             'psscript.dsc.resource.json',
@@ -24,7 +26,7 @@
             'sshdconfig',
             'sshd_config.dsc.resource.json'
         )
-        MacOS = @(
+        MacOS      = @(
             'bicep.dsc.extension.json',
             'dsc',
             'dsc_default.settings.json',
@@ -40,6 +42,8 @@
             'osinfo',
             'osinfo.dsc.resource.json',
             'powershell.dsc.resource.json',
+            'powershell.discover.ps1',
+            'powershell.dsc.extension.json',
             'psDscAdapter/',
             'psscript.ps1',
             'psscript.dsc.resource.json',
@@ -48,7 +52,7 @@
             'sshdconfig',
             'sshd_config.dsc.resource.json'
         )
-        Windows = @(
+        Windows    = @(
             'appx.dsc.extension.json',
             'appx-discover.ps1',
             'bicep.dsc.extension.json',
@@ -64,6 +68,8 @@
             'osinfo.exe',
             'osinfo.dsc.resource.json',
             'powershell.dsc.resource.json',
+            'powershell.discover.ps1',
+            'powershell.dsc.extension.json',
             'psDscAdapter/',
             'psscript.ps1',
             'psscript.dsc.resource.json',
@@ -90,23 +96,23 @@
             'brew.dsc.resource.sh'
         )
     }
-    Projects = @(
+    Projects     = @(
         @{
-            Name = 'root'
+            Name         = 'root'
             RelativePath = '.'
-            Kind = 'Root'
-            CopyFiles = @{
+            Kind         = 'Root'
+            CopyFiles    = @{
                 All = @(
                     'NOTICE.txt'
                 )
             }
         }
         @{
-            Name = 'resources/brew'
-            RelativePath = 'resources/brew'
-            Kind = 'Resource'
+            Name                = 'resources/brew'
+            RelativePath        = 'resources/brew'
+            Kind                = 'Resource'
             SupportedPlatformOS = 'MacOS'
-            CopyFiles = @{
+            CopyFiles           = @{
                 macOS = @(
                     'brew.dsc.resource.sh'
                     'brew.dsc.resource.json'
@@ -114,11 +120,11 @@
             }
         }
         @{
-            Name = 'resources/apt'
-            RelativePath = 'resources/apt'
-            Kind = 'Resource'
+            Name                = 'resources/apt'
+            RelativePath        = 'resources/apt'
+            Kind                = 'Resource'
             SupportedPlatformOS = 'Linux'
-            CopyFiles = @{
+            CopyFiles           = @{
                 Linux = @(
                     'apt.dsc.resource.sh'
                     'apt.dsc.resource.json'
@@ -126,38 +132,38 @@
             }
         }
         @{
-            Name = 'dsc-lib-pal'
-            RelativePath = 'lib/dsc-lib-pal'
-            Kind = 'Library'
-            IsRust = $true
+            Name                = 'dsc-lib-pal'
+            RelativePath        = 'lib/dsc-lib-pal'
+            Kind                = 'Library'
+            IsRust              = $true
             SupportedPlatformOS = 'Windows'
         }
         @{
-            Name = 'dsc-lib-registry'
-            RelativePath = 'lib/dsc-lib-registry'
-            Kind = 'Library'
-            IsRust = $true
+            Name                = 'dsc-lib-registry'
+            RelativePath        = 'lib/dsc-lib-registry'
+            Kind                = 'Library'
+            IsRust              = $true
             SupportedPlatformOS = 'Windows'
         }
         @{
-            Name = 'registry'
-            RelativePath = 'resources/registry'
-            Kind = 'Resource'
-            IsRust = $true
+            Name                = 'registry'
+            RelativePath        = 'resources/registry'
+            Kind                = 'Resource'
+            IsRust              = $true
             SupportedPlatformOS = 'Windows'
-            Binaries = @('registry')
-            CopyFiles = @{
+            Binaries            = @('registry')
+            CopyFiles           = @{
                 Windows = @(
                     'registry.dsc.resource.json'
                 )
             }
         }
         @{
-            Name = 'reboot_pending'
-            RelativePath = 'resources/reboot_pending'
-            Kind = 'Resource'
+            Name                = 'reboot_pending'
+            RelativePath        = 'resources/reboot_pending'
+            Kind                = 'Resource'
             SupportedPlatformOS = 'Windows'
-            CopyFiles = @{
+            CopyFiles           = @{
                 Windows = @(
                     'reboot_pending.resource.ps1'
                     'reboot_pending.dsc.resource.json'
@@ -165,11 +171,11 @@
             }
         }
         @{
-            Name = 'wmi'
-            RelativePath = 'adapters/wmi'
-            Kind = 'Adapter'
+            Name                = 'wmi'
+            RelativePath        = 'adapters/wmi'
+            Kind                = 'Adapter'
             SupportedPlatformOS = 'Windows'
-            CopyFIles = @{
+            CopyFIles           = @{
                 WIndows = @(
                     'wmi.resource.ps1'
                     'wmiAdapter.psd1'
@@ -179,11 +185,11 @@
             }
         }
         @{
-            Name = 'configurations/windows'
-            RelativePath = 'configurations/windows'
-            Kind = 'Configuration'
+            Name                = 'configurations/windows'
+            RelativePath        = 'configurations/windows'
+            Kind                = 'Configuration'
             SupportedPlatformOS = 'Windows'
-            CopyFiles = @{
+            CopyFiles           = @{
                 Windows = @(
                     'windows_baseline.dsc.yaml'
                     'windows_inventory.dsc.yaml'
@@ -191,11 +197,11 @@
             }
         }
         @{
-            Name = 'extensions/appx'
-            RelativePath = 'extensions/appx'
-            Kind = 'Extension'
+            Name                = 'extensions/appx'
+            RelativePath        = 'extensions/appx'
+            Kind                = 'Extension'
             SupportedPlatformOS = 'Windows'
-            CopyFiles = @{
+            CopyFiles           = @{
                 Windows = @(
                     'appx-discover.ps1'
                     'appx.dsc.extension.json'
@@ -203,60 +209,71 @@
             }
         }
         @{
-            Name = 'tree-sitter-dscexpression'
-            RelativePath = 'grammars/tree-sitter-dscexpression'
-            Kind = 'Grammar'
-            IsRust = $true
+            Name         = 'extensions/powershell'
+            RelativePath = 'extensions/powershell'
+            Kind         = 'Extension'
+            CopyFiles    = @{
+                All = @(
+                    'powershell.dsc.extension.json'
+                    'powershell.discover.ps1'
+                )
+            }
+        }
+        @{
+            Name          = 'tree-sitter-dscexpression'
+            RelativePath  = 'grammars/tree-sitter-dscexpression'
+            Kind          = 'Grammar'
+            IsRust        = $true
             ClippyUnclean = $true
-            SkipTest = @{
+            SkipTest      = @{
                 Windows = $true
             }
         }
-         @{
-            Name = 'tree-sitter-ssh-server-config'
-            RelativePath = 'grammars/tree-sitter-ssh-server-config'
-            Kind = 'Grammar'
-            IsRust = $true
+        @{
+            Name          = 'tree-sitter-ssh-server-config'
+            RelativePath  = 'grammars/tree-sitter-ssh-server-config'
+            Kind          = 'Grammar'
+            IsRust        = $true
             ClippyUnclean = $true
             # SKipTestProject = $IsWindows
         }
         @{
-            Name = 'dsc-lib-security_context'
+            Name         = 'dsc-lib-security_context'
             RelativePath = 'lib/dsc-lib-security_context'
-            Kind = 'Library'
-            IsRust = $true
+            Kind         = 'Library'
+            IsRust       = $true
         }
         @{
-            Name = 'dsc-lib-osinfo'
+            Name         = 'dsc-lib-osinfo'
             RelativePath = 'lib/dsc-lib-osinfo'
-            Kind = 'Library'
-            IsRust = $true
+            Kind         = 'Library'
+            IsRust       = $true
         }
         @{
-            Name = 'osinfo'
+            Name         = 'osinfo'
             RelativePath = 'resources/osinfo'
-            Kind = 'Resource'
-            IsRust = $true
-            Binaries = @('osinfo')
-            CopyFiles = @{
+            Kind         = 'Resource'
+            IsRust       = $true
+            Binaries     = @('osinfo')
+            CopyFiles    = @{
                 All = @(
                     'osinfo.dsc.resource.json'
                 )
             }
         }
         @{
-            Name = 'dsc-lib'
+            Name         = 'dsc-lib'
             RelativePath = 'lib/dsc-lib'
-            Kind = 'Library'
-            IsRust = $true
+            Kind         = 'Library'
+            IsRust       = $true
         }
         @{
-            Name = 'dsc'
+            Name         = 'dsc'
             RelativePath = 'dsc'
-            Kind = 'CLI'
-            IsRust = $true
-            Binaries = @('dsc')
-            CopyFiles = @{
+            Kind         = 'CLI'
+            IsRust       = $true
+            Binaries     = @('dsc')
+            CopyFiles    = @{
                 All = @(
                     'dsc.settings.json'
                     'dsc_default.settings.json'
@@ -267,36 +284,36 @@
             }
         }
         @{
-            Name = 'dscecho'
+            Name         = 'dscecho'
             RelativePath = 'resources/dscecho'
-            Kind = 'Resource'
-            IsRust = $true
-            Binaries = @('dscecho')
-            CopyFiles = @{
+            Kind         = 'Resource'
+            IsRust       = $true
+            Binaries     = @('dscecho')
+            CopyFiles    = @{
                 All = @(
                     'echo.dsc.resource.json'
                 )
             }
         }
         @{
-            Name = 'bicep'
+            Name         = 'bicep'
             RelativePath = 'extensions/bicep'
-            Kind = 'Extension'
-            CopyFIles = @{
+            Kind         = 'Extension'
+            CopyFiles    = @{
                 All = 'bicep.dsc.extension.json'
             }
         }
         @{
-            Name = 'powershell-adapter'
+            Name         = 'powershell-adapter'
             RelativePath = 'adapters/powershell'
-            Kind = 'Adapter'
-            CopyFiles = @{
-                All = @(
+            Kind         = 'Adapter'
+            CopyFiles    = @{
+                All     = @(
                     'psDscAdapter/powershell.resource.ps1'
                     'psDscAdapter/psDscAdapter.psd1'
                     'psDscAdapter/psDscAdapter.psm1'
                     'powershell.dsc.resource.json'
-                    )
+                )
                 Windows = @(
                     'psDscAdapter/win_psDscAdapter.psd1'
                     'psDscAdapter/win_psDscAdapter.psm1'
@@ -305,11 +322,11 @@
             }
         }
         @{
-            Name = 'PSScript'
+            Name         = 'PSScript'
             RelativePath = 'resources/PSScript'
-            Kind = 'Resource'
-            CopyFiles = @{
-                All = @(
+            Kind         = 'Resource'
+            CopyFiles    = @{
+                All     = @(
                     'psscript.ps1'
                     'psscript.dsc.resource.json'
                 )
@@ -319,37 +336,37 @@
             }
         }
         @{
-            Name = 'process'
+            Name         = 'process'
             RelativePath = 'resources/process'
-            Kind = 'Resource'
-            IsRust = $true
-            Binaries = @('process')
-            CopyFiles = @{
+            Kind         = 'Resource'
+            IsRust       = $true
+            Binaries     = @('process')
+            CopyFiles    = @{
                 All = @(
                     'process.dsc.resource.json'
                 )
             }
         }
         @{
-            Name = 'runcommandonset'
+            Name         = 'runcommandonset'
             RelativePath = 'resources/runcommandonset'
-            Kind = 'Resource'
-            IsRust = $true
-            Binaries = @('runcommandonset')
-            CopyFiles = @{
+            Kind         = 'Resource'
+            IsRust       = $true
+            Binaries     = @('runcommandonset')
+            CopyFiles    = @{
                 All = @(
                     'RunCommandOnSet.dsc.resource.json'
                 )
             }
         }
         @{
-            Name = 'sshdconfig'
+            Name         = 'sshdconfig'
             RelativePath = 'resources/sshdconfig'
-            Kind = 'Resource'
-            IsRust = $true
-            Binaries = @('sshdconfig')
-            CopyFiles = @{
-                All = @(
+            Kind         = 'Resource'
+            IsRust       = $true
+            Binaries     = @('sshdconfig')
+            CopyFiles    = @{
+                All     = @(
                     'sshd_config.dsc.resource.json'
                 )
                 Windows = @(
@@ -358,13 +375,13 @@
             }
         }
         @{
-            Name = 'dsctest'
+            Name         = 'dsctest'
             RelativePath = 'tools/dsctest'
-            Kind = 'Resource'
-            IsRust = $true
-            TestOnly = $true
-            Binaries = @('dsctest')
-            CopyFiles = @{
+            Kind         = 'Resource'
+            IsRust       = $true
+            TestOnly     = $true
+            Binaries     = @('dsctest')
+            CopyFiles    = @{
                 All = @(
                     'dscdelete.dsc.resource.json'
                     'dscexist.dsc.resource.json'
@@ -389,24 +406,24 @@
             }
         }
         @{
-            Name = 'test_group_resource'
+            Name         = 'test_group_resource'
             RelativePath = 'tools/test_group_resource'
-            Kind = 'Resource'
-            IsRust = $true
-            TestOnly = $true
-            Binaries = @('test_group_resource')
-            CopyFIles = @{
+            Kind         = 'Resource'
+            IsRust       = $true
+            TestOnly     = $true
+            Binaries     = @('test_group_resource')
+            CopyFIles    = @{
                 All = @(
                     'testGroup.dsc.resource.json'
                 )
             }
         }
         @{
-            Name = 'y2j'
+            Name         = 'y2j'
             RelativePath = 'y2j'
-            Kind = 'CLI'
-            IsRust = $true
-            Binaries = @('y2j')
+            Kind         = 'CLI'
+            IsRust       = $true
+            Binaries     = @('y2j')
         }
     )
 }
