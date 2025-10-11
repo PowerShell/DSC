@@ -865,7 +865,7 @@ Describe 'tests for function expressions' {
     @{ expression = "[uri('https://example.com/', '/path/file.html')]"; expected = 'https://example.com/path/file.html' }
     @{ expression = "[uri('https://example.com/api/v1', 'users')]"; expected = 'https://example.com/api/users' }
     @{ expression = "[uri('https://example.com/api/v1', '/users')]"; expected = 'https://example.com/api/users' }
-    @{ expression = "[uri('https://example.com', 'path')]"; expected = 'https://example.compath' }
+    @{ expression = "[uri('https://example.com', 'path')]"; expected = 'https://example.com/path' }
     @{ expression = "[uri('https://example.com', '/path')]"; expected = 'https://example.com/path' }
     @{ expression = "[uri('https://api.example.com/v2/resource/', 'item/123')]"; expected = 'https://api.example.com/v2/resource/item/123' }
     @{ expression = "[uri('https://example.com/api/', 'search?q=test')]"; expected = 'https://example.com/api/search?q=test' }
@@ -889,6 +889,25 @@ Describe 'tests for function expressions' {
 "@
     $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
     $out.results[0].result.actualState.output | Should -Be $expected
+  }
+
+  It 'uri function error handling: <expression>' -TestCases @(
+    @{ expression = "[uri('', 'path')]" ; expectedError = 'baseUri parameter cannot be empty' }
+  ) {
+    param($expression, $expectedError)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: `"$expression`"
+"@
+    $null = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log
+    $LASTEXITCODE | Should -Not -Be 0
+    $errorContent = Get-Content $TestDrive/error.log -Raw
+    $errorContent | Should -Match $expectedError
   }
 
   It 'uriComponent function works for: <expression>' -TestCases @(
