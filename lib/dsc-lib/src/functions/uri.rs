@@ -49,7 +49,7 @@ fn combine_uri(base_uri: &str, relative_uri: &str) -> Result<String, DscError> {
         return Err(DscError::Parser(t!("functions.uri.invalidRelativeUri").to_string()));
     }
 
-    if relative_uri.starts_with("//") {
+    if let Some(uri_without_slashes) = relative_uri.strip_prefix("//") {
         // Protocol-relative URI: extract scheme from base
         let scheme = if let Some(scheme_end) = base_uri.find("://") {
             &base_uri[..scheme_end]
@@ -58,11 +58,11 @@ fn combine_uri(base_uri: &str, relative_uri: &str) -> Result<String, DscError> {
         };
         
         // Check if the protocol-relative URI has a path
-        let uri_without_slashes = &relative_uri[2..]; // Remove leading //
         if uri_without_slashes.contains('/') {
             // Has a path, use as-is
             return Ok(format!("{scheme}:{relative_uri}"));
         }
+        // No path specified, add trailing slash for root
         return Ok(format!("{scheme}:{relative_uri}/"));
     }
 
