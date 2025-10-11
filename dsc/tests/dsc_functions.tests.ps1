@@ -858,4 +858,47 @@ Describe 'tests for function expressions' {
     $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
     $out.results[0].result.actualState.output | Should -Be $expected
   }
+
+  It 'items function converts object to array: <expression>' -TestCases @(
+    @{ expression = "[length(items(createObject('a', 1, 'b', 2)))]"; expected = 2 }
+    @{ expression = "[length(items(createObject()))]"; expected = 0 }
+    @{ expression = "[items(createObject('name', 'John'))[0].key]"; expected = 'name' }
+    @{ expression = "[items(createObject('name', 'John'))[0].value]"; expected = 'John' }
+    @{ expression = "[items(createObject('a', 1, 'b', 2, 'c', 3))[1].key]"; expected = 'b' }
+    @{ expression = "[items(createObject('x', 'hello', 'y', 'world'))[0].value]"; expected = 'hello' }
+  ) {
+    param($expression, $expected)
+
+    $escapedExpression = $expression -replace "'", "''"
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '$escapedExpression'
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -Be $expected
+  }
+
+  It 'items function handles nested values: <expression>' -TestCases @(
+    @{ expression = "[items(createObject('person', createObject('name', 'John')))[0].value.name]"; expected = 'John' }
+    @{ expression = "[items(createObject('list', createArray('a','b','c')))[0].value[1]]"; expected = 'b' }
+    @{ expression = "[length(items(createObject('obj', createObject('x', 1, 'y', 2)))[0].value)]"; expected = 2 }
+  ) {
+    param($expression, $expected)
+
+    $escapedExpression = $expression -replace "'", "''"
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '$escapedExpression'
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -Be $expected
+  }
 }
