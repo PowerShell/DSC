@@ -1,0 +1,50 @@
+[package]
+name = "dsc-lib"
+version = "3.2.0"
+edition = "2021"
+
+[dependencies]
+# external dependencies
+base32 = { workspace = true }
+base64 = { workspace = true }
+chrono = { workspace = true, features = ["alloc"] }
+clap = { workspace = true }
+derive_builder = { workspace = true }
+indicatif = { workspace = true }
+jsonschema = { workspace = true }
+linked-hash-map = { workspace = true }
+murmurhash64 = { workspace = true }
+num-traits = { workspace = true }
+path-absolutize = { workspace = true }
+regex = { workspace = true }
+rt-format = { workspace = true }
+rust-i18n = { workspace = true }
+# reqwest = { version = "0.12.8", features = ["native-tls"], default-features = false }
+schemars = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+thiserror = { workspace = true }
+semver = { workspace = true }
+tokio = { workspace = true, features = [
+    "io-util",
+    "macros",
+    "process",
+    "rt-multi-thread",
+] }
+tracing = { workspace = true }
+tracing-indicatif = { workspace = true }
+tree-sitter = { workspace = true }
+tree-sitter-rust = { workspace = true}
+uuid = { workspace = true }
+which = { workspace = true }
+# workspace crate dependencies
+dsc-lib-osinfo = { workspace = true }
+dsc-lib-security_context = { workspace = true }
+tree-sitter-dscexpression = { workspace = true }
+
+[dev-dependencies]
+serde_yaml = { workspace = true }
+
+[build-dependencies]
+cc = { workspace = true }

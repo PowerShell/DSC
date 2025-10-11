@@ -5,6 +5,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
 pub enum Schemas {
+    Adapter,
     Delete,
     Exist,
     ExitCode,
@@ -13,6 +14,7 @@ pub enum Schemas {
     Get,
     InDesiredState,
     Metadata,
+    Operation,
     Sleep,
     Trace,
     Version,
@@ -27,8 +29,28 @@ pub struct Args {
     pub subcommand: SubCommand,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
+pub enum AdapterOperation {
+    Get,
+    Set,
+    Test,
+    List,
+    Export,
+    Validate,
+}
+
 #[derive(Debug, PartialEq, Eq, Subcommand)]
 pub enum SubCommand {
+    #[clap(name = "adapter", about = "Resource adapter")]
+    Adapter {
+        #[clap(name = "input", short, long, help = "The input to the adapter command as JSON")]
+        input: String,
+        #[clap(name = "resource-type", short, long, help = "The resource type to adapt to")]
+        resource_type: String,
+        #[clap(name = "operation", short, long, help = "The operation to perform")]
+        operation: AdapterOperation,
+    },
+
     #[clap(name = "delete", about = "delete operation")]
     Delete {
         #[clap(name = "input", short, long, help = "The input to the delete command as JSON")]
@@ -77,6 +99,14 @@ pub enum SubCommand {
         input: String,
         #[clap(name = "export", short, long, help = "Use export operation")]
         export: bool,
+    },
+
+    #[clap(name = "operation", about = "Perform an operation")]
+    Operation {
+        #[clap(name = "operation", short, long, help = "The name of the operation to perform")]
+        operation: String,
+        #[clap(name = "input", short, long, help = "The input to the operation command as JSON")]
+        input: String,
     },
 
     #[clap(name = "schema", about = "Get the JSON schema for a subcommand")]
