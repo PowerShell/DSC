@@ -50,6 +50,7 @@ resources:
   properties:
     output: "Hello DSC"
 ```
+
 ```bash
 dsc config get --file copyIndex.example.1.dsc.config.yaml
 ```
@@ -74,9 +75,12 @@ results:
 messages: []
 hadErrors: false
 ```
+
 ### Example 2 - Using copyIndex with offset
+
 This example demonstrates using an offset to start numbering from a different
 value.
+
 ```yaml
 # copyIndex.example.2.dsc.config.yaml
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
@@ -89,6 +93,7 @@ resources:
   properties:
     output: "Server instance starting from 10 till 12"
 ```
+
 ```bash
 dsc config get --file copyIndex.example.2.dsc.config.yaml
 ```
@@ -113,8 +118,11 @@ results:
 messages: []
 hadErrors: false
 ```
+
 ### Example 3 - Using copyIndex with loop name
+
 This example shows how to reference a specific loop by name.
+
 ```yaml
 # copyIndex.example.3.dsc.config.yaml
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
@@ -127,6 +135,7 @@ resources:
   properties:
     output: "Item from loop"
 ```
+
 ```bash
 dsc config get --file copyIndex.example.3.dsc.config.yaml
 ```
@@ -141,8 +150,11 @@ results:
 messages: []
 hadErrors: false
 ```
+
 ### Example 4 - Using copyIndex with loop name and offset
+
 This example combines both loop name and offset parameters.
+
 ```yaml
 # copyIndex.example.4.dsc.config.yaml
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
@@ -155,6 +167,7 @@ resources:
   properties:
     output: "Database instance"
 ```
+
 ```bash
 dsc config get --file copyIndex.example.4.dsc.config.yaml
 ```
@@ -174,23 +187,32 @@ results:
 messages: []
 hadErrors: false
 ```
+
 ## Parameters
+
 ### offset
+
 An optional integer offset to add to the current index. The offset must be a
 non-negative number.
+
 ```yaml
 Type:     integer
 Required: false
 Minimum:  0
 ```
+
 ### loopName
+
 An optional string specifying the name of the copy loop to reference. This is
 useful when you have multiple copy loops and need to reference a specific one.
+
 ```yaml
 Type:     string
 Required: false
 ```
+
 ## Output
+
 The `copyIndex()` function returns an integer representing the current iteration
 index, optionally adjusted by the offset.
 
