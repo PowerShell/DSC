@@ -306,7 +306,7 @@ Describe 'Tests for MCP server' {
         @{ operation = 'test'; property = 'desiredState' }
         @{ operation = 'export'; property = 'actualState' }
     ) {
-        param($operation)
+        param($operation, $property)
 
         $mcpRequest = @{
             jsonrpc = "2.0"
@@ -332,5 +332,31 @@ Describe 'Tests for MCP server' {
         ($response.result.structuredContent.psobject.properties | Measure-Object).Count | Should -Be 1 -Because $because
         $response.result.structuredContent.result.$property.action | Should -BeExactly $operation -Because $because
         $response.result.structuredContent.result.$property.hello | Should -BeExactly "World" -Because $because
+    }
+
+    It 'Calling invoke_dsc_resource for delete operation' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id = 12
+            method = "tools/call"
+            params = @{
+                name = "invoke_dsc_resource"
+                arguments = @{
+                    type = 'Test/Operation'
+                    operation = 'delete'
+                    resource_type = 'Test/Operation'
+                    properties_json = (@{
+                        hello = "World"
+                        action = 'delete'
+                    } | ConvertTo-Json -Depth 20)
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 12
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        ($response.result.structuredContent.psobject.properties | Measure-Object).Count | Should -Be 1 -Because $because
+        $response.result.structuredContent.result.success | Should -Be $true -Because $because
     }
 }

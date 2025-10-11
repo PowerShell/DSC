@@ -512,6 +512,9 @@ description = "Converts the specified string to lower case"
 [functions.toUpper]
 description = "Converts the specified string to upper case"
 
+[functions.trim]
+description = "Removes all leading and trailing white-space characters from the specified string"
+
 [functions.true]
 description = "Returns the boolean value true"
 invoked = "true function"

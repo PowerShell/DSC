@@ -121,9 +121,10 @@ Describe 'tests for function expressions' {
     @{ expression = "[intersection(parameters('firstArray'), parameters('secondArray'), parameters('fifthArray'))]"; expected = @('cd') }
     @{ expression = "[intersection(parameters('firstObject'), parameters('secondObject'), parameters('sixthObject'))]"; expected = [pscustomobject]@{ two = 'b' } }
     @{ expression = "[intersection(parameters('nestedObject1'), parameters('nestedObject2'))]"; expected = [pscustomobject]@{
-      shared = [pscustomobject]@{ value = 42; flag = $true }
-      level = 1
-    } }
+        shared = [pscustomobject]@{ value = 42; flag = $true }
+        level  = 1
+      } 
+    }
     @{ expression = "[intersection(parameters('nestedObject1'), parameters('nestedObject3'))]"; expected = [pscustomobject]@{ level = 1 } }
     @{ expression = "[intersection(parameters('nestedObject1'), parameters('nestedObject2'), parameters('nestedObject4'))]"; expected = [pscustomobject]@{ level = 1 } }
   ) {
@@ -738,7 +739,7 @@ Describe 'tests for function expressions' {
     $out.results[0].result.actualState.output | Should -BeExactly $expected
   }
 
-    It 'base64ToString function works for: <expression>' -TestCases @(
+  It 'base64ToString function works for: <expression>' -TestCases @(
     @{ expression = "[base64ToString('aGVsbG8gd29ybGQ=')]"; expected = 'hello world' }
     @{ expression = "[base64ToString('')]"; expected = '' }
     @{ expression = "[base64ToString('aMOpbGxv')]"; expected = 'héllo' }
@@ -832,6 +833,33 @@ Describe 'tests for function expressions' {
     $out.results[0].result.actualState.output | Should -Be $expected
   }
 
+  It 'trim function works for: <expression>' -TestCases @(
+    @{ expression = "[trim('   hello')]"; expected = 'hello' }
+    @{ expression = "[trim('hello   ')]"; expected = 'hello' }
+    @{ expression = "[trim('  hello world  ')]"; expected = 'hello world' }
+    @{ expression = "[trim('hello')]"; expected = 'hello' }
+    @{ expression = "[trim('')]"; expected = '' }
+    @{ expression = "[trim('   ')]"; expected = '' }
+    @{ expression = "[trim('  hello  world  ')]"; expected = 'hello  world' }
+    @{ expression = "[trim('  café  ')]"; expected = 'café' }
+    @{ expression = "[trim(' a ')]"; expected = 'a' }
+    @{ expression = "[trim(concat('  hello', '  '))]"; expected = 'hello' }
+  ) {
+    param($expression, $expected)
+
+    $escapedExpression = $expression -replace "'", "''"
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '$escapedExpression'
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -Be $expected
+  }
+
   It 'uri function works for: <expression>' -TestCases @(
     @{ expression = "[uri('https://example.com/', 'path/file.html')]"; expected = 'https://example.com/path/file.html' }
     @{ expression = "[uri('https://example.com/', '/path/file.html')]"; expected = 'https://example.com/path/file.html' }
@@ -850,7 +878,6 @@ Describe 'tests for function expressions' {
     @{ expression = "[uri('https://example.com/old/path', 'new')]"; expected = 'https://example.com/old/new' }
   ) {
     param($expression, $expected)
-
     $escapedExpression = $expression -replace "'", "''"
     $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
