@@ -971,24 +971,4 @@ Describe 'tests for function expressions' {
     $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
     $out.results[0].result.actualState.output | Should -Be $expected
   }
-
-  It 'uriComponentToString function error handling: <expression>' -TestCases @(
-    @{ expression = "[uriComponentToString('incomplete%2')]" ; expectedError = 'Invalid percent-encoding: incomplete sequence at position' }
-    @{ expression = "[uriComponentToString('invalid%ZZ')]" ; expectedError = 'Invalid percent-encoding:.*is not valid hex at position' }
-  ) {
-    param($expression, $expectedError)
-
-    $config_yaml = @"
-            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
-            resources:
-            - name: Echo
-              type: Microsoft.DSC.Debug/Echo
-              properties:
-                output: `"$expression`"
-"@
-    $null = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log
-    $LASTEXITCODE | Should -Not -Be 0
-    $errorContent = Get-Content $TestDrive/error.log -Raw
-    $errorContent | Should -Match $expectedError
-  }
 }

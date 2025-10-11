@@ -538,9 +538,6 @@ description = "Encodes a URI component using percent-encoding"
 
 [functions.uriComponentToString]
 description = "Returns a string of a URI encoded value"
-incompleteSequence = "Invalid percent-encoding: incomplete sequence at position %{position}"
-invalidHexDigits = "Invalid percent-encoding: invalid hex digits at position %{position}"
-invalidHexValue = "Invalid percent-encoding: '%{hex}' is not valid hex at position %{position}"
 invalidUtf8 = "Invalid UTF-8 in decoded string: %{error}"
 
 [functions.userFunction]
