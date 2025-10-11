@@ -43,6 +43,7 @@ pub mod int;
 pub mod index_of;
 pub mod intersection;
 pub mod join;
+pub mod json;
 pub mod last_index_of;
 pub mod max;
 pub mod min;
@@ -165,6 +166,7 @@ impl FunctionDispatcher {
             Box::new(index_of::IndexOf{}),
             Box::new(intersection::Intersection{}),
             Box::new(join::Join{}),
+            Box::new(json::Json{}),
             Box::new(last_index_of::LastIndexOf{}),
             Box::new(max::Max{}),
             Box::new(min::Min{}),
