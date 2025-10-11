@@ -50,11 +50,20 @@ fn combine_uri(base_uri: &str, relative_uri: &str) -> Result<String, DscError> {
     }
 
     if relative_uri.starts_with("//") {
-        if let Some(scheme_end) = base_uri.find("://") {
-            let scheme = &base_uri[..scheme_end];
+        // Protocol-relative URI: extract scheme from base
+        let scheme = if let Some(scheme_end) = base_uri.find("://") {
+            &base_uri[..scheme_end]
+        } else {
+            "https"
+        };
+        
+        // Check if the protocol-relative URI has a path
+        let uri_without_slashes = &relative_uri[2..]; // Remove leading //
+        if uri_without_slashes.contains('/') {
+            // Has a path, use as-is
             return Ok(format!("{scheme}:{relative_uri}"));
         }
-        return Ok(format!("https:{relative_uri}"));
+        return Ok(format!("{scheme}:{relative_uri}/"));
     }
 
     let base_ends_with_slash = base_uri.ends_with('/');
