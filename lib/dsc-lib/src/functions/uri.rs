@@ -32,17 +32,17 @@ impl Function for Uri {
         let base_uri = args[0].as_str().unwrap();
         let relative_uri = args[1].as_str().unwrap();
 
-        let result = combine_uri(base_uri, relative_uri);
+        let result = combine_uri(base_uri, relative_uri)?;
         Ok(Value::String(result))
     }
 }
 
-fn combine_uri(base_uri: &str, relative_uri: &str) -> String {
+fn combine_uri(base_uri: &str, relative_uri: &str) -> Result<String, DscError> {
     if base_uri.is_empty() {
-        return relative_uri.to_string();
+        return Err(DscError::Parser(t!("functions.uri.emptyBaseUri").to_string()));
     }
     if relative_uri.is_empty() {
-        return base_uri.to_string();
+        return Ok(base_uri.to_string());
     }
 
     let base_ends_with_slash = base_uri.ends_with('/');
@@ -52,9 +52,9 @@ fn combine_uri(base_uri: &str, relative_uri: &str) -> String {
     if base_ends_with_slash {
         if relative_starts_with_slash {
             // Combine trailing and leading slash into one
-            return format!("{base_uri}{}", &relative_uri[1..]);
+            return Ok(format!("{base_uri}{}", &relative_uri[1..]));
         }
-        return format!("{base_uri}{relative_uri}");
+        return Ok(format!("{base_uri}{relative_uri}"));
     }
 
     // Case 2: baseUri doesn't end with trailing slash
@@ -72,12 +72,18 @@ fn combine_uri(base_uri: &str, relative_uri: &str) -> String {
     if let Some(last_slash_pos) = after_scheme.rfind('/') {
         let base_without_last_segment = &base_uri[..=(scheme_end + last_slash_pos)];
         if relative_starts_with_slash {
-            format!("{}{relative_uri}", &base_without_last_segment[..base_without_last_segment.len() - 1])
+            Ok(format!("{}{relative_uri}", &base_without_last_segment[..base_without_last_segment.len() - 1]))
         } else {
-            format!("{base_without_last_segment}{relative_uri}")
+            Ok(format!("{base_without_last_segment}{relative_uri}"))
         }
     } else {
-        format!("{base_uri}{relative_uri}")
+        // No path after scheme (e.g., "https://example.com")
+        // .NET Uri adds a '/' between host and relative URI
+        if relative_starts_with_slash {
+            Ok(format!("{base_uri}{relative_uri}"))
+        } else {
+            Ok(format!("{base_uri}/{relative_uri}"))
+        }
     }
 }
 
@@ -118,7 +124,8 @@ mod tests {
     fn test_uri_no_slashes_after_scheme() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[uri('https://example.com', 'path')]", &Context::new()).unwrap();
-        assert_eq!(result, "https://example.compath");
+        // .NET Uri behavior: adds a slash between host and relative path
+        assert_eq!(result, "https://example.com/path");
     }
 
     #[test]
@@ -189,5 +196,14 @@ mod tests {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[uri('https://example.com/old/path', 'new')]", &Context::new()).unwrap();
         assert_eq!(result, "https://example.com/old/new");
+    }
+
+    #[test]
+    fn test_uri_empty_base_uri_error() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[uri('', 'path')]", &Context::new());
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.to_string().contains("baseUri"));
     }
 }

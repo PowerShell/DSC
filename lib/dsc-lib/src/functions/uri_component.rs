@@ -27,36 +27,9 @@ impl Function for UriComponent {
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         let string_to_encode = args[0].as_str().unwrap();
-        let result = percent_encode_uri_component(string_to_encode);
-        Ok(Value::String(result))
+        let result = urlencoding::encode(string_to_encode);
+        Ok(Value::String(result.into_owned()))
     }
-}
-
-/// Percent-encodes a string for use as a URI component.
-/// 
-/// Encodes all characters except:
-/// - Unreserved characters: A-Z, a-z, 0-9, -, _, ., ~
-/// 
-/// This follows RFC 3986 for URI component encoding.
-fn percent_encode_uri_component(input: &str) -> String {
-    use std::fmt::Write;
-    let mut result = String::with_capacity(input.len() * 3);
-    
-    for byte in input.bytes() {
-        match byte {
-            // Unreserved characters (RFC 3986 section 2.3)
-            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
-                result.push(byte as char);
-            }
-            // Everything else gets percent-encoded
-            _ => {
-                result.push('%');
-                let _ = write!(result, "{byte:02X}");
-            }
-        }
-    }
-    
-    result
 }
 
 #[cfg(test)]

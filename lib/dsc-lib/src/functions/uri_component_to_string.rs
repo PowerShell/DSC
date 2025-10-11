@@ -27,50 +27,12 @@ impl Function for UriComponentToString {
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         let uri_encoded_string = args[0].as_str().unwrap();
-        let result = percent_decode_uri_component(uri_encoded_string)?;
-        Ok(Value::String(result))
+        let result = urlencoding::decode(uri_encoded_string)
+            .map_err(|e| DscError::Parser(
+                t!("functions.uriComponentToString.invalidUtf8", error = e).to_string()
+            ))?;
+        Ok(Value::String(result.into_owned()))
     }
-}
-
-/// Decodes a percent-encoded URI component string.
-/// 
-/// Decodes percent-encoded sequences (e.g., %20 to space, %40 to @).
-/// This is the inverse operation of `percent_encode_uri_component`.
-fn percent_decode_uri_component(input: &str) -> Result<String, DscError> {
-    let mut result = Vec::new();
-    let bytes = input.as_bytes();
-    let mut i = 0;
-    
-    while i < bytes.len() {
-        if bytes[i] == b'%' {
-            // Check if we have at least 2 more characters
-            if i + 2 >= bytes.len() {
-                return Err(DscError::Parser(
-                    t!("functions.uriComponentToString.incompleteSequence", position = i).to_string()
-                ));
-            }
-            
-            // Parse the two hex digits
-            let hex_str = std::str::from_utf8(&bytes[i + 1..i + 3])
-                .map_err(|_| DscError::Parser(
-                    t!("functions.uriComponentToString.invalidHexDigits", position = i).to_string()
-                ))?;
-            
-            let decoded_byte = u8::from_str_radix(hex_str, 16)
-                .map_err(|_| DscError::Parser(
-                    t!("functions.uriComponentToString.invalidHexValue", hex = hex_str, position = i).to_string()
-                ))?;
-            
-            result.push(decoded_byte);
-            i += 3;
-        } else {
-            result.push(bytes[i]);
-            i += 1;
-        }
-    }
-    
-    String::from_utf8(result)
-        .map_err(|e| DscError::Parser(t!("functions.uriComponentToString.invalidUtf8", error = e).to_string()))
 }
 
 #[cfg(test)]

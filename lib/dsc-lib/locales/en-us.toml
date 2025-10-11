@@ -530,6 +530,7 @@ invoked = "uniqueString function"
 
 [functions.uri]
 description = "Creates an absolute URI by combining the baseUri and the relativeUri string"
+emptyBaseUri = "The baseUri parameter cannot be empty. An absolute URI requires a valid base URI."
 
 [functions.uriComponent]
 description = "Encodes a URI component using percent-encoding"
