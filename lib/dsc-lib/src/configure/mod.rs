@@ -46,7 +46,7 @@ pub struct Configurator {
 /// # Arguments
 ///
 /// * `resource` - The resource to export.
-/// * `conf` - The configuration to add t`he results to.
+/// * `conf` - The configuration to add the results to.
 ///
 /// # Panics
 ///
