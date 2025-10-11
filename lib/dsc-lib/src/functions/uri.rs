@@ -45,6 +45,18 @@ fn combine_uri(base_uri: &str, relative_uri: &str) -> Result<String, DscError> {
         return Ok(base_uri.to_string());
     }
 
+    if relative_uri.starts_with("///") {
+        return Err(DscError::Parser(t!("functions.uri.invalidRelativeUri").to_string()));
+    }
+
+    if relative_uri.starts_with("//") {
+        if let Some(scheme_end) = base_uri.find("://") {
+            let scheme = &base_uri[..scheme_end];
+            return Ok(format!("{scheme}:{relative_uri}"));
+        }
+        return Ok(format!("https:{relative_uri}"));
+    }
+
     let base_ends_with_slash = base_uri.ends_with('/');
     let relative_starts_with_slash = relative_uri.starts_with('/');
 
@@ -205,5 +217,21 @@ mod tests {
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert!(err.to_string().contains("baseUri"));
+    }
+
+    #[test]
+    fn test_uri_triple_slash_error() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[uri('https://example.com/', '///foo')]", &Context::new());
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.to_string().contains("Invalid") || err.to_string().contains("hostname"));
+    }
+
+    #[test]
+    fn test_uri_double_slash_protocol_relative() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[uri('https://example.com/', '//foo')]", &Context::new()).unwrap();
+        assert_eq!(result, "https://foo/");
     }
 }

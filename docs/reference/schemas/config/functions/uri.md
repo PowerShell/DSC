@@ -21,6 +21,18 @@ uri(<baseUri>, <relativeUri>)
 
 The `uri()` function combines a base URI with a relative URI to create an absolute URI. The
 function handles trailing and leading slashes intelligently based on the structure of the base URI.
+This behavior matches the .NET `Uri` class implementation.
+
+### Special cases
+
+- **Empty base URI**: Returns an error. The base URI cannot be empty because an absolute URI
+  requires a valid base.
+- **Protocol-relative URIs (`//host`)**: The relative URI takes the scheme from the base URI.
+  For example, `uri('https://example.com/', '//foo')` returns `https://foo/`.
+- **Triple slash sequences (`///`)**: Returns an error. Three or more consecutive slashes are
+  invalid URI syntax.
+
+### Combining behavior
 
 The behavior depends on whether the base URI ends with a trailing slash:
 
@@ -29,8 +41,8 @@ The behavior depends on whether the base URI ends with a trailing slash:
   slashes are combined into one.
 
 - **If baseUri doesn't end with a trailing slash**:
-  - If `baseUri` has no slashes after the scheme (aside from `://` or `//` at the front), the
-    result is `baseUri` followed by `relativeUri`.
+  - If `baseUri` has no slashes after the scheme (e.g., `https://example.com`), a slash is
+    inserted between the host and the relative URI unless the relative URI starts with a slash.
   - If `baseUri` has slashes after the scheme but doesn't end with a slash, everything from the
     last slash onward is removed from `baseUri`, and the result is the modified `baseUri` followed
     by `relativeUri`.
@@ -228,6 +240,40 @@ results:
       output:
         withPort: https://example.com:8080/api
         withQuery: https://example.com/api/search?q=test&limit=10
+messages: []
+hadErrors: false
+```
+
+### Example 6 - Protocol-relative URI
+
+The following example shows how protocol-relative URIs (starting with `//`) inherit the scheme
+from the base URI.
+
+```yaml
+# uri.example.6.dsc.config.yaml
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: Protocol-relative URI
+  type: Microsoft.DSC.Debug/Echo
+  properties:
+    output:
+      result: "[uri('https://example.com/', '//cdn.example.org/assets')]"
+      explanation: The relative URI inherits the https scheme from the base
+```
+
+```bash
+dsc config get --file uri.example.6.dsc.config.yaml
+```
+
+```yaml
+results:
+- name: Protocol-relative URI
+  type: Microsoft.DSC.Debug/Echo
+  result:
+    actualState:
+      output:
+        result: https://cdn.example.org/assets
+        explanation: The relative URI inherits the https scheme from the base
 messages: []
 hadErrors: false
 ```

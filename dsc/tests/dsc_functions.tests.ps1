@@ -874,6 +874,7 @@ Describe 'tests for function expressions' {
     @{ expression = "[uri('https://example.com:8080/', 'api')]"; expected = 'https://example.com:8080/api' }
     @{ expression = "[uri(concat('https://example.com', '/'), 'path')]"; expected = 'https://example.com/path' }
     @{ expression = "[uri('//example.com/', 'path')]"; expected = '//example.com/path' }
+    @{ expression = "[uri('https://example.com/', '//foo')]"; expected = 'https://foo/' }
     @{ expression = "[uri('https://example.com/a/b/c/', 'd/e/f')]"; expected = 'https://example.com/a/b/c/d/e/f' }
     @{ expression = "[uri('https://example.com/old/path', 'new')]"; expected = 'https://example.com/old/new' }
   ) {
@@ -893,6 +894,7 @@ Describe 'tests for function expressions' {
 
   It 'uri function error handling: <expression>' -TestCases @(
     @{ expression = "[uri('', 'path')]" ; expectedError = 'baseUri parameter cannot be empty' }
+    @{ expression = "[uri('https://example.com/', '///foo')]" ; expectedError = 'Invalid URI|invalid sequence' }
   ) {
     param($expression, $expectedError)
 
