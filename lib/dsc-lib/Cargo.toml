@@ -37,6 +37,7 @@ tracing-indicatif = { workspace = true }
 tree-sitter = { workspace = true }
 tree-sitter-rust = { workspace = true}
 uuid = { workspace = true }
+urlencoding = { workspace = true }
 which = { workspace = true }
 # workspace crate dependencies
 dsc-lib-osinfo = { workspace = true }

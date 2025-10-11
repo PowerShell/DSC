@@ -121,9 +121,10 @@ Describe 'tests for function expressions' {
     @{ expression = "[intersection(parameters('firstArray'), parameters('secondArray'), parameters('fifthArray'))]"; expected = @('cd') }
     @{ expression = "[intersection(parameters('firstObject'), parameters('secondObject'), parameters('sixthObject'))]"; expected = [pscustomobject]@{ two = 'b' } }
     @{ expression = "[intersection(parameters('nestedObject1'), parameters('nestedObject2'))]"; expected = [pscustomobject]@{
-      shared = [pscustomobject]@{ value = 42; flag = $true }
-      level = 1
-    } }
+        shared = [pscustomobject]@{ value = 42; flag = $true }
+        level  = 1
+      } 
+    }
     @{ expression = "[intersection(parameters('nestedObject1'), parameters('nestedObject3'))]"; expected = [pscustomobject]@{ level = 1 } }
     @{ expression = "[intersection(parameters('nestedObject1'), parameters('nestedObject2'), parameters('nestedObject4'))]"; expected = [pscustomobject]@{ level = 1 } }
   ) {
@@ -738,7 +739,7 @@ Describe 'tests for function expressions' {
     $out.results[0].result.actualState.output | Should -BeExactly $expected
   }
 
-    It 'base64ToString function works for: <expression>' -TestCases @(
+  It 'base64ToString function works for: <expression>' -TestCases @(
     @{ expression = "[base64ToString('aGVsbG8gd29ybGQ=')]"; expected = 'hello world' }
     @{ expression = "[base64ToString('')]"; expected = '' }
     @{ expression = "[base64ToString('aMOpbGxv')]"; expected = 'héllo' }
@@ -843,6 +844,118 @@ Describe 'tests for function expressions' {
     @{ expression = "[trim('  café  ')]"; expected = 'café' }
     @{ expression = "[trim(' a ')]"; expected = 'a' }
     @{ expression = "[trim(concat('  hello', '  '))]"; expected = 'hello' }
+  ) {
+    param($expression, $expected)
+
+    $escapedExpression = $expression -replace "'", "''"
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '$escapedExpression'
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -Be $expected
+  }
+
+  It 'uri function works for: <expression>' -TestCases @(
+    @{ expression = "[uri('https://example.com/', 'path/file.html')]"; expected = 'https://example.com/path/file.html' }
+    @{ expression = "[uri('https://example.com/', '/path/file.html')]"; expected = 'https://example.com/path/file.html' }
+    @{ expression = "[uri('https://example.com/api/v1', 'users')]"; expected = 'https://example.com/api/users' }
+    @{ expression = "[uri('https://example.com/api/v1', '/users')]"; expected = 'https://example.com/api/users' }
+    @{ expression = "[uri('https://example.com', 'path')]"; expected = 'https://example.com/path' }
+    @{ expression = "[uri('https://example.com', '/path')]"; expected = 'https://example.com/path' }
+    @{ expression = "[uri('https://api.example.com/v2/resource/', 'item/123')]"; expected = 'https://api.example.com/v2/resource/item/123' }
+    @{ expression = "[uri('https://example.com/api/', 'search?q=test')]"; expected = 'https://example.com/api/search?q=test' }
+    @{ expression = "[uri('https://example.com/', '')]"; expected = 'https://example.com/' }
+    @{ expression = "[uri('http://example.com/', 'page.html')]"; expected = 'http://example.com/page.html' }
+    @{ expression = "[uri('https://example.com:8080/', 'api')]"; expected = 'https://example.com:8080/api' }
+    @{ expression = "[uri(concat('https://example.com', '/'), 'path')]"; expected = 'https://example.com/path' }
+    @{ expression = "[uri('//example.com/', 'path')]"; expected = '//example.com/path' }
+    @{ expression = "[uri('https://example.com/', '//foo')]"; expected = 'https://foo/' }
+    @{ expression = "[uri('https://example.com/a/b/c/', 'd/e/f')]"; expected = 'https://example.com/a/b/c/d/e/f' }
+    @{ expression = "[uri('https://example.com/old/path', 'new')]"; expected = 'https://example.com/old/new' }
+  ) {
+    param($expression, $expected)
+    $escapedExpression = $expression -replace "'", "''"
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '$escapedExpression'
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -Be $expected
+  }
+
+  It 'uri function error handling: <expression>' -TestCases @(
+    @{ expression = "[uri('', 'path')]" ; expectedError = 'baseUri parameter cannot be empty' }
+    @{ expression = "[uri('https://example.com/', '///foo')]" ; expectedError = 'Invalid URI|invalid sequence' }
+  ) {
+    param($expression, $expectedError)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: `"$expression`"
+"@
+    $null = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log
+    $LASTEXITCODE | Should -Not -Be 0
+    $errorContent = Get-Content $TestDrive/error.log -Raw
+    $errorContent | Should -Match $expectedError
+  }
+
+  It 'uriComponent function works for: <expression>' -TestCases @(
+    @{ expression = "[uriComponent('hello world')]"; expected = 'hello%20world' }
+    @{ expression = "[uriComponent('hello@example.com')]"; expected = 'hello%40example.com' }
+    @{ expression = "[uriComponent('https://example.com/path?query=value')]"; expected = 'https%3A%2F%2Fexample.com%2Fpath%3Fquery%3Dvalue' }
+    @{ expression = "[uriComponent('')]"; expected = '' }
+    @{ expression = "[uriComponent('ABCabc123-_.~')]"; expected = 'ABCabc123-_.~' }
+    @{ expression = "[uriComponent(':/?#[]@!$&()*+,;=')]"; expected = '%3A%2F%3F%23%5B%5D%40%21%24%26%28%29%2A%2B%2C%3B%3D' }
+    @{ expression = "[uriComponent('café')]"; expected = 'caf%C3%A9' }
+    @{ expression = "[uriComponent('name=John Doe&age=30')]"; expected = 'name%3DJohn%20Doe%26age%3D30' }
+    @{ expression = "[uriComponent('/path/to/my file.txt')]"; expected = '%2Fpath%2Fto%2Fmy%20file.txt' }
+    @{ expression = "[uriComponent(concat('hello', ' ', 'world'))]"; expected = 'hello%20world' }
+    @{ expression = "[uriComponent('user+tag@example.com')]"; expected = 'user%2Btag%40example.com' }
+    @{ expression = "[uriComponent('1234567890')]"; expected = '1234567890' }
+    @{ expression = "[uriComponent('100%')]"; expected = '100%25' }
+  ) {
+    param($expression, $expected)
+
+    $escapedExpression = $expression -replace "'", "''"
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '$escapedExpression'
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -Be $expected
+  }
+
+  It 'uriComponentToString function works for: <expression>' -TestCases @(
+    @{ expression = "[uriComponentToString('hello%20world')]"; expected = 'hello world' }
+    @{ expression = "[uriComponentToString('hello%40example.com')]"; expected = 'hello@example.com' }
+    @{ expression = "[uriComponentToString('https%3A%2F%2Fexample.com%2Fpath%3Fquery%3Dvalue')]"; expected = 'https://example.com/path?query=value' }
+    @{ expression = "[uriComponentToString('')]"; expected = '' }
+    @{ expression = "[uriComponentToString('ABCabc123-_.~')]"; expected = 'ABCabc123-_.~' }
+    @{ expression = "[uriComponentToString('%3A%2F%3F%23%5B%5D%40%21%24%26%28%29%2A%2B%2C%3B%3D')]"; expected = ':/?#[]@!$&()*+,;=' }
+    @{ expression = "[uriComponentToString('caf%C3%A9')]"; expected = 'café' }
+    @{ expression = "[uriComponentToString('name%3DJohn%20Doe%26age%3D30')]"; expected = 'name=John Doe&age=30' }
+    @{ expression = "[uriComponentToString('%2Fpath%2Fto%2Fmy%20file.txt')]"; expected = '/path/to/my file.txt' }
+    @{ expression = "[uriComponentToString(uriComponent('hello world'))]"; expected = 'hello world' }
+    @{ expression = "[uriComponentToString(uriComponent('user+tag@example.com'))]"; expected = 'user+tag@example.com' }
+    @{ expression = "[uriComponentToString('100%25')]"; expected = '100%' }
+    @{ expression = "[uriComponentToString(concat('hello', '%20', 'world'))]"; expected = 'hello world' }
   ) {
     param($expression, $expected)
 
