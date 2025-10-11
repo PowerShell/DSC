@@ -3,7 +3,7 @@
 
 use crate::configure::config_doc::{ExecutionKind, Metadata, Resource, Parameter};
 use crate::configure::context::{Context, ProcessMode};
-use crate::configure::{config_doc::RestartRequired, parameters::Input};
+use crate::configure::{config_doc::{IntOrExpression, RestartRequired}, parameters::Input};
 use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscerror::DscError;
 use crate::dscresources::{
@@ -46,7 +46,7 @@ pub struct Configurator {
 /// # Arguments
 ///
 /// * `resource` - The resource to export.
-/// * `conf` - The configuration to add the results to.
+/// * `conf` - The configuration to add t`he results to.
 ///
 /// # Panics
 ///
@@ -779,7 +779,7 @@ impl Configurator {
         if let Some(parameters_input) = parameters_input {
             trace!("parameters_input: {parameters_input}");
             let input_parameters: HashMap<String, Value> = serde_json::from_value::<Input>(parameters_input.clone())?.parameters;
-            
+
             for (name, value) in input_parameters {
                 if let Some(constraint) = parameters.get(&name) {
                     debug!("Validating parameter '{name}'");
@@ -818,7 +818,7 @@ impl Configurator {
 
         while !unresolved_parameters.is_empty() {
             let mut resolved_in_this_pass = Vec::new();
-            
+
             for (name, parameter) in &unresolved_parameters {
                 debug!("{}", t!("configure.mod.processingParameter", name = name));
                 if let Some(default_value) = &parameter.default_value {
@@ -962,7 +962,16 @@ impl Configurator {
                 self.context.process_mode = ProcessMode::Copy;
                 self.context.copy_current_loop_name.clone_from(&copy.name);
                 let mut copy_resources = Vec::<Resource>::new();
-                for i in 0..copy.count {
+                let count: i64 = match &copy.count {
+                    IntOrExpression::Int(i) => *i,
+                    IntOrExpression::Expression(e) => {
+                        let Value::Number(n) = self.statement_parser.parse_and_execute(e, &self.context)? else {
+                            return Err(DscError::Parser(t!("configure.mod.copyCountResultNotInteger", value = &copy.count).to_string()))
+                        };
+                        n.as_i64().ok_or_else(|| DscError::Parser(t!("configure.mod.copyCountResultNotInteger", value = &copy.count).to_string()))?
+                    },
+                };
+                for i in 0..count {
                     self.context.copy.insert(copy.name.clone(), i);
                     let mut new_resource = resource.clone();
                     let Value::String(new_name) = self.statement_parser.parse_and_execute(&resource.name, &self.context)? else {

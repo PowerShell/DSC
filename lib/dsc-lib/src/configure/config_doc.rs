@@ -212,14 +212,30 @@ pub enum CopyMode {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(untagged)]
+pub enum IntOrExpression {
+    Int(i64),
+    Expression(String),
+}
+
+impl Display for IntOrExpression {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            IntOrExpression::Int(i) => write!(f, "{i}"),
+            IntOrExpression::Expression(s) => write!(f, "{s}"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Copy {
     pub name: String,
-    pub count: i64,
+    pub count: IntOrExpression,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mode: Option<CopyMode>,
     #[serde(skip_serializing_if = "Option::is_none", rename = "batchSize")]
-    pub batch_size: Option<i64>,
+    pub batch_size: Option<IntOrExpression>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
