@@ -71,6 +71,7 @@ Describe 'Tests for MCP server' {
         }
 
         $tools = @{
+            'invoke_dsc_config'   = $false
             'invoke_dsc_resource' = $false
             'list_dsc_functions'  = $false
             'list_dsc_resources'  = $false
