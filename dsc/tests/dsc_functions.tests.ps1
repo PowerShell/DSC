@@ -831,4 +831,31 @@ Describe 'tests for function expressions' {
     $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
     $out.results[0].result.actualState.output | Should -Be $expected
   }
+
+  It 'trim function works for: <expression>' -TestCases @(
+    @{ expression = "[trim('   hello')]"; expected = 'hello' }
+    @{ expression = "[trim('hello   ')]"; expected = 'hello' }
+    @{ expression = "[trim('  hello world  ')]"; expected = 'hello world' }
+    @{ expression = "[trim('hello')]"; expected = 'hello' }
+    @{ expression = "[trim('')]"; expected = '' }
+    @{ expression = "[trim('   ')]"; expected = '' }
+    @{ expression = "[trim('  hello  world  ')]"; expected = 'hello  world' }
+    @{ expression = "[trim('  café  ')]"; expected = 'café' }
+    @{ expression = "[trim(' a ')]"; expected = 'a' }
+    @{ expression = "[trim(concat('  hello', '  '))]"; expected = 'hello' }
+  ) {
+    param($expression, $expected)
+
+    $escapedExpression = $expression -replace "'", "''"
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '$escapedExpression'
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -Be $expected
+  }
 }
