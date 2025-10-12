@@ -368,7 +368,7 @@ invoked = "intersection function"
 invalidArgType = "All arguments must either be arrays or objects"
 
 [functions.items]
-description = "Converts a dictionary object to an array"
+description = "Converts a dictionary object to an array of objects with key and value properties"
 notObject = "Argument must be an object"
 
 [functions.indexOf]
