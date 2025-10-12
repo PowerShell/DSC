@@ -34,15 +34,15 @@ Describe 'Tests for MCP server' {
     It 'Initialization works' {
         $mcpRequest = @{
             jsonrpc = "2.0"
-            id = 1
-            method = "initialize"
-            params = @{
+            id      = 1
+            method  = "initialize"
+            params  = @{
                 protocolVersion = "2024-11-05"
-                capabilities = @{
+                capabilities    = @{
                     tools = @{}
                 }
-                clientInfo = @{
-                    name = "Test Client"
+                clientInfo      = @{
+                    name    = "Test Client"
                     version = "1.0.0"
                 }
             }
@@ -56,7 +56,7 @@ Describe 'Tests for MCP server' {
 
         $notifyInitialized = @{
             jsonrpc = "2.0"
-            method = "notifications/initialized"
+            method  = "notifications/initialized"
         }
 
         Send-McpRequest -request $notifyInitialized -notify
@@ -65,16 +65,16 @@ Describe 'Tests for MCP server' {
     It 'Tools/List works' {
         $mcpRequest = @{
             jsonrpc = "2.0"
-            id = 2
-            method = "tools/list"
-            params = @{}
+            id      = 2
+            method  = "tools/list"
+            params  = @{}
         }
 
         $tools = @{
             'invoke_dsc_resource' = $false
-            'list_dsc_functions' = $false
-            'list_dsc_resources' = $false
-            'show_dsc_resource' = $false
+            'list_dsc_functions'  = $false
+            'list_dsc_resources'  = $false
+            'show_dsc_resource'   = $false
         }
 
         $response = Send-McpRequest -request $mcpRequest
@@ -93,10 +93,10 @@ Describe 'Tests for MCP server' {
     It 'Calling list_dsc_resources works' {
         $mcpRequest = @{
             jsonrpc = "2.0"
-            id = 3
-            method = "tools/call"
-            params = @{
-                name = "list_dsc_resources"
+            id      = 3
+            method  = "tools/call"
+            params  = @{
+                name      = "list_dsc_resources"
                 arguments = @{}
             }
         }
@@ -116,10 +116,10 @@ Describe 'Tests for MCP server' {
     It 'Calling list_dsc_resources with adapter works' {
         $mcpRequest = @{
             jsonrpc = "2.0"
-            id = 4
-            method = "tools/call"
-            params = @{
-                name = "list_dsc_resources"
+            id      = 4
+            method  = "tools/call"
+            params  = @{
+                name      = "list_dsc_resources"
                 arguments = @{
                     adapter = "Microsoft.DSC/PowerShell"
                 }
@@ -139,17 +139,17 @@ Describe 'Tests for MCP server' {
     }
 
     It 'Calling list_dsc_resources with <adapter> returns error' -TestCases @(
-        @{"adapter" = "Non.Existent/Adapter"},
-        @{"adapter" = "Microsoft.DSC.Debug/Echo"}
+        @{"adapter" = "Non.Existent/Adapter" },
+        @{"adapter" = "Microsoft.DSC.Debug/Echo" }
     ) {
         param($adapter)
 
         $mcpRequest = @{
             jsonrpc = "2.0"
-            id = 5
-            method = "tools/call"
-            params = @{
-                name = "list_dsc_resources"
+            id      = 5
+            method  = "tools/call"
+            params  = @{
+                name      = "list_dsc_resources"
                 arguments = @{
                     adapter = $adapter
                 }
@@ -167,10 +167,10 @@ Describe 'Tests for MCP server' {
 
         $mcpRequest = @{
             jsonrpc = "2.0"
-            id = 6
-            method = "tools/call"
-            params = @{
-                name = "show_dsc_resource"
+            id      = 6
+            method  = "tools/call"
+            params  = @{
+                name      = "show_dsc_resource"
                 arguments = @{
                     type = $resource.type
                 }
@@ -195,10 +195,10 @@ Describe 'Tests for MCP server' {
     It 'Calling show_dsc_resource with non-existent resource returns error' {
         $mcpRequest = @{
             jsonrpc = "2.0"
-            id = 7
-            method = "tools/call"
-            params = @{
-                name = "show_dsc_resource"
+            id      = 7
+            method  = "tools/call"
+            params  = @{
+                name      = "show_dsc_resource"
                 arguments = @{
                     type = "Non.Existent/Resource"
                 }
@@ -214,10 +214,10 @@ Describe 'Tests for MCP server' {
     It 'Calling list_dsc_functions works' {
         $mcpRequest = @{
             jsonrpc = "2.0"
-            id = 8
-            method = "tools/call"
-            params = @{
-                name = "list_dsc_functions"
+            id      = 8
+            method  = "tools/call"
+            params  = @{
+                name      = "list_dsc_functions"
                 arguments = @{}
             }
         }
@@ -241,10 +241,10 @@ Describe 'Tests for MCP server' {
     It 'Calling list_dsc_functions with function_filter filter works' {
         $mcpRequest = @{
             jsonrpc = "2.0"
-            id = 9
-            method = "tools/call"
-            params = @{
-                name = "list_dsc_functions"
+            id      = 9
+            method  = "tools/call"
+            params  = @{
+                name      = "list_dsc_functions"
                 arguments = @{
                     function_filter = "array"
                 }
@@ -261,10 +261,10 @@ Describe 'Tests for MCP server' {
     It 'Calling list_dsc_functions with wildcard pattern works' {
         $mcpRequest = @{
             jsonrpc = "2.0"
-            id = 10
-            method = "tools/call"
-            params = @{
-                name = "list_dsc_functions"
+            id      = 10
+            method  = "tools/call"
+            params  = @{
+                name      = "list_dsc_functions"
                 arguments = @{
                     function_filter = "*Array*"
                 }
@@ -284,10 +284,10 @@ Describe 'Tests for MCP server' {
     It 'Calling list_dsc_functions with invalid pattern returns empty result' {
         $mcpRequest = @{
             jsonrpc = "2.0"
-            id = 11
-            method = "tools/call"
-            params = @{
-                name = "list_dsc_functions"
+            id      = 11
+            method  = "tools/call"
+            params  = @{
+                name      = "list_dsc_functions"
                 arguments = @{
                     function_filter = "[invalid]"
                 }
@@ -310,18 +310,18 @@ Describe 'Tests for MCP server' {
 
         $mcpRequest = @{
             jsonrpc = "2.0"
-            id = 12
-            method = "tools/call"
-            params = @{
-                name = "invoke_dsc_resource"
+            id      = 12
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_resource"
                 arguments = @{
-                    type = 'Test/Operation'
-                    operation = $operation
-                    resource_type = 'Test/Operation'
+                    type            = 'Test/Operation'
+                    operation       = $operation
+                    resource_type   = 'Test/Operation'
                     properties_json = (@{
-                        hello = "World"
-                        action = $operation
-                    } | ConvertTo-Json -Depth 20)
+                            hello  = "World"
+                            action = $operation
+                        } | ConvertTo-Json -Depth 20)
                 }
             }
         }
@@ -337,18 +337,18 @@ Describe 'Tests for MCP server' {
     It 'Calling invoke_dsc_resource for delete operation' {
         $mcpRequest = @{
             jsonrpc = "2.0"
-            id = 12
-            method = "tools/call"
-            params = @{
-                name = "invoke_dsc_resource"
+            id      = 12
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_resource"
                 arguments = @{
-                    type = 'Test/Operation'
-                    operation = 'delete'
-                    resource_type = 'Test/Operation'
+                    type            = 'Test/Operation'
+                    operation       = 'delete'
+                    resource_type   = 'Test/Operation'
                     properties_json = (@{
-                        hello = "World"
-                        action = 'delete'
-                    } | ConvertTo-Json -Depth 20)
+                            hello  = "World"
+                            action = 'delete'
+                        } | ConvertTo-Json -Depth 20)
                 }
             }
         }
@@ -371,10 +371,10 @@ Describe 'Tests for MCP server' {
             '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
             resources = @(
                 @{
-                    name = 'TestOperation'
-                    type = 'Test/Operation'
+                    name       = 'TestOperation'
+                    type       = 'Test/Operation'
                     properties = @{
-                        hello = 'Hello from config'
+                        hello  = 'Hello from config'
                         action = $operation
                     }
                 }
@@ -383,12 +383,12 @@ Describe 'Tests for MCP server' {
 
         $mcpRequest = @{
             jsonrpc = "2.0"
-            id = 13
-            method = "tools/call"
-            params = @{
-                name = "invoke_dsc_config"
+            id      = 13
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_config"
                 arguments = @{
-                    operation = $operation
+                    operation     = $operation
                     configuration = ($config | ConvertTo-Json -Depth 20)
                 }
             }
@@ -407,8 +407,8 @@ Describe 'Tests for MCP server' {
             '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
             resources = @(
                 @{
-                    name = 'TestExport'
-                    type = 'Test/Export'
+                    name       = 'TestExport'
+                    type       = 'Test/Export'
                     properties = @{
                         count = 2
                     }
@@ -418,12 +418,12 @@ Describe 'Tests for MCP server' {
 
         $mcpRequest = @{
             jsonrpc = "2.0"
-            id = 13
-            method = "tools/call"
-            params = @{
-                name = "invoke_dsc_config"
+            id      = 13
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_config"
                 arguments = @{
-                    operation = 'export'
+                    operation     = 'export'
                     configuration = ($config | ConvertTo-Json -Depth 20)
                 }
             }
@@ -439,19 +439,19 @@ Describe 'Tests for MCP server' {
 
     It 'Calling invoke_dsc_config with parameters works' {
         $config = @{
-            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+            '$schema'  = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
             parameters = @{
                 message = @{
-                    type = 'string'
+                    type         = 'string'
                     defaultValue = 'default message'
                 }
             }
-            resources = @(
+            resources  = @(
                 @{
-                    name = 'TestResource'
-                    type = 'Test/Operation'
+                    name       = 'TestResource'
+                    type       = 'Test/Operation'
                     properties = @{
-                        hello = "[parameters('message')]"
+                        hello  = "[parameters('message')]"
                         action = 'get'
                     }
                 }
@@ -464,14 +464,14 @@ Describe 'Tests for MCP server' {
 
         $mcpRequest = @{
             jsonrpc = "2.0"
-            id = 14
-            method = "tools/call"
-            params = @{
-                name = "invoke_dsc_config"
+            id      = 14
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_config"
                 arguments = @{
-                    operation = 'get'
+                    operation     = 'get'
                     configuration = ($config | ConvertTo-Json -Depth 20)
-                    parameters = ($parameters | ConvertTo-Json -Depth 20)
+                    parameters    = ($parameters | ConvertTo-Json -Depth 20)
                 }
             }
         }
@@ -495,12 +495,12 @@ resources:
 
         $mcpRequest = @{
             jsonrpc = "2.0"
-            id = 15
-            method = "tools/call"
-            params = @{
-                name = "invoke_dsc_config"
+            id      = 15
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_config"
                 arguments = @{
-                    operation = 'get'
+                    operation     = 'get'
                     configuration = $configYaml
                 }
             }
@@ -514,18 +514,18 @@ resources:
 
     It 'Calling invoke_dsc_config with YAML parameters works' {
         $config = @{
-            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+            '$schema'  = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
             parameters = @{
                 greeting = @{
                     type = 'string'
                 }
             }
-            resources = @(
+            resources  = @(
                 @{
-                    name = 'TestResource'
-                    type = 'Test/Operation'
+                    name       = 'TestResource'
+                    type       = 'Test/Operation'
                     properties = @{
-                        hello = "[parameters('greeting')]"
+                        hello  = "[parameters('greeting')]"
                         action = 'get'
                     }
                 }
@@ -538,14 +538,14 @@ greeting: Hello from YAML parameters
 
         $mcpRequest = @{
             jsonrpc = "2.0"
-            id = 16
-            method = "tools/call"
-            params = @{
-                name = "invoke_dsc_config"
+            id      = 16
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_config"
                 arguments = @{
-                    operation = 'get'
+                    operation     = 'get'
                     configuration = ($config | ConvertTo-Json -Depth 20)
-                    parameters = $parametersYaml
+                    parameters    = $parametersYaml
                 }
             }
         }
@@ -559,12 +559,12 @@ greeting: Hello from YAML parameters
     It 'Calling invoke_dsc_config with invalid configuration returns error' {
         $mcpRequest = @{
             jsonrpc = "2.0"
-            id = 17
-            method = "tools/call"
-            params = @{
-                name = "invoke_dsc_config"
+            id      = 17
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_config"
                 arguments = @{
-                    operation = 'get'
+                    operation     = 'get'
                     configuration = '{ invalid json }'
                 }
             }
@@ -581,10 +581,10 @@ greeting: Hello from YAML parameters
             '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
             resources = @(
                 @{
-                    name = 'TestResource'
-                    type = 'Test/Operation'
+                    name       = 'TestResource'
+                    type       = 'Test/Operation'
                     properties = @{
-                        hello = 'test'
+                        hello  = 'test'
                         action = 'get'
                     }
                 }
@@ -593,14 +593,14 @@ greeting: Hello from YAML parameters
 
         $mcpRequest = @{
             jsonrpc = "2.0"
-            id = 18
-            method = "tools/call"
-            params = @{
-                name = "invoke_dsc_config"
+            id      = 18
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_config"
                 arguments = @{
-                    operation = 'get'
+                    operation     = 'get'
                     configuration = ($config | ConvertTo-Json -Depth 20)
-                    parameters = '{[invalid'
+                    parameters    = '{[invalid'
                 }
             }
         }
