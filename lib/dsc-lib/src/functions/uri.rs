@@ -42,7 +42,7 @@ fn combine_uri(base_uri: &str, relative_uri: &str) -> Result<String, DscError> {
         return Err(DscError::Parser(t!("functions.uri.emptyBaseUri").to_string()));
     }
     
-    if !base_uri.contains("://") {
+    if !base_uri.contains("://") && !base_uri.starts_with("//") {
         return Err(DscError::Parser(t!("functions.uri.notAbsoluteUri").to_string()));
     }
     
