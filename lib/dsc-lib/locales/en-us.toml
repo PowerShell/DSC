@@ -531,6 +531,7 @@ invoked = "uniqueString function"
 [functions.uri]
 description = "Creates an absolute URI by combining the baseUri and the relativeUri string"
 emptyBaseUri = "The baseUri parameter cannot be empty. An absolute URI requires a valid base URI."
+notAbsoluteUri = "The baseUri must be an absolute URI (must include a scheme such as http:// or https://)."
 invalidRelativeUri = "Invalid URI: The relative URI contains an invalid sequence. Three or more consecutive slashes (///) are not allowed."
 
 [functions.uriComponent]

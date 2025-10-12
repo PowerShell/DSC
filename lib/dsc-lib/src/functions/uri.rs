@@ -41,6 +41,11 @@ fn combine_uri(base_uri: &str, relative_uri: &str) -> Result<String, DscError> {
     if base_uri.is_empty() {
         return Err(DscError::Parser(t!("functions.uri.emptyBaseUri").to_string()));
     }
+    
+    if !base_uri.contains("://") {
+        return Err(DscError::Parser(t!("functions.uri.notAbsoluteUri").to_string()));
+    }
+    
     if relative_uri.is_empty() {
         return Ok(base_uri.to_string());
     }
@@ -66,20 +71,9 @@ fn combine_uri(base_uri: &str, relative_uri: &str) -> Result<String, DscError> {
         return Ok(format!("{scheme}:{relative_uri}/"));
     }
 
-    let base_ends_with_slash = base_uri.ends_with('/');
     let relative_starts_with_slash = relative_uri.starts_with('/');
 
-    // Case 1: baseUri ends with trailing slash
-    if base_ends_with_slash {
-        if relative_starts_with_slash {
-            // Combine trailing and leading slash into one
-            return Ok(format!("{base_uri}{}", &relative_uri[1..]));
-        }
-        return Ok(format!("{base_uri}{relative_uri}"));
-    }
-
-    // Case 2: baseUri doesn't end with trailing slash
-    // Check if baseUri has slashes (aside from // near the front)
+    // Extract scheme and host from base URI
     let scheme_end = if base_uri.starts_with("http://") || base_uri.starts_with("https://") {
         base_uri.find("://").map_or(0, |pos| pos + 3)
     } else if base_uri.starts_with("//") {
@@ -88,23 +82,39 @@ fn combine_uri(base_uri: &str, relative_uri: &str) -> Result<String, DscError> {
         0
     };
 
+    // If relative URI starts with '/', it replaces the entire path of the base URI
+    // Keep only scheme://host and append the relative URI
+    if relative_starts_with_slash {
+        let after_scheme = &base_uri[scheme_end..];
+        if let Some(first_slash_pos) = after_scheme.find('/') {
+            // Base has a path, extract scheme://host only
+            let scheme_and_host = &base_uri[..scheme_end + first_slash_pos];
+            return Ok(format!("{scheme_and_host}{relative_uri}"));
+        }
+        // Base has no path (e.g., "https://example.com"), just append
+        return Ok(format!("{base_uri}{relative_uri}"));
+    }
+
+    // Relative URI doesn't start with '/'
+    // Standard behavior: resolve relative to base
+    let base_ends_with_slash = base_uri.ends_with('/');
+
+    if base_ends_with_slash {
+        // Base ends with '/', just append
+        return Ok(format!("{base_uri}{relative_uri}"));
+    }
+
+    // Base doesn't end with '/', need to remove last segment
     let after_scheme = &base_uri[scheme_end..];
     
     if let Some(last_slash_pos) = after_scheme.rfind('/') {
+        // Base has a path with segments, remove last segment
         let base_without_last_segment = &base_uri[..=(scheme_end + last_slash_pos)];
-        if relative_starts_with_slash {
-            Ok(format!("{}{relative_uri}", &base_without_last_segment[..base_without_last_segment.len() - 1]))
-        } else {
-            Ok(format!("{base_without_last_segment}{relative_uri}"))
-        }
+        Ok(format!("{base_without_last_segment}{relative_uri}"))
     } else {
         // No path after scheme (e.g., "https://example.com")
-        // .NET Uri adds a '/' between host and relative URI
-        if relative_starts_with_slash {
-            Ok(format!("{base_uri}{relative_uri}"))
-        } else {
-            Ok(format!("{base_uri}/{relative_uri}"))
-        }
+        // Add a '/' between host and relative URI
+        Ok(format!("{base_uri}/{relative_uri}"))
     }
 }
 
@@ -138,7 +148,8 @@ mod tests {
     fn test_uri_no_trailing_slash_with_leading_slash() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[uri('https://example.com/api/v1', '/users')]", &Context::new()).unwrap();
-        assert_eq!(result, "https://example.com/api/users");
+        // When relative starts with '/', it replaces the entire path
+        assert_eq!(result, "https://example.com/users");
     }
 
     #[test]
@@ -242,5 +253,23 @@ mod tests {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[uri('https://example.com/', '//foo')]", &Context::new()).unwrap();
         assert_eq!(result, "https://foo/");
+    }
+
+    #[test]
+    fn test_uri_not_absolute_no_scheme() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[uri('example.com', 'path')]", &Context::new());
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.to_string().contains("absolute"));
+    }
+
+    #[test]
+    fn test_uri_not_absolute_relative_path() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[uri('/relative/path', 'file.txt')]", &Context::new());
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.to_string().contains("absolute"));
     }
 }

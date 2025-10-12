@@ -860,25 +860,29 @@ Describe 'tests for function expressions' {
     $out.results[0].result.actualState.output | Should -Be $expected
   }
 
-  It 'uri function works for: <expression>' -TestCases @(
-    @{ expression = "[uri('https://example.com/', 'path/file.html')]"; expected = 'https://example.com/path/file.html' }
-    @{ expression = "[uri('https://example.com/', '/path/file.html')]"; expected = 'https://example.com/path/file.html' }
-    @{ expression = "[uri('https://example.com/api/v1', 'users')]"; expected = 'https://example.com/api/users' }
-    @{ expression = "[uri('https://example.com/api/v1', '/users')]"; expected = 'https://example.com/api/users' }
-    @{ expression = "[uri('https://example.com', 'path')]"; expected = 'https://example.com/path' }
-    @{ expression = "[uri('https://example.com', '/path')]"; expected = 'https://example.com/path' }
-    @{ expression = "[uri('https://api.example.com/v2/resource/', 'item/123')]"; expected = 'https://api.example.com/v2/resource/item/123' }
-    @{ expression = "[uri('https://example.com/api/', 'search?q=test')]"; expected = 'https://example.com/api/search?q=test' }
-    @{ expression = "[uri('https://example.com/', '')]"; expected = 'https://example.com/' }
-    @{ expression = "[uri('http://example.com/', 'page.html')]"; expected = 'http://example.com/page.html' }
-    @{ expression = "[uri('https://example.com:8080/', 'api')]"; expected = 'https://example.com:8080/api' }
-    @{ expression = "[uri(concat('https://example.com', '/'), 'path')]"; expected = 'https://example.com/path' }
-    @{ expression = "[uri('//example.com/', 'path')]"; expected = '//example.com/path' }
-    @{ expression = "[uri('https://example.com/', '//foo')]"; expected = 'https://foo/' }
-    @{ expression = "[uri('https://example.com/a/b/c/', 'd/e/f')]"; expected = 'https://example.com/a/b/c/d/e/f' }
-    @{ expression = "[uri('https://example.com/old/path', 'new')]"; expected = 'https://example.com/old/new' }
+  It 'uri function works for: <base> + <relative>' -TestCases @(
+    @{ base = 'https://example.com/'; relative = 'path/file.html' }
+    @{ base = 'https://example.com/'; relative = '/path/file.html' }
+    @{ base = 'https://example.com/api/v1'; relative = 'users' }
+    @{ base = 'https://example.com/api/v1'; relative = '/users' }
+    @{ base = 'https://example.com'; relative = 'path' }
+    @{ base = 'https://example.com'; relative = '/path' }
+    @{ base = 'https://api.example.com/v2/resource/'; relative = 'item/123' }
+    @{ base = 'https://example.com/api/'; relative = 'search?q=test' }
+    @{ base = 'https://example.com/'; relative = '' }
+    @{ base = 'http://example.com/'; relative = 'page.html' }
+    @{ base = 'https://example.com:8080/'; relative = 'api' }
+    @{ base = 'https://example.com/'; relative = '//foo' }
+    @{ base = 'https://example.com/a/b/c/'; relative = 'd/e/f' }
+    @{ base = 'https://example.com/old/path'; relative = 'new' }
   ) {
-    param($expression, $expected)
+    param($base, $relative)
+    
+    $expected = ''
+    $success = [uri]::TryCreate([uri]$base, [uri]$relative, [ref]$expected)
+    $success | Should -BeTrue
+    
+    $expression = "[uri('$base', '$relative')]"
     $escapedExpression = $expression -replace "'", "''"
     $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
@@ -889,15 +893,24 @@ Describe 'tests for function expressions' {
                 output: '$escapedExpression'
 "@
     $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
-    $out.results[0].result.actualState.output | Should -Be $expected
+    $out.results[0].result.actualState.output | Should -BeExactly $expected.AbsoluteUri
   }
 
-  It 'uri function error handling: <expression>' -TestCases @(
-    @{ expression = "[uri('', 'path')]" ; expectedError = 'baseUri parameter cannot be empty' }
-    @{ expression = "[uri('https://example.com/', '///foo')]" ; expectedError = 'Invalid URI|invalid sequence' }
+  It 'uri function error handling: <base> + <relative>' -TestCases @(
+    @{ base = ''; relative = 'path'; expectedError = 'baseUri parameter cannot be empty' }
+    @{ base = 'example.com'; relative = 'path'; expectedError = 'baseUri must be an absolute URI' }
+    @{ base = '/relative/path'; relative = 'file.txt'; expectedError = 'baseUri must be an absolute URI' }
+    @{ base = 'https://example.com/'; relative = '///foo'; expectedError = 'Invalid URI|invalid sequence' }
   ) {
-    param($expression, $expectedError)
+    param($base, $relative, $expectedError)
 
+    if ($base -ne '') {
+      $testUri = $null
+      $dotnetSuccess = [uri]::TryCreate([uri]$base, [uri]$relative, [ref]$testUri)
+      $dotnetSuccess | Should -BeFalse -Because ".NET Uri.TryCreate should also fail for base='$base' relative='$relative'"
+    }
+
+    $expression = "[uri('$base', '$relative')]"
     $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
