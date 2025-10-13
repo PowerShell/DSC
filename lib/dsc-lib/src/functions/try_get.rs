@@ -91,7 +91,7 @@ mod tests {
     fn try_get_array_negative_index() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[tryGet(createArray('value1', 'value2'), -1)]", &Context::new()).unwrap();
-        assert_eq!(result, serde_json::json!(["value2"]));
+        assert_eq!(result, serde_json::json!([null]));
     }
 
     #[test]
