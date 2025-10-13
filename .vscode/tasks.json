@@ -1,0 +1,84 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "DSC: Build",
+            "detail": "Compiles the Rust crates and copies all build artifacts into the `bin` folder.",
+            "type": "shell",
+            "command": "${workspaceFolder}/build.new.ps1",
+            "args": [
+                "-Clippy:${input:Clippy}",
+                "-Verbose",
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true,
+            },
+            "problemMatcher": [],
+        },
+        {
+            "label": "DSC: Test (All)",
+            "detail": "Tests every project with optional skipping of building the projects, Clippy linting, Rust tests, and Pester tests.",
+            "type": "shell",
+            "command": "${workspaceFolder}/build.new.ps1",
+            "args": [
+                "-SkipBuild:${input:SkipBuild}",
+                "-Test",
+                "-Clippy:${input:Clippy}",
+                "-ExcludePesterTests:${input:ExcludePesterTests}",
+                "-ExcludeRustTests:${input:ExcludeRustTests}",
+                "-Verbose",
+            ],
+            "group": {
+                "kind": "test",
+                "isDefault": true,
+            },
+        },
+        {
+            "label": "DSC: Test Rust",
+            "detail": "Tests the Rust projects with optional skipping of building the projects and Clippy linting.",
+            "type": "shell",
+            "command": "${workspaceFolder}/build.new.ps1",
+            "args": [
+                "-SkipBuild:${input:SkipBuild}",
+                "-Test",
+                "-Clippy:${input:Clippy}",
+                "-ExcludePesterTests",
+                "-Verbose",
+            ],
+            "group": "test"
+        },
+    ],
+    "inputs": [
+        {
+            "id": "SkipBuild",
+            "description": "SkipBuild: Defines whether to skip building the projects.",
+            "type": "pickString",
+            "default": "$false",
+            "options": ["$true", "$false"]
+        },
+        {
+            "id": "Clippy",
+            "description": "Clippy: Defines whether to lint Rust projects with clippy.",
+            "type": "pickString",
+            "default": "$true",
+            "options": ["$true", "$false"]
+        },
+        {
+            "id": "ExcludePesterTests",
+            "description": "ExcludePesterTests: Defines whether to test without invoking Pester.",
+            "type": "pickString",
+            "default": "$false",
+            "options": ["$true", "$false"]
+        },
+        {
+            "id": "ExcludeRustTests",
+            "description": "ExcludePesterTests: Defines whether to test without invoking `cargo test`.",
+            "type": "pickString",
+            "default": "$false",
+            "options": ["$true", "$false"]
+        },
+    ]
+}
