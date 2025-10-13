@@ -27,7 +27,7 @@ pub struct Expression {
 
 fn node_to_string(node: &Node, statement_bytes: &[u8]) -> Result<String, DscError> {
     let text = node.utf8_text(statement_bytes)?;
-    Ok(text.trim_matches('\'').to_string())
+    Ok(text.to_string())
 }
 
 impl Expression {
