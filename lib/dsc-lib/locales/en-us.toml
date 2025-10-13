@@ -572,6 +572,7 @@ indexNotValid = "Index is not a valid number"
 indexOutOfBounds = "Index is out of bounds"
 indexOnNonArray = "Index access on non-array value"
 invalidIndexType = "Invalid index type"
+propertyNameNotString = "Property name is not a string"
 
 [parser.functions]
 foundErrorNode = "Found error node parsing function"

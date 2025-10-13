@@ -83,7 +83,7 @@ impl Expression {
                             },
                             "propertyName" => {
                                 let Some(string_node) = index_value.child_by_field_name("string") else {
-                                    return Err(DscError::Parser(t!("parser.expression.propertyNameNotFound").to_string()));
+                                    return Err(DscError::Parser(t!("parser.expression.propertyNameNotString").to_string()));
                                 };
                                 let value = string_node.utf8_text(statement_bytes)?;
                                 debug!("{}", t!("parser.expression.propertyNameValue", value = value : {:?}));
