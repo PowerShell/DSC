@@ -367,6 +367,10 @@ description = "Returns a single array or object with the common elements from th
 invoked = "intersection function"
 invalidArgType = "All arguments must either be arrays or objects"
 
+[functions.items]
+description = "Converts a dictionary object to an array of objects with key and value properties"
+notObject = "Argument must be an object"
+
 [functions.indexOf]
 description = "Returns the index of the first occurrence of an item in an array"
 invoked = "indexOf function"
@@ -531,7 +535,7 @@ invoked = "uniqueString function"
 [functions.uri]
 description = "Creates an absolute URI by combining the baseUri and the relativeUri string"
 emptyBaseUri = "The baseUri parameter cannot be empty. An absolute URI requires a valid base URI."
-notAbsoluteUri = "The baseUri must be an absolute URI (must include a scheme such as http:// or https://)."
+notAbsoluteUri = "The baseUri must be an absolute URI (must include a scheme such as https:// or file://)."
 invalidRelativeUri = "Invalid URI: The relative URI contains an invalid sequence. Three or more consecutive slashes (///) are not allowed."
 
 [functions.uriComponent]

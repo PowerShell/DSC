@@ -42,6 +42,7 @@ pub mod format;
 pub mod int;
 pub mod index_of;
 pub mod intersection;
+pub mod items;
 pub mod join;
 pub mod last_index_of;
 pub mod max;
@@ -167,6 +168,7 @@ impl FunctionDispatcher {
             Box::new(int::Int{}),
             Box::new(index_of::IndexOf{}),
             Box::new(intersection::Intersection{}),
+            Box::new(items::Items{}),
             Box::new(join::Join{}),
             Box::new(last_index_of::LastIndexOf{}),
             Box::new(max::Max{}),
