@@ -16,7 +16,7 @@ impl Function for TryGet {
         FunctionMetadata {
             name: "tryGet".to_string(),
             description: t!("functions.tryGet.description").to_string(),
-            category: vec![FunctionCategory::Logical],
+            category: vec![FunctionCategory::Array, FunctionCategory::Object],
             min_args: 2,
             max_args: 2,
             accepted_arg_ordered_types: vec![
