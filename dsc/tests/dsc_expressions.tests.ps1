@@ -17,6 +17,7 @@ Describe 'Expressions tests' {
     @{ text = "[parameters('test')['array'][1][0]]"; expected = 'two' }
     @{ text = "[parameters('test')['objectArray'][0]['name']]"; expected = 'one' }
     @{ text = "[parameters('test')['objectArray'][1]['value'][1]['name']]"; expected = 'three' }
+    @{ text = "[parameters('test')[parameters('propertyName')]]"; expected = '@{world=there}' }
   ) {
     param($text, $expected)
     $yaml = @"
@@ -40,6 +41,9 @@ Describe 'Expressions tests' {
           - nestedObject:
             name: three
             value: 3
+    propertyName:
+      type: string
+      defaultValue: hello
   resources:
   - name: echo
     type: Microsoft.DSC.Debug/Echo
