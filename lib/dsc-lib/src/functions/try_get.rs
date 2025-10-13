@@ -70,35 +70,35 @@ mod tests {
     fn try_get_object() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[tryGet(createObject('key1', 'value1'), 'key1')]", &Context::new()).unwrap();
-        assert_eq!(result, serde_json::json!(["value1"]));
+        assert_eq!(result, serde_json::json!("value1"));
     }
 
     #[test]
     fn try_get_object_not_found() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[tryGet(createObject('key1', 'value1'), 'key2')]", &Context::new()).unwrap();
-        assert_eq!(result, serde_json::json!([null]));
+        assert_eq!(result, serde_json::json!(null));
     }
 
     #[test]
     fn try_get_array() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[tryGet(createArray('value1', 'value2'), 1)]", &Context::new()).unwrap();
-        assert_eq!(result, serde_json::json!(["value2"]));
+        assert_eq!(result, serde_json::json!("value2"));
     }
 
     #[test]
     fn try_get_array_negative_index() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[tryGet(createArray('value1', 'value2'), -1)]", &Context::new()).unwrap();
-        assert_eq!(result, serde_json::json!([null]));
+        assert_eq!(result, serde_json::json!(null));
     }
 
     #[test]
     fn try_get_array_index_not_found() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[tryGet(createArray('value1', 'value2'), 2)]", &Context::new()).unwrap();
-        assert_eq!(result, serde_json::json!([null]));
+        assert_eq!(result, serde_json::json!(null));
     }
 
     #[test]
