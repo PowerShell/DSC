@@ -116,7 +116,7 @@ begin {
         $UseCFS = $true
     }
     # Import the build data
-    $BuildData = Import-DscBuildData
+    $BuildData = Import-DscBuildData -RefreshProjects
     # Filter projects if needed.
     if ($Project.Count -ge 1) {
         $BuildData.Projects = $BuildData.Projects | Where-Object -FilterScript {

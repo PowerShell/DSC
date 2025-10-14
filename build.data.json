@@ -1,0 +1,439 @@
+{
+  "PackageFiles": {
+    "Executable": [
+      "apt.dsc.resource.sh",
+      "brew.dsc.resource.sh"
+    ],
+    "Linux": [
+      "bicep.dsc.extension.json",
+      "dsc",
+      "dsc_default.settings.json",
+      "dsc.settings.json",
+      "dscecho",
+      "echo.dsc.resource.json",
+      "assertion.dsc.resource.json",
+      "apt.dsc.resource.json",
+      "apt.dsc.resource.sh",
+      "group.dsc.resource.json",
+      "include.dsc.resource.json",
+      "NOTICE.txt",
+      "osinfo",
+      "osinfo.dsc.resource.json",
+      "powershell.dsc.resource.json",
+      "psDscAdapter/",
+      "psscript.ps1",
+      "psscript.dsc.resource.json",
+      "RunCommandOnSet.dsc.resource.json",
+      "runcommandonset",
+      "sshdconfig",
+      "sshd_config.dsc.resource.json"
+    ],
+    "macOS": [
+      "bicep.dsc.extension.json",
+      "dsc",
+      "dsc_default.settings.json",
+      "dsc.settings.json",
+      "dscecho",
+      "echo.dsc.resource.json",
+      "assertion.dsc.resource.json",
+      "brew.dsc.resource.json",
+      "brew.dsc.resource.sh",
+      "group.dsc.resource.json",
+      "include.dsc.resource.json",
+      "NOTICE.txt",
+      "osinfo",
+      "osinfo.dsc.resource.json",
+      "powershell.dsc.resource.json",
+      "psDscAdapter/",
+      "psscript.ps1",
+      "psscript.dsc.resource.json",
+      "RunCommandOnSet.dsc.resource.json",
+      "runcommandonset",
+      "sshdconfig",
+      "sshd_config.dsc.resource.json"
+    ],
+    "Windows": [
+      "appx.dsc.extension.json",
+      "appx-discover.ps1",
+      "bicep.dsc.extension.json",
+      "dsc.exe",
+      "dsc_default.settings.json",
+      "dsc.settings.json",
+      "dscecho.exe",
+      "echo.dsc.resource.json",
+      "assertion.dsc.resource.json",
+      "group.dsc.resource.json",
+      "include.dsc.resource.json",
+      "NOTICE.txt",
+      "osinfo.exe",
+      "osinfo.dsc.resource.json",
+      "powershell.dsc.resource.json",
+      "psDscAdapter/",
+      "psscript.ps1",
+      "psscript.dsc.resource.json",
+      "winpsscript.dsc.resource.json",
+      "reboot_pending.dsc.resource.json",
+      "reboot_pending.resource.ps1",
+      "registry.dsc.resource.json",
+      "registry.exe",
+      "RunCommandOnSet.dsc.resource.json",
+      "RunCommandOnSet.exe",
+      "sshdconfig.exe",
+      "sshd-windows.dsc.resource.json",
+      "sshd_config.dsc.resource.json",
+      "windowspowershell.dsc.resource.json",
+      "wmi.dsc.resource.json",
+      "wmi.resource.ps1",
+      "wmiAdapter.psd1",
+      "wmiAdapter.psm1",
+      "windows_baseline.dsc.yaml",
+      "windows_inventory.dsc.yaml"
+    ]
+  },
+  "Projects": [
+    {
+      "Name": "root",
+      "Kind": "Root",
+      "RelativePath": ".",
+      "CopyFiles": {
+        "All": [
+          "NOTICE.txt"
+        ]
+      }
+    },
+    {
+      "Name": "powershell-adapter",
+      "Kind": "Adapter",
+      "RelativePath": "adapters/powershell",
+      "CopyFiles": {
+        "All": [
+          "psDscAdapter/powershell.resource.ps1",
+          "psDscAdapter/psDscAdapter.psd1",
+          "psDscAdapter/psDscAdapter.psm1",
+          "powershell.dsc.resource.json"
+        ],
+        "Windows": [
+          "psDscAdapter/win_psDscAdapter.psd1",
+          "psDscAdapter/win_psDscAdapter.psm1",
+          "windowspowershell.dsc.resource.json"
+        ]
+      }
+    },
+    {
+      "Name": "wmi",
+      "Kind": "Adapter",
+      "RelativePath": "adapters/wmi",
+      "SupportedPlatformOS": "Windows",
+      "CopyFiles": {
+        "Windows": [
+          "wmi.resource.ps1",
+          "wmiAdapter.psd1",
+          "wmiAdapter.psm1",
+          "wmi.dsc.resource.json"
+        ]
+      }
+    },
+    {
+      "Name": "configurations/windows",
+      "Kind": "Configuration",
+      "RelativePath": "configurations/windows",
+      "SupportedPlatformOS": "Windows",
+      "CopyFiles": {
+        "Windows": [
+          "windows_baseline.dsc.yaml",
+          "windows_inventory.dsc.yaml"
+        ]
+      }
+    },
+    {
+      "Name": "dsc",
+      "Kind": "CLI",
+      "RelativePath": "dsc",
+      "IsRust": true,
+      "Binaries": [
+        "dsc"
+      ],
+      "CopyFiles": {
+        "All": [
+          "dsc.settings.json",
+          "dsc_default.settings.json",
+          "assertion.dsc.resource.json",
+          "group.dsc.resource.json",
+          "include.dsc.resource.json"
+        ]
+      }
+    },
+    {
+      "Name": "extensions/appx",
+      "Kind": "Extension",
+      "RelativePath": "extensions/appx",
+      "SupportedPlatformOS": "Windows",
+      "CopyFiles": {
+        "Windows": [
+          "appx-discover.ps1",
+          "appx.dsc.extension.json"
+        ]
+      }
+    },
+    {
+      "Name": "bicep",
+      "Kind": "Extension",
+      "RelativePath": "extensions/bicep",
+      "CopyFiles": {
+        "All": [
+          "bicep.dsc.extension.json"
+        ]
+      }
+    },
+    {
+      "Name": "tree-sitter-dscexpression",
+      "Kind": "Grammar",
+      "RelativePath": "grammars/tree-sitter-dscexpression",
+      "IsRust": true,
+      "ClippyUnclean": true,
+      "SkipTest": {
+        "Windows": true
+      }
+    },
+    {
+      "Name": "tree-sitter-ssh-server-config",
+      "Kind": "Grammar",
+      "RelativePath": "grammars/tree-sitter-ssh-server-config",
+      "IsRust": true,
+      "ClippyUnclean": true
+    },
+    {
+      "Name": "dsc-lib",
+      "Kind": "Library",
+      "RelativePath": "lib/dsc-lib",
+      "IsRust": true
+    },
+    {
+      "Name": "dsc-lib-jsonschema",
+      "Kind": "Library",
+      "RelativePath": "lib/dsc-lib-jsonschema",
+      "IsRust": true
+    },
+    {
+      "Name": "dsc-lib-osinfo",
+      "Kind": "Library",
+      "RelativePath": "lib/dsc-lib-osinfo",
+      "IsRust": true
+    },
+    {
+      "Name": "dsc-lib-pal",
+      "Kind": "Library",
+      "RelativePath": "lib/dsc-lib-pal",
+      "SupportedPlatformOS": "Windows",
+      "IsRust": true
+    },
+    {
+      "Name": "dsc-lib-registry",
+      "Kind": "Library",
+      "RelativePath": "lib/dsc-lib-registry",
+      "SupportedPlatformOS": "Windows",
+      "IsRust": true
+    },
+    {
+      "Name": "dsc-lib-security_context",
+      "Kind": "Library",
+      "RelativePath": "lib/dsc-lib-security_context",
+      "IsRust": true
+    },
+    {
+      "Name": "resources/apt",
+      "Kind": "Resource",
+      "RelativePath": "resources/apt",
+      "SupportedPlatformOS": "Linux",
+      "CopyFiles": {
+        "Linux": [
+          "apt.dsc.resource.sh",
+          "apt.dsc.resource.json"
+        ]
+      }
+    },
+    {
+      "Name": "resources/brew",
+      "Kind": "Resource",
+      "RelativePath": "resources/brew",
+      "SupportedPlatformOS": "macOS",
+      "CopyFiles": {
+        "macOS": [
+          "brew.dsc.resource.sh",
+          "brew.dsc.resource.json"
+        ]
+      }
+    },
+    {
+      "Name": "dscecho",
+      "Kind": "Resource",
+      "RelativePath": "resources/dscecho",
+      "IsRust": true,
+      "Binaries": [
+        "dscecho"
+      ],
+      "CopyFiles": {
+        "All": [
+          "echo.dsc.resource.json"
+        ]
+      }
+    },
+    {
+      "Name": "osinfo",
+      "Kind": "Resource",
+      "RelativePath": "resources/osinfo",
+      "IsRust": true,
+      "Binaries": [
+        "osinfo"
+      ],
+      "CopyFiles": {
+        "All": [
+          "osinfo.dsc.resource.json"
+        ]
+      }
+    },
+    {
+      "Name": "process",
+      "Kind": "Resource",
+      "RelativePath": "resources/process",
+      "IsRust": true,
+      "Binaries": [
+        "process"
+      ],
+      "CopyFiles": {
+        "All": [
+          "process.dsc.resource.json"
+        ]
+      }
+    },
+    {
+      "Name": "PSScript",
+      "Kind": "Resource",
+      "RelativePath": "resources/PSScript",
+      "CopyFiles": {
+        "All": [
+          "psscript.ps1",
+          "psscript.dsc.resource.json"
+        ],
+        "Windows": [
+          "winpsscript.dsc.resource.json"
+        ]
+      }
+    },
+    {
+      "Name": "reboot_pending",
+      "Kind": "Resource",
+      "RelativePath": "resources/reboot_pending",
+      "SupportedPlatformOS": "Windows",
+      "CopyFiles": {
+        "Windows": [
+          "reboot_pending.resource.ps1",
+          "reboot_pending.dsc.resource.json"
+        ]
+      }
+    },
+    {
+      "Name": "registry",
+      "Kind": "Resource",
+      "RelativePath": "resources/registry",
+      "SupportedPlatformOS": "Windows",
+      "IsRust": true,
+      "Binaries": [
+        "registry"
+      ],
+      "CopyFiles": {
+        "Windows": [
+          "registry.dsc.resource.json"
+        ]
+      }
+    },
+    {
+      "Name": "runcommandonset",
+      "Kind": "Resource",
+      "RelativePath": "resources/runcommandonset",
+      "IsRust": true,
+      "Binaries": [
+        "runcommandonset"
+      ],
+      "CopyFiles": {
+        "All": [
+          "RunCommandOnSet.dsc.resource.json"
+        ]
+      }
+    },
+    {
+      "Name": "sshdconfig",
+      "Kind": "Resource",
+      "RelativePath": "resources/sshdconfig",
+      "IsRust": true,
+      "Binaries": [
+        "sshdconfig"
+      ],
+      "CopyFiles": {
+        "All": [
+          "sshd_config.dsc.resource.json"
+        ],
+        "Windows": [
+          "sshd-windows.dsc.resource.json"
+        ]
+      }
+    },
+    {
+      "Name": "dsctest",
+      "Kind": "Resource",
+      "RelativePath": "tools/dsctest",
+      "IsRust": true,
+      "Binaries": [
+        "dsctest"
+      ],
+      "TestOnly": true,
+      "CopyFiles": {
+        "All": [
+          "dscdelete.dsc.resource.json",
+          "dscexist.dsc.resource.json",
+          "dscexitcode.dsc.resource.json",
+          "dscexport.dsc.resource.json",
+          "dscexporter.dsc.resource.json",
+          "dscget.dsc.resource.json",
+          "dscindesiredstate.dsc.resource.json",
+          "dscoperation.dsc.resource.json",
+          "dscsleep.dsc.resource.json",
+          "dsctrace.dsc.resource.json",
+          "dscwhatif.dsc.resource.json",
+          "metadata.dsc.resource.json",
+          "resourceadapter.dsc.resource.json",
+          "version1.1.2.dsc.resource.json",
+          "version1.1.3.dsc.resource.json",
+          "version1.1.dsc.resource.json",
+          "version2.1p1.dsc.resource.json",
+          "version2.1p2.dsc.resource.json",
+          "version2.dsc.resource.json"
+        ]
+      }
+    },
+    {
+      "Name": "test_group_resource",
+      "Kind": "Resource",
+      "RelativePath": "tools/test_group_resource",
+      "IsRust": true,
+      "Binaries": [
+        "test_group_resource"
+      ],
+      "TestOnly": true,
+      "CopyFiles": {
+        "All": [
+          "testGroup.dsc.resource.json"
+        ]
+      }
+    },
+    {
+      "Name": "y2j",
+      "Kind": "CLI",
+      "RelativePath": "y2j",
+      "IsRust": true,
+      "Binaries": [
+        "y2j"
+      ]
+    }
+  ]
+}

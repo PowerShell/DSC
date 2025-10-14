@@ -1,0 +1,32 @@
+{
+    "Name": "dsctest",
+    "Kind": "Resource",
+    "IsRust": true,
+    "TestOnly": true,
+    "Binaries": [
+        "dsctest"
+    ],
+    "CopyFiles": {
+        "All": [
+            "dscdelete.dsc.resource.json",
+            "dscexist.dsc.resource.json",
+            "dscexitcode.dsc.resource.json",
+            "dscexport.dsc.resource.json",
+            "dscexporter.dsc.resource.json",
+            "dscget.dsc.resource.json",
+            "dscindesiredstate.dsc.resource.json",
+            "dscoperation.dsc.resource.json",
+            "dscsleep.dsc.resource.json",
+            "dsctrace.dsc.resource.json",
+            "dscwhatif.dsc.resource.json",
+            "metadata.dsc.resource.json",
+            "resourceadapter.dsc.resource.json",
+            "version1.1.2.dsc.resource.json",
+            "version1.1.3.dsc.resource.json",
+            "version1.1.dsc.resource.json",
+            "version2.1p1.dsc.resource.json",
+            "version2.1p2.dsc.resource.json",
+            "version2.dsc.resource.json"
+        ]
+    }
+}

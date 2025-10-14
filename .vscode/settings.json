@@ -4,6 +4,14 @@
         {
             "fileMatch": ["**/*.dsc.resource.json"],
             "url": "/schemas/v3/bundled/resource/manifest.vscode.json"
+        },
+        {
+            "fileMatch": ["build.data.json"],
+            "url": "./.vscode/schemas/build.data.json"
+        },
+        {
+            "fileMatch": ["**/.project.data.json"],
+            "url": "./.vscode/schemas/project.data.json"
         }
     ],
     "yaml.schemas": {
