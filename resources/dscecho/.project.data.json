@@ -1,0 +1,13 @@
+{
+    "Name": "dscecho",
+    "Kind": "Resource",
+    "IsRust": true,
+    "Binaries": [
+        "dscecho"
+    ],
+    "CopyFiles": {
+        "All": [
+            "echo.dsc.resource.json"
+        ]
+    }
+}
