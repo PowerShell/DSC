@@ -920,14 +920,13 @@ Describe 'tests for function expressions' {
     @{ expression = "[uriComponent(' ')]"; expected = '%20' }
   ) {
     param($expression, $expected)
-    $escapedExpression = $expression -replace "'", "''"
     $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: Echo
               type: Microsoft.DSC.Debug/Echo
               properties:
-                output: '$escapedExpression'
+                output: "$expression"
 "@
     $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
     $out.results[0].result.actualState.output | Should -Be $expected
@@ -949,15 +948,13 @@ Describe 'tests for function expressions' {
     @{ expression = "[uriComponentToString(concat('hello', '%20', 'world'))]"; expected = 'hello world' }
   ) {
     param($expression, $expected)
-
-    $escapedExpression = $expression -replace "'", "''"
     $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: Echo
               type: Microsoft.DSC.Debug/Echo
               properties:
-                output: '$escapedExpression'
+                output: "$expression"
 "@
     $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
     $out.results[0].result.actualState.output | Should -Be $expected
