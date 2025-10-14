@@ -70,7 +70,6 @@ pub mod trim;
 pub mod r#true;
 pub mod union;
 pub mod unique_string;
-pub mod uri;
 pub mod uri_component;
 pub mod uri_component_to_string;
 pub mod user_function;
@@ -196,7 +195,6 @@ impl FunctionDispatcher {
             Box::new(r#true::True{}),
             Box::new(union::Union{}),
             Box::new(unique_string::UniqueString{}),
-            Box::new(uri::Uri{}),
             Box::new(uri_component::UriComponent{}),
             Box::new(uri_component_to_string::UriComponentToString{}),
             Box::new(utc_now::UtcNow{}),
