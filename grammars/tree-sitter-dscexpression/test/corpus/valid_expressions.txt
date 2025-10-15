@@ -161,6 +161,24 @@ Array index
         (number)))))
 
 =====
+Object index
+=====
+[createObject('a',1)['a']]
+---
+
+(statement
+      (expression
+        (function
+          (functionName)
+          (arguments
+            (string)
+            (number)))
+        (accessor
+          (index
+            (propertyName
+              (string))))))
+
+=====
 Multiple array indexes
 =====
 [myFunction('argString')[0][1][2]]
