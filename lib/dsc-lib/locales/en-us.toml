@@ -523,6 +523,12 @@ description = "Removes all leading and trailing white-space characters from the 
 description = "Returns the boolean value true"
 invoked = "true function"
 
+[functions.tryGet]
+description = "Attempts to retrieve a value from an array (by index) or object (by key).  Null is returned if the key or index does not exist."
+invoked = "tryGet function"
+invalidKeyType = "Invalid key type, must be a string"
+invalidIndexType = "Invalid index type, must be an integer"
+
 [functions.union]
 description = "Returns a single array or object with all elements from the parameters"
 invoked = "union function"
