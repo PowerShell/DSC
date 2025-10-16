@@ -51,9 +51,36 @@ impl Function for Parameters {
                         };
                         Ok(serde_json::to_value(secure_object)?)
                     },
-                    _ => {
-                        Ok(value.clone())
-                    }
+                    DataType::String => {
+                        let Some(value) = value.as_str() else {
+                            return Err(DscError::Parser(t!("functions.parameters.keyNotString", key = key).to_string()));
+                        };
+                        Ok(serde_json::to_value(value)?)
+                    },
+                    DataType::Int => {
+                        let Some(value) = value.as_i64() else {
+                            return Err(DscError::Parser(t!("functions.parameters.keyNotInt", key = key).to_string()));
+                        };
+                        Ok(serde_json::to_value(value)?)
+                    },
+                    DataType::Bool => {
+                        let Some(value) = value.as_bool() else {
+                            return Err(DscError::Parser(t!("functions.parameters.keyNotBool", key = key).to_string()));
+                        };
+                        Ok(serde_json::to_value(value)?)
+                    },
+                    DataType::Object => {
+                        let Some(value) = value.as_object() else {
+                            return Err(DscError::Parser(t!("functions.parameters.keyNotObject", key = key).to_string()));
+                        };
+                        Ok(serde_json::to_value(value)?)
+                    },
+                    DataType::Array => {
+                        let Some(value) = value.as_array() else {
+                            return Err(DscError::Parser(t!("functions.parameters.keyNotArray", key = key).to_string()));
+                        };
+                        Ok(serde_json::to_value(value)?)
+                    },
                 }
             }
             else {
