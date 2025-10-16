@@ -538,6 +538,13 @@ invalidArgType = "All arguments must either be arrays or objects"
 description = "Returns a deterministic unique string from the given strings"
 invoked = "uniqueString function"
 
+[functions.uriComponent]
+description = "Encodes a URI component using percent-encoding"
+
+[functions.uriComponentToString]
+description = "Returns a string of a URI encoded value"
+invalidUtf8 = "Invalid UTF-8 in decoded string: %{error}"
+
 [functions.userFunction]
 expectedNoParameters = "User function '%{name}' does not accept parameters"
 unknownUserFunction = "Unknown user function '%{name}'"
