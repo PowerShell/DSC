@@ -581,6 +581,8 @@ The following list of functions operate on arrays:
 
 The following list of functions operate on data outside of a resource instance:
 
+- [context()][context] - Return information about the current system context,
+  including operating system and security context.
 - [envvar()][envvar] - Return the value of a specified environment variable.
 - [parameters()][parameters] - Return the value of a specified configuration parameter.
 - [variables()][variables] - Return the value of a specified configuration variable.
@@ -631,6 +633,7 @@ The following list of functions create or convert values of a given type:
 [add]:         ./add.md
 [base64]:      ./base64.md
 [concat]:      ./concat.md
+[context]:     ./context.md
 [createArray]: ./createArray.md
 [div]:         ./div.md
 [envvar]:      ./envvar.md
