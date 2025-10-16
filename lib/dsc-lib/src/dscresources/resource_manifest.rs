@@ -22,6 +22,12 @@ pub enum Kind {
     Resource,
 }
 
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub struct ResourceManifestList {
+    /// The list of resource manifests.
+    pub resources: Vec<ResourceManifest>,
+}
+
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ResourceManifest {
