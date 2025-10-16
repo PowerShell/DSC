@@ -30,7 +30,7 @@ use crate::util::get_setting;
 use crate::util::get_exe_path;
 
 const DSC_RESOURCE_EXTENSIONS: [&str; 3] = [".dsc.resource.json", ".dsc.resource.yaml", ".dsc.resource.yml"];
-const DSC_RESOURCE_LIST_EXTENSIONS: [&str; 3] = ["dsc.resourcelist.json", "dsc.resourcelist.yaml", ".dsc.resourcelist.yml"];
+const DSC_RESOURCE_LIST_EXTENSIONS: [&str; 3] = [".dsc.resourcelist.json", ".dsc.resourcelist.yaml", ".dsc.resourcelist.yml"];
 const DSC_EXTENSION_EXTENSIONS: [&str; 3] = [".dsc.extension.json", ".dsc.extension.yaml", ".dsc.extension.yml"];
 
 // use BTreeMap so that the results are sorted by the typename, the Vec is sorted by version
