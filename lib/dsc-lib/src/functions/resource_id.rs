@@ -42,14 +42,11 @@ impl Function for ResourceId {
         }
         // ARM uses a slash separator, but here we use a colon which is not allowed for the type nor name
         result.push(':');
-        // second argument is the name and must contain no slashes
+        // second argument is the name and we url encode it to ensure no unexpected characters are present
         let resource_name = &args[1];
         if let Some(value) = resource_name.as_str() {
-            if value.contains('/') {
-                return Err(DscError::Function("resourceId".to_string(), t!("functions.resourceId.incorrectNameFormat").to_string()));
-            }
-
-            result.push_str(value);
+            let encoded = urlencoding::encode(value);
+            result.push_str(&encoded);
         } else {
             return Err(DscError::Parser(t!("functions.resourceId.invalidSecondArgType").to_string()));
         }
@@ -85,10 +82,10 @@ mod tests {
     }
 
     #[test]
-    fn invalid_name() {
+    fn valid_name_with_slashes() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[resourceId('a','b/c')]", &Context::new());
-        assert!(result.is_err());
+        let result = parser.parse_and_execute("[resourceId('a','b/c')]", &Context::new()).unwrap();
+        assert_eq!(result, "a:b%2Fc");
     }
 
     #[test]
