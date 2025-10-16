@@ -244,8 +244,7 @@ impl ResourceDiscovery for CommandDiscovery {
                                 continue;
                             };
                             let file_name_lowercase = file_name.to_lowercase();
-                            if (kind == &DiscoveryKind::Resource && DSC_RESOURCE_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext))) ||
-                                (kind == &DiscoveryKind::Resource && DSC_RESOURCE_LIST_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext))) ||
+                            if kind == &DiscoveryKind::Resource && (DSC_RESOURCE_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext))) || DSC_RESOURCE_LIST_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)) ||
                                 (kind == &DiscoveryKind::Extension && DSC_EXTENSION_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext))) {
                                 trace!("{}", t!("discovery.commandDiscovery.foundResourceManifest", path = path.to_string_lossy()));
                                 let imported_manifests = match load_manifest(&path)
@@ -618,12 +617,22 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
             let resource = load_resource_manifest(path, &manifest)?;
             return Ok(vec![ImportedManifest::Resource(resource)]);
         }
+        if let Ok(manifest) = serde_yaml::from_str::<ResourceManifest>(&contents) {
+            let resource = load_resource_manifest(path, &manifest)?;
+            return Ok(vec![ImportedManifest::Resource(resource)]);
+        }
+        return Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.invalidResourceManifest", resource = path.to_string_lossy()).to_string()));
     }
     if DSC_EXTENSION_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)) {
         if let Ok(manifest) = serde_json::from_str::<ExtensionManifest>(&contents) {
             let extension = load_extension_manifest(path, &manifest)?;
             return Ok(vec![ImportedManifest::Extension(extension)]);
         }
+        if let Ok(manifest) = serde_yaml::from_str::<ExtensionManifest>(&contents) {
+            let extension = load_extension_manifest(path, &manifest)?;
+            return Ok(vec![ImportedManifest::Extension(extension)]);
+        }
+        return Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.invalidExtensionManifest", resource = path.to_string_lossy()).to_string()));
     }
     if DSC_RESOURCE_LIST_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)) {
         if let Ok(manifest) = serde_json::from_str::<ResourceManifestList>(&contents) {
@@ -634,8 +643,17 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
             }
             return Ok(resources);
         }
+        if let Ok(manifest) = serde_yaml::from_str::<ResourceManifestList>(&contents) {
+            let mut resources = vec![];
+            for res_manifest in manifest.resources {
+                let resource = load_resource_manifest(path, &res_manifest)?;
+                resources.push(ImportedManifest::Resource(resource));
+            }
+            return Ok(resources);
+        }
+        return Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.invalidResourceListManifest", resource = path.to_string_lossy()).to_string()));
     }
-    return Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.invalidManifest", resource = path.to_string_lossy()).to_string()));
+    Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.invalidManifestFile", resource = path.to_string_lossy()).to_string()))
 }
 
 fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<DscResource, DscError> {
