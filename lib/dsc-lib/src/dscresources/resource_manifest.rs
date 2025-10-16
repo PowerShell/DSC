@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use dsc_lib_jsonschema::transforms::idiomaticize_string_enum;
 use rust_i18n::t;
 use schemars::{Schema, JsonSchema, json_schema};
 use semver::Version;
@@ -12,6 +13,7 @@ use crate::{dscerror::DscError, schemas::DscRepoSchema};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
+#[schemars(transform = idiomaticize_string_enum)]
 pub enum Kind {
     Adapter,
     Exporter,
@@ -94,6 +96,7 @@ pub enum ArgKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[schemars(transform = idiomaticize_string_enum)]
 pub enum InputKind {
     /// The input is accepted as environmental variables.
     #[serde(rename = "env")]
@@ -122,6 +125,7 @@ pub struct SchemaCommand {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[schemars(transform = idiomaticize_string_enum)]
 pub enum ReturnKind {
     /// The return JSON is the state of the resource.
     #[serde(rename = "state")]
@@ -224,6 +228,7 @@ pub struct Adapter {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[schemars(transform = idiomaticize_string_enum)]
 pub enum AdapterInputKind {
     /// The adapter accepts full unprocessed configuration.
     #[serde(rename = "full")]
