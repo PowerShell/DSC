@@ -754,6 +754,11 @@ impl Configurator {
         Ok(false)
     }
 
+    /// Process the outputs defined in the configuration.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the output processing fails.
     pub fn process_output(&mut self) -> Result<(), DscError> {
         if self.config.outputs.is_none() || self.context.execution_type == ExecutionKind::WhatIf {
             return Ok(());
@@ -768,26 +773,22 @@ impl Configurator {
                     }
                 }
 
-                match &output.value_or_copy {
-                    ValueOrCopy::Value(value) => {
-                        let value_result = self.statement_parser.parse_and_execute(&value, &self.context)?;
-                        if output.r#type == DataType::SecureString || output.r#type == DataType::SecureObject {
-                            warn!("{}", t!("configure.mod.secureOutputSkipped", name = name));
-                            continue;
-                        }
-                        if value_result.is_string() && output.r#type != DataType::String ||
-                            value_result.is_i64() && output.r#type != DataType::Int ||
-                            value_result.is_boolean() && output.r#type != DataType::Bool ||
-                            value_result.is_array() && output.r#type != DataType::Array ||
-                            value_result.is_object() && output.r#type != DataType::Object {
-                            return Err(DscError::Validation(t!("configure.mod.outputTypeNotMatch", name = name, expected_type = output.r#type).to_string()));
-                        }
-                        self.context.outputs.insert(name.clone(), value_result);
-                    },
-                    _ => {
-                        warn!("{}", t!("configure.mod.copyNotSupported", name = name));
+                if let ValueOrCopy::Value(value) = &output.value_or_copy {
+                    let value_result = self.statement_parser.parse_and_execute(value, &self.context)?;
+                    if output.r#type == DataType::SecureString || output.r#type == DataType::SecureObject {
+                        warn!("{}", t!("configure.mod.secureOutputSkipped", name = name));
                         continue;
                     }
+                    if value_result.is_string() && output.r#type != DataType::String ||
+                        value_result.is_i64() && output.r#type != DataType::Int ||
+                        value_result.is_boolean() && output.r#type != DataType::Bool ||
+                        value_result.is_array() && output.r#type != DataType::Array ||
+                        value_result.is_object() && output.r#type != DataType::Object {
+                            return Err(DscError::Validation(t!("configure.mod.outputTypeNotMatch", name = name, expected_type = output.r#type).to_string()));
+                    }
+                    self.context.outputs.insert(name.clone(), value_result);
+                } else {
+                    warn!("{}", t!("configure.mod.copyNotSupported", name = name));
                 }
             }
         }
