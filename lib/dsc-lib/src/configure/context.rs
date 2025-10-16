@@ -25,6 +25,7 @@ pub struct Context {
     pub dsc_version: Option<String>,
     pub execution_type: ExecutionKind,
     pub extensions: Vec<DscExtension>,
+    pub outputs: Map<String, Value>,
     pub parameters: HashMap<String, (Value, DataType)>,
     pub process_expressions: bool,
     pub process_mode: ProcessMode,
@@ -36,7 +37,6 @@ pub struct Context {
     pub system_root: PathBuf,
     pub user_functions: HashMap<String, UserFunctionDefinition>,
     pub variables: Map<String, Value>,
-    pub outputs: Map<String, Value>,
 }
 
 impl Context {
@@ -48,6 +48,7 @@ impl Context {
             dsc_version: None,
             execution_type: ExecutionKind::Actual,
             extensions: Vec::new(),
+            outputs: Map::new(),
             parameters: HashMap::new(),
             process_expressions: true,
             process_mode: ProcessMode::Normal,
@@ -62,8 +63,6 @@ impl Context {
             system_root: get_default_os_system_root(),
             user_functions: HashMap::new(),
             variables: Map::new(),
-            restart_required: None,
-            outputs: Map::new(),
         }
     }
 }
