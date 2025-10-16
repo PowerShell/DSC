@@ -4,6 +4,7 @@
 use crate::DscError;
 use crate::configure::context::Context;
 use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
+use crate::util::resource_id;
 use rust_i18n::t;
 use serde_json::Value;
 
@@ -28,29 +29,15 @@ impl Function for ResourceId {
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
-        let mut result = String::new();
         // first argument is the type and must contain only 1 slash
-        let resource_type = &args[0];
-        if let Some(value) = resource_type.as_str() {
-            let slash_count = value.chars().filter(|c| *c == '/').count();
-            if slash_count != 1 {
-                return Err(DscError::Function("resourceId".to_string(), t!("functions.resourceId.incorrectTypeFormat").to_string()));
-            }
-            result.push_str(value);
-        } else {
-            return Err(DscError::Parser(t!("functions.resourceId.invalidFirstArgType").to_string()));
-        }
-        // ARM uses a slash separator, but here we use a colon which is not allowed for the type nor name
-        result.push(':');
-        // second argument is the name and we url encode it to ensure no unexpected characters are present
-        let resource_name = &args[1];
-        if let Some(value) = resource_name.as_str() {
-            let encoded = urlencoding::encode(value);
-            result.push_str(&encoded);
-        } else {
-            return Err(DscError::Parser(t!("functions.resourceId.invalidSecondArgType").to_string()));
+        let resource_type = &args[0].as_str().unwrap();
+        let slash_count = resource_type.chars().filter(|c| *c == '/').count();
+        if slash_count != 1 {
+            return Err(DscError::Function("resourceId".to_string(), t!("functions.resourceId.incorrectTypeFormat").to_string()));
         }
 
+        let resource_name = &args[1].as_str().unwrap();
+        let result = resource_id(resource_type, resource_name);
         Ok(Value::String(result))
     }
 }

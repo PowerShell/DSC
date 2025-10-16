@@ -15,6 +15,7 @@ use crate::DscResource;
 use crate::discovery::Discovery;
 use crate::parser::Statement;
 use crate::progress::{Failure, ProgressBar, ProgressFormat};
+use crate::util::resource_id;
 use self::config_doc::{Configuration, DataType, MicrosoftDscMetadata, Operation, SecurityContextKind};
 use self::depends_on::get_resource_invocation_order;
 use self::config_result::{ConfigurationExportResult, ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult};
@@ -388,7 +389,7 @@ impl Configurator {
 
             match &mut get_result {
                 GetResult::Resource(ref mut resource_result) => {
-                    self.context.references.insert(format!("{}:{}", resource.resource_type, evaluated_name), serde_json::to_value(&resource_result.actual_state)?);
+                    self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), serde_json::to_value(&resource_result.actual_state)?);
                     get_metadata_from_result(Some(&mut self.context), &mut resource_result.actual_state, &mut metadata)?;
                 },
                 GetResult::Group(group) => {
@@ -396,7 +397,7 @@ impl Configurator {
                     for result in group {
                         results.push(serde_json::to_value(&result.result)?);
                     }
-                    self.context.references.insert(format!("{}:{}", resource.resource_type, evaluated_name), Value::Array(results.clone()));
+                    self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), Value::Array(results.clone()));
                 },
             }
             let resource_result = config_result::ResourceGetResult {
@@ -559,7 +560,7 @@ impl Configurator {
             };
             match &mut set_result {
                 SetResult::Resource(resource_result) => {
-                    self.context.references.insert(format!("{}:{}", resource.resource_type, evaluated_name), serde_json::to_value(&resource_result.after_state)?);
+                    self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), serde_json::to_value(&resource_result.after_state)?);
                     get_metadata_from_result(Some(&mut self.context), &mut resource_result.after_state, &mut metadata)?;
                 },
                 SetResult::Group(group) => {
@@ -567,7 +568,7 @@ impl Configurator {
                     for result in group {
                         results.push(serde_json::to_value(&result.result)?);
                     }
-                    self.context.references.insert(format!("{}:{}", resource.resource_type, evaluated_name), Value::Array(results.clone()));
+                    self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), Value::Array(results.clone()));
                 },
             }
             let resource_result = config_result::ResourceSetResult {
@@ -637,7 +638,7 @@ impl Configurator {
             };
             match &mut test_result {
                 TestResult::Resource(resource_test_result) => {
-                    self.context.references.insert(format!("{}:{}", resource.resource_type, evaluated_name), serde_json::to_value(&resource_test_result.actual_state)?);
+                    self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), serde_json::to_value(&resource_test_result.actual_state)?);
                     get_metadata_from_result(Some(&mut self.context), &mut resource_test_result.actual_state, &mut metadata)?;
                 },
                 TestResult::Group(group) => {
@@ -645,7 +646,7 @@ impl Configurator {
                     for result in group {
                         results.push(serde_json::to_value(&result.result)?);
                     }
-                    self.context.references.insert(format!("{}:{}", resource.resource_type, evaluated_name), Value::Array(results.clone()));
+                    self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), Value::Array(results.clone()));
                 },
             }
             let resource_result = config_result::ResourceTestResult {
@@ -707,7 +708,7 @@ impl Configurator {
                     return Err(e);
                 },
             };
-            self.context.references.insert(format!("{}:{}", resource.resource_type, evaluated_name), serde_json::to_value(&export_result.actual_state)?);
+            self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), serde_json::to_value(&export_result.actual_state)?);
             progress.set_result(&serde_json::to_value(export_result)?);
             progress.write_increment(1);
         }
