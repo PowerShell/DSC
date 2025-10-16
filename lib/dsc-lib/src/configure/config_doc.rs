@@ -7,7 +7,6 @@ use schemars::{JsonSchema, json_schema};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::{collections::HashMap, fmt::Display};
-use std::fmt::Display;
 
 use crate::{dscerror::DscError, schemas::DscRepoSchema};
 
@@ -131,7 +130,7 @@ pub struct UserFunctionOutput {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
-#[serde(untagged)]
+#[serde(rename_all = "camelCase")]
 pub enum ValueOrCopy {
     Value(String),
     Copy(Copy),
@@ -142,6 +141,7 @@ pub enum ValueOrCopy {
 pub struct Output {
     pub condition: Option<String>,
     pub r#type: DataType,
+    #[serde(flatten)]
     pub value_or_copy: ValueOrCopy,
 }
 
@@ -156,14 +156,14 @@ pub struct Configuration {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub functions: Option<Vec<UserFunction>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub parameters: Option<HashMap<String, Parameter>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub variables: Option<Map<String, Value>>,
-    pub resources: Vec<Resource>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Metadata>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub outputs: Option<HashMap<String, Output>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parameters: Option<HashMap<String, Parameter>>,
+    pub resources: Vec<Resource>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub variables: Option<Map<String, Value>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
