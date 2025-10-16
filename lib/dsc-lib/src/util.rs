@@ -213,6 +213,24 @@ fn get_settings_policy_file_path() -> String
     Path::new("/etc").join("dsc").join("dsc.settings.json").display().to_string()
 }
 
+/// Generates a resource ID from the specified type and name.
+///
+/// # Arguments
+/// * `type_name` - The resource type in the format "namespace/type".
+/// * `name` - The resource name.
+///
+/// # Returns
+/// A string that holds the resource ID in the format "namespace/type:name".
+#[must_use]
+pub fn resource_id(type_name: &str, name: &str) -> String {
+    let mut result = String::new();
+    result.push_str(type_name);
+    result.push(':');
+    let encoded = urlencoding::encode(name);
+    result.push_str(&encoded);
+    result
+}
+
 #[macro_export]
 macro_rules! locked_is_empty {
     ($lockable:expr) => {{
