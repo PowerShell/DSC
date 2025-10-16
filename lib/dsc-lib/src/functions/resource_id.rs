@@ -84,8 +84,8 @@ mod tests {
     #[test]
     fn valid_name_with_slashes() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[resourceId('a','b/c')]", &Context::new()).unwrap();
-        assert_eq!(result, "a:b%2Fc");
+        let result = parser.parse_and_execute("[resourceId('a/a','b/c/d')]", &Context::new()).unwrap();
+        assert_eq!(result, "a/a:b%2Fc%2Fd");
     }
 
     #[test]
