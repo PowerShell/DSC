@@ -123,7 +123,7 @@ Describe 'tests for function expressions' {
     @{ expression = "[intersection(parameters('nestedObject1'), parameters('nestedObject2'))]"; expected = [pscustomobject]@{
         shared = [pscustomobject]@{ value = 42; flag = $true }
         level  = 1
-      } 
+      }
     }
     @{ expression = "[intersection(parameters('nestedObject1'), parameters('nestedObject3'))]"; expected = [pscustomobject]@{ level = 1 } }
     @{ expression = "[intersection(parameters('nestedObject1'), parameters('nestedObject2'), parameters('nestedObject4'))]"; expected = [pscustomobject]@{ level = 1 } }
@@ -948,10 +948,10 @@ Describe 'tests for function expressions' {
     @{ testInput = ' ' }
   ) {
     param($testInput)
-    
+
     $expected = [Uri]::EscapeDataString($testInput)
     $expression = "[uriComponent('$($testInput -replace "'", "''")')]"
-    
+
     $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
@@ -963,13 +963,13 @@ Describe 'tests for function expressions' {
     $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
     $out.results[0].result.actualState.output | Should -BeExactly $expected
   }
-  
+
   It 'uriComponent function works with concat' {
     $input1 = 'hello'
     $input2 = ' '
     $input3 = 'world'
     $expected = [Uri]::EscapeDataString($input1 + $input2 + $input3)
-    
+
     $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
@@ -995,10 +995,10 @@ Describe 'tests for function expressions' {
     @{ testInput = '100%25' }
   ) {
     param($testInput)
-    
+
     $expected = [Uri]::UnescapeDataString($testInput)
     $expression = "[uriComponentToString('$($testInput -replace "'", "''")')]"
-    
+
     $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
@@ -1010,11 +1010,11 @@ Describe 'tests for function expressions' {
     $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
     $out.results[0].result.actualState.output | Should -BeExactly $expected
   }
-  
+
   It 'uriComponentToString function works with round-trip encoding' {
     $original = 'hello world'
     $expected = $original
-    
+
     $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
@@ -1026,11 +1026,11 @@ Describe 'tests for function expressions' {
     $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
     $out.results[0].result.actualState.output | Should -BeExactly $expected
   }
-  
+
   It 'uriComponentToString function works with nested round-trip' {
     $original = 'user+tag@example.com'
     $expected = $original
-    
+
     $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
@@ -1042,13 +1042,13 @@ Describe 'tests for function expressions' {
     $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
     $out.results[0].result.actualState.output | Should -BeExactly $expected
   }
-  
+
   It 'uriComponentToString function works with concat' {
     $input1 = 'hello'
     $input2 = '%20'
     $input3 = 'world'
     $expected = [Uri]::UnescapeDataString($input1 + $input2 + $input3)
-    
+
     $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
@@ -1077,7 +1077,7 @@ Describe 'tests for function expressions' {
     @{ data = @{ nested = @{ value = 123 } }; accessor = '.nested.value'; expected = 123 }
   ) {
     param($data, $accessor, $expected)
-    
+
     $jsonString = ConvertTo-Json -Compress -InputObject $data
     $expression = "[json(''$($jsonString)'')$accessor]"
 
@@ -1152,7 +1152,7 @@ Describe 'tests for function expressions' {
     @{ base = 'http://192.168.1.1/'; relative = 'api/v1'; expected = 'http://192.168.1.1/api/v1' }
   ) {
     param($base, $relative, $expected)
-    
+
     $expression = "[uri('$($base -replace "'", "''")','$($relative -replace "'", "''")')]"
     $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
@@ -1187,5 +1187,21 @@ Describe 'tests for function expressions' {
     $LASTEXITCODE | Should -Not -Be 0
     $errorContent = Get-Content $TestDrive/error.log -Raw
     $errorContent | Should -Match ([regex]::Escape($expectedError))
+  }
+
+  It 'resourceId allows for arbitrary characters in names including unicode' {
+    $name = 'My Resource @123/!#$%^&*()[]{}-+=;`~'
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: "$name"
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[resourceId('Microsoft.DSC.Debug/Echo', '$name')]"
+"@
+    $out = dsc config get -i $config_yaml | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0
+    $expected = "Microsoft.DSC.Debug/Echo:$([Uri]::EscapeDataString($name))"
+    $out.results[0].result.actualState.output | Should -BeExactly $expected
   }
 }
