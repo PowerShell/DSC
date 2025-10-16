@@ -1031,4 +1031,33 @@ Describe 'tests for function expressions' {
     $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
     $out.results[0].result.actualState.output | Should -BeExactly $expected
   }
+
+    It 'tryGet() function works for: <expression>' -TestCases @(
+    @{ expression = "[tryGet(createObject('a', 1, 'b', 2), 'a')]"; expected = 1 }
+    @{ expression = "[tryGet(createObject('a', 1, 'b', 2), 'c')]"; expected = $null }
+    @{ expression = "[tryGet(createObject('key', 'value'), 'key')]"; expected = 'value' }
+    @{ expression = "[tryGet(createObject('nested', createObject('x', 10)), 'nested')]"; expected = [pscustomobject]@{ x = 10 } }
+    @{ expression = "[tryGet(createObject('nested', createObject('x', 10)), 'missing')]"; expected = $null }
+    @{ expression = "[tryGet(createArray(1,2,3), 0)]"; expected = 1 }
+    @{ expression = "[tryGet(createArray(1,2,3), 3)]"; expected = $null }
+    @{ expression = "[tryGet(createArray(1,2,3), -3)]"; expected = $null }
+  ) {
+    param($expression, $expected)
+
+    $escapedExpression = $expression -replace "'", "''"
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '$escapedExpression'
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    if ($expected -is [pscustomobject]) {
+      ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)
+    } else {
+      $out.results[0].result.actualState.output | Should -BeExactly $expected
+    }
+  }
 }

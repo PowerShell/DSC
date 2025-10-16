@@ -42,7 +42,8 @@ module.exports = grammar({
     memberAccess: $ => seq('.', field('name', $.memberName)),
     memberName: $ => /[a-zA-Z0-9_-]+/,
 
-    index: $ => seq('[', field('indexValue', choice($.expression, $.number)), ']'),
+    propertyName: $ => seq('\'', field('string', $.string), '\''),
+    index: $ => seq('[', field('indexValue', choice($.expression, $.number, $.propertyName)), ']'),
   }
 
 });

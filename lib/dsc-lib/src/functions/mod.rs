@@ -68,6 +68,7 @@ pub mod to_lower;
 pub mod to_upper;
 pub mod trim;
 pub mod r#true;
+pub mod try_get;
 pub mod union;
 pub mod unique_string;
 pub mod uri_component;
@@ -193,6 +194,8 @@ impl FunctionDispatcher {
             Box::new(to_upper::ToUpper{}),
             Box::new(trim::Trim{}),
             Box::new(r#true::True{}),
+            Box::new(try_get::TryGet{}),
+            Box::new(utc_now::UtcNow{}),
             Box::new(union::Union{}),
             Box::new(unique_string::UniqueString{}),
             Box::new(uri_component::UriComponent{}),

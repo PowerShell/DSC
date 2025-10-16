@@ -523,6 +523,12 @@ description = "Removes all leading and trailing white-space characters from the 
 description = "Returns the boolean value true"
 invoked = "true function"
 
+[functions.tryGet]
+description = "Attempts to retrieve a value from an array (by index) or object (by key).  Null is returned if the key or index does not exist."
+invoked = "tryGet function"
+invalidKeyType = "Invalid key type, must be a string"
+invalidIndexType = "Invalid index type, must be an integer"
+
 [functions.union]
 description = "Returns a single array or object with all elements from the parameters"
 invoked = "union function"
@@ -558,14 +564,17 @@ unavailableInUserFunction = "The 'variables()' function is not available in user
 
 [parser.expression]
 functionNodeNotFound = "Function node not found"
-parsingFunction = "Parsing function '%{name}'"
-parsingAccessor = "Parsing accessor '%{name}'"
+parsingFunction = "Parsing function: %{name}"
+parsingAccessor = "Parsing accessor: %{name}"
 accessorParsingError = "Error parsing accessor"
-parsingMemberAccessor = "Parsing member accessor '%{name}'"
+parsingMemberAccessor = "Parsing member accessor: %{name}"
 memberNotFound = "Member name not found"
-parsingIndexAccessor = "Parsing index accessor '%{index}'"
+parsingIndexAccessor = "Parsing index accessor: %{index}"
 indexNotFound = "Index value not found"
-invalidAccessorKind = "Invalid accessor kind: '%{kind}'"
+indexValue = "Index value: %{value} with kind %{kind}"
+propertyNameValue = "Property name value: %{value}"
+invalidIndexValueKind = "Invalid index value kind: %{kind}"
+invalidAccessorKind = "Invalid accessor kind: %{kind}"
 functionResult = "Function results: %{results}"
 functionResultSecure = "Function result is secure"
 evalAccessors = "Evaluating accessors"
@@ -576,6 +585,7 @@ indexNotValid = "Index is not a valid number"
 indexOutOfBounds = "Index is out of bounds"
 indexOnNonArray = "Index access on non-array value"
 invalidIndexType = "Invalid index type"
+propertyNameNotString = "Property name is not a string"
 
 [parser.functions]
 foundErrorNode = "Found error node parsing function"
