@@ -15,9 +15,6 @@ const MAX_CONTENT_SIZE: usize = 131_072; // 131072 characters
 #[derive(Debug, Default)]
 pub struct LoadTextContent {}
 
-#[derive(Debug, Default)]
-pub struct LoadTextContent {}
-
 impl super::Function for LoadTextContent {
     fn get_metadata(&self) -> FunctionMetadata {
         FunctionMetadata {
