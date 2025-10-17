@@ -42,8 +42,8 @@ static ADAPTED_RESOURCES: LazyLock<RwLock<BTreeMap<String, Vec<DscResource>>>> =
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(untagged)]
 pub enum Manifest {
-    Resource(ResourceManifest),
-    Extension(ExtensionManifest),
+    Resource(Box<ResourceManifest>),
+    Extension(Box<ExtensionManifest>),
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -629,8 +629,9 @@ fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource:
 pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
     let contents = fs::read_to_string(path)?;
     let file_name_lowercase = path.file_name().and_then(OsStr::to_str).unwrap_or("").to_lowercase();
+    let extension_is_json = path.extension().is_some_and(|ext| ext.eq_ignore_ascii_case("json"));
     if DSC_RESOURCE_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)) {
-        let manifest = if file_name_lowercase.ends_with(".json") {
+        let manifest = if extension_is_json {
             match serde_json::from_str::<ResourceManifest>(&contents) {
                 Ok(manifest) => manifest,
                 Err(err) => {
@@ -649,7 +650,7 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
         return Ok(vec![ImportedManifest::Resource(resource)]);
     }
     if DSC_EXTENSION_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)) {
-        let manifest = if file_name_lowercase.ends_with(".json") {
+        let manifest = if extension_is_json {
             match serde_json::from_str::<ExtensionManifest>(&contents) {
                 Ok(manifest) => manifest,
                 Err(err) => {
@@ -668,7 +669,7 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
         return Ok(vec![ImportedManifest::Extension(extension)]);
     }
     if DSC_MANIFEST_LIST_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)) {
-        let manifest_list = if file_name_lowercase.ends_with(".json") {
+        let manifest_list = if extension_is_json {
             match serde_json::from_str::<ManifestList>(&contents) {
                 Ok(manifest) => manifest,
                 Err(err) => {
