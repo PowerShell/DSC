@@ -372,7 +372,7 @@
             Binaries = @('dsctest')
             CopyFiles = @{
                 All = @(
-                    'dsctest.dsc.resourcelist.json'
+                    'dsctest.dsc.manifests.json'
                 )
             }
         }
