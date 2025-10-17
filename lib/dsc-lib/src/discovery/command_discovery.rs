@@ -4,7 +4,7 @@
 use crate::{discovery::discovery_trait::{DiscoveryFilter, DiscoveryKind, ResourceDiscovery}};
 use crate::{locked_is_empty, locked_extend, locked_clone, locked_get};
 use crate::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
-use crate::dscresources::resource_manifest::{import_manifest, validate_semver, Kind, ResourceManifest, ResourceManifestList, SchemaKind};
+use crate::dscresources::resource_manifest::{import_manifest, validate_semver, Kind, ResourceManifest, SchemaKind};
 use crate::dscresources::command_resource::invoke_command;
 use crate::dscerror::DscError;
 use crate::extensions::dscextension::{self, DscExtension, Capability as ExtensionCapability};
@@ -29,15 +29,27 @@ use which::which;
 use crate::util::get_setting;
 use crate::util::get_exe_path;
 
-const DSC_RESOURCE_EXTENSIONS: [&str; 3] = [".dsc.resource.json", ".dsc.resource.yaml", ".dsc.resource.yml"];
-const DSC_RESOURCE_LIST_EXTENSIONS: [&str; 3] = [".dsc.resourcelist.json", ".dsc.resourcelist.yaml", ".dsc.resourcelist.yml"];
 const DSC_EXTENSION_EXTENSIONS: [&str; 3] = [".dsc.extension.json", ".dsc.extension.yaml", ".dsc.extension.yml"];
+const DSC_MANIFEST_LIST_EXTENSIONS: [&str; 3] = [".dsc.manifests.json", ".dsc.manifests.yaml", ".dsc.manifests.yml"];
+const DSC_RESOURCE_EXTENSIONS: [&str; 3] = [".dsc.resource.json", ".dsc.resource.yaml", ".dsc.resource.yml"];
 
 // use BTreeMap so that the results are sorted by the typename, the Vec is sorted by version
 static ADAPTERS: LazyLock<RwLock<BTreeMap<String, Vec<DscResource>>>> = LazyLock::new(|| RwLock::new(BTreeMap::new()));
 static RESOURCES: LazyLock<RwLock<BTreeMap<String, Vec<DscResource>>>> = LazyLock::new(|| RwLock::new(BTreeMap::new()));
 static EXTENSIONS: LazyLock<RwLock<BTreeMap<String, DscExtension>>> = LazyLock::new(|| RwLock::new(BTreeMap::new()));
 static ADAPTED_RESOURCES: LazyLock<RwLock<BTreeMap<String, Vec<DscResource>>>> = LazyLock::new(|| RwLock::new(BTreeMap::new()));
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(untagged)]
+pub enum Manifest {
+    Resource(ResourceManifest),
+    Extension(ExtensionManifest),
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub struct ManifestList {
+    pub manifests: Vec<Manifest>,
+}
 
 #[derive(Clone, Serialize, Deserialize, JsonSchema)]
 #[schemars(transform = idiomaticize_externally_tagged_enum)]
@@ -199,12 +211,16 @@ impl ResourceDiscovery for CommandDiscovery {
 
     #[allow(clippy::too_many_lines)]
     fn discover(&mut self, kind: &DiscoveryKind, filter: &str) -> Result<(), DscError> {
-        info!("{}", t!("discovery.commandDiscovery.discoverResources", kind = kind : {:?}, filter = filter));
+        if !locked_is_empty!(RESOURCES) {
+            return Ok(());
+        }
 
         // if kind is DscResource, we need to discover extensions first
-        if *kind == DiscoveryKind::Resource {
+        if *kind == DiscoveryKind::Resource && locked_is_empty!(EXTENSIONS) {
             self.discover(&DiscoveryKind::Extension, "*")?;
         }
+
+        info!("{}", t!("discovery.commandDiscovery.discoverResources", kind = kind : {:?}, filter = filter));
 
         let regex_str = convert_wildcard_to_regex(filter);
         debug!("Using regex {regex_str} as filter for adapter name");
@@ -244,9 +260,10 @@ impl ResourceDiscovery for CommandDiscovery {
                                 continue;
                             };
                             let file_name_lowercase = file_name.to_lowercase();
-                            if kind == &DiscoveryKind::Resource && (DSC_RESOURCE_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext))) || DSC_RESOURCE_LIST_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)) ||
+                            if DSC_MANIFEST_LIST_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)) ||
+                                (kind == &DiscoveryKind::Resource && (DSC_RESOURCE_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)))) ||
                                 (kind == &DiscoveryKind::Extension && DSC_EXTENSION_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext))) {
-                                trace!("{}", t!("discovery.commandDiscovery.foundResourceManifest", path = path.to_string_lossy()));
+                                trace!("{}", t!("discovery.commandDiscovery.foundManifest", path = path.to_string_lossy()));
                                 let imported_manifests = match load_manifest(&path)
                                 {
                                     Ok(r) => r,
@@ -613,45 +630,73 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
     let contents = fs::read_to_string(path)?;
     let file_name_lowercase = path.file_name().and_then(OsStr::to_str).unwrap_or("").to_lowercase();
     if DSC_RESOURCE_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)) {
-        if let Ok(manifest) = serde_json::from_str::<ResourceManifest>(&contents) {
-            let resource = load_resource_manifest(path, &manifest)?;
-            return Ok(vec![ImportedManifest::Resource(resource)]);
-        }
-        if let Ok(manifest) = serde_yaml::from_str::<ResourceManifest>(&contents) {
-            let resource = load_resource_manifest(path, &manifest)?;
-            return Ok(vec![ImportedManifest::Resource(resource)]);
-        }
-        return Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.invalidResourceManifest", resource = path.to_string_lossy()).to_string()));
+        let manifest = if file_name_lowercase.ends_with(".json") {
+            match serde_json::from_str::<ResourceManifest>(&contents) {
+                Ok(manifest) => manifest,
+                Err(err) => {
+                    return Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.invalidResourceManifest", resource = path.to_string_lossy(), err = err).to_string()));
+                }
+            }
+        } else {
+            match serde_yaml::from_str::<ResourceManifest>(&contents) {
+                Ok(manifest) => manifest,
+                Err(err) => {
+                    return Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.invalidResourceManifest", resource = path.to_string_lossy(), err = err).to_string()));
+                }
+            }
+        };
+        let resource = load_resource_manifest(path, &manifest)?;
+        return Ok(vec![ImportedManifest::Resource(resource)]);
     }
     if DSC_EXTENSION_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)) {
-        if let Ok(manifest) = serde_json::from_str::<ExtensionManifest>(&contents) {
-            let extension = load_extension_manifest(path, &manifest)?;
-            return Ok(vec![ImportedManifest::Extension(extension)]);
-        }
-        if let Ok(manifest) = serde_yaml::from_str::<ExtensionManifest>(&contents) {
-            let extension = load_extension_manifest(path, &manifest)?;
-            return Ok(vec![ImportedManifest::Extension(extension)]);
-        }
-        return Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.invalidExtensionManifest", resource = path.to_string_lossy()).to_string()));
+        let manifest = if file_name_lowercase.ends_with(".json") {
+            match serde_json::from_str::<ExtensionManifest>(&contents) {
+                Ok(manifest) => manifest,
+                Err(err) => {
+                    return Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.invalidExtensionManifest", resource = path.to_string_lossy(), err = err).to_string()));
+                }
+            }
+        } else {
+            match serde_yaml::from_str::<ExtensionManifest>(&contents) {
+                Ok(manifest) => manifest,
+                Err(err) => {
+                    return Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.invalidExtensionManifest", resource = path.to_string_lossy(), err = err).to_string()));
+                }
+            }
+        };
+        let extension = load_extension_manifest(path, &manifest)?;
+        return Ok(vec![ImportedManifest::Extension(extension)]);
     }
-    if DSC_RESOURCE_LIST_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)) {
-        if let Ok(manifest) = serde_json::from_str::<ResourceManifestList>(&contents) {
-            let mut resources = vec![];
-            for res_manifest in manifest.resources {
-                let resource = load_resource_manifest(path, &res_manifest)?;
-                resources.push(ImportedManifest::Resource(resource));
+    if DSC_MANIFEST_LIST_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)) {
+        let manifest_list = if file_name_lowercase.ends_with(".json") {
+            match serde_json::from_str::<ManifestList>(&contents) {
+                Ok(manifest) => manifest,
+                Err(err) => {
+                    return Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.invalidManifestList", resource = path.to_string_lossy(), err = err).to_string()));
+                }
             }
-            return Ok(resources);
-        }
-        if let Ok(manifest) = serde_yaml::from_str::<ResourceManifestList>(&contents) {
-            let mut resources = vec![];
-            for res_manifest in manifest.resources {
-                let resource = load_resource_manifest(path, &res_manifest)?;
-                resources.push(ImportedManifest::Resource(resource));
+        } else {
+            match serde_yaml::from_str::<ManifestList>(&contents) {
+                Ok(manifest) => manifest,
+                Err(err) => {
+                    return Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.invalidManifestList", resource = path.to_string_lossy(), err = err).to_string()));
+                }
             }
-            return Ok(resources);
+        };
+        let mut resources = vec![];
+        for res_manifest in manifest_list.manifests {
+            match res_manifest {
+                Manifest::Extension(ext_manifest) => {
+                    let extension = load_extension_manifest(path, &ext_manifest)?;
+                    resources.push(ImportedManifest::Extension(extension));
+                },
+                Manifest::Resource(res_manifest) => {
+                    let resource = load_resource_manifest(path, &res_manifest)?;
+                    resources.push(ImportedManifest::Resource(resource));
+                }
+            }
         }
-        return Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.invalidResourceListManifest", resource = path.to_string_lossy()).to_string()));
+        return Ok(resources);
     }
     Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.invalidManifestFile", resource = path.to_string_lossy()).to_string()))
 }

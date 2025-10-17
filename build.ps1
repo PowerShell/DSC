@@ -499,11 +499,11 @@ if (!$SkipBuild) {
             }
 
             if ($IsWindows) {
-                Copy-Item "*.dsc.resource.*","*.dsc.resourcelist.*" $target -Force -ErrorAction Ignore
+                Copy-Item "*.dsc.resource.*","*.dsc.manifests.*" $target -Force -ErrorAction Ignore
             }
             else { # don't copy WindowsPowerShell resource manifest
                 $exclude = @('windowspowershell.dsc.resource.json', 'winpsscript.dsc.resource.json')
-                Copy-Item "*.dsc.resource.*","*.dsc.resourcelist.*" $target -Exclude $exclude -Force -ErrorAction Ignore
+                Copy-Item "*.dsc.resource.*","*.dsc.manifests.*" $target -Exclude $exclude -Force -ErrorAction Ignore
             }
 
             # be sure that the files that should be executable are executable

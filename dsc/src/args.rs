@@ -289,20 +289,21 @@ pub enum ResourceSubCommand {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
 pub enum SchemaType {
-    GetResult,
-    SetResult,
-    TestResult,
-    ResolveResult,
-    DscResource,
-    Resource,
-    ResourceManifest,
-    Include,
     Configuration,
     ConfigurationGetResult,
     ConfigurationSetResult,
     ConfigurationTestResult,
-    ExtensionManifest,
+    DscResource,
     ExtensionDiscoverResult,
+    ExtensionManifest,
     FunctionDefinition,
-    RestartRequired
+    GetResult,
+    Include,
+    ManifestList,
+    ResolveResult,
+    Resource,
+    ResourceManifest,
+    RestartRequired,
+    SetResult,
+    TestResult,
 }
