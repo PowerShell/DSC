@@ -45,6 +45,8 @@ pub mod intersection;
 pub mod items;
 pub mod join;
 pub mod last_index_of;
+pub mod load_file_as_base64;
+pub mod load_text_content;
 pub mod max;
 pub mod min;
 pub mod mod_function;
@@ -171,6 +173,8 @@ impl FunctionDispatcher {
             Box::new(items::Items{}),
             Box::new(join::Join{}),
             Box::new(last_index_of::LastIndexOf{}),
+            Box::new(load_file_as_base64::LoadFileAsBase64{}),
+            Box::new(load_text_content::LoadTextContent{}),
             Box::new(max::Max{}),
             Box::new(min::Min{}),
             Box::new(mod_function::Mod{}),

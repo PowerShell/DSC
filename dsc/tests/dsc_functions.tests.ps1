@@ -1060,4 +1060,366 @@ Describe 'tests for function expressions' {
     $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
     $out.results[0].result.actualState.output | Should -BeExactly $expected
   }
+
+  It 'loadFileAsBase64 function works with text file' {
+    $testContent = "Hello, World!"
+    $testFile = Join-Path $TestDrive "test.txt"
+    Set-Content -Path $testFile -Value $testContent -NoNewline
+    
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($testContent)
+    $expected = [Convert]::ToBase64String($bytes)
+    
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[loadFileAsBase64('$($testFile.Replace('\', '\\'))')]"
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -BeExactly $expected
+  }
+  
+  It 'loadFileAsBase64 function works with binary file' {
+    $testFile = Join-Path $TestDrive "test.bin"
+    $bytes = [byte[]](0x48, 0x65, 0x6C, 0x6C, 0x6F, 0x00, 0xFF, 0xAB)
+    [System.IO.File]::WriteAllBytes($testFile, $bytes)
+    
+    $expected = [Convert]::ToBase64String($bytes)
+    
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[loadFileAsBase64('$($testFile.Replace('\', '\\'))')]"
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -BeExactly $expected
+  }
+  
+  It 'loadFileAsBase64 function works with empty file' {
+    $testFile = Join-Path $TestDrive "empty.txt"
+    New-Item -Path $testFile -ItemType File -Force | Out-Null
+    
+    $expected = [Convert]::ToBase64String([byte[]]@())
+    
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[loadFileAsBase64('$($testFile.Replace('\', '\\'))')]"
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -BeExactly $expected
+  }
+  
+  It 'loadFileAsBase64 function validates round-trip with base64ToString' {
+    $testContent = "Round-trip test content!"
+    $testFile = Join-Path $TestDrive "roundtrip.txt"
+    Set-Content -Path $testFile -Value $testContent -NoNewline
+    
+    $expected = $testContent
+    
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[base64ToString(loadFileAsBase64('$($testFile.Replace('\', '\\'))'))]"
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -BeExactly $expected
+  }
+  
+  It 'loadFileAsBase64 function errors when file does not exist' {
+    $nonExistentFile = Join-Path $TestDrive "does_not_exist.txt"
+    
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[loadFileAsBase64('$($nonExistentFile.Replace('\', '\\'))')]"
+"@
+    $null = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log
+    $LASTEXITCODE | Should -Not -Be 0
+    $errorContent = Get-Content $TestDrive/error.log -Raw
+    $errorContent | Should -Match 'File not found'
+  }
+  
+  It 'loadFileAsBase64 function errors when path is a directory' {
+    $directory = Join-Path $TestDrive "testdir"
+    New-Item -Path $directory -ItemType Directory -Force | Out-Null
+    
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[loadFileAsBase64('$($directory.Replace('\', '\\'))')]"
+"@
+    $null = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log
+    $LASTEXITCODE | Should -Not -Be 0
+    $errorContent = Get-Content $TestDrive/error.log -Raw
+    $errorContent | Should -Match 'not a file'
+  }
+  
+  It 'loadFileAsBase64 function errors when file is too large' {
+    $testFile = Join-Path $TestDrive "large.txt"
+    $largeContent = "x" * (97 * 1024) # 97 KB
+    Set-Content -Path $testFile -Value $largeContent -NoNewline
+    
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[loadFileAsBase64('$($testFile.Replace('\', '\\'))')]"
+"@
+    $null = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log
+    $LASTEXITCODE | Should -Not -Be 0
+    $errorContent = Get-Content $TestDrive/error.log -Raw
+    $errorContent | Should -Match 'too large'
+  }
+
+  It 'loadTextContent function works with UTF-8 text file' {
+    $testContent = "Hello, World! Ça va bien?"
+    $testFile = Join-Path $TestDrive "test_utf8.txt"
+    Set-Content -Path $testFile -Value $testContent -NoNewline -Encoding UTF8
+    
+    $expected = $testContent
+    
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[loadTextContent('$($testFile.Replace('\', '\\'))')]"
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -BeExactly $expected
+  }
+  
+  It 'loadTextContent function works with explicit UTF-8 encoding' {
+    $testContent = "Hello, 世界! 🌍"
+    $testFile = Join-Path $TestDrive "test_utf8_explicit.txt"
+    Set-Content -Path $testFile -Value $testContent -NoNewline -Encoding UTF8
+    
+    $expected = $testContent
+    
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[loadTextContent('$($testFile.Replace('\', '\\'))', 'utf-8')]"
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -BeExactly $expected
+  }
+  
+  It 'loadTextContent function works with UTF-16 encoding' {
+    $testContent = "Hello, UTF-16!"
+    $testFile = Join-Path $TestDrive "test_utf16.txt"
+    Set-Content -Path $testFile -Value $testContent -NoNewline -Encoding Unicode  # Unicode = UTF-16LE
+    
+    $expected = $testContent
+    
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[loadTextContent('$($testFile.Replace('\', '\\'))', 'utf-16')]"
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -BeExactly $expected
+  }
+  
+  It 'loadTextContent function works with UTF-16BE encoding' {
+    $testContent = "Hello, UTF-16BE!"
+    $testFile = Join-Path $TestDrive "test_utf16be.txt"
+    $utf16BEBytes = [System.Text.Encoding]::BigEndianUnicode.GetBytes($testContent)
+    [System.IO.File]::WriteAllBytes($testFile, $utf16BEBytes)
+    
+    $expected = $testContent
+    
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[loadTextContent('$($testFile.Replace('\', '\\'))', 'utf-16BE')]"
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -BeExactly $expected
+  }
+  
+  It 'loadTextContent function works with empty file' {
+    # Create an empty test file
+    $testFile = Join-Path $TestDrive "empty.txt"
+    New-Item -Path $testFile -ItemType File -Force | Out-Null
+    
+    $expected = ""
+    
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[loadTextContent('$($testFile.Replace('\', '\\'))')]"
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -BeExactly $expected
+  }
+  
+  It 'loadTextContent function preserves line endings' {
+    $testContent = "Line 1`nLine 2`r`nLine 3`n"
+    $testFile = Join-Path $TestDrive "newlines.txt"
+    # Use .NET to write exact bytes to preserve line endings
+    [System.IO.File]::WriteAllText($testFile, $testContent, [System.Text.Encoding]::UTF8)
+    
+    $expected = $testContent
+    
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[loadTextContent('$($testFile.Replace('\', '\\'))')]"
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -BeExactly $expected
+  }
+  
+  It 'loadTextContent function works with ISO-8859-1 encoding' {
+    $testFile = Join-Path $TestDrive "test_iso.txt"
+    # Windows-1252/ISO-8859-1 bytes for "Café"
+    $bytes = [byte[]](0x43, 0x61, 0x66, 0xE9)
+    [System.IO.File]::WriteAllBytes($testFile, $bytes)
+    
+    $expected = "Café"
+    
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[loadTextContent('$($testFile.Replace('\', '\\'))', 'iso-8859-1')]"
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -BeExactly $expected
+  }
+  
+  It 'loadTextContent function works with US-ASCII encoding' {
+    # Create a test file with US-ASCII content (only characters 0-127)
+    $testContent = "Hello, ASCII!"
+    $testFile = Join-Path $TestDrive "test_ascii.txt"
+    # US-ASCII is a subset, so any ASCII characters work
+    $bytes = [System.Text.Encoding]::ASCII.GetBytes($testContent)
+    [System.IO.File]::WriteAllBytes($testFile, $bytes)
+    
+    $expected = $testContent
+    
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[loadTextContent('$($testFile.Replace('\', '\\'))', 'us-ascii')]"
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -BeExactly $expected
+  }
+  
+  It 'loadTextContent function errors when file does not exist' {
+    $nonExistentFile = Join-Path $TestDrive "does_not_exist.txt"
+    
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[loadTextContent('$($nonExistentFile.Replace('\', '\\'))')]"
+"@
+    $null = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log
+    $LASTEXITCODE | Should -Not -Be 0
+    $errorContent = Get-Content $TestDrive/error.log -Raw
+    $errorContent | Should -Match 'File not found'
+  }
+  
+  It 'loadTextContent function errors when path is a directory' {
+    $directory = Join-Path $TestDrive "testdir"
+    New-Item -Path $directory -ItemType Directory -Force | Out-Null
+    
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[loadTextContent('$($directory.Replace('\', '\\'))')]"
+"@
+    $null = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log
+    $LASTEXITCODE | Should -Not -Be 0
+    $errorContent = Get-Content $TestDrive/error.log -Raw
+    $errorContent | Should -Match 'not a file'
+  }
+  
+  It 'loadTextContent function errors when content is too large' {
+    # Create a file with more than 131072 characters
+    $testFile = Join-Path $TestDrive "large_text.txt"
+    $largeContent = "a" * 131073
+    Set-Content -Path $testFile -Value $largeContent -NoNewline
+    
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[loadTextContent('$($testFile.Replace('\', '\\'))')]"
+"@
+    $null = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log
+    $LASTEXITCODE | Should -Not -Be 0
+    $errorContent = Get-Content $TestDrive/error.log -Raw
+    $errorContent | Should -Match 'too large'
+  }
+  
+  It 'loadTextContent function errors with unsupported encoding' {
+    $testFile = Join-Path $TestDrive "test.txt"
+    Set-Content -Path $testFile -Value "test" -NoNewline
+    
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[loadTextContent('$($testFile.Replace('\', '\\'))', 'invalid-encoding')]"
+"@
+    $null = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log
+    $LASTEXITCODE | Should -Not -Be 0
+    $errorContent = Get-Content $TestDrive/error.log -Raw
+    $errorContent | Should -Match 'Unsupported encoding'
+  }
+
 }

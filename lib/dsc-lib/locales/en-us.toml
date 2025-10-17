@@ -389,6 +389,26 @@ description = "Returns the index of the last occurrence of an item in an array"
 invoked = "lastIndexOf function"
 invalidArrayArg = "First argument must be an array"
 
+[functions.loadFileAsBase64]
+description = "Loads the specified file as base64 string. File loading occurs during compilation, not at runtime. The maximum allowed size is 96 Kb."
+notString = "File path must be a string"
+fileNotFound = "File not found: %{filePath}"
+notAFile = "Path is not a file: %{filePath}"
+cannotReadMetadata = "Cannot read file metadata for '%{filePath}': %{error}"
+fileTooLarge = "File '%{filePath}' is too large. Maximum allowed size is %{maxSize} bytes."
+cannotReadFile = "Cannot read file '%{filePath}': %{error}"
+
+[functions.loadTextContent]
+description = "Loads the content of the specified file into a string. Content loading occurs during compilation, not at runtime. The maximum allowed content size is 131072 characters (including line endings)."
+notString = "File path must be a string"
+fileNotFound = "File not found: %{filePath}"
+notAFile = "Path is not a file: %{filePath}"
+cannotReadFile = "Cannot read file '%{filePath}': %{error}"
+invalidEncoding = "Encoding parameter must be a string"
+unsupportedEncoding = "Unsupported encoding: %{encoding}. Supported encodings are: 'utf-8', 'utf-16', 'utf-16BE', 'iso-8859-1', 'us-ascii'"
+decodingError = "Error decoding file '%{filePath}' with specified encoding"
+contentTooLarge = "File '%{filePath}' content is too large. Maximum allowed size is %{maxSize} characters."
+
 [functions.length]
 description = "Returns the length of a string, array, or object"
 invoked = "length function"

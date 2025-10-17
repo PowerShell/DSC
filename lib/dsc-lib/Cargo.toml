@@ -10,6 +10,7 @@ base64 = { workspace = true }
 chrono = { workspace = true, features = ["alloc"] }
 clap = { workspace = true }
 derive_builder = { workspace = true }
+encoding_rs = { workspace = true }
 indicatif = { workspace = true }
 jsonschema = { workspace = true }
 linked-hash-map = { workspace = true }
