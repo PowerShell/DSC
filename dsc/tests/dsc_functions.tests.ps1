@@ -1060,4 +1060,60 @@ Describe 'tests for function expressions' {
     $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
     $out.results[0].result.actualState.output | Should -BeExactly $expected
   }
+
+  It 'json() works: <accessor>' -TestCases @(
+    @{ data = @{ name = 'John'; age = 30 }; accessor = '.name'; expected = 'John' }
+    @{ data = @{ name = 'John'; age = 30 }; accessor = '.age'; expected = 30 }
+    @{ data = @(1,2,3); accessor = '[0]'; expected = 1 }
+    @{ data = @(1,2,3); accessor = '[2]'; expected = 3 }
+    @{ data = 'hello'; accessor = ''; expected = 'hello' }
+    @{ data = 42; accessor = ''; expected = 42 }
+    @{ data = $true; accessor = ''; expected = $true }
+    @{ data = $false; accessor = ''; expected = $false }
+    @{ data = $null; accessor = ''; expected = $null }
+    @{ data = @{ users = @( @{ name = 'Alice' }, @{ name = 'Bob' } ) }; accessor = '.users[0].name'; expected = 'Alice' }
+    @{ data = @{ users = @( @{ name = 'Alice' }, @{ name = 'Bob' } ) }; accessor = '.users[1].name'; expected = 'Bob' }
+    @{ data = @{ key = 'value' }; accessor = '.key'; expected = 'value' }
+    @{ data = @{ nested = @{ value = 123 } }; accessor = '.nested.value'; expected = 123 }
+  ) {
+    param($data, $accessor, $expected)
+    
+    $jsonString = ConvertTo-Json -Compress -InputObject $data
+    $expression = "[json(''$($jsonString)'')$accessor]"
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '$expression'
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -Be $expected
+  }
+
+  It 'json() error handling: <expression>' -TestCases @(
+    @{ expression = "[json('not valid json')]" }
+    @{ expression = "[json('{""key"":""value""')]" }
+    @{ expression = "[json('')]" }
+    @{ expression = "[json('{incomplete')]" }
+    @{ expression = "[json('[1,2,')]" }
+  ) {
+    param($expression)
+
+    $escapedExpression = $expression -replace "'", "''"
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '$escapedExpression'
+"@
+    $null = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log
+    $LASTEXITCODE | Should -Not -Be 0
+    $errorContent = Get-Content $TestDrive/error.log -Raw
+    $errorContent | Should -Match ([regex]::Escape('Invalid JSON string'))
+  }
 }

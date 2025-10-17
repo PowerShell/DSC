@@ -384,6 +384,10 @@ invalidNullElement = "Array elements cannot be null"
 invalidArrayElement = "Array elements cannot be arrays"
 invalidObjectElement = "Array elements cannot be objects"
 
+[functions.json]
+description = "Converts a valid JSON string into a JSON data type"
+invalidJson = "Invalid JSON string"
+
 [functions.lastIndexOf]
 description = "Returns the index of the last occurrence of an item in an array"
 invoked = "lastIndexOf function"
