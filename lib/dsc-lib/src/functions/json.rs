@@ -31,7 +31,6 @@ impl Function for Json {
             return Err(DscError::Parser(t!("functions.json.notString").to_string()));
         };
 
-        // Parse the JSON string
         match serde_json::from_str(json_str) {
             Ok(value) => Ok(value),
             Err(e) => Err(DscError::Parser(format!("{}: {}", t!("functions.json.invalidJson"), e))),
