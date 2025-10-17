@@ -386,7 +386,6 @@ invalidObjectElement = "Array elements cannot be objects"
 
 [functions.json]
 description = "Converts a valid JSON string into a JSON data type"
-notString = "Argument must be a string"
 invalidJson = "Invalid JSON string"
 
 [functions.lastIndexOf]

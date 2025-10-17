@@ -27,9 +27,7 @@ impl Function for Json {
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
-        let Some(json_str) = args[0].as_str() else {
-            return Err(DscError::Parser(t!("functions.json.notString").to_string()));
-        };
+        let json_str = args[0].as_str().unwrap();
 
         match serde_json::from_str(json_str) {
             Ok(value) => Ok(value),
