@@ -1061,23 +1061,25 @@ Describe 'tests for function expressions' {
     $out.results[0].result.actualState.output | Should -BeExactly $expected
   }
 
-  It 'json() works: <testInput>' -TestCases @(
-    @{ testInput = "('$(ConvertTo-Json -Compress -InputObject @{ name = 'John'; age = 30 })').name"; expected = 'John' }
-    @{ testInput = "('$(ConvertTo-Json -Compress -InputObject @{ name = 'John'; age = 30 })').age"; expected = 30 }
-    @{ testInput = "('$(ConvertTo-Json -Compress -InputObject @(1,2,3))')[0]"; expected = 1 }
-    @{ testInput = "('$(ConvertTo-Json -Compress -InputObject @(1,2,3))')[2]"; expected = 3 }
-    @{ testInput = "('$(ConvertTo-Json -Compress -InputObject 'hello')')"; expected = 'hello' }
-    @{ testInput = "('$(ConvertTo-Json -Compress -InputObject 42)')"; expected = 42 }
-    @{ testInput = "('$(ConvertTo-Json -Compress -InputObject $true)')"; expected = $true }
-    @{ testInput = "('$(ConvertTo-Json -Compress -InputObject $false)')"; expected = $false }
-    @{ testInput = "('$(ConvertTo-Json -Compress -InputObject $null)')"; expected = $null }
-    @{ testInput = "('$(ConvertTo-Json -Compress -InputObject @{ users = @( @{ name = 'Alice' }, @{ name = 'Bob' } ) })').users[0].name"; expected = 'Alice' }
-    @{ testInput = "('$(ConvertTo-Json -Compress -InputObject @{ users = @( @{ name = 'Alice' }, @{ name = 'Bob' } ) })').users[1].name"; expected = 'Bob' }
-    @{ testInput = "('$(ConvertTo-Json -Compress -InputObject @{ key = 'value' })').key"; expected = 'value' }
-    @{ testInput = "('$(ConvertTo-Json -Compress -InputObject @{ nested = @{ value = 123 } })').nested.value"; expected = 123 }
+  It 'json() works: <accessor>' -TestCases @(
+    @{ data = @{ name = 'John'; age = 30 }; accessor = '.name'; expected = 'John' }
+    @{ data = @{ name = 'John'; age = 30 }; accessor = '.age'; expected = 30 }
+    @{ data = @(1,2,3); accessor = '[0]'; expected = 1 }
+    @{ data = @(1,2,3); accessor = '[2]'; expected = 3 }
+    @{ data = 'hello'; accessor = ''; expected = 'hello' }
+    @{ data = 42; accessor = ''; expected = 42 }
+    @{ data = $true; accessor = ''; expected = $true }
+    @{ data = $false; accessor = ''; expected = $false }
+    @{ data = $null; accessor = ''; expected = $null }
+    @{ data = @{ users = @( @{ name = 'Alice' }, @{ name = 'Bob' } ) }; accessor = '.users[0].name'; expected = 'Alice' }
+    @{ data = @{ users = @( @{ name = 'Alice' }, @{ name = 'Bob' } ) }; accessor = '.users[1].name'; expected = 'Bob' }
+    @{ data = @{ key = 'value' }; accessor = '.key'; expected = 'value' }
+    @{ data = @{ nested = @{ value = 123 } }; accessor = '.nested.value'; expected = 123 }
   ) {
-    param($testInput, $expected)
-    $expression = "[json$($testInput -replace "'", "''")]"
+    param($data, $accessor, $expected)
+    
+    $jsonString = ConvertTo-Json -Compress -InputObject $data
+    $expression = "[json(''$($jsonString)'')$accessor]"
 
     $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
@@ -1092,13 +1094,13 @@ Describe 'tests for function expressions' {
   }
 
   It 'json() error handling: <expression>' -TestCases @(
-    @{ expression = "[json('not valid json')]"; expectedError = 'Invalid JSON string' }
-    @{ expression = "[json('{""key"":""value""')]"; expectedError = 'Invalid JSON string' }
-    @{ expression = "[json('')]"; expectedError = 'Invalid JSON string' }
-    @{ expression = "[json('{incomplete')]"; expectedError = 'Invalid JSON string' }
-    @{ expression = "[json('[1,2,')]"; expectedError = 'Invalid JSON string' }
+    @{ expression = "[json('not valid json')]" }
+    @{ expression = "[json('{""key"":""value""')]" }
+    @{ expression = "[json('')]" }
+    @{ expression = "[json('{incomplete')]" }
+    @{ expression = "[json('[1,2,')]" }
   ) {
-    param($expression, $expectedError)
+    param($expression)
 
     $escapedExpression = $expression -replace "'", "''"
     $config_yaml = @"
@@ -1112,6 +1114,6 @@ Describe 'tests for function expressions' {
     $null = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log
     $LASTEXITCODE | Should -Not -Be 0
     $errorContent = Get-Content $TestDrive/error.log -Raw
-    $errorContent | Should -Match ([regex]::Escape($expectedError))
+    $errorContent | Should -Match ([regex]::Escape('Invalid JSON string'))
   }
 }
