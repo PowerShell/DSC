@@ -127,6 +127,8 @@ crossterm = { version = "0.29" }
 ctrlc = { version = "3.5" }
 # dsc-lib
 derive_builder = { version = "0.20" }
+# dsc-lib
+encoding_rs = { version = "0.8" }
 # dsc, dsc-lib
 indicatif = { version = "0.18" }
 # dsc-lib-security_context::windows
