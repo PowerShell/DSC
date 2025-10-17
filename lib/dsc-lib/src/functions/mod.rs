@@ -42,6 +42,7 @@ pub mod format;
 pub mod int;
 pub mod index_of;
 pub mod intersection;
+pub mod items;
 pub mod join;
 pub mod json;
 pub mod last_index_of;
@@ -68,8 +69,11 @@ pub mod to_lower;
 pub mod to_upper;
 pub mod trim;
 pub mod r#true;
+pub mod try_get;
 pub mod union;
 pub mod unique_string;
+pub mod uri_component;
+pub mod uri_component_to_string;
 pub mod user_function;
 pub mod utc_now;
 pub mod variables;
@@ -165,6 +169,7 @@ impl FunctionDispatcher {
             Box::new(int::Int{}),
             Box::new(index_of::IndexOf{}),
             Box::new(intersection::Intersection{}),
+            Box::new(items::Items{}),
             Box::new(join::Join{}),
             Box::new(json::Json{}),
             Box::new(last_index_of::LastIndexOf{}),
@@ -191,9 +196,13 @@ impl FunctionDispatcher {
             Box::new(to_upper::ToUpper{}),
             Box::new(trim::Trim{}),
             Box::new(r#true::True{}),
+            Box::new(try_get::TryGet{}),
             Box::new(utc_now::UtcNow{}),
             Box::new(union::Union{}),
             Box::new(unique_string::UniqueString{}),
+            Box::new(uri_component::UriComponent{}),
+            Box::new(uri_component_to_string::UriComponentToString{}),
+            Box::new(utc_now::UtcNow{}),
             Box::new(variables::Variables{}),
         ];
         for function in function_list {
