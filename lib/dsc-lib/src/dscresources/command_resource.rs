@@ -725,6 +725,22 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
     }
 }
 
+fn convert_hashmap_string_keys_to_i32(input: Option<&HashMap<String, String>>) -> Result<Option<HashMap<i32, String>>, DscError> {
+    if input.is_none() {
+        return Ok(None);
+    }
+
+    let mut output: HashMap<i32, String> = HashMap::new();
+    for (key, value) in input.unwrap() {
+        if let Ok(key_int) = key.parse::<i32>() {
+            output.insert(key_int, value.clone());
+        } else {
+            return Err(DscError::NotSupported(t!("util.invalidExitCodeKey", key = key).to_string()));
+        }
+    }
+    Ok(Some(output))
+}
+
 /// Invoke a command and return the exit code, stdout, and stderr.
 ///
 /// # Arguments
@@ -745,7 +761,9 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
 /// Will panic if tokio runtime can't be created.
 ///
 #[allow(clippy::implicit_hasher)]
-pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&str>, env: Option<HashMap<String, String>>, exit_codes: Option<&HashMap<i32, String>>) -> Result<(i32, String, String), DscError> {
+pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&str>, env: Option<HashMap<String, String>>, exit_codes: Option<&HashMap<String, String>>) -> Result<(i32, String, String), DscError> {
+    let exit_codes = convert_hashmap_string_keys_to_i32(exit_codes)?;
+
     tokio::runtime::Builder::new_multi_thread().enable_all().build().unwrap().block_on(
         async {
             trace!("{}", t!("dscresources.commandResource.commandInvoke", executable = executable, args = args : {:?}));
@@ -753,7 +771,7 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
                 trace!("{}", t!("dscresources.commandResource.commandCwd", cwd = cwd));
             }
 
-            match run_process_async(executable, args, input, cwd, env, exit_codes).await {
+            match run_process_async(executable, args, input, cwd, env, exit_codes.as_ref()).await {
                 Ok((code, stdout, stderr)) => {
                     Ok((code, stdout, stderr))
                 },

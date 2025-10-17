@@ -50,6 +50,9 @@ pub enum DscError {
     #[error("{t} '{0}', {t2} {1}, {t3} {2}", t = t!("dscerror.invalidFunctionParameterCount"), t2 = t!("dscerror.expected"), t3 = t!("dscerror.got"))]
     InvalidFunctionParameterCount(String, usize, usize),
 
+    #[error("{0}")]
+    InvalidManifest(String),
+
     #[error("{t} '{0}': {1}", t = t!("dscerror.invalidRequiredVersion"))]
     InvalidRequiredVersion(String, String),
 
