@@ -10,7 +10,10 @@ use std::fs;
 use std::path::Path;
 use encoding_rs::{Encoding, WINDOWS_1252, UTF_8, UTF_16BE, UTF_16LE};
 
-const MAX_CONTENT_SIZE: usize = 131072;
+const MAX_CONTENT_SIZE: usize = 131_072; // 131072 characters
+
+#[derive(Debug, Default)]
+pub struct LoadTextContent {}
 
 #[derive(Debug, Default)]
 pub struct LoadTextContent {}
@@ -81,8 +84,7 @@ fn parse_encoding(encoding_str: &str) -> Result<&'static Encoding, DscError> {
         "utf-8" => Ok(UTF_8),
         "utf-16" => Ok(UTF_16LE),
         "utf-16be" => Ok(UTF_16BE),
-        "iso-8859-1" => Ok(WINDOWS_1252), // Per Encoding Standard, ISO-8859-1 maps to windows-1252
-        "us-ascii" => Ok(WINDOWS_1252), // US-ASCII is a subset of Windows-1252
+        "iso-8859-1" | "us-ascii" => Ok(WINDOWS_1252), // Per Encoding Standard, both map to windows-1252
         _ => Err(DscError::Parser(t!("functions.loadTextContent.unsupportedEncoding", encoding = encoding_str).to_string())),
     }
 }
