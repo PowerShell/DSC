@@ -1,0 +1,13 @@
+{
+    "Name": "osinfo",
+    "Kind": "Resource",
+    "IsRust": true,
+    "Binaries": [
+        "osinfo"
+    ],
+    "CopyFiles": {
+        "All": [
+            "osinfo.dsc.resource.json"
+        ]
+    }
+}
