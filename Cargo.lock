@@ -675,6 +675,7 @@ dependencies = [
  "tree-sitter",
  "tree-sitter-dscexpression",
  "tree-sitter-rust",
+ "url",
  "urlencoding",
  "uuid",
  "which",

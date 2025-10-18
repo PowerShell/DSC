@@ -542,6 +542,12 @@ invalidArgType = "All arguments must either be arrays or objects"
 description = "Returns a deterministic unique string from the given strings"
 invoked = "uniqueString function"
 
+[functions.uri]
+description = "Creates an absolute URI by combining the baseUri and the relativeUri string"
+emptyBaseUri = "The baseUri parameter cannot be empty. An absolute URI requires a valid base URI."
+notAbsoluteUri = "The baseUri must be an absolute URI (must include a scheme such as https:// or file://)."
+invalidRelativeUri = "Invalid URI: The relative URI contains an invalid sequence. Three or more consecutive slashes (///) are not allowed."
+
 [functions.uriComponent]
 description = "Encodes a URI component using percent-encoding"
 
