@@ -779,6 +779,7 @@ impl Configurator {
                         warn!("{}", t!("configure.mod.secureOutputSkipped", name = name));
                         continue;
                     }
+                    // TODO: handle nullable when supported
                     if value_result.is_string() && output.r#type != DataType::String ||
                         value_result.is_i64() && output.r#type != DataType::Int ||
                         value_result.is_boolean() && output.r#type != DataType::Bool ||
