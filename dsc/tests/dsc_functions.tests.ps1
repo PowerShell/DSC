@@ -121,9 +121,10 @@ Describe 'tests for function expressions' {
     @{ expression = "[intersection(parameters('firstArray'), parameters('secondArray'), parameters('fifthArray'))]"; expected = @('cd') }
     @{ expression = "[intersection(parameters('firstObject'), parameters('secondObject'), parameters('sixthObject'))]"; expected = [pscustomobject]@{ two = 'b' } }
     @{ expression = "[intersection(parameters('nestedObject1'), parameters('nestedObject2'))]"; expected = [pscustomobject]@{
-      shared = [pscustomobject]@{ value = 42; flag = $true }
-      level = 1
-    } }
+        shared = [pscustomobject]@{ value = 42; flag = $true }
+        level  = 1
+      } 
+    }
     @{ expression = "[intersection(parameters('nestedObject1'), parameters('nestedObject3'))]"; expected = [pscustomobject]@{ level = 1 } }
     @{ expression = "[intersection(parameters('nestedObject1'), parameters('nestedObject2'), parameters('nestedObject4'))]"; expected = [pscustomobject]@{ level = 1 } }
   ) {
@@ -738,7 +739,7 @@ Describe 'tests for function expressions' {
     $out.results[0].result.actualState.output | Should -BeExactly $expected
   }
 
-    It 'base64ToString function works for: <expression>' -TestCases @(
+  It 'base64ToString function works for: <expression>' -TestCases @(
     @{ expression = "[base64ToString('aGVsbG8gd29ybGQ=')]"; expected = 'hello world' }
     @{ expression = "[base64ToString('')]"; expected = '' }
     @{ expression = "[base64ToString('aMOpbGxv')]"; expected = 'héllo' }
@@ -857,5 +858,262 @@ Describe 'tests for function expressions' {
 "@
     $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
     $out.results[0].result.actualState.output | Should -Be $expected
+  }
+
+  It 'items function converts object to array: <expression>' -TestCases @(
+    @{ expression = "[length(items(createObject('a', 1, 'b', 2)))]"; expected = 2 }
+    @{ expression = "[length(items(createObject()))]"; expected = 0 }
+    @{ expression = "[items(createObject('name', 'John'))[0].key]"; expected = 'name' }
+    @{ expression = "[items(createObject('name', 'John'))[0].value]"; expected = 'John' }
+    @{ expression = "[items(createObject('a', 1, 'b', 2, 'c', 3))[1].key]"; expected = 'b' }
+    @{ expression = "[items(createObject('x', 'hello', 'y', 'world'))[0].value]"; expected = 'hello' }
+  ) {
+    param($expression, $expected)
+
+    $escapedExpression = $expression -replace "'", "''"
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '$escapedExpression'
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -Be $expected
+  }
+
+  It 'items function handles nested values: <expression>' -TestCases @(
+    @{ expression = "[items(createObject('person', createObject('name', 'John')))[0].value.name]"; expected = 'John' }
+    @{ expression = "[items(createObject('list', createArray('a','b','c')))[0].value[1]]"; expected = 'b' }
+    @{ expression = "[length(items(createObject('obj', createObject('x', 1, 'y', 2)))[0].value)]"; expected = 2 }
+  ) {
+    param($expression, $expected)
+
+    $escapedExpression = $expression -replace "'", "''"
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '$escapedExpression'
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -Be $expected
+  }
+
+  It 'tryGet() function works for: <expression>' -TestCases @(
+    @{ expression = "[tryGet(createObject('a', 1, 'b', 2), 'a')]"; expected = 1 }
+    @{ expression = "[tryGet(createObject('a', 1, 'b', 2), 'c')]"; expected = $null }
+    @{ expression = "[tryGet(createObject('key', 'value'), 'key')]"; expected = 'value' }
+    @{ expression = "[tryGet(createObject('nested', createObject('x', 10)), 'nested')]"; expected = [pscustomobject]@{ x = 10 } }
+    @{ expression = "[tryGet(createObject('nested', createObject('x', 10)), 'missing')]"; expected = $null }
+    @{ expression = "[tryGet(createArray(1,2,3), 0)]"; expected = 1 }
+    @{ expression = "[tryGet(createArray(1,2,3), 3)]"; expected = $null }
+    @{ expression = "[tryGet(createArray(1,2,3), -3)]"; expected = $null }
+  ) {
+    param($expression, $expected)
+
+    $escapedExpression = $expression -replace "'", "''"
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '$escapedExpression'
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    if ($expected -is [pscustomobject]) {
+      ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)
+    } else {
+      $out.results[0].result.actualState.output | Should -BeExactly $expected
+    }
+  }
+
+  It 'uriComponent function works for: <testInput>' -TestCases @(
+    @{ testInput = 'hello world' }
+    @{ testInput = 'hello@example.com' }
+    @{ testInput = 'https://example.com/path?query=value' }
+    @{ testInput = '' }
+    @{ testInput = 'ABCabc123-_.~' }
+    @{ testInput = ':/?#[]@!$&()*+,;=' }
+    @{ testInput = 'café' }
+    @{ testInput = 'name=John Doe&age=30' }
+    @{ testInput = '/path/to/my file.txt' }
+    @{ testInput = 'user+tag@example.com' }
+    @{ testInput = '1234567890' }
+    @{ testInput = '100%' }
+    @{ testInput = ' ' }
+  ) {
+    param($testInput)
+    
+    $expected = [Uri]::EscapeDataString($testInput)
+    $expression = "[uriComponent('$($testInput -replace "'", "''")')]"
+    
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "$expression"
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -BeExactly $expected
+  }
+  
+  It 'uriComponent function works with concat' {
+    $input1 = 'hello'
+    $input2 = ' '
+    $input3 = 'world'
+    $expected = [Uri]::EscapeDataString($input1 + $input2 + $input3)
+    
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[uriComponent(concat('hello', ' ', 'world'))]"
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -BeExactly $expected
+  }
+
+  It 'uriComponentToString function works for: <testInput>' -TestCases @(
+    @{ testInput = 'hello%20world' }
+    @{ testInput = 'hello%40example.com' }
+    @{ testInput = 'https%3A%2F%2Fexample.com%2Fpath%3Fquery%3Dvalue' }
+    @{ testInput = '' }
+    @{ testInput = 'ABCabc123-_.~' }
+    @{ testInput = '%3A%2F%3F%23%5B%5D%40%21%24%26%28%29%2A%2B%2C%3B%3D' }
+    @{ testInput = 'caf%C3%A9' }
+    @{ testInput = 'name%3DJohn%20Doe%26age%3D30' }
+    @{ testInput = '%2Fpath%2Fto%2Fmy%20file.txt' }
+    @{ testInput = '100%25' }
+  ) {
+    param($testInput)
+    
+    $expected = [Uri]::UnescapeDataString($testInput)
+    $expression = "[uriComponentToString('$($testInput -replace "'", "''")')]"
+    
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "$expression"
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -BeExactly $expected
+  }
+  
+  It 'uriComponentToString function works with round-trip encoding' {
+    $original = 'hello world'
+    $expected = $original
+    
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[uriComponentToString(uriComponent('hello world'))]"
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -BeExactly $expected
+  }
+  
+  It 'uriComponentToString function works with nested round-trip' {
+    $original = 'user+tag@example.com'
+    $expected = $original
+    
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[uriComponentToString(uriComponent('user+tag@example.com'))]"
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -BeExactly $expected
+  }
+  
+  It 'uriComponentToString function works with concat' {
+    $input1 = 'hello'
+    $input2 = '%20'
+    $input3 = 'world'
+    $expected = [Uri]::UnescapeDataString($input1 + $input2 + $input3)
+    
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[uriComponentToString(concat('hello', '%20', 'world'))]"
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -BeExactly $expected
+  }
+
+  It 'json() works: <accessor>' -TestCases @(
+    @{ data = @{ name = 'John'; age = 30 }; accessor = '.name'; expected = 'John' }
+    @{ data = @{ name = 'John'; age = 30 }; accessor = '.age'; expected = 30 }
+    @{ data = @(1,2,3); accessor = '[0]'; expected = 1 }
+    @{ data = @(1,2,3); accessor = '[2]'; expected = 3 }
+    @{ data = 'hello'; accessor = ''; expected = 'hello' }
+    @{ data = 42; accessor = ''; expected = 42 }
+    @{ data = $true; accessor = ''; expected = $true }
+    @{ data = $false; accessor = ''; expected = $false }
+    @{ data = $null; accessor = ''; expected = $null }
+    @{ data = @{ users = @( @{ name = 'Alice' }, @{ name = 'Bob' } ) }; accessor = '.users[0].name'; expected = 'Alice' }
+    @{ data = @{ users = @( @{ name = 'Alice' }, @{ name = 'Bob' } ) }; accessor = '.users[1].name'; expected = 'Bob' }
+    @{ data = @{ key = 'value' }; accessor = '.key'; expected = 'value' }
+    @{ data = @{ nested = @{ value = 123 } }; accessor = '.nested.value'; expected = 123 }
+  ) {
+    param($data, $accessor, $expected)
+    
+    $jsonString = ConvertTo-Json -Compress -InputObject $data
+    $expression = "[json(''$($jsonString)'')$accessor]"
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '$expression'
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -Be $expected
+  }
+
+  It 'json() error handling: <expression>' -TestCases @(
+    @{ expression = "[json('not valid json')]" }
+    @{ expression = "[json('{""key"":""value""')]" }
+    @{ expression = "[json('')]" }
+    @{ expression = "[json('{incomplete')]" }
+    @{ expression = "[json('[1,2,')]" }
+  ) {
+    param($expression)
+
+    $escapedExpression = $expression -replace "'", "''"
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '$escapedExpression'
+"@
+    $null = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log
+    $LASTEXITCODE | Should -Not -Be 0
+    $errorContent = Get-Content $TestDrive/error.log -Raw
+    $errorContent | Should -Match ([regex]::Escape('Invalid JSON string'))
   }
 }
