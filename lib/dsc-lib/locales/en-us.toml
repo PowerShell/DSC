@@ -79,7 +79,7 @@ nameResultNotString = "Resource name result is not a string"
 circularDependency = "Circular dependency or unresolvable parameter references detected in parameters: %{parameters}"
 userFunctionAlreadyDefined = "User function '%{name}' in namespace '%{namespace}' is already defined"
 addingUserFunction = "Adding user function '%{name}'"
-copyCountResultNotInteger = "Copy count is not an integer: %{value}"
+copyCountResultNotInteger = "Copy count result is not an integer: %{expression}"
 
 [discovery.commandDiscovery]
 couldNotReadSetting = "Could not read 'resourcePath' setting"

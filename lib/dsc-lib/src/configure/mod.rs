@@ -966,9 +966,9 @@ impl Configurator {
                     IntOrExpression::Int(i) => *i,
                     IntOrExpression::Expression(e) => {
                         let Value::Number(n) = self.statement_parser.parse_and_execute(e, &self.context)? else {
-                            return Err(DscError::Parser(t!("configure.mod.copyCountResultNotInteger", value = &copy.count).to_string()))
+                            return Err(DscError::Parser(t!("configure.mod.copyCountResultNotInteger", expression = e).to_string()))
                         };
-                        n.as_i64().ok_or_else(|| DscError::Parser(t!("configure.mod.copyCountResultNotInteger", value = &copy.count).to_string()))?
+                        n.as_i64().ok_or_else(|| DscError::Parser(t!("configure.mod.copyCountResultNotInteger", expression = e).to_string()))?
                     },
                 };
                 for i in 0..count {
