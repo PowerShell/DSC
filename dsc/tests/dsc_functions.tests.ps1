@@ -1146,6 +1146,10 @@ Describe 'tests for function expressions' {
     @{ base = 'https://example.com/path'; relative = 'http://different.com/path'; expected = 'http://different.com/path' }
     @{ base = 'https://user:pass@example.com/'; relative = 'path'; expected = 'https://user:pass@example.com/path' }
     @{ base = 'https://example.com/'; relative = 'café/file.txt'; expected = 'https://example.com/caf%C3%A9/file.txt' }
+    @{ base = 'https://[::1]/'; relative = 'path'; expected = 'https://[0000:0000:0000:0000:0000:0000:0000:0001]/path' }
+    @{ base = 'https://[2001:db8::1]/'; relative = 'api/v1'; expected = 'https://[2001:0DB8:0000:0000:0000:0000:0000:0001]/api/v1' }
+    @{ base = 'https://[2001:db8::1]:8080/'; relative = 'api'; expected = 'https://[2001:0DB8:0000:0000:0000:0000:0000:0001]:8080/api' }
+    @{ base = 'http://192.168.1.1/'; relative = 'api/v1'; expected = 'http://192.168.1.1/api/v1' }
   ) {
     param($base, $relative, $expected)
     

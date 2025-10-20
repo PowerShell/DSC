@@ -8,6 +8,7 @@ use rust_i18n::t;
 use serde_json::Value;
 use super::Function;
 use url::Url;
+use std::net::Ipv6Addr;
 
 #[derive(Debug, Default)]
 pub struct Uri {}
@@ -48,19 +49,24 @@ impl Function for Uri {
             return Err(DscError::Parser(t!("functions.uri.invalidRelativeUri").to_string()));
         }
 
-        if let Some(uri_without_slashes) = relative_uri.strip_prefix("//") {
-            let scheme = base.scheme();
-            
-            if uri_without_slashes.contains('/') {
-                return Ok(Value::String(format!("{scheme}:{relative_uri}")));
-            }
-            return Ok(Value::String(format!("{scheme}:{relative_uri}/")));
-        }
-
         let result = base.join(relative_uri)
             .map_err(|e| DscError::Parser(format!("{}: {}", t!("functions.uri.invalidRelativeUri"), e)))?;
         
-        Ok(Value::String(result.to_string()))
+        let final_result = if let Some(url::Host::Ipv6(ipv6_addr)) = result.host() {
+            let segments = ipv6_addr.segments();
+            let expanded = format!("{:04X}:{:04X}:{:04X}:{:04X}:{:04X}:{:04X}:{:04X}:{:04X}",
+                segments[0], segments[1], segments[2], segments[3],
+                segments[4], segments[5], segments[6], segments[7]
+            );
+            
+            let addr = Ipv6Addr::from(segments);
+            let compressed = addr.to_string();
+            result.to_string().replace(&compressed, &expanded)
+        } else {
+            result.to_string()
+        };
+        
+        Ok(Value::String(final_result))
     }
 }
 
@@ -216,5 +222,35 @@ mod tests {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[uri('https://example.com/', '//foo/bar')]", &Context::new()).unwrap();
         assert_eq!(result, "https://foo/bar");
+    }
+
+    #[test]
+    fn test_uri_ipv6_localhost() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[uri('https://[::1]/', 'path')]", &Context::new()).unwrap();
+        // IPv6 should be expanded to match .NET behavior
+        assert_eq!(result, "https://[0000:0000:0000:0000:0000:0000:0000:0001]/path");
+    }
+
+    #[test]
+    fn test_uri_ipv6_address() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[uri('https://[2001:db8::1]/', 'api/v1')]", &Context::new()).unwrap();
+        // IPv6 should be expanded to match .NET behavior
+        assert_eq!(result, "https://[2001:0DB8:0000:0000:0000:0000:0000:0001]/api/v1");
+    }
+
+    #[test]
+    fn test_uri_ipv6_with_port() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[uri('https://[2001:db8::1]:8080/', 'api')]", &Context::new()).unwrap();
+        assert_eq!(result, "https://[2001:0DB8:0000:0000:0000:0000:0000:0001]:8080/api");
+    }
+
+    #[test]
+    fn test_uri_ipv4_address() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[uri('http://192.168.1.1/', 'api/v1')]", &Context::new()).unwrap();
+        assert_eq!(result, "http://192.168.1.1/api/v1");
     }
 }
