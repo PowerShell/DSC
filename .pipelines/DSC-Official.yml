@@ -524,6 +524,11 @@ extends:
                 throw "PDP path '$pdpPath' does not exist. Cannot update PDP.xml."
               }
 
+              $sbConfigPath = '$(System.DefaultWorkingDirectory)/DSC/.pipelines/store/SBConfig.json'
+              if (-not (Test-Path -Path $sbConfigPath)) {
+                throw "SBConfig path '$sbConfigPath' does not exist. Cannot update SBConfig.json."
+              }
+
               $pdpContent = Get-Content -Path $pdpPath -Raw
               $appName = if ($(isPreRelease) -eq 'true') {
                 'DesiredStateConfiguration-Preview'
@@ -533,6 +538,16 @@ extends:
               $pdpContent = $pdpContent.Replace('$AppName$', $appName)
               Set-Content -Path $pdpPath -Value $pdpContent
               Write-Host "PDP.xml updated successfully with AppName: $appName"
+
+              $sbConfigContent = Get-Content -Path $sbConfigPath -Raw
+              $productId = if ($(isPreRelease) -eq 'true') {
+                'Microsoft.DesiredStateConfiguration-Preview'
+              } else {
+                'Microsoft.DesiredStateConfiguration'
+              }
+              $sbConfigContent = $sbConfigContent.Replace('$ProductID$', $productId)
+              Set-Content -Path $sbConfigPath -Value $sbConfigContent
+              Write-Host "SBConfig.json updated successfully with ProductID: $productId"
 
         - task: MS-RDX-MRO.windows-store-publish.package-task.store-package@3
           displayName: Publish to Microsoft Store
