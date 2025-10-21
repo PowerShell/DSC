@@ -1,9 +1,8 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::configure::config_doc::{ExecutionKind, Metadata, Resource, Parameter};
 use crate::configure::context::{Context, ProcessMode};
-use crate::configure::{config_doc::{IntOrExpression, RestartRequired}, parameters::Input};
+use crate::configure::{config_doc::{ExecutionKind, IntOrExpression, Metadata, Parameter, Resource, RestartRequired, ValueOrCopy}, parameters::Input};
 use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscerror::DscError;
 use crate::dscresources::{
@@ -414,6 +413,10 @@ impl Configurator {
         result.metadata = Some(
             self.get_result_metadata(Operation::Get)
         );
+        self.process_output()?;
+        if !self.context.outputs.is_empty() {
+            result.outputs = Some(self.context.outputs.clone());
+        }
         Ok(result)
     }
 
@@ -585,6 +588,10 @@ impl Configurator {
         result.metadata = Some(
             self.get_result_metadata(Operation::Set)
         );
+        self.process_output()?;
+        if !self.context.outputs.is_empty() {
+            result.outputs = Some(self.context.outputs.clone());
+        }
         Ok(result)
     }
 
@@ -663,6 +670,10 @@ impl Configurator {
         result.metadata = Some(
             self.get_result_metadata(Operation::Test)
         );
+        self.process_output()?;
+        if !self.context.outputs.is_empty() {
+            result.outputs = Some(self.context.outputs.clone());
+        }
         Ok(result)
     }
 
@@ -725,6 +736,10 @@ impl Configurator {
         }
 
         result.result = Some(conf);
+        self.process_output()?;
+        if !self.context.outputs.is_empty() {
+            result.outputs = Some(self.context.outputs.clone());
+        }
         Ok(result)
     }
 
@@ -737,6 +752,48 @@ impl Configurator {
             }
         }
         Ok(false)
+    }
+
+    /// Process the outputs defined in the configuration.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the output processing fails.
+    pub fn process_output(&mut self) -> Result<(), DscError> {
+        if self.config.outputs.is_none() || self.context.execution_type == ExecutionKind::WhatIf {
+            return Ok(());
+        }
+        if let Some(outputs) = &self.config.outputs {
+            for (name, output) in outputs {
+                if let Some(condition) = &output.condition {
+                    let condition_result = self.statement_parser.parse_and_execute(condition, &self.context)?;
+                    if condition_result != Value::Bool(true) {
+                        info!("{}", t!("configure.mod.skippingOutput", name = name));
+                        continue;
+                    }
+                }
+
+                if let ValueOrCopy::Value(value) = &output.value_or_copy {
+                    let value_result = self.statement_parser.parse_and_execute(value, &self.context)?;
+                    if output.r#type == DataType::SecureString || output.r#type == DataType::SecureObject {
+                        warn!("{}", t!("configure.mod.secureOutputSkipped", name = name));
+                        continue;
+                    }
+                    // TODO: handle nullable when supported
+                    if value_result.is_string() && output.r#type != DataType::String ||
+                        value_result.is_i64() && output.r#type != DataType::Int ||
+                        value_result.is_boolean() && output.r#type != DataType::Bool ||
+                        value_result.is_array() && output.r#type != DataType::Array ||
+                        value_result.is_object() && output.r#type != DataType::Object {
+                            return Err(DscError::Validation(t!("configure.mod.outputTypeNotMatch", name = name, expected_type = output.r#type).to_string()));
+                    }
+                    self.context.outputs.insert(name.clone(), value_result);
+                } else {
+                    warn!("{}", t!("configure.mod.copyNotSupported", name = name));
+                }
+            }
+        }
+        Ok(())
     }
 
     /// Set the mounted path for the configuration.

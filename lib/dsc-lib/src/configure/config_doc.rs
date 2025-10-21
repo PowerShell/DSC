@@ -130,6 +130,22 @@ pub struct UserFunctionOutput {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub enum ValueOrCopy {
+    Value(String),
+    Copy(Copy),
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct Output {
+    pub condition: Option<String>,
+    pub r#type: DataType,
+    #[serde(flatten)]
+    pub value_or_copy: ValueOrCopy,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Configuration {
     #[serde(rename = "$schema")]
@@ -140,15 +156,18 @@ pub struct Configuration {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub functions: Option<Vec<UserFunction>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub parameters: Option<HashMap<String, Parameter>>,
+    pub metadata: Option<Metadata>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub variables: Option<Map<String, Value>>,
+    pub outputs: Option<HashMap<String, Output>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parameters: Option<HashMap<String, Parameter>>,
     pub resources: Vec<Resource>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub metadata: Option<Metadata>,
+    pub variables: Option<Map<String, Value>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct Parameter {
     #[serde(rename = "type")]
     pub parameter_type: DataType,
@@ -358,6 +377,7 @@ impl Configuration {
             resources: Vec::new(),
             functions: None,
             variables: None,
+            outputs: None,
         }
     }
 }
