@@ -22,7 +22,7 @@
         "DisableAutoPackageNameFormatting": false
     },
     "appSubmission": {
-        "productId": "",
+        "productId": "$ProductID$",
         "targetPublishMode": "Immediate",
         "targetPublishDate": null,
         "visibility": "NotSet",
