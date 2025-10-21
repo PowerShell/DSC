@@ -1,8 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{discovery::discovery_trait::{DiscoveryFilter, DiscoveryKind, ResourceDiscovery}};
+use crate::{discovery::discovery_trait::{DiscoveryFilter, DiscoveryKind, ResourceDiscovery}, parser::Statement};
 use crate::{locked_is_empty, locked_extend, locked_clone, locked_get};
+use crate::configure::context::Context;
 use crate::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
 use crate::dscresources::resource_manifest::{import_manifest, validate_semver, Kind, ResourceManifest, SchemaKind};
 use crate::dscresources::command_resource::invoke_command;
@@ -639,6 +640,10 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
                 }
             }
         };
+        if !evaluate_condition(manifest.condition.as_deref())? {
+            debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = path.to_string_lossy(), condition = manifest.condition.unwrap_or_default()));
+            return Ok(vec![]);
+        }
         let resource = load_resource_manifest(path, &manifest)?;
         return Ok(vec![ImportedManifest::Resource(resource)]);
     }
@@ -658,10 +663,15 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
                 }
             }
         };
+        if !evaluate_condition(manifest.condition.as_deref())? {
+                debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = path.to_string_lossy(), condition = manifest.condition.unwrap_or_default()));
+                return Ok(vec![]);
+        }
         let extension = load_extension_manifest(path, &manifest)?;
         return Ok(vec![ImportedManifest::Extension(extension)]);
     }
     if DSC_MANIFEST_LIST_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)) {
+        let mut resources: Vec<ImportedManifest> = vec![];
         let manifest_list = if extension_is_json {
             match serde_json::from_str::<ManifestList>(&contents) {
                 Ok(manifest) => manifest,
@@ -677,15 +687,22 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
                 }
             }
         };
-        let mut resources = vec![];
         if let Some(resource_manifests) = &manifest_list.resources {
             for res_manifest in resource_manifests {
+                if !evaluate_condition(res_manifest.condition.as_deref())? {
+                    debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = path.to_string_lossy(), condition = res_manifest.condition.unwrap_or_default()));
+                    continue;
+                }
                 let resource = load_resource_manifest(path, res_manifest)?;
                 resources.push(ImportedManifest::Resource(resource));
             }
         }
         if let Some(extension_manifests) = &manifest_list.extensions {
             for ext_manifest in extension_manifests {
+                if !evaluate_condition(ext_manifest.condition.as_deref())? {
+                    debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = path.to_string_lossy(), condition = ext_manifest.condition.unwrap_or_default()));
+                    continue;
+                }
                 let extension = load_extension_manifest(path, ext_manifest)?;
                 resources.push(ImportedManifest::Extension(extension));
             }
