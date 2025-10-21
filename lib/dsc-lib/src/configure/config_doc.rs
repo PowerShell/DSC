@@ -159,6 +159,11 @@ pub struct Configuration {
     #[serde(rename = "$schema")]
     #[schemars(schema_with = "Configuration::recognized_schema_uris_subschema")]
     pub schema: String,
+    /// Irrelevant Bicep metadata from using the extension
+    /// TODO: Potentially check this as a feature flag.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "languageVersion")]
+    pub language_version: Option<String>,
     #[serde(rename = "contentVersion")]
     pub content_version: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -172,6 +177,11 @@ pub struct Configuration {
     pub resources: Vec<Resource>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub variables: Option<Map<String, Value>>,
+    /// Irrelevant Bicep metadata from using the extension
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub imports: Option<Map<String, Value>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub extensions: Option<Map<String, Value>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -344,6 +354,11 @@ pub struct Resource {
     pub resources: Option<Vec<Resource>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Metadata>,
+    /// Irrelevant Bicep metadata from using the extension
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub import: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub extension: Option<String>,
 }
 
 impl Default for Configuration {
@@ -381,6 +396,7 @@ impl Configuration {
     pub fn new() -> Self {
         Self {
             schema: Self::default_schema_id_uri(),
+            language_version: None,
             content_version: Some("1.0.0".to_string()),
             metadata: None,
             parameters: None,
@@ -388,6 +404,8 @@ impl Configuration {
             functions: None,
             variables: None,
             outputs: None,
+            imports: None,
+            extensions: None,
         }
     }
 }
@@ -413,6 +431,8 @@ impl Resource {
             location: None,
             tags: None,
             api_version: None,
+            import: None,
+            extension: None,
         }
     }
 }
