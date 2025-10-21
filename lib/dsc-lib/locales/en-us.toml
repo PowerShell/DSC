@@ -476,9 +476,6 @@ unavailableInUserFunction = "The 'reference()' function is not available in user
 [functions.resourceId]
 description = "Constructs a resource ID from the given type and name"
 incorrectTypeFormat = "Type argument must contain exactly one slash"
-invalidFirstArgType = "Invalid argument type for first parameter"
-incorrectNameFormat = "Name argument cannot contain a slash"
-invalidSecondArgType = "Invalid argument type for second parameter"
 
 [functions.secret]
 description = "Retrieves a secret from a vault"

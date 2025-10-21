@@ -42,7 +42,7 @@ pub fn get_resource_invocation_order(config: &Configuration, parser: &mut Statem
                 let (resource_type, resource_name) = get_type_and_name(string_result)?;
 
                 // find the resource by name
-                let Some(dependency_resource) = config.resources.iter().find(|r| r.name.eq(resource_name)) else {
+                let Some(dependency_resource) = config.resources.iter().find(|r| r.name.eq(&resource_name)) else {
                     return Err(DscError::Validation(t!("configure.dependsOn.dependencyNotFound", dependency_name = resource_name, resource_name = resource.name).to_string()));
                 };
                 // validate the type matches
@@ -91,12 +91,14 @@ pub fn get_resource_invocation_order(config: &Configuration, parser: &mut Statem
     Ok(order)
 }
 
-fn get_type_and_name(statement: &str) -> Result<(&str, &str), DscError> {
+fn get_type_and_name(statement: &str) -> Result<(&str, String), DscError> {
     let parts: Vec<&str> = statement.split(':').collect();
     if parts.len() != 2 {
         return Err(DscError::Validation(t!("configure.dependsOn.syntaxIncorrect", dependency = statement).to_string()));
     }
-    Ok((parts[0], parts[1]))
+    // the name is url encoded so we need to decode it
+    let decoded_name = urlencoding::decode(parts[1]).map_err(|_| DscError::Validation(t!("configure.dependsOn.syntaxIncorrect", dependency = statement).to_string()))?;
+    Ok((parts[0], decoded_name.into_owned()))
 }
 
 #[cfg(test)]
