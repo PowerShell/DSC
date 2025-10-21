@@ -198,7 +198,7 @@ tree-sitter-rust = { version = "0.24" }
 utfx = { version = "0.1" }
 # dsc-lib
 uuid = { version = "1.18", features = ["v4"] }
-# dsc-lib
+# dsc-lib, dsc-lib-jsonschema
 url = { version = "2.5" }
 # dsc-lib
 urlencoding = { version = "2.1" }

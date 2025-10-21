@@ -8,9 +8,10 @@
 //! module are for internal code. Do not define tests for public items in this
 //! module. Instead, define those tests in the `tests/integration` folder,
 //! which forces usage of the crate as a public API.
-//! 
+//!
 //! When you define tests in this module, ensure that you mirror the structure
 //! of the modules from the rest of the source tree.
 
+#[cfg(test)] mod schema_utility_extensions;
 #[cfg(test)] mod transforms;
 #[cfg(test)] mod vscode;
