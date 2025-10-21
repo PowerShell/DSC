@@ -79,6 +79,7 @@ nameResultNotString = "Resource name result is not a string"
 circularDependency = "Circular dependency or unresolvable parameter references detected in parameters: %{parameters}"
 userFunctionAlreadyDefined = "User function '%{name}' in namespace '%{namespace}' is already defined"
 addingUserFunction = "Adding user function '%{name}'"
+copyCountResultNotInteger = "Copy count result is not an integer: %{expression}"
 
 [discovery.commandDiscovery]
 couldNotReadSetting = "Could not read 'resourcePath' setting"
@@ -444,6 +445,10 @@ description = "Retrieves parameters from the configuration"
 invoked = "parameters function"
 traceKey = "parameters key: %{key}"
 keyNotString = "Parameter '%{key}' is not a string"
+keyNotInt = "Parameter '%{key}' is not an integer"
+keyNotBool = "Parameter '%{key}' is not a boolean"
+keyNotObject = "Parameter '%{key}' is not an object"
+keyNotArray = "Parameter '%{key}' is not an array"
 keyNotFound = "Parameter '%{key}' not found in context"
 
 [functions.path]
