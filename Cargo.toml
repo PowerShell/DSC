@@ -5,6 +5,7 @@ resolver = "2"
 members = [
     "dsc",
     "lib/dsc-lib",
+    "lib/dsc-lib-jsonschema",
     "resources/dscecho",
     "lib/dsc-lib-osinfo",
     "resources/osinfo",
@@ -27,6 +28,7 @@ members = [
 default-members = [
     "dsc",
     "lib/dsc-lib",
+    "lib/dsc-lib-jsonschema",
     "resources/dscecho",
     "lib/dsc-lib-osinfo",
     "resources/osinfo",
@@ -51,6 +53,7 @@ default-members = [
 Windows = [
     "dsc",
     "lib/dsc-lib",
+    "lib/dsc-lib-jsonschema",
     "resources/dscecho",
     "lib/dsc-lib-osinfo",
     "resources/osinfo",
@@ -70,6 +73,7 @@ Windows = [
 macOS = [
     "dsc",
     "lib/dsc-lib",
+    "lib/dsc-lib-jsonschema",
     "resources/dscecho",
     "lib/dsc-lib-osinfo",
     "resources/osinfo",
@@ -86,6 +90,7 @@ macOS = [
 Linux = [
     "dsc",
     "lib/dsc-lib",
+    "lib/dsc-lib-jsonschema",
     "resources/dscecho",
     "lib/dsc-lib-osinfo",
     "resources/osinfo",
@@ -193,7 +198,7 @@ tree-sitter-rust = { version = "0.24" }
 utfx = { version = "0.1" }
 # dsc-lib
 uuid = { version = "1.18", features = ["v4"] }
-# dsc-lib
+# dsc-lib, dsc-lib-jsonschema
 url = { version = "2.5" }
 # dsc-lib
 urlencoding = { version = "2.1" }
@@ -206,8 +211,13 @@ cc = { version = "1.2" }
 # registry, dsc-lib-registry
 static_vcruntime = { version = "2.0" }
 
+# test-only dependencies
+# dsc-lib-jsonschema
+pretty_assertions = { version = "1.4.1" }
+
 # Workspace crates as dependencies
 dsc-lib = { path = "lib/dsc-lib" }
+dsc-lib-jsonschema = { path = "lib/dsc-lib-jsonschema" }
 dsc-lib-osinfo = { path = "lib/dsc-lib-osinfo" }
 dsc-lib-security_context = { path = "lib/dsc-lib-security_context" }
 tree-sitter-dscexpression = { path = "grammars/tree-sitter-dscexpression" }

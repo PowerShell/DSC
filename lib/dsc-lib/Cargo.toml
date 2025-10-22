@@ -43,6 +43,7 @@ which = { workspace = true }
 # workspace crate dependencies
 dsc-lib-osinfo = { workspace = true }
 dsc-lib-security_context = { workspace = true }
+dsc-lib-jsonschema = { workspace = true }
 tree-sitter-dscexpression = { workspace = true }
 
 [dev-dependencies]
