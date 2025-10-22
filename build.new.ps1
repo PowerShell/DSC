@@ -97,6 +97,7 @@ param(
     [switch]$UseCFSAuth,
     [switch]$Clean,
     [switch]$CacheRustBuild,
+    [switch]$RustDocs,
     [switch]$Quiet
 )
 
@@ -221,18 +222,31 @@ process {
     if (!$SkipBuild) {
         $progressParams.Activity = 'Building the projects'
         Write-BuildProgress @progressParams
-        $buildParams = @{
-            Project      = $BuildData.Projects
-            Architecture = $Architecture
-            Release      = $Release
-            Clean        = $Clean
-        }
         Write-BuildProgress @progressParams -Status 'Generating grammar bindings'
         Export-GrammarBinding -Project $BuildData.Projects @VerboseParam
-        Write-BuildProgress @progressParams -Status 'Compiling Rust'
-        Build-RustProject @buildParams -Audit:$Audit -Clippy:$Clippy @VerboseParam
-        Write-BuildProgress @progressParams -Status "Copying build artifacts"
-        Copy-BuildArtifact @buildParams -ExecutableFile $BuildData.PackageFiles.Executable @VerboseParam
+
+        if ($RustDocs) {
+            $progressParams.Activity = 'Generating Rust documentation'
+            Write-BuildProgress @progressParams
+
+            $docsParams = @{
+                Project      = $BuildData.Projects
+                Architecture = $Architecture
+                Release      = $Release
+            }
+            Export-RustDocs @docsParams @VerboseParam
+        } else {
+            $buildParams = @{
+                Project      = $BuildData.Projects
+                Architecture = $Architecture
+                Release      = $Release
+                Clean        = $Clean
+            }
+            Write-BuildProgress @progressParams -Status 'Compiling Rust'
+            Build-RustProject @buildParams -Audit:$Audit -Clippy:$Clippy @VerboseParam
+            Write-BuildProgress @progressParams -Status "Copying build artifacts"
+            Copy-BuildArtifact @buildParams -ExecutableFile $BuildData.PackageFiles.Executable @VerboseParam
+        }
     }
 
     # Ensure PATH includes the output artifacts after building and before testing.
@@ -254,6 +268,16 @@ process {
             }
             Write-BuildProgress @progressParams -Status "Testing Rust projects"
             Test-RustProject @rustTestParams @VerboseParam
+        }
+        if ($RustDocs) {
+            $docTestParams = @{
+                Project      = $BuildData.Projects
+                Architecture = $Architecture
+                Release      = $Release
+                Docs         = $true
+            }
+            Write-BuildProgress @progressParams -Status "Testing documentation for Rust projects"
+            Test-RustProject @docTestParams @VerboseParam
         }
         if (-not $ExcludePesterTests) {
             $installParams = @{
