@@ -1,7 +1,7 @@
 Name:           dsc
 Version:        VERSION_PLACEHOLDER
 Release:        1
-Summary:        Desired State Configuration v3
+Summary:        DesiredStateConfiguration v3
 License:        MIT
 URL:            https://github.com/PowerShell/DSC
 BuildArch:      ARCH_PLACEHOLDER
