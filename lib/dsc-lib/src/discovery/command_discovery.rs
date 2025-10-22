@@ -45,7 +45,7 @@ pub struct ManifestList {
     pub extensions: Option<Vec<ExtensionManifest>>,
 }
 
-#[derive(Deserialize, JsonSchema)]
+#[derive(Clone, Deserialize, JsonSchema)]
 #[schemars(transform = idiomaticize_externally_tagged_enum)]
 pub enum ImportedManifest {
     Resource(DscResource),
