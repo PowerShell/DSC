@@ -34,5 +34,5 @@ ln -s /opt/dsc/dsc $RPM_BUILD_ROOT/usr/bin/dsc
 /usr/bin/dsc
 
 %changelog
-* Thu Oct 22 2025 Microsoft Corporation
+* Wed Oct 22 2025 Microsoft Corporation
 - Initial RPM package release
