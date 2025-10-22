@@ -922,7 +922,7 @@ if ($packageType -eq 'msixbundle') {
 
     # Read the spec template and replace placeholders
     $specTemplate = Get-Content "$PSScriptRoot/packaging/rpm/dsc.spec" -Raw
-    $specContent = $specTemplate.Replace('VERSION_PLACEHOLDER', $productVersion).Replace('ARCH_PLACEHOLDER', $rpmArch)
+    $specContent = $specTemplate.Replace('VERSION_PLACEHOLDER', $productVersion.Replace('-','~')).Replace('ARCH_PLACEHOLDER', $rpmArch)
     $specFile = Join-Path $rpmBuildRoot 'SPECS' 'dsc.spec'
     Set-Content -Path $specFile -Value $specContent
 
@@ -930,9 +930,10 @@ if ($packageType -eq 'msixbundle') {
     $rpmPackageName = "dsc-$productVersion-1.$rpmArch.rpm"
     
     # Build the RPM
-    rpmbuild -bb --define "_topdir $rpmBuildRoot" $specFile
+    rpmbuild -v -bb --define "_topdir $rpmBuildRoot" --buildroot "$rpmBuildRoot/BUILDROOT" $specFile 2>&1 > $rpmTarget/rpmbuild.log
     
     if ($LASTEXITCODE -ne 0) {
+        Write-Error (Get-Content $rpmTarget/rpmbuild.log -Raw)
         throw "Failed to create RPM package"
     }
 
@@ -1015,9 +1016,10 @@ if ($packageType -eq 'msixbundle') {
     $debPackageName = "dsc_$productVersion-1_$debArch.deb"
     
     # Build the DEB
-    dpkg-deb --build $debBuildRoot
+    dpkg-deb --build $debBuildRoot 2>&1 > $debTarget/debbuild.log
     
     if ($LASTEXITCODE -ne 0) {
+        Write-Error (Get-Content $debTarget/debbuild.log -Raw)
         throw "Failed to create DEB package"
     }
 
