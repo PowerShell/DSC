@@ -9,7 +9,7 @@ param(
     $architecture = 'current',
     [switch]$Clippy,
     [switch]$SkipBuild,
-    [ValidateSet('msix','msix-private','msixbundle','tgz','zip','rpm')]
+    [ValidateSet('msix','msix-private','msixbundle','tgz','zip','rpm','deb')]
     $packageType,
     [switch]$Test,
     [switch]$GetPackageVersion,
@@ -936,6 +936,81 @@ if ($packageType -eq 'msixbundle') {
     Copy-Item $builtRpm.FullName $finalRpmPath -Force
 
     Write-Host -ForegroundColor Green "`nRPM package is created at $finalRpmPath"
+} elseif ($packageType -eq 'deb') {
+    if (!$IsLinux) {
+        throw "DEB package creation is only supported on Linux"
+    }
+
+    # Check if dpkg-deb is available
+    if ($null -eq (Get-Command dpkg-deb -ErrorAction Ignore)) {
+        throw "dpkg-deb not found. Please install dpkg package (e.g., 'sudo apt install dpkg' or 'sudo dnf install dpkg')"
+    }
+
+    $debTarget = Join-Path $PSScriptRoot 'bin' $architecture 'deb'
+    if (Test-Path $debTarget) {
+        Remove-Item $debTarget -Recurse -ErrorAction Stop -Force
+    }
+
+    New-Item -ItemType Directory $debTarget > $null
+
+    # Create DEB package structure
+    $debBuildRoot = Join-Path $debTarget 'dsc'
+    $debDirs = @('DEBIAN', 'opt/dsc', 'usr/bin')
+    foreach ($dir in $debDirs) {
+        New-Item -ItemType Directory -Path (Join-Path $debBuildRoot $dir) -Force > $null
+    }
+
+    # Copy files to the package directory
+    $filesForPackage = $filesForLinuxPackage
+    $stagingDir = Join-Path $debBuildRoot 'opt' 'dsc'
+
+    foreach ($file in $filesForPackage) {
+        if ((Get-Item "$target\$file") -is [System.IO.DirectoryInfo]) {
+            Copy-Item "$target\$file" "$stagingDir\$file" -Recurse -ErrorAction Stop
+        } else {
+            Copy-Item "$target\$file" $stagingDir -ErrorAction Stop
+        }
+    }
+
+    # Create symlink in usr/bin
+    $symlinkPath = Join-Path $debBuildRoot 'usr' 'bin' 'dsc'
+    New-Item -ItemType SymbolicLink -Path $symlinkPath -Target '/opt/dsc/dsc' -Force > $null
+
+    # Determine DEB architecture
+    $debArch = if ($architecture -eq 'aarch64-unknown-linux-musl' -or $architecture -eq 'aarch64-unknown-linux-gnu') {
+        'arm64'
+    } elseif ($architecture -eq 'x86_64-unknown-linux-musl' -or $architecture -eq 'x86_64-unknown-linux-gnu') {
+        'amd64'
+    } else {
+        throw "Unsupported architecture for DEB: $architecture"
+    }
+
+    # Read the control template and replace placeholders
+    $controlTemplate = Get-Content "$PSScriptRoot/packaging/deb/control" -Raw
+    $controlContent = $controlTemplate.Replace('VERSION_PLACEHOLDER', $productVersion).Replace('ARCH_PLACEHOLDER', $debArch)
+    $controlFile = Join-Path $debBuildRoot 'DEBIAN' 'control'
+    Set-Content -Path $controlFile -Value $controlContent
+
+    Write-Verbose -Verbose "Building DEB package"
+    $debPackageName = "dsc_$productVersion-1_$debArch.deb"
+    
+    # Build the DEB
+    dpkg-deb --build $debBuildRoot
+    
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to create DEB package"
+    }
+
+    # Move the DEB to the bin directory with the correct name
+    $builtDeb = "$debBuildRoot.deb"
+    if (!(Test-Path $builtDeb)) {
+        throw "DEB package was not created"
+    }
+
+    $finalDebPath = Join-Path $PSScriptRoot 'bin' $debPackageName
+    Move-Item $builtDeb $finalDebPath -Force
+
+    Write-Host -ForegroundColor Green "`nDEB package is created at $finalDebPath"
 }
 
 $env:RUST_BACKTRACE=1
