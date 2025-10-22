@@ -902,7 +902,17 @@ if ($packageType -eq 'msixbundle') {
     }
 
     # Determine RPM architecture
-    $rpmArch = if ($architecture -eq 'aarch64-unknown-linux-musl' -or $architecture -eq 'aarch64-unknown-linux-gnu') {
+    $rpmArch = if ($architecture -eq 'current') {
+        # Detect current system architecture
+        $currentArch = uname -m
+        if ($currentArch -eq 'x86_64') {
+            'x86_64'
+        } elseif ($currentArch -eq 'aarch64') {
+            'aarch64'
+        } else {
+            throw "Unsupported current architecture for RPM: $currentArch"
+        }
+    } elseif ($architecture -eq 'aarch64-unknown-linux-musl' -or $architecture -eq 'aarch64-unknown-linux-gnu') {
         'aarch64'
     } elseif ($architecture -eq 'x86_64-unknown-linux-musl' -or $architecture -eq 'x86_64-unknown-linux-gnu') {
         'x86_64'
@@ -977,7 +987,17 @@ if ($packageType -eq 'msixbundle') {
     New-Item -ItemType SymbolicLink -Path $symlinkPath -Target '/opt/dsc/dsc' -Force > $null
 
     # Determine DEB architecture
-    $debArch = if ($architecture -eq 'aarch64-unknown-linux-musl' -or $architecture -eq 'aarch64-unknown-linux-gnu') {
+    $debArch = if ($architecture -eq 'current') {
+        # Detect current system architecture
+        $currentArch = uname -m
+        if ($currentArch -eq 'x86_64') {
+            'amd64'
+        } elseif ($currentArch -eq 'aarch64') {
+            'arm64'
+        } else {
+            throw "Unsupported current architecture for DEB: $currentArch"
+        }
+    } elseif ($architecture -eq 'aarch64-unknown-linux-musl' -or $architecture -eq 'aarch64-unknown-linux-gnu') {
         'arm64'
     } elseif ($architecture -eq 'x86_64-unknown-linux-musl' -or $architecture -eq 'x86_64-unknown-linux-gnu') {
         'amd64'
