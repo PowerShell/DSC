@@ -870,7 +870,7 @@ if ($packageType -eq 'msixbundle') {
 
     # Check if rpmbuild is available
     if ($null -eq (Get-Command rpmbuild -ErrorAction Ignore)) {
-        throw "rpmbuild not found. Please install rpm-build package (e.g., 'sudo apt-get install rpm' or 'sudo dnf install rpm-build')"
+        throw "rpmbuild not found. Please install rpm-build package (e.g., 'sudo apt install rpm build-essential' or 'sudo dnf install rpm-build')"
     }
 
     $rpmTarget = Join-Path $PSScriptRoot 'bin' $architecture 'rpm'
