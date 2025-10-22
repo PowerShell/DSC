@@ -5,6 +5,9 @@ Describe 'Extension Manifests' {
     It 'Extension manifests with condition: <condition>' -TestCases @(
         @{ condition = "[equals(1, 1)]"; shouldBeFound = $true }
         @{ condition = "[equals(1, 0)]"; shouldBeFound = $false }
+        @{ condition = "[equals(context().os.family,'macOS')]"; shouldBeFound = $IsMacOS }
+        @{ condition = "[equals(context().os.family,'Linux')]"; shouldBeFound = $IsLinux }
+        @{ condition = "[equals(context().os.family,'Windows')]"; shouldBeFound = $IsWindows }
     ) {
         param($condition, $shouldBeFound)
 
