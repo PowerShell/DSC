@@ -14,58 +14,133 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+defaults:
+  run:
+    shell: pwsh
+
 jobs:
-  # build-linux:
-
-  #   runs-on: ubuntu-latest
-
-  #   steps:
-  #   - uses: actions/checkout@v3
-  #   - name: Build
-  #     shell: pwsh
-  #     run: ./build.ps1 -clippy
-  #   - name: Run tests
-  #     shell: pwsh
-  #     run: ./build.ps1 -test
-
-  build-linux:
-
+  linux-build:
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v3
-    - run: rustup target add x86_64-unknown-linux-musl
-    - name: Install musl build tools
-      run: sudo apt update && sudo apt install musl-tools -y
-    - name: Build
-      shell: pwsh
-      run: ./build.ps1 -clippy -target x86_64-unknown-linux-musl
-    - name: Run tests
-      shell: pwsh
-      run: ./build.ps1 -test -target x86_64-unknown-linux-musl
-
-  build-windows:
-
-    runs-on: windows-latest
-
+      - uses: actions/checkout@v5
+      - name: Install prerequisites
+        run: ./build.new.ps1 -SkipBuild -Clippy  -Verbose
+      - name: Build
+        run: ./build.new.ps1 -Clippy -Verbose
+      - name: Run rust tests
+        run: ./build.new.ps1 -SkipBuild -Test -ExcludePesterTests -Verbose
+      - name:  Prepare build artifact
+        run:   tar -cvf bin.tar bin/
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-bin
+          path: bin.tar
+  linux-pester:
+    needs: linux-build
+    strategy:
+      matrix:
+        group: [dsc, adapters, extensions, resources]
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Build
-      shell: pwsh
-      run: ./build.ps1 -clippy
-    - name: Run tests
-      shell: pwsh
-      run: ./build.ps1 -test
+      - uses: actions/checkout@v5
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-bin
+      - name:  Expand build artifact
+        run:   tar -xvf bin.tar
+      - name: Test ${{matrix.group}}
+        run: |-
+          $params = @{
+            SkipBuild        = $true
+            Test             = $true
+            ExcludeRustTests = $true
+            Verbose          = $true
+          }
+          ./build.new.ps1 @params -PesterTestGroup ${{matrix.group}}
 
-  build-macos:
-
+  macos-build:
     runs-on: macos-latest
-
     steps:
-    - uses: actions/checkout@v3
-    - name: Build
-      shell: pwsh
-      run: ./build.ps1 -clippy
-    - name: Run tests
-      shell: pwsh
-      run: ./build.ps1 -test
+      - uses: actions/checkout@v5
+      - name: Install prerequisites
+        run: ./build.new.ps1 -SkipBuild -Clippy  -Verbose
+      - name: Build
+        run: ./build.new.ps1 -Clippy -Verbose
+      - name: Run rust tests
+        run: ./build.new.ps1 -SkipBuild -Test -ExcludePesterTests -Verbose
+      - name:  Prepare build artifact
+        run:   tar -cvf bin.tar bin/
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-bin
+          path: bin.tar
+  macos-pester:
+    needs: macos-build
+    strategy:
+      matrix:
+        group: [dsc, adapters, extensions, resources]
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-bin
+      - name:  Expand build artifact
+        run:   tar -xvf bin.tar
+      - name: Test ${{matrix.group}}
+        run: |-
+          $params = @{
+            SkipBuild        = $true
+            Test             = $true
+            ExcludeRustTests = $true
+            Verbose          = $true
+          }
+          ./build.new.ps1 @params -PesterTestGroup ${{matrix.group}}
+
+  # Windows
+  windows-build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install prerequisites
+        run: ./build.new.ps1 -SkipBuild -Clippy  -Verbose
+      - name: Build
+        run: ./build.new.ps1 -Clippy -Verbose
+      - name: Run rust tests
+        run: ./build.new.ps1 -SkipBuild -Test -ExcludePesterTests -Verbose
+      - name: List bin folder files
+        run:  Get-ChildItem bin
+      - name:  Prepare build artifact
+        run:   tar -cvf bin.tar bin
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-bin
+          path: bin.tar
+  windows-pester:
+    needs: windows-build
+    strategy:
+      matrix:
+        group: [dsc, adapters, extensions, resources]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-bin
+      - name:  Expand build artifact
+        run:   tar -xvf bin.tar
+      - name: Test ${{matrix.group}}
+        run: |-
+          $params = @{
+            SkipBuild        = $true
+            Test             = $true
+            ExcludeRustTests = $true
+            Verbose          = $true
+          }
+          ./build.new.ps1 @params -PesterTestGroup ${{matrix.group}}
