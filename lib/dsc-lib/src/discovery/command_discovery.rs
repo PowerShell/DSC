@@ -40,15 +40,9 @@ static EXTENSIONS: LazyLock<RwLock<BTreeMap<String, DscExtension>>> = LazyLock::
 static ADAPTED_RESOURCES: LazyLock<RwLock<BTreeMap<String, Vec<DscResource>>>> = LazyLock::new(|| RwLock::new(BTreeMap::new()));
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
-#[serde(untagged)]
-pub enum Manifest {
-    Resource(Box<ResourceManifest>),
-    Extension(Box<ExtensionManifest>),
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub struct ManifestList {
-    pub manifests: Vec<Manifest>,
+    pub resources: Option<Vec<ResourceManifest>>,
+    pub extensions: Option<Vec<ExtensionManifest>>,
 }
 
 #[derive(Clone, Serialize, Deserialize, JsonSchema)]
@@ -685,16 +679,16 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
             }
         };
         let mut resources = vec![];
-        for res_manifest in manifest_list.manifests {
-            match res_manifest {
-                Manifest::Extension(ext_manifest) => {
-                    let extension = load_extension_manifest(path, &ext_manifest)?;
-                    resources.push(ImportedManifest::Extension(extension));
-                },
-                Manifest::Resource(res_manifest) => {
-                    let resource = load_resource_manifest(path, &res_manifest)?;
-                    resources.push(ImportedManifest::Resource(resource));
-                }
+        if let Some(resource_manifests) = &manifest_list.resources {
+            for res_manifest in resource_manifests {
+                let resource = load_resource_manifest(path, res_manifest)?;
+                resources.push(ImportedManifest::Resource(resource));
+            }
+        }
+        if let Some(extension_manifests) = &manifest_list.extensions {
+            for ext_manifest in extension_manifests {
+                let extension = load_extension_manifest(path, ext_manifest)?;
+                resources.push(ImportedManifest::Extension(extension));
             }
         }
         return Ok(resources);
