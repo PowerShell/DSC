@@ -9,7 +9,7 @@ param(
     $architecture = 'current',
     [switch]$Clippy,
     [switch]$SkipBuild,
-    [ValidateSet('msix','msix-private','msixbundle','tgz','zip')]
+    [ValidateSet('msix','msix-private','msixbundle','tgz','zip','rpm')]
     $packageType,
     [switch]$Test,
     [switch]$GetPackageVersion,
@@ -863,6 +863,79 @@ if ($packageType -eq 'msixbundle') {
     }
 
     Write-Host -ForegroundColor Green "`ntar.gz file is created at $tarFile"
+} elseif ($packageType -eq 'rpm') {
+    if (!$IsLinux) {
+        throw "RPM package creation is only supported on Linux"
+    }
+
+    # Check if rpmbuild is available
+    if ($null -eq (Get-Command rpmbuild -ErrorAction Ignore)) {
+        throw "rpmbuild not found. Please install rpm-build package (e.g., 'sudo apt-get install rpm' or 'sudo dnf install rpm-build')"
+    }
+
+    $rpmTarget = Join-Path $PSScriptRoot 'bin' $architecture 'rpm'
+    if (Test-Path $rpmTarget) {
+        Remove-Item $rpmTarget -Recurse -ErrorAction Stop -Force
+    }
+
+    New-Item -ItemType Directory $rpmTarget > $null
+
+    # Create RPM build directories
+    $rpmBuildRoot = Join-Path $rpmTarget 'rpmbuild'
+    $rpmDirs = @('BUILD', 'RPMS', 'SOURCES', 'SPECS', 'SRPMS')
+    foreach ($dir in $rpmDirs) {
+        New-Item -ItemType Directory -Path (Join-Path $rpmBuildRoot $dir) -Force > $null
+    }
+
+    # Create a staging directory for the files
+    $stagingDir = Join-Path $rpmBuildRoot 'SOURCES' 'dsc_files'
+    New-Item -ItemType Directory $stagingDir > $null
+
+    $filesForPackage = $filesForLinuxPackage
+
+    foreach ($file in $filesForPackage) {
+        if ((Get-Item "$target\$file") -is [System.IO.DirectoryInfo]) {
+            Copy-Item "$target\$file" "$stagingDir\$file" -Recurse -ErrorAction Stop
+        } else {
+            Copy-Item "$target\$file" $stagingDir -ErrorAction Stop
+        }
+    }
+
+    # Determine RPM architecture
+    $rpmArch = if ($architecture -eq 'aarch64-unknown-linux-musl' -or $architecture -eq 'aarch64-unknown-linux-gnu') {
+        'aarch64'
+    } elseif ($architecture -eq 'x86_64-unknown-linux-musl' -or $architecture -eq 'x86_64-unknown-linux-gnu') {
+        'x86_64'
+    } else {
+        throw "Unsupported architecture for RPM: $architecture"
+    }
+
+    # Read the spec template and replace placeholders
+    $specTemplate = Get-Content "$PSScriptRoot/packaging/rpm/dsc.spec" -Raw
+    $specContent = $specTemplate.Replace('VERSION_PLACEHOLDER', $productVersion).Replace('ARCH_PLACEHOLDER', $rpmArch)
+    $specFile = Join-Path $rpmBuildRoot 'SPECS' 'dsc.spec'
+    Set-Content -Path $specFile -Value $specContent
+
+    Write-Verbose -Verbose "Building RPM package"
+    $rpmPackageName = "dsc-$productVersion-1.$rpmArch.rpm"
+    
+    # Build the RPM
+    rpmbuild -bb --define "_topdir $rpmBuildRoot" $specFile
+    
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to create RPM package"
+    }
+
+    # Copy the RPM to the bin directory
+    $builtRpm = Get-ChildItem -Path (Join-Path $rpmBuildRoot 'RPMS') -Recurse -Filter '*.rpm' | Select-Object -First 1
+    if ($null -eq $builtRpm) {
+        throw "RPM package was not created"
+    }
+
+    $finalRpmPath = Join-Path $PSScriptRoot 'bin' $builtRpm.Name
+    Copy-Item $builtRpm.FullName $finalRpmPath -Force
+
+    Write-Host -ForegroundColor Green "`nRPM package is created at $finalRpmPath"
 }
 
 $env:RUST_BACKTRACE=1
