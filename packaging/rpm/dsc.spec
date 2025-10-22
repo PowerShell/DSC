@@ -20,14 +20,14 @@ and Windows without any external dependencies.
 
 %install
 # Create installation directories
-mkdir -p %{buildroot}/opt/dsc
-mkdir -p %{buildroot}/usr/bin
+mkdir -p $RPM_BUILD_ROOT/opt/dsc
+mkdir -p $RPM_BUILD_ROOT/usr/bin
 
 # Copy all files from the source directory
-cp -r %{_sourcedir}/dsc_files/* %{buildroot}/opt/dsc/
+cp -r $RPM_SOURCE_DIR/dsc_files/* $RPM_BUILD_ROOT/opt/dsc/
 
 # Create symlink to make dsc available in PATH
-ln -s /opt/dsc/dsc %{buildroot}/usr/bin/dsc
+ln -s /opt/dsc/dsc $RPM_BUILD_ROOT/usr/bin/dsc
 
 %files
 /opt/dsc/*
