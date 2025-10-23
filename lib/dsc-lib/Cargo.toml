@@ -3,6 +3,9 @@ name = "dsc-lib"
 version = "3.2.0"
 edition = "2021"
 
+[lib]
+doctest = false
+
 [dependencies]
 # external dependencies
 base32 = { workspace = true }

@@ -1229,14 +1229,15 @@ function Copy-BuildArtifact {
 }
 #endregion Build project functions
 
-#region    Test project functions
-function Test-RustProject {
+#region    Documenting project functions
+function Export-RustDocs {
     [CmdletBinding()]
     param(
         [DscProjectDefinition[]]$Project,
         [ValidateSet('current','aarch64-pc-windows-msvc','x86_64-pc-windows-msvc','aarch64-apple-darwin','x86_64-apple-darwin','aarch64-unknown-linux-gnu','aarch64-unknown-linux-musl','x86_64-unknown-linux-gnu','x86_64-unknown-linux-musl')]
         $Architecture = 'current',
-        [switch]$Release
+        [switch]$Release,
+        [switch]$IncludeDependencies
     )
 
     begin {
@@ -1254,11 +1255,65 @@ function Test-RustProject {
             }
             Set-DefaultWorkspaceMemberGroup -MemberGroup $memberGroup
         }
+        if (-not $IncludeDependencies) {
+            $flags += '--no-deps'
+        }
     }
 
     process {
         $members = Get-DefaultWorkspaceMemberGroup
-        Write-Verbose -Verbose "Testing rust projects: [$members]"
+        Write-Verbose -Verbose "Exporting documentation for rust projects: [$members]"
+        cargo doc @flags
+
+        if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
+            Write-Error "Last exit code is $LASTEXITCODE, 'cargo doc' failed"
+        }
+    }
+
+    clean {
+        Reset-DefaultWorkspaceMemberGroup
+    }
+}
+#endregion Documenting project functions
+
+#region    Test project functions
+function Test-RustProject {
+    [CmdletBinding()]
+    param(
+        [DscProjectDefinition[]]$Project,
+        [ValidateSet('current','aarch64-pc-windows-msvc','x86_64-pc-windows-msvc','aarch64-apple-darwin','x86_64-apple-darwin','aarch64-unknown-linux-gnu','aarch64-unknown-linux-musl','x86_64-unknown-linux-gnu','x86_64-unknown-linux-musl')]
+        $Architecture = 'current',
+        [switch]$Release,
+        [switch]$Docs
+    )
+
+    begin {
+        $flags = @($Release ? '-r' : $null)
+        if ($Architecture -ne 'current') {
+            $flags += '--target'
+            $flags += $Architecture
+        } else {
+            $memberGroup = if ($IsLinux) {
+                'Linux'
+            } elseif ($IsMacOS) {
+                'macOS'
+            } elseif ($IsWindows) {
+                'Windows'
+            }
+            Set-DefaultWorkspaceMemberGroup -MemberGroup $memberGroup
+        }
+        if ($Docs) {
+            $flags += '--doc'
+        }
+    }
+
+    process {
+        $members = Get-DefaultWorkspaceMemberGroup
+        if ($Docs) {
+            Write-Verbose -Verbose "Testing documentation for rust projects: [$members]"
+        } else {
+            Write-Verbose -Verbose "Testing rust projects: [$members]"
+        }
         cargo test @flags
 
         if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
