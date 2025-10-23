@@ -23,6 +23,8 @@ pub enum Output {
     // Object has to be last so it doesn't get matched first
     #[serde(rename = "object")]
     Object(Map<String,Value>),
+    #[serde(rename = "null")]
+    Null,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
