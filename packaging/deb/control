@@ -1,0 +1,12 @@
+Package: dsc
+Version: VERSION_PLACEHOLDER
+Section: utils
+Priority: optional
+Architecture: ARCH_PLACEHOLDER
+Maintainer: Microsoft Corporation
+Homepage: https://github.com/PowerShell/DSC
+Description: DesiredStateConfiguration v3
+ DSCv3 is the latest iteration of Microsoft's Desired State Configuration
+ platform. DSCv3 is an open source command line application that abstracts
+ the management of software components declaratively and idempotently.
+ DSCv3 runs on Linux, macOS, and Windows without any external dependencies.
