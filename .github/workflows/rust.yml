@@ -61,6 +61,7 @@ jobs:
   linux-pester:
     needs: linux-build
     strategy:
+      fail-fast: false
       matrix:
         group: [dsc, adapters, extensions, resources]
     runs-on: ubuntu-latest
@@ -102,6 +103,7 @@ jobs:
   macos-pester:
     needs: macos-build
     strategy:
+      fail-fast: false
       matrix:
         group: [dsc, adapters, extensions, resources]
     runs-on: macos-latest
@@ -146,6 +148,7 @@ jobs:
   windows-pester:
     needs: windows-build
     strategy:
+      fail-fast: false
       matrix:
         group: [dsc, adapters, extensions, resources]
     runs-on: windows-latest
