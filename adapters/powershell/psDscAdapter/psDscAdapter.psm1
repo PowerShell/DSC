@@ -424,21 +424,30 @@ function Invoke-DscOperation {
                         # set each property of $dscResourceInstance to the value of the property in the $desiredState INPUT object
                         $DesiredState.properties.psobject.properties | ForEach-Object -Process {
                             # handle input objects by converting them to a hash table
+                            $validateProperty = $cachedDscResourceInfo.Properties | Where-Object -Property Name -EQ $_.Name
                             if ($_.Value -is [System.Management.Automation.PSCustomObject]) {
                                 $validateProperty = $cachedDscResourceInfo.Properties | Where-Object -Property Name -EQ $_.Name
-                                if ($validateProperty -and $validateProperty.PropertyType -eq 'PSCredential') {
+                                if ($validateProperty -and $validateProperty.PropertyType -like "*PSCredential") {
                                     if (-not $_.Value.Username -or -not $_.Value.Password) {
                                         "Credential object '$($_.Name)' requires both 'username' and 'password' properties" | Write-DscTrace -Operation Error
                                         exit 1
                                     }
                                     $dscResourceInstance.$($_.Name) = [System.Management.Automation.PSCredential]::new($_.Value.Username, (ConvertTo-SecureString -AsPlainText $_.Value.Password -Force))
                                 }
+                                elseif ($validateProperty -and $validateProperty.PropertyType -like '*SecureString') {
+                                    
+                                    $dscResourceInstance.$($_.Name) = ConvertTo-SecureString -AsPlainText $_.Value -Force
+                                }
                                 else {
                                     $dscResourceInstance.$($_.Name) = $_.Value.psobject.properties | ForEach-Object -Begin { $propertyHash = @{} } -Process { $propertyHash[$_.Name] = $_.Value } -End { $propertyHash }
                                 }
                             }
                             else {
-                                $dscResourceInstance.$($_.Name) = $_.Value
+                                if ($validateProperty -and $validateProperty.PropertyType -like '*SecureString' -and -not [string]::IsNullOrEmpty($_.Value)) {
+                                    $dscResourceInstance.$($_.Name) = ConvertTo-SecureString -AsPlainText $_.Value -Force   
+                                } else {
+                                    $dscResourceInstance.$($_.Name) = $_.Value
+                                }
                             }
                         }
                     }
