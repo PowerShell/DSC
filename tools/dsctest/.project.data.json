@@ -8,7 +8,7 @@
     ],
     "CopyFiles": {
         "All": [
-            "dsctrest.dsc.manifests.json"
+            "dsctest.dsc.manifests.json"
         ]
     }
 }
