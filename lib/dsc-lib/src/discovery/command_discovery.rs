@@ -607,6 +607,18 @@ fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource:
     }
 }
 
+fn evaluate_condition(condition: Option<&str>) -> Result<bool, DscError> {
+    if let Some(cond) = condition {
+        let mut statement = Statement::new()?;
+        let result = statement.parse_and_execute(cond, &Context::new())?;
+        if let Some(bool_result) = result.as_bool() {
+            return Ok(bool_result);
+        }
+        return Err(DscError::Validation(t!("discovery.commandDiscovery.conditionNotBoolean", condition = cond).to_string()));
+    }
+    Ok(true)
+}
+
 /// Loads a manifest from the given path and returns a vector of `ImportedManifest`.
 ///
 /// # Arguments
@@ -690,7 +702,7 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
         if let Some(resource_manifests) = &manifest_list.resources {
             for res_manifest in resource_manifests {
                 if !evaluate_condition(res_manifest.condition.as_deref())? {
-                    debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = path.to_string_lossy(), condition = res_manifest.condition.unwrap_or_default()));
+                    debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = path.to_string_lossy(), condition = res_manifest.condition.as_ref() : {:?}));
                     continue;
                 }
                 let resource = load_resource_manifest(path, res_manifest)?;
@@ -700,7 +712,7 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
         if let Some(extension_manifests) = &manifest_list.extensions {
             for ext_manifest in extension_manifests {
                 if !evaluate_condition(ext_manifest.condition.as_deref())? {
-                    debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = path.to_string_lossy(), condition = ext_manifest.condition.unwrap_or_default()));
+                    debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = path.to_string_lossy(), condition = ext_manifest.condition.as_ref() : {:?}));
                     continue;
                 }
                 let extension = load_extension_manifest(path, ext_manifest)?;
