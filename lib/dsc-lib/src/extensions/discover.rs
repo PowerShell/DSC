@@ -91,7 +91,7 @@ impl DscExtension {
                     let manifest_path = Path::new(&discover_result.manifest_path);
                     // Currently we don't support extensions discovering other extensions
                     for imported_manifest in load_manifest(manifest_path)? {
-                        if let Some(ImportedManifest::Resource(resource)) = imported_manifest {
+                        if let ImportedManifest::Resource(resource) = imported_manifest {
                             resources.push(resource);
                         }
                     }
