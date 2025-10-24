@@ -35,7 +35,7 @@ pub struct ExtensionManifest {
     pub secret: Option<SecretMethod>,
     /// Mapping of exit codes to descriptions.  Zero is always success and non-zero is always failure.
     #[serde(rename = "exitCodes", skip_serializing_if = "Option::is_none")]
-    pub exit_codes: Option<HashMap<i32, String>>,
+    pub exit_codes: Option<HashMap<String, String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Map<String, Value>>,
 }
