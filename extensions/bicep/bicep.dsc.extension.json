@@ -3,6 +3,7 @@
     "type": "Microsoft.DSC.Extension/Bicep",
     "version": "0.1.0",
     "description": "Enable passing Bicep file directly to DSC, but requires bicep executable to be available.",
+    "condition": "[not(equals(tryWhich('bicep'), null()))]",
     "import": {
         "fileExtensions": ["bicep"],
         "executable": "bicep",

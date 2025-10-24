@@ -32,6 +32,9 @@ pub struct ResourceManifest {
     /// The namespaced name of the resource.
     #[serde(rename = "type")]
     pub resource_type: String,
+    /// An optional condition for the resource to be active.  If the condition evaluates to false, the resource is skipped.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub condition: Option<String>,
     /// The kind of resource.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<Kind>,
