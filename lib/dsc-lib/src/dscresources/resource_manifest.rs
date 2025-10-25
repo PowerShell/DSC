@@ -69,7 +69,7 @@ pub struct ResourceManifest {
     pub adapter: Option<Adapter>,
     /// Mapping of exit codes to descriptions.  Zero is always success and non-zero is always failure.
     #[serde(rename = "exitCodes", skip_serializing_if = "Option::is_none")]
-    pub exit_codes: Option<HashMap<i32, String>>,
+    pub exit_codes: Option<HashMap<String, String>>, // we have to make this a string key instead of i32 due to https://github.com/serde-rs/json/issues/560
     /// Details how to get the schema of the resource.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub schema: Option<SchemaKind>,

@@ -4,12 +4,13 @@
 use crate::dscerror::DscError;
 use rust_i18n::t;
 use serde_json::Value;
-use std::fs;
-use std::fs::File;
-use std::io::BufReader;
-use std::path::PathBuf;
-use std::path::Path;
-use std::env;
+use std::{
+    fs,
+    fs::File,
+    io::BufReader,
+    path::{Path, PathBuf},
+    env,
+};
 use tracing::debug;
 
 pub struct DscSettingValue {
