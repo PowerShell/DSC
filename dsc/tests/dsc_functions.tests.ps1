@@ -504,6 +504,28 @@ Describe 'tests for function expressions' {
     ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)
   }
 
+  It 'last function works for: <expression>' -TestCases @(
+    @{ expression = "[last(createArray('hello', 'world'))]"; expected = 'world' }
+    @{ expression = "[last(createArray(1, 2, 3))]"; expected = 3 }
+    @{ expression = "[last('hello')]"; expected = 'o' }
+    @{ expression = "[last('a')]"; expected = 'a' }
+    @{ expression = "[last(array('mixed'))]"; expected = 'mixed' }
+  ) {
+    param($expression, $expected)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "$expression"
+"@
+    $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+    ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)
+  }
+
   It 'indexOf function works for: <expression>' -TestCases @(
     @{ expression = "[indexOf(createArray('apple', 'banana', 'cherry'), 'banana')]"; expected = 1 }
     @{ expression = "[indexOf(createArray('apple', 'banana', 'cherry'), 'cherry')]"; expected = 2 }
