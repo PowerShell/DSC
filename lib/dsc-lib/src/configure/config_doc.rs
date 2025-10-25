@@ -8,7 +8,7 @@ use dsc_lib_jsonschema::transforms::{
 };
 use rust_i18n::t;
 use schemars::{JsonSchema, json_schema};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value};
 use std::{collections::HashMap, fmt::Display};
 
@@ -159,6 +159,11 @@ pub struct Configuration {
     #[serde(rename = "$schema")]
     #[schemars(schema_with = "Configuration::recognized_schema_uris_subschema")]
     pub schema: String,
+    /// Irrelevant Bicep metadata from using the extension
+    /// TODO: Potentially check this as a feature flag.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "languageVersion")]
+    pub language_version: Option<String>,
     #[serde(rename = "contentVersion")]
     pub content_version: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -169,9 +174,42 @@ pub struct Configuration {
     pub outputs: Option<HashMap<String, Output>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub parameters: Option<HashMap<String, Parameter>>,
+    #[serde(deserialize_with = "deserialize_resources")]
     pub resources: Vec<Resource>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub variables: Option<Map<String, Value>>,
+    /// Irrelevant Bicep metadata from using the extension
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub imports: Option<Map<String, Value>>,
+}
+
+/// Simplest implementation of a custom deserializer that will map a JSON object
+/// of resources (where the keys are symbolic names) as found in ARMv2 back to a
+/// vector, so the rest of this codebase can remain untouched.
+fn deserialize_resources<'de, D>(deserializer: D) -> Result<Vec<Resource>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = Value::deserialize(deserializer)?;
+
+    match value {
+        Value::Array(resources) => {
+            resources.into_iter()
+                .map(|resource| serde_json::from_value(resource).map_err(serde::de::Error::custom))
+                .collect()
+        }
+        Value::Object(resources) => {
+            resources.into_iter()
+                .map(|(name, resource)| {
+                    let mut resource: Resource = serde_json::from_value(resource).map_err(serde::de::Error::custom)?;
+                    // TODO: Decide what to do if resource.name is already set.
+                    resource.name = name;
+                    Ok(resource)
+                })
+                .collect()
+        }
+        other => Err(serde::de::Error::custom(format!("Expected resources to be either an array or an object, but was {:?}", other))),
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -316,6 +354,7 @@ pub struct Resource {
     #[serde(skip_serializing_if = "Option::is_none", rename = "apiVersion")]
     pub api_version: Option<String>,
     /// A friendly name for the resource instance
+    #[serde(default)]
     pub name: String, // friendly unique instance name
     #[serde(skip_serializing_if = "Option::is_none")]
     pub comments: Option<String>,
@@ -344,6 +383,9 @@ pub struct Resource {
     pub resources: Option<Vec<Resource>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Metadata>,
+    /// Irrelevant Bicep metadata from using the extension
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub import: Option<String>,
 }
 
 impl Default for Configuration {
@@ -381,6 +423,7 @@ impl Configuration {
     pub fn new() -> Self {
         Self {
             schema: Self::default_schema_id_uri(),
+            language_version: None,
             content_version: Some("1.0.0".to_string()),
             metadata: None,
             parameters: None,
@@ -388,6 +431,7 @@ impl Configuration {
             functions: None,
             variables: None,
             outputs: None,
+            imports: None,
         }
     }
 }
@@ -413,6 +457,7 @@ impl Resource {
             location: None,
             tags: None,
             api_version: None,
+            import: None,
         }
     }
 }
@@ -465,5 +510,70 @@ mod test {
         let result = manifest.validate_schema_uri();
 
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_deserialize_resources_array() {
+        let config_json = r#"{
+            "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json",
+            "resources": [
+                {
+                    "type": "Test/Resource",
+                    "name": "resource1"
+                },
+                {
+                    "type": "Test/Resource",
+                    "name": "resource2"
+                }
+            ]
+        }"#;
+
+        let config: Configuration = serde_json::from_str(config_json).unwrap();
+        assert_eq!(config.resources.len(), 2);
+        assert_eq!(config.resources[0].name, "resource1");
+        assert_eq!(config.resources[1].name, "resource2");
+    }
+
+    #[test]
+    fn test_deserialize_resources_object() {
+        let config_json = r#"{
+            "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json",
+            "resources": {
+                "symbolicName1": {
+                    "type": "Test/Resource"
+                },
+                "symbolicName2": {
+                    "type": "Test/Resource"
+                }
+            }
+        }"#;
+
+        let config: Configuration = serde_json::from_str(config_json).unwrap();
+        assert_eq!(config.resources.len(), 2);
+
+        // Find resources by name (order may vary in HashMap)
+        let resource1 = config.resources.iter().find(|r| r.name == "symbolicName1").unwrap();
+        let resource2 = config.resources.iter().find(|r| r.name == "symbolicName2").unwrap();
+
+        assert_eq!(resource1.resource_type, "Test/Resource");
+        assert_eq!(resource2.resource_type, "Test/Resource");
+    }
+
+    #[test]
+    fn test_deserialize_resources_object_overrides_name() {
+        // If a resource in object form has a name field, it should be overridden by the key
+        let config_json = r#"{
+            "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json",
+            "resources": {
+                "correctName": {
+                    "type": "Test/Resource",
+                    "name": "wrongName"
+                }
+            }
+        }"#;
+
+        let config: Configuration = serde_json::from_str(config_json).unwrap();
+        assert_eq!(config.resources.len(), 1);
+        assert_eq!(config.resources[0].name, "correctName");
     }
 }
