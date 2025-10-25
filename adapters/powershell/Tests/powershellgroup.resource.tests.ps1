@@ -376,4 +376,11 @@ Describe 'PowerShell adapter resource tests' {
         $LASTEXITCODE | Should -Be 7
         Get-Content -Path $TestDrive/error.log | Should -Match 'Resource not found: TestClassResource/TestClassResource 0.0.2'
     }
+
+    It 'Can process SecureString property' {
+        $r = '{"Name":"TestClassResource1","SecureStringProp":"MySecretValue"}' | dsc resource get -r 'TestClassResource/TestClassResource' -f -
+        $LASTEXITCODE | Should -Be 0
+        $res = $r | ConvertFrom-Json
+        $res.actualState.SecureStringProp | Should -Not -BeNullOrEmpty
+    }
 }

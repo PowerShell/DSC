@@ -40,6 +40,9 @@ class TestClassResource : BaseTestClass
     [DscProperty()]
     [Ensure] $Ensure
 
+    [DscProperty()]
+    [SecureString] $SecureStringProp
+
     [string] $NonDscProperty # This property shouldn't be in results data
 
     hidden
