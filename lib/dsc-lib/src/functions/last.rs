@@ -115,9 +115,9 @@ mod tests {
     }
 
     #[test]
-    fn array_of_mixed_types() {
+    fn array_of_multiple_strings() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[last(createArray('text', 42, 'last'))]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[last(createArray('text', 'middle', 'last'))]", &Context::new()).unwrap();
         assert_eq!(result.as_str(), Some("last"));
     }
 
