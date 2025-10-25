@@ -343,6 +343,13 @@ emptyArray = "Cannot get first element of empty array"
 emptyString = "Cannot get first character of empty string"
 invalidArgType = "Invalid argument type, argument must be an array or string"
 
+[functions.last]
+description = "Returns the last element of an array or last character of a string"
+invoked = "last function"
+emptyArray = "Cannot get last element of empty array"
+emptyString = "Cannot get last character of empty string"
+invalidArgType = "Invalid argument type, argument must be an array or string"
+
 [functions.greater]
 description = "Evaluates if the first value is greater than the second value"
 invoked = "greater function"
