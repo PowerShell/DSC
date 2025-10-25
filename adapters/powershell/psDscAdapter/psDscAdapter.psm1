@@ -426,8 +426,7 @@ function Invoke-DscOperation {
                             # handle input objects by converting them to a hash table
                             $validateProperty = $cachedDscResourceInfo.Properties | Where-Object -Property Name -EQ $_.Name
                             if ($_.Value -is [System.Management.Automation.PSCustomObject]) {
-                                $validateProperty = $cachedDscResourceInfo.Properties | Where-Object -Property Name -EQ $_.Name
-                                if ($validateProperty -and $validateProperty.PropertyType -like "*PSCredential") {
+                                if ($validateProperty -and $validateProperty.PropertyType -in @('PSCredential', 'System.Management.Automation.PSCredential')) {
                                     if (-not $_.Value.Username -or -not $_.Value.Password) {
                                         "Credential object '$($_.Name)' requires both 'username' and 'password' properties" | Write-DscTrace -Operation Error
                                         exit 1
@@ -439,7 +438,7 @@ function Invoke-DscOperation {
                                 }
                             }
                             else {
-                                if ($validateProperty -and $validateProperty.PropertyType -like '*SecureString' -and -not [string]::IsNullOrEmpty($_.Value)) {
+                                if ($validateProperty -and $validateProperty.PropertyType -in @('SecureString', 'System.Security.SecureString') -and -not [string]::IsNullOrEmpty($_.Value)) {
                                     $dscResourceInstance.$($_.Name) = ConvertTo-SecureString -AsPlainText $_.Value -Force   
                                 } else {
                                     $dscResourceInstance.$($_.Name) = $_.Value
