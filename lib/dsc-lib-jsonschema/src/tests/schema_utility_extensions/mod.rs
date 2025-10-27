@@ -26,6 +26,9 @@ static OBJECT_VALUE: LazyLock<Map<String, Value>> = LazyLock::new(|| json!({
 }).as_object().unwrap().clone());
 static NULL_VALUE:    ()   = ();
 static STRING_VALUE: &str  = "value";
+static SUBSCHEMA_VALUE: LazyLock<Schema> = LazyLock::new(|| json_schema!({
+    "$id": "https://schema.contoso.com/test/get_keyword_as/subschema.json"
+}));
 static TEST_SCHEMA: LazyLock<Schema> = LazyLock::new(|| json_schema!({
     "$id": "https://schema.contoso.com/test/get_keyword_as.json",
     "array": *ARRAY_VALUE,
@@ -35,6 +38,7 @@ static TEST_SCHEMA: LazyLock<Schema> = LazyLock::new(|| json_schema!({
     "object": *OBJECT_VALUE,
     "null": null,
     "string": *STRING_VALUE,
+    "subschema": *SUBSCHEMA_VALUE,
 }));
 
 /// Defines test cases for a given `get_keyword_as` function (non-mutable).
@@ -135,12 +139,14 @@ test_cases_for_get_keyword_as!(
     get_keyword_as_number: "array", "integer", Some(&(INTEGER_VALUE.into())),
     get_keyword_as_str: "array", "string", Some(STRING_VALUE),
     get_keyword_as_string: "array", "string", Some(STRING_VALUE.to_string()),
+    get_keyword_as_subschema: "array", "subschema", Some(&*SUBSCHEMA_VALUE),
 );
 
 
 test_cases_for_get_keyword_as_mut!(
     get_keyword_as_array_mut: "boolean", "array", Some(&mut (*ARRAY_VALUE).clone()),
     get_keyword_as_object_mut: "array", "object", Some(&mut (*OBJECT_VALUE).clone()),
+    get_keyword_as_subschema_mut: "array", "subschema", Some(&mut (*SUBSCHEMA_VALUE).clone()),
 );
 
 #[cfg(test)] mod get_id {
