@@ -17,9 +17,6 @@ use schemars::Schema;
 use serde_json::{Map, Number, Value};
 use url::{Position, Url};
 
-type Array = Vec<Value>;
-type Object = Map<String, Value>;
-
 /// Provides utility extension methods for [`schemars::Schema`].
 pub trait SchemaUtilityExtensions {
     //********************** get_keyword_as_* functions **********************//
@@ -68,7 +65,7 @@ pub trait SchemaUtilityExtensions {
     ///     None
     /// )
     /// ```
-    fn get_keyword_as_array(&self, key: &str) -> Option<&Array>;
+    fn get_keyword_as_array(&self, key: &str) -> Option<&Vec<Value>>;
     /// Checks a JSON Schema for a given keyword and mutably borrows the value of that  keyword,
     /// if it exists, as a [`Vec`].
     ///
@@ -115,7 +112,7 @@ pub trait SchemaUtilityExtensions {
     ///     None
     /// )
     /// ```
-    fn get_keyword_as_array_mut(&mut self, key: &str) -> Option<&mut Array>;
+    fn get_keyword_as_array_mut(&mut self, key: &str) -> Option<&mut Vec<Value>>;
     /// Checks a JSON Schema for a given keyword and returns the value of that  keyword, if it
     /// exists, as a [`bool`].
     ///
@@ -347,7 +344,7 @@ pub trait SchemaUtilityExtensions {
     ///     None
     /// )
     /// ```
-    fn get_keyword_as_object(&self, key: &str) -> Option<&Object>;
+    fn get_keyword_as_object(&self, key: &str) -> Option<& Map<String, Value>>;
     /// Checks a JSON Schema for a given keyword and mutably borrows the value of that  keyword,
     /// if it exists, as a [`Map`].
     ///
@@ -398,7 +395,7 @@ pub trait SchemaUtilityExtensions {
     ///     None
     /// )
     /// ```
-    fn get_keyword_as_object_mut(&mut self, key: &str) -> Option<&mut Object>;
+    fn get_keyword_as_object_mut(&mut self, key: &str) -> Option<&mut  Map<String, Value>>;
     /// Checks a JSON schema for a given keyword and borrows the value of that keyword, if it
     /// exists, as a [`Number`].
     ///
@@ -803,7 +800,7 @@ pub trait SchemaUtilityExtensions {
     ///     defs_json.as_object()
     /// );
     /// ```
-    fn get_defs(&self) -> Option<&Object>;
+    fn get_defs(&self) -> Option<& Map<String, Value>>;
     /// Retrieves the `$defs` keyword and mutably borrows the object if it exists.
     ///
     /// If the keyword isn't defined or isn't an object, the function returns [`None`].
@@ -831,9 +828,9 @@ pub trait SchemaUtilityExtensions {
     ///     defs_json.as_object_mut()
     /// );
     /// ```
-    fn get_defs_mut(&mut self) -> Option<&mut Object>;
-    /// Looks up a reference in the `$defs` keyword by `$id` and returns the subschema entry as an
-    /// object if it exists.
+    fn get_defs_mut(&mut self) -> Option<&mut  Map<String, Value>>;
+    /// Looks up a reference in the `$defs` keyword by `$id` and returns the subschema entry as a
+    /// [`Schema`] if it exists.
     ///
     /// The value for the `id` _must_ be the absolute URL of the target subschema's `$id` keyword.
     /// If the target subschema doesn't define the `$id` keyword, this function can't resolve the
@@ -846,10 +843,9 @@ pub trait SchemaUtilityExtensions {
     ///
     /// ```rust
     /// use schemars::json_schema;
-    /// use serde_json::json;
     /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
     ///
-    /// let ref definition = json!({
+    /// let ref definition = json_schema!({
     ///     "$id": "https://contoso.com/schemas/example/foo.json",
     ///     "title": "Foo property"
     /// });
@@ -861,7 +857,7 @@ pub trait SchemaUtilityExtensions {
     ///
     /// assert_eq!(
     ///     schema.get_defs_subschema_from_id("https://contoso.com/schemas/example/foo.json"),
-    ///     definition.as_object()
+    ///     Some(definition)
     /// );
     /// assert_eq!(
     ///     schema.get_defs_subschema_from_id("/schemas/example/foo.json"),
@@ -870,9 +866,9 @@ pub trait SchemaUtilityExtensions {
     /// ```
     ///
     /// [`get_defs_subschema_from_reference()`]: SchemaUtilityExtensions::get_defs_subschema_from_reference
-    fn get_defs_subschema_from_id(&self, id: &str) -> Option<&Object>;
+    fn get_defs_subschema_from_id(&self, id: &str) -> Option<&Schema>;
     /// Looks up a reference in the `$defs` keyword by `$id` and mutably borrows the subschema
-    /// entry as an object if it exists.
+    /// entry as a [`Schema`] if it exists.
     ///
     /// The value for the `id` _must_ be the absolute URL of the target subschema's `$id` keyword.
     /// If the target subschema doesn't define the `$id` keyword, this function can't resolve the
@@ -885,10 +881,9 @@ pub trait SchemaUtilityExtensions {
     ///
     /// ```rust
     /// use schemars::json_schema;
-    /// use serde_json::json;
     /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
     ///
-    /// let ref mut definition = json!({
+    /// let ref mut definition = json_schema!({
     ///     "$id": "https://contoso.com/schemas/example/foo.json",
     ///     "title": "Foo property"
     /// });
@@ -900,7 +895,7 @@ pub trait SchemaUtilityExtensions {
     ///
     /// assert_eq!(
     ///     schema.get_defs_subschema_from_id_mut("https://contoso.com/schemas/example/foo.json"),
-    ///     definition.as_object_mut()
+    ///     Some(definition)
     /// );
     /// assert_eq!(
     ///     schema.get_defs_subschema_from_id_mut("/schemas/example/foo.json"),
@@ -909,9 +904,9 @@ pub trait SchemaUtilityExtensions {
     /// ```
     ///
     /// [`get_defs_subschema_from_reference_mut()`]: SchemaUtilityExtensions::get_defs_subschema_from_reference_mut
-    fn get_defs_subschema_from_id_mut(&mut self, id: &str) -> Option<&mut Object>;
-    /// Looks up a reference in the `$defs` keyword and returns the subschema entry as an obect if
-    /// it exists.
+    fn get_defs_subschema_from_id_mut(&mut self, id: &str) -> Option<&mut Schema>;
+    /// Looks up a reference in the `$defs` keyword and returns the subschema entry as a [`Schema`]
+    /// if it exists.
     ///
     /// The reference can be any of the following:
     ///
@@ -931,10 +926,9 @@ pub trait SchemaUtilityExtensions {
     ///
     /// ```rust
     /// use schemars::json_schema;
-    /// use serde_json::json;
     /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
     ///
-    /// let ref definition = json!({
+    /// let ref definition = json_schema!({
     ///     "$id": "https://contoso.com/schemas/example/foo.json",
     ///     "title": "Foo property"
     /// });
@@ -947,17 +941,17 @@ pub trait SchemaUtilityExtensions {
     /// // Lookup with pointer:
     /// assert_eq!(
     ///     schema.get_defs_subschema_from_reference("#/$defs/foo"),
-    ///     definition.as_object()
+    ///     Some(definition)
     /// );
     /// // Lookup with absolute URL:
     /// assert_eq!(
     ///     schema.get_defs_subschema_from_reference("https://contoso.com/schemas/example/foo.json"),
-    ///     definition.as_object()
+    ///     Some(definition)
     /// );
     /// // Lookup with site-relative URL:
     /// assert_eq!(
     ///     schema.get_defs_subschema_from_reference("/schemas/example/foo.json"),
-    ///     definition.as_object()
+    ///     Some(definition)
     /// );
     /// ```
     ///
@@ -966,10 +960,9 @@ pub trait SchemaUtilityExtensions {
     ///
     /// ```rust
     /// use schemars::json_schema;
-    /// use serde_json::json;
     /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
     ///
-    /// let ref definition = json!({
+    /// let ref definition = json_schema!({
     ///     "$id": "https://contoso.com/schemas/example/foo.json",
     ///     "title": "Foo property"
     /// });
@@ -981,12 +974,12 @@ pub trait SchemaUtilityExtensions {
     /// // Lookup with pointer:
     /// assert_eq!(
     ///     schema.get_defs_subschema_from_reference("#/$defs/foo"),
-    ///     definition.as_object()
+    ///     Some(definition)
     /// );
     /// // Lookup with absolute URL:
     /// assert_eq!(
     ///     schema.get_defs_subschema_from_reference("https://contoso.com/schemas/example/foo.json"),
-    ///     definition.as_object()
+    ///     Some(definition)
     /// );
     /// // Lookup with site-relative URL:
     /// assert_eq!(
@@ -994,9 +987,9 @@ pub trait SchemaUtilityExtensions {
     ///     None
     /// );
     /// ```
-    fn get_defs_subschema_from_reference(&self, reference: &str) -> Option<&Object>;
-    /// Looks up a reference in the `$defs` keyword and mutably borrows the subschema entry as an
-    /// object if it exists.
+    fn get_defs_subschema_from_reference(&self, reference: &str) -> Option<&Schema>;
+    /// Looks up a reference in the `$defs` keyword and mutably borrows the subschema entry as a
+    /// [`Schema`] if it exists.
     ///
     /// The reference can be any of the following:
     ///
@@ -1022,10 +1015,9 @@ pub trait SchemaUtilityExtensions {
     ///
     /// ```rust
     /// use schemars::json_schema;
-    /// use serde_json::json;
     /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
     ///
-    /// let ref mut definition = json!({
+    /// let ref mut definition = json_schema!({
     ///     "$id": "https://contoso.com/schemas/example/foo.json",
     ///     "title": "Foo property"
     /// });
@@ -1037,13 +1029,13 @@ pub trait SchemaUtilityExtensions {
     /// });
     /// // Lookup with absolute URL:
     /// assert_eq!(
-    ///     schema.get_defs_subschema_from_reference_mut("https://contoso.com/schemas/example/foo.json"),
-    ///     definition.as_object_mut()
+    ///     schema.get_defs_subschema_from_reference_mut("https://contoso.com/schemas/example/foo.json").unwrap(),
+    ///     definition
     /// );
     /// // Lookup with site-relative URL:
     /// assert_eq!(
-    ///     schema.get_defs_subschema_from_reference_mut("/schemas/example/foo.json"),
-    ///     definition.as_object_mut()
+    ///     schema.get_defs_subschema_from_reference_mut("/schemas/example/foo.json").unwrap(),
+    ///     definition
     /// );
     /// ```
     ///
@@ -1052,10 +1044,9 @@ pub trait SchemaUtilityExtensions {
     ///
     /// ```rust
     /// use schemars::json_schema;
-    /// use serde_json::json;
     /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
     ///
-    /// let ref mut definition = json!({
+    /// let ref mut definition = json_schema!({
     ///     "$id": "https://contoso.com/schemas/example/foo.json",
     ///     "title": "Foo property"
     /// });
@@ -1067,7 +1058,7 @@ pub trait SchemaUtilityExtensions {
     /// // Lookup with absolute URL:
     /// assert_eq!(
     ///     schema.get_defs_subschema_from_reference_mut("https://contoso.com/schemas/example/foo.json"),
-    ///     definition.as_object_mut()
+    ///     Some(definition)
     /// );
     /// // Lookup with site-relative URL:
     /// assert_eq!(
@@ -1079,7 +1070,7 @@ pub trait SchemaUtilityExtensions {
     /// [`get_defs_subschema_from_reference()`]: SchemaUtilityExtensions::get_defs_subschema_from_reference
     /// [schemars#478]: https://github.com/GREsau/schemars/issues/478
     /// [fixing PR]: https://github.com/GREsau/schemars/pull/479
-    fn get_defs_subschema_from_reference_mut(&mut self, reference: &str) -> Option<&mut Object>;
+    fn get_defs_subschema_from_reference_mut(&mut self, reference: &str) -> Option<&mut Schema>;
     /// Inserts a subschema entry into the `$defs` keyword for the [`Schema`]. If an entry for the
     /// given key already exists, this function returns the old value as a map.
     ///
@@ -1096,27 +1087,27 @@ pub trait SchemaUtilityExtensions {
     /// use serde_json::json;
     /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
     ///
-    /// let original_definition = json!({
+    /// let original_definition = json_schema!({
     ///     "title": "Foo property"
-    /// }).as_object().unwrap().clone();
-    /// let mut new_definition = json!({
+    /// }).clone();
+    /// let mut new_definition = json_schema!({
     ///     "$id": "https://contoso.com/schemas/example/foo.json",
-    /// }).as_object().unwrap().clone();
+    /// }).clone();
     /// let ref mut schema = json_schema!({
     ///     "$defs": {
     ///         "foo": original_definition
     ///     }
     /// });
     /// assert_eq!(
-    ///     schema.insert_defs_subschema("foo", &new_definition),
-    ///     Some(original_definition)
+    ///     schema.insert_defs_subschema("foo", &new_definition.as_object().unwrap()),
+    ///     original_definition.as_object().cloned()
     /// );
     /// assert_eq!(
     ///     schema.get_defs_subschema_from_reference_mut("https://contoso.com/schemas/example/foo.json"),
     ///     Some(&mut new_definition)
     /// )
     /// ```
-    fn insert_defs_subschema(&mut self, definition_key: &str, definition_value: &Object) -> Option<Object>;
+    fn insert_defs_subschema(&mut self, definition_key: &str, definition_value: & Map<String, Value>) -> Option< Map<String, Value>>;
     /// Looks up a subschema in the `$defs` keyword by reference and, if it exists, renames the
     /// _key_ for the definition.
     ///
@@ -1186,7 +1177,7 @@ pub trait SchemaUtilityExtensions {
     ///     properties_json.as_object()
     /// );
     /// ```
-    fn get_properties(&self) -> Option<&Object>;
+    fn get_properties(&self) -> Option<& Map<String, Value>>;
     /// Retrieves the `properties` keyword and mutably borrows the object if it exists.
     ///
     /// If the keyword isn't defined or isn't an object, the function returns [`None`].
@@ -1214,11 +1205,11 @@ pub trait SchemaUtilityExtensions {
     ///     properties_json.as_object_mut()
     /// );
     /// ```
-    fn get_properties_mut(&mut self) -> Option<&mut Object>;
+    fn get_properties_mut(&mut self) -> Option<&mut  Map<String, Value>>;
     /// Looks up a property in the `properties` keyword by name and returns the subschema entry as
-    /// an  object if it exists.
+    /// a [`Schema`] if it exists.
     ///
-    /// If the named property doesn't exist or isn't an object, this function returns [`None`].
+    /// If the named property doesn't exist or isn't a valid subschema, this function returns [`None`].
     ///
     /// # Examples
     ///
@@ -1227,7 +1218,7 @@ pub trait SchemaUtilityExtensions {
     /// use serde_json::json;
     /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
     ///
-    /// let ref property = json!({
+    /// let ref property = json_schema!({
     ///     "$id": "https://contoso.com/schemas/example/foo.json",
     ///     "title": "Foo property"
     /// });
@@ -1239,10 +1230,10 @@ pub trait SchemaUtilityExtensions {
     ///
     /// assert_eq!(
     ///     schema.get_property_subschema("foo"),
-    ///     property.as_object()
+    ///     Some(property)
     /// );
     /// ```
-    fn get_property_subschema(&self, property_name: &str) -> Option<&Object>;
+    fn get_property_subschema(&self, property_name: &str) -> Option<&Schema>;
     /// Looks up a property in the `properties` keyword by name and mutably borrows the subschema
     /// entry as an object if it exists.
     ///
@@ -1252,10 +1243,9 @@ pub trait SchemaUtilityExtensions {
     ///
     /// ```rust
     /// use schemars::json_schema;
-    /// use serde_json::json;
     /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
     ///
-    /// let ref mut property = json!({
+    /// let ref mut property = json_schema!({
     ///     "$id": "https://contoso.com/schemas/example/foo.json",
     ///     "title": "Foo property"
     /// });
@@ -1267,18 +1257,18 @@ pub trait SchemaUtilityExtensions {
     ///
     /// assert_eq!(
     ///     schema.get_property_subschema_mut("foo"),
-    ///     property.as_object_mut()
+    ///     Some(property)
     /// );
     /// ```
-    fn get_property_subschema_mut(&mut self, property_name: &str) -> Option<&mut Object>;
+    fn get_property_subschema_mut(&mut self, property_name: &str) -> Option<&mut Schema>;
 }
 
 impl SchemaUtilityExtensions for Schema {
-    fn get_keyword_as_array(&self, key: &str) -> Option<&Array> {
+    fn get_keyword_as_array(&self, key: &str) -> Option<&Vec<Value>> {
         self.get(key)
             .and_then(Value::as_array)
     }
-    fn get_keyword_as_array_mut(&mut self, key: &str) -> Option<&mut Array> {
+    fn get_keyword_as_array_mut(&mut self, key: &str) -> Option<&mut Vec<Value>> {
         self.get_mut(key)
             .and_then(Value::as_array_mut)
     }
@@ -1302,11 +1292,11 @@ impl SchemaUtilityExtensions for Schema {
         self.get(key)
             .and_then(Value::as_number)
     }
-    fn get_keyword_as_object(&self, key: &str) -> Option<&Object> {
+    fn get_keyword_as_object(&self, key: &str) -> Option<& Map<String, Value>> {
         self.get(key)
             .and_then(Value::as_object)
     }
-    fn get_keyword_as_object_mut(&mut self, key: &str) -> Option<&mut Object> {
+    fn get_keyword_as_object_mut(&mut self, key: &str) -> Option<&mut  Map<String, Value>> {
         self.get_mut(key)
             .and_then(Value::as_object_mut)
     }
@@ -1331,13 +1321,13 @@ impl SchemaUtilityExtensions for Schema {
         self.get(key)
             .and_then(Value::as_u64)
     }
-    fn get_defs(&self) -> Option<&Object> {
+    fn get_defs(&self) -> Option<& Map<String, Value>> {
         self.get_keyword_as_object("$defs")
     }
-    fn get_defs_mut(&mut self) -> Option<&mut Object> {
+    fn get_defs_mut(&mut self) -> Option<&mut  Map<String, Value>> {
         self.get_keyword_as_object_mut("$defs")
     }
-    fn get_defs_subschema_from_id(&self, id: &str) -> Option<&Object> {
+    fn get_defs_subschema_from_id(&self, id: &str) -> Option<&Schema> {
         let defs = self.get_defs()?;
 
         for def in defs.values() {
@@ -1345,14 +1335,14 @@ impl SchemaUtilityExtensions for Schema {
                 let def_id = definition.get("$id").and_then(Value::as_str);
 
                 if def_id == Some(id) {
-                    return Some(definition);
+                    return <&Value as TryInto<&Schema>>::try_into(def).ok()
                 }
             }
         }
 
         None
     }
-    fn get_defs_subschema_from_id_mut(&mut self, id: &str) -> Option<&mut Object> {
+    fn get_defs_subschema_from_id_mut(&mut self, id: &str) -> Option<&mut Schema> {
         let defs = self.get_defs_mut()?;
 
         for def in defs.values_mut() {
@@ -1360,17 +1350,19 @@ impl SchemaUtilityExtensions for Schema {
                 let def_id = definition.get("$id").and_then(Value::as_str);
 
                 if def_id == Some(id) {
-                    return Some(definition);
+                    return <&mut Value as TryInto<&mut Schema>>::try_into(def).ok()
                 }
             }
         }
 
         None
     }
-    fn get_defs_subschema_from_reference(&self, reference: &str) -> Option<&Object> {
+    fn get_defs_subschema_from_reference(&self, reference: &str) -> Option<&Schema> {
         // If the reference is a normative pointer to $defs, short-circuit.
         if reference.to_string().starts_with("#/$defs/") {
-            return self.pointer(reference).and_then(Value::as_object);
+            return self.pointer(reference).and_then(|v| {
+                <&Value as TryInto<&Schema>>::try_into(v).ok()
+            });
         }
 
         let id = reference.to_string();
@@ -1387,10 +1379,12 @@ impl SchemaUtilityExtensions for Schema {
 
         None
     }
-    fn get_defs_subschema_from_reference_mut(&mut self, reference: &str) -> Option<&mut Object> {
+    fn get_defs_subschema_from_reference_mut(&mut self, reference: &str) -> Option<&mut Schema> {
         // If the reference is a normative pointer to $defs, short-circuit.
         if reference.to_string().starts_with("#/$defs/") {
-            return self.pointer_mut(reference).and_then(Value::as_object_mut);
+            return self.pointer_mut(reference).and_then(|v| {
+                <&mut Value as TryInto<&mut Schema>>::try_into(v).ok()
+            });
         }
 
         let id = reference.to_string();
@@ -1410,8 +1404,8 @@ impl SchemaUtilityExtensions for Schema {
     fn insert_defs_subschema(
         &mut self,
         definition_key: &str,
-        definition_value: &Object
-    ) -> Option<Object> {
+        definition_value: &Map<String, Value>
+    ) -> Option<Map<String, Value>> {
         if let Some(defs) = self.get_defs_mut() {
             let old_value = defs.clone()
                 .get(definition_key)
@@ -1421,7 +1415,7 @@ impl SchemaUtilityExtensions for Schema {
             defs.insert(definition_key.to_string(), Value::Object(definition_value.clone()))
                 .and(old_value)
         } else {
-            let defs: &mut Object = &mut Map::new();
+            let defs: &mut Map<String, Value> = &mut Map::new();
             defs.insert(definition_key.to_string(), Value::Object(definition_value.clone()));
             self.insert("$defs".to_string(), Value::Object(defs.clone()));
 
@@ -1431,7 +1425,7 @@ impl SchemaUtilityExtensions for Schema {
     fn rename_defs_subschema_for_reference(&mut self, reference: &str, new_name: &str) {
         let lookup_self = self.clone();
         // Lookup the reference. If unresolved, return immediately.
-        let Some(value) = lookup_self.get_defs_subschema_from_reference(reference) else {
+        let Some(value) = lookup_self.get_defs_subschema_from_reference(reference).and_then(Schema::as_object) else {
             return;
         };
         // If defs can't be retrieved mutably, return immediately.
@@ -1474,20 +1468,20 @@ impl SchemaUtilityExtensions for Schema {
         self.insert("$id".to_string(), Value::String(id_uri.to_string()))
             .and(old_id)
     }
-    fn get_properties(&self) -> Option<&Object> {
+    fn get_properties(&self) -> Option<& Map<String, Value>> {
         self.get_keyword_as_object("properties")
     }
-    fn get_properties_mut(&mut self) -> Option<&mut Object> {
+    fn get_properties_mut(&mut self) -> Option<&mut  Map<String, Value>> {
         self.get_keyword_as_object_mut("properties")
     }
-    fn get_property_subschema(&self, property_name: &str) -> Option<&Object> {
+    fn get_property_subschema(&self, property_name: &str) -> Option<&Schema> {
         self.get_properties()
             .and_then(|properties| properties.get(property_name))
-            .and_then(Value::as_object)
+            .and_then(|v| <&Value as TryInto<&Schema>>::try_into(v).ok())
     }
-    fn get_property_subschema_mut(&mut self, property_name: &str) -> Option<&mut Object> {
+    fn get_property_subschema_mut(&mut self, property_name: &str) -> Option<&mut Schema> {
         self.get_properties_mut()
             .and_then(|properties| properties.get_mut(property_name))
-            .and_then(Value::as_object_mut)
+            .and_then(|v| <&mut Value as TryInto<&mut Schema>>::try_into(v).ok())
     }
 }
