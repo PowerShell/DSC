@@ -341,7 +341,6 @@ test_cases_for_get_keyword_as_mut!(
 
     use pretty_assertions::assert_eq;
     use schemars::json_schema;
-    use serde_json::json;
 
     use crate::schema_utility_extensions::SchemaUtilityExtensions;
 
@@ -388,13 +387,13 @@ test_cases_for_get_keyword_as_mut!(
                 }
             }
         });
-        let ref expected = json!({
+        let ref expected = json_schema!({
             "$id": "https://contoso.com/schemas/foo.json",
             "title": "Foo"
         });
         assert_eq!(
             schema.get_defs_subschema_from_id("https://contoso.com/schemas/foo.json"),
-            expected.as_object()
+            Some(expected)
         );
     }
 }
@@ -403,7 +402,6 @@ test_cases_for_get_keyword_as_mut!(
 
     use pretty_assertions::assert_eq;
     use schemars::json_schema;
-    use serde_json::json;
 
     use crate::schema_utility_extensions::SchemaUtilityExtensions;
 
@@ -450,20 +448,19 @@ test_cases_for_get_keyword_as_mut!(
                 }
             }
         });
-        let ref mut expected = json!({
+        let ref mut expected = json_schema!({
             "$id": "https://contoso.com/schemas/foo.json",
             "title": "Foo"
         });
         assert_eq!(
             schema.get_defs_subschema_from_id_mut("https://contoso.com/schemas/foo.json"),
-            expected.as_object_mut()
+            Some(expected)
         );
     }
 }
 #[cfg(test)] mod get_defs_subschema_from_reference {
     use pretty_assertions::assert_eq;
     use schemars::json_schema;
-    use serde_json::json;
 
     use crate::schema_utility_extensions::SchemaUtilityExtensions;
 
@@ -524,13 +521,13 @@ test_cases_for_get_keyword_as_mut!(
                 }
             }
         });
-        let expected = json!({
+        let ref expected = json_schema!({
             "$id": "https://contoso.com/schemas/foo.json",
             "title": "Foo"
         });
         assert_eq!(
             schema.get_defs_subschema_from_reference("#/$defs/foo").unwrap(),
-            expected.as_object().unwrap()
+            expected
         );
     }
     #[test] fn with_absolute_id_uri_reference() {
@@ -545,13 +542,13 @@ test_cases_for_get_keyword_as_mut!(
                 }
             }
         });
-        let expected = json!({
+        let ref expected = json_schema!({
             "$id": "https://contoso.com/schemas/foo.json",
             "title": "Foo"
         });
         assert_eq!(
             schema.get_defs_subschema_from_reference("/schemas/foo.json").unwrap(),
-            expected.as_object().unwrap()
+            expected
         );
     }
     #[test] fn with_relative_id_uri_reference() {
@@ -566,13 +563,13 @@ test_cases_for_get_keyword_as_mut!(
                 }
             }
         });
-        let expected = json!({
+        let ref expected = json_schema!({
             "$id": "https://contoso.com/schemas/foo.json",
             "title": "Foo"
         });
         assert_eq!(
             schema.get_defs_subschema_from_reference("https://contoso.com/schemas/foo.json").unwrap(),
-            expected.as_object().unwrap()
+            expected
         );
     }
 }
@@ -580,7 +577,6 @@ test_cases_for_get_keyword_as_mut!(
 #[cfg(test)] mod get_defs_subschema_from_reference_mut {
     use pretty_assertions::assert_ne;
     use schemars::json_schema;
-    use serde_json::json;
 
     use crate::schema_utility_extensions::SchemaUtilityExtensions;
 
@@ -648,14 +644,14 @@ test_cases_for_get_keyword_as_mut!(
                 }
             }
         });
-        let ref mut expected = json!({
+        let ref mut expected = json_schema!({
             "$id": "https://contoso.com/schemas/foo.json",
             "title": "Foo"
         });
 
         assert_ne!(
             schema.get_defs_subschema_from_reference_mut("#/$defs/foo"),
-            expected.as_object_mut()
+            Some(expected)
         );
     }
     #[test] fn with_absolute_id_uri_reference() {
@@ -670,13 +666,13 @@ test_cases_for_get_keyword_as_mut!(
                 }
             }
         });
-        let ref mut expected = json!({
+        let ref mut expected = json_schema!({
             "$id": "https://contoso.com/schemas/foo.json",
             "title": "Foo"
         });
         assert_eq!(
             schema.get_defs_subschema_from_reference_mut("/schemas/foo.json").unwrap(),
-            expected.as_object_mut().unwrap()
+            expected
         );
     }
     #[test] fn with_relative_id_uri_reference() {
@@ -691,13 +687,13 @@ test_cases_for_get_keyword_as_mut!(
                 }
             }
         });
-        let ref mut expected = json!({
+        let ref mut expected = json_schema!({
             "$id": "https://contoso.com/schemas/foo.json",
             "title": "Foo"
         });
         assert_eq!(
             schema.get_defs_subschema_from_reference_mut("https://contoso.com/schemas/foo.json").unwrap(),
-            expected.as_object_mut().unwrap()
+            expected
         );
     }
 }
@@ -897,7 +893,6 @@ test_cases_for_get_keyword_as_mut!(
 
     use pretty_assertions::assert_eq;
     use schemars::json_schema;
-    use serde_json::json;
 
     use crate::schema_utility_extensions::SchemaUtilityExtensions;
 
@@ -930,7 +925,7 @@ test_cases_for_get_keyword_as_mut!(
         assert_eq!(schema.get_property_subschema("foo"), None)
     }
     #[test] fn when_given_property_is_object() {
-        let ref property = json!({
+        let ref property = json_schema!({
             "title": "Foo property"
         });
         let ref schema = json_schema!({
@@ -940,7 +935,7 @@ test_cases_for_get_keyword_as_mut!(
         });
         assert_eq!(
             schema.get_property_subschema("foo").unwrap(),
-            property.as_object().unwrap()
+            property
         )
     }
 }
@@ -950,7 +945,6 @@ test_cases_for_get_keyword_as_mut!(
 
     use pretty_assertions::assert_eq;
     use schemars::json_schema;
-    use serde_json::json;
 
     use crate::schema_utility_extensions::SchemaUtilityExtensions;
 
@@ -983,7 +977,7 @@ test_cases_for_get_keyword_as_mut!(
         assert_eq!(schema.get_property_subschema_mut("foo"), None)
     }
     #[test] fn when_given_property_is_object() {
-        let ref mut property = json!({
+        let ref mut property = json_schema!({
             "title": "Foo property"
         });
         let ref mut schema = json_schema!({
@@ -993,7 +987,7 @@ test_cases_for_get_keyword_as_mut!(
         });
         assert_eq!(
             schema.get_property_subschema_mut("foo").unwrap(),
-            property.as_object_mut().unwrap()
+            property
         )
     }
 }
