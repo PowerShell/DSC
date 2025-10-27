@@ -10,7 +10,7 @@
 //!
 //! The rest of the utility methods work with specific keywords, like `$id` and `$defs`.
 
-use core::{clone::Clone, iter::Iterator, option::Option::None};
+use core::{clone::Clone, convert::TryInto, iter::Iterator, option::Option::None};
 use std::string::String;
 
 use schemars::Schema;
@@ -537,6 +537,103 @@ pub trait SchemaUtilityExtensions {
     /// )
     /// ```
     fn get_keyword_as_string(&self, key: &str) -> Option<String>;
+    /// Checks a JSON Schema for a given keyword and returns the value of that  keyword, if it
+    /// exists, as a [`Schema`].
+    ///
+    /// If the keyword doesn't exist or isn't a subchema, this function returns [`None`].
+    ///
+    /// # Examples
+    ///
+    /// When the given keyword exists and is a subschema, the function returns the subschema.
+    ///
+    /// ```rust
+    /// use schemars::json_schema;
+    /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
+    ///
+    /// let ref schema = json_schema!({
+    ///     "type": "array",
+    ///     "items": {
+    ///         "type": "string"
+    ///     }
+    /// });
+    /// assert_eq!(
+    ///     schema.get_keyword_as_subschema("items"),
+    ///     Some(&json_schema!({"type": "string"}))
+    /// );
+    /// ```
+    ///
+    /// When the given keyword doesn't exist or has the wrong data type, the function returns
+    /// [`None`].
+    ///
+    /// ```rust
+    /// use schemars::json_schema;
+    /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
+    ///
+    /// let ref schema = json_schema!({
+    ///     "items": "invalid"
+    /// });
+    ///
+    /// assert_eq!(
+    ///     schema.get_keyword_as_subschema("not_exist"),
+    ///     None
+    /// );
+    ///
+    /// assert_eq!(
+    ///     schema.get_keyword_as_subschema("items"),
+    ///     None
+    /// )
+    /// ```
+    fn get_keyword_as_subschema(&self, key: &str) -> Option<&Schema>;
+    /// Checks a JSON Schema for a given keyword and mutably borrows the value of that keyword,
+    /// if it exists, as a [`Schema`].
+    ///
+    /// If the keyword doesn't exist or isn't a subschema, this function returns [`None`].
+    ///
+    /// # Examples
+    ///
+    /// When the given keyword exists and is a subschema, the function returns the subschema.
+    ///
+    /// ```rust
+    /// use schemars::json_schema;
+    /// use serde_json::json;
+    /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
+    ///
+    /// let ref mut subschema = json_schema!({
+    ///     "type": "string"
+    /// });
+    /// let ref mut schema = json_schema!({
+    ///     "type": "array",
+    ///     "items": subschema
+    /// });
+    /// assert_eq!(
+    ///     schema.get_keyword_as_subschema_mut("items"),
+    ///     Some(subschema)
+    /// );
+    /// ```
+    ///
+    /// When the given keyword doesn't exist or has the wrong data type, the function returns
+    /// [`None`].
+    ///
+    /// ```rust
+    /// use schemars::json_schema;
+    /// use serde_json::json;
+    /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
+    ///
+    /// let ref mut schema = json_schema!({
+    ///     "items": "invalid"
+    /// });
+    ///
+    /// assert_eq!(
+    ///     schema.get_keyword_as_object_mut("not_exist"),
+    ///     None
+    /// );
+    ///
+    /// assert_eq!(
+    ///     schema.get_keyword_as_object_mut("items"),
+    ///     None
+    /// )
+    /// ```
+    fn get_keyword_as_subschema_mut(&mut self, key: &str) -> Option<&mut Schema>;
     /// Checks a JSON schema for a given keyword and returns the value of that keyword, if it
     /// exists, as a [`u64`].
     ///
@@ -1221,6 +1318,14 @@ impl SchemaUtilityExtensions for Schema {
         self.get(key)
             .and_then(Value::as_str)
             .map(std::string::ToString::to_string)
+    }
+    fn get_keyword_as_subschema(&self, key: &str) -> Option<&Schema> {
+        self.get(key)
+            .and_then(|v| <&Value as TryInto<&Schema>>::try_into(v).ok())
+    }
+    fn get_keyword_as_subschema_mut(&mut self, key: &str) -> Option<&mut Schema> {
+        self.get_mut(key)
+            .and_then(|v| <&mut Value as TryInto<&mut Schema>>::try_into(v).ok())
     }
     fn get_keyword_as_u64(&self, key: &str) -> Option<u64> {
         self.get(key)
