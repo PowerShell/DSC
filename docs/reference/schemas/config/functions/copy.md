@@ -161,6 +161,56 @@ messages: []
 hadErrors: false
 ```
 
+### Example 4 - Using expressions for count with parameters
+
+This example demonstrates using an expression for the `count` property, which
+allows you to dynamically determine the number of resource instances to create
+based on a parameter value. This is commonly used to make configurations
+flexible and reusable.
+
+```yaml
+# copy.example.4.dsc.config.yaml
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+parameters:
+  instanceCount:
+    type: int
+    defaultValue: 2
+resources:
+- name: "[format('Dynamic-{0}', copyIndex())]"
+  copy:
+    name: dynamicLoop
+    count: "[parameters('instanceCount')]"
+  type: Microsoft.DSC.Debug/Echo
+  properties:
+    output: "[format('Instance {0} of {1}', copyIndex(), parameters('instanceCount'))]"
+```
+
+```bash
+dsc config get --file copy.example.4.dsc.config.yaml --parameters '{"instanceCount": 4}'
+```
+
+```yaml
+results:
+- metadata:
+    Microsoft.DSC:
+      duration: PT0.2173106S
+  name: Dynamic-0
+  type: Microsoft.DSC.Debug/Echo
+  result:
+    actualState:
+      output: Instance 0 of 2
+- metadata:
+    Microsoft.DSC:
+      duration: PT0.0161486S
+  name: Dynamic-1
+  type: Microsoft.DSC.Debug/Echo
+  result:
+    actualState:
+      output: Instance 1 of 2
+messages: []
+hadErrors: false
+```
+
 ## Properties
 
 ### name
@@ -177,6 +227,11 @@ Required: true
 
 The number of iterations to perform. Must be a non-negative integer. If set to
 0, no instances of the resource are created.
+
+The `count` property accepts both literal integer values and expressions that
+evaluate to an integer, such as parameter references using the
+[`parameters()`][02] function. This allows you to dynamically control the
+number of resource instances based on configuration parameters.
 
 ```yaml
 Type:     integer
@@ -215,6 +270,8 @@ The current implementation has the following limitations:
 ## Related Functions
 
 - [`copyIndex()`][01] - Returns the current iteration index of a copy loop.
+- [`parameters()`][02] - Returns the value of a configuration parameter.
 
 <!-- Link reference definitions -->
 [01]: ./copyIndex.md
+[02]: ./parameters.md
