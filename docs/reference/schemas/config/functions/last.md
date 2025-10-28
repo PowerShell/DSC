@@ -23,8 +23,7 @@ item in a sequence, the final stage in a deployment pipeline, or the last
 character in a configuration value.
 
 For arrays, it returns the element at index `length - 1`. For strings, it
-returns the last character as a string. If the input is empty, an error is
-returned.
+returns the last character as a string.
 
 ## Examples
 
@@ -207,16 +206,17 @@ Returns the last element of the array (preserving its original type) or the
 last character as a string. For arrays, the return type matches the element
 type. For strings, returns a single-character string.
 
+If the input is an empty array, the function returns `null`. If the input is an
+empty string, the function returns an empty string.
+
 ```yaml
-Type: any | string
+Type: any | string | null
 ```
 
 ## Errors
 
 The function returns an error in the following cases:
 
-- **Empty array**: The input array has no elements
-- **Empty string**: The input string has no characters
 - **Invalid type**: The argument is not an array or string
 
 ## Related functions

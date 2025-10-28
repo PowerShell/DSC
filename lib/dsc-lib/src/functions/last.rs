@@ -21,7 +21,7 @@ impl Function for Last {
             max_args: 1,
             accepted_arg_ordered_types: vec![vec![FunctionArgKind::Array, FunctionArgKind::String]],
             remaining_arg_accepted_types: None,
-            return_types: vec![FunctionArgKind::String, FunctionArgKind::Number, FunctionArgKind::Array, FunctionArgKind::Object],
+            return_types: vec![FunctionArgKind::String, FunctionArgKind::Number, FunctionArgKind::Array, FunctionArgKind::Object, FunctionArgKind::Null],
         }
     }
 
@@ -30,14 +30,14 @@ impl Function for Last {
         
         if let Some(array) = args[0].as_array() {
             if array.is_empty() {
-                return Err(DscError::Parser(t!("functions.last.emptyArray").to_string()));
+                return Ok(Value::Null);
             }
             return Ok(array[array.len() - 1].clone());
         }
 
         if let Some(string) = args[0].as_str() {
             if string.is_empty() {
-                return Err(DscError::Parser(t!("functions.last.emptyString").to_string()));
+                return Ok(Value::String(String::new()));
             }
             return Ok(Value::String(string.chars().last().unwrap().to_string()));
         }
@@ -84,20 +84,6 @@ mod tests {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[last('a')]", &Context::new()).unwrap();
         assert_eq!(result.as_str(), Some("a"));
-    }
-
-    #[test]
-    fn empty_array() {
-        let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[last(createArray())]", &Context::new());
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn empty_string() {
-        let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[last('')]", &Context::new());
-        assert!(result.is_err());
     }
 
     #[test]

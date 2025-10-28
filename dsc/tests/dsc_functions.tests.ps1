@@ -510,6 +510,8 @@ Describe 'tests for function expressions' {
     @{ expression = "[last('hello')]"; expected = 'o' }
     @{ expression = "[last('a')]"; expected = 'a' }
     @{ expression = "[last(array('mixed'))]"; expected = 'mixed' }
+    @{ expression = "[last(createArray())]"; expected = $null }
+    @{ expression = "[last('')]"; expected = '' }
   ) {
     param($expression, $expected)
 
