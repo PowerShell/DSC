@@ -448,10 +448,6 @@ pub fn get_input(input: Option<&String>, file: Option<&String>, parameters_from_
         // check if need to read from STDIN
         if path == "-" {
             info!("{}", t!("util.readingInputFromStdin"));
-            if parameters_from_stdin {
-                error!("{}", t!("util.stdinNotAllowedForBothParametersAndInput"));
-                exit(EXIT_INVALID_INPUT);
-            }
             let mut stdin = Vec::<u8>::new();
             match std::io::stdin().read_to_end(&mut stdin) {
                 Ok(_) => {
