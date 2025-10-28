@@ -603,6 +603,7 @@ The following list of functions operate on integer values or arrays of integer v
 
 The following list of functions operate on resource instances:
 
+- [copyIndex()][copyIndex] - Return the current iteration index of a copy loop.
 - [reference()][reference] - Return the result data for another resource instance.
 - [resourceId()][resourceId] - Return the ID of another resource instance to reference or depend
   on.
@@ -631,6 +632,7 @@ The following list of functions create or convert values of a given type:
 [add]:         ./add.md
 [base64]:      ./base64.md
 [concat]:      ./concat.md
+[copyIndex]:   ./copyIndex.md
 [createArray]: ./createArray.md
 [div]:         ./div.md
 [envvar]:      ./envvar.md
