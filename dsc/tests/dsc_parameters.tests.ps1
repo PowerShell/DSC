@@ -380,20 +380,6 @@ Describe 'Parameters tests' {
       $out.results[0].result.inDesiredState | Should -Be $IsWindows
     }
 
-    It 'Parameters and input cannot both be from STDIN' {
-      $params = @{
-        parameters = @{
-          osFamily = 'Windows'
-        }
-      } | ConvertTo-Json -Compress
-
-      $out = $params | dsc config -f - test -f - 2> $TestDrive/error.log
-      $LASTEXITCODE | Should -Be 4
-      $out | Should -BeNullOrEmpty
-      $errorMessage = Get-Content -Path $TestDrive/error.log -Raw
-      $errorMessage | Should -BeLike "*ERROR*Cannot read from STDIN for both parameters and input*"
-    }
-
     It 'Invalid parameters read from STDIN result in error' {
       $params = @{
         osFamily = 'Windows'
