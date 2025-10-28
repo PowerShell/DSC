@@ -136,7 +136,7 @@ fn main() {
                 parameters
             };
 
-            subcommand::config(&subcommand, &merged_parameters, false, system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format);
+            subcommand::config(&subcommand, &merged_parameters, system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format);
         },
         SubCommand::Extension { subcommand } => {
             subcommand::extension(&subcommand, progress_format);
