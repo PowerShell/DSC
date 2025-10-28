@@ -1037,6 +1037,10 @@ impl Configurator {
                     };
                     new_resource.name = new_name.to_string();
 
+                    if let Some(properties) = &resource.properties {
+                        new_resource.properties = self.invoke_property_expressions(Some(properties))?;
+                    }
+
                     new_resource.copy = None;
                     copy_resources.push(new_resource);
                 }
