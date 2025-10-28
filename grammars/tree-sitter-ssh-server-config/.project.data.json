@@ -1,0 +1,6 @@
+{
+    "Name": "tree-sitter-ssh-server-config",
+    "Kind": "Grammar",
+    "IsRust": true,
+    "ClippyUnclean": true
+}

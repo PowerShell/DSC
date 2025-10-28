@@ -123,7 +123,7 @@ Describe 'tests for function expressions' {
     @{ expression = "[intersection(parameters('nestedObject1'), parameters('nestedObject2'))]"; expected = [pscustomobject]@{
         shared = [pscustomobject]@{ value = 42; flag = $true }
         level  = 1
-      } 
+      }
     }
     @{ expression = "[intersection(parameters('nestedObject1'), parameters('nestedObject3'))]"; expected = [pscustomobject]@{ level = 1 } }
     @{ expression = "[intersection(parameters('nestedObject1'), parameters('nestedObject2'), parameters('nestedObject4'))]"; expected = [pscustomobject]@{ level = 1 } }
@@ -948,10 +948,10 @@ Describe 'tests for function expressions' {
     @{ testInput = ' ' }
   ) {
     param($testInput)
-    
+
     $expected = [Uri]::EscapeDataString($testInput)
     $expression = "[uriComponent('$($testInput -replace "'", "''")')]"
-    
+
     $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
@@ -963,13 +963,13 @@ Describe 'tests for function expressions' {
     $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
     $out.results[0].result.actualState.output | Should -BeExactly $expected
   }
-  
+
   It 'uriComponent function works with concat' {
     $input1 = 'hello'
     $input2 = ' '
     $input3 = 'world'
     $expected = [Uri]::EscapeDataString($input1 + $input2 + $input3)
-    
+
     $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
@@ -995,10 +995,10 @@ Describe 'tests for function expressions' {
     @{ testInput = '100%25' }
   ) {
     param($testInput)
-    
+
     $expected = [Uri]::UnescapeDataString($testInput)
     $expression = "[uriComponentToString('$($testInput -replace "'", "''")')]"
-    
+
     $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
@@ -1010,11 +1010,11 @@ Describe 'tests for function expressions' {
     $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
     $out.results[0].result.actualState.output | Should -BeExactly $expected
   }
-  
+
   It 'uriComponentToString function works with round-trip encoding' {
     $original = 'hello world'
     $expected = $original
-    
+
     $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
@@ -1026,11 +1026,11 @@ Describe 'tests for function expressions' {
     $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
     $out.results[0].result.actualState.output | Should -BeExactly $expected
   }
-  
+
   It 'uriComponentToString function works with nested round-trip' {
     $original = 'user+tag@example.com'
     $expected = $original
-    
+
     $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
@@ -1042,13 +1042,13 @@ Describe 'tests for function expressions' {
     $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
     $out.results[0].result.actualState.output | Should -BeExactly $expected
   }
-  
+
   It 'uriComponentToString function works with concat' {
     $input1 = 'hello'
     $input2 = '%20'
     $input3 = 'world'
     $expected = [Uri]::UnescapeDataString($input1 + $input2 + $input3)
-    
+
     $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
@@ -1077,7 +1077,7 @@ Describe 'tests for function expressions' {
     @{ data = @{ nested = @{ value = 123 } }; accessor = '.nested.value'; expected = 123 }
   ) {
     param($data, $accessor, $expected)
-    
+
     $jsonString = ConvertTo-Json -Compress -InputObject $data
     $expression = "[json(''$($jsonString)'')$accessor]"
 
@@ -1115,5 +1115,93 @@ Describe 'tests for function expressions' {
     $LASTEXITCODE | Should -Not -Be 0
     $errorContent = Get-Content $TestDrive/error.log -Raw
     $errorContent | Should -Match ([regex]::Escape('Invalid JSON string'))
+  }
+
+  It 'uri() function works for: <base> + <relative>' -TestCases @(
+    @{ base = 'https://example.com/'; relative = 'path/file.html'; expected = 'https://example.com/path/file.html' }
+    @{ base = 'https://example.com/'; relative = '/path/file.html'; expected = 'https://example.com/path/file.html' }
+    @{ base = 'https://example.com/api/v1'; relative = 'users'; expected = 'https://example.com/api/users' }
+    @{ base = 'https://example.com/api/v1'; relative = '/users'; expected = 'https://example.com/users' }
+    @{ base = 'https://example.com'; relative = 'path'; expected = 'https://example.com/path' }
+    @{ base = 'https://example.com'; relative = '/path'; expected = 'https://example.com/path' }
+    @{ base = 'https://api.example.com/v2/resource/'; relative = 'item/123'; expected = 'https://api.example.com/v2/resource/item/123' }
+    @{ base = 'https://example.com/a/b/c/'; relative = 'd/e/f'; expected = 'https://example.com/a/b/c/d/e/f' }
+    @{ base = 'https://example.com/old/path'; relative = 'new'; expected = 'https://example.com/old/new' }
+    @{ base = 'https://example.com/api/'; relative = 'search?q=test'; expected = 'https://example.com/api/search?q=test' }
+    @{ base = 'https://example.com/page'; relative = '#section'; expected = 'https://example.com/page#section' }
+    @{ base = 'https://example.com/page'; relative = '?query=value#section'; expected = 'https://example.com/page?query=value#section' }
+    @{ base = 'https://example.com/'; relative = ''; expected = 'https://example.com/' }
+    @{ base = 'http://example.com/'; relative = 'page.html'; expected = 'http://example.com/page.html' }
+    @{ base = 'ftp://example.com/'; relative = 'file.txt'; expected = 'ftp://example.com/file.txt' }
+    @{ base = 'file:///C:/path/'; relative = 'file.txt'; expected = 'file:///C:/path/file.txt' }
+    @{ base = 'https://example.com:8080/'; relative = 'api'; expected = 'https://example.com:8080/api' }
+    @{ base = 'https://example.com:8080/api'; relative = '/v2'; expected = 'https://example.com:8080/v2' }
+    @{ base = 'https://example.com/'; relative = 'path'; expected = 'https://example.com/path' }
+    @{ base = 'https://example.com/path/'; relative = 'file%20name.txt'; expected = 'https://example.com/path/file%20name.txt' }
+    @{ base = 'https://example.com/'; relative = 'path with spaces'; expected = 'https://example.com/path%20with%20spaces' }
+    @{ base = 'https://example.com/'; relative = 'path/../other'; expected = 'https://example.com/other' }
+    @{ base = 'https://example.com/a/b/'; relative = '../c'; expected = 'https://example.com/a/c' }
+    @{ base = 'https://example.com/a/b/'; relative = './c'; expected = 'https://example.com/a/b/c' }
+    @{ base = 'https://example.com/path'; relative = 'https://other.com/other'; expected = 'https://other.com/other' }
+    @{ base = 'https://example.com/path'; relative = 'http://different.com/path'; expected = 'http://different.com/path' }
+    @{ base = 'https://user:pass@example.com/'; relative = 'path'; expected = 'https://user:pass@example.com/path' }
+    @{ base = 'https://example.com/'; relative = 'café/file.txt'; expected = 'https://example.com/caf%C3%A9/file.txt' }
+    @{ base = 'https://[::1]/'; relative = 'path'; expected = 'https://[::1]/path' }
+    @{ base = 'https://[2001:db8::1]/'; relative = 'api/v1'; expected = 'https://[2001:db8::1]/api/v1' }
+    @{ base = 'https://[2001:db8::1]:8080/'; relative = 'api'; expected = 'https://[2001:db8::1]:8080/api' }
+    @{ base = 'http://192.168.1.1/'; relative = 'api/v1'; expected = 'http://192.168.1.1/api/v1' }
+  ) {
+    param($base, $relative, $expected)
+
+    $expression = "[uri('$($base -replace "'", "''")','$($relative -replace "'", "''")')]"
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "$expression"
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -BeExactly $expected
+  }
+
+  It 'uri() error handling: <expectedError>' -TestCases @(
+    @{ base = ''; relative = 'path'; expectedError = 'The baseUri parameter cannot be empty' }
+    @{ base = 'example.com'; relative = 'path'; expectedError = 'The baseUri must be an absolute URI (must include a scheme such as https:// or file://)' }
+    @{ base = '/relative/path'; relative = 'file.txt'; expectedError = 'The baseUri must be an absolute URI' }
+    @{ base = 'https://example.com/'; relative = '///foo'; expectedError = 'Invalid URI: The relative URI contains an invalid sequence.' }
+  ) {
+    param($base, $relative, $expectedError)
+
+    $expression = "[uri('$($base -replace "'", "''")','$($relative -replace "'", "''")')]"
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "$expression"
+"@
+    $null = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log
+    $LASTEXITCODE | Should -Not -Be 0
+    $errorContent = Get-Content $TestDrive/error.log -Raw
+    $errorContent | Should -Match ([regex]::Escape($expectedError))
+  }
+
+  It 'resourceId allows for arbitrary characters in names including unicode' {
+    $name = 'My Resource @123/!#$%^&*()[]{}-+=;`~'
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: "$name"
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[resourceId('Microsoft.DSC.Debug/Echo', '$name')]"
+"@
+    $out = dsc config get -i $config_yaml | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0
+    $expected = "Microsoft.DSC.Debug/Echo:$([Uri]::EscapeDataString($name))"
+    $out.results[0].result.actualState.output | Should -BeExactly $expected
   }
 }

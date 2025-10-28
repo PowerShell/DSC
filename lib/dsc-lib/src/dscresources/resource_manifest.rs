@@ -1,17 +1,19 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use dsc_lib_jsonschema::transforms::idiomaticize_string_enum;
 use rust_i18n::t;
 use schemars::{Schema, JsonSchema, json_schema};
 use semver::Version;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{Map, Value};
 use std::collections::HashMap;
 
 use crate::{dscerror::DscError, schemas::DscRepoSchema};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
+#[schemars(transform = idiomaticize_string_enum)]
 pub enum Kind {
     Adapter,
     Exporter,
@@ -67,10 +69,12 @@ pub struct ResourceManifest {
     pub adapter: Option<Adapter>,
     /// Mapping of exit codes to descriptions.  Zero is always success and non-zero is always failure.
     #[serde(rename = "exitCodes", skip_serializing_if = "Option::is_none")]
-    pub exit_codes: Option<HashMap<i32, String>>,
+    pub exit_codes: Option<HashMap<String, String>>, // we have to make this a string key instead of i32 due to https://github.com/serde-rs/json/issues/560
     /// Details how to get the schema of the resource.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub schema: Option<SchemaKind>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<Map<String, Value>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -94,6 +98,7 @@ pub enum ArgKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[schemars(transform = idiomaticize_string_enum)]
 pub enum InputKind {
     /// The input is accepted as environmental variables.
     #[serde(rename = "env")]
@@ -122,6 +127,7 @@ pub struct SchemaCommand {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[schemars(transform = idiomaticize_string_enum)]
 pub enum ReturnKind {
     /// The return JSON is the state of the resource.
     #[serde(rename = "state")]
@@ -224,6 +230,7 @@ pub struct Adapter {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[schemars(transform = idiomaticize_string_enum)]
 pub enum AdapterInputKind {
     /// The adapter accepts full unprocessed configuration.
     #[serde(rename = "full")]

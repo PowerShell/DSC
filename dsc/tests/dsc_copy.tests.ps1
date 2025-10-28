@@ -234,4 +234,33 @@ resources:
         $out.results[1].name | Should -Be 'Server-1'
         $out.results[1].result.actualState.output | Should -Be 'Environment: test'
     }
+
+    It 'Copy count using expression' {
+        $configYaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+parameters:
+  serverCount:
+    type: int
+    defaultValue: 4
+resources:
+- name: "[format('Server-{0}', copyIndex())]"
+  copy:
+    name: testLoop
+    count: "[parameters('serverCount')]"
+  type: Microsoft.DSC.Debug/Echo
+  properties:
+    output: Hello
+'@
+        $out = dsc -l trace config get -i $configYaml 2>$testdrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content $testdrive/error.log -Raw | Out-String)
+        $out.results.Count | Should -Be 4
+        $out.results[0].name | Should -Be 'Server-0'
+        $out.results[0].result.actualState.output | Should -Be 'Hello'
+        $out.results[1].name | Should -Be 'Server-1'
+        $out.results[1].result.actualState.output | Should -Be 'Hello'
+        $out.results[2].name | Should -Be 'Server-2'
+        $out.results[2].result.actualState.output | Should -Be 'Hello'
+        $out.results[3].name | Should -Be 'Server-3'
+        $out.results[3].result.actualState.output | Should -Be 'Hello'
+    }
 }

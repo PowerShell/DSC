@@ -1,0 +1,11 @@
+{
+    "Name": "extensions/appx",
+    "Kind": "Extension",
+    "SupportedPlatformOS": "Windows",
+    "CopyFiles": {
+        "Windows": [
+            "appx-discover.ps1",
+            "appx.dsc.extension.json"
+        ]
+    }
+}

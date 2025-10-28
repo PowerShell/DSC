@@ -356,6 +356,7 @@ if (!$SkipBuild) {
         ".",
         "grammars/tree-sitter-dscexpression",
         "grammars/tree-sitter-ssh-server-config",
+        "lib/dsc-lib-jsonschema",
         "lib/dsc-lib-security_context",
         "lib/dsc-lib-osinfo",
         "lib/dsc-lib",
@@ -498,11 +499,11 @@ if (!$SkipBuild) {
             }
 
             if ($IsWindows) {
-                Copy-Item "*.dsc.resource.json" $target -Force -ErrorAction Ignore
+                Copy-Item "*.dsc.resource.*","*.dsc.manifests.*" $target -Force -ErrorAction Ignore
             }
             else { # don't copy WindowsPowerShell resource manifest
                 $exclude = @('windowspowershell.dsc.resource.json', 'winpsscript.dsc.resource.json')
-                Copy-Item "*.dsc.resource.json" $target -Exclude $exclude -Force -ErrorAction Ignore
+                Copy-Item "*.dsc.resource.*","*.dsc.manifests.*" $target -Exclude $exclude -Force -ErrorAction Ignore
             }
 
             # be sure that the files that should be executable are executable

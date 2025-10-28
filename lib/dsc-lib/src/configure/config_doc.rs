@@ -2,6 +2,10 @@
 // Licensed under the MIT License.
 
 use chrono::{DateTime, Local};
+use dsc_lib_jsonschema::transforms::{
+    idiomaticize_externally_tagged_enum,
+    idiomaticize_string_enum
+};
 use rust_i18n::t;
 use schemars::{JsonSchema, json_schema};
 use serde::{Deserialize, Serialize};
@@ -12,6 +16,7 @@ use crate::{dscerror::DscError, schemas::DscRepoSchema};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
+#[schemars(transform = idiomaticize_string_enum)]
 pub enum SecurityContextKind {
     Current,
     Elevated,
@@ -20,6 +25,7 @@ pub enum SecurityContextKind {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
+#[schemars(transform = idiomaticize_string_enum)]
 pub enum Operation {
     Get,
     Set,
@@ -29,6 +35,7 @@ pub enum Operation {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
+#[schemars(transform = idiomaticize_string_enum)]
 pub enum ExecutionKind {
     Actual,
     WhatIf,
@@ -43,6 +50,7 @@ pub struct Process {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
+#[schemars(transform = idiomaticize_externally_tagged_enum)]
 pub enum RestartRequired {
     System(String),
     Service(String),
@@ -130,6 +138,22 @@ pub struct UserFunctionOutput {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub enum ValueOrCopy {
+    Value(String),
+    Copy(Copy),
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct Output {
+    pub condition: Option<String>,
+    pub r#type: DataType,
+    #[serde(flatten)]
+    pub value_or_copy: ValueOrCopy,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Configuration {
     #[serde(rename = "$schema")]
@@ -140,15 +164,18 @@ pub struct Configuration {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub functions: Option<Vec<UserFunction>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub parameters: Option<HashMap<String, Parameter>>,
+    pub metadata: Option<Metadata>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub variables: Option<Map<String, Value>>,
+    pub outputs: Option<HashMap<String, Output>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parameters: Option<HashMap<String, Parameter>>,
     pub resources: Vec<Resource>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub metadata: Option<Metadata>,
+    pub variables: Option<Map<String, Value>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct Parameter {
     #[serde(rename = "type")]
     pub parameter_type: DataType,
@@ -171,6 +198,7 @@ pub struct Parameter {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[schemars(transform = idiomaticize_string_enum)]
 pub enum DataType {
     #[serde(rename = "string")]
     String,
@@ -204,6 +232,7 @@ impl Display for DataType {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[schemars(transform = idiomaticize_string_enum)]
 pub enum CopyMode {
     #[serde(rename = "serial")]
     Serial,
@@ -212,14 +241,30 @@ pub enum CopyMode {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(untagged)]
+pub enum IntOrExpression {
+    Int(i64),
+    Expression(String),
+}
+
+impl Display for IntOrExpression {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            IntOrExpression::Int(i) => write!(f, "{i}"),
+            IntOrExpression::Expression(s) => write!(f, "{s}"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Copy {
     pub name: String,
-    pub count: i64,
+    pub count: IntOrExpression,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mode: Option<CopyMode>,
     #[serde(skip_serializing_if = "Option::is_none", rename = "batchSize")]
-    pub batch_size: Option<i64>,
+    pub batch_size: Option<IntOrExpression>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -342,6 +387,7 @@ impl Configuration {
             resources: Vec::new(),
             functions: None,
             variables: None,
+            outputs: None,
         }
     }
 }

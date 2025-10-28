@@ -3,6 +3,9 @@ name = "dsc-lib"
 version = "3.2.0"
 edition = "2021"
 
+[lib]
+doctest = false
+
 [dependencies]
 # external dependencies
 base32 = { workspace = true }
@@ -37,11 +40,13 @@ tracing-indicatif = { workspace = true }
 tree-sitter = { workspace = true }
 tree-sitter-rust = { workspace = true}
 uuid = { workspace = true }
+url = { workspace = true }
 urlencoding = { workspace = true }
 which = { workspace = true }
 # workspace crate dependencies
 dsc-lib-osinfo = { workspace = true }
 dsc-lib-security_context = { workspace = true }
+dsc-lib-jsonschema = { workspace = true }
 tree-sitter-dscexpression = { workspace = true }
 
 [dev-dependencies]

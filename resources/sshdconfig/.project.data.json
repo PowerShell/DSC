@@ -1,0 +1,16 @@
+{
+    "Name": "sshdconfig",
+    "Kind": "Resource",
+    "IsRust": true,
+    "Binaries": [
+        "sshdconfig"
+    ],
+    "CopyFiles": {
+        "All": [
+            "sshd_config.dsc.resource.json"
+        ],
+        "Windows": [
+            "sshd-windows.dsc.resource.json"
+        ]
+    }
+}

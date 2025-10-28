@@ -1,9 +1,8 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::configure::config_doc::{ExecutionKind, Metadata, Resource, Parameter};
 use crate::configure::context::{Context, ProcessMode};
-use crate::configure::{config_doc::RestartRequired, parameters::Input};
+use crate::configure::{config_doc::{ExecutionKind, IntOrExpression, Metadata, Parameter, Resource, RestartRequired, ValueOrCopy}, parameters::Input};
 use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscerror::DscError;
 use crate::dscresources::{
@@ -15,6 +14,7 @@ use crate::DscResource;
 use crate::discovery::Discovery;
 use crate::parser::Statement;
 use crate::progress::{Failure, ProgressBar, ProgressFormat};
+use crate::util::resource_id;
 use self::config_doc::{Configuration, DataType, MicrosoftDscMetadata, Operation, SecurityContextKind};
 use self::depends_on::get_resource_invocation_order;
 use self::config_result::{ConfigurationExportResult, ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult};
@@ -388,7 +388,7 @@ impl Configurator {
 
             match &mut get_result {
                 GetResult::Resource(ref mut resource_result) => {
-                    self.context.references.insert(format!("{}:{}", resource.resource_type, evaluated_name), serde_json::to_value(&resource_result.actual_state)?);
+                    self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), serde_json::to_value(&resource_result.actual_state)?);
                     get_metadata_from_result(Some(&mut self.context), &mut resource_result.actual_state, &mut metadata)?;
                 },
                 GetResult::Group(group) => {
@@ -396,7 +396,7 @@ impl Configurator {
                     for result in group {
                         results.push(serde_json::to_value(&result.result)?);
                     }
-                    self.context.references.insert(format!("{}:{}", resource.resource_type, evaluated_name), Value::Array(results.clone()));
+                    self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), Value::Array(results.clone()));
                 },
             }
             let resource_result = config_result::ResourceGetResult {
@@ -413,6 +413,10 @@ impl Configurator {
         result.metadata = Some(
             self.get_result_metadata(Operation::Get)
         );
+        self.process_output()?;
+        if !self.context.outputs.is_empty() {
+            result.outputs = Some(self.context.outputs.clone());
+        }
         Ok(result)
     }
 
@@ -559,7 +563,7 @@ impl Configurator {
             };
             match &mut set_result {
                 SetResult::Resource(resource_result) => {
-                    self.context.references.insert(format!("{}:{}", resource.resource_type, evaluated_name), serde_json::to_value(&resource_result.after_state)?);
+                    self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), serde_json::to_value(&resource_result.after_state)?);
                     get_metadata_from_result(Some(&mut self.context), &mut resource_result.after_state, &mut metadata)?;
                 },
                 SetResult::Group(group) => {
@@ -567,7 +571,7 @@ impl Configurator {
                     for result in group {
                         results.push(serde_json::to_value(&result.result)?);
                     }
-                    self.context.references.insert(format!("{}:{}", resource.resource_type, evaluated_name), Value::Array(results.clone()));
+                    self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), Value::Array(results.clone()));
                 },
             }
             let resource_result = config_result::ResourceSetResult {
@@ -584,6 +588,10 @@ impl Configurator {
         result.metadata = Some(
             self.get_result_metadata(Operation::Set)
         );
+        self.process_output()?;
+        if !self.context.outputs.is_empty() {
+            result.outputs = Some(self.context.outputs.clone());
+        }
         Ok(result)
     }
 
@@ -637,7 +645,7 @@ impl Configurator {
             };
             match &mut test_result {
                 TestResult::Resource(resource_test_result) => {
-                    self.context.references.insert(format!("{}:{}", resource.resource_type, evaluated_name), serde_json::to_value(&resource_test_result.actual_state)?);
+                    self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), serde_json::to_value(&resource_test_result.actual_state)?);
                     get_metadata_from_result(Some(&mut self.context), &mut resource_test_result.actual_state, &mut metadata)?;
                 },
                 TestResult::Group(group) => {
@@ -645,7 +653,7 @@ impl Configurator {
                     for result in group {
                         results.push(serde_json::to_value(&result.result)?);
                     }
-                    self.context.references.insert(format!("{}:{}", resource.resource_type, evaluated_name), Value::Array(results.clone()));
+                    self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), Value::Array(results.clone()));
                 },
             }
             let resource_result = config_result::ResourceTestResult {
@@ -662,6 +670,10 @@ impl Configurator {
         result.metadata = Some(
             self.get_result_metadata(Operation::Test)
         );
+        self.process_output()?;
+        if !self.context.outputs.is_empty() {
+            result.outputs = Some(self.context.outputs.clone());
+        }
         Ok(result)
     }
 
@@ -707,7 +719,7 @@ impl Configurator {
                     return Err(e);
                 },
             };
-            self.context.references.insert(format!("{}:{}", resource.resource_type, evaluated_name), serde_json::to_value(&export_result.actual_state)?);
+            self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), serde_json::to_value(&export_result.actual_state)?);
             progress.set_result(&serde_json::to_value(export_result)?);
             progress.write_increment(1);
         }
@@ -724,6 +736,10 @@ impl Configurator {
         }
 
         result.result = Some(conf);
+        self.process_output()?;
+        if !self.context.outputs.is_empty() {
+            result.outputs = Some(self.context.outputs.clone());
+        }
         Ok(result)
     }
 
@@ -736,6 +752,48 @@ impl Configurator {
             }
         }
         Ok(false)
+    }
+
+    /// Process the outputs defined in the configuration.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the output processing fails.
+    pub fn process_output(&mut self) -> Result<(), DscError> {
+        if self.config.outputs.is_none() || self.context.execution_type == ExecutionKind::WhatIf {
+            return Ok(());
+        }
+        if let Some(outputs) = &self.config.outputs {
+            for (name, output) in outputs {
+                if let Some(condition) = &output.condition {
+                    let condition_result = self.statement_parser.parse_and_execute(condition, &self.context)?;
+                    if condition_result != Value::Bool(true) {
+                        info!("{}", t!("configure.mod.skippingOutput", name = name));
+                        continue;
+                    }
+                }
+
+                if let ValueOrCopy::Value(value) = &output.value_or_copy {
+                    let value_result = self.statement_parser.parse_and_execute(value, &self.context)?;
+                    if output.r#type == DataType::SecureString || output.r#type == DataType::SecureObject {
+                        warn!("{}", t!("configure.mod.secureOutputSkipped", name = name));
+                        continue;
+                    }
+                    // TODO: handle nullable when supported
+                    if value_result.is_string() && output.r#type != DataType::String ||
+                        value_result.is_i64() && output.r#type != DataType::Int ||
+                        value_result.is_boolean() && output.r#type != DataType::Bool ||
+                        value_result.is_array() && output.r#type != DataType::Array ||
+                        value_result.is_object() && output.r#type != DataType::Object {
+                            return Err(DscError::Validation(t!("configure.mod.outputTypeNotMatch", name = name, expected_type = output.r#type).to_string()));
+                    }
+                    self.context.outputs.insert(name.clone(), value_result);
+                } else {
+                    warn!("{}", t!("configure.mod.copyNotSupported", name = name));
+                }
+            }
+        }
+        Ok(())
     }
 
     /// Set the mounted path for the configuration.
@@ -779,7 +837,7 @@ impl Configurator {
         if let Some(parameters_input) = parameters_input {
             trace!("parameters_input: {parameters_input}");
             let input_parameters: HashMap<String, Value> = serde_json::from_value::<Input>(parameters_input.clone())?.parameters;
-            
+
             for (name, value) in input_parameters {
                 if let Some(constraint) = parameters.get(&name) {
                     debug!("Validating parameter '{name}'");
@@ -818,7 +876,7 @@ impl Configurator {
 
         while !unresolved_parameters.is_empty() {
             let mut resolved_in_this_pass = Vec::new();
-            
+
             for (name, parameter) in &unresolved_parameters {
                 debug!("{}", t!("configure.mod.processingParameter", name = name));
                 if let Some(default_value) = &parameter.default_value {
@@ -962,7 +1020,16 @@ impl Configurator {
                 self.context.process_mode = ProcessMode::Copy;
                 self.context.copy_current_loop_name.clone_from(&copy.name);
                 let mut copy_resources = Vec::<Resource>::new();
-                for i in 0..copy.count {
+                let count: i64 = match &copy.count {
+                    IntOrExpression::Int(i) => *i,
+                    IntOrExpression::Expression(e) => {
+                        let Value::Number(n) = self.statement_parser.parse_and_execute(e, &self.context)? else {
+                            return Err(DscError::Parser(t!("configure.mod.copyCountResultNotInteger", expression = e).to_string()))
+                        };
+                        n.as_i64().ok_or_else(|| DscError::Parser(t!("configure.mod.copyCountResultNotInteger", expression = e).to_string()))?
+                    },
+                };
+                for i in 0..count {
                     self.context.copy.insert(copy.name.clone(), i);
                     let mut new_resource = resource.clone();
                     let Value::String(new_name) = self.statement_parser.parse_and_execute(&resource.name, &self.context)? else {

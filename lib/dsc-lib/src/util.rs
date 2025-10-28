@@ -4,12 +4,13 @@
 use crate::dscerror::DscError;
 use rust_i18n::t;
 use serde_json::Value;
-use std::fs;
-use std::fs::File;
-use std::io::BufReader;
-use std::path::PathBuf;
-use std::path::Path;
-use std::env;
+use std::{
+    fs,
+    fs::File,
+    io::BufReader,
+    path::{Path, PathBuf},
+    env,
+};
 use tracing::debug;
 
 pub struct DscSettingValue {
@@ -211,6 +212,24 @@ fn get_settings_policy_file_path() -> String
     // "/etc/dsc/dsc.settings.json"
     // This location is writable only by admins, but readable by all users
     Path::new("/etc").join("dsc").join("dsc.settings.json").display().to_string()
+}
+
+/// Generates a resource ID from the specified type and name.
+///
+/// # Arguments
+/// * `type_name` - The resource type in the format "namespace/type".
+/// * `name` - The resource name.
+///
+/// # Returns
+/// A string that holds the resource ID in the format "namespace/type:name".
+#[must_use]
+pub fn resource_id(type_name: &str, name: &str) -> String {
+    let mut result = String::new();
+    result.push_str(type_name);
+    result.push(':');
+    let encoded = urlencoding::encode(name);
+    result.push_str(&encoded);
+    result
 }
 
 #[macro_export]
