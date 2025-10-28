@@ -35,6 +35,7 @@ pub mod greater_or_equals;
 pub mod r#if;
 pub mod r#false;
 pub mod first;
+pub mod last;
 pub mod length;
 pub mod less;
 pub mod less_or_equals;
@@ -163,6 +164,7 @@ impl FunctionDispatcher {
             Box::new(r#if::If{}),
             Box::new(r#false::False{}),
             Box::new(first::First{}),
+            Box::new(last::Last{}),
             Box::new(length::Length{}),
             Box::new(less::Less{}),
             Box::new(less_or_equals::LessOrEquals{}),
