@@ -18,6 +18,7 @@ include = [
 
 [lib]
 path = "bindings/rust/lib.rs"
+doctest = false
 
 [dependencies]
 tree-sitter-rust = { workspace = true }

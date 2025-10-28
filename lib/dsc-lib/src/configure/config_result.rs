@@ -1,13 +1,16 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use dsc_lib_jsonschema::transforms::idiomaticize_string_enum;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
 use crate::dscresources::invoke_result::{GetResult, SetResult, TestResult};
 use crate::configure::config_doc::{Configuration, Metadata};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
+#[schemars(transform = idiomaticize_string_enum)]
 pub enum MessageLevel {
     Error,
     Warning,
@@ -54,6 +57,8 @@ pub struct ConfigurationGetResult {
     pub messages: Vec<ResourceMessage>,
     #[serde(rename = "hadErrors")]
     pub had_errors: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub outputs: Option<Map<String, Value>>,
 }
 
 impl ConfigurationGetResult {
@@ -64,6 +69,7 @@ impl ConfigurationGetResult {
             results: Vec::new(),
             messages: Vec::new(),
             had_errors: false,
+            outputs: None,
         }
     }
 }
@@ -85,6 +91,7 @@ impl From<ConfigurationTestResult> for ConfigurationGetResult {
             results,
             messages: test_result.messages,
             had_errors: test_result.had_errors,
+            outputs: test_result.outputs,
         }
     }
 }
@@ -140,6 +147,8 @@ pub struct ConfigurationSetResult {
     pub messages: Vec<ResourceMessage>,
     #[serde(rename = "hadErrors")]
     pub had_errors: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub outputs: Option<Map<String, Value>>,
 }
 
 impl ConfigurationSetResult {
@@ -150,6 +159,7 @@ impl ConfigurationSetResult {
             results: Vec::new(),
             messages: Vec::new(),
             had_errors: false,
+            outputs: None,
         }
     }
 }
@@ -200,6 +210,8 @@ pub struct ConfigurationTestResult {
     pub messages: Vec<ResourceMessage>,
     #[serde(rename = "hadErrors")]
     pub had_errors: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub outputs: Option<Map<String, Value>>,
 }
 
 impl ConfigurationTestResult {
@@ -210,6 +222,7 @@ impl ConfigurationTestResult {
             results: Vec::new(),
             messages: Vec::new(),
             had_errors: false,
+            outputs: None,
         }
     }
 }
@@ -228,6 +241,8 @@ pub struct ConfigurationExportResult {
     pub messages: Vec<ResourceMessage>,
     #[serde(rename = "hadErrors")]
     pub had_errors: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub outputs: Option<Map<String, Value>>,
 }
 
 impl ConfigurationExportResult {
@@ -238,6 +253,7 @@ impl ConfigurationExportResult {
             result: None,
             messages: Vec::new(),
             had_errors: false,
+            outputs: None,
         }
     }
 }

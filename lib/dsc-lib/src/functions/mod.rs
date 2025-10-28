@@ -35,6 +35,7 @@ pub mod greater_or_equals;
 pub mod r#if;
 pub mod r#false;
 pub mod first;
+pub mod last;
 pub mod length;
 pub mod less;
 pub mod less_or_equals;
@@ -42,7 +43,9 @@ pub mod format;
 pub mod int;
 pub mod index_of;
 pub mod intersection;
+pub mod items;
 pub mod join;
+pub mod json;
 pub mod last_index_of;
 pub mod max;
 pub mod min;
@@ -65,9 +68,14 @@ pub mod substring;
 pub mod system_root;
 pub mod to_lower;
 pub mod to_upper;
+pub mod trim;
 pub mod r#true;
+pub mod try_get;
 pub mod union;
 pub mod unique_string;
+pub mod uri;
+pub mod uri_component;
+pub mod uri_component_to_string;
 pub mod user_function;
 pub mod utc_now;
 pub mod variables;
@@ -156,6 +164,7 @@ impl FunctionDispatcher {
             Box::new(r#if::If{}),
             Box::new(r#false::False{}),
             Box::new(first::First{}),
+            Box::new(last::Last{}),
             Box::new(length::Length{}),
             Box::new(less::Less{}),
             Box::new(less_or_equals::LessOrEquals{}),
@@ -163,7 +172,9 @@ impl FunctionDispatcher {
             Box::new(int::Int{}),
             Box::new(index_of::IndexOf{}),
             Box::new(intersection::Intersection{}),
+            Box::new(items::Items{}),
             Box::new(join::Join{}),
+            Box::new(json::Json{}),
             Box::new(last_index_of::LastIndexOf{}),
             Box::new(max::Max{}),
             Box::new(min::Min{}),
@@ -186,10 +197,15 @@ impl FunctionDispatcher {
             Box::new(system_root::SystemRoot{}),
             Box::new(to_lower::ToLower{}),
             Box::new(to_upper::ToUpper{}),
+            Box::new(trim::Trim{}),
             Box::new(r#true::True{}),
-            Box::new(utc_now::UtcNow{}),
+            Box::new(try_get::TryGet{}),
             Box::new(union::Union{}),
             Box::new(unique_string::UniqueString{}),
+            Box::new(uri::Uri{}),
+            Box::new(uri_component::UriComponent{}),
+            Box::new(uri_component_to_string::UriComponentToString{}),
+            Box::new(utc_now::UtcNow{}),
             Box::new(variables::Variables{}),
         ];
         for function in function_list {

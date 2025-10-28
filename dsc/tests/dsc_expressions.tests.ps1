@@ -12,6 +12,12 @@ Describe 'Expressions tests' {
     @{ text = "[parameters('test').objectArray[1].value[1].name]"; expected = 'three' }
     @{ text = "[parameters('test').index]"; expected = '1' }
     @{ text = "[parameters('test').objectArray[parameters('test').index].name]"; expected = 'two' }
+    @{ text = "[parameters('test')['hello']"; expected = '@{world=there}' }
+    @{ text = "[parameters('test')['hello']['world']]"; expected = 'there' }
+    @{ text = "[parameters('test')['array'][1][0]]"; expected = 'two' }
+    @{ text = "[parameters('test')['objectArray'][0]['name']]"; expected = 'one' }
+    @{ text = "[parameters('test')['objectArray'][1]['value'][1]['name']]"; expected = 'three' }
+    @{ text = "[parameters('test')[parameters('propertyName')]]"; expected = '@{world=there}' }
   ) {
     param($text, $expected)
     $yaml = @"
@@ -35,6 +41,9 @@ Describe 'Expressions tests' {
           - nestedObject:
             name: three
             value: 3
+    propertyName:
+      type: string
+      defaultValue: hello
   resources:
   - name: echo
     type: Microsoft.DSC.Debug/Echo
@@ -185,7 +194,7 @@ resources:
       if ($out.results[0].result.actualState.output.$key -is [psobject]) {
         $out.results[0].result.actualState.output.$key.psobject.properties.value | Should -Be $expected.$key.values -Because ($out | ConvertTo-Json -Depth 10 | Out-String)
       } else {
-        $out.results[0].result.actualState.output.$key | Should -Be $expected.$key -Because ($out | ConvertTo-Json -Depth 10 | Out-String)  
+        $out.results[0].result.actualState.output.$key | Should -Be $expected.$key -Because ($out | ConvertTo-Json -Depth 10 | Out-String)
       }
     }
   }
@@ -240,7 +249,7 @@ resources:
     $LASTEXITCODE | Should -Be 2
     $log = Get-Content -Path $TestDrive/error.log -Raw
     $log | Should -BeLike "*ERROR* Arguments must be of the same type*"
-        
+
   }
 
   Context 'Resource name expression evaluation' {
