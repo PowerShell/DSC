@@ -623,6 +623,13 @@ The following list of functions create or convert values of a given type:
   same type.
 - [int()][int] - Convert a string or number with a fractional part into an integer.
 
+### User-defined functions
+
+DSC also supports creating custom functions within configuration documents:
+
+- [User-defined functions][user-defined] - Define and invoke custom functions
+  with parameters, type validation, and reusable logic.
+
 <!-- Link references -->
 [01]: https://yaml.org/spec/1.2.2/#folded-style
 [02]: https://yaml.org/spec/1.2.2/#literal-style
@@ -639,8 +646,9 @@ The following list of functions create or convert values of a given type:
 [min]:         ./min.md
 [mod]:         ./mod.md
 [mul]:         ./mul.md
-[parameters]:  ./parameters.md
-[reference]:   ./reference.md
-[resourceId]:  ./resourceId.md
-[sub]:         ./sub.md
-[variables]:   ./variables.md
+[parameters]:    ./parameters.md
+[reference]:     ./reference.md
+[resourceId]:    ./resourceId.md
+[sub]:           ./sub.md
+[user-defined]:  ./user-defined.md
+[variables]:     ./variables.md
