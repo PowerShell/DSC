@@ -54,16 +54,63 @@ fn main() {
             generate(shell, &mut cmd, "dsc", &mut io::stdout());
         },
         SubCommand::Config { subcommand, parameters, parameters_file, system_root, as_group, as_assert, as_include } => {
-            if let Some(file_name) = parameters_file {
+            let merged_parameters = if parameters_file.is_some() && parameters.is_some() {
+                // Both parameters and parameters_file provided - merge them with inline taking precedence
+                let file_params = if let Some(file_name) = &parameters_file {
+                    if file_name == "-" {
+                        info!("{}", t!("main.readingParametersFromStdin"));
+                        let mut stdin = Vec::<u8>::new();
+                        match io::stdin().read_to_end(&mut stdin) {
+                            Ok(_) => {
+                                match String::from_utf8(stdin) {
+                                    Ok(input) => Some(input),
+                                    Err(err) => {
+                                        error!("{}: {err}", t!("util.invalidUtf8"));
+                                        exit(EXIT_INVALID_INPUT);
+                                    }
+                                }
+                            },
+                            Err(err) => {
+                                error!("{}: {err}", t!("util.failedToReadStdin"));
+                                exit(EXIT_INVALID_INPUT);
+                            }
+                        }
+                    } else {
+                        info!("{}: {file_name}", t!("main.readingParametersFile"));
+                        match std::fs::read_to_string(file_name) {
+                            Ok(content) => Some(content),
+                            Err(err) => {
+                                error!("{} '{file_name}': {err}", t!("main.failedReadingParametersFile"));
+                                exit(util::EXIT_INVALID_INPUT);
+                            }
+                        }
+                    }
+                } else {
+                    None
+                };
+
+                // Parse both and merge
+                if let (Some(file_content), Some(inline_content)) = (file_params, parameters.as_ref()) {
+                    info!("{}", t!("main.mergingParameters"));
+                    match util::merge_parameters(&file_content, inline_content) {
+                        Ok(merged) => Some(merged),
+                        Err(err) => {
+                            error!("{}: {err}", t!("main.failedMergingParameters"));
+                            exit(EXIT_INVALID_INPUT);
+                        }
+                    }
+                } else {
+                    parameters.clone()
+                }
+            } else if let Some(file_name) = parameters_file {
+                // Only parameters_file provided
                 if file_name == "-" {
                     info!("{}", t!("main.readingParametersFromStdin"));
                     let mut stdin = Vec::<u8>::new();
-                    let parameters = match io::stdin().read_to_end(&mut stdin) {
+                    match io::stdin().read_to_end(&mut stdin) {
                         Ok(_) => {
                             match String::from_utf8(stdin) {
-                                Ok(input) => {
-                                    input
-                                },
+                                Ok(input) => Some(input),
                                 Err(err) => {
                                     error!("{}: {err}", t!("util.invalidUtf8"));
                                     exit(EXIT_INVALID_INPUT);
@@ -74,22 +121,22 @@ fn main() {
                             error!("{}: {err}", t!("util.failedToReadStdin"));
                             exit(EXIT_INVALID_INPUT);
                         }
-                    };
-                    subcommand::config(&subcommand, &Some(parameters), true, system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format);
-                    return;
-                }
-                info!("{}: {file_name}", t!("main.readingParametersFile"));
-                match std::fs::read_to_string(&file_name) {
-                    Ok(parameters) => subcommand::config(&subcommand, &Some(parameters), false, system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format),
-                    Err(err) => {
-                        error!("{} '{file_name}': {err}", t!("main.failedReadingParametersFile"));
-                        exit(util::EXIT_INVALID_INPUT);
+                    }
+                } else {
+                    info!("{}: {file_name}", t!("main.readingParametersFile"));
+                    match std::fs::read_to_string(&file_name) {
+                        Ok(content) => Some(content),
+                        Err(err) => {
+                            error!("{} '{file_name}': {err}", t!("main.failedReadingParametersFile"));
+                            exit(util::EXIT_INVALID_INPUT);
+                        }
                     }
                 }
-            }
-            else {
-                subcommand::config(&subcommand, &parameters, false, system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format);
-            }
+            } else {
+                parameters
+            };
+
+            subcommand::config(&subcommand, &merged_parameters, false, system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format);
         },
         SubCommand::Extension { subcommand } => {
             subcommand::extension(&subcommand, progress_format);
