@@ -432,7 +432,7 @@ pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Op
     info!("Trace-level is {:?}", tracing_setting.level);
 }
 
-pub fn get_input(input: Option<&String>, file: Option<&String>, parameters_from_stdin: bool) -> String {
+pub fn get_input(input: Option<&String>, file: Option<&String>) -> String {
     trace!("Input: {input:?}, File: {file:?}");
     let value = if let Some(input) = input {
         debug!("{}", t!("util.readingInput"));
