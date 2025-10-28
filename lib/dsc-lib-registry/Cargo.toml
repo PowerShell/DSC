@@ -8,6 +8,9 @@ available-locales = ["en-us"]
 default-locale = "en-us"
 load-path = "locales"
 
+[lib]
+doctest = false
+
 [dependencies]
 crossterm = { workspace = true }
 registry = { workspace = true }

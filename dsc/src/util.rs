@@ -17,7 +17,10 @@ use dsc_lib::{
             ResourceTestResult,
         },
     },
-    discovery::Discovery,
+    discovery::{
+        command_discovery::ManifestList,
+        Discovery,
+    },
     dscerror::DscError,
     dscresources::{
         command_resource::TraceLevel,
@@ -157,30 +160,6 @@ pub fn add_fields_to_json(json: &str, fields_to_add: &HashMap<String, String>) -
 #[must_use]
 pub fn get_schema(schema: SchemaType) -> Schema {
     match schema {
-        SchemaType::GetResult => {
-            schema_for!(GetResult)
-        },
-        SchemaType::SetResult => {
-            schema_for!(SetResult)
-        },
-        SchemaType::TestResult => {
-            schema_for!(TestResult)
-        },
-        SchemaType::ResolveResult => {
-            schema_for!(ResolveResult)
-        }
-        SchemaType::DscResource => {
-            schema_for!(DscResource)
-        },
-        SchemaType::Resource => {
-            schema_for!(Resource)
-        },
-        SchemaType::ResourceManifest => {
-            schema_for!(ResourceManifest)
-        },
-        SchemaType::Include => {
-            schema_for!(Include)
-        },
         SchemaType::Configuration => {
             schema_for!(Configuration)
         },
@@ -193,18 +172,45 @@ pub fn get_schema(schema: SchemaType) -> Schema {
         SchemaType::ConfigurationTestResult => {
             schema_for!(ConfigurationTestResult)
         },
-        SchemaType::ExtensionManifest => {
-            schema_for!(ExtensionManifest)
+        SchemaType::DscResource => {
+            schema_for!(DscResource)
         },
         SchemaType::ExtensionDiscoverResult => {
             schema_for!(DiscoverResult)
         },
+        SchemaType::ExtensionManifest => {
+            schema_for!(ExtensionManifest)
+        },
         SchemaType::FunctionDefinition => {
             schema_for!(FunctionDefinition)
         },
+        SchemaType::GetResult => {
+            schema_for!(GetResult)
+        },
+        SchemaType::Include => {
+            schema_for!(Include)
+        },
+        SchemaType::ManifestList => {
+            schema_for!(ManifestList)
+        },
+        SchemaType::ResolveResult => {
+            schema_for!(ResolveResult)
+        },
+        SchemaType::Resource => {
+            schema_for!(Resource)
+        },
+        SchemaType::ResourceManifest => {
+            schema_for!(ResourceManifest)
+        },
         SchemaType::RestartRequired => {
             schema_for!(RestartRequired)
-        }
+        },
+        SchemaType::SetResult => {
+            schema_for!(SetResult)
+        },
+        SchemaType::TestResult => {
+            schema_for!(TestResult)
+        },
     }
 }
 

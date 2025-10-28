@@ -1,0 +1,9 @@
+{
+    "Name": "tree-sitter-dscexpression",
+    "Kind": "Grammar",
+    "IsRust": true,
+    "ClippyUnclean": true,
+    "SkipTest": {
+        "Windows": true
+    }
+}

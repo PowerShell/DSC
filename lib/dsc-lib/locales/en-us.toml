@@ -79,6 +79,11 @@ nameResultNotString = "Resource name result is not a string"
 circularDependency = "Circular dependency or unresolvable parameter references detected in parameters: %{parameters}"
 userFunctionAlreadyDefined = "User function '%{name}' in namespace '%{namespace}' is already defined"
 addingUserFunction = "Adding user function '%{name}'"
+copyCountResultNotInteger = "Copy count result is not an integer: %{expression}"
+skippingOutput = "Skipping output for '%{name}' due to condition evaluating to false"
+secureOutputSkipped = "Secure output '%{name}' is skipped"
+outputTypeNotMatch = "Output '%{name}' type does not match expected type '%{expected_type}'"
+copyNotSupported = "Copy for output '%{name}' is currently not supported"
 
 [discovery.commandDiscovery]
 couldNotReadSetting = "Could not read 'resourcePath' setting"
@@ -93,13 +98,16 @@ discoverResources = "Discovering '%{kind}' using filter: %{filter}"
 invalidAdapterFilter = "Could not build Regex filter for adapter name"
 progressSearching = "Searching for resources"
 extensionSearching = "Searching for extensions"
-foundResourceManifest = "Found resource manifest: %{path}"
+foundManifest = "Found manifest: %{path}"
 extensionFound = "Extension '%{extension}' version %{version} found"
 adapterFound = "Resource adapter '%{adapter}' version %{version} found"
 resourceFound = "Resource '%{resource}' version %{version} found"
 executableNotFound = "Executable '%{executable}' not found for operation '%{operation}' for resource '%{resource}'"
 extensionInvalidVersion = "Extension '%{extension}' version '%{version}' is invalid"
-invalidManifest = "Invalid manifest for resource '%{resource}'"
+invalidResourceManifest = "Invalid manifest for resource '%{resource}'"
+invalidExtensionManifest = "Invalid manifest for extension '%{extension}'"
+invalidManifestList = "Invalid manifest list '%{resource}': %{err}"
+invalidManifestFile = "Invalid manifest file '%{resource}': %{err}"
 extensionResourceFound = "Extension found resource '%{resource}'"
 callingExtension = "Calling extension '%{extension}' to discover resources"
 extensionFoundResources = "Extension '%{extension}' found %{count} resources"
@@ -335,6 +343,11 @@ emptyArray = "Cannot get first element of empty array"
 emptyString = "Cannot get first character of empty string"
 invalidArgType = "Invalid argument type, argument must be an array or string"
 
+[functions.last]
+description = "Returns the last element of an array or last character of a string"
+invoked = "last function"
+invalidArgType = "Invalid argument type, argument must be an array or string"
+
 [functions.greater]
 description = "Evaluates if the first value is greater than the second value"
 invoked = "greater function"
@@ -367,6 +380,10 @@ description = "Returns a single array or object with the common elements from th
 invoked = "intersection function"
 invalidArgType = "All arguments must either be arrays or objects"
 
+[functions.items]
+description = "Converts a dictionary object to an array of objects with key and value properties"
+notObject = "Argument must be an object"
+
 [functions.indexOf]
 description = "Returns the index of the first occurrence of an item in an array"
 invoked = "indexOf function"
@@ -379,6 +396,10 @@ invalidArrayArg = "First argument must be an array"
 invalidNullElement = "Array elements cannot be null"
 invalidArrayElement = "Array elements cannot be arrays"
 invalidObjectElement = "Array elements cannot be objects"
+
+[functions.json]
+description = "Converts a valid JSON string into a JSON data type"
+invalidJson = "Invalid JSON string"
 
 [functions.lastIndexOf]
 description = "Returns the index of the last occurrence of an item in an array"
@@ -436,6 +457,10 @@ description = "Retrieves parameters from the configuration"
 invoked = "parameters function"
 traceKey = "parameters key: %{key}"
 keyNotString = "Parameter '%{key}' is not a string"
+keyNotInt = "Parameter '%{key}' is not an integer"
+keyNotBool = "Parameter '%{key}' is not a boolean"
+keyNotObject = "Parameter '%{key}' is not an object"
+keyNotArray = "Parameter '%{key}' is not an array"
 keyNotFound = "Parameter '%{key}' not found in context"
 
 [functions.path]
@@ -463,9 +488,6 @@ unavailableInUserFunction = "The 'reference()' function is not available in user
 [functions.resourceId]
 description = "Constructs a resource ID from the given type and name"
 incorrectTypeFormat = "Type argument must contain exactly one slash"
-invalidFirstArgType = "Invalid argument type for first parameter"
-incorrectNameFormat = "Name argument cannot contain a slash"
-invalidSecondArgType = "Invalid argument type for second parameter"
 
 [functions.secret]
 description = "Retrieves a secret from a vault"
@@ -519,6 +541,12 @@ description = "Removes all leading and trailing white-space characters from the 
 description = "Returns the boolean value true"
 invoked = "true function"
 
+[functions.tryGet]
+description = "Attempts to retrieve a value from an array (by index) or object (by key).  Null is returned if the key or index does not exist."
+invoked = "tryGet function"
+invalidKeyType = "Invalid key type, must be a string"
+invalidIndexType = "Invalid index type, must be an integer"
+
 [functions.union]
 description = "Returns a single array or object with all elements from the parameters"
 invoked = "union function"
@@ -527,6 +555,19 @@ invalidArgType = "All arguments must either be arrays or objects"
 [functions.uniqueString]
 description = "Returns a deterministic unique string from the given strings"
 invoked = "uniqueString function"
+
+[functions.uri]
+description = "Creates an absolute URI by combining the baseUri and the relativeUri string"
+emptyBaseUri = "The baseUri parameter cannot be empty. An absolute URI requires a valid base URI."
+notAbsoluteUri = "The baseUri must be an absolute URI (must include a scheme such as https:// or file://)."
+invalidRelativeUri = "Invalid URI: The relative URI contains an invalid sequence. Three or more consecutive slashes (///) are not allowed."
+
+[functions.uriComponent]
+description = "Encodes a URI component using percent-encoding"
+
+[functions.uriComponentToString]
+description = "Returns a string of a URI encoded value"
+invalidUtf8 = "Invalid UTF-8 in decoded string: %{error}"
 
 [functions.userFunction]
 expectedNoParameters = "User function '%{name}' does not accept parameters"
@@ -547,14 +588,17 @@ unavailableInUserFunction = "The 'variables()' function is not available in user
 
 [parser.expression]
 functionNodeNotFound = "Function node not found"
-parsingFunction = "Parsing function '%{name}'"
-parsingAccessor = "Parsing accessor '%{name}'"
+parsingFunction = "Parsing function: %{name}"
+parsingAccessor = "Parsing accessor: %{name}"
 accessorParsingError = "Error parsing accessor"
-parsingMemberAccessor = "Parsing member accessor '%{name}'"
+parsingMemberAccessor = "Parsing member accessor: %{name}"
 memberNotFound = "Member name not found"
-parsingIndexAccessor = "Parsing index accessor '%{index}'"
+parsingIndexAccessor = "Parsing index accessor: %{index}"
 indexNotFound = "Index value not found"
-invalidAccessorKind = "Invalid accessor kind: '%{kind}'"
+indexValue = "Index value: %{value} with kind %{kind}"
+propertyNameValue = "Property name value: %{value}"
+invalidIndexValueKind = "Invalid index value kind: %{kind}"
+invalidAccessorKind = "Invalid accessor kind: %{kind}"
 functionResult = "Function results: %{results}"
 functionResultSecure = "Function result is secure"
 evalAccessors = "Evaluating accessors"
@@ -565,6 +609,7 @@ indexNotValid = "Index is not a valid number"
 indexOutOfBounds = "Index is out of bounds"
 indexOnNonArray = "Index access on non-array value"
 invalidIndexType = "Invalid index type"
+propertyNameNotString = "Property name is not a string"
 
 [parser.functions]
 foundErrorNode = "Found error node parsing function"
@@ -640,3 +685,4 @@ notFoundSetting = "Setting '%{name}' not found in %{path}"
 failedToGetExePath = "Can't get 'dsc' executable path"
 settingNotFound = "Setting '%{name}' not found"
 failedToAbsolutizePath = "Failed to absolutize path '%{path}'"
+invalidExitCodeKey = "Invalid exit code key '%{key}'"
