@@ -528,6 +528,66 @@ mod test {
     }
 
     #[test]
+    fn test_invalid_resource_field_in_array() {
+        let config_json = r#"{
+            "resources": [
+                {
+                    "invalidField": "someValue"
+                }
+            ]
+        }"#;
+
+        let result: Result<Configuration, _> = serde_json::from_str(config_json);
+        assert!(result.is_err());
+        let err = result.unwrap_err().to_string();
+        assert!(err.starts_with("unknown field `invalidField`, expected one of `condition`, `type`,"));
+    }
+
+    #[test]
+    fn test_invalid_resource_field_in_object() {
+        let config_json = r#"{
+            "resources": {
+                "someResource": {
+                    "invalidField": "someValue"
+                }
+            }
+        }"#;
+
+        let result: Result<Configuration, _> = serde_json::from_str(config_json);
+        assert!(result.is_err());
+        let err = result.unwrap_err().to_string();
+        assert!(err.starts_with("unknown field `invalidField`, expected one of `condition`, `type`,"));
+    }
+
+    #[test]
+    fn test_invalid_resource_type_in_array() {
+        let config_json = r#"{
+            "resources": [
+                "invalidType"
+            ]
+        }"#;
+
+        let result: Result<Configuration, _> = serde_json::from_str(config_json);
+        assert!(result.is_err());
+        let err = result.unwrap_err().to_string();
+        assert!(err.contains("expected struct Resource"));
+    }
+
+    #[test]
+    fn test_invalid_resource_type_in_object() {
+        let config_json = r#"{
+            "resources": {
+                "someResource": "invalidType"
+            }
+        }"#;
+
+        let result: Result<Configuration, _> = serde_json::from_str(config_json);
+        assert!(result.is_err());
+        let err = result.unwrap_err().to_string();
+        assert!(err.contains("expected struct Resource"));
+    }
+
+    #[test]
     fn test_resources_as_array() {
         let config_json = r#"{
             "$schema": "https://aka.ms/dsc/schemas/v3/bundled/config/document.json",
