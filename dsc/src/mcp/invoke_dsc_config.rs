@@ -46,10 +46,10 @@ pub struct InvokeDscConfigResponse {
 pub struct InvokeDscConfigRequest {
     #[schemars(description = "The operation to perform on the DSC configuration")]
     pub operation: ConfigOperation,
-    #[schemars(description = "The DSC configuration document as JSON or YAML string")]
+    #[schemars(description = "The DSC configuration document as a YAML string")]
     pub configuration: String,
     #[schemars(
-        description = "Optional parameters to pass to the configuration as JSON or YAML string"
+        description = "Optional parameters to pass to the configuration as a YAML string"
     )]
     pub parameters: Option<String>,
 }
@@ -75,33 +75,10 @@ impl McpServer {
         }): Parameters<InvokeDscConfigRequest>,
     ) -> Result<Json<InvokeDscConfigResponse>, McpError> {
         let result = task::spawn_blocking(move || {
-            let config: Configuration = match serde_json::from_str(&configuration) {
-                Ok(config) => config,
-                Err(_) => {
-                    match serde_yaml::from_str::<serde_yaml::Value>(&configuration) {
-                        Ok(yaml_value) => match serde_json::to_value(yaml_value) {
-                            Ok(json_value) => match serde_json::from_value(json_value) {
-                                Ok(config) => config,
-                                Err(e) => {
-                                    return Err(McpError::invalid_request(
-                                        format!(
-                                            "{}: {e}",
-                                            t!("mcp.invoke_dsc_config.invalidConfiguration")
-                                        ),
-                                        None,
-                                    ))
-                                }
-                            },
-                            Err(e) => {
-                                return Err(McpError::invalid_request(
-                                    format!(
-                                        "{}: {e}",
-                                        t!("mcp.invoke_dsc_config.failedConvertJson")
-                                    ),
-                                    None,
-                                ))
-                            }
-                        },
+            let config: Configuration = match serde_yaml::from_str::<serde_yaml::Value>(&configuration) {
+                Ok(yaml_value) => match serde_json::to_value(yaml_value) {
+                    Ok(json_value) => match serde_json::from_value(json_value) {
+                        Ok(config) => config,
                         Err(e) => {
                             return Err(McpError::invalid_request(
                                 format!(
@@ -111,7 +88,25 @@ impl McpServer {
                                 None,
                             ))
                         }
+                    },
+                    Err(e) => {
+                        return Err(McpError::invalid_request(
+                            format!(
+                                "{}: {e}",
+                                t!("mcp.invoke_dsc_config.failedConvertJson")
+                            ),
+                            None,
+                        ))
                     }
+                },
+                Err(e) => {
+                    return Err(McpError::invalid_request(
+                        format!(
+                            "{}: {e}",
+                            t!("mcp.invoke_dsc_config.invalidConfiguration")
+                        ),
+                        None,
+                    ))
                 }
             };
 
@@ -133,32 +128,27 @@ impl McpServer {
             configurator.context.dsc_version = Some(env!("CARGO_PKG_VERSION").to_string());
 
             let parameters_value: Option<serde_json::Value> = if let Some(params_str) = parameters {
-                let params_json = match serde_json::from_str(&params_str) {
-                    Ok(json) => json,
-                    Err(_) => {
-                        match serde_yaml::from_str::<serde_yaml::Value>(&params_str) {
-                            Ok(yaml) => match serde_json::to_value(yaml) {
-                                Ok(json) => json,
-                                Err(e) => {
-                                    return Err(McpError::invalid_request(
-                                        format!(
-                                            "{}: {e}",
-                                            t!("mcp.invoke_dsc_config.failedConvertJson")
-                                        ),
-                                        None,
-                                    ))
-                                }
-                            },
-                            Err(e) => {
-                                return Err(McpError::invalid_request(
-                                    format!(
-                                        "{}: {e}",
-                                        t!("mcp.invoke_dsc_config.invalidParameters")
-                                    ),
-                                    None,
-                                ))
-                            }
+                let params_json = match serde_yaml::from_str::<serde_yaml::Value>(&params_str) {
+                    Ok(yaml) => match serde_json::to_value(yaml) {
+                        Ok(json) => json,
+                        Err(e) => {
+                            return Err(McpError::invalid_request(
+                                format!(
+                                    "{}: {e}",
+                                    t!("mcp.invoke_dsc_config.failedConvertJson")
+                                ),
+                                None,
+                            ))
                         }
+                    },
+                    Err(e) => {
+                        return Err(McpError::invalid_request(
+                            format!(
+                                "{}: {e}",
+                                t!("mcp.invoke_dsc_config.invalidParameters")
+                            ),
+                            None,
+                        ))
                     }
                 };
 
