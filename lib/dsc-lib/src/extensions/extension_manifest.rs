@@ -23,6 +23,9 @@ pub struct ExtensionManifest {
     pub r#type: String,
     /// The version of the extension using semantic versioning.
     pub version: String,
+    /// An optional condition for the extension to be active.  If the condition evaluates to false, the extension is skipped.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub condition: Option<String>,
     /// The description of the extension.
     pub description: Option<String>,
     /// Tags for the extension.
