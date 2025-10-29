@@ -547,6 +547,12 @@ invoked = "tryGet function"
 invalidKeyType = "Invalid key type, must be a string"
 invalidIndexType = "Invalid index type, must be an integer"
 
+[functions.tryIndexFromEnd]
+description = "Retrieves a value from an array by counting backward from the end. Returns null if the index is out of range."
+invoked = "tryIndexFromEnd function"
+invalidSourceType = "Invalid source type, must be an array"
+invalidIndexType = "Invalid index type, must be an integer"
+
 [functions.union]
 description = "Returns a single array or object with all elements from the parameters"
 invoked = "union function"
