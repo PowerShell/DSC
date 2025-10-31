@@ -5,4 +5,5 @@
 //! a user can add with the `#[schemars(transform = <function_name>)]` attribute to modify the
 //! generated schema.
 
-#[cfg(test)] mod idiomaticizing;
+#[cfg(test)] mod idiomaticize_externally_tagged_enum;
+#[cfg(test)] mod idiomaticize_string_enum;
