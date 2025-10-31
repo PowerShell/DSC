@@ -88,24 +88,33 @@ for the non-existent `enableAlpha` flag (which `coalesce()` converts to
 
 Retrieve environment-specific configuration values with safe defaults. This is
 useful when different environments might have different configuration keys. This
-example uses [`createObject()`][03] to build the environment settings and
-demonstrates accessing nested object properties.
+example uses [`parameters()`][07] to reference the environment configuration,
+making the complex nested object structure easier to understand.
 
 ```yaml
 # tryGet.example.2.dsc.config.yaml
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+parameters:
+  environments:
+    type: object
+    defaultValue:
+      production:
+        replicas: 5
+        region: us-east-1
+      staging:
+        replicas: 2
 resources:
 - name: Environment Config
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      environments: "[createObject('production', createObject('replicas', 5, 'region', 'us-east-1'), 'staging', createObject('replicas', 2))]"
-      productionEnv: "[tryGet(createObject('production', createObject('replicas', 5, 'region', 'us-east-1'), 'staging', createObject('replicas', 2)), 'production')]"
-      stagingEnv: "[tryGet(createObject('production', createObject('replicas', 5, 'region', 'us-east-1'), 'staging', createObject('replicas', 2)), 'staging')]"
-      developmentEnv: "[tryGet(createObject('production', createObject('replicas', 5, 'region', 'us-east-1'), 'staging', createObject('replicas', 2)), 'development')]"
-      prodReplicas: "[tryGet(createObject('replicas', 5, 'region', 'us-east-1'), 'replicas')]"
-      prodRegion: "[tryGet(createObject('replicas', 5, 'region', 'us-east-1'), 'region')]"
-      stagingRegion: "[tryGet(createObject('replicas', 2), 'region')]"
+      environments: "[parameters('environments')]"
+      productionEnv: "[tryGet(parameters('environments'), 'production')]"
+      stagingEnv: "[tryGet(parameters('environments'), 'staging')]"
+      developmentEnv: "[tryGet(parameters('environments'), 'development')]"
+      prodReplicas: "[tryGet(tryGet(parameters('environments'), 'production'), 'replicas')]"
+      prodRegion: "[tryGet(tryGet(parameters('environments'), 'production'), 'region')]"
+      stagingRegion: "[tryGet(tryGet(parameters('environments'), 'staging'), 'region')]"
 ```
 
 ```bash
@@ -301,6 +310,7 @@ The function returns an error in the following cases:
 - [`equals()`][05] - Compares two values for equality
 - [`not()`][06] - Inverts a boolean value
 - [`tryIndexFromEnd()`][01] - Safely retrieves array elements by counting backward from the end
+- [`parameters()`][07] - Returns the value of a specified configuration parameter
 
 <!-- Link reference definitions -->
 [00]: ./createArray.md
@@ -310,3 +320,4 @@ The function returns an error in the following cases:
 [04]: ./if.md
 [05]: ./equals.md
 [06]: ./not.md
+[07]: ./parameters.md
