@@ -85,18 +85,27 @@ handle missing data gracefully.
 Use `tryIndexFromEnd()` to implement flexible backup retention policies that
 adapt to available backups without failing when fewer backups exist than
 expected. This example retrieves the third-most-recent backup if available. This
-example uses [`createArray()`][05] to build the backup timestamps.
+example uses [`parameters()`][06] to reference the backup timestamps array.
 
 ```yaml
 # tryIndexFromEnd.example.2.dsc.config.yaml
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+parameters:
+  backupTimestamps:
+    type: array
+    defaultValue:
+      - 20250101
+      - 20250108
+      - 20250115
+      - 20250122
+      - 20250129
 resources:
 - name: Backup Retention
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      backups: "[createArray(20250101, 20250108, 20250115, 20250122, 20250129)]"
-      retainAfter: "[tryIndexFromEnd(createArray(20250101, 20250108, 20250115, 20250122, 20250129), 3)]"
+      backups: "[parameters('backupTimestamps')]"
+      retainAfter: "[tryIndexFromEnd(parameters('backupTimestamps'), 3)]"
       description: "Retain backups newer than the third-most-recent"
 ```
 
@@ -130,22 +139,29 @@ you to implement a retention policy that keeps the three most recent backups.
 
 Use `tryIndexFromEnd()` to access configuration values from arrays of varying
 lengths. This is useful when configuration arrays might have different numbers
-of elements across environments. This example uses [`createArray()`][05] to
-build the log level arrays.
+of elements across environments. This example uses [`parameters()`][06] to
+reference the log level arrays.
 
 ```yaml
 # tryIndexFromEnd.example.3.dsc.config.yaml
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+parameters:
+  productionLevels:
+    type: array
+    defaultValue: [ERROR, WARN, INFO]
+  devLevels:
+    type: array
+    defaultValue: [ERROR, WARN, INFO, DEBUG, TRACE]
 resources:
 - name: Log Configuration
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      productionLevels: "[createArray('ERROR', 'WARN', 'INFO')]"
-      devLevels: "[createArray('ERROR', 'WARN', 'INFO', 'DEBUG', 'TRACE')]"
-      prodThirdLevel: "[tryIndexFromEnd(createArray('ERROR', 'WARN', 'INFO'), 3)]"
-      devThirdLevel: "[tryIndexFromEnd(createArray('ERROR', 'WARN', 'INFO', 'DEBUG', 'TRACE'), 3)]"
-      prodFifthLevel: "[tryIndexFromEnd(createArray('ERROR', 'WARN', 'INFO'), 5)]"
+      productionLevels: "[parameters('productionLevels')]"
+      devLevels: "[parameters('devLevels')]"
+      prodThirdLevel: "[tryIndexFromEnd(parameters('productionLevels'), 3)]"
+      devThirdLevel: "[tryIndexFromEnd(parameters('devLevels'), 3)]"
+      prodFifthLevel: "[tryIndexFromEnd(parameters('productionLevels'), 5)]"
 ```
 
 ```bash
@@ -184,8 +200,7 @@ appropriate log level or `null` without throwing errors.
 Use `tryIndexFromEnd()` with [`coalesce()`][02] to implement fallback logic when
 accessing configuration values from arrays that might have different lengths
 across regions. This example shows how to safely access regional endpoints with
-a default fallback. This example uses [`createArray()`][05] to build the
-regional endpoint arrays.
+a default fallback.
 
 ```yaml
 # tryIndexFromEnd.example.4.dsc.config.yaml
@@ -281,6 +296,7 @@ The function returns an error in the following cases:
 - [`equals()`][03] - Compares two values for equality
 - [`not()`][04] - Inverts a boolean value
 - [`createArray()`][05] - Creates an array from provided values
+- [`parameters()`][06] - Returns the value of a specified configuration parameter
 
 <!-- Link reference definitions -->
 [00]: ./last.md
@@ -289,3 +305,4 @@ The function returns an error in the following cases:
 [03]: ./equals.md
 [04]: ./not.md
 [05]: ./createArray.md
+[06]: ./parameters.md
