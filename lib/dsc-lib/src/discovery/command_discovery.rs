@@ -711,38 +711,38 @@ fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<Ds
 
     let mut capabilities: Vec<Capability> = vec![];
     if let Some(get) = &manifest.get {
-        verify_executable(&manifest.resource_type, "get", &get.executable);
+        verify_executable(&manifest.resource_type, "get", &get.executable, path.parent().unwrap());
         capabilities.push(Capability::Get);
     }
     if let Some(set) = &manifest.set {
-        verify_executable(&manifest.resource_type, "set", &set.executable);
+        verify_executable(&manifest.resource_type, "set", &set.executable, path.parent().unwrap());
         capabilities.push(Capability::Set);
         if set.handles_exist == Some(true) {
             capabilities.push(Capability::SetHandlesExist);
         }
     }
     if let Some(what_if) = &manifest.what_if {
-        verify_executable(&manifest.resource_type, "what_if", &what_if.executable);
+        verify_executable(&manifest.resource_type, "what_if", &what_if.executable, path.parent().unwrap());
         capabilities.push(Capability::WhatIf);
     }
     if let Some(test) = &manifest.test {
-        verify_executable(&manifest.resource_type, "test", &test.executable);
+        verify_executable(&manifest.resource_type, "test", &test.executable, path.parent().unwrap());
         capabilities.push(Capability::Test);
     }
     if let Some(delete) = &manifest.delete {
-        verify_executable(&manifest.resource_type, "delete", &delete.executable);
+        verify_executable(&manifest.resource_type, "delete", &delete.executable, path.parent().unwrap());
         capabilities.push(Capability::Delete);
     }
     if let Some(export) = &manifest.export {
-        verify_executable(&manifest.resource_type, "export", &export.executable);
+        verify_executable(&manifest.resource_type, "export", &export.executable, path.parent().unwrap());
         capabilities.push(Capability::Export);
     }
     if let Some(resolve) = &manifest.resolve {
-        verify_executable(&manifest.resource_type, "resolve", &resolve.executable);
+        verify_executable(&manifest.resource_type, "resolve", &resolve.executable, path.parent().unwrap());
         capabilities.push(Capability::Resolve);
     }
     if let Some(SchemaKind::Command(command)) = &manifest.schema {
-        verify_executable(&manifest.resource_type, "schema", &command.executable);
+        verify_executable(&manifest.resource_type, "schema", &command.executable, path.parent().unwrap());
     }
 
     let resource = DscResource {
@@ -768,15 +768,15 @@ fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<
 
     let mut capabilities: Vec<dscextension::Capability> = vec![];
     if let Some(discover) = &manifest.discover {
-        verify_executable(&manifest.r#type, "discover", &discover.executable);
+        verify_executable(&manifest.r#type, "discover", &discover.executable, path.parent().unwrap());
         capabilities.push(dscextension::Capability::Discover);
     }
     if let Some(secret) = &manifest.secret {
-        verify_executable(&manifest.r#type, "secret", &secret.executable);
+        verify_executable(&manifest.r#type, "secret", &secret.executable, path.parent().unwrap());
         capabilities.push(dscextension::Capability::Secret);
     }
     let import_extensions = if let Some(import) = &manifest.import {
-        verify_executable(&manifest.r#type, "import", &import.executable);
+        verify_executable(&manifest.r#type, "import", &import.executable, path.parent().unwrap());
         capabilities.push(dscextension::Capability::Import);
         if import.file_extensions.is_empty() {
             warn!("{}", t!("discovery.commandDiscovery.importExtensionsEmpty", extension = manifest.r#type));
@@ -803,7 +803,17 @@ fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<
     Ok(extension)
 }
 
-fn verify_executable(resource: &str, operation: &str, executable: &str) {
+fn verify_executable(resource: &str, operation: &str, executable: &str, directory: &Path) {
+    // check if executable has a relative path
+    if !Path::new(executable).is_absolute() {
+        // combine with directory and see if it exists
+        let exe_path = directory.join(executable);
+        if exe_path.exists() {
+            return;
+        }
+        info!("{}", t!("discovery.commandDiscovery.executableNotFound", resource = resource, operation = operation, executable = exe_path.to_string_lossy()));
+        return;
+    }
     if which(executable).is_err() {
         info!("{}", t!("discovery.commandDiscovery.executableNotFound", resource = resource, operation = operation, executable = executable));
     }
