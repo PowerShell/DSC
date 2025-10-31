@@ -234,12 +234,12 @@ pub fn resource_id(type_name: &str, name: &str) -> String {
 }
 
 pub fn canonicalize_which(executable: &str, cwd: Option<&str>) -> Result<String, DscError> {
-    let mut executable = executable.to_string().replace("/", std::path::MAIN_SEPARATOR_STR);
-    if cfg!(target_os = "windows") && !executable.ends_with(".exe") {
-        let mut exe_path = PathBuf::from(&executable);
-        exe_path.set_extension("exe");
-        executable = exe_path.to_string_lossy().to_string();
+    // Use PathBuf to handle path separators robustly
+    let mut executable_path = PathBuf::from(executable);
+    if cfg!(target_os = "windows") && executable_path.extension().map_or(true, |ext| ext != "exe") {
+        executable_path.set_extension("exe");
     }
+    let mut executable = executable_path.to_string_lossy().to_string();
     if which(&executable).is_err() && !Path::new(&executable).is_absolute() && cwd.is_some() {
         if let Some(cwd) = cwd {
             let cwd_path = Path::new(cwd);
