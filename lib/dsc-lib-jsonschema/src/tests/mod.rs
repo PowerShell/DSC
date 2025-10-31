@@ -13,5 +13,4 @@
 //! of the modules from the rest of the source tree.
 
 #[cfg(test)] mod schema_utility_extensions;
-#[cfg(test)] mod transforms;
 #[cfg(test)] mod vscode;
