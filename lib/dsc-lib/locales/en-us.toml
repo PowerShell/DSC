@@ -169,7 +169,6 @@ invalidKey = "Unsupported value for key '%{key}'.  Only string, bool, number, an
 inDesiredStateNotBool = "'_inDesiredState' is not a boolean"
 exportNotSupportedUsingGet = "Export is not supported by resource '%{resource}' using get operation"
 runProcessError = "Failed to run process '%{executable}': %{error}"
-executableNotFound = "Executable '%{executable}' not found"
 
 [dscresources.dscresource]
 invokeGet = "Invoking get for '%{resource}'"
@@ -699,3 +698,4 @@ failedToGetExePath = "Can't get 'dsc' executable path"
 settingNotFound = "Setting '%{name}' not found"
 failedToAbsolutizePath = "Failed to absolutize path '%{path}'"
 invalidExitCodeKey = "Invalid exit code key '%{key}'"
+executableNotFound = "Executable '%{executable}' not found with working directory '%{cwd}'"
