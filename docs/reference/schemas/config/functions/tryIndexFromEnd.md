@@ -200,7 +200,8 @@ appropriate log level or `null` without throwing errors.
 Use `tryIndexFromEnd()` with [`coalesce()`][02] to implement fallback logic when
 accessing configuration values from arrays that might have different lengths
 across regions. This example shows how to safely access regional endpoints with
-a default fallback.
+a default fallback. This example uses [`createArray()`][05] to build the
+regional endpoint arrays.
 
 ```yaml
 # tryIndexFromEnd.example.4.dsc.config.yaml
