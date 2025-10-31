@@ -20,14 +20,13 @@ use serde::Deserialize;
 use std::{collections::{BTreeMap, HashMap, HashSet}, sync::{LazyLock, RwLock}};
 use std::env;
 use std::ffi::OsStr;
-use std::fs;
+use std::fs::{create_dir_all, read, read_to_string, write};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use tracing::{debug, info, trace, warn};
-use which::which;
 
 use crate::util::get_setting;
-use crate::util::get_exe_path;
+use crate::util::{canonicalize_which, get_exe_path};
 
 const DSC_EXTENSION_EXTENSIONS: [&str; 3] = [".dsc.extension.json", ".dsc.extension.yaml", ".dsc.extension.yml"];
 const DSC_MANIFEST_LIST_EXTENSIONS: [&str; 3] = [".dsc.manifests.json", ".dsc.manifests.yaml", ".dsc.manifests.yml"];
@@ -621,7 +620,7 @@ fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource:
 ///
 /// * Returns a `DscError` if the manifest could not be loaded or parsed.
 pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
-    let contents = fs::read_to_string(path)?;
+    let contents = read_to_string(path)?;
     let file_name_lowercase = path.file_name().and_then(OsStr::to_str).unwrap_or("").to_lowercase();
     let extension_is_json = path.extension().is_some_and(|ext| ext.eq_ignore_ascii_case("json"));
     if DSC_RESOURCE_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)) {
@@ -804,17 +803,7 @@ fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<
 }
 
 fn verify_executable(resource: &str, operation: &str, executable: &str, directory: &Path) {
-    if which(executable).is_err() {
-        if !Path::new(executable).is_absolute() {
-            // combine with directory and see if it exists
-            let exe_path = directory.join(executable);
-            if exe_path.exists() {
-                return;
-            }
-            info!("{}", t!("discovery.commandDiscovery.executableNotFound", resource = resource, operation = operation, executable = exe_path.to_string_lossy()));
-            return;
-        }
-
+    if canonicalize_which(executable, Some(directory.to_string_lossy().as_ref())).is_err() {
         info!("{}", t!("discovery.commandDiscovery.executableNotFound", resource = resource, operation = operation, executable = executable));
     }
 }
@@ -849,8 +838,8 @@ fn save_adapted_resources_lookup_table(lookup_table: &HashMap<String, String>)
 
         let path = std::path::Path::new(&file_path);
         if let Some(prefix) = path.parent() {
-            if fs::create_dir_all(prefix).is_ok()  {
-                if fs::write(file_path.clone(), lookup_table_json).is_err() {
+            if create_dir_all(prefix).is_ok()  {
+                if write(file_path.clone(), lookup_table_json).is_err() {
                     info!("Unable to write lookup_table file {file_path:?}");
                 }
             } else {
@@ -868,7 +857,7 @@ fn load_adapted_resources_lookup_table() -> HashMap<String, String>
 {
     let file_path = get_lookup_table_file_path();
 
-    let lookup_table: HashMap<String, String> = match fs::read(file_path.clone()){
+    let lookup_table: HashMap<String, String> = match read(file_path.clone()){
         Ok(data) => { serde_json::from_slice(&data).unwrap_or_default() },
         Err(_) => { HashMap::new() }
     };

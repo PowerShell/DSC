@@ -280,7 +280,7 @@ Describe 'tests for resource discovery' {
         try {
             $env:DSC_RESOURCE_PATH = $subfolder
             $out = dsc resource get -r 'Microsoft.DSC.Debug/Echo' -i '{"output":"RelativePathTest"}' 2> "$testdrive/error.txt" | ConvertFrom-Json
-            $LASTEXITCODE | Should -Be 0
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw -Path "$testdrive/error.txt")
             $out.actualState.output | Should -BeExactly 'RelativePathTest'
         }
         finally {
