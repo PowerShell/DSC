@@ -12,6 +12,7 @@ use crate::dscerror::DscError;
 use super::{dscresource::{get_diff, redact}, invoke_result::{ExportResult, GetResult, ResolveResult, SetResult, TestResult, ValidateResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse, get_in_desired_state}, resource_manifest::{ArgKind, InputKind, Kind, ResourceManifest, ReturnKind, SchemaKind}};
 use tracing::{error, warn, info, debug, trace};
 use tokio::{io::{AsyncBufReadExt, AsyncWriteExt, BufReader}, process::Command};
+use which::which;
 
 pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
 
@@ -764,7 +765,7 @@ fn convert_hashmap_string_keys_to_i32(input: Option<&HashMap<String, String>>) -
 pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&str>, env: Option<HashMap<String, String>>, exit_codes: Option<&HashMap<String, String>>) -> Result<(i32, String, String), DscError> {
     let exit_codes = convert_hashmap_string_keys_to_i32(exit_codes)?;
     let mut executable = executable.to_string();
-    if !Path::new(&executable).is_absolute() && cwd.is_some() {
+    if which(&executable).is_err() && !Path::new(&executable).is_absolute() && cwd.is_some() {
         if let Some(cwd) = cwd {
             let cwd_path = Path::new(cwd);
             let executable_path = cwd_path.join(&executable);

@@ -804,17 +804,17 @@ fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<
 }
 
 fn verify_executable(resource: &str, operation: &str, executable: &str, directory: &Path) {
-    // check if executable has a relative path
-    if !Path::new(executable).is_absolute() {
-        // combine with directory and see if it exists
-        let exe_path = directory.join(executable);
-        if exe_path.exists() {
+    if which(executable).is_err() {
+        if !Path::new(executable).is_absolute() {
+            // combine with directory and see if it exists
+            let exe_path = directory.join(executable);
+            if exe_path.exists() {
+                return;
+            }
+            info!("{}", t!("discovery.commandDiscovery.executableNotFound", resource = resource, operation = operation, executable = exe_path.to_string_lossy()));
             return;
         }
-        info!("{}", t!("discovery.commandDiscovery.executableNotFound", resource = resource, operation = operation, executable = exe_path.to_string_lossy()));
-        return;
-    }
-    if which(executable).is_err() {
+
         info!("{}", t!("discovery.commandDiscovery.executableNotFound", resource = resource, operation = operation, executable = executable));
     }
 }

@@ -169,6 +169,7 @@ invalidKey = "Unsupported value for key '%{key}'.  Only string, bool, number, an
 inDesiredStateNotBool = "'_inDesiredState' is not a boolean"
 exportNotSupportedUsingGet = "Export is not supported by resource '%{resource}' using get operation"
 runProcessError = "Failed to run process '%{executable}': %{error}"
+executableNotFound = "Executable '%{executable}' not found"
 
 [dscresources.dscresource]
 invokeGet = "Invoking get for '%{resource}'"
