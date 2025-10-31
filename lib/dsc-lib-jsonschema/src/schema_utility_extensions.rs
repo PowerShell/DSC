@@ -344,7 +344,7 @@ pub trait SchemaUtilityExtensions {
     ///     None
     /// )
     /// ```
-    fn get_keyword_as_object(&self, key: &str) -> Option<& Map<String, Value>>;
+    fn get_keyword_as_object(&self, key: &str) -> Option<&Map<String, Value>>;
     /// Checks a JSON Schema for a given keyword and mutably borrows the value of that  keyword,
     /// if it exists, as a [`Map`].
     ///
@@ -395,7 +395,7 @@ pub trait SchemaUtilityExtensions {
     ///     None
     /// )
     /// ```
-    fn get_keyword_as_object_mut(&mut self, key: &str) -> Option<&mut  Map<String, Value>>;
+    fn get_keyword_as_object_mut(&mut self, key: &str) -> Option<&mut Map<String, Value>>;
     /// Checks a JSON schema for a given keyword and borrows the value of that keyword, if it
     /// exists, as a [`Number`].
     ///
@@ -537,7 +537,7 @@ pub trait SchemaUtilityExtensions {
     /// Checks a JSON Schema for a given keyword and returns the value of that  keyword, if it
     /// exists, as a [`Schema`].
     ///
-    /// If the keyword doesn't exist or isn't a subchema, this function returns [`None`].
+    /// If the keyword doesn't exist or isn't a subschema, this function returns [`None`].
     ///
     /// # Examples
     ///
@@ -621,12 +621,12 @@ pub trait SchemaUtilityExtensions {
     /// });
     ///
     /// assert_eq!(
-    ///     schema.get_keyword_as_object_mut("not_exist"),
+    ///     schema.get_keyword_as_subschema_mut("not_exist"),
     ///     None
     /// );
     ///
     /// assert_eq!(
-    ///     schema.get_keyword_as_object_mut("items"),
+    ///     schema.get_keyword_as_subschema_mut("items"),
     ///     None
     /// )
     /// ```
@@ -800,7 +800,7 @@ pub trait SchemaUtilityExtensions {
     ///     defs_json.as_object()
     /// );
     /// ```
-    fn get_defs(&self) -> Option<& Map<String, Value>>;
+    fn get_defs(&self) -> Option<&Map<String, Value>>;
     /// Retrieves the `$defs` keyword and mutably borrows the object if it exists.
     ///
     /// If the keyword isn't defined or isn't an object, the function returns [`None`].
@@ -828,7 +828,7 @@ pub trait SchemaUtilityExtensions {
     ///     defs_json.as_object_mut()
     /// );
     /// ```
-    fn get_defs_mut(&mut self) -> Option<&mut  Map<String, Value>>;
+    fn get_defs_mut(&mut self) -> Option<&mut Map<String, Value>>;
     /// Looks up a reference in the `$defs` keyword by `$id` and returns the subschema entry as a
     /// [`Schema`] if it exists.
     ///
@@ -1107,7 +1107,7 @@ pub trait SchemaUtilityExtensions {
     ///     Some(&mut new_definition)
     /// )
     /// ```
-    fn insert_defs_subschema(&mut self, definition_key: &str, definition_value: & Map<String, Value>) -> Option< Map<String, Value>>;
+    fn insert_defs_subschema(&mut self, definition_key: &str, definition_value: &Map<String, Value>) -> Option< Map<String, Value>>;
     /// Looks up a subschema in the `$defs` keyword by reference and, if it exists, renames the
     /// _key_ for the definition.
     ///
@@ -1177,7 +1177,7 @@ pub trait SchemaUtilityExtensions {
     ///     properties_json.as_object()
     /// );
     /// ```
-    fn get_properties(&self) -> Option<& Map<String, Value>>;
+    fn get_properties(&self) -> Option<&Map<String, Value>>;
     /// Retrieves the `properties` keyword and mutably borrows the object if it exists.
     ///
     /// If the keyword isn't defined or isn't an object, the function returns [`None`].
@@ -1205,7 +1205,7 @@ pub trait SchemaUtilityExtensions {
     ///     properties_json.as_object_mut()
     /// );
     /// ```
-    fn get_properties_mut(&mut self) -> Option<&mut  Map<String, Value>>;
+    fn get_properties_mut(&mut self) -> Option<&mut Map<String, Value>>;
     /// Looks up a property in the `properties` keyword by name and returns the subschema entry as
     /// a [`Schema`] if it exists.
     ///
@@ -1235,9 +1235,9 @@ pub trait SchemaUtilityExtensions {
     /// ```
     fn get_property_subschema(&self, property_name: &str) -> Option<&Schema>;
     /// Looks up a property in the `properties` keyword by name and mutably borrows the subschema
-    /// entry as an object if it exists.
+    /// entry as a [`Schema`] if it exists.
     ///
-    /// If the named property doesn't exist or isn't an object, this function returns [`None`].
+    /// If the named property doesn't exist or isn't a [`Schema`], this function returns [`None`].
     ///
     /// # Examples
     ///
@@ -1292,11 +1292,11 @@ impl SchemaUtilityExtensions for Schema {
         self.get(key)
             .and_then(Value::as_number)
     }
-    fn get_keyword_as_object(&self, key: &str) -> Option<& Map<String, Value>> {
+    fn get_keyword_as_object(&self, key: &str) -> Option<&Map<String, Value>> {
         self.get(key)
             .and_then(Value::as_object)
     }
-    fn get_keyword_as_object_mut(&mut self, key: &str) -> Option<&mut  Map<String, Value>> {
+    fn get_keyword_as_object_mut(&mut self, key: &str) -> Option<&mut Map<String, Value>> {
         self.get_mut(key)
             .and_then(Value::as_object_mut)
     }
@@ -1321,10 +1321,10 @@ impl SchemaUtilityExtensions for Schema {
         self.get(key)
             .and_then(Value::as_u64)
     }
-    fn get_defs(&self) -> Option<& Map<String, Value>> {
+    fn get_defs(&self) -> Option<&Map<String, Value>> {
         self.get_keyword_as_object("$defs")
     }
-    fn get_defs_mut(&mut self) -> Option<&mut  Map<String, Value>> {
+    fn get_defs_mut(&mut self) -> Option<&mut Map<String, Value>> {
         self.get_keyword_as_object_mut("$defs")
     }
     fn get_defs_subschema_from_id(&self, id: &str) -> Option<&Schema> {
@@ -1468,10 +1468,10 @@ impl SchemaUtilityExtensions for Schema {
         self.insert("$id".to_string(), Value::String(id_uri.to_string()))
             .and(old_id)
     }
-    fn get_properties(&self) -> Option<& Map<String, Value>> {
+    fn get_properties(&self) -> Option<&Map<String, Value>> {
         self.get_keyword_as_object("properties")
     }
-    fn get_properties_mut(&mut self) -> Option<&mut  Map<String, Value>> {
+    fn get_properties_mut(&mut self) -> Option<&mut Map<String, Value>> {
         self.get_keyword_as_object_mut("properties")
     }
     fn get_property_subschema(&self, property_name: &str) -> Option<&Schema> {
