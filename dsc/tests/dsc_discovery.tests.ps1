@@ -245,4 +245,46 @@ Describe 'tests for resource discovery' {
             $env:DSC_RESOURCE_PATH = $oldPath
         }
     }
+
+    It 'Resource manifest using relative path to exe works' {
+        $manifest = @'
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "type": "Microsoft.DSC.Debug/Echo",
+    "version": "1.0.0",
+    "description": "Echo resource for testing and debugging purposes",
+    "get": {
+        "executable": "../dscecho",
+        "args": [
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ]
+    },
+    "schema": {
+        "command": {
+            "executable": "../dscecho"
+        }
+    }
+}
+'@
+        $dscEcho = Get-Command dscecho -ErrorAction Stop
+        # copy to testdrive
+        Copy-Item -Path "$($dscEcho.Source)" -Destination $testdrive
+        # create manifest in subfolder
+        $subfolder = Join-Path $testdrive 'subfolder'
+        New-Item -Path $subfolder -ItemType Directory | Out-Null
+        Set-Content -Path (Join-Path $subfolder 'test.dsc.resource.json') -Value $manifest
+
+        try {
+            $env:DSC_RESOURCE_PATH = $subfolder
+            $out = dsc resource get -r 'Microsoft.DSC.Debug/Echo' -i '{"output":"RelativePathTest"}' 2> "$testdrive/error.txt" | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $out.actualState.output | Should -BeExactly 'RelativePathTest'
+        }
+        finally {
+            $env:DSC_RESOURCE_PATH = $null
+        }
+    }
 }
