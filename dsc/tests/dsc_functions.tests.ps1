@@ -599,6 +599,37 @@ Describe 'tests for function expressions' {
     ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)
   }
 
+  It 'take function works for: <expression>' -TestCases @(
+    @{ expression = "[take(createArray('a','b','c','d'), 2)]"; expected = @('a', 'b') }
+    @{ expression = "[take('hello', 2)]"; expected = 'he' }
+    @{ expression = "[take(createArray('a','b'), 0)]"; expected = @() }
+    @{ expression = "[take('abc', 0)]"; expected = '' }
+    @{ expression = "[take(createArray('a','b'), 5)]"; expected = @('a', 'b') }
+    @{ expression = "[take('hi', 10)]"; expected = 'hi' }
+    @{ expression = "[take('', 1)]"; expected = '' }
+    @{ expression = "[take(createArray(), 2)]"; expected = @() }
+    # Negative and zero counts return empty
+    @{ expression = "[take(createArray('x','y','z'), -1)]"; expected = @() }
+    @{ expression = "[take('hello', -2)]"; expected = '' }
+    # Take all elements
+    @{ expression = "[take(createArray('x','y','z'), 3)]"; expected = @('x', 'y', 'z') }
+    @{ expression = "[take('test', 4)]"; expected = 'test' }
+  ) {
+    param($expression, $expected)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "$expression"
+"@
+    $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+    ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)
+  }
+
   It 'lastIndexOf function works for: <expression>' -TestCases @(
     @{ expression = "[lastIndexOf(createArray('a', 'b', 'a', 'c'), 'a')]"; expected = 2 }
     @{ expression = "[lastIndexOf(createArray(10, 20, 30, 20), 20)]"; expected = 3 }
