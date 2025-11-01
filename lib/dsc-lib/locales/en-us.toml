@@ -528,6 +528,12 @@ invoked = "sub function"
 description = "Returns the system root path"
 invoked = "systemRoot function"
 
+[functions.take]
+description = "Returns an array with the specified number of elements from the start, or a string with the specified number of characters from the start"
+invoked = "take function"
+invalidNumberToTake = "Second argument must be an integer"
+invalidOriginalValue = "First argument must be an array or string"
+
 [functions.toLower]
 description = "Converts the specified string to lower case"
 

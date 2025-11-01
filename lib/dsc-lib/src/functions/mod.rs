@@ -63,6 +63,7 @@ pub mod secret;
 pub mod skip;
 pub mod starts_with;
 pub mod string;
+pub mod take;
 pub mod sub;
 pub mod substring;
 pub mod system_root;
@@ -194,6 +195,7 @@ impl FunctionDispatcher {
             Box::new(starts_with::StartsWith{}),
             Box::new(string::StringFn{}),
             Box::new(sub::Sub{}),
+            Box::new(take::Take{}),
             Box::new(substring::Substring{}),
             Box::new(system_root::SystemRoot{}),
             Box::new(to_lower::ToLower{}),
