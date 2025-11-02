@@ -577,4 +577,164 @@ Describe 'Parameters tests' {
         $LASTEXITCODE | Should -Be 4
         $testError | Should -Match 'Circular dependency or unresolvable parameter references detected in parameters'
     }
+
+    It 'Default value violates <constraint> constraint' -TestCases @(
+        @{ constraint = 'minLength'; type = 'string'; value = 'ab'; min = 3; max = 20; errorMatch = 'minimum length' }
+        @{ constraint = 'maxLength'; type = 'string'; value = 'verylongusernamethatexceedslimit'; min = 3; max = 20; errorMatch = 'maximum length' }
+        @{ constraint = 'minValue'; type = 'int'; value = 0; min = 1; max = 65535; errorMatch = 'minimum value' }
+        @{ constraint = 'maxValue'; type = 'int'; value = 99999; min = 1; max = 65535; errorMatch = 'maximum value' }
+    ) {
+        param($constraint, $type, $value, $min, $max, $errorMatch)
+
+        if ($type -eq 'string') {
+            $value = "'$value'"
+            # For string type, only use length constraints
+            $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              param1:
+                type: $type
+                minLength: $min
+                maxLength: $max
+                defaultValue: $value
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '[parameters(''param1'')]'
+"@
+        } else {
+            # For int type, only use value constraints
+            $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              param1:
+                type: $type
+                minValue: $min
+                maxValue: $max
+                defaultValue: $value
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '[parameters(''param1'')]'
+"@
+        }
+
+        $testError = & {$config_yaml | dsc config get -f - 2>&1}
+        $LASTEXITCODE | Should -Be 4
+        $testError | Should -Match $errorMatch
+    }
+
+    It 'Default value violates allowedValues constraint for <type>' -TestCases @(
+        @{ type = 'string'; value = 'staging'; allowed = @('dev', 'test', 'prod') }
+        @{ type = 'int'; value = 7; allowed = @(1, 5, 10) }
+    ) {
+        param($type, $value, $allowed)
+
+        if ($type -eq 'string') {
+            $value = "'$value'"
+        }
+
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              param1:
+                type: $type
+                allowedValues: $($allowed | ConvertTo-Json -Compress)
+                defaultValue: $value
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '[parameters(''param1'')]'
+"@
+
+        $testError = & {$config_yaml | dsc config get -f - 2>&1}
+        $LASTEXITCODE | Should -Be 4
+        $testError | Should -Match 'allowed values'
+    }
+
+    It 'Default values pass constraint validation for <type>' -TestCases @(
+        @{ type = 'string'; value = 'admin'; min = 3; max = 20 }
+        @{ type = 'int'; value = 8080; min = 1; max = 65535 }
+    ) {
+        param($type, $value, $min, $max)
+
+        if ($type -eq 'string') {
+            $value = "'$value'"
+            # For string type, only use length constraints
+            $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              param1:
+                type: $type
+                minLength: $min
+                maxLength: $max
+                defaultValue: $value
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '[parameters(''param1'')]'
+"@
+        } else {
+            # For int type, only use value constraints
+            $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              param1:
+                type: $type
+                minValue: $min
+                maxValue: $max
+                defaultValue: $value
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '[parameters(''param1'')]'
+"@
+        }
+
+        $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        if ($type -eq 'string') {
+            $out.results[0].result.actualState.output | Should -BeExactly 'admin'
+        } else {
+            $out.results[0].result.actualState.output | Should -BeExactly 8080
+        }
+    }
+
+    It 'Default values with allowedValues pass validation for <type>' -TestCases @(
+        @{ type = 'string'; value = 'dev'; allowed = @('dev', 'test', 'prod') }
+        @{ type = 'int'; value = 5; allowed = @(1, 5, 10) }
+    ) {
+        param($type, $value, $allowed)
+
+        if ($type -eq 'string') {
+            $value = "'$value'"
+        }
+
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              param1:
+                type: $type
+                allowedValues: $($allowed | ConvertTo-Json -Compress)
+                defaultValue: $value
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '[parameters(''param1'')]'
+"@
+
+        $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        if ($type -eq 'string') {
+            $out.results[0].result.actualState.output | Should -BeExactly 'dev'
+        } else {
+            $out.results[0].result.actualState.output | Should -BeExactly 5
+        }
+    }
 }

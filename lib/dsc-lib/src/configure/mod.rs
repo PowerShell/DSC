@@ -895,6 +895,10 @@ impl Configurator {
                     };
 
                     if let Ok(value) = value_result {
+                        check_length(name, &value, parameter)?;
+                        check_allowed_values(name, &value, parameter)?;
+                        check_number_limits(name, &value, parameter)?;
+                        
                         validate_parameter_type(name, &value, &parameter.parameter_type)?;
                         self.context.parameters.insert(name.to_string(), (value, parameter.parameter_type.clone()));
                         resolved_in_this_pass.push(name.clone());
