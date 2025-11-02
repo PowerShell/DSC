@@ -589,6 +589,7 @@ The following list of functions operate on arrays and collections:
 - [min()][min] - Return the smallest integer value from an array of integers.
 - [range()][range] - Create an array of integers within a specified range.
 - [skip()][skip] - Return an array or string with elements skipped from the beginning.
+- [take()][take] - Return an array or string with the specified number of elements from the start.
 - [tryGet()][tryGet] - Safely retrieve a value from an array by index or an object by key without throwing an error.
 - [tryIndexFromEnd()][tryIndexFromEnd] - Safely retrieve a value from an array by counting backward from the end.
 - [union()][union] - Return a single array or object with all unique elements from the parameters.
@@ -679,6 +680,7 @@ The following list of functions are for manipulating strings:
 - [length()][length] - Return the number of elements in an array, characters in a string, or top-level properties in an object.
 - [skip()][skip] - Return an array or string with elements skipped from the beginning.
 - [startsWith()][startsWith] - Check if a string starts with a specified prefix.
+- [take()][take] - Return an array or string with the specified number of elements from the start.
 - [string()][string] - Convert a value to its string representation.
 - [substring()][substring] - Extract a portion of a string starting at a specified position.
 - [toLower()][toLower] - Convert a string to lowercase.
@@ -765,6 +767,7 @@ The following list of functions create or convert values of a given type:
 [skip]:                 ./skip.md
 [startsWith]:           ./startsWith.md
 [string]:               ./string.md
+[take]:                 ./take.md
 [sub]:                  ./sub.md
 [substring]:            ./substring.md
 [systemRoot]:           ./systemRoot.md
