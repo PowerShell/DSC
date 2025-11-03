@@ -662,6 +662,7 @@ dependencies = [
  "dsc-lib-osinfo",
  "dsc-lib-security_context",
  "indicatif",
+ "ipnetwork",
  "jsonschema",
  "linked-hash-map",
  "murmurhash64",
@@ -1428,6 +1429,12 @@ name = "ipnet"
 version = "2.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "469fb0b9cefa57e3ef31275ee7cacb78f2fdca44e4765491884a2b119d4eb130"
+
+[[package]]
+name = "ipnetwork"
+version = "0.21.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cf370abdafd54d13e54a620e8c3e1145f28e46cc9d704bc6d94414559df41763"
 
 [[package]]
 name = "iri-string"
