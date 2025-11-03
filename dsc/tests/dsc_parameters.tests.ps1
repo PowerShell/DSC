@@ -588,28 +588,15 @@ Describe 'Parameters tests' {
 
         if ($type -eq 'string') {
             $value = "'$value'"
-            # For string type, only use length constraints
-            $config_yaml = @"
+        }
+
+        $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             parameters:
               param1:
                 type: $type
                 minLength: $min
                 maxLength: $max
-                defaultValue: $value
-            resources:
-            - name: Echo
-              type: Microsoft.DSC.Debug/Echo
-              properties:
-                output: '[parameters(''param1'')]'
-"@
-        } else {
-            # For int type, only use value constraints
-            $config_yaml = @"
-            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
-            parameters:
-              param1:
-                type: $type
                 minValue: $min
                 maxValue: $max
                 defaultValue: $value
@@ -619,7 +606,6 @@ Describe 'Parameters tests' {
               properties:
                 output: '[parameters(''param1'')]'
 "@
-        }
 
         $testError = & {$config_yaml | dsc config get -f - 2>&1}
         $LASTEXITCODE | Should -Be 4
@@ -657,34 +643,25 @@ Describe 'Parameters tests' {
 
     It 'Default values pass constraint validation for <type>' -TestCases @(
         @{ type = 'string'; value = 'admin'; min = 3; max = 20 }
+        @{ type = 'string'; value = 'abc'; min = 3; max = 20 }
+        @{ type = 'string'; value = 'abcdefghijklmnopqrst'; min = 3; max = 20 }
         @{ type = 'int'; value = 8080; min = 1; max = 65535 }
+        @{ type = 'int'; value = 1; min = 1; max = 65535 }
+        @{ type = 'int'; value = 65535; min = 1; max = 65535 }
     ) {
         param($type, $value, $min, $max)
 
         if ($type -eq 'string') {
             $value = "'$value'"
-            # For string type, only use length constraints
-            $config_yaml = @"
+        }
+
+        $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             parameters:
               param1:
                 type: $type
                 minLength: $min
                 maxLength: $max
-                defaultValue: $value
-            resources:
-            - name: Echo
-              type: Microsoft.DSC.Debug/Echo
-              properties:
-                output: '[parameters(''param1'')]'
-"@
-        } else {
-            # For int type, only use value constraints
-            $config_yaml = @"
-            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
-            parameters:
-              param1:
-                type: $type
                 minValue: $min
                 maxValue: $max
                 defaultValue: $value
@@ -694,20 +671,17 @@ Describe 'Parameters tests' {
               properties:
                 output: '[parameters(''param1'')]'
 "@
-        }
 
         $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
-        if ($type -eq 'string') {
-            $out.results[0].result.actualState.output | Should -BeExactly 'admin'
-        } else {
-            $out.results[0].result.actualState.output | Should -BeExactly 8080
-        }
+        $out.results[0].result.actualState.output | Should -BeExactly $value
     }
 
     It 'Default values with allowedValues pass validation for <type>' -TestCases @(
         @{ type = 'string'; value = 'dev'; allowed = @('dev', 'test', 'prod') }
+        @{ type = 'string'; value = 'prod'; allowed = @('dev', 'test', 'prod') }
         @{ type = 'int'; value = 5; allowed = @(1, 5, 10) }
+        @{ type = 'int'; value = 10; allowed = @(1, 5, 10) }
     ) {
         param($type, $value, $allowed)
 
@@ -731,10 +705,6 @@ Describe 'Parameters tests' {
 
         $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
-        if ($type -eq 'string') {
-            $out.results[0].result.actualState.output | Should -BeExactly 'dev'
-        } else {
-            $out.results[0].result.actualState.output | Should -BeExactly 5
-        }
+        $out.results[0].result.actualState.output | Should -BeExactly $value
     }
 }
