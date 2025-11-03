@@ -32,6 +32,14 @@ impl Function for ParseCidr {
 
         let cidr_string = args[0].as_str().unwrap();
 
+        // Validate that the input contains a CIDR prefix (contains '/')
+        if !cidr_string.contains('/') {
+            return Err(DscError::FunctionArg(
+                "parseCidr".to_string(),
+                t!("functions.parseCidr.invalidCidr", cidr = cidr_string).to_string(),
+            ));
+        }
+
         let network = cidr_string.parse::<IpNetwork>().map_err(|_| {
             DscError::FunctionArg(
                 "parseCidr".to_string(),
