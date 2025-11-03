@@ -590,15 +590,16 @@ Describe 'Parameters tests' {
             $value = "'$value'"
         }
 
+        $minConstraint = if ($type -eq 'string') { "minLength: $min" } else { "minValue: $min" }
+        $maxConstraint = if ($type -eq 'string') { "maxLength: $max" } else { "maxValue: $max" }
+
         $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             parameters:
               param1:
                 type: $type
-                minLength: $min
-                maxLength: $max
-                minValue: $min
-                maxValue: $max
+                $minConstraint
+                $maxConstraint
                 defaultValue: $value
             resources:
             - name: Echo
@@ -651,19 +652,16 @@ Describe 'Parameters tests' {
     ) {
         param($type, $value, $min, $max)
 
-        if ($type -eq 'string') {
-            $value = "'$value'"
-        }
+        $minConstraint = if ($type -eq 'string') { "minLength: $min" } else { "minValue: $min" }
+        $maxConstraint = if ($type -eq 'string') { "maxLength: $max" } else { "maxValue: $max" }
 
         $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             parameters:
               param1:
                 type: $type
-                minLength: $min
-                maxLength: $max
-                minValue: $min
-                maxValue: $max
+                $minConstraint
+                $maxConstraint
                 defaultValue: $value
             resources:
             - name: Echo
@@ -684,10 +682,6 @@ Describe 'Parameters tests' {
         @{ type = 'int'; value = 10; allowed = @(1, 5, 10) }
     ) {
         param($type, $value, $allowed)
-
-        if ($type -eq 'string') {
-            $value = "'$value'"
-        }
 
         $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
