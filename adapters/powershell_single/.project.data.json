@@ -1,0 +1,14 @@
+{
+    "Name": "powershell-single-adapter",
+    "Kind": "Adapter",
+    "CopyFiles": {
+        "All": [
+            "powershell_single.dsc.resource.json",
+            "psadapter.ps1",
+            "psadapter_helpers.psm1"
+        ],
+        "Windows": [
+            "WindowsPowershell_single.dsc.resource.json"
+        ]
+    }
+}
