@@ -107,11 +107,11 @@ messages: []
 hadErrors: false
 ```
 
-### Example 3 - Generate network device IPs with range
+### Example 3 - Allocate IPs for network infrastructure
 
-The configuration uses the [`range()`][03] function to generate IP addresses
-for multiple network devices systematically, demonstrating how to combine
-functions for dynamic IP allocation.
+This configuration shows allocating specific IP addresses for various network
+infrastructure components within a subnet, demonstrating practical host number
+offsets for different device types.
 
 ```yaml
 # cidrHost.example.3.dsc.config.yaml
@@ -120,21 +120,19 @@ parameters:
   networkCidr:
     type: string
     defaultValue: 192.168.100.0/24
-  startHost:
-    type: int
-    defaultValue: 20
-  deviceCount:
-    type: int
-    defaultValue: 5
 resources:
-  - name: Device IP allocation
+  - name: Network infrastructure IPs
     type: Microsoft.DSC.Debug/Echo
     properties:
       output:
         network: "[parameters('networkCidr')]"
         gateway: "[cidrHost(parameters('networkCidr'), 1)]"
-        dnsServer: "[cidrHost(parameters('networkCidr'), 2)]"
-        deviceIPs: "[map(range(parameters('startHost'), parameters('deviceCount')), 'i', cidrHost(parameters('networkCidr'), add(i, parameters('startHost'))))]"
+        primaryDNS: "[cidrHost(parameters('networkCidr'), 2)]"
+        secondaryDNS: "[cidrHost(parameters('networkCidr'), 3)]"
+        loadBalancer: "[cidrHost(parameters('networkCidr'), 10)]"
+        webServer1: "[cidrHost(parameters('networkCidr'), 20)]"
+        webServer2: "[cidrHost(parameters('networkCidr'), 21)]"
+        dbServer: "[cidrHost(parameters('networkCidr'), 50)]"
 ```
 
 ```bash
@@ -143,20 +141,19 @@ dsc config get --file cidrHost.example.3.dsc.config.yaml
 
 ```yaml
 results:
-- name: Device IP allocation
+- name: Network infrastructure IPs
   type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output:
         network: 192.168.100.0/24
         gateway: 192.168.100.1
-        dnsServer: 192.168.100.2
-        deviceIPs:
-        - 192.168.100.20
-        - 192.168.100.21
-        - 192.168.100.22
-        - 192.168.100.23
-        - 192.168.100.24
+        primaryDNS: 192.168.100.2
+        secondaryDNS: 192.168.100.3
+        loadBalancer: 192.168.100.10
+        webServer1: 192.168.100.20
+        webServer2: 192.168.100.21
+        dbServer: 192.168.100.50
 messages: []
 hadErrors: false
 ```
@@ -217,15 +214,13 @@ The `cidrHost()` function raises errors for the following conditions:
 ## Related functions
 
 - [`cidrSubnet()`][02] - Creates a subnet from a larger CIDR block
-- [`parseCidr()`][04] - Parses CIDR notation and returns network details
-- [`range()`][03] - Generates a sequence of numbers
-- [`map()`][05] - Applies a function to each element in an array
-- [`parameters()`][06] - Retrieves parameter values
+- [`parseCidr()`][03] - Parses CIDR notation and returns network details
+- [`add()`][04] - Adds two numbers together
+- [`parameters()`][05] - Retrieves parameter values
 
 <!-- Link reference definitions -->
 [01]: https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing
 [02]: ./cidrSubnet.md
-[03]: ./range.md
-[04]: ./parseCidr.md
-[05]: ./map.md
-[06]: ./parameters.md
+[03]: ./parseCidr.md
+[04]: ./add.md
+[05]: ./parameters.md
