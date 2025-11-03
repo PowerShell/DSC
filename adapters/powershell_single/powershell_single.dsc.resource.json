@@ -3,7 +3,7 @@
     "type": "Microsoft.Adapter/PowerShell",
     "version": "0.1.0",
     "kind": "adapter",
-    "description": "Resource adapter to classic DSC Powershell resources.",
+    "description": "Resource adapter to PowerShell class based DSC resources.",
     "tags": [
         "PowerShell"
     ],
@@ -17,7 +17,8 @@
                 "-ExecutionPolicy",
                 "Bypass",
                 "-Command",
-                "./psadapter.ps1 List"
+                "./psadapter.ps1",
+                "List"
             ]
         },
         "inputKind": "single"
