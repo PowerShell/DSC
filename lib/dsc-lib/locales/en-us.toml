@@ -463,6 +463,37 @@ keyNotObject = "Parameter '%{key}' is not an object"
 keyNotArray = "Parameter '%{key}' is not an array"
 keyNotFound = "Parameter '%{key}' not found in context"
 
+[functions.parseCidr]
+description = "Parses an IP address range in CIDR notation and returns network properties"
+invoked = "parseCidr function"
+invalidCidr = "Invalid CIDR notation: '%{cidr}'. Expected format: IP/prefix (e.g., '192.168.1.0/24' or '2001:db8::/32')"
+
+[functions.cidrHost]
+description = "Calculates the usable IP address of the host with the specified index on the specified IP address range in CIDR notation"
+invoked = "cidrHost function"
+invalidNetwork = "Network parameter must be a string"
+invalidHostIndex = "HostIndex parameter must be an integer"
+negativeHostIndex = "HostIndex cannot be negative"
+invalidCidr = "Invalid CIDR notation: '%{cidr}'. Expected format: IP/prefix (e.g., '192.168.1.0/24' or '2001:db8::/32')"
+noUsableHosts = "Network has no usable host addresses (single IP address)"
+hostIndexOutOfRange = "Host index %{index} is out of range. Maximum index is %{maxIndex}"
+hostCalculationFailed = "Failed to calculate host address"
+
+[functions.cidrSubnet]
+description = "Splits the specified IP address range in CIDR notation into subnets with a new CIDR value and returns the IP address range of the subnet with the specified index"
+invoked = "cidrSubnet function"
+invalidNetwork = "Network parameter must be a string"
+invalidNewCidr = "NewCIDR parameter must be an integer"
+invalidSubnetIndex = "SubnetIndex parameter must be an integer"
+negativeSubnetIndex = "SubnetIndex cannot be negative"
+invalidCidr = "Invalid CIDR notation: '%{cidr}'. Expected format: IP/prefix (e.g., '192.168.1.0/24' or '2001:db8::/32')"
+invalidPrefixV4 = "Invalid IPv4 prefix: %{prefix}. Must be between 0 and 32"
+invalidPrefixV6 = "Invalid IPv6 prefix: %{prefix}. Must be between 0 and 128"
+newCidrTooSmall = "New CIDR prefix (%{newCidr}) must be equal to or larger than the current CIDR prefix (%{currentCidr})"
+subnetIndexOutOfRange = "Subnet index %{index} is out of range. Maximum index is %{maxIndex}"
+tooManySubnets = "The difference between new and current CIDR is too large (>32 bits). This would create too many subnets"
+subnetCreationFailed = "Failed to create subnet"
+
 [functions.path]
 description = "Concatenates multiple strings into a file path"
 traceArgs = "Executing path function with args: %{args}"
