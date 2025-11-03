@@ -242,11 +242,12 @@ pub fn canonicalize_which(executable: &str, cwd: Option<&str>) -> Result<String,
     if which(executable).is_err() {
         if let Some(cwd) = cwd {
             let cwd_path = Path::new(cwd);
-            if let Ok(canonical_path) = canonicalize(cwd_path.join(executable)) {
+            if let Ok(canonical_path) = canonicalize(cwd_path.join(&executable_path)) {
                 return Ok(canonical_path.to_string_lossy().to_string());
             }
+            return Err(DscError::CommandOperation(t!("util.executableNotFoundInWorkingDirectory", executable = &executable, cwd = cwd_path.to_string_lossy()).to_string(), executable_path.to_string_lossy().to_string()));
         }
-        return Err(DscError::CommandOperation(t!("util.executableNotFound", executable = &executable, cwd = cwd : {:?}).to_string(), executable.to_string()));
+        return Err(DscError::CommandOperation(t!("util.executableNotFound", executable = &executable).to_string(), executable.to_string()));
     }
     Ok(executable.to_string())
 }
