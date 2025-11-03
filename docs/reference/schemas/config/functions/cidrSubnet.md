@@ -71,11 +71,11 @@ messages: []
 hadErrors: false
 ```
 
-### Example 2 - Dynamic subnet allocation with range
+### Example 2 - Create subnets for multiple regions
 
-The configuration uses [`range()`][02] to generate multiple subnets dynamically,
-perfect for scenarios where you need to create subnets programmatically based
-on the number of availability zones or regions.
+This configuration demonstrates creating dedicated subnets for different regions
+or environments, showing how to systematically allocate non-overlapping network
+segments from a larger address space.
 
 ```yaml
 # cidrSubnet.example.2.dsc.config.yaml
@@ -87,14 +87,16 @@ parameters:
   newPrefix:
     type: int
     defaultValue: 24
-  subnetCount:
-    type: int
-    defaultValue: 5
 resources:
-  - name: Generate subnets
+  - name: Regional subnets
     type: Microsoft.DSC.Debug/Echo
     properties:
-      output: "[map(range(0, parameters('subnetCount')), 'i', cidrSubnet(parameters('baseNetwork'), parameters('newPrefix'), i))]"
+      output:
+        eastus: "[cidrSubnet(parameters('baseNetwork'), parameters('newPrefix'), 0)]"
+        westus: "[cidrSubnet(parameters('baseNetwork'), parameters('newPrefix'), 1)]"
+        northeurope: "[cidrSubnet(parameters('baseNetwork'), parameters('newPrefix'), 2)]"
+        westeurope: "[cidrSubnet(parameters('baseNetwork'), parameters('newPrefix'), 3)]"
+        southeastasia: "[cidrSubnet(parameters('baseNetwork'), parameters('newPrefix'), 4)]"
 ```
 
 ```bash
@@ -103,16 +105,16 @@ dsc config get --file cidrSubnet.example.2.dsc.config.yaml
 
 ```yaml
 results:
-- name: Generate subnets
+- name: Regional subnets
   type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output:
-      - 10.144.0.0/24
-      - 10.144.1.0/24
-      - 10.144.2.0/24
-      - 10.144.3.0/24
-      - 10.144.4.0/24
+        eastus: 10.144.0.0/24
+        westus: 10.144.1.0/24
+        northeurope: 10.144.2.0/24
+        westeurope: 10.144.3.0/24
+        southeastasia: 10.144.4.0/24
 messages: []
 hadErrors: false
 ```
@@ -249,16 +251,12 @@ The `cidrSubnet()` function raises errors for the following conditions:
 
 ## Related functions
 
-- [`cidrHost()`][03] - Calculates a host IP address within a CIDR block
-- [`parseCidr()`][04] - Parses CIDR notation and returns network details
-- [`range()`][02] - Generates a sequence of numbers
-- [`map()`][05] - Applies a function to each element in an array
-- [`parameters()`][06] - Retrieves parameter values
+- [`cidrHost()`][02] - Calculates a host IP address within a CIDR block
+- [`parseCidr()`][03] - Parses CIDR notation and returns network details
+- [`parameters()`][04] - Retrieves parameter values
 
 <!-- Link reference definitions -->
 [01]: https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing
-[02]: ./range.md
-[03]: ./cidrHost.md
-[04]: ./parseCidr.md
-[05]: ./map.md
-[06]: ./parameters.md
+[02]: ./cidrHost.md
+[03]: ./parseCidr.md
+[04]: ./parameters.md
