@@ -239,21 +239,16 @@ pub fn canonicalize_which(executable: &str, cwd: Option<&str>) -> Result<String,
     if cfg!(target_os = "windows") && executable_path.extension().is_none() {
         executable_path.set_extension("exe");
     }
-    let mut executable = executable_path.to_string_lossy().to_string();
-    if which(&executable).is_err() && !Path::new(&executable).is_absolute() {
+    if which(executable).is_err() {
         if let Some(cwd) = cwd {
             let cwd_path = Path::new(cwd);
-            match canonicalize(cwd_path.join(&executable)) {
-                Err(_err) => {
-                    return Err(DscError::CommandOperation(t!("util.executableNotFound", executable = &executable, cwd = cwd_path.to_string_lossy()).to_string(), executable.to_string()));
-                },
-                Ok(canonical_path) => {
-                    executable = canonical_path.to_string_lossy().to_string();
-                }
+            if let Ok(canonical_path) = canonicalize(cwd_path.join(executable)) {
+                return Ok(canonical_path.to_string_lossy().to_string());
             }
         }
+        return Err(DscError::CommandOperation(t!("util.executableNotFound", executable = &executable, cwd = cwd : {:?}).to_string(), executable.to_string()));
     }
-    Ok(executable)
+    Ok(executable.to_string())
 }
 
 #[macro_export]
