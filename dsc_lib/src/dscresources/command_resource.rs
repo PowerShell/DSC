@@ -7,7 +7,7 @@ use rust_i18n::t;
 use serde::Deserialize;
 use serde_json::{Map, Value};
 use std::{collections::HashMap, env, process::Stdio};
-use crate::configure::{config_doc::ExecutionKind, config_result::{ResourceGetResult, ResourceTestResult}};
+use crate::{configure::{config_doc::ExecutionKind, config_result::{ResourceGetResult, ResourceTestResult}}, util::canonicalize_which};
 use crate::dscerror::DscError;
 use super::{dscresource::get_diff, invoke_result::{ExportResult, GetResult, ResolveResult, SetResult, TestResult, ValidateResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse, get_in_desired_state}, resource_manifest::{ArgKind, InputKind, Kind, ResourceManifest, ReturnKind, SchemaKind}};
 use tracing::{error, warn, info, debug, trace};
@@ -459,11 +459,11 @@ pub fn get_schema(resource: &ResourceManifest, cwd: &str) -> Result<String, DscE
     };
 
     match schema_kind {
-        SchemaKind::Command(ref command) => {
+        SchemaKind::Command(command) => {
             let (_exit_code, stdout, _stderr) = invoke_command(&command.executable, command.args.clone(), None, Some(cwd), None, resource.exit_codes.as_ref())?;
             Ok(stdout)
         },
-        SchemaKind::Embedded(ref schema) => {
+        SchemaKind::Embedded(schema) => {
             let json = serde_json::to_string(schema)?;
             Ok(json)
         },
@@ -662,7 +662,7 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
         if code != 0 {
             if let Some(exit_codes) = exit_codes {
                 if let Some(error_message) = exit_codes.get(&code) {
-                    return Err(DscError::CommandExitFromManifest(executable.to_string(), code, error_message.to_string()));
+                    return Err(DscError::CommandExitFromManifest(executable.to_string(), code, error_message.clone()));
                 }
             }
             return Err(DscError::Command(executable.to_string(), code, stderr_result));
@@ -697,12 +697,13 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
 #[allow(clippy::implicit_hasher)]
 pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&str>, env: Option<HashMap<String, String>>, exit_codes: Option<&HashMap<i32, String>>) -> Result<(i32, String, String), DscError> {
     debug!("{}", t!("dscresources.commandResource.commandInvoke", executable = executable, args = args : {:?}));
+    let executable = canonicalize_which(executable, cwd)?;
 
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
         .unwrap()
-        .block_on(run_process_async(executable, args, input, cwd, env, exit_codes))
+        .block_on(run_process_async(&executable, args, input, cwd, env, exit_codes))
 }
 
 /// Process the arguments for a command resource.
@@ -837,7 +838,7 @@ fn json_to_hashmap(json: &str) -> Result<HashMap<String, String>, DscError> {
                 },
                 Value::Null => {
                     // ignore null values
-                },  
+                },
                 Value::Object(_) => {
                     return Err(DscError::Operation(t!("dscresources.commandResource.invalidKey", key = key).to_string()));
                 },

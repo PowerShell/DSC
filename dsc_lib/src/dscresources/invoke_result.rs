@@ -93,10 +93,10 @@ pub enum TestResult {
 #[must_use]
 pub fn get_in_desired_state(test_result: &TestResult) -> bool {
     match test_result {
-        TestResult::Resource(ref resource_test_result) => {
+        TestResult::Resource(resource_test_result) => {
             resource_test_result.in_desired_state
         },
-        TestResult::Group(ref group_test_result) => {
+        TestResult::Group(group_test_result) => {
             for result in group_test_result {
                 if !get_in_desired_state(&(result.result)) {
                     return false;

@@ -703,7 +703,7 @@ impl Configurator {
                 value.clone()
             };
             info!("{}", t!("configure.mod.setVariable", name = name, value = new_value));
-            self.context.variables.insert(name.to_string(), new_value);
+            self.context.variables.insert(name.clone(), new_value);
         }
         Ok(())
     }
@@ -839,13 +839,13 @@ fn get_failure_from_error(err: &DscError) -> Option<Failure> {
     match err {
         DscError::CommandExit(_resource, exit_code, reason) => {
             Some(Failure {
-                message: reason.to_string(),
+                message: reason.clone(),
                 exit_code: *exit_code,
             })
         },
         DscError::CommandExitFromManifest(_resource, exit_code, reason) => {
             Some(Failure {
-                message: reason.to_string(),
+                message: reason.clone(),
                 exit_code: *exit_code,
             })
         },

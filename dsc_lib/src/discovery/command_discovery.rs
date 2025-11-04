@@ -22,10 +22,10 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use tracing::{debug, info, trace, warn};
-use which::which;
 
 use crate::util::get_setting;
 use crate::util::get_exe_path;
+use crate::util::canonicalize_which;
 
 const DSC_RESOURCE_EXTENSIONS: [&str; 3] = [".dsc.resource.json", ".dsc.resource.yaml", ".dsc.resource.yml"];
 const DSC_EXTENSION_EXTENSIONS: [&str; 3] = [".dsc.extension.json", ".dsc.extension.yaml", ".dsc.extension.yml"];
@@ -121,10 +121,11 @@ impl CommandDiscovery {
 
         let dsc_resource_path = env::var_os("DSC_RESOURCE_PATH");
         if resource_path_setting.allow_env_override && dsc_resource_path.is_some(){
-            let value = dsc_resource_path.unwrap();
-            debug!("DSC_RESOURCE_PATH: {:?}", value.to_string_lossy());
-            using_custom_path = true;
-            paths.append(&mut env::split_paths(&value).collect::<Vec<_>>());
+            if let Some(value) = dsc_resource_path {
+                debug!("DSC_RESOURCE_PATH: {:?}", value.to_string_lossy());
+                using_custom_path = true;
+                paths.append(&mut env::split_paths(&value).collect::<Vec<_>>());
+            }
         } else {
             for p in resource_path_setting.directories {
                 let v = PathBuf::from_str(&p);
@@ -649,38 +650,38 @@ fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<Ds
 
     let mut capabilities: Vec<Capability> = vec![];
     if let Some(get) = &manifest.get {
-        verify_executable(&manifest.resource_type, "get", &get.executable);
+        verify_executable(&manifest.resource_type, "get", &get.executable, path.parent().unwrap());
         capabilities.push(Capability::Get);
     }
     if let Some(set) = &manifest.set {
-        verify_executable(&manifest.resource_type, "set", &set.executable);
+        verify_executable(&manifest.resource_type, "set", &set.executable, path.parent().unwrap());
         capabilities.push(Capability::Set);
         if set.handles_exist == Some(true) {
             capabilities.push(Capability::SetHandlesExist);
         }
     }
     if let Some(what_if) = &manifest.what_if {
-        verify_executable(&manifest.resource_type, "what_if", &what_if.executable);
+        verify_executable(&manifest.resource_type, "what_if", &what_if.executable, path.parent().unwrap());
         capabilities.push(Capability::WhatIf);
     }
     if let Some(test) = &manifest.test {
-        verify_executable(&manifest.resource_type, "test", &test.executable);
+        verify_executable(&manifest.resource_type, "test", &test.executable, path.parent().unwrap());
         capabilities.push(Capability::Test);
     }
     if let Some(delete) = &manifest.delete {
-        verify_executable(&manifest.resource_type, "delete", &delete.executable);
+        verify_executable(&manifest.resource_type, "delete", &delete.executable, path.parent().unwrap());
         capabilities.push(Capability::Delete);
     }
     if let Some(export) = &manifest.export {
-        verify_executable(&manifest.resource_type, "export", &export.executable);
+        verify_executable(&manifest.resource_type, "export", &export.executable, path.parent().unwrap());
         capabilities.push(Capability::Export);
     }
     if let Some(resolve) = &manifest.resolve {
-        verify_executable(&manifest.resource_type, "resolve", &resolve.executable);
+        verify_executable(&manifest.resource_type, "resolve", &resolve.executable, path.parent().unwrap());
         capabilities.push(Capability::Resolve);
     }
     if let Some(SchemaKind::Command(command)) = &manifest.schema {
-        verify_executable(&manifest.resource_type, "schema", &command.executable);
+        verify_executable(&manifest.resource_type, "schema", &command.executable, path.parent().unwrap());
     }
 
     let resource = DscResource {
@@ -706,7 +707,7 @@ fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<
 
     let mut capabilities: Vec<dscextension::Capability> = vec![];
     if let Some(discover) = &manifest.discover {
-        verify_executable(&manifest.r#type, "discover", &discover.executable);
+        verify_executable(&manifest.r#type, "discover", &discover.executable, path.parent().unwrap());
         capabilities.push(dscextension::Capability::Discover);
     }
 
@@ -724,8 +725,8 @@ fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<
     Ok(extension)
 }
 
-fn verify_executable(resource: &str, operation: &str, executable: &str) {
-    if which(executable).is_err() {
+fn verify_executable(resource: &str, operation: &str, executable: &str, directory: &Path) {
+    if canonicalize_which(executable, Some(directory.to_string_lossy().as_ref())).is_err() {
         warn!("{}", t!("discovery.commandDiscovery.executableNotFound", resource = resource, operation = operation, executable = executable));
     }
 }
@@ -739,7 +740,7 @@ fn sort_adapters_based_on_lookup_table(unsorted_adapters: &BTreeMap<String, Vec<
         if let Some(adapter_name) = lookup_table.get(needed_resource) {
             if let Some(resource_vec) = unsorted_adapters.get(adapter_name) {
                 debug!("Lookup table found resource '{}' in adapter '{}'", needed_resource, adapter_name);
-                result.insert(adapter_name.to_string(), resource_vec.clone());
+                result.insert(adapter_name.clone(), resource_vec.clone());
             }
         }
     }
@@ -747,7 +748,7 @@ fn sort_adapters_based_on_lookup_table(unsorted_adapters: &BTreeMap<String, Vec<
     // now add remaining adapters
     for (adapter_name, adapters) in unsorted_adapters {
         if !result.contains_key(adapter_name) {
-            result.insert(adapter_name.to_string(), adapters.clone());
+            result.insert(adapter_name.clone(), adapters.clone());
         }
     }
 
@@ -761,8 +762,8 @@ fn add_resources_to_lookup_table(adapted_resources: &BTreeMap<String, Vec<DscRes
     let mut lookup_table_changed = false;
     for (resource_name, res_vec) in adapted_resources {
         if let Some(adapter_name) = &res_vec[0].require_adapter {
-            let new_value = adapter_name.to_string();
-            let oldvalue = lookup_table.insert(resource_name.to_string().to_lowercase(), new_value.clone());
+            let new_value = adapter_name.clone();
+            let oldvalue = lookup_table.insert(resource_name.clone().to_lowercase(), new_value.clone());
             if !lookup_table_changed && (oldvalue.is_none() || oldvalue.is_some_and(|val| val != new_value)) {
                 lookup_table_changed = true;
             }
