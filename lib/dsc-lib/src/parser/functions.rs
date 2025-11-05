@@ -93,7 +93,6 @@ impl Function {
                         resolved_args.push(value.clone());
                     },
                     FunctionArg::Lambda(_lambda) => {
-                        // This shouldn't happen - lambdas should only be created by lambda() function
                         return Err(DscError::Parser(t!("parser.functions.unexpectedLambda").to_string()));
                     }
                 }
