@@ -19,7 +19,7 @@ impl Function for CidrSubnet {
         FunctionMetadata {
             name: "cidrSubnet".to_string(),
             description: t!("functions.cidrSubnet.description").to_string(),
-            category: vec![FunctionCategory::String],
+            category: vec![FunctionCategory::Cidr],
             min_args: 3,
             max_args: 3,
             accepted_arg_ordered_types: vec![
@@ -35,26 +35,9 @@ impl Function for CidrSubnet {
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.cidrSubnet.invoked"));
 
-        let cidr_string = args[0].as_str().ok_or_else(|| {
-            DscError::FunctionArg(
-                "cidrSubnet".to_string(),
-                t!("functions.cidrSubnet.invalidNetwork").to_string(),
-            )
-        })?;
-
-        let new_cidr = args[1].as_i64().ok_or_else(|| {
-            DscError::FunctionArg(
-                "cidrSubnet".to_string(),
-                t!("functions.cidrSubnet.invalidNewCidr").to_string(),
-            )
-        })? as u8;
-
-        let subnet_index = args[2].as_i64().ok_or_else(|| {
-            DscError::FunctionArg(
-                "cidrSubnet".to_string(),
-                t!("functions.cidrSubnet.invalidSubnetIndex").to_string(),
-            )
-        })?;
+        let cidr_string = args[0].as_str().unwrap();
+        let new_cidr = args[1].as_i64().unwrap() as u8;
+        let subnet_index = args[2].as_i64().unwrap();
 
         if subnet_index < 0 {
             return Err(DscError::FunctionArg(

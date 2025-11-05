@@ -173,6 +173,51 @@ messages: []
 hadErrors: false
 ```
 
+### Example 4 - IPv6 subnet allocation
+
+This configuration demonstrates creating IPv6 subnets from a larger IPv6 address
+block, showing support for both IPv4 and IPv6 address families.
+
+```yaml
+# cidrSubnet.example.4.dsc.config.yaml
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+parameters:
+  ipv6BaseNetwork:
+    type: string
+    defaultValue: 2001:db8::/32
+  subnetPrefix:
+    type: int
+    defaultValue: 48
+resources:
+  - name: IPv6 subnets
+    type: Microsoft.DSC.Debug/Echo
+    properties:
+      output:
+        baseNetwork: "[parameters('ipv6BaseNetwork')]"
+        subnet0: "[cidrSubnet(parameters('ipv6BaseNetwork'), parameters('subnetPrefix'), 0)]"
+        subnet1: "[cidrSubnet(parameters('ipv6BaseNetwork'), parameters('subnetPrefix'), 1)]"
+        subnet10: "[cidrSubnet(parameters('ipv6BaseNetwork'), parameters('subnetPrefix'), 10)]"
+```
+
+```bash
+dsc config get --file cidrSubnet.example.4.dsc.config.yaml
+```
+
+```yaml
+results:
+- name: IPv6 subnets
+  type: Microsoft.DSC.Debug/Echo
+  result:
+    actualState:
+      output:
+        baseNetwork: 2001:db8::/32
+        subnet0: 2001:db8::/48
+        subnet1: 2001:db8:1::/48
+        subnet10: 2001:db8:a::/48
+messages: []
+hadErrors: false
+```
+
 ## Parameters
 
 ### cidrNotation

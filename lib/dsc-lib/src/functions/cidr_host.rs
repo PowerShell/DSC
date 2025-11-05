@@ -18,7 +18,7 @@ impl Function for CidrHost {
         FunctionMetadata {
             name: "cidrHost".to_string(),
             description: t!("functions.cidrHost.description").to_string(),
-            category: vec![FunctionCategory::String],
+            category: vec![FunctionCategory::Cidr],
             min_args: 2,
             max_args: 2,
             accepted_arg_ordered_types: vec![
@@ -33,19 +33,8 @@ impl Function for CidrHost {
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.cidrHost.invoked"));
 
-        let cidr_string = args[0].as_str().ok_or_else(|| {
-            DscError::FunctionArg(
-                "cidrHost".to_string(),
-                t!("functions.cidrHost.invalidNetwork").to_string(),
-            )
-        })?;
-
-        let host_index = args[1].as_i64().ok_or_else(|| {
-            DscError::FunctionArg(
-                "cidrHost".to_string(),
-                t!("functions.cidrHost.invalidHostIndex").to_string(),
-            )
-        })?;
+        let cidr_string = args[0].as_str().unwrap();
+        let host_index = args[1].as_i64().unwrap();
 
         if host_index < 0 {
             return Err(DscError::FunctionArg(
@@ -62,15 +51,15 @@ impl Function for CidrHost {
         })?;
 
         let result = match network {
-            IpNetwork::V4(net) => calculate_ipv4_host(net, host_index as u32)?,
-            IpNetwork::V6(net) => calculate_ipv6_host(net, host_index as u128)?,
+            IpNetwork::V4(net) => calculate_ipv4_host(&net, host_index as u32)?,
+            IpNetwork::V6(net) => calculate_ipv6_host(&net, host_index as u128)?,
         };
 
         Ok(Value::String(result))
     }
 }
 
-fn calculate_ipv4_host(net: Ipv4Network, host_index: u32) -> Result<String, DscError> {
+fn calculate_ipv4_host(net: &Ipv4Network, host_index: u32) -> Result<String, DscError> {
     let prefix = net.prefix();
 
     // Special case: /32 has no usable hosts
@@ -125,7 +114,7 @@ fn calculate_ipv4_host(net: Ipv4Network, host_index: u32) -> Result<String, DscE
     Ok(host_ip.to_string())
 }
 
-fn calculate_ipv6_host(net: Ipv6Network, host_index: u128) -> Result<String, DscError> {
+fn calculate_ipv6_host(net: &Ipv6Network, host_index: u128) -> Result<String, DscError> {
     let prefix = net.prefix();
 
     if prefix == 128 {

@@ -18,7 +18,7 @@ impl Function for ParseCidr {
         FunctionMetadata {
             name: "parseCidr".to_string(),
             description: t!("functions.parseCidr.description").to_string(),
-            category: vec![FunctionCategory::Object],
+            category: vec![FunctionCategory::Cidr],
             min_args: 1,
             max_args: 1,
             accepted_arg_ordered_types: vec![vec![FunctionArgKind::String]],
@@ -80,7 +80,6 @@ impl Function for ParseCidr {
                 json!({
                     "network": network_addr.to_string(),
                     "netmask": net.mask().to_string(),
-                    "broadcast": broadcast_addr.to_string(),
                     "firstUsable": network_addr.to_string(),
                     "lastUsable": broadcast_addr.to_string(),
                     "cidr": net.prefix()
@@ -216,7 +215,7 @@ mod tests {
         assert_eq!(obj.get("network").unwrap().as_str().unwrap(), "2001:db8::");
         assert_eq!(obj.get("cidr").unwrap().as_u64().unwrap(), 32);
         assert!(obj.get("netmask").is_some());
-        assert!(obj.get("broadcast").is_some());
+        assert!(obj.get("broadcast").is_none());
         assert!(obj.get("firstUsable").is_some());
         assert!(obj.get("lastUsable").is_some());
     }
@@ -232,7 +231,7 @@ mod tests {
         assert_eq!(obj.get("network").unwrap().as_str().unwrap(), "fe80::");
         assert_eq!(obj.get("cidr").unwrap().as_u64().unwrap(), 64);
         assert!(obj.get("netmask").is_some());
-        assert!(obj.get("broadcast").is_some());
+        assert!(obj.get("broadcast").is_none());
     }
 
     #[test]

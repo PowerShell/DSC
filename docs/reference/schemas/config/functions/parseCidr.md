@@ -157,6 +157,41 @@ messages: []
 hadErrors: false
 ```
 
+### Example 4 - Parse IPv6 CIDR notation
+
+This configuration demonstrates parsing IPv6 CIDR notation, showing that the
+function supports both IPv4 and IPv6 address families.
+
+```yaml
+# parseCidr.example.4.dsc.config.yaml
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+  - name: Parse IPv6 network
+    type: Microsoft.DSC.Debug/Echo
+    properties:
+      output: "[parseCidr('2001:db8::/32')]"
+```
+
+```bash
+dsc config get --file parseCidr.example.4.dsc.config.yaml
+```
+
+```yaml
+results:
+- name: Parse IPv6 network
+  type: Microsoft.DSC.Debug/Echo
+  result:
+    actualState:
+      output:
+        network: 2001:db8::
+        netmask: ffff:ffff::
+        firstUsable: 2001:db8::
+        lastUsable: 2001:db8:ffff:ffff:ffff:ffff:ffff:ffff
+        cidr: 32
+messages: []
+hadErrors: false
+```
+
 ## Parameters
 
 ### cidrNotation
@@ -195,9 +230,8 @@ For **IPv6** addresses:
 
 - `network`: The network address (string)
 - `netmask`: The network mask (string)
-- `broadcast`: The broadcast address (string)
 - `firstUsable`: The first usable address (same as network for IPv6) (string)
-- `lastUsable`: The last usable address (same as broadcast for IPv6) (string)
+- `lastUsable`: The last address in the network (string)
 - `cidr`: The prefix length (integer)
 
 **Note**: For `/32` IPv4 networks (single host), `firstUsable` and `lastUsable`
