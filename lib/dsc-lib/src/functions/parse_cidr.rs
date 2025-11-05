@@ -18,7 +18,7 @@ impl Function for ParseCidr {
         FunctionMetadata {
             name: "parseCidr".to_string(),
             description: t!("functions.parseCidr.description").to_string(),
-            category: vec![FunctionCategory::Cidr],
+            category: vec![FunctionCategory::CIDR],
             min_args: 1,
             max_args: 1,
             accepted_arg_ordered_types: vec![vec![FunctionArgKind::String]],
