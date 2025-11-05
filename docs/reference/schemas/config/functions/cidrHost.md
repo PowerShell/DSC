@@ -158,6 +158,48 @@ messages: []
 hadErrors: false
 ```
 
+### Example 4 - IPv6 host address allocation
+
+This configuration demonstrates calculating host addresses within an IPv6
+network, showing that the function supports both IPv4 and IPv6 address families.
+
+```yaml
+# cidrHost.example.4.dsc.config.yaml
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+parameters:
+  ipv6Network:
+    type: string
+    defaultValue: 2001:db8::/64
+resources:
+  - name: IPv6 host addresses
+    type: Microsoft.DSC.Debug/Echo
+    properties:
+      output:
+        network: "[parameters('ipv6Network')]"
+        router: "[cidrHost(parameters('ipv6Network'), 1)]"
+        server1: "[cidrHost(parameters('ipv6Network'), 10)]"
+        server2: "[cidrHost(parameters('ipv6Network'), 11)]"
+```
+
+```bash
+dsc config get --file cidrHost.example.4.dsc.config.yaml
+```
+
+```yaml
+results:
+- name: IPv6 host addresses
+  type: Microsoft.DSC.Debug/Echo
+  result:
+    actualState:
+      output:
+        network: 2001:db8::/64
+        router: 2001:db8::1
+        server1: 2001:db8::a
+        server2: 2001:db8::b
+messages: []
+hadErrors: false
+```
+
 ## Parameters
 
 ### cidrNotation

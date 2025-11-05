@@ -1365,7 +1365,7 @@ Describe 'tests for function expressions' {
   }
 
   It 'parseCidr fails with invalid CIDR: <cidr>' -TestCases @(
-    @{ cidr = 'invalid'; errorMatch = 'Invalid CIDR notation' }
+    @{ cidr = '192.168.1/24'; errorMatch = 'Invalid CIDR notation' }
     @{ cidr = '192.168.1.0/33'; errorMatch = 'Invalid CIDR notation' }
     @{ cidr = '192.168.1.256/24'; errorMatch = 'Invalid CIDR notation' }
   ) {
@@ -1444,7 +1444,7 @@ Describe 'tests for function expressions' {
     @{ testName = 'new CIDR too small'; network = '10.144.0.0/20'; newCidr = 16; index = 0; errorMatch = 'equal to or larger' }
     @{ testName = 'invalid IPv4 prefix'; network = '10.144.0.0/20'; newCidr = 33; index = 0; errorMatch = 'Invalid IPv4 prefix' }
     @{ testName = 'invalid IPv6 prefix'; network = '2001:db8::/32'; newCidr = 129; index = 0; errorMatch = 'Invalid IPv6 prefix' }
-    @{ testName = 'invalid CIDR format'; network = 'invalid'; newCidr = 24; index = 0; errorMatch = 'Invalid CIDR notation' }
+    @{ testName = 'invalid CIDR format'; network = '10.0.0/16'; newCidr = 24; index = 0; errorMatch = 'Invalid CIDR notation' }
   ) {
     param($testName, $network, $newCidr, $index, $errorMatch)
 
@@ -1501,18 +1501,11 @@ Describe 'tests for function expressions' {
     $out.results[0].result.actualState.output | Should -BeExactly $expected
   }
 
-  It 'cidrHost handles /31 point-to-point' {
-    $config_yaml = @"
-            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
-            resources:
-            - name: Echo
-              type: Microsoft.DSC.Debug/Echo
-              properties:
-                output: "[cidrHost('192.168.1.0/31', 0)]"
-"@
-    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
-    $LASTEXITCODE | Should -Be 0
-    $out.results[0].result.actualState.output | Should -BeExactly '192.168.1.0'
+  It 'cidrHost handles /31 point-to-point: index <index>' -TestCases @(
+    @{ network = '192.168.1.0/31'; index = 0; expected = '192.168.1.0' }
+    @{ network = '192.168.1.0/31'; index = 1; expected = '192.168.1.1' }
+  ) {
+    param($network, $index, $expected)
 
     $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
@@ -1520,11 +1513,11 @@ Describe 'tests for function expressions' {
             - name: Echo
               type: Microsoft.DSC.Debug/Echo
               properties:
-                output: "[cidrHost('192.168.1.0/31', 1)]"
+                output: "[cidrHost('$network', $index)]"
 "@
     $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0
-    $out.results[0].result.actualState.output | Should -BeExactly '192.168.1.1'
+    $out.results[0].result.actualState.output | Should -BeExactly $expected
   }
 
   It 'cidrHost works with IPv6' {
@@ -1546,7 +1539,7 @@ Describe 'tests for function expressions' {
     @{ testName = '/128 has no usable hosts'; network = '2001:db8::1/128'; index = 0; errorMatch = 'no usable host' }
     @{ testName = 'index out of range'; network = '192.168.1.0/24'; index = 254; errorMatch = 'out of range' }
     @{ testName = 'negative index'; network = '192.168.1.0/24'; index = -1; errorMatch = 'negative' }
-    @{ testName = 'invalid CIDR'; network = 'invalid'; index = 0; errorMatch = 'Invalid CIDR notation' }
+    @{ testName = 'invalid CIDR'; network = '192.168.1.0.0/24'; index = 0; errorMatch = 'Invalid CIDR notation' }
   ) {
     param($testName, $network, $index, $errorMatch)
 
