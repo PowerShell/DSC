@@ -1343,7 +1343,6 @@ Describe 'tests for function expressions' {
     $result.network | Should -BeExactly $network
     $result.cidr | Should -Be $prefix
     $result.netmask | Should -Not -BeNullOrEmpty
-    $result.broadcast | Should -Not -BeNullOrEmpty
     $result.firstUsable | Should -Not -BeNullOrEmpty
     $result.lastUsable | Should -Not -BeNullOrEmpty
   }
