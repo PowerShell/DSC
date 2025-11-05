@@ -48,7 +48,10 @@ pub mod intersection;
 pub mod items;
 pub mod join;
 pub mod json;
+pub mod lambda;
+pub mod lambda_variables;
 pub mod last_index_of;
+pub mod map;
 pub mod max;
 pub mod min;
 pub mod mod_function;
@@ -182,7 +185,10 @@ impl FunctionDispatcher {
             Box::new(items::Items{}),
             Box::new(join::Join{}),
             Box::new(json::Json{}),
+            Box::new(lambda::LambdaFn{}),
+            Box::new(lambda_variables::LambdaVariables{}),
             Box::new(last_index_of::LastIndexOf{}),
+            Box::new(map::Map{}),
             Box::new(max::Max{}),
             Box::new(min::Min{}),
             Box::new(mod_function::Mod{}),
@@ -281,6 +287,63 @@ impl FunctionDispatcher {
         }
 
         function.invoke(args, context)
+    }
+
+    /// Special handler for lambda() function calls.
+    /// Creates a Lambda object and stores it in Context with a unique ID.
+    ///
+    /// # Arguments
+    ///
+    /// * `args` - Raw FunctionArg list (unevaluated)
+    /// * `context` - Context to store the lambda in
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the lambda syntax is invalid.
+    pub fn invoke_lambda(&self, args: &Option<Vec<crate::parser::functions::FunctionArg>>, context: &Context) -> Result<Value, DscError> {
+        use crate::parser::functions::{FunctionArg, Lambda};
+        use uuid::Uuid;
+        
+        let Some(args) = args else {
+            return Err(DscError::Parser(t!("functions.lambda.requiresArgs").to_string()));
+        };
+
+        if args.len() < 2 {
+            return Err(DscError::Parser(t!("functions.lambda.requiresParamAndBody").to_string()));
+        }
+
+        // All arguments except the last must be string values (parameter names)
+        let mut parameters = Vec::new();
+        for arg in args.iter().take(args.len() - 1) {
+            match arg {
+                FunctionArg::Value(Value::String(s)) => {
+                    parameters.push(s.clone());
+                },
+                _ => {
+                    return Err(DscError::Parser(t!("functions.lambda.paramsMustBeStrings").to_string()));
+                }
+            }
+        }
+
+        // Last argument is the body expression
+        let body_expr = match &args[args.len() - 1] {
+            FunctionArg::Expression(expr) => expr.clone(),
+            _ => {
+                return Err(DscError::Parser(t!("functions.lambda.bodyMustBeExpression").to_string()));
+            }
+        };
+
+        // Create Lambda and store in Context with unique ID
+        let lambda = Lambda {
+            parameters,
+            body: body_expr,
+        };
+        
+        let lambda_id = format!("__lambda_{}", Uuid::new_v4());
+        context.lambdas.borrow_mut().insert(lambda_id.clone(), lambda);
+
+        // Return the ID as a string value
+        Ok(Value::String(lambda_id))
     }
 
     fn check_arg_against_expected_types(name: &str, arg: &Value, expected_types: &[FunctionArgKind]) -> Result<(), DscError> {
