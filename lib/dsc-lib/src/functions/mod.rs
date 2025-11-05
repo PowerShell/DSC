@@ -346,7 +346,7 @@ pub struct FunctionDefinition {
 #[serde(deny_unknown_fields)]
 pub enum FunctionCategory {
     Array,
-    Cidr,
+    CIDR,
     Comparison,
     Date,
     Deployment,
@@ -363,7 +363,7 @@ impl Display for FunctionCategory {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             FunctionCategory::Array => write!(f, "Array"),
-            FunctionCategory::Cidr => write!(f, "Cidr"),
+            FunctionCategory::CIDR => write!(f, "Cidr"),
             FunctionCategory::Comparison => write!(f, "Comparison"),
             FunctionCategory::Date => write!(f, "Date"),
             FunctionCategory::Deployment => write!(f, "Deployment"),

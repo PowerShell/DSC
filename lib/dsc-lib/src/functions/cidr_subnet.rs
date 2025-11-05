@@ -19,7 +19,7 @@ impl Function for CidrSubnet {
         FunctionMetadata {
             name: "cidrSubnet".to_string(),
             description: t!("functions.cidrSubnet.description").to_string(),
-            category: vec![FunctionCategory::Cidr],
+            category: vec![FunctionCategory::CIDR],
             min_args: 3,
             max_args: 3,
             accepted_arg_ordered_types: vec![
