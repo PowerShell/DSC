@@ -35,7 +35,8 @@ use std::{
     collections::HashMap,
     io::{self, IsTerminal},
     path::Path,
-    process::exit
+    process::exit,
+    slice::from_ref,
 };
 use tracing::{debug, error, trace};
 
@@ -495,7 +496,7 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
             continue;
         }
 
-        resource_types.push(type_name.to_lowercase().to_string());
+        resource_types.push(type_name.to_lowercase().clone());
     }
     dsc.find_resources(&resource_types, progress_format);
 
@@ -578,16 +579,16 @@ pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat
             list_resources(&mut dsc, resource_name.as_ref(), adapter_name.as_ref(), description.as_ref(), tags.as_ref(), output_format.as_ref(), progress_format);
         },
         ResourceSubCommand::Schema { resource , output_format } => {
-            dsc.find_resources(&[resource.to_string()], progress_format);
+            dsc.find_resources(from_ref(resource), progress_format);
             resource_command::schema(&dsc, resource, output_format.as_ref());
         },
         ResourceSubCommand::Export { resource, input, file, output_format } => {
-            dsc.find_resources(&[resource.to_string()], progress_format);
+            dsc.find_resources(from_ref(resource), progress_format);
             let parsed_input = get_input(input.as_ref(), file.as_ref(), false);
             resource_command::export(&mut dsc, resource, &parsed_input, output_format.as_ref());
         },
         ResourceSubCommand::Get { resource, input, file: path, all, output_format } => {
-            dsc.find_resources(&[resource.to_string()], progress_format);
+            dsc.find_resources(from_ref(resource), progress_format);
             if *all {
                 resource_command::get_all(&dsc, resource, output_format.as_ref());
             }
@@ -601,17 +602,17 @@ pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat
             }
         },
         ResourceSubCommand::Set { resource, input, file: path, output_format } => {
-            dsc.find_resources(&[resource.to_string()], progress_format);
+            dsc.find_resources(from_ref(resource), progress_format);
             let parsed_input = get_input(input.as_ref(), path.as_ref(), false);
             resource_command::set(&dsc, resource, &parsed_input, output_format.as_ref());
         },
         ResourceSubCommand::Test { resource, input, file: path, output_format } => {
-            dsc.find_resources(&[resource.to_string()], progress_format);
+            dsc.find_resources(from_ref(resource), progress_format);
             let parsed_input = get_input(input.as_ref(), path.as_ref(), false);
             resource_command::test(&dsc, resource, &parsed_input, output_format.as_ref());
         },
         ResourceSubCommand::Delete { resource, input, file: path } => {
-            dsc.find_resources(&[resource.to_string()], progress_format);
+            dsc.find_resources(from_ref(resource), progress_format);
             let parsed_input = get_input(input.as_ref(), path.as_ref(), false);
             resource_command::delete(&dsc, resource, &parsed_input);
         },

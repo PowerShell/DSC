@@ -517,7 +517,7 @@ pub fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
                 let sub_diff = get_diff(value, &actual[key]);
                 if !sub_diff.is_empty() {
                     debug!("{}", t!("dscresources.dscresource.subDiff", key = key));
-                    diff_properties.push(key.to_string());
+                    diff_properties.push(key.clone());
                 }
             }
             else {
@@ -532,22 +532,22 @@ pub fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
                             if let Some(actual_array) = actual[key].as_array() {
                                 if !is_same_array(value_array, actual_array) {
                                     info!("{}", t!("dscresources.dscresource.diffArray", key = key));
-                                    diff_properties.push(key.to_string());
+                                    diff_properties.push(key.clone());
                                 }
                             } else {
                                 info!("{}", t!("dscresources.dscresource.diffNotArray", key = actual[key]));
-                                diff_properties.push(key.to_string());
+                                diff_properties.push(key.clone());
                             }
                         } else if value != &actual[key] {
-                            diff_properties.push(key.to_string());
+                            diff_properties.push(key.clone());
                         }
                     } else {
                         info!("{}", t!("dscresources.dscresource.diffKeyMissing", key = key));
-                        diff_properties.push(key.to_string());
+                        diff_properties.push(key.clone());
                     }
                 } else {
                     info!("{}", t!("dscresources.dscresource.diffKeyNotObject", key = key));
-                    diff_properties.push(key.to_string());
+                    diff_properties.push(key.clone());
                 }
             }
         }
