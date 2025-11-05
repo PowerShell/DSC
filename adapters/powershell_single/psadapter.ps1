@@ -17,6 +17,10 @@ param(
 Import-Module -Name "$PSScriptRoot/psadapter_helpers.psm1" -Force
 
 switch ($Operation) {
+    'ClearCache' {
+        Remove-Item -Path (Get-CacheFilePath) -Force -ErrorAction Ignore
+        exit 0
+    }
     'List' {
         $dscResourceCache = Invoke-DscCacheRefresh
 
@@ -95,7 +99,7 @@ switch ($Operation) {
         # process the INPUT (desiredState) for each resource as dscresourceInfo and return the OUTPUT as actualState
         $actualState = $psDscAdapter.invoke( { param($op, $ds, $dscResourceCache) Invoke-DscOperation -Operation $op -DesiredState $ds -dscResourceCache $dscResourceCache }, $Operation, $ds, $dscResourceCache)
         if ($null -eq $actualState) {
-            Write-DscTrace -Level Error -Message 'Incomplete GET for resource ' + $ds.Name
+            Write-DscTrace -Level Error -Message "Incomplete GET for resource $($ds.Name)"
             exit 1
         }
         if ($null -ne $actualState.Properties -and $actualState.Properties.InDesiredState -eq $false) {
