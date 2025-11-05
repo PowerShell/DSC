@@ -528,6 +528,12 @@ invoked = "sub function"
 description = "Returns the system root path"
 invoked = "systemRoot function"
 
+[functions.take]
+description = "Returns an array with the specified number of elements from the start, or a string with the specified number of characters from the start"
+invoked = "take function"
+invalidNumberToTake = "Second argument must be an integer"
+invalidOriginalValue = "First argument must be an array or string"
+
 [functions.toLower]
 description = "Converts the specified string to lower case"
 
@@ -545,6 +551,12 @@ invoked = "true function"
 description = "Attempts to retrieve a value from an array (by index) or object (by key).  Null is returned if the key or index does not exist."
 invoked = "tryGet function"
 invalidKeyType = "Invalid key type, must be a string"
+invalidIndexType = "Invalid index type, must be an integer"
+
+[functions.tryIndexFromEnd]
+description = "Retrieves a value from an array by counting backward from the end. Returns null if the index is out of range."
+invoked = "tryIndexFromEnd function"
+invalidSourceType = "Invalid source type, must be an array"
 invalidIndexType = "Invalid index type, must be an integer"
 
 [functions.union]
@@ -686,3 +698,5 @@ failedToGetExePath = "Can't get 'dsc' executable path"
 settingNotFound = "Setting '%{name}' not found"
 failedToAbsolutizePath = "Failed to absolutize path '%{path}'"
 invalidExitCodeKey = "Invalid exit code key '%{key}'"
+executableNotFoundInWorkingDirectory = "Executable '%{executable}' not found with working directory '%{cwd}'"
+executableNotFound = "Executable '%{executable}' not found"

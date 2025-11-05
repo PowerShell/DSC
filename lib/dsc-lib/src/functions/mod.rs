@@ -63,6 +63,7 @@ pub mod secret;
 pub mod skip;
 pub mod starts_with;
 pub mod string;
+pub mod take;
 pub mod sub;
 pub mod substring;
 pub mod system_root;
@@ -71,6 +72,7 @@ pub mod to_upper;
 pub mod trim;
 pub mod r#true;
 pub mod try_get;
+pub mod try_index_from_end;
 pub mod union;
 pub mod unique_string;
 pub mod uri;
@@ -193,6 +195,7 @@ impl FunctionDispatcher {
             Box::new(starts_with::StartsWith{}),
             Box::new(string::StringFn{}),
             Box::new(sub::Sub{}),
+            Box::new(take::Take{}),
             Box::new(substring::Substring{}),
             Box::new(system_root::SystemRoot{}),
             Box::new(to_lower::ToLower{}),
@@ -200,6 +203,7 @@ impl FunctionDispatcher {
             Box::new(trim::Trim{}),
             Box::new(r#true::True{}),
             Box::new(try_get::TryGet{}),
+            Box::new(try_index_from_end::TryIndexFromEnd{}),
             Box::new(union::Union{}),
             Box::new(unique_string::UniqueString{}),
             Box::new(uri::Uri{}),

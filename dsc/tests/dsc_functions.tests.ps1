@@ -599,6 +599,37 @@ Describe 'tests for function expressions' {
     ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)
   }
 
+  It 'take function works for: <expression>' -TestCases @(
+    @{ expression = "[take(createArray('a','b','c','d'), 2)]"; expected = @('a', 'b') }
+    @{ expression = "[take('hello', 2)]"; expected = 'he' }
+    @{ expression = "[take(createArray('a','b'), 0)]"; expected = @() }
+    @{ expression = "[take('abc', 0)]"; expected = '' }
+    @{ expression = "[take(createArray('a','b'), 5)]"; expected = @('a', 'b') }
+    @{ expression = "[take('hi', 10)]"; expected = 'hi' }
+    @{ expression = "[take('', 1)]"; expected = '' }
+    @{ expression = "[take(createArray(), 2)]"; expected = @() }
+    # Negative and zero counts return empty
+    @{ expression = "[take(createArray('x','y','z'), -1)]"; expected = @() }
+    @{ expression = "[take('hello', -2)]"; expected = '' }
+    # Take all elements
+    @{ expression = "[take(createArray('x','y','z'), 3)]"; expected = @('x', 'y', 'z') }
+    @{ expression = "[take('test', 4)]"; expected = 'test' }
+  ) {
+    param($expression, $expected)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "$expression"
+"@
+    $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+    ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)
+  }
+
   It 'lastIndexOf function works for: <expression>' -TestCases @(
     @{ expression = "[lastIndexOf(createArray('a', 'b', 'a', 'c'), 'a')]"; expected = 2 }
     @{ expression = "[lastIndexOf(createArray(10, 20, 30, 20), 20)]"; expected = 3 }
@@ -951,6 +982,40 @@ Describe 'tests for function expressions' {
     $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
     if ($expected -is [pscustomobject]) {
       ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)
+    } else {
+      $out.results[0].result.actualState.output | Should -BeExactly $expected
+    }
+  }
+
+  It 'tryIndexFromEnd() function works for: <expression>' -TestCases @(
+    @{ expression = "[tryIndexFromEnd(createArray('a', 'b', 'c'), 1)]"; expected = 'c' }
+    @{ expression = "[tryIndexFromEnd(createArray('a', 'b', 'c'), 2)]"; expected = 'b' }
+    @{ expression = "[tryIndexFromEnd(createArray('a', 'b', 'c'), 3)]"; expected = 'a' }
+    @{ expression = "[tryIndexFromEnd(createArray('a', 'b', 'c'), 4)]"; expected = $null }
+    @{ expression = "[tryIndexFromEnd(createArray('a', 'b', 'c'), 0)]"; expected = $null }
+    @{ expression = "[tryIndexFromEnd(createArray('a', 'b', 'c'), -1)]"; expected = $null }
+    @{ expression = "[tryIndexFromEnd(createArray('only'), 1)]"; expected = 'only' }
+    @{ expression = "[tryIndexFromEnd(createArray(10, 20, 30, 40), 2)]"; expected = 30 }
+    @{ expression = "[tryIndexFromEnd(createArray(createObject('k', 'v1'), createObject('k', 'v2')), 1)]"; expected = [pscustomobject]@{ k = 'v2' } }
+    @{ expression = "[tryIndexFromEnd(createArray(createArray(1, 2), createArray(3, 4)), 1)]"; expected = @(3, 4) }
+    @{ expression = "[tryIndexFromEnd(createArray(), 1)]"; expected = $null }
+    @{ expression = "[tryIndexFromEnd(createArray('x', 'y'), 1000)]"; expected = $null }
+  ) {
+    param($expression, $expected)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "$expression"
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    if ($expected -is [pscustomobject]) {
+      ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)
+    } elseif ($expected -is [array]) {
+      ($out.results[0].result.actualState.output | ConvertTo-Json -Compress) | Should -BeExactly ($expected | ConvertTo-Json -Compress)
     } else {
       $out.results[0].result.actualState.output | Should -BeExactly $expected
     }
