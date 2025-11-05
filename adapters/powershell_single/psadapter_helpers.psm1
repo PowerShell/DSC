@@ -4,6 +4,16 @@
 $script:CurrentCacheSchemaVersion = 4
 $script:CacheFileName = "PSAdapterCache_v$script:CurrentCacheSchemaVersion.json"
 
+function Get-CacheFilePath {
+    if ($IsWindows) {
+        # PS 6+ on Windows
+        return Join-Path $env:LocalAppData "dsc\$script:CacheFileName"
+    } else {
+        # PS 6+ on Linux/Mac
+        return Join-Path $env:HOME ".dsc" $script:CacheFileName
+    }
+}
+
 function Write-DscTrace {
     param(
         [Parameter(Mandatory = $true)]
@@ -287,15 +297,7 @@ function Invoke-DscCacheRefresh {
     )
 
     $refreshCache = $false
-
-    $cacheFilePath = if ($IsWindows) {
-        # PS 6+ on Windows
-        Join-Path $env:LocalAppData "dsc\$script:CacheFileName"
-    }
-    else {
-        # PS 6+ on Linux/Mac
-        Join-Path $env:HOME ".dsc" $script:CacheFileName
-    }
+    $cacheFilePath = Get-CacheFilePath
 
     if (Test-Path $cacheFilePath) {
         Write-DscTrace -Level Debug -Message "Reading from cache file $cacheFilePath"
@@ -304,7 +306,7 @@ function Invoke-DscCacheRefresh {
 
         if ($cache.CacheSchemaVersion -ne $script:CurrentCacheSchemaVersion) {
             $refreshCache = $true
-            Write-DscTrace -Level Warn -Message "Incompatible version of cache in file '" + $cache.CacheSchemaVersion + "' (expected '" + $script:CurrentCacheSchemaVersion + "')"
+            Write-DscTrace -Level Warn -Message "Incompatible version of cache in file '$($cache.CacheSchemaVersion)' (expected '$($script:CurrentCacheSchemaVersion)')"
         }
         else {
             $dscResourceCacheEntries = $cache.ResourceCache
@@ -350,7 +352,7 @@ function Invoke-DscCacheRefresh {
                 if (-not $refreshCache) {
                     Write-DscTrace -Level Debug -Message "Checking cache for stale PSModulePath"
 
-                    $m = $env:PSModulePath -split [IO.Path]::PathSeparator | % { Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue }
+                    $m = $env:PSModulePath -split [IO.Path]::PathSeparator | % { Get-ChildItem -Directory -Path $_ -Depth 1 -ErrorAction SilentlyContinue }
 
                     $hs_cache = [System.Collections.Generic.HashSet[string]]($cache.PSModulePaths)
                     $hs_live = [System.Collections.Generic.HashSet[string]]($m.FullName)
@@ -372,7 +374,7 @@ function Invoke-DscCacheRefresh {
     }
 
     if ($refreshCache) {
-        Write-DscTrace -Level Debug -Message 'Constructing Get-DscResource cache'
+        Write-DscTrace -Level Info -Message 'Constructing Get-DscResource cache'
 
         # create a list object to store cache of Get-DscResource
         $dscResourceCacheEntries = @{}
@@ -406,7 +408,7 @@ function Invoke-DscCacheRefresh {
 
             # fill in resource files (and their last-write-times) that will be used for up-do-date checks
             $lastWriteTimes = @{}
-            Get-ChildItem -Recurse -File -Path $dscResource.ParentPath -Include "*.ps1", "*.psd1", "*.psm1", "*.mof" -ea Ignore | ForEach-Object {
+            Get-ChildItem -Recurse -File -Path $dscResource.ParentPath -Include "*.ps1", "*.psd1", "*.psm1", "*.mof" -ErrorAction Ignore | ForEach-Object {
                 $lastWriteTimes.Add($_.FullName, $_.LastWriteTime)
             }
 
@@ -422,7 +424,7 @@ function Invoke-DscCacheRefresh {
 
         [dscResourceCache]$cache = [dscResourceCache]::new()
         $cache.ResourceCache = $dscResourceCacheEntries
-        $m = $env:PSModulePath -split [IO.Path]::PathSeparator | ForEach-Object { Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue }
+        $m = $env:PSModulePath -split [IO.Path]::PathSeparator | ForEach-Object { Get-ChildItem -Directory -Path $_ -Depth 1 -ErrorAction Ignore }
         $cache.PSModulePaths = $m.FullName
         $cache.CacheSchemaVersion = $script:CurrentCacheSchemaVersion
 
@@ -449,10 +451,10 @@ function Invoke-DscOperation {
     )
 
     $osVersion = [System.Environment]::OSVersion.VersionString
-    Write-DscTrace -Level Debug -Message 'OS version: ' + $osVersion
+    Write-DscTrace -Level Debug -Message "OS version: $osVersion"
 
     $psVersion = $PSVersionTable.PSVersion.ToString()
-    Write-DscTrace -Level Debug -Message 'PowerShell version: ' + $psVersion
+    Write-DscTrace -Level Debug -Message "PowerShell version: $psVersion"
 
     # get details from cache about the DSC resource, if it exists
     $cachedDscResourceInfo = $dscResourceCache | Where-Object Type -EQ $DesiredState.type | ForEach-Object DscResourceInfo | Select-Object -First 1
