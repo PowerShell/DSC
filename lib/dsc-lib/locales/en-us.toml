@@ -678,6 +678,7 @@ functionName = "Function name: '%{name}'"
 argIsExpression = "Argument is an expression"
 argIsValue = "Argument is a value: '%{value}'"
 unknownArgType = "Unknown argument type '%{kind}'"
+unexpectedLambda = "Lambda expressions cannot be used as function arguments directly. Use the lambda() function to create a lambda expression."
 
 [parser]
 parsingStatement = "Parsing statement: %{statement}"
