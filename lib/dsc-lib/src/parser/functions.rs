@@ -23,6 +23,13 @@ pub struct Function {
 pub enum FunctionArg {
     Value(Value),
     Expression(Expression),
+    Lambda(Lambda),
+}
+
+#[derive(Clone)]
+pub struct Lambda {
+    pub parameters: Vec<String>,
+    pub body: Expression,
 }
 
 impl Function {
@@ -66,6 +73,11 @@ impl Function {
     ///
     /// This function will return an error if the function fails to execute.
     pub fn invoke(&self, function_dispatcher: &FunctionDispatcher, context: &Context) -> Result<Value, DscError> {
+        // Special handling for lambda() function - don't evaluate it, just pass args through
+        if self.name.to_lowercase() == "lambda" {
+            return function_dispatcher.invoke_lambda(&self.args, context);
+        }
+
         // if any args are expressions, we need to invoke those first
         let mut resolved_args: Vec<Value> = vec![];
         if let Some(args) = &self.args {
@@ -79,6 +91,10 @@ impl Function {
                     FunctionArg::Value(value) => {
                         debug!("{}", t!("parser.functions.argIsValue", value = value : {:?}));
                         resolved_args.push(value.clone());
+                    },
+                    FunctionArg::Lambda(_lambda) => {
+                        // This shouldn't happen - lambdas should only be created by lambda() function
+                        return Err(DscError::Parser(t!("parser.functions.unexpectedLambda").to_string()));
                     }
                 }
             }
