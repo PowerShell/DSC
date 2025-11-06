@@ -51,7 +51,6 @@ if ($GetPackageVersion) {
 $filesForWindowsPackage = @(
     'appx.dsc.extension.json',
     'appx-discover.ps1',
-    'bicep.dsc.extension.json',
     'dsc.exe',
     'dsc_default.settings.json',
     'dsc.settings.json',
@@ -65,18 +64,12 @@ $filesForWindowsPackage = @(
     'osinfo.dsc.resource.json',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
-    'psscript.ps1',
-    'psscript.dsc.resource.json',
-    'winpsscript.dsc.resource.json',
     'reboot_pending.dsc.resource.json',
     'reboot_pending.resource.ps1',
     'registry.dsc.resource.json',
     'registry.exe',
     'RunCommandOnSet.dsc.resource.json',
     'RunCommandOnSet.exe',
-    'sshdconfig.exe',
-    'sshd-windows.dsc.resource.json',
-    'sshd_config.dsc.resource.json',
     'windowspowershell.dsc.resource.json',
     'wmi.dsc.resource.json',
     'wmi.resource.ps1',
@@ -87,7 +80,6 @@ $filesForWindowsPackage = @(
 )
 
 $filesForLinuxPackage = @(
-    'bicep.dsc.extension.json',
     'dsc',
     'dsc_default.settings.json',
     'dsc.settings.json'
@@ -103,16 +95,12 @@ $filesForLinuxPackage = @(
     'osinfo.dsc.resource.json',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
-    'psscript.ps1',
     'psscript.dsc.resource.json',
     'RunCommandOnSet.dsc.resource.json',
-    'runcommandonset',
-    'sshdconfig',
-    'sshd_config.dsc.resource.json'
+    'runcommandonset'
 )
 
 $filesForMacPackage = @(
-    'bicep.dsc.extension.json',
     'dsc',
     'dsc_default.settings.json',
     'dsc.settings.json'
@@ -128,12 +116,8 @@ $filesForMacPackage = @(
     'osinfo.dsc.resource.json',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
-    'psscript.ps1',
-    'psscript.dsc.resource.json',
     'RunCommandOnSet.dsc.resource.json',
-    'runcommandonset',
-    'sshdconfig',
-    'sshd_config.dsc.resource.json'
+    'runcommandonset'
 )
 
 # the list of files other than the binaries which need to be executable
