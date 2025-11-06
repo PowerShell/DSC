@@ -95,7 +95,6 @@ $filesForLinuxPackage = @(
     'osinfo.dsc.resource.json',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
-    'psscript.dsc.resource.json',
     'RunCommandOnSet.dsc.resource.json',
     'runcommandonset'
 )
@@ -480,7 +479,7 @@ if (!$SkipBuild) {
                 Copy-Item "*.dsc.resource.*","*.dsc.manifests.*" $target -Force -ErrorAction Ignore
             }
             else { # don't copy WindowsPowerShell resource manifest
-                $exclude = @('windowspowershell.dsc.resource.json', 'winpsscript.dsc.resource.json')
+                $exclude = @('windowspowershell.dsc.resource.json')
                 Copy-Item "*.dsc.resource.*","*.dsc.manifests.*" $target -Exclude $exclude -Force -ErrorAction Ignore
             }
 
