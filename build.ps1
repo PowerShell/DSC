@@ -524,7 +524,7 @@ if (!$SkipBuild) {
     }
 }
 
-if (!$SkipBuild) {
+if (!$Clippy -and !$SkipBuild) {
     $relative = Resolve-Path $target -Relative
     Write-Host -ForegroundColor Green "`nEXE's are copied to $target ($relative)"
 
@@ -551,9 +551,11 @@ if (!$SkipBuild) {
     $env:PATH = [string]::Join([System.IO.Path]::PathSeparator, $env:PATH.Split([System.IO.Path]::PathSeparator, [StringSplitOptions]::RemoveEmptyEntries))
 
     if (!$found) {
-        Write-Host -ForegroundCOlor Yellow "Adding $target to `$env:PATH"
+        Write-Host -ForegroundColor Yellow "Adding $target to `$env:PATH"
         $env:PATH = $target + [System.IO.Path]::PathSeparator + $env:PATH
     }
+
+    Write-Verbose -Verbose (dir $target | Out-String)
 }
 
 if ($Test) {
