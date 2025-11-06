@@ -326,13 +326,13 @@ if (!$SkipBuild -and !$SkipLinkCheck -and $IsWindows -and !(Get-Command 'link.ex
 $configuration = $Release ? 'release' : 'debug'
 $flags = @($Release ? '-r' : $null)
 if ($architecture -eq 'current') {
-    $path = Join-Path $PSScriptRoot "target" $configuration
+    $path = ".\target\$configuration"
     $target = Join-Path $PSScriptRoot 'bin' $configuration
 }
 else {
     $flags += '--target'
     $flags += $architecture
-    $path = Join-Path $PSScriptRoot 'target' $architecture $configuration
+    $path = ".\target\$architecture\$configuration"
     $target = Join-Path $PSScriptRoot 'bin' $architecture $configuration
 }
 
