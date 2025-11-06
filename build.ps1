@@ -554,8 +554,6 @@ if (!$Clippy -and !$SkipBuild) {
         Write-Host -ForegroundColor Yellow "Adding $target to `$env:PATH"
         $env:PATH = $target + [System.IO.Path]::PathSeparator + $env:PATH
     }
-
-    Write-Verbose -Verbose (dir $target | Out-String)
 }
 
 if ($Test) {
