@@ -28,6 +28,8 @@ if ($Verbose) {
     $env:RUSTC_LOG='rustc_codegen_ssa::back::link=info'
 }
 
+$usingADO = ($null -ne $env:TF_BUILD)
+
 if ($GetPackageVersion) {
     $match = Select-String -Path $PSScriptRoot/dsc/Cargo.toml -Pattern '^version\s*=\s*"(?<ver>.*?)"$'
     if ($null -eq $match) {
@@ -158,7 +160,7 @@ if ($null -ne $packageType) {
             Remove-Item temp:/rustup-init.exe -ErrorAction Ignore
         }
     }
-    else  {
+    elseif (!$usingADO) {
         Write-Verbose -Verbose "Rust found, updating..."
         & $rustup update
     }
@@ -447,8 +449,6 @@ if (!$Clippy -and !$SkipBuild) {
 
 if ($Test) {
     $failed = $false
-
-    $usingADO = ($null -ne $env:TF_BUILD)
     $repository = 'PSGallery'
 
     if ($usingADO) {
