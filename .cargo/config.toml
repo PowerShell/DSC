@@ -13,7 +13,7 @@ global-credential-providers = ["cargo:token"]
 # We do this, because vcruntime140.dll is an optional Windows component.
 [target.x86_64-pc-windows-msvc]
 rustflags = [
-    "-CControl-flow-guard",
+    "-Ccontrol-flow-guard",
     "-Ctarget-feature=+crt-static",
     "-Clink-args=/DEFAULTLIB:ucrt.lib",
     "-Clink-args=/NODEFAULTLIB:vcruntime.lib",
@@ -25,7 +25,7 @@ rustflags = [
 
 [target.aarch64-windows-msvc]
 rustflags = [
-    "-CControl-flow-guard",
+    "-Ccontrol-flow-guard",
     "-Ctarget-feature=+crt-static",
     "-Clink-args=/DEFAULTLIB:ucrt.lib",
     "-Clink-args=/NODEFAULTLIB:vcruntime.lib",
