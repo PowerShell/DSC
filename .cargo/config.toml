@@ -20,7 +20,8 @@ rustflags = [
     "-Clink-args=/NODEFAULTLIB:msvcrt.lib",
     "-Clink-args=/NODEFAULTLIB:libucrt.lib",
     "-Clink-args=/DYNAMICBASE",
-    "-Clink-args=/CETCOMPAT"
+    "-Clink-args=/CETCOMPAT",
+    "-Dwarnings"
 ]
 
 [target.aarch64-windows-msvc]
@@ -31,7 +32,8 @@ rustflags = [
     "-Clink-args=/NODEFAULTLIB:vcruntime.lib",
     "-Clink-args=/NODEFAULTLIB:msvcrt.lib",
     "-Clink-args=/NODEFAULTLIB:libucrt.lib",
-    "-Clink-args=/DYNAMICBASE"
+    "-Clink-args=/DYNAMICBASE",
+    "-Dwarnings"
 ]
 
 # The following is only needed for release builds

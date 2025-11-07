@@ -29,7 +29,6 @@ trap {
 }
 
 $env:RUSTC_LOG=$null
-$env:RUSTFLAGS='-Dwarnings'
 $usingADO = ($null -ne $env:TF_BUILD)
 if ($usingADO -or $UseCFSAuth) {
     $UseCFS = $true
