@@ -49,7 +49,7 @@ On the details page, select the artifact for your platform:
 Extract the archive and place the `dsc` executable (or `dsc.exe` on Windows) in a directory in
 your PATH.
 
-## Advanced Script Options
+## Advanced script options
 
 ### DSC CLI
 
