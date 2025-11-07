@@ -12,16 +12,10 @@ if ($null -eq (Get-Command "gh" -ErrorAction SilentlyContinue)) {
     throw "Please install the GitHub CLI: https://cli.github.com/"
 }
 
-$platform = if ($IsWindows) { "windows" } elseif ($IsLinux) { "linux" } elseif ($IsMacOS) { "macos" } else { throw "Unsupported OS" }
-
 # Fetch
 if (!$InstallPath) {
-  # Default install paths by platform
-  if ($IsWindows) {
-    $InstallPath = [System.IO.Path]::combine($env:LOCALAPPDATA, "dsc")
-  } else {
-    $InstallPath = [System.IO.Path]::combine($HOME, ".dsc", "bin")
-  }
+  # Default install for Windows
+  $InstallPath = [System.IO.Path]::combine($env:LOCALAPPDATA, "dsc")
 }
 if (!$Repo) {
   $Repo = "PowerShell/DSC"
@@ -54,7 +48,7 @@ $installationFiles = Join-Path $tmpDir 'bin' 'debug'
 New-Item -ItemType Directory -Force -Path $InstallPath | Out-Null
 Move-Item -Path "$installationFiles/*" -Destination $InstallPath -Force -ErrorAction Ignore
 
-$dscExe = if ($IsWindows) { Join-Path $InstallPath "dsc.exe" } else { Join-Path $InstallPath "dsc" }
+$dscExe = Join-Path $InstallPath "dsc.exe"
 $versionStdout = & $dscExe --version; if(!$?) { throw }
 $version = $versionStdout -replace 'dsc ', ''
 Write-Host "Installed DSC CLI $version from https://github.com/$Repo/actions/runs/$RunId to $InstallPath"
