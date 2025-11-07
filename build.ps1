@@ -15,7 +15,7 @@ param(
     [switch]$GetPackageVersion,
     [switch]$SkipLinkCheck,
     [switch]$UseX64MakeAppx,
-    [switch]$UseCratesIO,
+    [switch]$UseCFS,
     [switch]$UpdateLockFile,
     [switch]$Audit,
     [switch]$UseCFSAuth,
@@ -23,7 +23,18 @@ param(
     [switch]$Verbose
 )
 
+trap {
+    Write-Error "An error occurred: $($_ | Out-String)"
+    exit 1
+}
+
 $env:RUSTC_LOG=$null
+$env:RUSTFLAGS='-Dwarnings'
+$usingADO = ($null -ne $env:TF_BUILD)
+if ($usingADO -or $UseCFSAuth) {
+    $UseCFS = $true
+}
+
 if ($Verbose) {
     $env:RUSTC_LOG='rustc_codegen_ssa::back::link=info'
 }
@@ -129,6 +140,7 @@ function Find-LinkExe {
 
 $channel = 'stable'
 if ($null -ne (Get-Command msrustup -CommandType Application -ErrorAction Ignore)) {
+    Write-Verbose -Verbose "Using msrustup"
     $rustup = 'msrustup'
     $channel = 'ms-stable'
     if ($architecture -eq 'current') {
@@ -136,15 +148,46 @@ if ($null -ne (Get-Command msrustup -CommandType Application -ErrorAction Ignore
     }
 } elseif ($null -ne (Get-Command rustup -CommandType Application -ErrorAction Ignore)) {
         $rustup = 'rustup'
-} else {
-    $rustup = 'echo'
 }
 
 if ($null -ne $packageType) {
     $SkipBuild = $true
 } else {
+    if ($UseCFS) {
+        Write-Host "Using CFS for cargo source replacement"
+        ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = $null
+        $env:CARGO_REGISTRIES_CRATESIO_INDEX = $null
+
+        if ($UseCFSAuth) {
+            if ($null -eq (Get-Command 'az' -ErrorAction Ignore)) {
+                throw "Azure CLI not found"
+            }
+
+            if ($null -ne (Get-Command az -ErrorAction Ignore)) {
+                Write-Host "Getting token"
+                $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Warning "Failed to get access token, use 'az login' first, or use '-useCratesIO' to use crates.io.  Proceeding with anonymous access."
+                } else {
+                    $header = "Bearer $accessToken"
+                    $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
+                    $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
+                    $env:CARGO_REGISTRIES_POWERSHELL_INDEX = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell~force-auth/Cargo/index/"
+                }
+            }
+            else {
+                Write-Warning "Azure CLI not found, proceeding with anonymous access."
+            }
+        }
+    } else {
+        # this will override the config.toml
+        Write-Host "Setting CARGO_SOURCE_crates-io_REPLACE_WITH to 'crates-io'"
+        ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = 'CRATESIO'
+        $env:CARGO_REGISTRIES_CRATESIO_INDEX = 'sparse+https://index.crates.io/'
+    }
+
     ## Test if Rust is installed
-    if (!(Get-Command 'cargo' -ErrorAction Ignore)) {
+    if (!$usingADO -and !(Get-Command 'cargo' -ErrorAction Ignore)) {
         Write-Verbose -Verbose "Rust not found, installing..."
         if (!$IsWindows) {
             curl https://sh.rustup.rs -sSf | sh -s -- -y
@@ -157,15 +200,77 @@ if ($null -ne $packageType) {
             $env:PATH += ";$env:USERPROFILE\.cargo\bin"
             Remove-Item temp:/rustup-init.exe -ErrorAction Ignore
         }
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to install Rust"
+        }
     }
-    else  {
+    elseif (!$usingADO) {
         Write-Verbose -Verbose "Rust found, updating..."
         & $rustup update
     }
 
-    $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
+    if ($IsWindows) {
+        $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
+    }
 
-    & $rustup default stable
+    if (!$usingADO) {
+        & $rustup default stable
+    }
+
+    if ($Clippy) {
+        Write-Verbose -Verbose "Installing clippy..."
+        if ($UseCFS) {
+            cargo install clippy --config .cargo/config.toml
+        } else {
+            if ($architecture -ne 'current') {
+                write-verbose -verbose "Installing clippy for $architecture"
+                rustup component add clippy --target $architecture
+            } else {
+                write-verbose -verbose "Installing clippy for current architecture"
+                rustup component add clippy
+            }
+        }
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to install clippy"
+        }
+    }
+
+    ## Test if Node is installed
+    ## Skipping upgrade as users may have a specific version they want to use
+    if (!(Get-Command 'node' -ErrorAction Ignore)) {
+        Write-Verbose -Verbose "Node.js not found, installing..."
+        if (!$IsWindows) {
+            if (Get-Command 'brew' -ErrorAction Ignore) {
+                brew install node@24
+            } else {
+                Write-Warning "Homebrew not found, please install Node.js manually"
+            }
+        }
+        else {
+            if (Get-Command 'winget' -ErrorAction Ignore) {
+                Write-Verbose -Verbose "Using winget to install Node.js"
+                winget install OpenJS.NodeJS --accept-source-agreements --accept-package-agreements --source winget --silent
+            } else {
+                Write-Warning "winget not found, please install Node.js manually"
+            }
+        }
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to install Node.js"
+        }
+    }
+
+    ## Test if tree-sitter is installed
+    if ($null -eq (Get-Command tree-sitter -ErrorAction Ignore)) {
+        Write-Verbose -Verbose "tree-sitter not found, installing..."
+        if ($UseCFS) {
+            cargo install tree-sitter-cli --config .cargo/config.toml
+        } else {
+            cargo install tree-sitter-cli
+        }
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to install tree-sitter-cli"
+        }
+    }
 }
 
 if (!$SkipBuild -and !$SkipLinkCheck -and $IsWindows -and !(Get-Command 'link.exe' -ErrorAction Ignore)) {
@@ -213,7 +318,7 @@ else {
 }
 
 if (!$SkipBuild) {
-    if ($architecture -ne 'Current') {
+    if ($architecture -ne 'Current' -and !$usingADO) {
         & $rustup target add --toolchain $channel $architecture
     }
 
@@ -222,39 +327,6 @@ if (!$SkipBuild) {
     }
     New-Item -ItemType Directory $target -ErrorAction Ignore > $null
 
-    if ($UseCratesIO) {
-        # this will override the config.toml
-        Write-Host "Setting CARGO_SOURCE_crates-io_REPLACE_WITH to 'crates-io'"
-        ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = 'CRATESIO'
-        $env:CARGO_REGISTRIES_CRATESIO_INDEX = 'sparse+https://index.crates.io/'
-    } else {
-        Write-Host "Using CFS for cargo source replacement"
-        ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = $null
-        $env:CARGO_REGISTRIES_CRATESIO_INDEX = $null
-
-        if ($UseCFSAuth -or $null -ne $env:TF_BUILD) {
-            if ($null -eq (Get-Command 'az' -ErrorAction Ignore)) {
-                throw "Azure CLI not found"
-            }
-
-            if ($null -ne (Get-Command az -ErrorAction Ignore)) {
-                Write-Host "Getting token"
-                $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
-                if ($LASTEXITCODE -ne 0) {
-                    Write-Warning "Failed to get access token, use 'az login' first, or use '-useCratesIO' to use crates.io.  Proceeding with anonymous access."
-                } else {
-                    $header = "Bearer $accessToken"
-                    $env:CARGO_REGISTRIES_POWERSHELL_INDEX = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell~force-auth/Cargo/index/"
-                    $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
-                    $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
-                }
-            }
-            else {
-                Write-Warning "Azure CLI not found, proceeding with anonymous access."
-            }
-        }
-    }
-
     # make sure dependencies are built first so clippy runs correctly
     $windows_projects = @("pal", "registry", "reboot_pending", "wmi-adapter", "configurations/windows", 'extensions/appx')
     $macOS_projects = @("resources/brew")
@@ -262,6 +334,7 @@ if (!$SkipBuild) {
 
     # projects are in dependency order
     $projects = @(
+        ".",
         "tree-sitter-dscexpression",
         "security_context_lib",
         "dsc_lib",
@@ -273,12 +346,11 @@ if (!$SkipBuild) {
         "runcommandonset",
         "tools/dsctest",
         "tools/test_group_resource",
-        "y2j",
-        "."
+        "y2j"
     )
     $pedantic_unclean_projects = @()
-    $clippy_unclean_projects = @("tree-sitter-dscexpression")
-    $skip_test_projects_on_windows = @("tree-sitter-dscexpression")
+    $clippy_unclean_projects = @("grammars/tree-sitter-dscexpression", "grammars/tree-sitter-ssh-server-config")
+    $skip_test_projects_on_windows = @("grammars/tree-sitter-dscexpression", "grammars/tree-sitter-ssh-server-config")
 
     if ($IsWindows) {
         $projects += $windows_projects
@@ -295,65 +367,81 @@ if (!$SkipBuild) {
     $failed = $false
     foreach ($project in $projects) {
         ## Build format_json
-        Write-Host -ForegroundColor Cyan "Building $project ... for $architecture"
+        Write-Host -ForegroundColor Cyan "Building '$project' for $architecture"
         try {
             Push-Location "$PSScriptRoot/$project" -ErrorAction Stop
+            Write-Verbose -Verbose "Current directory is $(Get-Location)"
 
-            if ($project -eq 'tree-sitter-dscexpression') {
+            # check if the project is either tree-sitter-dscexpression or tree-sitter-ssh-server-config
+            if (($project -match 'tree-sitter-dscexpression$') -or ($project -match 'tree-sitter-ssh-server-config$')) {
                 if ($UpdateLockFile) {
                     cargo generate-lockfile
                 }
                 else {
                     if ($Audit) {
                         if ($null -eq (Get-Command cargo-audit -ErrorAction Ignore)) {
-                            cargo install cargo-audit --features=fix
+                            if ($UseCFS) {
+                                cargo install cargo-audit --features=fix --config .cargo/config.toml
+                            } else {
+                                cargo install cargo-audit --features=fix
+                            }
                         }
 
                         cargo audit fix
                     }
 
+                    Write-Verbose -Verbose "Running build.ps1 for $project"
                     ./build.ps1
                 }
             }
 
-            if (Test-Path "./Cargo.toml")
+            if ((Test-Path "./Cargo.toml"))
             {
-                if ($Clippy) {
+                $isRepoRoot = $pwd.Path -eq $PSScriptRoot
+                if ($Clippy -and -not $isRepoRoot) {
                     if ($clippy_unclean_projects -contains $project) {
                         Write-Verbose -Verbose "Skipping clippy for $project"
                     }
                     elseif ($pedantic_unclean_projects -contains $project) {
                         Write-Verbose -Verbose "Running clippy for $project"
-                        cargo clippy @flags -- -Dwarnings
+                        cargo clippy @flags -- -Dwarnings --no-deps
                     }
                     else {
                         Write-Verbose -Verbose "Running clippy with pedantic for $project"
-                        cargo clippy @flags --% -- -Dwarnings -Dclippy::pedantic
+                        cargo clippy @flags --% -- -Dwarnings -Dclippy::pedantic --no-deps
                     }
                 }
                 else {
-                    if ($UpdateLockFile) {
+                    if ($UpdateLockFile -and $isRepoRoot) {
                         cargo generate-lockfile
                     }
                     else {
                         if ($Audit) {
                             if ($null -eq (Get-Command cargo-audit -ErrorAction Ignore)) {
-                                cargo install cargo-audit --features=fix
+                                if ($UseCFS) {
+                                    cargo install cargo-audit --features=fix --config .cargo/config.toml
+                                } else {
+                                    cargo install cargo-audit --features=fix
+                                }
                             }
 
                             cargo audit fix
                         }
 
-                        if ($Clean) {
+                        if ($Clean -and $isRepoRoot) {
                             cargo clean
                         }
 
-                        cargo build @flags
+                        if (-not $isRepoRoot) {
+                            Write-Verbose -Verbose "Building $project"
+                            cargo build @flags
+                        }
                     }
                 }
             }
 
-            if ($LASTEXITCODE -ne 0) {
+            if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
+                Write-Error "Last exit code is $LASTEXITCODE, build failed for '$project'"
                 $failed = $true
                 break
             }
@@ -386,10 +474,11 @@ if (!$SkipBuild) {
             }
 
             if ($IsWindows) {
-                Copy-Item "*.dsc.resource.json" $target -Force -ErrorAction Ignore
+                Copy-Item "*.dsc.resource.*","*.dsc.manifests.*" $target -Force -ErrorAction Ignore
             }
             else { # don't copy WindowsPowerShell resource manifest
-                Copy-Item "*.dsc.resource.json" $target -Exclude 'windowspowershell.dsc.resource.json' -Force -ErrorAction Ignore
+                $exclude = @('windowspowershell.dsc.resource.json')
+                Copy-Item "*.dsc.resource.*","*.dsc.manifests.*" $target -Exclude $exclude -Force -ErrorAction Ignore
             }
 
             # be sure that the files that should be executable are executable
@@ -401,7 +490,10 @@ if (!$SkipBuild) {
                     }
                 }
             }
-
+        } catch {
+            Write-Error "Failed to build $project : $($_ | Out-String)"
+            $failed = $true
+            break
         } finally {
             Pop-Location
         }
@@ -440,15 +532,13 @@ if (!$Clippy -and !$SkipBuild) {
     $env:PATH = [string]::Join([System.IO.Path]::PathSeparator, $env:PATH.Split([System.IO.Path]::PathSeparator, [StringSplitOptions]::RemoveEmptyEntries))
 
     if (!$found) {
-        Write-Host -ForegroundCOlor Yellow "Adding $target to `$env:PATH"
+        Write-Host -ForegroundColor Yellow "Adding $target to `$env:PATH"
         $env:PATH = $target + [System.IO.Path]::PathSeparator + $env:PATH
     }
 }
 
 if ($Test) {
     $failed = $false
-
-    $usingADO = ($null -ne $env:TF_BUILD)
     $repository = 'PSGallery'
 
     if ($usingADO) {
@@ -474,6 +564,10 @@ if ($Test) {
     }
 
     foreach ($project in $projects) {
+        # Skip repository root, otherwise it tests all workspace members, failing on not-Windows
+        if ($project -eq '.') {
+            continue
+        }
         if ($IsWindows -and $skip_test_projects_on_windows -contains $project) {
             Write-Verbose -Verbose "Skipping test for $project on Windows"
             continue
@@ -522,7 +616,7 @@ if ($Test) {
         (Get-Module -Name Pester -ListAvailable).Path
     }
 
-    Invoke-Pester -ErrorAction Stop
+    Invoke-Pester -Output Detailed -ErrorAction Stop
 }
 
 function Find-MakeAppx() {

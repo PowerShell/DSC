@@ -7,19 +7,25 @@ pr:
     - onebranch
     - release/v*
 
-schedules:
-- cron: '0 3 * * 1'
-  displayName: Weekly Build
-  branches:
-    include:
-    - main
-  always: true
+parameters:
+  - name: OfficialBuild
+    type: boolean
+    default: false
 
 variables:
-  BuildConfiguration: 'release'
-  PackageRoot: '$(System.ArtifactsDirectory)/Packages'
-  WindowsContainerImage: 'onebranch.azurecr.io/windows/ltsc2022/vse2022:latest'
-  Codeql.TSAEnabled: true
+  - name: BuildConfiguration
+    value: 'release'
+  - name: PackageRoot
+    value: '$(System.ArtifactsDirectory)/Packages'
+  - name: WindowsContainerImage
+    value: 'onebranch.azurecr.io/windows/ltsc2022/vse2022:latest'
+  - name: Codeql.TSAEnabled
+    value: true
+  - name: templateFile
+    value: ${{ iif ( parameters.OfficialBuild, 'v2/OneBranch.Official.CrossPlat.yml@onebranchTemplates', 'v2/OneBranch.NonOfficial.CrossPlat.yml@onebranchTemplates' ) }}
+  - group: DSC-Rust.SDK
+  - name: officialBuild
+    value: ${{ parameters.OfficialBuild }}
 
 resources:
   repositories:
@@ -29,8 +35,10 @@ resources:
     ref: refs/heads/main
 
 extends:
-  template: v2/OneBranch.Official.CrossPlat.yml@onebranchTemplates
+  template: ${{ variables.templateFile }}
   parameters:
+    release:
+      category: NonAzure
     featureFlags:
       WindowsHostVersion:
         Disk: Large
@@ -83,6 +91,18 @@ extends:
             Write-Host ("sending " + $vstsCommandString)
             Write-Host "##$vstsCommandString"
           name: Package
+          displayName: Set Package Version
+        - task: AzureCLI@2
+          displayName: Get Az Token
+          inputs:
+            azureSubscription: PowerShell-CICD-Feed-Access
+            scriptType: pscore
+            scriptLocation: inlineScript
+            inlineScript: |
+              $token = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
+              $vstsCommandString = "vso[task.setvariable variable=AzToken;isoutput=true]$token"
+              Write-Host "Setting token"
+              Write-Host "##$vstsCommandString"
 
       - job: BuildWin_x64
         dependsOn: SetPackageVersion
@@ -90,6 +110,7 @@ extends:
           ob_sdl_tsa_configFile: '$(Build.SourcesDirectory)\DSC\.config\tsaoptions.json'
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           signSrcPath: '$(Build.SourcesDirectory)\out'
+          AzToken: $[ dependencies.SetPackageVersion.outputs['AzToken'] ]
           ob_sdl_sbom_enabled: true
           ob_signing_setup_enabled: true
           ob_sdl_codeql_compiled_enabled: true
@@ -101,6 +122,8 @@ extends:
             buildName: x86_64-pc-windows-msvc
             signSrcPath: '$(signSrcPath)'
             PackageRoot: '$(PackageRoot)'
+            aztoken: '$(AzToken)'
+            rustSDK: '$(Rust.SDK)'
 
       - job: BuildWin_arm64
         dependsOn: SetPackageVersion
@@ -108,6 +131,7 @@ extends:
           ob_sdl_tsa_configFile: '$(Build.SourcesDirectory)\DSC\.config\tsaoptions.json'
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           signSrcPath: '$(Build.SourcesDirectory)\out'
+          AzToken: $[ dependencies.SetPackageVersion.outputs['AzToken'] ]
           ob_sdl_sbom_enabled: true
           ob_signing_setup_enabled: true
           ob_sdl_codeql_compiled_enabled: true
@@ -119,6 +143,8 @@ extends:
             buildName: aarch64-pc-windows-msvc
             signSrcPath: '$(signSrcPath)'
             PackageRoot: '$(PackageRoot)'
+            aztoken: '$(AzToken)'
+            rustSDK: '$(Rust.SDK)'
 
       - job: CreateMsixBundle
         dependsOn:
@@ -127,9 +153,14 @@ extends:
         variables:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           ob_sdl_tsa_configFile: '$(Build.SourcesDirectory)\DSC\.config\tsaoptions.json'
-          ob_sdl_sbom_enabled: true
-          ob_signing_setup_enabled: true
-          ob_sdl_codeql_compiled_enabled: true
+          ob_symbolsPublishing_enabled: true
+          ob_symbolsPublishing_symbolsFolder: '$(Build.SourcesDirectory)\DSC\bin'
+          ob_symbolsPublishing_searchPattern: '**/*.pdb'
+          ob_symbolsPublishing_indexSources: true
+          ob_sdl_sbom_enabled: false
+          ob_signing_setup_enabled: false
+          ob_sdl_codeql_compiled_enabled: false
+          ob_restore_phase: true
         pool:
           type: windows
         steps:
@@ -146,16 +177,51 @@ extends:
             Copy-Item "$(Pipeline.Workspace)/drop_BuildAndSign_BuildWin_x64/*.msix" ./bin/msix -Verbose
             Copy-Item "$(Pipeline.Workspace)/drop_BuildAndSign_BuildWin_arm64/*.msix" ./bin/msix -Verbose
             ./build.ps1 -PackageType msixbundle
-            Copy-Item ./bin/*.msixbundle "$(ob_outputDirectory)"
+            Copy-Item "$(Build.SourcesDirectory)/DSC/bin/*.msixbundle" "$(ob_outputDirectory)"
           displayName: 'Create msixbundle'
           condition: succeeded()
+
+      - job: SignMsixBundle
+        condition: and(succeeded(), eq(variables.officialBuild, true))
+        dependsOn: CreateMsixBundle
+        variables:
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+          ob_sdl_sbom_enabled: false
+          ob_signing_setup_enabled: true
+          ob_sdl_codeql_compiled_enabled: false
+        pool:
+          type: windows
+        steps:
+        - task: DownloadPipelineArtifact@2
+          inputs:
+            buildType: 'current'
+            artifact: drop_BuildAndSign_CreateMsixBundle
+            itemPattern: |
+              **/*.msixbundle
+            targetPath: '$(Build.ArtifactStagingDirectory)/downloads'
+          displayName: Download MsixBundle
+        - task: onebranch.pipeline.signing@1
+          displayName: Sign MsixBundle
+          condition: succeeded()
+          inputs:
+            command: 'sign'
+            signing_profile: 'Dynamic-WINMSAPP1ST'
+            files_to_sign: '*.msixbundle'
+            search_root: '$(Build.ArtifactStagingDirectory)/downloads'
+        - pwsh: |
+            Copy-Item "$(Build.ArtifactStagingDirectory)/downloads/*.msixbundle" "$(ob_outputDirectory)"
+          displayName: 'Copy MsixBundle to output directory'
 
       - job: BuildLinuxMusl
         dependsOn: SetPackageVersion
         variables:
           LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2204:latest'
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+          AzToken: $[ dependencies.SetPackageVersion.outputs['AzToken'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+          ob_linuxSymbolsPublishing_enabled: true
+          ob_linuxSymbolsPublishing_symbolsFolder: '$(Build.SourcesDirectory)/DSC/bin'
+          ob_linuxSymbolsPublishing_searchPattern: '**/*.dbg'
         displayName: Linux-x64-musl
         pool:
           type: linux
@@ -163,7 +229,7 @@ extends:
         - task: RustInstaller@1
           inputs:
             rustVersion: ms-stable
-            toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
+            toolchainFeed: $(Rust.SDK)
             additionalTargets: x86_64-unknown-linux-musl
           displayName: Install Rust
           env:
@@ -171,6 +237,9 @@ extends:
         - pwsh: |
             apt update
             apt -y install musl-tools
+            $header = "Bearer $(AzToken)"
+            $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
+            $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
             ./build.ps1 -Release -Architecture x86_64-unknown-linux-musl
             ./build.ps1 -PackageType tgz -Architecture x86_64-unknown-linux-musl -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
@@ -180,9 +249,13 @@ extends:
       - job: BuildLinuxArm64Musl
         dependsOn: SetPackageVersion
         variables:
-          LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2004-arm64:latest'
+          LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2204-arm64:latest'
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+          AzToken: $[ dependencies.SetPackageVersion.outputs['AzToken'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+          ob_linuxSymbolsPublishing_enabled: true
+          ob_linuxSymbolsPublishing_symbolsFolder: '$(Build.SourcesDirectory)/DSC/bin'
+          ob_linuxSymbolsPublishing_searchPattern: '**/*.dbg'
         displayName: Linux-ARM64-musl
         pool:
           type: linux
@@ -191,11 +264,19 @@ extends:
         - task: RustInstaller@1
           inputs:
             rustVersion: ms-stable
-            toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
+            toolchainFeed: $(Rust.SDK)
             additionalTargets: aarch64-unknown-linux-musl
           displayName: Install Rust
           env:
             ob_restore_phase: true
+        - task: AzureCLI@2
+          displayName: Azure CLI
+          inputs:
+            azureSubscription: PowerShell-CICD-Feed-Access
+            scriptType: pscore
+            scriptLocation: inlineScript
+            inlineScript: |
+              az account show
         - pwsh: |
             $env:CC_aarch64_unknown_linux_musl='clang'
             $env:AR_aarch64_unknown_linux_musl='llvm-ar'
@@ -204,13 +285,17 @@ extends:
             apt -y install clang
             apt -y install llvm
             apt -y install musl-tools
-            apt -y install gcc-multilib
+            apt -y install musl-gcc
+            #apt -y install gcc-multilib
             apt -y install libssl-dev
             apt -y install pkg-config
             msrustup default stable-aarch64-unknown-linux-musl
             if ((openssl version -d) -match 'OPENSSLDIR: "(?<dir>.*?)"') {
               $env:OPENSSL_LIB_DIR = $matches['dir']
             }
+            $header = "Bearer $(AzToken)"
+            $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
+            $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
             ./build.ps1 -Release -Architecture aarch64-unknown-linux-musl
             ./build.ps1 -PackageType tgz -Architecture aarch64-unknown-linux-musl -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
@@ -221,6 +306,7 @@ extends:
         dependsOn: SetPackageVersion
         variables:
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+          AzToken: $[ dependencies.SetPackageVersion.outputs['AzToken'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
         displayName: BuildMac
         pool:
@@ -238,12 +324,24 @@ extends:
         - task: RustInstaller@1
           inputs:
             rustVersion: ms-stable
-            toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
+            toolchainFeed: $(Rust.SDK)
             additionalTargets: $(buildName)
           displayName: Install Rust
           env:
             ob_restore_phase: true
+        - task: AzureCLI@2
+          displayName: Azure CLI
+          inputs:
+            azureSubscription: PowerShell-CICD-Feed-Access
+            scriptType: pscore
+            scriptLocation: inlineScript
+            inlineScript: |
+              az account show
         - pwsh: |
+            $header = "Bearer $(AzToken)"
+            $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
+            $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
+            Write-Verbose -Verbose "Building for $(buildName)"
             ./build.ps1 -Release -Architecture $(buildName)
             ./build.ps1 -PackageType tgz -Architecture $(buildName) -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
@@ -251,53 +349,258 @@ extends:
           displayName: 'Build $(buildName)'
           condition: succeeded()
 
-    - stage: Release
+    - stage: ReleasePreparation
       dependsOn: BuildAndSign
-      condition: ne(variables['Build.Reason'], 'Schedule')
-      variables:
-        PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+      condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'), eq(variables.officialBuild, true))
       jobs:
-      - job: Validation
-        displayName: Manual validation
-        pool:
-          type: agentless
-        timeoutInMinutes: 1440
-        steps:
-        - task: ManualValidation@0
-          displayName: Wait 24 hours for validation
-          inputs:
-            notifyUsers: $(Build.RequestedForEmail)
-            instructions: Please validate the release
-            timeoutInMinutes: 1440
-      - job: GitHub
-        dependsOn: validation
-        displayName: Publish draft to GitHub
+      - job: ReleasePreparationJob
+        displayName: Release Preparation job
         pool:
           type: windows
         variables:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
-          ob_sdl_sbom_enabled: false
-          ob_signing_setup_enabled: false
-          ob_sdl_codeql_compiled_enabled: false
-          drop: $(Pipeline.Workspace)/drop_build_main
         steps:
         - download: current
-          displayName: Download artifacts
-          patterns: |
-            '**/*.zip'
-            '**/*.tar.gz'
+          artifact: drop_BuildAndSign_BuildWin_x64
+          patterns: '*.zip'
+
+        - download: current
+          artifact: drop_BuildAndSign_BuildWin_arm64
+          patterns: '*.zip'
+
+        - download: current
+          artifact: drop_BuildAndSign_BuildLinuxArm64Musl
+          patterns: '*.tar.gz'
+
+        - download: current
+          artifact: drop_BuildAndSign_BuildLinuxMusl
+          patterns: '*.tar.gz'
+
+        - download: current
+          artifact: release ## this includes artifacts for macOS
+          patterns: '**/*.tar.gz'
+
+        - download: current
+          artifact: drop_BuildAndSign_SignMsixBundle
+          patterns: '*.msixbundle'
+
+        - pwsh: |
+            Get-ChildItem "$(Pipeline.Workspace)" -Recurse -Include '*.zip', '*.tar.gz', '*.msixbundle' | ForEach-Object {
+              Write-Host "Found artifact: $($_.FullName)"
+            }
+          displayName: List downloaded artifacts
+
+        - pwsh: |
+            $outputDir = "$(ob_outputDirectory)\releasePrep"
+            if( -not (Test-Path -Path $outputDir)) {
+              New-Item -ItemType Directory -Path $outputDir -Force -ErrorAction Ignore -Verbose
+            }
+
+            Write-Verbose -Verbose "Starting to copy"
+
+            Get-ChildItem "$(Pipeline.Workspace)" -Recurse -Include '*.zip', '*.tar.gz', '*.msixbundle' | ForEach-Object {
+              Copy-Item -Path $_.FullName -Destination $outputDir -Force -Verbose
+            }
+
+            Write-Verbose -Verbose "Copy completed"
+          displayName: Copy artifacts to release area
+
+    - stage: Validation
+      dependsOn: ['ReleasePreparation']
+      condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))
+      jobs:
+      - job: ValidationJob
+        displayName: Validation job
+        pool:
+          type: agentless
+        steps:
+        - task: ManualValidation@0
+          displayName: Wait for manual validation
+          inputs:
+            notifyUsers: $(Build.RequestedForEmail)
+            instructions: Please validate the build artifacts before proceeding to release.
+            timeoutInMinutes: 1440
+
+    - stage: Release
+      dependsOn: ['BuildAndSign', 'Validation', 'ReleasePreparation']
+      condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'), eq(variables.officialBuild, true))
+      variables:
+        - name: PackageVersion
+          value: $[ stageDependencies.BuildAndSign.SetPackageVersion.outputs['Package.Version'] ]
+        - name: ob_release_environment
+          value: ${{ iif ( parameters.OfficialBuild, 'Production', 'Test' ) }}
+      jobs:
+      - job: ReleaseJob
+        displayName: Release job
+        pool:
+          type: release
+          os: windows
+        templateContext:
+          inputs:
+            - input: pipelineArtifact
+              artifactName: drop_ReleasePreparation_ReleasePreparationJob
+
+        steps:
+        - task: PowerShell@2
+          displayName: Capture downloaded artifacts and Version for release
+          inputs:
+            targetType: 'inline'
+            script: |
+              Write-Verbose -Verbose "Release version: $(PackageVersion)"
+
+              $artifacts = Get-ChildItem "$(Pipeline.Workspace)" -Recurse -Include '*.zip', '*.tar.gz', '*.msixbundle'
+
+              $artifacts | ForEach-Object {
+                Write-Verbose -Verbose "Found artifact: $($_.FullName)"
+              }
+
+              $GitHubReleaseDirectory = New-Item -ItemType Directory -Path "$(Pipeline.Workspace)/GitHubRelease" -Force -ErrorAction Ignore
+              Write-Host "##vso[task.setvariable variable=GitHubReleaseDirectory]$GitHubReleaseDirectory"
+              $artifacts | ForEach-Object {
+                Copy-Item -Path $_.FullName -Destination $GitHubReleaseDirectory -Force -Verbose
+              }
+
+              if (-not '$(PackageVersion)') {
+                throw "PackageVersion variable is not set. Cannot proceed with release."
+              }
+
+              $packageVersion = '$(PackageVersion)'
+              if ($packageVersion -like '*-*') {
+                Write-Verbose -Verbose "Pre-release version detected: $packageVersion"
+                Write-Host "##vso[task.setvariable variable=IsPreRelease]true"
+              }
+              else {
+                Write-Verbose -Verbose "Stable release version detected: $packageVersion"
+                Write-Host "##vso[task.setvariable variable=IsPreRelease]false"
+              }
+
+              $githubReleaseVersion = "v$packageVersion"
+              Write-Verbose -Verbose "GitHub Release version: $githubReleaseVersion"
+              Write-Host "##vso[task.setvariable variable=GitHubReleaseVersion]$githubReleaseVersion"
+
         - task: GitHubRelease@1
           displayName: Create GitHub release
           inputs:
-            gitHubConnection: GitHub
+            gitHubConnection: github.com_SteveL-MSFT
             repositoryName: PowerShell/DSC
+            target: main
             action: create
             assets: |
-              *.zip;
-              *.tar.gz;
-            addChangeLog: true
-            changeLogType: commitBased
-            releaseNotesFilePath: CHANGELOG.md
-            tagSource: gitTag
-            tag: v$(version)
+              $(GitHubReleaseDirectory)\*.zip
+              $(GitHubReleaseDirectory)\*.tar.gz
+              $(GitHubReleaseDirectory)\*.msixbundle
+            addChangeLog: false
+            tagSource: 'userSpecifiedTag'
+            tag: '$(GitHubReleaseVersion)'
             isDraft: true
+            isPreRelease: '$(IsPreRelease)'
+
+    - stage: ReleaseUniversalPackage
+      dependsOn: ['BuildAndSign','Release']
+      condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'), eq(variables.officialBuild, true))
+      variables:
+        - name: PackageVersion
+          value: $[ stageDependencies.BuildAndSign.SetPackageVersion.outputs['Package.Version'] ]
+      jobs:
+      - job: ReleaseUniversalPackageJob
+        displayName: Release Universal Package job
+        pool:
+          type: windows
+        variables:
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+        steps:
+        - download: current
+          artifact: drop_ReleasePreparation_ReleasePreparationJob
+
+        - pwsh: |
+            $releasePrepPath = "$(Pipeline.Workspace)/drop_ReleasePreparation_ReleasePreparationJob/releasePrep"
+            if (-not (Test-Path -Path $releasePrepPath)) {
+              throw "Release preparation path '$releasePrepPath' does not exist."
+            }
+
+            $windowsFiles = Get-ChildItem -Path $releasePrepPath -Recurse -Include '*.zip'
+            if ($windowsFiles.Count -eq 0) {
+              throw "No Windows .zip files found in '$releasePrepPath'. Cannot proceed with Universal Package creation."
+            }
+
+            $linuxFiles = Get-ChildItem -Path $releasePrepPath -Recurse -Include '*linux.tar.gz'
+            if ($linuxFiles.Count -eq 0) {
+              throw "No Linux .tar.gz files found in '$releasePrepPath'. Cannot proceed with Universal Package creation."
+            }
+
+            $macosFiles = Get-ChildItem -Path $releasePrepPath -Recurse -Include '*darwin.tar.gz'
+            if ($macosFiles.Count -eq 0) {
+              throw "No macOS .tar.gz files found in '$releasePrepPath'. Cannot proceed with Universal Package creation."
+            }
+
+            $windowsDirectory = New-Item -ItemType Directory -Path "$releasePrepPath/windows" -Force -ErrorAction Ignore
+            Write-Host "##vso[task.setvariable variable=WindowsDirectory]$($windowsDirectory.FullName)"
+
+            $linuxDirectory = New-Item -ItemType Directory -Path "$releasePrepPath/linux" -Force -ErrorAction Ignore
+            Write-Host "##vso[task.setvariable variable=LinuxDirectory]$linuxDirectory"
+
+            $macosDirectory = New-Item -ItemType Directory -Path "$releasePrepPath/macos" -Force -ErrorAction Ignore
+            Write-Host "##vso[task.setvariable variable=MacOSDirectory]$macosDirectory"
+
+            $windowsFiles | ForEach-Object {
+              Move-Item -Path $_.FullName -Destination $windowsDirectory.FullName -Force -Verbose
+            }
+
+            $linuxFiles | ForEach-Object {
+              Move-Item -Path $_.FullName -Destination $linuxDirectory.FullName -Force -Verbose
+            }
+
+            $macosFiles | ForEach-Object {
+              Move-Item -Path $_.FullName -Destination $macosDirectory.FullName -Force -Verbose
+            }
+
+          displayName: Prepare files for Universal Package
+
+        - task: AzureCLI@2
+          displayName: Publish Windows - Universal Package
+          inputs:
+            azureSubscription: PS-PS-DSC-UniversalFeed
+            scriptType: pscore
+            scriptLocation: inlineScript
+            inlineScript: |
+              $packageVersion = '$(PackageVersion)'
+
+              if (-not $packageVersion) {
+                throw "PackageVersion variable is not set. Cannot proceed with publishing Universal Package."
+              }
+              Write-Verbose -Verbose "Universal Package version: $packageVersion"
+              az artifacts universal publish --organization https://dev.azure.com/PowerShell --project PowerShell --feed PowerShell-Universal --name microsoft.dsc-windows --version $packageVersion --description "Microsoft Desired State Configuration (DSC) - Universal Package" --path "$(WindowsDirectory)" --scope project --verbose
+          condition: succeeded()
+
+        - task: AzureCLI@2
+          displayName: Publish Linux - Universal Package
+          inputs:
+            azureSubscription: PS-PS-DSC-UniversalFeed
+            scriptType: pscore
+            scriptLocation: inlineScript
+            inlineScript: |
+              $packageVersion = '$(PackageVersion)'
+
+              if (-not $packageVersion) {
+                throw "PackageVersion variable is not set. Cannot proceed with publishing Universal Package."
+              }
+              Write-Verbose -Verbose "Universal Package version: $packageVersion"
+              az artifacts universal publish --organization https://dev.azure.com//PowerShell --project PowerShell --feed PowerShell-Universal --name microsoft.dsc-linux --version $packageVersion --description "Microsoft Desired State Configuration (DSC) - Universal Package" --path "$(LinuxDirectory)" --scope project --verbose
+          condition: succeeded()
+
+        - task: AzureCLI@2
+          displayName: Publish macOS - Universal Package
+          inputs:
+            azureSubscription: PS-PS-DSC-UniversalFeed
+            scriptType: pscore
+            scriptLocation: inlineScript
+            inlineScript: |
+              $packageVersion = '$(PackageVersion)'
+
+              if (-not $packageVersion) {
+                throw "PackageVersion variable is not set. Cannot proceed with publishing Universal Package."
+              }
+              Write-Verbose -Verbose "Universal Package version: $packageVersion"
+              az artifacts universal publish --organization https://dev.azure.com/PowerShell/ --project PowerShell --feed PowerShell-Universal --name microsoft.dsc-macos --version $packageVersion --description "Microsoft Desired State Configuration (DSC) - Universal Package" --path "$(MacOSDirectory)" --scope project --verbose
+          condition: succeeded()
+
