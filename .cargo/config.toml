@@ -8,12 +8,31 @@ POWERSHELL = { index = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/
 [registry]
 global-credential-providers = ["cargo:token"]
 
-# Enable Control Flow Guard (needed for OneBranch's post-build analysis).
+# Avoid linking with vcruntime140.dll by statically linking everything,
+# and then explicitly linking with ucrtbase.dll dynamically.
+# We do this, because vcruntime140.dll is an optional Windows component.
 [target.x86_64-pc-windows-msvc]
-rustflags = ["-Ccontrol-flow-guard", "-Ctarget-feature=+crt-static", "-Clink-args=/DYNAMICBASE /CETCOMPAT"]
+rustflags = [
+    "-CControl-flow-guard",
+    "-Ctarget-feature=+crt-static",
+    "-Clink-args=/DEFAULTLIB:ucrt.lib",
+    "-Clink-args=/NODEFAULTLIB:vcruntime.lib",
+    "-Clink-args=/NODEFAULTLIB:msvcrt.lib",
+    "-Clink-args=/NODEFAULTLIB:libucrt.lib",
+    "-Clink-args=/DYNAMICBASE",
+    "-Clink-args=/CETCOMPAT"
+]
 
 [target.aarch64-windows-msvc]
-rustflags = ["-Ccontrol-flow-guard", "-Ctarget-feature=+crt-static", "-Clink-args=/DYNAMICBASE"]
+rustflags = [
+    "-CControl-flow-guard",
+    "-Ctarget-feature=+crt-static",
+    "-Clink-args=/DEFAULTLIB:ucrt.lib",
+    "-Clink-args=/NODEFAULTLIB:vcruntime.lib",
+    "-Clink-args=/NODEFAULTLIB:msvcrt.lib",
+    "-Clink-args=/NODEFAULTLIB:libucrt.lib",
+    "-Clink-args=/DYNAMICBASE"
+]
 
 # The following is only needed for release builds
 [source.crates-io]
