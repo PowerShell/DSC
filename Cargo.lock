@@ -729,7 +729,6 @@ dependencies = [
  "schemars",
  "serde",
  "serde_json",
- "static_vcruntime",
  "thiserror 2.0.17",
  "tracing",
  "tracing-subscriber",
@@ -784,7 +783,6 @@ dependencies = [
  "schemars",
  "serde",
  "serde_json",
- "static_vcruntime",
  "thiserror 2.0.17",
  "tracing",
  "tracing-subscriber",
@@ -2677,12 +2675,6 @@ name = "stable_deref_trait"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
-
-[[package]]
-name = "static_vcruntime"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "954e3e877803def9dc46075bf4060147c55cd70db97873077232eae0269dc89b"
 
 [[package]]
 name = "streaming-iterator"

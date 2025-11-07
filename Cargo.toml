@@ -208,8 +208,6 @@ which = { version = "8.0" }
 # build-only dependencies
 # dsc-lib, dsc-lib-registry, sshdconfig, tree-sitter-dscexpression, tree-sitter-ssh-server-config
 cc = { version = "1.2" }
-# registry, dsc-lib-registry
-static_vcruntime = { version = "2.0" }
 
 # test-only dependencies
 # dsc-lib-jsonschema
