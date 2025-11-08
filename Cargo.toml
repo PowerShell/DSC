@@ -204,6 +204,8 @@ url = { version = "2.5" }
 urlencoding = { version = "2.1" }
 # dsc-lib
 which = { version = "8.0" }
+# dsc-lib
+ipnetwork = { version = "0.21" }
 
 # build-only dependencies
 # dsc-lib, dsc-lib-registry, sshdconfig, tree-sitter-dscexpression, tree-sitter-ssh-server-config
