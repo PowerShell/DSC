@@ -623,13 +623,6 @@ test_cases_for_get_keyword_as_mut!(
             None
         );
     }
-    /// Inverted the test - current logic fails due to a bug in [`schemars::Schema::pointer_mut()`],
-    /// see [schemars#478].
-    ///
-    /// This bug will be fixed when schemars merges [schemars#479] and makes a new release.
-    ///
-    /// [schemars#478]: https://github.com/GREsau/schemars/issues/478
-    /// [schemars#479]: https://github.com/GREsau/schemars/pull/479
     #[test] fn with_defs_pointer_reference() {
         let ref mut schema = json_schema!({
             "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -647,7 +640,7 @@ test_cases_for_get_keyword_as_mut!(
             "title": "Foo"
         });
 
-        assert_ne!(
+        assert_eq!(
             schema.get_defs_subschema_from_reference_mut("#/$defs/foo"),
             expected.as_object_mut()
         );
