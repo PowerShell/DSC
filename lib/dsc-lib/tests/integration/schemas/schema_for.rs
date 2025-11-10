@@ -29,6 +29,7 @@ macro_rules! test_schema_for {
 #[allow(non_snake_case)]
 #[cfg(test)] mod dsc_lib {
     #[cfg(test)] mod configure {
+        #[allow(unused_must_use)]
         #[cfg(test)] mod config_doc {
             test_schema_for!(dsc_lib::configure::config_doc::SecurityContextKind);
             test_schema_for!(dsc_lib::configure::config_doc::Operation);
@@ -51,6 +52,7 @@ macro_rules! test_schema_for {
             test_schema_for!(dsc_lib::configure::config_doc::Sku);
             test_schema_for!(dsc_lib::configure::config_doc::Resource);
         }
+        #[allow(unused_must_use)]
         #[cfg(test)] mod config_results {
             test_schema_for!(dsc_lib::configure::config_result::MessageLevel);
             test_schema_for!(dsc_lib::configure::config_result::ResourceMessage);
@@ -64,6 +66,7 @@ macro_rules! test_schema_for {
             test_schema_for!(dsc_lib::configure::config_result::ConfigurationTestResult);
             test_schema_for!(dsc_lib::configure::config_result::ConfigurationExportResult);
         }
+        #[allow(unused_must_use)]
         #[cfg(test)] mod parameters {
             test_schema_for!(dsc_lib::configure::parameters::Input);
             test_schema_for!(dsc_lib::configure::parameters::SecureString);
@@ -72,17 +75,20 @@ macro_rules! test_schema_for {
         }
     }
     #[cfg(test)] mod discovery {
+        #[allow(unused_must_use)]
         #[cfg(test)] mod command_discovery {
             test_schema_for!(dsc_lib::discovery::command_discovery::ImportedManifest);
         }
     }
 
     #[cfg(test)] mod dscresources {
+        #[allow(unused_must_use)]
         #[cfg(test)] mod dscresource {
             test_schema_for!(dsc_lib::dscresources::dscresource::DscResource);
             test_schema_for!(dsc_lib::dscresources::dscresource::Capability);
             test_schema_for!(dsc_lib::dscresources::dscresource::ImplementedAs);
         }
+        #[allow(unused_must_use)]
         #[cfg(test)] mod invoke_result {
             test_schema_for!(dsc_lib::dscresources::invoke_result::GetResult);
             test_schema_for!(dsc_lib::dscresources::invoke_result::ResourceGetResponse);
@@ -94,6 +100,7 @@ macro_rules! test_schema_for {
             test_schema_for!(dsc_lib::dscresources::invoke_result::ExportResult);
             test_schema_for!(dsc_lib::dscresources::invoke_result::ResolveResult);
         }
+        #[allow(unused_must_use)]
         #[cfg(test)] mod resource_manifest {
             test_schema_for!(dsc_lib::dscresources::resource_manifest::Kind);
             test_schema_for!(dsc_lib::dscresources::resource_manifest::ArgKind);
@@ -116,21 +123,26 @@ macro_rules! test_schema_for {
     }
 
     #[cfg(test)] mod extensions {
+        #[allow(unused_must_use)]
         #[cfg(test)] mod discover {
             test_schema_for!(dsc_lib::extensions::discover::DiscoverMethod);
             test_schema_for!(dsc_lib::extensions::discover::DiscoverResult);
         }
+        #[allow(unused_must_use)]
         #[cfg(test)] mod dscextension {
             test_schema_for!(dsc_lib::extensions::dscextension::DscExtension);
             test_schema_for!(dsc_lib::extensions::dscextension::Capability);
         }
+        #[allow(unused_must_use)]
         #[cfg(test)] mod extension_manifest {
             test_schema_for!(dsc_lib::extensions::extension_manifest::ExtensionManifest);
         }
+        #[allow(unused_must_use)]
         #[cfg(test)] mod import {
             test_schema_for!(dsc_lib::extensions::import::ImportMethod);
             test_schema_for!(dsc_lib::extensions::import::ImportArgKind);
         }
+        #[allow(unused_must_use)]
         #[cfg(test)] mod secret {
             test_schema_for!(dsc_lib::extensions::secret::SecretArgKind);
             test_schema_for!(dsc_lib::extensions::secret::SecretMethod);
