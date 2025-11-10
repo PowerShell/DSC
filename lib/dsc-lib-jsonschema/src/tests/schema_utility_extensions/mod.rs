@@ -572,7 +572,6 @@ test_cases_for_get_keyword_as_mut!(
 }
 
 #[cfg(test)] mod get_defs_subschema_from_reference_mut {
-    use pretty_assertions::assert_ne;
     use schemars::json_schema;
     use serde_json::json;
 
