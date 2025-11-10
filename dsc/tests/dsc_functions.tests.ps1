@@ -599,6 +599,37 @@ Describe 'tests for function expressions' {
     ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)
   }
 
+  It 'take function works for: <expression>' -TestCases @(
+    @{ expression = "[take(createArray('a','b','c','d'), 2)]"; expected = @('a', 'b') }
+    @{ expression = "[take('hello', 2)]"; expected = 'he' }
+    @{ expression = "[take(createArray('a','b'), 0)]"; expected = @() }
+    @{ expression = "[take('abc', 0)]"; expected = '' }
+    @{ expression = "[take(createArray('a','b'), 5)]"; expected = @('a', 'b') }
+    @{ expression = "[take('hi', 10)]"; expected = 'hi' }
+    @{ expression = "[take('', 1)]"; expected = '' }
+    @{ expression = "[take(createArray(), 2)]"; expected = @() }
+    # Negative and zero counts return empty
+    @{ expression = "[take(createArray('x','y','z'), -1)]"; expected = @() }
+    @{ expression = "[take('hello', -2)]"; expected = '' }
+    # Take all elements
+    @{ expression = "[take(createArray('x','y','z'), 3)]"; expected = @('x', 'y', 'z') }
+    @{ expression = "[take('test', 4)]"; expected = 'test' }
+  ) {
+    param($expression, $expected)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "$expression"
+"@
+    $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+    ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)
+  }
+
   It 'lastIndexOf function works for: <expression>' -TestCases @(
     @{ expression = "[lastIndexOf(createArray('a', 'b', 'a', 'c'), 'a')]"; expected = 2 }
     @{ expression = "[lastIndexOf(createArray(10, 20, 30, 20), 20)]"; expected = 3 }
@@ -956,6 +987,40 @@ Describe 'tests for function expressions' {
     }
   }
 
+  It 'tryIndexFromEnd() function works for: <expression>' -TestCases @(
+    @{ expression = "[tryIndexFromEnd(createArray('a', 'b', 'c'), 1)]"; expected = 'c' }
+    @{ expression = "[tryIndexFromEnd(createArray('a', 'b', 'c'), 2)]"; expected = 'b' }
+    @{ expression = "[tryIndexFromEnd(createArray('a', 'b', 'c'), 3)]"; expected = 'a' }
+    @{ expression = "[tryIndexFromEnd(createArray('a', 'b', 'c'), 4)]"; expected = $null }
+    @{ expression = "[tryIndexFromEnd(createArray('a', 'b', 'c'), 0)]"; expected = $null }
+    @{ expression = "[tryIndexFromEnd(createArray('a', 'b', 'c'), -1)]"; expected = $null }
+    @{ expression = "[tryIndexFromEnd(createArray('only'), 1)]"; expected = 'only' }
+    @{ expression = "[tryIndexFromEnd(createArray(10, 20, 30, 40), 2)]"; expected = 30 }
+    @{ expression = "[tryIndexFromEnd(createArray(createObject('k', 'v1'), createObject('k', 'v2')), 1)]"; expected = [pscustomobject]@{ k = 'v2' } }
+    @{ expression = "[tryIndexFromEnd(createArray(createArray(1, 2), createArray(3, 4)), 1)]"; expected = @(3, 4) }
+    @{ expression = "[tryIndexFromEnd(createArray(), 1)]"; expected = $null }
+    @{ expression = "[tryIndexFromEnd(createArray('x', 'y'), 1000)]"; expected = $null }
+  ) {
+    param($expression, $expected)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "$expression"
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    if ($expected -is [pscustomobject]) {
+      ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)
+    } elseif ($expected -is [array]) {
+      ($out.results[0].result.actualState.output | ConvertTo-Json -Compress) | Should -BeExactly ($expected | ConvertTo-Json -Compress)
+    } else {
+      $out.results[0].result.actualState.output | Should -BeExactly $expected
+    }
+  }
+
   It 'uriComponent function works for: <testInput>' -TestCases @(
     @{ testInput = 'hello world' }
     @{ testInput = 'hello@example.com' }
@@ -1227,5 +1292,266 @@ Describe 'tests for function expressions' {
     $LASTEXITCODE | Should -Be 0
     $expected = "Microsoft.DSC.Debug/Echo:$([Uri]::EscapeDataString($name))"
     $out.results[0].result.actualState.output | Should -BeExactly $expected
+  }
+
+  It 'parseCidr parses IPv4 CIDR notation: <cidr>' -TestCases @(
+    @{ cidr = '192.168.1.0/24'; network = '192.168.1.0'; broadcast = '192.168.1.255'; firstUsable = '192.168.1.1'; lastUsable = '192.168.1.254'; netmask = '255.255.255.0'; prefix = 24 }
+    @{ cidr = '10.0.0.0/16'; network = '10.0.0.0'; broadcast = '10.0.255.255'; firstUsable = '10.0.0.1'; lastUsable = '10.0.255.254'; netmask = '255.255.0.0'; prefix = 16 }
+    @{ cidr = '10.144.0.0/20'; network = '10.144.0.0'; broadcast = '10.144.15.255'; firstUsable = '10.144.0.1'; lastUsable = '10.144.15.254'; netmask = '255.255.240.0'; prefix = 20 }
+    @{ cidr = '172.16.0.0/12'; network = '172.16.0.0'; broadcast = '172.31.255.255'; firstUsable = '172.16.0.1'; lastUsable = '172.31.255.254'; netmask = '255.240.0.0'; prefix = 12 }
+    @{ cidr = '192.168.1.100/32'; network = '192.168.1.100'; broadcast = '192.168.1.100'; firstUsable = '192.168.1.100'; lastUsable = '192.168.1.100'; netmask = '255.255.255.255'; prefix = 32 }
+  ) {
+    param($cidr, $network, $broadcast, $firstUsable, $lastUsable, $netmask, $prefix)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[parseCidr('$cidr')]"
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0
+    $result = $out.results[0].result.actualState.output
+    $result.network | Should -BeExactly $network
+    $result.netmask | Should -BeExactly $netmask
+    $result.broadcast | Should -BeExactly $broadcast
+    $result.firstUsable | Should -BeExactly $firstUsable
+    $result.lastUsable | Should -BeExactly $lastUsable
+    $result.cidr | Should -Be $prefix
+  }
+
+  It 'parseCidr parses IPv6 CIDR notation: <cidr>' -TestCases @(
+    @{ cidr = '2001:db8::/32'; network = '2001:db8::'; prefix = 32 }
+    @{ cidr = 'fe80::/64'; network = 'fe80::'; prefix = 64 }
+    @{ cidr = '2001:db8::1/128'; network = '2001:db8::1'; prefix = 128 }
+  ) {
+    param($cidr, $network, $prefix)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[parseCidr('$cidr')]"
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0
+    $result = $out.results[0].result.actualState.output
+    $result.network | Should -BeExactly $network
+    $result.cidr | Should -Be $prefix
+    $result.netmask | Should -Not -BeNullOrEmpty
+    $result.firstUsable | Should -Not -BeNullOrEmpty
+    $result.lastUsable | Should -Not -BeNullOrEmpty
+  }
+
+  It 'parseCidr handles CIDR with host bits set' {
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[parseCidr('192.168.1.100/24')]"
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0
+    $result = $out.results[0].result.actualState.output
+    $result.network | Should -BeExactly '192.168.1.0'
+    $result.broadcast | Should -BeExactly '192.168.1.255'
+  }
+
+  It 'parseCidr fails with invalid CIDR: <cidr>' -TestCases @(
+    @{ cidr = '192.168.1/24'; errorMatch = 'Invalid CIDR notation' }
+    @{ cidr = '192.168.1.0/33'; errorMatch = 'Invalid CIDR notation' }
+    @{ cidr = '192.168.1.256/24'; errorMatch = 'Invalid CIDR notation' }
+  ) {
+    param($cidr, $errorMatch)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[parseCidr('$cidr')]"
+"@
+    $errorContent = & { $config_yaml | dsc config get -f - 2>&1 } | Out-String
+    $LASTEXITCODE | Should -Be 2
+    $errorContent | Should -Match $errorMatch
+  }
+
+  It 'cidrSubnet splits IPv4 network into subnets: <network>/<newCidr> index <index>' -TestCases @(
+    @{ network = '10.144.0.0/20'; newCidr = 24; index = 0; expected = '10.144.0.0/24' }
+    @{ network = '10.144.0.0/20'; newCidr = 24; index = 1; expected = '10.144.1.0/24' }
+    @{ network = '10.144.0.0/20'; newCidr = 24; index = 2; expected = '10.144.2.0/24' }
+    @{ network = '10.144.0.0/20'; newCidr = 24; index = 3; expected = '10.144.3.0/24' }
+    @{ network = '10.144.0.0/20'; newCidr = 24; index = 4; expected = '10.144.4.0/24' }
+    @{ network = '10.144.0.0/20'; newCidr = 24; index = 15; expected = '10.144.15.0/24' }
+    @{ network = '10.0.0.0/16'; newCidr = 18; index = 0; expected = '10.0.0.0/18' }
+    @{ network = '10.0.0.0/16'; newCidr = 18; index = 1; expected = '10.0.64.0/18' }
+    @{ network = '192.168.0.0/24'; newCidr = 28; index = 0; expected = '192.168.0.0/28' }
+  ) {
+    param($network, $newCidr, $index, $expected)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[cidrSubnet('$network', $newCidr, $index)]"
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0
+    $out.results[0].result.actualState.output | Should -BeExactly $expected
+  }
+
+  It 'cidrSubnet splits IPv6 network into subnets' {
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[cidrSubnet('2001:db8::/32', 48, 0)]"
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0
+    $out.results[0].result.actualState.output | Should -BeExactly '2001:db8::/48'
+  }
+
+  It 'cidrSubnet with same prefix returns original network' {
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[cidrSubnet('10.144.0.0/20', 20, 0)]"
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0
+    $out.results[0].result.actualState.output | Should -BeExactly '10.144.0.0/20'
+  }
+
+  It 'cidrSubnet fails with invalid parameters: <testName>' -TestCases @(
+    @{ testName = 'index out of range'; network = '10.144.0.0/20'; newCidr = 24; index = 16; errorMatch = 'out of range' }
+    @{ testName = 'negative index'; network = '10.144.0.0/20'; newCidr = 24; index = -1; errorMatch = 'negative' }
+    @{ testName = 'new CIDR too small'; network = '10.144.0.0/20'; newCidr = 16; index = 0; errorMatch = 'equal to or larger' }
+    @{ testName = 'invalid IPv4 prefix'; network = '10.144.0.0/20'; newCidr = 33; index = 0; errorMatch = 'Invalid IPv4 prefix' }
+    @{ testName = 'invalid IPv6 prefix'; network = '2001:db8::/32'; newCidr = 129; index = 0; errorMatch = 'Invalid IPv6 prefix' }
+    @{ testName = 'invalid CIDR format'; network = '10.0.0/16'; newCidr = 24; index = 0; errorMatch = 'Invalid CIDR notation' }
+  ) {
+    param($testName, $network, $newCidr, $index, $errorMatch)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[cidrSubnet('$network', $newCidr, $index)]"
+"@
+    $errorContent = & { $config_yaml | dsc config get -f - 2>&1 } | Out-String
+    $LASTEXITCODE | Should -Be 2
+    $errorContent | Should -Match $errorMatch
+  }
+
+  It 'cidrSubnet can be used with parseCidr' {
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[parseCidr(cidrSubnet('10.144.0.0/20', 24, 2))]"
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0
+    $result = $out.results[0].result.actualState.output
+    $result.network | Should -BeExactly '10.144.2.0'
+    $result.cidr | Should -Be 24
+  }
+
+  It 'cidrHost returns usable host IP: <network> index <index>' -TestCases @(
+    @{ network = '192.168.1.0/24'; index = 0; expected = '192.168.1.1' }
+    @{ network = '192.168.1.0/24'; index = 1; expected = '192.168.1.2' }
+    @{ network = '192.168.1.0/24'; index = 10; expected = '192.168.1.11' }
+    @{ network = '192.168.1.0/24'; index = 253; expected = '192.168.1.254' }
+    @{ network = '10.0.0.0/16'; index = 0; expected = '10.0.0.1' }
+    @{ network = '10.0.0.0/16'; index = 99; expected = '10.0.0.100' }
+    @{ network = '10.0.0.0/16'; index = 255; expected = '10.0.1.0' }
+  ) {
+    param($network, $index, $expected)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[cidrHost('$network', $index)]"
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0
+    $out.results[0].result.actualState.output | Should -BeExactly $expected
+  }
+
+  It 'cidrHost handles /31 point-to-point: index <index>' -TestCases @(
+    @{ network = '192.168.1.0/31'; index = 0; expected = '192.168.1.0' }
+    @{ network = '192.168.1.0/31'; index = 1; expected = '192.168.1.1' }
+  ) {
+    param($network, $index, $expected)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[cidrHost('$network', $index)]"
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0
+    $out.results[0].result.actualState.output | Should -BeExactly $expected
+  }
+
+  It 'cidrHost works with IPv6' {
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[cidrHost('2001:db8::/64', 0)]"
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0
+    $out.results[0].result.actualState.output | Should -BeExactly '2001:db8::1'
+  }
+
+  It 'cidrHost fails with invalid parameters: <testName>' -TestCases @(
+    @{ testName = '/32 has no usable hosts'; network = '192.168.1.1/32'; index = 0; errorMatch = 'no usable host' }
+    @{ testName = '/128 has no usable hosts'; network = '2001:db8::1/128'; index = 0; errorMatch = 'no usable host' }
+    @{ testName = 'index out of range'; network = '192.168.1.0/24'; index = 254; errorMatch = 'out of range' }
+    @{ testName = 'negative index'; network = '192.168.1.0/24'; index = -1; errorMatch = 'negative' }
+    @{ testName = 'invalid CIDR'; network = '192.168.1.0.0/24'; index = 0; errorMatch = 'Invalid CIDR notation' }
+  ) {
+    param($testName, $network, $index, $errorMatch)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[cidrHost('$network', $index)]"
+"@
+    $errorContent = & { $config_yaml | dsc config get -f - 2>&1 } | Out-String
+    $LASTEXITCODE | Should -Be 2
+    $errorContent | Should -Match $errorMatch
   }
 }

@@ -18,6 +18,8 @@ pub mod array;
 pub mod base64;
 pub mod base64_to_string;
 pub mod bool;
+pub mod cidr_host;
+pub mod cidr_subnet;
 pub mod coalesce;
 pub mod concat;
 pub mod contains;
@@ -55,6 +57,7 @@ pub mod not;
 pub mod null;
 pub mod or;
 pub mod parameters;
+pub mod parse_cidr;
 pub mod path;
 pub mod range;
 pub mod reference;
@@ -63,6 +66,7 @@ pub mod secret;
 pub mod skip;
 pub mod starts_with;
 pub mod string;
+pub mod take;
 pub mod sub;
 pub mod substring;
 pub mod system_root;
@@ -71,6 +75,7 @@ pub mod to_upper;
 pub mod trim;
 pub mod r#true;
 pub mod try_get;
+pub mod try_index_from_end;
 pub mod union;
 pub mod unique_string;
 pub mod uri;
@@ -147,6 +152,8 @@ impl FunctionDispatcher {
             Box::new(base64::Base64{}),
             Box::new(base64_to_string::Base64ToString{}),
             Box::new(bool::Bool{}),
+            Box::new(cidr_host::CidrHost{}),
+            Box::new(cidr_subnet::CidrSubnet{}),
             Box::new(coalesce::Coalesce{}),
             Box::new(concat::Concat{}),
             Box::new(contains::Contains{}),
@@ -184,6 +191,7 @@ impl FunctionDispatcher {
             Box::new(null::Null{}),
             Box::new(or::Or{}),
             Box::new(parameters::Parameters{}),
+            Box::new(parse_cidr::ParseCidr{}),
             Box::new(path::Path{}),
             Box::new(range::Range{}),
             Box::new(reference::Reference{}),
@@ -193,6 +201,7 @@ impl FunctionDispatcher {
             Box::new(starts_with::StartsWith{}),
             Box::new(string::StringFn{}),
             Box::new(sub::Sub{}),
+            Box::new(take::Take{}),
             Box::new(substring::Substring{}),
             Box::new(system_root::SystemRoot{}),
             Box::new(to_lower::ToLower{}),
@@ -200,6 +209,7 @@ impl FunctionDispatcher {
             Box::new(trim::Trim{}),
             Box::new(r#true::True{}),
             Box::new(try_get::TryGet{}),
+            Box::new(try_index_from_end::TryIndexFromEnd{}),
             Box::new(union::Union{}),
             Box::new(unique_string::UniqueString{}),
             Box::new(uri::Uri{}),
@@ -336,6 +346,7 @@ pub struct FunctionDefinition {
 #[serde(deny_unknown_fields)]
 pub enum FunctionCategory {
     Array,
+    Cidr,
     Comparison,
     Date,
     Deployment,
@@ -352,6 +363,7 @@ impl Display for FunctionCategory {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             FunctionCategory::Array => write!(f, "Array"),
+            FunctionCategory::Cidr => write!(f, "CIDR"),
             FunctionCategory::Comparison => write!(f, "Comparison"),
             FunctionCategory::Date => write!(f, "Date"),
             FunctionCategory::Deployment => write!(f, "Deployment"),

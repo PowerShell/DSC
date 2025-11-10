@@ -463,6 +463,32 @@ keyNotObject = "Parameter '%{key}' is not an object"
 keyNotArray = "Parameter '%{key}' is not an array"
 keyNotFound = "Parameter '%{key}' not found in context"
 
+[functions.parseCidr]
+description = "Parses an IP address range in CIDR notation and returns network properties"
+invoked = "parseCidr function"
+invalidCidr = "Invalid CIDR notation: '%{cidr}'. Expected format: IP/prefix (e.g., '192.168.1.0/24' or '2001:db8::/32')"
+
+[functions.cidrHost]
+description = "Calculates the usable IP address of the host with the specified index on the specified IP address range in CIDR notation"
+invoked = "cidrHost function"
+negativeHostIndex = "HostIndex cannot be negative"
+invalidCidr = "Invalid CIDR notation: '%{cidr}'. Expected format: IP/prefix (e.g., '192.168.1.0/24' or '2001:db8::/32')"
+noUsableHosts = "Network has no usable host addresses (single IP address)"
+hostIndexOutOfRange = "Host index %{index} is out of range. Maximum index is %{maxIndex}"
+hostCalculationFailed = "Failed to calculate host address"
+
+[functions.cidrSubnet]
+description = "Splits the specified IP address range in CIDR notation into subnets with a new CIDR value and returns the IP address range of the subnet with the specified index"
+invoked = "cidrSubnet function"
+negativeSubnetIndex = "SubnetIndex cannot be negative"
+invalidCidr = "Invalid CIDR notation: '%{cidr}'. Expected format: IP/prefix (e.g., '192.168.1.0/24' or '2001:db8::/32')"
+invalidPrefixV4 = "Invalid IPv4 prefix: %{prefix}. Must be between 0 and 32"
+invalidPrefixV6 = "Invalid IPv6 prefix: %{prefix}. Must be between 0 and 128"
+newCidrTooSmall = "New CIDR prefix (%{newCidr}) must be equal to or larger than the current CIDR prefix (%{currentCidr})"
+subnetIndexOutOfRange = "Subnet index %{index} is out of range. Maximum index is %{maxIndex}"
+tooManySubnets = "The difference between new and current CIDR is too large (>32 bits). This would create too many subnets"
+subnetCreationFailed = "Failed to create subnet"
+
 [functions.path]
 description = "Concatenates multiple strings into a file path"
 traceArgs = "Executing path function with args: %{args}"
@@ -528,6 +554,12 @@ invoked = "sub function"
 description = "Returns the system root path"
 invoked = "systemRoot function"
 
+[functions.take]
+description = "Returns an array with the specified number of elements from the start, or a string with the specified number of characters from the start"
+invoked = "take function"
+invalidNumberToTake = "Second argument must be an integer"
+invalidOriginalValue = "First argument must be an array or string"
+
 [functions.toLower]
 description = "Converts the specified string to lower case"
 
@@ -545,6 +577,12 @@ invoked = "true function"
 description = "Attempts to retrieve a value from an array (by index) or object (by key).  Null is returned if the key or index does not exist."
 invoked = "tryGet function"
 invalidKeyType = "Invalid key type, must be a string"
+invalidIndexType = "Invalid index type, must be an integer"
+
+[functions.tryIndexFromEnd]
+description = "Retrieves a value from an array by counting backward from the end. Returns null if the index is out of range."
+invoked = "tryIndexFromEnd function"
+invalidSourceType = "Invalid source type, must be an array"
 invalidIndexType = "Invalid index type, must be an integer"
 
 [functions.union]
@@ -686,3 +724,5 @@ failedToGetExePath = "Can't get 'dsc' executable path"
 settingNotFound = "Setting '%{name}' not found"
 failedToAbsolutizePath = "Failed to absolutize path '%{path}'"
 invalidExitCodeKey = "Invalid exit code key '%{key}'"
+executableNotFoundInWorkingDirectory = "Executable '%{executable}' not found with working directory '%{cwd}'"
+executableNotFound = "Executable '%{executable}' not found"

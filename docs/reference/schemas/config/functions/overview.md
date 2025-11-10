@@ -567,23 +567,65 @@ resources:
 
 The following sections include the available DSC configuration functions by purpose and input type.
 
-### Array functions
+### Array and collection functions
 
-The following list of functions operate on arrays:
+The following list of functions operate on arrays and collections:
 
+- [array()][array] - Convert a value into an array containing that value.
 - [concat()][concat] - Combine multiple arrays of strings into a single array of strings.
+- [contains()][contains] - Check if an array contains a value or an object contains a key.
 - [createArray()][createArray] - Create an array of a given type from zero or more values of the
   same type.
-- [min()][min] - Return the smallest integer value from an array of integers.
+- [empty()][empty] - Check if a value (string, array, or object) is empty.
+- [first()][first] - Return the first element of an array or the first character of a string.
+- [indexOf()][indexOf] - Return the zero-based index of the first occurrence of a value in an array.
+- [intersection()][intersection] - Return a single array or object with the common elements from the parameters.
+- [items()][items] - Convert an object into an array of key-value pair objects.
+- [join()][join] - Combine array elements into a single string with a specified delimiter.
+- [last()][last] - Return the last element of an array or the last character of a string.
+- [lastIndexOf()][lastIndexOf] - Return the zero-based index of the last occurrence of a value in an array.
+- [length()][length] - Return the number of elements in an array, characters in a string, or top-level properties in an object.
 - [max()][max] - Return the largest integer value from an array of integers.
+- [min()][min] - Return the smallest integer value from an array of integers.
+- [range()][range] - Create an array of integers within a specified range.
+- [skip()][skip] - Return an array or string with elements skipped from the beginning.
+- [take()][take] - Return an array or string with the specified number of elements from the start.
+- [tryGet()][tryGet] - Safely retrieve a value from an array by index or an object by key without throwing an error.
+- [tryIndexFromEnd()][tryIndexFromEnd] - Safely retrieve a value from an array by counting backward from the end.
+- [union()][union] - Return a single array or object with all unique elements from the parameters.
+
+### Comparison functions
+
+The following list of functions compare values:
+
+- [equals()][equals] - Check if two values are equal.
+- [greater()][greater] - Check if the first value is greater than the second value.
+- [greaterOrEquals()][greaterOrEquals] - Check if the first value is greater than or equal to the second value.
+- [less()][less] - Check if the first value is less than the second value.
+- [lessOrEquals()][lessOrEquals] - Check if the first value is less than or equal to the second value.
 
 ### Data functions
 
 The following list of functions operate on data outside of a resource instance:
 
+- [context()][context] - Return contextual information about the system and execution environment.
 - [envvar()][envvar] - Return the value of a specified environment variable.
 - [parameters()][parameters] - Return the value of a specified configuration parameter.
+- [secret()][secret] - Retrieve a secret value from a secure store.
 - [variables()][variables] - Return the value of a specified configuration variable.
+
+### Logical functions
+
+The following list of functions perform logical operations:
+
+- [and()][and] - Return true if all boolean values are true.
+- [bool()][bool] - Convert a value to a boolean.
+- [false()][false] - Return the boolean value false.
+- [if()][if] - Return one of two values based on a boolean condition.
+- [not()][not] - Return the logical negation of a boolean value.
+- [null()][null] - Return a null value.
+- [or()][or] - Return true if any boolean value is true.
+- [true()][true] - Return the boolean value true.
 
 ### Mathematics functions
 
@@ -599,6 +641,18 @@ The following list of functions operate on integer values or arrays of integer v
 - [mul()][mul] - Return the product from multiplying two integers.
 - [sub()][sub] - Return the difference from subtracting one integer from another.
 
+### Object functions
+
+The following list of functions operate on objects:
+
+- [coalesce()][coalesce] - Return the first non-null value from the provided arguments.
+- [contains()][contains] - Check if an array contains a value or an object contains a key.
+- [createObject()][createObject] - Create an object from key-value pairs.
+- [empty()][empty] - Check if a value (string, array, or object) is empty.
+- [items()][items] - Convert an object into an array of key-value pair objects.
+- [json()][json] - Parse a JSON string and return the resulting value.
+- [tryGet()][tryGet] - Safely retrieve a value from an array by index or an object by key without throwing an error.
+
 ### Resource functions
 
 The following list of functions operate on resource instances:
@@ -613,36 +667,120 @@ The following list of functions operate on resource instances:
 The following list of functions are for manipulating strings:
 
 - [base64()][base64] - Return the base64 representation of a string.
+- [base64ToString()][base64ToString] - Decode a base64-encoded string and return the original string.
 - [concat()][concat] - Return a combined string where the input strings are concatenated in the
   order they're specified.
+- [contains()][contains] - Check if an array contains a value or an object contains a key.
+- [empty()][empty] - Check if a value (string, array, or object) is empty.
+- [endsWith()][endsWith] - Check if a string ends with a specified suffix.
+- [first()][first] - Return the first element of an array or the first character of a string.
+- [format()][format] - Create a formatted string from input values.
+- [join()][join] - Combine array elements into a single string with a specified delimiter.
+- [last()][last] - Return the last element of an array or the last character of a string.
+- [length()][length] - Return the number of elements in an array, characters in a string, or top-level properties in an object.
+- [skip()][skip] - Return an array or string with elements skipped from the beginning.
+- [startsWith()][startsWith] - Check if a string starts with a specified prefix.
+- [take()][take] - Return an array or string with the specified number of elements from the start.
+- [string()][string] - Convert a value to its string representation.
+- [substring()][substring] - Extract a portion of a string starting at a specified position.
+- [toLower()][toLower] - Convert a string to lowercase.
+- [toUpper()][toUpper] - Convert a string to uppercase.
+- [trim()][trim] - Remove leading and trailing whitespace from a string.
+- [uniqueString()][uniqueString] - Create a deterministic hash string based on provided values.
+- [uri()][uri] - Create an absolute URI by combining a base URI with a relative URI string.
+- [uriComponent()][uriComponent] - Encode a string for use as a URI component.
+- [uriComponentToString()][uriComponentToString] - Decode a URI-encoded string.
+
+### System functions
+
+The following list of functions provide system-level information:
+
+- [path()][path] - Construct a file system path from one or more path segments.
+- [systemRoot()][systemRoot] - Return the system root directory path.
+- [utcNow()][utcNow] - Return the current UTC datetime in a specified format.
 
 ### Type functions
 
 The following list of functions create or convert values of a given type:
 
+- [array()][array] - Convert a value into an array containing that value.
+- [bool()][bool] - Convert a value to a boolean.
 - [createArray()][createArray] - Create an array of a given type from zero or more values of the
   same type.
+- [createObject()][createObject] - Create an object from key-value pairs.
 - [int()][int] - Convert a string or number with a fractional part into an integer.
+- [string()][string] - Convert a value to its string representation.
 
 <!-- Link references -->
 [01]: https://yaml.org/spec/1.2.2/#folded-style
 [02]: https://yaml.org/spec/1.2.2/#literal-style
 [03]: https://yaml.org/spec/1.2.2/#block-chomping-indicator
 <!-- Function link references -->
-[add]:         ./add.md
-[base64]:      ./base64.md
-[concat]:      ./concat.md
-[copyIndex]:   ./copyIndex.md
-[createArray]: ./createArray.md
-[div]:         ./div.md
-[envvar]:      ./envvar.md
-[int]:         ./int.md
-[max]:         ./max.md
-[min]:         ./min.md
-[mod]:         ./mod.md
-[mul]:         ./mul.md
-[parameters]:  ./parameters.md
-[reference]:   ./reference.md
-[resourceId]:  ./resourceId.md
-[sub]:         ./sub.md
-[variables]:   ./variables.md
+[add]:                  ./add.md
+[and]:                  ./and.md
+[array]:                ./array.md
+[base64]:               ./base64.md
+[base64ToString]:       ./base64ToString.md
+[bool]:                 ./bool.md
+[coalesce]:             ./coalesce.md
+[concat]:               ./concat.md
+[contains]:             ./contains.md
+[context]:              ./context.md
+[copyIndex]:            ./copyIndex.md
+[createArray]:          ./createArray.md
+[createObject]:         ./createObject.md
+[div]:                  ./div.md
+[empty]:                ./empty.md
+[endsWith]:             ./endsWith.md
+[envvar]:               ./envvar.md
+[equals]:               ./equals.md
+[false]:                ./false.md
+[first]:                ./first.md
+[format]:               ./format.md
+[greater]:              ./greater.md
+[greaterOrEquals]:      ./greaterOrEquals.md
+[if]:                   ./if.md
+[indexOf]:              ./indexOf.md
+[int]:                  ./int.md
+[intersection]:         ./intersection.md
+[items]:                ./items.md
+[join]:                 ./join.md
+[json]:                 ./json.md
+[last]:                 ./last.md
+[lastIndexOf]:          ./lastIndexOf.md
+[length]:               ./length.md
+[less]:                 ./less.md
+[lessOrEquals]:         ./lessOrEquals.md
+[max]:                  ./max.md
+[min]:                  ./min.md
+[mod]:                  ./mod.md
+[mul]:                  ./mul.md
+[not]:                  ./not.md
+[null]:                 ./null.md
+[or]:                   ./or.md
+[parameters]:           ./parameters.md
+[path]:                 ./path.md
+[range]:                ./range.md
+[reference]:            ./reference.md
+[resourceId]:           ./resourceId.md
+[secret]:               ./secret.md
+[skip]:                 ./skip.md
+[startsWith]:           ./startsWith.md
+[string]:               ./string.md
+[take]:                 ./take.md
+[sub]:                  ./sub.md
+[substring]:            ./substring.md
+[systemRoot]:           ./systemRoot.md
+[toLower]:              ./toLower.md
+[toUpper]:              ./toUpper.md
+[trim]:                 ./trim.md
+[true]:                 ./true.md
+[tryGet]:               ./tryGet.md
+[tryIndexFromEnd]:      ./tryIndexFromEnd.md
+[union]:                ./union.md
+[uniqueString]:         ./uniqueString.md
+[uri]:                  ./uri.md
+[uriComponent]:         ./uriComponent.md
+[uriComponentToString]: ./uriComponentToString.md
+[utcNow]:               ./utcNow.md
+[variables]:            ./variables.md

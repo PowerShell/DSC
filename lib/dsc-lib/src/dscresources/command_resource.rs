@@ -7,7 +7,7 @@ use rust_i18n::t;
 use serde::Deserialize;
 use serde_json::{Map, Value};
 use std::{collections::HashMap, env, process::Stdio};
-use crate::configure::{config_doc::ExecutionKind, config_result::{ResourceGetResult, ResourceTestResult}};
+use crate::{configure::{config_doc::ExecutionKind, config_result::{ResourceGetResult, ResourceTestResult}}, util::canonicalize_which};
 use crate::dscerror::DscError;
 use super::{dscresource::{get_diff, redact}, invoke_result::{ExportResult, GetResult, ResolveResult, SetResult, TestResult, ValidateResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse, get_in_desired_state}, resource_manifest::{ArgKind, InputKind, Kind, ResourceManifest, ReturnKind, SchemaKind}};
 use tracing::{error, warn, info, debug, trace};
@@ -763,6 +763,7 @@ fn convert_hashmap_string_keys_to_i32(input: Option<&HashMap<String, String>>) -
 #[allow(clippy::implicit_hasher)]
 pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&str>, env: Option<HashMap<String, String>>, exit_codes: Option<&HashMap<String, String>>) -> Result<(i32, String, String), DscError> {
     let exit_codes = convert_hashmap_string_keys_to_i32(exit_codes)?;
+    let executable = canonicalize_which(executable, cwd)?;
 
     tokio::runtime::Builder::new_multi_thread().enable_all().build().unwrap().block_on(
         async {
@@ -771,7 +772,7 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
                 trace!("{}", t!("dscresources.commandResource.commandCwd", cwd = cwd));
             }
 
-            match run_process_async(executable, args, input, cwd, env, exit_codes.as_ref()).await {
+            match run_process_async(&executable, args, input, cwd, env, exit_codes.as_ref()).await {
                 Ok((code, stdout, stderr)) => {
                     Ok((code, stdout, stderr))
                 },

@@ -6,12 +6,13 @@ use rust_i18n::t;
 use serde_json::Value;
 use std::{
     fs,
-    fs::File,
+    fs::{canonicalize, File},
     io::BufReader,
     path::{Path, PathBuf},
     env,
 };
 use tracing::debug;
+use which::which;
 
 pub struct DscSettingValue {
     pub setting:  Value,
@@ -230,6 +231,25 @@ pub fn resource_id(type_name: &str, name: &str) -> String {
     let encoded = urlencoding::encode(name);
     result.push_str(&encoded);
     result
+}
+
+pub fn canonicalize_which(executable: &str, cwd: Option<&str>) -> Result<String, DscError> {
+    // Use PathBuf to handle path separators robustly
+    let mut executable_path = PathBuf::from(executable);
+    if cfg!(target_os = "windows") && executable_path.extension().is_none() {
+        executable_path.set_extension("exe");
+    }
+    if which(executable).is_err() {
+        if let Some(cwd) = cwd {
+            let cwd_path = Path::new(cwd);
+            if let Ok(canonical_path) = canonicalize(cwd_path.join(&executable_path)) {
+                return Ok(canonical_path.to_string_lossy().to_string());
+            }
+            return Err(DscError::CommandOperation(t!("util.executableNotFoundInWorkingDirectory", executable = &executable, cwd = cwd_path.to_string_lossy()).to_string(), executable_path.to_string_lossy().to_string()));
+        }
+        return Err(DscError::CommandOperation(t!("util.executableNotFound", executable = &executable).to_string(), executable.to_string()));
+    }
+    Ok(executable.to_string())
 }
 
 #[macro_export]
