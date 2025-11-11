@@ -750,9 +750,6 @@ function Set-RustEnvironment {
         Write-Verbose "Caching current rust environment variables..."
         [hashtable]$currentRustEnvironment = Get-RustEnvironment
 
-        Write-Verbose "Setting RUSTFLAGS to '-Dwarnings'"
-        $env:RUSTFLAGS='-Dwarnings'
-
         if ($VerbosePreference -eq 'Continue') {
             Write-Verbose "Running verbose, setting RUSTC_LOG "
             # $env:RUSTC_LOG='rustc_codegen_ssa::back::link=info'

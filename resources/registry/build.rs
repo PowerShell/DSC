@@ -4,5 +4,4 @@
 fn main() {
     // Prevent this build script from rerunning unnecessarily.
     println!("cargo:rerun-if-changed=build.rs");
-    static_vcruntime::metabuild();
 }

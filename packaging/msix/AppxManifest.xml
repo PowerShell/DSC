@@ -47,5 +47,6 @@
     <rescap:Capability Name="unvirtualizedResources" />
     <rescap:Capability Name="packageManagement" />
     <rescap:Capability Name="packageQuery" />
+    <rescap:Capability Name="appLicensing" />
   </Capabilities>
 </Package>
