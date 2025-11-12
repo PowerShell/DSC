@@ -24,7 +24,6 @@ use crate::{
 use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::path::Path;
 use std::path::PathBuf;
 use tracing::{info, trace};
 
