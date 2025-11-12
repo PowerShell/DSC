@@ -108,4 +108,16 @@ Describe 'WMI adapter resource tests' {
         $res.afterState.VariableValue | Should -Be 'update'
         $res.afterState.UserName | Should -Be ("{0}\{1}" -f $env:USERDOMAIN, $env:USERNAME)
     }
+
+    It 'Get works with read-only properties on Win32_ComputerSystem' -Skip:(!$IsWindows) {
+        $manufacturer = (Get-CimInstance -ClassName Win32_ComputerSystem).Manufacturer
+        $i = @{
+            Manufacturer = $manufacturer
+        } | ConvertTo-Json
+        
+        $r = dsc resource get -r root.cimv2/Win32_ComputerSystem -i $i
+        $LASTEXITCODE | Should -Be 0 
+        $res = $r | ConvertFrom-Json
+        $res.actualState.Manufacturer | Should -Not -BeNullOrEmpty
+    }
 }
