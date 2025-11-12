@@ -751,8 +751,8 @@ fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<Ds
         description: manifest.description.clone(),
         version: manifest.version.clone(),
         capabilities,
-        path: path.to_str().unwrap().to_string(),
-        directory: path.parent().unwrap().to_str().unwrap().to_string(),
+        path: path.to_path_buf(),
+        directory: path.parent().unwrap().to_path_buf(),
         manifest: Some(serde_json::to_value(manifest)?),
         ..Default::default()
     };
@@ -793,8 +793,8 @@ fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<
         version: manifest.version.clone(),
         capabilities,
         import_file_extensions: import_extensions,
-        path: path.to_str().unwrap().to_string(),
-        directory: path.parent().unwrap().to_str().unwrap().to_string(),
+        path: path.to_path_buf(),
+        directory: path.parent().unwrap().to_path_buf(),
         manifest: serde_json::to_value(manifest)?,
         ..Default::default()
     };
@@ -803,7 +803,7 @@ fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<
 }
 
 fn verify_executable(resource: &str, operation: &str, executable: &str, directory: &Path) {
-    if canonicalize_which(executable, Some(directory.to_string_lossy().as_ref())).is_err() {
+    if canonicalize_which(executable, Some(directory)).is_err() {
         info!("{}", t!("discovery.commandDiscovery.executableNotFound", resource = resource, operation = operation, executable = executable));
     }
 }
