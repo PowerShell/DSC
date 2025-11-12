@@ -263,7 +263,7 @@ fn initialize_config_root(path: Option<&String>) -> Option<String> {
     } else {
         let current_directory = std::env::current_dir().unwrap_or_default();
         debug!("DSC_CONFIG_ROOT = {} '{current_directory:?}'", t!("subcommand.currentDirectory"));
-        set_dscconfigroot(&current_directory.to_string_lossy());
+        set_dscconfigroot(current_directory.to_str().unwrap_or_default());
     }
 
     // if the path is "-", we need to return it so later processing can handle it correctly
