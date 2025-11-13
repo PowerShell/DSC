@@ -1,0 +1,13 @@
+{
+    "Name": "runcommandonset",
+    "Kind": "Resource",
+    "IsRust": true,
+    "Binaries": [
+        "runcommandonset"
+    ],
+    "CopyFiles": {
+        "All": [
+            "RunCommandOnSet.dsc.resource.json"
+        ]
+    }
+}

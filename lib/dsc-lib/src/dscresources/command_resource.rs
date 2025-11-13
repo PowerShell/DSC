@@ -6,8 +6,8 @@ use jsonschema::Validator;
 use rust_i18n::t;
 use serde::Deserialize;
 use serde_json::{Map, Value};
-use std::{collections::HashMap, env, process::Stdio};
-use crate::configure::{config_doc::ExecutionKind, config_result::{ResourceGetResult, ResourceTestResult}};
+use std::{collections::HashMap, env, path::Path, process::Stdio};
+use crate::{configure::{config_doc::ExecutionKind, config_result::{ResourceGetResult, ResourceTestResult}}, util::canonicalize_which};
 use crate::dscerror::DscError;
 use super::{dscresource::{get_diff, redact}, invoke_result::{ExportResult, GetResult, ResolveResult, SetResult, TestResult, ValidateResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse, get_in_desired_state}, resource_manifest::{ArgKind, InputKind, Kind, ResourceManifest, ReturnKind, SchemaKind}};
 use tracing::{error, warn, info, debug, trace};
@@ -25,7 +25,7 @@ pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
 /// # Errors
 ///
 /// Error returned if the resource does not successfully get the current state
-pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str, target_resource: Option<&str>) -> Result<GetResult, DscError> {
+pub fn invoke_get(resource: &ResourceManifest, cwd: &Path, filter: &str, target_resource: Option<&str>) -> Result<GetResult, DscError> {
     debug!("{}", t!("dscresources.commandResource.invokeGet", resource = &resource.resource_type));
     let mut command_input = CommandInput { env: None, stdin: None };
     let Some(get) = &resource.get else {
@@ -78,7 +78,7 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str, target_r
 ///
 /// Error returned if the resource does not successfully set the desired state
 #[allow(clippy::too_many_lines)]
-pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_test: bool, execution_type: &ExecutionKind, target_resource: Option<&str>) -> Result<SetResult, DscError> {
+pub fn invoke_set(resource: &ResourceManifest, cwd: &Path, desired: &str, skip_test: bool, execution_type: &ExecutionKind, target_resource: Option<&str>) -> Result<SetResult, DscError> {
     debug!("{}", t!("dscresources.commandResource.invokeSet", resource = &resource.resource_type));
     let operation_type: String;
     let mut is_synthetic_what_if = false;
@@ -271,7 +271,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
 /// # Errors
 ///
 /// Error is returned if the underlying command returns a non-zero exit code.
-pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str, target_resource: Option<&str>) -> Result<TestResult, DscError> {
+pub fn invoke_test(resource: &ResourceManifest, cwd: &Path, expected: &str, target_resource: Option<&str>) -> Result<TestResult, DscError> {
     debug!("{}", t!("dscresources.commandResource.invokeTest", resource = &resource.resource_type));
     let Some(test) = &resource.test else {
         info!("{}", t!("dscresources.commandResource.testSyntheticTest", resource = &resource.resource_type));
@@ -380,7 +380,7 @@ fn get_desired_state(actual: &Value) -> Result<Option<bool>, DscError> {
     Ok(in_desired_state)
 }
 
-fn invoke_synthetic_test(resource: &ResourceManifest, cwd: &str, expected: &str, target_resource: Option<&str>) -> Result<TestResult, DscError> {
+fn invoke_synthetic_test(resource: &ResourceManifest, cwd: &Path, expected: &str, target_resource: Option<&str>) -> Result<TestResult, DscError> {
     let get_result = invoke_get(resource, cwd, expected, target_resource)?;
     let actual_state = match get_result {
         GetResult::Group(results) => {
@@ -415,7 +415,7 @@ fn invoke_synthetic_test(resource: &ResourceManifest, cwd: &str, expected: &str,
 /// # Errors
 ///
 /// Error is returned if the underlying command returns a non-zero exit code.
-pub fn invoke_delete(resource: &ResourceManifest, cwd: &str, filter: &str, target_resource: Option<&str>) -> Result<(), DscError> {
+pub fn invoke_delete(resource: &ResourceManifest, cwd: &Path, filter: &str, target_resource: Option<&str>) -> Result<(), DscError> {
     let Some(delete) = &resource.delete else {
         return Err(DscError::NotImplemented("delete".to_string()));
     };
@@ -450,7 +450,7 @@ pub fn invoke_delete(resource: &ResourceManifest, cwd: &str, filter: &str, targe
 /// # Errors
 ///
 /// Error is returned if the underlying command returns a non-zero exit code.
-pub fn invoke_validate(resource: &ResourceManifest, cwd: &str, config: &str, target_resource: Option<&str>) -> Result<ValidateResult, DscError> {
+pub fn invoke_validate(resource: &ResourceManifest, cwd: &Path, config: &str, target_resource: Option<&str>) -> Result<ValidateResult, DscError> {
     trace!("{}", t!("dscresources.commandResource.invokeValidateConfig", resource = &resource.resource_type, config = &config));
     // TODO: use schema to validate config if validate is not implemented
     let Some(validate) = resource.validate.as_ref() else {
@@ -479,7 +479,7 @@ pub fn invoke_validate(resource: &ResourceManifest, cwd: &str, config: &str, tar
 /// # Errors
 ///
 /// Error if schema is not available or if there is an error getting the schema
-pub fn get_schema(resource: &ResourceManifest, cwd: &str) -> Result<String, DscError> {
+pub fn get_schema(resource: &ResourceManifest, cwd: &Path) -> Result<String, DscError> {
     let Some(schema_kind) = resource.schema.as_ref() else {
         return Err(DscError::SchemaNotAvailable(resource.resource_type.clone()));
     };
@@ -511,7 +511,7 @@ pub fn get_schema(resource: &ResourceManifest, cwd: &str) -> Result<String, DscE
 /// # Errors
 ///
 /// Error returned if the resource does not successfully export the current state
-pub fn invoke_export(resource: &ResourceManifest, cwd: &str, input: Option<&str>, target_resource: Option<&str>) -> Result<ExportResult, DscError> {
+pub fn invoke_export(resource: &ResourceManifest, cwd: &Path, input: Option<&str>, target_resource: Option<&str>) -> Result<ExportResult, DscError> {
     let Some(export) = resource.export.as_ref() else {
         // see if get is supported and use that instead
         if resource.get.is_some() {
@@ -591,7 +591,7 @@ pub fn invoke_export(resource: &ResourceManifest, cwd: &str, input: Option<&str>
 /// # Errors
 ///
 /// Error returned if the resource does not successfully resolve the input
-pub fn invoke_resolve(resource: &ResourceManifest, cwd: &str, input: &str) -> Result<ResolveResult, DscError> {
+pub fn invoke_resolve(resource: &ResourceManifest, cwd: &Path, input: &str) -> Result<ResolveResult, DscError> {
     let Some(resolve) = &resource.resolve else {
         return Err(DscError::Operation(t!("dscresources.commandResource.resolveNotSupported", resource = &resource.resource_type).to_string()));
     };
@@ -620,7 +620,7 @@ pub fn invoke_resolve(resource: &ResourceManifest, cwd: &str, input: &str) -> Re
 ///
 /// Error is returned if the command fails to execute or stdin/stdout/stderr cannot be opened.
 ///
-async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&str>, env: Option<HashMap<String, String>>, exit_codes: Option<&HashMap<i32, String>>) -> Result<(i32, String, String), DscError> {
+async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&Path>, env: Option<HashMap<String, String>>, exit_codes: Option<&HashMap<i32, String>>) -> Result<(i32, String, String), DscError> {
 
     // use somewhat large initial buffer to avoid early string reallocations;
     // the value is based on list result of largest of built-in adapters - WMI adapter ~500KB
@@ -725,6 +725,22 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
     }
 }
 
+fn convert_hashmap_string_keys_to_i32(input: Option<&HashMap<String, String>>) -> Result<Option<HashMap<i32, String>>, DscError> {
+    if input.is_none() {
+        return Ok(None);
+    }
+
+    let mut output: HashMap<i32, String> = HashMap::new();
+    for (key, value) in input.unwrap() {
+        if let Ok(key_int) = key.parse::<i32>() {
+            output.insert(key_int, value.clone());
+        } else {
+            return Err(DscError::NotSupported(t!("util.invalidExitCodeKey", key = key).to_string()));
+        }
+    }
+    Ok(Some(output))
+}
+
 /// Invoke a command and return the exit code, stdout, and stderr.
 ///
 /// # Arguments
@@ -745,15 +761,18 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
 /// Will panic if tokio runtime can't be created.
 ///
 #[allow(clippy::implicit_hasher)]
-pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&str>, env: Option<HashMap<String, String>>, exit_codes: Option<&HashMap<i32, String>>) -> Result<(i32, String, String), DscError> {
+pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&Path>, env: Option<HashMap<String, String>>, exit_codes: Option<&HashMap<String, String>>) -> Result<(i32, String, String), DscError> {
+    let exit_codes = convert_hashmap_string_keys_to_i32(exit_codes)?;
+    let executable = canonicalize_which(executable, cwd)?;
+
     tokio::runtime::Builder::new_multi_thread().enable_all().build().unwrap().block_on(
         async {
             trace!("{}", t!("dscresources.commandResource.commandInvoke", executable = executable, args = args : {:?}));
             if let Some(cwd) = cwd {
-                trace!("{}", t!("dscresources.commandResource.commandCwd", cwd = cwd));
+                trace!("{}", t!("dscresources.commandResource.commandCwd", cwd = cwd.display()));
             }
 
-            match run_process_async(executable, args, input, cwd, env, exit_codes).await {
+            match run_process_async(&executable, args, input, cwd, env, exit_codes.as_ref()).await {
                 Ok((code, stdout, stderr)) => {
                     Ok((code, stdout, stderr))
                 },
@@ -835,7 +854,7 @@ fn get_command_input(input_kind: Option<&InputKind>, input: &str) -> Result<Comm
     })
 }
 
-fn verify_json(resource: &ResourceManifest, cwd: &str, json: &str) -> Result<(), DscError> {
+fn verify_json(resource: &ResourceManifest, cwd: &Path, json: &str) -> Result<(), DscError> {
 
     debug!("{}", t!("dscresources.commandResource.verifyJson", resource = resource.resource_type));
 

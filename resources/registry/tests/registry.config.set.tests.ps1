@@ -145,4 +145,55 @@ Describe 'registry config set tests' {
         $LASTEXITCODE | Should -Be 0
         $out.results[0].result.afterState._exist | Should -Be $false
     }
+
+    It 'Can delete value from system-protected key with minimal permissions' -Skip:(!$IsWindows) {
+        $testKeyPath = 'HKLM:\Software\Policies\Microsoft\Windows\Appx'
+        if (-not (Test-Path $testKeyPath)) {
+            Set-ItResult -Skipped -Because "Test key path '$testKeyPath' does not exist"
+            return
+        }
+
+        $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+        $isElevated = $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+        
+        if (-not $isElevated) {
+            Set-ItResult -Skipped -Because "Test requires elevated privileges"
+            return
+        }
+
+        $setJson = @'
+        {
+            "keyPath": "HKEY_LOCAL_MACHINE\\Software\\Policies\\Microsoft\\Windows\\Appx",
+            "valueName": "DSCTestValue",
+            "valueData": {
+                "String": "TestData"
+            }
+        }
+'@
+        $out = registry config set --input $setJson 2>$null
+        $LASTEXITCODE | Should -Be 0
+
+        $getJson = @'
+        {
+            "keyPath": "HKEY_LOCAL_MACHINE\\Software\\Policies\\Microsoft\\Windows\\Appx",
+            "valueName": "DSCTestValue"
+        }
+'@
+        $result = registry config get --input $getJson 2>$null | ConvertFrom-Json
+        $result.valueName | Should -Be 'DSCTestValue'
+        $result.valueData.String | Should -Be 'TestData'
+
+        $deleteJson = @'
+        {
+            "keyPath": "HKEY_LOCAL_MACHINE\\Software\\Policies\\Microsoft\\Windows\\Appx",
+            "valueName": "DSCTestValue"
+        }
+'@
+        $out = registry config delete --input $deleteJson 2>$null
+        $LASTEXITCODE | Should -Be 0
+
+        $result = registry config get --input $getJson 2>$null | ConvertFrom-Json
+        $result._exist | Should -Be $false
+        $result.valueData | Should -BeNullOrEmpty
+    }
 }

@@ -50,7 +50,7 @@ if ($Operation -eq 'ClearCache') {
 
 if ($PSVersionTable.PSVersion.Major -le 5) {
     # For Windows PowerShell, we want to remove any PowerShell 7 paths from PSModulePath
-    if ($pwshPath = Get-Command 'pwsh' -ErrorAction Ignore | Select-Obect -ExpandProperty Source) {
+    if ($pwshPath = Get-Command 'pwsh' -ErrorAction Ignore | Select-Object -ExpandProperty Source) {
         $pwshDefaultModulePaths = @(
             "$HOME\Documents\PowerShell\Modules"                # CurrentUser
             "$Env:ProgramFiles\PowerShell\Modules"              # AllUsers

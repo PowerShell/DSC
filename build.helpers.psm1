@@ -10,6 +10,19 @@ enum DscSupportedPlatformOS {
     Linux   = 4
 }
 
+class DscProjectSkipTest {
+    [bool] $Linux
+    [bool] $MacOS
+    [bool] $Windows
+}
+
+class DscProjectCopyFiles {
+    [string[]] $All
+    [string[]] $Linux
+    [string[]] $MacOS
+    [string[]] $Windows
+}
+
 class DscProjectDefinition {
     [string] $Name
     [string] $RelativePath
@@ -22,8 +35,85 @@ class DscProjectDefinition {
     [bool]   $TestOnly
     [DscSupportedPlatformOS] $SupportedPlatformOS = 7
     [string[]] $Binaries
-    [hashtable] $CopyFiles
-    [hashtable] $SkipTest
+    [DscProjectCopyFiles] $CopyFiles
+    [DscProjectSkipTest] $SkipTest
+
+    [string] ToJson([bool]$forBuild) {
+        $json = $this.ToData($forBuild) | ConvertTo-Json -Depth 5 -EnumsAsStrings
+        return ($json -replace "`r`n", "`n")
+    }
+    [string] ToJson() {
+        return $this.ToJson($false)
+    }
+    [System.Collections.Specialized.OrderedDictionary] ToData([bool]$forBuild) {
+        $data = [ordered]@{
+            Name = $this.Name
+            Kind = $this.Kind
+        }
+        if ($forBuild ) {
+            $data.RelativePath = $this.RelativePath
+        }
+        if ($this.SupportedPlatformOS -ne 7) {
+            switch ($this.SupportedPlatformOS) {
+                Linux {
+                    $data.SupportedPlatformOS = 'Linux'
+                }
+                MacOS {
+                    $data.SupportedPlatformOS = 'macOS'
+                }
+                Windows {
+                    $data.SupportedPlatformOS = 'Windows'
+                }
+            }
+        }
+        if ($this.IsRust) {
+            $data.IsRust = $true
+            if ($this.ClippyPedanticUnclean) {
+                $data.ClippyPedanticUnclean = $true
+            }
+            if ($this.ClippyUnclean) {
+                $data.ClippyUnclean = $true
+            }
+        }
+        if ($null -ne $this.Binaries) {
+            $data.Binaries = $this.Binaries
+        }
+        if ($this.TestOnly) {
+            $data.TestOnly = $true
+        }
+        if ($null -ne $this.SkipTest) {
+            $data.SkipTest = [ordered]@{}
+            if ($this.SkipTest.Linux) {
+                $data.SkipTest.Linux = $this.SkipTest.Linux
+            }
+            if ($this.SkipTest.MacOS) {
+                $data.SkipTest.macOS = $this.SkipTest.macOS
+            }
+            if ($this.SkipTest.Windows) {
+                $data.SkipTest.Windows = $this.SkipTest.Windows
+            }
+        }
+        if ($null -ne $this.CopyFiles) {
+            $data.CopyFiles = [ordered]@{}
+            if ($this.CopyFiles.All) {
+                $data.CopyFiles.All = $this.CopyFiles.All
+            }
+            if ($this.CopyFiles.Linux) {
+                $data.CopyFiles.Linux = $this.CopyFiles.Linux
+            }
+            if ($this.CopyFiles.MacOS) {
+                $data.CopyFiles.macOS = $this.CopyFiles.MacOS
+            }
+            if ($this.CopyFiles.Windows) {
+                $data.CopyFiles.Windows = $this.CopyFiles.Windows
+            }
+        }
+
+        return $data
+    }
+    [System.Collections.Specialized.OrderedDictionary] ToData() {
+        return $this.ToData($false)
+    }
 }
 
 class DscProjectPackageFiles {
@@ -36,6 +126,27 @@ class DscProjectPackageFiles {
 class DscProjectBuildData {
     [DscProjectPackageFiles]$PackageFiles
     [DscProjectDefinition[]]$Projects
+
+    [string] ToJson() {
+        $json = $this.ToData() | ConvertTo-Json -Depth 6 -EnumsAsStrings
+        return ($json -replace "`r`n", "`n")
+    }
+    [System.Collections.Specialized.OrderedDictionary] ToData() {
+        $data = [ordered]@{
+            PackageFiles = [ordered]@{
+                Executable = $this.PackageFiles.Executable
+                Linux      = $this.PackageFiles.Linux
+                macOS      = $this.PackageFiles.MacOS
+                Windows    = $this.PackageFiles.Windows
+            }
+            Projects = @()
+        }
+        foreach ($project in $this.Projects) {
+            $data.Projects += $project.ToData($true)
+        }
+
+        return $data
+    }
 }
 
 class DscArtifactDirectoryPath {
@@ -53,14 +164,167 @@ class DscArtifactDirectoryPath {
 #region Build data functions
 function Import-DscBuildData {
     [CmdletBinding()]
-    param()
+    [OutputType("DscProjectBuildData")]
+    param(
+        [switch]$RefreshProjects
+    )
+
+    begin {
+        $buildDataFilePath = Join-Path $PSScriptRoot "build.data.json"
+    }
 
     process {
-        $data = Import-PowerShellDataFile -Path $PSScriptRoot/build.data.psd1
-        $data.Projects = [DscProjectDefinition[]]$data.Projects
+        if (-not (Test-Path $buildDataFilePath)) {
+            throw "Build data file not found: '$buildDataFilePath'"
+        }
+        $data = Get-Content -Path $buildDataFilePath -Raw
+        | ConvertFrom-Json -AsHashtable
+
+        if ($RefreshProjects) {
+            $data.Projects = Get-DscProjectData
+        } else {
+            $data.Projects = [DscProjectDefinition[]]$data.Projects
+        }
+
         [DscProjectBuildData]$data
     }
 }
+
+function Update-DscBuildData {
+    [cmdletbinding()]
+    param(
+        [switch]$PassThru
+    )
+
+    begin {
+        function Write-ComparisonVerbose {
+            [CmdletBinding()]
+            param(
+                [DscProjectDefinition]$Current,
+                [DscProjectDefinition]$New,
+                [string]$PropertyDotPath
+            )
+
+            begin {
+                $name     = $New.Name
+                $oldValue = $Current
+                $newValue = $New
+                foreach ($segment in ($PropertyDotPath -split '.')) {
+                    $oldValue = $oldValue.$segment
+                    $newValue = $newValue.$segment
+                }
+            }
+
+            process {
+                if ($oldValue -ne $newValue) {
+                    Write-Verbose (@(
+                        "Updating '$PropertyDotPath' for '$name' from:"
+                        "'$oldValue'"
+                        "to"
+                        "'$newValue'"
+                    ) -join " ")
+                }
+            }
+        }
+        $propertyDotPaths = @(
+            'RelativePath'
+            'Kind'
+            'IsRust'
+            'ClippyUnclean'
+            'ClippyPedanticUnclean'
+            'SkipTestProject'
+            'OperatingSystemCheck'
+            'TestOnly'
+            'SupportedPlatformOS'
+            'Binaries'
+            'CopyFiles.All'
+            'CopyFiles.Linux'
+            'CopyFiles.macOS'
+            'CopyFiles.Windows'
+            'SkipTest.Linux'
+            'SkipTest.macOS'
+            'SkipTest.Windows'
+        )
+        $buildDataFilePath = Join-Path $PSScriptRoot "build.data.json"
+    }
+
+    process {
+        [DscProjectBuildData]$currentData = Import-DscBuildData
+        [DscProjectBuildData]$newData = Import-DscBuildData -RefreshProjects
+
+        foreach ($newProject in $newData.Projects) {
+            $current = ($currentData.Projects.Where({
+                $_.Name -eq $name
+            }, 'first'))
+            if ($null -eq $current) {
+                Write-Verbose "Adding new project '$($newProject.Name)': $($newProject.ToJson($true))"
+                continue
+            }
+            $comparing = @{
+                Current = ($currentData.Projects.Where({
+                    $_.Name -eq $name
+                }, 'first'))[0]
+                New     = $newProject
+            }
+            if ($VerbosePreference -eq 'Continue') {
+                $comparing.Verbose = $true
+            }
+            foreach ($propertyDotPath in $propertyDotPaths) {
+                $comparing.PropertyDotPath = $propertyDotPath
+                Write-ComparisonVerbose @comparing
+            }
+        }
+
+        $rootProject = $currentData.Projects.Where({
+            $_.Name -eq 'root'
+        }, 'first')[0]
+        $newData.Projects = @($rootProject) + $newData.Projects
+
+        $newJson = $newData.ToJson()
+        $null = $newJson | Out-File -FilePath $buildDataFilePath -Encoding utf8 -Force
+
+        if ($PassThru) {
+            $newData
+        }
+    }
+}
+
+function Get-DscProjectData {
+    [cmdletbinding()]
+    param(
+        [string[]]$Path
+    )
+
+    begin {
+        if ($null -eq $Path) {
+            $Path = $PSScriptRoot
+        }
+        [System.IO.FileInfo[]]$projectDataFiles = @()
+        $repoRootPattern = [regex]::Escape($PSScriptRoot)
+        $gciParams = @{
+            Recurse = $true
+            Filter  = '.project.data.json'
+        }
+        if (-not $IsWindows) {
+            $gciParams.Hidden = $true
+        }
+    }
+
+    process {
+        foreach ($p in $Path) {
+            $projectDataFiles += Get-ChildItem -Path $p @gciParams
+        }
+        foreach ($projectFile in $projectDataFiles) {
+            [DscProjectDefinition]$data = Get-Content -Raw -Path $projectFile | ConvertFrom-Json -AsHashtable
+            $relativePath = $projectFile.Directory.FullName -replace $repoRootPattern, ''
+            $relativePath = $relativePath -replace '\\', '/'
+            $relativePath = $relativePath.trim('/')
+            $data.RelativePath = $relativePath
+            $data
+        }
+    }
+}
+
 function Get-DscCliVersion {
     <#
         .SYNOPSIS
@@ -485,9 +749,6 @@ function Set-RustEnvironment {
     process {
         Write-Verbose "Caching current rust environment variables..."
         [hashtable]$currentRustEnvironment = Get-RustEnvironment
-
-        Write-Verbose "Setting RUSTFLAGS to '-Dwarnings'"
-        $env:RUSTFLAGS='-Dwarnings'
 
         if ($VerbosePreference -eq 'Continue') {
             Write-Verbose "Running verbose, setting RUSTC_LOG "
@@ -1002,12 +1263,14 @@ function Export-GrammarBinding {
         }
 
         $env:TREE_SITTER_VERBOSE = 1
+        Write-Verbose "Searching for grammar projects..."
         $grammarProjects = $Project | Where-Object -FilterScript { $_.Kind -eq 'Grammar'}
+        Write-Verbose "Found grammar projects: [`n`t$($grammarProjects.Name -join "`n`t")`n]"
     }
 
     process {
-
         foreach ($grammar in $grammarProjects) {
+            Write-Verbose "Exporting grammar binding for '$($grammar.Name)'"
             try {
                 Push-Location $grammar.RelativePath
                 Invoke-NativeCommand 'tree-sitter init --update'
@@ -1229,14 +1492,15 @@ function Copy-BuildArtifact {
 }
 #endregion Build project functions
 
-#region    Test project functions
-function Test-RustProject {
+#region    Documenting project functions
+function Export-RustDocs {
     [CmdletBinding()]
     param(
         [DscProjectDefinition[]]$Project,
         [ValidateSet('current','aarch64-pc-windows-msvc','x86_64-pc-windows-msvc','aarch64-apple-darwin','x86_64-apple-darwin','aarch64-unknown-linux-gnu','aarch64-unknown-linux-musl','x86_64-unknown-linux-gnu','x86_64-unknown-linux-musl')]
         $Architecture = 'current',
-        [switch]$Release
+        [switch]$Release,
+        [switch]$IncludeDependencies
     )
 
     begin {
@@ -1254,11 +1518,65 @@ function Test-RustProject {
             }
             Set-DefaultWorkspaceMemberGroup -MemberGroup $memberGroup
         }
+        if (-not $IncludeDependencies) {
+            $flags += '--no-deps'
+        }
     }
 
     process {
         $members = Get-DefaultWorkspaceMemberGroup
-        Write-Verbose -Verbose "Testing rust projects: [$members]"
+        Write-Verbose -Verbose "Exporting documentation for rust projects: [$members]"
+        cargo doc @flags
+
+        if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
+            Write-Error "Last exit code is $LASTEXITCODE, 'cargo doc' failed"
+        }
+    }
+
+    clean {
+        Reset-DefaultWorkspaceMemberGroup
+    }
+}
+#endregion Documenting project functions
+
+#region    Test project functions
+function Test-RustProject {
+    [CmdletBinding()]
+    param(
+        [DscProjectDefinition[]]$Project,
+        [ValidateSet('current','aarch64-pc-windows-msvc','x86_64-pc-windows-msvc','aarch64-apple-darwin','x86_64-apple-darwin','aarch64-unknown-linux-gnu','aarch64-unknown-linux-musl','x86_64-unknown-linux-gnu','x86_64-unknown-linux-musl')]
+        $Architecture = 'current',
+        [switch]$Release,
+        [switch]$Docs
+    )
+
+    begin {
+        $flags = @($Release ? '-r' : $null)
+        if ($Architecture -ne 'current') {
+            $flags += '--target'
+            $flags += $Architecture
+        } else {
+            $memberGroup = if ($IsLinux) {
+                'Linux'
+            } elseif ($IsMacOS) {
+                'macOS'
+            } elseif ($IsWindows) {
+                'Windows'
+            }
+            Set-DefaultWorkspaceMemberGroup -MemberGroup $memberGroup
+        }
+        if ($Docs) {
+            $flags += '--doc'
+        }
+    }
+
+    process {
+        $members = Get-DefaultWorkspaceMemberGroup
+        if ($Docs) {
+            Write-Verbose -Verbose "Testing documentation for rust projects: [$members]"
+        } else {
+            Write-Verbose -Verbose "Testing rust projects: [$members]"
+        }
         cargo test @flags
 
         if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {

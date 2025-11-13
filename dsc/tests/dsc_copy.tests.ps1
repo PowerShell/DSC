@@ -263,4 +263,75 @@ resources:
         $out.results[3].name | Should -Be 'Server-3'
         $out.results[3].result.actualState.output | Should -Be 'Hello'
     }
+
+    It 'Copy works with copyIndex() in properties' {
+        $configYaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: "[format('Server-{0}', copyIndex())]"
+  copy:
+    name: testLoop
+    count: 3
+  type: Microsoft.DSC.Debug/Echo
+  properties:
+    output: "[format('Instance-{0}', copyIndex())]"
+'@
+        $out = dsc -l trace config get -i $configYaml 2>$testdrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content $testdrive/error.log -Raw | Out-String)
+        $out.results.Count | Should -Be 3
+        $out.results[0].name | Should -Be 'Server-0'
+        $out.results[0].result.actualState.output | Should -Be 'Instance-0'
+        $out.results[1].name | Should -Be 'Server-1'
+        $out.results[1].result.actualState.output | Should -Be 'Instance-1'
+        $out.results[2].name | Should -Be 'Server-2'
+        $out.results[2].result.actualState.output | Should -Be 'Instance-2'
+    }
+
+    It 'Copy works with copyIndex() with offset in properties' {
+        $configYaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: "[format('Server-{0}', copyIndex())]"
+  copy:
+    name: testLoop
+    count: 3
+  type: Microsoft.DSC.Debug/Echo
+  properties:
+    output: "[format('Port-{0}', copyIndex(8080))]"
+'@
+        $out = dsc -l trace config get -i $configYaml 2>$testdrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content $testdrive/error.log -Raw | Out-String)
+        $out.results.Count | Should -Be 3
+        $out.results[0].name | Should -Be 'Server-0'
+        $out.results[0].result.actualState.output | Should -Be 'Port-8080'
+        $out.results[1].name | Should -Be 'Server-1'
+        $out.results[1].result.actualState.output | Should -Be 'Port-8081'
+        $out.results[2].name | Should -Be 'Server-2'
+        $out.results[2].result.actualState.output | Should -Be 'Port-8082'
+    }
+
+    It 'Copy works with parameters and copyIndex() combined in properties' {
+        $configYaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+parameters:
+  prefix:
+    type: string
+    defaultValue: web
+resources:
+- name: "[format('Server-{0}', copyIndex())]"
+  copy:
+    name: testLoop
+    count: 2
+  type: Microsoft.DSC.Debug/Echo
+  properties:
+    output: "[concat(parameters('prefix'), '-', string(copyIndex(1)))]"
+'@
+        $out = dsc -l trace config get -i $configYaml 2>$testdrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content $testdrive/error.log -Raw | Out-String)
+        $out.results.Count | Should -Be 2
+        $out.results[0].name | Should -Be 'Server-0'
+        $out.results[0].result.actualState.output | Should -Be 'web-1'
+        $out.results[1].name | Should -Be 'Server-1'
+        $out.results[1].result.actualState.output | Should -Be 'web-2'
+    }
 }

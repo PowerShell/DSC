@@ -1,0 +1,296 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$defs": {
+        "BuildDataFile": {
+            "title": "Build Data",
+            "markdownDescription": "Defines metadata required for building, testing, and packaging DSC and all related projects with the `build.new.ps1` build script.",
+            "type": "object",
+            "required": ["PackageFiles", "Projects"],
+            "unevaluatedProperties": false,
+            "properties": {
+                "PackageFiles": {
+                    "$ref": "#/$defs/BuildPackageFiles"
+                },
+                "Projects": {
+                    "type": "array",
+                    "items": {
+                        "title": "Project Data",
+                        "markdownDescription": "Defines metadata for every project. Composed from the `.project.data.json` files for each project in the repository.",
+                        "required": ["Name", "Kind"],
+                        "unevaluatedProperties": false,
+                        "properties": {
+                            "Name":                { "$ref": "#/$defs/ProjectName" },
+                            "Kind":                { "$ref": "#/$defs/ProjectKind" },
+                            "SupportedPlatformOS": { "$ref": "#/$defs/ProjectSupportedPlatformOS" },
+                            "IsRust":              { "$ref": "#/$defs/ProjectIsRust" },
+                            "TestOnly":            { "$ref": "#/$defs/ProjectTestOnly" },
+                            "SkipTest":            { "$ref": "#/$defs/ProjectSkipTest" },
+                            "ClippyUnclean":       { "$ref": "#/$defs/ProjectClippyUnclean" },
+                            "Binaries":            { "$ref": "#/$defs/ProjectBinaries" },
+                            "CopyFiles":           { "$ref": "#/$defs/ProjectCopyFiles" }
+                        },
+                        "allOf": [
+                            {
+                                "if": {
+                                    "properties": {
+                                        "Kind": {
+                                            "const": "Root"
+                                        }
+                                    }
+                                },
+                                "then": {
+                                    "properties": {
+                                        "RelativePath": {
+                                            "const": "."
+                                        }
+                                    }
+                                },
+                                "else": {
+                                    "properties": {
+                                        "RelativePath": {
+                                            "$ref": "#/$defs/ProjectRelativePath"
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        "ProjectDataFile": {
+            "title": "Project Data File",
+            "markdownDescription": "Defines metadata about the project for the build tooling.",
+            "type": "object",
+            "required": ["Name", "Kind"],
+            "unevaluatedProperties": false,
+            "properties": {
+                "Name":                { "$ref": "#/$defs/ProjectName" },
+                "Kind":                { "$ref": "#/$defs/ProjectKind" },
+                "SupportedPlatformOS": { "$ref": "#/$defs/ProjectSupportedPlatformOS" },
+                "IsRust":              { "$ref": "#/$defs/ProjectIsRust" },
+                "TestOnly":            { "$ref": "#/$defs/ProjectTestOnly" },
+                "SkipTest":            { "$ref": "#/$defs/ProjectSkipTest" },
+                "ClippyUnclean":       { "$ref": "#/$defs/ProjectClippyUnclean" },
+                "Binaries":            { "$ref": "#/$defs/ProjectBinaries" },
+                "CopyFiles":           { "$ref": "#/$defs/ProjectCopyFiles" }
+            }
+        },
+        "BuildPackageFiles": {
+            "title": "Package Files",
+            "markdownDescription": "Defines the sets of files for packaging.",
+            "type": "object",
+            "required": [
+                "Executable",
+                "macOS",
+                "Linux",
+                "Windows"
+            ],
+            "properties": {
+                "Executable": {
+                    "title": "Executable Package Files",
+                    "markdownDescription": "Defines the list of files to mark as executable. After copying artifacts, the build script enumerates each item in this list and uses `chmod` to make the files executable if they exist.",
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "minLength": 3
+                    }
+                },
+                "macOS": {
+                    "title": "Package files for macOS",
+                    "markdownDescription": "Defines the _full_ list of files and folders to include in packages for macOS platform builds.",
+                    "type": "array",
+                    "items": {
+                        "title": "Package file definition",
+                        "markdownDescription": "Defines the name of the file or folder to include in the package. For folders, ensure the item in the array ends with a forward slash (`/`). For nested items, always use a forward slash (`/`) to separate segments, even on Windows.",
+                        "type": "string",
+                        "minLength": 3
+                    }
+                },
+                "Linux": {
+                    "title": "Package files for Linux",
+                    "markdownDescription": "Defines the _full_ list of files and folders to include in packages for Linux platform builds.",
+                    "type": "array",
+                    "items": {
+                        "title": "Package file definition",
+                        "markdownDescription": "Defines the name of the file or folder to include in the package. For folders, ensure the item in the array ends with a forward slash (`/`). For nested items, always use a forward slash (`/`) to separate segments, even on Windows.",
+                        "type": "string",
+                        "minLength": 3
+                    }
+                },
+                "Windows": {
+                    "title": "Package files for Windows",
+                    "markdownDescription": "Defines the _full_ list of files and folders to include in packages for Windows platform builds.",
+                    "type": "array",
+                    "items": {
+                        "title": "Package file definition",
+                        "markdownDescription": "Defines the name of the file or folder to include in the package. For folders, ensure the item in the array ends with a forward slash (`/`). For nested items, always use a forward slash (`/`) to separate segments, even on Windows.",
+                        "type": "string",
+                        "minLength": 3
+                    }
+                }
+            }
+        },
+        "ProjectName": {
+            "type": "string",
+            "title": "Project Name",
+            "markdownDescription": "The _name_ for the project.",
+            "minLength": 3
+        },
+        "ProjectKind": {
+            "type": "string",
+            "title": "Project Kind",
+            "markdownDescription": "Defines what category the project is.",
+            "enum": [
+                "Adapter",
+                "CLI",
+                "Configuration",
+                "Extension",
+                "Grammar",
+                "Library",
+                "Resource",
+                "Root"
+            ],
+            "enumDescriptions": [
+                "The project is for a DSC resource adapter.",
+                "The project is for a standalone CLI tool.",
+                "The project is for a set of shared configurations.",
+                "The project is for a tree-sitter grammar.",
+                "The project is for a Rust library.",
+                "The project is for a DSC resource implemented in any language."
+            ]
+        },
+        "ProjectRelativePath": {
+            "title": "Relative Path to Project",
+            "markdownDescription": "Defines the path to the folder containing the project, relative to the repository root.\n\nSpecify the folder paths without the relative-path prefix (`./`), like `extensions/bicep` instead of `./extensions/bicep`.\n\n",
+            "type": "string",
+            "pattern": "^(\\w|-)+(\\/(\\w|-)+)*$",
+            "patternErrorMessage": "The path must be relative to the repository root but without a leading `.` or `/`. Use a `/` to separate folders, even on Windows."
+        },
+        "ProjectSupportedPlatformOS": {
+            "type": "string",
+            "title": "Supported Platform Operating System",
+            "markdownDescription": "Defines which operating system the project is limited to.",
+            "enum": [
+                "macOS",
+                "Linux",
+                "Windows"
+            ],
+            "enumDescriptions": [
+                "Indicates the project is only for macOS systems.",
+                "Indicates the project is only for Linux systems.",
+                "Indicates the project is only for Windows systems."
+            ]
+        },
+        "ProjectIsRust": {
+            "type": "boolean",
+            "default": false,
+            "title": "Is Rust Crate",
+            "markdownDescription": "Indicates whether the project is a Rust crate."
+        },
+        "ProjectTestOnly": {
+            "type": "boolean",
+            "default": false,
+            "title": "Project is for Testing Purposes Only",
+            "markdownDescription": "Indicates... whether a project is only defined for testing, like the `dsctest` project. Test-only projects don't need to be built when packaging for a release."
+        },
+        "ProjectSkipTest": {
+            "title": "Skip Tests by Platform",
+            "markdownDescription": "Indicates whether to skip tests for specific platforms. Tests are always skipped for unsupported platforms.",
+            "type": "object",
+            "properties": {
+                "Linux": {
+                    "title": "Skip tests on Linux",
+                    "markdownDescription": "Indicates that tests for the project should be skipped on Linux.",
+                    "type": "boolean",
+                    "default": false
+                },
+                "macOS": {
+                    "title": "Skip tests on macOS",
+                    "markdownDescription": "Indicates that tests for the project should be skipped on macOS.",
+                    "type": "boolean",
+                    "default": false
+                },
+                "Windows": {
+                    "title": "Skip tests on Windows",
+                    "markdownDescription": "Indicates that tests for the project should be skipped on Windows.",
+                    "type": "boolean",
+                    "default": false
+                }
+            },
+            "additionalProperties": false
+        },
+        "ProjectClippyUnclean": {
+            "type": "boolean",
+            "default": false,
+            "title": "Clippy Unclean",
+            "markdownDescription": "Indicates whether to skip linting the Rust crate with Clippy."
+        },
+        "ProjectBinaries": {
+            "type": "array",
+            "title": "Project Binaries",
+            "markdownDescription": "Defines an array of binary file names to copy from a Rust project after compilation.\n\nSpecify only the base name of the binary, like `dsc`, not `dsc.exe`. The build tooling copies each binary to the `bin` folder after compilation. On Windows, the build script automatically copies both the `.exe` and the `.pdb` files.\n\nIf a project defines more than one binary, ensure you define every binary in this array.",
+            "items": {
+                "type": "string",
+                "title": "Binary base name",
+                "markdownDescription": "Specify the _base name_ of the binary. Don't specify any file extensions, even for Windows-only binaries."
+            }
+        },
+        "ProjectCopyFiles": {
+            "type": "object",
+            "title": "Files to Copy as Build Artifacts",
+            "markdownDescription": "Defines relative paths to static files from the project folder to copy as build artifacts. Compiled binaries are copied separately. Ensure this array includes any manifests, script files, and other static files.\n\nSpecify the paths without a relative prefix, like:\n\n- `foo.dsc.resource.json` instead of `./foo.dsc.resource.json`\n- `subfolder/subsubfolder/script.ps1` instead of `./subfolder/subsubfolder/script.ps1`",
+            "additionalProperties": false,
+            "properties": {
+                "All": {
+                    "title": "Files to Copy for All Platforms",
+                    "markdownDescription": "Defines an array of relative paths to files to copy as build artifacts for all platforms.",
+                    "type": "array",
+                    "items": {
+                        "title": "File to Copy",
+                        "markdownDescription": "Relative path to a file to copy Must not start with `.` or `/`.",
+                        "type": "string",
+                        "pattern": "^(\\w|-)+(\\/(\\w|-)+)*?(\\w|-)+(\\.(\\w|-)+)*$",
+                        "patternErrorMessage": "The path must be relative to the project folder but without a leading `.` or `/`. Use a `/` to separate folders, even on Windows."
+                    }
+                },
+                "Linux": {
+                    "title": "Files to Copy for Linux",
+                    "markdownDescription": "Defines an array of relative paths to files to copy as build artifacts for Linux platform builds.",
+                    "type": "array",
+                    "items": {
+                        "title": "File to Copy",
+                        "markdownDescription": "Relative path to a file to copy Must not start with `.` or `/`.",
+                        "type": "string",
+                        "pattern": "^(\\w|-)+(\\/(\\w|-)+)*?(\\w|-)+(\\.(\\w|-)+)*$",
+                        "patternErrorMessage": "The path must be relative to the project folder but without a leading `.` or `/`. Use a `/` to separate folders, even on Windows."
+                    }
+                },
+                "macOS": {
+                    "title": "Files to Copy for macOS",
+                    "markdownDescription": "Defines an array of relative paths to files to copy as build artifacts for macOS platform builds.",
+                    "type": "array",
+                    "items": {
+                        "title": "File to Copy",
+                        "markdownDescription": "Relative path to a file to copy Must not start with `.` or `/`.",
+                        "type": "string",
+                        "pattern": "^(\\w|-)+(\\/(\\w|-)+)*?(\\w|-)+(\\.(\\w|-)+)*$",
+                        "patternErrorMessage": "The path must be relative to the project folder but without a leading `.` or `/`. Use a `/` to separate folders, even on Windows."
+                    }
+                },
+                "Windows": {
+                    "title": "Files to Copy for Windows",
+                    "markdownDescription": "Defines an array of relative paths to files to copy as build artifacts for Windows platform builds.",
+                    "type": "array",
+                    "items": {
+                        "title": "File to Copy",
+                        "markdownDescription": "Relative path to a file to copy Must not start with `.` or `/`.",
+                        "type": "string",
+                        "pattern": "^(\\w|-)+(\\/(\\w|-)+)*?(\\w|-)+(\\.(\\w|-)+)*$",
+                        "patternErrorMessage": "The path must be relative to the project folder but without a leading `.` or `/`. Use a `/` to separate folders, even on Windows."
+                    }
+                }
+            }
+        }
+    }
+}

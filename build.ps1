@@ -29,7 +29,6 @@ trap {
 }
 
 $env:RUSTC_LOG=$null
-$env:RUSTFLAGS='-Dwarnings'
 $usingADO = ($null -ne $env:TF_BUILD)
 if ($usingADO -or $UseCFSAuth) {
     $UseCFS = $true
@@ -182,20 +181,15 @@ if ($null -ne $packageType) {
                 throw "Azure CLI not found"
             }
 
-            if ($null -ne (Get-Command az -ErrorAction Ignore)) {
-                Write-Host "Getting token"
-                $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
-                if ($LASTEXITCODE -ne 0) {
-                    Write-Warning "Failed to get access token, use 'az login' first, or use '-useCratesIO' to use crates.io.  Proceeding with anonymous access."
-                } else {
-                    $header = "Bearer $accessToken"
-                    $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
-                    $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
-                    $env:CARGO_REGISTRIES_POWERSHELL_INDEX = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell~force-auth/Cargo/index/"
-                }
-            }
-            else {
-                Write-Warning "Azure CLI not found, proceeding with anonymous access."
+            Write-Host "Getting token"
+            $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warning "Failed to get access token, use 'az login' first, or use '-useCratesIO' to use crates.io.  Proceeding with anonymous access."
+            } else {
+                $header = "Bearer $accessToken"
+                $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
+                $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
+                $env:CARGO_REGISTRIES_POWERSHELL_INDEX = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell~force-auth/Cargo/index/"
             }
         }
     } else {
@@ -499,11 +493,11 @@ if (!$SkipBuild) {
             }
 
             if ($IsWindows) {
-                Copy-Item "*.dsc.resource.json" $target -Force -ErrorAction Ignore
+                Copy-Item "*.dsc.resource.*","*.dsc.manifests.*" $target -Force -ErrorAction Ignore
             }
             else { # don't copy WindowsPowerShell resource manifest
                 $exclude = @('windowspowershell.dsc.resource.json', 'winpsscript.dsc.resource.json')
-                Copy-Item "*.dsc.resource.json" $target -Exclude $exclude -Force -ErrorAction Ignore
+                Copy-Item "*.dsc.resource.*","*.dsc.manifests.*" $target -Exclude $exclude -Force -ErrorAction Ignore
             }
 
             # be sure that the files that should be executable are executable

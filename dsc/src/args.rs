@@ -66,9 +66,9 @@ pub enum SubCommand {
     Config {
         #[clap(subcommand)]
         subcommand: ConfigSubCommand,
-        #[clap(short, long, help = t!("args.parameters").to_string(), conflicts_with = "parameters_file")]
+        #[clap(short, long, help = t!("args.parameters").to_string())]
         parameters: Option<String>,
-        #[clap(short = 'f', long, help = t!("args.parametersFile").to_string(), conflicts_with = "parameters")]
+        #[clap(short = 'f', long, help = t!("args.parametersFile").to_string())]
         parameters_file: Option<String>,
         #[clap(short = 'r', long, help = t!("args.systemRoot").to_string())]
         system_root: Option<String>,
@@ -289,20 +289,21 @@ pub enum ResourceSubCommand {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
 pub enum SchemaType {
-    GetResult,
-    SetResult,
-    TestResult,
-    ResolveResult,
-    DscResource,
-    Resource,
-    ResourceManifest,
-    Include,
     Configuration,
     ConfigurationGetResult,
     ConfigurationSetResult,
     ConfigurationTestResult,
-    ExtensionManifest,
+    DscResource,
     ExtensionDiscoverResult,
+    ExtensionManifest,
     FunctionDefinition,
-    RestartRequired
+    GetResult,
+    Include,
+    ManifestList,
+    ResolveResult,
+    Resource,
+    ResourceManifest,
+    RestartRequired,
+    SetResult,
+    TestResult,
 }

@@ -391,7 +391,7 @@ Describe 'Parameters tests' {
       $LASTEXITCODE | Should -Be 4
       $out | Should -BeNullOrEmpty
       $errorMessage = Get-Content -Path $TestDrive/error.log -Raw
-      $errorMessage | Should -BeLike "*ERROR*Cannot read from STDIN for both parameters and input*"
+      $errorMessage | Should -BeLike "*ERROR*Empty input provided*"
     }
 
     It 'Invalid parameters read from STDIN result in error' {
@@ -576,5 +576,420 @@ Describe 'Parameters tests' {
         $testError = & {$config_yaml | dsc config get -f - 2>&1}
         $LASTEXITCODE | Should -Be 4
         $testError | Should -Match 'Circular dependency or unresolvable parameter references detected in parameters'
+    }
+
+    It 'Default value violates <constraint> constraint' -TestCases @(
+        @{ constraint = 'minLength'; type = 'string'; value = 'ab'; min = 3; max = 20; errorMatch = 'minimum length' }
+        @{ constraint = 'maxLength'; type = 'string'; value = 'verylongusernamethatexceedslimit'; min = 3; max = 20; errorMatch = 'maximum length' }
+        @{ constraint = 'minValue'; type = 'int'; value = 0; min = 1; max = 65535; errorMatch = 'minimum value' }
+        @{ constraint = 'maxValue'; type = 'int'; value = 99999; min = 1; max = 65535; errorMatch = 'maximum value' }
+    ) {
+        param($constraint, $type, $value, $min, $max, $errorMatch)
+
+        if ($type -eq 'string') {
+            $value = "'$value'"
+        }
+
+        $minConstraint = if ($type -eq 'string') { "minLength: $min" } else { "minValue: $min" }
+        $maxConstraint = if ($type -eq 'string') { "maxLength: $max" } else { "maxValue: $max" }
+
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              param1:
+                type: $type
+                $minConstraint
+                $maxConstraint
+                defaultValue: $value
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '[parameters(''param1'')]'
+"@
+
+        $testError = & {$config_yaml | dsc config get -f - 2>&1}
+        $LASTEXITCODE | Should -Be 4
+        $testError | Should -Match $errorMatch
+    }
+
+    It 'Default value violates allowedValues constraint for <type>' -TestCases @(
+        @{ type = 'string'; value = 'staging'; allowed = @('dev', 'test', 'prod') }
+        @{ type = 'int'; value = 7; allowed = @(1, 5, 10) }
+    ) {
+        param($type, $value, $allowed)
+
+        if ($type -eq 'string') {
+            $value = "'$value'"
+        }
+
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              param1:
+                type: $type
+                allowedValues: $($allowed | ConvertTo-Json -Compress)
+                defaultValue: $value
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '[parameters(''param1'')]'
+"@
+
+        $testError = & {$config_yaml | dsc config get -f - 2>&1}
+        $LASTEXITCODE | Should -Be 4
+        $testError | Should -Match 'allowed values'
+    }
+
+    It 'Default values pass constraint validation for <type>' -TestCases @(
+        @{ type = 'string'; value = 'admin'; min = 3; max = 20 }
+        @{ type = 'string'; value = 'abc'; min = 3; max = 20 }
+        @{ type = 'string'; value = 'abcdefghijklmnopqrst'; min = 3; max = 20 }
+        @{ type = 'int'; value = 8080; min = 1; max = 65535 }
+        @{ type = 'int'; value = 1; min = 1; max = 65535 }
+        @{ type = 'int'; value = 65535; min = 1; max = 65535 }
+    ) {
+        param($type, $value, $min, $max)
+
+        $minConstraint = if ($type -eq 'string') { "minLength: $min" } else { "minValue: $min" }
+        $maxConstraint = if ($type -eq 'string') { "maxLength: $max" } else { "maxValue: $max" }
+
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              param1:
+                type: $type
+                $minConstraint
+                $maxConstraint
+                defaultValue: $value
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '[parameters(''param1'')]'
+"@
+
+        $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].result.actualState.output | Should -BeExactly $value
+    }
+
+    It 'Default values with allowedValues pass validation for <type>' -TestCases @(
+        @{ type = 'string'; value = 'dev'; allowed = @('dev', 'test', 'prod') }
+        @{ type = 'string'; value = 'prod'; allowed = @('dev', 'test', 'prod') }
+        @{ type = 'int'; value = 5; allowed = @(1, 5, 10) }
+        @{ type = 'int'; value = 10; allowed = @(1, 5, 10) }
+    ) {
+        param($type, $value, $allowed)
+
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              param1:
+                type: $type
+                allowedValues: $($allowed | ConvertTo-Json -Compress)
+                defaultValue: $value
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '[parameters(''param1'')]'
+"@
+
+        $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].result.actualState.output | Should -BeExactly $value
+    }
+
+    It 'Inline parameters and parameters file can be used together' {
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              message:
+                type: string
+              environment:
+                type: string
+              port:
+                type: int
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[concat('Message: ', parameters('message'), ', Environment: ', parameters('environment'), ', Port: ', string(parameters('port')))]"
+"@
+        $paramsFile = @{
+            parameters = @{
+                message = 'Hello from file'
+                environment = 'production'
+                port = 8080
+            }
+        } | ConvertTo-Json
+
+        $inlineParams = @{
+            parameters = @{
+                message = 'Hello from inline'
+                port = 3000
+            }
+        } | ConvertTo-Json
+
+        $file_path = "$TestDrive/test.parameters.json"
+        Set-Content -Path $file_path -Value $paramsFile
+
+        $out = dsc config --parameters-file $file_path --parameters $inlineParams get -i $config_yaml | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].result.actualState.output | Should -BeExactly 'Message: Hello from inline, Environment: production, Port: 3000'
+    }
+
+    It 'Inline parameters take precedence over parameters file' {
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              value1:
+                type: string
+              value2:
+                type: string
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[concat(parameters('value1'), '-', parameters('value2'))]"
+"@
+        $paramsFile = @{
+            parameters = @{
+                value1 = 'file1'
+                value2 = 'file2'
+            }
+        } | ConvertTo-Json
+
+        $inlineParams = @{
+            parameters = @{
+                value1 = 'inline1'
+            }
+        } | ConvertTo-Json
+
+        $file_path = "$TestDrive/test.parameters.json"
+        Set-Content -Path $file_path -Value $paramsFile
+
+        $out = dsc config --parameters-file $file_path --parameters $inlineParams get -i $config_yaml | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].result.actualState.output | Should -BeExactly 'inline1-file2'
+    }
+
+    It 'Parameters file from stdin can be merged with inline parameters' {
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              param1:
+                type: string
+              param2:
+                type: string
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[concat(parameters('param1'), '-', parameters('param2'))]"
+"@
+        $paramsFile = @{
+            parameters = @{
+                param1 = 'fromStdin'
+                param2 = 'alsoFromStdin'
+            }
+        } | ConvertTo-Json
+
+        $inlineParams = @{
+            parameters = @{
+                param2 = 'fromInline'
+            }
+        } | ConvertTo-Json
+
+        $out = $paramsFile | dsc config --parameters-file - --parameters $inlineParams get -i $config_yaml | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].result.actualState.output | Should -BeExactly 'fromStdin-fromInline'
+    }
+
+    It 'Parameters file in YAML format can be merged with inline JSON parameters' {
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              name:
+                type: string
+              age:
+                type: int
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[concat(parameters('name'), ' is ', string(parameters('age')))]"
+"@
+        $paramsFileYaml = @"
+parameters:
+  name: John
+  age: 30
+"@
+        $inlineParams = @{
+            parameters = @{
+                age = 25
+            }
+        } | ConvertTo-Json
+
+        $file_path = "$TestDrive/test.parameters.yaml"
+        Set-Content -Path $file_path -Value $paramsFileYaml
+
+        $out = dsc config --parameters-file $file_path --parameters $inlineParams get -i $config_yaml | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].result.actualState.output | Should -BeExactly 'John is 25'
+    }
+
+    It 'Merged parameters work with default values' {
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              param1:
+                type: string
+                defaultValue: default1
+              param2:
+                type: string
+                defaultValue: default2
+              param3:
+                type: string
+                defaultValue: default3
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[concat(parameters('param1'), '-', parameters('param2'), '-', parameters('param3'))]"
+"@
+        $paramsFile = @{
+            parameters = @{
+                param2 = 'fromFile'
+            }
+        } | ConvertTo-Json
+
+        $inlineParams = @{
+            parameters = @{
+                param3 = 'fromInline'
+            }
+        } | ConvertTo-Json
+
+        $file_path = "$TestDrive/test.parameters.json"
+        Set-Content -Path $file_path -Value $paramsFile
+
+        $out = dsc config --parameters-file $file_path --parameters $inlineParams get -i $config_yaml | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].result.actualState.output | Should -BeExactly 'default1-fromFile-fromInline'
+    }
+
+    It 'Merged parameters support all data types: <type>' -TestCases @(
+        @{ type = 'string'; fileValue = 'file'; inlineValue = 'inline' }
+        @{ type = 'int'; fileValue = 100; inlineValue = 200 }
+        @{ type = 'bool'; fileValue = $false; inlineValue = $true }
+        @{ type = 'array'; fileValue = @('a', 'b'); inlineValue = @('x', 'y', 'z') }
+        @{ type = 'object'; fileValue = @{key1='value1'}; inlineValue = @{key2='value2'} }
+    ) {
+        param($type, $fileValue, $inlineValue)
+
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              fileParam:
+                type: $type
+              inlineParam:
+                type: $type
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[concat(string(parameters('fileParam')), '-', string(parameters('inlineParam')))]"
+"@
+        $paramsFile = @{
+            parameters = @{
+                fileParam = $fileValue
+                inlineParam = $fileValue
+            }
+        } | ConvertTo-Json
+
+        $inlineParams = @{
+            parameters = @{
+                inlineParam = $inlineValue
+            }
+        } | ConvertTo-Json
+
+        $file_path = "$TestDrive/test.parameters.json"
+        Set-Content -Path $file_path -Value $paramsFile
+
+        $out = dsc config --parameters-file $file_path --parameters $inlineParams get -i $config_yaml | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        if ($type -eq 'bool') {
+            $expectedOutput = "{0}-{1}" -f $fileValue.ToString().ToLower(), $inlineValue.ToString().ToLower()
+        }
+        elseif ($type -eq 'array') {
+            $fileJson = $fileValue | ConvertTo-Json -Compress
+            $inlineJson = $inlineValue | ConvertTo-Json -Compress
+            $expectedOutput = "{0}-{1}" -f $fileJson, $inlineJson
+        }
+        elseif ($type -eq 'object') {
+            $fileJson = $fileValue | ConvertTo-Json -Compress
+            $inlineJson = $inlineValue | ConvertTo-Json -Compress
+            $expectedOutput = "{0}-{1}" -f $fileJson, $inlineJson
+        }
+        else {
+            $expectedOutput = "{0}-{1}" -f $fileValue, $inlineValue
+        } 
+        $out.results[0].result.actualState.output | Should -BeExactly $expectedOutput
+    }
+
+    It 'Invalid inline parameters format returns error when merging' {
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              param1:
+                type: string
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[parameters('param1')]"
+"@
+        $paramsFile = @{
+            parameters = @{
+                param1 = 'valid'
+            }
+        } | ConvertTo-Json
+
+        $file_path = "$TestDrive/test.parameters.json"
+        Set-Content -Path $file_path -Value $paramsFile
+
+        $invalidInlineParams = 'not valid json'
+
+        $out = & {$config_yaml | dsc config --parameters-file $file_path --parameters $invalidInlineParams get -f - 2>&1}
+        $LASTEXITCODE | Should -Be 4
+        $out | Should -Match 'Failed to merge parameters'
+    }
+
+    It 'Invalid parameters file format returns error when merging' {
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              param1:
+                type: string
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[parameters('param1')]"
+"@
+        $inlineParams = @{
+            parameters = @{
+                param1 = 'valid'
+            }
+        } | ConvertTo-Json
+
+        $file_path = "$TestDrive/test.parameters.json"
+        Set-Content -Path $file_path -Value 'not valid json'
+
+        $out = & {$config_yaml | dsc config --parameters-file $file_path --parameters $inlineParams get -f - 2>&1}
+        $LASTEXITCODE | Should -Be 4
+        $out | Should -Match 'Failed to merge parameters'
     }
 }

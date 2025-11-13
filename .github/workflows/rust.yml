@@ -19,6 +19,28 @@ defaults:
     shell: pwsh
 
 jobs:
+  docs:
+    strategy:
+      matrix:
+        platform: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{matrix.platform}}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install prerequisites
+        run: ./build.new.ps1 -SkipBuild -Clippy -Verbose
+      - name: Generate documentation
+        run: ./build.new.ps1 -RustDocs -Verbose
+      - name: Test documentation
+        run: |-
+          $testParams = @{
+            SkipBuild          = $true
+            RustDocs           = $true
+            Test               = $true
+            ExcludeRustTests   = $true
+            ExcludePesterTests = $true
+            Verbose            = $true
+          }
+          ./build.new.ps1 @testParams
   linux-build:
     runs-on: ubuntu-latest
     steps:
@@ -39,6 +61,7 @@ jobs:
   linux-pester:
     needs: linux-build
     strategy:
+      fail-fast: false
       matrix:
         group: [dsc, adapters, extensions, resources]
     runs-on: ubuntu-latest
@@ -80,6 +103,7 @@ jobs:
   macos-pester:
     needs: macos-build
     strategy:
+      fail-fast: false
       matrix:
         group: [dsc, adapters, extensions, resources]
     runs-on: macos-latest
@@ -124,6 +148,7 @@ jobs:
   windows-pester:
     needs: windows-build
     strategy:
+      fail-fast: false
       matrix:
         group: [dsc, adapters, extensions, resources]
     runs-on: windows-latest

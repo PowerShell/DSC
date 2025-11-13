@@ -1,0 +1,5 @@
+{
+    "Name": "dsc-lib-osinfo",
+    "Kind": "Library",
+    "IsRust": true
+}
