@@ -68,6 +68,13 @@ serverStopped = "MCP server stopped"
 failedToCreateRuntime = "Failed to create async runtime: %{error}"
 serverWaitFailed = "Failed to wait for MCP server: %{error}"
 
+[mcp.invoke_dsc_config]
+invalidConfiguration = "Invalid configuration document"
+invalidParameters = "Invalid parameters"
+failedConvertJson = "Failed to convert to JSON"
+failedSerialize = "Failed to serialize configuration"
+failedSetParameters = "Failed to set parameters"
+
 [mcp.invoke_dsc_resource]
 resourceNotFound = "Resource type '%{resource}' does not exist"
 

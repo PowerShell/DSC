@@ -585,7 +585,7 @@ extends:
                 throw "PackageVersion variable is not set. Cannot proceed with publishing Universal Package."
               }
               Write-Verbose -Verbose "Universal Package version: $packageVersion"
-              az artifacts universal publish --organization https://dev.azure.com//PowerShell --project PowerShell --feed PowerShell-Universal --name microsoft.dsc-linux --version $packageVersion --description "Microsoft Desired State Configuration (DSC) - Universal Package" --path "$(LinuxDirectory)" --scope project --verbose
+              az artifacts universal publish --organization https://dev.azure.com/PowerShell --project PowerShell --feed PowerShell-Universal --name microsoft.dsc-linux --version $packageVersion --description "Microsoft Desired State Configuration (DSC) - Universal Package" --path "$(LinuxDirectory)" --scope project --verbose
           condition: succeeded()
 
         - task: AzureCLI@2

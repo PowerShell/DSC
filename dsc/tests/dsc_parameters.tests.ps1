@@ -380,6 +380,20 @@ Describe 'Parameters tests' {
       $out.results[0].result.inDesiredState | Should -Be $IsWindows
     }
 
+    It 'Parameters and input cannot both be from STDIN' {
+      $params = @{
+        parameters = @{
+          osFamily = 'Windows'
+        }
+      } | ConvertTo-Json -Compress
+
+      $out = $params | dsc config -f - test -f - 2> $TestDrive/error.log
+      $LASTEXITCODE | Should -Be 4
+      $out | Should -BeNullOrEmpty
+      $errorMessage = Get-Content -Path $TestDrive/error.log -Raw
+      $errorMessage | Should -BeLike "*ERROR*Cannot read from STDIN for both parameters and input*"
+    }
+
     It 'Invalid parameters read from STDIN result in error' {
       $params = @{
         osFamily = 'Windows'
@@ -562,6 +576,130 @@ Describe 'Parameters tests' {
         $testError = & {$config_yaml | dsc config get -f - 2>&1}
         $LASTEXITCODE | Should -Be 4
         $testError | Should -Match 'Circular dependency or unresolvable parameter references detected in parameters'
+    }
+
+    It 'Default value violates <constraint> constraint' -TestCases @(
+        @{ constraint = 'minLength'; type = 'string'; value = 'ab'; min = 3; max = 20; errorMatch = 'minimum length' }
+        @{ constraint = 'maxLength'; type = 'string'; value = 'verylongusernamethatexceedslimit'; min = 3; max = 20; errorMatch = 'maximum length' }
+        @{ constraint = 'minValue'; type = 'int'; value = 0; min = 1; max = 65535; errorMatch = 'minimum value' }
+        @{ constraint = 'maxValue'; type = 'int'; value = 99999; min = 1; max = 65535; errorMatch = 'maximum value' }
+    ) {
+        param($constraint, $type, $value, $min, $max, $errorMatch)
+
+        if ($type -eq 'string') {
+            $value = "'$value'"
+        }
+
+        $minConstraint = if ($type -eq 'string') { "minLength: $min" } else { "minValue: $min" }
+        $maxConstraint = if ($type -eq 'string') { "maxLength: $max" } else { "maxValue: $max" }
+
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              param1:
+                type: $type
+                $minConstraint
+                $maxConstraint
+                defaultValue: $value
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '[parameters(''param1'')]'
+"@
+
+        $testError = & {$config_yaml | dsc config get -f - 2>&1}
+        $LASTEXITCODE | Should -Be 4
+        $testError | Should -Match $errorMatch
+    }
+
+    It 'Default value violates allowedValues constraint for <type>' -TestCases @(
+        @{ type = 'string'; value = 'staging'; allowed = @('dev', 'test', 'prod') }
+        @{ type = 'int'; value = 7; allowed = @(1, 5, 10) }
+    ) {
+        param($type, $value, $allowed)
+
+        if ($type -eq 'string') {
+            $value = "'$value'"
+        }
+
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              param1:
+                type: $type
+                allowedValues: $($allowed | ConvertTo-Json -Compress)
+                defaultValue: $value
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '[parameters(''param1'')]'
+"@
+
+        $testError = & {$config_yaml | dsc config get -f - 2>&1}
+        $LASTEXITCODE | Should -Be 4
+        $testError | Should -Match 'allowed values'
+    }
+
+    It 'Default values pass constraint validation for <type>' -TestCases @(
+        @{ type = 'string'; value = 'admin'; min = 3; max = 20 }
+        @{ type = 'string'; value = 'abc'; min = 3; max = 20 }
+        @{ type = 'string'; value = 'abcdefghijklmnopqrst'; min = 3; max = 20 }
+        @{ type = 'int'; value = 8080; min = 1; max = 65535 }
+        @{ type = 'int'; value = 1; min = 1; max = 65535 }
+        @{ type = 'int'; value = 65535; min = 1; max = 65535 }
+    ) {
+        param($type, $value, $min, $max)
+
+        $minConstraint = if ($type -eq 'string') { "minLength: $min" } else { "minValue: $min" }
+        $maxConstraint = if ($type -eq 'string') { "maxLength: $max" } else { "maxValue: $max" }
+
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              param1:
+                type: $type
+                $minConstraint
+                $maxConstraint
+                defaultValue: $value
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '[parameters(''param1'')]'
+"@
+
+        $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].result.actualState.output | Should -BeExactly $value
+    }
+
+    It 'Default values with allowedValues pass validation for <type>' -TestCases @(
+        @{ type = 'string'; value = 'dev'; allowed = @('dev', 'test', 'prod') }
+        @{ type = 'string'; value = 'prod'; allowed = @('dev', 'test', 'prod') }
+        @{ type = 'int'; value = 5; allowed = @(1, 5, 10) }
+        @{ type = 'int'; value = 10; allowed = @(1, 5, 10) }
+    ) {
+        param($type, $value, $allowed)
+
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              param1:
+                type: $type
+                allowedValues: $($allowed | ConvertTo-Json -Compress)
+                defaultValue: $value
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '[parameters(''param1'')]'
+"@
+
+        $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].result.actualState.output | Should -BeExactly $value
     }
 
     It 'Inline parameters and parameters file can be used together' {
