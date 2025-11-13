@@ -60,7 +60,6 @@ function GetValidCimProperties {
 
     $keyProperties = $availableProperties | Where-Object {$_.Flags.Hasflag([Microsoft.Management.Infrastructure.CimFlags]::Key)}
     
-
     if ($null -eq $availableProperties) {
         "No valid properties found in the CIM class '$ClassName' for the provided properties." | Write-DscTrace -Operation Error
         exit 1
@@ -176,10 +175,7 @@ function GetWmiInstance {
     param 
     (
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
-        [psobject]$DesiredState,
-
-        [Parameter()]
-        [switch]$SkipReadOnly
+        [psobject]$DesiredState
     )
 
     $type_fields = $DesiredState.type -split "/"
@@ -189,8 +185,7 @@ function GetWmiInstance {
     $class = Get-CimClass -Namespace $wmi_namespace -ClassName $wmi_classname -ErrorAction Stop
 
     if ($DesiredState.properties) {
-        # For GET operations, we should NOT skip read-only properties since we're just reading them
-        $properties = GetValidCimProperties -CimClass $class -ClassName $wmi_classname -Properties $DesiredState.properties -SkipReadOnly:$SkipReadOnly
+        $properties = GetValidCimProperties -CimClass $class -ClassName $wmi_classname -Properties $DesiredState.properties -SkipReadOnly
 
         # Only build query if we have properties to query
         if ($properties -and $properties.Count -gt 0) {
@@ -212,6 +207,8 @@ function GetWmiInstance {
                     }
                 }
             }
+        } else {
+            $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -ClassName $wmi_classname -ErrorAction Ignore -ErrorVariable Err
         }
     } else {
         $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -ClassName $wmi_classname -ErrorAction Ignore -ErrorVariable Err
@@ -250,7 +247,7 @@ function GetCimSpace {
 
         switch ($Operation) {
             'Get' {
-                $wmi_instances = GetWmiInstance -DesiredState $DesiredState -SkipReadOnly:$true
+                $wmi_instances = GetWmiInstance -DesiredState $DesiredState
 
                 if ($wmi_instances) {
                     $instance_result = [ordered]@{}
@@ -276,7 +273,7 @@ function GetCimSpace {
                 }
             }
             'Set' {
-                $wmi_instance = GetCimInstanceProperties -DesiredState $r -SkipReadOnly:$false
+                $wmi_instance = GetCimInstanceProperties -DesiredState $r
                 $properties = @{}
 
                 $wmi_instance.Properties | ForEach-Object {
@@ -324,10 +321,7 @@ function GetCimInstanceProperties {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
-        [dscResourceObject]$DesiredState,
-
-        [Parameter()]
-        [switch]$SkipReadOnly
+        [dscResourceObject]$DesiredState
     )
 
     $className = $DesiredState.type.Split("/")[-1]
@@ -342,7 +336,7 @@ function GetCimInstanceProperties {
 
     $validatedProperties = GetValidCimProperties -CimClass $cimClass -ClassName $className -Properties $DesiredState.properties -ValidateKeyProperty
 
-    $cimInstance = GetWmiInstance -DesiredState $DesiredState -SkipReadOnly:$SkipReadOnly
+    $cimInstance = GetWmiInstance -DesiredState $DesiredState
 
     return @{
         CimInstance = $cimInstance
