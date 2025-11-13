@@ -391,7 +391,7 @@ Describe 'Parameters tests' {
       $LASTEXITCODE | Should -Be 4
       $out | Should -BeNullOrEmpty
       $errorMessage = Get-Content -Path $TestDrive/error.log -Raw
-      $errorMessage | Should -BeLike "*ERROR*Cannot read from STDIN for both parameters and input*"
+      $errorMessage | Should -BeLike "*ERROR*Empty input provided*"
     }
 
     It 'Invalid parameters read from STDIN result in error' {

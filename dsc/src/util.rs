@@ -579,7 +579,61 @@ pub fn in_desired_state(test_result: &ResourceTestResult) -> bool {
     }
 }
 
+/// Parse input string as JSON or YAML and return a serde_json::Value.
+///
+/// # Arguments
+///
+/// * `input` - The input string to parse (JSON or YAML format)
+/// * `context` - Context string for error messages (e.g., "file parameters", "inline parameters")
+///
+/// # Returns
+///
+/// * `Result<serde_json::Value, DscError>` - Parsed JSON value
+///
+/// # Errors
+///
+/// This function will return an error if the input cannot be parsed as valid JSON or YAML
+fn parse_input_to_json_value(input: &str, context: &str) -> Result<serde_json::Value, DscError> {
+    match serde_json::from_str(input) {
+        Ok(json) => Ok(json),
+        Err(_) => {
+            match serde_yaml::from_str::<serde_yaml::Value>(input) {
+                Ok(yaml) => Ok(serde_json::to_value(yaml)?),
+                Err(err) => {
+                    Err(DscError::Parser(t!(&format!("util.failedToParse{context}"), error = err.to_string()).to_string()))
+                }
+            }
+        }
+    }
+}
+
+/// Convert parameter input to a map, handling different formats.
+///
+/// # Arguments
+///
+/// * `params` - Parameter string to convert (JSON or YAML format)
+/// * `context` - Context string for error messages
+///
+/// # Returns
+///
+/// * `Result<serde_json::Map<String, serde_json::Value>, DscError>` - Parameter map
+///
+/// # Errors
+///
+/// Returns an error if the input cannot be parsed or is not an object
+fn params_to_map(params: &str, context: &str) -> Result<serde_json::Map<String, serde_json::Value>, DscError> {
+    let value = parse_input_to_json_value(params, context)?;
+    
+    let Some(map) = value.as_object().cloned() else {
+        return Err(DscError::Parser(t!("util.parametersNotObject").to_string()));
+    };
+    
+    Ok(map)
+}
+
 /// Merge two parameter sets, with inline parameters taking precedence over file parameters.
+/// Top-level keys (like "parameters") are merged recursively, but parameter values themselves
+/// are replaced (not merged) when specified inline.
 ///
 /// # Arguments
 ///
@@ -598,67 +652,35 @@ pub fn in_desired_state(test_result: &ResourceTestResult) -> bool {
 pub fn merge_parameters(file_params: &str, inline_params: &str) -> Result<String, DscError> {
     use serde_json::Value;
     
-    // Parse file parameters
-    let file_value: Value = match serde_json::from_str(file_params) {
-        Ok(json) => json,
-        Err(_) => {
-            // YAML
-            match serde_yaml::from_str::<serde_yaml::Value>(file_params) {
-                Ok(yaml) => serde_json::to_value(yaml)?,
-                Err(err) => {
-                    return Err(DscError::Parser(format!("Failed to parse file parameters: {err}")));
+    // Convert both parameter inputs to maps
+    let mut file_map = params_to_map(file_params, "FileParameters")?;
+    let inline_map = params_to_map(inline_params, "InlineParameters")?;
+
+    // Merge top-level keys
+    for (key, inline_value) in &inline_map {
+        if key == "parameters" {
+            // Special handling for "parameters" key - merge at parameter name level only
+            // Within each parameter name, inline replaces (not merges)
+            if let Some(file_params_value) = file_map.get_mut("parameters") {
+                if let (Some(file_params_obj), Some(inline_params_obj)) = (file_params_value.as_object_mut(), inline_value.as_object()) {
+                    // For each parameter in inline, replace (not merge) in file
+                    for (param_name, param_value) in inline_params_obj {
+                        file_params_obj.insert(param_name.clone(), param_value.clone());
+                    }
+                } else {
+                    // If one is not an object, inline replaces completely
+                    file_map.insert(key.clone(), inline_value.clone());
                 }
+            } else {
+                // "parameters" key doesn't exist in file, add it
+                file_map.insert(key.clone(), inline_value.clone());
             }
-        }
-    };
-
-    // Parse inline parameters
-    let inline_value: Value = match serde_json::from_str(inline_params) {
-        Ok(json) => json,
-        Err(_) => {
-            // YAML
-            match serde_yaml::from_str::<serde_yaml::Value>(inline_params) {
-                Ok(yaml) => serde_json::to_value(yaml)?,
-                Err(err) => {
-                    return Err(DscError::Parser(format!("Failed to parse inline parameters: {err}")));
-                }
-            }
-        }
-    };
-
-    // Both must be objects to merge
-    let Some(mut file_obj) = file_value.as_object().cloned() else {
-        return Err(DscError::Parser("File parameters must be a JSON object".to_string()));
-    };
-    
-    let Some(inline_obj) = inline_value.as_object() else {
-        return Err(DscError::Parser("Inline parameters must be a JSON object".to_string()));
-    };
-
-    // Special handling for the "parameters" key - merge nested objects
-    if let (Some(file_params_value), Some(inline_params_value)) = (file_obj.get("parameters"), inline_obj.get("parameters")) {
-        if let (Some(mut file_params_obj), Some(inline_params_obj)) = (file_params_value.as_object().cloned(), inline_params_value.as_object()) {
-            // Merge the nested parameters objects
-            for (key, value) in inline_params_obj {
-                file_params_obj.insert(key.clone(), value.clone());
-            }
-            file_obj.insert("parameters".to_string(), Value::Object(file_params_obj));
         } else {
-            // If one is not an object, inline takes precedence
-            file_obj.insert("parameters".to_string(), inline_params_value.clone());
-        }
-    } else if let Some(inline_params_value) = inline_obj.get("parameters") {
-        // Only inline has parameters
-        file_obj.insert("parameters".to_string(), inline_params_value.clone());
-    }
-
-    // Merge other top-level keys: inline parameters override file parameters
-    for (key, value) in inline_obj {
-        if key != "parameters" {
-            file_obj.insert(key.clone(), value.clone());
+            // For other top-level keys, inline value replaces file value
+            file_map.insert(key.clone(), inline_value.clone());
         }
     }
 
-    let merged = Value::Object(file_obj);
+    let merged = Value::Object(file_map);
     Ok(serde_json::to_string(&merged)?)
 }
