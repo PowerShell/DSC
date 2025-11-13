@@ -176,7 +176,10 @@ function GetWmiInstance {
     param 
     (
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
-        [psobject]$DesiredState
+        [psobject]$DesiredState,
+
+        [Parameter()]
+        [switch]$SkipReadOnly
     )
 
     $type_fields = $DesiredState.type -split "/"
@@ -187,7 +190,7 @@ function GetWmiInstance {
 
     if ($DesiredState.properties) {
         # For GET operations, we should NOT skip read-only properties since we're just reading them
-        $properties = GetValidCimProperties -CimClass $class -ClassName $wmi_classname -Properties $DesiredState.properties
+        $properties = GetValidCimProperties -CimClass $class -ClassName $wmi_classname -Properties $DesiredState.properties -SkipReadOnly:$SkipReadOnly
 
         # Only build query if we have properties to query
         if ($properties -and $properties.Count -gt 0) {
@@ -247,7 +250,7 @@ function GetCimSpace {
 
         switch ($Operation) {
             'Get' {
-                $wmi_instances = GetWmiInstance -DesiredState $DesiredState
+                $wmi_instances = GetWmiInstance -DesiredState $DesiredState -SkipReadOnly:$true
 
                 if ($wmi_instances) {
                     $instance_result = [ordered]@{}
@@ -273,7 +276,7 @@ function GetCimSpace {
                 }
             }
             'Set' {
-                $wmi_instance = GetCimInstanceProperties -DesiredState $r
+                $wmi_instance = GetCimInstanceProperties -DesiredState $r -SkipReadOnly:$false
                 $properties = @{}
 
                 $wmi_instance.Properties | ForEach-Object {
@@ -321,7 +324,10 @@ function GetCimInstanceProperties {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
-        [dscResourceObject]$DesiredState
+        [dscResourceObject]$DesiredState,
+
+        [Parameter()]
+        [switch]$SkipReadOnly
     )
 
     $className = $DesiredState.type.Split("/")[-1]
@@ -336,7 +342,7 @@ function GetCimInstanceProperties {
 
     $validatedProperties = GetValidCimProperties -CimClass $cimClass -ClassName $className -Properties $DesiredState.properties -ValidateKeyProperty
 
-    $cimInstance = GetWmiInstance -DesiredState $DesiredState
+    $cimInstance = GetWmiInstance -DesiredState $DesiredState -SkipReadOnly:$SkipReadOnly
 
     return @{
         CimInstance = $cimInstance
