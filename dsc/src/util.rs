@@ -469,8 +469,9 @@ pub fn get_input(input: Option<&String>, file: Option<&String>) -> String {
         } else {
             // see if an extension should handle this file
             let mut discovery = Discovery::new();
+            let path_buf = Path::new(path);
             for extension in discovery.get_extensions(&Capability::Import) {
-                if let Ok(content) = extension.import(path) {
+                if let Ok(content) = extension.import(path_buf) {
                     return content;
                 }
             }
