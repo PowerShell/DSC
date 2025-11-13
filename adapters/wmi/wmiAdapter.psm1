@@ -60,6 +60,7 @@ function GetValidCimProperties {
 
     $keyProperties = $availableProperties | Where-Object {$_.Flags.Hasflag([Microsoft.Management.Infrastructure.CimFlags]::Key)}
     
+
     if ($null -eq $availableProperties) {
         "No valid properties found in the CIM class '$ClassName' for the provided properties." | Write-DscTrace -Operation Error
         exit 1
@@ -122,10 +123,11 @@ function BuildWmiQuery {
         [string]$ClassName,
         
         [Parameter(Mandatory = $true)]
-        [array]$Properties,
-        
-        [Parameter(Mandatory = $true)]
         [psobject]$DesiredStateProperties,
+
+        [Parameter()]
+        [AllowNull()]
+        [array]$Properties,
         
         [Parameter()]
         [switch]$KeyPropertiesOnly
@@ -185,26 +187,22 @@ function GetWmiInstance {
     $class = Get-CimClass -Namespace $wmi_namespace -ClassName $wmi_classname -ErrorAction Stop
 
     if ($DesiredState.properties) {
-        # For GET operations, we should NOT skip read-only properties since we're just reading them
-        $properties = GetValidCimProperties -CimClass $class -ClassName $wmi_classname -Properties $DesiredState.properties
+        $properties = GetValidCimProperties -CimClass $class -ClassName $wmi_classname -Properties $DesiredState.properties -SkipReadOnly
 
-        # Only build query if we have properties to query
-        if ($properties -and $properties.Count -gt 0) {
-            $query = BuildWmiQuery -ClassName $wmi_classname -Properties $properties -DesiredStateProperties $DesiredState.properties
+        $query = BuildWmiQuery -ClassName $wmi_classname -Properties $properties -DesiredStateProperties $DesiredState.properties
 
-            if ($query) {
-                "Query: $query" | Write-DscTrace -Operation Debug
-                $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -Query $query -ErrorAction Ignore -ErrorVariable err
+        if ($query) {
+            "Query: $query" | Write-DscTrace -Operation Debug
+            $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -Query $query -ErrorAction Ignore -ErrorVariable err
 
-                if ($null -eq $wmi_instances) {
-                    "No WMI instances found using query '$query'. Retrying with key properties only." | Write-DscTrace -Operation Debug
-                    $keyQuery = BuildWmiQuery -ClassName $wmi_classname -Properties $properties -DesiredStateProperties $DesiredState.properties -KeyPropertiesOnly
+            if ($null -eq $wmi_instances) {
+                "No WMI instances found using query '$query'. Retrying with key properties only." | Write-DscTrace -Operation Debug
+                $keyQuery = BuildWmiQuery -ClassName $wmi_classname -Properties $properties -DesiredStateProperties $DesiredState.properties -KeyPropertiesOnly
 
-                    if ($keyQuery) {
-                        $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -Query $keyQuery -ErrorAction Ignore -ErrorVariable err
-                        if ($null -eq $wmi_instances) {
-                            "No WMI instances found using key properties query '$keyQuery'." | Write-DscTrace -Operation Debug
-                        }
+                if ($keyQuery) {
+                    $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -Query $keyQuery -ErrorAction Ignore -ErrorVariable err
+                    if ($null -eq $wmi_instances) {
+                        "No WMI instances found using key properties query '$keyQuery'." | Write-DscTrace -Operation Debug
                     }
                 }
             }
