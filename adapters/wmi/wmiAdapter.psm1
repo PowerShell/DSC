@@ -185,7 +185,8 @@ function GetWmiInstance {
     $class = Get-CimClass -Namespace $wmi_namespace -ClassName $wmi_classname -ErrorAction Stop
 
     if ($DesiredState.properties) {
-        $properties = GetValidCimProperties -CimClass $class -ClassName $wmi_classname -Properties $DesiredState.properties -SkipReadOnly
+        # For GET operations, we should NOT skip read-only properties since we're just reading them
+        $properties = GetValidCimProperties -CimClass $class -ClassName $wmi_classname -Properties $DesiredState.properties
 
         # Only build query if we have properties to query
         if ($properties -and $properties.Count -gt 0) {
