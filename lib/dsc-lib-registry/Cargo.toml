@@ -24,5 +24,4 @@ tracing-subscriber = { workspace = true }
 utfx = { workspace = true }
 
 [build-dependencies]
-static_vcruntime = { workspace = true }
 cc = { workspace = true }
