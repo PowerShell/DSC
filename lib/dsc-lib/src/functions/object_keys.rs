@@ -31,7 +31,6 @@ impl Function for ObjectKeys {
             return Err(DscError::Parser(t!("functions.objectKeys.notObject").to_string()));
         };
 
-        // Extract all keys from the object and return as an array of strings
         let keys: Vec<Value> = obj
             .keys()
             .map(|key| Value::String(key.clone()))
