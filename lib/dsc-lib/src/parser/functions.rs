@@ -23,6 +23,13 @@ pub struct Function {
 pub enum FunctionArg {
     Value(Value),
     Expression(Expression),
+    Lambda(Lambda),
+}
+
+#[derive(Clone)]
+pub struct Lambda {
+    pub parameters: Vec<String>,
+    pub body: Expression,
 }
 
 /// Represents a lambda expression for use in DSC function expressions.
@@ -125,6 +132,9 @@ impl Function {
                     FunctionArg::Value(value) => {
                         debug!("{}", t!("parser.functions.argIsValue", value = value : {:?}));
                         resolved_args.push(value.clone());
+                    },
+                    FunctionArg::Lambda(_lambda) => {
+                        return Err(DscError::Parser(t!("parser.functions.unexpectedLambda").to_string()));
                     }
                 }
             }

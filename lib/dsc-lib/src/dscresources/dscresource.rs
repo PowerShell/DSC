@@ -11,6 +11,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
+use std::path::PathBuf;
 use tracing::{debug, info, trace};
 
 use super::{
@@ -37,11 +38,11 @@ pub struct DscResource {
     /// The capabilities of the resource.
     pub capabilities: Vec<Capability>,
     /// The file path to the resource.
-    pub path: String,
+    pub path: PathBuf,
     /// The description of the resource.
     pub description: Option<String>,
     // The directory path to the resource.
-    pub directory: String,
+    pub directory: PathBuf,
     /// The implementation of the resource.
     #[serde(rename="implementedAs")]
     pub implemented_as: ImplementedAs,
@@ -98,8 +99,8 @@ impl DscResource {
             version: String::new(),
             capabilities: Vec::new(),
             description: None,
-            path: String::new(),
-            directory: String::new(),
+            path: PathBuf::new(),
+            directory: PathBuf::new(),
             implemented_as: ImplementedAs::Command,
             author: None,
             properties: Vec::new(),

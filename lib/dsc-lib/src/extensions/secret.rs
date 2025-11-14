@@ -78,7 +78,7 @@ impl DscExtension {
                 &secret.executable,
                 args,
                 vault,
-                Some(self.directory.as_str()),
+                Some(&self.directory),
                 None,
                 extension.exit_codes.as_ref(),
             )?;

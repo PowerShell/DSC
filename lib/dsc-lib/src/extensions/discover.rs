@@ -24,7 +24,7 @@ use crate::{
 use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::path::Path;
+use std::path::PathBuf;
 use tracing::{info, trace};
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -39,7 +39,7 @@ pub struct DiscoverMethod {
 pub struct DiscoverResult {
     /// The path to the resource manifest, must be absolute.
     #[serde(rename = "manifestPath")]
-    pub manifest_path: String,
+    pub manifest_path: PathBuf,
 }
 
 impl DscExtension {
@@ -70,7 +70,7 @@ impl DscExtension {
                 &discover.executable,
                 args,
                 None,
-                Some(self.directory.as_str()),
+                Some(&self.directory),
                 None,
                 extension.exit_codes.as_ref(),
             )?;
@@ -85,12 +85,11 @@ impl DscExtension {
                             return Err(DscError::Json(err));
                         }
                     };
-                    if !Path::new(&discover_result.manifest_path).is_absolute() {
-                        return Err(DscError::Extension(t!("extensions.dscextension.discoverNotAbsolutePath", extension = self.type_name.clone(), path = discover_result.manifest_path.clone()).to_string()));
+                    if !discover_result.manifest_path.is_absolute() {
+                        return Err(DscError::Extension(t!("extensions.dscextension.discoverNotAbsolutePath", extension = self.type_name.clone(), path = discover_result.manifest_path.display()).to_string()));
                     }
-                    let manifest_path = Path::new(&discover_result.manifest_path);
                     // Currently we don't support extensions discovering other extensions
-                    for imported_manifest in load_manifest(manifest_path)? {
+                    for imported_manifest in load_manifest(&discover_result.manifest_path)? {
                         if let ImportedManifest::Resource(resource) = imported_manifest {
                             resources.push(resource);
                         }
