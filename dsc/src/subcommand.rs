@@ -263,7 +263,7 @@ fn initialize_config_root(path: Option<&String>) -> Option<String> {
     } else {
         let current_directory = std::env::current_dir().unwrap_or_default();
         debug!("DSC_CONFIG_ROOT = {} '{current_directory:?}'", t!("subcommand.currentDirectory"));
-        set_dscconfigroot(&current_directory.to_string_lossy());
+        set_dscconfigroot(current_directory.to_str().unwrap_or_default());
     }
 
     // if the path is "-", we need to return it so later processing can handle it correctly
@@ -276,7 +276,7 @@ fn initialize_config_root(path: Option<&String>) -> Option<String> {
 
 #[allow(clippy::too_many_lines)]
 #[allow(clippy::too_many_arguments)]
-pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parameters_from_stdin: bool, mounted_path: Option<&String>, as_group: &bool, as_assert: &bool, as_include: &bool, progress_format: ProgressFormat) {
+pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounted_path: Option<&String>, as_group: &bool, as_assert: &bool, as_include: &bool, progress_format: ProgressFormat) {
     let (new_parameters, json_string) = match subcommand {
         ConfigSubCommand::Get { input, file, .. } |
         ConfigSubCommand::Set { input, file, .. } |
@@ -284,7 +284,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parame
         ConfigSubCommand::Validate { input, file, .. } |
         ConfigSubCommand::Export { input, file, .. } => {
             let new_path = initialize_config_root(file.as_ref());
-            let document = get_input(input.as_ref(), new_path.as_ref(), parameters_from_stdin);
+            let document = get_input(input.as_ref(), new_path.as_ref());
             if *as_include {
                 let (new_parameters, config_json) = match get_contents(&document) {
                     Ok((parameters, config_json)) => (parameters, config_json),
@@ -300,7 +300,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parame
         },
         ConfigSubCommand::Resolve { input, file, .. } => {
             let new_path = initialize_config_root(file.as_ref());
-            let document = get_input(input.as_ref(), new_path.as_ref(), parameters_from_stdin);
+            let document = get_input(input.as_ref(), new_path.as_ref());
             let (new_parameters, config_json) = match get_contents(&document) {
                 Ok((parameters, config_json)) => (parameters, config_json),
                 Err(err) => {
@@ -398,7 +398,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parame
             };
             if *as_include {
                 let new_path = initialize_config_root(file.as_ref());
-                let input = get_input(input.as_ref(), new_path.as_ref(), parameters_from_stdin);
+                let input = get_input(input.as_ref(), new_path.as_ref());
                 match serde_json::from_str::<Include>(&input) {
                     Ok(_) => {
                         // valid, so do nothing
@@ -554,7 +554,7 @@ pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat
         },
         ResourceSubCommand::Export { resource, version, input, file, output_format } => {
             dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
-            let parsed_input = get_input(input.as_ref(), file.as_ref(), false);
+            let parsed_input = get_input(input.as_ref(), file.as_ref());
             resource_command::export(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref());
         },
         ResourceSubCommand::Get { resource, version, input, file: path, all, output_format } => {
@@ -567,23 +567,23 @@ pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat
                     error!("{}", t!("subcommand.jsonArrayNotSupported"));
                     exit(EXIT_INVALID_ARGS);
                 }
-                let parsed_input = get_input(input.as_ref(), path.as_ref(), false);
+                let parsed_input = get_input(input.as_ref(), path.as_ref());
                 resource_command::get(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref());
             }
         },
         ResourceSubCommand::Set { resource, version, input, file: path, output_format } => {
             dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
-            let parsed_input = get_input(input.as_ref(), path.as_ref(), false);
+            let parsed_input = get_input(input.as_ref(), path.as_ref());
             resource_command::set(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref());
         },
         ResourceSubCommand::Test { resource, version, input, file: path, output_format } => {
             dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
-            let parsed_input = get_input(input.as_ref(), path.as_ref(), false);
+            let parsed_input = get_input(input.as_ref(), path.as_ref());
             resource_command::test(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref());
         },
         ResourceSubCommand::Delete { resource, version, input, file: path } => {
             dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
-            let parsed_input = get_input(input.as_ref(), path.as_ref(), false);
+            let parsed_input = get_input(input.as_ref(), path.as_ref());
             resource_command::delete(&mut dsc, resource, version.as_deref(), &parsed_input);
         },
     }
