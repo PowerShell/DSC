@@ -63,6 +63,6 @@ resources:
 '@
         $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
-        $out.results[0].result.actualState.output | Should -Be $null
+        $out.results[0].result.actualState.Count | Should -Be 0
     }
 }
