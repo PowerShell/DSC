@@ -26,12 +26,6 @@ pub enum FunctionArg {
     Lambda(Lambda),
 }
 
-#[derive(Clone)]
-pub struct Lambda {
-    pub parameters: Vec<String>,
-    pub body: Expression,
-}
-
 /// Represents a lambda expression for use in DSC function expressions.
 ///
 /// Lambda expressions are anonymous functions created using the `lambda()` function
