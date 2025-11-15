@@ -42,6 +42,8 @@ To install DSC v3:
 1. Expand the release archive.
 1. Add the folder containing the expanded archive contents to the `PATH`.
 
+For information on building and testing DSC from source, see the [Contributing Guide](CONTRIBUTING.md).
+
 ## Explore DSCv3
 
 If you're new to DSC or configuration management, we recommend reviewing the [documentation][02].
