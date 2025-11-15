@@ -27,9 +27,7 @@ impl Function for ObjectKeys {
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
-        let Some(obj) = args[0].as_object() else {
-            return Err(DscError::Parser(t!("functions.objectKeys.notObject").to_string()));
-        };
+        let obj = args[0].as_object().unwrap();
 
         let keys: Vec<Value> = obj
             .keys()

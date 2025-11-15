@@ -450,7 +450,6 @@ invoked = "null function"
 
 [functions.objectKeys]
 description = "Returns the keys from an object, where an object is a collection of key-value pairs"
-notObject = "Argument must be an object"
 
 [functions.or]
 description = "Evaluates if any arguments are true"
