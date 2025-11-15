@@ -448,6 +448,9 @@ invoked = "not function"
 description = "Returns a null value"
 invoked = "null function"
 
+[functions.objectKeys]
+description = "Returns the keys from an object, where an object is a collection of key-value pairs"
+
 [functions.or]
 description = "Evaluates if any arguments are true"
 invoked = "or function"

@@ -55,6 +55,7 @@ pub mod mod_function;
 pub mod mul;
 pub mod not;
 pub mod null;
+pub mod object_keys;
 pub mod or;
 pub mod parameters;
 pub mod parse_cidr;
@@ -189,6 +190,7 @@ impl FunctionDispatcher {
             Box::new(mul::Mul{}),
             Box::new(not::Not{}),
             Box::new(null::Null{}),
+            Box::new(object_keys::ObjectKeys{}),
             Box::new(or::Or{}),
             Box::new(parameters::Parameters{}),
             Box::new(parse_cidr::ParseCidr{}),
