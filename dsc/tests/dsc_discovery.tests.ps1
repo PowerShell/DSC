@@ -94,9 +94,8 @@ Describe 'tests for resource discovery' {
         try {
             $env:DSC_RESOURCE_PATH = $testdrive
             Set-Content -Path "$testdrive/test.dsc.resource.json" -Value $manifest
-            $out = dsc resource list 2>&1
-            write-verbose -verbose ($out | Out-String)
-            $out | Should -Match 'WARN.*?Validation.*?invalid version' -Because ($out | Out-String)
+            $null = dsc resource list 2> "$testdrive/error.txt"
+            "$testdrive/error.txt" | Should -FileContentMatchExactly 'WARN.*?does not use semver' -Because (Get-Content -Raw "$testdrive/error.txt")
         }
         finally {
             $env:DSC_RESOURCE_PATH = $oldPath
@@ -110,11 +109,10 @@ Describe 'tests for resource discovery' {
 
         # perform List on an adapter - this should create adapter lookup table file
         $oldPSModulePath = $env:PSModulePath
-        $TestClassResourcePath = Resolve-Path "$PSScriptRoot/../../powershell-adapter/Tests"
+        $TestClassResourcePath = Resolve-Path "$PSScriptRoot/../../adapters/powershell/Tests"
         $env:DSC_RESOURCE_PATH = $null
         $env:PSModulePath += [System.IO.Path]::PathSeparator + $TestClassResourcePath
         dsc resource list -a Microsoft.DSC/PowerShell | Out-Null
-        gc -raw $script:lookupTableFilePath
         $script:lookupTableFilePath | Should -FileContentMatchExactly 'Microsoft.DSC/PowerShell'
         Test-Path $script:lookupTableFilePath -PathType Leaf | Should -BeTrue
         $env:PSModulePath = $oldPSModulePath
@@ -128,7 +126,7 @@ Describe 'tests for resource discovery' {
 
         # perform Get on an adapter - this should create adapter lookup table file
         $oldPSModulePath = $env:PSModulePath
-        $TestClassResourcePath = Resolve-Path "$PSScriptRoot/../../powershell-adapter/Tests"
+        $TestClassResourcePath = Resolve-Path "$PSScriptRoot/../../adapters/powershell/Tests"
         $env:DSC_RESOURCE_PATH = $null
         $env:PSModulePath += [System.IO.Path]::PathSeparator + $TestClassResourcePath
         "{'Name':'TestClassResource1'}" | dsc resource get -r 'TestClassResource/TestClassResource' -f - | Out-Null
@@ -141,7 +139,7 @@ Describe 'tests for resource discovery' {
     It 'Verify adapter lookup table is used on repeat invocations' {
 
         $oldPSModulePath = $env:PSModulePath
-        $TestClassResourcePath = Resolve-Path "$PSScriptRoot/../../powershell-adapter/Tests"
+        $TestClassResourcePath = Resolve-Path "$PSScriptRoot/../../adapters/powershell/Tests"
         $env:DSC_RESOURCE_PATH = $null
         $env:PSModulePath += [System.IO.Path]::PathSeparator + $TestClassResourcePath
 
@@ -150,37 +148,33 @@ Describe 'tests for resource discovery' {
         Test-Path $script:lookupTableFilePath -PathType Leaf | Should -BeFalse
 
         # initial invocation should populate and save adapter lookup table
-        dsc -l trace resource list -a Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
+        $null = dsc -l trace resource list -a Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Read 0 items into lookup table"
-        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Saving lookup table"
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Saving lookup table" -Because (Get-Content -Raw "$TestDrive/tracing.txt")
 
         # second invocation (without an update) should use but not save adapter lookup table
         "{'Name':'TestClassResource1'}" | dsc -l trace resource get -r 'TestClassResource/TestClassResource' -f - 2> $TestDrive/tracing.txt
-        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Lookup table found resource 'testclassresource/testclassresource' in adapter 'Microsoft.DSC/PowerShell'"
         "$TestDrive/tracing.txt" | Should -Not -FileContentMatchExactly "Saving lookup table"
 
         # third invocation (with an update) should save updated adapter lookup table
-        dsc -l trace resource list -a Test/TestGroup 2> $TestDrive/tracing.txt
+        $null = dsc -l trace resource list -a Test/TestGroup 2> $TestDrive/tracing.txt
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Saving lookup table"
 
         $env:PSModulePath = $oldPSModulePath
     }
 
-    It 'Verify non-zero exit code when resource not found' {
+    It 'Verify non-zero exit code when resource not found: <cmdline>' -TestCases @(
+        @{ cmdline = "dsc resource get -r abc/def" }
+        @{ cmdline = "dsc resource get --all -r abc/def" }
+        @{ cmdline = "dsc resource set -r abc/def -i 'abc'" }
+        @{ cmdline = "dsc resource test -r abc/def -i 'abc'" }
+        @{ cmdline = "dsc resource delete -r abc/def -i 'abc'" }
+        @{ cmdline = "dsc resource export -r abc/def" }
+        @{ cmdline = "dsc resource schema -r abc/def" }
+    ) {
+        param($cmdline)
 
-        $out = dsc resource get -r abc/def
-        $LASTEXITCODE | Should -Be 7
-        $out = dsc resource get --all -r abc/def
-        $LASTEXITCODE | Should -Be 7
-        $out = 'abc' | dsc resource set -r abc/def -f -
-        $LASTEXITCODE | Should -Be 7
-        $out = 'abc' | dsc resource test -r abc/def -f -
-        $LASTEXITCODE | Should -Be 7
-        $out = 'abc' | dsc resource delete -r abc/def -f -
-        $LASTEXITCODE | Should -Be 7
-        $out = dsc resource export -r abc/def
-        $LASTEXITCODE | Should -Be 7
-        $out = dsc resource schema -r abc/def
+        Invoke-Expression $cmdline 2>$null
         $LASTEXITCODE | Should -Be 7
     }
 
@@ -209,12 +203,12 @@ Describe 'tests for resource discovery' {
         try {
             $env:DSC_RESOURCE_PATH = $testdrive
             Set-Content -Path "$testdrive/test.dsc.resource.json" -Value $manifest
-            $out = dsc resource list 'Test/ExecutableNotFound' 2> "$testdrive/error.txt" | ConvertFrom-Json
+            $out = dsc -l info resource list 'Test/ExecutableNotFound' 2> "$testdrive/error.txt" | ConvertFrom-Json
             $LASTEXITCODE | Should -Be 0
             $out.Count | Should -Be 1
             $out.Type | Should -BeExactly 'Test/ExecutableNotFound'
             $out.Kind | Should -BeExactly 'resource'
-            Get-Content -Path "$testdrive/error.txt" | Should -Match "WARN.*?Executable 'doesNotExist' not found"
+            (Get-Content -Path "$testdrive/error.txt" -Raw) | Should -Match "INFO.*?Executable 'doesNotExist' not found"
         }
         finally {
             $env:DSC_RESOURCE_PATH = $oldPath
@@ -249,6 +243,57 @@ Describe 'tests for resource discovery' {
         }
         finally {
             $env:DSC_RESOURCE_PATH = $oldPath
+        }
+    }
+
+    It 'Resource manifest using relative path to exe: <path>' -TestCases @(
+        @{ path = '../dscecho'; success = $true }
+        @{ path = '../foo/dscecho'; success = $false }
+    ) {
+        param($path, $success)
+        $manifest = @"
+{
+    "`$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "type": "Microsoft.DSC.Debug/Echo",
+    "version": "1.0.0",
+    "description": "Echo resource for testing and debugging purposes",
+    "get": {
+        "executable": "$path",
+        "args": [
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ]
+    },
+    "schema": {
+        "command": {
+            "executable": "$path"
+        }
+    }
+}
+"@
+        $dscEcho = Get-Command dscecho -ErrorAction Stop
+        # copy to testdrive
+        Copy-Item -Path "$($dscEcho.Source)" -Destination $testdrive
+        # create manifest in subfolder
+        $subfolder = Join-Path $testdrive 'subfolder'
+        New-Item -Path $subfolder -ItemType Directory -Force | Out-Null
+        Set-Content -Path (Join-Path $subfolder 'test.dsc.resource.json') -Value $manifest
+
+        try {
+            $env:DSC_RESOURCE_PATH = $subfolder
+            $out = dsc resource get -r 'Microsoft.DSC.Debug/Echo' -i '{"output":"RelativePathTest"}' 2> "$testdrive/error.txt" | ConvertFrom-Json
+            if ($success) {
+                $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw -Path "$testdrive/error.txt")
+                $out.actualState.output | Should -BeExactly 'RelativePathTest'
+            } else {
+                $LASTEXITCODE | Should -Be 2 -Because (Get-Content -Raw -Path "$testdrive/error.txt")
+                (Get-Content -Raw -Path "$testdrive/error.txt") | Should -Match "ERROR.*?Executable '\.\./foo/dscecho(\.exe)?' not found"
+            }
+        }
+        finally {
+            $env:DSC_RESOURCE_PATH = $null
         }
     }
 }

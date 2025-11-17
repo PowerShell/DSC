@@ -1,0 +1,13 @@
+[package]
+name = "dsc-lib-security_context"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+doctest = false
+
+[target.'cfg(target_os = "windows")'.dependencies]
+is_elevated = { workspace = true }
+
+[target.'cfg(not(target_os = "windows"))'.dependencies]
+nix = { workspace = true, features = ["user"] }

@@ -1,0 +1,25 @@
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/extension/manifest.json",
+    "type": "Microsoft.Azure.CLI/KeyVault",
+    "version": "1.0.0",
+    "description": "Retrieve secrets from Azure KeyVault.  Requires AzCLI to already be installed.",
+    "secret": {
+        "executable": "az.cmd",
+        "outputKind": "PlainText",
+        "args": [
+            "keyvault",
+            "secret",
+            "show",
+            {
+                "vaultArg": "--vault-name"
+            },
+            {
+                "nameArg": "--name"
+            },
+            "--query",
+            "value",
+            "--output",
+            "tsv"
+        ]
+    }
+}

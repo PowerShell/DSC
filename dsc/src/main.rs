@@ -4,6 +4,7 @@
 use args::{Args, SubCommand};
 use clap::{CommandFactory, Parser};
 use clap_complete::generate;
+use mcp::start_mcp_server;
 use rust_i18n::{i18n, t};
 use std::{io, io::Read, process::exit};
 use sysinfo::{Process, RefreshKind, System, get_current_pid, ProcessRefreshKind};
@@ -18,6 +19,7 @@ use crossterm::event;
 use std::env;
 
 pub mod args;
+pub mod mcp;
 pub mod resolve;
 pub mod resource_command;
 pub mod subcommand;
@@ -52,16 +54,15 @@ fn main() {
             generate(shell, &mut cmd, "dsc", &mut io::stdout());
         },
         SubCommand::Config { subcommand, parameters, parameters_file, system_root, as_group, as_assert, as_include } => {
-            if let Some(file_name) = parameters_file {
+            // Read parameters from file if provided
+            let file_params = if let Some(file_name) = &parameters_file {
                 if file_name == "-" {
                     info!("{}", t!("main.readingParametersFromStdin"));
                     let mut stdin = Vec::<u8>::new();
-                    let parameters = match io::stdin().read_to_end(&mut stdin) {
+                    match io::stdin().read_to_end(&mut stdin) {
                         Ok(_) => {
                             match String::from_utf8(stdin) {
-                                Ok(input) => {
-                                    input
-                                },
+                                Ok(input) => Some(input),
                                 Err(err) => {
                                     error!("{}: {err}", t!("util.invalidUtf8"));
                                     exit(EXIT_INVALID_INPUT);
@@ -72,26 +73,52 @@ fn main() {
                             error!("{}: {err}", t!("util.failedToReadStdin"));
                             exit(EXIT_INVALID_INPUT);
                         }
-                    };
-                    subcommand::config(&subcommand, &Some(parameters), true, system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format);
-                    return;
-                }
-                info!("{}: {file_name}", t!("main.readingParametersFile"));
-                match std::fs::read_to_string(&file_name) {
-                    Ok(parameters) => subcommand::config(&subcommand, &Some(parameters), false, system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format),
-                    Err(err) => {
-                        error!("{} '{file_name}': {err}", t!("main.failedReadingParametersFile"));
-                        exit(util::EXIT_INVALID_INPUT);
+                    }
+                } else {
+                    info!("{}: {file_name}", t!("main.readingParametersFile"));
+                    match std::fs::read_to_string(file_name) {
+                        Ok(content) => Some(content),
+                        Err(err) => {
+                            error!("{} '{file_name}': {err}", t!("main.failedReadingParametersFile"));
+                            exit(util::EXIT_INVALID_INPUT);
+                        }
                     }
                 }
-            }
-            else {
-                subcommand::config(&subcommand, &parameters, false, system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format);
-            }
+            } else {
+                None
+            };
+
+            let merged_parameters = match (file_params, parameters) {
+                (Some(file_content), Some(inline_content)) => {
+                    info!("{}", t!("main.mergingParameters"));
+                    match util::merge_parameters(&file_content, &inline_content) {
+                        Ok(merged) => Some(merged),
+                        Err(err) => {
+                            error!("{}: {err}", t!("main.failedMergingParameters"));
+                            exit(EXIT_INVALID_INPUT);
+                        }
+                    }
+                },
+                (Some(file_content), None) => Some(file_content),
+                (None, Some(inline_content)) => Some(inline_content),
+                (None, None) => None,
+            };
+
+            subcommand::config(&subcommand, &merged_parameters, system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format);
         },
         SubCommand::Extension { subcommand } => {
             subcommand::extension(&subcommand, progress_format);
         },
+        SubCommand::Function { subcommand } => {
+            subcommand::function(&subcommand);
+        },
+        SubCommand::Mcp => {
+            if let Err(err) = start_mcp_server() {
+                error!("{}", t!("main.failedToStartMcpServer", error = err));
+                exit(util::EXIT_MCP_FAILED);
+            }
+            exit(util::EXIT_SUCCESS);
+        }
         SubCommand::Resource { subcommand } => {
             subcommand::resource(&subcommand, progress_format);
         },

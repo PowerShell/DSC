@@ -9,13 +9,13 @@ param(
     $architecture = 'current',
     [switch]$Clippy,
     [switch]$SkipBuild,
-    [ValidateSet('msix','msix-private','msixbundle','tgz','zip')]
+    [ValidateSet('msix','msix-private','msixbundle','tgz','zip','rpm','deb')]
     $packageType,
     [switch]$Test,
     [switch]$GetPackageVersion,
     [switch]$SkipLinkCheck,
     [switch]$UseX64MakeAppx,
-    [switch]$UseCratesIO,
+    [switch]$UseCFS,
     [switch]$UpdateLockFile,
     [switch]$Audit,
     [switch]$UseCFSAuth,
@@ -23,7 +23,17 @@ param(
     [switch]$Verbose
 )
 
+trap {
+    Write-Error "An error occurred: $($_ | Out-String)"
+    exit 1
+}
+
 $env:RUSTC_LOG=$null
+$usingADO = ($null -ne $env:TF_BUILD)
+if ($usingADO -or $UseCFSAuth) {
+    $UseCFS = $true
+}
+
 if ($Verbose) {
     $env:RUSTC_LOG='rustc_codegen_ssa::back::link=info'
 }
@@ -40,6 +50,7 @@ if ($GetPackageVersion) {
 $filesForWindowsPackage = @(
     'appx.dsc.extension.json',
     'appx-discover.ps1',
+    'bicep.dsc.extension.json',
     'dsc.exe',
     'dsc_default.settings.json',
     'dsc.settings.json',
@@ -53,6 +64,9 @@ $filesForWindowsPackage = @(
     'osinfo.dsc.resource.json',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
+    'psscript.ps1',
+    'psscript.dsc.resource.json',
+    'winpsscript.dsc.resource.json',
     'reboot_pending.dsc.resource.json',
     'reboot_pending.resource.ps1',
     'registry.dsc.resource.json',
@@ -60,16 +74,19 @@ $filesForWindowsPackage = @(
     'RunCommandOnSet.dsc.resource.json',
     'RunCommandOnSet.exe',
     'sshdconfig.exe',
-    'sshd.dsc.resource.json',
+    'sshd-windows.dsc.resource.json',
     'sshd_config.dsc.resource.json',
     'windowspowershell.dsc.resource.json',
     'wmi.dsc.resource.json',
     'wmi.resource.ps1',
+    'wmiAdapter.psd1',
+    'wmiAdapter.psm1',
     'windows_baseline.dsc.yaml',
     'windows_inventory.dsc.yaml'
 )
 
 $filesForLinuxPackage = @(
+    'bicep.dsc.extension.json',
     'dsc',
     'dsc_default.settings.json',
     'dsc.settings.json'
@@ -85,14 +102,16 @@ $filesForLinuxPackage = @(
     'osinfo.dsc.resource.json',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
+    'psscript.ps1',
+    'psscript.dsc.resource.json',
     'RunCommandOnSet.dsc.resource.json',
     'runcommandonset',
     'sshdconfig',
-    'sshd.dsc.resource.json',
     'sshd_config.dsc.resource.json'
 )
 
 $filesForMacPackage = @(
+    'bicep.dsc.extension.json',
     'dsc',
     'dsc_default.settings.json',
     'dsc.settings.json'
@@ -108,10 +127,11 @@ $filesForMacPackage = @(
     'osinfo.dsc.resource.json',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
+    'psscript.ps1',
+    'psscript.dsc.resource.json',
     'RunCommandOnSet.dsc.resource.json',
     'runcommandonset',
     'sshdconfig',
-    'sshd.dsc.resource.json',
     'sshd_config.dsc.resource.json'
 )
 
@@ -138,6 +158,7 @@ function Find-LinkExe {
 
 $channel = 'stable'
 if ($null -ne (Get-Command msrustup -CommandType Application -ErrorAction Ignore)) {
+    Write-Verbose -Verbose "Using msrustup"
     $rustup = 'msrustup'
     $channel = 'ms-stable'
     if ($architecture -eq 'current') {
@@ -145,15 +166,41 @@ if ($null -ne (Get-Command msrustup -CommandType Application -ErrorAction Ignore
     }
 } elseif ($null -ne (Get-Command rustup -CommandType Application -ErrorAction Ignore)) {
         $rustup = 'rustup'
-} else {
-    $rustup = 'echo'
 }
 
 if ($null -ne $packageType) {
     $SkipBuild = $true
 } else {
+    if ($UseCFS) {
+        Write-Host "Using CFS for cargo source replacement"
+        ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = $null
+        $env:CARGO_REGISTRIES_CRATESIO_INDEX = $null
+
+        if ($UseCFSAuth) {
+            if ($null -eq (Get-Command 'az' -ErrorAction Ignore)) {
+                throw "Azure CLI not found"
+            }
+
+            Write-Host "Getting token"
+            $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warning "Failed to get access token, use 'az login' first, or use '-useCratesIO' to use crates.io.  Proceeding with anonymous access."
+            } else {
+                $header = "Bearer $accessToken"
+                $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
+                $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
+                $env:CARGO_REGISTRIES_POWERSHELL_INDEX = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell~force-auth/Cargo/index/"
+            }
+        }
+    } else {
+        # this will override the config.toml
+        Write-Host "Setting CARGO_SOURCE_crates-io_REPLACE_WITH to 'crates-io'"
+        ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = 'CRATESIO'
+        $env:CARGO_REGISTRIES_CRATESIO_INDEX = 'sparse+https://index.crates.io/'
+    }
+
     ## Test if Rust is installed
-    if (!(Get-Command 'cargo' -ErrorAction Ignore)) {
+    if (!$usingADO -and !(Get-Command 'cargo' -ErrorAction Ignore)) {
         Write-Verbose -Verbose "Rust not found, installing..."
         if (!$IsWindows) {
             curl https://sh.rustup.rs -sSf | sh -s -- -y
@@ -166,17 +213,42 @@ if ($null -ne $packageType) {
             $env:PATH += ";$env:USERPROFILE\.cargo\bin"
             Remove-Item temp:/rustup-init.exe -ErrorAction Ignore
         }
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to install Rust"
+        }
     }
-    else  {
+    elseif (!$usingADO) {
         Write-Verbose -Verbose "Rust found, updating..."
         & $rustup update
     }
 
-    $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
+    if ($IsWindows) {
+        $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
+    }
 
-    & $rustup default stable
+    if (!$usingADO) {
+        & $rustup default stable
+    }
 
-    ## Test if Node is installed 
+    if ($Clippy) {
+        Write-Verbose -Verbose "Installing clippy..."
+        if ($UseCFS) {
+            cargo install clippy --config .cargo/config.toml
+        } else {
+            if ($architecture -ne 'current') {
+                write-verbose -verbose "Installing clippy for $architecture"
+                rustup component add clippy --target $architecture
+            } else {
+                write-verbose -verbose "Installing clippy for current architecture"
+                rustup component add clippy
+            }
+        }
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to install clippy"
+        }
+    }
+
+    ## Test if Node is installed
     ## Skipping upgrade as users may have a specific version they want to use
     if (!(Get-Command 'node' -ErrorAction Ignore)) {
         Write-Verbose -Verbose "Node.js not found, installing..."
@@ -194,6 +266,22 @@ if ($null -ne $packageType) {
             } else {
                 Write-Warning "winget not found, please install Node.js manually"
             }
+        }
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to install Node.js"
+        }
+    }
+
+    ## Test if tree-sitter is installed
+    if ($null -eq (Get-Command tree-sitter -ErrorAction Ignore)) {
+        Write-Verbose -Verbose "tree-sitter not found, installing..."
+        if ($UseCFS) {
+            cargo install tree-sitter-cli --config .cargo/config.toml
+        } else {
+            cargo install tree-sitter-cli
+        }
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to install tree-sitter-cli"
         }
     }
 }
@@ -232,18 +320,18 @@ if (!$SkipBuild -and !$SkipLinkCheck -and $IsWindows -and !(Get-Command 'link.ex
 $configuration = $Release ? 'release' : 'debug'
 $flags = @($Release ? '-r' : $null)
 if ($architecture -eq 'current') {
-    $path = ".\target\$configuration"
+    $path = Join-Path $PSScriptRoot "target" $configuration
     $target = Join-Path $PSScriptRoot 'bin' $configuration
 }
 else {
     $flags += '--target'
     $flags += $architecture
-    $path = ".\target\$architecture\$configuration"
+    $path = Join-Path $PSScriptRoot 'target' $architecture $configuration
     $target = Join-Path $PSScriptRoot 'bin' $architecture $configuration
 }
 
 if (!$SkipBuild) {
-    if ($architecture -ne 'Current') {
+    if ($architecture -ne 'Current' -and !$usingADO) {
         & $rustup target add --toolchain $channel $architecture
     }
 
@@ -252,65 +340,36 @@ if (!$SkipBuild) {
     }
     New-Item -ItemType Directory $target -ErrorAction Ignore > $null
 
-    if ($UseCratesIO) {
-        # this will override the config.toml
-        Write-Host "Setting CARGO_SOURCE_crates-io_REPLACE_WITH to 'crates-io'"
-        ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = 'CRATESIO'
-        $env:CARGO_REGISTRIES_CRATESIO_INDEX = 'sparse+https://index.crates.io/'
-    } else {
-        Write-Host "Using CFS for cargo source replacement"
-        ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = $null
-        $env:CARGO_REGISTRIES_CRATESIO_INDEX = $null
-
-        if ($UseCFSAuth) {
-            if ($null -eq (Get-Command 'az' -ErrorAction Ignore)) {
-                throw "Azure CLI not found"
-            }
-
-            if ($null -ne (Get-Command az -ErrorAction Ignore)) {
-                Write-Host "Getting token"
-                $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
-                if ($LASTEXITCODE -ne 0) {
-                    Write-Warning "Failed to get access token, use 'az login' first, or use '-useCratesIO' to use crates.io.  Proceeding with anonymous access."
-                } else {
-                    $header = "Bearer $accessToken"
-                    $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
-                    $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
-                    $env:CARGO_REGISTRIES_POWERSHELL_INDEX = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell~force-auth/Cargo/index/"
-                }
-            }
-            else {
-                Write-Warning "Azure CLI not found, proceeding with anonymous access."
-            }
-        }
-    }
-
     # make sure dependencies are built first so clippy runs correctly
-    $windows_projects = @("pal", "registry_lib", "registry", "reboot_pending", "wmi-adapter", "configurations/windows", 'extensions/appx')
+    $windows_projects = @("lib/dsc-lib-pal", "lib/dsc-lib-registry", "resources/registry", "resources/reboot_pending", "adapters/wmi", "configurations/windows", 'extensions/appx')
     $macOS_projects = @("resources/brew")
     $linux_projects = @("resources/apt")
 
     # projects are in dependency order
     $projects = @(
-        "tree-sitter-dscexpression",
-        "tree-sitter-ssh-server-config",
-        "security_context_lib",
-        "dsc_lib",
+        ".",
+        "grammars/tree-sitter-dscexpression",
+        "grammars/tree-sitter-ssh-server-config",
+        "lib/dsc-lib-jsonschema",
+        "lib/dsc-lib-security_context",
+        "lib/dsc-lib-osinfo",
+        "lib/dsc-lib",
         "dsc",
-        "dscecho",
-        "osinfo",
-        "powershell-adapter",
-        "process",
-        "runcommandonset",
-        "sshdconfig",
+        "resources/dscecho",
+        "extensions/bicep",
+        "resources/osinfo",
+        "adapters/powershell",
+        'resources/PSScript',
+        "resources/process",
+        "resources/runcommandonset",
+        "resources/sshdconfig",
         "tools/dsctest",
         "tools/test_group_resource",
-        "y2j",
-        "."
+        "y2j"
     )
     $pedantic_unclean_projects = @()
-    $clippy_unclean_projects = @("tree-sitter-dscexpression", "tree-sitter-ssh-server-config")
-    $skip_test_projects_on_windows = @("tree-sitter-dscexpression", "tree-sitter-ssh-server-config")
+    $clippy_unclean_projects = @("grammars/tree-sitter-dscexpression", "grammars/tree-sitter-ssh-server-config")
+    $skip_test_projects_on_windows = @("grammars/tree-sitter-dscexpression", "grammars/tree-sitter-ssh-server-config")
 
     if ($IsWindows) {
         $projects += $windows_projects
@@ -327,66 +386,81 @@ if (!$SkipBuild) {
     $failed = $false
     foreach ($project in $projects) {
         ## Build format_json
-        Write-Host -ForegroundColor Cyan "Building $project ... for $architecture"
+        Write-Host -ForegroundColor Cyan "Building '$project' for $architecture"
         try {
             Push-Location "$PSScriptRoot/$project" -ErrorAction Stop
+            Write-Verbose -Verbose "Current directory is $(Get-Location)"
 
             # check if the project is either tree-sitter-dscexpression or tree-sitter-ssh-server-config
-            if (($project -eq 'tree-sitter-dscexpression') -or ($project -eq 'tree-sitter-ssh-server-config')) {
+            if (($project -match 'tree-sitter-dscexpression$') -or ($project -match 'tree-sitter-ssh-server-config$')) {
                 if ($UpdateLockFile) {
                     cargo generate-lockfile
                 }
                 else {
                     if ($Audit) {
                         if ($null -eq (Get-Command cargo-audit -ErrorAction Ignore)) {
-                            cargo install cargo-audit --features=fix
+                            if ($UseCFS) {
+                                cargo install cargo-audit --features=fix --config .cargo/config.toml
+                            } else {
+                                cargo install cargo-audit --features=fix
+                            }
                         }
 
                         cargo audit fix
                     }
 
+                    Write-Verbose -Verbose "Running build.ps1 for $project"
                     ./build.ps1
                 }
             }
 
-            if (Test-Path "./Cargo.toml")
+            if ((Test-Path "./Cargo.toml"))
             {
-                if ($Clippy) {
+                $isRepoRoot = $pwd.Path -eq $PSScriptRoot
+                if ($Clippy -and -not $isRepoRoot) {
                     if ($clippy_unclean_projects -contains $project) {
                         Write-Verbose -Verbose "Skipping clippy for $project"
                     }
                     elseif ($pedantic_unclean_projects -contains $project) {
                         Write-Verbose -Verbose "Running clippy for $project"
-                        cargo clippy @flags -- -Dwarnings
+                        cargo clippy @flags -- -Dwarnings --no-deps
                     }
                     else {
                         Write-Verbose -Verbose "Running clippy with pedantic for $project"
-                        cargo clippy @flags --% -- -Dwarnings -Dclippy::pedantic
+                        cargo clippy @flags --% -- -Dwarnings -Dclippy::pedantic --no-deps
                     }
                 }
                 else {
-                    if ($UpdateLockFile) {
+                    if ($UpdateLockFile -and $isRepoRoot) {
                         cargo generate-lockfile
                     }
                     else {
                         if ($Audit) {
                             if ($null -eq (Get-Command cargo-audit -ErrorAction Ignore)) {
-                                cargo install cargo-audit --features=fix
+                                if ($UseCFS) {
+                                    cargo install cargo-audit --features=fix --config .cargo/config.toml
+                                } else {
+                                    cargo install cargo-audit --features=fix
+                                }
                             }
 
                             cargo audit fix
                         }
 
-                        if ($Clean) {
+                        if ($Clean -and $isRepoRoot) {
                             cargo clean
                         }
 
-                        cargo build @flags
+                        if (-not $isRepoRoot) {
+                            Write-Verbose -Verbose "Building $project"
+                            cargo build @flags
+                        }
                     }
                 }
             }
 
-            if ($LASTEXITCODE -ne 0) {
+            if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
+                Write-Error "Last exit code is $LASTEXITCODE, build failed for '$project'"
                 $failed = $true
                 break
             }
@@ -419,10 +493,11 @@ if (!$SkipBuild) {
             }
 
             if ($IsWindows) {
-                Copy-Item "*.dsc.resource.json" $target -Force -ErrorAction Ignore
+                Copy-Item "*.dsc.resource.*","*.dsc.manifests.*" $target -Force -ErrorAction Ignore
             }
             else { # don't copy WindowsPowerShell resource manifest
-                Copy-Item "*.dsc.resource.json" $target -Exclude 'windowspowershell.dsc.resource.json' -Force -ErrorAction Ignore
+                $exclude = @('windowspowershell.dsc.resource.json', 'winpsscript.dsc.resource.json')
+                Copy-Item "*.dsc.resource.*","*.dsc.manifests.*" $target -Exclude $exclude -Force -ErrorAction Ignore
             }
 
             # be sure that the files that should be executable are executable
@@ -434,7 +509,10 @@ if (!$SkipBuild) {
                     }
                 }
             }
-
+        } catch {
+            Write-Error "Failed to build $project : $($_ | Out-String)"
+            $failed = $true
+            break
         } finally {
             Pop-Location
         }
@@ -480,8 +558,6 @@ if (!$Clippy -and !$SkipBuild) {
 
 if ($Test) {
     $failed = $false
-
-    $usingADO = ($null -ne $env:TF_BUILD)
     $repository = 'PSGallery'
 
     if ($usingADO) {
@@ -507,6 +583,10 @@ if ($Test) {
     }
 
     foreach ($project in $projects) {
+        # Skip repository root, otherwise it tests all workspace members, failing on not-Windows
+        if ($project -eq '.') {
+            continue
+        }
         if ($IsWindows -and $skip_test_projects_on_windows -contains $project) {
             Write-Verbose -Verbose "Skipping test for $project on Windows"
             continue
@@ -555,7 +635,7 @@ if ($Test) {
         (Get-Module -Name Pester -ListAvailable).Path
     }
 
-    Invoke-Pester -ErrorAction Stop
+    Invoke-Pester -Output Detailed -ErrorAction Stop
 }
 
 function Find-MakeAppx() {
@@ -777,6 +857,176 @@ if ($packageType -eq 'msixbundle') {
     }
 
     Write-Host -ForegroundColor Green "`ntar.gz file is created at $tarFile"
+} elseif ($packageType -eq 'rpm') {
+    if (!$IsLinux) {
+        throw "RPM package creation is only supported on Linux"
+    }
+
+    # Check if rpmbuild is available
+    if ($null -eq (Get-Command rpmbuild -ErrorAction Ignore)) {
+        throw "rpmbuild not found. Please install rpm-build package (e.g., 'sudo apt install rpm build-essential' or 'sudo dnf install rpm-build')"
+    }
+
+    $rpmTarget = Join-Path $PSScriptRoot 'bin' $architecture 'rpm'
+    if (Test-Path $rpmTarget) {
+        Remove-Item $rpmTarget -Recurse -ErrorAction Stop -Force
+    }
+
+    New-Item -ItemType Directory $rpmTarget > $null
+
+    # Create RPM build directories
+    $rpmBuildRoot = Join-Path $rpmTarget 'rpmbuild'
+    $rpmDirs = @('BUILD', 'RPMS', 'SOURCES', 'SPECS', 'SRPMS')
+    foreach ($dir in $rpmDirs) {
+        New-Item -ItemType Directory -Path (Join-Path $rpmBuildRoot $dir) -Force > $null
+    }
+
+    # Create a staging directory for the files
+    $stagingDir = Join-Path $rpmBuildRoot 'SOURCES' 'dsc_files'
+    New-Item -ItemType Directory $stagingDir > $null
+
+    $filesForPackage = $filesForLinuxPackage
+
+    foreach ($file in $filesForPackage) {
+        if ((Get-Item "$target\$file") -is [System.IO.DirectoryInfo]) {
+            Copy-Item "$target\$file" "$stagingDir\$file" -Recurse -ErrorAction Stop
+        } else {
+            Copy-Item "$target\$file" $stagingDir -ErrorAction Stop
+        }
+    }
+
+    # Determine RPM architecture
+    $rpmArch = if ($architecture -eq 'current') {
+        # Detect current system architecture
+        $currentArch = uname -m
+        if ($currentArch -eq 'x86_64') {
+            'x86_64'
+        } elseif ($currentArch -eq 'aarch64') {
+            'aarch64'
+        } else {
+            throw "Unsupported current architecture for RPM: $currentArch"
+        }
+    } elseif ($architecture -eq 'aarch64-unknown-linux-musl' -or $architecture -eq 'aarch64-unknown-linux-gnu') {
+        'aarch64'
+    } elseif ($architecture -eq 'x86_64-unknown-linux-musl' -or $architecture -eq 'x86_64-unknown-linux-gnu') {
+        'x86_64'
+    } else {
+        throw "Unsupported architecture for RPM: $architecture"
+    }
+
+    # Read the spec template and replace placeholders
+    $specTemplate = Get-Content "$PSScriptRoot/packaging/rpm/dsc.spec" -Raw
+    $specContent = $specTemplate.Replace('VERSION_PLACEHOLDER', $productVersion.Replace('-','~')).Replace('ARCH_PLACEHOLDER', $rpmArch)
+    $specFile = Join-Path $rpmBuildRoot 'SPECS' 'dsc.spec'
+    Set-Content -Path $specFile -Value $specContent
+
+    Write-Verbose -Verbose "Building RPM package"
+    $rpmPackageName = "dsc-$productVersion-1.$rpmArch.rpm"
+    
+    # Build the RPM
+    rpmbuild -v -bb --define "_topdir $rpmBuildRoot" --buildroot "$rpmBuildRoot/BUILDROOT" $specFile 2>&1 > $rpmTarget/rpmbuild.log
+    
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error (Get-Content $rpmTarget/rpmbuild.log -Raw)
+        throw "Failed to create RPM package"
+    }
+
+    # Copy the RPM to the bin directory
+    $builtRpm = Get-ChildItem -Path (Join-Path $rpmBuildRoot 'RPMS') -Recurse -Filter '*.rpm' | Select-Object -First 1
+    if ($null -eq $builtRpm) {
+        throw "RPM package was not created"
+    }
+
+    $finalRpmPath = Join-Path $PSScriptRoot 'bin' $builtRpm.Name
+    Copy-Item $builtRpm.FullName $finalRpmPath -Force
+
+    Write-Host -ForegroundColor Green "`nRPM package is created at $finalRpmPath"
+} elseif ($packageType -eq 'deb') {
+    if (!$IsLinux) {
+        throw "DEB package creation is only supported on Linux"
+    }
+
+    # Check if dpkg-deb is available
+    if ($null -eq (Get-Command dpkg-deb -ErrorAction Ignore)) {
+        throw "dpkg-deb not found. Please install dpkg package (e.g., 'sudo apt install dpkg' or 'sudo dnf install dpkg')"
+    }
+
+    $debTarget = Join-Path $PSScriptRoot 'bin' $architecture 'deb'
+    if (Test-Path $debTarget) {
+        Remove-Item $debTarget -Recurse -ErrorAction Stop -Force
+    }
+
+    New-Item -ItemType Directory $debTarget > $null
+
+    # Create DEB package structure
+    $debBuildRoot = Join-Path $debTarget 'dsc'
+    $debDirs = @('DEBIAN', 'opt/dsc', 'usr/bin')
+    foreach ($dir in $debDirs) {
+        New-Item -ItemType Directory -Path (Join-Path $debBuildRoot $dir) -Force > $null
+    }
+
+    # Copy files to the package directory
+    $filesForPackage = $filesForLinuxPackage
+    $stagingDir = Join-Path $debBuildRoot 'opt' 'dsc'
+
+    foreach ($file in $filesForPackage) {
+        if ((Get-Item "$target\$file") -is [System.IO.DirectoryInfo]) {
+            Copy-Item "$target\$file" "$stagingDir\$file" -Recurse -ErrorAction Stop
+        } else {
+            Copy-Item "$target\$file" $stagingDir -ErrorAction Stop
+        }
+    }
+
+    # Create symlink in usr/bin
+    $symlinkPath = Join-Path $debBuildRoot 'usr' 'bin' 'dsc'
+    New-Item -ItemType SymbolicLink -Path $symlinkPath -Target '/opt/dsc/dsc' -Force > $null
+
+    # Determine DEB architecture
+    $debArch = if ($architecture -eq 'current') {
+        # Detect current system architecture
+        $currentArch = uname -m
+        if ($currentArch -eq 'x86_64') {
+            'amd64'
+        } elseif ($currentArch -eq 'aarch64') {
+            'arm64'
+        } else {
+            throw "Unsupported current architecture for DEB: $currentArch"
+        }
+    } elseif ($architecture -eq 'aarch64-unknown-linux-musl' -or $architecture -eq 'aarch64-unknown-linux-gnu') {
+        'arm64'
+    } elseif ($architecture -eq 'x86_64-unknown-linux-musl' -or $architecture -eq 'x86_64-unknown-linux-gnu') {
+        'amd64'
+    } else {
+        throw "Unsupported architecture for DEB: $architecture"
+    }
+
+    # Read the control template and replace placeholders
+    $controlTemplate = Get-Content "$PSScriptRoot/packaging/deb/control" -Raw
+    $controlContent = $controlTemplate.Replace('VERSION_PLACEHOLDER', $productVersion).Replace('ARCH_PLACEHOLDER', $debArch)
+    $controlFile = Join-Path $debBuildRoot 'DEBIAN' 'control'
+    Set-Content -Path $controlFile -Value $controlContent
+
+    Write-Verbose -Verbose "Building DEB package"
+    $debPackageName = "dsc_$productVersion-1_$debArch.deb"
+    
+    # Build the DEB
+    dpkg-deb --build $debBuildRoot 2>&1 > $debTarget/debbuild.log
+    
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error (Get-Content $debTarget/debbuild.log -Raw)
+        throw "Failed to create DEB package"
+    }
+
+    # Move the DEB to the bin directory with the correct name
+    $builtDeb = "$debBuildRoot.deb"
+    if (!(Test-Path $builtDeb)) {
+        throw "DEB package was not created"
+    }
+
+    $finalDebPath = Join-Path $PSScriptRoot 'bin' $debPackageName
+    Move-Item $builtDeb $finalDebPath -Force
+
+    Write-Host -ForegroundColor Green "`nDEB package is created at $finalDebPath"
 }
 
 $env:RUST_BACKTRACE=1

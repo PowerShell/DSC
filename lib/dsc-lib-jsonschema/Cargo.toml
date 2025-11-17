@@ -1,0 +1,23 @@
+[package]
+name = "dsc-lib-jsonschema"
+version = "0.0.0" # version stays 0.0.0 until we're ready to publish - should pin to dsc-lib.
+edition = "2024"
+
+[lib]
+doctest = false # Disable doc tests by default for compilation speed
+
+[dependencies]
+regex = { workspace = true }
+rust-i18n = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+url = { workspace = true }
+
+[dev-dependencies]
+# Helps review complex comparisons, like schemas
+pretty_assertions = { workspace = true }
+
+[lints.clippy]
+pedantic = { level = "deny" }

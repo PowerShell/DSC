@@ -1,42 +1,56 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::args::{DscType, OutputFormat, TraceFormat};
+use crate::args::{SchemaType, OutputFormat, TraceFormat};
 use crate::resolve::Include;
-use dsc_lib::configure::config_result::ResourceTestResult;
-use dsc_lib::extensions::discover::DiscoverResult;
-use dsc_lib::extensions::extension_manifest::ExtensionManifest;
 use dsc_lib::{
     configure::{
-        config_doc::Configuration,
+        config_doc::{
+            Configuration,
+            Resource,
+            RestartRequired,
+        },
         config_result::{
             ConfigurationGetResult,
             ConfigurationSetResult,
-            ConfigurationTestResult
-        }
+            ConfigurationTestResult,
+            ResourceTestResult,
+        },
+    },
+    discovery::{
+        command_discovery::ManifestList,
+        Discovery,
     },
     dscerror::DscError,
     dscresources::{
         command_resource::TraceLevel,
-        dscresource::DscResource, invoke_result::{
+        dscresource::DscResource,
+        invoke_result::{
             GetResult,
             SetResult,
             TestResult,
             ResolveResult,
-        }, resource_manifest::ResourceManifest
+        },
+        resource_manifest::ResourceManifest
     },
-    util::parse_input_to_json,
-    util::get_setting,
+    extensions::{
+        discover::DiscoverResult,
+        dscextension::Capability,
+        extension_manifest::ExtensionManifest,
+    },
+    functions::FunctionDefinition,
+    util::{
+        get_setting,
+        parse_input_to_json,
+    },
 };
-use jsonschema::Validator;
 use path_absolutize::Absolutize;
 use rust_i18n::t;
-use schemars::{schema_for, schema::RootSchema};
+use schemars::{Schema, schema_for};
 use serde::Deserialize;
-use serde_json::Value;
 use std::collections::HashMap;
 use std::env;
-use std::io::{IsTerminal, Read};
+use std::io::{IsTerminal, Read, stdout, Write};
 use std::path::Path;
 use std::process::exit;
 use syntect::{
@@ -58,6 +72,7 @@ pub const EXIT_VALIDATION_FAILED: i32 = 5;
 pub const EXIT_CTRL_C: i32 = 6;
 pub const EXIT_DSC_RESOURCE_NOT_FOUND: i32 = 7;
 pub const EXIT_DSC_ASSERTION_FAILED: i32 = 8;
+pub const EXIT_MCP_FAILED: i32 = 9;
 
 pub const DSC_CONFIG_ROOT: &str = "DSC_CONFIG_ROOT";
 pub const DSC_TRACE_LEVEL: &str = "DSC_TRACE_LEVEL";
@@ -141,48 +156,60 @@ pub fn add_fields_to_json(json: &str, fields_to_add: &HashMap<String, String>) -
 ///
 /// # Returns
 ///
-/// * `RootSchema` - The schema
+/// * `Schema` - The schema
 #[must_use]
-pub fn get_schema(dsc_type: DscType) -> RootSchema {
-    match dsc_type {
-        DscType::GetResult => {
-            schema_for!(GetResult)
-        },
-        DscType::SetResult => {
-            schema_for!(SetResult)
-        },
-        DscType::TestResult => {
-            schema_for!(TestResult)
-        },
-        DscType::ResolveResult => {
-            schema_for!(ResolveResult)
-        }
-        DscType::DscResource => {
-            schema_for!(DscResource)
-        },
-        DscType::ResourceManifest => {
-            schema_for!(ResourceManifest)
-        },
-        DscType::Include => {
-            schema_for!(Include)
-        },
-        DscType::Configuration => {
+pub fn get_schema(schema: SchemaType) -> Schema {
+    match schema {
+        SchemaType::Configuration => {
             schema_for!(Configuration)
         },
-        DscType::ConfigurationGetResult => {
+        SchemaType::ConfigurationGetResult => {
             schema_for!(ConfigurationGetResult)
         },
-        DscType::ConfigurationSetResult => {
+        SchemaType::ConfigurationSetResult => {
             schema_for!(ConfigurationSetResult)
         },
-        DscType::ConfigurationTestResult => {
+        SchemaType::ConfigurationTestResult => {
             schema_for!(ConfigurationTestResult)
         },
-        DscType::ExtensionManifest => {
+        SchemaType::DscResource => {
+            schema_for!(DscResource)
+        },
+        SchemaType::ExtensionDiscoverResult => {
+            schema_for!(DiscoverResult)
+        },
+        SchemaType::ExtensionManifest => {
             schema_for!(ExtensionManifest)
         },
-        DscType::ExtensionDiscoverResult => {
-            schema_for!(DiscoverResult)
+        SchemaType::FunctionDefinition => {
+            schema_for!(FunctionDefinition)
+        },
+        SchemaType::GetResult => {
+            schema_for!(GetResult)
+        },
+        SchemaType::Include => {
+            schema_for!(Include)
+        },
+        SchemaType::ManifestList => {
+            schema_for!(ManifestList)
+        },
+        SchemaType::ResolveResult => {
+            schema_for!(ResolveResult)
+        },
+        SchemaType::Resource => {
+            schema_for!(Resource)
+        },
+        SchemaType::ResourceManifest => {
+            schema_for!(ResourceManifest)
+        },
+        SchemaType::RestartRequired => {
+            schema_for!(RestartRequired)
+        },
+        SchemaType::SetResult => {
+            schema_for!(SetResult)
+        },
+        SchemaType::TestResult => {
+            schema_for!(TestResult)
         },
     }
 }
@@ -272,7 +299,11 @@ pub fn write_object(json: &str, format: Option<&OutputFormat>, include_separator
         }
     }
     else {
-        println!("{output}");
+        let mut stdout_lock = stdout().lock();
+        if writeln!(stdout_lock, "{output}").is_err() {
+            // likely caused by a broken pipe (e.g. 'head' command closed early)
+            exit(EXIT_SUCCESS);
+        }
     }
 }
 
@@ -401,40 +432,7 @@ pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Op
     info!("Trace-level is {:?}", tracing_setting.level);
 }
 
-/// Validate the JSON against the schema.
-///
-/// # Arguments
-///
-/// * `source` - The source of the JSON
-/// * `schema` - The schema to validate against
-/// * `json` - The JSON to validate
-///
-/// # Returns
-///
-/// Nothing on success.
-///
-/// # Errors
-///
-/// * `DscError` - The JSON is invalid
-pub fn validate_json(source: &str, schema: &Value, json: &Value) -> Result<(), DscError> {
-    debug!("{}: {source}", t!("util.validatingSchema"));
-    trace!("JSON: {json}");
-    trace!("Schema: {schema}");
-    let compiled_schema = match Validator::new(schema) {
-        Ok(compiled_schema) => compiled_schema,
-        Err(err) => {
-            return Err(DscError::Validation(format!("{}: {err}", t!("util.failedToCompileSchema"))));
-        }
-    };
-
-    if let Err(err) = compiled_schema.validate(json) {
-        return Err(DscError::Validation(format!("{}: '{source}' {err}", t!("util.validationFailed"))));
-    }
-
-    Ok(())
-}
-
-pub fn get_input(input: Option<&String>, file: Option<&String>, parameters_from_stdin: bool) -> String {
+pub fn get_input(input: Option<&String>, file: Option<&String>) -> String {
     trace!("Input: {input:?}, File: {file:?}");
     let value = if let Some(input) = input {
         debug!("{}", t!("util.readingInput"));
@@ -450,10 +448,6 @@ pub fn get_input(input: Option<&String>, file: Option<&String>, parameters_from_
         // check if need to read from STDIN
         if path == "-" {
             info!("{}", t!("util.readingInputFromStdin"));
-            if parameters_from_stdin {
-                error!("{}", t!("util.stdinNotAllowedForBothParametersAndInput"));
-                exit(EXIT_INVALID_INPUT);
-            }
             let mut stdin = Vec::<u8>::new();
             match std::io::stdin().read_to_end(&mut stdin) {
                 Ok(_) => {
@@ -473,6 +467,14 @@ pub fn get_input(input: Option<&String>, file: Option<&String>, parameters_from_
                 }
             }
         } else {
+            // see if an extension should handle this file
+            let mut discovery = Discovery::new();
+            let path_buf = Path::new(path);
+            for extension in discovery.get_extensions(&Capability::Import) {
+                if let Ok(content) = extension.import(path_buf) {
+                    return content;
+                }
+            }
             match std::fs::read_to_string(path) {
                 Ok(input) => {
                     // check if it contains UTF-8 BOM and remove it
@@ -576,4 +578,110 @@ pub fn in_desired_state(test_result: &ResourceTestResult) -> bool {
             true
         }
     }
+}
+
+/// Parse input string as JSON or YAML and return a serde_json::Value.
+///
+/// # Arguments
+///
+/// * `input` - The input string to parse (JSON or YAML format)
+/// * `context` - Context string for error messages (e.g., "file parameters", "inline parameters")
+///
+/// # Returns
+///
+/// * `Result<serde_json::Value, DscError>` - Parsed JSON value
+///
+/// # Errors
+///
+/// This function will return an error if the input cannot be parsed as valid JSON or YAML
+fn parse_input_to_json_value(input: &str, context: &str) -> Result<serde_json::Value, DscError> {
+    match serde_json::from_str(input) {
+        Ok(json) => Ok(json),
+        Err(_) => {
+            match serde_yaml::from_str::<serde_yaml::Value>(input) {
+                Ok(yaml) => Ok(serde_json::to_value(yaml)?),
+                Err(err) => {
+                    Err(DscError::Parser(t!(&format!("util.failedToParse{context}"), error = err.to_string()).to_string()))
+                }
+            }
+        }
+    }
+}
+
+/// Convert parameter input to a map, handling different formats.
+///
+/// # Arguments
+///
+/// * `params` - Parameter string to convert (JSON or YAML format)
+/// * `context` - Context string for error messages
+///
+/// # Returns
+///
+/// * `Result<serde_json::Map<String, serde_json::Value>, DscError>` - Parameter map
+///
+/// # Errors
+///
+/// Returns an error if the input cannot be parsed or is not an object
+fn params_to_map(params: &str, context: &str) -> Result<serde_json::Map<String, serde_json::Value>, DscError> {
+    let value = parse_input_to_json_value(params, context)?;
+    
+    let Some(map) = value.as_object().cloned() else {
+        return Err(DscError::Parser(t!("util.parametersNotObject").to_string()));
+    };
+    
+    Ok(map)
+}
+
+/// Merge two parameter sets, with inline parameters taking precedence over file parameters.
+/// Top-level keys (like "parameters") are merged recursively, but parameter values themselves
+/// are replaced (not merged) when specified inline.
+///
+/// # Arguments
+///
+/// * `file_params` - Parameters from file (JSON or YAML format)
+/// * `inline_params` - Inline parameters (JSON or YAML format) that take precedence
+///
+/// # Returns
+///
+/// * `Result<String, DscError>` - Merged parameters as JSON string
+///
+/// # Errors
+///
+/// This function will return an error if:
+/// - Either parameter set cannot be parsed as valid JSON or YAML
+/// - The merged result cannot be serialized to JSON
+pub fn merge_parameters(file_params: &str, inline_params: &str) -> Result<String, DscError> {
+    use serde_json::Value;
+    
+    // Convert both parameter inputs to maps
+    let mut file_map = params_to_map(file_params, "FileParameters")?;
+    let inline_map = params_to_map(inline_params, "InlineParameters")?;
+
+    // Merge top-level keys
+    for (key, inline_value) in &inline_map {
+        if key == "parameters" {
+            // Special handling for "parameters" key - merge at parameter name level only
+            // Within each parameter name, inline replaces (not merges)
+            if let Some(file_params_value) = file_map.get_mut("parameters") {
+                if let (Some(file_params_obj), Some(inline_params_obj)) = (file_params_value.as_object_mut(), inline_value.as_object()) {
+                    // For each parameter in inline, replace (not merge) in file
+                    for (param_name, param_value) in inline_params_obj {
+                        file_params_obj.insert(param_name.clone(), param_value.clone());
+                    }
+                } else {
+                    // If one is not an object, inline replaces completely
+                    file_map.insert(key.clone(), inline_value.clone());
+                }
+            } else {
+                // "parameters" key doesn't exist in file, add it
+                file_map.insert(key.clone(), inline_value.clone());
+            }
+        } else {
+            // For other top-level keys, inline value replaces file value
+            file_map.insert(key.clone(), inline_value.clone());
+        }
+    }
+
+    let merged = Value::Object(file_map);
+    Ok(serde_json::to_string(&merged)?)
 }

@@ -1,0 +1,32 @@
+[package]
+name = "dsc-resource-sshdconfig"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "sshdconfig"
+path = "src/main.rs"
+
+[dependencies]
+#external dependencies
+chrono = { workspace = true }
+clap = { workspace = true }
+crossterm = { workspace = true }
+rust-i18n = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tempfile = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+tree-sitter = { workspace = true }
+tree-sitter-rust = { workspace = true}
+# workspace crate dependencies
+tree-sitter-ssh-server-config = { workspace = true }
+
+[target.'cfg(windows)'.dependencies]
+dsc-lib-registry = { workspace = true }
+
+[build-dependencies]
+cc = { workspace = true }

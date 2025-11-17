@@ -5,14 +5,19 @@ use clap::{Parser, Subcommand, ValueEnum};
 
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
 pub enum Schemas {
+    Adapter,
     Delete,
     Exist,
     ExitCode,
-    InDesiredState,
     Export,
     Exporter,
+    Get,
+    InDesiredState,
+    Metadata,
+    Operation,
     Sleep,
     Trace,
+    Version,
     WhatIf,
 }
 
@@ -24,8 +29,28 @@ pub struct Args {
     pub subcommand: SubCommand,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
+pub enum AdapterOperation {
+    Get,
+    Set,
+    Test,
+    List,
+    Export,
+    Validate,
+}
+
 #[derive(Debug, PartialEq, Eq, Subcommand)]
 pub enum SubCommand {
+    #[clap(name = "adapter", about = "Resource adapter")]
+    Adapter {
+        #[clap(name = "input", short, long, help = "The input to the adapter command as JSON")]
+        input: String,
+        #[clap(name = "resource-type", short, long, help = "The resource type to adapt to")]
+        resource_type: String,
+        #[clap(name = "operation", short, long, help = "The operation to perform")]
+        operation: AdapterOperation,
+    },
+
     #[clap(name = "delete", about = "delete operation")]
     Delete {
         #[clap(name = "input", short, long, help = "The input to the delete command as JSON")]
@@ -44,11 +69,6 @@ pub enum SubCommand {
         input: String,
     },
 
-    #[clap(name = "in-desired-state", about = "Specify if the resource is in the desired state")]
-    InDesiredState {
-        #[clap(name = "input", short, long, help = "The input to the in desired state command as JSON")]
-        input: String,
-    },
     #[clap(name = "export", about = "Export instances")]
     Export {
         #[clap(name = "input", short, long, help = "The input to the export command as JSON")]
@@ -58,6 +78,34 @@ pub enum SubCommand {
     #[clap(name = "exporter", about = "Exports different types of resources")]
     Exporter {
         #[clap(name = "input", short, long, help = "The input to the exporter command as JSON")]
+        input: String,
+    },
+
+    #[clap(name = "get", about = "Get a resource")]
+    Get {
+        #[clap(name = "input", short, long, help = "The input to the get command as JSON")]
+        input: String,
+    },
+
+    #[clap(name = "in-desired-state", about = "Specify if the resource is in the desired state")]
+    InDesiredState {
+        #[clap(name = "input", short, long, help = "The input to the in desired state command as JSON")]
+        input: String,
+    },
+
+    #[clap(name = "metadata", about = "Return the metadata")]
+    Metadata {
+        #[clap(name = "input", short, long, help = "The input to the metadata command as JSON")]
+        input: String,
+        #[clap(name = "export", short, long, help = "Use export operation")]
+        export: bool,
+    },
+
+    #[clap(name = "operation", about = "Perform an operation")]
+    Operation {
+        #[clap(name = "operation", short, long, help = "The name of the operation to perform")]
+        operation: String,
+        #[clap(name = "input", short, long, help = "The input to the operation command as JSON")]
         input: String,
     },
 
@@ -75,6 +123,11 @@ pub enum SubCommand {
 
     #[clap(name = "trace", about = "The trace level")]
     Trace,
+
+    #[clap(name = "version", about = "Test multiple versions of same resource")]
+    Version {
+        version: String,
+    },
 
     #[clap(name = "whatif", about = "Check if it is a whatif operation")]
     WhatIf {

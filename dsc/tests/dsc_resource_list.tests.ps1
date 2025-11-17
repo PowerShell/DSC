@@ -1,6 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
+BeforeDiscovery {
+    try {
+        $windowWidth = [Console]::WindowWidth
+    } catch {
+        $consoleUnavailable = $true
+    }
+}
+
 Describe 'Tests for listing resources' {
     It 'dsc resource list' {
         $resources = dsc resource list | ConvertFrom-Json -Depth 10
@@ -76,10 +84,12 @@ Describe 'Tests for listing resources' {
     }
 
     It 'Capabilities are returned' {
-        $resource = dsc resource list Microsoft/OSInfo | ConvertFrom-Json
+        $resource = dsc resource list Microsoft.DSC.Debug/Echo | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
-        $resource.capabilities.Count | Should -Be 2
+        $resource.capabilities.Count | Should -Be 4
         $resource.capabilities | Should -Contain 'get'
+        $resource.capabilities | Should -Contain 'set'
+        $resource.capabilities | Should -Contain 'test'
         $resource.capabilities | Should -Contain 'export'
     }
 
@@ -89,12 +99,12 @@ Describe 'Tests for listing resources' {
         $out | Should -BeLike "*ERROR*Adapter not found: foo`*"
     }
 
-    It 'Table is not truncated' {
+    It 'Table is not truncated' -Skip:($consoleUnavailable) {
         $output = dsc resource list --output-format table-no-truncate
         $LASTEXITCODE | Should -Be 0
         $foundWideLine = $false
         foreach ($line in $output) {
-            if ($line.Length -gt [Console]::WindowWidth) {
+            if ($line.Length -gt $windowWidth) {
                 $foundWideLine = $true
                 break
             }

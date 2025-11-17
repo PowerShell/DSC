@@ -1,0 +1,14 @@
+{
+    "Name": "dsctest",
+    "Kind": "Resource",
+    "IsRust": true,
+    "TestOnly": true,
+    "Binaries": [
+        "dsctest"
+    ],
+    "CopyFiles": {
+        "All": [
+            "dsctest.dsc.manifests.json"
+        ]
+    }
+}

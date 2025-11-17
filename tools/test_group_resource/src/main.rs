@@ -8,6 +8,7 @@ use clap::Parser;
 use dsc_lib::dscresources::resource_manifest::{ResourceManifest, GetMethod, Kind};
 use dsc_lib::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
 use dsc_lib::schemas::DscRepoSchema;
+use std::path::PathBuf;
 
 fn main() {
     let args = Args::parse();
@@ -20,11 +21,12 @@ fn main() {
                 capabilities: vec![Capability::Get, Capability::Set],
                 description: Some("This is a test resource.".to_string()),
                 implemented_as: ImplementedAs::Custom("TestResource".to_string()),
-                path: "test_resource1".to_string(),
-                directory: "test_directory".to_string(),
+                path: PathBuf::from("test_resource1"),
+                directory: PathBuf::from("test_directory"),
                 author: Some("Microsoft".to_string()),
                 properties: vec!["Property1".to_string(), "Property2".to_string()],
                 require_adapter: Some("Test/TestGroup".to_string()),
+                target_resource: None,
                 manifest: Some(serde_json::to_value(ResourceManifest {
                     description: Some("This is a test resource.".to_string()),
                     schema_version: dsc_lib::dscresources::resource_manifest::ResourceManifest::default_schema_id_uri(),
@@ -45,11 +47,12 @@ fn main() {
                 capabilities: vec![Capability::Get, Capability::Set],
                 description: Some("This is a test resource.".to_string()),
                 implemented_as: ImplementedAs::Custom("TestResource".to_string()),
-                path: "test_resource2".to_string(),
-                directory: "test_directory".to_string(),
+                path: PathBuf::from("test_resource2"),
+                directory: PathBuf::from("test_directory"),
                 author: Some("Microsoft".to_string()),
                 properties: vec!["Property1".to_string(), "Property2".to_string()],
                 require_adapter: Some("Test/TestGroup".to_string()),
+                target_resource: None,
                 manifest: Some(serde_json::to_value(ResourceManifest {
                     description: Some("This is a test resource.".to_string()),
                     schema_version: dsc_lib::dscresources::resource_manifest::ResourceManifest::default_schema_id_uri(),
@@ -74,11 +77,12 @@ fn main() {
                 capabilities: vec![Capability::Get],
                 description: Some("This is a test resource.".to_string()),
                 implemented_as: ImplementedAs::Custom("TestResource".to_string()),
-                path: "test_resource1".to_string(),
-                directory: "test_directory".to_string(),
+                path: PathBuf::from("test_resource1"),
+                directory: PathBuf::from("test_directory"),
                 author: Some("Microsoft".to_string()),
                 properties: vec!["Property1".to_string(), "Property2".to_string()],
                 require_adapter: None,
+                target_resource: None,
                 manifest: None,
             };
             println!("{}", serde_json::to_string(&resource1).unwrap());

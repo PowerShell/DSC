@@ -1,0 +1,12 @@
+# Copyright (C) Microsoft Corporation. All rights reserved.
+
+[package]
+name = "dsc-lib-pal"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+doctest = false
+
+[build-dependencies]
+cc = { workspace = true }

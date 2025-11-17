@@ -42,6 +42,7 @@ Describe 'resource export tests' {
         $config_with_process_list.metadata.'Microsoft.DSC'.operation | Should -BeExactly 'export'
         # contentVersion on export is always 1.0.0
         $config_with_process_list.contentVersion | Should -BeExactly '1.0.0'
+        $config_with_process_list.resources.name | Should -BeLike 'Process-*'
     }
 
     It 'Configuration Export can be piped to configuration Set' -Skip:(!$IsWindows) {
@@ -74,7 +75,7 @@ Describe 'resource export tests' {
               properties:
                 pid: 0
 '@
-        $out = $yaml | dsc config export -f - 2>&1
+        $null = $yaml | dsc config export -f - 2>&1
         $LASTEXITCODE | Should -Be 0
     }
 
@@ -180,5 +181,37 @@ resources:
         $out.resources[0].properties.psobject.properties.name | Should -Not -Contain '_kind'
         $out.resources[0].properties.psobject.properties.name | Should -Not -Contain '_securityContext'
         $out.resources[0].properties.psobject.properties.name | Should -Not -Contain '_name'
+    }
+
+    It 'Export can be used with a resource that only implements Get with filter' {
+      $yaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+  - name: NoExport
+    type: Test/Get
+    properties:
+      name: two
+'@
+      $out = dsc config export -i $yaml | ConvertFrom-Json
+      $LASTEXITCODE | Should -Be 0
+      $out.resources.count | Should -Be 1
+      $out.resources[0].type | Should -BeExactly 'Test/Get'
+      $out.resources[0].properties.name | Should -BeExactly 'two'
+      $out.resources[0].properties.id | Should -Be 2
+    }
+
+    It 'Export can be used with a resource that only implements Get with no filter' {
+      $yaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+  - name: NoFilter
+    type: Test/Get
+'@
+      $out = dsc config export -i $yaml | ConvertFrom-Json
+      $LASTEXITCODE | Should -Be 0
+      $out.resources.count | Should -Be 1
+      $out.resources[0].type | Should -BeExactly 'Test/Get'
+      $out.resources[0].properties.name | Should -BeExactly 'one'
+      $out.resources[0].properties.id | Should -Be 1
     }
 }

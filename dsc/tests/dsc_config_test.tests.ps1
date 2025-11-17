@@ -14,8 +14,8 @@ Describe 'dsc config test tests' {
          - name: Is64BitOS
            type: Microsoft/OSInfo
            properties:
-             bitness: '64'
-         - name: 64bit test 2
+             bitness: 64
+         - name: Family Test
            type: Microsoft/OSInfo
            properties:
              family: Windows
@@ -83,6 +83,6 @@ Describe 'dsc config test tests' {
         $null = dsc config test -i $configYaml 2> "$TestDrive/trace.log"
         $LASTEXITCODE | Should -Be 2
         $log = Get-Content "$TestDrive/trace.log" -Raw
-        $log | Should -Match ".*Resource named 'MyTest' is specified more than once.*" -Because ($log | Out-String)
+        $log | Should -Match ".*Resource named 'MyTest' for type 'Microsoft.DSC.Debug/Echo' is specified more than once.*" -Because ($log | Out-String)
     }
 }

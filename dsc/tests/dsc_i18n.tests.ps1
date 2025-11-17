@@ -26,23 +26,25 @@ Describe 'Internationalization tests' {
             }
         }
 
+        $patterns = @{
+            t = '(?s)\bt\!\(\s*"(?<key>.*?)".*?\)'
+            panic_t = '(?s)\bpanic_t\!\(\s*"(?<key>.*?)".*?\)'
+            assert_t = '(?s)\bassert_t\!\(\s*.*?,\s*"(?<key>.*?)".*?\)'
+        }
+
         $missing = @()
         Get-ChildItem -Recurse -Path $project -Include *.rs -File | ForEach-Object {
-            # Write-Verbose -Verbose "File: $_"
-            $line = 0
-            Get-Content -Path $_ | ForEach-Object {
-                $line++
-                ($_ | Select-String -Pattern '[^\w]t\!\("(?<key>.*?)".*?\)' -AllMatches).Matches | ForEach-Object {
+            $content = Get-Content -Path $_ -Raw
+            foreach ($pattern in $patterns.keys) {
+                ($content | Select-String -Pattern $patterns[$pattern] -AllMatches).Matches | ForEach-Object {
                     # write-verbose -verbose "Line: $_"
                     if ($null -ne $_) {
                         $key = $_.Groups['key'].Value
                         if ($i18n.ContainsKey($key)) {
                             $i18n[$key] = 1
-                            # write-verbose -verbose "Found on line $line : $key"
                         }
                         else {
                             $missing += $key
-                            # write-verbose -verbose "Missing: $key"
                         }
                     }
                 }

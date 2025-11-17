@@ -1,11 +1,12 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::args::{ConfigSubCommand, DscType, ExtensionSubCommand, GetOutputFormat, ListOutputFormat, OutputFormat, ResourceSubCommand};
+use crate::args::{ConfigSubCommand, SchemaType, ExtensionSubCommand, FunctionSubCommand, GetOutputFormat, ListOutputFormat, OutputFormat, ResourceSubCommand};
 use crate::resolve::{get_contents, Include};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
-use crate::util::{get_input, get_schema, in_desired_state, set_dscconfigroot, validate_json, write_object, DSC_CONFIG_ROOT, EXIT_DSC_ASSERTION_FAILED, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR};
+use crate::util::{get_input, get_schema, in_desired_state, set_dscconfigroot, write_object, DSC_CONFIG_ROOT, EXIT_DSC_ASSERTION_FAILED, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR};
+use dsc_lib::functions::FunctionArgKind;
 use dsc_lib::{
     configure::{
         config_doc::{
@@ -16,7 +17,7 @@ use dsc_lib::{
         config_result::ResourceGetResult,
         Configurator,
     },
-    discovery::discovery_trait::DiscoveryKind,
+    discovery::discovery_trait::{DiscoveryFilter, DiscoveryKind},
     discovery::command_discovery::ImportedManifest,
     dscerror::DscError,
     DscManager,
@@ -25,12 +26,16 @@ use dsc_lib::{
         TestResult,
         ValidateResult,
     },
-    dscresources::dscresource::{Capability, ImplementedAs, Invoke},
-    dscresources::resource_manifest::{import_manifest, ResourceManifest},
+    dscresources::dscresource::{Capability, ImplementedAs, validate_json, validate_properties},
+    dscresources::resource_manifest::import_manifest,
     extensions::dscextension::Capability as ExtensionCapability,
+    functions::FunctionDispatcher,
     progress::ProgressFormat,
+    util::convert_wildcard_to_regex,
 };
+use regex::RegexBuilder;
 use rust_i18n::t;
+use core::convert::AsRef;
 use std::{
     collections::HashMap,
     io::{self, IsTerminal},
@@ -258,7 +263,7 @@ fn initialize_config_root(path: Option<&String>) -> Option<String> {
     } else {
         let current_directory = std::env::current_dir().unwrap_or_default();
         debug!("DSC_CONFIG_ROOT = {} '{current_directory:?}'", t!("subcommand.currentDirectory"));
-        set_dscconfigroot(&current_directory.to_string_lossy());
+        set_dscconfigroot(current_directory.to_str().unwrap_or_default());
     }
 
     // if the path is "-", we need to return it so later processing can handle it correctly
@@ -271,7 +276,7 @@ fn initialize_config_root(path: Option<&String>) -> Option<String> {
 
 #[allow(clippy::too_many_lines)]
 #[allow(clippy::too_many_arguments)]
-pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parameters_from_stdin: bool, mounted_path: Option<&String>, as_group: &bool, as_assert: &bool, as_include: &bool, progress_format: ProgressFormat) {
+pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounted_path: Option<&String>, as_group: &bool, as_assert: &bool, as_include: &bool, progress_format: ProgressFormat) {
     let (new_parameters, json_string) = match subcommand {
         ConfigSubCommand::Get { input, file, .. } |
         ConfigSubCommand::Set { input, file, .. } |
@@ -279,7 +284,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parame
         ConfigSubCommand::Validate { input, file, .. } |
         ConfigSubCommand::Export { input, file, .. } => {
             let new_path = initialize_config_root(file.as_ref());
-            let document = get_input(input.as_ref(), new_path.as_ref(), parameters_from_stdin);
+            let document = get_input(input.as_ref(), new_path.as_ref());
             if *as_include {
                 let (new_parameters, config_json) = match get_contents(&document) {
                     Ok((parameters, config_json)) => (parameters, config_json),
@@ -295,7 +300,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parame
         },
         ConfigSubCommand::Resolve { input, file, .. } => {
             let new_path = initialize_config_root(file.as_ref());
-            let document = get_input(input.as_ref(), new_path.as_ref(), parameters_from_stdin);
+            let document = get_input(input.as_ref(), new_path.as_ref());
             let (new_parameters, config_json) = match get_contents(&document) {
                 Ok((parameters, config_json)) => (parameters, config_json),
                 Err(err) => {
@@ -314,6 +319,8 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parame
             exit(EXIT_DSC_ERROR);
         }
     };
+
+    configurator.context.dsc_version = Some(env!("CARGO_PKG_VERSION").to_string());
 
     if let ConfigSubCommand::Set { what_if , .. } = subcommand {
         if *what_if {
@@ -391,7 +398,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parame
             };
             if *as_include {
                 let new_path = initialize_config_root(file.as_ref());
-                let input = get_input(input.as_ref(), new_path.as_ref(), parameters_from_stdin);
+                let input = get_input(input.as_ref(), new_path.as_ref());
                 match serde_json::from_str::<Include>(&input) {
                     Ok(_) => {
                         // valid, so do nothing
@@ -473,10 +480,10 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parame
 pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) -> Result<(), DscError> {
     // first validate against the config schema
     debug!("{}", t!("subcommand.validatingConfiguration"));
-    let schema = serde_json::to_value(get_schema(DscType::Configuration))?;
+    let schema = serde_json::to_value(get_schema(SchemaType::Configuration))?;
     let config_value = serde_json::to_value(config)?;
     validate_json("Configuration", &schema, &config_value)?;
-    let mut dsc = DscManager::new()?;
+    let mut dsc = DscManager::new();
 
     // then validate each resource
     let Some(resources) = config_value["resources"].as_array() else {
@@ -484,17 +491,12 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
     };
 
     // discover the resources
-    let mut resource_types = Vec::new();
+    let mut resource_types = Vec::<DiscoveryFilter>::new();
     for resource_block in resources {
         let Some(type_name) = resource_block["type"].as_str() else {
             return Err(DscError::Validation(t!("subcommand.resourceTypeNotSpecified").to_string()));
         };
-
-        if resource_types.contains(&type_name.to_lowercase()) {
-            continue;
-        }
-
-        resource_types.push(type_name.to_lowercase().to_string());
+        resource_types.push(DiscoveryFilter::new(type_name, resource_block["api_version"].as_str().map(std::string::ToString::to_string)));
     }
     dsc.find_resources(&resource_types, progress_format);
 
@@ -506,40 +508,13 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
         trace!("{} '{}'", t!("subcommand.validatingResource"), resource_block["name"].as_str().unwrap_or_default());
 
         // get the actual resource
-        let Some(resource) = get_resource(&dsc, type_name) else {
+        let Some(resource) = get_resource(&mut dsc, type_name, resource_block["api_version"].as_str()) else {
             return Err(DscError::Validation(format!("{}: '{type_name}'", t!("subcommand.resourceNotFound"))));
         };
 
         // see if the resource is command based
         if resource.implemented_as == ImplementedAs::Command {
-            // if so, see if it implements validate via the resource manifest
-            if let Some(manifest) = resource.manifest.clone() {
-                // convert to resource_manifest
-                let manifest: ResourceManifest = serde_json::from_value(manifest)?;
-                if manifest.validate.is_some() {
-                    debug!("{}: {type_name} ", t!("subcommand.resourceImplementsValidate"));
-                    // get the resource's part of the config
-                    let resource_config = resource_block["properties"].to_string();
-                    let result = resource.validate(&resource_config)?;
-                    if !result.valid {
-                        let reason = result.reason.unwrap_or(t!("subcommand.noReason").to_string());
-                        let type_name = resource.type_name.clone();
-                        return Err(DscError::Validation(format!("{}: {type_name} {reason}", t!("subcommand.resourceValidationFailed"))));
-                    }
-                }
-                else {
-                    // use schema validation
-                    trace!("{}: {type_name}", t!("subcommand.resourceDoesNotImplementValidate"));
-                    let Ok(schema) = resource.schema() else {
-                        return Err(DscError::Validation(format!("{}: {type_name}", t!("subcommand.noSchemaOrValidate"))));
-                    };
-                    let schema = serde_json::from_str(&schema)?;
-
-                    validate_json(&resource.type_name, &schema, &resource_block["properties"])?;
-                }
-            } else {
-                return Err(DscError::Validation(format!("{}: {type_name}", t!("subcommand.noManifest"))));
-            }
+            validate_properties(resource, &resource_block["properties"])?;
         }
     }
 
@@ -547,13 +522,7 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
 }
 
 pub fn extension(subcommand: &ExtensionSubCommand, progress_format: ProgressFormat) {
-    let mut dsc = match DscManager::new() {
-        Ok(dsc) => dsc,
-        Err(err) => {
-            error!("Error: {err}");
-            exit(EXIT_DSC_ERROR);
-        }
-    };
+    let mut dsc = DscManager::new();
 
     match subcommand {
         ExtensionSubCommand::List{extension_name, output_format} => {
@@ -562,57 +531,60 @@ pub fn extension(subcommand: &ExtensionSubCommand, progress_format: ProgressForm
     }
 }
 
+pub fn function(subcommand: &FunctionSubCommand) {
+    let functions = FunctionDispatcher::new();
+    match subcommand {
+        FunctionSubCommand::List { function_name, output_format } => {
+            list_functions(&functions, function_name.as_ref(), output_format.as_ref());
+        },
+    }
+}
+
 #[allow(clippy::too_many_lines)]
 pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat) {
-    let mut dsc = match DscManager::new() {
-        Ok(dsc) => dsc,
-        Err(err) => {
-            error!("Error: {err}");
-            exit(EXIT_DSC_ERROR);
-        }
-    };
+    let mut dsc = DscManager::new();
 
     match subcommand {
         ResourceSubCommand::List { resource_name, adapter_name, description, tags, output_format } => {
             list_resources(&mut dsc, resource_name.as_ref(), adapter_name.as_ref(), description.as_ref(), tags.as_ref(), output_format.as_ref(), progress_format);
         },
-        ResourceSubCommand::Schema { resource , output_format } => {
-            dsc.find_resources(&[resource.to_string()], progress_format);
-            resource_command::schema(&dsc, resource, output_format.as_ref());
+        ResourceSubCommand::Schema { resource , version, output_format } => {
+            dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
+            resource_command::schema(&mut dsc, resource, version.as_deref(), output_format.as_ref());
         },
-        ResourceSubCommand::Export { resource, input, file, output_format } => {
-            dsc.find_resources(&[resource.to_string()], progress_format);
-            let parsed_input = get_input(input.as_ref(), file.as_ref(), false);
-            resource_command::export(&mut dsc, resource, &parsed_input, output_format.as_ref());
+        ResourceSubCommand::Export { resource, version, input, file, output_format } => {
+            dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
+            let parsed_input = get_input(input.as_ref(), file.as_ref());
+            resource_command::export(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref());
         },
-        ResourceSubCommand::Get { resource, input, file: path, all, output_format } => {
-            dsc.find_resources(&[resource.to_string()], progress_format);
+        ResourceSubCommand::Get { resource, version, input, file: path, all, output_format } => {
+            dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
             if *all {
-                resource_command::get_all(&dsc, resource, output_format.as_ref());
+                resource_command::get_all(&mut dsc, resource, version.as_deref(), output_format.as_ref());
             }
             else {
                 if *output_format == Some(GetOutputFormat::JsonArray) {
                     error!("{}", t!("subcommand.jsonArrayNotSupported"));
                     exit(EXIT_INVALID_ARGS);
                 }
-                let parsed_input = get_input(input.as_ref(), path.as_ref(), false);
-                resource_command::get(&dsc, resource, &parsed_input, output_format.as_ref());
+                let parsed_input = get_input(input.as_ref(), path.as_ref());
+                resource_command::get(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref());
             }
         },
-        ResourceSubCommand::Set { resource, input, file: path, output_format } => {
-            dsc.find_resources(&[resource.to_string()], progress_format);
-            let parsed_input = get_input(input.as_ref(), path.as_ref(), false);
-            resource_command::set(&dsc, resource, &parsed_input, output_format.as_ref());
+        ResourceSubCommand::Set { resource, version, input, file: path, output_format } => {
+            dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
+            let parsed_input = get_input(input.as_ref(), path.as_ref());
+            resource_command::set(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref());
         },
-        ResourceSubCommand::Test { resource, input, file: path, output_format } => {
-            dsc.find_resources(&[resource.to_string()], progress_format);
-            let parsed_input = get_input(input.as_ref(), path.as_ref(), false);
-            resource_command::test(&dsc, resource, &parsed_input, output_format.as_ref());
+        ResourceSubCommand::Test { resource, version, input, file: path, output_format } => {
+            dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
+            let parsed_input = get_input(input.as_ref(), path.as_ref());
+            resource_command::test(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref());
         },
-        ResourceSubCommand::Delete { resource, input, file: path } => {
-            dsc.find_resources(&[resource.to_string()], progress_format);
-            let parsed_input = get_input(input.as_ref(), path.as_ref(), false);
-            resource_command::delete(&dsc, resource, &parsed_input);
+        ResourceSubCommand::Delete { resource, version, input, file: path } => {
+            dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
+            let parsed_input = get_input(input.as_ref(), path.as_ref());
+            resource_command::delete(&mut dsc, resource, version.as_deref(), &parsed_input);
         },
     }
 }
@@ -632,10 +604,11 @@ fn list_extensions(dsc: &mut DscManager, extension_name: Option<&String>, format
     let mut include_separator = false;
     for manifest_resource in dsc.list_available(&DiscoveryKind::Extension, extension_name.unwrap_or(&String::from("*")), "", progress_format) {
         if let ImportedManifest::Extension(extension) = manifest_resource {
-            let mut capabilities = "-".to_string();
             let capability_types = [
                 (ExtensionCapability::Discover, "d"),
+                (ExtensionCapability::Secret, "s"),
             ];
+            let mut capabilities = "-".repeat(capability_types.len());
 
             for (i, (capability, letter)) in capability_types.iter().enumerate() {
                 if extension.capabilities.contains(capability) {
@@ -680,7 +653,98 @@ fn list_extensions(dsc: &mut DscManager, extension_name: Option<&String>, format
     }
 }
 
-fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_name: Option<&String>, description: Option<&String>, tags: Option<&Vec<String>>, format: Option<&ListOutputFormat>, progress_format: ProgressFormat) {
+fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>, output_format: Option<&ListOutputFormat>) {
+    let mut write_table = false;
+    let mut table = Table::new(&[
+        t!("subcommand.tableHeader_functionCategory").to_string().as_ref(),
+        t!("subcommand.tableHeader_functionName").to_string().as_ref(),
+        t!("subcommand.tableHeader_minArgs").to_string().as_ref(),
+        t!("subcommand.tableHeader_maxArgs").to_string().as_ref(),
+        t!("subcommand.tableHeader_argTypes").to_string().as_ref(),
+        t!("subcommand.tableHeader_description").to_string().as_ref(),
+    ]);
+    if output_format.is_none() && io::stdout().is_terminal() {
+        // write as table if format is not specified and interactive
+        write_table = true;
+    }
+    let mut include_separator = false;
+    let returned_types= [
+        (FunctionArgKind::Array, "a"),
+        (FunctionArgKind::Boolean, "b"),
+        (FunctionArgKind::Number, "n"),
+        (FunctionArgKind::String, "s"),
+        (FunctionArgKind::Object, "o"),
+    ];
+
+    let asterisks = String::from("*");
+    let name = function_name.unwrap_or(&asterisks);
+    let regex_str = convert_wildcard_to_regex(name);
+    let mut regex_builder = RegexBuilder::new(&regex_str);
+    regex_builder.case_insensitive(true);
+    let Ok(regex) = regex_builder.build() else {
+        error!("{}: {}", t!("subcommand.invalidFunctionFilter"), regex_str);
+        exit(EXIT_INVALID_ARGS);
+    };
+
+    let mut functions_list = functions.list();
+    functions_list.sort();
+    for function in functions_list {
+        if !regex.is_match(&function.name) {
+            continue;
+        }
+
+        if write_table {
+            // construct arg_types from '-' times number of accepted_arg_types
+            let mut arg_types = "-".repeat(returned_types.len());
+            for (i, (arg_type, letter)) in returned_types.iter().enumerate() {
+                if function.return_types.contains(arg_type) {
+                    arg_types.replace_range(i..=i, letter);
+                }
+            }
+
+            let max_args = if function.max_args == usize::MAX {
+                t!("subcommand.maxInt").to_string()
+            } else {
+                function.max_args.to_string()
+            };
+
+            table.add_row(vec![
+                function.category.iter().map(std::string::ToString::to_string).collect::<Vec<String>>().join(", "),
+                function.name,
+                function.min_args.to_string(),
+                max_args,
+                arg_types,
+                function.description
+            ]);
+        }
+        else {
+            let json = match serde_json::to_string(&function) {
+                Ok(json) => json,
+                Err(err) => {
+                    error!("JSON: {err}");
+                    exit(EXIT_JSON_ERROR);
+                }
+            };
+            let format = match output_format {
+                Some(ListOutputFormat::Json) => Some(OutputFormat::Json),
+                Some(ListOutputFormat::PrettyJson) => Some(OutputFormat::PrettyJson),
+                Some(ListOutputFormat::Yaml) => Some(OutputFormat::Yaml),
+                _ => None,
+            };
+            write_object(&json, format.as_ref(), include_separator);
+            include_separator = true;
+            // insert newline separating instances if writing to console
+            if io::stdout().is_terminal() { println!(); }
+        }
+    }
+
+    if write_table {
+        let truncate = output_format != Some(&ListOutputFormat::TableNoTruncate);
+        table.print(truncate);
+    }
+}
+
+pub fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_name: Option<&String>, description: Option<&String>, tags: Option<&Vec<String>>, format: Option<&ListOutputFormat>, progress_format: ProgressFormat) {
     let mut write_table = false;
     let mut table = Table::new(&[
         t!("subcommand.tableHeader_type").to_string().as_ref(),
@@ -697,7 +761,6 @@ fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_
     let mut include_separator = false;
     for manifest_resource in dsc.list_available(&DiscoveryKind::Resource, resource_name.unwrap_or(&String::from("*")), adapter_name.unwrap_or(&String::new()), progress_format) {
         if let ImportedManifest::Resource(resource) = manifest_resource {
-            let mut capabilities = "--------".to_string();
             let capability_types = [
                 (Capability::Get, "g"),
                 (Capability::Set, "s"),
@@ -708,6 +771,7 @@ fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_
                 (Capability::Export, "e"),
                 (Capability::Resolve, "r"),
             ];
+            let mut capabilities = "-".repeat(capability_types.len());
 
             for (i, (capability, letter)) in capability_types.iter().enumerate() {
                 if resource.capabilities.contains(capability) {

@@ -14,7 +14,7 @@ body:
       new feature would solve. Try formulating it in user story style
       (if applicable).
     placeholder: >-
-      'As a user I want X so that Y...' with X being the being the
+      'As a user I want X so that Y...' with X being the
       action and Y being the value of the action.
   validations:
     required: true
