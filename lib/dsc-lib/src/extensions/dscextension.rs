@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use schemars::JsonSchema;
 use std::fmt::Display;
+use std::path::PathBuf;
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -21,11 +22,11 @@ pub struct DscExtension {
     #[serde(rename = "importFileExtensions")]
     pub import_file_extensions: Option<Vec<String>>,
     /// The file path to the resource.
-    pub path: String,
+    pub path: PathBuf,
     /// The description of the resource.
     pub description: Option<String>,
     // The directory path to the resource.
-    pub directory: String,
+    pub directory: PathBuf,
     /// The author of the resource.
     pub author: Option<String>,
     /// The manifest of the resource.
@@ -63,8 +64,8 @@ impl DscExtension {
             capabilities: Vec::new(),
             import_file_extensions: None,
             description: None,
-            path: String::new(),
-            directory: String::new(),
+            path: PathBuf::new(),
+            directory: PathBuf::new(),
             author: None,
             manifest: Value::Null,
         }

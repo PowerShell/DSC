@@ -9,6 +9,7 @@ use rmcp::{
 };
 use rust_i18n::t;
 
+pub mod invoke_dsc_config;
 pub mod invoke_dsc_resource;
 pub mod list_dsc_functions;
 pub mod list_dsc_resources;

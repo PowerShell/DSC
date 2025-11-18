@@ -9,7 +9,7 @@ param(
     $architecture = 'current',
     [switch]$Clippy,
     [switch]$SkipBuild,
-    [ValidateSet('msix','msix-private','msixbundle','tgz','zip')]
+    [ValidateSet('msix','msix-private','msixbundle','tgz','zip','rpm','deb')]
     $packageType,
     [switch]$Test,
     [switch]$GetPackageVersion,
@@ -857,6 +857,176 @@ if ($packageType -eq 'msixbundle') {
     }
 
     Write-Host -ForegroundColor Green "`ntar.gz file is created at $tarFile"
+} elseif ($packageType -eq 'rpm') {
+    if (!$IsLinux) {
+        throw "RPM package creation is only supported on Linux"
+    }
+
+    # Check if rpmbuild is available
+    if ($null -eq (Get-Command rpmbuild -ErrorAction Ignore)) {
+        throw "rpmbuild not found. Please install rpm-build package (e.g., 'sudo apt install rpm build-essential' or 'sudo dnf install rpm-build')"
+    }
+
+    $rpmTarget = Join-Path $PSScriptRoot 'bin' $architecture 'rpm'
+    if (Test-Path $rpmTarget) {
+        Remove-Item $rpmTarget -Recurse -ErrorAction Stop -Force
+    }
+
+    New-Item -ItemType Directory $rpmTarget > $null
+
+    # Create RPM build directories
+    $rpmBuildRoot = Join-Path $rpmTarget 'rpmbuild'
+    $rpmDirs = @('BUILD', 'RPMS', 'SOURCES', 'SPECS', 'SRPMS')
+    foreach ($dir in $rpmDirs) {
+        New-Item -ItemType Directory -Path (Join-Path $rpmBuildRoot $dir) -Force > $null
+    }
+
+    # Create a staging directory for the files
+    $stagingDir = Join-Path $rpmBuildRoot 'SOURCES' 'dsc_files'
+    New-Item -ItemType Directory $stagingDir > $null
+
+    $filesForPackage = $filesForLinuxPackage
+
+    foreach ($file in $filesForPackage) {
+        if ((Get-Item "$target\$file") -is [System.IO.DirectoryInfo]) {
+            Copy-Item "$target\$file" "$stagingDir\$file" -Recurse -ErrorAction Stop
+        } else {
+            Copy-Item "$target\$file" $stagingDir -ErrorAction Stop
+        }
+    }
+
+    # Determine RPM architecture
+    $rpmArch = if ($architecture -eq 'current') {
+        # Detect current system architecture
+        $currentArch = uname -m
+        if ($currentArch -eq 'x86_64') {
+            'x86_64'
+        } elseif ($currentArch -eq 'aarch64') {
+            'aarch64'
+        } else {
+            throw "Unsupported current architecture for RPM: $currentArch"
+        }
+    } elseif ($architecture -eq 'aarch64-unknown-linux-musl' -or $architecture -eq 'aarch64-unknown-linux-gnu') {
+        'aarch64'
+    } elseif ($architecture -eq 'x86_64-unknown-linux-musl' -or $architecture -eq 'x86_64-unknown-linux-gnu') {
+        'x86_64'
+    } else {
+        throw "Unsupported architecture for RPM: $architecture"
+    }
+
+    # Read the spec template and replace placeholders
+    $specTemplate = Get-Content "$PSScriptRoot/packaging/rpm/dsc.spec" -Raw
+    $specContent = $specTemplate.Replace('VERSION_PLACEHOLDER', $productVersion.Replace('-','~')).Replace('ARCH_PLACEHOLDER', $rpmArch)
+    $specFile = Join-Path $rpmBuildRoot 'SPECS' 'dsc.spec'
+    Set-Content -Path $specFile -Value $specContent
+
+    Write-Verbose -Verbose "Building RPM package"
+    $rpmPackageName = "dsc-$productVersion-1.$rpmArch.rpm"
+    
+    # Build the RPM
+    rpmbuild -v -bb --define "_topdir $rpmBuildRoot" --buildroot "$rpmBuildRoot/BUILDROOT" $specFile 2>&1 > $rpmTarget/rpmbuild.log
+    
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error (Get-Content $rpmTarget/rpmbuild.log -Raw)
+        throw "Failed to create RPM package"
+    }
+
+    # Copy the RPM to the bin directory
+    $builtRpm = Get-ChildItem -Path (Join-Path $rpmBuildRoot 'RPMS') -Recurse -Filter '*.rpm' | Select-Object -First 1
+    if ($null -eq $builtRpm) {
+        throw "RPM package was not created"
+    }
+
+    $finalRpmPath = Join-Path $PSScriptRoot 'bin' $builtRpm.Name
+    Copy-Item $builtRpm.FullName $finalRpmPath -Force
+
+    Write-Host -ForegroundColor Green "`nRPM package is created at $finalRpmPath"
+} elseif ($packageType -eq 'deb') {
+    if (!$IsLinux) {
+        throw "DEB package creation is only supported on Linux"
+    }
+
+    # Check if dpkg-deb is available
+    if ($null -eq (Get-Command dpkg-deb -ErrorAction Ignore)) {
+        throw "dpkg-deb not found. Please install dpkg package (e.g., 'sudo apt install dpkg' or 'sudo dnf install dpkg')"
+    }
+
+    $debTarget = Join-Path $PSScriptRoot 'bin' $architecture 'deb'
+    if (Test-Path $debTarget) {
+        Remove-Item $debTarget -Recurse -ErrorAction Stop -Force
+    }
+
+    New-Item -ItemType Directory $debTarget > $null
+
+    # Create DEB package structure
+    $debBuildRoot = Join-Path $debTarget 'dsc'
+    $debDirs = @('DEBIAN', 'opt/dsc', 'usr/bin')
+    foreach ($dir in $debDirs) {
+        New-Item -ItemType Directory -Path (Join-Path $debBuildRoot $dir) -Force > $null
+    }
+
+    # Copy files to the package directory
+    $filesForPackage = $filesForLinuxPackage
+    $stagingDir = Join-Path $debBuildRoot 'opt' 'dsc'
+
+    foreach ($file in $filesForPackage) {
+        if ((Get-Item "$target\$file") -is [System.IO.DirectoryInfo]) {
+            Copy-Item "$target\$file" "$stagingDir\$file" -Recurse -ErrorAction Stop
+        } else {
+            Copy-Item "$target\$file" $stagingDir -ErrorAction Stop
+        }
+    }
+
+    # Create symlink in usr/bin
+    $symlinkPath = Join-Path $debBuildRoot 'usr' 'bin' 'dsc'
+    New-Item -ItemType SymbolicLink -Path $symlinkPath -Target '/opt/dsc/dsc' -Force > $null
+
+    # Determine DEB architecture
+    $debArch = if ($architecture -eq 'current') {
+        # Detect current system architecture
+        $currentArch = uname -m
+        if ($currentArch -eq 'x86_64') {
+            'amd64'
+        } elseif ($currentArch -eq 'aarch64') {
+            'arm64'
+        } else {
+            throw "Unsupported current architecture for DEB: $currentArch"
+        }
+    } elseif ($architecture -eq 'aarch64-unknown-linux-musl' -or $architecture -eq 'aarch64-unknown-linux-gnu') {
+        'arm64'
+    } elseif ($architecture -eq 'x86_64-unknown-linux-musl' -or $architecture -eq 'x86_64-unknown-linux-gnu') {
+        'amd64'
+    } else {
+        throw "Unsupported architecture for DEB: $architecture"
+    }
+
+    # Read the control template and replace placeholders
+    $controlTemplate = Get-Content "$PSScriptRoot/packaging/deb/control" -Raw
+    $controlContent = $controlTemplate.Replace('VERSION_PLACEHOLDER', $productVersion).Replace('ARCH_PLACEHOLDER', $debArch)
+    $controlFile = Join-Path $debBuildRoot 'DEBIAN' 'control'
+    Set-Content -Path $controlFile -Value $controlContent
+
+    Write-Verbose -Verbose "Building DEB package"
+    $debPackageName = "dsc_$productVersion-1_$debArch.deb"
+    
+    # Build the DEB
+    dpkg-deb --build $debBuildRoot 2>&1 > $debTarget/debbuild.log
+    
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error (Get-Content $debTarget/debbuild.log -Raw)
+        throw "Failed to create DEB package"
+    }
+
+    # Move the DEB to the bin directory with the correct name
+    $builtDeb = "$debBuildRoot.deb"
+    if (!(Test-Path $builtDeb)) {
+        throw "DEB package was not created"
+    }
+
+    $finalDebPath = Join-Path $PSScriptRoot 'bin' $debPackageName
+    Move-Item $builtDeb $finalDebPath -Force
+
+    Write-Host -ForegroundColor Green "`nDEB package is created at $finalDebPath"
 }
 
 $env:RUST_BACKTRACE=1
