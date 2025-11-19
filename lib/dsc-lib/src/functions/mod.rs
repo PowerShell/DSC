@@ -64,6 +64,7 @@ pub mod range;
 pub mod reference;
 pub mod resource_id;
 pub mod secret;
+pub mod shallow_merge;
 pub mod skip;
 pub mod starts_with;
 pub mod string;
@@ -200,6 +201,7 @@ impl FunctionDispatcher {
             Box::new(reference::Reference{}),
             Box::new(resource_id::ResourceId{}),
             Box::new(secret::Secret{}),
+            Box::new(shallow_merge::ShallowMerge{}),
             Box::new(skip::Skip{}),
             Box::new(starts_with::StartsWith{}),
             Box::new(string::StringFn{}),
