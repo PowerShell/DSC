@@ -669,6 +669,7 @@ dependencies = [
 name = "dsc-lib-jsonschema"
 version = "0.0.0"
 dependencies = [
+ "jsonschema",
  "pretty_assertions",
  "regex",
  "rust-i18n",
@@ -677,6 +678,7 @@ dependencies = [
  "serde_json",
  "tracing",
  "url",
+ "urlencoding",
 ]
 
 [[package]]

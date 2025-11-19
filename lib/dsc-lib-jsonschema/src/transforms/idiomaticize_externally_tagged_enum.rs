@@ -1,10 +1,11 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use core::cmp::PartialEq;
 use schemars::Schema;
-use serde_json::{Map, Value, json};
+use serde_json::{self, json, Map, Value};
 
-use crate::vscode::VSCODE_KEYWORDS;
+use crate::vscode::keywords::VSCodeKeyword;
 
 /// Munges the generated schema for externally tagged enums into an idiomatic object schema.
 ///
@@ -202,7 +203,7 @@ pub fn idiomaticize_externally_tagged_enum(schema: &mut Schema) {
             if let Some(d) = item_desc && property_data.get("description").is_none() {
                 property_data.insert("description".into(), d.clone());
             }
-            for keyword in VSCODE_KEYWORDS {
+            for keyword in VSCodeKeyword::ALL {
                 if let Some(keyword_value) = item_data.get(keyword) && property_data.get(keyword).is_none() {
                     property_data.insert(keyword.to_string(), keyword_value.clone());
                 }
