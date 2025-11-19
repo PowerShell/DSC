@@ -35,9 +35,10 @@ pub fn enable_tracing() {
     }
 }
 
-/// Get the `sshd_config` path based on the provided input
-///  If not provided, get default path for the current platform.
-/// On Windows, uses the `ProgramData` environment variable.
+/// Get the `sshd_config` path
+/// Uses the input value, if provided.
+/// If input value not provided, get default path for the OS.
+/// On Windows, uses the `ProgramData` environment variable and standard path.
 /// On Unix-like systems, uses the standard path.
 pub fn get_default_sshd_config_path(input: Option<PathBuf>) -> PathBuf {
     if let Some(path) = input {
