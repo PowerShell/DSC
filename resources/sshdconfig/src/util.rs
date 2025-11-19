@@ -35,16 +35,16 @@ pub fn enable_tracing() {
     }
 }
 
-/// Get the sshd_config path based on the provided input
+/// Get the `sshd_config` path based on the provided input
 ///  If not provided, get default path for the current platform.
-/// On Windows, uses the ProgramData environment variable.
+/// On Windows, uses the `ProgramData` environment variable.
 /// On Unix-like systems, uses the standard path.
 pub fn get_default_sshd_config_path(input: Option<PathBuf>) -> PathBuf {
     if let Some(path) = input {
         path
     } else if cfg!(windows) {
         let program_data = std::env::var("ProgramData").unwrap_or_else(|_| "C:\\ProgramData".into());
-        PathBuf::from(format!("{}{}", program_data, SSHD_CONFIG_DEFAULT_PATH_WINDOWS))
+        PathBuf::from(format!("{program_data}{SSHD_CONFIG_DEFAULT_PATH_WINDOWS}"))
     } else {
         PathBuf::from(SSHD_CONFIG_DEFAULT_PATH_UNIX)
     }
@@ -162,7 +162,7 @@ pub fn build_command_info(input: Option<&String>, is_get: bool) -> Result<Comman
 ///
 /// # Arguments
 ///
-/// * `input` - Optional PathBuf with `sshd_config` filepath.
+/// * `input` - Optional `PathBuf` with `sshd_config` filepath.
 ///
 /// # Errors
 ///

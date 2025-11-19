@@ -10,6 +10,7 @@ use {
 
 use rust_i18n::t;
 use serde_json::{Map, Value};
+use std::{fmt::Write, string::String};
 use tracing::debug;
 
 use crate::args::{DefaultShell, Setting};
@@ -29,7 +30,7 @@ pub fn invoke_set(input: &str, setting: &Setting) -> Result<Map<String, Value>, 
             debug!("{} {:?}", t!("set.settingSshdConfig").to_string(), setting);
             let cmd_info = build_command_info(Some(&input.to_string()), false)?;
             match set_sshd_config(&cmd_info) {
-                Ok(_) => Ok(Map::new()),
+                Ok(()) => Ok(Map::new()),
                 Err(e) => Err(e),
             }
         },
@@ -40,11 +41,7 @@ pub fn invoke_set(input: &str, setting: &Setting) -> Result<Map<String, Value>, 
                     debug!("{}", t!("set.defaultShellDebug", shell = format!("{:?}", default_shell)));
                     // if default_shell.shell is Some, we should pass that into set default shell
                     // otherwise pass in an empty string
-                    let shell = if let Some(shell) = default_shell.shell.clone() {
-                        shell
-                    } else {
-                        String::new()
-                    };
+                    let shell: String = default_shell.shell.clone().unwrap_or_default();
                     set_default_shell(shell, default_shell.cmd_option, default_shell.escape_arguments)?;
                     Ok(Map::new())
                 },
@@ -57,7 +54,9 @@ pub fn invoke_set(input: &str, setting: &Setting) -> Result<Map<String, Value>, 
 #[cfg(windows)]
 fn set_default_shell(shell: String, cmd_option: Option<String>, escape_arguments: Option<bool>) -> Result<(), SshdConfigError> {
     debug!("{}", t!("set.settingDefaultShell"));
-    if !shell.is_empty() {
+    if shell.is_empty() {
+        remove_registry(DEFAULT_SHELL)?;
+    } else {
         // TODO: if shell contains quotes, we need to remove them
         let shell_path = Path::new(&shell);
         if shell_path.is_relative() && shell_path.components().any(|c| c == std::path::Component::ParentDir) {
@@ -66,12 +65,8 @@ fn set_default_shell(shell: String, cmd_option: Option<String>, escape_arguments
         if !shell_path.exists() {
             return Err(SshdConfigError::InvalidInput(t!("set.shellPathDoesNotExist", shell = shell).to_string()));
         }
-
         set_registry(DEFAULT_SHELL, RegistryValueData::String(shell))?;
-    } else {
-        remove_registry(DEFAULT_SHELL)?;
     }
-
 
     if let Some(cmd_option) = cmd_option {
         set_registry(DEFAULT_SHELL_CMD_OPTION, RegistryValueData::String(cmd_option.clone()))?;
@@ -120,7 +115,7 @@ fn set_sshd_config(cmd_info: &CommandInfo) -> Result<(), SshdConfigError> {
     if cmd_info.clobber {
         for (key, value) in &cmd_info.input {
             if let Some(value_str) = value.as_str() {
-                config_text.push_str(&format!("{} {}\n", key, value_str));
+                writeln!(&mut config_text, "{key} {value_str}").unwrap();
             } else {
                 return Err(SshdConfigError::InvalidInput(t!("set.valueMustBeString", key = key).to_string()));
             }
