@@ -115,13 +115,12 @@ fn set_sshd_config(cmd_info: &CommandInfo) -> Result<(), SshdConfigError> {
     if cmd_info.clobber {
         for (key, value) in &cmd_info.input {
             if let Some(value_str) = value.as_str() {
-                writeln!(&mut config_text, "{key} {value_str}").unwrap();
+                writeln!(&mut config_text, "{key} {value_str}")?;
             } else {
                 return Err(SshdConfigError::InvalidInput(t!("set.valueMustBeString", key = key).to_string()));
             }
         }
-    }
-    else {
+    } else {
         /* TODO: preserve existing settings that are not in input, probably need to call get */
         return Err(SshdConfigError::InvalidInput(t!("set.clobberFalseUnsupported").to_string()));
     }

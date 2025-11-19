@@ -8,6 +8,7 @@ setInput = "input to set in sshd_config"
 [error]
 command = "Command"
 invalidInput = "Invalid Input"
+fmt = "Format"
 io = "IO"
 json = "JSON"
 language = "Language"
