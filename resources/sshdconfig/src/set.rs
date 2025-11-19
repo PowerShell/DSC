@@ -35,7 +35,7 @@ pub fn invoke_set(input: &str, setting: &Setting) -> Result<Map<String, Value>, 
             }
         },
         Setting::WindowsGlobal => {
-            debug!("{} {:?}", t!("set.settingWindowsGlobal").to_string(), setting);
+            debug!("{} {:?}", t!("set.settingDefaultShell").to_string(), setting);
             match serde_json::from_str::<DefaultShell>(input) {
                 Ok(default_shell) => {
                     debug!("{}", t!("set.defaultShellDebug", shell = format!("{:?}", default_shell)));
