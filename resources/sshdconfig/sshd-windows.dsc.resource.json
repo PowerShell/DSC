@@ -18,6 +18,8 @@
         "executable": "sshdconfig",
         "args": [
             "set",
+            "-s",
+            "windows-global",
             {
                 "jsonInputArg": "--input",
                 "mandatory": true

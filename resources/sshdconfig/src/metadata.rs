@@ -39,6 +39,12 @@ pub const REPEATABLE_KEYWORDS: [&str; 12] = [
     "subsystem"
 ];
 
+
+pub const SSHD_CONFIG_HEADER: &str = "# This file is managed by Microsoft DSC sshdconfig resource.";
+pub const SSHD_CONFIG_DEFAULT_PATH_UNIX: &str = "/etc/ssh/sshd_config";
+// For Windows, full path is constructed at runtime using ProgramData environment variable
+pub const SSHD_CONFIG_DEFAULT_PATH_WINDOWS: &str = "\\ssh\\sshd_config";
+
 #[cfg(windows)]
 pub mod windows {
     pub const REGISTRY_PATH: &str = "HKLM\\SOFTWARE\\OpenSSH";

@@ -57,9 +57,9 @@ fn main() {
             println!("{}", serde_json::to_string(&schema).unwrap());
             Ok(Map::new())
         },
-        Command::Set { input } => {
+        Command::Set { input, setting } => {
             debug!("{}", t!("main.set", input = input).to_string());
-            invoke_set(input)
+            invoke_set(input, setting)
         },
     };
 
