@@ -181,7 +181,7 @@ switch ($Operation) {
             # process the INPUT (desiredState) for each resource as dscresourceInfo and return the OUTPUT as actualState
             $actualState = $psDscAdapter.invoke( { param($op, $ds, $dscResourceCache) Invoke-DscOperation -Operation $op -DesiredState $ds -dscResourceCache $dscResourceCache }, $Operation, $ds, $dscResourceCache)
             if ($null -eq $actualState) {
-                Write-DscTrace -Operation Error -Message 'Incomplete GET for resource ' + $ds.Name
+                "Failed to invoke operation '{0}' for resource name '{1}'." -f $Operation, $ds.Name | Write-DscTrace -Operation Error
                 exit 1
             }
             if ($null -ne $actualState.Properties -and $actualState.Properties.InDesiredState -eq $false) {
