@@ -105,6 +105,49 @@ Describe 'PowerShell adapter resource tests' {
     $out | Should -BeLike "*ERROR*Export method not implemented by resource 'TestClassResource/NoExport'*"
   }
 
+  It 'Export works with filtered export property' {
+    $yaml = @'
+            $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Working with class-based resources
+              type: Microsoft.DSC/PowerShell
+              properties:
+                resources:
+                - name: Class-resource Info
+                  type: TestClassResource/FilteredExport
+                  properties:
+                    Name: 'FilteredExport'
+'@
+    $out = $yaml | dsc -l trace config export -f - 2> "$TestDrive/export_trace.txt"
+    $LASTEXITCODE | Should -Be 0
+    $res = $out | ConvertFrom-Json
+    $res.'$schema' | Should -BeExactly 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+    $res.'resources' | Should -Not -BeNullOrEmpty
+    $res.resources[0].properties.result.count | Should -Be 1
+    $res.resources[0].properties.result[0].Name | Should -Be "FilteredExport"
+    $res.resources[0].properties.result[0].Prop1 | Should -Be "Filtered Property for FilteredExport"
+    "$TestDrive/export_trace.txt" | Should -FileContentMatch "Properties provided for filtered export"
+  }
+
+  It 'Export fails when filtered export is requested but not implemented' {
+    $yaml = @'
+            $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Working with class-based resources
+              type: Microsoft.DSC/PowerShell
+              properties:
+                resources:
+                - name: Class-resource Info
+                  type: TestClassResource/NoExport
+                  properties:
+                    Name: 'SomeFilter'
+'@
+    $out = $yaml | dsc config export -f - 2>&1 | Out-String
+    $LASTEXITCODE | Should -Be 2
+    $out | Should -Not -BeNullOrEmpty
+    $out | Should -BeLike "*ERROR*Export method with parameters not implemented by resource 'TestClassResource/NoExport'*"
+  }
+
   It 'Custom psmodulepath in config works' {
 
     $OldPSModulePath = $env:PSModulePath
