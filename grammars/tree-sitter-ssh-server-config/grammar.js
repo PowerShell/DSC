@@ -34,7 +34,7 @@ module.exports = grammar({
       repeat1(choice($.comment, $.keyword)),
     ),
 
-    arguments: $ => repeat1(choice($.boolean, $.number, $._quotedString, $._commaSeparatedString)),
+    arguments: $ => repeat1(choice($.boolean, $.number, $.quotedString, $._commaSeparatedString)),
 
     alphanumeric: $ => /[a-zA-Z0-9]+/i,
     boolean: $ => choice('yes', 'no'),
@@ -43,7 +43,7 @@ module.exports = grammar({
     string: $ => /[^\r\n,"]+/,
 
     _commaSeparatedString: $ => seq($.string, repeat(seq(',', $.string))),
-    _quotedString: $ => seq('\"', $.string, '\"'),
+    quotedString: $ => seq('\"', $.string, '\"'),
   }
 
 });
