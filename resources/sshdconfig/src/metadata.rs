@@ -1,29 +1,39 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-// keywords that can have multiple argments per line but cannot be repeated over multiple lines,
+// keywords that can have multiple comma-separated argments per line but cannot be repeated over multiple lines,
 // as subsequent entries are ignored, should be represented as arrays
-pub const MULTI_ARG_KEYWORDS: [&str; 16] = [
+pub const MULTI_ARG_KEYWORDS_COMMA_SEP: [&str; 10] = [
     "authenticationmethods",
-    "authorizedkeysfile",
     "casignaturealgorithms",
-    "channeltimeout",
     "ciphers",
     "hostbasedacceptedalgorithms",
     "hostkeyalgorithms",
-    "ipqos",
     "kexalgorithms",
     "macs",
-    "permitlisten",
-    "permitopen",
     "permituserenvironment",
-    "persourcepenalties",
     "persourcepenaltyexemptlist",
     "pubkeyacceptedalgorithms"
 ];
 
+// keywords that can have multiple space-separated argments per line but cannot be repeated over multiple lines,
+// as subsequent entries are ignored, should be represented as arrays
+pub const MULTI_ARG_KEYWORDS_SPACE_SEP: [&str; 11] = [
+    "acceptenv",
+    "allowgroups",
+    "allowusers",
+    "authorizedkeysfile",
+    "channeltimeout",
+    "denygroups",
+    "denyusers",
+    "ipqos",
+    "permitlisten",
+    "permitopen",
+    "persourcepenalties",
+];
+
 // keywords that can be repeated over multiple lines and should be represented as arrays.
-// note that some keywords can be both multi-arg and repeatable, in which case they only need to be listed here
+// note that some keywords can be both multi-arg and repeatable
 pub const REPEATABLE_KEYWORDS: [&str; 12] = [
     "acceptenv",
     "allowgroups",
