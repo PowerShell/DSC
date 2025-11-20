@@ -9,7 +9,7 @@ param(
 
 # Read JSON input from stdin for operations that need it
 $jsonInput = if ($Operation -ne 'List' -and $Operation -ne 'ClearCache') {
-    $input | Out-String
+    [System.Console]::In.ReadToEnd()
     if ([string]::IsNullOrWhiteSpace($jsonInput)) {
         $jsonInput = '@{}'
     }

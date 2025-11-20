@@ -8,7 +8,7 @@ param(
 )
 
 # Read JSON input from stdin
-$jsonInput = $input | Out-String
+$jsonInput = [System.Console]::In.ReadToEnd()
 
 function Write-DscTrace {
     param(
