@@ -16,8 +16,9 @@
           "-NoProfile",
           "-ExecutionPolicy",
           "Bypass",
-          "-Command",
-          "./wmi.resource.ps1 List"
+          "-File",
+          "./wmi.resource.ps1",
+          "List"
         ]
         },
       "config": "full"
@@ -30,8 +31,9 @@
         "-NoProfile",
         "-ExecutionPolicy",
         "Bypass",
-        "-Command",
-        "$Input | ./wmi.resource.ps1 Get"
+        "-File",
+        "./wmi.resource.ps1",
+        "Get"
       ],
       "input": "stdin"
     },
@@ -43,8 +45,9 @@
         "-NoProfile",
         "-ExecutionPolicy",
         "Bypass",
-        "-Command",
-        "$Input | ./wmi.resource.ps1 Set"
+        "-File",
+        "./wmi.resource.ps1",
+        "Set"
       ],
       "input": "stdin",
       "implementsPretest": false
@@ -57,8 +60,9 @@
           "-NoProfile",
           "-ExecutionPolicy",
           "Bypass",
-          "-Command",
-          "$Input | ./wmi.resource.ps1 Validate"
+          "-File",
+          "./wmi.resource.ps1",
+          "Validate"
           ]
       },
     "exitCodes": {

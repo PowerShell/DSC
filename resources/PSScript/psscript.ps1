@@ -4,10 +4,11 @@
 param(
     [Parameter(Mandatory = $true, Position = 0)]
     [ValidateSet('Get', 'Set', 'Test')]
-    [string]$Operation,
-    [Parameter(Mandatory = $true, Position = 1, ValueFromPipeline = $true)]
-    [string]$jsonInput
+    [string]$Operation
 )
+
+# Read JSON input from stdin
+$jsonInput = $input | Out-String
 
 function Write-DscTrace {
     param(

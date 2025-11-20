@@ -4,10 +4,18 @@
 param(
     [Parameter(Mandatory = $true, Position = 0, HelpMessage = 'Operation to perform. Choose from List, Get, Set, Test, Validate.')]
     [ValidateSet('List', 'Get', 'Set', 'Test', 'Validate')]
-    [string]$Operation,
-    [Parameter(Mandatory = $false, Position = 1, ValueFromPipeline = $true, HelpMessage = 'Configuration or resource input in JSON format.')]
-    [string]$jsonInput = '@{}'
+    [string]$Operation
 )
+
+# Read JSON input from stdin for operations that need it
+$jsonInput = if ($Operation -ne 'List') {
+    $input | Out-String
+    if ([string]::IsNullOrWhiteSpace($jsonInput)) {
+        $jsonInput = '@{}'
+    }
+} else {
+    '@{}'
+}
 
 # Import private functions
 $wmiAdapter = Import-Module "$PSScriptRoot\wmiAdapter.psm1" -Force -PassThru

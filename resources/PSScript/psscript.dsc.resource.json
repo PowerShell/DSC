@@ -11,8 +11,8 @@
             "-NoProfile",
             "-ExecutionPolicy",
             "Bypass",
-            "-Command",
-            "$input | ./psscript.ps1",
+            "-File",
+            "./psscript.ps1",
             "get"
         ],
         "input": "stdin"
@@ -25,8 +25,8 @@
             "-NoProfile",
             "-ExecutionPolicy",
             "Bypass",
-            "-Command",
-            "$input | ./psscript.ps1",
+            "-File",
+            "./psscript.ps1",
             "set"
         ],
         "implementsPretest": true,
@@ -41,8 +41,8 @@
             "-NoProfile",
             "-ExecutionPolicy",
             "Bypass",
-            "-Command",
-            "$input | ./psscript.ps1",
+            "-File",
+            "./psscript.ps1",
             "test"
         ],
         "input": "stdin",

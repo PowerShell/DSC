@@ -14,8 +14,9 @@
           "-NoLogo",
           "-NonInteractive",
           "-NoProfile",
-          "-Command",
-          "./testadapter.resource.ps1 List"
+          "-File",
+          "./testadapter.resource.ps1",
+          "List"
         ]
         },
       "config": "full"
@@ -26,8 +27,9 @@
         "-NoLogo",
         "-NonInteractive",
         "-NoProfile",
-        "-Command",
-        "$Input | ./testadapter.resource.ps1 Get"
+        "-File",
+        "./testadapter.resource.ps1",
+        "Get"
       ],
       "input": "stdin"
       },
@@ -37,8 +39,9 @@
         "-NoLogo",
         "-NonInteractive",
         "-NoProfile",
-        "-Command",
-        "$Input | ./testadapter.resource.ps1 Set"
+        "-File",
+        "./testadapter.resource.ps1",
+        "Set"
       ],
       "input": "stdin",
       "implementsPretest": true
@@ -49,8 +52,9 @@
         "-NoLogo",
         "-NonInteractive",
         "-NoProfile",
-        "-Command",
-        "$Input | ./testadapter.resource.ps1 Test"
+        "-File",
+        "./testadapter.resource.ps1",
+        "Test"
       ],
       "input": "stdin"
       },
@@ -60,8 +64,9 @@
         "-NoLogo",
         "-NonInteractive",
         "-NoProfile",
-        "-Command",
-        "$Input | ./testadapter.resource.ps1 Export"
+        "-File",
+        "./testadapter.resource.ps1",
+        "Export"
       ],
       "input": "stdin"
       },
@@ -71,8 +76,9 @@
           "-NoLogo",
           "-NonInteractive",
           "-NoProfile",
-          "-Command",
-          "$Input | ./testadapter.resource.ps1 Validate"
+          "-File",
+          "./testadapter.resource.ps1",
+          "Validate"
           ],
         "input": "stdin"
       },
