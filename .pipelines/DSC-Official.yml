@@ -552,7 +552,7 @@ extends:
         - task: MS-RDX-MRO.windows-store-publish.package-task.store-package@3
           displayName: Publish to Microsoft Store
           inputs:
-            serviceEndpoint: <YourServiceConnection>
+            serviceEndpoint: dsc-store
             sbConfigPath: '$(System.DefaultWorkingDirectory)/DSC/.pipelines/store/SBConfig.json'
             sourceFolder: '$(GitHubReleaseDirectory)'
             contents: '*.msixbundle'
