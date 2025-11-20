@@ -150,6 +150,42 @@ function FindAndParseResourceDefinitions {
     return $resourceList
 }
 
+function GetExportMethod ($ResourceType, $HasFilterProperties, $ResourceTypeName) {
+    $methods = $ResourceType.GetMethods() | Where-Object { $_.Name -eq 'Export' }
+    $method = $null
+    
+    if ($HasFilterProperties) {
+        "Properties provided for filtered export" | Write-DscTrace -Operation Trace
+        $method = foreach ($mt in $methods) {
+            if ($mt.GetParameters().Count -gt 0) {
+                $mt
+                break
+            }
+        }
+        
+        if ($null -eq $method) {
+            "Export method with parameters not implemented by resource '$ResourceTypeName'. Filtered export is not supported." | Write-DscTrace -Operation Error
+            exit 1
+        }
+    }
+    else {
+        "No properties provided, using parameterless export" | Write-DscTrace -Operation Trace
+        $method = foreach ($mt in $methods) {
+            if ($mt.GetParameters().Count -eq 0) {
+                $mt
+                break
+            }
+        }
+        
+        if ($null -eq $method) {
+            "Export method not implemented by resource '$ResourceTypeName'" | Write-DscTrace -Operation Error
+            exit 1
+        }
+    }
+    
+    return $method
+}
+
 function LoadPowerShellClassResourcesFromModule {
     [CmdletBinding(HelpUri = '')]
     param(
@@ -471,20 +507,18 @@ function Invoke-DscOperation {
                         }
                         'Export' {
                             $t = $dscResourceInstance.GetType()
-                            $methods = $t.GetMethods() | Where-Object { $_.Name -eq 'Export' }
-                            $method = foreach ($mt in $methods) {
-                                if ($mt.GetParameters().Count -eq 0) {
-                                    $mt
-                                    break
-                                }
+                            $hasFilter = $null -ne $DesiredState.properties -and 
+                            ($DesiredState.properties.PSObject.Properties | Measure-Object).Count -gt 0
+
+                            $method = GetExportMethod -ResourceType $t -HasFilterProperties $hasFilter -ResourceTypeName $DesiredState.Type
+
+                            $resultArray = @()
+                            if ($hasFilter) {
+                                $raw_obj_array = $method.Invoke($null, @($dscResourceInstance))
+                            } else {
+                                $raw_obj_array = $method.Invoke($null, $null)
                             }
 
-                            if ($null -eq $method) {
-                                "Export method not implemented by resource '$($DesiredState.Type)'" | Write-DscTrace -Operation Error
-                                exit 1
-                            }
-                            $resultArray = @()
-                            $raw_obj_array = $method.Invoke($null, $null)
                             foreach ($raw_obj in $raw_obj_array) {
                                 $Result_obj = @{}
                                 $ValidProperties | ForEach-Object { 
