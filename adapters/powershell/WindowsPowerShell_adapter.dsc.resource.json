@@ -1,15 +1,15 @@
 {
     "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
-    "type": "Microsoft.Adapter/PowerShell",
+    "type": "Microsoft.Adapter/WindowsPowerShell",
     "version": "0.1.0",
     "kind": "adapter",
-    "description": "Resource adapter to PowerShell class based DSC resources.",
+    "description": "Resource adapter to classic DSC Powershell resources in Windows PowerShell.",
     "tags": [
         "PowerShell"
     ],
     "adapter": {
         "list": {
-            "executable": "pwsh",
+            "executable": "powershell",
             "args": [
                 "-NoLogo",
                 "-NonInteractive",
@@ -17,14 +17,16 @@
                 "-ExecutionPolicy",
                 "Bypass",
                 "-Command",
-                "./psadapter.ps1",
-                "List"
+                "./psDscAdapter/powershell.resource.ps1",
+                "List",
+                "-ResourceType",
+                "Single"
             ]
         },
-        "inputKind": "single"
+        "config": "full"
     },
     "get": {
-        "executable": "pwsh",
+        "executable": "powershell",
         "args": [
             "-NoLogo",
             "-NonInteractive",
@@ -32,7 +34,7 @@
             "-ExecutionPolicy",
             "Bypass",
             "-Command",
-            "$Input | ./psadapter.ps1",
+            "$Input | ./psDscAdapter/powershell.resource.ps1",
             "Get",
             {
                 "resourceTypeArg": "-ResourceType"
@@ -41,7 +43,7 @@
         "input": "stdin"
     },
     "set": {
-        "executable": "pwsh",
+        "executable": "powershell",
         "args": [
             "-NoLogo",
             "-NonInteractive",
@@ -49,17 +51,17 @@
             "-ExecutionPolicy",
             "Bypass",
             "-Command",
-            "$Input | ./psadapter.ps1",
+            "$Input | ./psDscAdapter/powershell.resource.ps1",
             "Set",
             {
                 "resourceTypeArg": "-ResourceType"
             }
         ],
         "input": "stdin",
-        "implementsPretest": true
+        "preTest": true
     },
     "test": {
-        "executable": "pwsh",
+        "executable": "powershell",
         "args": [
             "-NoLogo",
             "-NonInteractive",
@@ -67,7 +69,7 @@
             "-ExecutionPolicy",
             "Bypass",
             "-Command",
-            "$Input | ./psadapter.ps1",
+            "$Input | ./psDscAdapter/powershell.resource.ps1",
             "Test",
             {
                 "resourceTypeArg": "-ResourceType"
@@ -77,7 +79,7 @@
         "return": "state"
     },
     "export": {
-        "executable": "pwsh",
+        "executable": "powershell",
         "args": [
             "-NoLogo",
             "-NonInteractive",
@@ -85,7 +87,7 @@
             "-ExecutionPolicy",
             "Bypass",
             "-Command",
-            "$Input | ./psadapter.ps1",
+            "$Input | ./psDscAdapter/powershell.resource.ps1",
             "Export",
             {
                 "resourceTypeArg": "-ResourceType"
@@ -95,7 +97,7 @@
         "return": "state"
     },
     "validate": {
-        "executable": "pwsh",
+        "executable": "powershell",
         "args": [
             "-NoLogo",
             "-NonInteractive",
@@ -103,10 +105,8 @@
             "-ExecutionPolicy",
             "Bypass",
             "-Command",
-            "$Input | ./psadapter.ps1",
-            "Validate"
-        ],
-        "input": "stdin"
+            "$Input | ./psDscAdapter/powershell.resource.ps1 Validate"
+        ]
     },
     "exitCodes": {
         "0": "Success",

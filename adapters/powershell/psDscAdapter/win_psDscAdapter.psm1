@@ -280,18 +280,28 @@ function Invoke-DscCacheRefresh {
 function Get-DscResourceObject {
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
-        $jsonInput
+        $jsonInput,
+        [Switch]
+        $single
     )
     # normalize the INPUT object to an array of dscResourceObject objects
     $inputObj = $jsonInput | ConvertFrom-Json
-    $desiredState = [System.Collections.Generic.List[Object]]::new()
+    if ($single) {
+        $desiredState = [dscResourceObject]@{
+            name       = $inputObj.name
+            type       = $inputObj.type
+            properties = $inputObj.properties
+        }
+    }
+    else {
+        $desiredState = [System.Collections.Generic.List[Object]]::new()
 
-    # change the type from pscustomobject to dscResourceObject
-    $inputObj.resources | ForEach-Object -Process {
-        $desiredState += [dscResourceObject]@{
-            name       = $_.name
-            type       = $_.type
-            properties = $_.properties
+        $inputObj.resources | ForEach-Object -Process {
+            $desiredState += [dscResourceObject]@{
+                name       = $_.name
+                type       = $_.type
+                properties = $_.properties
+            }
         }
     }
 
