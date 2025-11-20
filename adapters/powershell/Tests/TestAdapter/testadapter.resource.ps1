@@ -4,17 +4,17 @@
 param(
     [Parameter(Mandatory = $true, Position = 0, HelpMessage = 'Operation to perform. Choose from List, Get, Set, Test, Export, Validate.')]
     [ValidateSet('List', 'Get', 'Set', 'Test', 'Export', 'Validate')]
-    [string]$Operation
+    [string]$Operation,
+    [Parameter(Mandatory = $false, Position = 1, ValueFromPipeline = $true, HelpMessage = 'Configuration or resource input in JSON format.')]
+    [string]$jsonInput = '@{}'
 )
 
-# Read JSON input from stdin for operations that need it
-$jsonInput = if ($Operation -ne 'List') {
-    [System.Console]::In.ReadToEnd()
-    if ([string]::IsNullOrWhiteSpace($jsonInput)) {
-        $jsonInput = '@{}'
+# Read JSON input from stdin using $input automatic variable for operations that need it
+if ($Operation -ne 'List') {
+    $stdinData = $input | Out-String
+    if (-not [string]::IsNullOrWhiteSpace($stdinData)) {
+        $jsonInput = $stdinData
     }
-} else {
-    '@{}'
 }
 
 function Write-DscTrace {
