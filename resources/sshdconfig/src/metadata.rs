@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-// keywords that can have multiple comma-separated argments per line but cannot be repeated over multiple lines,
+// keywords that can have multiple comma-separated arguments per line but cannot be repeated over multiple lines,
 // as subsequent entries are ignored, should be represented as arrays
 pub const MULTI_ARG_KEYWORDS_COMMA_SEP: [&str; 10] = [
     "authenticationmethods",
@@ -16,7 +16,7 @@ pub const MULTI_ARG_KEYWORDS_COMMA_SEP: [&str; 10] = [
     "pubkeyacceptedalgorithms"
 ];
 
-// keywords that can have multiple space-separated argments per line but cannot be repeated over multiple lines,
+// keywords that can have multiple space-separated arguments per line but cannot be repeated over multiple lines,
 // as subsequent entries are ignored, should be represented as arrays
 pub const MULTI_ARG_KEYWORDS_SPACE_SEP: [&str; 11] = [
     "acceptenv",
