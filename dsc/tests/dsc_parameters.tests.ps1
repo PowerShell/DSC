@@ -412,7 +412,19 @@ Describe 'Parameters tests' {
         - name: echo
           type: Microsoft.DSC.Debug/Echo
           properties:
-            output: "[concat(parameters('myString'), '-', parameters('myObject').prop1, '-', parameters('myArray')[0], parameters('myArray')[1], '-', string(parameters('myInt')), '-', string(parameters('myBool'))]"
+            output: >-
+              [concat(
+                parameters('myString'),
+                '-',
+                parameters('myObject').prop1,
+                '-',
+                parameters('myArray')[0],
+                parameters('myArray')[1],
+                '-',
+                string(parameters('myInt')),
+                '-',
+                string(parameters('myBool')
+              )]
 "@
       $params = @{
         parameters = @{
