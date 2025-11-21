@@ -4,14 +4,14 @@
 use args::{Args, SubCommand};
 use clap::{CommandFactory, Parser};
 use clap_complete::generate;
+use dsc_lib::progress::ProgressFormat;
 use mcp::start_mcp_server;
 use rust_i18n::{i18n, t};
-use std::{io, io::Read, process::exit};
+use std::{io, process::exit};
 use sysinfo::{Process, RefreshKind, System, get_current_pid, ProcessRefreshKind};
 use tracing::{error, info, warn, debug};
-use dsc_lib::progress::ProgressFormat;
 
-use crate::util::EXIT_INVALID_INPUT;
+use crate::util::{EXIT_INVALID_INPUT, get_input};
 
 #[cfg(debug_assertions)]
 use crossterm::event;
@@ -54,38 +54,11 @@ fn main() {
             generate(shell, &mut cmd, "dsc", &mut io::stdout());
         },
         SubCommand::Config { subcommand, parameters, parameters_file, system_root, as_group, as_assert, as_include } => {
-            // Read parameters from file if provided
-            let file_params = if let Some(file_name) = &parameters_file {
-                if file_name == "-" {
-                    info!("{}", t!("main.readingParametersFromStdin"));
-                    let mut stdin = Vec::<u8>::new();
-                    match io::stdin().read_to_end(&mut stdin) {
-                        Ok(_) => {
-                            match String::from_utf8(stdin) {
-                                Ok(input) => Some(input),
-                                Err(err) => {
-                                    error!("{}: {err}", t!("util.invalidUtf8"));
-                                    exit(EXIT_INVALID_INPUT);
-                                }
-                            }
-                        },
-                        Err(err) => {
-                            error!("{}: {err}", t!("util.failedToReadStdin"));
-                            exit(EXIT_INVALID_INPUT);
-                        }
-                    }
-                } else {
-                    info!("{}: {file_name}", t!("main.readingParametersFile"));
-                    match std::fs::read_to_string(file_name) {
-                        Ok(content) => Some(content),
-                        Err(err) => {
-                            error!("{} '{file_name}': {err}", t!("main.failedReadingParametersFile"));
-                            exit(util::EXIT_INVALID_INPUT);
-                        }
-                    }
-                }
-            } else {
+            let params = get_input(None, parameters_file.as_ref());
+            let file_params = if params.is_empty() {
                 None
+            } else {
+                Some(params)
             };
 
             let merged_parameters = match (file_params, parameters) {

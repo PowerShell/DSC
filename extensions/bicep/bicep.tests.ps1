@@ -94,4 +94,12 @@ resource invalid 'Microsoft.DSC.Extension/Bicep:1.0' = {
         $content | Should -Match "Importing file '$bicepFile' with extension 'Microsoft.DSC.Extension/Bicep'"
         $content | Should -Match "BCP033"
     }
+
+    It 'Example bicep parameters file should work' {
+        $bicepFile = Resolve-Path -Path "$PSScriptRoot\..\..\dsc\examples\hello_world.dsc.bicep"
+        $bicepParamFile = Resolve-Path -Path "$PSScriptRoot\..\..\dsc\examples\hello_world.dsc.bicepparam"
+        $out = dsc -l trace config --parameters-file $bicepParamFile get --file $bicepFile 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw | Out-String)
+        $out.results[0].result.actualState.output | Should -BeExactly 'This is a parameterized hello world!'
+    }
 }

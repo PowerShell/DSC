@@ -34,6 +34,9 @@ pub struct ExtensionManifest {
     pub discover: Option<DiscoverMethod>,
     /// Details how to call the Import method of the extension.
     pub import: Option<ImportMethod>,
+    /// Details how to call the ImportParameters method of the extension.
+    #[serde(rename = "importParameters")]
+    pub import_parameters: Option<ImportMethod>,
     /// Details how to call the Secret method of the extension.
     pub secret: Option<SecretMethod>,
     /// Mapping of exit codes to descriptions.  Zero is always success and non-zero is always failure.

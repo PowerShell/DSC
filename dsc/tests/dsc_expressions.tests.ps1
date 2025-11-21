@@ -73,7 +73,7 @@ Describe 'Expressions tests' {
 "@
     $out = dsc config get -i $yaml 2>&1
     $LASTEXITCODE | Should -Be 2
-    $out | Should -BeLike "*ERROR*"
+    ,$out | Should -BeLike "*ERROR*" -Because ($out | Out-String)
   }
 
   It 'Multi-line string literals work' {

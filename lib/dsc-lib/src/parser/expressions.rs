@@ -3,7 +3,7 @@
 
 use rust_i18n::t;
 use serde_json::Value;
-use tracing::{debug, trace};
+use tracing::{debug, trace, warn};
 use tree_sitter::Node;
 
 use crate::configure::context::Context;
@@ -12,14 +12,14 @@ use crate::dscerror::DscError;
 use crate::functions::FunctionDispatcher;
 use crate::parser::functions::Function;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Accessor {
     Member(String),
     Index(Value),
     IndexExpression(Expression),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Expression {
     function: Function,
     accessors: Vec<Accessor>,
@@ -156,8 +156,10 @@ impl Expression {
                 let mut index = Value::Null;
                 match accessor {
                     Accessor::Member(member) => {
+                        debug!("{}", t!("parser.expression.evaluatingMemberAccessor", name = member : {:?}));
                         if let Some(object) = value.as_object() {
                             if !object.contains_key(member) {
+                                warn!("{}", t!("parser.expression.memberNameNotFound", member = member));
                                 return Err(DscError::Parser(t!("parser.expression.memberNameNotFound", member = member).to_string()));
                             }
                             if is_secure {
@@ -166,10 +168,12 @@ impl Expression {
                                 value = object[member].clone();
                             }
                         } else {
+                            warn!("{}", t!("parser.expression.accessOnNonObject"));
                             return Err(DscError::Parser(t!("parser.expression.accessOnNonObject").to_string()));
                         }
                     },
                     Accessor::Index(index_value) => {
+                        debug!("{}", t!("parser.expression.evaluatingIndexAccessor", index = index_value : {:?}));
                         if is_secure {
                             index = convert_to_secure(index_value);
                         } else {
@@ -177,6 +181,7 @@ impl Expression {
                         }
                     },
                     Accessor::IndexExpression(expression) => {
+                        debug!("{}", t!("parser.expression.evaluatingIndexExpression", expression = expression : {:?}));
                         index = expression.invoke(function_dispatcher, context)?;
                         trace!("{}", t!("parser.expression.expressionResult", index = index : {:?}));
                     },
@@ -220,6 +225,7 @@ impl Expression {
                 }
             }
 
+            trace!("{}", t!("parser.expression.accessorResult", result = value : {:?}));
             Ok(value)
         }
     }

@@ -803,14 +803,14 @@ fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<
         verify_executable(&manifest.r#type, "secret", &secret.executable, path.parent().unwrap());
         capabilities.push(dscextension::Capability::Secret);
     }
-    let import_extensions = if let Some(import) = &manifest.import {
+    let import = if let Some(import) = &manifest.import {
         verify_executable(&manifest.r#type, "import", &import.executable, path.parent().unwrap());
         capabilities.push(dscextension::Capability::Import);
         if import.file_extensions.is_empty() {
             warn!("{}", t!("discovery.commandDiscovery.importExtensionsEmpty", extension = manifest.r#type));
             None
         } else {
-            Some(import.file_extensions.clone())
+            Some(import.clone())
         }
     } else {
         None
@@ -821,7 +821,7 @@ fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<
         description: manifest.description.clone(),
         version: manifest.version.clone(),
         capabilities,
-        import_file_extensions: import_extensions,
+        import,
         path: path.to_path_buf(),
         directory: path.parent().unwrap().to_path_buf(),
         manifest: serde_json::to_value(manifest)?,
