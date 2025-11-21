@@ -9,7 +9,7 @@ use serde_json::Value;
 use std::{collections::HashMap, fmt::Display};
 use tracing::trace;
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, JsonSchema)]
 pub struct Input {
     pub parameters: HashMap<String, Value>,
 }
