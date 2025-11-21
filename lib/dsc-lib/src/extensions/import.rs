@@ -2,19 +2,13 @@
 // Licensed under the MIT License.
 
 use crate::{
-    dscerror::DscError,
-    dscresources::{
-        command_resource::{
-            invoke_command,
-        },
-    },
-    extensions::{
+    configure::context::Context, dscerror::DscError, dscresources::command_resource::invoke_command, extensions::{
         dscextension::{
             Capability,
             DscExtension,
         },
         extension_manifest::ExtensionManifest,
-    },
+    }, parser::Statement
 };
 use path_absolutize::Absolutize;
 use rust_i18n::t;
@@ -32,6 +26,8 @@ pub struct ImportMethod {
     pub executable: String,
     /// The arguments to pass to the command to perform an Import.
     pub args: Option<Vec<ImportArgKind>>,
+    /// Enables modifying the resulting output from STDOUT after running the import command.
+    pub output: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -62,9 +58,9 @@ impl DscExtension {
     ///
     /// This function will return an error if the import fails or if the extension does not support the import capability.
     pub fn import(&self, file: &Path) -> Result<String, DscError> {
-        if self.capabilities.contains(&Capability::Import) {
+        if let Some(import) = &self.import {
             let file_extension = file.extension().and_then(|s| s.to_str()).unwrap_or_default().to_string();
-            if self.import_file_extensions.as_ref().is_some_and(|exts| exts.contains(&file_extension)) {
+            if import.file_extensions.contains(&file_extension) {
                 debug!("{}", t!("extensions.dscextension.importingFile", file = file.display(), extension = self.type_name));
             } else {
                 return Err(DscError::NotSupported(
@@ -93,6 +89,16 @@ impl DscExtension {
             if stdout.is_empty() {
                 info!("{}", t!("extensions.dscextension.importNoResults", extension = self.type_name));
             } else {
+                debug!("got stdout: {}", stdout);
+                if let Some(output) = &import.output {
+                    debug!("processing output: {}", output);
+                    debug!("{}", t!("extensions.dscextension.importProcessingOutput", extension = self.type_name));
+                    let mut parser = Statement::new()?;
+                    let mut context = Context::new();
+                    context.stdout = Some(stdout);
+                    let processed_output = parser.parse_and_execute(output, &context)?;
+                    return Ok(processed_output.to_string());
+                }
                 return Ok(stdout);
             }
         }

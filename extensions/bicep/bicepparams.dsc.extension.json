@@ -13,6 +13,7 @@
                 "fileArg": ""
             },
             "--stdout"
-        ]
+        ],
+        "output": "[json(json(stdout()).parametersJson)]"
     }
 }

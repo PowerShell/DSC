@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use crate::extensions::import::ImportMethod;
 use dsc_lib_jsonschema::transforms::idiomaticize_string_enum;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -18,9 +19,8 @@ pub struct DscExtension {
     pub version: String,
     /// The capabilities of the resource.
     pub capabilities: Vec<Capability>,
-    /// The extensions supported for importing.
-    #[serde(rename = "importFileExtensions")]
-    pub import_file_extensions: Option<Vec<String>>,
+    /// The import specifics.
+    pub import: Option<ImportMethod>,
     /// The file path to the resource.
     pub path: PathBuf,
     /// The description of the resource.
@@ -43,8 +43,6 @@ pub enum Capability {
     Secret,
     /// The extension imports configuration from a different format.
     Import,
-    /// The extension imports parameters from a different format.
-    ImportParameters,
 }
 
 impl Display for Capability {
@@ -53,7 +51,6 @@ impl Display for Capability {
             Capability::Discover => write!(f, "Discover"),
             Capability::Secret => write!(f, "Secret"),
             Capability::Import => write!(f, "Import"),
-            Capability::ImportParameters => write!(f, "ImportParams"),
         }
     }
 }
@@ -65,7 +62,7 @@ impl DscExtension {
             type_name: String::new(),
             version: String::new(),
             capabilities: Vec::new(),
-            import_file_extensions: None,
+            import: None,
             description: None,
             path: PathBuf::new(),
             directory: PathBuf::new(),

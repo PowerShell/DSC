@@ -68,7 +68,7 @@ macro_rules! test_schema_for {
         }
         #[allow(unused_must_use)]
         #[cfg(test)] mod parameters {
-            test_schema_for!(dsc_lib::configure::parameters::Input);
+            test_schema_for!(dsc_lib::configure::parameters::SimpleInput);
             test_schema_for!(dsc_lib::configure::parameters::SecureString);
             test_schema_for!(dsc_lib::configure::parameters::SecureObject);
             test_schema_for!(dsc_lib::configure::parameters::SecureKind);
