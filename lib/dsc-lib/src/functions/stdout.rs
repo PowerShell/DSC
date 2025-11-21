@@ -30,7 +30,6 @@ impl Function for Stdout {
             let result = stdout.to_string();
             return Ok(Value::String(result));
         }
-        Err(DscError::Parser(t!("functions.stdout.noStdoutAvailable").to_string(),
-        ))
+        Err(DscError::Parser(t!("functions.stdout.noStdoutAvailable").to_string()))
     }
 }
