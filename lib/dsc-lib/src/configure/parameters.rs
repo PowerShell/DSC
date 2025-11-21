@@ -106,29 +106,29 @@ pub fn import_parameters(parameters: &Value) -> Result<HashMap<String, Value>, D
             result
         },
         Err(_) => {
-            let input = match serde_json::from_value::<ComplexInput>(parameters.clone()) {
-                Ok(input) => {
+            let complex_input = match serde_json::from_value::<ComplexInput>(parameters.clone()) {
+                Ok(complex_input) => {
                     trace!("{}", t!("configure.parameters.importingParametersFromComplexInput"));
                     let mut result: HashMap<String, Value> = HashMap::new();
-                    for (name, input_object) in input.parameters {
+                    for (name, input_object) in complex_input.parameters {
                         result.insert(name, input_object.value);
                     }
                     result
                 },
                 Err(_) => {
-                    let input = match serde_json::from_value::<Input>(parameters.clone()) {
-                        Ok(input) => {
+                    let simple_input = match serde_json::from_value::<Input>(parameters.clone()) {
+                        Ok(simple_input) => {
                             trace!("{}", t!("configure.parameters.importingParametersFromInput"));
-                            input.parameters
+                            simple_input.parameters
                         }
                         Err(e) => {
                             return Err(DscError::Parser(t!("configure.parameters.invalidParamsFormat", error = e).to_string()));
                         }
                     };
-                    input
+                    simple_input
                 }
             };
-            input
+            complex_input
         },
     };
     Ok(input)
