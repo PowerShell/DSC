@@ -9,7 +9,8 @@ authorizedKEYSfile "path to authorized keys file"
   (keyword
     (alphanumeric)
     (arguments
-      (string))))
+      (quotedString
+        (string)))))
 =====
 comment
 =====
@@ -36,7 +37,8 @@ authorizedkeysfile "path to authorized keys file"
     (keyword
       (alphanumeric)
       (arguments
-        (string)))))
+        (quotedString
+          (string))))))
 =====
 boolean and match
 =====
@@ -59,7 +61,8 @@ authorizedkeysfile "path to authorized keys file"
     (keyword
       (alphanumeric)
       (arguments
-        (string)))))
+        (quotedString
+          (string))))))
 =====
 directive with = operator
 =====
@@ -108,7 +111,8 @@ AllowGroups group1 "group two"
     (alphanumeric)
     (arguments
       (string)
-      (string))))
+      (quotedString
+        (string)))))
 =====
 directive with comma-separated arguments
 =====
@@ -316,7 +320,8 @@ passwordauthentication yes
       (alphanumeric)
       (arguments
         (string)
-        (string))))
+        (quotedString
+          (string)))))
   (match
     (keyword
       (alphanumeric)
@@ -367,4 +372,5 @@ allowgroups administrators "openssh users"
     (alphanumeric)
     (arguments
       (string)
-      (string))))
+      (quotedString
+        (string)))))

@@ -8,11 +8,36 @@ use tracing::debug;
 use tree_sitter::Parser;
 
 use crate::error::SshdConfigError;
-use crate::metadata::{MULTI_ARG_KEYWORDS, REPEATABLE_KEYWORDS};
+use crate::metadata::{MULTI_ARG_KEYWORDS_COMMA_SEP, MULTI_ARG_KEYWORDS_SPACE_SEP, REPEATABLE_KEYWORDS};
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum KeywordType {
+    CommaSeparated,
+    SpaceSeparated,
+    Unseparated
+}
 
 #[derive(Debug, JsonSchema)]
 pub struct SshdConfigParser {
     map: Map<String, Value>
+}
+
+/// Parse `sshd_config` to map.
+///
+/// # Arguments
+///
+/// * `input` - The `sshd_config` text to parse.
+///
+/// # Errors
+///
+/// This function will return an error if the input fails to parse.
+pub fn parse_text_to_map(input: &str) -> Result<Map<String,Value>, SshdConfigError> {
+    let mut parser = SshdConfigParser::new();
+    parser.parse_text(input)?;
+    let lowercased_map = parser.map.into_iter()
+        .map(|(k, v)| (k.to_lowercase(), v))
+        .collect();
+    Ok(lowercased_map)
 }
 
 impl SshdConfigParser {
@@ -59,18 +84,105 @@ impl SshdConfigParser {
             return Err(SshdConfigError::ParserError(t!("parser.failedToParse", input = input).to_string()));
         }
         match node.kind() {
-            "keyword" => self.parse_keyword_node(node, input, input_bytes),
-            "comment" | "empty_line" | "match" => Ok(()), // TODO: do not ignore match nodes when parsing
+            "keyword" => {
+                Self::parse_and_insert_keyword(node, input, input_bytes, Some(&mut self.map))?;
+                Ok(())
+            },
+            "comment" | "empty_line" => Ok(()),
+            "match" => self.parse_match_node(node, input, input_bytes),
             _ => Err(SshdConfigError::ParserError(t!("parser.unknownNodeType", node = node.kind()).to_string())),
         }
     }
 
-    fn parse_keyword_node(&mut self, keyword_node: tree_sitter::Node, input: &str, input_bytes: &[u8]) -> Result<(), SshdConfigError> {
+    fn parse_match_node(&mut self, match_node: tree_sitter::Node, input: &str, input_bytes: &[u8]) -> Result<(), SshdConfigError> {
+        let Some(criteria_node) = match_node.child_by_field_name("criteria") else {
+            return Err(SshdConfigError::ParserError(
+                t!("parser.missingCriteriaInMatch", input = input).to_string()
+            ));
+        };
+
+        // Parse criteria by extracting the entire line and parsing key-value pairs
+        let criteria_map = Self::parse_match_criteria(criteria_node, input, input_bytes)?;
+
+        let mut match_object = Map::new();
+        match_object.insert("criteria".to_string(), Value::Object(criteria_map));
+
+        // Collect keywords - parse and insert directly into match_object
+        let mut cursor = match_node.walk();
+        for child_node in match_node.named_children(&mut cursor) {
+            if child_node.is_error() {
+                return Err(SshdConfigError::ParserError(
+                    t!("parser.failedToParseChildNode", input = input).to_string()
+                ));
+            }
+
+            match child_node.kind() {
+                "keyword" => {
+                    // Skip the criteria node (already processed)
+                    if child_node.id() == criteria_node.id() {
+                        continue;
+                    }
+                    Self::parse_and_insert_keyword(child_node, input, input_bytes, Some(&mut match_object))?;
+                }
+                "comment" => {}
+                _ => {
+                    return Err(SshdConfigError::ParserError(t!("parser.unknownNodeType", node = child_node.kind()).to_string()));
+                }
+            }
+        }
+
+        // Add the match object to the main map
+        Self::insert_into_map(&mut self.map, "match", Value::Object(match_object), true)?;
+        Ok(())
+    }
+
+    /// Parse match criteria which can contain multiple key-value pairs on a single line.
+    /// Example: "user alice,bob address *.*.0.1 localport 22"
+    /// Returns a Map with each criterion as a key with an array value.
+    fn parse_match_criteria(criteria_node: tree_sitter::Node, input: &str, input_bytes: &[u8]) -> Result<Map<String, Value>, SshdConfigError> {
+        let Ok(criteria_text) = criteria_node.utf8_text(input_bytes) else {
+            return Err(SshdConfigError::ParserError(t!("parser.failedToParseChildNode", input = input).to_string()));
+        };
+
+        let criteria_text = criteria_text.trim_end();
+        let tokens: Vec<&str> = criteria_text.split_whitespace().collect();
+        let mut criteria_map = Map::new();
+        let mut i = 0;
+
+        while i < tokens.len() {
+            let key = tokens[i].to_lowercase();
+            i += 1;
+            if i >= tokens.len() {
+                return Err(SshdConfigError::ParserError(
+                    t!("parser.missingValueInChildNode", input = input).to_string()
+                ));
+            }
+
+            let value_str = tokens[i];
+            let values: Vec<Value> = value_str.split(',').map(|s| Value::String(s.to_string())).collect();
+
+            criteria_map.insert(key, Value::Array(values));
+            i += 1;
+        }
+        Ok(criteria_map)
+    }
+
+    /// Parse a keyword node and optionally insert it into a map.
+    /// If `target_map` is provided, the keyword will be inserted into that map with repeatability handling.
+    /// If `target_map` is None, returns the key-value pair without inserting.
+    fn parse_and_insert_keyword(
+        keyword_node: tree_sitter::Node,
+        input: &str,
+        input_bytes: &[u8],
+        target_map: Option<&mut Map<String, Value>>
+    ) -> Result<(String, Value), SshdConfigError> {
         let mut cursor = keyword_node.walk();
         let mut key = None;
         let mut value = Value::Null;
-        let mut is_repeatable = false;
+        let mut operator: Option<String> = None;
         let mut is_vec = false;
+        let mut is_repeatable = false;
+        let mut keyword_type = KeywordType::Unseparated;
 
         if let Some(keyword) = keyword_node.child_by_field_name("keyword") {
             let Ok(text) = keyword.utf8_text(input_bytes) else {
@@ -78,14 +190,29 @@ impl SshdConfigParser {
                     t!("parser.failedToParseChildNode", input = input).to_string()
                 ));
             };
-            debug!("{}", t!("parser.keywordDebug", text = text).to_string());
-            if REPEATABLE_KEYWORDS.contains(&text) {
-                is_repeatable = true;
-                is_vec = true;
-            } else if MULTI_ARG_KEYWORDS.contains(&text) {
-                is_vec = true;
+
+            if target_map.is_some() {
+                debug!("{}", t!("parser.keywordDebug", text = text).to_string());
             }
+
+            if MULTI_ARG_KEYWORDS_SPACE_SEP.contains(&text) {
+                keyword_type = KeywordType::SpaceSeparated;
+            } else if MULTI_ARG_KEYWORDS_COMMA_SEP.contains(&text) {
+                keyword_type = KeywordType::CommaSeparated;
+            }
+            is_repeatable = REPEATABLE_KEYWORDS.contains(&text);
+            is_vec = is_repeatable || keyword_type != KeywordType::Unseparated;
             key = Some(text.to_string());
+        }
+
+        // Check for operator field
+        if let Some(operator_node) = keyword_node.child_by_field_name("operator") {
+            let Ok(op_text) = operator_node.utf8_text(input_bytes) else {
+                return Err(SshdConfigError::ParserError(
+                    t!("parser.failedToParseChildNode", input = input).to_string()
+                ));
+            };
+            operator = Some(op_text.to_string());
         }
 
         for node in keyword_node.named_children(&mut cursor) {
@@ -93,23 +220,43 @@ impl SshdConfigParser {
                 return Err(SshdConfigError::ParserError(t!("parser.failedToParseChildNode", input = input).to_string()));
             }
             if node.kind() == "arguments" {
-                value = parse_arguments_node(node, input, input_bytes, is_vec)?;
-                debug!("{}: {:?}", t!("parser.valueDebug").to_string(), value);
+                value = parse_arguments_node(node, input, input_bytes, is_vec, keyword_type)?;
+                if target_map.is_some() {
+                    debug!("{}: {:?}", t!("parser.valueDebug").to_string(), value);
+                }
             }
         }
+
+        // If operator is present, wrap value in a nested map
+        if let Some(op) = operator {
+            let mut operator_map = Map::new();
+            operator_map.insert("value".to_string(), value);
+            operator_map.insert("operator".to_string(), Value::String(op));
+            value = Value::Object(operator_map);
+        }
+
         if let Some(key) = key {
             if value.is_null() {
                 return Err(SshdConfigError::ParserError(t!("parser.missingValueInChildNode", input = input).to_string()));
             }
-            return self.update_map(&key, value, is_repeatable);
+
+            // If target_map is provided, insert the value with repeatability handling
+            if let Some(map) = target_map {
+                Self::insert_into_map(map, &key, value.clone(), is_repeatable)?;
+            }
+
+            return Ok((key, value));
         }
         Err(SshdConfigError::ParserError(t!("parser.missingKeyInChildNode", input = input).to_string()))
     }
 
-    fn update_map(&mut self, key: &str, value: Value, is_repeatable: bool) -> Result<(), SshdConfigError> {
-        if self.map.contains_key(key) {
+    /// Insert a key-value pair into a map with repeatability handling.
+    /// If the key is repeatable and already exists, append to the array.
+    /// If the key is not repeatable and already exists, return an error.
+    fn insert_into_map(map: &mut Map<String, Value>, key: &str, value: Value, is_repeatable: bool) -> Result<(), SshdConfigError> {
+        if map.contains_key(key) {
             if is_repeatable {
-                let existing_value = self.map.get_mut(key);
+                let existing_value = map.get_mut(key);
                 if let Some(existing_value) = existing_value {
                     if let Value::Array(ref mut arr) = existing_value {
                         if let Value::Array(vector) = value {
@@ -117,14 +264,10 @@ impl SshdConfigParser {
                                 arr.push(v);
                             }
                         } else {
-                            return Err(SshdConfigError::ParserError(
-                                t!("parser.failedToParseAsArray").to_string()
-                            ));
+                            arr.push(value);
                         }
                     } else {
-                        return Err(SshdConfigError::ParserError(
-                            t!("parser.failedToParseAsArray").to_string()
-                        ));
+                        return Err(SshdConfigError::ParserError(t!("parser.failedToParseAsArray").to_string()));
                     }
                 } else {
                     return Err(SshdConfigError::ParserError(t!("parser.keyNotFound", key = key).to_string()));
@@ -132,17 +275,23 @@ impl SshdConfigParser {
             } else {
                 return Err(SshdConfigError::ParserError(t!("parser.keyNotRepeatable", key = key).to_string()));
             }
+        } else if is_repeatable {
+            // Initialize repeatable keywords as arrays
+            if let Value::Array(_) = value {
+                map.insert(key.to_string(), value);
+            } else {
+                map.insert(key.to_string(), Value::Array(vec![value]));
+            }
         } else {
-            self.map.insert(key.to_string(), value);
+            map.insert(key.to_string(), value);
         }
         Ok(())
     }
 }
 
-fn parse_arguments_node(arg_node: tree_sitter::Node, input: &str, input_bytes: &[u8], is_vec: bool) -> Result<Value, SshdConfigError> {
+fn parse_arguments_node(arg_node: tree_sitter::Node, input: &str, input_bytes: &[u8], is_vec: bool, keyword_type: KeywordType) -> Result<Value, SshdConfigError> {
     let mut cursor = arg_node.walk();
     let mut vec: Vec<Value> = Vec::new();
-    let mut value = Value::Null;
 
     // if there is more than one argument, but a vector is not expected for the keyword, throw an error
     let children: Vec<_> = arg_node.named_children(&mut cursor).collect();
@@ -150,64 +299,50 @@ fn parse_arguments_node(arg_node: tree_sitter::Node, input: &str, input_bytes: &
         return Err(SshdConfigError::ParserError(t!("parser.invalidMultiArgNode", input = input).to_string()));
     }
 
-    for node in children {
+    for node in &children {
         if node.is_error() {
             return Err(SshdConfigError::ParserError(t!("parser.failedToParseChildNode", input = input).to_string()));
         }
-        let argument: Value = match node.kind() {
-            "boolean" | "string" => {
+        match node.kind() {
+            "boolean" | "string" | "quotedString" => {
                 let Ok(arg) = node.utf8_text(input_bytes) else {
                     return Err(SshdConfigError::ParserError(
                         t!("parser.failedToParseNode", input = input).to_string()
                     ));
                 };
-                Value::String(arg.trim().to_string())
-            }
+                let arg_str = arg.trim();
+
+                // For space-separated keywords, split unquoted strings on whitespace
+                if node.kind() == "string" && keyword_type == KeywordType::SpaceSeparated && is_vec {
+                    for token in arg_str.split_whitespace() {
+                        vec.push(Value::String(token.to_string()));
+                    }
+                } else {
+                    vec.push(Value::String(arg_str.to_string()));
+                }
+            },
             "number" => {
                 let Ok(arg) = node.utf8_text(input_bytes) else {
-                    return Err(SshdConfigError::ParserError(
-                        t!("parser.failedToParseNode", input = input).to_string()
-                    ));
+                    return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
                 };
-                Value::Number(arg.parse::<u64>()?.into())
-            }
+                vec.push(Value::Number(arg.parse::<u64>()?.into()));
+            },
             "operator" => {
-                // TODO: handle operator if not parsing from SSHD -T
-                return Err(SshdConfigError::ParserError(
-                    t!("parser.invalidValue").to_string()
-                ));
-            }
+                // Operators are handled at the keyword level, not in arguments
+                return Err(SshdConfigError::ParserError(t!("parser.invalidValue").to_string()));
+            },
             _ => return Err(SshdConfigError::ParserError(t!("parser.unknownNode", kind = node.kind()).to_string()))
-        };
-        if is_vec {
-            vec.push(argument);
-        } else {
-            value = argument;
         }
     }
+
+    // Always return array if is_vec is true (for MULTI_ARG_KEYWORDS_COMMA_SEP, MULTI_ARG_KEYWORDS_SPACE_SEP, and REPEATABLE_KEYWORDS)
     if is_vec {
         Ok(Value::Array(vec))
-    } else{
-        Ok(value)
+    } else if !vec.is_empty() {
+        Ok(vec[0].clone())
+    } else { /* shouldn't happen */
+        Err(SshdConfigError::ParserError(t!("parser.noArgumentsFound", input = input).to_string()))
     }
-}
-
-/// Parse `sshd_config` to map.
-///
-/// # Arguments
-///
-/// * `input` - The `sshd_config` text to parse.
-///
-/// # Errors
-///
-/// This function will return an error if the input fails to parse.
-pub fn parse_text_to_map(input: &str) -> Result<Map<String,Value>, SshdConfigError> {
-    let mut parser = SshdConfigParser::new();
-    parser.parse_text(input)?;
-    let lowercased_map = parser.map.into_iter()
-        .map(|(k, v)| (k.to_lowercase(), v))
-        .collect();
-    Ok(lowercased_map)
 }
 
 #[cfg(test)]
@@ -242,7 +377,7 @@ mod tests {
         let result: Map<String, Value> = parse_text_to_map(input).unwrap();
         let expected = vec![
             Value::String("administrators".to_string()),
-            Value::String("openssh users".to_string()),
+            Value::String("\"openssh users\"".to_string()),
         ];
         assert_eq!(result.get("allowgroups").unwrap(), &Value::Array(expected));
     }
@@ -252,6 +387,16 @@ mod tests {
         let input = "printmotd yes\r\n";
         let result: Map<String, Value> = parse_text_to_map(input).unwrap();
         assert_eq!(result.get("printmotd").unwrap(), &Value::String("yes".to_string()));
+    }
+
+    #[test]
+    fn multiarg_string_with_spaces_no_quotes_keyword() {
+        let input = "allowgroups administrators developers\n";
+        let result: Map<String, Value> = parse_text_to_map(input).unwrap();
+        let allowgroups = result.get("allowgroups").unwrap().as_array().unwrap();
+        assert_eq!(allowgroups.len(), 2);
+        assert_eq!(allowgroups[0], Value::String("administrators".to_string()));
+        assert_eq!(allowgroups[1], Value::String("developers".to_string()));
     }
 
     #[test]
@@ -267,5 +412,203 @@ mod tests {
         "#;
         let result = parse_text_to_map(code);
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn keyword_with_operator_variations() {
+        let input = r#"
+ciphers +aes256-ctr
+macs -hmac-md5
+kexalgorithms ^ecdh-sha2-nistp256
+"#;
+        let result: Map<String, Value> = parse_text_to_map(input).unwrap();
+
+        let ciphers = result.get("ciphers").unwrap().as_object().unwrap();
+        assert_eq!(ciphers.get("operator").unwrap(), &Value::String("+".to_string()));
+        assert!(ciphers.get("value").unwrap().is_array());
+
+        let macs = result.get("macs").unwrap().as_object().unwrap();
+        assert_eq!(macs.get("operator").unwrap(), &Value::String("-".to_string()));
+        assert!(macs.get("value").unwrap().is_array());
+
+        let kex = result.get("kexalgorithms").unwrap().as_object().unwrap();
+        assert_eq!(kex.get("operator").unwrap(), &Value::String("^".to_string()));
+        assert!(kex.get("value").unwrap().is_array());
+    }
+
+    #[test]
+    fn keyword_with_operator_multiple_values() {
+        let input = r#"
+ciphers +aes256-ctr,aes128-ctr
+"#;
+        let result: Map<String, Value> = parse_text_to_map(input).unwrap();
+        let ciphers = result.get("ciphers").unwrap().as_object().unwrap();
+        let value_array = ciphers.get("value").unwrap().as_array().unwrap();
+        assert_eq!(value_array.len(), 2);
+        assert_eq!(value_array[0], Value::String("aes256-ctr".to_string()));
+        assert_eq!(value_array[1], Value::String("aes128-ctr".to_string()));
+        assert_eq!(ciphers.get("operator").unwrap(), &Value::String("+".to_string()));
+    }
+
+    #[test]
+    fn single_match_block() {
+        let input = r#"
+port 22
+match user bob
+    gssapiauthentication yes
+    allowtcpforwarding yes
+"#;
+        let result: Map<String, Value> = parse_text_to_map(input).unwrap();
+        let match_array = result.get("match").unwrap().as_array().unwrap();
+        assert_eq!(match_array.len(), 1);
+        let match_obj = match_array[0].as_object().unwrap();
+        let criteria = match_obj.get("criteria").unwrap().as_object().unwrap();
+        let user_array = criteria.get("user").unwrap().as_array().unwrap();
+        assert_eq!(user_array[0], Value::String("bob".to_string()));
+        assert_eq!(match_obj.get("gssapiauthentication").unwrap(), &Value::String("yes".to_string()));
+        assert_eq!(match_obj.get("allowtcpforwarding").unwrap(), &Value::String("yes".to_string()));
+    }
+
+    #[test]
+    fn multiple_match_blocks() {
+        let input = r#"
+match user alice
+    passwordauthentication yes
+match group administrators
+    permitrootlogin yes
+"#;
+        let result: Map<String, Value> = parse_text_to_map(input).unwrap();
+        let match_array = result.get("match").unwrap().as_array().unwrap();
+        assert_eq!(match_array.len(), 2);
+        let match_obj1 = match_array[0].as_object().unwrap();
+        let criteria1 = match_obj1.get("criteria").unwrap().as_object().unwrap();
+        let user_array1 = criteria1.get("user").unwrap().as_array().unwrap();
+        assert_eq!(user_array1[0], Value::String("alice".to_string()));
+        assert_eq!(match_obj1.get("passwordauthentication").unwrap(), &Value::String("yes".to_string()));
+        let match_obj2 = match_array[1].as_object().unwrap();
+        let criteria2 = match_obj2.get("criteria").unwrap().as_object().unwrap();
+        let group_array2 = criteria2.get("group").unwrap().as_array().unwrap();
+        assert_eq!(group_array2[0], Value::String("administrators".to_string()));
+        assert_eq!(match_obj2.get("permitrootlogin").unwrap(), &Value::String("yes".to_string()));
+    }
+
+    #[test]
+    fn match_with_comma_separated_criteria() {
+        let input = r#"
+match user alice,bob
+    passwordauthentication yes
+"#;
+        let result: Map<String, Value> = parse_text_to_map(input).unwrap();
+        let match_array = result.get("match").unwrap().as_array().unwrap();
+        let match_obj = match_array[0].as_object().unwrap();
+        let criteria = match_obj.get("criteria").unwrap().as_object().unwrap();
+        let user_array = criteria.get("user").unwrap().as_array().unwrap();
+        assert_eq!(user_array.len(), 2);
+        assert_eq!(user_array[0], Value::String("alice".to_string()));
+        assert_eq!(user_array[1], Value::String("bob".to_string()));
+    }
+
+    #[test]
+    fn match_with_multiarg_keyword() {
+        let input = r#"
+match user testuser
+    passwordauthentication yes
+    allowgroups administrators developers
+"#;
+        let result: Map<String, Value> = parse_text_to_map(input).unwrap();
+        let match_array = result.get("match").unwrap().as_array().unwrap();
+        let match_obj = match_array[0].as_object().unwrap();
+        for (k, v) in match_obj.iter() {
+            eprintln!("  {}: {:?}", k, v);
+        }
+
+        // allowgroups is both MULTI_ARG and REPEATABLE
+        // Space-separated values should be parsed as array
+        let allowgroups = match_obj.get("allowgroups").unwrap().as_array().unwrap();
+        assert_eq!(allowgroups.len(), 2);
+        assert_eq!(allowgroups[0], Value::String("administrators".to_string()));
+        assert_eq!(allowgroups[1], Value::String("developers".to_string()));
+    }
+
+    #[test]
+    fn match_with_repeated_multiarg_keyword() {
+        let input = r#"
+match user testuser
+    allowgroups administrators developers
+    allowgroups guests users
+"#;
+        let result: Map<String, Value> = parse_text_to_map(input).unwrap();
+
+        let match_array = result.get("match").unwrap().as_array().unwrap();
+        let match_obj = match_array[0].as_object().unwrap();
+
+        // allowgroups is both MULTI_ARG and REPEATABLE
+        // Multiple occurrences should append all values to a flat array
+        let allowgroups = match_obj.get("allowgroups").unwrap().as_array().unwrap();
+        assert_eq!(allowgroups.len(), 4);
+        assert_eq!(allowgroups[0], Value::String("administrators".to_string()));
+        assert_eq!(allowgroups[1], Value::String("developers".to_string()));
+        assert_eq!(allowgroups[2], Value::String("guests".to_string()));
+        assert_eq!(allowgroups[3], Value::String("users".to_string()));
+    }
+
+    #[test]
+    fn match_with_repeated_single_value_keyword() {
+        let input = r#"
+match user testuser
+    port 2222
+    port 3333
+"#;
+        let result: Map<String, Value> = parse_text_to_map(input).unwrap();
+
+        let match_array = result.get("match").unwrap().as_array().unwrap();
+        let match_obj = match_array[0].as_object().unwrap();
+
+        // port is REPEATABLE - values should be in a flat array
+        let ports = match_obj.get("port").unwrap().as_array().unwrap();
+        assert_eq!(ports.len(), 2);
+        assert_eq!(ports[0], Value::Number(2222.into()));
+        assert_eq!(ports[1], Value::Number(3333.into()));
+    }
+
+    #[test]
+    fn match_with_comments() {
+        let input = r#"
+match user developer
+    # Enable password authentication for developers - comment ignored
+    passwordauthentication yes
+"#;
+        let result: Map<String, Value> = parse_text_to_map(input).unwrap();
+        let match_array = result.get("match").unwrap().as_array().unwrap();
+        let match_obj = match_array[0].as_object().unwrap();
+        assert_eq!(match_obj.get("passwordauthentication").unwrap(), &Value::String("yes".to_string()));
+        assert_eq!(match_obj.len(), 2);
+    }
+
+    #[test]
+    fn match_with_multiple_criteria_types() {
+        let input = r#"
+match user alice,bob address 1.2.3.4/56
+    passwordauthentication yes
+    allowtcpforwarding no
+"#;
+        let result: Map<String, Value> = parse_text_to_map(input).unwrap();
+        let match_array = result.get("match").unwrap().as_array().unwrap();
+        assert_eq!(match_array.len(), 1);
+        let match_obj = match_array[0].as_object().unwrap();
+
+        let criteria = match_obj.get("criteria").unwrap().as_object().unwrap();
+
+        let user_array = criteria.get("user").unwrap().as_array().unwrap();
+        assert_eq!(user_array.len(), 2);
+        assert_eq!(user_array[0], Value::String("alice".to_string()));
+        assert_eq!(user_array[1], Value::String("bob".to_string()));
+
+        let address_array = criteria.get("address").unwrap().as_array().unwrap();
+        assert_eq!(address_array.len(), 1);
+        assert_eq!(address_array[0], Value::String("1.2.3.4/56".to_string()));
+
+        assert_eq!(match_obj.get("passwordauthentication").unwrap(), &Value::String("yes".to_string()));
+        assert_eq!(match_obj.get("allowtcpforwarding").unwrap(), &Value::String("no".to_string()));
     }
 }
