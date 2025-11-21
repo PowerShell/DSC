@@ -12,9 +12,9 @@ use crate::metadata::{MULTI_ARG_KEYWORDS_COMMA_SEP, MULTI_ARG_KEYWORDS_SPACE_SEP
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum KeywordType {
-    SpaceSeparated,
     CommaSeparated,
-    Other,
+    SpaceSeparated,
+    Unseparated
 }
 
 #[derive(Debug, JsonSchema)]
@@ -157,7 +157,7 @@ impl SshdConfigParser {
         let mut operator: Option<String> = None;
         let mut is_vec = force_array;
         let mut is_repeatable = false;
-        let mut keyword_type = KeywordType::Other;
+        let mut keyword_type = KeywordType::Unseparated;
 
         if let Some(keyword) = keyword_node.child_by_field_name("keyword") {
             let Ok(text) = keyword.utf8_text(input_bytes) else {
@@ -171,19 +171,13 @@ impl SshdConfigParser {
             }
 
             if !force_array {
-                if REPEATABLE_KEYWORDS.contains(&text) {
-                    is_repeatable = true;
-                    is_vec = true;
-                    if MULTI_ARG_KEYWORDS_SPACE_SEP.contains(&text) {
-                        keyword_type = KeywordType::SpaceSeparated;
-                    }
-                } else if MULTI_ARG_KEYWORDS_SPACE_SEP.contains(&text) {
-                    is_vec = true;
+                if MULTI_ARG_KEYWORDS_SPACE_SEP.contains(&text) {
                     keyword_type = KeywordType::SpaceSeparated;
                 } else if MULTI_ARG_KEYWORDS_COMMA_SEP.contains(&text) {
-                    is_vec = true;
                     keyword_type = KeywordType::CommaSeparated;
                 }
+                is_repeatable = REPEATABLE_KEYWORDS.contains(&text);
+                is_vec = is_repeatable || keyword_type != KeywordType::Unseparated;
             }
             key = Some(text.to_string());
         }
@@ -275,7 +269,6 @@ impl SshdConfigParser {
 fn parse_arguments_node(arg_node: tree_sitter::Node, input: &str, input_bytes: &[u8], is_vec: bool, keyword_type: KeywordType) -> Result<Value, SshdConfigError> {
     let mut cursor = arg_node.walk();
     let mut vec: Vec<Value> = Vec::new();
-    let value = Value::Null;
 
     // if there is more than one argument, but a vector is not expected for the keyword, throw an error
     let children: Vec<_> = arg_node.named_children(&mut cursor).collect();
@@ -288,22 +281,7 @@ fn parse_arguments_node(arg_node: tree_sitter::Node, input: &str, input_bytes: &
             return Err(SshdConfigError::ParserError(t!("parser.failedToParseChildNode", input = input).to_string()));
         }
         match node.kind() {
-            "quotedString" => {
-                // For quoted strings, extract the string child node (which contains the actual text)
-                let mut quoted_cursor = node.walk();
-                for child in node.named_children(&mut quoted_cursor) {
-                    if child.kind() == "string" {
-                        let Ok(arg) = child.utf8_text(input_bytes) else {
-                            return Err(SshdConfigError::ParserError(
-                                t!("parser.failedToParseNode", input = input).to_string()
-                            ));
-                        };
-                        // Quoted strings are never split on whitespace
-                        vec.push(Value::String(arg.trim().to_string()));
-                    }
-                }
-            }
-            "boolean" | "string" => {
+            "boolean" | "string" | "quotedString" => {
                 let Ok(arg) = node.utf8_text(input_bytes) else {
                     return Err(SshdConfigError::ParserError(
                         t!("parser.failedToParseNode", input = input).to_string()
@@ -312,28 +290,24 @@ fn parse_arguments_node(arg_node: tree_sitter::Node, input: &str, input_bytes: &
                 let arg_str = arg.trim();
 
                 // For space-separated keywords, split unquoted strings on whitespace
-                if keyword_type == KeywordType::SpaceSeparated && is_vec {
+                if node.kind() == "string" && keyword_type == KeywordType::SpaceSeparated && is_vec {
                     for token in arg_str.split_whitespace() {
                         vec.push(Value::String(token.to_string()));
                     }
                 } else {
                     vec.push(Value::String(arg_str.to_string()));
                 }
-            }
+            },
             "number" => {
                 let Ok(arg) = node.utf8_text(input_bytes) else {
-                    return Err(SshdConfigError::ParserError(
-                        t!("parser.failedToParseNode", input = input).to_string()
-                    ));
+                    return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
                 };
                 vec.push(Value::Number(arg.parse::<u64>()?.into()));
-            }
+            },
             "operator" => {
                 // Operators are handled at the keyword level, not in arguments
-                return Err(SshdConfigError::ParserError(
-                    t!("parser.invalidValue").to_string()
-                ));
-            }
+                return Err(SshdConfigError::ParserError(t!("parser.invalidValue").to_string()));
+            },
             _ => return Err(SshdConfigError::ParserError(t!("parser.unknownNode", kind = node.kind()).to_string()))
         };
     }
@@ -343,8 +317,8 @@ fn parse_arguments_node(arg_node: tree_sitter::Node, input: &str, input_bytes: &
         Ok(Value::Array(vec))
     } else if !vec.is_empty() {
         Ok(vec[0].clone())
-    } else {
-        Ok(value)
+    } else { /* shouldn't happen */
+        Err(SshdConfigError::ParserError(t!("parser.noArgumentsFound", input = input).to_string()))
     }
 }
 
@@ -380,7 +354,7 @@ mod tests {
         let result: Map<String, Value> = parse_text_to_map(input).unwrap();
         let expected = vec![
             Value::String("administrators".to_string()),
-            Value::String("openssh users".to_string()),
+            Value::String("\"openssh users\"".to_string()),
         ];
         assert_eq!(result.get("allowgroups").unwrap(), &Value::Array(expected));
     }

@@ -33,7 +33,7 @@ pub const MULTI_ARG_KEYWORDS_SPACE_SEP: [&str; 11] = [
 ];
 
 // keywords that can be repeated over multiple lines and should be represented as arrays.
-// note that some keywords can be both multi-arg and repeatable
+// note that some keywords can be both multi-arg space-separated and repeatable
 pub const REPEATABLE_KEYWORDS: [&str; 12] = [
     "acceptenv",
     "allowgroups",
