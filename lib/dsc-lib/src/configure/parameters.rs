@@ -30,11 +30,6 @@ pub struct ParametersJson {
     pub parameters_json: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
-pub struct ParametersInput {
-    pub parameters_input: ParametersJson,
-}
-
 pub const SECURE_VALUE_REDACTED: &str = "<secureValue>";
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
