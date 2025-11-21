@@ -67,7 +67,6 @@ impl DscExtension {
             if self.import_file_extensions.as_ref().is_some_and(|exts| exts.contains(&file_extension)) {
                 debug!("{}", t!("extensions.dscextension.importingFile", file = file.display(), extension = self.type_name));
             } else {
-                debug!("{}", t!("extensions.dscextension.importNotSupported", file = file.display(), extension = self.type_name));
                 return Err(DscError::NotSupported(
                     t!("extensions.dscextension.importNotSupported", file = file.display(), extension = self.type_name).to_string(),
                 ));
@@ -101,7 +100,7 @@ impl DscExtension {
             self.type_name.clone(),
             Capability::Import.to_string()
         ))
-    }    
+    }
 }
 
 fn process_import_args(args: Option<&Vec<ImportArgKind>>, file: &Path) -> Result<Option<Vec<String>>, DscError> {

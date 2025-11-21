@@ -1,14 +1,38 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use crate::dscerror::DscError;
+use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{collections::HashMap, fmt::Display};
+use tracing::trace;
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct Input {
     pub parameters: HashMap<String, Value>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct ComplexInput {
+    pub parameters: HashMap<String, InputObject>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct InputObject {
+    pub value: Value,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct ParametersJson {
+    #[serde(rename = "parametersJson")]
+    pub parameters_json: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct ParametersInput {
+    pub parameters_input: ParametersJson,
 }
 
 pub const SECURE_VALUE_REDACTED: &str = "<secureValue>";
@@ -63,4 +87,49 @@ pub enum SecureKind {
     SecureString(SecureString),
     #[serde(rename = "secureObject")]
     SecureObject(SecureObject),
+}
+
+pub fn import_parameters(parameters: &Value) -> Result<HashMap<String, Value>, DscError> {
+    let input = match serde_json::from_value::<ParametersJson>(parameters.clone()) {
+        Ok(input) => {
+            trace!("{}", t!("configure.parameters.importingParametersFromJson"));
+            let param_map = match serde_json::from_str::<ComplexInput>(&input.parameters_json) {
+                Ok(param_map) => param_map,
+                Err(e) => {
+                    return Err(DscError::Parser(t!("configure.parameters.invalidParamsJsonFormat", error = e).to_string()));
+                }
+            };
+            let mut result: HashMap<String, Value> = HashMap::new();
+            for (name, input_object) in param_map.parameters {
+                result.insert(name, input_object.value);
+            }
+            result
+        },
+        Err(_) => {
+            let input = match serde_json::from_value::<ComplexInput>(parameters.clone()) {
+                Ok(input) => {
+                    trace!("{}", t!("configure.parameters.importingParametersFromComplexInput"));
+                    let mut result: HashMap<String, Value> = HashMap::new();
+                    for (name, input_object) in input.parameters {
+                        result.insert(name, input_object.value);
+                    }
+                    result
+                },
+                Err(_) => {
+                    let input = match serde_json::from_value::<Input>(parameters.clone()) {
+                        Ok(input) => {
+                            trace!("{}", t!("configure.parameters.importingParametersFromInput"));
+                            input.parameters
+                        }
+                        Err(e) => {
+                            return Err(DscError::Parser(t!("configure.parameters.invalidParamsFormat", error = e).to_string()));
+                        }
+                    };
+                    input
+                }
+            };
+            input
+        },
+    };
+    Ok(input)
 }

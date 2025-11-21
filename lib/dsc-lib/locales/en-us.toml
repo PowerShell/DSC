@@ -85,6 +85,13 @@ secureOutputSkipped = "Secure output '%{name}' is skipped"
 outputTypeNotMatch = "Output '%{name}' type does not match expected type '%{expected_type}'"
 copyNotSupported = "Copy for output '%{name}' is currently not supported"
 
+[configure.parameters]
+importingParametersFromJson = "Importing parameters from `parameters_input` JSON"
+importingParametersFromComplexInput = "Importing parameters from complex input"
+importingParametersFromInput = "Importing parameters from simple input"
+invalidParamsJsonFormat = "Invalid parameters JSON format: %{error}"
+invalidParamsFormat = "Invalid parameters format: %{error}"
+
 [discovery.commandDiscovery]
 couldNotReadSetting = "Could not read 'resourcePath' setting"
 appendingEnvPath = "Appending PATH to resourcePath"
@@ -221,8 +228,11 @@ retrievingSecretFromExtension = "Retrieving secret '%{name}' from extension '%{e
 extensionReturnedSecret = "Extension '%{extension}' returned secret"
 extensionReturnedNoSecret = "Extension '%{extension}' did not return a secret"
 importingFile = "Importing file '%{file}' with extension '%{extension}'"
+importingParametersFile = "Importing parameters file '%{file}' with extension '%{extension}'"
 importNotSupported = "Import is not supported by extension '%{extension}' for file '%{file}'"
+importParametersNotSupported = "Import parameters is not supported by extension '%{extension}' for file '%{file}'"
 importNoResults = "Extension '%{extension}' returned no results for import"
+importParametersNoResults = "Extension '%{extension}' returned no results for import parameters"
 secretMultipleLinesReturned = "Extension '%{extension}' returned multiple lines which is not supported for secrets"
 
 [extensions.extension_manifest]

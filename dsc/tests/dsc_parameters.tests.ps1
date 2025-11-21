@@ -394,6 +394,53 @@ Describe 'Parameters tests' {
       $errorMessage | Should -BeLike "*ERROR*Empty input provided*"
     }
 
+    It 'Parameters in ARM syntax are supported' {
+      $config_yaml = @"
+        `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+        parameters:
+          myString:
+            type: string
+          myObject:
+            type: object
+          myArray:
+            type: array
+          myInt:
+            type: int
+          myBool:
+            type: bool
+        resources:
+        - name: echo
+          type: Microsoft.DSC.Debug/Echo
+          properties:
+            output: "[concat(parameters('myString'), '-', parameters('myObject').prop1, '-', parameters('myArray')[0], parameters('myArray')[1], '-', string(parameters('myInt')), '-', string(parameters('myBool'))]"
+"@
+      $params = @{
+        parameters = @{
+          myString = @{
+            value = 'Hello'
+          }
+          myObject = @{
+            value = @{
+              prop1 = 'World'
+            }
+          }
+          myArray = @{
+            value = @('Item1', 'Item2')
+          }
+          myInt = @{
+            value = 123
+          }
+          myBool = @{
+            value = $true
+          }
+        }
+      } | ConvertTo-Json -Compress -Depth 5
+
+      $out = $config_yaml | dsc -l trace config -p $params get -f - 2> $TestDrive/error.log | ConvertFrom-Json
+      $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw | Out-String)
+      $out.results[0].result.actualState.output | Should -BeExactly 'Hello-World-Item1Item2-123-true'
+    }
+
     It 'Invalid parameters read from STDIN result in error' {
       $params = @{
         osFamily = 'Windows'
@@ -403,7 +450,7 @@ Describe 'Parameters tests' {
       $LASTEXITCODE | Should -Be 4
       $out | Should -BeNullOrEmpty
       $errorMessage = Get-Content -Path $TestDrive/error.log -Raw
-      $errorMessage | Should -BeLike "*ERROR*Parameter input failure: JSON: missing field ````parameters````*"
+      $errorMessage | Should -BeLike "*ERROR*Invalid parameters format: missing field ````parameters````*"
     }
 
     It 'Parameters can reference other parameters in defaultValue: simple nested' {
@@ -935,7 +982,7 @@ parameters:
         }
         else {
             $expectedOutput = "{0}-{1}" -f $fileValue, $inlineValue
-        } 
+        }
         $out.results[0].result.actualState.output | Should -BeExactly $expectedOutput
     }
 

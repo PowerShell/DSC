@@ -43,6 +43,8 @@ pub enum Capability {
     Secret,
     /// The extension imports configuration from a different format.
     Import,
+    /// The extension imports parameters from a different format.
+    ImportParameters,
 }
 
 impl Display for Capability {
@@ -51,6 +53,7 @@ impl Display for Capability {
             Capability::Discover => write!(f, "Discover"),
             Capability::Secret => write!(f, "Secret"),
             Capability::Import => write!(f, "Import"),
+            Capability::ImportParameters => write!(f, "ImportParams"),
         }
     }
 }
