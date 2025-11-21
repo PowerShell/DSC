@@ -456,4 +456,4 @@ This ensures your changes:
 - **Contributing Guide**: [CONTRIBUTING.md](CONTRIBUTING.md)
 - **Documentation**: [docs/](docs/)
 - **Build Helper Module**: [build.helpers.psm1](build.helpers.psm1)
-- **Legacy Build Script**: [build.ps1](build.ps1) (deprecated, use build.new.ps1)
+- **Legacy Build Script**: [packaging.ps1](packaging.ps1) (deprecated, use `build.ps1`)

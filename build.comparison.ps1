@@ -146,7 +146,7 @@ begin {
         begin {
             # Define variables
             $durationFormat    = "mm\:ss\.fff"
-            $legacyScript      = Join-Path $PSScriptRoot "build.ps1"
+            $legacyScript      = Join-Path $PSScriptRoot "packaging.ps1"
             $legacyBuildParams = $BuildParams.Clone()
             $newScript         = Join-Path $PSScriptRoot "build.new.ps1"
             $newBuildParams    = $BuildParams.Clone()
