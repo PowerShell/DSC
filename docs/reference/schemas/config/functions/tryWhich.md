@@ -7,8 +7,8 @@ title:       tryWhich
 
 ## Synopsis
 
-Looks for an executable in the `PATH` environment variable and returns the full path to that  
-executable or null if not found.
+Looks for an executable in the `PATH` environment variable and returns the full path to the first  
+matching executable or null if not found.
 
 ## Syntax
 
@@ -19,8 +19,8 @@ tryWhich(<commandName>)
 ## Description
 
 The `tryWhich()` function searches for an executable in the `PATH` environment variable and returns  
-the full path to the executable if found. If the executable isn't discoverable, the function  
-returns `null` instead of generating an error.
+the full path to the first matching executable if found. If the executable isn't discoverable, the  
+function returns `null` instead of generating an error.
 
 This function is useful for:
 
@@ -185,8 +185,8 @@ Position: 1
 
 ## Output
 
-Returns the full path to the executable as a string if found in the system PATH. Returns
-`null` if the executable is not found.
+Returns the full path to the first matching executable as a string if found in the system PATH.  
+Returns `null` if the executable is not found.
 
 ```yaml
 Type: string or null
