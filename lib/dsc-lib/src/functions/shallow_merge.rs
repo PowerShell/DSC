@@ -30,11 +30,16 @@ impl Function for ShallowMerge {
         let mut result = Map::new();
 
         for item in array {
-            if let Some(obj) = item.as_object() {
-                for (key, value) in obj {
-                    // Shallow merge: replace the entire value, even if it's a nested object
-                    result.insert(key.clone(), value.clone());
-                }
+            let obj = item.as_object().ok_or_else(|| {
+                DscError::Parser(format!(
+                    "shallowMerge requires all array elements to be objects, but found: {}",
+                    item
+                ))
+            })?;
+            
+            for (key, value) in obj {
+                // Shallow merge: replace the entire value, even if it's a nested object
+                result.insert(key.clone(), value.clone());
             }
         }
 
@@ -157,6 +162,28 @@ mod tests {
         let result =
             parser.parse_and_execute("[shallowMerge(createObject('a', 1))]", &Context::new());
 
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn shallow_merge_array_with_non_object_elements_error() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute(
+            "[shallowMerge(createArray('string', 'another'))]",
+            &Context::new()
+        );
+        assert!(result.is_err());
+
+        let result = parser.parse_and_execute(
+            "[shallowMerge(createArray(1, 2, 3))]",
+            &Context::new()
+        );
+        assert!(result.is_err());
+
+        let result = parser.parse_and_execute(
+            "[shallowMerge(createArray(createObject('a', 1), 'string', createObject('b', 2)))]",
+            &Context::new()
+        );
         assert!(result.is_err());
     }
 }

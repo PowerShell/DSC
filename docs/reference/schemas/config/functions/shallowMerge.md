@@ -48,23 +48,23 @@ entirely with the value defined by the last object with that property in the inp
 
 ### Example 1 - Merge configuration objects
 
-The following example demonstrates merging two configuration objects using [`createArray()`][02]
-and [`createObject()`][03], where the second object overrides properties from the first.
+The following example demonstrates merging two configuration objects where the second object
+overrides properties from the first.
 
 ```yaml
 # shallowMerge.example.1.dsc.config.yaml
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+variables:
+  configArray:
+  - host: localhost
+    port: 8080
+  - port: 9000
+    ssl: true
 resources:
 - name: Echo
   type: Microsoft.DSC.Debug/Echo
   properties:
-    output: >-  
-      [shallowMerge(  
-        createArray(  
-          createObject('host', 'localhost', 'port', 8080),  
-          createObject('port', 9000, 'ssl', true())  
-        )  
-      )]
+    output: "[shallowMerge(variables('configArray'))]"
 ```
 
 ```bash
