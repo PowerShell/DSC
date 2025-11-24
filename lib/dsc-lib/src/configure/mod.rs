@@ -836,9 +836,7 @@ impl Configurator {
 
         // process input parameters first
         if let Some(parameters_input) = parameters_input {
-            trace!("parameters_input: {parameters_input}");
             let input_parameters: HashMap<String, Value> = import_parameters(parameters_input)?;
-
             for (name, value) in input_parameters {
                 if let Some(constraint) = parameters.get(&name) {
                     debug!("Validating parameter '{name}'");

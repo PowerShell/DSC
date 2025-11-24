@@ -89,9 +89,7 @@ impl DscExtension {
             if stdout.is_empty() {
                 info!("{}", t!("extensions.dscextension.importNoResults", extension = self.type_name));
             } else {
-                debug!("got stdout: {}", stdout);
                 if let Some(output) = &import.output {
-                    debug!("processing output: {}", output);
                     debug!("{}", t!("extensions.dscextension.importProcessingOutput", extension = self.type_name));
                     let mut parser = Statement::new()?;
                     let mut context = Context::new();
