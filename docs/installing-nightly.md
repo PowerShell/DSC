@@ -23,7 +23,7 @@ platform:
    - Bash (Linux and macOS):
 
      ```sh
-     curl -o https://raw.githubusercontent.com/PowerShell/DSC/refs/heads/main/sharedScripts/install_cli_nightly.sh
+     curl -O https://raw.githubusercontent.com/PowerShell/DSC/refs/heads/main/sharedScripts/install_cli_nightly.sh
      ```
 
    - PowerShell (Windows):
@@ -145,7 +145,7 @@ Extract the archive using the following steps:
   - PowerShell (Windows):
 
     ```powershell
-    install_cli_nightly.ps1 -Repo myusername/DSC"
+    install_cli_nightly.ps1 -Repo myusername/DSC
     ```
 
 - Install from a branch other than `main`:
