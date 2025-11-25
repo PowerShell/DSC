@@ -24,7 +24,7 @@ module.exports = grammar({
 
     function: $ => prec(PREC.FUNCTION, seq(field('name', $.functionName), '(', field('args', optional($.arguments)), ')')),
     functionName: $ => choice(
-      /[a-zA-Z][a-zA-Z0-9]*(\.[a-zA-Z0-9]+)?/,
+      /[_a-zA-Z][_a-zA-Z0-9]*(\.[a-zA-Z0-9]+)?/,
       $._booleanLiteral
     ),
     arguments: $ => seq($._argument, repeat(seq(',', $._argument))),

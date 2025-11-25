@@ -118,6 +118,8 @@ foundResourceWithVersion = "Found matching resource '%{resource}' version %{vers
 foundNonAdapterResources = "Found %{count} non-adapter resources"
 resourceMissingRequireAdapter = "Resource '%{resource}' is missing 'require_adapter' field."
 extensionDiscoverFailed = "Extension '%{extension}' failed to discover resources: %{error}"
+conditionNotBoolean = "Condition '%{condition}' did not evaluate to a boolean"
+conditionNotMet = "Condition '%{condition}' not met, skipping manifest at '%{path}'"
 
 [dscresources.commandResource]
 invokeGet = "Invoking get for '%{resource}'"
@@ -448,6 +450,9 @@ invoked = "not function"
 description = "Returns a null value"
 invoked = "null function"
 
+[functions.objectKeys]
+description = "Returns the keys from an object, where an object is a collection of key-value pairs"
+
 [functions.or]
 description = "Evaluates if any arguments are true"
 invoked = "or function"
@@ -584,6 +589,10 @@ description = "Retrieves a value from an array by counting backward from the end
 invoked = "tryIndexFromEnd function"
 invalidSourceType = "Invalid source type, must be an array"
 invalidIndexType = "Invalid index type, must be an integer"
+
+[functions.tryWhich]
+description = "Attempts to locate an executable in the system PATH.  Null is returned if the executable is not found otherwise the full path to the executable is returned."
+invoked = "tryWhich function"
 
 [functions.union]
 description = "Returns a single array or object with all elements from the parameters"

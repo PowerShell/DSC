@@ -236,13 +236,17 @@ extends:
             ob_restore_phase: true
         - pwsh: |
             apt update
-            apt -y install musl-tools
+            apt -y install musl-tools rpm dpkg build-essential
             $header = "Bearer $(AzToken)"
             $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
             $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
             ./build.ps1 -Release -Architecture x86_64-unknown-linux-musl
             ./build.ps1 -PackageType tgz -Architecture x86_64-unknown-linux-musl -Release
+            ./build.ps1 -PackageType rpm -Architecture x86_64-unknown-linux-musl -Release
+            ./build.ps1 -PackageType deb -Architecture x86_64-unknown-linux-musl -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
+            Copy-Item ./bin/*.rpm "$(ob_outputDirectory)"
+            Copy-Item ./bin/*.deb "$(ob_outputDirectory)"
           displayName: 'Build x86_64-unknown-linux-musl'
           condition: succeeded()
 
@@ -289,6 +293,9 @@ extends:
             #apt -y install gcc-multilib
             apt -y install libssl-dev
             apt -y install pkg-config
+            apt -y install rpm
+            apt -y install dpkg
+            apt -y install build-essential
             msrustup default stable-aarch64-unknown-linux-musl
             if ((openssl version -d) -match 'OPENSSLDIR: "(?<dir>.*?)"') {
               $env:OPENSSL_LIB_DIR = $matches['dir']
@@ -298,7 +305,11 @@ extends:
             $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
             ./build.ps1 -Release -Architecture aarch64-unknown-linux-musl
             ./build.ps1 -PackageType tgz -Architecture aarch64-unknown-linux-musl -Release
+            ./build.ps1 -PackageType rpm -Architecture aarch64-unknown-linux-musl -Release
+            ./build.ps1 -PackageType deb -Architecture aarch64-unknown-linux-musl -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
+            Copy-Item ./bin/*.rpm "$(ob_outputDirectory)"
+            Copy-Item ./bin/*.deb "$(ob_outputDirectory)"
           displayName: 'Build aarch64-unknown-linux-musl'
           condition: succeeded()
 
@@ -370,11 +381,17 @@ extends:
 
         - download: current
           artifact: drop_BuildAndSign_BuildLinuxArm64Musl
-          patterns: '*.tar.gz'
+          patterns: |
+            *.tar.gz
+            *.rpm
+            *.deb
 
         - download: current
           artifact: drop_BuildAndSign_BuildLinuxMusl
-          patterns: '*.tar.gz'
+          patterns: |
+            *.tar.gz
+            *.rpm
+            *.deb
 
         - download: current
           artifact: release ## this includes artifacts for macOS
@@ -385,7 +402,7 @@ extends:
           patterns: '*.msixbundle'
 
         - pwsh: |
-            Get-ChildItem "$(Pipeline.Workspace)" -Recurse -Include '*.zip', '*.tar.gz', '*.msixbundle' | ForEach-Object {
+            Get-ChildItem "$(Pipeline.Workspace)" -Recurse -Include '*.zip', '*.tar.gz', '*.msixbundle', '*.rpm', '*.deb' | ForEach-Object {
               Write-Host "Found artifact: $($_.FullName)"
             }
           displayName: List downloaded artifacts
@@ -398,7 +415,7 @@ extends:
 
             Write-Verbose -Verbose "Starting to copy"
 
-            Get-ChildItem "$(Pipeline.Workspace)" -Recurse -Include '*.zip', '*.tar.gz', '*.msixbundle' | ForEach-Object {
+            Get-ChildItem "$(Pipeline.Workspace)" -Recurse -Include '*.zip', '*.tar.gz', '*.msixbundle', '*.rpm', '*.deb' | ForEach-Object {
               Copy-Item -Path $_.FullName -Destination $outputDir -Force -Verbose
             }
 
@@ -448,7 +465,7 @@ extends:
             script: |
               Write-Verbose -Verbose "Release version: $(PackageVersion)"
 
-              $artifacts = Get-ChildItem "$(Pipeline.Workspace)" -Recurse -Include '*.zip', '*.tar.gz', '*.msixbundle'
+              $artifacts = Get-ChildItem "$(Pipeline.Workspace)" -Recurse -Include '*.zip', '*.tar.gz', '*.msixbundle', '*.rpm', '*.deb'
 
               $artifacts | ForEach-Object {
                 Write-Verbose -Verbose "Found artifact: $($_.FullName)"
@@ -489,11 +506,59 @@ extends:
               $(GitHubReleaseDirectory)\*.zip
               $(GitHubReleaseDirectory)\*.tar.gz
               $(GitHubReleaseDirectory)\*.msixbundle
+              $(GitHubReleaseDirectory)\*.rpm
+              $(GitHubReleaseDirectory)\*.deb
             addChangeLog: false
             tagSource: 'userSpecifiedTag'
             tag: '$(GitHubReleaseVersion)'
             isDraft: true
             isPreRelease: '$(IsPreRelease)'
+
+        - task: PowerShell@2
+          displayName: Update PDP.xml for Store release
+          inputs:
+            targetType: 'inline'
+            script: |
+              $pdpPath = '$(System.DefaultWorkingDirectory)/DSC/.pipelines/store/PDP/en-US/PDP.xml'
+              if (-not (Test-Path -Path $pdpPath)) {
+                throw "PDP path '$pdpPath' does not exist. Cannot update PDP.xml."
+              }
+
+              $sbConfigPath = '$(System.DefaultWorkingDirectory)/DSC/.pipelines/store/SBConfig.json'
+              if (-not (Test-Path -Path $sbConfigPath)) {
+                throw "SBConfig path '$sbConfigPath' does not exist. Cannot update SBConfig.json."
+              }
+
+              $pdpContent = Get-Content -Path $pdpPath -Raw
+              $appName = if ($(isPreRelease) -eq 'true') {
+                'DesiredStateConfiguration-Preview'
+              } else {
+                'DesiredStateConfiguration'
+              }
+              $pdpContent = $pdpContent.Replace('$AppName$', $appName)
+              Set-Content -Path $pdpPath -Value $pdpContent
+              Write-Host "PDP.xml updated successfully with AppName: $appName"
+
+              $sbConfigContent = Get-Content -Path $sbConfigPath -Raw
+              $productId = if ($(isPreRelease) -eq 'true') {
+                'Microsoft.DesiredStateConfiguration-Preview'
+              } else {
+                'Microsoft.DesiredStateConfiguration'
+              }
+              $sbConfigContent = $sbConfigContent.Replace('$ProductID$', $productId)
+              Set-Content -Path $sbConfigPath -Value $sbConfigContent
+              Write-Host "SBConfig.json updated successfully with ProductID: $productId"
+
+        - task: MS-RDX-MRO.windows-store-publish.package-task.store-package@3
+          displayName: Publish to Microsoft Store
+          inputs:
+            serviceEndpoint: dsc-store
+            sbConfigPath: '$(System.DefaultWorkingDirectory)/DSC/.pipelines/store/SBConfig.json'
+            sourceFolder: '$(GitHubReleaseDirectory)'
+            contents: '*.msixbundle'
+            outSBName: 'DesiredStateConfigurationStorePackage'
+            pdpPath: '$(System.DefaultWorkingDirectory)/DSC/.pipelines/store/PDP/en-US/PDP.xml'
+            pdpMediaPath: '$(System.DefaultWorkingDirectory)/DSC/.pipelines/store/PDP/PDP-Media/en-US'
 
     - stage: ReleaseUniversalPackage
       dependsOn: ['BuildAndSign','Release']
