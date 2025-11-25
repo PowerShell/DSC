@@ -78,7 +78,7 @@ extends:
           vmImage: windows-latest
         variables:
           repoRoot: $(Build.SourcesDirectory)\DSC
-          ob_sdl_tsa_configFile: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
+          ob_sdl_tsa_configFile: $(Build.SourcesDirectory)\.config\tsaoptions.json
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           ob_sdl_sbom_enabled: false
           ob_signing_setup_enabled: false
@@ -107,7 +107,7 @@ extends:
       - job: BuildWin_x64
         dependsOn: SetPackageVersion
         variables:
-          ob_sdl_tsa_configFile: '$(Build.SourcesDirectory)\DSC\.config\tsaoptions.json'
+          ob_sdl_tsa_configFile: '$(Build.SourcesDirectory)\.config\tsaoptions.json'
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           signSrcPath: '$(Build.SourcesDirectory)\out'
           AzToken: $[ dependencies.SetPackageVersion.outputs['AzToken'] ]
@@ -128,7 +128,7 @@ extends:
       - job: BuildWin_arm64
         dependsOn: SetPackageVersion
         variables:
-          ob_sdl_tsa_configFile: '$(Build.SourcesDirectory)\DSC\.config\tsaoptions.json'
+          ob_sdl_tsa_configFile: '$(Build.SourcesDirectory)\.config\tsaoptions.json'
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           signSrcPath: '$(Build.SourcesDirectory)\out'
           AzToken: $[ dependencies.SetPackageVersion.outputs['AzToken'] ]
@@ -152,7 +152,7 @@ extends:
           - BuildWin_arm64
         variables:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
-          ob_sdl_tsa_configFile: '$(Build.SourcesDirectory)\DSC\.config\tsaoptions.json'
+          ob_sdl_tsa_configFile: '$(Build.SourcesDirectory)\.config\tsaoptions.json'
           ob_symbolsPublishing_enabled: true
           ob_symbolsPublishing_symbolsFolder: '$(Build.SourcesDirectory)\DSC\bin'
           ob_symbolsPublishing_searchPattern: '**/*.pdb'
