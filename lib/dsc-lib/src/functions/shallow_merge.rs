@@ -31,10 +31,10 @@ impl Function for ShallowMerge {
 
         for item in array {
             let obj = item.as_object().ok_or_else(|| {
-                DscError::Parser(format!(
-                    "shallowMerge requires all array elements to be objects, but found: {}",
-                    item
-                ))
+                DscError::Parser(t!(
+                    "functions.shallowMerge.requiresObjects",
+                    value = item
+                ).to_string())
             })?;
             
             for (key, value) in obj {
