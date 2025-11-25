@@ -89,7 +89,7 @@ $filesForLinuxPackage = @(
     'bicep.dsc.extension.json',
     'dsc',
     'dsc_default.settings.json',
-    'dsc.settings.json'
+    'dsc.settings.json',
     'dscecho',
     'echo.dsc.resource.json',
     'assertion.dsc.resource.json',
@@ -114,7 +114,7 @@ $filesForMacPackage = @(
     'bicep.dsc.extension.json',
     'dsc',
     'dsc_default.settings.json',
-    'dsc.settings.json'
+    'dsc.settings.json',
     'dscecho',
     'echo.dsc.resource.json',
     'assertion.dsc.resource.json',
