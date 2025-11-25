@@ -519,7 +519,6 @@ sumOverflow = "Sum of startIndex and count causes overflow"
 description = "Retrieves the output of a previously executed resource"
 invoked = "reference function"
 keyNotFound = "Invalid resourceId or resource has not executed yet: %{key}"
-cannotUseInCopyMode = "The 'reference()' function cannot be used when processing a 'Copy' loop"
 unavailableInUserFunction = "The 'reference()' function is not available in user-defined functions"
 
 [functions.resourceId]
