@@ -86,7 +86,7 @@ extends:
         steps:
         - checkout: self
         - pwsh: |
-            Write-Verbose -Verbose (Get-ChildItem '$(Build.SourcesDirectory\DSC\.config)')
+            Write-Verbose -Verbose (Get-ChildItem '$(Build.SourcesDirectory)\DSC\.config')
             $packageVersion = $(repoRoot)/build.ps1 -GetPackageVersion
             $vstsCommandString = "vso[task.setvariable variable=Version;isoutput=true]$packageVersion"
             Write-Host ("sending " + $vstsCommandString)
