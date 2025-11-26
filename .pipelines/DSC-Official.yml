@@ -260,7 +260,7 @@ extends:
           artifact: drop_BuildAndSign_SignMsixBundle
           patterns: '*.msixbundle'
         - task: MS-RDX-MRO.windows-store-publish.package-task.store-package@3
-          displayName: Publish to Microsoft Store
+          displayName: Package for Store Submission
           inputs:
             serviceEndpoint: dsc-store
             sbConfigPath: '$(ob_outputDirectory)/store/SBConfig.json'
@@ -612,7 +612,7 @@ extends:
           displayName: 'Publish StoreBroker Package (Stable/LTS)'
           condition: succeeded()
           inputs:
-            serviceEndpoint: 'StoreAppPublish-Stable'
+            serviceEndpoint: dsc-store
             appId: '$(AppID)'
             inputMethod: JsonAndZip
             jsonPath: '$(Pipeline.Workspace)\DesiredStateConfigurationStorePackage.json'
