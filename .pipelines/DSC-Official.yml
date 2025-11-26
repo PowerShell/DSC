@@ -214,7 +214,7 @@ extends:
           displayName: 'Copy MsixBundle to output directory'
 
       - job: PrepareStorePublish
-        dependsOn: SignMsixBundle
+        dependsOn: ['SetPackageVersion', 'SignMsixBundle']
         condition: and(succeeded(), eq(variables.officialBuild, true))
         displayName: Prepare Microsoft Store Publish to output directory
         pool:
@@ -674,18 +674,23 @@ extends:
       jobs:
       - job: PublishToStoreJob
         displayName: Publish to Microsoft Store job
-        variables:
-          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
         pool:
           type: windows
         steps:
+        - download: current
+          artifact: drop_BuildAndSign_SignMsixBundle
+          patterns: '*.msixbundle'
+        - download: current
+          artifact: drop_PrepareStorePublish_PrepareStorePublishJob
+          patterns: '**/*'
+          displayName: Download Store Preparation Artifacts
         - task: MS-RDX-MRO.windows-store-publish.package-task.store-package@3
           displayName: Publish to Microsoft Store
           inputs:
             serviceEndpoint: dsc-store
-            sbConfigPath: '$(ob_outputDirectory)/store/SBConfig.json'
-            sourceFolder: '$(ob_outputDirectory)'
+            sbConfigPath: '$(Pipeline.Workspace)/drop_PrepareStorePublish_PrepareStorePublishJob/store/SBConfig.json'
+            sourceFolder: '$(Pipeline.Workspace)/drop_BuildAndSign_SignMsixBundle'
             contents: '*.msixbundle'
             outSBName: 'DesiredStateConfigurationStorePackage'
-            pdpPath: '$(ob_outputDirectory)/store/PDP/en-US/PDP.xml'
-            pdpMediaPath: '$(ob_outputDirectory)/store/PDP/PDP-Media/en-US'
+            pdpPath: '$(Pipeline.Workspace)/drop_PrepareStorePublish_PrepareStorePublishJob/store/PDP/en-US/PDP.xml'
+            pdpMediaPath: '$(Pipeline.Workspace)/drop_PrepareStorePublish_PrepareStorePublishJob/store/PDP/PDP-Media/en-US'
