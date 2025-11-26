@@ -674,7 +674,7 @@ extends:
       jobs:
       - job: PublishToStoreJob
         displayName: Publish to Microsoft Store job
-        varibles:
+        variables:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
         pool:
           type: windows
