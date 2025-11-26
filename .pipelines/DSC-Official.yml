@@ -221,6 +221,9 @@ extends:
           type: windows
         variables:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+          ob_sdl_sbom_enabled: false
+          ob_signing_setup_enabled: false
+          ob_sdl_codeql_compiled_enabled: false
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
         steps:
         - pwsh: |
@@ -668,12 +671,11 @@ extends:
     - stage: PublishToStore
       dependsOn: ['PrepareStorePublish', 'Release']
       condition: and(succeeded(), eq(variables.officialBuild, true))
-      variables:
-        - name: ob_outputDirectory
-          value: '$(Build.ArtifactStagingDirectory)'
       jobs:
       - job: PublishToStoreJob
         displayName: Publish to Microsoft Store job
+        varibles:
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
         pool:
           type: windows
         steps:
