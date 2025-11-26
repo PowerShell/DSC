@@ -669,7 +669,7 @@ extends:
           condition: succeeded()
 
     - stage: PublishToStore
-      dependsOn: ['PrepareStorePublish', 'Release']
+      dependsOn: ['BuildAndSign', 'Release']
       condition: and(succeeded(), eq(variables.officialBuild, true))
       jobs:
       - job: PublishToStoreJob
