@@ -610,7 +610,7 @@ extends:
 
         - task: MS-RDX-MRO.windows-store-publish.publish-task.store-publish@3
           displayName: 'Publish StoreBroker Package (Stable/LTS)'
-          condition: and(ne('${{ parameters.skipMSIXPublish }}', 'true'), or(eq('$(STABLE)', 'true'), eq('$(LTS)', 'true')))
+          condition: succeeded()
           inputs:
             serviceEndpoint: 'StoreAppPublish-Stable'
             appId: '$(AppID)'
