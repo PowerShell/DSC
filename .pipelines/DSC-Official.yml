@@ -87,6 +87,7 @@ extends:
         steps:
         - checkout: self
         - pwsh: |
+            Write-Verbose -Verbose (Get-ChildItem '$(Build.SourcesDirectory)\DSC\.config')
             $packageVersion = $(repoRoot)/build.ps1 -GetPackageVersion
             $vstsCommandString = "vso[task.setvariable variable=Version;isoutput=true]$packageVersion"
             Write-Host ("sending " + $vstsCommandString)
@@ -212,6 +213,85 @@ extends:
         - pwsh: |
             Copy-Item "$(Build.ArtifactStagingDirectory)/downloads/*.msixbundle" "$(ob_outputDirectory)"
           displayName: 'Copy MsixBundle to output directory'
+
+      - job: PrepareStorePublish
+        dependsOn: ['SetPackageVersion', 'SignMsixBundle']
+        condition: and(succeeded(), eq(variables.officialBuild, true))
+        displayName: Prepare Microsoft Store Publish to output directory
+        pool:
+          type: windows
+        variables:
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+          ob_sdl_sbom_enabled: false
+          ob_signing_setup_enabled: false
+          ob_sdl_codeql_compiled_enabled: false
+          PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+        steps:
+        - pwsh: |
+            $null = New-Item -ItemType Directory -Path "$(ob_outputDirectory)/store" -Force -ErrorAction Stop
+            Copy-Item -Recurse -Path '$(System.DefaultWorkingDirectory)/DSC/.pipelines/store' "$(ob_outputDirectory)/store" -Force -ErrorAction Stop
+
+            $pdpPath = '$(ob_outputDirectory)/store/PDP/en-US/PDP.xml'
+            if (-not (Test-Path -Path $pdpPath)) {
+              throw "PDP path '$pdpPath' does not exist. Cannot update PDP.xml."
+            }
+
+            $sbConfigPath = '$(ob_outputDirectory)/store/SBConfig.json'
+            if (-not (Test-Path -Path $sbConfigPath)) {
+              throw "SBConfig path '$sbConfigPath' does not exist. Cannot update SBConfig.json."
+            }
+
+            $isPreRelease = '$(PackageVersion)' -like '*-*'
+            $pdpContent = Get-Content -Path $pdpPath -Raw
+            $appName = if ($isPreRelease) {
+              'DesiredStateConfiguration-Preview'
+            } else {
+              'DesiredStateConfiguration'
+            }
+            $pdpContent = $pdpContent.Replace('$AppName$', $appName)
+            Set-Content -Path $pdpPath -Value $pdpContent
+            Write-Host "PDP.xml updated successfully with AppName: $appName"
+
+            $sbConfigContent = Get-Content -Path $sbConfigPath -Raw
+            $productId = "Microsoft.$appName"
+            $sbConfigContent = $sbConfigContent.Replace('$ProductID$', $productId)
+            Set-Content -Path $sbConfigPath -Value $sbConfigContent
+            Write-Host "SBConfig.json updated successfully with ProductID: $productId"
+        - download: current
+          artifact: drop_BuildAndSign_SignMsixBundle
+          patterns: '*.msixbundle'
+        - task: MS-RDX-MRO.windows-store-publish.package-task.store-package@3
+          displayName: Package for Store Submission
+          inputs:
+            serviceEndpoint: dsc-store
+            sbConfigPath: '$(ob_outputDirectory)/store/SBConfig.json'
+            sourceFolder: '$(Pipeline.Workspace)/drop_BuildAndSign_SignMsixBundle'
+            contents: '*.msixbundle'
+            outSBName: 'DesiredStateConfigurationStorePackage'
+            pdpPath: '$(ob_outputDirectory)/store/PDP/en-US/PDP.xml'
+            pdpMediaPath: '$(ob_outputDirectory)/store/PDP/PDP-Media/en-US'
+        - pwsh: |
+            Get-Item -Path "$(System.DefaultWorkingDirectory)/SBLog.txt" -ErrorAction SilentlyContinue |
+              Copy-Item -Destination "$(ob_outputDirectory)" -Verbose
+          displayName: Upload Store Failure Log
+          condition: failed()
+        - pwsh: |
+            $submissionPackageDir = "$(System.DefaultWorkingDirectory)/SBOutDir"
+            $jsonFile = "$submissionPackageDir/DesiredStateConfigurationStorePackage.json"
+            $zipFile = "$submissionPackageDir/DesiredStateConfigurationStorePackage.zip"
+
+            if ((Test-Path $jsonFile) -and (Test-Path $zipFile)) {
+              Write-Verbose -Verbose "Uploading StoreBroker Package files:"
+              Write-Verbose -Verbose "JSON File: $jsonFile"
+              Write-Verbose -Verbose "ZIP File: $zipFile"
+
+              Copy-Item -Path $submissionPackageDir -Destination "$(ob_outputDirectory)" -Verbose -Recurse
+            }
+
+            else {
+              Write-Error "Required files not found in $submissionPackageDir"
+            }
+          displayName: 'Upload StoreBroker Package'
 
       - job: BuildLinuxMusl
         dependsOn: SetPackageVersion
@@ -402,8 +482,14 @@ extends:
           artifact: drop_BuildAndSign_SignMsixBundle
           patterns: '*.msixbundle'
 
+        - download: current
+          artifact: drop_BuildAndSign_PrepareStorePublish
+          patterns: |
+            *.zip
+            *.json
+
         - pwsh: |
-            Get-ChildItem "$(Pipeline.Workspace)" -Recurse -Include '*.zip', '*.tar.gz', '*.msixbundle', '*.rpm', '*.deb' | ForEach-Object {
+            Get-ChildItem "$(Pipeline.Workspace)" -Recurse -Include '*.zip', '*.tar.gz', '*.msixbundle', '*.rpm', '*.deb', '*.json' | ForEach-Object {
               Write-Host "Found artifact: $($_.FullName)"
             }
           displayName: List downloaded artifacts
@@ -416,7 +502,7 @@ extends:
 
             Write-Verbose -Verbose "Starting to copy"
 
-            Get-ChildItem "$(Pipeline.Workspace)" -Recurse -Include '*.zip', '*.tar.gz', '*.msixbundle', '*.rpm', '*.deb' | ForEach-Object {
+            Get-ChildItem "$(Pipeline.Workspace)" -Recurse -Include '*.zip', '*.tar.gz', '*.msixbundle', '*.rpm', '*.deb', '*.json' | ForEach-Object {
               Copy-Item -Path $_.FullName -Destination $outputDir -Force -Verbose
             }
 
@@ -496,6 +582,14 @@ extends:
               Write-Verbose -Verbose "GitHub Release version: $githubReleaseVersion"
               Write-Host "##vso[task.setvariable variable=GitHubReleaseVersion]$githubReleaseVersion"
 
+              $appId = if ('$(PackageVersion)' -like '*-*') {
+                '9PCX3HX4HZ0Z'
+              } else {
+                '9NVTPZWRC6KQ'
+              }
+              Write-Verbose -Verbose "App ID for Store submission: $appId"
+              Write-Host "##vso[task.setvariable variable=AppID]$appId"
+
         - task: GitHubRelease@1
           displayName: Create GitHub release
           inputs:
@@ -515,51 +609,18 @@ extends:
             isDraft: true
             isPreRelease: '$(IsPreRelease)'
 
-        # - task: PowerShell@2
-        #   displayName: Update PDP.xml for Store release
-        #   inputs:
-        #     targetType: 'inline'
-        #     script: |
-        #       $pdpPath = '$(System.DefaultWorkingDirectory)/DSC/.pipelines/store/PDP/en-US/PDP.xml'
-        #       if (-not (Test-Path -Path $pdpPath)) {
-        #         throw "PDP path '$pdpPath' does not exist. Cannot update PDP.xml."
-        #       }
-
-        #       $sbConfigPath = '$(System.DefaultWorkingDirectory)/DSC/.pipelines/store/SBConfig.json'
-        #       if (-not (Test-Path -Path $sbConfigPath)) {
-        #         throw "SBConfig path '$sbConfigPath' does not exist. Cannot update SBConfig.json."
-        #       }
-
-        #       $pdpContent = Get-Content -Path $pdpPath -Raw
-        #       $appName = if ($(isPreRelease) -eq 'true') {
-        #         'DesiredStateConfiguration-Preview'
-        #       } else {
-        #         'DesiredStateConfiguration'
-        #       }
-        #       $pdpContent = $pdpContent.Replace('$AppName$', $appName)
-        #       Set-Content -Path $pdpPath -Value $pdpContent
-        #       Write-Host "PDP.xml updated successfully with AppName: $appName"
-
-        #       $sbConfigContent = Get-Content -Path $sbConfigPath -Raw
-        #       $productId = if ($(isPreRelease) -eq 'true') {
-        #         'Microsoft.DesiredStateConfiguration-Preview'
-        #       } else {
-        #         'Microsoft.DesiredStateConfiguration'
-        #       }
-        #       $sbConfigContent = $sbConfigContent.Replace('$ProductID$', $productId)
-        #       Set-Content -Path $sbConfigPath -Value $sbConfigContent
-        #       Write-Host "SBConfig.json updated successfully with ProductID: $productId"
-
-        # - task: MS-RDX-MRO.windows-store-publish.package-task.store-package@3
-        #   displayName: Publish to Microsoft Store
-        #   inputs:
-        #     serviceEndpoint: dsc-store
-        #     sbConfigPath: '$(System.DefaultWorkingDirectory)/DSC/.pipelines/store/SBConfig.json'
-        #     sourceFolder: '$(GitHubReleaseDirectory)'
-        #     contents: '*.msixbundle'
-        #     outSBName: 'DesiredStateConfigurationStorePackage'
-        #     pdpPath: '$(System.DefaultWorkingDirectory)/DSC/.pipelines/store/PDP/en-US/PDP.xml'
-        #     pdpMediaPath: '$(System.DefaultWorkingDirectory)/DSC/.pipelines/store/PDP/PDP-Media/en-US'
+        - task: MS-RDX-MRO.windows-store-publish.publish-task.store-publish@3
+          displayName: 'Publish StoreBroker Package (Stable/LTS)'
+          condition: succeeded()
+          inputs:
+            serviceEndpoint: dsc-store
+            appId: '$(AppID)'
+            inputMethod: JsonAndZip
+            jsonPath: '$(Pipeline.Workspace)\DesiredStateConfigurationStorePackage.json'
+            zipPath: '$(Pipeline.Workspace)\DesiredStateConfigurationStorePackage.zip'
+            numberOfPackagesToKeep: 2
+            jsonZipUpdateMetadata: true
+            targetPublishMode: 'Manual'
 
     - stage: ReleaseUniversalPackage
       dependsOn: ['BuildAndSign','Release']
@@ -669,4 +730,3 @@ extends:
               Write-Verbose -Verbose "Universal Package version: $packageVersion"
               az artifacts universal publish --organization https://dev.azure.com/PowerShell/ --project PowerShell --feed PowerShell-Universal --name microsoft.dsc-macos --version $packageVersion --description "Microsoft Desired State Configuration (DSC) - Universal Package" --path "$(MacOSDirectory)" --scope project --verbose
           condition: succeeded()
-
