@@ -729,30 +729,3 @@ extends:
               Write-Verbose -Verbose "Universal Package version: $packageVersion"
               az artifacts universal publish --organization https://dev.azure.com/PowerShell/ --project PowerShell --feed PowerShell-Universal --name microsoft.dsc-macos --version $packageVersion --description "Microsoft Desired State Configuration (DSC) - Universal Package" --path "$(MacOSDirectory)" --scope project --verbose
           condition: succeeded()
-
-    - stage: PublishToStore
-      dependsOn: ['BuildAndSign', 'Release']
-      condition: and(succeeded(), eq(variables.officialBuild, true))
-      jobs:
-      - job: PublishToStoreJob
-        displayName: Publish to Microsoft Store job
-        pool:
-          type: windows
-        steps:
-        - download: current
-          artifact: drop_BuildAndSign_SignMsixBundle
-          patterns: '*.msixbundle'
-        - download: current
-          artifact: drop_PrepareStorePublish_PrepareStorePublishJob
-          patterns: '**/*'
-          displayName: Download Store Preparation Artifacts
-        - task: MS-RDX-MRO.windows-store-publish.package-task.store-pacakge@3
-          displayName: Publish to Microsoft Store
-          inputs:
-            serviceEndpoint: dsc-store
-            sbConfigPath: '$(Pipeline.Workspace)/drop_PrepareStorePublish_PrepareStorePublishJob/store/SBConfig.json'
-            sourceFolder: '$(Pipeline.Workspace)/drop_BuildAndSign_SignMsixBundle'
-            contents: '*.msixbundle'
-            outSBName: 'DesiredStateConfigurationStorePackage'
-            pdpPath: '$(Pipeline.Workspace)/drop_PrepareStorePublish_PrepareStorePublishJob/store/PDP/en-US/PDP.xml'
-            pdpMediaPath: '$(Pipeline.Workspace)/drop_PrepareStorePublish_PrepareStorePublishJob/store/PDP/PDP-Media/en-US'
