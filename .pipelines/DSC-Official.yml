@@ -183,7 +183,7 @@ extends:
           condition: succeeded()
 
       - job: SignMsixBundle
-        condition: and(succeeded(), eq(variables.officialBuild, true))
+        condition: and(succeeded(), eq(variables.officialBuild, false))
         dependsOn: CreateMsixBundle
         variables:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
@@ -201,14 +201,14 @@ extends:
               **/*.msixbundle
             targetPath: '$(Build.ArtifactStagingDirectory)/downloads'
           displayName: Download MsixBundle
-        - task: onebranch.pipeline.signing@1
-          displayName: Sign MsixBundle
-          condition: succeeded()
-          inputs:
-            command: 'sign'
-            signing_profile: 'Dynamic-WINMSAPP1ST'
-            files_to_sign: '*.msixbundle'
-            search_root: '$(Build.ArtifactStagingDirectory)/downloads'
+        # - task: onebranch.pipeline.signing@1
+        #   displayName: Sign MsixBundle
+        #   condition: succeeded()
+        #   inputs:
+        #     command: 'sign'
+        #     signing_profile: 'Dynamic-WINMSAPP1ST'
+        #     files_to_sign: '*.msixbundle'
+        #     search_root: '$(Build.ArtifactStagingDirectory)/downloads'
         - pwsh: |
             Copy-Item "$(Build.ArtifactStagingDirectory)/downloads/*.msixbundle" "$(ob_outputDirectory)"
           displayName: 'Copy MsixBundle to output directory'
