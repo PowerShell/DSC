@@ -78,7 +78,7 @@ extends:
           vmImage: windows-latest
         variables:
           repoRoot: $(Build.SourcesDirectory)\DSC
-          ob_sdl_tsa_configFile: $(Build.Repository.LocalPath)\.config\tsaoptions.json
+          ob_sdl_tsa_configFile: '$(System.DefaultWorkingDirectory)\.config\tsaoptions.json'
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           ob_sdl_sbom_enabled: false
           ob_signing_setup_enabled: false
@@ -108,7 +108,7 @@ extends:
       - job: BuildWin_x64
         dependsOn: SetPackageVersion
         variables:
-          ob_sdl_tsa_configFile: '$(Build.Repository.LocalPath)\.config\tsaoptions.json'
+          ob_sdl_tsa_configFile: '$(System.DefaultWorkingDirectory)\.config\tsaoptions.json'
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           signSrcPath: '$(Build.SourcesDirectory)\out'
           AzToken: $[ dependencies.SetPackageVersion.outputs['AzToken'] ]
@@ -129,7 +129,7 @@ extends:
       - job: BuildWin_arm64
         dependsOn: SetPackageVersion
         variables:
-          ob_sdl_tsa_configFile: '$(Build.Repository.LocalPath)\.config\tsaoptions.json'
+          ob_sdl_tsa_configFile: '$(System.DefaultWorkingDirectory)\.config\tsaoptions.json'
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           signSrcPath: '$(Build.SourcesDirectory)\out'
           AzToken: $[ dependencies.SetPackageVersion.outputs['AzToken'] ]
@@ -153,7 +153,7 @@ extends:
           - BuildWin_arm64
         variables:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
-          ob_sdl_tsa_configFile: '$(Build.Repository.LocalPath)\.config\tsaoptions.json'
+          ob_sdl_tsa_configFile: '$(System.DefaultWorkingDirectory)\.config\tsaoptions.json'
           ob_symbolsPublishing_enabled: true
           ob_symbolsPublishing_symbolsFolder: '$(Build.SourcesDirectory)\DSC\bin'
           ob_symbolsPublishing_searchPattern: '**/*.pdb'
@@ -227,15 +227,15 @@ extends:
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
         steps:
         - pwsh: |
-            $null = New-Item -ItemType Directory -Path "$(ob_outputDirectory)/store" -Force -ErrorAction Stop
-            Copy-Item -Recurse -Path '$(System.DefaultWorkingDirectory)/DSC/.pipelines/store' "$(ob_outputDirectory)/store" -Force -ErrorAction Stop
+            $null = New-Item -ItemType Directory -Path "$(ob_outputDirectory)\store" -Force -ErrorAction Stop
+            Copy-Item -Recurse -Path '$(System.DefaultWorkingDirectory)\.pipelines\store' "$(ob_outputDirectory)\store" -Force -ErrorAction Stop
 
-            $pdpPath = '$(ob_outputDirectory)/store/PDP/en-US/PDP.xml'
+            $pdpPath = '$(ob_outputDirectory)\store\PDP\en-US\PDP.xml'
             if (-not (Test-Path -Path $pdpPath)) {
               throw "PDP path '$pdpPath' does not exist. Cannot update PDP.xml."
             }
 
-            $sbConfigPath = '$(ob_outputDirectory)/store/SBConfig.json'
+            $sbConfigPath = '$(ob_outputDirectory)\store\SBConfig.json'
             if (-not (Test-Path -Path $sbConfigPath)) {
               throw "SBConfig path '$sbConfigPath' does not exist. Cannot update SBConfig.json."
             }
