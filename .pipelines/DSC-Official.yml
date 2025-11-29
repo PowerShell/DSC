@@ -228,7 +228,7 @@ extends:
         steps:
         - pwsh: |
             $null = New-Item -ItemType Directory -Path "$(ob_outputDirectory)\store" -Force -ErrorAction Stop
-            Copy-Item -Recurse -Path '$(System.DefaultWorkingDirectory)\.pipelines\store' "$(ob_outputDirectory)\store" -Force -ErrorAction Stop
+            Copy-Item -Recurse -Path '$(System.DefaultWorkingDirectory)\.pipelines\store\*' "$(ob_outputDirectory)\store" -Force -ErrorAction Stop
             Write-Verbose -Verbose (Get-ChildItem "$(ob_outputDirectory)" -Recurse | Out-String)
 
             $pdpPath = '$(ob_outputDirectory)\store\PDP\en-US\PDP.xml'
