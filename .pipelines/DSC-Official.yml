@@ -267,7 +267,7 @@ extends:
             contents: '*.msixbundle'
             outSBName: 'DesiredStateConfigurationStorePackage'
             pdpPath: '$(System.DefaultWorkingDirectory)\.pipelines\Store\PDP'
-            pdpMediaPath: '$(System.DefaultWorkingDirectory)\.pipelines\Store\PDP\PDP-Media'
+            pdpMediaPath: '$(System.DefaultWorkingDirectory)\.pipelines\Store\PDP-Media'
         - pwsh: |
             Get-Item -Path "$(System.DefaultWorkingDirectory)/SBLog.txt" -ErrorAction SilentlyContinue |
               Copy-Item -Destination "$(ob_outputDirectory)" -Verbose
