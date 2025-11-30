@@ -262,12 +262,12 @@ extends:
           displayName: Package for Store Submission
           inputs:
             serviceEndpoint: dsc-store
-            sbConfigPath: '$(System.DefaultWorkingDirectory)\.pipelines\store\SBConfig.json'
+            sbConfigPath: '$(System.DefaultWorkingDirectory)\.pipelines\Store\SBConfig.json'
             sourceFolder: '$(Pipeline.Workspace)\drop_BuildAndSign_SignMsixBundle'
             contents: '*.msixbundle'
             outSBName: 'DesiredStateConfigurationStorePackage'
-            pdpPath: '$(System.DefaultWorkingDirectory)\.pipelines\store\PDP\en-US\PDP.xml'
-            pdpMediaPath: '$(System.DefaultWorkingDirectory)\.pipelines\store\PDP\PDP-Media\en-US'
+            pdpPath: '$(System.DefaultWorkingDirectory)\.pipelines\Store\PDP'
+            pdpMediaPath: '$(System.DefaultWorkingDirectory)\.pipelines\Store\PDP\PDP-Media'
         - pwsh: |
             Get-Item -Path "$(System.DefaultWorkingDirectory)/SBLog.txt" -ErrorAction SilentlyContinue |
               Copy-Item -Destination "$(ob_outputDirectory)" -Verbose
