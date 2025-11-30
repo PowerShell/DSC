@@ -227,16 +227,12 @@ extends:
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
         steps:
         - pwsh: |
-            $null = New-Item -ItemType Directory -Path "$(ob_outputDirectory)\store" -Force -ErrorAction Stop
-            Copy-Item -Recurse -Path '$(System.DefaultWorkingDirectory)\.pipelines\store\*' "$(ob_outputDirectory)\store" -Force -ErrorAction Stop
-            Write-Verbose -Verbose (Get-ChildItem "$(ob_outputDirectory)" -Recurse | Out-String)
-
-            $pdpPath = '$(ob_outputDirectory)\store\PDP\en-US\PDP.xml'
+            $pdpPath = '$(System.DefaultWorkingDirectory)\DSC\.pipelines\store\PDP\en-US\PDP.xml'
             if (-not (Test-Path -Path $pdpPath)) {
               throw "PDP path '$pdpPath' does not exist. Cannot update PDP.xml."
             }
 
-            $sbConfigPath = '$(ob_outputDirectory)\store\SBConfig.json'
+            $sbConfigPath = '$(System.DefaultWorkingDirectory)\DSC\.pipelines\store\SBConfig.json'
             if (-not (Test-Path -Path $sbConfigPath)) {
               throw "SBConfig path '$sbConfigPath' does not exist. Cannot update SBConfig.json."
             }
@@ -257,6 +253,7 @@ extends:
             $sbConfigContent = $sbConfigContent.Replace('$ProductID$', $productId)
             Set-Content -Path $sbConfigPath -Value $sbConfigContent
             Write-Host "SBConfig.json updated successfully with ProductID: $productId"
+          displayName: 'Prepare Store Publish Files'
         - download: current
           artifact: drop_BuildAndSign_SignMsixBundle
           patterns: '*.msixbundle'
@@ -264,12 +261,12 @@ extends:
           displayName: Package for Store Submission
           inputs:
             serviceEndpoint: dsc-store
-            sbConfigPath: '$(ob_outputDirectory)\store\SBConfig.json'
+            sbConfigPath: '$(System.DefaultWorkingDirectory)\DSC\.pipelines\store\SBConfig.json'
             sourceFolder: '$(Pipeline.Workspace)\drop_BuildAndSign_SignMsixBundle'
             contents: '*.msixbundle'
             outSBName: 'DesiredStateConfigurationStorePackage'
-            pdpPath: '$(ob_outputDirectory)\store\PDP\en-US\PDP.xml'
-            pdpMediaPath: '$(ob_outputDirectory)\store\PDP\PDP-Media\en-US'
+            pdpPath: '$(System.DefaultWorkingDirectory)\DSC\.pipelines\store\PDP\en-US\PDP.xml'
+            pdpMediaPath: '$(System.DefaultWorkingDirectory)\DSC\.pipelines\store\PDP\PDP-Media\en-US'
         - pwsh: |
             Get-Item -Path "$(System.DefaultWorkingDirectory)/SBLog.txt" -ErrorAction SilentlyContinue |
               Copy-Item -Destination "$(ob_outputDirectory)" -Verbose
