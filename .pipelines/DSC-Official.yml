@@ -158,7 +158,7 @@ extends:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           ob_sdl_tsa_configFile: '$(System.DefaultWorkingDirectory)\.config\tsaoptions.json'
           ob_symbolsPublishing_enabled: true
-          ob_symbolsPublishing_symbolsFolder: '$(System.DefaultWorkingDirectory)\bin'
+          ob_symbolsPublishing_symbolsFolder: '$(System.DefaultWorkingDirectory)\DSC\bin'
           ob_symbolsPublishing_searchPattern: '**/*.pdb'
           ob_symbolsPublishing_indexSources: true
           ob_sdl_sbom_enabled: false
@@ -302,7 +302,7 @@ extends:
           AzToken: $[ dependencies.SetPackageVersion.outputs['AzToken'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           ob_linuxSymbolsPublishing_enabled: true
-          ob_linuxSymbolsPublishing_symbolsFolder: '$(System.DefaultWorkingDirectory)/bin'
+          ob_linuxSymbolsPublishing_symbolsFolder: '$(System.DefaultWorkingDirectory)/DSC/bin'
           ob_linuxSymbolsPublishing_searchPattern: '**/*.dbg'
         displayName: Linux-x64-musl
         pool:
@@ -340,7 +340,7 @@ extends:
           AzToken: $[ dependencies.SetPackageVersion.outputs['AzToken'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           ob_linuxSymbolsPublishing_enabled: true
-          ob_linuxSymbolsPublishing_symbolsFolder: '$(System.DefaultWorkingDirectory)/bin'
+          ob_linuxSymbolsPublishing_symbolsFolder: '$(System.DefaultWorkingDirectory)/DSC/bin'
           ob_linuxSymbolsPublishing_searchPattern: '**/*.dbg'
         displayName: Linux-ARM64-musl
         pool:
