@@ -80,7 +80,7 @@ extends:
           type: windows
           vmImage: windows-latest
         variables:
-          repoRoot: $(System.DefaultWorkingDirectory)
+          repoRoot: '$(System.DefaultWorkingDirectory)\DSC'
           ob_sdl_tsa_configFile: '$(System.DefaultWorkingDirectory)\.config\tsaoptions.json'
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           ob_sdl_sbom_enabled: false
