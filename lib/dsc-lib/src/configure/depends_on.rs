@@ -2,11 +2,12 @@
 // Licensed under the MIT License.
 
 use crate::configure::config_doc::Resource;
-use crate::configure::Configuration;
+use crate::configure::{Configuration, IntOrExpression, ProcessMode, invoke_property_expressions};
 use crate::DscError;
 use crate::parser::Statement;
 
 use rust_i18n::t;
+use serde_json::Value;
 use super::context::Context;
 use tracing::debug;
 
@@ -23,7 +24,7 @@ use tracing::debug;
 /// # Errors
 ///
 /// * `DscError::Validation` - The configuration is invalid
-pub fn get_resource_invocation_order(config: &Configuration, parser: &mut Statement, context: &Context) -> Result<Vec<Resource>, DscError> {
+pub fn get_resource_invocation_order(config: &Configuration, parser: &mut Statement, context: &mut Context) -> Result<Vec<Resource>, DscError> {
     debug!("Getting resource invocation order");
     let mut order: Vec<Resource> = Vec::new();
     for resource in &config.resources {
@@ -54,7 +55,7 @@ pub fn get_resource_invocation_order(config: &Configuration, parser: &mut Statem
                     continue;
                 }
                 // add the dependency to the order
-                order.push(dependency_resource.clone());
+                unroll_and_push(&mut order, dependency_resource, parser, context)?;
                 dependency_already_in_order = false;
             }
         }
@@ -84,11 +85,50 @@ pub fn get_resource_invocation_order(config: &Configuration, parser: &mut Statem
             continue;
         }
 
-        order.push(resource.clone());
+        unroll_and_push(&mut order, resource, parser, context)?;
     }
 
     debug!("{}: {order:?}", t!("configure.dependsOn.invocationOrder"));
     Ok(order)
+}
+
+fn unroll_and_push(order: &mut Vec<Resource>, resource: &Resource, parser: &mut Statement, context: &mut Context) -> Result<(), DscError> {
+  // if the resource contains `Copy`, unroll it
+  if let Some(copy) = &resource.copy {
+      debug!("{}", t!("configure.mod.unrollingCopy", name = &copy.name, count = copy.count));
+      context.process_mode = ProcessMode::Copy;
+      context.copy_current_loop_name.clone_from(&copy.name);
+      let mut copy_resources = Vec::<Resource>::new();
+      let count: i64 = match &copy.count {
+          IntOrExpression::Int(i) => *i,
+          IntOrExpression::Expression(e) => {
+              let Value::Number(n) = parser.parse_and_execute(e, context)? else {
+                  return Err(DscError::Parser(t!("configure.mod.copyCountResultNotInteger", expression = e).to_string()))
+              };
+              n.as_i64().ok_or_else(|| DscError::Parser(t!("configure.mod.copyCountResultNotInteger", expression = e).to_string()))?
+          },
+      };
+      for i in 0..count {
+          context.copy.insert(copy.name.clone(), i);
+          let mut new_resource = resource.clone();
+          let Value::String(new_name) = parser.parse_and_execute(&resource.name, context)? else {
+              return Err(DscError::Parser(t!("configure.mod.copyNameResultNotString").to_string()))
+          };
+          new_resource.name = new_name.to_string();
+
+          if let Some(properties) = &resource.properties {
+              new_resource.properties = invoke_property_expressions(parser, context, Some(properties))?;
+          }
+
+          new_resource.copy = None;
+          copy_resources.push(new_resource);
+      }
+      context.process_mode = ProcessMode::Normal;
+      order.extend(copy_resources.clone());
+  } else {
+      order.push(resource.clone());
+  }
+  Ok(())
 }
 
 fn get_type_and_name(statement: &str) -> Result<(&str, String), DscError> {
@@ -122,7 +162,8 @@ mod tests {
 
         let config: Configuration = serde_yaml::from_str(config_yaml).unwrap();
         let mut parser = parser::Statement::new().unwrap();
-        let order = get_resource_invocation_order(&config, &mut parser, &Context::new()).unwrap();
+        let mut context = Context::new();
+        let order = get_resource_invocation_order(&config, &mut parser, &mut context).unwrap();
         assert_eq!(order[0].name, "First");
         assert_eq!(order[1].name, "Second");
     }
@@ -144,7 +185,8 @@ mod tests {
 
         let config: Configuration = serde_yaml::from_str(config_yaml).unwrap();
         let mut parser = parser::Statement::new().unwrap();
-        let order = get_resource_invocation_order(&config, &mut parser, &Context::new());
+        let mut context = Context::new();
+        let order = get_resource_invocation_order(&config, &mut parser, &mut context);
         assert!(order.is_err());
     }
 
@@ -161,7 +203,8 @@ mod tests {
 
         let config: Configuration = serde_yaml::from_str(config_yaml).unwrap();
         let mut parser = parser::Statement::new().unwrap();
-        let order = get_resource_invocation_order(&config, &mut parser, &Context::new());
+        let mut context = Context::new();
+        let order = get_resource_invocation_order(&config, &mut parser, &mut context);
         assert!(order.is_err());
     }
 
@@ -184,7 +227,8 @@ mod tests {
 
         let config: Configuration = serde_yaml::from_str(config_yaml).unwrap();
         let mut parser = parser::Statement::new().unwrap();
-        let order = get_resource_invocation_order(&config, &mut parser, &Context::new()).unwrap();
+        let mut context = Context::new();
+        let order = get_resource_invocation_order(&config, &mut parser, &mut context).unwrap();
         assert_eq!(order[0].name, "First");
         assert_eq!(order[1].name, "Second");
         assert_eq!(order[2].name, "Third");
@@ -207,7 +251,8 @@ mod tests {
 
         let config: Configuration = serde_yaml::from_str(config_yaml).unwrap();
         let mut parser = parser::Statement::new().unwrap();
-        let order = get_resource_invocation_order(&config, &mut parser, &Context::new());
+        let mut context = Context::new();
+        let order = get_resource_invocation_order(&config, &mut parser, &mut context);
         assert!(order.is_err());
     }
 
@@ -229,7 +274,8 @@ mod tests {
 
         let config: Configuration = serde_yaml::from_str(config_yaml).unwrap();
         let mut parser = parser::Statement::new().unwrap();
-        let order = get_resource_invocation_order(&config, &mut parser, &Context::new()).unwrap();
+        let mut context = Context::new();
+        let order = get_resource_invocation_order(&config, &mut parser, &mut context).unwrap();
         assert_eq!(order[0].name, "First");
         assert_eq!(order[1].name, "Second");
         assert_eq!(order[2].name, "Third");
@@ -257,7 +303,8 @@ mod tests {
 
         let config: Configuration = serde_yaml::from_str(config_yaml).unwrap();
         let mut parser = parser::Statement::new().unwrap();
-        let order = get_resource_invocation_order(&config, &mut parser, &Context::new());
+        let mut context = Context::new();
+        let order = get_resource_invocation_order(&config, &mut parser, &mut context);
         assert!(order.is_err());
     }
 
@@ -285,7 +332,8 @@ mod tests {
 
         let config: Configuration = serde_yaml::from_str(config_yaml).unwrap();
         let mut parser = parser::Statement::new().unwrap();
-        let order = get_resource_invocation_order(&config, &mut parser, &Context::new()).unwrap();
+        let mut context = Context::new();
+        let order = get_resource_invocation_order(&config, &mut parser, &mut context).unwrap();
         assert_eq!(order[0].name, "First");
         assert_eq!(order[1].name, "Second");
         assert_eq!(order[2].name, "Third");
