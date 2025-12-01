@@ -20,12 +20,12 @@ The DSC project is built using Rust and PowerShell. The build system automatical
 ### Required
 
 1. **PowerShell**: Version 7.2 or later (cross-platform)
-   - Download from: https://github.com/PowerShell/PowerShell
+   - Download from: <https://github.com/PowerShell/PowerShell>
    - The build script is invoked with `pwsh`
 
 2. **Rust**: Latest stable version
    - The build script can install/update Rust automatically
-   - Manual installation: https://rustup.rs/
+   - Manual installation: <https://rustup.rs/>
 
 ### Automatically Installed by Build Script
 
@@ -39,14 +39,17 @@ The `build.ps1` script automatically installs or verifies the following dependen
 ### Platform-Specific Requirements
 
 #### Windows
+
 - Visual Studio 2019 or later with C++ build tools (automatically checked)
 - MakeAppx.exe (for creating MSIX packages)
 
 #### Linux
+
 - GCC or Clang
 - Standard development tools (make, pkg-config)
 
 #### macOS
+
 - Xcode Command Line Tools
 
 ## Quick Start
@@ -144,8 +147,9 @@ Build for a specific architecture:
 ### Build Artifacts
 
 After a successful build, artifacts are located in:
-- **bin/**: Compiled binaries and executables
-- **target/**: Rust build artifacts (debug or release)
+
+- `bin/`: Compiled binaries and executables
+- `target/`: Rust build artifacts (debug or release)
 
 ## Running Tests
 
@@ -344,6 +348,7 @@ To simulate the CI workflow locally:
 ### Winget Workflow: winget.yml
 
 The `winget.yml` workflow publishes releases to Windows Package Manager (WinGet):
+
 - Triggered on release publication or manual workflow dispatch
 - Only processes stable releases (not pre-releases)
 - Creates WinGet package submission
@@ -355,6 +360,7 @@ The `winget.yml` workflow publishes releases to Windows Package Manager (WinGet)
 #### Rust Not Found
 
 If Rust is not installed:
+
 ```powershell
 # The build script will attempt to install Rust automatically
 # Or manually install from: https://rustup.rs/
@@ -363,6 +369,7 @@ If Rust is not installed:
 #### Build Fails on Windows
 
 Ensure Visual Studio C++ build tools are installed:
+
 ```powershell
 # The build script checks and provides guidance
 ./build.ps1 -Verbose
@@ -371,6 +378,7 @@ Ensure Visual Studio C++ build tools are installed:
 #### Tests Fail
 
 Check that the build completed successfully:
+
 ```powershell
 # Ensure clean build before testing
 ./build.ps1 -Clean
@@ -380,6 +388,7 @@ Check that the build completed successfully:
 #### Node.js or tree-sitter Missing
 
 The build script automatically installs these. If issues persist:
+
 ```powershell
 # Re-run with verbose output
 ./build.ps1 -Verbose
@@ -414,6 +423,7 @@ The build script automatically installs these. If issues persist:
 ### Verbose Output
 
 For detailed build information:
+
 ```powershell
 ./build.ps1 -Verbose
 ```
@@ -421,7 +431,7 @@ For detailed build information:
 ### Getting Help
 
 - Review error messages from the build script
-- Check GitHub Issues: https://github.com/PowerShell/DSC/issues
+- Check GitHub Issues: <https://github.com/PowerShell/DSC/issues>
 - See CONTRIBUTING.md for contribution guidelines
 
 ## Validating Changes
@@ -444,6 +454,7 @@ Before submitting a pull request, validate your changes with the following comma
 ```
 
 This ensures your changes:
+
 - Build successfully with optimizations
 - Pass all linting checks
 - Pass all tests
@@ -456,4 +467,5 @@ This ensures your changes:
 - **Contributing Guide**: [CONTRIBUTING.md](CONTRIBUTING.md)
 - **Documentation**: [docs/](docs/)
 - **Build Helper Module**: [build.helpers.psm1](build.helpers.psm1)
-- **Legacy Build Script**: [packaging.ps1](packaging.ps1) (deprecated, use `build.ps1`)
+- **Legacy Build Script**: [packaging.ps1](packaging.ps1) - legacy packaging script, retained for
+  release packaging and certain package types (`rpm`, `deb`).
