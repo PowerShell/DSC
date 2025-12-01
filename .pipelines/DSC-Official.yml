@@ -68,6 +68,7 @@ extends:
           enabled: true
         apiscan:
           enabled: false
+        tsaOptionsFile: .config\tsaoptions.json
 
     stages:
     - stage: BuildAndSign
