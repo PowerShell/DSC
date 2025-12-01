@@ -486,6 +486,7 @@ extends:
 
         - download: current
           artifact: drop_BuildAndSign_PrepareStorePublish
+          condition: and(succeeded(), eq( variables.PublishToStore, true ))
           patterns: |
             *.zip
             *.json
