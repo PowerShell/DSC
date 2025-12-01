@@ -614,7 +614,7 @@ extends:
 
         - task: MS-RDX-MRO.windows-store-publish.publish-task.store-publish@3
           displayName: 'Publish StoreBroker Package (Stable/LTS)'
-          condition: succeeded()
+          condition: and(succeeded(), eq( variables.PublishToStore, true ), eq( variables.officialBuild, true ))
           inputs:
             serviceEndpoint: dsc-store
             appId: '$(AppID)'
