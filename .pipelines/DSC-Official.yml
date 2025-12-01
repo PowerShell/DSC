@@ -176,7 +176,7 @@ extends:
           artifact: drop_BuildAndSign_BuildWin_arm64
           patterns: '*.msix'
         - pwsh: |
-            Set-Location "$(System.DefaultWorkingDirectory)"
+            Set-Location "$(System.DefaultWorkingDirectory)\DSC"
             $null = New-Item -ItemType Directory -Path "./bin/msix" -Force -ErrorAction Ignore
             Copy-Item "$(Pipeline.Workspace)/drop_BuildAndSign_BuildWin_x64/*.msix" ./bin/msix -Verbose
             Copy-Item "$(Pipeline.Workspace)/drop_BuildAndSign_BuildWin_arm64/*.msix" ./bin/msix -Verbose
