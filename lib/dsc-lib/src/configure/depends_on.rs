@@ -124,7 +124,7 @@ fn unroll_and_push(order: &mut Vec<Resource>, resource: &Resource, parser: &mut 
           copy_resources.push(new_resource);
       }
       context.process_mode = ProcessMode::Normal;
-      order.extend(copy_resources.clone());
+      order.extend(copy_resources);
   } else {
       order.push(resource.clone());
   }
