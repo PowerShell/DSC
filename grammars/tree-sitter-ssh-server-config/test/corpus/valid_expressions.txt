@@ -277,7 +277,7 @@ Subsystem	sftp	sftp-server.exe -f LOCAL0 -l DEBUG3
   (keyword
     (alphanumeric)
     (arguments
-    (string)
+      (string)
       (string)
       (string)
       (string)
@@ -412,12 +412,12 @@ passwordauthentication no
   (match
     (criteria
       (alpha)
-          (string)
-          (string))
-        (criteria
-          (alpha)
-          (string))
-        (keyword
-          (alphanumeric)
-          (arguments
-            (boolean)))))
+        (string)
+        (string))
+    (criteria
+      (alpha)
+        (string))
+    (keyword
+      (alphanumeric)
+        (arguments
+          (boolean)))))
