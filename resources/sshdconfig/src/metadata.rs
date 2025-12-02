@@ -1,8 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-// keywords that can have multiple comma-separated arguments per line but cannot be repeated over multiple lines,
-// as subsequent entries are ignored, should be represented as arrays
+// note that it is possible for a keyword to be in one, neither, or both of the multi-arg and repeatable lists below.
+
+// keywords that can have multiple comma-separated arguments per line and should be represented as arrays.
 pub const MULTI_ARG_KEYWORDS: [&str; 22] = [
     "acceptenv",
     "allowgroups",
@@ -29,7 +30,6 @@ pub const MULTI_ARG_KEYWORDS: [&str; 22] = [
 ];
 
 // keywords that can be repeated over multiple lines and should be represented as arrays.
-// note that some keywords can be both multi-arg and repeatable
 pub const REPEATABLE_KEYWORDS: [&str; 12] = [
     "acceptenv",
     "allowgroups",

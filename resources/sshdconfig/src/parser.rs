@@ -439,7 +439,6 @@ match user bob
     allowtcpforwarding yes
 "#;
         let result: Map<String, Value> = parse_text_to_map(input).unwrap();
-        println!("{:#?}", result);
         let match_array = result.get("match").unwrap().as_array().unwrap();
         assert_eq!(match_array.len(), 1);
         let match_obj = match_array[0].as_object().unwrap();
@@ -484,7 +483,6 @@ match user alice,bob
         let match_obj = match_array[0].as_object().unwrap();
         let criteria = match_obj.get("criteria").unwrap().as_object().unwrap();
         let user_array = criteria.get("user").unwrap().as_array().unwrap();
-        println!("{:#?}", user_array);
         assert_eq!(user_array.len(), 2);
         assert_eq!(user_array[0], Value::String("alice".to_string()));
         assert_eq!(user_array[1], Value::String("bob".to_string()));
