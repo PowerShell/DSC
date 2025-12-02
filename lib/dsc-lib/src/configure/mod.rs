@@ -329,7 +329,19 @@ impl Configurator {
     }
 
     fn get_properties(&mut self, resource: &Resource, resource_kind: &Kind) -> Result<Option<Map<String, Value>>, DscError> {
-        match resource_kind {
+        // Restore copy loop context from resource tags if present
+        if let Some(tags) = &resource.tags {
+            for (key, value) in tags {
+                if let Some(loop_name) = key.strip_prefix("__dsc_copy_loop_") {
+                    if let Some(index) = value.as_i64() {
+                        self.context.copy.insert(loop_name.to_string(), index);
+                        self.context.copy_current_loop_name = loop_name.to_string();
+                    }
+                }
+            }
+        }
+
+        let result = match resource_kind {
             Kind::Group => {
                 // if Group resource, we leave it to the resource to handle expressions
                 Ok(resource.properties.clone())
@@ -337,7 +349,13 @@ impl Configurator {
             _ => {
                 Ok(self.invoke_property_expressions(resource.properties.as_ref())?)
             },
-        }
+        };
+
+        // Clear copy context after property evaluation
+        self.context.copy.clear();
+        self.context.copy_current_loop_name.clear();
+
+        result
     }
 
     /// Invoke the get operation on a resource.
@@ -1039,8 +1057,17 @@ impl Configurator {
                     };
                     new_resource.name = new_name.to_string();
 
-                    if let Some(properties) = &resource.properties {
-                        new_resource.properties = self.invoke_property_expressions(Some(properties))?;
+                    // Keep properties as-is during copy unrolling
+                    // They contain expressions that will be evaluated during resource execution
+                    // This allows reference() and copyIndex() to work correctly
+                    new_resource.properties = resource.properties.clone();
+
+                    // Store copy loop metadata in tags for later retrieval during execution
+                    if new_resource.tags.is_none() {
+                        new_resource.tags = Some(Map::new());
+                    }
+                    if let Some(tags) = &mut new_resource.tags {
+                        tags.insert(format!("__dsc_copy_loop_{}", copy.name), Value::Number(i.into()));
                     }
 
                     new_resource.copy = None;
