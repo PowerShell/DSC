@@ -66,6 +66,7 @@ pub mod resource_id;
 pub mod secret;
 pub mod skip;
 pub mod starts_with;
+pub mod stdout;
 pub mod string;
 pub mod take;
 pub mod sub;
@@ -85,6 +86,7 @@ pub mod uri_component_to_string;
 pub mod user_function;
 pub mod utc_now;
 pub mod variables;
+pub mod try_which;
 
 /// The kind of argument that a function accepts.
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Serialize, JsonSchema)]
@@ -201,6 +203,7 @@ impl FunctionDispatcher {
             Box::new(secret::Secret{}),
             Box::new(skip::Skip{}),
             Box::new(starts_with::StartsWith{}),
+            Box::new(stdout::Stdout{}),
             Box::new(string::StringFn{}),
             Box::new(sub::Sub{}),
             Box::new(take::Take{}),
@@ -219,6 +222,7 @@ impl FunctionDispatcher {
             Box::new(uri_component_to_string::UriComponentToString{}),
             Box::new(utc_now::UtcNow{}),
             Box::new(variables::Variables{}),
+            Box::new(try_which::TryWhich{}),
         ];
         for function in function_list {
             functions.insert(function.get_metadata().name.clone(), function);

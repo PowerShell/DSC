@@ -370,3 +370,16 @@ User Function with nested function
               (function
                 (functionName)))
             (boolean)))))
+
+=====
+User Function with namespace prefixed by underscores
+=====
+[__bicep.myFunction('param1')]
+---
+
+    (statement
+      (expression
+        (function
+          (functionName)
+          (arguments
+            (string)))))

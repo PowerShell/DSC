@@ -90,7 +90,7 @@ For more information, see [Contributor License Agreements][01].
 Building the DSC project requires PowerShell 7.2 or later to execute the build script. For more
 information about installing PowerShell, see [Install PowerShell on Windows, Linux, and macOS][02].
 
-DSC requires other tools for building the project. The build script (`build.new.ps1`) installs the
+DSC requires other tools for building the project. The build script (`build.ps1`) installs the
 tools in the following table if they aren't already installed on your system:
 
 | Tool                                                    |    Version    |       Platforms       | Projects                                             |
@@ -118,16 +118,16 @@ tools in the following table if they aren't already installed on your system:
 
 ```powershell
 # Build the project
-./build.new.ps1
+./build.ps1
 
 # Build with linting (recommended)
-./build.new.ps1 -Clippy
+./build.ps1 -Clippy
 
 # Build and run all tests
-./build.new.ps1 -Clippy -Test
+./build.ps1 -Clippy -Test
 
 # Build in release mode (optimized)
-./build.new.ps1 -Release
+./build.ps1 -Release
 ```
 
 #### Running tests
@@ -136,16 +136,16 @@ DSCv3 includes Rust unit tests and PowerShell Pester tests:
 
 ```powershell
 # Run all tests
-./build.new.ps1 -Test
+./build.ps1 -Test
 
 # Run only Rust tests
-./build.new.ps1 -Test -ExcludePesterTests
+./build.ps1 -Test -ExcludePesterTests
 
 # Run only Pester tests
-./build.new.ps1 -Test -ExcludeRustTests
+./build.ps1 -Test -ExcludeRustTests
 
 # Run specific Pester test groups
-./build.new.ps1 -SkipBuild -Test -ExcludeRustTests -PesterTestGroup dsc
+./build.ps1 -SkipBuild -Test -ExcludeRustTests -PesterTestGroup dsc
 ```
 
 Available Pester test groups include:
@@ -163,13 +163,13 @@ for other platforms and architectures with the `-Architecture` parameter:
 
 ```powershell
 # Windows ARM
-./build.new.ps1 -Architecture aarch64-pc-windows-msvc
+./build.ps1 -Architecture aarch64-pc-windows-msvc
 
 # macOS Apple Silicon
-./build.new.ps1 -Architecture aarch64-apple-darwin
+./build.ps1 -Architecture aarch64-apple-darwin
 
 # Linux x64
-./build.new.ps1 -Architecture x86_64-unknown-linux-gnu
+./build.ps1 -Architecture x86_64-unknown-linux-gnu
 ```
 
 #### Additional Information

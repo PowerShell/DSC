@@ -155,6 +155,52 @@ class NoExport: BaseTestClass
     }
 }
 
+[DscResource()]
+class FilteredExport : BaseTestClass
+{
+    [DscProperty(Key)]
+    [string] $Name
+
+    [DscProperty()]
+    [string] $Prop1
+
+    [void] Set()
+    {
+    }
+
+    [bool] Test()
+    {
+        return $true
+    }
+
+    [FilteredExport] Get()
+    {
+        return $this
+    }
+
+    static [FilteredExport[]] Export()
+    {
+        $resultList = [List[FilteredExport]]::new()
+        $obj = New-Object FilteredExport
+        $obj.Name = "DefaultObject"
+        $obj.Prop1 = "Default Property"
+        $resultList.Add($obj)
+
+        return $resultList.ToArray()
+    }
+
+    static [FilteredExport[]] Export([FilteredExport]$Name)
+    {
+        $resultList = [List[FilteredExport]]::new()
+        $obj = New-Object FilteredExport
+        $obj.Name = $Name
+        $obj.Prop1 = "Filtered Property for $Name"
+        $resultList.Add($obj)
+
+        return $resultList.ToArray()
+    }
+}
+
 function Test-World()
 {
     "Hello world from PSTestModule!"

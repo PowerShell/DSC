@@ -1594,4 +1594,27 @@ Describe 'tests for function expressions' {
     $LASTEXITCODE | Should -Be 2
     $errorContent | Should -Match $errorMatch
   }
+
+  It 'tryWhich() works for: <expression>' -TestCases @(
+    @{ expression = "[tryWhich('pwsh')]"; found = $true }
+    @{ expression = "[tryWhich('nonexistentcommand12345')]"; found = $false }
+  ) {
+    param($expression, $found)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "$expression"
+"@
+    $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+    if ($found) {
+      $out.results[0].result.actualState.output | Should -Not -BeNullOrEmpty
+    } else {
+      $out.results[0].result.actualState.output | Should -BeNullOrEmpty
+    }
+  }
 }
