@@ -61,7 +61,7 @@ pub enum FunctionArg {
 /// Lambdas are stored for the duration of a single configuration evaluation and are
 /// automatically cleaned up when the `Context` is dropped at the end of processing.
 /// Each configuration evaluation starts with a fresh, empty lambda registry.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Lambda {
     pub parameters: Vec<String>,
     pub body: Expression,
