@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-// keywords that can have multiple argments per line but cannot be repeated over multiple lines,
+// keywords that can have multiple arguments per line but cannot be repeated over multiple lines,
 // as subsequent entries are ignored, should be represented as arrays
-pub const MULTI_ARG_KEYWORDS: [&str; 16] = [
+pub const MULTI_ARG_KEYWORDS: [&str; 17] = [
     "authenticationmethods",
     "authorizedkeysfile",
     "casignaturealgorithms",
@@ -19,7 +19,8 @@ pub const MULTI_ARG_KEYWORDS: [&str; 16] = [
     "permituserenvironment",
     "persourcepenalties",
     "persourcepenaltyexemptlist",
-    "pubkeyacceptedalgorithms"
+    "pubkeyacceptedalgorithms",
+    "rekeylimit" // first arg is bytes, second arg (optional) is amount of time
 ];
 
 // keywords that can be repeated over multiple lines and should be represented as arrays.
