@@ -40,14 +40,14 @@ pub fn enable_tracing() {
 /// If input value not provided, get default path for the OS.
 /// On Windows, uses the `ProgramData` environment variable and standard path.
 /// On Unix-like systems, uses the standard path.
-pub fn get_default_sshd_config_path(input: Option<PathBuf>) -> PathBuf {
+pub fn get_default_sshd_config_path(input: Option<PathBuf>) -> Result<PathBuf, SshdConfigError> {
     if let Some(path) = input {
-        path
+        Ok(path)
     } else if cfg!(windows) {
-        let program_data = std::env::var("ProgramData").unwrap_or_else(|_| "C:\\ProgramData".into());
-        PathBuf::from(format!("{program_data}{SSHD_CONFIG_DEFAULT_PATH_WINDOWS}"))
+        let program_data = std::env::var("ProgramData")?;
+        Ok(PathBuf::from(format!("{program_data}{SSHD_CONFIG_DEFAULT_PATH_WINDOWS}")))
     } else {
-        PathBuf::from(SSHD_CONFIG_DEFAULT_PATH_UNIX)
+        Ok(PathBuf::from(SSHD_CONFIG_DEFAULT_PATH_UNIX))
     }
 }
 
@@ -169,7 +169,7 @@ pub fn build_command_info(input: Option<&String>, is_get: bool) -> Result<Comman
 ///
 /// This function will return an error if the file cannot be found or read.
 pub fn read_sshd_config(input: Option<PathBuf>) -> Result<String, SshdConfigError> {
-    let filepath = get_default_sshd_config_path(input);
+    let filepath = get_default_sshd_config_path(input)?;
 
     if filepath.exists() {
         let mut sshd_config_content = String::new();

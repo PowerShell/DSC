@@ -11,7 +11,7 @@ use {
 use rust_i18n::t;
 use serde_json::{Map, Value};
 use std::{fmt::Write, string::String};
-use tracing::debug;
+use tracing::{debug, warn};
 
 use crate::args::{DefaultShell, Setting};
 use crate::error::SshdConfigError;
@@ -148,12 +148,12 @@ fn set_sshd_config(cmd_info: &CommandInfo) -> Result<(), SshdConfigError> {
     let result = invoke_sshd_config_validation(args);
     // Always cleanup temp file, regardless of result success or failure
     if let Err(e) = std::fs::remove_file(&path) {
-        debug!("{}", t!("set.cleanupFailed", path = path.display(), error = e));
+        warn!("{}", t!("set.cleanupFailed", path = path.display(), error = e));
     }
     // Propagate failure, if any
     result?;
 
-    let sshd_config_path = get_default_sshd_config_path(cmd_info.metadata.filepath.clone());
+    let sshd_config_path = get_default_sshd_config_path(cmd_info.metadata.filepath.clone())?;
 
     if sshd_config_path.exists() {
         let mut sshd_config_content = String::new();
@@ -170,7 +170,7 @@ fn set_sshd_config(cmd_info: &CommandInfo) -> Result<(), SshdConfigError> {
             let backup_path = format!("{}.bak", sshd_config_path.display());
             std::fs::write(&backup_path, &sshd_config_content)
                 .map_err(|e| SshdConfigError::CommandError(e.to_string()))?;
-            debug!("{}", t!("set.backupCreated", path = backup_path));
+            info!("{}", t!("set.backupCreated", path = backup_path));
         }
     } else {
         debug!("{}", t!("set.configDoesNotExist"));
