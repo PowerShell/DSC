@@ -48,7 +48,7 @@ module.exports = grammar({
     boolean: $ => choice('yes', 'no'),
     number: $ => /\d+/,
     operator: $ => token(prec(PREC.OPERATOR, /[-+\^]/)),
-    string: $ => /[^\r\n,"'\s]+/, /* cannot contains spaces */
+    string: $ => /[^\r\n,"'\s]+/, /* cannot contain spaces */
 
     _quotedString: $ => /[^\r\n,"']+/, /* can contain spaces */
     _doublequotedString: $ => seq('"', alias($._quotedString, $.string), repeat(seq(',', alias($._quotedString, $.string))), '"'),
