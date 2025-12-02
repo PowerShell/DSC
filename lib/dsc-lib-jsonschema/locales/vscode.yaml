@@ -1,0 +1,471 @@
+_version: 2
+
+vscode:
+  dialect:
+    title:
+      en-US: VS Code dialect
+    description:
+      en-US: >-
+        Defines a meta schema combining Draft 2020-12 and the VS Code extended vocabulary.
+    markdownDescription:
+      en-US: |-
+        Defines a meta schema combining Draft 2020-12 and the VS Code extended vocabulary.
+
+        The VS Code extended vocabulary enables you to define custom keywords that enhance how VS
+        Code interprets schemas to provide better hover documentation, IntelliSense, validation
+        errors, and more.
+
+  vocabulary:
+    title:
+      en-US: VS Code extended vocabulary
+    description:
+      en-US: >-
+        Defines custom keywords for enhancing the authoring and editing experience for data files
+        in VS Code.
+    markdownDescription:
+      en-US: |-
+        Defines custom keywords for enhancing the authoring and editing experience for data files
+        in VS Code.
+
+        These custom keywords don't affect the validation of data. Instead, they provide
+        annotations that VS Code interprets to provide better hover documentation, IntelliSense,
+        validation errors, and more.
+
+  keywords:
+    allowComments:
+      title:
+        en-US: Allow comments
+      description:
+        en-US: >-
+          Indicates whether VS Code should allow comments in the JSON file, even when the file
+          extension isn't '.jsonc'.
+      markdownDescription:
+        en-US: |-
+          Indicates whether VS Code should allow comments in the JSON file, even when the file
+          extension isn't `.jsonc`.
+
+          By default, JSON comments in `.json` files cause parsing errors. If you define a JSON
+          Schema with `allowComments` set to `true`, VS Code doesn't raise validation errors for
+          comments in JSON for that schema.
+
+    allowTrailingCommas:
+      title:
+        en-US: Allow trailing commas
+      description:
+        en-US: >-
+          Indicates whether VS Code should allow trailing commas in the JSON file.
+      markdownDescription:
+        en-US: |-
+          Indicates whether VS Code should allow trailing commas in the JSON file.
+
+          By default, a comma after the last item in an array or last key-value pair in an object
+          causes a parsing error. If you define a JSON Schema with `allowTrailingCommas` set to
+          `true`, VS Code doesn't raise validation errors for commas after the last item in arrays
+          or last key-value pair in objects for that Schema.
+
+    completionDetail:
+      title:
+        en-US: Completion detail
+      description:
+        en-US: >-
+          Defines additional information for IntelliSense when completing a proposed item, replacing
+          the `title` keyword as code-formatted text.
+      markdownDescription:
+        en-US: |-
+          Defines additional information for IntelliSense when completing a proposed item, replacing
+          the `title` keyword as code-formatted text.
+
+          By default, when a user completes a value for a schema or subschema, VS Code displays
+          additional information in hover text. If the schema defines the `title` keyword, the
+          hover text includes the title string as the first line of the hover text.
+
+          If you define the `completionDetail` keyword, VS Code displays the string as monospace
+          code-formatted text instead of the `title` keyword's value.
+
+          If the schema defines the `description` or `markdownDescription` keywords, that text is
+          displayed in the hover text after the value from the `completionDetail` or `title`
+          keyword.
+
+    defaultSnippets:
+      title:
+        en-US: Default Snippets
+      description:
+        en-US: >-
+          Provides snippets for completion of a schema or subschema value or property.
+      markdownDescription:
+        en-US: |-
+          Provides snippets for completion of a schema or subschema value or property.
+
+          By default, VS Code presents a set of completion options for data with an associated JSON
+          Schema like suggesting defined property names or enum values. You can use the
+          `defaultSnippets` keyword to provide an array of snippets with more control over the
+          presentation, default values, and enable users to quickly fill out the snippet.
+
+          The keyword expects an array of objects that each define a snippet. For more information
+          about defining snippets, see [Define snippets in JSON Schemas][01]. For more information
+          about the snippet syntax, see [Snippet syntax][02].
+
+          [01]: https://code.visualstudio.com/Docs/languages/json#_define-snippets-in-json-schemas
+          [02]: https://code.visualstudio.com/docs/editing/userdefinedsnippets#_snippet-syntax
+
+      items:
+        title:
+          en-US: Snippet definition
+        description:
+          en-US: >-
+            Each item defines a snippet for users that VS Code will surface as part of IntelliSense.
+        markdownDescription:
+          en-US: |-
+            Each item defines a snippet for users that VS Code will surface as part of IntelliSense.
+
+            Every snippet must define either the `body` or `bodyText` property, which VS Code uses
+            to insert the snippet into the data file. If you specify both `body` and `bodyText`, the
+            value for `body` supercedes the value for `bodyText`.
+            
+            The `description`, and `markdownDescription` properties provide documentation for the
+            snippet and are displayed in the hover text when a user selects the snippet. If you
+            specify both `description` and `markdownDescription`, the text for
+            `markdownDescription` supercedes the text for `description`.
+
+            The `label` property defines a short name for the snippet. If the snippet doesn't define
+            the `label` property, VS Code shows a stringified representation of the snippet instead.
+            
+            Snippets are presented to the user in alphabetical order by the value of their `label`
+            property (or the stringified representation of the snippet if it has no label).
+
+        properties:
+          label:
+            title:
+              en-US: Snippet label
+            description:
+              en-US: >-
+                Defines a short name for the snippet.
+            markdownDescription:
+              en-US: |-
+                Defines a short name for the snippet instead of using the stringified representation
+                of the snippet's value. The `label` property also affects the order that VS Code
+                presents the snippets. VS Code sorts the snippets for completion alphabetically by
+                label.
+          description:
+            title:
+              en-US: Snippet description
+            description:
+              en-US: >-
+                Defines plain text documentation for the snippet displayed in the completion dialog.
+            markdownDescription:
+              en-US: |-
+                Defines plain text documentation for the snippet displayed in the completion dialog.
+                
+                When the snippet doesn't define the `description` or `markdownDescription` property,
+                the snippet provides no additional context to the user aside from the label until
+                they select the snippet for completion. Use the `description` property to provide
+                information to the user about the snippet. If you need to provide rich formatting,
+                like links or text formatting, use the `markdownDescription` property.
+
+                If you define both the `description` and `markdownDescription` property for a
+                snippet, the `markdownDescription` text overrides the `description` text.
+          markdownDescription:
+            title:
+              en-US: Snippet markdown description
+            description:
+              en-US: >-
+                Defines formatted documentation for the snippet displayed in the completion dialog.
+            markdownDescription:
+              en-US: |-
+                Defines formatted documentation for the snippet displayed in the completion dialog.
+
+                When the snippet doesn't define the `description` or `markdownDescription` property,
+                the snippet provides no additional context to the user aside from the label until
+                they select the snippet for completion. Use the `description` property to provide
+                information to the user about the snippet. If you need to provide rich formatting,
+                like links or text formatting, use the `markdownDescription` property.
+
+                If you define both the `description` and `markdownDescription` property for a
+                snippet, the `markdownDescription` text overrides the `description` text.
+          body:
+            title:
+              en-US: Snippet body
+            description:
+              en-US: >-
+                Defines the data to insert for the snippet. The data can be any type.
+            markdownDescription:
+              en-US: |-
+                Defines the data to insert for the snippet. The data can be any type. When the user
+                selects the snippet, VS Code inserts the data at the cursor. In string literals for
+                the `body` you can use [snippet syntax][01] to define tabstops, placeholders, and
+                variables.
+
+                Alternatively, you can define the `bodyText` property for the snippet, which
+                specifies the text to insert for the snippet as a string.
+
+                If you define both the `bodyText` and `body` properties for a snippet, the `body`
+                definition overrides the `bodyText` property.
+
+                [01]: https://code.visualstudio.com/docs/editing/userdefinedsnippets#_snippet-syntax
+          bodyText:
+            title:
+              en-US: Snippet body text
+            description:
+              en-US: >-
+                Defines the data to insert for the snippet as a string literal.
+            markdownDescription:
+              en-US: |-
+                Defines the data to insert for the snippet as a string literal. When the user
+                selects the snippet, VS Code inserts the text _without_ the enclosing quotation
+                marks at the cursor. You can use [snippet syntax][01] to define tabstops,
+                placeholders, and variables in the `bodyText`.
+
+                Alternatively, you can define the `body` property for the snippet, which specifies
+                the text to insert for the snippet as data.
+
+                If you define both the `bodyText` and `body` properties for a snippet, the `body`
+                definition overrides the `bodyText` property.
+
+                [01]: https://code.visualstudio.com/docs/editing/userdefinedsnippets#_snippet-syntax
+
+    deprecationMessage:
+      title:
+        en-US: Deprecation message
+      description:
+        en-US: >-
+          Defines a message to surface as a warning to users when they specify a deprecated property
+          in their data.
+      markdownDescription:
+        en-US: |-
+          Defines a message to surface as a warning to users when they specify a deprecated property
+          in their data.
+
+          This keyword only has an affect when defined in a schema or subschema that also defines
+          the `deprecated` keyword as `true`. When you define the `deprecationMessage` keyword for
+          a deprecated schema or subschema, VS Code displays the provided message instead of the
+          default warning about deprecation.
+
+    doNotSuggest:
+      title:
+        en-US: Do not suggest
+      description:
+        en-US: >-
+          Indicates whether VS Code should avoid suggesting the property for IntelliSense.
+      markdownDescription:
+        en-US: |-
+          Indicates whether VS Code should avoid suggesting the property for IntelliSense.
+
+          By default, VS Code will show any defined property in the `properties` keyword as a
+          completion option with IntelliSense. You can define the `doNotSuggest` keyword in a
+          property subschema as `true` to indicate that VS Code should not show that property for
+          IntelliSense.
+
+    enumDescriptions:
+      title:
+        en-US: Enum descriptions
+      description:
+        en-US: >-
+          Defines per-value descriptions for schemas that use the enum keyword.
+      markdownDescription:
+        en-US: |-
+          Defines per-value descriptions for schemas that use the `enum` keyword.
+
+          The builtin keywords for JSON Schema includes the `description` keyword, which you can use
+          to document a given schema or subschema. However, for schemas that use the `enum` keyword
+          to define an array of valid values, JSON Schema provides no keyword for documenting each
+          value.
+
+          With the `enumDescriptions` keyword from the VS Code vocabulary, you can document each
+          item in the `enum` keyword array. VS Code interprets each item in `enumDescriptions` as
+          documenting the item at the same index in the `enum` keyword.
+
+          This documentation is surfaced in VS Code on hover for an enum value and for IntelliSense
+          when completing an enum value.
+
+          If you want to use Markdown syntax for the annotation, specify the
+          `markdownEnumDescriptions` keyword instead.
+
+    enumDetails:
+      title:
+        en-US: Enum details
+      description:
+        en-US: >-
+          Defines additional information for IntelliSense when completing a proposed enum value,
+          shown before the description.
+      markdownDescription:
+        en-US: |-
+          Defines additional information for IntelliSense when completing a proposed enum value,
+          shown before the description.
+
+          By default, when VS Code suggests a completion for an item defined in the `enum` keyword,
+          VS Code displays hover text with a description. If the schema defined the `description`,
+          `enumDescriptions`, or `markdownEnumDescriptions` keywords, VS Code displays that text.
+          The `markdownEnumDescriptions` keyword overrides the `enumDescriptions` keyword, which
+          overrides the `description` keyword.
+
+          When you define the `enumDetails` keyword, VS Code displays the string for that enum
+          value as monospace code-formatted text. The keyword expects an array of strings. VS Code
+          correlates the items in the `enumDetails` keyword to the items in the `enum` keyword by
+          their index. The first item in `enumDetails` maps to the first item in `enum` and so on.
+
+    enumSortTexts:
+      title:
+        en-US: Enum sort text
+      description:
+        en-US: >-
+          Defines a alternate strings to use when sorting a suggestion for enum values.
+      markdownDescription:
+        en-US: |-
+          Defines a alternate strings to use when sorting a suggestion for enum values.
+
+          By default, suggestions are sorted alphabetically, not in the order that you define
+          items in the `enum` keyword array. You can use the `enumSortText` keyword to override
+          the order the values are displayed, providing a different string for each value.
+
+          The keyword expects an array of strings. VS Code correlates the items in the
+          `enumSortText` keyword to the items in the `enum` keyword by their index. The first item
+          in `enumSortText` maps to the first item in `enum` and so on.
+
+          For example, in the following schema, VS Code will suggest the `baz`, then `bar`, then
+          `foo` values:
+
+          ```json
+          {
+              "type": "string",
+              "enum": ["foo", "bar", "baz"],
+              "enumSortText": ["c", "b", "a"]
+          }
+          ```
+
+    errorMessage:
+      title:
+        en-US: Validation error message
+      description:
+        en-US: >-
+          Defines a friendly error message to raise when a schema or subschema fails validation.
+      markdownDescription:
+        en-US: |-
+          Defines a friendly error message to raise when a schema or subschema fails validation.
+
+          By default, VS Code surfaces a default error message for data that fails schema
+          validation, like specifying an invalid type. You can use the `errorMessage` keyword to
+          define a custom message to raise in the editor when the data fails validation for the
+          following cases:
+
+          - When the data is an invalid type as validated by the `type` keyword.
+          - When the subschema defined for the `not` keyword is valid.
+          - When the data is invalid for the defined values in the `enum` keyword.
+          - When the data is invalid for the defined value in the `const` keyword.
+          - When a string doesn't match the regular expression defined in the `pattern` keyword.
+            This message is overridden by the `patternErrorMessage` keyword if it's defined.
+          - When a string value doesn't match a required format.
+          - When the data is for an array that is validated by the `minContains` or `maxContains`
+            keywords and fails those validations.
+          - When the data includes a property that was defined in the `properties` keyword as
+            `false`, forbidding the property.
+          - When the data includes a property that was defined in the `patternProperties` keyword as
+            `false`, forbidding matching property names.
+          - When the data includes a property that wasn't defined in the `properties` or
+            `patternProperties` keyword and the schema defines `additionalProperties` as `false`.
+          - When the data includes a property that isn't evaluated by any keywords and the schema
+            defines `unevaluatedProperties` as `false`.
+
+          The value for the `errorMessage` keyword supercedes all default messages for the schema
+          or subschema where you define the keyword. You can provide per-validation failure
+          messages by defining the validating keywords in separate entries of the `allOf` keyword
+          and defining the `errorMessage` keyword for each entry.
+
+    markdownDescription:
+      title:
+        en-US: Markdown description
+      description:
+        en-US: >-
+          Defines documentation for the schema or subschema displayed as hover text in VS Code.
+      markdownDescription:
+        en-US: |-
+          Defines documentation for the schema or subschema displayed as hover text in VS Code.
+
+          By default, VS Code displays the text defined in the `description` keyword in the hover
+          text for properties and values. VS Code interprets the `description` keyword literally,
+          without converting any apparent markup.
+
+          You can define the `markdownDescription` keyword to provide descriptive text as markdown,
+          including links and code blocks. When a schema or subschema defines the
+          `markdownDescription` keyword, that value supercedes any defined text in the `description`
+          keyword.
+
+          You can also use the `markdownEnumDescriptions` keyword to document the values defined
+          for the `enum` keyword.
+
+          For more information, see [Use rich formatting in hovers][01].
+
+          [01]: https://code.visualstudio.com/Docs/languages/json#_use-rich-formatting-in-hovers
+
+    markdownEnumDescriptions:
+      title:
+        en-US: Markdown enum descriptions
+      description:
+        en-US: >-
+          Defines documentation for enum values displayed as hover text in VS Code.
+      markdownDescription:
+        en-US: |-
+          Defines documentation for enum values displayed as hover text in VS Code.
+
+          By default, when a user hovers on or selects completion for a value that is validated by
+          the `enum` keyword, VS Code displays the text from the `description` or
+          `markdownDescription` keywords for the schema or subschema. You can use the
+          `markdownEnumDescriptions` keyword to define documentation for each enum value.
+
+          When a schema or subschema defines the `markdownEnumDescriptions` keyword, that value
+          supercedes any defined text in the `description`, `markdownDescription`, or
+          `enumDescriptions` keywords.
+
+          The keyword expects an array of strings. VS Code correlates the items in the
+          `markdownEnumDescriptions` keyword to the items in the `enum` keyword by their index. The
+          first item in `markdownEnumDescriptions` maps to the first item in `enum` and so on.
+
+    patternErrorMessage:
+      title:
+        en-US: Pattern validation error message
+      description:
+        en-US: >-
+          Defines a friendly error message to raise when a schema or subschema fails validation
+          for the `pattern` keyword.
+      markdownDescription:
+        en-US: |-
+          Defines a friendly error message to raise when a schema or subschema fails validation
+          for the `pattern` keyword.
+
+          By default, when a value fails validation for the `pattern` keyword, VS Code raises an
+          error that informs the user that the value is invalid for the given regular expression,
+          which it displays in the message.
+
+          Reading and parsing regular expressions can be difficult even for experienced users. You
+          can define the `patternErrorMessage` keyword to provide better information to the user
+          about the expected pattern for the string value.
+
+    suggestSortText:
+      title:
+        en-US: Suggest sort text
+      description:
+        en-US: >-
+          Defines an alternate string to use when sorting a suggestion.
+      markdownDescription:
+        en-US: |-
+          Defines an alternate string to use when sorting a suggestion.
+
+          By default, suggestions are displayed in alphabetical order. You can define the
+          `suggestSortText` keyword to change how the suggestions are sorted. For example, in
+          the following schema, VS Code will suggest the `baz`, then `bar`, then `foo` properties:
+
+          ```json
+          {
+              "type": "object",
+              "properties": {
+                  "foo": {
+                      "suggestSortText": "c",
+                  }
+                  "bar": {
+                      "suggestSortText": "b",
+                  }
+                  "baz": {
+                      "suggestSortText": "a",
+                  }
+              }
+          }
+          ```

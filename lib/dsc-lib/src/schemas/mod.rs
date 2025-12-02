@@ -70,6 +70,10 @@ impl SchemaForm {
     /// The extension for [`Bundled`] and [`Canonical`] schemas is `.json`
     /// 
     /// The extension for [`VSCode`] schemas is `.vscode.json`
+    /// 
+    /// [`Bundled`]: SchemaForm::Bundled
+    /// [`Canonical`]: SchemaForm::Canonical
+    /// [`VSCode`]: SchemaForm::VSCode
     #[must_use]
     pub fn to_extension(&self) -> String {
         match self {
@@ -83,6 +87,10 @@ impl SchemaForm {
     /// The [`Bundled`] and [`VSCode`] schemas are always published in the `bundled` folder
     /// immediately beneath the version folder. The [`Canonical`] schemas use the folder path
     /// as defined for that schema.
+    /// 
+    /// [`Bundled`]: SchemaForm::Bundled
+    /// [`Canonical`]: SchemaForm::Canonical
+    /// [`VSCode`]: SchemaForm::VSCode
     #[must_use]
     pub fn to_folder_prefix(&self) -> String {
         match self {
