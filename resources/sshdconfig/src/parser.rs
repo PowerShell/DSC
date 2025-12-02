@@ -175,10 +175,6 @@ impl SshdConfigParser {
                 return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
             };
 
-            if target_map.is_some() {
-                debug!("{}", t!("parser.keywordDebug", text = text).to_string());
-            }
-
             is_repeatable = REPEATABLE_KEYWORDS.contains(&text);
             is_vec = is_repeatable || MULTI_ARG_KEYWORDS.contains(&text);
             key = Some(text.to_string());
@@ -323,7 +319,9 @@ fn parse_arguments_node(arg_node: tree_sitter::Node, input: &str, input_bytes: &
 pub fn parse_text_to_map(input: &str) -> Result<Map<String,Value>, SshdConfigError> {
     let mut parser = SshdConfigParser::new();
     parser.parse_text(input)?;
-    let lowercased_map = parser.map.into_iter().map(|(k, v)| (k.to_lowercase(), v)).collect();
+    let lowercased_map = parser.map.into_iter()
+        .map(|(k, v)| (k.to_lowercase(), v))
+        .collect();
     Ok(lowercased_map)
 }
 
