@@ -67,6 +67,7 @@ pub mod secret;
 pub mod shallow_merge;
 pub mod skip;
 pub mod starts_with;
+pub mod stdout;
 pub mod string;
 pub mod take;
 pub mod sub;
@@ -204,6 +205,7 @@ impl FunctionDispatcher {
             Box::new(shallow_merge::ShallowMerge{}),
             Box::new(skip::Skip{}),
             Box::new(starts_with::StartsWith{}),
+            Box::new(stdout::Stdout{}),
             Box::new(string::StringFn{}),
             Box::new(sub::Sub{}),
             Box::new(take::Take{}),
