@@ -155,7 +155,7 @@ fn parse_arguments_node(arg_node: tree_sitter::Node, input: &str, input_bytes: &
             return Err(SshdConfigError::ParserError(t!("parser.failedToParseChildNode", input = input).to_string()));
         }
         let argument: Value = match node.kind() {
-            "boolean" | "string" | "quotedString" => {
+            "boolean" | "string" => {
                 let Ok(arg) = node.utf8_text(input_bytes) else {
                     return Err(SshdConfigError::ParserError(
                         t!("parser.failedToParseNode", input = input).to_string()
@@ -176,7 +176,7 @@ fn parse_arguments_node(arg_node: tree_sitter::Node, input: &str, input_bytes: &
                 return Err(SshdConfigError::ParserError(
                     t!("parser.invalidValue").to_string()
                 ));
-            },
+            }
             _ => return Err(SshdConfigError::ParserError(t!("parser.unknownNode", kind = node.kind()).to_string()))
         };
         if is_vec {
