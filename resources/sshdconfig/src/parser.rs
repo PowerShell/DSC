@@ -34,9 +34,7 @@ pub struct SshdConfigParser {
 pub fn parse_text_to_map(input: &str) -> Result<Map<String,Value>, SshdConfigError> {
     let mut parser = SshdConfigParser::new();
     parser.parse_text(input)?;
-    let lowercased_map = parser.map.into_iter()
-        .map(|(k, v)| (k.to_lowercase(), v))
-        .collect();
+    let lowercased_map = parser.map.into_iter().map(|(k, v)| (k.to_lowercase(), v)).collect();
     Ok(lowercased_map)
 }
 
@@ -88,43 +86,30 @@ impl SshdConfigParser {
                 Self::parse_and_insert_keyword(node, input, input_bytes, Some(&mut self.map))?;
                 Ok(())
             },
-            "comment" | "empty_line" => Ok(()),
+            "comment" => Ok(()),
             "match" => self.parse_match_node(node, input, input_bytes),
             _ => Err(SshdConfigError::ParserError(t!("parser.unknownNodeType", node = node.kind()).to_string())),
         }
     }
 
     fn parse_match_node(&mut self, match_node: tree_sitter::Node, input: &str, input_bytes: &[u8]) -> Result<(), SshdConfigError> {
-        let Some(criteria_node) = match_node.child_by_field_name("criteria") else {
-            return Err(SshdConfigError::ParserError(
-                t!("parser.missingCriteriaInMatch", input = input).to_string()
-            ));
-        };
-
-        // Parse criteria by extracting the entire line and parsing key-value pairs
-        let criteria_map = Self::parse_match_criteria(criteria_node, input, input_bytes)?;
-
-        let mut match_object = Map::new();
-        match_object.insert("criteria".to_string(), Value::Object(criteria_map));
-
-        // Collect keywords - parse and insert directly into match_object
+        let mut criteria_map = Map::new();
         let mut cursor = match_node.walk();
+        let mut match_object = Map::new();
+
         for child_node in match_node.named_children(&mut cursor) {
             if child_node.is_error() {
-                return Err(SshdConfigError::ParserError(
-                    t!("parser.failedToParseChildNode", input = input).to_string()
-                ));
+                return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
             }
 
             match child_node.kind() {
+                "comment" => {}
+                "criteria" => {
+                    Self::parse_match_criteria(child_node, input, input_bytes, &mut criteria_map)?;
+                }
                 "keyword" => {
-                    // Skip the criteria node (already processed)
-                    if child_node.id() == criteria_node.id() {
-                        continue;
-                    }
                     Self::parse_and_insert_keyword(child_node, input, input_bytes, Some(&mut match_object))?;
                 }
-                "comment" => {}
                 _ => {
                     return Err(SshdConfigError::ParserError(t!("parser.unknownNodeType", node = child_node.kind()).to_string()));
                 }
@@ -132,50 +117,70 @@ impl SshdConfigParser {
         }
 
         // Add the match object to the main map
+        if criteria_map.is_empty() {
+            return Err(SshdConfigError::ParserError(t!("parser.missingCriteriaInMatch", input = input).to_string()));
+        }
+        match_object.insert("criteria".to_string(), Value::Object(criteria_map));
         Self::insert_into_map(&mut self.map, "match", Value::Object(match_object), true)?;
         Ok(())
     }
 
-    /// Parse match criteria which can contain multiple key-value pairs on a single line.
-    /// Example: "user alice,bob address *.*.0.1 localport 22"
-    /// Returns a Map with each criterion as a key with an array value.
-    fn parse_match_criteria(criteria_node: tree_sitter::Node, input: &str, input_bytes: &[u8]) -> Result<Map<String, Value>, SshdConfigError> {
-        let Ok(criteria_text) = criteria_node.utf8_text(input_bytes) else {
-            return Err(SshdConfigError::ParserError(t!("parser.failedToParseChildNode", input = input).to_string()));
-        };
+    /// Parse a single match criteria node and insert into the provided criteria map.
+    /// Example criteria node: "user alice,bob" or "address *.*.0.1"
+    /// Inserts the criterion as a key with an array value into the `criteria_map`.
+    fn parse_match_criteria(criteria_node: tree_sitter::Node, input: &str, input_bytes: &[u8], criteria_map: &mut Map<String, Value>) -> Result<(), SshdConfigError> {
+        let mut cursor = criteria_node.walk();
+        let mut key: Option<String> = None;
+        let mut values: Vec<Value> = Vec::new();
 
-        let criteria_text = criteria_text.trim_end();
-        let tokens: Vec<&str> = criteria_text.split_whitespace().collect();
-        let mut criteria_map = Map::new();
-        let mut i = 0;
-
-        while i < tokens.len() {
-            let key = tokens[i].to_lowercase();
-            i += 1;
-            if i >= tokens.len() {
-                return Err(SshdConfigError::ParserError(
-                    t!("parser.missingValueInChildNode", input = input).to_string()
-                ));
+        // Iterate through named children of the criteria node
+        for child in criteria_node.named_children(&mut cursor) {
+            if child.is_error() {
+                return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
             }
 
-            let value_str = tokens[i];
-            let values: Vec<Value> = value_str.split(',').map(|s| Value::String(s.to_string())).collect();
-
-            criteria_map.insert(key, Value::Array(values));
-            i += 1;
+            match child.kind() {
+                "alpha" => {
+                    let Ok(text) = child.utf8_text(input_bytes) else {
+                        return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
+                    };
+                    key = Some(text.to_string());
+                }
+                "boolean" | "string" => {
+                    let Ok(arg) = child.utf8_text(input_bytes) else {
+                        return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
+                    };
+                    let arg_str = arg.trim();
+                    values.push(Value::String(arg_str.to_string()));
+                }
+                "number" => {
+                    let Ok(arg) = child.utf8_text(input_bytes) else {
+                        return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
+                    };
+                    values.push(Value::Number(arg.parse::<u64>()?.into()));
+                }
+                _ => {
+                    return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
+                }
+            }
         }
-        Ok(criteria_map)
+
+        let Some(criteria_key) = key else {
+            return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
+        };
+
+        if values.is_empty() {
+            return Err(SshdConfigError::ParserError(t!("parser.noArgumentsFound", input = input).to_string()));
+        }
+
+        criteria_map.insert(criteria_key.to_lowercase(), Value::Array(values));
+        Ok(())
     }
 
     /// Parse a keyword node and optionally insert it into a map.
     /// If `target_map` is provided, the keyword will be inserted into that map with repeatability handling.
     /// If `target_map` is None, returns the key-value pair without inserting.
-    fn parse_and_insert_keyword(
-        keyword_node: tree_sitter::Node,
-        input: &str,
-        input_bytes: &[u8],
-        target_map: Option<&mut Map<String, Value>>
-    ) -> Result<(String, Value), SshdConfigError> {
+    fn parse_and_insert_keyword(keyword_node: tree_sitter::Node, input: &str, input_bytes: &[u8], target_map: Option<&mut Map<String, Value>>) -> Result<(String, Value), SshdConfigError> {
         let mut cursor = keyword_node.walk();
         let mut key = None;
         let mut value = Value::Null;
@@ -186,9 +191,7 @@ impl SshdConfigParser {
 
         if let Some(keyword) = keyword_node.child_by_field_name("keyword") {
             let Ok(text) = keyword.utf8_text(input_bytes) else {
-                return Err(SshdConfigError::ParserError(
-                    t!("parser.failedToParseChildNode", input = input).to_string()
-                ));
+                return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
             };
 
             if target_map.is_some() {
@@ -208,16 +211,14 @@ impl SshdConfigParser {
         // Check for operator field
         if let Some(operator_node) = keyword_node.child_by_field_name("operator") {
             let Ok(op_text) = operator_node.utf8_text(input_bytes) else {
-                return Err(SshdConfigError::ParserError(
-                    t!("parser.failedToParseChildNode", input = input).to_string()
-                ));
+                return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
             };
             operator = Some(op_text.to_string());
         }
 
         for node in keyword_node.named_children(&mut cursor) {
             if node.is_error() {
-                return Err(SshdConfigError::ParserError(t!("parser.failedToParseChildNode", input = input).to_string()));
+                return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
             }
             if node.kind() == "arguments" {
                 value = parse_arguments_node(node, input, input_bytes, is_vec, keyword_type)?;
@@ -289,37 +290,25 @@ impl SshdConfigParser {
     }
 }
 
-fn parse_arguments_node(arg_node: tree_sitter::Node, input: &str, input_bytes: &[u8], is_vec: bool, keyword_type: KeywordType) -> Result<Value, SshdConfigError> {
+fn parse_arguments_node(arg_node: tree_sitter::Node, input: &str, input_bytes: &[u8], is_vec: bool, _keyword_type: KeywordType) -> Result<Value, SshdConfigError> {
     let mut cursor = arg_node.walk();
     let mut vec: Vec<Value> = Vec::new();
-
     // if there is more than one argument, but a vector is not expected for the keyword, throw an error
     let children: Vec<_> = arg_node.named_children(&mut cursor).collect();
     if children.len() > 1 && !is_vec {
         return Err(SshdConfigError::ParserError(t!("parser.invalidMultiArgNode", input = input).to_string()));
     }
-
     for node in &children {
         if node.is_error() {
-            return Err(SshdConfigError::ParserError(t!("parser.failedToParseChildNode", input = input).to_string()));
+            return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
         }
         match node.kind() {
-            "boolean" | "string" | "quotedString" => {
+            "boolean" | "string" => {
                 let Ok(arg) = node.utf8_text(input_bytes) else {
-                    return Err(SshdConfigError::ParserError(
-                        t!("parser.failedToParseNode", input = input).to_string()
-                    ));
+                    return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
                 };
                 let arg_str = arg.trim();
-
-                // For space-separated keywords, split unquoted strings on whitespace
-                if node.kind() == "string" && keyword_type == KeywordType::SpaceSeparated && is_vec {
-                    for token in arg_str.split_whitespace() {
-                        vec.push(Value::String(token.to_string()));
-                    }
-                } else {
-                    vec.push(Value::String(arg_str.to_string()));
-                }
+                vec.push(Value::String(arg_str.to_string()));
             },
             "number" => {
                 let Ok(arg) = node.utf8_text(input_bytes) else {
@@ -334,7 +323,6 @@ fn parse_arguments_node(arg_node: tree_sitter::Node, input: &str, input_bytes: &
             _ => return Err(SshdConfigError::ParserError(t!("parser.unknownNode", kind = node.kind()).to_string()))
         }
     }
-
     // Always return array if is_vec is true (for MULTI_ARG_KEYWORDS_COMMA_SEP, MULTI_ARG_KEYWORDS_SPACE_SEP, and REPEATABLE_KEYWORDS)
     if is_vec {
         Ok(Value::Array(vec))
@@ -377,7 +365,7 @@ mod tests {
         let result: Map<String, Value> = parse_text_to_map(input).unwrap();
         let expected = vec![
             Value::String("administrators".to_string()),
-            Value::String("\"openssh users\"".to_string()),
+            Value::String("openssh users".to_string()),
         ];
         assert_eq!(result.get("allowgroups").unwrap(), &Value::Array(expected));
     }
@@ -459,6 +447,7 @@ match user bob
     allowtcpforwarding yes
 "#;
         let result: Map<String, Value> = parse_text_to_map(input).unwrap();
+        println!("{:#?}", result);
         let match_array = result.get("match").unwrap().as_array().unwrap();
         assert_eq!(match_array.len(), 1);
         let match_obj = match_array[0].as_object().unwrap();
@@ -503,6 +492,7 @@ match user alice,bob
         let match_obj = match_array[0].as_object().unwrap();
         let criteria = match_obj.get("criteria").unwrap().as_object().unwrap();
         let user_array = criteria.get("user").unwrap().as_array().unwrap();
+        println!("{:#?}", user_array);
         assert_eq!(user_array.len(), 2);
         assert_eq!(user_array[0], Value::String("alice".to_string()));
         assert_eq!(user_array[1], Value::String("bob".to_string()));

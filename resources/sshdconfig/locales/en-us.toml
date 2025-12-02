@@ -33,7 +33,6 @@ set = "Set command: '%{input}'"
 [parser]
 failedToParse = "failed to parse: '%{input}'"
 failedToParseAsArray = "value is not an array"
-failedToParseChildNode = "failed to parse child node: '%{input}'"
 failedToParseNode = "failed to parse '%{input}'"
 failedToParseRoot = "failed to parse root: '%{input}'"
 invalidConfig = "invalid config: '%{input}'"
