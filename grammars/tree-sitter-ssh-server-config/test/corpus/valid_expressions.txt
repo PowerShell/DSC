@@ -391,6 +391,17 @@ ciphers "chacha20-poly1305@openssh.com,aes128-gcm@openssh.com"
       (string)
       (string))))
 ====
+parse single-quoted argument
+====
+allowgroups 'openssh users'
+
+---
+(server_config
+  (keyword
+    (alphanumeric)
+    (arguments
+      (string))))
+====
 parse multiple match criteria
 ====
 match user User1,User2 Address 192.0.2.0/24
