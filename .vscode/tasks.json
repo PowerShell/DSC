@@ -7,7 +7,7 @@
             "label": "DSC: Build",
             "detail": "Compiles the Rust crates and copies all build artifacts into the `bin` folder.",
             "type": "shell",
-            "command": "${workspaceFolder}/build.new.ps1",
+            "command": "${workspaceFolder}/build.ps1",
             "args": [
                 "-Clippy:${input:Clippy}",
                 "-Verbose",
@@ -22,7 +22,7 @@
             "label": "DSC: Test (All)",
             "detail": "Tests every project with optional skipping of building the projects, Clippy linting, Rust tests, and Pester tests.",
             "type": "shell",
-            "command": "${workspaceFolder}/build.new.ps1",
+            "command": "${workspaceFolder}/build.ps1",
             "args": [
                 "-SkipBuild:${input:SkipBuild}",
                 "-Test",
@@ -40,7 +40,7 @@
             "label": "DSC: Test Rust",
             "detail": "Tests the Rust projects with optional skipping of building the projects and Clippy linting.",
             "type": "shell",
-            "command": "${workspaceFolder}/build.new.ps1",
+            "command": "${workspaceFolder}/build.ps1",
             "args": [
                 "-SkipBuild:${input:SkipBuild}",
                 "-Test",

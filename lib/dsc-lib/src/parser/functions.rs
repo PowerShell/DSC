@@ -13,13 +13,13 @@ use crate::parser::{
     FunctionDispatcher,
 };
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Function {
     name: String,
     args: Option<Vec<FunctionArg>>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum FunctionArg {
     Value(Value),
     Expression(Expression),

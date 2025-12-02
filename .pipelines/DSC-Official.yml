@@ -11,6 +11,9 @@ parameters:
   - name: OfficialBuild
     type: boolean
     default: false
+  - name: PublishToStore
+    type: boolean
+    default: false
 
 variables:
   - name: BuildConfiguration
@@ -60,11 +63,12 @@ extends:
         forStages: [Build]
         credscan:
           enabled: true
-          scanFolder:  $(Build.SourcesDirectory)\DSC
+          scanFolder:  $(System.DefaultWorkingDirectory)
         binskim:
           enabled: true
         apiscan:
           enabled: false
+        tsaOptionsFile: .config\tsaoptions.json
 
     stages:
     - stage: BuildAndSign
@@ -77,8 +81,8 @@ extends:
           type: windows
           vmImage: windows-latest
         variables:
-          repoRoot: $(Build.SourcesDirectory)\DSC
-          ob_sdl_tsa_configFile: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
+          repoRoot: '$(System.DefaultWorkingDirectory)\DSC'
+          ob_sdl_tsa_configFile: '$(System.DefaultWorkingDirectory)\.config\tsaoptions.json'
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           ob_sdl_sbom_enabled: false
           ob_signing_setup_enabled: false
@@ -86,7 +90,8 @@ extends:
         steps:
         - checkout: self
         - pwsh: |
-            $packageVersion = $(repoRoot)/build.ps1 -GetPackageVersion
+            Write-Verbose -Verbose (Get-ChildItem '$(repoRoot)' | Out-String)
+            $packageVersion = $(repoRoot)/packaging.ps1 -GetPackageVersion
             $vstsCommandString = "vso[task.setvariable variable=Version;isoutput=true]$packageVersion"
             Write-Host ("sending " + $vstsCommandString)
             Write-Host "##$vstsCommandString"
@@ -107,9 +112,9 @@ extends:
       - job: BuildWin_x64
         dependsOn: SetPackageVersion
         variables:
-          ob_sdl_tsa_configFile: '$(Build.SourcesDirectory)\DSC\.config\tsaoptions.json'
+          ob_sdl_tsa_configFile: '$(System.DefaultWorkingDirectory)\.config\tsaoptions.json'
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
-          signSrcPath: '$(Build.SourcesDirectory)\out'
+          signSrcPath: '$(System.DefaultWorkingDirectory)\out'
           AzToken: $[ dependencies.SetPackageVersion.outputs['AzToken'] ]
           ob_sdl_sbom_enabled: true
           ob_signing_setup_enabled: true
@@ -128,9 +133,9 @@ extends:
       - job: BuildWin_arm64
         dependsOn: SetPackageVersion
         variables:
-          ob_sdl_tsa_configFile: '$(Build.SourcesDirectory)\DSC\.config\tsaoptions.json'
+          ob_sdl_tsa_configFile: '$(System.DefaultWorkingDirectory)\.config\tsaoptions.json'
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
-          signSrcPath: '$(Build.SourcesDirectory)\out'
+          signSrcPath: '$(System.DefaultWorkingDirectory)\out'
           AzToken: $[ dependencies.SetPackageVersion.outputs['AzToken'] ]
           ob_sdl_sbom_enabled: true
           ob_signing_setup_enabled: true
@@ -152,9 +157,9 @@ extends:
           - BuildWin_arm64
         variables:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
-          ob_sdl_tsa_configFile: '$(Build.SourcesDirectory)\DSC\.config\tsaoptions.json'
+          ob_sdl_tsa_configFile: '$(System.DefaultWorkingDirectory)\.config\tsaoptions.json'
           ob_symbolsPublishing_enabled: true
-          ob_symbolsPublishing_symbolsFolder: '$(Build.SourcesDirectory)\DSC\bin'
+          ob_symbolsPublishing_symbolsFolder: '$(System.DefaultWorkingDirectory)\DSC\bin'
           ob_symbolsPublishing_searchPattern: '**/*.pdb'
           ob_symbolsPublishing_indexSources: true
           ob_sdl_sbom_enabled: false
@@ -172,12 +177,12 @@ extends:
           artifact: drop_BuildAndSign_BuildWin_arm64
           patterns: '*.msix'
         - pwsh: |
-            Set-Location "$(Build.SourcesDirectory)/DSC"
+            Set-Location "$(System.DefaultWorkingDirectory)\DSC"
             $null = New-Item -ItemType Directory -Path "./bin/msix" -Force -ErrorAction Ignore
             Copy-Item "$(Pipeline.Workspace)/drop_BuildAndSign_BuildWin_x64/*.msix" ./bin/msix -Verbose
             Copy-Item "$(Pipeline.Workspace)/drop_BuildAndSign_BuildWin_arm64/*.msix" ./bin/msix -Verbose
-            ./build.ps1 -PackageType msixbundle
-            Copy-Item "$(Build.SourcesDirectory)/DSC/bin/*.msixbundle" "$(ob_outputDirectory)"
+            ./packaging.ps1 -PackageType msixbundle
+            Copy-Item "$(System.DefaultWorkingDirectory)/DSC/bin/*.msixbundle" "$(ob_outputDirectory)"
           displayName: 'Create msixbundle'
           condition: succeeded()
 
@@ -212,6 +217,84 @@ extends:
             Copy-Item "$(Build.ArtifactStagingDirectory)/downloads/*.msixbundle" "$(ob_outputDirectory)"
           displayName: 'Copy MsixBundle to output directory'
 
+      - job: PrepareStorePublish
+        dependsOn: ['SetPackageVersion', 'SignMsixBundle']
+        condition: and(succeeded(), eq(variables.officialBuild, true), eq( variables.PublishToStore, true ))
+        displayName: Prepare Microsoft Store Publish to output directory
+        pool:
+          type: windows
+        variables:
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+          ob_sdl_sbom_enabled: false
+          ob_signing_setup_enabled: false
+          ob_sdl_codeql_compiled_enabled: false
+          PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+        steps:
+        - pwsh: |
+            Write-Verbose -Verbose (Get-ChildItem '$(System.DefaultWorkingDirectory)' | Out-String)
+            $pdpPath = '$(System.DefaultWorkingDirectory)\.pipelines\store\PDP\en-US\PDP.xml'
+            if (-not (Test-Path -Path $pdpPath)) {
+              throw "PDP path '$pdpPath' does not exist. Cannot update PDP.xml."
+            }
+
+            $sbConfigPath = '$(System.DefaultWorkingDirectory)\.pipelines\store\SBConfig.json'
+            if (-not (Test-Path -Path $sbConfigPath)) {
+              throw "SBConfig path '$sbConfigPath' does not exist. Cannot update SBConfig.json."
+            }
+
+            $isPreRelease = '$(PackageVersion)' -like '*-*'
+            $pdpContent = Get-Content -Path $pdpPath -Raw
+            $appName = if ($isPreRelease) {
+              'DesiredStateConfiguration-Preview'
+            } else {
+              'DesiredStateConfiguration'
+            }
+            $pdpContent = $pdpContent.Replace('$AppName$', $appName)
+            Set-Content -Path $pdpPath -Value $pdpContent
+            Write-Host "PDP.xml updated successfully with AppName: $appName"
+
+            $sbConfigContent = Get-Content -Path $sbConfigPath -Raw
+            $productId = "Microsoft.$appName"
+            $sbConfigContent = $sbConfigContent.Replace('$ProductID$', $productId)
+            Set-Content -Path $sbConfigPath -Value $sbConfigContent
+            Write-Host "SBConfig.json updated successfully with ProductID: $productId"
+          displayName: 'Prepare Store Publish Files'
+        - download: current
+          artifact: drop_BuildAndSign_SignMsixBundle
+          patterns: '*.msixbundle'
+        - task: MS-RDX-MRO.windows-store-publish.package-task.store-package@3
+          displayName: Package for Store Submission
+          inputs:
+            serviceEndpoint: dsc-store
+            sbConfigPath: '$(System.DefaultWorkingDirectory)\.pipelines\Store\SBConfig.json'
+            sourceFolder: '$(Pipeline.Workspace)\drop_BuildAndSign_SignMsixBundle'
+            contents: '*.msixbundle'
+            outSBName: 'DesiredStateConfigurationStorePackage'
+            pdpPath: '$(System.DefaultWorkingDirectory)\.pipelines\Store\PDP'
+            pdpMediaPath: '$(System.DefaultWorkingDirectory)\.pipelines\Store\PDP-Media'
+        - pwsh: |
+            Get-Item -Path "$(System.DefaultWorkingDirectory)/SBLog.txt" -ErrorAction SilentlyContinue |
+              Copy-Item -Destination "$(ob_outputDirectory)" -Verbose
+          displayName: Upload Store Failure Log
+          condition: failed()
+        - pwsh: |
+            $submissionPackageDir = "$(System.DefaultWorkingDirectory)/SBOutDir"
+            $jsonFile = "$submissionPackageDir/DesiredStateConfigurationStorePackage.json"
+            $zipFile = "$submissionPackageDir/DesiredStateConfigurationStorePackage.zip"
+
+            if ((Test-Path $jsonFile) -and (Test-Path $zipFile)) {
+              Write-Verbose -Verbose "Uploading StoreBroker Package files:"
+              Write-Verbose -Verbose "JSON File: $jsonFile"
+              Write-Verbose -Verbose "ZIP File: $zipFile"
+
+              Copy-Item -Path $submissionPackageDir -Destination "$(ob_outputDirectory)" -Verbose -Recurse
+            }
+
+            else {
+              Write-Error "Required files not found in $submissionPackageDir"
+            }
+          displayName: 'Upload StoreBroker Package'
+
       - job: BuildLinuxMusl
         dependsOn: SetPackageVersion
         variables:
@@ -220,7 +303,7 @@ extends:
           AzToken: $[ dependencies.SetPackageVersion.outputs['AzToken'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           ob_linuxSymbolsPublishing_enabled: true
-          ob_linuxSymbolsPublishing_symbolsFolder: '$(Build.SourcesDirectory)/DSC/bin'
+          ob_linuxSymbolsPublishing_symbolsFolder: '$(System.DefaultWorkingDirectory)/DSC/bin'
           ob_linuxSymbolsPublishing_searchPattern: '**/*.dbg'
         displayName: Linux-x64-musl
         pool:
@@ -236,13 +319,17 @@ extends:
             ob_restore_phase: true
         - pwsh: |
             apt update
-            apt -y install musl-tools
+            apt -y install musl-tools rpm dpkg build-essential
             $header = "Bearer $(AzToken)"
             $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
             $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
-            ./build.ps1 -Release -Architecture x86_64-unknown-linux-musl
-            ./build.ps1 -PackageType tgz -Architecture x86_64-unknown-linux-musl -Release
+            ./packaging.ps1 -Release -Architecture x86_64-unknown-linux-musl
+            ./packaging.ps1 -PackageType tgz -Architecture x86_64-unknown-linux-musl -Release
+            ./packaging.ps1 -PackageType rpm -Architecture x86_64-unknown-linux-musl -Release
+            ./packaging.ps1 -PackageType deb -Architecture x86_64-unknown-linux-musl -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
+            Copy-Item ./bin/*.rpm "$(ob_outputDirectory)"
+            Copy-Item ./bin/*.deb "$(ob_outputDirectory)"
           displayName: 'Build x86_64-unknown-linux-musl'
           condition: succeeded()
 
@@ -254,7 +341,7 @@ extends:
           AzToken: $[ dependencies.SetPackageVersion.outputs['AzToken'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           ob_linuxSymbolsPublishing_enabled: true
-          ob_linuxSymbolsPublishing_symbolsFolder: '$(Build.SourcesDirectory)/DSC/bin'
+          ob_linuxSymbolsPublishing_symbolsFolder: '$(System.DefaultWorkingDirectory)/DSC/bin'
           ob_linuxSymbolsPublishing_searchPattern: '**/*.dbg'
         displayName: Linux-ARM64-musl
         pool:
@@ -289,6 +376,9 @@ extends:
             #apt -y install gcc-multilib
             apt -y install libssl-dev
             apt -y install pkg-config
+            apt -y install rpm
+            apt -y install dpkg
+            apt -y install build-essential
             msrustup default stable-aarch64-unknown-linux-musl
             if ((openssl version -d) -match 'OPENSSLDIR: "(?<dir>.*?)"') {
               $env:OPENSSL_LIB_DIR = $matches['dir']
@@ -296,9 +386,13 @@ extends:
             $header = "Bearer $(AzToken)"
             $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
             $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
-            ./build.ps1 -Release -Architecture aarch64-unknown-linux-musl
-            ./build.ps1 -PackageType tgz -Architecture aarch64-unknown-linux-musl -Release
+            ./packaging.ps1 -Release -Architecture aarch64-unknown-linux-musl
+            ./packaging.ps1 -PackageType tgz -Architecture aarch64-unknown-linux-musl -Release
+            ./packaging.ps1 -PackageType rpm -Architecture aarch64-unknown-linux-musl -Release
+            ./packaging.ps1 -PackageType deb -Architecture aarch64-unknown-linux-musl -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
+            Copy-Item ./bin/*.rpm "$(ob_outputDirectory)"
+            Copy-Item ./bin/*.deb "$(ob_outputDirectory)"
           displayName: 'Build aarch64-unknown-linux-musl'
           condition: succeeded()
 
@@ -342,8 +436,8 @@ extends:
             $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
             $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
             Write-Verbose -Verbose "Building for $(buildName)"
-            ./build.ps1 -Release -Architecture $(buildName)
-            ./build.ps1 -PackageType tgz -Architecture $(buildName) -Release
+            ./packaging.ps1 -Release -Architecture $(buildName)
+            ./packaging.ps1 -PackageType tgz -Architecture $(buildName) -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
             Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(ob_outputDirectory)/DSC-$(PackageVersion)-$(buildName).tar.gz"
           displayName: 'Build $(buildName)'
@@ -370,11 +464,17 @@ extends:
 
         - download: current
           artifact: drop_BuildAndSign_BuildLinuxArm64Musl
-          patterns: '*.tar.gz'
+          patterns: |
+            *.tar.gz
+            *.rpm
+            *.deb
 
         - download: current
           artifact: drop_BuildAndSign_BuildLinuxMusl
-          patterns: '*.tar.gz'
+          patterns: |
+            *.tar.gz
+            *.rpm
+            *.deb
 
         - download: current
           artifact: release ## this includes artifacts for macOS
@@ -384,8 +484,15 @@ extends:
           artifact: drop_BuildAndSign_SignMsixBundle
           patterns: '*.msixbundle'
 
+        - download: current
+          artifact: drop_BuildAndSign_PrepareStorePublish
+          condition: and(succeeded(), eq( variables.PublishToStore, true ))
+          patterns: |
+            *.zip
+            *.json
+
         - pwsh: |
-            Get-ChildItem "$(Pipeline.Workspace)" -Recurse -Include '*.zip', '*.tar.gz', '*.msixbundle' | ForEach-Object {
+            Get-ChildItem "$(Pipeline.Workspace)" -Recurse -Include '*.zip', '*.tar.gz', '*.msixbundle', '*.rpm', '*.deb', '*.json' | ForEach-Object {
               Write-Host "Found artifact: $($_.FullName)"
             }
           displayName: List downloaded artifacts
@@ -398,7 +505,7 @@ extends:
 
             Write-Verbose -Verbose "Starting to copy"
 
-            Get-ChildItem "$(Pipeline.Workspace)" -Recurse -Include '*.zip', '*.tar.gz', '*.msixbundle' | ForEach-Object {
+            Get-ChildItem "$(Pipeline.Workspace)" -Recurse -Include '*.zip', '*.tar.gz', '*.msixbundle', '*.rpm', '*.deb', '*.json' | ForEach-Object {
               Copy-Item -Path $_.FullName -Destination $outputDir -Force -Verbose
             }
 
@@ -448,7 +555,7 @@ extends:
             script: |
               Write-Verbose -Verbose "Release version: $(PackageVersion)"
 
-              $artifacts = Get-ChildItem "$(Pipeline.Workspace)" -Recurse -Include '*.zip', '*.tar.gz', '*.msixbundle'
+              $artifacts = Get-ChildItem "$(Pipeline.Workspace)" -Recurse -Include '*.zip', '*.tar.gz', '*.msixbundle', '*.rpm', '*.deb'
 
               $artifacts | ForEach-Object {
                 Write-Verbose -Verbose "Found artifact: $($_.FullName)"
@@ -478,6 +585,14 @@ extends:
               Write-Verbose -Verbose "GitHub Release version: $githubReleaseVersion"
               Write-Host "##vso[task.setvariable variable=GitHubReleaseVersion]$githubReleaseVersion"
 
+              $appId = if ('$(PackageVersion)' -like '*-*') {
+                '9PCX3HX4HZ0Z'
+              } else {
+                '9NVTPZWRC6KQ'
+              }
+              Write-Verbose -Verbose "App ID for Store submission: $appId"
+              Write-Host "##vso[task.setvariable variable=AppID]$appId"
+
         - task: GitHubRelease@1
           displayName: Create GitHub release
           inputs:
@@ -489,11 +604,26 @@ extends:
               $(GitHubReleaseDirectory)\*.zip
               $(GitHubReleaseDirectory)\*.tar.gz
               $(GitHubReleaseDirectory)\*.msixbundle
+              $(GitHubReleaseDirectory)\*.rpm
+              $(GitHubReleaseDirectory)\*.deb
             addChangeLog: false
             tagSource: 'userSpecifiedTag'
             tag: '$(GitHubReleaseVersion)'
             isDraft: true
             isPreRelease: '$(IsPreRelease)'
+
+        - task: MS-RDX-MRO.windows-store-publish.publish-task.store-publish@3
+          displayName: 'Publish StoreBroker Package (Stable/LTS)'
+          condition: and(succeeded(), eq( variables.PublishToStore, true ), eq( variables.officialBuild, true ))
+          inputs:
+            serviceEndpoint: dsc-store
+            appId: '$(AppID)'
+            inputMethod: JsonAndZip
+            jsonPath: '$(Pipeline.Workspace)\DesiredStateConfigurationStorePackage.json'
+            zipPath: '$(Pipeline.Workspace)\DesiredStateConfigurationStorePackage.zip'
+            numberOfPackagesToKeep: 2
+            jsonZipUpdateMetadata: true
+            targetPublishMode: 'Manual'
 
     - stage: ReleaseUniversalPackage
       dependsOn: ['BuildAndSign','Release']
@@ -603,4 +733,3 @@ extends:
               Write-Verbose -Verbose "Universal Package version: $packageVersion"
               az artifacts universal publish --organization https://dev.azure.com/PowerShell/ --project PowerShell --feed PowerShell-Universal --name microsoft.dsc-macos --version $packageVersion --description "Microsoft Desired State Configuration (DSC) - Universal Package" --path "$(MacOSDirectory)" --scope project --verbose
           condition: succeeded()
-

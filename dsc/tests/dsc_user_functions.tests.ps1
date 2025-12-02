@@ -3,7 +3,7 @@
 
 Describe 'user function tests' {
     It 'user function working with expression: <expression>' -TestCases @(
-        @{ expression = "[MyFunction.ComboFunction('test', 42, true)]"; expected = 'test-42-True' }
+        @{ expression = "[__MyFunction.ComboFunction('test', 42, true)]"; expected = 'test-42-True' }
         @{ expression = "[MyOtherNamespace.ArrayFunction(createArray('a','b','c','d'))]"; expected = @('["b","c","d"]-a') }
     ) {
         param($expression, $expected)
@@ -11,7 +11,7 @@ Describe 'user function tests' {
         $configYaml = @"
 `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 functions:
-- namespace: MyFunction
+- namespace: __MyFunction
   members:
     ComboFunction:
       parameters:

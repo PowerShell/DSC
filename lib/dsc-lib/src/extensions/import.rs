@@ -2,19 +2,13 @@
 // Licensed under the MIT License.
 
 use crate::{
-    dscerror::DscError,
-    dscresources::{
-        command_resource::{
-            invoke_command,
-        },
-    },
-    extensions::{
+    configure::context::Context, dscerror::DscError, dscresources::command_resource::invoke_command, extensions::{
         dscextension::{
             Capability,
             DscExtension,
         },
         extension_manifest::ExtensionManifest,
-    },
+    }, parser::Statement
 };
 use path_absolutize::Absolutize;
 use rust_i18n::t;
@@ -32,6 +26,8 @@ pub struct ImportMethod {
     pub executable: String,
     /// The arguments to pass to the command to perform an Import.
     pub args: Option<Vec<ImportArgKind>>,
+    /// Enables modifying the resulting output from STDOUT after running the import command.
+    pub output: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -61,16 +57,14 @@ impl DscExtension {
     /// # Errors
     ///
     /// This function will return an error if the import fails or if the extension does not support the import capability.
-    pub fn import(&self, file: &str) -> Result<String, DscError> {
-        if self.capabilities.contains(&Capability::Import) {
-            let file_path = Path::new(file);
-            let file_extension = file_path.extension().and_then(|s| s.to_str()).unwrap_or_default().to_string();
-            if self.import_file_extensions.as_ref().is_some_and(|exts| exts.contains(&file_extension)) {
-                debug!("{}", t!("extensions.dscextension.importingFile", file = file, extension = self.type_name));
+    pub fn import(&self, file: &Path) -> Result<String, DscError> {
+        if let Some(import) = &self.import {
+            let file_extension = file.extension().and_then(|s| s.to_str()).unwrap_or_default().to_string();
+            if import.file_extensions.contains(&file_extension) {
+                debug!("{}", t!("extensions.dscextension.importingFile", file = file.display(), extension = self.type_name));
             } else {
-                debug!("{}", t!("extensions.dscextension.importNotSupported", file = file, extension = self.type_name));
                 return Err(DscError::NotSupported(
-                    t!("extensions.dscextension.importNotSupported", file = file, extension = self.type_name).to_string(),
+                    t!("extensions.dscextension.importNotSupported", file = file.display(), extension = self.type_name).to_string(),
                 ));
             }
 
@@ -88,13 +82,21 @@ impl DscExtension {
                 &import.executable,
                 args,
                 None,
-                Some(self.directory.as_str()),
+                Some(&self.directory),
                 None,
                 extension.exit_codes.as_ref(),
             )?;
             if stdout.is_empty() {
                 info!("{}", t!("extensions.dscextension.importNoResults", extension = self.type_name));
             } else {
+                if let Some(output) = &import.output {
+                    debug!("{}", t!("extensions.dscextension.importProcessingOutput", extension = self.type_name));
+                    let mut parser = Statement::new()?;
+                    let mut context = Context::new();
+                    context.stdout = Some(stdout);
+                    let processed_output = parser.parse_and_execute(output, &context)?;
+                    return Ok(processed_output.to_string());
+                }
                 return Ok(stdout);
             }
         }
@@ -102,19 +104,18 @@ impl DscExtension {
             self.type_name.clone(),
             Capability::Import.to_string()
         ))
-    }    
+    }
 }
 
-fn process_import_args(args: Option<&Vec<ImportArgKind>>, file: &str) -> Result<Option<Vec<String>>, DscError> {
+fn process_import_args(args: Option<&Vec<ImportArgKind>>, file: &Path) -> Result<Option<Vec<String>>, DscError> {
     let Some(arg_values) = args else {
         debug!("{}", t!("dscresources.commandResource.noArgs"));
         return Ok(None);
     };
 
     // make path absolute
-    let path = Path::new(file);
-    let Ok(full_path) = path.absolutize() else {
-        return Err(DscError::Extension(t!("util.failedToAbsolutizePath", path = path : {:?}).to_string()));
+    let Ok(full_path) = file.absolutize() else {
+        return Err(DscError::Extension(t!("util.failedToAbsolutizePath", path = file.display()).to_string()));
     };
 
     let mut processed_args = Vec::<String>::new();

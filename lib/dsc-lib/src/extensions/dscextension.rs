@@ -1,11 +1,13 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use crate::extensions::import::ImportMethod;
 use dsc_lib_jsonschema::transforms::idiomaticize_string_enum;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use schemars::JsonSchema;
 use std::fmt::Display;
+use std::path::PathBuf;
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -17,15 +19,14 @@ pub struct DscExtension {
     pub version: String,
     /// The capabilities of the resource.
     pub capabilities: Vec<Capability>,
-    /// The extensions supported for importing.
-    #[serde(rename = "importFileExtensions")]
-    pub import_file_extensions: Option<Vec<String>>,
+    /// The import specifics.
+    pub import: Option<ImportMethod>,
     /// The file path to the resource.
-    pub path: String,
+    pub path: PathBuf,
     /// The description of the resource.
     pub description: Option<String>,
     // The directory path to the resource.
-    pub directory: String,
+    pub directory: PathBuf,
     /// The author of the resource.
     pub author: Option<String>,
     /// The manifest of the resource.
@@ -61,10 +62,10 @@ impl DscExtension {
             type_name: String::new(),
             version: String::new(),
             capabilities: Vec::new(),
-            import_file_extensions: None,
+            import: None,
             description: None,
-            path: String::new(),
-            directory: String::new(),
+            path: PathBuf::new(),
+            directory: PathBuf::new(),
             author: None,
             manifest: Value::Null,
         }

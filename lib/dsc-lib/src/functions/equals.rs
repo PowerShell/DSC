@@ -20,8 +20,8 @@ impl Function for Equals {
             min_args: 2,
             max_args: 2,
             accepted_arg_ordered_types: vec![
-                vec![FunctionArgKind::Number, FunctionArgKind::String, FunctionArgKind::Array, FunctionArgKind::Object],
-                vec![FunctionArgKind::Number, FunctionArgKind::String, FunctionArgKind::Array, FunctionArgKind::Object],
+                vec![FunctionArgKind::Null, FunctionArgKind::Number, FunctionArgKind::String, FunctionArgKind::Array, FunctionArgKind::Object],
+                vec![FunctionArgKind::Null, FunctionArgKind::Number, FunctionArgKind::String, FunctionArgKind::Array, FunctionArgKind::Object],
             ],
             remaining_arg_accepted_types: None,
             return_types: vec![FunctionArgKind::Boolean],
@@ -72,6 +72,13 @@ mod tests {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[equals(1,'string')]", &Context::new()).unwrap();
         assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn null_equal() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[equals(null(),null())]", &Context::new()).unwrap();
+        assert_eq!(result, Value::Bool(true));
     }
 
     // TODO: Add tests for arrays once `createArray()` is implemented
