@@ -9,8 +9,7 @@ authorizedKEYSfile "path to authorized keys file"
   (keyword
     (alphanumeric)
     (arguments
-      (quotedString
-        (string)))))
+      (string))))
 =====
 comment
 =====
@@ -30,15 +29,13 @@ authorizedkeysfile "path to authorized keys file"
 
 (server_config
   (match
+    (criteria
+      (alpha)
+      (string))
     (keyword
       (alphanumeric)
       (arguments
-        (string)))
-    (keyword
-      (alphanumeric)
-      (arguments
-        (quotedString
-          (string))))))
+        (string)))))
 =====
 boolean and match
 =====
@@ -54,15 +51,13 @@ authorizedkeysfile "path to authorized keys file"
     (arguments
       (boolean)))
   (match
+    (criteria
+      (alpha)
+      (string))
     (keyword
       (alphanumeric)
       (arguments
-        (string)))
-    (keyword
-      (alphanumeric)
-      (arguments
-        (quotedString
-          (string))))))
+        (string)))))
 =====
 directive with = operator
 =====
@@ -111,8 +106,7 @@ AllowGroups group1 "group two"
     (alphanumeric)
     (arguments
       (string)
-      (quotedString
-        (string)))))
+      (string))))
 =====
 directive with comma-separated arguments
 =====
@@ -233,19 +227,17 @@ passwordauthentication yes
 
 (server_config
   (match
-    (keyword
-      (alphanumeric)
-      (arguments
-        (string)))
+    (criteria
+      (alpha)
+      (string))
     (keyword
       (alphanumeric)
       (arguments
         (boolean))))
   (match
-    (keyword
-      (alphanumeric)
-      (arguments
-        (string)))
+    (criteria
+      (alpha)
+      (string))
     (keyword
       (alphanumeric)
       (arguments
@@ -285,6 +277,11 @@ Subsystem	sftp	sftp-server.exe -f LOCAL0 -l DEBUG3
   (keyword
     (alphanumeric)
     (arguments
+    (string)
+      (string)
+      (string)
+      (string)
+      (string)
       (string))))
 =====
 parse mini config
@@ -308,10 +305,9 @@ passwordauthentication yes
     (arguments
       (string)))
   (match
-    (keyword
-      (alphanumeric)
-      (arguments
-        (string)))
+    (criteria
+      (alpha)
+      (string))
     (keyword
       (alphanumeric)
       (arguments
@@ -320,13 +316,11 @@ passwordauthentication yes
       (alphanumeric)
       (arguments
         (string)
-        (quotedString
-          (string)))))
+        (string))))
   (match
-    (keyword
-      (alphanumeric)
-      (arguments
-        (string)))
+    (criteria
+      (alpha)
+      (string))
     (keyword
       (alphanumeric)
       (arguments
@@ -359,8 +353,7 @@ parse empty line
 
 
 ---
-(server_config
-  (empty_line))
+(server_config)
 ====
 parse repeatable keyword
 ====
@@ -372,5 +365,59 @@ allowgroups administrators "openssh users"
     (alphanumeric)
     (arguments
       (string)
-      (quotedString
-        (string)))))
+      (string))))
+====
+parse repeatable strings without quotes
+====
+allowgroups groupOne groupTwo
+
+---
+(server_config
+  (keyword
+    (alphanumeric)
+    (arguments
+      (string)
+      (string))))
+====
+parse comma separated string with quotes
+====
+ciphers "chacha20-poly1305@openssh.com,aes128-gcm@openssh.com"
+
+---
+(server_config
+  (keyword
+    (alphanumeric)
+    (arguments
+      (string)
+      (string))))
+====
+parse single-quoted argument
+====
+allowgroups 'openssh users'
+
+---
+(server_config
+  (keyword
+    (alphanumeric)
+    (arguments
+      (string))))
+====
+parse multiple match criteria
+====
+match user User1,User2 Address 192.0.2.0/24
+passwordauthentication no
+
+---
+(server_config
+  (match
+    (criteria
+      (alpha)
+          (string)
+          (string))
+        (criteria
+          (alpha)
+          (string))
+        (keyword
+          (alphanumeric)
+          (arguments
+            (boolean)))))

@@ -18,7 +18,7 @@ pub const MULTI_ARG_KEYWORDS_COMMA_SEP: [&str; 10] = [
 
 // keywords that can have multiple space-separated arguments per line but cannot be repeated over multiple lines,
 // as subsequent entries are ignored, should be represented as arrays
-pub const MULTI_ARG_KEYWORDS_SPACE_SEP: [&str; 11] = [
+pub const MULTI_ARG_KEYWORDS_SPACE_SEP: [&str; 12] = [
     "acceptenv",
     "allowgroups",
     "allowusers",
@@ -30,6 +30,7 @@ pub const MULTI_ARG_KEYWORDS_SPACE_SEP: [&str; 11] = [
     "permitlisten",
     "permitopen",
     "persourcepenalties",
+    "rekeylimit" // first arg is bytes, second arg (optional) is amount of time
 ];
 
 // keywords that can be repeated over multiple lines and should be represented as arrays.
