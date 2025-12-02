@@ -8,14 +8,7 @@ use tracing::debug;
 use tree_sitter::Parser;
 
 use crate::error::SshdConfigError;
-use crate::metadata::{MULTI_ARG_KEYWORDS_COMMA_SEP, MULTI_ARG_KEYWORDS_SPACE_SEP, REPEATABLE_KEYWORDS};
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-enum KeywordType {
-    CommaSeparated,
-    SpaceSeparated,
-    Unseparated
-}
+use crate::metadata::{MULTI_ARG_KEYWORDS, REPEATABLE_KEYWORDS};
 
 #[derive(Debug, JsonSchema)]
 pub struct SshdConfigParser {
@@ -187,7 +180,6 @@ impl SshdConfigParser {
         let mut operator: Option<String> = None;
         let mut is_vec = false;
         let mut is_repeatable = false;
-        let mut keyword_type = KeywordType::Unseparated;
 
         if let Some(keyword) = keyword_node.child_by_field_name("keyword") {
             let Ok(text) = keyword.utf8_text(input_bytes) else {
@@ -198,13 +190,8 @@ impl SshdConfigParser {
                 debug!("{}", t!("parser.keywordDebug", text = text).to_string());
             }
 
-            if MULTI_ARG_KEYWORDS_SPACE_SEP.contains(&text) {
-                keyword_type = KeywordType::SpaceSeparated;
-            } else if MULTI_ARG_KEYWORDS_COMMA_SEP.contains(&text) {
-                keyword_type = KeywordType::CommaSeparated;
-            }
             is_repeatable = REPEATABLE_KEYWORDS.contains(&text);
-            is_vec = is_repeatable || keyword_type != KeywordType::Unseparated;
+            is_vec = is_repeatable || MULTI_ARG_KEYWORDS.contains(&text);
             key = Some(text.to_string());
         }
 
@@ -221,7 +208,7 @@ impl SshdConfigParser {
                 return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
             }
             if node.kind() == "arguments" {
-                value = parse_arguments_node(node, input, input_bytes, is_vec, keyword_type)?;
+                value = parse_arguments_node(node, input, input_bytes, is_vec)?;
                 if target_map.is_some() {
                     debug!("{}: {:?}", t!("parser.valueDebug").to_string(), value);
                 }
@@ -290,7 +277,7 @@ impl SshdConfigParser {
     }
 }
 
-fn parse_arguments_node(arg_node: tree_sitter::Node, input: &str, input_bytes: &[u8], is_vec: bool, _keyword_type: KeywordType) -> Result<Value, SshdConfigError> {
+fn parse_arguments_node(arg_node: tree_sitter::Node, input: &str, input_bytes: &[u8], is_vec: bool) -> Result<Value, SshdConfigError> {
     let mut cursor = arg_node.walk();
     let mut vec: Vec<Value> = Vec::new();
     // if there is more than one argument, but a vector is not expected for the keyword, throw an error
@@ -323,7 +310,7 @@ fn parse_arguments_node(arg_node: tree_sitter::Node, input: &str, input_bytes: &
             _ => return Err(SshdConfigError::ParserError(t!("parser.unknownNode", kind = node.kind()).to_string()))
         }
     }
-    // Always return array if is_vec is true (for MULTI_ARG_KEYWORDS_COMMA_SEP, MULTI_ARG_KEYWORDS_SPACE_SEP, and REPEATABLE_KEYWORDS)
+    // Always return array if is_vec is true (for MULTI_ARG_KEYWORDS, and REPEATABLE_KEYWORDS)
     if is_vec {
         Ok(Value::Array(vec))
     } else if !vec.is_empty() {

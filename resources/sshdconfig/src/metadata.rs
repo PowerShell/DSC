@@ -3,32 +3,27 @@
 
 // keywords that can have multiple comma-separated arguments per line but cannot be repeated over multiple lines,
 // as subsequent entries are ignored, should be represented as arrays
-pub const MULTI_ARG_KEYWORDS_COMMA_SEP: [&str; 10] = [
-    "authenticationmethods",
-    "casignaturealgorithms",
-    "ciphers",
-    "hostbasedacceptedalgorithms",
-    "hostkeyalgorithms",
-    "kexalgorithms",
-    "macs",
-    "permituserenvironment",
-    "persourcepenaltyexemptlist",
-    "pubkeyacceptedalgorithms"
-];
-
-// keywords that can have multiple space-separated arguments per line but cannot be repeated over multiple lines,
-// as subsequent entries are ignored, should be represented as arrays
-pub const MULTI_ARG_KEYWORDS_SPACE_SEP: [&str; 12] = [
+pub const MULTI_ARG_KEYWORDS: [&str; 22] = [
     "acceptenv",
     "allowgroups",
     "allowusers",
+    "authenticationmethods",
     "authorizedkeysfile",
+    "casignaturealgorithms",
     "channeltimeout",
+    "ciphers",
     "denygroups",
     "denyusers",
+    "hostbasedacceptedalgorithms",
+    "hostkeyalgorithms",
     "ipqos",
+    "kexalgorithms",
+    "macs",
     "permitlisten",
     "permitopen",
+    "permituserenvironment",
+    "persourcepenaltyexemptlist",
+    "pubkeyacceptedalgorithms",
     "persourcepenalties",
     "rekeylimit" // first arg is bytes, second arg (optional) is amount of time
 ];
