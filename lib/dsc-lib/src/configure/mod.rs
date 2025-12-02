@@ -335,7 +335,7 @@ impl Configurator {
                 Ok(resource.properties.clone())
             },
             _ => {
-                Ok(self.invoke_property_expressions(resource.properties.as_ref())?)
+                Ok(invoke_property_expressions(&mut self.statement_parser, &self.context, resource.properties.as_ref())?)
             },
         }
     }
@@ -350,10 +350,8 @@ impl Configurator {
     ///
     /// This function will return an error if the underlying resource fails.
     pub fn invoke_get(&mut self) -> Result<ConfigurationGetResult, DscError> {
-        self.unroll_copy_loops()?;
-
         let mut result = ConfigurationGetResult::new();
-        let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
+        let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &mut self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
         let discovery = &mut self.discovery.clone();
         for resource in resources {
@@ -436,10 +434,8 @@ impl Configurator {
     /// This function will return an error if the underlying resource fails.
     #[allow(clippy::too_many_lines)]
     pub fn invoke_set(&mut self, skip_test: bool) -> Result<ConfigurationSetResult, DscError> {
-        self.unroll_copy_loops()?;
-
         let mut result = ConfigurationSetResult::new();
-        let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
+        let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &mut self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
         let discovery = &mut self.discovery.clone();
         for resource in resources {
@@ -606,10 +602,8 @@ impl Configurator {
     ///
     /// This function will return an error if the underlying resource fails.
     pub fn invoke_test(&mut self) -> Result<ConfigurationTestResult, DscError> {
-        self.unroll_copy_loops()?;
-
         let mut result = ConfigurationTestResult::new();
-        let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
+        let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &mut self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
         let discovery = &mut self.discovery.clone();
         for resource in resources {
@@ -688,8 +682,6 @@ impl Configurator {
     ///
     /// This function will return an error if the underlying resource fails.
     pub fn invoke_export(&mut self) -> Result<ConfigurationExportResult, DscError> {
-        self.unroll_copy_loops()?;
-
         let mut result = ConfigurationExportResult::new();
         let mut conf = config_doc::Configuration::new();
         conf.metadata.clone_from(&self.config.metadata);
@@ -1009,54 +1001,6 @@ impl Configurator {
         Ok(())
     }
 
-    /// Unroll copy loops in the configuration.
-    /// This method should be called after parameters have been set in the context.
-    fn unroll_copy_loops(&mut self) -> Result<(), DscError> {
-        let mut config = self.config.clone();
-        let config_copy = config.clone();
-
-        for resource in config_copy.resources {
-            // if the resource contains `Copy`, unroll it
-            if let Some(copy) = &resource.copy {
-                debug!("{}", t!("configure.mod.unrollingCopy", name = &copy.name, count = copy.count));
-                self.context.process_mode = ProcessMode::Copy;
-                self.context.copy_current_loop_name.clone_from(&copy.name);
-                let mut copy_resources = Vec::<Resource>::new();
-                let count: i64 = match &copy.count {
-                    IntOrExpression::Int(i) => *i,
-                    IntOrExpression::Expression(e) => {
-                        let Value::Number(n) = self.statement_parser.parse_and_execute(e, &self.context)? else {
-                            return Err(DscError::Parser(t!("configure.mod.copyCountResultNotInteger", expression = e).to_string()))
-                        };
-                        n.as_i64().ok_or_else(|| DscError::Parser(t!("configure.mod.copyCountResultNotInteger", expression = e).to_string()))?
-                    },
-                };
-                for i in 0..count {
-                    self.context.copy.insert(copy.name.clone(), i);
-                    let mut new_resource = resource.clone();
-                    let Value::String(new_name) = self.statement_parser.parse_and_execute(&resource.name, &self.context)? else {
-                        return Err(DscError::Parser(t!("configure.mod.copyNameResultNotString").to_string()))
-                    };
-                    new_resource.name = new_name.to_string();
-
-                    if let Some(properties) = &resource.properties {
-                        new_resource.properties = self.invoke_property_expressions(Some(properties))?;
-                    }
-
-                    new_resource.copy = None;
-                    copy_resources.push(new_resource);
-                }
-                self.context.process_mode = ProcessMode::Normal;
-                // replace current resource with the unrolled copy resources
-                config.resources.retain(|r| *r != resource);
-                config.resources.extend(copy_resources);
-            }
-        }
-
-        self.config = config;
-        Ok(())
-    }
-
     /// Evaluate resource name expression and return the resolved name.
     ///
     /// This method evaluates DSC expressions in a resource name, handling both
@@ -1086,72 +1030,73 @@ impl Configurator {
 
         Ok(evaluated_name)
     }
+}
 
-    fn invoke_property_expressions(&mut self, properties: Option<&Map<String, Value>>) -> Result<Option<Map<String, Value>>, DscError> {
-        debug!("{}", t!("configure.mod.invokePropertyExpressions"));
-        if properties.is_none() {
-            return Ok(None);
-        }
+pub fn invoke_property_expressions(parser: &mut Statement, context: &Context, properties: Option<&Map<String, Value>>) -> Result<Option<Map<String, Value>>, DscError> {
+    debug!("{}", t!("configure.mod.invokePropertyExpressions"));
+    if properties.is_none() {
+        return Ok(None);
+    }
 
-        let mut result: Map<String, Value> = Map::new();
-        if let Some(properties) = properties {
-            for (name, value) in properties {
-                trace!("{}", t!("configure.mod.invokeExpression", name = name, value = value));
-                match value {
-                    Value::Object(object) => {
-                        let value = self.invoke_property_expressions(Some(object))?;
-                        result.insert(name.clone(), serde_json::to_value(value)?);
-                    },
-                    Value::Array(array) => {
-                        let mut result_array: Vec<Value> = Vec::new();
-                        for element in array {
-                            match element {
-                                Value::Object(object) => {
-                                    let value = self.invoke_property_expressions(Some(object))?;
-                                    result_array.push(serde_json::to_value(value)?);
-                                },
-                                Value::Array(_) => {
-                                    return Err(DscError::Parser(t!("configure.mod.nestedArraysNotSupported").to_string()));
-                                },
-                                Value::String(_) => {
-                                    // use as_str() so that the enclosing quotes are not included for strings
-                                    let Some(statement) = element.as_str() else {
-                                        return Err(DscError::Parser(t!("configure.mod.arrayElementCouldNotTransformAsString").to_string()));
-                                    };
-                                    let statement_result = self.statement_parser.parse_and_execute(statement, &self.context)?;
-                                    let Some(string_result) = statement_result.as_str() else {
-                                        return Err(DscError::Parser(t!("configure.mod.arrayElementCouldNotTransformAsString").to_string()));
-                                    };
-                                    result_array.push(Value::String(string_result.to_string()));
-                                }
-                                _ => {
-                                    result_array.push(element.clone());
-                                }
+    let mut result: Map<String, Value> = Map::new();
+    if let Some(properties) = properties {
+        for (name, value) in properties {
+            trace!("{}", t!("configure.mod.invokeExpression", name = name, value = value));
+            match value {
+                Value::Object(object) => {
+                    let value = invoke_property_expressions(parser, context, Some(object))?;
+                    result.insert(name.clone(), serde_json::to_value(value)?);
+                },
+                Value::Array(array) => {
+                    let mut result_array: Vec<Value> = Vec::new();
+                    for element in array {
+                        match element {
+                            Value::Object(object) => {
+                                let value = invoke_property_expressions(parser, context, Some(object))?;
+                                result_array.push(serde_json::to_value(value)?);
+                            },
+                            Value::Array(_) => {
+                                return Err(DscError::Parser(t!("configure.mod.nestedArraysNotSupported").to_string()));
+                            },
+                            Value::String(_) => {
+                                // use as_str() so that the enclosing quotes are not included for strings
+                                let Some(statement) = element.as_str() else {
+                                    return Err(DscError::Parser(t!("configure.mod.arrayElementCouldNotTransformAsString").to_string()));
+                                };
+                                let statement_result = parser.parse_and_execute(statement, context)?;
+                                let Some(string_result) = statement_result.as_str() else {
+                                    return Err(DscError::Parser(t!("configure.mod.arrayElementCouldNotTransformAsString").to_string()));
+                                };
+                                result_array.push(Value::String(string_result.to_string()));
+                            }
+                            _ => {
+                                result_array.push(element.clone());
                             }
                         }
-                        result.insert(name.clone(), serde_json::to_value(result_array)?);
-                    },
-                    Value::String(_) => {
-                        // use as_str() so that the enclosing quotes are not included for strings
-                        let Some(statement) = value.as_str() else {
-                            return Err(DscError::Parser(t!("configure.mod.valueCouldNotBeTransformedAsString", value = value).to_string()));
-                        };
-                        let statement_result = self.statement_parser.parse_and_execute(statement, &self.context)?;
-                        if let Some(string_result) = statement_result.as_str() {
-                            result.insert(name.clone(), Value::String(string_result.to_string()));
-                        } else {
-                            result.insert(name.clone(), statement_result);
-                        }
-                    },
-                    _ => {
-                        result.insert(name.clone(), value.clone());
-                    },
-                }
+                    }
+                    result.insert(name.clone(), serde_json::to_value(result_array)?);
+                },
+                Value::String(_) => {
+                    // use as_str() so that the enclosing quotes are not included for strings
+                    let Some(statement) = value.as_str() else {
+                        return Err(DscError::Parser(t!("configure.mod.valueCouldNotBeTransformedAsString", value = value).to_string()));
+                    };
+                    let statement_result = parser.parse_and_execute(statement, context)?;
+                    if let Some(string_result) = statement_result.as_str() {
+                        result.insert(name.clone(), Value::String(string_result.to_string()));
+                    } else {
+                        result.insert(name.clone(), statement_result);
+                    }
+                },
+                _ => {
+                    result.insert(name.clone(), value.clone());
+                },
             }
         }
-        Ok(Some(result))
     }
+    Ok(Some(result))
 }
+
 
 /// Validate that a parameter value matches the expected type.
 ///
