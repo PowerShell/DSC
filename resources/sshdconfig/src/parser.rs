@@ -242,7 +242,7 @@ mod tests {
         let result: Map<String, Value> = parse_text_to_map(input).unwrap();
         let expected = vec![
             Value::String("administrators".to_string()),
-            Value::String("\"openssh users\"".to_string()),
+            Value::String("openssh users".to_string()),
         ];
         assert_eq!(result.get("allowgroups").unwrap(), &Value::Array(expected));
     }
