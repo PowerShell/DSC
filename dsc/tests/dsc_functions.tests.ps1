@@ -958,6 +958,46 @@ Describe 'tests for function expressions' {
     $out.results[0].result.actualState.output | Should -Be $expected
   }
 
+  It 'objectKeys function returns array of keys: <expression>' -TestCases @(
+    @{ expression = "[length(objectKeys(createObject('a', 1, 'b', 2, 'c', 3)))]"; expected = 3 }
+    @{ expression = "[length(objectKeys(createObject()))]"; expected = 0 }
+    @{ expression = "[objectKeys(createObject('name', 'John'))[0]]"; expected = 'name' }
+    @{ expression = "[length(objectKeys(createObject('x', 1, 'y', 2)))]"; expected = 2 }
+  ) {
+    param($expression, $expected)
+
+    $escapedExpression = $expression -replace "'", "''"
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '$escapedExpression'
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -Be $expected
+  }
+
+  It 'objectKeys function works with nested objects: <expression>' -TestCases @(
+    @{ expression = "[objectKeys(createObject('person', createObject('name', 'John')))[0]]"; expected = 'person' }
+    @{ expression = "[length(objectKeys(createObject('a', createArray(1,2,3), 'b', 'text')))]"; expected = 2 }
+  ) {
+    param($expression, $expected)
+
+    $escapedExpression = $expression -replace "'", "''"
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '$escapedExpression'
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -Be $expected
+  }
+
   It 'tryGet() function works for: <expression>' -TestCases @(
     @{ expression = "[tryGet(createObject('a', 1, 'b', 2), 'a')]"; expected = 1 }
     @{ expression = "[tryGet(createObject('a', 1, 'b', 2), 'c')]"; expected = $null }
@@ -1553,5 +1593,28 @@ Describe 'tests for function expressions' {
     $errorContent = & { $config_yaml | dsc config get -f - 2>&1 } | Out-String
     $LASTEXITCODE | Should -Be 2
     $errorContent | Should -Match $errorMatch
+  }
+
+  It 'tryWhich() works for: <expression>' -TestCases @(
+    @{ expression = "[tryWhich('pwsh')]"; found = $true }
+    @{ expression = "[tryWhich('nonexistentcommand12345')]"; found = $false }
+  ) {
+    param($expression, $found)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "$expression"
+"@
+    $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+    if ($found) {
+      $out.results[0].result.actualState.output | Should -Not -BeNullOrEmpty
+    } else {
+      $out.results[0].result.actualState.output | Should -BeNullOrEmpty
+    }
   }
 }

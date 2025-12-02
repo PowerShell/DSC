@@ -23,6 +23,9 @@ pub struct ExtensionManifest {
     pub r#type: String,
     /// The version of the extension using semantic versioning.
     pub version: String,
+    /// An optional condition for the extension to be active.  If the condition evaluates to false, the extension is skipped.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub condition: Option<String>,
     /// The description of the extension.
     pub description: Option<String>,
     /// Tags for the extension.
@@ -31,6 +34,9 @@ pub struct ExtensionManifest {
     pub discover: Option<DiscoverMethod>,
     /// Details how to call the Import method of the extension.
     pub import: Option<ImportMethod>,
+    /// Details how to call the ImportParameters method of the extension.
+    #[serde(rename = "importParameters")]
+    pub import_parameters: Option<ImportMethod>,
     /// Details how to call the Secret method of the extension.
     pub secret: Option<SecretMethod>,
     /// Mapping of exit codes to descriptions.  Zero is always success and non-zero is always failure.

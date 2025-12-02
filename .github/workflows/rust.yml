@@ -27,9 +27,9 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Install prerequisites
-        run: ./build.new.ps1 -SkipBuild -Clippy -Verbose
+        run: ./build.ps1 -SkipBuild -Clippy -Verbose
       - name: Generate documentation
-        run: ./build.new.ps1 -RustDocs -Verbose
+        run: ./build.ps1 -RustDocs -Verbose
       - name: Test documentation
         run: |-
           $testParams = @{
@@ -40,17 +40,17 @@ jobs:
             ExcludePesterTests = $true
             Verbose            = $true
           }
-          ./build.new.ps1 @testParams
+          ./build.ps1 @testParams
   linux-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - name: Install prerequisites
-        run: ./build.new.ps1 -SkipBuild -Clippy  -Verbose
+        run: ./build.ps1 -SkipBuild -Clippy  -Verbose
       - name: Build
-        run: ./build.new.ps1 -Clippy -Verbose
+        run: ./build.ps1 -Clippy -Verbose
       - name: Run rust tests
-        run: ./build.new.ps1 -SkipBuild -Test -ExcludePesterTests -Verbose
+        run: ./build.ps1 -SkipBuild -Test -ExcludePesterTests -Verbose
       - name:  Prepare build artifact
         run:   tar -cvf bin.tar bin/
       - name: Upload build artifact
@@ -81,18 +81,18 @@ jobs:
             ExcludeRustTests = $true
             Verbose          = $true
           }
-          ./build.new.ps1 @params -PesterTestGroup ${{matrix.group}}
+          ./build.ps1 @params -PesterTestGroup ${{matrix.group}}
 
   macos-build:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v5
       - name: Install prerequisites
-        run: ./build.new.ps1 -SkipBuild -Clippy  -Verbose
+        run: ./build.ps1 -SkipBuild -Clippy  -Verbose
       - name: Build
-        run: ./build.new.ps1 -Clippy -Verbose
+        run: ./build.ps1 -Clippy -Verbose
       - name: Run rust tests
-        run: ./build.new.ps1 -SkipBuild -Test -ExcludePesterTests -Verbose
+        run: ./build.ps1 -SkipBuild -Test -ExcludePesterTests -Verbose
       - name:  Prepare build artifact
         run:   tar -cvf bin.tar bin/
       - name: Upload build artifact
@@ -123,7 +123,7 @@ jobs:
             ExcludeRustTests = $true
             Verbose          = $true
           }
-          ./build.new.ps1 @params -PesterTestGroup ${{matrix.group}}
+          ./build.ps1 @params -PesterTestGroup ${{matrix.group}}
 
   # Windows
   windows-build:
@@ -131,11 +131,11 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Install prerequisites
-        run: ./build.new.ps1 -SkipBuild -Clippy  -Verbose
+        run: ./build.ps1 -SkipBuild -Clippy  -Verbose
       - name: Build
-        run: ./build.new.ps1 -Clippy -Verbose
+        run: ./build.ps1 -Clippy -Verbose
       - name: Run rust tests
-        run: ./build.new.ps1 -SkipBuild -Test -ExcludePesterTests -Verbose
+        run: ./build.ps1 -SkipBuild -Test -ExcludePesterTests -Verbose
       - name: List bin folder files
         run:  Get-ChildItem bin
       - name:  Prepare build artifact
@@ -168,4 +168,4 @@ jobs:
             ExcludeRustTests = $true
             Verbose          = $true
           }
-          ./build.new.ps1 @params -PesterTestGroup ${{matrix.group}}
+          ./build.ps1 @params -PesterTestGroup ${{matrix.group}}

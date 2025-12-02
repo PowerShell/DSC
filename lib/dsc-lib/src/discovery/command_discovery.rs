@@ -1,8 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{discovery::discovery_trait::{DiscoveryFilter, DiscoveryKind, ResourceDiscovery}};
+use crate::{discovery::discovery_trait::{DiscoveryFilter, DiscoveryKind, ResourceDiscovery}, parser::Statement};
 use crate::{locked_is_empty, locked_extend, locked_clone, locked_get};
+use crate::configure::context::Context;
 use crate::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
 use crate::dscresources::resource_manifest::{import_manifest, validate_semver, Kind, ResourceManifest, SchemaKind};
 use crate::dscresources::command_resource::invoke_command;
@@ -606,6 +607,18 @@ fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource:
     }
 }
 
+fn evaluate_condition(condition: Option<&str>) -> Result<bool, DscError> {
+    if let Some(cond) = condition {
+        let mut statement = Statement::new()?;
+        let result = statement.parse_and_execute(cond, &Context::new())?;
+        if let Some(bool_result) = result.as_bool() {
+            return Ok(bool_result);
+        }
+        return Err(DscError::Validation(t!("discovery.commandDiscovery.conditionNotBoolean", condition = cond).to_string()));
+    }
+    Ok(true)
+}
+
 /// Loads a manifest from the given path and returns a vector of `ImportedManifest`.
 ///
 /// # Arguments
@@ -639,6 +652,10 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
                 }
             }
         };
+        if !evaluate_condition(manifest.condition.as_deref())? {
+            debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = path.to_string_lossy(), condition = manifest.condition.unwrap_or_default()));
+            return Ok(vec![]);
+        }
         let resource = load_resource_manifest(path, &manifest)?;
         return Ok(vec![ImportedManifest::Resource(resource)]);
     }
@@ -658,10 +675,15 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
                 }
             }
         };
+        if !evaluate_condition(manifest.condition.as_deref())? {
+                debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = path.to_string_lossy(), condition = manifest.condition.unwrap_or_default()));
+                return Ok(vec![]);
+        }
         let extension = load_extension_manifest(path, &manifest)?;
         return Ok(vec![ImportedManifest::Extension(extension)]);
     }
     if DSC_MANIFEST_LIST_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)) {
+        let mut resources: Vec<ImportedManifest> = vec![];
         let manifest_list = if extension_is_json {
             match serde_json::from_str::<ManifestList>(&contents) {
                 Ok(manifest) => manifest,
@@ -677,15 +699,22 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
                 }
             }
         };
-        let mut resources = vec![];
         if let Some(resource_manifests) = &manifest_list.resources {
             for res_manifest in resource_manifests {
+                if !evaluate_condition(res_manifest.condition.as_deref())? {
+                    debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = path.to_string_lossy(), condition = res_manifest.condition.as_ref() : {:?}));
+                    continue;
+                }
                 let resource = load_resource_manifest(path, res_manifest)?;
                 resources.push(ImportedManifest::Resource(resource));
             }
         }
         if let Some(extension_manifests) = &manifest_list.extensions {
             for ext_manifest in extension_manifests {
+                if !evaluate_condition(ext_manifest.condition.as_deref())? {
+                    debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = path.to_string_lossy(), condition = ext_manifest.condition.as_ref() : {:?}));
+                    continue;
+                }
                 let extension = load_extension_manifest(path, ext_manifest)?;
                 resources.push(ImportedManifest::Extension(extension));
             }
@@ -774,14 +803,14 @@ fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<
         verify_executable(&manifest.r#type, "secret", &secret.executable, path.parent().unwrap());
         capabilities.push(dscextension::Capability::Secret);
     }
-    let import_extensions = if let Some(import) = &manifest.import {
+    let import = if let Some(import) = &manifest.import {
         verify_executable(&manifest.r#type, "import", &import.executable, path.parent().unwrap());
         capabilities.push(dscextension::Capability::Import);
         if import.file_extensions.is_empty() {
             warn!("{}", t!("discovery.commandDiscovery.importExtensionsEmpty", extension = manifest.r#type));
             None
         } else {
-            Some(import.file_extensions.clone())
+            Some(import.clone())
         }
     } else {
         None
@@ -792,7 +821,7 @@ fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<
         description: manifest.description.clone(),
         version: manifest.version.clone(),
         capabilities,
-        import_file_extensions: import_extensions,
+        import,
         path: path.to_path_buf(),
         directory: path.parent().unwrap().to_path_buf(),
         manifest: serde_json::to_value(manifest)?,
