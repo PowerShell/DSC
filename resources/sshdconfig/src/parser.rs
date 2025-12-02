@@ -15,22 +15,6 @@ pub struct SshdConfigParser {
     map: Map<String, Value>
 }
 
-/// Parse `sshd_config` to map.
-///
-/// # Arguments
-///
-/// * `input` - The `sshd_config` text to parse.
-///
-/// # Errors
-///
-/// This function will return an error if the input fails to parse.
-pub fn parse_text_to_map(input: &str) -> Result<Map<String,Value>, SshdConfigError> {
-    let mut parser = SshdConfigParser::new();
-    parser.parse_text(input)?;
-    let lowercased_map = parser.map.into_iter().map(|(k, v)| (k.to_lowercase(), v)).collect();
-    Ok(lowercased_map)
-}
-
 impl SshdConfigParser {
     /// Create a new `SshdConfigParser` instance.
     pub fn new() -> Self {
@@ -75,11 +59,11 @@ impl SshdConfigParser {
             return Err(SshdConfigError::ParserError(t!("parser.failedToParse", input = input).to_string()));
         }
         match node.kind() {
+            "comment" => Ok(()),
             "keyword" => {
                 Self::parse_and_insert_keyword(node, input, input_bytes, Some(&mut self.map))?;
                 Ok(())
-            },
-            "comment" => Ok(()),
+            }
             "match" => self.parse_match_node(node, input, input_bytes),
             _ => Err(SshdConfigError::ParserError(t!("parser.unknownNodeType", node = node.kind()).to_string())),
         }
@@ -173,13 +157,18 @@ impl SshdConfigParser {
     /// Parse a keyword node and optionally insert it into a map.
     /// If `target_map` is provided, the keyword will be inserted into that map with repeatability handling.
     /// If `target_map` is None, returns the key-value pair without inserting.
-    fn parse_and_insert_keyword(keyword_node: tree_sitter::Node, input: &str, input_bytes: &[u8], target_map: Option<&mut Map<String, Value>>) -> Result<(String, Value), SshdConfigError> {
+    fn parse_and_insert_keyword(
+        keyword_node: tree_sitter::Node,
+        input: &str,
+        input_bytes: &[u8],
+        target_map: Option<&mut Map<String, Value>>
+    ) -> Result<(String, Value), SshdConfigError> {
         let mut cursor = keyword_node.walk();
         let mut key = None;
         let mut value = Value::Null;
-        let mut operator: Option<String> = None;
-        let mut is_vec = false;
         let mut is_repeatable = false;
+        let mut is_vec = false;
+        let mut operator: Option<String> = None;
 
         if let Some(keyword) = keyword_node.child_by_field_name("keyword") {
             let Ok(text) = keyword.utf8_text(input_bytes) else {
@@ -198,7 +187,9 @@ impl SshdConfigParser {
         // Check for operator field
         if let Some(operator_node) = keyword_node.child_by_field_name("operator") {
             let Ok(op_text) = operator_node.utf8_text(input_bytes) else {
-                return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
+                return Err(
+                    SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string())
+                );
             };
             operator = Some(op_text.to_string());
         }
@@ -209,9 +200,7 @@ impl SshdConfigParser {
             }
             if node.kind() == "arguments" {
                 value = parse_arguments_node(node, input, input_bytes, is_vec)?;
-                if target_map.is_some() {
-                    debug!("{}: {:?}", t!("parser.valueDebug").to_string(), value);
-                }
+                debug!("{}: {:?}", t!("parser.valueDebug").to_string(), value);
             }
         }
 
@@ -255,7 +244,9 @@ impl SshdConfigParser {
                             arr.push(value);
                         }
                     } else {
-                        return Err(SshdConfigError::ParserError(t!("parser.failedToParseAsArray").to_string()));
+                        return Err(SshdConfigError::ParserError(
+                            t!("parser.failedToParseAsArray").to_string()
+                        ));
                     }
                 } else {
                     return Err(SshdConfigError::ParserError(t!("parser.keyNotFound", key = key).to_string()));
@@ -292,20 +283,20 @@ fn parse_arguments_node(arg_node: tree_sitter::Node, input: &str, input_bytes: &
         match node.kind() {
             "boolean" | "string" => {
                 let Ok(arg) = node.utf8_text(input_bytes) else {
-                    return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
+                    return Err(SshdConfigError::ParserError(
+                        t!("parser.failedToParseNode", input = input).to_string()
+                    ));
                 };
                 let arg_str = arg.trim();
                 vec.push(Value::String(arg_str.to_string()));
             },
             "number" => {
                 let Ok(arg) = node.utf8_text(input_bytes) else {
-                    return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
+                    return Err(SshdConfigError::ParserError(
+                        t!("parser.failedToParseNode", input = input).to_string()
+                    ));
                 };
                 vec.push(Value::Number(arg.parse::<u64>()?.into()));
-            },
-            "operator" => {
-                // Operators are handled at the keyword level, not in arguments
-                return Err(SshdConfigError::ParserError(t!("parser.invalidValue").to_string()));
             },
             _ => return Err(SshdConfigError::ParserError(t!("parser.unknownNode", kind = node.kind()).to_string()))
         }
@@ -318,6 +309,22 @@ fn parse_arguments_node(arg_node: tree_sitter::Node, input: &str, input_bytes: &
     } else { /* shouldn't happen */
         Err(SshdConfigError::ParserError(t!("parser.noArgumentsFound", input = input).to_string()))
     }
+}
+
+/// Parse `sshd_config` to map.
+///
+/// # Arguments
+///
+/// * `input` - The `sshd_config` text to parse.
+///
+/// # Errors
+///
+/// This function will return an error if the input fails to parse.
+pub fn parse_text_to_map(input: &str) -> Result<Map<String,Value>, SshdConfigError> {
+    let mut parser = SshdConfigParser::new();
+    parser.parse_text(input)?;
+    let lowercased_map = parser.map.into_iter().map(|(k, v)| (k.to_lowercase(), v)).collect();
+    Ok(lowercased_map)
 }
 
 #[cfg(test)]

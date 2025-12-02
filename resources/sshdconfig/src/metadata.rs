@@ -22,14 +22,14 @@ pub const MULTI_ARG_KEYWORDS: [&str; 22] = [
     "permitlisten",
     "permitopen",
     "permituserenvironment",
+    "persourcepenalties",
     "persourcepenaltyexemptlist",
     "pubkeyacceptedalgorithms",
-    "persourcepenalties",
     "rekeylimit" // first arg is bytes, second arg (optional) is amount of time
 ];
 
 // keywords that can be repeated over multiple lines and should be represented as arrays.
-// note that some keywords can be both multi-arg space-separated and repeatable
+// note that some keywords can be both multi-arg and repeatable
 pub const REPEATABLE_KEYWORDS: [&str; 12] = [
     "acceptenv",
     "allowgroups",
