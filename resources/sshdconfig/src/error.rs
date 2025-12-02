@@ -28,4 +28,6 @@ pub enum SshdConfigError {
     #[cfg(windows)]
     #[error("{t}: {0}", t = t!("error.registry"))]
     RegistryError(#[from] dsc_lib_registry::error::RegistryError),
+    #[error("{t}: {0}", t = t!("error.envVar"))]
+    EnvVarError(#[from] std::env::VarError),
 }

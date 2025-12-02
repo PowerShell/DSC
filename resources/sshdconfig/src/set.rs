@@ -11,12 +11,12 @@ use {
 use rust_i18n::t;
 use serde_json::{Map, Value};
 use std::{fmt::Write, string::String};
-use tracing::{debug, warn};
+use tracing::{debug, info, warn};
 
 use crate::args::{DefaultShell, Setting};
 use crate::error::SshdConfigError;
 use crate::inputs::{CommandInfo, SshdCommandArgs};
-use crate::metadata::SSHD_CONFIG_HEADER;
+use crate::metadata::{SSHD_CONFIG_HEADER, SSHD_CONFIG_RESOURCE_VERSION};
 use crate::util::{build_command_info, get_default_sshd_config_path, invoke_sshd_config_validation};
 
 /// Invoke the set command.
@@ -111,7 +111,7 @@ fn set_sshd_config(cmd_info: &CommandInfo) -> Result<(), SshdConfigError> {
     // i.e. if the key can be repeated or have multiple values, etc.
     // or if the value is something besides a string (like an object to convert back into a comma-separated list)
     debug!("{}", t!("set.writingTempConfig"));
-    let mut config_text = SSHD_CONFIG_HEADER.to_string() + "\n";
+    let mut config_text = SSHD_CONFIG_HEADER.to_string() + "\n" + SSHD_CONFIG_RESOURCE_VERSION + "\n";
     if cmd_info.clobber {
         for (key, value) in &cmd_info.input {
             if let Some(value_str) = value.as_str() {
