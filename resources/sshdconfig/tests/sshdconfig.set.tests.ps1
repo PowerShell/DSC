@@ -71,10 +71,11 @@ Describe 'sshd_config Set Tests' -Skip:(!$IsWindows -or $skipTest) {
             $LASTEXITCODE | Should -Be 0
 
             # Verify backup was created
-            Test-Path "$TestConfigPath.bak" | Should -Be $true
+            $filepath = $TestConfigPath + "_backup"
+            Test-Path $filepath | Should -Be $true
 
             # Verify backup content
-            $backupContent = Get-Content "$TestConfigPath.bak" -Raw
+            $backupContent = Get-Content $filepath -Raw
             $backupContent | Should -Match "Port 22"
             $backupContent | Should -Match "PermitRootLogin yes"
 
