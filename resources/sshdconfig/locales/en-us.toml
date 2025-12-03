@@ -7,6 +7,7 @@ setInput = "input to set in sshd_config"
 
 [error]
 command = "Command"
+envVar = "Environment Variable"
 invalidInput = "Invalid Input"
 fmt = "Format"
 io = "IO"
