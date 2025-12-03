@@ -16,7 +16,7 @@ use tracing::{debug, info, warn};
 use crate::args::{DefaultShell, Setting};
 use crate::error::SshdConfigError;
 use crate::inputs::{CommandInfo, SshdCommandArgs};
-use crate::metadata::{SSHD_CONFIG_HEADER, SSHD_CONFIG_RESOURCE_VERSION};
+use crate::metadata::{SSHD_CONFIG_HEADER, SSHD_CONFIG_HEADER_VERSION, SSHD_CONFIG_HEADER_WARNING};
 use crate::util::{build_command_info, get_default_sshd_config_path, invoke_sshd_config_validation};
 
 /// Invoke the set command.
@@ -111,7 +111,7 @@ fn set_sshd_config(cmd_info: &CommandInfo) -> Result<(), SshdConfigError> {
     // i.e. if the key can be repeated or have multiple values, etc.
     // or if the value is something besides a string (like an object to convert back into a comma-separated list)
     debug!("{}", t!("set.writingTempConfig"));
-    let mut config_text = SSHD_CONFIG_HEADER.to_string() + "\n" + SSHD_CONFIG_RESOURCE_VERSION + "\n";
+    let mut config_text = SSHD_CONFIG_HEADER.to_string() + "\n" + SSHD_CONFIG_HEADER_VERSION + "\n" + SSHD_CONFIG_HEADER_WARNING + "\n";
     if cmd_info.clobber {
         for (key, value) in &cmd_info.input {
             if let Some(value_str) = value.as_str() {
@@ -167,7 +167,7 @@ fn set_sshd_config(cmd_info: &CommandInfo) -> Result<(), SshdConfigError> {
         if !sshd_config_content.starts_with(SSHD_CONFIG_HEADER) {
             // If config file is not already managed by this resource, create a backup of the existing file
             debug!("{}", t!("set.backingUpConfig"));
-            let backup_path = format!("{}.bak", sshd_config_path.display());
+            let backup_path = format!("{}_backup", sshd_config_path.display());
             std::fs::write(&backup_path, &sshd_config_content)
                 .map_err(|e| SshdConfigError::CommandError(e.to_string()))?;
             info!("{}", t!("set.backupCreated", path = backup_path));
