@@ -591,4 +591,20 @@ match user alice,bob address 1.2.3.4/56
         assert_eq!(match_obj.get("passwordauthentication").unwrap(), &Value::String("yes".to_string()));
         assert_eq!(match_obj.get("allowtcpforwarding").unwrap(), &Value::String("no".to_string()));
     }
+
+    #[test]
+    fn match_with_operator_argument() {
+        let input = r#"
+match group administrators
+    pubkeyacceptedalgorithms +ssh-rsa
+"#;
+        let result: Map<String, Value> = parse_text_to_map(input).unwrap();
+        let match_array = result.get("match").unwrap().as_array().unwrap();
+        let match_obj = match_array[0].as_object().unwrap();
+        let pubkey = match_obj.get("pubkeyacceptedalgorithms").unwrap().as_object().unwrap();
+        let value_array = pubkey.get("value").unwrap().as_array().unwrap();
+        assert_eq!(pubkey.get("operator").unwrap(), &Value::String("+".to_string()));
+        assert_eq!(value_array.len(), 1);
+        assert_eq!(value_array[0], Value::String("ssh-rsa".to_string()));
+    }
 }
