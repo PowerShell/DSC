@@ -1,5 +1,9 @@
 _version = 1
 
+[dsc_repo.dsc_repo_schema]
+unrecognizedSchemaUri = "Unrecognized $schema URI"
+validSchemaUrisAre = "Valid schema URIs are"
+
 [transforms.idiomaticize_externally_tagged_enum]
 applies_to = "invalid application of idiomaticize_externally_tagged_enum; missing 'oneOf' keyword in transforming schema: %{transforming_schema}"
 oneOf_array = "invalid application of idiomaticize_externally_tagged_enum; 'oneOf' isn't an array in transforming schema: %{transforming_schema}"
