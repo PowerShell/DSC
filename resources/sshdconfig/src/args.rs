@@ -24,7 +24,9 @@ pub enum Command {
     /// Set default shell, eventually to be used for `sshd_config` and repeatable keywords
     Set {
         #[clap(short = 'i', long, help = t!("args.setInput").to_string())]
-        input: String
+        input: String,
+        #[clap(short = 's', long, hide = true)]
+        setting: Setting,
     },
     /// Export `sshd_config`, eventually to be used for repeatable keywords
     Export {
