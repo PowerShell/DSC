@@ -70,8 +70,8 @@ writingTempConfig = "Writing temporary sshd_config file"
 
 [util]
 cleanupFailed = "Failed to clean up temporary file %{path}: %{error}"
+getIgnoresInputFilters = "get command does not support filtering based on input settings, provided input will be ignored"
 inputMustBeBoolean = "value of '%{input}' must be true or false"
-inputMustBeEmpty = "get command does not support filtering based on input settings"
 sshdConfigNotFound = "sshd_config not found at path: '%{path}'"
 sshdConfigReadFailed = "failed to read sshd_config at path: '%{path}'"
 sshdElevation = "elevated security context required"

@@ -4,7 +4,7 @@
 use rust_i18n::t;
 use serde_json::{Map, Value};
 use std::{path::PathBuf, process::Command};
-use tracing::debug;
+use tracing::{debug, warn};
 use tracing_subscriber::{EnvFilter, filter::LevelFilter, Layer, prelude::__tracing_subscriber_SubscriberExt};
 
 use crate::error::SshdConfigError;
@@ -146,7 +146,7 @@ pub fn build_command_info(input: Option<&String>, is_get: bool) -> Result<Comman
             }
         });
         if is_get && !sshd_config.is_empty() {
-            return Err(SshdConfigError::InvalidInput(t!("util.inputMustBeEmpty").to_string()));
+            warn!("{}", t!("util.getIgnoresInputFilters"));
         }
         return Ok(CommandInfo {
             clobber,
