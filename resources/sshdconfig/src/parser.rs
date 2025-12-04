@@ -106,52 +106,25 @@ impl SshdConfigParser {
     /// Example criteria node: "user alice,bob" or "address *.*.0.1"
     /// Inserts the criterion as a key with an array value into the `criteria_map`.
     fn parse_match_criteria(criteria_node: tree_sitter::Node, input: &str, input_bytes: &[u8], criteria_map: &mut Map<String, Value>) -> Result<(), SshdConfigError> {
-        let mut cursor = criteria_node.walk();
-        let mut key: Option<String> = None;
-        let mut values: Vec<Value> = Vec::new();
-
-        // Iterate through named children of the criteria node
-        for child in criteria_node.named_children(&mut cursor) {
-            if child.is_error() {
+        if let Some(key_node) = criteria_node.child_by_field_name("keyword") {
+            let Ok(key_text) = key_node.utf8_text(input_bytes) else {
                 return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
+            };
+            let key = key_text.to_string();
+
+            let values: Value;
+            if let Some(value_node) = criteria_node.child_by_field_name("argument") {
+                values = parse_arguments_node(value_node, input, input_bytes, true)?;
+            }
+            else {
+                return Err(SshdConfigError::ParserError(t!("parser.missingValueInCriteria", input = input).to_string()));
             }
 
-            match child.kind() {
-                "alpha" => {
-                    let Ok(text) = child.utf8_text(input_bytes) else {
-                        return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
-                    };
-                    key = Some(text.to_string());
-                }
-                "boolean" | "string" => {
-                    let Ok(arg) = child.utf8_text(input_bytes) else {
-                        return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
-                    };
-                    let arg_str = arg.trim();
-                    values.push(Value::String(arg_str.to_string()));
-                }
-                "number" => {
-                    let Ok(arg) = child.utf8_text(input_bytes) else {
-                        return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
-                    };
-                    values.push(Value::Number(arg.parse::<u64>()?.into()));
-                }
-                _ => {
-                    return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
-                }
-            }
+            criteria_map.insert(key.to_lowercase(), values);
+            Ok(())
+        } else {
+            Err(SshdConfigError::ParserError(t!("parser.missingKeyInCriteria", input = input).to_string()))
         }
-
-        let Some(criteria_key) = key else {
-            return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
-        };
-
-        if values.is_empty() {
-            return Err(SshdConfigError::ParserError(t!("parser.noArgumentsFound", input = input).to_string()));
-        }
-
-        criteria_map.insert(criteria_key.to_lowercase(), Value::Array(values));
-        Ok(())
     }
 
     /// Parse a keyword node and optionally insert it into a map.
@@ -252,7 +225,7 @@ impl SshdConfigParser {
             }
         } else if is_repeatable {
             // Initialize repeatable keywords as arrays
-            if let Value::Array(_) = value {
+            if value.is_array() {
                 map.insert(key.to_string(), value);
             } else {
                 map.insert(key.to_string(), Value::Array(vec![value]));
@@ -276,22 +249,17 @@ fn parse_arguments_node(arg_node: tree_sitter::Node, input: &str, input_bytes: &
         if node.is_error() {
             return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
         }
+        let arg = node.utf8_text(input_bytes)?;
         match node.kind() {
-            "boolean" | "string" => {
-                let Ok(arg) = node.utf8_text(input_bytes) else {
-                    return Err(SshdConfigError::ParserError(
-                        t!("parser.failedToParseNode", input = input).to_string()
-                    ));
-                };
+            "boolean" => {
+                let arg_str = arg.trim();
+                vec.push(Value::Bool(arg_str.eq_ignore_ascii_case("yes")));
+            }
+            "string" => {
                 let arg_str = arg.trim();
                 vec.push(Value::String(arg_str.to_string()));
             },
             "number" => {
-                let Ok(arg) = node.utf8_text(input_bytes) else {
-                    return Err(SshdConfigError::ParserError(
-                        t!("parser.failedToParseNode", input = input).to_string()
-                    ));
-                };
                 vec.push(Value::Number(arg.parse::<u64>()?.into()));
             },
             _ => return Err(SshdConfigError::ParserError(t!("parser.unknownNode", kind = node.kind()).to_string()))
@@ -366,7 +334,7 @@ mod tests {
     fn bool_keyword() {
         let input = "printmotd yes\r\n";
         let result: Map<String, Value> = parse_text_to_map(input).unwrap();
-        assert_eq!(result.get("printmotd").unwrap(), &Value::String("yes".to_string()));
+        assert_eq!(result.get("printmotd").unwrap(), &Value::Bool(true));
     }
 
     #[test]
@@ -442,11 +410,12 @@ match user bob
         let match_array = result.get("match").unwrap().as_array().unwrap();
         assert_eq!(match_array.len(), 1);
         let match_obj = match_array[0].as_object().unwrap();
+        println!("match_obj: {:?}", match_obj);
         let criteria = match_obj.get("criteria").unwrap().as_object().unwrap();
         let user_array = criteria.get("user").unwrap().as_array().unwrap();
         assert_eq!(user_array[0], Value::String("bob".to_string()));
-        assert_eq!(match_obj.get("gssapiauthentication").unwrap(), &Value::String("yes".to_string()));
-        assert_eq!(match_obj.get("allowtcpforwarding").unwrap(), &Value::String("yes".to_string()));
+        assert_eq!(match_obj.get("gssapiauthentication").unwrap(), &Value::Bool(true));
+        assert_eq!(match_obj.get("allowtcpforwarding").unwrap(), &Value::Bool(true));
     }
 
     #[test]
@@ -464,12 +433,12 @@ match group administrators
         let criteria1 = match_obj1.get("criteria").unwrap().as_object().unwrap();
         let user_array1 = criteria1.get("user").unwrap().as_array().unwrap();
         assert_eq!(user_array1[0], Value::String("alice".to_string()));
-        assert_eq!(match_obj1.get("passwordauthentication").unwrap(), &Value::String("yes".to_string()));
+        assert_eq!(match_obj1.get("passwordauthentication").unwrap(), &Value::Bool(true));
         let match_obj2 = match_array[1].as_object().unwrap();
         let criteria2 = match_obj2.get("criteria").unwrap().as_object().unwrap();
         let group_array2 = criteria2.get("group").unwrap().as_array().unwrap();
         assert_eq!(group_array2[0], Value::String("administrators".to_string()));
-        assert_eq!(match_obj2.get("permitrootlogin").unwrap(), &Value::String("yes".to_string()));
+        assert_eq!(match_obj2.get("permitrootlogin").unwrap(), &Value::Bool(true));
     }
 
     #[test]
@@ -561,7 +530,7 @@ match user developer
         let result: Map<String, Value> = parse_text_to_map(input).unwrap();
         let match_array = result.get("match").unwrap().as_array().unwrap();
         let match_obj = match_array[0].as_object().unwrap();
-        assert_eq!(match_obj.get("passwordauthentication").unwrap(), &Value::String("yes".to_string()));
+        assert_eq!(match_obj.get("passwordauthentication").unwrap(), &Value::Bool(true));
         assert_eq!(match_obj.len(), 2);
     }
 
@@ -588,8 +557,8 @@ match user alice,bob address 1.2.3.4/56
         assert_eq!(address_array.len(), 1);
         assert_eq!(address_array[0], Value::String("1.2.3.4/56".to_string()));
 
-        assert_eq!(match_obj.get("passwordauthentication").unwrap(), &Value::String("yes".to_string()));
-        assert_eq!(match_obj.get("allowtcpforwarding").unwrap(), &Value::String("no".to_string()));
+        assert_eq!(match_obj.get("passwordauthentication").unwrap(), &Value::Bool(true));
+        assert_eq!(match_obj.get("allowtcpforwarding").unwrap(), &Value::Bool(false));
     }
 
     #[test]
