@@ -12,7 +12,7 @@ use crate::extensions::dscextension::{self, DscExtension, Capability as Extensio
 use crate::extensions::extension_manifest::ExtensionManifest;
 use crate::progress::{ProgressBar, ProgressFormat};
 use crate::util::convert_wildcard_to_regex;
-use dsc_lib_jsonschema::transforms::idiomaticize_externally_tagged_enum;
+use crate::schemas::transforms::idiomaticize_externally_tagged_enum;
 use regex::RegexBuilder;
 use rust_i18n::t;
 use semver::{Version, VersionReq};
