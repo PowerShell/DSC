@@ -40,13 +40,13 @@ resources:
             $out.resources.count | Should -Be 1
             $out.resources[0].properties | Should -Not -BeNullOrEmpty
             $out.resources[0].properties.port | Should -BeNullOrEmpty
-            $out.resources[0].properties.passwordAuthentication | Should -Be 'no'
+            $out.resources[0].properties.passwordAuthentication | Should -Be $false
             $out.resources[0].properties._inheritedDefaults | Should -BeNullOrEmpty
         } else {
             $out.results.count | Should -Be 1
             $out.results.result.actualState | Should -Not -BeNullOrEmpty
             $out.results.result.actualState.port[0] | Should -Be 22
-            $out.results.result.actualState.passwordAuthentication | Should -Be 'no'
+            $out.results.result.actualState.passwordAuthentication | Should -Be $false
             $out.results.result.actualState._inheritedDefaults | Should -Contain 'port'
         }
     }
@@ -69,7 +69,7 @@ resources:
         $LASTEXITCODE | Should -Be 0
         $out.resources.count | Should -Be 1
         ($out.resources[0].properties.psobject.properties | Measure-Object).count | Should -Be 1
-        $out.resources[0].properties.passwordAuthentication | Should -Be 'no'
+        $out.resources[0].properties.passwordAuthentication | Should -Be $false
     }
 
     It '<command> with _includeDefaults specified works' -TestCases @(
@@ -128,7 +128,7 @@ resources:
                 $out.results.count | Should -Be 1
                 $out.results.result.actualState | Should -Not -BeNullOrEmpty
                 $out.results.result.actualState.port | Should -Be 22
-                $out.results.result.actualState.passwordAuthentication | Should -Be 'yes'
+                $out.results.result.actualState.passwordAuthentication | Should -Be $true
                 $out.results.result.actualState._inheritedDefaults | Should -Not -Contain 'port'
             }
         }
