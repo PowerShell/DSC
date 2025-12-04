@@ -8,7 +8,7 @@ use tracing::debug;
 use tree_sitter::Parser;
 
 use crate::error::SshdConfigError;
-use crate::metadata::{MULTI_ARG_KEYWORDS, REPEATABLE_KEYWORDS};
+use crate::metadata::{MULTI_ARG_KEYWORDS_COMMA_SEP, MULTI_ARG_KEYWORDS_SPACE_SEP, REPEATABLE_KEYWORDS};
 
 #[derive(Debug, JsonSchema)]
 pub struct SshdConfigParser {
@@ -147,9 +147,9 @@ impl SshdConfigParser {
             let Ok(text) = keyword.utf8_text(input_bytes) else {
                 return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
             };
-
-            is_repeatable = REPEATABLE_KEYWORDS.contains(&text);
-            is_vec = is_repeatable || MULTI_ARG_KEYWORDS.contains(&text);
+            let lowercase_key = text.to_lowercase();
+            is_repeatable = REPEATABLE_KEYWORDS.contains(&lowercase_key.as_str());
+            is_vec = is_repeatable || MULTI_ARG_KEYWORDS_COMMA_SEP.contains(&lowercase_key.as_str()) || MULTI_ARG_KEYWORDS_SPACE_SEP.contains(&lowercase_key.as_str());
             key = Some(text.to_string());
         }
 

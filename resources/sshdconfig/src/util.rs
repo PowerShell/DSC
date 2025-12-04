@@ -9,7 +9,7 @@ use tracing_subscriber::{EnvFilter, filter::LevelFilter, Layer, prelude::__traci
 
 use crate::error::SshdConfigError;
 use crate::inputs::{CommandInfo, Metadata, SshdCommandArgs};
-use crate::metadata::{SSHD_CONFIG_DEFAULT_PATH_UNIX, SSHD_CONFIG_DEFAULT_PATH_WINDOWS};
+use crate::metadata::{MULTI_ARG_KEYWORDS_COMMA_SEP, MULTI_ARG_KEYWORDS_SPACE_SEP, SSHD_CONFIG_DEFAULT_PATH_UNIX, SSHD_CONFIG_DEFAULT_PATH_WINDOWS};
 use crate::parser::parse_text_to_map;
 
 /// Enable tracing.
@@ -32,6 +32,79 @@ pub fn enable_tracing() {
 
     if tracing::subscriber::set_global_default(subscriber).is_err() {
         eprintln!("{}", t!("util.tracingInitError"));
+    }
+}
+
+/// Format a JSON value for writing to sshd_config.
+///
+/// # Arguments
+///
+/// * `key` - The configuration key name (used to determine formatting rules)
+/// * `value` - The JSON value to format
+///
+/// # Returns
+///
+/// * `Ok(Some(String))` - Formatted value string
+/// * `Ok(None)` - Value is null and should be skipped
+/// * `Err(SshdConfigError)` - Invalid value type or formatting error
+///
+/// # Errors
+///
+/// Returns an error if the value type is not supported or if formatting fails.
+pub fn format_sshd_value(key: &str, value: &Value) -> Result<Option<String>, SshdConfigError> {
+    let key_lower = key.to_lowercase();
+
+    match value {
+        Value::Null => Ok(None),
+        Value::String(s) => Ok(Some(s.clone())),
+        Value::Number(n) => Ok(Some(n.to_string())),
+        Value::Bool(b) => {
+            let bool_str = if *b { "yes" } else { "no" };
+            Ok(Some(bool_str.to_string()))
+        },
+        Value::Array(arr) => {
+            if arr.is_empty() {
+                return Ok(None);
+            }
+
+            // Convert array elements to strings
+            let mut string_values = Vec::new();
+            for item in arr {
+                match item {
+                    Value::String(s) => string_values.push(s.clone()),
+                    Value::Number(n) => string_values.push(n.to_string()),
+                    Value::Bool(b) => {
+                        let bool_str = if *b { "yes" } else { "no" };
+                        string_values.push(bool_str.to_string());
+                    },
+                    Value::Null => continue, // Skip null values in arrays
+                    _ => return Err(SshdConfigError::InvalidInput(
+                        t!("set.arrayElementMustBeStringNumberOrBool", key = key).to_string()
+                    )),
+                }
+            }
+
+            if string_values.is_empty() {
+                return Ok(None);
+            }
+
+            // Determine separator based on keyword type
+            let separator = if MULTI_ARG_KEYWORDS_COMMA_SEP.contains(&key_lower.as_str()) {
+                ","
+            } else if MULTI_ARG_KEYWORDS_SPACE_SEP.contains(&key_lower.as_str()) {
+                " "
+            } else {
+                // Default to comma for unknown multi-arg keywords
+                ","
+            };
+
+            Ok(Some(string_values.join(separator)))
+        },
+        Value::Object(_) => {
+            Err(SshdConfigError::InvalidInput(
+                t!("set.objectValuesNotSupported", key = key).to_string()
+            ))
+        }
     }
 }
 

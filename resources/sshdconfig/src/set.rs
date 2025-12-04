@@ -16,8 +16,8 @@ use tracing::{debug, info, warn};
 use crate::args::{DefaultShell, Setting};
 use crate::error::SshdConfigError;
 use crate::inputs::{CommandInfo, SshdCommandArgs};
-use crate::metadata::{SSHD_CONFIG_HEADER, SSHD_CONFIG_HEADER_VERSION, SSHD_CONFIG_HEADER_WARNING};
-use crate::util::{build_command_info, get_default_sshd_config_path, invoke_sshd_config_validation};
+use crate::metadata::{REPEATABLE_KEYWORDS, SSHD_CONFIG_HEADER, SSHD_CONFIG_HEADER_VERSION, SSHD_CONFIG_HEADER_WARNING};
+use crate::util::{build_command_info, format_sshd_value, get_default_sshd_config_path, invoke_sshd_config_validation};
 
 /// Invoke the set command.
 ///
@@ -114,10 +114,29 @@ fn set_sshd_config(cmd_info: &CommandInfo) -> Result<(), SshdConfigError> {
     let mut config_text = SSHD_CONFIG_HEADER.to_string() + "\n" + SSHD_CONFIG_HEADER_VERSION + "\n" + SSHD_CONFIG_HEADER_WARNING + "\n";
     if cmd_info.clobber {
         for (key, value) in &cmd_info.input {
-            if let Some(value_str) = value.as_str() {
-                writeln!(&mut config_text, "{key} {value_str}")?;
-            } else {
-                return Err(SshdConfigError::InvalidInput(t!("set.valueMustBeString", key = key).to_string()));
+            let key_lower = key.to_lowercase();
+
+            // Handle repeatable keywords - write multiple lines
+            if REPEATABLE_KEYWORDS.contains(&key_lower.as_str()) {
+                if let Value::Array(arr) = value {
+                    for item in arr {
+                        if let Some(formatted) = format_sshd_value(key, item)? {
+                            writeln!(&mut config_text, "{key} {formatted}")?;
+                        }
+                    }
+                    continue;
+                } else {
+                    // Single value for repeatable keyword, write as-is
+                    if let Some(formatted) = format_sshd_value(key, value)? {
+                        writeln!(&mut config_text, "{key} {formatted}")?;
+                    }
+                    continue;
+                }
+            }
+
+            // Handle non-repeatable keywords - format and write single line
+            if let Some(formatted) = format_sshd_value(key, value)? {
+                writeln!(&mut config_text, "{key} {formatted}")?;
             }
         }
     } else {
