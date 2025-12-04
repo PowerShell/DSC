@@ -12,5 +12,6 @@
 //! When you define tests in this module, ensure that you mirror the structure
 //! of the modules from the rest of the source tree.
 
+#[cfg(test)] mod dsc_repo;
 #[cfg(test)] mod schema_utility_extensions;
 #[cfg(test)] mod vscode;
