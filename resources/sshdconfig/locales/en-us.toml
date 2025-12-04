@@ -30,6 +30,7 @@ windowsOnly = "Microsoft.OpenSSH.SSHD/Windows is only applicable to Windows"
 
 [main]
 export = "Export command: %{input}"
+invalidTraceLevel = "Invalid trace level"
 schema = "Schema command:"
 set = "Set command: '%{input}'"
 

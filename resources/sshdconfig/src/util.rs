@@ -4,9 +4,10 @@
 use rust_i18n::t;
 use serde_json::{Map, Value};
 use std::{path::PathBuf, process::Command};
-use tracing::{debug, warn};
-use tracing_subscriber::{EnvFilter, filter::LevelFilter, Layer, prelude::__tracing_subscriber_SubscriberExt};
+use tracing::{debug, warn, Level};
+use tracing_subscriber::{EnvFilter, Layer, prelude::__tracing_subscriber_SubscriberExt};
 
+use crate::args::{TraceFormat, TraceLevel};
 use crate::error::SshdConfigError;
 use crate::inputs::{CommandInfo, Metadata, SshdCommandArgs};
 use crate::metadata::{MULTI_ARG_KEYWORDS_COMMA_SEP, MULTI_ARG_KEYWORDS_SPACE_SEP, SSHD_CONFIG_DEFAULT_PATH_UNIX, SSHD_CONFIG_DEFAULT_PATH_WINDOWS};
@@ -14,19 +15,52 @@ use crate::parser::parse_text_to_map;
 
 /// Enable tracing.
 ///
+/// # Arguments
+///
+/// * `trace_level` - The level of information to output
+/// * `trace_format` - The format of the output
+///
 /// # Errors
 ///
 /// This function will return an error if it fails to initialize tracing.
-pub fn enable_tracing() {
-    // default filter to trace level
-    let filter = EnvFilter::builder().with_default_directive(LevelFilter::TRACE.into()).parse("").unwrap_or_default();
+pub fn enable_tracing(trace_level: &TraceLevel, trace_format: &TraceFormat) {
+    let tracing_level = match trace_level {
+        TraceLevel::Error => Level::ERROR,
+        TraceLevel::Warn => Level::WARN,
+        TraceLevel::Info => Level::INFO,
+        TraceLevel::Debug => Level::DEBUG,
+        TraceLevel::Trace => Level::TRACE,
+    };
+
+    let filter = EnvFilter::try_from_default_env()
+        .or_else(|_| EnvFilter::try_new("warn"))
+        .unwrap_or_default()
+        .add_directive(tracing_level.into());
     let layer = tracing_subscriber::fmt::Layer::default().with_writer(std::io::stderr);
-    let fmt = layer
+    let fmt = match trace_format {
+        TraceFormat::Default => {
+            layer
+                .with_ansi(true)
+                .with_level(true)
+                .with_line_number(true)
+                .boxed()
+        },
+        TraceFormat::Plaintext => {
+            layer
+                .with_ansi(false)
+                .with_level(true)
+                .with_line_number(false)
+                .boxed()
+        },
+        TraceFormat::Json => {
+            layer
                 .with_ansi(false)
                 .with_level(true)
                 .with_line_number(true)
                 .json()
-                .boxed();
+                .boxed()
+        }
+    };
 
     let subscriber = tracing_subscriber::Registry::default().with(fmt).with(filter);
 
