@@ -31,7 +31,8 @@ authorizedkeysfile "path to authorized keys file"
   (match
     (criteria
       (alpha)
-      (string))
+      (argument
+        (string)))
     (keyword
       (alphanumeric)
       (arguments
@@ -53,7 +54,8 @@ authorizedkeysfile "path to authorized keys file"
   (match
     (criteria
       (alpha)
-      (string))
+      (argument
+      (string)))
     (keyword
       (alphanumeric)
       (arguments
@@ -229,7 +231,8 @@ passwordauthentication yes
   (match
     (criteria
       (alpha)
-      (string))
+      (argument
+      (string)))
     (keyword
       (alphanumeric)
       (arguments
@@ -237,7 +240,8 @@ passwordauthentication yes
   (match
     (criteria
       (alpha)
-      (string))
+      (argument
+      (string)))
     (keyword
       (alphanumeric)
       (arguments
@@ -307,7 +311,8 @@ passwordauthentication yes
   (match
     (criteria
       (alpha)
-      (string))
+      (argument
+      (string)))
     (keyword
       (alphanumeric)
       (arguments
@@ -320,7 +325,8 @@ passwordauthentication yes
   (match
     (criteria
       (alpha)
-      (string))
+      (argument
+      (string)))
     (keyword
       (alphanumeric)
       (arguments
@@ -412,11 +418,13 @@ passwordauthentication no
   (match
     (criteria
       (alpha)
+      (argument
         (string)
-        (string))
+        (string)))
     (criteria
       (alpha)
-        (string))
+      (argument
+        (string)))
     (keyword
       (alphanumeric)
         (arguments

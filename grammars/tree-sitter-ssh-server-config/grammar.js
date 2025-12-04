@@ -35,9 +35,9 @@ module.exports = grammar({
     ),
 
     criteria: $ => seq(
-      field('criteria', $.alpha),
+      field('keyword', $.alpha),
       choice(seq(/[ \t]/, optional('=')), '='),
-      field('argument', $._argument)
+      field('argument', alias($._argument, $.argument))
     ),
 
     _argument: $ => choice($.boolean, $.number, $.string, $._commaSeparatedString, $._doublequotedString, $._singlequotedString),
