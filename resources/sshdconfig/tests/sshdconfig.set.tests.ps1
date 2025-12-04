@@ -37,6 +37,11 @@ Describe 'sshd_config Set Tests' -Skip:(!$IsWindows -or $skipTest) {
                 }
                 _clobber = $true
                 Port = "1234"
+                passwordauthentication = $false
+                allowusers = @("user1", "user2")
+                ciphers = @("aes128-ctr", "aes192-ctr", "aes256-ctr")
+                addressfamily = "inet6"
+                authorizedkeysfile = @(".ssh/authorized_keys", ".ssh/authorized_keys2")
             } | ConvertTo-Json
 
             $output = sshdconfig set --input $inputConfig -s sshd-config 2>$null
@@ -44,15 +49,14 @@ Describe 'sshd_config Set Tests' -Skip:(!$IsWindows -or $skipTest) {
 
             # Verify file was created
             Test-Path $TestConfigPath | Should -Be $true
-
-            # Verify content using get
-            $getInput = @{
-                _metadata = @{
-                    filepath = $TestConfigPath
-                }
-            } | ConvertTo-Json
-            $result = sshdconfig get --input $getInput -s sshd-config 2>$null | ConvertFrom-Json
-            $result.Port | Should -Be "1234"
+            $sshdConfigContents = Get-Content $TestConfigPath
+            $sshdConfigContents | Should -Contain "Port 1234"
+            $sshdConfigContents | Should -Contain "PasswordAuthentication no"
+            $sshdConfigContents | Should -Contain "AllowUsers user1"
+            $sshdConfigContents | Should -Contain "AllowUsers user2"
+            $sshdConfigContents | Should -Contain "Ciphers aes128-ctr,aes192-ctr,aes256-ctr"
+            $sshdConfigContents | Should -Contain "AddressFamily inet6"
+            $sshdConfigContents | Should -Contain "AuthorizedKeysFile .ssh/authorized_keys .ssh/authorized_keys2"
         }
 
         It 'Should create backup when file exists and is not managed by DSC' {

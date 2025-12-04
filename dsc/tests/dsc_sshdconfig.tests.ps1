@@ -149,11 +149,28 @@ resources:
   properties:
     _clobber: true
     port: 1234
+    allowusers:
+      - user1
+      - user2
+    passwordauthentication: $false
+    ciphers:
+      - aes128-ctr
+      - aes192-ctr
+      - aes256-ctr
+    addressfamily: inet6
+    authorizedkeysfile:
+      - ./.ssh/authorized_keys
+      - ./.ssh/authorized_keys2
 "@
             $out = dsc config set -i "$set_yaml" | ConvertFrom-Json -Depth 10
             $LASTEXITCODE | Should -Be 0
             $out.results.count | Should -Be 1
-            $out.results[0].actualState.port | Should -Be 1234
+            $out.results.result.afterState.port | Should -Be 1234
+            $out.results.result.afterState.passwordauthentication | Should -Be $false
+            $out.results.result.afterState.ciphers | Should -Be @('aes128-ctr', 'aes192-ctr', 'aes256-ctr')
+            $out.results.result.afterState.allowusers | Should -Be @('user1', 'user2')
+            $out.results.result.afterState.addressfamily | Should -Be 'inet6'
+            $out.results.result.afterState.authorizedkeysfile | Should -Be @('./.ssh/authorized_keys', './.ssh/authorized_keys2')
         }
     }
 }
