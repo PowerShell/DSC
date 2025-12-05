@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 // the multi-arg comma-separated and space-separated lists are mutually exclusive, but the repeatable list can overlap with either of them.
-// the mult-arg lists are maintained for formatting arrays into the correct format when writing back to the config file.
+// the multi-arg lists are maintained for formatting arrays into the correct format when writing back to the config file.
 
 // keywords that can have multiple comma-separated arguments per line and should be represented as arrays.
 pub const MULTI_ARG_KEYWORDS_COMMA_SEP: [&str; 11] = [
@@ -19,7 +19,7 @@ pub const MULTI_ARG_KEYWORDS_COMMA_SEP: [&str; 11] = [
     "rekeylimit" // first arg is bytes, second arg (optional) is amount of time
 ];
 
-// keywords that can have multiple space-separated argments per line and should be represented as arrays.
+// keywords that can have multiple space-separated arguments per line and should be represented as arrays.
 pub const MULTI_ARG_KEYWORDS_SPACE_SEP: [&str; 11] = [
     "acceptenv",
     "allowgroups",

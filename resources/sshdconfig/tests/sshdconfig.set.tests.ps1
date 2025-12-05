@@ -59,7 +59,7 @@ Describe 'sshd_config Set Tests' -Skip:(!$IsWindows -or $skipTest) {
             $sshdConfigContents | Should -Contain "AuthorizedKeysFile .ssh/authorized_keys .ssh/authorized_keys2"
         }
 
-        It 'Should set with valud match blocks' {
+        It 'Should set with valid match blocks' {
             $inputConfig = @{
                 _metadata = @{
                     filepath = $TestConfigPath
