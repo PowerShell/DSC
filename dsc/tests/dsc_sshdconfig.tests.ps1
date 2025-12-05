@@ -149,16 +149,16 @@ resources:
   properties:
     _clobber: true
     port: 1234
-    allowusers:
+    allowUsers:
       - user1
       - user2
-    passwordauthentication: $false
+    passwordAuthentication: $false
     ciphers:
       - aes128-ctr
       - aes192-ctr
       - aes256-ctr
-    addressfamily: inet6
-    authorizedkeysfile:
+    addressFamily: inet6
+    authorizedKeysFile:
       - ./.ssh/authorized_keys
       - ./.ssh/authorized_keys2
 "@

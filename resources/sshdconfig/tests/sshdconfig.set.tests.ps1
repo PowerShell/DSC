@@ -59,6 +59,38 @@ Describe 'sshd_config Set Tests' -Skip:(!$IsWindows -or $skipTest) {
             $sshdConfigContents | Should -Contain "AuthorizedKeysFile .ssh/authorized_keys .ssh/authorized_keys2"
         }
 
+        It 'Should set with valud match blocks' {
+            $inputConfig = @{
+                _metadata = @{
+                    filepath = $TestConfigPath
+                }
+                _clobber = $true
+                match = @(
+                    @{
+                        criteria = @{
+                            user = @("alice", "bob")
+                        }
+                        passwordauthentication = $true
+                    },
+                    @{
+                        criteria = @{
+                            group = @("administrators")
+                        }
+                        permitrootlogin = $false
+                    }
+                )
+            } | ConvertTo-Json -Depth 10
+
+            $output = sshdconfig set --input $inputConfig -s sshd-config 2>$null
+            $LASTEXITCODE | Should -Be 0
+            Test-Path $TestConfigPath | Should -Be $true
+            $sshdConfigContents = Get-Content $TestConfigPath -Raw
+            $sshdConfigContents | Should -Match "match user alice,bob"
+            $sshdConfigContents | Should -Match "passwordauthentication yes"
+            $sshdConfigContents | Should -Match "match group administrators"
+            $sshdConfigContents | Should -Match "permitrootlogin no"
+        }
+
         It 'Should create backup when file exists and is not managed by DSC' {
             # Create a non-DSC managed file
             "Port 22`nPermitRootLogin yes" | Set-Content $TestConfigPath
