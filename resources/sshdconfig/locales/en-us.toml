@@ -68,7 +68,6 @@ shellPathMustNotBeRelative = "shell path must not be relative"
 sshdConfigReadFailed = "failed to read existing sshd_config file at path: '%{path}'"
 tempFileCreated = "temporary file created at: %{path}"
 validatingTempConfig = "Validating temporary sshd_config file"
-valueMustBeString = "value for key '%{key}' must be a string"
 writingTempConfig = "Writing temporary sshd_config file"
 
 [util]

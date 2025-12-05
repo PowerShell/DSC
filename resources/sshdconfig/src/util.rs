@@ -314,18 +314,18 @@ fn format_match_block(match_obj: &Map<String, Value>) -> Result<Option<String>, 
     let mut lines = Vec::new();
 
     let Some(criteria_value) = match_obj.get("criteria") else {
-        return Err(SshdConfigError::InvalidInput(t!("set.matchBlockMissingCriteria").to_string()));
+        return Err(SshdConfigError::InvalidInput(t!("util.matchBlockMissingCriteria").to_string()));
     };
 
     let Value::Object(criteria) = criteria_value else {
-        return Err(SshdConfigError::InvalidInput(t!("set.matchBlockCriteriaMustBeObject").to_string()));
+        return Err(SshdConfigError::InvalidInput(t!("util.matchBlockCriteriaMustBeObject").to_string()));
     };
 
     let mut match_parts = vec![];
 
     for (criterion_key, criterion_value) in criteria {
         let Value::Array(values) = criterion_value else {
-            return Err(SshdConfigError::InvalidInput(t!("set.matchCriterionMustBeArray", key = criterion_key).to_string()));
+            return Err(SshdConfigError::InvalidInput(t!("util.matchCriterionMustBeArray", key = criterion_key).to_string()));
         };
 
         // Convert array values to comma-separated string
