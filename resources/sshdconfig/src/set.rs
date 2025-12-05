@@ -124,19 +124,17 @@ fn set_sshd_config(cmd_info: &CommandInfo) -> Result<(), SshdConfigError> {
                             writeln!(&mut config_text, "{key} {formatted}")?;
                         }
                     }
-                    continue;
                 } else {
                     // Single value for repeatable keyword, write as-is
                     if let Some(formatted) = format_sshd_value(key, value)? {
                         writeln!(&mut config_text, "{key} {formatted}")?;
                     }
-                    continue;
                 }
-            }
-
-            // Handle non-repeatable keywords - format and write single line
-            if let Some(formatted) = format_sshd_value(key, value)? {
-                writeln!(&mut config_text, "{key} {formatted}")?;
+            } else {
+                // Handle non-repeatable keywords - format and write single line
+                if let Some(formatted) = format_sshd_value(key, value)? {
+                    writeln!(&mut config_text, "{key} {formatted}")?;
+                }
             }
         }
     } else {

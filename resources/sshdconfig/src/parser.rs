@@ -467,12 +467,6 @@ match user testuser
         let result: Map<String, Value> = parse_text_to_map(input).unwrap();
         let match_array = result.get("match").unwrap().as_array().unwrap();
         let match_obj = match_array[0].as_object().unwrap();
-        for (k, v) in match_obj.iter() {
-            eprintln!("  {}: {:?}", k, v);
-        }
-
-        // allowgroups is both MULTI_ARG and REPEATABLE
-        // Space-separated values should be parsed as array
         let allowgroups = match_obj.get("allowgroups").unwrap().as_array().unwrap();
         assert_eq!(allowgroups.len(), 2);
         assert_eq!(allowgroups[0], Value::String("administrators".to_string()));

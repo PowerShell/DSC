@@ -10,7 +10,7 @@ use tracing_subscriber::{EnvFilter, Layer, prelude::__tracing_subscriber_Subscri
 use crate::args::{TraceFormat, TraceLevel};
 use crate::error::SshdConfigError;
 use crate::inputs::{CommandInfo, Metadata, SshdCommandArgs};
-use crate::metadata::{MULTI_ARG_KEYWORDS_COMMA_SEP, MULTI_ARG_KEYWORDS_SPACE_SEP, SSHD_CONFIG_DEFAULT_PATH_UNIX, SSHD_CONFIG_DEFAULT_PATH_WINDOWS};
+use crate::metadata::{MULTI_ARG_KEYWORDS_COMMA_SEP, SSHD_CONFIG_DEFAULT_PATH_UNIX, SSHD_CONFIG_DEFAULT_PATH_WINDOWS};
 use crate::parser::parse_text_to_map;
 
 /// Enable tracing.
@@ -69,7 +69,7 @@ pub fn enable_tracing(trace_level: &TraceLevel, trace_format: &TraceFormat) {
     }
 }
 
-/// Format a JSON value for writing to sshd_config.
+/// Format a JSON value for writing to `sshd_config`.
 ///
 /// # Arguments
 ///
@@ -89,13 +89,6 @@ pub fn format_sshd_value(key: &str, value: &Value) -> Result<Option<String>, Ssh
     let key_lower = key.to_lowercase();
 
     match value {
-        Value::Null => Ok(None),
-        Value::String(s) => Ok(Some(s.clone())),
-        Value::Number(n) => Ok(Some(n.to_string())),
-        Value::Bool(b) => {
-            let bool_str = if *b { "yes" } else { "no" };
-            Ok(Some(bool_str.to_string()))
-        },
         Value::Array(arr) => {
             if arr.is_empty() {
                 return Ok(None);
@@ -105,15 +98,10 @@ pub fn format_sshd_value(key: &str, value: &Value) -> Result<Option<String>, Ssh
             let mut string_values = Vec::new();
             for item in arr {
                 match item {
-                    Value::String(s) => string_values.push(s.clone()),
                     Value::Number(n) => string_values.push(n.to_string()),
-                    Value::Bool(b) => {
-                        let bool_str = if *b { "yes" } else { "no" };
-                        string_values.push(bool_str.to_string());
-                    },
-                    Value::Null => continue, // Skip null values in arrays
+                    Value::String(s) => string_values.push(s.clone()),
                     _ => return Err(SshdConfigError::InvalidInput(
-                        t!("set.arrayElementMustBeStringNumberOrBool", key = key).to_string()
+                        t!("util.arrayElementMustBeStringNumber", key = key).to_string()
                     )),
                 }
             }
@@ -122,23 +110,27 @@ pub fn format_sshd_value(key: &str, value: &Value) -> Result<Option<String>, Ssh
                 return Ok(None);
             }
 
-            // Determine separator based on keyword type
             let separator = if MULTI_ARG_KEYWORDS_COMMA_SEP.contains(&key_lower.as_str()) {
                 ","
-            } else if MULTI_ARG_KEYWORDS_SPACE_SEP.contains(&key_lower.as_str()) {
-                " "
             } else {
-                // Default to comma for unknown multi-arg keywords
-                ","
+                " "
             };
 
             Ok(Some(string_values.join(separator)))
         },
-        Value::Object(_) => {
-            Err(SshdConfigError::InvalidInput(
-                t!("set.objectValuesNotSupported", key = key).to_string()
-            ))
+        Value::Bool(b) => {
+            let bool_str = if *b { "yes" } else { "no" };
+            Ok(Some(bool_str.to_string()))
+        },
+        Value::Null => Ok(None),
+        Value::Number(n) => Ok(Some(n.to_string())),
+        Value::Object(obj) => {
+            if key_lower == "match" {
+                return format_match_block(obj);
+            }
+            Err(SshdConfigError::InvalidInput(t!("util.objectValuesNotSupported", key = key).to_string()))
         }
+        Value::String(s) => Ok(Some(s.clone())),
     }
 }
 
@@ -246,6 +238,8 @@ pub fn build_command_info(input: Option<&String>, is_get: bool) -> Result<Comman
         } else {
             Metadata::new()
         };
+        // lowercase keys for case-insensitive comparison later of SSHD -T output
+        sshd_config = sshd_config.into_iter().map(|(k, v)| (k.to_lowercase(), v)).collect();
         let sshd_args = metadata.filepath.clone().map(|filepath| {
             SshdCommandArgs {
                 filepath: Some(filepath),
@@ -314,4 +308,47 @@ fn get_bool_or_default(map: &mut Map<String, Value>, key: &str, default: bool) -
     } else {
         Ok(default)
     }
+}
+
+fn format_match_block(match_obj: &Map<String, Value>) -> Result<Option<String>, SshdConfigError> {
+    let mut lines = Vec::new();
+
+    let Some(criteria_value) = match_obj.get("criteria") else {
+        return Err(SshdConfigError::InvalidInput(t!("set.matchBlockMissingCriteria").to_string()));
+    };
+
+    let Value::Object(criteria) = criteria_value else {
+        return Err(SshdConfigError::InvalidInput(t!("set.matchBlockCriteriaMustBeObject").to_string()));
+    };
+
+    let mut match_parts = vec![];
+
+    for (criterion_key, criterion_value) in criteria {
+        let Value::Array(values) = criterion_value else {
+            return Err(SshdConfigError::InvalidInput(t!("set.matchCriterionMustBeArray", key = criterion_key).to_string()));
+        };
+
+        // Convert array values to comma-separated string
+        let value_strings: Vec<String> = values.iter()
+            .filter_map(|v| v.as_str().map(String::from))
+            .collect();
+
+        if !value_strings.is_empty() {
+            match_parts.push(format!("{} {}", criterion_key, value_strings.join(",")));
+        }
+    }
+
+    lines.push(match_parts.join(" "));
+
+    // Format other keywords in the match block
+    for (key, value) in match_obj {
+        if key == "criteria" {
+            continue; // handled above
+        }
+
+        if let Some(formatted_value) = format_sshd_value(key, value)? {
+            lines.push(format!("    {key} {formatted_value}"));
+        }
+    }
+    Ok(Some(lines.join("\n")))
 }
