@@ -8,7 +8,7 @@ use serde_json::Map;
 use std::process::exit;
 use tracing::{debug, error};
 
-use args::{Args, Command, DefaultShell, Setting};
+use args::{Args, Command, DefaultShell, Setting, TraceLevel};
 use get::{get_sshd_settings, invoke_get};
 use parser::SshdConfigParser;
 use set::invoke_set;
@@ -29,9 +29,29 @@ const EXIT_SUCCESS: i32 = 0;
 const EXIT_FAILURE: i32 = 1;
 
 fn main() {
-    enable_tracing();
-
     let args = Args::parse();
+
+    let trace_level = match &args.trace_level {
+        Some(trace_level) => trace_level.clone(),
+        None => {
+            if let Ok(trace_level) = std::env::var("DSC_TRACE_LEVEL") {
+                match trace_level.to_lowercase().as_str() {
+                    "error" => TraceLevel::Error,
+                    "warn" => TraceLevel::Warn,
+                    "info" => TraceLevel::Info,
+                    "debug" => TraceLevel::Debug,
+                    "trace" => TraceLevel::Trace,
+                    _ => {
+                        eprintln!("{}: {trace_level}", t!("main.invalidTraceLevel"));
+                        TraceLevel::Info
+                    }
+                }
+            } else {
+                TraceLevel::Info
+            }
+        }
+    };
+    enable_tracing(&trace_level, &args.trace_format);
 
     let result = match &args.command {
         Command::Export { input } => {

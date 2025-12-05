@@ -133,4 +133,44 @@ resources:
             }
         }
     }
+
+    Context 'Set Commands' {
+        It 'Set works with _clobber: true' {
+            $set_yaml = @"
+`$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+metadata:
+  Microsoft.DSC:
+    securityContext: elevated
+resources:
+- name: sshdconfig
+  type: Microsoft.OpenSSH.SSHD/sshd_config
+  metadata:
+    filepath: $filepath
+  properties:
+    _clobber: true
+    port: 1234
+    allowUsers:
+      - user1
+      - user2
+    passwordAuthentication: $false
+    ciphers:
+      - aes128-ctr
+      - aes192-ctr
+      - aes256-ctr
+    addressFamily: inet6
+    authorizedKeysFile:
+      - ./.ssh/authorized_keys
+      - ./.ssh/authorized_keys2
+"@
+            $out = dsc config set -i "$set_yaml" | ConvertFrom-Json -Depth 10
+            $LASTEXITCODE | Should -Be 0
+            $out.results.count | Should -Be 1
+            $out.results.result.afterState.port | Should -Be 1234
+            $out.results.result.afterState.passwordauthentication | Should -Be $false
+            $out.results.result.afterState.ciphers | Should -Be @('aes128-ctr', 'aes192-ctr', 'aes256-ctr')
+            $out.results.result.afterState.allowusers | Should -Be @('user1', 'user2')
+            $out.results.result.afterState.addressfamily | Should -Be 'inet6'
+            $out.results.result.afterState.authorizedkeysfile | Should -Be @('./.ssh/authorized_keys', './.ssh/authorized_keys2')
+        }
+    }
 }

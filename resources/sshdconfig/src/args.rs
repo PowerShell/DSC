@@ -6,10 +6,30 @@ use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
+pub enum TraceFormat {
+    Default,
+    Plaintext,
+    Json,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
+pub enum TraceLevel {
+    Error,
+    Warn,
+    Info,
+    Debug,
+    Trace
+}
+
 #[derive(Parser)]
 pub struct Args {
     #[clap(subcommand)]
     pub command: Command,
+    #[clap(short = 'l', long, help = "Trace level to use", value_enum)]
+    pub trace_level: Option<TraceLevel>,
+    #[clap(short = 'f', long, help = "Trace format to use", value_enum, default_value = "json")]
+    pub trace_format: TraceFormat,
 }
 
 #[derive(Subcommand)]
