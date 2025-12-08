@@ -398,7 +398,11 @@ function Invoke-DscOperation {
                                 "Credential object '$($_.Name)' requires both 'username' and 'password' properties" | Write-DscTrace -Operation Error
                                 exit 1
                             }
-                            $property.$($_.Name) = [System.Management.Automation.PSCredential]::new($_.Value.Username, (ConvertTo-SecureString -AsPlainText $_.Value.Password -Force))
+
+                            $username = Get-PrimitiveValueString $_.Value.Username
+                            $password = $_.Value.Password | ConvertTo-SecureString -AsPlainText -Force
+                            $property.$($_.Name) = [System.Management.Automation.PSCredential]::new($username, $password)
+                            
                         } else {
                             $property.$($_.Name) = $_.Value.psobject.properties | ForEach-Object -Begin { $propertyHash = @{} } -Process { $propertyHash[$_.Name] = $_.Value } -End { $propertyHash }
                         }
