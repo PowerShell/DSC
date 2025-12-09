@@ -15,7 +15,7 @@ use crate::metadata::{MULTI_ARG_KEYWORDS_COMMA_SEP, SSHD_CONFIG_DEFAULT_PATH_UNI
 use crate::parser::parse_text_to_map;
 
 #[derive(Debug, Deserialize)]
-struct MatchBlockFmt {
+struct MatchBlock {
     criteria: Map<String, Value>,
     #[serde(flatten)]
     contents: Map<String, Value>,
@@ -343,7 +343,7 @@ fn get_bool_or_default(map: &mut Map<String, Value>, key: &str, default: bool) -
 }
 
 fn format_match_block(match_obj: &Value) -> Result<String, SshdConfigError> {
-    let match_block = match serde_json::from_value::<MatchBlockFmt>(match_obj.clone()) {
+    let match_block = match serde_json::from_value::<MatchBlock>(match_obj.clone()) {
         Ok(result) => {
             result
         }
