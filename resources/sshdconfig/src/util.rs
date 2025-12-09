@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 use rust_i18n::t;
+use serde::Deserialize;
 use serde_json::{Map, Value};
 use std::{path::PathBuf, process::Command};
 use tracing::{debug, warn, Level};
@@ -12,6 +13,13 @@ use crate::error::SshdConfigError;
 use crate::inputs::{CommandInfo, Metadata, SshdCommandArgs};
 use crate::metadata::{MULTI_ARG_KEYWORDS_COMMA_SEP, SSHD_CONFIG_DEFAULT_PATH_UNIX, SSHD_CONFIG_DEFAULT_PATH_WINDOWS};
 use crate::parser::parse_text_to_map;
+
+#[derive(Debug, Deserialize)]
+struct MatchBlockFmt {
+    criteria: Map<String, Value>,
+    #[serde(flatten)]
+    contents: Map<String, Value>,
+}
 
 /// Enable tracing.
 ///
@@ -106,52 +114,55 @@ pub fn enable_tracing(trace_level: Option<TraceLevel>, trace_format: &TraceForma
 /// # Errors
 ///
 /// Returns an error if the value type is not supported or if formatting fails.
-pub fn format_sshd_value(key: &str, value: &Value) -> Result<Option<String>, SshdConfigError> {
+pub fn format_sshd_value(key: &str, value: &Value) -> Result<String, SshdConfigError> {
     let key_lower = key.to_lowercase();
+    let result = if key_lower == "match" {
+        format_match_block(value)?
+    } else {
+        display_sshd_value(value, MULTI_ARG_KEYWORDS_COMMA_SEP.contains(&key_lower.as_str()))?
+    };
 
+    if result.is_empty() {
+        return Err(SshdConfigError::ParserError(t!("util.invalidValue", key = key).to_string()))
+    }
+    Ok(result)
+}
+
+fn display_sshd_value(value: &Value, is_comma_separated: bool) -> Result<String, SshdConfigError> {
     match value {
         Value::Array(arr) => {
             if arr.is_empty() {
-                return Ok(None);
+                return Ok(String::new());
             }
 
             // Convert array elements to strings
             let mut string_values = Vec::new();
             for item in arr {
-                match item {
-                    Value::Number(n) => string_values.push(n.to_string()),
-                    Value::String(s) => string_values.push(s.clone()),
-                    _ => return Err(SshdConfigError::InvalidInput(
-                        t!("util.arrayElementMustBeStringNumber", key = key).to_string()
-                    )),
+                let result = display_sshd_value(item, false)?;
+                if !result.is_empty() {
+                    string_values.push(result);
                 }
             }
 
             if string_values.is_empty() {
-                return Ok(None);
+                return Ok(String::new());
             }
 
-            let separator = if MULTI_ARG_KEYWORDS_COMMA_SEP.contains(&key_lower.as_str()) {
+            let separator = if is_comma_separated {
                 ","
             } else {
                 " "
             };
 
-            Ok(Some(string_values.join(separator)))
+            Ok(string_values.join(separator))
         },
         Value::Bool(b) => {
             let bool_str = if *b { "yes" } else { "no" };
-            Ok(Some(bool_str.to_string()))
+            Ok(bool_str.to_string())
         },
-        Value::Null => Ok(None),
-        Value::Number(n) => Ok(Some(n.to_string())),
-        Value::Object(obj) => {
-            if key_lower == "match" {
-                return format_match_block(obj);
-            }
-            Err(SshdConfigError::InvalidInput(t!("util.objectValuesNotSupported", key = key).to_string()))
-        }
-        Value::String(s) => Ok(Some(s.clone())),
+        Value::Number(n) => Ok(n.to_string()),
+        Value::String(s) => Ok(s.clone()),
+        _ => Ok(String::new())
     }
 }
 
@@ -331,45 +342,39 @@ fn get_bool_or_default(map: &mut Map<String, Value>, key: &str, default: bool) -
     }
 }
 
-fn format_match_block(match_obj: &Map<String, Value>) -> Result<Option<String>, SshdConfigError> {
-    let mut lines = Vec::new();
-
-    let Some(criteria_value) = match_obj.get("criteria") else {
-        return Err(SshdConfigError::InvalidInput(t!("util.matchBlockMissingCriteria").to_string()));
+fn format_match_block(match_obj: &Value) -> Result<String, SshdConfigError> {
+    let match_block = match serde_json::from_value::<MatchBlockFmt>(match_obj.clone()) {
+        Ok(result) => {
+            result
+        }
+        Err(e) => {
+            return Err(SshdConfigError::ParserError(t!("util.deserializeFailed", error = e).to_string()));
+        }
     };
 
-    let Value::Object(criteria) = criteria_value else {
-        return Err(SshdConfigError::InvalidInput(t!("util.matchBlockCriteriaMustBeObject").to_string()));
-    };
+    if match_block.criteria.is_empty() {
+        return Err(SshdConfigError::InvalidInput(
+            t!("util.matchBlockMissingCriteria").to_string()
+        ));
+    }
 
     let mut match_parts = vec![];
+    let mut result = vec![];
 
-    for (criterion_key, criterion_value) in criteria {
-        let Value::Array(values) = criterion_value else {
-            return Err(SshdConfigError::InvalidInput(t!("util.matchCriterionMustBeArray", key = criterion_key).to_string()));
-        };
-
-        // Convert array values to comma-separated string
-        let value_strings: Vec<String> = values.iter()
-            .filter_map(|v| v.as_str().map(String::from))
-            .collect();
-
-        if !value_strings.is_empty() {
-            match_parts.push(format!("{} {}", criterion_key, value_strings.join(",")));
-        }
+    for (key, value) in &match_block.criteria {
+        // all match criteria values are comma-separated
+        let value_formatted = display_sshd_value(value, true)?;
+        match_parts.push(format!("{key} {value_formatted}"));
     }
 
-    lines.push(match_parts.join(" "));
+    // Write the Match line with the formatted criteria(s)
+    result.push(match_parts.join(" "));
 
     // Format other keywords in the match block
-    for (key, value) in match_obj {
-        if key == "criteria" {
-            continue; // handled above
-        }
-
-        if let Some(formatted_value) = format_sshd_value(key, value)? {
-            lines.push(format!("    {key} {formatted_value}"));
-        }
+    for (key, value) in &match_block.contents {
+        let formatted_value = format_sshd_value(key, value)?;
+        result.push(format!("    {key} {formatted_value}"));
     }
-    Ok(Some(lines.join("\n")))
+
+    Ok(result.join("\n"))
 }

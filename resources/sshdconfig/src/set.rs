@@ -120,21 +120,18 @@ fn set_sshd_config(cmd_info: &CommandInfo) -> Result<(), SshdConfigError> {
             if REPEATABLE_KEYWORDS.contains(&key_lower.as_str()) {
                 if let Value::Array(arr) = value {
                     for item in arr {
-                        if let Some(formatted) = format_sshd_value(key, item)? {
-                            writeln!(&mut config_text, "{key} {formatted}")?;
-                        }
+                        let formatted = format_sshd_value(key, item)?;
+                        writeln!(&mut config_text, "{key} {formatted}")?;
                     }
                 } else {
                     // Single value for repeatable keyword, write as-is
-                    if let Some(formatted) = format_sshd_value(key, value)? {
-                        writeln!(&mut config_text, "{key} {formatted}")?;
-                    }
+                    let formatted = format_sshd_value(key, value)?;
+                    writeln!(&mut config_text, "{key} {formatted}")?;
                 }
             } else {
                 // Handle non-repeatable keywords - format and write single line
-                if let Some(formatted) = format_sshd_value(key, value)? {
-                    writeln!(&mut config_text, "{key} {formatted}")?;
-                }
+                let formatted = format_sshd_value(key, value)?;
+                writeln!(&mut config_text, "{key} {formatted}")?;
             }
         }
     } else {
