@@ -23,7 +23,28 @@ use crate::parser::parse_text_to_map;
 /// # Errors
 ///
 /// This function will return an error if it fails to initialize tracing.
-pub fn enable_tracing(trace_level: &TraceLevel, trace_format: &TraceFormat) {
+pub fn enable_tracing(trace_level: Option<TraceLevel>, trace_format: &TraceFormat) {
+    let trace_level = match trace_level {
+        Some(trace_level) => trace_level.clone(),
+        None => {
+            if let Ok(trace_level) = std::env::var("DSC_TRACE_LEVEL") {
+                match trace_level.to_lowercase().as_str() {
+                    "error" => TraceLevel::Error,
+                    "warn" => TraceLevel::Warn,
+                    "info" => TraceLevel::Info,
+                    "debug" => TraceLevel::Debug,
+                    "trace" => TraceLevel::Trace,
+                    _ => {
+                        eprintln!("{}: {trace_level}", t!("main.invalidTraceLevel"));
+                        TraceLevel::Info
+                    }
+                }
+            } else {
+                TraceLevel::Info
+            }
+        }
+    };
+
     let tracing_level = match trace_level {
         TraceLevel::Error => Level::ERROR,
         TraceLevel::Warn => Level::WARN,
