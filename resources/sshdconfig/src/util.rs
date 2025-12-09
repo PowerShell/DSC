@@ -31,12 +31,12 @@ struct MatchBlockFmt {
 /// # Errors
 ///
 /// This function will return an error if it fails to initialize tracing.
-pub fn enable_tracing(trace_level: Option<TraceLevel>, trace_format: &TraceFormat) {
+pub fn enable_tracing(trace_level: Option<&TraceLevel>, trace_format: &TraceFormat) {
     let trace_level = match trace_level {
-        Some(trace_level) => trace_level.clone(),
+        Some(trace_level) => trace_level,
         None => {
             if let Ok(trace_level) = std::env::var("DSC_TRACE_LEVEL") {
-                match trace_level.to_lowercase().as_str() {
+                &match trace_level.to_lowercase().as_str() {
                     "error" => TraceLevel::Error,
                     "warn" => TraceLevel::Warn,
                     "info" => TraceLevel::Info,
@@ -48,7 +48,7 @@ pub fn enable_tracing(trace_level: Option<TraceLevel>, trace_format: &TraceForma
                     }
                 }
             } else {
-                TraceLevel::Info
+                &TraceLevel::Info
             }
         }
     };
