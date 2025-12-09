@@ -6,9 +6,11 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 use crate::configure::config_result::{ResourceGetResult, ResourceSetResult, ResourceTestResult};
+use crate::schemas::dsc_repo::DscRepoSchema;
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(untagged)]
+#[dsc_repo_schema(base_name = "get", folder_path = "outputs/resource")]
 pub enum GetResult {
     Resource(ResourceGetResponse),
     Group(Vec<ResourceGetResult>),
@@ -33,16 +35,18 @@ impl From<TestResult> for GetResult {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
+#[dsc_repo_schema(base_name = "get.simple", folder_path = "outputs/resource")]
 pub struct ResourceGetResponse {
     /// The state of the resource as it was returned by the Get method.
     #[serde(rename = "actualState")]
     pub actual_state: Value,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(untagged)]
+#[dsc_repo_schema(base_name = "set", folder_path = "outputs/resource")]
 pub enum SetResult {
     Resource(ResourceSetResponse),
     Group(Vec<ResourceSetResult>),
@@ -69,8 +73,9 @@ impl From<TestResult> for SetResult {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
+#[dsc_repo_schema(base_name = "set.simple", folder_path = "outputs/resource")]
 pub struct ResourceSetResponse {
     /// The state of the resource as it was before the Set method was called.
     #[serde(rename = "beforeState")]
@@ -83,8 +88,9 @@ pub struct ResourceSetResponse {
     pub changed_properties: Option<Vec<String>>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(untagged)]
+#[dsc_repo_schema(base_name = "test", folder_path = "outputs/resource")]
 pub enum TestResult {
     Resource(ResourceTestResponse),
     Group(Vec<ResourceTestResult>),
@@ -107,8 +113,9 @@ pub fn get_in_desired_state(test_result: &TestResult) -> bool {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
+#[dsc_repo_schema(base_name = "test.simple", folder_path = "outputs/resource")]
 pub struct ResourceTestResponse {
     /// The state of the resource as it was expected to be.
     #[serde(rename = "desiredState")]
@@ -124,8 +131,9 @@ pub struct ResourceTestResponse {
     pub diff_properties: Vec<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
+#[dsc_repo_schema(base_name = "validate", folder_path = "outputs/resource")]
 pub struct ValidateResult {
     /// Whether the supplied configuration is valid.
     pub valid: bool,
@@ -133,16 +141,18 @@ pub struct ValidateResult {
     pub reason: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
+#[dsc_repo_schema(base_name = "export", folder_path = "outputs/resource")]
 pub struct ExportResult {
     /// The state of the resource as it was returned by the Export method.
     #[serde(rename = "actualState")]
     pub actual_state: Vec<Value>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
+#[dsc_repo_schema(base_name = "resolve", folder_path = "outputs/resource")]
 pub struct ResolveResult {
     /// The resolved configuration.
     pub configuration: Value,

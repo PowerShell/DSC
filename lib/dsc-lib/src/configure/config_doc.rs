@@ -3,28 +3,30 @@
 
 use chrono::{DateTime, Local};
 use rust_i18n::t;
-use schemars::{JsonSchema, json_schema};
+use schemars::JsonSchema;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value};
 use std::{collections::HashMap, fmt::Display};
 
 use crate::schemas::{
-    dsc_repo::{DscRepoSchema, UnrecognizedSchemaUri},
+    dsc_repo::DscRepoSchema,
     transforms::{idiomaticize_externally_tagged_enum, idiomaticize_string_enum}
 };
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
 #[schemars(transform = idiomaticize_string_enum)]
+#[dsc_repo_schema(base_name = "securityContext", folder_path = "metadata/Microsoft.DSC")]
 pub enum SecurityContextKind {
     Current,
     Elevated,
     Restricted,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
 #[schemars(transform = idiomaticize_string_enum)]
+#[dsc_repo_schema(base_name = "operation", folder_path = "metadata/Microsoft.DSC")]
 pub enum Operation {
     Get,
     Set,
@@ -32,9 +34,10 @@ pub enum Operation {
     Export,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
 #[schemars(transform = idiomaticize_string_enum)]
+#[dsc_repo_schema(base_name = "executionType", folder_path = "metadata/Microsoft.DSC")]
 pub enum ExecutionKind {
     Actual,
     WhatIf,
@@ -47,9 +50,10 @@ pub struct Process {
     pub id: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
 #[schemars(transform = idiomaticize_externally_tagged_enum)]
+#[dsc_repo_schema(base_name = "restartRequired", folder_path = "metadata/Microsoft.DSC")]
 pub enum RestartRequired {
     System(String),
     Service(String),
@@ -104,7 +108,8 @@ impl MicrosoftDscMetadata {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[dsc_repo_schema(base_name = "document.metadata", folder_path = "config")]
 pub struct Metadata {
     #[serde(rename = "Microsoft.DSC", skip_serializing_if = "Option::is_none")]
     pub microsoft: Option<MicrosoftDscMetadata>,
@@ -112,25 +117,29 @@ pub struct Metadata {
     pub other: Map<String, Value>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[dsc_repo_schema(base_name = "document.function", folder_path = "config")]
 pub struct UserFunction {
     pub namespace: String,
     pub members: HashMap<String, UserFunctionDefinition>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[dsc_repo_schema(base_name = "definition", folder_path = "definitions/functions/user")]
 pub struct UserFunctionDefinition {
     pub parameters: Option<Vec<UserFunctionParameter>>,
     pub output: UserFunctionOutput,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[dsc_repo_schema(base_name = "parameter", folder_path = "definitions/functions/user")]
 pub struct UserFunctionParameter {
     pub name: String,
     pub r#type: DataType,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[dsc_repo_schema(base_name = "output", folder_path = "definitions/functions/user")]
 pub struct UserFunctionOutput {
     pub r#type: DataType,
     pub value: String,
@@ -143,8 +152,9 @@ pub enum ValueOrCopy {
     Copy(Copy),
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
+#[dsc_repo_schema(base_name = "document.output", folder_path = "config")]
 pub struct Output {
     pub condition: Option<String>,
     pub r#type: DataType,
@@ -152,8 +162,18 @@ pub struct Output {
     pub value_or_copy: ValueOrCopy,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
+#[dsc_repo_schema(
+    base_name = "document",
+    folder_path = "config",
+    should_bundle = true,
+    schema_field(
+        name = schema,
+        title = t!("configure.config_doc.configurationDocumentSchemaTitle"),
+        description = t!("configure.config_doc.configurationDocumentSchemaDescription"),
+    )
+)]
 pub struct Configuration {
     #[serde(rename = "$schema")]
     #[schemars(schema_with = "Configuration::recognized_schema_uris_subschema")]
@@ -222,8 +242,9 @@ where
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
+#[dsc_repo_schema(base_name = "document.parameter", folder_path = "config")]
 pub struct Parameter {
     #[serde(rename = "type")]
     pub parameter_type: DataType,
@@ -245,8 +266,9 @@ pub struct Parameter {
     pub metadata: Option<Map<String, Value>>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[schemars(transform = idiomaticize_string_enum)]
+#[dsc_repo_schema(base_name = "dataTypes", folder_path = "definitions/parameters")]
 pub enum DataType {
     #[serde(rename = "string")]
     String,
@@ -353,8 +375,9 @@ pub struct Sku {
     pub capacity: Option<i32>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
+#[dsc_repo_schema(base_name = "document.resource", folder_path = "config")]
 pub struct Resource {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub condition: Option<String>,
@@ -403,30 +426,6 @@ pub struct Resource {
 impl Default for Configuration {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-impl DscRepoSchema for Configuration {
-    const SCHEMA_FILE_BASE_NAME: &'static str = "document";
-    const SCHEMA_FOLDER_PATH: &'static str = "config";
-    const SCHEMA_SHOULD_BUNDLE: bool = true;
-
-    fn schema_property_metadata() -> schemars::Schema {
-        json_schema!({
-            "title": t!("configure.config_doc.configurationDocumentSchemaTitle").to_string(),
-            "description": t!("configure.config_doc.configurationDocumentSchemaDescription").to_string(),
-        })
-    }
-
-    fn validate_schema_uri(&self) -> Result<(), UnrecognizedSchemaUri> {
-        if Self::is_recognized_schema_uri(&self.schema) {
-            Ok(())
-        } else {
-            Err(UnrecognizedSchemaUri(
-                self.schema.clone(),
-                Self::recognized_schema_uris(),
-            ))
-        }
     }
 }
 

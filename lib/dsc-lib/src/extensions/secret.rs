@@ -13,7 +13,9 @@ use crate::{
         },
         extension_manifest::ExtensionManifest,
     },
+    schemas::dsc_repo::DscRepoSchema
 };
+
 use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -38,7 +40,8 @@ pub enum SecretArgKind {
     },
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[dsc_repo_schema(base_name = "manifest.secret", folder_path = "extension")]
 pub struct SecretMethod {
     /// The command to run to get the state of the resource.
     pub executable: String,

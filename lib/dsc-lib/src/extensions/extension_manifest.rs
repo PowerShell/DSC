@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use rust_i18n::t;
-use schemars::{Schema, JsonSchema, json_schema};
+use schemars::JsonSchema;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -10,10 +10,20 @@ use std::collections::HashMap;
 
 use crate::dscerror::DscError;
 use crate::extensions::{discover::DiscoverMethod, import::ImportMethod, secret::SecretMethod};
-use crate::schemas::dsc_repo::{DscRepoSchema, UnrecognizedSchemaUri};
+use crate::schemas::dsc_repo::DscRepoSchema;
 
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
+#[dsc_repo_schema(
+    base_name = "manifest",
+    folder_path = "extension",
+    should_bundle = true,
+    schema_field(
+        name = schema_version,
+        title = t!("extensions.extension_manifest.extensionManifestSchemaTitle"),
+        description = t!("extensions.extension_manifest.extensionManifestSchemaDescription"),
+    )
+)]
 pub struct ExtensionManifest {
     /// The version of the extension manifest schema.
     #[serde(rename = "$schema")]
@@ -45,30 +55,6 @@ pub struct ExtensionManifest {
     pub exit_codes: Option<HashMap<String, String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Map<String, Value>>,
-}
-
-impl DscRepoSchema for ExtensionManifest {
-    const SCHEMA_FILE_BASE_NAME: &'static str = "manifest";
-    const SCHEMA_FOLDER_PATH: &'static str = "extension";
-    const SCHEMA_SHOULD_BUNDLE: bool = true;
-
-    fn schema_property_metadata() -> Schema {
-        json_schema!({
-            "title": t!("extensions.extension_manifest.extensionManifestSchemaTitle").to_string(),
-            "description": t!("extensions.extension_manifest.extensionManifestSchemaDescription").to_string(),
-        })
-    }
-
-    fn validate_schema_uri(&self) -> Result<(), UnrecognizedSchemaUri> {
-        if Self::is_recognized_schema_uri(&self.schema_version) {
-            Ok(())
-        } else {
-            Err(UnrecognizedSchemaUri(
-                self.schema_version.clone(),
-                Self::recognized_schema_uris(),
-            ))
-        }
-    }
 }
 
 /// Import a resource manifest from a JSON value.

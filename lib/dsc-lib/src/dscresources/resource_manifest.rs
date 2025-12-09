@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use rust_i18n::t;
-use schemars::{Schema, JsonSchema, json_schema};
+use schemars::JsonSchema;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -10,12 +10,13 @@ use std::collections::HashMap;
 
 use crate::{
     dscerror::DscError,
-    schemas::{dsc_repo::{DscRepoSchema, UnrecognizedSchemaUri}, transforms::idiomaticize_string_enum},
+    schemas::{dsc_repo::DscRepoSchema, transforms::idiomaticize_string_enum},
 };
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
 #[schemars(transform = idiomaticize_string_enum)]
+#[dsc_repo_schema(base_name = "resourceKind", folder_path = "definitions")]
 pub enum Kind {
     Adapter,
     Exporter,
@@ -24,8 +25,18 @@ pub enum Kind {
     Resource,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
+#[dsc_repo_schema(
+    base_name = "manifest",
+    folder_path = "resource",
+    should_bundle = true,
+    schema_field(
+        name = schema_version,
+        title = t!("dscresources.resource_manifest.resourceManifestSchemaTitle"),
+        description = t!("dscresources.resource_manifest.resourceManifestSchemaDescription"),
+    )
+)]
 pub struct ResourceManifest {
     /// The version of the resource manifest schema.
     #[serde(rename = "$schema")]
@@ -82,8 +93,9 @@ pub struct ResourceManifest {
     pub metadata: Option<Map<String, Value>>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(untagged)]
+#[dsc_repo_schema(base_name = "commandArgs", folder_path = "definitions")]
 pub enum ArgKind {
     /// The argument is a string.
     String(String),
@@ -102,8 +114,9 @@ pub enum ArgKind {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[schemars(transform = idiomaticize_string_enum)]
+#[dsc_repo_schema(base_name = "inputKind", folder_path = "definitions")]
 pub enum InputKind {
     /// The input is accepted as environmental variables.
     #[serde(rename = "env")]
@@ -113,7 +126,8 @@ pub enum InputKind {
     Stdin,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[dsc_repo_schema(base_name = "manifest.schema", folder_path = "resource")]
 pub enum SchemaKind {
     /// The schema is returned by running a command.
     #[serde(rename = "command")]
@@ -131,8 +145,9 @@ pub struct SchemaCommand {
     pub args: Option<Vec<String>>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[schemars(transform = idiomaticize_string_enum)]
+#[dsc_repo_schema(base_name = "returnKind", folder_path = "definitions")]
 pub enum ReturnKind {
     /// The return JSON is the state of the resource.
     #[serde(rename = "state")]
@@ -142,7 +157,8 @@ pub enum ReturnKind {
     StateAndDiff,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[dsc_repo_schema(base_name = "manifest.get", folder_path = "resource")]
 pub struct GetMethod {
     /// The command to run to get the state of the resource.
     pub executable: String,
@@ -153,7 +169,8 @@ pub struct GetMethod {
     pub input: Option<InputKind>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[dsc_repo_schema(base_name = "manifest.set", folder_path = "resource")]
 pub struct SetMethod {
     /// The command to run to set the state of the resource.
     pub executable: String,
@@ -172,7 +189,8 @@ pub struct SetMethod {
     pub returns: Option<ReturnKind>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[dsc_repo_schema(base_name = "manifest.test", folder_path = "resource")]
 pub struct TestMethod {
     /// The command to run to test the state of the resource.
     pub executable: String,
@@ -185,7 +203,8 @@ pub struct TestMethod {
     pub returns: Option<ReturnKind>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[dsc_repo_schema(base_name = "manifest.delete", folder_path = "resource")]
 pub struct DeleteMethod {
     /// The command to run to delete the state of the resource.
     pub executable: String,
@@ -195,7 +214,8 @@ pub struct DeleteMethod {
     pub input: Option<InputKind>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[dsc_repo_schema(base_name = "manifest.validate", folder_path = "resource")]
 pub struct ValidateMethod { // TODO: enable validation via schema or command
     /// The command to run to validate the state of the resource.
     pub executable: String,
@@ -205,7 +225,8 @@ pub struct ValidateMethod { // TODO: enable validation via schema or command
     pub input: Option<InputKind>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[dsc_repo_schema(base_name = "manifest.export", folder_path = "resource")]
 pub struct ExportMethod {
     /// The command to run to enumerate instances of the resource.
     pub executable: String,
@@ -215,7 +236,8 @@ pub struct ExportMethod {
     pub input: Option<InputKind>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[dsc_repo_schema(base_name = "manifest.resolve", folder_path = "resource")]
 pub struct ResolveMethod {
     /// The command to run to enumerate instances of the resource.
     pub executable: String,
@@ -225,7 +247,8 @@ pub struct ResolveMethod {
     pub input: Option<InputKind>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[dsc_repo_schema(base_name = "manifest.adapter", folder_path = "resource")]
 pub struct Adapter {
     /// The way to list adapter supported resources.
     pub list: ListMethod,
@@ -254,30 +277,6 @@ pub struct ListMethod {
     pub executable: String,
     /// The arguments to pass to the command to perform a List.
     pub args: Option<Vec<String>>,
-}
-
-impl DscRepoSchema for ResourceManifest {
-    const SCHEMA_FILE_BASE_NAME: &'static str = "manifest";
-    const SCHEMA_FOLDER_PATH: &'static str = "resource";
-    const SCHEMA_SHOULD_BUNDLE: bool = true;
-
-    fn schema_property_metadata() -> Schema {
-        json_schema!({
-            "title": t!("dscresources.resource_manifest.resourceManifestSchemaTitle").to_string(),
-            "description": t!("dscresources.resource_manifest.resourceManifestSchemaDescription").to_string(),
-        })
-    }
-
-    fn validate_schema_uri(&self) -> Result<(), UnrecognizedSchemaUri> {
-        if Self::is_recognized_schema_uri(&self.schema_version) {
-            Ok(())
-        } else {
-            Err(UnrecognizedSchemaUri(
-                self.schema_version.clone(),
-                Self::recognized_schema_uris(),
-            ))
-        }
-    }
 }
 
 /// Import a resource manifest from a JSON value.
