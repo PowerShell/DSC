@@ -20,6 +20,7 @@ use crate::{
         },
         extension_manifest::ExtensionManifest,
     },
+    schemas::dsc_repo::DscRepoSchema
 };
 use rust_i18n::t;
 use schemars::JsonSchema;
@@ -27,7 +28,8 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tracing::{info, trace};
 
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[dsc_repo_schema(base_name = "manifest.discover", folder_path = "extension")]
 pub struct DiscoverMethod {
     /// The command to run to get the state of the resource.
     pub executable: String,
@@ -35,7 +37,8 @@ pub struct DiscoverMethod {
     pub args: Option<Vec<ArgKind>>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[dsc_repo_schema(base_name = "discover", folder_path = "extension/stdout")]
 pub struct DiscoverResult {
     /// The path to the resource manifest, must be absolute.
     #[serde(rename = "manifestPath")]
