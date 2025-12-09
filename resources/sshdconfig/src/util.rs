@@ -119,7 +119,7 @@ pub fn format_sshd_value(key: &str, value: &Value) -> Result<String, SshdConfigE
     let result = if key_lower == "match" {
         format_match_block(value)?
     } else {
-        display_sshd_value(value, MULTI_ARG_KEYWORDS_COMMA_SEP.contains(&key_lower.as_str()))?
+        format_value_as_string(value, MULTI_ARG_KEYWORDS_COMMA_SEP.contains(&key_lower.as_str()))?
     };
 
     if result.is_empty() {
@@ -128,7 +128,7 @@ pub fn format_sshd_value(key: &str, value: &Value) -> Result<String, SshdConfigE
     Ok(result)
 }
 
-fn display_sshd_value(value: &Value, is_comma_separated: bool) -> Result<String, SshdConfigError> {
+fn format_value_as_string(value: &Value, is_comma_separated: bool) -> Result<String, SshdConfigError> {
     match value {
         Value::Array(arr) => {
             if arr.is_empty() {
@@ -138,7 +138,7 @@ fn display_sshd_value(value: &Value, is_comma_separated: bool) -> Result<String,
             // Convert array elements to strings
             let mut string_values = Vec::new();
             for item in arr {
-                let result = display_sshd_value(item, false)?;
+                let result = format_value_as_string(item, false)?;
                 if !result.is_empty() {
                     string_values.push(result);
                 }
@@ -363,7 +363,7 @@ fn format_match_block(match_obj: &Value) -> Result<String, SshdConfigError> {
 
     for (key, value) in &match_block.criteria {
         // all match criteria values are comma-separated
-        let value_formatted = display_sshd_value(value, true)?;
+        let value_formatted = format_value_as_string(value, true)?;
         match_parts.push(format!("{key} {value_formatted}"));
     }
 
