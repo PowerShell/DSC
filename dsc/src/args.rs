@@ -93,6 +93,8 @@ pub enum SubCommand {
     },
     #[clap(name = "mcp", about = t!("args.mcpAbout").to_string())]
     Mcp,
+    #[clap(name = "bicep", about = t!("args.bicepAbout").to_string())]
+    Bicep,
     #[clap(name = "resource", about = t!("args.resourceAbout").to_string())]
     Resource {
         #[clap(subcommand)]
