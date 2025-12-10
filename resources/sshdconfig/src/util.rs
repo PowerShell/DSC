@@ -2,36 +2,167 @@
 // Licensed under the MIT License.
 
 use rust_i18n::t;
+use serde::Deserialize;
 use serde_json::{Map, Value};
 use std::{path::PathBuf, process::Command};
-use tracing::debug;
-use tracing_subscriber::{EnvFilter, filter::LevelFilter, Layer, prelude::__tracing_subscriber_SubscriberExt};
+use tracing::{debug, warn, Level};
+use tracing_subscriber::{EnvFilter, Layer, prelude::__tracing_subscriber_SubscriberExt};
 
+use crate::args::{TraceFormat, TraceLevel};
 use crate::error::SshdConfigError;
 use crate::inputs::{CommandInfo, Metadata, SshdCommandArgs};
-use crate::metadata::{SSHD_CONFIG_DEFAULT_PATH_UNIX, SSHD_CONFIG_DEFAULT_PATH_WINDOWS};
+use crate::metadata::{MULTI_ARG_KEYWORDS_COMMA_SEP, SSHD_CONFIG_DEFAULT_PATH_UNIX, SSHD_CONFIG_DEFAULT_PATH_WINDOWS};
 use crate::parser::parse_text_to_map;
 
+#[derive(Debug, Deserialize)]
+struct MatchBlock {
+    criteria: Map<String, Value>,
+    #[serde(flatten)]
+    contents: Map<String, Value>,
+}
+
 /// Enable tracing.
+///
+/// # Arguments
+///
+/// * `trace_level` - The level of information to output
+/// * `trace_format` - The format of the output
 ///
 /// # Errors
 ///
 /// This function will return an error if it fails to initialize tracing.
-pub fn enable_tracing() {
-    // default filter to trace level
-    let filter = EnvFilter::builder().with_default_directive(LevelFilter::TRACE.into()).parse("").unwrap_or_default();
+pub fn enable_tracing(trace_level: Option<&TraceLevel>, trace_format: &TraceFormat) {
+    let trace_level = match trace_level {
+        Some(trace_level) => trace_level,
+        None => {
+            if let Ok(trace_level) = std::env::var("DSC_TRACE_LEVEL") {
+                &match trace_level.to_lowercase().as_str() {
+                    "error" => TraceLevel::Error,
+                    "warn" => TraceLevel::Warn,
+                    "info" => TraceLevel::Info,
+                    "debug" => TraceLevel::Debug,
+                    "trace" => TraceLevel::Trace,
+                    _ => {
+                        eprintln!("{}: {trace_level}", t!("main.invalidTraceLevel"));
+                        TraceLevel::Info
+                    }
+                }
+            } else {
+                &TraceLevel::Info
+            }
+        }
+    };
+
+    let tracing_level = match trace_level {
+        TraceLevel::Error => Level::ERROR,
+        TraceLevel::Warn => Level::WARN,
+        TraceLevel::Info => Level::INFO,
+        TraceLevel::Debug => Level::DEBUG,
+        TraceLevel::Trace => Level::TRACE,
+    };
+
+    let filter = EnvFilter::try_from_default_env()
+        .or_else(|_| EnvFilter::try_new("warn"))
+        .unwrap_or_default()
+        .add_directive(tracing_level.into());
     let layer = tracing_subscriber::fmt::Layer::default().with_writer(std::io::stderr);
-    let fmt = layer
+    let fmt = match trace_format {
+        TraceFormat::Default => {
+            layer
+                .with_ansi(true)
+                .with_level(true)
+                .with_line_number(true)
+                .boxed()
+        },
+        TraceFormat::Plaintext => {
+            layer
+                .with_ansi(false)
+                .with_level(true)
+                .with_line_number(false)
+                .boxed()
+        },
+        TraceFormat::Json => {
+            layer
                 .with_ansi(false)
                 .with_level(true)
                 .with_line_number(true)
                 .json()
-                .boxed();
+                .boxed()
+        }
+    };
 
     let subscriber = tracing_subscriber::Registry::default().with(fmt).with(filter);
 
     if tracing::subscriber::set_global_default(subscriber).is_err() {
         eprintln!("{}", t!("util.tracingInitError"));
+    }
+}
+
+/// Format a JSON value for writing to `sshd_config`.
+///
+/// # Arguments
+///
+/// * `key` - The configuration key name (used to determine formatting rules)
+/// * `value` - The JSON value to format
+///
+/// # Returns
+///
+/// * `Ok(Some(String))` - Formatted value string
+/// * `Ok(None)` - Value is null and should be skipped
+/// * `Err(SshdConfigError)` - Invalid value type or formatting error
+///
+/// # Errors
+///
+/// Returns an error if the value type is not supported or if formatting fails.
+pub fn format_sshd_value(key: &str, value: &Value) -> Result<String, SshdConfigError> {
+    let key_lower = key.to_lowercase();
+    let result = if key_lower == "match" {
+        format_match_block(value)?
+    } else {
+        format_value_as_string(value, MULTI_ARG_KEYWORDS_COMMA_SEP.contains(&key_lower.as_str()))?
+    };
+
+    if result.is_empty() {
+        return Err(SshdConfigError::ParserError(t!("util.invalidValue", key = key).to_string()))
+    }
+    Ok(result)
+}
+
+fn format_value_as_string(value: &Value, is_comma_separated: bool) -> Result<String, SshdConfigError> {
+    match value {
+        Value::Array(arr) => {
+            if arr.is_empty() {
+                return Ok(String::new());
+            }
+
+            // Convert array elements to strings
+            let mut string_values = Vec::new();
+            for item in arr {
+                let result = format_value_as_string(item, false)?;
+                if !result.is_empty() {
+                    string_values.push(result);
+                }
+            }
+
+            if string_values.is_empty() {
+                return Ok(String::new());
+            }
+
+            let separator = if is_comma_separated {
+                ","
+            } else {
+                " "
+            };
+
+            Ok(string_values.join(separator))
+        },
+        Value::Bool(b) => {
+            let bool_str = if *b { "yes" } else { "no" };
+            Ok(bool_str.to_string())
+        },
+        Value::Number(n) => Ok(n.to_string()),
+        Value::String(s) => Ok(s.clone()),
+        _ => Ok(String::new())
     }
 }
 
@@ -139,6 +270,8 @@ pub fn build_command_info(input: Option<&String>, is_get: bool) -> Result<Comman
         } else {
             Metadata::new()
         };
+        // lowercase keys for case-insensitive comparison later of SSHD -T output
+        sshd_config = sshd_config.into_iter().map(|(k, v)| (k.to_lowercase(), v)).collect();
         let sshd_args = metadata.filepath.clone().map(|filepath| {
             SshdCommandArgs {
                 filepath: Some(filepath),
@@ -146,7 +279,7 @@ pub fn build_command_info(input: Option<&String>, is_get: bool) -> Result<Comman
             }
         });
         if is_get && !sshd_config.is_empty() {
-            return Err(SshdConfigError::InvalidInput(t!("util.inputMustBeEmpty").to_string()));
+            warn!("{}", t!("util.getIgnoresInputFilters"));
         }
         return Ok(CommandInfo {
             clobber,
@@ -207,4 +340,41 @@ fn get_bool_or_default(map: &mut Map<String, Value>, key: &str, default: bool) -
     } else {
         Ok(default)
     }
+}
+
+fn format_match_block(match_obj: &Value) -> Result<String, SshdConfigError> {
+    let match_block = match serde_json::from_value::<MatchBlock>(match_obj.clone()) {
+        Ok(result) => {
+            result
+        }
+        Err(e) => {
+            return Err(SshdConfigError::ParserError(t!("util.deserializeFailed", error = e).to_string()));
+        }
+    };
+
+    if match_block.criteria.is_empty() {
+        return Err(SshdConfigError::InvalidInput(
+            t!("util.matchBlockMissingCriteria").to_string()
+        ));
+    }
+
+    let mut match_parts = vec![];
+    let mut result = vec![];
+
+    for (key, value) in &match_block.criteria {
+        // all match criteria values are comma-separated
+        let value_formatted = format_value_as_string(value, true)?;
+        match_parts.push(format!("{key} {value_formatted}"));
+    }
+
+    // Write the Match line with the formatted criteria(s)
+    result.push(match_parts.join(" "));
+
+    // Format other keywords in the match block
+    for (key, value) in &match_block.contents {
+        let formatted_value = format_sshd_value(key, value)?;
+        result.push(format!("    {key} {formatted_value}"));
+    }
+
+    Ok(result.join("\n"))
 }

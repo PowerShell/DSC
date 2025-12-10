@@ -37,6 +37,11 @@ Describe 'sshd_config Set Tests' -Skip:(!$IsWindows -or $skipTest) {
                 }
                 _clobber = $true
                 Port = "1234"
+                passwordauthentication = $false
+                allowusers = @("user1", "user2")
+                ciphers = @("aes128-ctr", "aes192-ctr", "aes256-ctr")
+                addressfamily = "inet6"
+                authorizedkeysfile = @(".ssh/authorized_keys", ".ssh/authorized_keys2")
             } | ConvertTo-Json
 
             $output = sshdconfig set --input $inputConfig -s sshd-config 2>$null
@@ -44,15 +49,46 @@ Describe 'sshd_config Set Tests' -Skip:(!$IsWindows -or $skipTest) {
 
             # Verify file was created
             Test-Path $TestConfigPath | Should -Be $true
+            $sshdConfigContents = Get-Content $TestConfigPath
+            $sshdConfigContents | Should -Contain "Port 1234"
+            $sshdConfigContents | Should -Contain "PasswordAuthentication no"
+            $sshdConfigContents | Should -Contain "AllowUsers user1"
+            $sshdConfigContents | Should -Contain "AllowUsers user2"
+            $sshdConfigContents | Should -Contain "Ciphers aes128-ctr,aes192-ctr,aes256-ctr"
+            $sshdConfigContents | Should -Contain "AddressFamily inet6"
+            $sshdConfigContents | Should -Contain "AuthorizedKeysFile .ssh/authorized_keys .ssh/authorized_keys2"
+        }
 
-            # Verify content using get
-            $getInput = @{
+        It 'Should set with valid match blocks' {
+            $inputConfig = @{
                 _metadata = @{
                     filepath = $TestConfigPath
                 }
-            } | ConvertTo-Json
-            $result = sshdconfig get --input $getInput -s sshd-config 2>$null | ConvertFrom-Json
-            $result.Port | Should -Be "1234"
+                _clobber = $true
+                match = @(
+                    @{
+                        criteria = @{
+                            user = @("alice", "bob")
+                        }
+                        passwordauthentication = $true
+                    },
+                    @{
+                        criteria = @{
+                            group = @("administrators")
+                        }
+                        permitrootlogin = $false
+                    }
+                )
+            } | ConvertTo-Json -Depth 10
+
+            $output = sshdconfig set --input $inputConfig -s sshd-config 2>$null
+            $LASTEXITCODE | Should -Be 0
+            Test-Path $TestConfigPath | Should -Be $true
+            $sshdConfigContents = Get-Content $TestConfigPath -Raw
+            $sshdConfigContents | Should -Match "match user alice,bob"
+            $sshdConfigContents | Should -Match "passwordauthentication yes"
+            $sshdConfigContents | Should -Match "match group administrators"
+            $sshdConfigContents | Should -Match "permitrootlogin no"
         }
 
         It 'Should create backup when file exists and is not managed by DSC' {

@@ -8,7 +8,7 @@ use tracing::debug;
 use tree_sitter::Parser;
 
 use crate::error::SshdConfigError;
-use crate::metadata::{MULTI_ARG_KEYWORDS, REPEATABLE_KEYWORDS};
+use crate::metadata::{MULTI_ARG_KEYWORDS_COMMA_SEP, MULTI_ARG_KEYWORDS_SPACE_SEP, REPEATABLE_KEYWORDS};
 
 #[derive(Debug, JsonSchema)]
 pub struct SshdConfigParser {
@@ -147,9 +147,9 @@ impl SshdConfigParser {
             let Ok(text) = keyword.utf8_text(input_bytes) else {
                 return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
             };
-
-            is_repeatable = REPEATABLE_KEYWORDS.contains(&text);
-            is_vec = is_repeatable || MULTI_ARG_KEYWORDS.contains(&text);
+            let lowercase_key = text.to_lowercase();
+            is_repeatable = REPEATABLE_KEYWORDS.contains(&lowercase_key.as_str());
+            is_vec = is_repeatable || MULTI_ARG_KEYWORDS_COMMA_SEP.contains(&lowercase_key.as_str()) || MULTI_ARG_KEYWORDS_SPACE_SEP.contains(&lowercase_key.as_str());
             key = Some(text.to_string());
         }
 
@@ -467,12 +467,6 @@ match user testuser
         let result: Map<String, Value> = parse_text_to_map(input).unwrap();
         let match_array = result.get("match").unwrap().as_array().unwrap();
         let match_obj = match_array[0].as_object().unwrap();
-        for (k, v) in match_obj.iter() {
-            eprintln!("  {}: {:?}", k, v);
-        }
-
-        // allowgroups is both MULTI_ARG and REPEATABLE
-        // Space-separated values should be parsed as array
         let allowgroups = match_obj.get("allowgroups").unwrap().as_array().unwrap();
         assert_eq!(allowgroups.len(), 2);
         assert_eq!(allowgroups[0], Value::String("administrators".to_string()));
