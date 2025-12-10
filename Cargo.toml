@@ -160,6 +160,8 @@ num-traits = { version = "0.2" }
 os_info = { version = "3.14" }
 # dsc, dsc-lib
 path-absolutize = { version = "3.1" }
+# dsc
+prost = { version = "0.14" }
 # dsc-lib-jsonschema-macros
 proc-macro2 = { version = "1.0" }
 # dsc-lib-jsonschema-macros
@@ -198,6 +200,10 @@ thiserror = { version = "2.0" }
 tokio = { version = "1.49" }
 # dsc
 tokio-util = { version = "0.7" }
+# dsc
+tonic = { version = "*" }
+# dsc
+tonic-prost = { version = "*" }
 # dsc, dsc-lib, registry, dsc-lib-registry, runcommandonset, sshdconfig
 tracing = { version = "0.1" }
 # dsc, dsc-lib
@@ -234,6 +240,8 @@ windows = { version = "0.62", features = [
 # build-only dependencies
 # dsc-lib, dsc-lib-registry, sshdconfig, tree-sitter-dscexpression, tree-sitter-ssh-server-config
 cc = { version = "1.2" }
+# dsc
+tonic-prost-build = { version = "*" }
 
 # test-only dependencies
 # dsc-lib-jsonschema
