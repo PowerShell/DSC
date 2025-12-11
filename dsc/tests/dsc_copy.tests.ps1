@@ -441,5 +441,47 @@ resources:
         $out.results[5].result.actualState.output | Should -Be 'From 2: Data-1002'
     }
 
-    
+    It 'Symbolic name loop works' {
+        $configYaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+languageVersion: 2.2-experimental
+contentVersion: 1.0.0.0
+parameters:
+  basePath:
+    type: string
+    defaultValue: DSCBicepTests
+variables:
+  items:
+  - A
+  - B
+  - C
+extensions:
+  dsc:
+    name: DesiredStateConfiguration
+    version: 0.1.0
+resources:
+  simple_loop:
+    copy:
+      name: simple_loop
+      count: '[length(variables(''items''))]'
+    extension: dsc
+    type: Microsoft.DSC.Debug/Echo
+    properties:
+      output: '[format(''{0}\loops_simple_{1}'', parameters(''basePath''), variables(''items'')[copyIndex()])]'
+outputs:
+  simpleLoopCount:
+    type: int
+    value: '[length(variables(''items''))]'
+'@
+        $out = dsc -l trace config get -i $configYaml 2>$testdrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content $testdrive/error.log -Raw | Out-String)
+        $out.results.Count | Should -Be 3
+        $out.results[0].name | Should -Be 'simple_loop'
+        $out.results[0].result.actualState.output | Should -Be 'DSCBicepTests\loops_simple_A' -Because ($out | ConvertTo-Json -Depth 10)
+        $out.results[1].name | Should -Be 'simple_loop'
+        $out.results[1].result.actualState.output | Should -Be 'DSCBicepTests\loops_simple_B'
+        $out.results[2].name | Should -Be 'simple_loop'
+        $out.results[2].result.actualState.output | Should -Be 'DSCBicepTests\loops_simple_C'
+        $out.outputs.simpleLoopCount | Should -Be 3
+    }
 }

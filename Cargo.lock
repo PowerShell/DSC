@@ -711,14 +711,17 @@ dependencies = [
 name = "dsc-lib-jsonschema"
 version = "0.0.0"
 dependencies = [
+ "jsonschema",
  "pretty_assertions",
  "regex",
  "rust-i18n",
  "schemars",
  "serde",
  "serde_json",
+ "thiserror 2.0.17",
  "tracing",
  "url",
+ "urlencoding",
 ]
 
 [[package]]

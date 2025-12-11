@@ -5,7 +5,7 @@
 
 const PREC = {
   MATCH: 2,
-  OPERATOR: 1,
+  OPERATOR: 1
 }
 
 module.exports = grammar({
@@ -14,10 +14,10 @@ module.exports = grammar({
   extras: $ => [' ', '\t', '\r'],
 
   rules: {
-    server_config: $ => seq(repeat(choice($.empty_line, $.comment, $.keyword)), repeat($.match)),
+    server_config: $ => seq(repeat(choice($._empty_line, $.comment, $.keyword)), repeat($.match)),
 
     // check for an empty line that is just a /n character
-    empty_line: $ => '\n',
+    _empty_line: $ => '\n',
     comment: $ => /#.*\n/,
 
     keyword: $ => seq(
@@ -30,20 +30,31 @@ module.exports = grammar({
 
     match: $ => seq(
       token(prec(PREC.MATCH, /match/i)),
-      field('criteria', $.keyword),
+      seq(repeat1($.criteria), $._empty_line),
       repeat1(choice($.comment, $.keyword)),
     ),
 
-    arguments: $ => repeat1(choice($.boolean, $.number, $._quotedString, $._commaSeparatedString)),
+    criteria: $ => seq(
+      field('keyword', $.alpha),
+      choice(seq(/[ \t]/, optional('=')), '='),
+      field('argument', alias($._argument, $.argument))
+    ),
 
+    _argument: $ => choice($.boolean, $.number, $.string, $._commaSeparatedString, $._doublequotedString, $._singlequotedString),
+    arguments: $ => repeat1($._argument),
+
+    alpha: $ => /[a-zA-Z]+/i,
     alphanumeric: $ => /[a-zA-Z0-9]+/i,
     boolean: $ => choice('yes', 'no'),
     number: $ => /\d+/,
     operator: $ => token(prec(PREC.OPERATOR, /[-+\^]/)),
-    string: $ => /[^\r\n,"]+/,
+    string: $ => /[^\r\n,"'\s]+/, /* cannot contain spaces */
 
-    _commaSeparatedString: $ => seq($.string, repeat(seq(',', $.string))),
-    _quotedString: $ => seq('\"', $.string, '\"'),
+    _quotedString: $ => /[^\r\n,"']+/, /* can contain spaces */
+    _doublequotedString: $ => seq('"', alias($._quotedString, $.string), repeat(seq(',', alias($._quotedString, $.string))), '"'),
+    _singlequotedString: $ => seq('\'', alias($._quotedString, $.string), repeat(seq(',', alias($._quotedString, $.string))), '\''),
+
+    _commaSeparatedString: $ => prec(1, seq($.string, repeat1(seq(',', $.string))))
   }
 
 });

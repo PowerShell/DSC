@@ -8,8 +8,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
 
-use crate::{dscerror::DscError, schemas::DscRepoSchema};
+use crate::dscerror::DscError;
 use crate::extensions::{discover::DiscoverMethod, import::ImportMethod, secret::SecretMethod};
+use crate::schemas::dsc_repo::{DscRepoSchema, UnrecognizedSchemaUri};
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -51,18 +52,18 @@ impl DscRepoSchema for ExtensionManifest {
     const SCHEMA_FOLDER_PATH: &'static str = "extension";
     const SCHEMA_SHOULD_BUNDLE: bool = true;
 
-    fn schema_metadata() -> Schema {
+    fn schema_property_metadata() -> Schema {
         json_schema!({
             "title": t!("extensions.extension_manifest.extensionManifestSchemaTitle").to_string(),
             "description": t!("extensions.extension_manifest.extensionManifestSchemaDescription").to_string(),
         })
     }
 
-    fn validate_schema_uri(&self) -> Result<(), DscError> {
+    fn validate_schema_uri(&self) -> Result<(), UnrecognizedSchemaUri> {
         if Self::is_recognized_schema_uri(&self.schema_version) {
             Ok(())
         } else {
-            Err(DscError::UnrecognizedSchemaUri(
+            Err(UnrecognizedSchemaUri(
                 self.schema_version.clone(),
                 Self::recognized_schema_uris(),
             ))
@@ -109,9 +110,9 @@ pub fn validate_semver(version: &str) -> Result<(), semver::Error> {
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        dscerror::DscError, extensions::extension_manifest::ExtensionManifest, schemas::DscRepoSchema
-    };
+    use crate::schemas::dsc_repo::{DscRepoSchema, UnrecognizedSchemaUri};
+
+    use crate::extensions::extension_manifest::ExtensionManifest;
 
     #[test]
     fn test_validate_schema_uri_with_invalid_uri() {
@@ -129,13 +130,10 @@ mod test {
         assert!(result.as_ref().is_err());
 
         match result.as_ref().unwrap_err() {
-            DscError::UnrecognizedSchemaUri(actual, recognized) => {
+            UnrecognizedSchemaUri(actual, recognized) => {
                 assert_eq!(actual, &invalid_uri);
                 assert_eq!(recognized, &ExtensionManifest::recognized_schema_uris())
             },
-            _ => {
-                panic!("Expected validate_schema_uri() to error on unrecognized schema uri, but was {:?}", result.as_ref().unwrap_err())
-            }
         }
     }
 

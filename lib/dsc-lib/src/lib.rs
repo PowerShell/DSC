@@ -19,7 +19,9 @@ pub mod functions;
 pub mod parser;
 pub mod progress;
 pub mod util;
-pub mod schemas;
+
+// Re-export the dependency crate to minimize dependency management.
+pub use dsc_lib_jsonschema as schemas;
 
 i18n!("locales", fallback = "en-us");
 

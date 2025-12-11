@@ -644,6 +644,16 @@ function Install-PowerShellTestPrerequisite {
             Write-Verbose "Installing module 'Pester'"
             Install-PSResource Pester -WarningAction Ignore -Repository $repository -TrustRepository
         }
+
+        if (-not (Get-Module -ListAvailable -Name YaYaml)) {
+            Write-Verbose "Installing module 'YaYaml'"
+            Install-PSResource YaYaml -WarningAction Ignore -Repository $repository -TrustRepository
+        }
+
+        if (-not (Get-Module -ListAvailable -Name PSToml)) {
+            Write-Verbose "Installing module 'PSToml'"
+            Install-PSResource PSToml -WarningAction Ignore -Repository $repository -TrustRepository
+        }
     }
 }
 
