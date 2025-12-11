@@ -6,7 +6,6 @@ use clap::{CommandFactory, Parser};
 use clap_complete::generate;
 use dsc_lib::progress::ProgressFormat;
 use mcp::start_mcp_server;
-use bicep::start_bicep_server;
 use rust_i18n::{i18n, t};
 use std::{io, process::exit};
 use sysinfo::{Process, RefreshKind, System, get_current_pid, ProcessRefreshKind};
@@ -21,7 +20,6 @@ use std::env;
 
 pub mod args;
 pub mod mcp;
-pub mod bicep;
 pub mod resolve;
 pub mod resource_command;
 pub mod subcommand;
@@ -91,13 +89,6 @@ fn main() {
             if let Err(err) = start_mcp_server() {
                 error!("{}", t!("main.failedToStartMcpServer", error = err));
                 exit(util::EXIT_MCP_FAILED);
-            }
-            exit(util::EXIT_SUCCESS);
-        }
-        SubCommand::Bicep => {
-            if let Err(err) = start_bicep_server() {
-                error!("{}", t!("main.failedToStartBicepServer", error = err));
-                exit(util::EXIT_BICEP_FAILED);
             }
             exit(util::EXIT_SUCCESS);
         }

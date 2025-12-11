@@ -4,6 +4,7 @@ resolver = "2"
 # the path to a crate.
 members = [
     "dsc",
+    "dscbicep",
     "lib/dsc-lib",
     "lib/dsc-lib-jsonschema",
     "lib/dsc-lib-jsonschema-macros",
@@ -28,6 +29,7 @@ members = [
 # avoid unintentionally modifying this value.
 default-members = [
     "dsc",
+    "dscbicep",
     "lib/dsc-lib",
     "lib/dsc-lib-jsonschema",
     "lib/dsc-lib-jsonschema-macros",
@@ -54,6 +56,7 @@ default-members = [
 # current operating system to enable faster builds.
 Windows = [
     "dsc",
+    "dscbicep",
     "lib/dsc-lib",
     "lib/dsc-lib-jsonschema",
     "lib/dsc-lib-jsonschema-macros",
@@ -75,6 +78,7 @@ Windows = [
 ]
 macOS = [
     "dsc",
+    "dscbicep",
     "lib/dsc-lib",
     "lib/dsc-lib-jsonschema",
     "lib/dsc-lib-jsonschema-macros",
@@ -93,6 +97,7 @@ macOS = [
 ]
 Linux = [
     "dsc",
+    "dscbicep",
     "lib/dsc-lib",
     "lib/dsc-lib-jsonschema",
     "lib/dsc-lib-jsonschema-macros",
@@ -195,6 +200,8 @@ tempfile = { version = "3.23" }
 thiserror = { version = "2.0" }
 # dsc, dsc-lib
 tokio = { version = "1.48" }
+# dscbicep
+tokio-stream = { version = "0.1" }
 # dsc
 tokio-util = { version = "0.7" }
 # dsc

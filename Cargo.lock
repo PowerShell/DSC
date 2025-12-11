@@ -731,7 +731,6 @@ dependencies = [
  "indicatif",
  "jsonschema",
  "path-absolutize",
- "prost",
  "regex",
  "rmcp",
  "rust-i18n",
@@ -745,9 +744,6 @@ dependencies = [
  "thiserror 2.0.17",
  "tokio",
  "tokio-util",
- "tonic",
- "tonic-prost",
- "tonic-prost-build",
  "tracing",
  "tracing-indicatif",
  "tracing-subscriber",
@@ -941,6 +937,21 @@ dependencies = [
  "tree-sitter",
  "tree-sitter-rust",
  "tree-sitter-ssh-server-config",
+]
+
+[[package]]
+name = "dscbicep"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "prost",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+ "tonic-prost",
+ "tonic-prost-build",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
