@@ -2,6 +2,7 @@
   "name": "tree-sitter-ssh-server-config",
   "version": "1.0.0",
   "description": "sshd_config grammar for tree-sitter",
+  "type": "module",
   "repository": "https://github.com/powershell/dsc",
   "license": "MIT",
   "main": "bindings/node",
