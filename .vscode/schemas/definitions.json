@@ -3,7 +3,7 @@
     "$defs": {
         "BuildDataFile": {
             "title": "Build Data",
-            "markdownDescription": "Defines metadata required for building, testing, and packaging DSC and all related projects with the `build.new.ps1` build script.",
+            "markdownDescription": "Defines metadata required for building, testing, and packaging DSC and all related projects with the `build.ps1` build script.",
             "type": "object",
             "required": ["PackageFiles", "Projects"],
             "unevaluatedProperties": false,

@@ -85,6 +85,11 @@ secureOutputSkipped = "Secure output '%{name}' is skipped"
 outputTypeNotMatch = "Output '%{name}' type does not match expected type '%{expected_type}'"
 copyNotSupported = "Copy for output '%{name}' is currently not supported"
 
+[configure.parameters]
+importingParametersFromComplexInput = "Importing parameters from complex input"
+importingParametersFromInput = "Importing parameters from simple input"
+invalidParamsFormat = "Invalid parameters format: %{error}"
+
 [discovery.commandDiscovery]
 couldNotReadSetting = "Could not read 'resourcePath' setting"
 appendingEnvPath = "Appending PATH to resourcePath"
@@ -224,6 +229,7 @@ importingFile = "Importing file '%{file}' with extension '%{extension}'"
 importNotSupported = "Import is not supported by extension '%{extension}' for file '%{file}'"
 importNoResults = "Extension '%{extension}' returned no results for import"
 secretMultipleLinesReturned = "Extension '%{extension}' returned multiple lines which is not supported for secrets"
+importProcessingOutput = "Processing output from extension '%{extension}'"
 
 [extensions.extension_manifest]
 extensionManifestSchemaTitle = "Extension manifest schema URI"
@@ -537,6 +543,10 @@ invoked = "skip function"
 invalidNumberToSkip = "Second argument must be an integer"
 invalidOriginalValue = "First argument must be an array or string"
 
+[functions.stdout]
+description = "Returns the standard output from the last executed resource.  Can only be used in output definitions."
+noStdoutAvailable = "No standard output is available from the last executed resource"
+
 [functions.string]
 description = "Converts a value to a string"
 
@@ -656,6 +666,10 @@ indexOutOfBounds = "Index is out of bounds"
 indexOnNonArray = "Index access on non-array value"
 invalidIndexType = "Invalid index type"
 propertyNameNotString = "Property name is not a string"
+accessorResult = "Accessor result: %{result}"
+evaluatingMemberAccessor = "Evaluating member accessor: %{name}"
+evaluatingIndexAccessor = "Evaluating index accessor: %{index}"
+evaluatingIndexExpression = "Evaluating index expression: %{expression}"
 
 [parser.functions]
 foundErrorNode = "Found error node parsing function"

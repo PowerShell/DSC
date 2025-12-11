@@ -2,7 +2,8 @@
 // Licensed under the MIT License.
 
 use crate::configure::context::{Context, ProcessMode};
-use crate::configure::{config_doc::{ExecutionKind, IntOrExpression, Metadata, Parameter, Resource, RestartRequired, ValueOrCopy}, parameters::Input};
+use crate::configure::parameters::import_parameters;
+use crate::configure::{config_doc::{ExecutionKind, IntOrExpression, Metadata, Parameter, Resource, RestartRequired, ValueOrCopy}};
 use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscerror::DscError;
 use crate::dscresources::{
@@ -853,9 +854,7 @@ impl Configurator {
 
         // process input parameters first
         if let Some(parameters_input) = parameters_input {
-            trace!("parameters_input: {parameters_input}");
-            let input_parameters: HashMap<String, Value> = serde_json::from_value::<Input>(parameters_input.clone())?.parameters;
-
+            let input_parameters: HashMap<String, Value> = import_parameters(parameters_input)?;
             for (name, value) in input_parameters {
                 if let Some(constraint) = parameters.get(&name) {
                     debug!("Validating parameter '{name}'");
