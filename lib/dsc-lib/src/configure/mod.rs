@@ -351,6 +351,7 @@ impl Configurator {
             },
         };
 
+        // Clear copy loop context after processing resource
         self.context.copy.clear();
         self.context.copy_current_loop_name.clear();
 
