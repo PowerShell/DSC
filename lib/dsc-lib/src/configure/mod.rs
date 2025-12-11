@@ -1019,63 +1019,6 @@ impl Configurator {
         Ok(())
     }
 
-    /// Unroll copy loops in the configuration.
-    /// This method should be called after parameters have been set in the context.
-    fn unroll_copy_loops(&mut self) -> Result<(), DscError> {
-        let mut config = self.config.clone();
-        let config_copy = config.clone();
-
-        for resource in config_copy.resources {
-            // if the resource contains `Copy`, unroll it
-            if let Some(copy) = &resource.copy {
-                debug!("{}", t!("configure.mod.unrollingCopy", name = &copy.name, count = copy.count));
-                self.context.process_mode = ProcessMode::Copy;
-                self.context.copy_current_loop_name.clone_from(&copy.name);
-                let mut copy_resources = Vec::<Resource>::new();
-                let count: i64 = match &copy.count {
-                    IntOrExpression::Int(i) => *i,
-                    IntOrExpression::Expression(e) => {
-                        let Value::Number(n) = self.statement_parser.parse_and_execute(e, &self.context)? else {
-                            return Err(DscError::Parser(t!("configure.mod.copyCountResultNotInteger", expression = e).to_string()))
-                        };
-                        n.as_i64().ok_or_else(|| DscError::Parser(t!("configure.mod.copyCountResultNotInteger", expression = e).to_string()))?
-                    },
-                };
-                for i in 0..count {
-                    self.context.copy.insert(copy.name.clone(), i);
-                    let mut new_resource = resource.clone();
-                    let Value::String(new_name) = self.statement_parser.parse_and_execute(&resource.name, &self.context)? else {
-                        return Err(DscError::Parser(t!("configure.mod.copyNameResultNotString").to_string()))
-                    };
-                    new_resource.name = new_name.to_string();
-
-                    // Keep properties as-is during copy unrolling
-                    // They contain expressions that will be evaluated during resource execution
-                    // This allows reference() and copyIndex() to work correctly
-                    new_resource.properties = resource.properties.clone();
-
-                    // Store copy loop metadata in tags for later retrieval during execution
-                    if new_resource.tags.is_none() {
-                        new_resource.tags = Some(Map::new());
-                    }
-                    if let Some(tags) = &mut new_resource.tags {
-                        tags.insert(format!("__dsc_copy_loop_{}", copy.name), Value::Number(i.into()));
-                    }
-
-                    new_resource.copy = None;
-                    copy_resources.push(new_resource);
-                }
-                self.context.process_mode = ProcessMode::Normal;
-                // replace current resource with the unrolled copy resources
-                config.resources.retain(|r| *r != resource);
-                config.resources.extend(copy_resources);
-            }
-        }
-
-        self.config = config;
-        Ok(())
-    }
-
     /// Evaluate resource name expression and return the resolved name.
     ///
     /// This method evaluates DSC expressions in a resource name, handling both
