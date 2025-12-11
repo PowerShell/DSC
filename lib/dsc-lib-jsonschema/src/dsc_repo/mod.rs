@@ -16,6 +16,8 @@ pub use schema_form::SchemaForm;
 mod schema_uri_prefix;
 pub use schema_uri_prefix::SchemaUriPrefix;
 
+pub use dsc_lib_jsonschema_macros::DscRepoSchema;
+
 /// Returns the constructed URI for a hosted DSC schema.
 ///
 /// This convenience function simplifies constructing the URIs for the various published schemas
@@ -114,13 +116,33 @@ pub(crate) fn get_recognized_uris_subschema(
         |schema_uri| serde_json::Value::String(schema_uri.clone())
     ).collect();
 
-    json_schema!({
+    let mut subschema = json_schema!({
         "type": "string",
         "format": Some("uri".to_string()),
         "enum": Some(enums),
-        "title": metadata.get("title"),
-        "description": metadata.get("description"),
-    })
+    });
+    
+    let annotation_keywords = [
+        "title",
+        "description",
+        "markdownDescription",
+        "enumMarkdownDescriptions",
+        "enumDescriptions",
+        "completionDetail",
+        "defaultSnippets",
+        "enumDetails",
+        "enumSortTexts",
+        "suggestSortText",
+        "deprecationMessage",
+        "errorMessage",
+    ];
+    for annotation_keyword in annotation_keywords {
+        if let Some(value) = metadata.get(annotation_keyword) {
+            subschema.insert(annotation_keyword.to_string(), value.clone());
+        }
+    }
+
+    subschema
 }
 
 /// Returns the recognized schema URI for the latest major version with the
