@@ -351,7 +351,6 @@ impl Configurator {
             },
         };
 
-        // Clear copy context after property evaluation
         self.context.copy.clear();
         self.context.copy_current_loop_name.clear();
 
