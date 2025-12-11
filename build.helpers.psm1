@@ -471,6 +471,19 @@ function Install-TreeSitter {
         [switch]$UseCFS
     )
 
+    begin {
+        $arguments = @(
+            'install',
+            'tree-sitter-cli',
+            '--version', '0.25.10'
+        )
+
+        if ($UseCFS) {
+            $arguments += '--config'
+            $arguments += '.cargo/config.toml'
+        }
+    }
+
     process {
         if (Test-CommandAvailable -Name 'tree-sitter') {
             Write-Verbose "tree-sitter already installed."
@@ -478,11 +491,9 @@ function Install-TreeSitter {
         }
 
         Write-Verbose -Verbose "tree-sitter not found, installing..."
-        if ($UseCFS) {
-            cargo install tree-sitter-cli --config .cargo/config.toml
-        } else {
-            cargo install tree-sitter-cli
-        }
+
+        cargo @arguments
+
         if ($LASTEXITCODE -ne 0) {
             throw "Failed to install tree-sitter-cli"
         }
