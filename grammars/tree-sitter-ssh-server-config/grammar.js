@@ -8,7 +8,7 @@ const PREC = {
   OPERATOR: 1
 }
 
-module.exports = grammar({
+export default grammar({
   name: 'ssh_server_config',
 
   extras: $ => [' ', '\t', '\r'],
