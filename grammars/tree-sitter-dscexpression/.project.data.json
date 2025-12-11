@@ -3,6 +3,7 @@
     "Kind": "Grammar",
     "IsRust": true,
     "ClippyUnclean": true,
+    "ClippyPedanticUnclean": true,
     "SkipTest": {
         "Windows": true
     }
