@@ -1300,7 +1300,7 @@ function Export-GrammarBinding {
             } finally {
                 Pop-Location
             }
-            
+
         }
     }
 
@@ -1369,9 +1369,13 @@ function Build-RustProject {
             cargo clean
         }
 
-        if ($Clippy) {
+        if ($Clippy -and !$Project.ClippyUnclean) {
             $clippyFlags = @()
-            cargo clippy @clippyFlags --% -- -Dwarnings --no-deps
+            if (!$Project.ClippyPedanticUnclean) {
+                cargo clippy @clippyFlags --% -- -Dclippy::pedantic --no-deps -Dwarnings
+            } else {
+                cargo clippy @clippyFlags --% -- -Dwarnings --no-deps
+            }
 
             if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
                 throw "Last exit code is $LASTEXITCODE, clippy failed for at least one project"
