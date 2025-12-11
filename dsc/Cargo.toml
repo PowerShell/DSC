@@ -12,7 +12,6 @@ ctrlc = { workspace = true }
 indicatif = { workspace = true }
 jsonschema = { workspace = true }
 path-absolutize = { workspace = true }
-prost = { workspace = true }
 regex = { workspace = true }
 rmcp = { workspace = true, features = [
     "server",
@@ -33,13 +32,8 @@ sysinfo = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 tokio-util = { workspace = true }
-tonic = { workspace = true }
-tonic-prost = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 tracing-indicatif = { workspace = true }
 # workspace crate dependencies
 dsc-lib = { workspace = true }
-
-[build-dependencies]
-tonic-prost-build = { workspace = true }

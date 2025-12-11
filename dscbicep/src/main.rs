@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use clap::Parser;
 use tonic::{transport::Server, Request, Response, Status};
 
 // Include the generated protobuf code
@@ -98,30 +99,99 @@ impl BicepExtension for BicepExtensionService {
     }
 }
 
-async fn start_bicep_server_async(addr: impl Into<std::net::SocketAddr>) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let addr = addr.into();
+#[derive(Parser, Debug)]
+#[command(name = "dscbicep")]
+#[command(about = "DSC Bicep Local Deploy Extension", long_about = None)]
+struct Args {
+    /// The path to the domain socket to connect on (Unix-like systems)
+    #[arg(long)]
+    socket: Option<String>,
 
-    tracing::info!("Starting Bicep gRPC server on {addr}");
+    /// The named pipe to connect on (Windows)
+    #[arg(long)]
+    pipe: Option<String>,
 
-    let route_guide = BicepExtensionService;
-    let svc = BicepExtensionServer::new(route_guide);
-
-    Server::builder().add_service(svc).serve(addr).await?;
-
-    Ok(())
+    /// Wait for debugger to attach before starting
+    #[arg(long)]
+    wait_for_debugger: bool,
 }
 
-/// Synchronous wrapper to start the Bicep gRPC server
-///
-/// # Errors
-///
-/// This function will return an error if the Bicep server fails to start or if the tokio runtime cannot be created.
-pub fn start_bicep_server() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let rt = tokio::runtime::Runtime::new()?;
+#[allow(unused_variables)]
+async fn run_server(
+    socket: Option<String>,
+    pipe: Option<String>,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let service = BicepExtensionService;
 
-    // Default to localhost:50051 (standard gRPC port)
-    let addr: std::net::SocketAddr = "127.0.0.1:50051".parse()?;
+    #[cfg(unix)]
+    if let Some(socket_path) = socket {
+        use tokio::net::UnixListener;
+        use tokio_stream::wrappers::UnixListenerStream;
 
-    rt.block_on(start_bicep_server_async(addr))?;
+        tracing::info!("Starting Bicep gRPC server on Unix socket: {}", socket_path);
+
+        // Remove the socket file if it exists
+        let _ = std::fs::remove_file(&socket_path);
+
+        let uds = UnixListener::bind(&socket_path)?;
+        let uds_stream = UnixListenerStream::new(uds);
+
+        Server::builder()
+            .add_service(BicepExtensionServer::new(service))
+            .serve_with_incoming(uds_stream)
+            .await?;
+
+        return Ok(());
+    }
+
+    #[cfg(windows)]
+    if let Some(pipe_name) = pipe {
+        tracing::info!("Starting Bicep gRPC server on named pipe: {}", pipe_name);
+
+        // TODO: Implement Windows named pipe transport
+        // This requires additional dependencies and platform-specific code
+        return Err("Windows named pipe support not yet implemented".into());
+    }
+
+    Err("Either --socket (Unix) or --pipe (Windows) must be specified".into())
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    // Initialize tracing
+    tracing_subscriber::fmt()
+        .with_target(false)
+        .with_level(true)
+        .init();
+
+    let args = Args::parse();
+
+    if args.wait_for_debugger {
+        tracing::info!("Waiting for debugger to attach...");
+        tracing::info!("Press Enter to continue after attaching debugger");
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input)?;
+    }
+
+    // Set up graceful shutdown on SIGTERM/SIGINT
+    let shutdown_signal = async {
+        tokio::signal::ctrl_c()
+            .await
+            .expect("Failed to listen for shutdown signal");
+        tracing::info!("Received shutdown signal, terminating gracefully...");
+    };
+
+    tokio::select! {
+        result = run_server(args.socket, args.pipe) => {
+            if let Err(e) = result {
+                tracing::error!("Server error: {}", e);
+                return Err(e);
+            }
+        }
+        _ = shutdown_signal => {
+            tracing::info!("Shutdown complete");
+        }
+    }
+
     Ok(())
 }

@@ -1,3 +1,7 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
+// Imported from https://github.com/Azure/bicep/blob/9a9b56e15f4acb6fa1382f92ad69e4650fab4ee3/src/Bicep.Local.Rpc/extension.proto
 syntax = "proto3";
 
 option csharp_namespace = "Bicep.Local.Rpc";
