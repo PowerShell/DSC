@@ -19,15 +19,16 @@
                         "required": ["Name", "Kind"],
                         "unevaluatedProperties": false,
                         "properties": {
-                            "Name":                { "$ref": "#/$defs/ProjectName" },
-                            "Kind":                { "$ref": "#/$defs/ProjectKind" },
-                            "SupportedPlatformOS": { "$ref": "#/$defs/ProjectSupportedPlatformOS" },
-                            "IsRust":              { "$ref": "#/$defs/ProjectIsRust" },
-                            "TestOnly":            { "$ref": "#/$defs/ProjectTestOnly" },
-                            "SkipTest":            { "$ref": "#/$defs/ProjectSkipTest" },
-                            "ClippyUnclean":       { "$ref": "#/$defs/ProjectClippyUnclean" },
-                            "Binaries":            { "$ref": "#/$defs/ProjectBinaries" },
-                            "CopyFiles":           { "$ref": "#/$defs/ProjectCopyFiles" }
+                            "Name":                  { "$ref": "#/$defs/ProjectName" },
+                            "Kind":                  { "$ref": "#/$defs/ProjectKind" },
+                            "SupportedPlatformOS":   { "$ref": "#/$defs/ProjectSupportedPlatformOS" },
+                            "IsRust":                { "$ref": "#/$defs/ProjectIsRust" },
+                            "TestOnly":              { "$ref": "#/$defs/ProjectTestOnly" },
+                            "SkipTest":              { "$ref": "#/$defs/ProjectSkipTest" },
+                            "ClippyUnclean":         { "$ref": "#/$defs/ProjectClippyUnclean" },
+                            "ClippyPedanticUnclean": { "$ref": "#/$defs/ProjectClippyPedanticUnclean" },
+                            "Binaries":              { "$ref": "#/$defs/ProjectBinaries" },
+                            "CopyFiles":             { "$ref": "#/$defs/ProjectCopyFiles" }
                         },
                         "allOf": [
                             {
@@ -65,15 +66,16 @@
             "required": ["Name", "Kind"],
             "unevaluatedProperties": false,
             "properties": {
-                "Name":                { "$ref": "#/$defs/ProjectName" },
-                "Kind":                { "$ref": "#/$defs/ProjectKind" },
-                "SupportedPlatformOS": { "$ref": "#/$defs/ProjectSupportedPlatformOS" },
-                "IsRust":              { "$ref": "#/$defs/ProjectIsRust" },
-                "TestOnly":            { "$ref": "#/$defs/ProjectTestOnly" },
-                "SkipTest":            { "$ref": "#/$defs/ProjectSkipTest" },
-                "ClippyUnclean":       { "$ref": "#/$defs/ProjectClippyUnclean" },
-                "Binaries":            { "$ref": "#/$defs/ProjectBinaries" },
-                "CopyFiles":           { "$ref": "#/$defs/ProjectCopyFiles" }
+                "Name":                  { "$ref": "#/$defs/ProjectName" },
+                "Kind":                  { "$ref": "#/$defs/ProjectKind" },
+                "SupportedPlatformOS":   { "$ref": "#/$defs/ProjectSupportedPlatformOS" },
+                "IsRust":                { "$ref": "#/$defs/ProjectIsRust" },
+                "TestOnly":              { "$ref": "#/$defs/ProjectTestOnly" },
+                "SkipTest":              { "$ref": "#/$defs/ProjectSkipTest" },
+                "ClippyUnclean":         { "$ref": "#/$defs/ProjectClippyUnclean" },
+                "ClippyPedanticUnclean": { "$ref": "#/$defs/ProjectClippyPedanticUnclean" },
+                "Binaries":              { "$ref": "#/$defs/ProjectBinaries" },
+                "CopyFiles":             { "$ref": "#/$defs/ProjectCopyFiles" }
             }
         },
         "BuildPackageFiles": {
@@ -225,6 +227,12 @@
             "default": false,
             "title": "Clippy Unclean",
             "markdownDescription": "Indicates whether to skip linting the Rust crate with Clippy."
+        },
+        "ProjectClippyPedanticUnclean": {
+            "type": "boolean",
+            "default": false,
+            "title": "Clippy Pedantic Unclean",
+            "markdownDescription": "Indicates whether to skip linting the pedantic rules for the Rust crate with Clippy."
         },
         "ProjectBinaries": {
             "type": "array",
