@@ -23,7 +23,7 @@
                 "Single"
             ]
         },
-        "config": "full"
+        "config": "single"
     },
     "get": {
         "executable": "powershell",
@@ -41,7 +41,7 @@
             }
         ],
         "input": "stdin"
-    },
+    }, 
     "set": {
         "executable": "powershell",
         "args": [

@@ -23,7 +23,7 @@
                 "Single"
             ]
         },
-        "config": "full"
+        "config": "single"
     },
     "get": {
         "executable": "pwsh",

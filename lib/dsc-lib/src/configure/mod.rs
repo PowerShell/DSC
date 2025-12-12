@@ -367,7 +367,15 @@ impl Configurator {
                 return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.api_version.as_deref().unwrap_or("").to_string()));
             };
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
-            let filter = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
+            let mut dsc_resource = dsc_resource.clone();
+            if let Some(resource_metadata) = &resource.metadata {
+                if let Some(microsoft_metadata) = &resource_metadata.microsoft {
+                    if let Some(require_adapter) = &microsoft_metadata.require_adapter {
+                        dsc_resource.require_adapter = Some(require_adapter.clone());
+                    }
+                }
+            }
+            let filter = add_metadata(&dsc_resource, properties, resource.metadata.clone())?;
             let start_datetime = chrono::Local::now();
             let mut get_result = match dsc_resource.get(&filter) {
                 Ok(result) => result,
@@ -957,14 +965,15 @@ impl Configurator {
         Metadata {
             microsoft: Some(
                 MicrosoftDscMetadata {
-                    version: Some(version),
-                    operation: Some(operation),
-                    execution_type: Some(self.context.execution_type.clone()),
-                    start_datetime: Some(self.context.start_datetime.to_rfc3339()),
-                    end_datetime: Some(end_datetime.to_rfc3339()),
+                    require_adapter: None,
                     duration: Some(end_datetime.signed_duration_since(self.context.start_datetime).to_string()),
-                    security_context: Some(self.context.security_context.clone()),
+                    end_datetime: Some(end_datetime.to_rfc3339()),
+                    execution_type: Some(self.context.execution_type.clone()),
+                    operation: Some(operation),
                     restart_required: self.context.restart_required.clone(),
+                    security_context: Some(self.context.security_context.clone()),
+                    start_datetime: Some(self.context.start_datetime.to_rfc3339()),
+                    version: Some(version),
                 }
             ),
             other: Map::new(),
