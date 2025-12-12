@@ -7,7 +7,7 @@ use args::{Args, SubCommand};
 use clap::Parser;
 use dsc_lib::dscresources::resource_manifest::{ResourceManifest, GetMethod, Kind};
 use dsc_lib::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
-use dsc_lib::schemas::DscRepoSchema;
+use dsc_lib::schemas::dsc_repo::DscRepoSchema;
 use std::path::PathBuf;
 
 fn main() {

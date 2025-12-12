@@ -29,9 +29,9 @@ const EXIT_SUCCESS: i32 = 0;
 const EXIT_FAILURE: i32 = 1;
 
 fn main() {
-    enable_tracing();
-
     let args = Args::parse();
+
+    enable_tracing(args.trace_level.as_ref(), &args.trace_format);
 
     let result = match &args.command {
         Command::Export { input } => {
@@ -57,9 +57,9 @@ fn main() {
             println!("{}", serde_json::to_string(&schema).unwrap());
             Ok(Map::new())
         },
-        Command::Set { input } => {
+        Command::Set { input, setting } => {
             debug!("{}", t!("main.set", input = input).to_string());
-            invoke_set(input)
+            invoke_set(input, setting)
         },
     };
 

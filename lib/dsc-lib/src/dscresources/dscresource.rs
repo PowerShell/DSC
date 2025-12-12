@@ -3,7 +3,7 @@
 
 use crate::{configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}, context::ProcessMode, parameters::{SECURE_VALUE_REDACTED, is_secure_value}}, dscresources::resource_manifest::{AdapterInputKind, Kind}};
 use crate::dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse};
-use dsc_lib_jsonschema::transforms::idiomaticize_string_enum;
+use crate::schemas::transforms::idiomaticize_string_enum;
 use dscerror::DscError;
 use jsonschema::Validator;
 use rust_i18n::t;

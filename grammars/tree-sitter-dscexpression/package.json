@@ -2,6 +2,7 @@
   "name": "tree-sitter-dscexpression",
   "version": "1.0.0",
   "description": "Dscexpression grammar for tree-sitter",
+  "type": "module",
   "repository": "github:tree-sitter/tree-sitter-dscexpression",
   "license": "MIT",
   "main": "bindings/node",

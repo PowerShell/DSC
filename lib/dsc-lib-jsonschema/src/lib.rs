@@ -8,6 +8,7 @@ use rust_i18n::i18n;
 #[macro_use]
 pub mod macros;
 
+pub mod dsc_repo;
 pub mod schema_utility_extensions;
 pub mod transforms;
 pub mod vscode;

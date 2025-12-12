@@ -6,7 +6,6 @@ use std::str::Utf8Error;
 
 use indicatif::style::TemplateError;
 use thiserror::Error;
-use tracing::error;
 use tree_sitter::LanguageError;
 
 #[derive(Error, Debug)]
@@ -128,8 +127,8 @@ pub enum DscError {
         message: String,
     },
 
-    #[error("{t}: {0}.  {t2}: {1:?}", t = t!("dscerror.unrecognizedSchemaUri"), t2 = t!("dscerror.validSchemaUrisAre"))]
-    UnrecognizedSchemaUri(String, Vec<String>),
+    #[error(transparent)]
+    UnrecognizedSchemaUri(#[from] crate::schemas::dsc_repo::UnrecognizedSchemaUri),
 
     #[error("{t} '{0}' {t2} '{1}'", t = t!("dscerror.extension"), t2 = t!("dscerror.unsupportedCapability"))]
     UnsupportedCapability(String, String),
