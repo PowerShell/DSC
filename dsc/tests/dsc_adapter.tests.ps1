@@ -87,5 +87,25 @@ Describe 'Tests for adapter support' {
                 }
             }
         }
+
+
+        It 'Specifying invalid adapter via metadata fails' {
+            $config_yaml = @"
+                `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+                resources:
+                - name: Test
+                  type: Microsoft.DSC.Debug/Echo
+                  properties:
+                    output: '1'
+                  metadata:
+                    Microsoft.DSC:
+                      requireAdapter: InvalidAdapter/Invalid
+"@
+            $out = dsc config get -i $config_yaml 2>$TestDrive/error.log
+            $LASTEXITCODE | Should -Be 2 -Because (Get-Content $TestDrive/error.log | Out-String)
+            $errorContent = Get-Content $TestDrive/error.log -Raw
+            $errorContent | Should -Match "Adapter resource 'InvalidAdapter/Invalid' not found" -Because $errorContent
+            $out | Should -BeNullOrEmpty -Because $errorContent
+        }
     }
 }

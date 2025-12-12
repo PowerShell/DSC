@@ -6,7 +6,7 @@ param(
     [ValidateSet('List', 'Get', 'Set', 'Test', 'Export', 'Validate', 'ClearCache')]
     [string]$Operation,
     [Parameter(Mandatory = $false, Position = 1, ValueFromPipeline = $true, HelpMessage = 'Configuration or resource input in JSON format.')]
-    [string]$jsonInput = '@{}',
+    [string]$jsonInput = '{}',
     [Parameter()]
     [string]$ResourceType
 )
@@ -78,7 +78,7 @@ if ('Validate' -ne $Operation) {
 }
 
 if ($jsonInput) {
-    if ($jsonInput -ne '@{}') {
+    if ($jsonInput -ne '{}') {
         $inputobj_pscustomobj = $jsonInput | ConvertFrom-Json
     }
     $new_psmodulepath = $inputobj_pscustomobj.psmodulepath
@@ -159,16 +159,23 @@ switch ($Operation) {
         }
     }
     { @('Get','Set','Test','Export') -contains $_ } {
+        $desiredState = $psDscAdapter.invoke(   { param($jsonInput) Get-DscResourceObject -jsonInput $jsonInput }, $jsonInput )
+        if ($null -eq $desiredState) {
+            Write-DscTrace -Operation Error -message 'Failed to create configuration object from provided input JSON.'
+            exit 1
+        }        
+
         if ($ResourceType) {
-            $dscResourceCache = Invoke-DscCacheRefresh -ResourceType $ResourceType.Split('/')[0]
+            Write-DscTrace -Operation Debug -Message "Using resource type override: $ResourceType"
+            $dscResourceCache = Invoke-DscCacheRefresh -Module $ResourceType.Split('/')[0]
             if ($null -eq $dscResourceCache) {
                 Write-DscTrace -Operation Error -Message ("DSC resource '{0}' module not found." -f $ResourceType)
                 exit 1
             }
 
+            $desiredState.Type = $ResourceType
             $inDesiredState = $true
-            $desiredState = $psDscAdapter.invoke(   { param($jsonInput) Get-DscResourceObject -jsonInput $jsonInput -single }, $jsonInput )
-            $actualState = $psDscAdapter.invoke( { param($op, $ds, $dscResourceCache) Invoke-DscOperation -Operation $op -DesiredState $desiredState -dscResourceCache $dscResourceCache }, $Operation, $desiredState, $dscResourceCache)
+            $actualState = $psDscAdapter.invoke( { param($op, $ds, $dscResourceCache) Invoke-DscOperation -Operation $op -DesiredState $ds -dscResourceCache $dscResourceCache }, $Operation, $desiredState, $dscResourceCache)
             if ($null -eq $actualState) {
                 Write-DscTrace -Operation Error -Message 'Incomplete GET for resource ' + $desiredState.Name
                 exit 1
@@ -178,19 +185,13 @@ switch ($Operation) {
             }
 
             if ($Operation -eq 'Test') {
-                $result = @{ result = $actualState; _inDesiredState = $inDesiredState } | ConvertTo-Json -Depth 10 -Compress
+                $result = @{ desiredState = $desiredState.Properties; actualState = $actualState.Properties; _inDesiredState = $inDesiredState } | ConvertTo-Json -Depth 10 -Compress
             }
             else {
-                $result = @{ result = $actualState } | ConvertTo-Json -Depth 10 -Compress
+                $result = $actualState.Properties | ConvertTo-Json -Depth 10 -Compress
             }
             Write-DscTrace -Operation Debug -Message "jsonOutput=$result"
             return $result
-        }
-
-        $desiredState = $psDscAdapter.invoke(   { param($jsonInput) Get-DscResourceObject -jsonInput $jsonInput }, $jsonInput )
-        if ($null -eq $desiredState) {
-            Write-DscTrace -Operation Error -message 'Failed to create configuration object from provided input JSON.'
-            exit 1
         }
 
         # only need to cache the resources that are used
