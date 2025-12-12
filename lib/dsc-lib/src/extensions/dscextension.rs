@@ -2,15 +2,16 @@
 // Licensed under the MIT License.
 
 use crate::extensions::import::ImportMethod;
-use crate::schemas::transforms::idiomaticize_string_enum;
+use crate::schemas::{dsc_repo::DscRepoSchema, transforms::idiomaticize_string_enum};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use schemars::JsonSchema;
 use std::fmt::Display;
 use std::path::PathBuf;
 
-#[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
+#[derive(Clone, Debug, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
+#[dsc_repo_schema(base_name = "list", folder_path = "outputs/extension")]
 pub struct DscExtension {
     /// The namespaced name of the resource.
     #[serde(rename="type")]
@@ -33,9 +34,10 @@ pub struct DscExtension {
     pub manifest: Value,
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
 #[schemars(transform = idiomaticize_string_enum)]
+#[dsc_repo_schema(base_name = "extensionCapabilities", folder_path = "definitions")]
 pub enum Capability {
     /// The extension aids in discovering resources.
     Discover,
