@@ -1,8 +1,10 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
-use dsc_lib_jsonschema::transforms::idiomaticize_string_enum;
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
+use crate::schemas::transforms::idiomaticize_string_enum;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]

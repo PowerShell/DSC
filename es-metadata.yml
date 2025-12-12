@@ -1,8 +1,12 @@
-schemaVersion: 0.0.1
-isProduction: true
-accountableOwners:
-  service: cc9ed9e4-21e4-4574-9bec-2b92d4413f1b
-routing:
-  defaultAreaPath:
-    org: msazure
-    path: One\MGMT\Compute\PowerShell Desired State Configuration
+schemaVersion: 1.0.0
+providers:
+- provider: InventoryAsCode
+  version: 1.0.0
+  metadata:
+    isProduction: true
+    accountableOwners:
+      service: cc9ed9e4-21e4-4574-9bec-2b92d4413f1b
+    routing:
+      defaultAreaPath:
+        org: msazure
+        path: One\MGMT\Compute\PowerShell Desired State Configuration

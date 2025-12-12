@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use dsc_lib_jsonschema::transforms::idiomaticize_string_enum;
 use rust_i18n::t;
 use schemars::{Schema, JsonSchema, json_schema};
 use semver::Version;
@@ -9,7 +8,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
 
-use crate::{dscerror::DscError, schemas::DscRepoSchema};
+use crate::{
+    dscerror::DscError,
+    schemas::{dsc_repo::{DscRepoSchema, UnrecognizedSchemaUri}, transforms::idiomaticize_string_enum},
+};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
@@ -259,18 +261,18 @@ impl DscRepoSchema for ResourceManifest {
     const SCHEMA_FOLDER_PATH: &'static str = "resource";
     const SCHEMA_SHOULD_BUNDLE: bool = true;
 
-    fn schema_metadata() -> Schema {
+    fn schema_property_metadata() -> Schema {
         json_schema!({
             "title": t!("dscresources.resource_manifest.resourceManifestSchemaTitle").to_string(),
             "description": t!("dscresources.resource_manifest.resourceManifestSchemaDescription").to_string(),
         })
     }
 
-    fn validate_schema_uri(&self) -> Result<(), DscError> {
+    fn validate_schema_uri(&self) -> Result<(), UnrecognizedSchemaUri> {
         if Self::is_recognized_schema_uri(&self.schema_version) {
             Ok(())
         } else {
-            Err(DscError::UnrecognizedSchemaUri(
+            Err(UnrecognizedSchemaUri(
                 self.schema_version.clone(),
                 Self::recognized_schema_uris(),
             ))
@@ -321,11 +323,9 @@ pub fn validate_semver(version: &str) -> Result<(), semver::Error> {
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        dscerror::DscError,
-        dscresources::resource_manifest::ResourceManifest,
-        schemas::DscRepoSchema
-    };
+    use crate::schemas::dsc_repo::{DscRepoSchema, UnrecognizedSchemaUri};
+
+    use crate::dscresources::resource_manifest::ResourceManifest;
 
     #[test]
     fn test_validate_schema_uri_with_invalid_uri() {
@@ -343,13 +343,10 @@ mod test {
         assert!(result.as_ref().is_err());
 
         match result.as_ref().unwrap_err() {
-            DscError::UnrecognizedSchemaUri(actual, recognized) => {
+            UnrecognizedSchemaUri(actual, recognized) => {
                 assert_eq!(actual, &invalid_uri);
                 assert_eq!(recognized, &ResourceManifest::recognized_schema_uris())
             },
-            _ => {
-                panic!("Expected validate_schema_uri() to error on unrecognized schema uri, but was {:?}", result.as_ref().unwrap_err())
-            }
         }
     }
 

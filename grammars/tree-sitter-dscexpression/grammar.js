@@ -6,7 +6,7 @@ const PREC = {
   STRINGLITERAL: -11,
 }
 
-module.exports = grammar({
+export default grammar({
   name: 'dscexpression',
 
   extras: $ => ['\n', ' '],

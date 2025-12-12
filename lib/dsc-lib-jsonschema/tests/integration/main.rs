@@ -16,3 +16,4 @@
 //! execute our tests.
 
 #[cfg(test)] mod transforms;
+#[cfg(test)] mod dsc_repo;

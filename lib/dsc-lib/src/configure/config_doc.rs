@@ -2,17 +2,16 @@
 // Licensed under the MIT License.
 
 use chrono::{DateTime, Local};
-use dsc_lib_jsonschema::transforms::{
-    idiomaticize_externally_tagged_enum,
-    idiomaticize_string_enum
-};
 use rust_i18n::t;
 use schemars::{JsonSchema, json_schema};
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value};
 use std::{collections::HashMap, fmt::Display};
 
-use crate::{dscerror::DscError, schemas::DscRepoSchema};
+use crate::schemas::{
+    dsc_repo::{DscRepoSchema, UnrecognizedSchemaUri},
+    transforms::{idiomaticize_externally_tagged_enum, idiomaticize_string_enum}
+};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
@@ -412,18 +411,18 @@ impl DscRepoSchema for Configuration {
     const SCHEMA_FOLDER_PATH: &'static str = "config";
     const SCHEMA_SHOULD_BUNDLE: bool = true;
 
-    fn schema_metadata() -> schemars::Schema {
+    fn schema_property_metadata() -> schemars::Schema {
         json_schema!({
             "title": t!("configure.config_doc.configurationDocumentSchemaTitle").to_string(),
             "description": t!("configure.config_doc.configurationDocumentSchemaDescription").to_string(),
         })
     }
 
-    fn validate_schema_uri(&self) -> Result<(), DscError> {
+    fn validate_schema_uri(&self) -> Result<(), UnrecognizedSchemaUri> {
         if Self::is_recognized_schema_uri(&self.schema) {
             Ok(())
         } else {
-            Err(DscError::UnrecognizedSchemaUri(
+            Err(UnrecognizedSchemaUri(
                 self.schema.clone(),
                 Self::recognized_schema_uris(),
             ))
@@ -485,11 +484,9 @@ impl Default for Resource {
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        configure::config_doc::Configuration,
-        dscerror::DscError,
-        schemas::DscRepoSchema
-    };
+    use crate::schemas::dsc_repo::{DscRepoSchema, UnrecognizedSchemaUri};
+
+    use crate::configure::config_doc::Configuration;
 
     #[test]
     fn test_validate_schema_uri_with_invalid_uri() {
@@ -505,13 +502,10 @@ mod test {
         assert!(result.as_ref().is_err());
 
         match result.as_ref().unwrap_err() {
-            DscError::UnrecognizedSchemaUri(actual, recognized) => {
+            UnrecognizedSchemaUri(actual, recognized) => {
                 assert_eq!(actual, &invalid_uri);
                 assert_eq!(recognized, &Configuration::recognized_schema_uris())
             },
-            _ => {
-                panic!("Expected validate_schema_uri() to error on unrecognized schema uri, but was {:?}", result.as_ref().unwrap_err())
-            }
         }
     }
 
