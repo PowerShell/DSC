@@ -21,7 +21,7 @@ impl Function for Map {
             max_args: 2,
             accepted_arg_ordered_types: vec![
                 vec![FunctionArgKind::Array],
-                vec![FunctionArgKind::String], // Lambda ID as string
+                vec![FunctionArgKind::Lambda],
             ],
             remaining_arg_accepted_types: None,
             return_types: vec![FunctionArgKind::Array],

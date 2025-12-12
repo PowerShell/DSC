@@ -672,6 +672,7 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
     let returned_types= [
         (FunctionArgKind::Array, "a"),
         (FunctionArgKind::Boolean, "b"),
+        (FunctionArgKind::Lambda, "l"),
         (FunctionArgKind::Number, "n"),
         (FunctionArgKind::String, "s"),
         (FunctionArgKind::Object, "o"),

@@ -96,6 +96,7 @@ pub mod try_which;
 pub enum FunctionArgKind {
     Array,
     Boolean,
+    Lambda,
     Null,
     Number,
     Object,
@@ -107,6 +108,7 @@ impl Display for FunctionArgKind {
         match self {
             FunctionArgKind::Array => write!(f, "Array"),
             FunctionArgKind::Boolean => write!(f, "Boolean"),
+            FunctionArgKind::Lambda => write!(f, "Lambda"),
             FunctionArgKind::Null => write!(f, "Null"),
             FunctionArgKind::Number => write!(f, "Number"),
             FunctionArgKind::Object => write!(f, "Object"),
@@ -353,17 +355,21 @@ impl FunctionDispatcher {
     }
 
     fn check_arg_against_expected_types(name: &str, arg: &Value, expected_types: &[FunctionArgKind]) -> Result<(), DscError> {
+        let is_lambda = arg.as_str().is_some_and(|s| s.starts_with("__lambda_"));
+
         if arg.is_array() && !expected_types.contains(&FunctionArgKind::Array) {
             return Err(DscError::Parser(t!("functions.noArrayArgs", name = name, accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
         } else if arg.is_boolean() && !expected_types.contains(&FunctionArgKind::Boolean) {
             return Err(DscError::Parser(t!("functions.noBooleanArgs", name = name, accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
+        } else if is_lambda && !expected_types.contains(&FunctionArgKind::Lambda) {
+            return Err(DscError::Parser(t!("functions.noLambdaArgs", name = name, accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
         } else if arg.is_null() && !expected_types.contains(&FunctionArgKind::Null) {
             return Err(DscError::Parser(t!("functions.noNullArgs", name = name, accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
         } else if arg.is_number() && !expected_types.contains(&FunctionArgKind::Number) {
             return Err(DscError::Parser(t!("functions.noNumberArgs", name = name, accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
         } else if arg.is_object() && !expected_types.contains(&FunctionArgKind::Object) {
             return Err(DscError::Parser(t!("functions.noObjectArgs", name = name, accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
-        } else if arg.is_string() && !expected_types.contains(&FunctionArgKind::String) {
+        } else if arg.is_string() && !is_lambda && !expected_types.contains(&FunctionArgKind::String) {
             return Err(DscError::Parser(t!("functions.noStringArgs", name = name, accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
         }
         Ok(())
