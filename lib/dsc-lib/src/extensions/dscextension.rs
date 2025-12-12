@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::extensions::import::ImportMethod;
-use dsc_lib_jsonschema::transforms::idiomaticize_string_enum;
+use crate::schemas::transforms::idiomaticize_string_enum;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use schemars::JsonSchema;

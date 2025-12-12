@@ -471,6 +471,19 @@ function Install-TreeSitter {
         [switch]$UseCFS
     )
 
+    begin {
+        $arguments = @(
+            'install',
+            'tree-sitter-cli',
+            '--version', '0.25.10'
+        )
+
+        if ($UseCFS) {
+            $arguments += '--config'
+            $arguments += '.cargo/config.toml'
+        }
+    }
+
     process {
         if (Test-CommandAvailable -Name 'tree-sitter') {
             Write-Verbose "tree-sitter already installed."
@@ -478,11 +491,9 @@ function Install-TreeSitter {
         }
 
         Write-Verbose -Verbose "tree-sitter not found, installing..."
-        if ($UseCFS) {
-            cargo install tree-sitter-cli --config .cargo/config.toml
-        } else {
-            cargo install tree-sitter-cli
-        }
+
+        cargo @arguments
+
         if ($LASTEXITCODE -ne 0) {
             throw "Failed to install tree-sitter-cli"
         }
@@ -643,6 +654,16 @@ function Install-PowerShellTestPrerequisite {
         if (-not(Get-Module -ListAvailable -Name Pester)){
             Write-Verbose "Installing module 'Pester'"
             Install-PSResource Pester -WarningAction Ignore -Repository $repository -TrustRepository
+        }
+
+        if (-not (Get-Module -ListAvailable -Name YaYaml)) {
+            Write-Verbose "Installing module 'YaYaml'"
+            Install-PSResource YaYaml -WarningAction Ignore -Repository $repository -TrustRepository
+        }
+
+        if (-not (Get-Module -ListAvailable -Name PSToml)) {
+            Write-Verbose "Installing module 'PSToml'"
+            Install-PSResource PSToml -WarningAction Ignore -Repository $repository -TrustRepository
         }
     }
 }
@@ -1279,7 +1300,7 @@ function Export-GrammarBinding {
             } finally {
                 Pop-Location
             }
-            
+
         }
     }
 
@@ -1348,9 +1369,13 @@ function Build-RustProject {
             cargo clean
         }
 
-        if ($Clippy) {
+        if ($Clippy -and !$Project.ClippyUnclean) {
             $clippyFlags = @()
-            cargo clippy @clippyFlags --% -- -Dwarnings --no-deps
+            if (!$Project.ClippyPedanticUnclean) {
+                cargo clippy @clippyFlags --% -- -Dclippy::pedantic --no-deps -Dwarnings
+            } else {
+                cargo clippy @clippyFlags --% -- -Dwarnings --no-deps
+            }
 
             if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
                 throw "Last exit code is $LASTEXITCODE, clippy failed for at least one project"

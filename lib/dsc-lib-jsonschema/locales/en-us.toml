@@ -1,5 +1,9 @@
 _version = 1
 
+[dsc_repo.dsc_repo_schema]
+unrecognizedSchemaUri = "Unrecognized $schema URI"
+validSchemaUrisAre = "Valid schema URIs are"
+
 [transforms.idiomaticize_externally_tagged_enum]
 applies_to = "invalid application of idiomaticize_externally_tagged_enum; missing 'oneOf' keyword in transforming schema: %{transforming_schema}"
 oneOf_array = "invalid application of idiomaticize_externally_tagged_enum; 'oneOf' isn't an array in transforming schema: %{transforming_schema}"
@@ -112,3 +116,56 @@ invalid item: %{invalid_item}
 
 transforming schema: %{transforming_schema}
 """
+
+[vscode.keywords.allow_comments]
+factory_error_invalid_type = "The 'allowComments' VS Code keyword must be a boolean value."
+
+[vscode.keywords.allow_trailing_commas]
+factory_error_invalid_type = "The 'allowTrailingCommas' VS Code keyword must be a boolean value."
+
+[vscode.keywords.completion_detail]
+factory_error_invalid_type = "The 'completionDetail' VS Code keyword must be a string value."
+
+[vscode.keywords.default_snippets]
+factory_error_suffix = "The 'defaultSnippets' VS Code keyword must be an array of objects. Every object must be a valid snippet definition."
+factory_error_not_array = "Non-array value is invalid."
+factory_error_invalid_item = "Invalid definition for an object in the array."
+factory_error_non_object_item = "Array containing non-object items is invalid."
+
+[vscode.keywords.deprecation_message]
+factory_error_invalid_type = "The 'deprecationMessage' VS Code keyword must be a string value."
+
+[vscode.keywords.do_not_suggest]
+factory_error_invalid_type = "The 'doNotSuggest' VS Code keyword must be a boolean value."
+
+[vscode.keywords.enum_descriptions]
+factory_error_suffix = "The 'enumDescriptions' VS Code keyword must be an array of string values. The 'enumDescriptions' keyword should have the same number of items as the 'enum' keyword."
+factory_error_not_array = "Non-array value is invalid."
+factory_error_non_string_item = "Array containing non-string items is invalid."
+
+[vscode.keywords.enum_details]
+factory_error_suffix = "The 'enumDetails' VS Code keyword must be an array of string values. The 'enumDetails' keyword should have the same number of items as the 'enum' keyword."
+factory_error_not_array = "Non-array value is invalid."
+factory_error_non_string_item = "Array containing non-string items is invalid."
+
+[vscode.keywords.enum_sort_texts]
+factory_error_suffix = "The 'enumSortTexts' VS Code keyword must be an array of string values. The 'enumSortTexts' keyword should have the same number of items as the 'enum' keyword."
+factory_error_not_array = "Non-array value is invalid."
+factory_error_non_string_item = "Array containing non-string items is invalid."
+
+[vscode.keywords.error_message]
+factory_error_invalid_type = "The 'errorMessage' VS Code keyword must be a string value."
+
+[vscode.keywords.markdown_description]
+factory_error_invalid_type = "The 'markdownDescription' VS Code keyword must be a string value."
+
+[vscode.keywords.markdown_enum_descriptions]
+factory_error_suffix = "The 'markdownEnumDescriptions' VS Code keyword must be an array of string values. The 'markdownEnumDescriptions' keyword should have the same number of items as the 'enum' keyword."
+factory_error_not_array = "Non-array value is invalid."
+factory_error_non_string_item = "Array containing non-string items is invalid."
+
+[vscode.keywords.pattern_error_message]
+factory_error_invalid_type = "The 'patternErrorMessage' VS Code keyword must be a string value."
+
+[vscode.keywords.suggest_sort_text]
+factory_error_invalid_type = "The 'suggestSortText' VS Code keyword must be a string value."

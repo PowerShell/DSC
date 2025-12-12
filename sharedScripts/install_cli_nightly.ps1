@@ -55,6 +55,10 @@ param(
     $NoClean
 )
 begin {
+    if ($IsLinux -or $IsMacOS) {
+        throw "This script is only supported on Windows. Use 'install_cli_nightly.sh' on Linux or macOS systems."
+    }
+
     [string[]]$missing = @()
     if (-not (Get-Command 'gh' -ErrorAction SilentlyContinue)) {
         $missing += 'gh'
@@ -97,7 +101,7 @@ process {
     $downloadArtifactParams = @(
         '-R', $Repo
         $RunId
-        '-n', "$platform-bin"
+        '-n', "windows-bin"
         "--dir", $tmpDir
     )
     gh run download @downloadArtifactParams
