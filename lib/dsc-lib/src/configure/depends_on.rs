@@ -219,6 +219,23 @@ fn unroll_and_push(order: &mut Vec<Resource>, resource: &Resource, parser: &mut 
   Ok(())
 }
 
+/// Parses a resource reference statement into type and name components.
+///
+/// Resource references in dependsOn and resourceId use the format "Type:Name" where
+/// the name portion is URL-encoded to handle special characters.
+///
+/// # Arguments
+/// * `statement` - A resource reference in the format "Microsoft.Resource/Type:EncodedName"
+///
+/// # Returns
+/// A tuple of (resource_type, decoded_name) on success.
+///
+/// # Errors
+/// Returns `DscError::Validation` if the statement doesn't contain exactly one colon
+/// separator or if the name portion cannot be URL-decoded.
+///
+/// # Examples
+/// - Input: `"Microsoft.DSC.Debug/Echo:Policy%2D0"` → Output: `("Microsoft.DSC.Debug/Echo", "Policy-0")`
 fn get_type_and_name(statement: &str) -> Result<(&str, String), DscError> {
     let parts: Vec<&str> = statement.split(':').collect();
     if parts.len() != 2 {
