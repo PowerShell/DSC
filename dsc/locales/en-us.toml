@@ -107,6 +107,7 @@ invalidOperationOnAdapter = "Can not perform this operation on the adapter itsel
 setInputEmpty = "Desired input is empty"
 testInputEmpty = "Expected input is required"
 jsonError = "JSON: %{err}"
+routingToDelete = "Routing to delete operation because _exist is false"
 
 [subcommand]
 actualStateNotObject = "actual_state is not an object"
