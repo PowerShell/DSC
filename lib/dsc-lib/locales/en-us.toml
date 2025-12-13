@@ -557,6 +557,10 @@ extensionReturnedError = "Extension '%{extension}': %{error}"
 noExtensions = "No extensions supporting secrets was found"
 secretNotFound = "Secret '%{name}' not found"
 
+[functions.shallowMerge]
+description = "Combines an array of objects where only the top-level objects are merged"
+requiresObjects = "shallowMerge requires all array elements to be objects, but found: %{value}"
+
 [functions.startsWith]
 description = "Checks if a string starts with a specific prefix"
 invoked = "startsWith function"
