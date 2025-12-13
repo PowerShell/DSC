@@ -34,14 +34,8 @@ impl Function for LambdaVariables {
 
     fn invoke(&self, args: &[Value], context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.lambdaVariables.invoked"));
-        
-        if args.len() != 1 {
-            return Err(DscError::Parser(t!("functions.invalidArgCount", name = "lambdaVariables", count = 1).to_string()));
-        }
 
-        let Some(var_name) = args[0].as_str() else {
-            return Err(DscError::Parser(t!("functions.lambdaVariables.paramNameMustBeString").to_string()));
-        };
+        let var_name = args[0].as_str().unwrap();
 
         // Look up the variable in the lambda context
         if let Some(value) = context.lambda_variables.get(var_name) {

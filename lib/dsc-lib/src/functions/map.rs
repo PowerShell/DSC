@@ -30,18 +30,9 @@ impl Function for Map {
 
     fn invoke(&self, args: &[Value], context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.map.invoked"));
-        
-        if args.len() != 2 {
-            return Err(DscError::Parser(t!("functions.invalidArgCount", name = "map", count = 2).to_string()));
-        }
 
-        let Some(array) = args[0].as_array() else {
-            return Err(DscError::Parser(t!("functions.map.firstArgMustBeArray").to_string()));
-        };
-
-        let Some(lambda_id) = args[1].as_str() else {
-            return Err(DscError::Parser(t!("functions.map.secondArgMustBeLambda").to_string()));
-        };
+        let array = args[0].as_array().unwrap();
+        let lambda_id = args[1].as_str().unwrap();
 
         // Retrieve the lambda from context
         let lambdas = context.lambdas.borrow();
