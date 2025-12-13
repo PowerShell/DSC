@@ -118,6 +118,6 @@ Describe 'WMI adapter resource tests' {
         $r = dsc resource get -r root.cimv2/Win32_ComputerSystem -i $i
         $LASTEXITCODE | Should -Be 0 
         $res = $r | ConvertFrom-Json
-        $res.actualState.Manufacturer | Should -Not -BeNullOrEmpty
+        $res.actualState.Manufacturer | Should -Be $manufacturer
     }
 }
