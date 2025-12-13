@@ -34,9 +34,6 @@ impl Function for Reference {
     fn invoke(&self, args: &[Value], context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.reference.invoked"));
 
-        if context.process_mode == ProcessMode::Copy {
-            return Err(DscError::Parser(t!("functions.reference.cannotUseInCopyMode").to_string()));
-        }
         if context.process_mode == ProcessMode::UserFunction {
             return Err(DscError::Parser(t!("functions.reference.unavailableInUserFunction").to_string()));
         }

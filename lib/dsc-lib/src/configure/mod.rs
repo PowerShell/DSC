@@ -329,7 +329,19 @@ impl Configurator {
     }
 
     fn get_properties(&mut self, resource: &Resource, resource_kind: &Kind) -> Result<Option<Map<String, Value>>, DscError> {
-        match resource_kind {
+        // Restore copy loop context from resource tags if present
+        if let Some(tags) = &resource.tags {
+            for (key, value) in tags {
+                if let Some(loop_name) = key.strip_prefix("__dsc_copy_loop_") {
+                    if let Some(index) = value.as_i64() {
+                        self.context.copy.insert(loop_name.to_string(), index);
+                        self.context.copy_current_loop_name = loop_name.to_string();
+                    }
+                }
+            }
+        }
+
+        let result = match resource_kind {
             Kind::Group => {
                 // if Group resource, we leave it to the resource to handle expressions
                 Ok(resource.properties.clone())
@@ -337,7 +349,13 @@ impl Configurator {
             _ => {
                 Ok(invoke_property_expressions(&mut self.statement_parser, &self.context, resource.properties.as_ref())?)
             },
-        }
+        };
+
+        // Clear copy loop context after processing resource
+        self.context.copy.clear();
+        self.context.copy_current_loop_name.clear();
+
+        result
     }
 
     /// Invoke the get operation on a resource.
