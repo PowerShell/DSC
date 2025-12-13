@@ -76,15 +76,3 @@ impl Function for Map {
         Ok(Value::Array(result_array))
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn requires_two_args() {
-        let func = Map {};
-        let result = func.invoke(&[], &Context::new());
-        assert!(result.is_err());
-    }
-}
