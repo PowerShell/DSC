@@ -298,6 +298,36 @@ function Get-DscResourceObject {
     return $desiredState
 }
 
+## Primitive value for PScredentials 
+
+function Get-PrimitiveValueString {
+    param([Parameter(Mandatory)][object]$Value)
+
+    # If already a string → done
+    if ($Value -is [string]) {
+        return $Value
+    }
+
+    # If it's a hashtable or PSCustomObject → unwrap
+    if ($Value -is [hashtable] -or $Value -is [pscustomobject]) {
+        $props = $Value.psobject.Properties
+
+        # Case 1: { secureString = "admin" }
+        if ($props.Name -contains 'secureString') {
+            return $Value.secureString
+        }
+
+        # Case 2: nested object e.g. @{ value = @{ secureString = "admin" }}
+        if ($props.Count -eq 1) {
+            return Get-PrimitiveValueString $props.Value
+        }
+
+        "Cannot extract primitive value from nested object: $($Value | Out-String)" | Write-DscTrace -Operation Error
+    }
+
+    "Unsupported type '$($Value.GetType().FullName)' for primitive extraction" | Write-DscTrace -Operation Error
+}
+
 # Get the actual state using DSC Get method from any type of DSC resource
 function Invoke-DscOperation {
     param(
@@ -368,7 +398,11 @@ function Invoke-DscOperation {
                                 "Credential object '$($_.Name)' requires both 'username' and 'password' properties" | Write-DscTrace -Operation Error
                                 exit 1
                             }
-                            $property.$($_.Name) = [System.Management.Automation.PSCredential]::new($_.Value.Username, (ConvertTo-SecureString -AsPlainText $_.Value.Password -Force))
+
+                            $username = Get-PrimitiveValueString $_.Value.Username
+                            $password = $_.Value.Password | ConvertTo-SecureString -AsPlainText -Force
+                            $property.$($_.Name) = [System.Management.Automation.PSCredential]::new($username, $password)
+                            
                         } else {
                             $property.$($_.Name) = $_.Value.psobject.properties | ForEach-Object -Begin { $propertyHash = @{} } -Process { $propertyHash[$_.Name] = $_.Value } -End { $propertyHash }
                         }
