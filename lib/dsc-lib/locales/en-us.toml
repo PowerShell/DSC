@@ -421,7 +421,6 @@ bodyMustBeExpression = "lambda() body must be an expression"
 [functions.lambdaVariables]
 description = "Retrieves the value of a lambda parameter"
 invoked = "lambdaVariables function"
-paramNameMustBeString = "lambdaVariables() parameter name must be a string"
 notFound = "Lambda parameter '%{name}' not found in current context"
 
 [functions.lastIndexOf]
@@ -432,8 +431,6 @@ invalidArrayArg = "First argument must be an array"
 [functions.map]
 description = "Transforms an array by applying a lambda function to each element"
 invoked = "map function"
-firstArgMustBeArray = "map() first argument must be an array"
-secondArgMustBeLambda = "map() second argument must be a lambda function"
 lambdaNotFound = "Lambda function with ID '%{id}' not found"
 lambdaMustHave1Or2Params = "map() lambda must have 1 or 2 parameters (element and optional index)"
 
