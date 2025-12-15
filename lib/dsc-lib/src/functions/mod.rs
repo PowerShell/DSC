@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use crate::DscError;
 use crate::configure::context::Context;
 use crate::functions::user_function::invoke_user_function;
+use crate::schemas::dsc_repo::DscRepoSchema;
 use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::Serialize;
@@ -90,7 +91,8 @@ pub mod variables;
 pub mod try_which;
 
 /// The kind of argument that a function accepts.
-#[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Serialize, JsonSchema)]
+#[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Serialize, JsonSchema, DscRepoSchema)]
+#[dsc_repo_schema(base_name = "argKind", folder_path = "definitions/functions/builtin")]
 pub enum FunctionArgKind {
     Array,
     Boolean,
@@ -332,8 +334,9 @@ impl Default for FunctionDispatcher {
     }
 }
 
-#[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Serialize, JsonSchema)]
+#[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
+#[dsc_repo_schema(base_name = "list", folder_path = "outputs/function")]
 pub struct FunctionDefinition {
     pub category: Vec<FunctionCategory>,
     pub name: String,
@@ -350,8 +353,9 @@ pub struct FunctionDefinition {
     pub return_types: Vec<FunctionArgKind>,
 }
 
-#[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Serialize, JsonSchema)]
+#[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
+#[dsc_repo_schema(base_name = "category", folder_path = "definitions/functions/builtin")]
 pub enum FunctionCategory {
     Array,
     Cidr,
