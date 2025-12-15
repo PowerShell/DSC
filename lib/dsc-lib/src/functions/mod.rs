@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 
 use crate::DscError;
-use crate::configure::context::Context;
+use crate::configure::context::{Context, ProcessMode};
 use crate::functions::user_function::invoke_user_function;
 use rust_i18n::t;
 use schemars::JsonSchema;
@@ -290,13 +290,22 @@ impl FunctionDispatcher {
         }
 
         // if we have remaining args, they must match one of the remaining_arg_types
-        if let Some(remaining_arg_types) = metadata.remaining_arg_accepted_types {
+        if let Some(ref remaining_arg_types) = metadata.remaining_arg_accepted_types {
             for value in args.iter().skip(metadata.accepted_arg_ordered_types.len()) {
-                Self::check_arg_against_expected_types(name, value, &remaining_arg_types)?;
+                Self::check_arg_against_expected_types(name, value, remaining_arg_types)?;
             }
         }
 
-        function.invoke(args, context)
+        let accepts_lambda = metadata.accepted_arg_ordered_types.iter().any(|types| types.contains(&FunctionArgKind::Lambda))
+            || metadata.remaining_arg_accepted_types.as_ref().is_some_and(|types| types.contains(&FunctionArgKind::Lambda));
+
+        if accepts_lambda {
+            let mut lambda_context = context.clone();
+            lambda_context.process_mode = ProcessMode::Lambda;
+            function.invoke(args, &lambda_context)
+        } else {
+            function.invoke(args, context)
+        }
     }
 
     /// Special handler for lambda() function calls.

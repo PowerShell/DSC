@@ -12,6 +12,7 @@ use super::config_doc::{DataType, RestartRequired, SecurityContextKind};
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ProcessMode {
     Copy,
+    Lambda,
     Normal,
     NoExpressionEvaluation,
     ParametersDefault,
