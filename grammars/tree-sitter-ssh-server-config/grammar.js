@@ -4,6 +4,7 @@
 //-------------------------------------------------------------------------------------------------------
 
 const PREC = {
+  COMMENT: 3,
   MATCH: 2,
   OPERATOR: 1
 }
@@ -18,20 +19,22 @@ export default grammar({
 
     // check for an empty line that is just a /n character
     _empty_line: $ => '\n',
-    comment: $ => /#.*\n/,
+    comment: $ => /#.*/,
 
     keyword: $ => seq(
       field('keyword', $.alphanumeric),
       choice(seq(/[ \t]/, optional('=')), '='),
       optional(field('operator', $.operator)),
       field('arguments', $.arguments),
+      optional($.comment),
       "\n"
     ),
 
     match: $ => seq(
       token(prec(PREC.MATCH, /match/i)),
-      seq(repeat1($.criteria), $._empty_line),
+      seq(repeat1($.criteria), optional($.comment), $._empty_line),
       repeat1(choice($.comment, $.keyword)),
+      optional($._empty_line)
     ),
 
     criteria: $ => seq(
@@ -48,9 +51,9 @@ export default grammar({
     boolean: $ => choice('yes', 'no'),
     number: $ => /\d+/,
     operator: $ => token(prec(PREC.OPERATOR, /[-+\^]/)),
-    string: $ => /[^\r\n,"'\s]+/, /* cannot contain spaces */
+    string: $ => /[^\n\r\s,"'#]+/, /* cannot contain spaces */
 
-    _quotedString: $ => /[^\r\n,"']+/, /* can contain spaces */
+    _quotedString: $ => /[^\r\n,"'#]+/, /* can contain spaces */
     _doublequotedString: $ => seq('"', alias($._quotedString, $.string), repeat(seq(',', alias($._quotedString, $.string))), '"'),
     _singlequotedString: $ => seq('\'', alias($._quotedString, $.string), repeat(seq(',', alias($._quotedString, $.string))), '\''),
 
