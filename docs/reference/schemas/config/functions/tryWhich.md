@@ -7,7 +7,7 @@ title:       tryWhich
 
 ## Synopsis
 
-Looks for an executable in the `PATH` environment variable and returns the full path to the first  
+Looks for an executable in the `PATH` environment variable and returns the full path to the first
 matching executable or null if not found.
 
 ## Syntax
@@ -18,19 +18,19 @@ tryWhich(<commandName>)
 
 ## Description
 
-The `tryWhich()` function searches for an executable in the `PATH` environment variable and returns  
-the full path to the first matching executable if found. If the executable isn't discoverable, the  
+The `tryWhich()` function searches for an executable in the `PATH` environment variable and returns
+the full path to the first matching executable if found. If the executable isn't discoverable, the
 function returns `null` instead of generating an error.
 
 This function is useful for:
 
-- Checking whether a required command-line tool is available before invoking it.  
-- Conditionally configuring resources based on available system tools.  
-- Validating prerequisites in configurations.  
+- Checking whether a required command-line tool is available before invoking it.
+- Conditionally configuring resources based on available system tools.
+- Validating prerequisites in configurations.
 - Finding the exact path to executables for use in scripts or commands.
 
-The function searches the `PATH` in the same way the operating system would when executing a  
-command. On Windows, it automatically checks for common executable extensions, like `.exe`, `.cmd`,  
+The function searches the `PATH` in the same way the operating system would when executing a
+command. On Windows, it automatically checks for common executable extensions, like `.exe`, `.cmd`,
 and `.bat`, if no extension is provided.
 
 Unlike a strict path lookup that would fail if the executable is missing, `tryWhich()`
@@ -53,11 +53,11 @@ resources:
   properties:
     output:
       gitPath: "[tryWhich('git')]"
-      hasGit: >-  
-        [if(  
-          equals(tryWhich('git'), null()),  
-          false(),  
-          true()  
+      hasGit: >-
+        [if(
+          equals(tryWhich('git'), null()),
+          false(),
+          true()
         )]
 ```
 
@@ -94,11 +94,11 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      pythonPath: >-  
-        [coalesce(  
-          tryWhich('python3'),  
-          tryWhich('python'),  
-          '/usr/bin/python'  
+      pythonPath: >-
+        [coalesce(
+          tryWhich('python3'),
+          tryWhich('python'),
+          '/usr/bin/python'
         )]
 ```
 
@@ -118,9 +118,9 @@ messages: []
 hadErrors: false
 ```
 
-In this example, the function first looks for `python3` in the `PATH` environmental variable. If  
-that executable isn't discovered, it then looks for `python`. If neither executable is discovered,  
-it falls back to the specified default value, `/usr/bin/python3`.
+In this example, the function first looks for `python3` in the `PATH` environmental variable. If
+that executable isn't discovered, it then looks for `python`. If neither executable is discovered,
+it falls back to the specified default value, `/usr/bin/python`.
 
 ### Example 3 - Validate multiple prerequisites
 
@@ -139,11 +139,11 @@ resources:
         docker: "[tryWhich('docker')]"
         kubectl: "[tryWhich('kubectl')]"
         helm: "[tryWhich('helm')]"
-      allFound: >-  
-        [and(  
-          not(equals(tryWhich('docker'), null())),  
-          not(equals(tryWhich('kubectl'), null())),  
-          not(equals(tryWhich('helm'), null()))  
+      allFound: >-
+        [and(
+          not(equals(tryWhich('docker'), null())),
+          not(equals(tryWhich('kubectl'), null())),
+          not(equals(tryWhich('helm'), null()))
         )]
 ```
 
@@ -174,7 +174,7 @@ not found, so `allFound` is `false`.
 
 ### commandName
 
-The name of the executable to locate. On Windows, it automatically checks for common executable  
+The name of the executable to locate. On Windows, it automatically checks for common executable
 extensions, like `.exe`, `.cmd`, and `.bat`, if no extension is provided.
 
 ```yaml
@@ -185,7 +185,7 @@ Position: 1
 
 ## Output
 
-Returns the full path to the first matching executable as a string if found in the system PATH.  
+Returns the full path to the first matching executable as a string if found in the system PATH.
 Returns `null` if the executable is not found.
 
 ```yaml
@@ -194,21 +194,21 @@ Type: string or null
 
 ## Error conditions
 
-The function returns `null` instead of generating errors when the executable isn't found.  
+The function returns `null` instead of generating errors when the executable isn't found.
 
 The function only returns an error when the input isn't a string.
 
 ## Notes
 
-- The function searches the `PATH` environment variable in the same order as the operating system.  
-- On Windows, the function automatically checks for the executable with common extensions, like  
-  `.exe`, `.cmd`, and `.bat`, when the input string doesn't define an extension. For example, if  
-  the input is `dsc`, the function would return `dsc.exe` if available in `PATH`.  
-- The function returns `null` when the executable isn't found instead of raising an error.  
-- The function always returns the absolute path to a discovered executable.  
-- Use with [`if()`][00] or [`coalesce()`][01] for conditional logic based on tool availability.  
-- The function searches for the executable case-insensitively on Windows and case-sensitively on  
-  other platforms.  
+- The function searches the `PATH` environment variable in the same order as the operating system.
+- On Windows, the function automatically checks for the executable with common extensions, like
+  `.exe`, `.cmd`, and `.bat`, when the input string doesn't define an extension. For example, if
+  the input is `dsc`, the function would return `dsc.exe` if available in `PATH`.
+- The function returns `null` when the executable isn't found instead of raising an error.
+- The function always returns the absolute path to a discovered executable.
+- Use with [`if()`][00] or [`coalesce()`][01] for conditional logic based on tool availability.
+- The function searches for the executable case-insensitively on Windows and case-sensitively on
+  other platforms.
 - The function resolves symbolic links to their target paths.
 
 ## Related functions
