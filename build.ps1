@@ -183,7 +183,7 @@ process {
         Write-BuildProgress @progressParams -Status 'Configuring Rust environment'
         [hashtable]$priorRustEnvironment = Set-RustEnvironment -CacheRustBuild:$CacheRustBuild @VerboseParam
         Write-BuildProgress @progressParams -Status 'Configuring Cargo environment'
-        Set-CargoEnvironment @VerboseParam
+        Set-CargoEnvironment -UseCFS:$UseCFS -UseCFSAuth:$UseCFSAuth @VerboseParam
 
         # Install or update rust
         if (!$usingADO) {
