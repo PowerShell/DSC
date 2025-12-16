@@ -312,7 +312,11 @@ process {
 clean {
     $progressParams.Activity = 'Cleaning up'
     Write-BuildProgress @progressParams
-    Write-BuildProgress @progressParams -Status "Restoring rust environment"
-    Reset-RustEnvironment -PriorEnvironment $priorRustEnvironment @VerboseParam
+
+    if ($null -ne $priorRustEnvironment) {
+        Write-BuildProgress @progressParams -Status "Restoring rust environment"
+        Reset-RustEnvironment -PriorEnvironment $priorRustEnvironment @VerboseParam
+    }
+
     Write-BuildProgress -Completed
 }

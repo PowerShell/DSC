@@ -218,10 +218,10 @@
       "IsRust": true
     },
     {
-        "Name": "dsc-lib-jsonschema-macros",
-        "Kind": "Library",
-        "RelativePath": "lib/dsc-lib-jsonschema-macros",
-        "IsRust": true
+      "Name": "dsc-lib-jsonschema-macros",
+      "Kind": "Library",
+      "RelativePath": "lib/dsc-lib-jsonschema-macros",
+      "IsRust": true
     },
     {
       "Name": "dsc-lib-osinfo",
