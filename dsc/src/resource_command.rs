@@ -181,7 +181,7 @@ pub fn set(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, inp
             }
         };
 
-        let diff = get_diff(&after_state, &before_state);
+        let diff = get_diff(&before_state, &after_state);
 
         let result = SetResult::Resource(ResourceSetResponse {
             before_state,
