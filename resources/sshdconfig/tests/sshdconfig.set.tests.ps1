@@ -221,4 +221,109 @@ Describe 'sshd_config Set Tests' -Skip:(!$IsWindows -or $skipTest) {
             $currentResult.Port | Should -Be $originalResult.Port
         }
     }
+
+    Context 'Set with _clobber=false' {
+        BeforeEach {
+            $initialContent = @"
+    Port 2222
+    AddressFamily inet
+    MaxAuthTries 5
+    PermitRootLogin yes
+    PasswordAuthentication no
+"@
+            Set-Content -Path $TestConfigPath -Value $initialContent
+        }
+
+        It '<Title>' -TestCases @(
+            @{
+                Title = 'Should preserve unchanged regular keyword when value is the same'
+                InputConfig = @{ Port = "2222" }
+                ExpectedContains = @("Port 2222", "AddressFamily inet", "MaxAuthTries 5", "PermitRootLogin yes", "PasswordAuthentication no")
+                ExpectedNotContains = @()
+                VerifyOrder = @()
+            },
+            @{
+                Title = 'Should overwrite regular keyword when value is different'
+                InputConfig = @{ MaxAuthTries = "3" }
+                ExpectedContains = @("Port 2222", "AddressFamily inet", "MaxAuthTries 3", "PermitRootLogin yes", "PasswordAuthentication no")
+                ExpectedNotContains = @("MaxAuthTries 5")
+                VerifyOrder = @()
+            },
+            @{
+                Title = 'Should add regular keyword when it does not exist'
+                InputConfig = @{ LoginGraceTime = "60" }
+                ExpectedContains = @("Port 2222", "AddressFamily inet", "MaxAuthTries 5", "PermitRootLogin yes", "PasswordAuthentication no", "LoginGraceTime 60")
+                ExpectedNotContains = @()
+                VerifyOrder = @()
+            },
+            @{
+                Title = 'Should preserve unchanged boolean keyword when value is the same'
+                InputConfig = @{ PasswordAuthentication = $false }
+                ExpectedContains = @("Port 2222", "AddressFamily inet", "MaxAuthTries 5", "PermitRootLogin yes", "PasswordAuthentication no")
+                ExpectedNotContains = @()
+                VerifyOrder = @()
+            },
+            @{
+                Title = 'Should overwrite boolean keyword when value is different'
+                InputConfig = @{ PasswordAuthentication = $true }
+                ExpectedContains = @("Port 2222", "AddressFamily inet", "MaxAuthTries 5", "PermitRootLogin yes", "PasswordAuthentication yes")
+                ExpectedNotContains = @("PasswordAuthentication no")
+                VerifyOrder = @()
+            },
+            @{
+                Title = 'Should add boolean keyword when it does not exist'
+                InputConfig = @{ PubkeyAuthentication = $true }
+                ExpectedContains = @("Port 2222", "AddressFamily inet", "MaxAuthTries 5", "PermitRootLogin yes", "PasswordAuthentication no", "PubkeyAuthentication yes")
+                ExpectedNotContains = @()
+                VerifyOrder = @()
+            },
+            @{
+                Title = 'Should handle multiple keyword changes and preserve order'
+                InputConfig = @{
+                    PasswordAuthentication = $false
+                    PermitRootLogin = $false
+                    LoginGraceTime = "60"
+                }
+                ExpectedContains = @("Port 2222", "AddressFamily inet", "MaxAuthTries 5", "PermitRootLogin no", "PasswordAuthentication no", "LoginGraceTime 60")
+                ExpectedNotContains = @("PermitRootLogin yes")
+                VerifyOrder = @(
+                    @{ Pattern = "^Port"; Before = "^PasswordAuthentication" },
+                    @{ Pattern = "^PasswordAuthentication"; Before = "^PermitRootLogin" },
+                    @{ Pattern = "^PermitRootLogin"; Before = "^AddressFamily" },
+                    @{ Pattern = "^AddressFamily"; Before = "^MaxAuthTries" }
+                )
+            }
+        ) {
+            param($Title, $InputConfig, $ExpectedContains, $ExpectedNotContains, $VerifyOrder)
+
+            $config = @{
+                _metadata = @{
+                    filepath = $TestConfigPath
+                }
+                _clobber = $false
+            }
+            foreach ($key in $InputConfig.Keys) {
+                $config[$key] = $InputConfig[$key]
+            }
+            $inputJson = $config | ConvertTo-Json
+
+            $output = sshdconfig set --input $inputJson -s sshd-config 2>$null
+            $LASTEXITCODE | Should -Be 0
+            $sshdConfigContents = Get-Content $TestConfigPath
+
+            foreach ($expected in $ExpectedContains) {
+                $sshdConfigContents | Should -Contain $expected
+            }
+
+            foreach ($notExpected in $ExpectedNotContains) {
+                $sshdConfigContents | Should -Not -Contain $notExpected
+            }
+
+            foreach ($orderCheck in $VerifyOrder) {
+                $beforeLine = ($sshdConfigContents | Select-String -Pattern $orderCheck.Pattern).LineNumber
+                $afterLine = ($sshdConfigContents | Select-String -Pattern $orderCheck.Before).LineNumber
+                $beforeLine | Should -BeLessThan $afterLine
+            }
+        }
+    }
 }
