@@ -166,9 +166,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     let args = Args::parse();
 
-    if args.wait_for_debugger {
+    // TODO: Find out if there is any actual way to get bicep local-deploy to send the --wait-for-debugger command.
+    if true {
         tracing::info!("Waiting for debugger to attach...");
-        tracing::info!("Press Enter to continue after attaching debugger");
+        tracing::info!("Press any key to continue after attaching to PID: {}", std::process::id());
         let mut input = String::new();
         std::io::stdin().read_line(&mut input)?;
     }
