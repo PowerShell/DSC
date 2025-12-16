@@ -14,6 +14,8 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use tracing::{debug, info, trace};
 
+use crate::schemas::dsc_repo::DscRepoSchema;
+
 use super::{
     command_resource,
     dscerror,
@@ -25,8 +27,9 @@ use super::{
     }
 };
 
-#[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
+#[derive(Clone, Debug, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
+#[dsc_repo_schema(base_name = "list", folder_path = "outputs/resource")]
 pub struct DscResource {
     /// The namespaced name of the resource.
     #[serde(rename="type")]
@@ -59,9 +62,10 @@ pub struct DscResource {
     pub manifest: Option<Value>,
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
 #[schemars(transform = idiomaticize_string_enum)]
+#[dsc_repo_schema(base_name = "resourceCapabilities", folder_path = "definitions")]
 pub enum Capability {
     /// The resource supports retrieving configuration.
     Get,
