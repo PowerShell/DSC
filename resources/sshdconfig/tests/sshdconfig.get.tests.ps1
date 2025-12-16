@@ -29,6 +29,13 @@ Match Address 192.168.1.0/24
 "@
         $TestConfigPathWithMatch = Join-Path $TestDrive 'test_sshd_config_match'
         $configWithMatch | Set-Content -Path $TestConfigPathWithMatch
+        $configWithInclude = @"
+Port 3333
+Include /etc/ssh/sshd_config.d/*.conf
+PasswordAuthentication no
+"@
+        $TestConfigPathWithInclude = Join-Path $TestDrive 'test_sshd_config_include'
+        $configWithInclude | Set-Content -Path $TestConfigPathWithInclude
     }
 
     AfterAll {
@@ -37,6 +44,9 @@ Match Address 192.168.1.0/24
         }
         if (Test-Path $TestConfigPathWithMatch) {
             Remove-Item -Path $TestConfigPathWithMatch -Force -ErrorAction SilentlyContinue
+        }
+        if (Test-Path $TestConfigPathWithInclude) {
+            Remove-Item -Path $TestConfigPathWithInclude -Force -ErrorAction SilentlyContinue
         }
     }
 
@@ -106,5 +116,30 @@ Match Address 192.168.1.0/24
         $result.Match[1].Criteria.Address | Should -Be "192.168.1.0/24"
         $result.Match[1].X11Forwarding | Should -Be $true
         $result.Match[1].MaxAuthTries | Should -Be "3"
+    }
+
+    It '<Command> command displays warning when Include directive is present' -TestCases @(
+        @{ Command = 'get' }
+        @{ Command = 'export' }
+    ) {
+        param($Command)
+
+        $inputData = @{
+            _metadata = @{
+                filepath = $TestConfigPathWithInclude
+            }
+        } | ConvertTo-Json
+
+        $stderrFile = Join-Path $TestDrive "stderr_$Command.txt"
+        if ($Command -eq 'get') {
+            $result = sshdconfig $Command --input $inputData -s sshd-config 2>$stderrFile | ConvertFrom-Json
+        }
+        else {
+            $result = sshdconfig $Command --input $inputData 2>$stderrFile | ConvertFrom-Json
+        }
+
+        $stderr = Get-Content -Path $stderrFile -Raw -ErrorAction SilentlyContinue
+        $stderr | Should -BeLike "*WARN*Include directive found in sshd_config*"
+        Remove-Item -Path $stderrFile -Force -ErrorAction SilentlyContinue
     }
 }
