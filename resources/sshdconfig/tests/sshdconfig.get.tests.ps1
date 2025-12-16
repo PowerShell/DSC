@@ -6,12 +6,17 @@ BeforeDiscovery {
         $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
         $principal = [System.Security.Principal.WindowsPrincipal]::new($identity)
         $isElevated = $principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
-        $sshdExists = ($null -ne (Get-Command sshd -CommandType Application -ErrorAction Ignore))
-        $skipTest = !$isElevated -or !$sshdExists
     }
+    else {
+        $isElevated = (id -u) -eq 0
+    }
+
+    $sshdExists = ($null -ne (Get-Command sshd -CommandType Application -ErrorAction Ignore))
+    $skipTest = !$isElevated -or !$sshdExists
 }
 
-Describe 'sshd_config Get and Export Tests' -Skip:(!$IsWindows -or $skipTest) {
+
+Describe 'sshd_config Get and Export Tests' -Skip:($skipTest) {
     BeforeAll {
         $TestConfigPath = Join-Path $TestDrive 'test_sshd_config'
         "LogLevel Debug3`nPasswordAuthentication no" | Set-Content -Path $TestConfigPath
