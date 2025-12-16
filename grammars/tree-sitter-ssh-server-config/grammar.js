@@ -4,7 +4,6 @@
 //-------------------------------------------------------------------------------------------------------
 
 const PREC = {
-  COMMENT: 3,
   MATCH: 2,
   OPERATOR: 1
 }
@@ -53,7 +52,7 @@ export default grammar({
     operator: $ => token(prec(PREC.OPERATOR, /[-+\^]/)),
     string: $ => /[^\n\r\s,"'#]+/, /* cannot contain spaces */
 
-    _quotedString: $ => /[^\r\n,"'#]+/, /* can contain spaces */
+    _quotedString: $ => /[^\r\n,"']+/, /* can contain spaces */
     _doublequotedString: $ => seq('"', alias($._quotedString, $.string), repeat(seq(',', alias($._quotedString, $.string))), '"'),
     _singlequotedString: $ => seq('\'', alias($._quotedString, $.string), repeat(seq(',', alias($._quotedString, $.string))), '\''),
 
