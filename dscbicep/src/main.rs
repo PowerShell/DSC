@@ -3,6 +3,11 @@
 
 use clap::Parser;
 use tonic::{transport::Server, Request, Response, Status};
+use dsc_lib::{
+    configure::config_doc::ExecutionKind,
+    dscresources::dscresource::Invoke,
+    DscManager,
+};
 
 // Include the generated protobuf code
 pub mod proto {
@@ -31,8 +36,28 @@ impl BicepExtension for BicepExtensionService {
             spec.api_version
         );
 
-        // TODO: Implement actual resource creation/update logic
-        Err(Status::unimplemented("CreateOrUpdate not yet implemented"))
+        let mut dsc = DscManager::new();
+        let Some(resource) = dsc.find_resource(&spec.r#type, None) else {
+            return Err(Status::invalid_argument("Resource not found"));
+        };
+
+        let _result = match resource.set(&spec.properties, false, &ExecutionKind::Actual) {
+            Ok(res) => res,
+            Err(e) => return Err(Status::internal(format!("DSC set operation failed: {}", e))),
+        };
+
+        let response = LocalExtensibilityOperationResponse {
+            resource: Some(proto::Resource {
+                r#type: spec.r#type,
+                api_version: spec.api_version,
+                identifiers: String::new(),
+                properties: spec.properties,
+                status: None,
+            }),
+            error_data: None,
+        };
+
+        Ok(Response::new(response))
     }
 
     async fn preview(

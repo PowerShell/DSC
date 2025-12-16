@@ -237,7 +237,7 @@ ipnetwork = { version = "0.21" }
 # dsc-lib, dsc-lib-registry, sshdconfig, tree-sitter-dscexpression, tree-sitter-ssh-server-config
 cc = { version = "1.2" }
 # dsc
-tonic-prost-build = { version = "*" }
+tonic-prost-build = { version = "0.14" }
 
 # test-only dependencies
 # dsc-lib-jsonschema
