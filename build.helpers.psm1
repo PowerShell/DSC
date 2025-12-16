@@ -181,7 +181,10 @@ function Import-DscBuildData {
         | ConvertFrom-Json -AsHashtable
 
         if ($RefreshProjects) {
-            $data.Projects = Get-DscProjectData
+            [DscProjectDefinition[]]$rootProject = $data.Projects.Where({
+                $_.Name -eq 'root'
+            }, 'first')[0]
+            $data.Projects = $rootProject + (Get-DscProjectData)
         } else {
             $data.Projects = [DscProjectDefinition[]]$data.Projects
         }
@@ -1030,7 +1033,7 @@ function Get-ArtifactDirectoryPath {
             MsixBundle = Join-Path $PSScriptRoot 'bin' 'msix'
             MsixTarget = Join-Path $PSScriptRoot 'bin' $Architecture 'msix'
             ZipTarget  = Join-Path $PSScriptRoot 'bin' $Architecture 'zip'
-            $TgzTarget = Join-Path $PSScriptRoot 'bin' $Architecture 'tgz'
+            TgzTarget  = Join-Path $PSScriptRoot 'bin' $Architecture 'tgz'
         }
     }
 }
@@ -1333,7 +1336,7 @@ function Build-RustProject {
             } elseif ($Architecture -match 'darwin') {
                 'macOS'
             } elseif ($Architecture -match 'windows') {
-                'windows'
+                'Windows'
             } else {
                 throw "Unsupported architecture '$Architecture'"
             }
@@ -2072,7 +2075,7 @@ function Build-DscPackage {
         } elseif ($packageType -eq 'tgz') {
             Build-DscTgzPackage @buildParams
         } elseif ($packageType -eq 'zip') {
-            Build-DscTgzPackage
+            Build-DscZipPackage @buildParams
         } else {
             throw "Unhandled package type '$packageType'"
         }
