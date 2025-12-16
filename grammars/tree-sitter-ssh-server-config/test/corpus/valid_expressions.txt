@@ -543,3 +543,22 @@ match Address 192.168.1.0/24
       (alphanumeric)
       (arguments
         (number)))))
+====
+parse comment within match block
+====
+match user developer
+    # Enable password authentication for developers - comment ignored
+    passwordauthentication yes
+
+---
+(server_config
+  (match
+    (criteria
+      (alpha)
+      (argument
+        (string)))
+    (comment)
+    (keyword
+      (alphanumeric)
+      (arguments
+        (boolean)))))

@@ -18,20 +18,21 @@ export default grammar({
 
     // check for an empty line that is just a /n character
     _empty_line: $ => '\n',
-    comment: $ => /#.*/,
+    comment: $ => seq(/#.*/, '\n'),
+    _inline_comment: $ => /#.*/,
 
     keyword: $ => seq(
       field('keyword', $.alphanumeric),
       choice(seq(/[ \t]/, optional('=')), '='),
       optional(field('operator', $.operator)),
       field('arguments', $.arguments),
-      optional($.comment),
+      optional(alias($._inline_comment, $.comment)),
       "\n"
     ),
 
     match: $ => seq(
       token(prec(PREC.MATCH, /match/i)),
-      seq(repeat1($.criteria), optional($.comment), $._empty_line),
+      seq(repeat1($.criteria), optional(alias($._inline_comment, $.comment)), $._empty_line),
       repeat1(choice($.comment, $.keyword)),
       optional($._empty_line)
     ),
