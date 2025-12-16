@@ -918,6 +918,7 @@ name = "dscbicep"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "dsc-lib",
  "prost",
  "tokio",
  "tokio-stream",

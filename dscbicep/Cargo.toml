@@ -8,6 +8,8 @@ name = "dscbicep"
 path = "src/main.rs"
 
 [dependencies]
+dsc-lib = { workspace = true }
+
 clap = { workspace = true }
 prost = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "signal", "io-std"] }
