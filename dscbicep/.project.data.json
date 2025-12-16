@@ -1,0 +1,6 @@
+{
+  "Name": "dscbicep",
+  "Kind": "CLI",
+  "IsRust": true,
+  "Binaries": ["dscbicep"]
+}
