@@ -765,24 +765,41 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
     let exit_codes = convert_hashmap_string_keys_to_i32(exit_codes)?;
     let executable = canonicalize_which(executable, cwd)?;
 
-    tokio::runtime::Builder::new_multi_thread().enable_all().build().unwrap().block_on(
-        async {
-            trace!("{}", t!("dscresources.commandResource.commandInvoke", executable = executable, args = args : {:?}));
-            if let Some(cwd) = cwd {
-                trace!("{}", t!("dscresources.commandResource.commandCwd", cwd = cwd.display()));
-            }
+    let run_async = async {
+        trace!("{}", t!("dscresources.commandResource.commandInvoke", executable = executable, args = args : {:?}));
+        if let Some(cwd) = cwd {
+            trace!("{}", t!("dscresources.commandResource.commandCwd", cwd = cwd.display()));
+        }
 
-            match run_process_async(&executable, args, input, cwd, env, exit_codes.as_ref()).await {
-                Ok((code, stdout, stderr)) => {
-                    Ok((code, stdout, stderr))
-                },
-                Err(err) => {
-                    error!("{}", t!("dscresources.commandResource.runProcessError", executable = executable, error = err));
-                    Err(err)
-                }
+        match run_process_async(&executable, args, input, cwd, env, exit_codes.as_ref()).await {
+            Ok((code, stdout, stderr)) => {
+                Ok((code, stdout, stderr))
+            },
+            Err(err) => {
+                error!("{}", t!("dscresources.commandResource.runProcessError", executable = executable, error = err));
+                Err(err)
             }
         }
-    )
+    };
+
+    // Try to use existing runtime first (e.g. from gRPC or MCP server)
+    match tokio::runtime::Handle::try_current() {
+        Ok(handle) => {
+            std::thread::scope(|s| {
+                s.spawn(|| {
+                    handle.block_on(run_async)
+                }).join().unwrap()
+            })
+        },
+        // Otherwise create a new runtime
+        Err(_) => {
+            tokio::runtime::Builder::new_multi_thread()
+                .enable_all()
+                .build()
+                .unwrap()
+                .block_on(run_async)
+        }
+    }
 }
 
 /// Process the arguments for a command resource.
