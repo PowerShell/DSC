@@ -81,7 +81,7 @@ PasswordAuthentication no
             $result = sshdconfig $Command --input $inputData 2>$null | ConvertFrom-Json
         }
 
-        if ($command -eq 'get') {
+        if ($Command -eq 'get') {
             # Get should return all properties regardless of input
             $result.LogLevel | Should -Be "Debug3"
             $result.PasswordAuthentication | Should -Be $false
