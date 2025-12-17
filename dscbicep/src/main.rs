@@ -10,6 +10,7 @@ use tonic::{transport::Server, Request, Response, Status};
 // Include the generated protobuf code
 pub mod proto {
     tonic::include_proto!("extension");
+    pub(crate) const FILE_DESCRIPTOR_SET: &[u8] = tonic::include_file_descriptor_set!("bicep");
 }
 
 use proto::bicep_extension_server::{BicepExtension, BicepExtensionServer};
@@ -227,6 +228,10 @@ async fn run_server(
     http: Option<String>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let service = BicepExtensionService;
+    let reflection_service = tonic_reflection::server::Builder::configure()
+        .register_encoded_file_descriptor_set(proto::FILE_DESCRIPTOR_SET)
+        .build_v1()
+        .unwrap();
 
     #[cfg(unix)]
     if let Some(socket_path) = socket {
@@ -242,6 +247,7 @@ async fn run_server(
         let uds_stream = UnixListenerStream::new(uds);
 
         Server::builder()
+            .add_service(reflection_service)
             .add_service(BicepExtensionServer::new(service))
             .serve_with_incoming(uds_stream)
             .await?;
@@ -263,6 +269,7 @@ async fn run_server(
     tracing::info!("Starting Bicep gRPC server on HTTP: {addr}");
 
     Server::builder()
+        .add_service(reflection_service)
         .add_service(BicepExtensionServer::new(service))
         .serve(addr)
         .await?;
