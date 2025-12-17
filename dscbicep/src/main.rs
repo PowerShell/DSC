@@ -41,24 +41,21 @@ impl BicepExtension for BicepExtensionService {
             return Err(Status::invalid_argument("Resource not found"));
         };
 
-        let _result = match resource.set(&properties, false, &ExecutionKind::Actual) {
-            Ok(res) => res,
-            Err(e) => return Err(Status::internal(format!("DSC set operation failed: {e}"))),
+        let result = match resource.set(&properties, false, &ExecutionKind::Actual) {
+            Ok(r) => LocalExtensibilityOperationResponse {
+                resource: Some(proto::Resource {
+                    r#type: resource_type,
+                    api_version: version,
+                    identifiers: String::new(),
+                    properties: serde_json::to_string(&r).unwrap(),
+                    status: None,
+                }),
+                error_data: None,
+            },
+            Err(e) => return Err(Status::internal(format!("DSC set operation failed: {e}")))
         };
 
-        // TODO: Use '_result'.
-        let response = LocalExtensibilityOperationResponse {
-            resource: Some(proto::Resource {
-                r#type: resource_type,
-                api_version: version,
-                identifiers: String::new(),
-                properties: properties,
-                status: None,
-            }),
-            error_data: None,
-        };
-
-        Ok(Response::new(response))
+        Ok(Response::new(result))
     }
 
     async fn preview(
@@ -77,28 +74,21 @@ impl BicepExtension for BicepExtensionService {
             return Err(Status::invalid_argument("Resource not found"));
         };
 
-        let _result = match resource.set(&properties, false, &ExecutionKind::WhatIf) {
-            Ok(res) => res,
-            Err(e) => {
-                return Err(Status::internal(format!(
-                    "DSC whatif operation failed: {e}"
-                )))
-            }
+        let result = match resource.set(&properties, false, &ExecutionKind::WhatIf) {
+            Ok(r) => LocalExtensibilityOperationResponse {
+                resource: Some(proto::Resource {
+                    r#type: resource_type,
+                    api_version: version,
+                    identifiers: String::new(),
+                    properties: serde_json::to_string(&r).unwrap(),
+                    status: None,
+                }),
+                error_data: None,
+            },
+            Err(e) => return Err(Status::internal(format!("DSC whatif operation failed: {e}")))
         };
 
-        // TODO: Use '_result'.
-        let response = LocalExtensibilityOperationResponse {
-            resource: Some(proto::Resource {
-                r#type: resource_type,
-                api_version: version,
-                identifiers: String::new(),
-                properties: properties,
-                status: None,
-            }),
-            error_data: None,
-        };
-
-        Ok(Response::new(response))
+        Ok(Response::new(result))
     }
 
     async fn get(
@@ -118,24 +108,21 @@ impl BicepExtension for BicepExtensionService {
         };
 
         // TODO: DSC asks for 'properties' here but we only have 'identifiers' from Bicep.
-        let _result = match resource.get(&identifiers) {
-            Ok(res) => res,
-            Err(e) => return Err(Status::internal(format!("DSC get operation failed: {e}"))),
+        let result = match resource.get(&identifiers) {
+            Ok(r) => LocalExtensibilityOperationResponse {
+                resource: Some(proto::Resource {
+                    r#type: resource_type,
+                    api_version: version,
+                    identifiers: String::new(),
+                    properties: serde_json::to_string(&r).unwrap(),
+                    status: None,
+                }),
+                error_data: None,
+            },
+            Err(e) => return Err(Status::internal(format!("DSC get operation failed: {e}")))
         };
 
-        // TODO: Use '_result'.
-        let response = LocalExtensibilityOperationResponse {
-            resource: Some(proto::Resource {
-                r#type: resource_type,
-                api_version: version,
-                identifiers: identifiers,
-                properties: String::new(),
-                status: None,
-            }),
-            error_data: None,
-        };
-
-        Ok(Response::new(response))
+        Ok(Response::new(result))
     }
 
     async fn delete(
@@ -160,28 +147,21 @@ impl BicepExtension for BicepExtensionService {
         };
 
         // TODO: DSC asks for 'properties' here but we only have 'identifiers' from Bicep.
-        let _result = match resource.delete(&identifiers) {
-            Ok(res) => res,
-            Err(e) => {
-                return Err(Status::internal(format!(
-                    "DSC delete operation failed: {e}"
-                )))
-            }
+        let result = match resource.delete(&identifiers) {
+            Ok(r) => LocalExtensibilityOperationResponse {
+                resource: Some(proto::Resource {
+                    r#type: resource_type,
+                    api_version: version,
+                    identifiers: String::new(),
+                    properties: serde_json::to_string(&r).unwrap(),
+                    status: None,
+                }),
+                error_data: None,
+            },
+            Err(e) => return Err(Status::internal(format!("DSC delete operation failed: {e}")))
         };
 
-        // TODO: Use '_result'.
-        let response = LocalExtensibilityOperationResponse {
-            resource: Some(proto::Resource {
-                r#type: resource_type,
-                api_version: version,
-                identifiers: identifiers,
-                properties: String::new(),
-                status: None,
-            }),
-            error_data: None,
-        };
-
-        Ok(Response::new(response))
+        Ok(Response::new(result))
     }
 
     async fn get_type_files(
