@@ -29,9 +29,9 @@ const EXIT_SUCCESS: i32 = 0;
 const EXIT_FAILURE: i32 = 1;
 
 fn main() {
-    enable_tracing();
-
     let args = Args::parse();
+
+    enable_tracing(args.trace_level.as_ref(), &args.trace_format);
 
     let result = match &args.command {
         Command::Export { input } => {

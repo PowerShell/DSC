@@ -181,7 +181,10 @@ function Import-DscBuildData {
         | ConvertFrom-Json -AsHashtable
 
         if ($RefreshProjects) {
-            $data.Projects = Get-DscProjectData
+            [DscProjectDefinition[]]$rootProject = $data.Projects.Where({
+                $_.Name -eq 'root'
+            }, 'first')[0]
+            $data.Projects = $rootProject + (Get-DscProjectData)
         } else {
             $data.Projects = [DscProjectDefinition[]]$data.Projects
         }
@@ -471,6 +474,19 @@ function Install-TreeSitter {
         [switch]$UseCFS
     )
 
+    begin {
+        $arguments = @(
+            'install',
+            'tree-sitter-cli',
+            '--version', '0.25.10'
+        )
+
+        if ($UseCFS) {
+            $arguments += '--config'
+            $arguments += '.cargo/config.toml'
+        }
+    }
+
     process {
         if (Test-CommandAvailable -Name 'tree-sitter') {
             Write-Verbose "tree-sitter already installed."
@@ -478,11 +494,9 @@ function Install-TreeSitter {
         }
 
         Write-Verbose -Verbose "tree-sitter not found, installing..."
-        if ($UseCFS) {
-            cargo install tree-sitter-cli --config .cargo/config.toml
-        } else {
-            cargo install tree-sitter-cli
-        }
+
+        cargo @arguments
+
         if ($LASTEXITCODE -ne 0) {
             throw "Failed to install tree-sitter-cli"
         }
@@ -1019,7 +1033,7 @@ function Get-ArtifactDirectoryPath {
             MsixBundle = Join-Path $PSScriptRoot 'bin' 'msix'
             MsixTarget = Join-Path $PSScriptRoot 'bin' $Architecture 'msix'
             ZipTarget  = Join-Path $PSScriptRoot 'bin' $Architecture 'zip'
-            $TgzTarget = Join-Path $PSScriptRoot 'bin' $Architecture 'tgz'
+            TgzTarget  = Join-Path $PSScriptRoot 'bin' $Architecture 'tgz'
         }
     }
 }
@@ -1289,7 +1303,7 @@ function Export-GrammarBinding {
             } finally {
                 Pop-Location
             }
-            
+
         }
     }
 
@@ -1322,7 +1336,7 @@ function Build-RustProject {
             } elseif ($Architecture -match 'darwin') {
                 'macOS'
             } elseif ($Architecture -match 'windows') {
-                'windows'
+                'Windows'
             } else {
                 throw "Unsupported architecture '$Architecture'"
             }
@@ -1358,9 +1372,13 @@ function Build-RustProject {
             cargo clean
         }
 
-        if ($Clippy) {
+        if ($Clippy -and !$Project.ClippyUnclean) {
             $clippyFlags = @()
-            cargo clippy @clippyFlags --% -- -Dwarnings --no-deps
+            if (!$Project.ClippyPedanticUnclean) {
+                cargo clippy @clippyFlags --% -- -Dclippy::pedantic --no-deps -Dwarnings
+            } else {
+                cargo clippy @clippyFlags --% -- -Dwarnings --no-deps
+            }
 
             if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
                 throw "Last exit code is $LASTEXITCODE, clippy failed for at least one project"
@@ -2057,7 +2075,7 @@ function Build-DscPackage {
         } elseif ($packageType -eq 'tgz') {
             Build-DscTgzPackage @buildParams
         } elseif ($packageType -eq 'zip') {
-            Build-DscTgzPackage
+            Build-DscZipPackage @buildParams
         } else {
             throw "Unhandled package type '$packageType'"
         }

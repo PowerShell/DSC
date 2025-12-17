@@ -192,7 +192,7 @@ pub trait DscRepoSchema : JsonSchema {
 }
 
 /// Defines the error when a user-defined JSON Schema references an unrecognized schema URI.
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Clone, PartialEq)]
 #[error(
     "{t}: {0}. {t2}: {1:?}",
     t = t!("dsc_repo.dsc_repo_schema.unrecognizedSchemaUri"),

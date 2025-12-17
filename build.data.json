@@ -181,7 +181,8 @@
       "RelativePath": "extensions/bicep",
       "CopyFiles": {
         "All": [
-          "bicep.dsc.extension.json"
+          "bicep.dsc.extension.json",
+          "bicepparams.dsc.extension.json"
         ]
       }
     },
@@ -190,6 +191,7 @@
       "Kind": "Grammar",
       "RelativePath": "grammars/tree-sitter-dscexpression",
       "IsRust": true,
+      "ClippyPedanticUnclean": true,
       "ClippyUnclean": true,
       "SkipTest": {
         "Windows": true
@@ -200,6 +202,7 @@
       "Kind": "Grammar",
       "RelativePath": "grammars/tree-sitter-ssh-server-config",
       "IsRust": true,
+      "ClippyPedanticUnclean": true,
       "ClippyUnclean": true
     },
     {
@@ -212,6 +215,12 @@
       "Name": "dsc-lib-jsonschema",
       "Kind": "Library",
       "RelativePath": "lib/dsc-lib-jsonschema",
+      "IsRust": true
+    },
+    {
+      "Name": "dsc-lib-jsonschema-macros",
+      "Kind": "Library",
+      "RelativePath": "lib/dsc-lib-jsonschema-macros",
       "IsRust": true
     },
     {

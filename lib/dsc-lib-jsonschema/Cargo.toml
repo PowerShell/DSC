@@ -17,6 +17,8 @@ thiserror = { workspace = true }
 tracing = { workspace = true }
 url = { workspace = true }
 urlencoding = { workspace = true }
+# workspace dependencies
+dsc-lib-jsonschema-macros = { workspace = true }
 
 [dev-dependencies]
 # Helps review complex comparisons, like schemas

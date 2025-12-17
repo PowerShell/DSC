@@ -30,6 +30,7 @@ windowsOnly = "Microsoft.OpenSSH.SSHD/Windows is only applicable to Windows"
 
 [main]
 export = "Export command: %{input}"
+invalidTraceLevel = "Invalid trace level"
 schema = "Schema command:"
 set = "Set command: '%{input}'"
 
@@ -67,13 +68,15 @@ shellPathMustNotBeRelative = "shell path must not be relative"
 sshdConfigReadFailed = "failed to read existing sshd_config file at path: '%{path}'"
 tempFileCreated = "temporary file created at: %{path}"
 validatingTempConfig = "Validating temporary sshd_config file"
-valueMustBeString = "value for key '%{key}' must be a string"
 writingTempConfig = "Writing temporary sshd_config file"
 
 [util]
 cleanupFailed = "Failed to clean up temporary file %{path}: %{error}"
+deserializeFailed = "Failed to deserialize match input: %{error}"
+getIgnoresInputFilters = "get command does not support filtering based on input settings, provided input will be ignored"
 inputMustBeBoolean = "value of '%{input}' must be true or false"
-inputMustBeEmpty = "get command does not support filtering based on input settings"
+invalidValue = "Key: '%{key}' cannot have empty value"
+matchBlockMissingCriteria = "Match block must contain 'criteria' field"
 sshdConfigNotFound = "sshd_config not found at path: '%{path}'"
 sshdConfigReadFailed = "failed to read sshd_config at path: '%{path}'"
 sshdElevation = "elevated security context required"
