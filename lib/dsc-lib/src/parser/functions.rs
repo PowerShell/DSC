@@ -108,9 +108,14 @@ impl Function {
     ///
     /// This function will return an error if the function fails to execute.
     pub fn invoke(&self, function_dispatcher: &FunctionDispatcher, context: &Context) -> Result<Value, DscError> {
-        // Special handling for lambda() function - don't evaluate it, just pass args through
+        // Special handling for lambda() function - pass raw args through context
         if self.name.to_lowercase() == "lambda" {
-            return function_dispatcher.invoke_lambda(&self.args, context);
+            // Store raw args in context for lambda function to access
+            *context.lambda_raw_args.borrow_mut() = self.args.clone();
+            let result = function_dispatcher.invoke("lambda", &[], context);
+            // Clear raw args
+            *context.lambda_raw_args.borrow_mut() = None;
+            return result;
         }
 
         // if any args are expressions, we need to invoke those first

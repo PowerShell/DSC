@@ -10,13 +10,13 @@ use serde_json::Value;
 use tracing::debug;
 
 #[derive(Debug, Default)]
-pub struct Map {}
+pub struct Filter {}
 
-impl Function for Map {
+impl Function for Filter {
     fn get_metadata(&self) -> FunctionMetadata {
         FunctionMetadata {
-            name: "map".to_string(),
-            description: t!("functions.map.description").to_string(),
+            name: "filter".to_string(),
+            description: t!("functions.filter.description").to_string(),
             category: vec![FunctionCategory::Array, FunctionCategory::Lambda],
             min_args: 2,
             max_args: 2,
@@ -30,14 +30,23 @@ impl Function for Map {
     }
 
     fn invoke(&self, args: &[Value], context: &Context) -> Result<Value, DscError> {
-        debug!("{}", t!("functions.map.invoked"));
+        debug!("{}", t!("functions.filter.invoked"));
 
         let array = args[0].as_array().unwrap();
         let lambda_id = args[1].as_str().unwrap();
-        let lambdas = get_lambda(context, lambda_id, "map")?;
+
+        let lambdas = get_lambda(context, lambda_id, "filter")?;
         let lambda = lambdas.get(lambda_id).unwrap();
-        let result_array = apply_lambda_to_array(array, lambda, context, |result, _element| {
-            Ok(Some(result))
+
+        let result_array = apply_lambda_to_array(array, lambda, context, |result, element| {
+            let Some(include) = result.as_bool() else {
+                return Err(DscError::Parser(t!("functions.filter.lambdaMustReturnBool").to_string()));
+            };
+            if include {
+                Ok(Some(element.clone()))
+            } else {
+                Ok(None)
+            }
         })?;
 
         Ok(Value::Array(result_array))

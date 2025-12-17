@@ -251,6 +251,8 @@ noLambdaArgs = "Function '%{name}' does not accept lambda arguments, accepted ty
 noNullArgs = "Function '%{name}' does not accept null arguments, accepted types are: %{accepted_args_string}"
 noObjectArgs = "Function '%{name}' does not accept object arguments, accepted types are: %{accepted_args_string}"
 noStringArgs = "Function '%{name}' does not accept string arguments, accepted types are: %{accepted_args_string}"
+lambdaNotFound = "Function '%{name}' could not find lambda with ID '%{id}'"
+lambdaTooManyParams = "Function '%{name}' requires lambda with 1 or 2 parameters (element and optional index)"
 
 [functions.add]
 description = "Adds two or more numbers together"
@@ -345,6 +347,11 @@ description = "Evaluates if the two values are the same"
 description = "Returns the boolean value false"
 invoked = "false function"
 
+[functions.filter]
+description = "Filters an array with a custom filtering function"
+invoked = "filter function"
+lambdaMustReturnBool = "filter() lambda must return a boolean value"
+
 [functions.first]
 description = "Returns the first element of an array or first character of a string"
 invoked = "first function"
@@ -412,8 +419,7 @@ invalidJson = "Invalid JSON string"
 
 [functions.lambda]
 description = "Creates a lambda function with parameters and a body expression"
-cannotInvokeDirectly = "lambda() should not be invoked directly"
-requiresArgs = "lambda() requires at least 2 arguments"
+invoked = "lambda function"
 requiresParamAndBody = "lambda() requires at least one parameter name and a body expression"
 paramsMustBeStrings = "lambda() parameter names must be string literals"
 bodyMustBeExpression = "lambda() body must be an expression"
@@ -431,8 +437,6 @@ invalidArrayArg = "First argument must be an array"
 [functions.map]
 description = "Transforms an array by applying a lambda function to each element"
 invoked = "map function"
-lambdaNotFound = "Lambda function with ID '%{id}' not found"
-lambdaMustHave1Or2Params = "map() lambda must have 1 or 2 parameters (element and optional index)"
 
 [functions.length]
 description = "Returns the length of a string, array, or object"
