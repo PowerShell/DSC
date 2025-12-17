@@ -211,6 +211,10 @@ struct Args {
     #[arg(long)]
     pipe: Option<String>,
 
+    /// The HTTP address to listen on (e.g., 127.0.0.1:50051)
+    #[arg(long)]
+    http: Option<String>,
+
     /// Wait for debugger to attach before starting
     #[arg(long)]
     wait_for_debugger: bool,
@@ -220,6 +224,7 @@ struct Args {
 async fn run_server(
     socket: Option<String>,
     pipe: Option<String>,
+    http: Option<String>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let service = BicepExtensionService;
 
@@ -253,7 +258,16 @@ async fn run_server(
         return Err("Windows named pipe support not yet implemented".into());
     }
 
-    Err("Either --socket (Unix) or --pipe (Windows) must be specified".into())
+    // Default to HTTP server on [::1]:50051 if no transport specified
+    let addr = http.unwrap_or_else(|| "[::1]:50051".to_string()).parse()?;
+    tracing::info!("Starting Bicep gRPC server on HTTP: {addr}");
+
+    Server::builder()
+        .add_service(BicepExtensionServer::new(service))
+        .serve(addr)
+        .await?;
+
+    Ok(())
 }
 
 #[tokio::main]
@@ -296,9 +310,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     };
 
     tokio::select! {
-        result = run_server(args.socket, args.pipe) => {
+        result = run_server(args.socket, args.pipe, args.http) => {
             if let Err(e) = result {
-                tracing::error!("Server error: {}", e);
+                tracing::error!("Server error: {e}");
                 return Err(e);
             }
         }
