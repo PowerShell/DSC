@@ -2,12 +2,10 @@
 // Licensed under the MIT License.
 
 use clap::Parser;
-use tonic::{transport::Server, Request, Response, Status};
 use dsc_lib::{
-    configure::config_doc::ExecutionKind,
-    dscresources::dscresource::Invoke,
-    DscManager,
+    configure::config_doc::ExecutionKind, dscresources::dscresource::Invoke, DscManager,
 };
+use tonic::{transport::Server, Request, Response, Status};
 
 // Include the generated protobuf code
 pub mod proto {
@@ -16,7 +14,7 @@ pub mod proto {
 
 use proto::bicep_extension_server::{BicepExtension, BicepExtensionServer};
 use proto::{
-    Empty, ResourceSpecification, ResourceReference, LocalExtensibilityOperationResponse,
+    Empty, LocalExtensibilityOperationResponse, ResourceReference, ResourceSpecification,
     TypeFilesResponse,
 };
 
@@ -30,28 +28,29 @@ impl BicepExtension for BicepExtensionService {
         request: Request<ResourceSpecification>,
     ) -> Result<Response<LocalExtensibilityOperationResponse>, Status> {
         let spec = request.into_inner();
-        tracing::debug!(
-            "CreateOrUpdate called for type: {}, apiVersion: {:?}",
-            spec.r#type,
-            spec.api_version
-        );
+        let resource_type = spec.r#type;
+        let version = spec.api_version;
+        let properties = spec.properties;
+
+        tracing::debug!("CreateOrUpdate called for {resource_type}@{version:?}: {properties}");
 
         let mut dsc = DscManager::new();
-        let Some(resource) = dsc.find_resource(&spec.r#type, None) else {
+        let Some(resource) = dsc.find_resource(&resource_type, version.as_deref()) else {
             return Err(Status::invalid_argument("Resource not found"));
         };
 
-        let _result = match resource.set(&spec.properties, false, &ExecutionKind::Actual) {
+        let _result = match resource.set(&properties, false, &ExecutionKind::Actual) {
             Ok(res) => res,
-            Err(e) => return Err(Status::internal(format!("DSC set operation failed: {}", e))),
+            Err(e) => return Err(Status::internal(format!("DSC set operation failed: {e}"))),
         };
 
+        // TODO: Use '_result'.
         let response = LocalExtensibilityOperationResponse {
             resource: Some(proto::Resource {
-                r#type: spec.r#type,
-                api_version: spec.api_version,
+                r#type: resource_type,
+                api_version: version,
                 identifiers: String::new(),
-                properties: spec.properties,
+                properties: properties,
                 status: None,
             }),
             error_data: None,
@@ -65,14 +64,39 @@ impl BicepExtension for BicepExtensionService {
         request: Request<ResourceSpecification>,
     ) -> Result<Response<LocalExtensibilityOperationResponse>, Status> {
         let spec = request.into_inner();
-        tracing::debug!(
-            "Preview called for type: {}, apiVersion: {:?}",
-            spec.r#type,
-            spec.api_version
-        );
+        let resource_type = spec.r#type;
+        let version = spec.api_version;
+        let properties = spec.properties;
 
-        // TODO: Implement preview/what-if logic
-        Err(Status::unimplemented("Preview not yet implemented"))
+        tracing::debug!("Preview called for {resource_type}@{version:?}: {properties}");
+
+        let mut dsc = DscManager::new();
+        let Some(resource) = dsc.find_resource(&resource_type, version.as_deref()) else {
+            return Err(Status::invalid_argument("Resource not found"));
+        };
+
+        let _result = match resource.set(&properties, false, &ExecutionKind::WhatIf) {
+            Ok(res) => res,
+            Err(e) => {
+                return Err(Status::internal(format!(
+                    "DSC whatif operation failed: {e}"
+                )))
+            }
+        };
+
+        // TODO: Use '_result'.
+        let response = LocalExtensibilityOperationResponse {
+            resource: Some(proto::Resource {
+                r#type: resource_type,
+                api_version: version,
+                identifiers: String::new(),
+                properties: properties,
+                status: None,
+            }),
+            error_data: None,
+        };
+
+        Ok(Response::new(response))
     }
 
     async fn get(
@@ -80,14 +104,36 @@ impl BicepExtension for BicepExtensionService {
         request: Request<ResourceReference>,
     ) -> Result<Response<LocalExtensibilityOperationResponse>, Status> {
         let reference = request.into_inner();
-        tracing::debug!(
-            "Get called for type: {}, identifiers: {}",
-            reference.r#type,
-            reference.identifiers
-        );
+        let resource_type = reference.r#type.clone();
+        let version = reference.api_version.clone();
+        let identifiers = reference.identifiers.clone();
 
-        // TODO: Implement resource retrieval logic
-        Err(Status::unimplemented("Get not yet implemented"))
+        tracing::debug!("Get called for {resource_type}@{version:?}: {identifiers}");
+
+        let mut dsc = DscManager::new();
+        let Some(resource) = dsc.find_resource(&resource_type, version.as_deref()) else {
+            return Err(Status::invalid_argument("Resource not found"));
+        };
+
+        // TODO: DSC asks for 'properties' here but we only have 'identifiers' from Bicep.
+        let _result = match resource.get(&identifiers) {
+            Ok(res) => res,
+            Err(e) => return Err(Status::internal(format!("DSC get operation failed: {e}"))),
+        };
+
+        // TODO: Use '_result'.
+        let response = LocalExtensibilityOperationResponse {
+            resource: Some(proto::Resource {
+                r#type: resource_type,
+                api_version: version,
+                identifiers: identifiers,
+                properties: String::new(),
+                status: None,
+            }),
+            error_data: None,
+        };
+
+        Ok(Response::new(response))
     }
 
     async fn delete(
@@ -95,14 +141,45 @@ impl BicepExtension for BicepExtensionService {
         request: Request<ResourceReference>,
     ) -> Result<Response<LocalExtensibilityOperationResponse>, Status> {
         let reference = request.into_inner();
+        let resource_type = reference.r#type.clone();
+        let version = reference.api_version.clone();
+        let identifiers = reference.identifiers.clone();
+
         tracing::debug!(
-            "Delete called for type: {}, identifiers: {}",
-            reference.r#type,
-            reference.identifiers
+            "Delete called for {}@{:?}: {}",
+            resource_type,
+            version,
+            identifiers
         );
 
-        // TODO: Implement resource deletion logic
-        Err(Status::unimplemented("Delete not yet implemented"))
+        let mut dsc = DscManager::new();
+        let Some(resource) = dsc.find_resource(&resource_type, version.as_deref()) else {
+            return Err(Status::invalid_argument("Resource not found"));
+        };
+
+        // TODO: DSC asks for 'properties' here but we only have 'identifiers' from Bicep.
+        let _result = match resource.delete(&identifiers) {
+            Ok(res) => res,
+            Err(e) => {
+                return Err(Status::internal(format!(
+                    "DSC delete operation failed: {e}"
+                )))
+            }
+        };
+
+        // TODO: Use '_result'.
+        let response = LocalExtensibilityOperationResponse {
+            resource: Some(proto::Resource {
+                r#type: resource_type,
+                api_version: version,
+                identifiers: identifiers,
+                properties: String::new(),
+                status: None,
+            }),
+            error_data: None,
+        };
+
+        Ok(Response::new(response))
     }
 
     async fn get_type_files(
@@ -111,14 +188,12 @@ impl BicepExtension for BicepExtensionService {
     ) -> Result<Response<TypeFilesResponse>, Status> {
         tracing::debug!("GetTypeFiles called");
 
-        // TODO: Return actual Bicep type definitions
+        // TODO: Return actual Bicep type definitions...yet the extension already has these?
+        // Perhaps this is where we can dynamically get them from the current system.
         Err(Status::unimplemented("GetTypeFiles not yet implemented"))
     }
 
-    async fn ping(
-        &self,
-        _request: Request<Empty>,
-    ) -> Result<Response<Empty>, Status> {
+    async fn ping(&self, _request: Request<Empty>) -> Result<Response<Empty>, Status> {
         tracing::debug!("Ping called");
         Ok(Response::new(Empty {}))
     }
