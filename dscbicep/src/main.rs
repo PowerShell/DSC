@@ -187,6 +187,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     tracing_subscriber::fmt()
         .with_target(false)
         .with_level(true)
+        // TODO: Plumb tracing env var support.
+        .with_max_level(tracing::Level::TRACE)
         .init();
 
     let args = Args::parse();
