@@ -258,20 +258,31 @@ async fn run_server(
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    // Initialize tracing
+    let trace_level = std::env::var("DSC_TRACE_LEVEL")
+        .ok()
+        .and_then(|level| match level.to_uppercase().as_str() {
+            "TRACE" => Some(tracing::Level::TRACE),
+            "DEBUG" => Some(tracing::Level::DEBUG),
+            "INFO" => Some(tracing::Level::INFO),
+            "WARN" => Some(tracing::Level::WARN),
+            "ERROR" => Some(tracing::Level::ERROR),
+            _ => None,
+        })
+        .unwrap_or(tracing::Level::WARN);
+
     tracing_subscriber::fmt()
         .with_target(false)
         .with_level(true)
-        // TODO: Plumb tracing env var support.
-        .with_max_level(tracing::Level::TRACE)
+        .with_max_level(trace_level)
         .init();
 
     let args = Args::parse();
 
-    // TODO: Find out if there is any actual way to get bicep local-deploy to send the --wait-for-debugger command.
-    if true {
-        tracing::info!("Waiting for debugger to attach...");
-        tracing::info!("Press any key to continue after attaching to PID: {}", std::process::id());
+    if args.wait_for_debugger || std::env::var_os("DSC_GRPC_DEBUG").is_some() {
+        tracing::warn!(
+            "Press any key to continue after attaching to PID: {}",
+            std::process::id()
+        );
         let mut input = String::new();
         std::io::stdin().read_line(&mut input)?;
     }
