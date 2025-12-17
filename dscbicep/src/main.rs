@@ -5,6 +5,7 @@ use clap::Parser;
 use dsc_lib::{
     configure::config_doc::ExecutionKind, dscresources::dscresource::Invoke, DscManager,
 };
+use std::{env, fs, io, process};
 use tonic::{transport::Server, Request, Response, Status};
 
 // Include the generated protobuf code
@@ -241,7 +242,7 @@ async fn run_server(
         tracing::info!("Starting Bicep gRPC server on Unix socket: {}", socket_path);
 
         // Remove the socket file if it exists
-        let _ = std::fs::remove_file(&socket_path);
+        let _ = fs::remove_file(&socket_path);
 
         let uds = UnixListener::bind(&socket_path)?;
         let uds_stream = UnixListenerStream::new(uds);
@@ -279,7 +280,7 @@ async fn run_server(
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let trace_level = std::env::var("DSC_TRACE_LEVEL")
+    let trace_level = env::var("DSC_TRACE_LEVEL")
         .ok()
         .and_then(|level| match level.to_uppercase().as_str() {
             "TRACE" => Some(tracing::Level::TRACE),
@@ -299,13 +300,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     let args = Args::parse();
 
-    if args.wait_for_debugger || std::env::var_os("DSC_GRPC_DEBUG").is_some() {
+    if args.wait_for_debugger || env::var_os("DSC_GRPC_DEBUG").is_some() {
         tracing::warn!(
             "Press any key to continue after attaching to PID: {}",
-            std::process::id()
+            process::id()
         );
         let mut input = String::new();
-        std::io::stdin().read_line(&mut input)?;
+        io::stdin().read_line(&mut input)?;
     }
 
     // Set up graceful shutdown on SIGTERM/SIGINT
