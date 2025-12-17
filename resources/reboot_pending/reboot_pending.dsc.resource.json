@@ -9,7 +9,7 @@
       "-NoLogo",
       "-NonInteractive",
       "-NoProfile",
-      "-Command",
+      "-File",
       "reboot_pending.resource.ps1"
     ]
   },
