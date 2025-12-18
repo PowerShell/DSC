@@ -4,7 +4,10 @@
 use clap::Parser;
 use dsc_lib::{
     configure::config_doc::ExecutionKind,
-    dscresources::{dscresource::Invoke, invoke_result},
+    dscresources::{
+        dscresource::Invoke,
+        invoke_result::{GetResult, SetResult},
+    },
     DscManager,
 };
 use std::{env, fs, io, process};
@@ -43,16 +46,11 @@ impl BicepExtension for BicepExtensionService {
             return Err(Status::invalid_argument("Resource not found"));
         };
 
-        let result = match resource.set(&properties, false, &ExecutionKind::Actual) {
-            Ok(r) => match r {
-                invoke_result::SetResult::Resource(set_result) => {
-                    serde_json::to_string(&set_result.after_state).map_err(|e| {
-                        Status::internal(format!("Failed to serialize actual state: {e}"))
-                    })?
-                }
-                _ => return Err(Status::unimplemented("Group resources not yet supported")),
-            },
-            Err(e) => return Err(Status::internal(format!("DSC set operation failed: {e}"))),
+        let SetResult::Resource(result) = resource
+            .set(&properties, false, &ExecutionKind::Actual)
+            .map_err(|e| Status::internal(format!("DSC set operation failed: {e}")))?
+        else {
+            return Err(Status::unimplemented("Group resources not supported"));
         };
 
         Ok(Response::new(LocalExtensibilityOperationResponse {
@@ -60,7 +58,7 @@ impl BicepExtension for BicepExtensionService {
                 r#type: resource_type,
                 api_version: version,
                 identifiers: properties,
-                properties: result,
+                properties: result.after_state.to_string(),
                 status: None,
             }),
             error_data: None,
@@ -83,20 +81,11 @@ impl BicepExtension for BicepExtensionService {
             return Err(Status::invalid_argument("Resource not found"));
         };
 
-        let result = match resource.set(&properties, false, &ExecutionKind::WhatIf) {
-            Ok(r) => match r {
-                invoke_result::SetResult::Resource(set_result) => {
-                    serde_json::to_string(&set_result.after_state).map_err(|e| {
-                        Status::internal(format!("Failed to serialize actual state: {e}"))
-                    })?
-                }
-                _ => return Err(Status::unimplemented("Group resources not yet supported")),
-            },
-            Err(e) => {
-                return Err(Status::internal(format!(
-                    "DSC whatif operation failed: {e}"
-                )))
-            }
+        let SetResult::Resource(result) = resource
+            .set(&properties, false, &ExecutionKind::WhatIf)
+            .map_err(|e| Status::internal(format!("DSC whatif operation failed: {e}")))?
+        else {
+            return Err(Status::unimplemented("Group resources not supported"));
         };
 
         Ok(Response::new(LocalExtensibilityOperationResponse {
@@ -104,7 +93,7 @@ impl BicepExtension for BicepExtensionService {
                 r#type: resource_type,
                 api_version: version,
                 identifiers: properties,
-                properties: result,
+                properties: result.after_state.to_string(),
                 status: None,
             }),
             error_data: None,
@@ -127,17 +116,11 @@ impl BicepExtension for BicepExtensionService {
             return Err(Status::invalid_argument("Resource not found"));
         };
 
-        // TODO: DSC asks for 'properties' here but we only have 'identifiers' from Bicep.
-        let result = match resource.get(&identifiers) {
-            Ok(r) => match r {
-                invoke_result::GetResult::Resource(get_result) => {
-                    serde_json::to_string(&get_result.actual_state).map_err(|e| {
-                        Status::internal(format!("Failed to serialize actual state: {e}"))
-                    })?
-                }
-                _ => return Err(Status::unimplemented("Group resources not yet supported")),
-            },
-            Err(e) => return Err(Status::internal(format!("DSC get operation failed: {e}"))),
+        let GetResult::Resource(result) = resource
+            .get(&identifiers)
+            .map_err(|e| Status::internal(format!("DSC get operation failed: {e}")))?
+        else {
+            return Err(Status::unimplemented("Group resources not supported"));
         };
 
         Ok(Response::new(LocalExtensibilityOperationResponse {
@@ -145,7 +128,7 @@ impl BicepExtension for BicepExtensionService {
                 r#type: resource_type,
                 api_version: version,
                 identifiers: identifiers,
-                properties: result,
+                properties: result.actual_state.to_string(),
                 status: None,
             }),
             error_data: None,
