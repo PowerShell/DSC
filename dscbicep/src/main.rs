@@ -3,7 +3,9 @@
 
 use clap::Parser;
 use dsc_lib::{
-    configure::config_doc::ExecutionKind, dscresources::dscresource::Invoke, DscManager,
+    configure::config_doc::ExecutionKind,
+    dscresources::{dscresource::Invoke, invoke_result},
+    DscManager,
 };
 use std::{env, fs, io, process};
 use tonic::{transport::Server, Request, Response, Status};
@@ -42,20 +44,27 @@ impl BicepExtension for BicepExtensionService {
         };
 
         let result = match resource.set(&properties, false, &ExecutionKind::Actual) {
-            Ok(r) => LocalExtensibilityOperationResponse {
-                resource: Some(proto::Resource {
-                    r#type: resource_type,
-                    api_version: version,
-                    identifiers: properties,
-                    properties: serde_json::to_string(&r).unwrap(),
-                    status: None,
-                }),
-                error_data: None,
+            Ok(r) => match r {
+                invoke_result::SetResult::Resource(set_result) => {
+                    serde_json::to_string(&set_result.after_state).map_err(|e| {
+                        Status::internal(format!("Failed to serialize actual state: {e}"))
+                    })?
+                }
+                _ => return Err(Status::unimplemented("Group resources not yet supported")),
             },
             Err(e) => return Err(Status::internal(format!("DSC set operation failed: {e}"))),
         };
 
-        Ok(Response::new(result))
+        Ok(Response::new(LocalExtensibilityOperationResponse {
+            resource: Some(proto::Resource {
+                r#type: resource_type,
+                api_version: version,
+                identifiers: properties,
+                properties: result,
+                status: None,
+            }),
+            error_data: None,
+        }))
     }
 
     async fn preview(
@@ -75,15 +84,13 @@ impl BicepExtension for BicepExtensionService {
         };
 
         let result = match resource.set(&properties, false, &ExecutionKind::WhatIf) {
-            Ok(r) => LocalExtensibilityOperationResponse {
-                resource: Some(proto::Resource {
-                    r#type: resource_type,
-                    api_version: version,
-                    identifiers: properties,
-                    properties: serde_json::to_string(&r).unwrap(),
-                    status: None,
-                }),
-                error_data: None,
+            Ok(r) => match r {
+                invoke_result::SetResult::Resource(set_result) => {
+                    serde_json::to_string(&set_result.after_state).map_err(|e| {
+                        Status::internal(format!("Failed to serialize actual state: {e}"))
+                    })?
+                }
+                _ => return Err(Status::unimplemented("Group resources not yet supported")),
             },
             Err(e) => {
                 return Err(Status::internal(format!(
@@ -92,7 +99,16 @@ impl BicepExtension for BicepExtensionService {
             }
         };
 
-        Ok(Response::new(result))
+        Ok(Response::new(LocalExtensibilityOperationResponse {
+            resource: Some(proto::Resource {
+                r#type: resource_type,
+                api_version: version,
+                identifiers: properties,
+                properties: result,
+                status: None,
+            }),
+            error_data: None,
+        }))
     }
 
     async fn get(
@@ -113,20 +129,27 @@ impl BicepExtension for BicepExtensionService {
 
         // TODO: DSC asks for 'properties' here but we only have 'identifiers' from Bicep.
         let result = match resource.get(&identifiers) {
-            Ok(r) => LocalExtensibilityOperationResponse {
-                resource: Some(proto::Resource {
-                    r#type: resource_type,
-                    api_version: version,
-                    identifiers: identifiers,
-                    properties: serde_json::to_string(&r).unwrap(),
-                    status: None,
-                }),
-                error_data: None,
+            Ok(r) => match r {
+                invoke_result::GetResult::Resource(get_result) => {
+                    serde_json::to_string(&get_result.actual_state).map_err(|e| {
+                        Status::internal(format!("Failed to serialize actual state: {e}"))
+                    })?
+                }
+                _ => return Err(Status::unimplemented("Group resources not yet supported")),
             },
             Err(e) => return Err(Status::internal(format!("DSC get operation failed: {e}"))),
         };
 
-        Ok(Response::new(result))
+        Ok(Response::new(LocalExtensibilityOperationResponse {
+            resource: Some(proto::Resource {
+                r#type: resource_type,
+                api_version: version,
+                identifiers: identifiers,
+                properties: result,
+                status: None,
+            }),
+            error_data: None,
+        }))
     }
 
     async fn delete(
@@ -152,16 +175,8 @@ impl BicepExtension for BicepExtensionService {
 
         // TODO: DSC asks for 'properties' here but we only have 'identifiers' from Bicep.
         let result = match resource.delete(&identifiers) {
-            Ok(r) => LocalExtensibilityOperationResponse {
-                resource: Some(proto::Resource {
-                    r#type: resource_type,
-                    api_version: version,
-                    identifiers: identifiers,
-                    properties: serde_json::to_string(&r).unwrap(),
-                    status: None,
-                }),
-                error_data: None,
-            },
+            // Successful deletion returns () so we return an empty JSON object.
+            Ok(_) => "{}".to_string(),
             Err(e) => {
                 return Err(Status::internal(format!(
                     "DSC delete operation failed: {e}"
@@ -169,7 +184,16 @@ impl BicepExtension for BicepExtensionService {
             }
         };
 
-        Ok(Response::new(result))
+        Ok(Response::new(LocalExtensibilityOperationResponse {
+            resource: Some(proto::Resource {
+                r#type: resource_type,
+                api_version: version,
+                identifiers: identifiers,
+                properties: result,
+                status: None,
+            }),
+            error_data: None,
+        }))
     }
 
     async fn get_type_files(
