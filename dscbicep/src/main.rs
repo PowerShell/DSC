@@ -10,7 +10,7 @@ use dsc_lib::{
     },
     DscManager,
 };
-use std::{env, fs, io, process};
+use std::{env, io, process};
 use tonic::{transport::Server, Request, Response, Status};
 
 // Include the generated protobuf code
@@ -223,16 +223,15 @@ async fn run_server(
         use tokio::net::UnixListener;
         use tokio_stream::wrappers::UnixListenerStream;
 
-        tracing::info!("Starting Bicep gRPC server on Unix socket: {}", socket_path);
+        tracing::info!("Starting Bicep gRPC server on Unix socket: {socket_path}");
 
         // Remove the socket file if it exists
-        let _ = fs::remove_file(&socket_path);
+        let _ = std::fs::remove_file(&socket_path);
 
         let uds = UnixListener::bind(&socket_path)?;
         let uds_stream = UnixListenerStream::new(uds);
 
         Server::builder()
-            // .add_service(reflection_service)
             .add_service(BicepExtensionServer::new(service))
             .serve_with_incoming(uds_stream)
             .await?;
