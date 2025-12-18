@@ -43,12 +43,12 @@ impl BicepExtension for BicepExtensionService {
 
         let mut dsc = DscManager::new();
         let Some(resource) = dsc.find_resource(&resource_type, version.as_deref()) else {
-            return Err(Status::invalid_argument("Resource not found"));
+            return Err(Status::not_found("Resource not found"));
         };
 
         let SetResult::Resource(result) = resource
             .set(&properties, false, &ExecutionKind::Actual)
-            .map_err(|e| Status::internal(format!("DSC set operation failed: {e}")))?
+            .map_err(|e| Status::aborted(e.to_string()))?
         else {
             return Err(Status::unimplemented("Group resources not supported"));
         };
@@ -78,12 +78,12 @@ impl BicepExtension for BicepExtensionService {
 
         let mut dsc = DscManager::new();
         let Some(resource) = dsc.find_resource(&resource_type, version.as_deref()) else {
-            return Err(Status::invalid_argument("Resource not found"));
+            return Err(Status::not_found("Resource not found"));
         };
 
         let SetResult::Resource(result) = resource
             .set(&properties, false, &ExecutionKind::WhatIf)
-            .map_err(|e| Status::internal(format!("DSC whatif operation failed: {e}")))?
+            .map_err(|e| Status::aborted(e.to_string()))?
         else {
             return Err(Status::unimplemented("Group resources not supported"));
         };
@@ -113,12 +113,12 @@ impl BicepExtension for BicepExtensionService {
 
         let mut dsc = DscManager::new();
         let Some(resource) = dsc.find_resource(&resource_type, version.as_deref()) else {
-            return Err(Status::invalid_argument("Resource not found"));
+            return Err(Status::not_found("Resource not found"));
         };
 
         let GetResult::Resource(result) = resource
             .get(&identifiers)
-            .map_err(|e| Status::internal(format!("DSC get operation failed: {e}")))?
+            .map_err(|e| Status::aborted(e.to_string()))?
         else {
             return Err(Status::unimplemented("Group resources not supported"));
         };
@@ -153,26 +153,19 @@ impl BicepExtension for BicepExtensionService {
 
         let mut dsc = DscManager::new();
         let Some(resource) = dsc.find_resource(&resource_type, version.as_deref()) else {
-            return Err(Status::invalid_argument("Resource not found"));
+            return Err(Status::not_found("Resource not found"));
         };
 
-        // TODO: DSC asks for 'properties' here but we only have 'identifiers' from Bicep.
-        let result = match resource.delete(&identifiers) {
-            // Successful deletion returns () so we return an empty JSON object.
-            Ok(_) => "{}".to_string(),
-            Err(e) => {
-                return Err(Status::internal(format!(
-                    "DSC delete operation failed: {e}"
-                )))
-            }
-        };
+        resource
+            .delete(&identifiers)
+            .map_err(|e| Status::aborted(e.to_string()))?;
 
         Ok(Response::new(LocalExtensibilityOperationResponse {
             resource: Some(proto::Resource {
                 r#type: resource_type,
                 api_version: version,
                 identifiers: identifiers,
-                properties: result,
+                properties: "{}".to_string(),
                 status: None,
             }),
             error_data: None,
