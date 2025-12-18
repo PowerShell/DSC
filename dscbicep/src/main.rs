@@ -46,13 +46,13 @@ impl BicepExtension for BicepExtensionService {
                 resource: Some(proto::Resource {
                     r#type: resource_type,
                     api_version: version,
-                    identifiers: String::new(),
+                    identifiers: properties,
                     properties: serde_json::to_string(&r).unwrap(),
                     status: None,
                 }),
                 error_data: None,
             },
-            Err(e) => return Err(Status::internal(format!("DSC set operation failed: {e}")))
+            Err(e) => return Err(Status::internal(format!("DSC set operation failed: {e}"))),
         };
 
         Ok(Response::new(result))
@@ -79,13 +79,17 @@ impl BicepExtension for BicepExtensionService {
                 resource: Some(proto::Resource {
                     r#type: resource_type,
                     api_version: version,
-                    identifiers: String::new(),
+                    identifiers: properties,
                     properties: serde_json::to_string(&r).unwrap(),
                     status: None,
                 }),
                 error_data: None,
             },
-            Err(e) => return Err(Status::internal(format!("DSC whatif operation failed: {e}")))
+            Err(e) => {
+                return Err(Status::internal(format!(
+                    "DSC whatif operation failed: {e}"
+                )))
+            }
         };
 
         Ok(Response::new(result))
@@ -113,13 +117,13 @@ impl BicepExtension for BicepExtensionService {
                 resource: Some(proto::Resource {
                     r#type: resource_type,
                     api_version: version,
-                    identifiers: String::new(),
+                    identifiers: identifiers,
                     properties: serde_json::to_string(&r).unwrap(),
                     status: None,
                 }),
                 error_data: None,
             },
-            Err(e) => return Err(Status::internal(format!("DSC get operation failed: {e}")))
+            Err(e) => return Err(Status::internal(format!("DSC get operation failed: {e}"))),
         };
 
         Ok(Response::new(result))
@@ -152,13 +156,17 @@ impl BicepExtension for BicepExtensionService {
                 resource: Some(proto::Resource {
                     r#type: resource_type,
                     api_version: version,
-                    identifiers: String::new(),
+                    identifiers: identifiers,
                     properties: serde_json::to_string(&r).unwrap(),
                     status: None,
                 }),
                 error_data: None,
             },
-            Err(e) => return Err(Status::internal(format!("DSC delete operation failed: {e}")))
+            Err(e) => {
+                return Err(Status::internal(format!(
+                    "DSC delete operation failed: {e}"
+                )))
+            }
         };
 
         Ok(Response::new(result))
@@ -209,10 +217,6 @@ async fn run_server(
     http: Option<String>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let service = BicepExtensionService;
-    let reflection_service = tonic_reflection::server::Builder::configure()
-        .register_encoded_file_descriptor_set(proto::FILE_DESCRIPTOR_SET)
-        .build_v1()
-        .unwrap();
 
     #[cfg(unix)]
     if let Some(socket_path) = socket {
@@ -228,7 +232,7 @@ async fn run_server(
         let uds_stream = UnixListenerStream::new(uds);
 
         Server::builder()
-            .add_service(reflection_service)
+            // .add_service(reflection_service)
             .add_service(BicepExtensionServer::new(service))
             .serve_with_incoming(uds_stream)
             .await?;
@@ -248,6 +252,11 @@ async fn run_server(
     // Default to HTTP server on [::1]:50051 if no transport specified
     let addr = http.unwrap_or_else(|| "[::1]:50051".to_string()).parse()?;
     tracing::info!("Starting Bicep gRPC server on HTTP: {addr}");
+
+    let reflection_service = tonic_reflection::server::Builder::configure()
+        .register_encoded_file_descriptor_set(proto::FILE_DESCRIPTOR_SET)
+        .build_v1()
+        .unwrap();
 
     Server::builder()
         .add_service(reflection_service)
@@ -280,7 +289,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     let args = Args::parse();
 
-    if args.wait_for_debugger || env::var_os("DSC_GRPC_DEBUG").is_some() {
+    if args.wait_for_debugger
+        || env::var_os("DSC_GRPC_DEBUG").is_some_and(|v| v.eq_ignore_ascii_case("true"))
+    {
         tracing::warn!(
             "Press any key to continue after attaching to PID: {}",
             process::id()
