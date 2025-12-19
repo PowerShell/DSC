@@ -272,6 +272,7 @@ Describe 'PowerShell adapter resource tests' {
                 Name: 'TestClassResource1'
                 HashTableProp:
                   Name: 'DSCv3'
+                Prop1: foo
 "@
     $out = dsc -l trace config $operation -i $yaml 2> $TestDrive/tracing.txt
     $text = $out | Out-String
@@ -286,7 +287,7 @@ Describe 'PowerShell adapter resource tests' {
         $out.results[0].result.afterState.Name | Should -BeExactly 'TestClassResource1' -Because $text
       }
       'test' {
-        $out.results[0].result.actualState.InDesiredState | Should -BeFalse -Because $text
+        $out.results[0].result.inDesiredState | Should -BeFalse -Because $text
       }
     }
     if ($metadata -eq 'Microsoft.DSC') {
