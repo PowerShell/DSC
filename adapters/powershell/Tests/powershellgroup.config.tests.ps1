@@ -248,12 +248,12 @@ Describe 'PowerShell adapter resource tests' {
   }
 
   It 'Config calling PS Resource directly works for <operation> with metadata <metadata> and adapter <adapter>' -TestCases @(
-    @{ Operation = 'get'; metadata = 'Micrososft.DSC'; adapter = 'Microsoft.DSC/PowerShell' }
-    @{ Operation = 'set'; metadata = 'Micrososft.DSC'; adapter = 'Microsoft.DSC/PowerShell' }
-    @{ Operation = 'test'; metadata = 'Micrososft.DSC'; adapter = 'Microsoft.DSC/PowerShell' }
-    @{ Operation = 'get'; metadata = 'Micrososft.DSC'; adapter = 'Microsoft.Adapter/PowerShell' }
-    @{ Operation = 'set'; metadata = 'Micrososft.DSC'; adapter = 'Microsoft.Adapter/PowerShell' }
-    @{ Operation = 'test'; metadata = 'Micrososft.DSC'; adapter = 'Microsoft.Adapter/PowerShell' }
+    @{ Operation = 'get'; metadata = 'Microsoft.DSC'; adapter = 'Microsoft.DSC/PowerShell' }
+    @{ Operation = 'set'; metadata = 'Microsoft.DSC'; adapter = 'Microsoft.DSC/PowerShell' }
+    @{ Operation = 'test'; metadata = 'Microsoft.DSC'; adapter = 'Microsoft.DSC/PowerShell' }
+    @{ Operation = 'get'; metadata = 'Microsoft.DSC'; adapter = 'Microsoft.Adapter/PowerShell' }
+    @{ Operation = 'set'; metadata = 'Microsoft.DSC'; adapter = 'Microsoft.Adapter/PowerShell' }
+    @{ Operation = 'test'; metadata = 'Microsoft.DSC'; adapter = 'Microsoft.Adapter/PowerShell' }
     @{ Operation = 'get'; metadata = 'Ignored' }
     @{ Operation = 'set'; metadata = 'Ignored' }
     @{ Operation = 'test'; metadata = 'Ignored' }
@@ -273,14 +273,13 @@ Describe 'PowerShell adapter resource tests' {
                 HashTableProp:
                   Name: 'DSCv3'
 "@
-
     $out = dsc -l trace config $operation -i $yaml 2> $TestDrive/tracing.txt
     $text = $out | Out-String
     $out = $out | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw -Path $TestDrive/tracing.txt)
     switch ($Operation) {
       'get' {
-        $out.results[0].result.actualState.Name | Should -BeExactly 'TestClassResource1' -Because $text
+        $out.results[0].result.actualState.Name | Should -BeExactly 'TestClassResource1' -Because ("$text`n" + (Get-Content -Raw -Path $TestDrive/tracing.txt))
       }
       'set' {
         $out.results[0].result.beforeState.Name | Should -BeExactly 'TestClassResource1' -Because $text
@@ -290,11 +289,9 @@ Describe 'PowerShell adapter resource tests' {
         $out.results[0].result.actualState.InDesiredState | Should -BeFalse -Because $text
       }
     }
-    if ($metadata -eq 'Micrososft.DSC') {
-      "$TestDrive/tracing.txt" | Should -FileContentMatch "Using adapter 'Microsoft.Adapter/PowerShell'"
-    }
-    else {
-      "$TestDrive/tracing.txt" | Should -Not -FileContentMatch "Using adapter 'Microsoft.Adapter/PowerShell'"
+    if ($metadata -eq 'Microsoft.DSC') {
+      "$TestDrive/tracing.txt" | Should -FileContentMatch "Invoking $Operation for '$adapter'" -Because (Get-Content -Raw -Path $TestDrive/tracing.txt)
+
     }
   }
 
