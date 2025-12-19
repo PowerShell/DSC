@@ -998,6 +998,103 @@ Describe 'tests for function expressions' {
     $out.results[0].result.actualState.output | Should -Be $expected
   }
 
+  It 'shallowMerge function basic usage: <expression>' -TestCases @(
+    @{ expression = "[shallowMerge(createArray(createObject('one', 'a'), createObject('two', 'b'), createObject('two', 'c')))]"; expected = [pscustomobject]@{ one = 'a'; two = 'c' } }
+    @{ expression = "[shallowMerge(createArray(createObject('a', 1, 'b', 2), createObject('b', 3, 'c', 4)))]"; expected = [pscustomobject]@{ a = 1; b = 3; c = 4 } }
+    @{ expression = "[shallowMerge(createArray(createObject('name', 'John', 'age', 30)))]"; expected = [pscustomobject]@{ name = 'John'; age = 30 } }
+    @{ expression = "[shallowMerge(createArray())]"; expected = [pscustomobject]@{} }
+  ) {
+    param($expression, $expected)
+
+    $escapedExpression = $expression -replace "'", "''"
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '$escapedExpression'
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $result = $out.results[0].result.actualState.output
+    
+    if ($expected -is [PSCustomObject]) {
+      $expectedHash = @{}
+      $expected.PSObject.Properties | ForEach-Object { $expectedHash[$_.Name] = $_.Value }
+      
+      $resultHash = @{}
+      $result.PSObject.Properties | ForEach-Object { $resultHash[$_.Name] = $_.Value }
+      
+      $resultHash.Count | Should -Be $expectedHash.Count
+      foreach ($key in $expectedHash.Keys) {
+        $resultHash[$key] | Should -Be $expectedHash[$key]
+      }
+    }
+  }
+
+  It 'shallowMerge function with nested objects: <expression>' -TestCases @(
+    @{ expression = "[shallowMerge(createArray(createObject('one', 'a', 'nested', createObject('a', 1, 'nested', createObject('c', 3))), createObject('two', 'b', 'nested', createObject('b', 2))))]"; expectedKeys = @('one', 'two', 'nested'); nestedKeys = @('b') }
+    @{ expression = "[shallowMerge(createArray(createObject('nested', createObject('x', 1, 'y', 2)), createObject('nested', createObject('z', 3))))]"; expectedKeys = @('nested'); nestedKeys = @('z') }
+  ) {
+    param($expression, $expectedKeys, $nestedKeys)
+
+    $escapedExpression = $expression -replace "'", "''"
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '$escapedExpression'
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $result = $out.results[0].result.actualState.output
+    
+    # Verify top-level keys
+    $result.PSObject.Properties.Name | Should -HaveCount $expectedKeys.Count
+    foreach ($key in $expectedKeys) {
+      $result.PSObject.Properties.Name | Should -Contain $key
+    }
+    
+    # Verify nested object was completely replaced (shallow merge)
+    if ($nestedKeys.Count -gt 0) {
+      $result.nested.PSObject.Properties.Name | Should -HaveCount $nestedKeys.Count
+      foreach ($key in $nestedKeys) {
+        $result.nested.PSObject.Properties.Name | Should -Contain $key
+      }
+    }
+  }
+
+  It 'shallowMerge function with multiple objects: <expression>' -TestCases @(
+    @{ expression = "[shallowMerge(createArray(createObject('a', 1), createObject('b', 2), createObject('c', 3), createObject('d', 4)))]"; expectedKeys = @('a', 'b', 'c', 'd') }
+    @{ expression = "[length(objectKeys(shallowMerge(createArray(createObject('x', 10), createObject('y', 20)))))]"; expected = 2 }
+  ) {
+    param($expression, $expectedKeys, $expected)
+
+    $escapedExpression = $expression -replace "'", "''"
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '$escapedExpression'
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $result = $out.results[0].result.actualState.output
+    
+    if ($expectedKeys) {
+      $result.PSObject.Properties.Name | Should -HaveCount $expectedKeys.Count
+      foreach ($key in $expectedKeys) {
+        $result.PSObject.Properties.Name | Should -Contain $key
+      }
+    }
+    
+    if ($expected) {
+      $result | Should -Be $expected
+    }
+  }
+
   It 'tryGet() function works for: <expression>' -TestCases @(
     @{ expression = "[tryGet(createObject('a', 1, 'b', 2), 'a')]"; expected = 1 }
     @{ expression = "[tryGet(createObject('a', 1, 'b', 2), 'c')]"; expected = $null }

@@ -8,8 +8,11 @@ use crate::{
             DscExtension,
         },
         extension_manifest::ExtensionManifest,
-    }, parser::Statement
+    },
+    parser::Statement,
+    schemas::dsc_repo::DscRepoSchema
 };
+
 use path_absolutize::Absolutize;
 use rust_i18n::t;
 use schemars::JsonSchema;
@@ -17,7 +20,8 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 use tracing::{debug, info};
 
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[dsc_repo_schema(base_name = "manifest.import", folder_path = "extension")]
 pub struct ImportMethod {
     /// The extensions to import.
     #[serde(rename = "fileExtensions")]

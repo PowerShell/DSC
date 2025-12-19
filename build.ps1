@@ -183,7 +183,7 @@ process {
         Write-BuildProgress @progressParams -Status 'Configuring Rust environment'
         [hashtable]$priorRustEnvironment = Set-RustEnvironment -CacheRustBuild:$CacheRustBuild @VerboseParam
         Write-BuildProgress @progressParams -Status 'Configuring Cargo environment'
-        Set-CargoEnvironment @VerboseParam
+        Set-CargoEnvironment -UseCFS:$UseCFS -UseCFSAuth:$UseCFSAuth @VerboseParam
 
         # Install or update rust
         if (!$usingADO) {
@@ -312,7 +312,11 @@ process {
 clean {
     $progressParams.Activity = 'Cleaning up'
     Write-BuildProgress @progressParams
-    Write-BuildProgress @progressParams -Status "Restoring rust environment"
-    Reset-RustEnvironment -PriorEnvironment $priorRustEnvironment @VerboseParam
+
+    if ($null -ne $priorRustEnvironment) {
+        Write-BuildProgress @progressParams -Status "Restoring rust environment"
+        Reset-RustEnvironment -PriorEnvironment $priorRustEnvironment @VerboseParam
+    }
+
     Write-BuildProgress -Completed
 }

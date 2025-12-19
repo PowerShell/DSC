@@ -29,6 +29,8 @@ variables:
   - group: DSC-Rust.SDK
   - name: officialBuild
     value: ${{ parameters.OfficialBuild }}
+  - name: PublishToStore
+    value: ${{ parameters.PublishToStore }}
 
 resources:
   repositories:

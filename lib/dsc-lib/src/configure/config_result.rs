@@ -7,7 +7,7 @@ use serde_json::{Map, Value};
 
 use crate::dscresources::invoke_result::{GetResult, SetResult, TestResult};
 use crate::configure::config_doc::{Configuration, Metadata};
-use crate::schemas::transforms::idiomaticize_string_enum;
+use crate::schemas::{dsc_repo::DscRepoSchema, transforms::idiomaticize_string_enum};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
@@ -18,8 +18,9 @@ pub enum MessageLevel {
     Information,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
+#[dsc_repo_schema(base_name = "message", folder_path = "definitions")]
 pub struct ResourceMessage {
     pub name: String,
     #[serde(rename="type")]
@@ -28,8 +29,9 @@ pub struct ResourceMessage {
     pub level: MessageLevel,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
+#[dsc_repo_schema(base_name = "get.full", folder_path = "outputs/resource")]
 pub struct ResourceGetResult {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Metadata>,
@@ -50,8 +52,9 @@ impl From<ResourceTestResult> for ResourceGetResult {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
+#[dsc_repo_schema(base_name = "get", folder_path = "outputs/config")]
 pub struct ConfigurationGetResult {
     pub metadata: Option<Metadata>,
     pub results: Vec<ResourceGetResult>,
@@ -97,8 +100,9 @@ impl From<ConfigurationTestResult> for ConfigurationGetResult {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
+#[dsc_repo_schema(base_name = "set.full", folder_path = "outputs/resource")]
 pub struct ResourceSetResult {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Metadata>,
@@ -140,8 +144,9 @@ impl Default for GroupResourceSetResult {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
+#[dsc_repo_schema(base_name = "set", folder_path = "outputs/config")]
 pub struct ConfigurationSetResult {
     pub metadata: Option<Metadata>,
     pub results: Vec<ResourceSetResult>,
@@ -171,8 +176,9 @@ impl Default for ConfigurationSetResult {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
+#[dsc_repo_schema(base_name = "test.full", folder_path = "outputs/resource")]
 pub struct ResourceTestResult {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Metadata>,
@@ -203,8 +209,9 @@ impl Default for GroupResourceTestResult {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
+#[dsc_repo_schema(base_name = "test", folder_path = "outputs/config")]
 pub struct ConfigurationTestResult {
     pub metadata: Option<Metadata>,
     pub results: Vec<ResourceTestResult>,
@@ -234,8 +241,9 @@ impl Default for ConfigurationTestResult {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
+#[dsc_repo_schema(base_name = "export", folder_path = "outputs/config")]
 pub struct ConfigurationExportResult {
     pub metadata: Option<Metadata>,
     pub result: Option<Configuration>,

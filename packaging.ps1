@@ -279,9 +279,9 @@ if ($null -ne $packageType) {
     if ($null -eq (Get-Command tree-sitter -ErrorAction Ignore)) {
         Write-Verbose -Verbose "tree-sitter not found, installing..."
         if ($UseCFS) {
-            cargo install tree-sitter-cli --config .cargo/config.toml
+            cargo install tree-sitter-cli --config .cargo/config.toml --version 0.25.10
         } else {
-            cargo install tree-sitter-cli
+            cargo install tree-sitter-cli --version 0.25.10
         }
         if ($LASTEXITCODE -ne 0) {
             throw "Failed to install tree-sitter-cli"
@@ -925,10 +925,10 @@ if ($packageType -eq 'msixbundle') {
 
     Write-Verbose -Verbose "Building RPM package"
     $rpmPackageName = "dsc-$productVersion-1.$rpmArch.rpm"
-    
+
     # Build the RPM
     rpmbuild -v -bb --define "_topdir $rpmBuildRoot" --buildroot "$rpmBuildRoot/BUILDROOT" $specFile 2>&1 > $rpmTarget/rpmbuild.log
-    
+
     if ($LASTEXITCODE -ne 0) {
         Write-Error (Get-Content $rpmTarget/rpmbuild.log -Raw)
         throw "Failed to create RPM package"
@@ -1011,10 +1011,10 @@ if ($packageType -eq 'msixbundle') {
 
     Write-Verbose -Verbose "Building DEB package"
     $debPackageName = "dsc_$productVersion-1_$debArch.deb"
-    
+
     # Build the DEB
     dpkg-deb --build $debBuildRoot 2>&1 > $debTarget/debbuild.log
-    
+
     if ($LASTEXITCODE -ne 0) {
         Write-Error (Get-Content $debTarget/debbuild.log -Raw)
         throw "Failed to create DEB package"
