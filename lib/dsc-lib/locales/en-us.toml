@@ -84,6 +84,7 @@ skippingOutput = "Skipping output for '%{name}' due to condition evaluating to f
 secureOutputSkipped = "Secure output '%{name}' is skipped"
 outputTypeNotMatch = "Output '%{name}' type does not match expected type '%{expected_type}'"
 copyNotSupported = "Copy for output '%{name}' is currently not supported"
+requireAdapter = "Resource '%{resource}' requires adapter '%{adapter}'"
 
 [configure.parameters]
 importingParametersFromComplexInput = "Importing parameters from complex input"
@@ -109,8 +110,8 @@ adapterFound = "Resource adapter '%{adapter}' version %{version} found"
 resourceFound = "Resource '%{resource}' version %{version} found"
 executableNotFound = "Executable '%{executable}' not found for operation '%{operation}' for resource '%{resource}'"
 extensionInvalidVersion = "Extension '%{extension}' version '%{version}' is invalid"
-invalidResourceManifest = "Invalid manifest for resource '%{resource}'"
-invalidExtensionManifest = "Invalid manifest for extension '%{extension}'"
+invalidResourceManifest = "Invalid manifest for resource '%{resource}': %{err}"
+invalidExtensionManifest = "Invalid manifest for extension '%{extension}': %{err}"
 invalidManifestList = "Invalid manifest list '%{resource}': %{err}"
 invalidManifestFile = "Invalid manifest file '%{resource}': %{err}"
 extensionResourceFound = "Extension found resource '%{resource}'"

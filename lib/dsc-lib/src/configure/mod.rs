@@ -206,7 +206,7 @@ fn add_metadata(dsc_resource: &DscResource, mut properties: Option<Map<String, V
         props.insert("_metadata".to_string(), Value::Object(other_metadata));
         let modified_props = Value::from(props.clone());
         if let Ok(()) = validate_properties(dsc_resource, &modified_props) {} else {
-            warn!("{}", t!("configure.mod.schemaExcludesMetadata"));
+            info!("{}", t!("configure.mod.schemaExcludesMetadata"));
             props.remove("_metadata");
         }
         return Ok(serde_json::to_string(&props)?);
@@ -277,6 +277,18 @@ fn get_metadata_from_result(mut context: Option<&mut Context>, result: &mut Valu
         }
         if let Some(value_map) = result.as_object_mut() {
             value_map.remove("_metadata");
+        }
+    }
+    Ok(())
+}
+
+fn update_require_adapter_from_metadata(resource: &mut DscResource, resource_metadata: &Option<Metadata>) -> Result<(), DscError> {
+    if let Some(resource_metadata) = resource_metadata {
+        if let Some(microsoft_metadata) = &resource_metadata.microsoft {
+            if let Some(require_adapter) = &microsoft_metadata.require_adapter {
+                info!("{}", t!("configure.mod.requireAdapter", resource = &resource.type_name, adapter = require_adapter));
+                resource.require_adapter = Some(require_adapter.clone());
+            }
         }
     }
     Ok(())
@@ -367,7 +379,9 @@ impl Configurator {
                 return Err(DscError::ResourceNotFound(resource.resource_type, resource.api_version.as_deref().unwrap_or("").to_string()));
             };
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
-            let filter = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
+            let mut dsc_resource = dsc_resource.clone();
+            update_require_adapter_from_metadata(&mut dsc_resource, &resource.metadata)?;
+            let filter = add_metadata(&dsc_resource, properties, resource.metadata.clone())?;
             let start_datetime = chrono::Local::now();
             let mut get_result = match dsc_resource.get(&filter) {
                 Ok(result) => result,
@@ -451,6 +465,8 @@ impl Configurator {
                 return Err(DscError::ResourceNotFound(resource.resource_type, resource.api_version.as_deref().unwrap_or("").to_string()));
             };
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
+            let mut dsc_resource = dsc_resource.clone();
+            update_require_adapter_from_metadata(&mut dsc_resource, &resource.metadata)?;
             debug!("resource_type {}", &resource.resource_type);
 
             // see if the properties contains `_exist` and is false
@@ -467,7 +483,7 @@ impl Configurator {
                 }
             };
 
-            let desired = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
+            let desired = add_metadata(&dsc_resource, properties, resource.metadata.clone())?;
             trace!("{}", t!("configure.mod.desired", state = desired));
 
             let start_datetime;
@@ -619,8 +635,10 @@ impl Configurator {
                 return Err(DscError::ResourceNotFound(resource.resource_type, resource.api_version.as_deref().unwrap_or("").to_string()));
             };
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
+            let mut dsc_resource = dsc_resource.clone();
+            update_require_adapter_from_metadata(&mut dsc_resource, &resource.metadata)?;
             debug!("resource_type {}", &resource.resource_type);
-            let expected = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
+            let expected = add_metadata(&dsc_resource, properties, resource.metadata.clone())?;
             trace!("{}", t!("configure.mod.expectedState", state = expected));
             let start_datetime = chrono::Local::now();
             let mut test_result = match dsc_resource.test(&expected) {
@@ -702,9 +720,12 @@ impl Configurator {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone(), resource.api_version.as_deref().unwrap_or("").to_string()));
             };
             let properties = self.get_properties(resource, &dsc_resource.kind)?;
-            let input = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
+            let mut dsc_resource = dsc_resource.clone();
+            update_require_adapter_from_metadata(&mut dsc_resource, &resource.metadata)?;
+            debug!("resource_type {}", &resource.resource_type);
+            let input = add_metadata(&dsc_resource, properties, resource.metadata.clone())?;
             trace!("{}", t!("configure.mod.exportInput", input = input));
-            let export_result = match add_resource_export_results_to_configuration(dsc_resource, &mut conf, input.as_str()) {
+            let export_result = match add_resource_export_results_to_configuration(&dsc_resource, &mut conf, input.as_str()) {
                 Ok(result) => result,
                 Err(e) => {
                     progress.set_failure(get_failure_from_error(&e));
@@ -957,14 +978,15 @@ impl Configurator {
         Metadata {
             microsoft: Some(
                 MicrosoftDscMetadata {
-                    version: Some(version),
-                    operation: Some(operation),
-                    execution_type: Some(self.context.execution_type.clone()),
-                    start_datetime: Some(self.context.start_datetime.to_rfc3339()),
-                    end_datetime: Some(end_datetime.to_rfc3339()),
+                    require_adapter: None,
                     duration: Some(end_datetime.signed_duration_since(self.context.start_datetime).to_string()),
-                    security_context: Some(self.context.security_context.clone()),
+                    end_datetime: Some(end_datetime.to_rfc3339()),
+                    execution_type: Some(self.context.execution_type.clone()),
+                    operation: Some(operation),
                     restart_required: self.context.restart_required.clone(),
+                    security_context: Some(self.context.security_context.clone()),
+                    start_datetime: Some(self.context.start_datetime.to_rfc3339()),
+                    version: Some(version),
                 }
             ),
             other: Map::new(),

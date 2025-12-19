@@ -13,9 +13,9 @@ Describe 'metadata tests' {
             properties:
               output: hello world
 '@
-        $out = dsc config get -i $configYaml 2>$TestDrive/error.log | ConvertFrom-Json
+        $out = dsc -l info config get -i $configYaml 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
-        (Get-Content $TestDrive/error.log) | Should -BeLike "*WARN*Will not add '_metadata' to properties because resource schema does not support it*"
+        (Get-Content $TestDrive/error.log -Raw) | Should -BeLike "*INFO Will not add '_metadata' to properties because resource schema does not support it*" -Because (Get-Content $TestDrive/error.log -Raw)
         $out.results.result.actualState.output | Should -BeExactly 'hello world'
     }
 
