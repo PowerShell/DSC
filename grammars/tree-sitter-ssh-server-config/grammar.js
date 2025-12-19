@@ -14,10 +14,9 @@ export default grammar({
   extras: $ => [' ', '\t', '\r', $.comment],
 
   rules: {
-    server_config: $ => seq(repeat(choice($._empty_line, $.keyword)), repeat($.match)),
+    server_config: $ => seq(repeat(choice($._new_line, $.keyword)), repeat($.match)),
 
-    // check for an empty line that is just a /n character
-    _empty_line: $ => '\n',
+    _new_line: $ => '\n',
     comment: $ => /#.*/,
 
     keyword: $ => seq(
@@ -25,14 +24,14 @@ export default grammar({
       choice(seq(/[ \t]/, optional('=')), '='),
       optional(field('operator', $.operator)),
       field('arguments', $.arguments),
-      $._empty_line
+      $._new_line
     ),
 
     match: $ => seq(
       token(prec(PREC.MATCH, /match/i)),
-      seq(repeat1($.criteria), $._empty_line),
-      repeat1(choice(seq($.comment, $._empty_line), $.keyword)),
-      optional(repeat($._empty_line))
+      seq(repeat1($.criteria), $._new_line),
+      repeat1(choice(seq($.comment, $._new_line), $.keyword)),
+      optional(repeat($._new_line))
     ),
 
     criteria: $ => seq(
