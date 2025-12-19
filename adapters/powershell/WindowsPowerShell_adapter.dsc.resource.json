@@ -41,7 +41,7 @@
             }
         ],
         "input": "stdin"
-    }, 
+    },
     "set": {
         "executable": "powershell",
         "args": [
@@ -58,7 +58,7 @@
             }
         ],
         "input": "stdin",
-        "preTest": true
+        "implementsPretest": true
     },
     "test": {
         "executable": "powershell",
@@ -106,7 +106,8 @@
             "Bypass",
             "-Command",
             "$Input | ./psDscAdapter/powershell.resource.ps1 Validate"
-        ]
+        ],
+        "input": "stdin"
     },
     "exitCodes": {
         "0": "Success",
