@@ -8,13 +8,13 @@ Describe 'Group resource tests' {
         $out | Should -BeLike @'
 metadata:
   Microsoft.DSC:
-    version: 3*
-    operation: Get
-    executionType: Actual
-    startDatetime: *
-    endDatetime: *
     duration: PT*S
+    endDatetime: *
+    executionType: Actual
+    operation: Get
     securityContext: *
+    startDatetime: *
+    version: 3*
 results:
 - metadata:
     Microsoft.DSC:
