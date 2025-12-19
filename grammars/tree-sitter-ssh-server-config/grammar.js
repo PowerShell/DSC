@@ -30,8 +30,7 @@ export default grammar({
     match: $ => seq(
       token(prec(PREC.MATCH, /match/i)),
       seq(repeat1($.criteria), $._new_line),
-      repeat1(choice(seq($.comment, $._new_line), $.keyword)),
-      optional(repeat($._new_line))
+      repeat1(choice($._new_line, $.keyword))
     ),
 
     criteria: $ => seq(
