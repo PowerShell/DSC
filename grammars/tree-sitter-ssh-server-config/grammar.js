@@ -11,30 +11,28 @@ const PREC = {
 export default grammar({
   name: 'ssh_server_config',
 
-  extras: $ => [' ', '\t', '\r'],
+  extras: $ => [' ', '\t', '\r', $.comment],
 
   rules: {
-    server_config: $ => seq(repeat(choice($._empty_line, $.comment, $.keyword)), repeat($.match)),
+    server_config: $ => seq(repeat(choice($._empty_line, $.keyword)), repeat($.match)),
 
     // check for an empty line that is just a /n character
     _empty_line: $ => '\n',
-    comment: $ => seq(/#.*/, '\n'),
-    _inline_comment: $ => /#.*/,
+    comment: $ => /#.*/,
 
     keyword: $ => seq(
       field('keyword', $.alphanumeric),
       choice(seq(/[ \t]/, optional('=')), '='),
       optional(field('operator', $.operator)),
       field('arguments', $.arguments),
-      optional(alias($._inline_comment, $.comment)),
-      "\n"
+      $._empty_line
     ),
 
     match: $ => seq(
       token(prec(PREC.MATCH, /match/i)),
-      seq(repeat1($.criteria), optional(alias($._inline_comment, $.comment)), $._empty_line),
-      repeat1(choice($.comment, $.keyword)),
-      optional($._empty_line)
+      seq(repeat1($.criteria), $._empty_line),
+      repeat1(choice(seq($.comment, $._empty_line), $.keyword)),
+      optional(repeat($._empty_line))
     ),
 
     criteria: $ => seq(

@@ -562,3 +562,66 @@ match user developer
       (alphanumeric)
       (arguments
         (boolean)))))
+====
+parse newlines between match blocks
+====
+match User testuser
+    PasswordAuthentication yes
+    AllowTcpForwarding no
+    # comment line 1
+    # comment line 2
+
+
+match Address 192.168.1.0/24
+    X11Forwarding yes
+    MaxAuthTries 3
+
+---
+(server_config
+  (match
+    (criteria
+      (alpha)
+      (argument
+        (string)))
+    (keyword
+      (alphanumeric)
+      (arguments
+        (boolean)))
+    (keyword
+      (alphanumeric)
+      (arguments
+        (boolean)))
+    (comment)
+    (comment))
+  (match
+    (criteria
+      (alpha)
+      (argument
+        (string)))
+    (keyword
+      (alphanumeric)
+      (arguments
+        (boolean)))
+    (keyword
+      (alphanumeric)
+      (arguments
+        (number)))))
+====
+parse multiple comments and multiple lines
+====
+# comment line 1
+# comment line 2
+# comment lin3 3
+
+
+passwordauthentication yes
+
+---
+(server_config
+  (comment)
+  (comment)
+  (comment)
+  (keyword
+    (alphanumeric)
+      (arguments
+        (boolean))))
