@@ -429,3 +429,199 @@ passwordauthentication no
       (alphanumeric)
         (arguments
           (boolean)))))
+====
+parse comments between keywords
+====
+port 2222 # use non-default port
+
+---
+(server_config
+  (keyword
+    (alphanumeric)
+    (arguments
+      (number))
+    (comment)))
+====
+parse comments in match blocks
+====
+port 2222
+passwordauthentication no
+
+match User testuser # comment about criteria
+    PasswordAuthentication yes
+    AllowTcpForwarding no
+# comment between match blocks
+match Address 192.168.1.0/24
+    X11Forwarding yes
+    MaxAuthTries 3
+
+---
+(server_config
+  (keyword
+    (alphanumeric)
+      (arguments
+        (number)))
+  (keyword
+    (alphanumeric)
+      (arguments
+        (boolean)))
+  (match
+    (criteria
+      (alpha)
+      (argument
+        (string)))
+      (comment)
+    (keyword
+      (alphanumeric)
+        (arguments
+          (boolean)))
+    (keyword
+      (alphanumeric)
+        (arguments
+          (boolean)))
+    (comment))
+  (match
+    (criteria
+      (alpha)
+      (argument
+        (string)))
+    (keyword
+      (alphanumeric)
+      (arguments
+        (boolean)))
+    (keyword
+      (alphanumeric)
+      (arguments
+        (number)))))
+====
+parse newlines between match blocks
+====
+port 2222
+passwordauthentication no
+
+match User testuser
+    PasswordAuthentication yes
+    AllowTcpForwarding no
+
+match Address 192.168.1.0/24
+    X11Forwarding yes
+    MaxAuthTries 3
+
+---
+(server_config
+  (keyword
+    (alphanumeric)
+      (arguments
+        (number)))
+  (keyword
+    (alphanumeric)
+      (arguments
+        (boolean)))
+  (match
+    (criteria
+      (alpha)
+      (argument
+        (string)))
+    (keyword
+      (alphanumeric)
+        (arguments
+          (boolean)))
+    (keyword
+      (alphanumeric)
+        (arguments
+          (boolean))))
+  (match
+    (criteria
+      (alpha)
+      (argument
+        (string)))
+    (keyword
+      (alphanumeric)
+      (arguments
+        (boolean)))
+    (keyword
+      (alphanumeric)
+      (arguments
+        (number)))))
+====
+parse comment within match block
+====
+match user developer
+    # Enable password authentication for developers - comment ignored
+    passwordauthentication yes
+
+---
+(server_config
+  (match
+    (criteria
+      (alpha)
+      (argument
+        (string)))
+    (comment)
+    (keyword
+      (alphanumeric)
+      (arguments
+        (boolean)))))
+====
+parse newlines between match blocks
+====
+match User testuser
+    PasswordAuthentication yes
+    AllowTcpForwarding no
+    # comment line 1
+    # comment line 2
+
+
+match Address 192.168.1.0/24
+    X11Forwarding yes
+    MaxAuthTries 3
+
+---
+(server_config
+  (match
+    (criteria
+      (alpha)
+      (argument
+        (string)))
+    (keyword
+      (alphanumeric)
+      (arguments
+        (boolean)))
+    (keyword
+      (alphanumeric)
+      (arguments
+        (boolean)))
+    (comment)
+    (comment))
+  (match
+    (criteria
+      (alpha)
+      (argument
+        (string)))
+    (keyword
+      (alphanumeric)
+      (arguments
+        (boolean)))
+    (keyword
+      (alphanumeric)
+      (arguments
+        (number)))))
+====
+parse multiple comments and multiple lines
+====
+# comment line 1
+# comment line 2
+# comment lin3 3
+
+
+passwordauthentication yes
+
+---
+(server_config
+  (comment)
+  (comment)
+  (comment)
+  (keyword
+    (alphanumeric)
+      (arguments
+        (boolean))))

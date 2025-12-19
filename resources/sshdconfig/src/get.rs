@@ -10,7 +10,7 @@ use {
 
 use rust_i18n::t;
 use serde_json::{Map, Value};
-use tracing::{debug, trace};
+use tracing::{debug, trace, warn};
 
 use crate::args::Setting;
 use crate::error::SshdConfigError;
@@ -121,9 +121,14 @@ pub fn get_sshd_settings(cmd_info: &CommandInfo, is_get: bool) -> Result<Map<Str
     let mut defaults = extract_sshd_defaults()?;
 
     // remove any explicit keys from default settings list
-    for key in explicit_settings.keys() {
+    for (key, value) in &explicit_settings {
         if defaults.contains_key(key) {
             defaults.remove(key);
+        }
+        if key == "include" {
+            warn!("{}", t!("get.includeWarning").to_string());
+        } else if key == "match" {
+            result.insert(key.clone(), value.clone());
         }
     }
 

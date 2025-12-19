@@ -25,6 +25,7 @@ defaultShellCmdOptionMustBeString = "cmdOption must be a string"
 defaultShellEscapeArgsMustBe0Or1 = "'%{input}' must be a 0 or 1"
 defaultShellEscapeArgsMustBeDWord = "escapeArguments must be a DWord"
 defaultShellMustBeString = "shell must be a string"
+includeWarning = "Include directive found in sshd_config. This resource uses 'sshd -T' to process the overall configuration state, which merges all included files but does not return the Include directive itself"
 traceInput = "Get input:"
 windowsOnly = "Microsoft.OpenSSH.SSHD/Windows is only applicable to Windows"
 

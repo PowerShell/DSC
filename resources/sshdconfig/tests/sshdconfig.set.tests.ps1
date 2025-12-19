@@ -6,12 +6,16 @@ BeforeDiscovery {
         $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
         $principal = [System.Security.Principal.WindowsPrincipal]::new($identity)
         $isElevated = $principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
-        $sshdExists = ($null -ne (Get-Command sshd -CommandType Application -ErrorAction Ignore))
-        $skipTest = !$isElevated -or !$sshdExists
     }
+    else {
+        $isElevated = (id -u) -eq 0
+    }
+
+    $sshdExists = ($null -ne (Get-Command sshd -CommandType Application -ErrorAction Ignore))
+    $skipTest = !$isElevated -or !$sshdExists
 }
 
-Describe 'sshd_config Set Tests' -Skip:(!$IsWindows -or $skipTest) {
+Describe 'sshd_config Set Tests' -Skip:($skipTest) {
     BeforeAll {
         # Create a temporary test directory for sshd_config files
         $TestDir = Join-Path $TestDrive "sshd_test"
