@@ -230,5 +230,53 @@ resources:
     $out.resources.count | Should -Be 5
     $out.resources[0].properties.Ensure | Should -Be 'Present' # Check for enum property
   }
+
+  It 'Config calling PS Resource directly works for <operation> with metadata <metadata> and adapter <adapter>' -TestCases @(
+    @{ Operation = 'get'; metadata = 'Microsoft.DSC'; adapter = 'Microsoft.Windows/WindowsPowerShell' }
+    @{ Operation = 'set'; metadata = 'Microsoft.DSC'; adapter = 'Microsoft.Windows/WindowsPowerShell' }
+    @{ Operation = 'test'; metadata = 'Microsoft.DSC'; adapter = 'Microsoft.Windows/WindowsPowerShell' }
+    @{ Operation = 'get'; metadata = 'Microsoft.DSC'; adapter = 'Microsoft.Adapter/WindowsPowerShell' }
+    @{ Operation = 'set'; metadata = 'Microsoft.DSC'; adapter = 'Microsoft.Adapter/WindowsPowerShell' }
+    @{ Operation = 'test'; metadata = 'Microsoft.DSC'; adapter = 'Microsoft.Adapter/WindowsPowerShell' }
+    @{ Operation = 'get'; metadata = 'Ignored' }
+    @{ Operation = 'set'; metadata = 'Ignored' }
+    @{ Operation = 'test'; metadata = 'Ignored' }
+  ) {
+    param($Operation, $metadata, $adapter)
+
+    $yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Class-resource Info
+              type: TestClassResource/TestClassResource
+              metadata:
+                ${metadata}:
+                  requireAdapter: $adapter
+              properties:
+                Name: 'TestClassResource1'
+                HashTableProp:
+                  Name: 'DSCv3'
+"@
+    $out = dsc -l trace config $operation -i $yaml 2> $TestDrive/tracing.txt
+    $text = $out | Out-String
+    $out = $out | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw -Path $TestDrive/tracing.txt)
+    switch ($Operation) {
+      'get' {
+        $out.results[0].result.actualState.Name | Should -BeExactly 'TestClassResource1' -Because ("$text`n" + (Get-Content -Raw -Path $TestDrive/tracing.txt))
+      }
+      'set' {
+        $out.results[0].result.beforeState.Name | Should -BeExactly 'TestClassResource1' -Because $text
+        $out.results[0].result.afterState.Name | Should -BeExactly 'TestClassResource1' -Because $text
+      }
+      'test' {
+        $out.results[0].result.actualState.InDesiredState | Should -BeFalse -Because $text
+      }
+    }
+    if ($metadata -eq 'Microsoft.DSC') {
+      "$TestDrive/tracing.txt" | Should -FileContentMatch "Invoking $Operation for '$adapter'" -Because (Get-Content -Raw -Path $TestDrive/tracing.txt)
+
+    }
+  }
 }
 

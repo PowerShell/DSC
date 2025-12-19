@@ -159,17 +159,17 @@ switch ($Operation) {
         }
     }
     { @('Get','Set','Test','Export') -contains $_ } {
-        $desiredState = $psDscAdapter.invoke(   { param($jsonInput) Get-DscResourceObject -jsonInput $jsonInput }, $jsonInput )
-        if ($null -eq $desiredState) {
-            Write-DscTrace -Operation Error -message 'Failed to create configuration object from provided input JSON.'
-            exit 1
-        }        
-
         if ($ResourceType) {
             Write-DscTrace -Operation Debug -Message "Using resource type override: $ResourceType"
             $dscResourceCache = Invoke-DscCacheRefresh -Module $ResourceType.Split('/')[0]
             if ($null -eq $dscResourceCache) {
                 Write-DscTrace -Operation Error -Message ("DSC resource '{0}' module not found." -f $ResourceType)
+                exit 1
+            }
+
+            $desiredState = $psDscAdapter.invoke(   { param($jsonInput, $type) Get-DscResourceObject -jsonInput $jsonInput -type $type }, $jsonInput, $ResourceType )
+            if ($null -eq $desiredState) {
+                Write-DscTrace -Operation Error -message 'Failed to create configuration object from provided input JSON.'
                 exit 1
             }
 
@@ -192,6 +192,12 @@ switch ($Operation) {
             }
             Write-DscTrace -Operation Debug -Message "jsonOutput=$result"
             return $result
+        }
+
+        $desiredState = $psDscAdapter.invoke(   { param($jsonInput) Get-DscResourceObject -jsonInput $jsonInput }, $jsonInput )
+        if ($null -eq $desiredState) {
+            Write-DscTrace -Operation Error -message 'Failed to create configuration object from provided input JSON.'
+            exit 1
         }
 
         # only need to cache the resources that are used

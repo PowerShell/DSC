@@ -206,7 +206,7 @@ fn add_metadata(dsc_resource: &DscResource, mut properties: Option<Map<String, V
         props.insert("_metadata".to_string(), Value::Object(other_metadata));
         let modified_props = Value::from(props.clone());
         if let Ok(()) = validate_properties(dsc_resource, &modified_props) {} else {
-            warn!("{}", t!("configure.mod.schemaExcludesMetadata"));
+            info!("{}", t!("configure.mod.schemaExcludesMetadata"));
             props.remove("_metadata");
         }
         return Ok(serde_json::to_string(&props)?);
@@ -371,6 +371,7 @@ impl Configurator {
             if let Some(resource_metadata) = &resource.metadata {
                 if let Some(microsoft_metadata) = &resource_metadata.microsoft {
                     if let Some(require_adapter) = &microsoft_metadata.require_adapter {
+                        info!("{}", t!("configure.mod.requireAdapter", resource = &resource.resource_type, adapter = require_adapter));
                         dsc_resource.require_adapter = Some(require_adapter.clone());
                     }
                 }
@@ -459,6 +460,15 @@ impl Configurator {
                 return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.api_version.as_deref().unwrap_or("").to_string()));
             };
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
+            let mut dsc_resource = dsc_resource.clone();
+            if let Some(resource_metadata) = &resource.metadata {
+                if let Some(microsoft_metadata) = &resource_metadata.microsoft {
+                    if let Some(require_adapter) = &microsoft_metadata.require_adapter {
+                        info!("{}", t!("configure.mod.requireAdapter", resource = &resource.resource_type, adapter = require_adapter));
+                        dsc_resource.require_adapter = Some(require_adapter.clone());
+                    }
+                }
+            }
             debug!("resource_type {}", &resource.resource_type);
 
             // see if the properties contains `_exist` and is false
@@ -475,7 +485,7 @@ impl Configurator {
                 }
             };
 
-            let desired = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
+            let desired = add_metadata(&dsc_resource, properties, resource.metadata.clone())?;
             trace!("{}", t!("configure.mod.desired", state = desired));
 
             let start_datetime;
@@ -627,8 +637,17 @@ impl Configurator {
                 return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.api_version.as_deref().unwrap_or("").to_string()));
             };
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
+            let mut dsc_resource = dsc_resource.clone();
+            if let Some(resource_metadata) = &resource.metadata {
+                if let Some(microsoft_metadata) = &resource_metadata.microsoft {
+                    if let Some(require_adapter) = &microsoft_metadata.require_adapter {
+                        info!("{}", t!("configure.mod.requireAdapter", resource = &resource.resource_type, adapter = require_adapter));
+                        dsc_resource.require_adapter = Some(require_adapter.clone());
+                    }
+                }
+            }
             debug!("resource_type {}", &resource.resource_type);
-            let expected = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
+            let expected = add_metadata(&dsc_resource, properties, resource.metadata.clone())?;
             trace!("{}", t!("configure.mod.expectedState", state = expected));
             let start_datetime = chrono::Local::now();
             let mut test_result = match dsc_resource.test(&expected) {
@@ -710,9 +729,18 @@ impl Configurator {
                 return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.api_version.as_deref().unwrap_or("").to_string()));
             };
             let properties = self.get_properties(resource, &dsc_resource.kind)?;
-            let input = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
+            let mut dsc_resource = dsc_resource.clone();
+            if let Some(resource_metadata) = &resource.metadata {
+                if let Some(microsoft_metadata) = &resource_metadata.microsoft {
+                    if let Some(require_adapter) = &microsoft_metadata.require_adapter {
+                        info!("{}", t!("configure.mod.requireAdapter", resource = &resource.resource_type, adapter = require_adapter));
+                        dsc_resource.require_adapter = Some(require_adapter.clone());
+                    }
+                }
+            }
+            let input = add_metadata(&dsc_resource, properties, resource.metadata.clone())?;
             trace!("{}", t!("configure.mod.exportInput", input = input));
-            let export_result = match add_resource_export_results_to_configuration(dsc_resource, &mut conf, input.as_str()) {
+            let export_result = match add_resource_export_results_to_configuration(&dsc_resource, &mut conf, input.as_str()) {
                 Ok(result) => result,
                 Err(e) => {
                     progress.set_failure(get_failure_from_error(&e));
