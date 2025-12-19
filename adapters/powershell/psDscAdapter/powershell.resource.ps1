@@ -187,7 +187,6 @@ switch ($Operation) {
             Write-DscTrace -Operation Debug -Message "actualState=$($actualState | ConvertTo-Json -Depth 10)"
             if ($Operation -eq 'Test') {
                 $actualState = $psDscAdapter.Invoke( { param($ds, $dscResourceCache) Invoke-DscOperation -Operation 'Get' -DesiredState $ds -dscResourceCache $dscResourceCache }, $desiredState, $dscResourceCache)
-                $actualState.Properties | Add-Member -MemberType NoteProperty -Name inDesiredState -Value $inDesiredState -Force
             }
 
             $result = $actualState.Properties | ConvertTo-Json -Depth 10 -Compress
