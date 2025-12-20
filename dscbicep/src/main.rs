@@ -241,11 +241,109 @@ async fn run_server(
 
     #[cfg(windows)]
     if let Some(pipe_name) = pipe {
-        tracing::info!("Starting Bicep gRPC server on named pipe: {}", pipe_name);
+        // TODO: This named pipe code is messy and honestly mostly generated. It
+        // does work, but most of the problem lies in minimal Windows support
+        // inside the Tokio library (and no support for UDS).
+        use std::pin::Pin;
+        use std::task::{Context, Poll};
+        use tokio::io::{AsyncRead, AsyncWrite};
+        use tokio::net::windows::named_pipe::ServerOptions;
+        use tonic::transport::server::Connected;
 
-        // TODO: Implement Windows named pipe transport
-        // This requires additional dependencies and platform-specific code
-        return Err("Windows named pipe support not yet implemented".into());
+        // Wrapper to implement Connected trait for NamedPipeServer
+        struct NamedPipeConnection(tokio::net::windows::named_pipe::NamedPipeServer);
+
+        impl Connected for NamedPipeConnection {
+            type ConnectInfo = ();
+
+            fn connect_info(&self) -> Self::ConnectInfo {
+                ()
+            }
+        }
+
+        impl AsyncRead for NamedPipeConnection {
+            fn poll_read(
+                mut self: Pin<&mut Self>,
+                cx: &mut Context<'_>,
+                buf: &mut tokio::io::ReadBuf<'_>,
+            ) -> Poll<std::io::Result<()>> {
+                Pin::new(&mut self.0).poll_read(cx, buf)
+            }
+        }
+
+        impl AsyncWrite for NamedPipeConnection {
+            fn poll_write(
+                mut self: Pin<&mut Self>,
+                cx: &mut Context<'_>,
+                buf: &[u8],
+            ) -> Poll<std::io::Result<usize>> {
+                Pin::new(&mut self.0).poll_write(cx, buf)
+            }
+
+            fn poll_flush(
+                mut self: Pin<&mut Self>,
+                cx: &mut Context<'_>,
+            ) -> Poll<std::io::Result<()>> {
+                Pin::new(&mut self.0).poll_flush(cx)
+            }
+
+            fn poll_shutdown(
+                mut self: Pin<&mut Self>,
+                cx: &mut Context<'_>,
+            ) -> Poll<std::io::Result<()>> {
+                Pin::new(&mut self.0).poll_shutdown(cx)
+            }
+        }
+
+        // Windows named pipes must be in the format \\.\pipe\{name}
+        let full_pipe_path = format!(r"\\.\pipe\{}", pipe_name);
+        tracing::info!("Starting Bicep gRPC server on named pipe: {full_pipe_path}");
+
+        // Create a stream that accepts connections on the named pipe
+        let incoming = async_stream::stream! {
+            // Track whether this is the first instance
+            let mut is_first = true;
+
+            loop {
+                let pipe = if is_first {
+                    ServerOptions::new()
+                        .first_pipe_instance(true)
+                        .create(&full_pipe_path)
+                } else {
+                    ServerOptions::new()
+                        .create(&full_pipe_path)
+                };
+
+                let server = match pipe {
+                    Ok(server) => server,
+                    Err(e) => {
+                        tracing::error!("Failed to create named pipe: {}", e);
+                        break;
+                    }
+                };
+
+                is_first = false;
+
+                tracing::debug!("Waiting for client to connect to named pipe...");
+                match server.connect().await {
+                    Ok(()) => {
+                        tracing::info!("Client connected to named pipe");
+                        yield Ok::<_, std::io::Error>(NamedPipeConnection(server));
+                    }
+                    Err(e) => {
+                        tracing::error!("Failed to accept connection: {}", e);
+                        break;
+                    }
+                }
+            }
+        };
+
+        Server::builder()
+            .add_service(BicepExtensionServer::new(service))
+            .serve_with_incoming(incoming)
+            .await?;
+
+        return Ok(());
     }
 
     // Default to HTTP server on [::1]:50051 if no transport specified
@@ -287,6 +385,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         .init();
 
     let args = Args::parse();
+    tracing::debug!("Args are {args:#?}");
 
     if args.wait_for_debugger
         || env::var_os("DSC_GRPC_DEBUG").is_some_and(|v| v.eq_ignore_ascii_case("true"))
