@@ -319,6 +319,17 @@ invoked = "createObject function"
 argsMustBePairs = "Arguments must be provided in key-value pairs"
 keyMustBeString = "Object keys must be strings"
 
+[functions.dataUri]
+description = "Converts a value to a data URI"
+
+[functions.dataUriToString]
+description = "Converts a data URI formatted value to a string"
+invoked = "dataUriToString function"
+invalidDataUri = "Invalid data URI format"
+invalidBase64 = "Invalid base64 encoding in data URI"
+invalidUtf8 = "Decoded bytes do not form valid UTF-8"
+invalidEncoding = "Invalid encoding in data URI"
+
 [functions.div]
 description = "Divides the first number by the second"
 invoked = "div function"

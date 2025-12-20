@@ -27,6 +27,8 @@ pub mod contains;
 pub mod context;
 pub mod copy_index;
 pub mod create_array;
+pub mod data_uri;
+pub mod data_uri_to_string;
 pub mod create_object;
 pub mod div;
 pub mod empty;
@@ -167,6 +169,8 @@ impl FunctionDispatcher {
             Box::new(copy_index::CopyIndex{}),
             Box::new(create_array::CreateArray{}),
             Box::new(create_object::CreateObject{}),
+            Box::new(data_uri::DataUri{}),
+            Box::new(data_uri_to_string::DataUriToString{}),
             Box::new(div::Div{}),
             Box::new(empty::Empty{}),
             Box::new(ends_with::EndsWith{}),
