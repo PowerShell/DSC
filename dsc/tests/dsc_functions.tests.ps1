@@ -1714,4 +1714,67 @@ Describe 'tests for function expressions' {
       $out.results[0].result.actualState.output | Should -BeNullOrEmpty
     }
   }
+
+  It 'dataUri function works for: <expression>' -TestCases @(
+    @{ expression = "[dataUri('Hello')]"; expected = 'data:text/plain;charset=utf8;base64,SGVsbG8=' }
+    @{ expression = "[dataUri('')]"; expected = 'data:text/plain;charset=utf8;base64,' }
+    @{ expression = "[dataUri('Hello, World!')]"; expected = 'data:text/plain;charset=utf8;base64,SGVsbG8sIFdvcmxkIQ==' }
+    @{ expression = "[dataUri('héllo')]"; expected = 'data:text/plain;charset=utf8;base64,aMOpbGxv' }
+    @{ expression = "[dataUri(concat('Hello', ', World!'))]"; expected = 'data:text/plain;charset=utf8;base64,SGVsbG8sIFdvcmxkIQ==' }
+  ) {
+    param($expression, $expected)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "$expression"
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -Be $expected
+  }
+
+  It 'dataUriToString function works for: <expression>' -TestCases @(
+    @{ expression = "[dataUriToString('data:text/plain;charset=utf8;base64,SGVsbG8=')]"; expected = 'Hello' }
+    @{ expression = "[dataUriToString('data:;base64,SGVsbG8sIFdvcmxkIQ==')]"; expected = 'Hello, World!' }
+    @{ expression = "[dataUriToString('data:text/plain;base64,')]"; expected = '' }
+    @{ expression = "[dataUriToString('data:text/plain;charset=utf8;base64,aMOpbGxv')]"; expected = 'héllo' }
+    @{ expression = "[dataUriToString(dataUri('test message'))]"; expected = 'test message' }
+  ) {
+    param($expression, $expected)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '$expression'
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -Be $expected
+  }
+
+  It 'dataUriToString function error handling: <expression>' -TestCases @(
+    @{ expression = "[dataUriToString('not a data uri')]" ; expectedError = 'Invalid data URI format' }
+    @{ expression = "[dataUriToString('data:text/plain;base64')]" ; expectedError = 'Invalid data URI format' }
+    @{ expression = "[dataUriToString('data:;base64,invalid!@#')]" ; expectedError = 'Invalid base64 encoding' }
+  ) {
+    param($expression, $expectedError)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: `"$expression`"
+"@
+    $null = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log
+    $LASTEXITCODE | Should -Not -Be 0
+    $errorContent = Get-Content $TestDrive/error.log -Raw
+    $errorContent | Should -Match $expectedError
+  }
 }
