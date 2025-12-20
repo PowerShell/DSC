@@ -1730,7 +1730,7 @@ Describe 'tests for function expressions' {
             - name: Echo
               type: Microsoft.DSC.Debug/Echo
               properties:
-                output: "$expression"
+                output: `"$expression`"
 "@
     $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
     $out.results[0].result.actualState.output | Should -Be $expected
@@ -1751,7 +1751,7 @@ Describe 'tests for function expressions' {
             - name: Echo
               type: Microsoft.DSC.Debug/Echo
               properties:
-                output: '$expression'
+                output: `"$expression`"
 "@
     $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
     $out.results[0].result.actualState.output | Should -Be $expected
