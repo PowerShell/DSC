@@ -28,18 +28,25 @@ especially when the content needs to be passed through systems that expect URI-f
 
 ## Examples
 
-### Example 1 - Convert a string to data URI
+### Example 1 - Encode a script for transport
 
-The configuration converts a basic string value with the `dataUri()` function.
+Encoding a PowerShell script as a data URI ensures safe transport through systems that may have
+issues with special characters or line breaks.
 
 ```yaml
 # dataUri.example.1.dsc.config.yaml
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+parameters:
+  scriptContent:
+    type: string
+    defaultValue: "Write-Host 'Hello, World!'"
 resources:
-  - name: Convert 'Hello' to data URI
+  - name: Encode script as data URI
     type: Microsoft.DSC.Debug/Echo
     properties:
-      output: "[dataUri('Hello')]"
+      output:
+        originalScript: "[parameters('scriptContent')]"
+        encodedScript: "[dataUri(parameters('scriptContent'))]"
 ```
 
 ```bash
@@ -48,28 +55,30 @@ dsc config get --file dataUri.example.1.dsc.config.yaml
 
 ```yaml
 results:
-- name: Convert 'Hello' to data URI
+- name: Encode script as data URI
   type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
-      output: data:text/plain;charset=utf8;base64,SGVsbG8=
+      output:
+        originalScript: Write-Host 'Hello, World!'
+        encodedScript: data:text/plain;charset=utf8;base64,V3JpdGUtSG9zdCAnSGVsbG8sIFdvcmxkISc=
 messages: []
 hadErrors: false
 ```
 
-### Example 2 - Convert a concatenated string to data URI
+### Example 2 - Encode JSON configuration for embedding
 
-The configuration uses the [concat()][02] function inside the `dataUri()` function to combine
-strings before converting to a data URI.
+The configuration encodes a JSON configuration string as a data URI, which is useful when passing
+structured data through systems that expect URI-formatted content.
 
 ```yaml
 # dataUri.example.2.dsc.config.yaml
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
-  - name: Convert concatenated string to data URI
+  - name: Encode JSON config as data URI
     type: Microsoft.DSC.Debug/Echo
     properties:
-      output: "[dataUri(concat('Hello', ', World!'))]"
+      output: "[dataUri('{\"setting\":\"value\",\"enabled\":true}')]"
 ```
 
 ```bash
@@ -78,28 +87,31 @@ dsc config get --file dataUri.example.2.dsc.config.yaml
 
 ```yaml
 results:
-- name: Convert concatenated string to data URI
+- name: Encode JSON config as data URI
   type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
-      output: data:text/plain;charset=utf8;base64,SGVsbG8sIFdvcmxkIQ==
+      output: data:text/plain;charset=utf8;base64,eyJzZXR0aW5nIjoidmFsdWUiLCJlbmFibGVkIjp0cnVlfQ==
 messages: []
 hadErrors: false
 ```
 
-### Example 3 - Round-trip encoding and decoding
+### Example 3 - Compare base64 and dataUri encoding
 
-The configuration demonstrates encoding a string to a data URI and then decoding it back using the
-[dataUriToString()][03] function.
+Unlike the [`base64()`][02] function which returns only the encoded content, `dataUri()` adds
+the data URI prefix with media type information. Use `dataUri()` when the target system expects
+the full data URI format.
 
 ```yaml
 # dataUri.example.3.dsc.config.yaml
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
-  - name: Round-trip data URI conversion
+  - name: Compare encoding methods
     type: Microsoft.DSC.Debug/Echo
     properties:
-      output: "[dataUriToString(dataUri('Configuration Data'))]"
+      output:
+        base64Only: "[base64('Hello')]"
+        fullDataUri: "[dataUri('Hello')]"
 ```
 
 ```bash
@@ -108,11 +120,43 @@ dsc config get --file dataUri.example.3.dsc.config.yaml
 
 ```yaml
 results:
-- name: Round-trip data URI conversion
+- name: Compare encoding methods
   type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
-      output: Configuration Data
+      output:
+        base64Only: SGVsbG8=
+        fullDataUri: data:text/plain;charset=utf8;base64,SGVsbG8=
+messages: []
+hadErrors: false
+```
+
+### Example 4 - Encode multiline content
+
+Multiline content like configuration files or scripts can be encoded as a data URI to preserve
+line breaks during transport.
+
+```yaml
+# dataUri.example.4.dsc.config.yaml
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+  - name: Encode multiline content
+    type: Microsoft.DSC.Debug/Echo
+    properties:
+      output: "[dataUri('line1\nline2\nline3')]"
+```
+
+```bash
+dsc config get --file dataUri.example.4.dsc.config.yaml
+```
+
+```yaml
+results:
+- name: Encode multiline content
+  type: Microsoft.DSC.Debug/Echo
+  result:
+    actualState:
+      output: data:text/plain;charset=utf8;base64,bGluZTEKbGluZTIKbGluZTM=
 messages: []
 hadErrors: false
 ```
@@ -144,5 +188,4 @@ Type: string
 
 <!-- Link reference definitions -->
 [01]: https://en.wikipedia.org/wiki/Data_URI_scheme
-[02]: concat.md
-[03]: dataUriToString.md
+[02]: base64.md

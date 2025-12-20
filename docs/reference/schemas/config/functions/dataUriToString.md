@@ -28,18 +28,23 @@ and URL-encoded data URIs. It automatically detects the encoding method and deco
 
 ## Examples
 
-### Example 1 - Decode a base64-encoded data URI
+### Example 1 - Decode embedded script content
 
-The configuration decodes a data URI back to its original string value.
+Decoding a PowerShell script from a data URI is useful when receiving commands from external
+systems that transmit data in this format.
 
 ```yaml
 # dataUriToString.example.1.dsc.config.yaml
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+parameters:
+  encodedScript:
+    type: string
+    defaultValue: "data:text/plain;charset=utf8;base64,V3JpdGUtSG9zdCAnSGVsbG8sIFdvcmxkISc="
 resources:
-  - name: Decode data URI
+  - name: Decode and display script
     type: Microsoft.DSC.Debug/Echo
     properties:
-      output: "[dataUriToString('data:text/plain;charset=utf8;base64,SGVsbG8=')]"
+      output: "[dataUriToString(parameters('encodedScript'))]"
 ```
 
 ```bash
@@ -48,31 +53,34 @@ dsc config get --file dataUriToString.example.1.dsc.config.yaml
 
 ```yaml
 results:
-- name: Decode data URI
+- name: Decode and display script
   type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
-      output: Hello
+      output: Write-Host 'Hello, World!'
 messages: []
 hadErrors: false
 ```
 
-### Example 2 - Decode a data URI from parameter
+### Example 2 - Extract JSON configuration from data URI
 
-This example shows decoding a data URI value passed through a parameter.
+The configuration decodes a JSON configuration that was transmitted as a data URI, then parses it
+using the [`json()`][06] function to access its properties.
 
 ```yaml
 # dataUriToString.example.2.dsc.config.yaml
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 parameters:
-  dataFormattedString:
+  configDataUri:
     type: string
-    defaultValue: "data:;base64,SGVsbG8sIFdvcmxkIQ=="
+    defaultValue: "data:;base64,eyJzZXR0aW5nIjoidmFsdWUiLCJlbmFibGVkIjp0cnVlfQ=="
 resources:
-  - name: Decode data URI from parameter
+  - name: Decode and parse JSON config
     type: Microsoft.DSC.Debug/Echo
     properties:
-      output: "[dataUriToString(parameters('dataFormattedString'))]"
+      output:
+        rawJson: "[dataUriToString(parameters('configDataUri'))]"
+        parsedSetting: "[json(dataUriToString(parameters('configDataUri'))).setting]"
 ```
 
 ```bash
@@ -81,28 +89,34 @@ dsc config get --file dataUriToString.example.2.dsc.config.yaml
 
 ```yaml
 results:
-- name: Decode data URI from parameter
+- name: Decode and parse JSON config
   type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
-      output: Hello, World!
+      output:
+        rawJson: '{"setting":"value","enabled":true}'
+        parsedSetting: value
 messages: []
 hadErrors: false
 ```
 
-### Example 3 - Round-trip encoding and decoding
+### Example 3 - Process data from Azure ARM template output
 
-The configuration demonstrates encoding a string to a data URI and then decoding it
-back using the [`dataUri()`][02] function inside the `dataUriToString()` function.
+Azure ARM templates and similar systems often use data URIs for content encoding. Use
+`dataUriToString()` to decode this content back to its original form.
 
 ```yaml
 # dataUriToString.example.3.dsc.config.yaml
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+parameters:
+  armTemplateOutput:
+    type: string
+    defaultValue: "data:text/plain;charset=utf8;base64,SGVsbG8sIFdvcmxkIQ=="
 resources:
-  - name: Round-trip data URI conversion
+  - name: Process ARM template data URI output
     type: Microsoft.DSC.Debug/Echo
     properties:
-      output: "[dataUriToString(dataUri('Configuration Data'))]"
+      output: "[dataUriToString(parameters('armTemplateOutput'))]"
 ```
 
 ```bash
@@ -111,27 +125,34 @@ dsc config get --file dataUriToString.example.3.dsc.config.yaml
 
 ```yaml
 results:
-- name: Round-trip data URI conversion
+- name: Process ARM template data URI output
   type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
-      output: Configuration Data
+      output: Hello, World!
 messages: []
 hadErrors: false
 ```
 
-### Example 4 - Decode URL-encoded data URI
+### Example 4 - Round-trip verification
 
-This example demonstrates decoding a data URI that uses URL encoding instead of base64.
+Encoding a string to a data URI and decoding it back verifies that data survives the
+transformation correctly. Combine `dataUriToString()` with [`dataUri()`][02] to test this.
 
 ```yaml
 # dataUriToString.example.4.dsc.config.yaml
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+parameters:
+  originalContent:
+    type: string
+    defaultValue: "Configuration with special chars: <>&\""
 resources:
-  - name: Decode URL-encoded data URI
+  - name: Verify round-trip encoding
     type: Microsoft.DSC.Debug/Echo
     properties:
-      output: "[dataUriToString('data:text/plain,Hello%20World')]"
+      output:
+        original: "[parameters('originalContent')]"
+        afterRoundTrip: "[dataUriToString(dataUri(parameters('originalContent')))]"
 ```
 
 ```bash
@@ -140,11 +161,13 @@ dsc config get --file dataUriToString.example.4.dsc.config.yaml
 
 ```yaml
 results:
-- name: Decode URL-encoded data URI
+- name: Verify round-trip encoding
   type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
-      output: Hello World
+      output:
+        original: 'Configuration with special chars: <>&"'
+        afterRoundTrip: 'Configuration with special chars: <>&"'
 messages: []
 hadErrors: false
 ```
@@ -196,3 +219,4 @@ The `dataUriToString()` function raises errors for the following conditions:
 [03]: ./base64.md
 [04]: ./base64ToString.md
 [05]: ./parameters.md
+[06]: ./json.md
