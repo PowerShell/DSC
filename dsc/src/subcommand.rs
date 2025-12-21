@@ -571,10 +571,10 @@ pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat
                 resource_command::get(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref());
             }
         },
-        ResourceSubCommand::Set { resource, version, input, file: path, output_format } => {
+        ResourceSubCommand::Set { resource, version, input, file: path, output_format, what_if } => {
             dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
             let parsed_input = get_input(input.as_ref(), path.as_ref());
-            resource_command::set(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref());
+            resource_command::set(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref(), *what_if);
         },
         ResourceSubCommand::Test { resource, version, input, file: path, output_format } => {
             dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);

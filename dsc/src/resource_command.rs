@@ -127,7 +127,7 @@ pub fn get_all(dsc: &mut DscManager, resource_type: &str, version: Option<&str>,
     }
 }
 
-pub fn set(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, input: &str, format: Option<&OutputFormat>) {
+pub fn set(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, input: &str, format: Option<&OutputFormat>, what_if: bool) {
     if input.is_empty() {
         error!("{}", t!("resource_command.setInputEmpty"));
         exit(EXIT_INVALID_ARGS);
@@ -143,6 +143,8 @@ pub fn set(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, inp
         error!("{}: {}", t!("resource_command.invalidOperationOnAdapter"), resource.type_name);
         exit(EXIT_DSC_ERROR);
     }
+
+    let execution_kind = if what_if { ExecutionKind::WhatIf } else { ExecutionKind::Actual };
 
     let exist = match serde_json::from_str::<Value>(input) {
         Ok(v) => {
@@ -167,17 +169,25 @@ pub fn set(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, inp
             }
         };
 
-        if let Err(err) = resource.delete(input) {
-            error!("{err}");
-            exit(EXIT_DSC_ERROR);
-        }
-
-        let after_state = match resource.get(input) {
-            Ok(GetResult::Resource(response)) => response.actual_state,
-            Ok(_) => unreachable!(),
-            Err(err) => {
+        let after_state = if what_if {
+            let mut simulated_state = before_state.clone();
+            if let Value::Object(ref mut map) = simulated_state {
+                map.insert("_exist".to_string(), Value::Bool(false));
+            }
+            simulated_state
+        } else {
+            if let Err(err) = resource.delete(input) {
                 error!("{err}");
                 exit(EXIT_DSC_ERROR);
+            }
+
+            match resource.get(input) {
+                Ok(GetResult::Resource(response)) => response.actual_state,
+                Ok(_) => unreachable!(),
+                Err(err) => {
+                    error!("{err}");
+                    exit(EXIT_DSC_ERROR);
+                }
             }
         };
 
@@ -200,7 +210,7 @@ pub fn set(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, inp
         return;
     }
 
-    match resource.set(input, true, &ExecutionKind::Actual) {
+    match resource.set(input, true, &execution_kind) {
         Ok(result) => {
             // convert to json
             let json = match serde_json::to_string(&result) {
