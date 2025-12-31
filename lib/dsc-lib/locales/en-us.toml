@@ -84,7 +84,6 @@ skippingOutput = "Skipping output for '%{name}' due to condition evaluating to f
 secureOutputSkipped = "Secure output '%{name}' is skipped"
 outputTypeNotMatch = "Output '%{name}' type does not match expected type '%{expected_type}'"
 copyNotSupported = "Copy for output '%{name}' is currently not supported"
-requireAdapter = "Resource '%{resource}' requires adapter '%{adapter}'"
 
 [configure.parameters]
 importingParametersFromComplexInput = "Importing parameters from complex input"

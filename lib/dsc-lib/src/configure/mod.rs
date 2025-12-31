@@ -282,17 +282,6 @@ fn get_metadata_from_result(mut context: Option<&mut Context>, result: &mut Valu
     Ok(())
 }
 
-fn get_require_adapter_from_metadata(resource_metadata: &Option<Metadata>) -> Option<String> {
-    if let Some(resource_metadata) = resource_metadata {
-        if let Some(microsoft_metadata) = &resource_metadata.microsoft {
-            if let Some(require_adapter) = &microsoft_metadata.require_adapter {
-                return Some(require_adapter.clone());
-            }
-        }
-    }
-    None
-}
-
 impl Configurator {
     /// Create a new `Configurator` instance.
     ///
@@ -351,6 +340,20 @@ impl Configurator {
         }
     }
 
+    fn get_require_adapter_from_metadata(&mut self, resource_metadata: &Option<Metadata>) -> Result<Option<String>, DscError> {
+        if let Some(resource_metadata) = resource_metadata {
+            if let Some(microsoft_metadata) = &resource_metadata.microsoft {
+                if let Some(require_adapter) = &microsoft_metadata.require_adapter {
+                    if self.discovery.find_adapter(require_adapter).is_none() {
+                        return Err(DscError::AdapterNotFound(require_adapter.clone()));
+                    }
+                    return Ok(Some(require_adapter.clone()));
+                }
+            }
+        }
+        Ok(None)
+    }
+
     /// Invoke the get operation on a resource.
     ///
     /// # Returns
@@ -374,7 +377,7 @@ impl Configurator {
                 progress.write_increment(1);
                 continue;
             }
-            let adapter = get_require_adapter_from_metadata(&resource.metadata);
+            let adapter = self.get_require_adapter_from_metadata(&resource.metadata)?;
             let Some(dsc_resource) = discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.api_version.as_deref(), adapter.as_deref())) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.api_version.as_deref().unwrap_or("").to_string()));
             };
@@ -459,7 +462,7 @@ impl Configurator {
                 progress.write_increment(1);
                 continue;
             }
-            let adapter = get_require_adapter_from_metadata(&resource.metadata);
+            let adapter = self.get_require_adapter_from_metadata(&resource.metadata)?;
             let Some(dsc_resource) = discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.api_version.as_deref(), adapter.as_deref())) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.api_version.as_deref().unwrap_or("").to_string()));
             };
@@ -628,7 +631,7 @@ impl Configurator {
                 progress.write_increment(1);
                 continue;
             }
-            let adapter = get_require_adapter_from_metadata(&resource.metadata);
+            let adapter = self.get_require_adapter_from_metadata(&resource.metadata)?;
             let Some(dsc_resource) = discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.api_version.as_deref(), adapter.as_deref())) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.api_version.as_deref().unwrap_or("").to_string()));
             };
@@ -712,7 +715,7 @@ impl Configurator {
                 progress.write_increment(1);
                 continue;
             }
-            let adapter = get_require_adapter_from_metadata(&resource.metadata);
+            let adapter = self.get_require_adapter_from_metadata(&resource.metadata)?;
             let Some(dsc_resource) = discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.api_version.as_deref(), adapter.as_deref())) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.api_version.as_deref().unwrap_or("").to_string()));
             };
@@ -997,7 +1000,7 @@ impl Configurator {
         let mut discovery_filter: Vec<DiscoveryFilter> = Vec::new();
         let config_copy = config.clone();
         for resource in config_copy.resources {
-            let adapter = get_require_adapter_from_metadata(&resource.metadata);
+            let adapter = self.get_require_adapter_from_metadata(&resource.metadata)?;
             let filter = DiscoveryFilter::new(&resource.resource_type, resource.api_version.as_deref(), adapter.as_deref());
             if !discovery_filter.contains(&filter) {
                 discovery_filter.push(filter);

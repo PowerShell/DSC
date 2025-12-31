@@ -5,6 +5,7 @@ pub mod command_discovery;
 pub mod discovery_trait;
 
 use crate::discovery::discovery_trait::{DiscoveryKind, ResourceDiscovery, DiscoveryFilter};
+use crate::dscresources::resource_manifest::Kind;
 use crate::extensions::dscextension::{Capability, DscExtension};
 use crate::{dscresources::dscresource::DscResource, progress::ProgressFormat};
 use core::result::Result::Ok;
@@ -84,6 +85,18 @@ impl Discovery {
             .filter(|ext| ext.capabilities.contains(capability))
             .cloned()
             .collect()
+    }
+
+    pub fn find_adapter(&mut self, adapter: &str) -> Option<&DscResource> {
+        if self.resources.is_empty() {
+            self.find_resources(&[DiscoveryFilter::new(adapter, None, None)], ProgressFormat::None);
+        }
+        for resource in &self.resources {
+            if resource.0.eq_ignore_ascii_case(adapter) && resource.1.first().unwrap().kind == Kind::Adapter {
+                return resource.1.first();
+            }
+        }
+        None
     }
 
     #[must_use]
