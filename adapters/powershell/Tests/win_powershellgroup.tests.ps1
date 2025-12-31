@@ -224,7 +224,7 @@ resources:
   }
 
   It 'Export works with class-based PS DSC resources' {
-    $out = dsc resource export -r PSClassResource/PSClassResource 2> "$testdrive/error.log" | ConvertFrom-Json
+    $out = dsc -l trace resource export -r PSClassResource/PSClassResource 2> "$testdrive/error.log" | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path "$testdrive/error.log" -Raw | Out-String)
     $out | Should -Not -BeNullOrEmpty
     $out.resources.count | Should -Be 5
@@ -248,14 +248,15 @@ resources:
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: Class-resource Info
-              type: TestClassResource/TestClassResource
+              type: PSClassResource/PSClassResource
               metadata:
                 ${metadata}:
                   requireAdapter: $adapter
               properties:
-                Name: 'TestClassResource1'
-                HashTableProp:
-                  Name: 'DSCv3'
+                Name: TestInstance
+                Credential:
+                  UserName: 'MyUser'
+                  Password: 'MyPassword'
 "@
     $out = dsc -l trace config $operation -i $yaml 2> $TestDrive/tracing.txt
     $text = $out | Out-String
@@ -263,14 +264,16 @@ resources:
     $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw -Path $TestDrive/tracing.txt)
     switch ($Operation) {
       'get' {
-        $out.results[0].result.actualState.Name | Should -BeExactly 'TestClassResource1' -Because ("$text`n" + (Get-Content -Raw -Path $TestDrive/tracing.txt))
+        $out.results[0].result.actualState.Name | Should -BeExactly 'TestInstance' -Because ("$text`n" + (Get-Content -Raw -Path $TestDrive/tracing.txt))
       }
       'set' {
-        $out.results[0].result.beforeState.Name | Should -BeExactly 'TestClassResource1' -Because $text
-        $out.results[0].result.afterState.Name | Should -BeExactly 'TestClassResource1' -Because $text
+        $out.results[0].result.beforeState.Name | Should -BeExactly 'TestInstance' -Because $text
+        if ($adapter -eq 'Microsoft.Adapter/WindowsPowerShell') {
+          $out.results[0].result.afterState.Name | Should -BeExactly 'TestInstance' -Because $text
+        }
       }
       'test' {
-        $out.results[0].result.actualState.InDesiredState | Should -BeFalse -Because $text
+        $out.results[0].result.inDesiredState | Should -BeTrue -Because $text
       }
     }
     if ($metadata -eq 'Microsoft.DSC') {

@@ -514,9 +514,29 @@ impl ResourceDiscovery for CommandDiscovery {
             return Ok(found_resources);
         }
 
-        // now go through the adapters, this is for implicit adapters so version can't be specified so use latest version
+        // sort the adapters by ones specified in the required resources first
+        let mut specified_adapters: Vec<String> = vec![];
+        let mut unspecified_adapters: Vec<String> = vec![];
         for adapter_name in locked_clone!(ADAPTERS).keys() {
-            self.discover_adapted_resources("*", adapter_name)?;
+            let mut is_specified = false;
+            for filter in required_resource_types {
+                if let Some(required_adapter) = filter.require_adapter() {
+                    if required_adapter.eq_ignore_ascii_case(adapter_name) {
+                        is_specified = true;
+                        break;
+                    }
+                }
+            }
+            if is_specified {
+                specified_adapters.push(adapter_name.clone());
+            } else {
+                unspecified_adapters.push(adapter_name.clone());
+            }
+        }
+        specified_adapters.append(&mut unspecified_adapters);
+
+        for adapter_name in specified_adapters {
+            self.discover_adapted_resources("*", &adapter_name)?;
             add_resources_to_lookup_table(&locked_clone!(ADAPTED_RESOURCES));
             for filter in required_resource_types {
                 if let Some(adapted_resources) = locked_get!(ADAPTED_RESOURCES, filter.resource_type()) {

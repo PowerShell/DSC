@@ -87,15 +87,14 @@ impl Discovery {
     }
 
     #[must_use]
-    pub fn find_resource(&mut self, type_name: &str, version_string: Option<&str>) -> Option<&DscResource> {
+    pub fn find_resource(&mut self, filter: &DiscoveryFilter) -> Option<&DscResource> {
         if self.resources.is_empty() {
-            let discovery_filter = DiscoveryFilter::new(type_name, version_string.map(std::string::ToString::to_string));
-            self.find_resources(&[discovery_filter], ProgressFormat::None);
+            self.find_resources(&[filter.clone()], ProgressFormat::None);
         }
 
-        let type_name = type_name.to_lowercase();
+        let type_name = filter.resource_type().to_lowercase();
         if let Some(resources) = self.resources.get(&type_name) {
-            if let Some(version) = version_string {
+            if let Some(version) = filter.version() {
                 let version = fix_semver(version);
                 if let Ok(version_req) = VersionReq::parse(&version) {
                     for resource in resources {
