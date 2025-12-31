@@ -58,7 +58,8 @@
             }
         ],
         "input": "stdin",
-        "implementsPretest": true
+        "implementsPretest": true,
+        "return": "state"
     },
     "test": {
         "executable": "powershell",

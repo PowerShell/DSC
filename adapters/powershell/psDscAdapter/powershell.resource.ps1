@@ -142,6 +142,11 @@ switch ($Operation) {
                 }
             }
 
+            $properties = @()
+            foreach ($prop in $DscResourceInfo.Properties) {
+                $properties += $prop.Name
+            }
+
             # OUTPUT dsc is expecting the following properties
             [resourceOutput]@{
                 type           = $dscResource.Type
@@ -152,7 +157,7 @@ switch ($Operation) {
                 directory      = $DscResourceInfo.ParentPath
                 implementedAs  = $DscResourceInfo.ImplementationDetail
                 author         = $DscResourceInfo.CompanyName
-                properties     = $DscResourceInfo.Properties.Name
+                properties     = $properties
                 requireAdapter = $requireAdapter
                 description    = $description
             } | ConvertTo-Json -Compress
@@ -180,12 +185,23 @@ switch ($Operation) {
                 Write-DscTrace -Operation Error -Message 'Incomplete GET for resource ' + $desiredState.Name
                 exit 1
             }
-            if ($actualState.InDesiredState -eq $false) {
+            if ($actualState.Properties.InDesiredState -eq $false) {
                 $inDesiredState = $false
             }
 
-            if ($Operation -eq 'Test') {
+            if ($Operation -in @('Set', 'Test')) {
                 $actualState = $psDscAdapter.Invoke( { param($ds, $dscResourceCache) Invoke-DscOperation -Operation 'Get' -DesiredState $ds -dscResourceCache $dscResourceCache }, $desiredState, $dscResourceCache)
+            }
+
+            if ($Operation -eq 'Test') {
+                $actualState.Properties | Add-Member -MemberType NoteProperty -Name _inDesiredState -Value $inDesiredState -Force
+            }
+
+            if ($Operation -eq 'Export') {
+                foreach ($instance in $actualState) {
+                    $instance | ConvertTo-Json -Depth 10 -Compress
+                }
+                exit 0
             }
 
             $result = $actualState.Properties | ConvertTo-Json -Depth 10 -Compress
