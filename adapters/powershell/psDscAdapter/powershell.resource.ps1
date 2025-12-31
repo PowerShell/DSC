@@ -6,7 +6,9 @@ param(
     [ValidateSet('List', 'Get', 'Set', 'Test', 'Export', 'Validate', 'ClearCache')]
     [string]$Operation,
     [Parameter(Mandatory = $false, Position = 1, ValueFromPipeline = $true, HelpMessage = 'Configuration or resource input in JSON format.')]
-    [string]$jsonInput = '@{}'
+    [string]$jsonInput = '{}',
+    [Parameter()]
+    [string]$ResourceType
 )
 
 function Write-DscTrace {
@@ -76,7 +78,7 @@ if ('Validate' -ne $Operation) {
 }
 
 if ($jsonInput) {
-    if ($jsonInput -ne '@{}') {
+    if ($jsonInput -ne '{}') {
         $inputobj_pscustomobj = $jsonInput | ConvertFrom-Json
     }
     $new_psmodulepath = $inputobj_pscustomobj.psmodulepath
@@ -126,10 +128,23 @@ switch ($Operation) {
 
             # match adapter to version of powershell
             if ($PSVersionTable.PSVersion.Major -le 5) {
-                $requireAdapter = 'Microsoft.Windows/WindowsPowerShell'
+                if ($ResourceType) {
+                    $requireAdapter = 'Microsoft.Adapter/WindowsPowerShell'
+                } else {
+                    $requireAdapter = 'Microsoft.Windows/WindowsPowerShell'
+                }
             }
             else {
-                $requireAdapter = 'Microsoft.DSC/PowerShell'
+                if ($ResourceType) {
+                    $requireAdapter = 'Microsoft.Adapter/PowerShell'
+                } else {
+                    $requireAdapter = 'Microsoft.DSC/PowerShell'
+                }
+            }
+
+            $properties = @()
+            foreach ($prop in $DscResourceInfo.Properties) {
+                $properties += $prop.Name
             }
 
             # OUTPUT dsc is expecting the following properties
@@ -142,13 +157,58 @@ switch ($Operation) {
                 directory      = $DscResourceInfo.ParentPath
                 implementedAs  = $DscResourceInfo.ImplementationDetail
                 author         = $DscResourceInfo.CompanyName
-                properties     = $DscResourceInfo.Properties.Name
+                properties     = $properties
                 requireAdapter = $requireAdapter
                 description    = $description
             } | ConvertTo-Json -Compress
         }
     }
     { @('Get','Set','Test','Export') -contains $_ } {
+        if ($ResourceType) {
+            Write-DscTrace -Operation Debug -Message "Using resource type override: $ResourceType"
+            $dscResourceCache = Invoke-DscCacheRefresh -Module $ResourceType.Split('/')[0]
+            if ($null -eq $dscResourceCache) {
+                Write-DscTrace -Operation Error -Message ("DSC resource '{0}' module not found." -f $ResourceType)
+                exit 1
+            }
+
+            $desiredState = $psDscAdapter.invoke(   { param($jsonInput, $type) Get-DscResourceObject -jsonInput $jsonInput -type $type }, $jsonInput, $ResourceType )
+            if ($null -eq $desiredState) {
+                Write-DscTrace -Operation Error -message 'Failed to create configuration object from provided input JSON.'
+                exit 1
+            }
+
+            $desiredState.Type = $ResourceType
+            $inDesiredState = $true
+            $actualState = $psDscAdapter.invoke( { param($op, $ds, $dscResourceCache) Invoke-DscOperation -Operation $op -DesiredState $ds -dscResourceCache $dscResourceCache }, $Operation, $desiredState, $dscResourceCache)
+            if ($null -eq $actualState) {
+                Write-DscTrace -Operation Error -Message 'Incomplete GET for resource ' + $desiredState.Name
+                exit 1
+            }
+            if ($actualState.Properties.InDesiredState -eq $false) {
+                $inDesiredState = $false
+            }
+
+            if ($Operation -in @('Set', 'Test')) {
+                $actualState = $psDscAdapter.Invoke( { param($ds, $dscResourceCache) Invoke-DscOperation -Operation 'Get' -DesiredState $ds -dscResourceCache $dscResourceCache }, $desiredState, $dscResourceCache)
+            }
+
+            if ($Operation -eq 'Test') {
+                $actualState.Properties | Add-Member -MemberType NoteProperty -Name _inDesiredState -Value $inDesiredState -Force
+            }
+
+            if ($Operation -eq 'Export') {
+                foreach ($instance in $actualState) {
+                    $instance | ConvertTo-Json -Depth 10 -Compress
+                }
+                exit 0
+            }
+
+            $result = $actualState.Properties | ConvertTo-Json -Depth 10 -Compress
+            Write-DscTrace -Operation Debug -Message "jsonOutput=$result"
+            return $result
+        }
+
         $desiredState = $psDscAdapter.invoke(   { param($jsonInput) Get-DscResourceObject -jsonInput $jsonInput }, $jsonInput )
         if ($null -eq $desiredState) {
             Write-DscTrace -Operation Error -message 'Failed to create configuration object from provided input JSON.'

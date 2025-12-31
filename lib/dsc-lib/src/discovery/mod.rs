@@ -5,6 +5,7 @@ pub mod command_discovery;
 pub mod discovery_trait;
 
 use crate::discovery::discovery_trait::{DiscoveryKind, ResourceDiscovery, DiscoveryFilter};
+use crate::dscresources::resource_manifest::Kind;
 use crate::extensions::dscextension::{Capability, DscExtension};
 use crate::{dscresources::dscresource::DscResource, progress::ProgressFormat};
 use core::result::Result::Ok;
@@ -86,16 +87,27 @@ impl Discovery {
             .collect()
     }
 
-    #[must_use]
-    pub fn find_resource(&mut self, type_name: &str, version_string: Option<&str>) -> Option<&DscResource> {
+    pub fn find_adapter(&mut self, adapter: &str) -> Option<&DscResource> {
         if self.resources.is_empty() {
-            let discovery_filter = DiscoveryFilter::new(type_name, version_string.map(std::string::ToString::to_string));
-            self.find_resources(&[discovery_filter], ProgressFormat::None);
+            self.find_resources(&[DiscoveryFilter::new(adapter, None, None)], ProgressFormat::None);
+        }
+        for resource in &self.resources {
+            if resource.0.eq_ignore_ascii_case(adapter) && resource.1.first().unwrap().kind == Kind::Adapter {
+                return resource.1.first();
+            }
+        }
+        None
+    }
+
+    #[must_use]
+    pub fn find_resource(&mut self, filter: &DiscoveryFilter) -> Option<&DscResource> {
+        if self.resources.is_empty() {
+            self.find_resources(&[filter.clone()], ProgressFormat::None);
         }
 
-        let type_name = type_name.to_lowercase();
+        let type_name = filter.resource_type().to_lowercase();
         if let Some(resources) = self.resources.get(&type_name) {
-            if let Some(version) = version_string {
+            if let Some(version) = filter.version() {
                 let version = fix_semver(version);
                 if let Ok(version_req) = VersionReq::parse(&version) {
                     for resource in resources {
