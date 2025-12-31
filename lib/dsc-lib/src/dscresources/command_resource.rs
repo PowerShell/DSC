@@ -785,10 +785,8 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
     // Try to use existing runtime first (e.g. from gRPC or MCP server)
     match tokio::runtime::Handle::try_current() {
         Ok(handle) => {
-            std::thread::scope(|s| {
-                s.spawn(|| {
-                    handle.block_on(run_async)
-                }).join().unwrap()
+            tokio::task::block_in_place(|| {
+                handle.block_on(run_async)
             })
         },
         // Otherwise create a new runtime
