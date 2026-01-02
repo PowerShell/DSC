@@ -309,6 +309,23 @@ Describe 'PowerShell adapter resource tests' {
         }
     }
 
+    It 'Verify validate operation shows reason on adapted resource' {
+        $oldPath = $env:PATH
+        try {
+            $adapterPath = Join-Path $PSScriptRoot 'TestAdapter'
+            $env:PATH += [System.IO.Path]::PathSeparator + $adapterPath
+
+            # Test with invalid TestCaseId that should trigger validation failure with reason
+            $r = '{"TestCaseId": 99}' | dsc resource get -r 'Test/TestCase' -f - 2>&1
+            $LASTEXITCODE | Should -Not -Be 0
+            $errorOutput = $r | Out-String
+            $errorOutput | Should -Match "TestCaseId 99 is not allowed for testing purposes"
+        }
+        finally {
+            $env:PATH = $oldPath
+        }
+    }
+
     It 'Dsc can process large resource output' -Pending {
         try {
             $env:TestClassResourceResultCount = 5000 # with sync resource invocations this was not possible
