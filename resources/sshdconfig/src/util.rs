@@ -198,7 +198,6 @@ pub fn invoke_sshd_config_validation(args: Option<SshdCommandArgs>) -> Result<St
         }
     }
 
-    debug!("here10");
     let output = command.output()
         .map_err(|e| SshdConfigError::CommandError(e.to_string()))?;
 
