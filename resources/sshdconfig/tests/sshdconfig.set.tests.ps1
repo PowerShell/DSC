@@ -168,6 +168,18 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
     }
 
     Context 'Set with invalid configuration' {
+        BeforeEach {
+            # Create initial file with valid config
+            $validConfig = @{
+                _metadata = @{
+                    filepath = $TestConfigPath
+                }
+                _clobber = $true
+                Port = "9999"
+            } | ConvertTo-Json
+            sshdconfig set --input $validConfig -s sshd-config
+        }
+
         It 'Should fail with clobber set to false' {
             $inputConfig = @{
                 _metadata = @{
@@ -183,22 +195,10 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
 
             # Read log file and check for error message
             $logContent = Get-Content $logFile -Raw
-            $logContent | Should -Match "clobber=false is not yet supported"
+            $logContent | Should -Match "clobber=false is not supported for keywords that can have multiple values"
         }
 
         It 'Should fail with invalid keyword and not modify file' {
-            # Create initial file with valid config
-            $validConfig = @{
-                _metadata = @{
-                    filepath = $TestConfigPath
-                }
-                _clobber = $true
-                Port = "9999"
-            } | ConvertTo-Json
-
-            sshdconfig set --input $validConfig -s sshd-config 2>$null
-            $LASTEXITCODE | Should -Be 0
-
             # Get original content
             $getInput = @{
                 _metadata = @{
@@ -298,10 +298,11 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
                 ExpectedContains = @("Port 2222", "AddressFamily inet", "MaxAuthTries 5", "PermitRootLogin no", "PasswordAuthentication no", "LoginGraceTime 60")
                 ExpectedNotContains = @("PermitRootLogin yes")
                 VerifyOrder = @(
-                    @{ Pattern = "^Port"; Before = "^PasswordAuthentication" },
-                    @{ Pattern = "^PasswordAuthentication"; Before = "^PermitRootLogin" },
-                    @{ Pattern = "^PermitRootLogin"; Before = "^AddressFamily" },
-                    @{ Pattern = "^AddressFamily"; Before = "^MaxAuthTries" }
+                    @{ First = "^Port"; Next = "^AddressFamily" },
+                    @{ First = "^AddressFamily"; Next = "^MaxAuthTries" },
+                    @{ First = "^MaxAuthTries"; Next = "^PermitRootLogin" },
+                    @{ First = "^PermitRootLogin"; Next = "^PasswordAuthentication" },
+                    @{ First = "^PasswordAuthentication"; Next = "^LoginGraceTime" }
                 )
             }
         ) {
@@ -331,9 +332,9 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
             }
 
             foreach ($orderCheck in $VerifyOrder) {
-                $beforeLine = ($sshdConfigContents | Select-String -Pattern $orderCheck.Pattern).LineNumber
-                $afterLine = ($sshdConfigContents | Select-String -Pattern $orderCheck.Before).LineNumber
-                $beforeLine | Should -BeLessThan $afterLine
+                $beforeLine = ($sshdConfigContents | Select-String -Pattern $orderCheck.First).LineNumber
+                $afterLine = ($sshdConfigContents | Select-String -Pattern $orderCheck.Next).LineNumber
+                $beforeLine | Should -BeLessThan $afterLine -Because "Expected '$($orderCheck.First)' to appear before '$($orderCheck.Next)'"
             }
         }
     }

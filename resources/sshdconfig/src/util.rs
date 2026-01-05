@@ -4,14 +4,14 @@
 use rust_i18n::t;
 use serde::Deserialize;
 use serde_json::{Map, Value};
-use std::{path::PathBuf, process::Command};
+use std::{fmt::Write, path::PathBuf, process::Command};
 use tracing::{debug, warn, Level};
 use tracing_subscriber::{EnvFilter, Layer, prelude::__tracing_subscriber_SubscriberExt};
 
 use crate::args::{TraceFormat, TraceLevel};
 use crate::error::SshdConfigError;
 use crate::inputs::{CommandInfo, Metadata, SshdCommandArgs};
-use crate::metadata::{MULTI_ARG_KEYWORDS_COMMA_SEP, SSHD_CONFIG_DEFAULT_PATH_UNIX, SSHD_CONFIG_DEFAULT_PATH_WINDOWS};
+use crate::metadata::{MULTI_ARG_KEYWORDS_COMMA_SEP, REPEATABLE_KEYWORDS, SSHD_CONFIG_DEFAULT_PATH_UNIX, SSHD_CONFIG_DEFAULT_PATH_WINDOWS};
 use crate::parser::parse_text_to_map;
 
 #[derive(Debug, Deserialize)]
@@ -114,38 +114,33 @@ pub fn enable_tracing(trace_level: Option<&TraceLevel>, trace_format: &TraceForm
 /// # Errors
 ///
 /// Returns an error if the value type is not supported or if formatting fails.
-pub fn format_sshd_value(key: &str, value: &Value) -> Result<String, SshdConfigError> {
+fn format_sshd_value(key: &str, value: &Value) -> Result<String, SshdConfigError> {
     let key_lower = key.to_lowercase();
-    let result = if key_lower == "match" {
-        format_match_block(value)?
-    } else {
-        format_value_as_string(value, MULTI_ARG_KEYWORDS_COMMA_SEP.contains(&key_lower.as_str()))?
-    };
-
+    let result = format_value_as_string(value, MULTI_ARG_KEYWORDS_COMMA_SEP.contains(&key_lower.as_str()));
     if result.is_empty() {
         return Err(SshdConfigError::ParserError(t!("util.invalidValue", key = key).to_string()))
     }
     Ok(result)
 }
 
-fn format_value_as_string(value: &Value, is_comma_separated: bool) -> Result<String, SshdConfigError> {
+fn format_value_as_string(value: &Value, is_comma_separated: bool) -> String {
     match value {
         Value::Array(arr) => {
             if arr.is_empty() {
-                return Ok(String::new());
+                return String::new();
             }
 
             // Convert array elements to strings
             let mut string_values = Vec::new();
             for item in arr {
-                let result = format_value_as_string(item, false)?;
+                let result = format_value_as_string(item, false);
                 if !result.is_empty() {
                     string_values.push(result);
                 }
             }
 
             if string_values.is_empty() {
-                return Ok(String::new());
+                return String::new();
             }
 
             let separator = if is_comma_separated {
@@ -154,15 +149,15 @@ fn format_value_as_string(value: &Value, is_comma_separated: bool) -> Result<Str
                 " "
             };
 
-            Ok(string_values.join(separator))
+            string_values.join(separator)
         },
         Value::Bool(b) => {
             let bool_str = if *b { "yes" } else { "no" };
-            Ok(bool_str.to_string())
+            bool_str.to_string()
         },
-        Value::Number(n) => Ok(n.to_string()),
-        Value::String(s) => Ok(s.clone()),
-        _ => Ok(String::new())
+        Value::Number(n) => n.to_string(),
+        Value::String(s) => s.clone(),
+        _ => String::new()
     }
 }
 
@@ -364,7 +359,7 @@ fn format_match_block(match_obj: &Value) -> Result<String, SshdConfigError> {
 
     for (key, value) in &match_block.criteria {
         // all match criteria values are comma-separated
-        let value_formatted = format_value_as_string(value, true)?;
+        let value_formatted = format_value_as_string(value, true);
         match_parts.push(format!("{key} {value_formatted}"));
     }
 
@@ -378,4 +373,49 @@ fn format_match_block(match_obj: &Value) -> Result<String, SshdConfigError> {
     }
 
     Ok(result.join("\n"))
+}
+
+/// Write configuration map to config text string
+///
+/// # Errors
+///
+/// This function will return an error if formatting fails.
+pub fn write_config_map_to_text(global_map: &Map<String, Value>, match_map: Option<Value>) -> Result<String, SshdConfigError> {
+    let mut config_text = String::new();
+
+    for (key, value) in global_map {
+        let key_lower = key.to_lowercase();
+
+        // Handle repeatable keywords - write multiple lines
+        if REPEATABLE_KEYWORDS.contains(&key_lower.as_str()) {
+            if let Value::Array(arr) = value {
+                for item in arr {
+                    let formatted = format_sshd_value(key, item)?;
+                    writeln!(&mut config_text, "{key} {formatted}")?;
+                }
+            } else {
+                // Single value for repeatable keyword, write as-is
+                let formatted = format_sshd_value(key, value)?;
+                writeln!(&mut config_text, "{key} {formatted}")?;
+            }
+        } else {
+            // Handle non-repeatable keywords - format and write single line
+            let formatted = format_sshd_value(key, value)?;
+            writeln!(&mut config_text, "{key} {formatted}")?;
+        }
+    }
+
+    if let Some(match_map) = match_map {
+        if let Value::Array(arr) = match_map {
+            for item in arr {
+                let formatted = format_match_block(&item)?;
+                writeln!(&mut config_text, "match {formatted}")?;
+            }
+        } else {
+            let formatted = format_match_block(&match_map)?;
+            writeln!(&mut config_text, "match {formatted}")?;
+        }
+    }
+
+    Ok(config_text)
 }

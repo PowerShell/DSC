@@ -10,14 +10,15 @@ use {
 
 use rust_i18n::t;
 use serde_json::{Map, Value};
-use std::{fmt::Write, string::String};
+use std::string::String;
 use tracing::{debug, info, warn};
 
 use crate::args::{DefaultShell, Setting};
 use crate::error::SshdConfigError;
+use crate::get::get_sshd_settings;
 use crate::inputs::{CommandInfo, SshdCommandArgs};
-use crate::metadata::{REPEATABLE_KEYWORDS, SSHD_CONFIG_HEADER, SSHD_CONFIG_HEADER_VERSION, SSHD_CONFIG_HEADER_WARNING};
-use crate::util::{build_command_info, format_sshd_value, get_default_sshd_config_path, invoke_sshd_config_validation};
+use crate::metadata::{MULTI_ARG_KEYWORDS_COMMA_SEP, MULTI_ARG_KEYWORDS_SPACE_SEP, REPEATABLE_KEYWORDS, SSHD_CONFIG_HEADER, SSHD_CONFIG_HEADER_VERSION, SSHD_CONFIG_HEADER_WARNING};
+use crate::util::{build_command_info, get_default_sshd_config_path, invoke_sshd_config_validation, write_config_map_to_text};
 
 /// Invoke the set command.
 ///
@@ -28,8 +29,8 @@ pub fn invoke_set(input: &str, setting: &Setting) -> Result<Map<String, Value>, 
     match setting {
         Setting::SshdConfig => {
             debug!("{} {:?}", t!("set.settingSshdConfig").to_string(), setting);
-            let cmd_info = build_command_info(Some(&input.to_string()), false)?;
-            match set_sshd_config(&cmd_info) {
+            let mut cmd_info = build_command_info(Some(&input.to_string()), false)?;
+            match set_sshd_config(&mut cmd_info) {
                 Ok(()) => Ok(Map::new()),
                 Err(e) => Err(e),
             }
@@ -106,37 +107,41 @@ fn remove_registry(name: &str) -> Result<(), SshdConfigError> {
     Ok(())
 }
 
-fn set_sshd_config(cmd_info: &CommandInfo) -> Result<(), SshdConfigError> {
+fn set_sshd_config(cmd_info: &mut CommandInfo) -> Result<(), SshdConfigError> {
     // this should be its own helper function that checks that the value makes sense for the key type
     // i.e. if the key can be repeated or have multiple values, etc.
     // or if the value is something besides a string (like an object to convert back into a comma-separated list)
     debug!("{}", t!("set.writingTempConfig"));
     let mut config_text = SSHD_CONFIG_HEADER.to_string() + "\n" + SSHD_CONFIG_HEADER_VERSION + "\n" + SSHD_CONFIG_HEADER_WARNING + "\n";
     if cmd_info.clobber {
+        let match_map = cmd_info.input.remove("match");
+        config_text.push_str(&write_config_map_to_text(&cmd_info.input, match_map)?);
+    } else {
+        let mut get_cmd_info = cmd_info.clone();
+        get_cmd_info.include_defaults = false;
+        get_cmd_info.input = Map::new();
+
+        let mut existing_config = get_sshd_settings(&get_cmd_info, true)?;
         for (key, value) in &cmd_info.input {
             let key_lower = key.to_lowercase();
+            let key_contains = key_lower.as_str();
 
-            // Handle repeatable keywords - write multiple lines
-            if REPEATABLE_KEYWORDS.contains(&key_lower.as_str()) {
-                if let Value::Array(arr) = value {
-                    for item in arr {
-                        let formatted = format_sshd_value(key, item)?;
-                        writeln!(&mut config_text, "{key} {formatted}")?;
-                    }
-                } else {
-                    // Single value for repeatable keyword, write as-is
-                    let formatted = format_sshd_value(key, value)?;
-                    writeln!(&mut config_text, "{key} {formatted}")?;
-                }
+            if REPEATABLE_KEYWORDS.contains(&key_contains)
+                || MULTI_ARG_KEYWORDS_COMMA_SEP.contains(&key_contains)
+                || MULTI_ARG_KEYWORDS_SPACE_SEP.contains(&key_contains) {
+                return Err(SshdConfigError::InvalidInput(t!("set.clobberFalseUnsupported").to_string()));
+            }
+
+            if value.is_null() {
+                existing_config.remove(key);
             } else {
-                // Handle non-repeatable keywords - format and write single line
-                let formatted = format_sshd_value(key, value)?;
-                writeln!(&mut config_text, "{key} {formatted}")?;
+                existing_config.insert(key.clone(), value.clone());
             }
         }
-    } else {
-        /* TODO: preserve existing settings that are not in input, probably need to call get */
-        return Err(SshdConfigError::InvalidInput(t!("set.clobberFalseUnsupported").to_string()));
+        existing_config.remove("_metadata");
+        existing_config.remove("_inheritedDefaults");
+        let match_map = existing_config.remove("match");
+        config_text.push_str(&write_config_map_to_text(&existing_config, match_map)?);
     }
 
     // Write input to a temporary file and validate it with SSHD -T
