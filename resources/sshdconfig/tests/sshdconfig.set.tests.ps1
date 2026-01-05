@@ -39,7 +39,7 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
                 _metadata = @{
                     filepath = $TestConfigPath
                 }
-                _clobber = $true
+                _purge = $true
                 Port = "1234"
                 passwordauthentication = $false
                 allowusers = @("user1", "user2")
@@ -68,7 +68,7 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
                 _metadata = @{
                     filepath = $TestConfigPath
                 }
-                _clobber = $true
+                _purge = $true
                 match = @(
                     @{
                         criteria = @{
@@ -103,7 +103,7 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
                 _metadata = @{
                     filepath = $TestConfigPath
                 }
-                _clobber = $true
+                _purge = $true
                 Port = "5555"
             } | ConvertTo-Json
 
@@ -135,7 +135,7 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
                 _metadata = @{
                     filepath = $TestConfigPath
                 }
-                _clobber = $true
+                _purge = $true
                 Port = "6789"
             } | ConvertTo-Json
 
@@ -146,7 +146,7 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
                 _metadata = @{
                     filepath = $TestConfigPath
                 }
-                _clobber = $true
+                _purge = $true
                 Port = "7777"
             } | ConvertTo-Json
 
@@ -174,28 +174,28 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
                 _metadata = @{
                     filepath = $TestConfigPath
                 }
-                _clobber = $true
+                _purge = $true
                 Port = "9999"
             } | ConvertTo-Json
             sshdconfig set --input $validConfig -s sshd-config
         }
 
-        It 'Should fail with clobber set to false' {
+        It 'Should fail with purge set to false' {
             $inputConfig = @{
                 _metadata = @{
                     filepath = $TestConfigPath
                 }
-                _clobber = $false
+                _purge = $false
                 Port = "8888"
             } | ConvertTo-Json
 
-            $logFile = Join-Path $TestDrive "clobber_error.log"
+            $logFile = Join-Path $TestDrive "purge_error.log"
             sshdconfig set --input $inputConfig -s sshd-config 2>$logFile
             $LASTEXITCODE | Should -Not -Be 0
 
             # Read log file and check for error message
             $logContent = Get-Content $logFile -Raw
-            $logContent | Should -Match "clobber=false is not supported for keywords that can have multiple values"
+            $logContent | Should -Match "purge=false is not supported for keywords that can have multiple values"
         }
 
         It 'Should fail with invalid keyword and not modify file' {
@@ -212,7 +212,7 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
                 _metadata = @{
                     filepath = $TestConfigPath
                 }
-                _clobber = $true
+                _purge = $true
                 FakeKeyword = "1234"
             } | ConvertTo-Json
 
@@ -226,7 +226,7 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
         }
     }
 
-    Context 'Set with _clobber=false' {
+    Context 'Set with _purge=false' {
         BeforeEach {
             $initialContent = @"
     Port 2222
@@ -312,7 +312,7 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
                 _metadata = @{
                     filepath = $TestConfigPath
                 }
-                _clobber = $false
+                _purge = $false
             }
             foreach ($key in $InputConfig.Keys) {
                 $config[$key] = $InputConfig[$key]

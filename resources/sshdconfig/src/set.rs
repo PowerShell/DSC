@@ -113,7 +113,7 @@ fn set_sshd_config(cmd_info: &mut CommandInfo) -> Result<(), SshdConfigError> {
     // or if the value is something besides a string (like an object to convert back into a comma-separated list)
     debug!("{}", t!("set.writingTempConfig"));
     let mut config_text = SSHD_CONFIG_HEADER.to_string() + "\n" + SSHD_CONFIG_HEADER_VERSION + "\n" + SSHD_CONFIG_HEADER_WARNING + "\n";
-    if cmd_info.clobber {
+    if cmd_info.purge {
         let match_map = cmd_info.input.remove("match");
         config_text.push_str(&write_config_map_to_text(&cmd_info.input, match_map)?);
     } else {
@@ -129,7 +129,7 @@ fn set_sshd_config(cmd_info: &mut CommandInfo) -> Result<(), SshdConfigError> {
             if REPEATABLE_KEYWORDS.contains(&key_contains)
                 || MULTI_ARG_KEYWORDS_COMMA_SEP.contains(&key_contains)
                 || MULTI_ARG_KEYWORDS_SPACE_SEP.contains(&key_contains) {
-                return Err(SshdConfigError::InvalidInput(t!("set.clobberFalseUnsupported").to_string()));
+                return Err(SshdConfigError::InvalidInput(t!("set.purgeFalseUnsupported").to_string()));
             }
 
             if value.is_null() {

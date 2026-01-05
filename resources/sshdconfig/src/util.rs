@@ -258,7 +258,7 @@ pub fn extract_sshd_defaults() -> Result<Map<String, Value>, SshdConfigError> {
 pub fn build_command_info(input: Option<&String>, is_get: bool) -> Result<CommandInfo, SshdConfigError> {
     if let Some(inputs) = input {
         let mut sshd_config: Map<String, Value> = serde_json::from_str(inputs.as_str())?;
-        let clobber = get_bool_or_default(&mut sshd_config, "_clobber", false)?;
+        let purge = get_bool_or_default(&mut sshd_config, "_purge", false)?;
         let include_defaults = get_bool_or_default(&mut sshd_config, "_includeDefaults", is_get)?;
         let metadata: Metadata = if let Some(value) = sshd_config.remove("_metadata") {
             serde_json::from_value(value)?
@@ -278,7 +278,7 @@ pub fn build_command_info(input: Option<&String>, is_get: bool) -> Result<Comman
             sshd_config.clear();
         }
         return Ok(CommandInfo {
-            clobber,
+            purge,
             include_defaults,
             input: sshd_config,
             metadata,

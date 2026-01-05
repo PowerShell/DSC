@@ -7,8 +7,8 @@ use std::path::PathBuf;
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct CommandInfo {
-    #[serde(rename = "_clobber")]
-    pub clobber: bool,
+    #[serde(rename = "_purge")]
+    pub purge: bool,
     /// Switch to include defaults in the output
     #[serde(rename = "_includeDefaults")]
     pub include_defaults: bool,
@@ -24,7 +24,7 @@ impl CommandInfo {
     /// Create a new `CommandInfo` instance.
     pub fn new(include_defaults: bool) -> Self {
         Self {
-            clobber: false,
+            purge: false,
             include_defaults,
             input: Map::new(),
             metadata: Metadata::new(),
