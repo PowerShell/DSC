@@ -121,7 +121,15 @@ fn set_sshd_config(cmd_info: &mut CommandInfo) -> Result<(), SshdConfigError> {
         get_cmd_info.include_defaults = false;
         get_cmd_info.input = Map::new();
 
-        let mut existing_config = get_sshd_settings(&get_cmd_info, true)?;
+        let mut existing_config = match get_sshd_settings(&get_cmd_info, true) {
+            Ok(config) => config,
+            Err(SshdConfigError::FileNotFound(_)) => {
+                return Err(SshdConfigError::InvalidInput(
+                    t!("set.purgeFalseRequiresExistingFile").to_string()
+                ));
+            }
+            Err(e) => return Err(e),
+        };
         for (key, value) in &cmd_info.input {
             let key_lower = key.to_lowercase();
             let key_contains = key_lower.as_str();

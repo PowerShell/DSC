@@ -180,7 +180,28 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
             sshdconfig set --input $validConfig -s sshd-config
         }
 
-        It 'Should fail with purge set to false' {
+        It 'Should fail with purge=false when file does not exist' {
+            $nonExistentPath = Join-Path $TestDrive "nonexistent_sshd_config"
+
+            $inputConfig = @{
+                _metadata = @{
+                    filepath = $nonExistentPath
+                }
+                _purge = $false
+                Port = "8888"
+            } | ConvertTo-Json
+
+            $stderrFile = Join-Path $TestDrive "stderr_purgefalse_nofile.txt"
+            sshdconfig set --input $inputConfig -s sshd-config 2>$stderrFile
+            $LASTEXITCODE | Should -Not -Be 0
+
+            $stderr = Get-Content -Path $stderrFile -Raw -ErrorAction SilentlyContinue
+            $stderr | Should -Match "_purge=false requires an existing sshd_config file"
+            $stderr | Should -Match "Use _purge=true to create a new configuration file"
+            Remove-Item -Path $stderrFile -Force -ErrorAction SilentlyContinue
+        }
+
+        It 'Should fail with purge set to false for multi-value keywords' {
             $inputConfig = @{
                 _metadata = @{
                     filepath = $TestConfigPath

@@ -188,6 +188,9 @@ pub fn invoke_sshd_config_validation(args: Option<SshdCommandArgs>) -> Result<St
 
     if let Some(args) = args {
         if let Some(filepath) = args.filepath {
+            if !filepath.exists() {
+                return Err(SshdConfigError::FileNotFound(filepath.display().to_string()));
+            }
             command.arg("-f").arg(&filepath);
         }
         if let Some(additional_args) = args.additional_args {
@@ -195,6 +198,7 @@ pub fn invoke_sshd_config_validation(args: Option<SshdCommandArgs>) -> Result<St
         }
     }
 
+    debug!("here10");
     let output = command.output()
         .map_err(|e| SshdConfigError::CommandError(e.to_string()))?;
 
@@ -299,7 +303,6 @@ pub fn build_command_info(input: Option<&String>, is_get: bool) -> Result<Comman
 /// This function will return an error if the file cannot be found or read.
 pub fn read_sshd_config(input: Option<PathBuf>) -> Result<String, SshdConfigError> {
     let filepath = get_default_sshd_config_path(input)?;
-
     if filepath.exists() {
         let mut sshd_config_content = String::new();
         if let Ok(mut file) = std::fs::OpenOptions::new().read(true).open(&filepath) {
@@ -311,7 +314,7 @@ pub fn read_sshd_config(input: Option<PathBuf>) -> Result<String, SshdConfigErro
         }
         Ok(sshd_config_content)
     } else {
-        Err(SshdConfigError::CommandError(t!("util.sshdConfigNotFound", path = filepath.display()).to_string()))
+        Err(SshdConfigError::FileNotFound(filepath.display().to_string()))
     }
 }
 
