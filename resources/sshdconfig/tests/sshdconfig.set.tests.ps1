@@ -237,7 +237,7 @@ Describe 'sshd_config Set Tests' -Skip:(!$IsWindows -or $skipTest) {
         It '<Title>' -TestCases @(
             @{
                 Title = 'Should preserve unchanged regular keyword when value is the same'
-                InputConfig = @{ Port = "2222" }
+                InputConfig = @{ MaxAuthTries = "5" }
                 ExpectedContains = @("Port 2222", "AddressFamily inet", "MaxAuthTries 5", "PermitRootLogin yes", "PasswordAuthentication no")
                 ExpectedNotContains = @()
                 VerifyOrder = @()
@@ -254,6 +254,13 @@ Describe 'sshd_config Set Tests' -Skip:(!$IsWindows -or $skipTest) {
                 InputConfig = @{ LoginGraceTime = "60" }
                 ExpectedContains = @("Port 2222", "AddressFamily inet", "MaxAuthTries 5", "PermitRootLogin yes", "PasswordAuthentication no", "LoginGraceTime 60")
                 ExpectedNotContains = @()
+                VerifyOrder = @()
+            },
+            @{
+                Title = 'Should remove regular keyword when value is NULL'
+                InputConfig = @{ MaxAuthTries = $null }
+                ExpectedContains = @("Port 2222", "AddressFamily inet", "PermitRootLogin yes", "PasswordAuthentication no")
+                ExpectedNotContains = @("MaxAuthTries 5")
                 VerifyOrder = @()
             },
             @{
