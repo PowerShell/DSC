@@ -199,10 +199,11 @@ impl DscResource {
     }
 
     fn invoke_test_with_adapter(&self, adapter: &FullyQualifiedTypeName, resource_name: &FullyQualifiedTypeName, expected: &str) -> Result<TestResult, DscError> {
+        info!("Invoking test on resource '{}' using adapter '{}'", self.type_name, adapter);
         let mut configurator = self.clone().create_config_for_adapter(adapter, expected)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
-            adapter.target_resource = Some(resource_name.clone());
+            adapter.target_resource = Some(resource_name.to_string());
             return adapter.test(expected);
         }
 
@@ -278,7 +279,7 @@ impl DscResource {
     }
 
     fn get_adapter_resource(configurator: &mut Configurator, adapter: &FullyQualifiedTypeName) -> Result<DscResource, DscError> {
-        if let Some(adapter_resource) = configurator.discovery().find_resource(&DiscoveryFilter::new(adapter, None, None)) {
+        if let Some(adapter_resource) = configurator.discovery().find_resource(&DiscoveryFilter::new(adapter, None, None))? {
             return Ok(adapter_resource.clone());
         }
         Err(DscError::Operation(t!("dscresources.dscresource.adapterResourceNotFound", adapter = adapter).to_string()))

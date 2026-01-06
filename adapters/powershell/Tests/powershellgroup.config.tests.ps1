@@ -292,7 +292,6 @@ Describe 'PowerShell adapter resource tests' {
     }
     if ($metadata -eq 'Microsoft.DSC') {
       "$TestDrive/tracing.txt" | Should -FileContentMatch "Invoking $Operation for '$adapter'" -Because (Get-Content -Raw -Path $TestDrive/tracing.txt)
-
     }
   }
 

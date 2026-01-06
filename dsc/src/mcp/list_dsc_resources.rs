@@ -52,7 +52,7 @@ impl McpServer {
             let mut dsc = DscManager::new();
             let adapter_filter = match adapter {
                 Some(adapter) => {
-                    if let Some(resource) = dsc.find_resource(&DiscoveryFilter::new(&adapter, None, None)) {
+                    if let Some(resource) = dsc.find_resource(&DiscoveryFilter::new(&adapter, None, None)).unwrap_or(None) {
                         if resource.kind != Kind::Adapter {
                             return Err(McpError::invalid_params(t!("mcp.list_dsc_resources.resourceNotAdapter", adapter = adapter), None));
                         }
