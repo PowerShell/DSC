@@ -255,6 +255,8 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
     MaxAuthTries 5
     PermitRootLogin yes
     PasswordAuthentication no
+    Match Group administrators
+        GSSAPIAuthentication yes
 "@
             Set-Content -Path $TestConfigPath -Value $initialContent
         }
@@ -319,11 +321,11 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
                 ExpectedContains = @("Port 2222", "AddressFamily inet", "MaxAuthTries 5", "PermitRootLogin no", "PasswordAuthentication no", "LoginGraceTime 60")
                 ExpectedNotContains = @("PermitRootLogin yes")
                 VerifyOrder = @(
-                    @{ First = "^Port"; Next = "^AddressFamily" },
-                    @{ First = "^AddressFamily"; Next = "^MaxAuthTries" },
-                    @{ First = "^MaxAuthTries"; Next = "^PermitRootLogin" },
-                    @{ First = "^PermitRootLogin"; Next = "^PasswordAuthentication" },
-                    @{ First = "^PasswordAuthentication"; Next = "^LoginGraceTime" }
+                    @{ Before = "^Port"; Last = "^Match" },
+                    @{ Before = "^AddressFamily"; Last = "^Match" },
+                    @{ Before = "^MaxAuthTries"; Last = "^Match" },
+                    @{ Before = "^PermitRootLogin"; Last = "^Match" },
+                    @{ Before = "^PasswordAuthentication"; Last = "^Match" }
                 )
             }
         ) {
@@ -353,9 +355,9 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
             }
 
             foreach ($orderCheck in $VerifyOrder) {
-                $beforeLine = ($sshdConfigContents | Select-String -Pattern $orderCheck.First).LineNumber
-                $afterLine = ($sshdConfigContents | Select-String -Pattern $orderCheck.Next).LineNumber
-                $beforeLine | Should -BeLessThan $afterLine -Because "Expected '$($orderCheck.First)' to appear before '$($orderCheck.Next)'"
+                $beforeLine = ($sshdConfigContents | Select-String -Pattern $orderCheck.Before).LineNumber
+                $afterLine = ($sshdConfigContents | Select-String -Pattern $orderCheck.Last).LineNumber
+                $beforeLine | Should -BeLessThan $afterLine -Because "Expected '$($orderCheck.Before)' to appear before '$($orderCheck.Last)'"
             }
         }
     }
