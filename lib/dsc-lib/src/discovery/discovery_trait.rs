@@ -23,7 +23,7 @@ impl DiscoveryFilter {
     pub fn new(resource_type: &str, version: Option<&str>, adapter: Option<&str>) -> Self {
         let version = version.map(|v| fix_semver(&v));
         Self {
-            require_adapter: adapter.map(std::string::ToString::to_string),
+            require_adapter: adapter.map(|a| a.to_lowercase()),
             r#type: resource_type.to_lowercase(),
             version,
         }
@@ -68,6 +68,7 @@ pub trait ResourceDiscovery {
     ///
     /// * `name_filter` - The filter for the resource name.
     /// * `adapter_filter` - The filter for the adapter name.
+    /// * `fail_on_unknown_adapter` - Whether to fail if the adapter is unknown.
     ///
     /// # Returns
     ///

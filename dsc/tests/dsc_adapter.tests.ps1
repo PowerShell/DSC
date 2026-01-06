@@ -3,6 +3,16 @@
 
 Describe 'Tests for adapter support' {
     Context 'Adapter support single resource' {
+        BeforeAll {
+            $OldPSModulePath = $env:PSModulePath
+            $env:PSModulePath += [System.IO.Path]::PathSeparator + (Resolve-Path "$PSScriptRoot/../../adapters/powershell/Tests")
+        }
+
+        AfterAll {
+            $env:PSModulePath = $OldPSModulePath
+        }
+
+
         It 'Direct resource invocation for: <operation>' -TestCases @(
             @{ operation = 'get' },
             @{ operation = 'set' },
@@ -106,6 +116,38 @@ Describe 'Tests for adapter support' {
             $errorContent = Get-Content $TestDrive/error.log -Raw
             $errorContent | Should -Match "Adapter not found: InvalidAdapter/Invalid" -Because $errorContent
             $out | Should -BeNullOrEmpty -Because $errorContent
+        }
+
+        It 'Specifying two adapters for same resource works' {
+            $config_yaml = @'
+                $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+                resources:
+                - name: Test
+                  type: TestClassResource/TestClassResource
+                  properties:
+                    Name: 'Hello'
+                  metadata:
+                    Microsoft.DSC:
+                      requireAdapter: Microsoft.DSC/PowerShell
+                - name: Test2
+                  type: TestClassResource/TestClassResource
+                  properties:
+                    Name: 'Bye'
+                  metadata:
+                    Microsoft.DSC:
+                      requireAdapter: Microsoft.Adapter/PowerShell
+'@
+            $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json -Depth 10
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log | Out-String)
+            $out.results.Count | Should -Be 2
+            $out.results[0].type | Should -BeExactly 'TestClassResource/TestClassResource'
+            $out.results[0].Name | Should -Be 'Test'
+            $out.results[0].result.actualState.Name | Should -BeExactly 'Hello'
+            $out.results[1].type | Should -BeExactly 'TestClassResource/TestClassResource'
+            $out.results[1].Name | Should -Be 'Test2'
+            $out.results[1].result.actualState.Name | Should -BeExactly 'Bye'
+            "$TestDrive/error.log" | Should -FileContentMatch "Invoking get for 'Microsoft.DSC/PowerShell'" -Because (Get-Content $TestDrive/error.log | Out-String)
+            "$TestDrive/error.log" | Should -FileContentMatch "Invoking get for 'Microsoft.Adapter/PowerShell'" -Because (Get-Content $TestDrive/error.log | Out-String)
         }
     }
 }
