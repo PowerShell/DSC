@@ -578,7 +578,6 @@ fn filter_resources(found_resources: &mut BTreeMap<String, Vec<DscResource>>, re
             }
         } else {
             if matches_adapter_requirement(resource, filter) {
-                debug!("{}", t!("discovery.commandDiscovery.foundResourceWithoutVersion", resource = resource.type_name, version = resource.version));
                 found_resources.entry(filter.resource_type().to_string()).or_default().push(resource.clone());
                 required_resources.insert(filter.clone(), true);
                 break;
@@ -856,32 +855,22 @@ fn add_resources_to_lookup_table(adapted_resources: &BTreeMap<String, Vec<DscRes
 
     let mut lookup_table_changed = false;
     for (resource_name, res_vec) in adapted_resources {
-        for resource  in res_vec {
-            let mut adapters: Vec<String> = vec![];
-            if let Some(adapter_name) = &resource.require_adapter {
-                adapters.push(adapter_name.to_string());
-            } else {
-                debug!("{}", t!("discovery.commandDiscovery.resourceMissingRequireAdapter", resource = resource_name));
-            }
-            adapters.sort();
-            if let Some(existing_adapters) = lookup_table.get(resource_name) {
-                if *existing_adapters != adapters {
-                    lookup_table.insert(resource_name.to_string(), adapters);
-                    lookup_table_changed = true;
-                }
-            } else {
-                lookup_table.insert(resource_name.to_string(), adapters);
+        if let Some(adapter_name) = &res_vec[0].require_adapter {
+            let new_value = adapter_name.to_string();
+            let oldvalue = lookup_table.insert(resource_name.to_string().to_lowercase(), new_value.clone());
+            if !lookup_table_changed && (oldvalue.is_none() || oldvalue.is_some_and(|val| val != new_value)) {
                 lookup_table_changed = true;
             }
+        } else {
+            debug!("{}", t!("discovery.commandDiscovery.resourceMissingRequireAdapter", resource = resource_name));
         }
     }
-
     if lookup_table_changed {
         save_adapted_resources_lookup_table(&lookup_table);
     }
 }
 
-fn save_adapted_resources_lookup_table(lookup_table: &HashMap<String, Vec<String>>)
+fn save_adapted_resources_lookup_table(lookup_table: &HashMap<String, String>)
 {
     if let Ok(lookup_table_json) = serde_json::to_string(&lookup_table) {
         let file_path = get_lookup_table_file_path();
@@ -904,12 +893,11 @@ fn save_adapted_resources_lookup_table(lookup_table: &HashMap<String, Vec<String
     }
 }
 
-// The lookup table is stored as a hashtable with the resource type name as key and a vector of adapters as value
-fn load_adapted_resources_lookup_table() -> HashMap<String, Vec<String>>
+fn load_adapted_resources_lookup_table() -> HashMap<String, String>
 {
     let file_path = get_lookup_table_file_path();
 
-    let lookup_table: HashMap<String, Vec<String>> = match read(file_path.clone()){
+    let lookup_table: HashMap<String, String> = match read(file_path.clone()){
         Ok(data) => { serde_json::from_slice(&data).unwrap_or_default() },
         Err(_) => { HashMap::new() }
     };
