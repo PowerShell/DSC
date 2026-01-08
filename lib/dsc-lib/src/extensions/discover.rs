@@ -68,7 +68,7 @@ impl DscExtension {
             let Some(discover) = extension.discover else {
                 return Err(DscError::UnsupportedCapability(self.type_name.to_string(), Capability::Discover.to_string()));
             };
-            let args = process_args(discover.args.as_ref(), "", &self.type_name);
+            let args = process_args(discover.args.as_ref(), "", self.type_name.as_ref());
             let (_exit_code, stdout, _stderr) = invoke_command(
                 &discover.executable,
                 args,

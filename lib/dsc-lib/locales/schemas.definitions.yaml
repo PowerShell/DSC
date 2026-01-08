@@ -15,11 +15,11 @@ schemas:
         <owner>[.<namespace>...]/<name>
         ```
 
-        Where the type may have zero to three namespace segments for organizing the type. The
+        Where the type may have zero or more namespace segments for organizing the type. The
         `owner`, `namespace`, and `name` segments must consist only of alphanumeric characters and
         underscores.
 
-        Conventionally, the first character of each segment is capitalized. When a segments
+        Conventionally, the first character of each segment is capitalized. When a segment
         contains a brand or proper name, use the correct casing for that word, like
         `TailspinToys/Settings`, not `Tailspintoys/Settings`.
 

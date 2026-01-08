@@ -71,7 +71,7 @@ fn main() {
         },
         SubCommand::ListMissingRequires => {
             let resource1 = DscResource {
-                type_name: "InvalidResource".parse().unwrap(),
+                type_name: "Test/InvalidResource".parse().unwrap(),
                 kind: Kind::Resource,
                 version: "1.0.0".to_string(),
                 capabilities: vec![Capability::Get],

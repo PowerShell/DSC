@@ -103,7 +103,7 @@ fn test_as_ref() {
 fn test_deref() {
     let name = "Owner/Name";
     let instance = FullyQualifiedTypeName::new(name).unwrap();
-    assert_eq!(*name, *instance)
+    assert_eq!(name, &*instance)
 }
 
 #[test]
