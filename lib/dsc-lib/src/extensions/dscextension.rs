@@ -3,6 +3,7 @@
 
 use crate::extensions::import::ImportMethod;
 use crate::schemas::{dsc_repo::DscRepoSchema, transforms::idiomaticize_string_enum};
+use crate::types::FullyQualifiedTypeName;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use schemars::JsonSchema;
@@ -15,7 +16,7 @@ use std::path::PathBuf;
 pub struct DscExtension {
     /// The namespaced name of the resource.
     #[serde(rename="type")]
-    pub type_name: String,
+    pub type_name: FullyQualifiedTypeName,
     /// The version of the resource.
     pub version: String,
     /// The capabilities of the resource.
@@ -61,7 +62,7 @@ impl DscExtension {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            type_name: String::new(),
+            type_name: FullyQualifiedTypeName::default(),
             version: String::new(),
             capabilities: Vec::new(),
             import: None,
