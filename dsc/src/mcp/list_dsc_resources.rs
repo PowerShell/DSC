@@ -6,7 +6,7 @@ use dsc_lib::{
     DscManager, discovery::{
         command_discovery::ImportedManifest::Resource,
         discovery_trait::DiscoveryKind,
-    }, dscresources::resource_manifest::Kind, progress::ProgressFormat
+    }, dscresources::resource_manifest::Kind, progress::ProgressFormat, types::FullyQualifiedTypeName
 };
 use rmcp::{ErrorData as McpError, Json, tool, tool_router, handler::server::wrapper::Parameters};
 use rust_i18n::t;
@@ -22,11 +22,11 @@ pub struct ResourceListResult {
 
 #[derive(Serialize, JsonSchema)]
 pub struct ResourceSummary {
-    pub r#type: String,
+    pub r#type: FullyQualifiedTypeName,
     pub kind: Kind,
     pub description: Option<String>,
     #[serde(rename = "requireAdapter")]
-    pub require_adapter: Option<String>,
+    pub require_adapter: Option<FullyQualifiedTypeName>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -67,10 +67,10 @@ impl McpServer {
             for resource in dsc.list_available(&DiscoveryKind::Resource, "*", &adapter_filter, ProgressFormat::None) {
                 if let Resource(resource) = resource {
                     let summary = ResourceSummary {
-                        r#type: resource.type_name.to_string(),
+                        r#type: resource.type_name.clone(),
                         kind: resource.kind.clone(),
                         description: resource.description.clone(),
-                        require_adapter: resource.require_adapter.map(|fqtn| fqtn.to_string()),
+                        require_adapter: resource.require_adapter,
                     };
                     resources.insert(resource.type_name.to_lowercase(), summary);
                 }
