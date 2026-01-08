@@ -159,7 +159,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &Path, desired: &str, skip_t
         serde_json::from_str(&stdout)?
     }
     else {
-        return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
+        return Err(DscError::Command(resource.resource_type.to_string(), exit_code, stderr));
     };
     let mut pre_state = if pre_state_value.is_object() {
         let mut pre_state_map: Map<String, Value> = serde_json::from_value(pre_state_value)?;
@@ -220,12 +220,12 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &Path, desired: &str, skip_t
             // command should be returning actual state as a JSON line and a list of properties that differ as separate JSON line
             let mut lines = stdout.lines();
             let Some(actual_line) = lines.next() else {
-                return Err(DscError::Command(resource.resource_type.clone(), exit_code, t!("dscresources.commandResource.setUnexpectedOutput").to_string()));
+                return Err(DscError::Command(resource.resource_type.to_string(), exit_code, t!("dscresources.commandResource.setUnexpectedOutput").to_string()));
             };
             let actual_value: Value = serde_json::from_str(actual_line)?;
             // TODO: need schema for diff_properties to validate against
             let Some(diff_line) = lines.next() else {
-                return Err(DscError::Command(resource.resource_type.clone(), exit_code, t!("dscresources.commandResource.setUnexpectedDiff").to_string()));
+                return Err(DscError::Command(resource.resource_type.to_string(), exit_code, t!("dscresources.commandResource.setUnexpectedDiff").to_string()));
             };
             let diff_properties: Vec<String> = serde_json::from_str(diff_line)?;
             Ok(SetResult::Resource(ResourceSetResponse {
@@ -324,11 +324,11 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &Path, expected: &str, targ
             // command should be returning actual state as a JSON line and a list of properties that differ as separate JSON line
             let mut lines = stdout.lines();
             let Some(actual_value) = lines.next() else {
-                return Err(DscError::Command(resource.resource_type.clone(), exit_code, t!("dscresources.commandResource.testNoActualState").to_string()));
+                return Err(DscError::Command(resource.resource_type.to_string(), exit_code, t!("dscresources.commandResource.testNoActualState").to_string()));
             };
             let actual_value: Value = serde_json::from_str(actual_value)?;
             let Some(diff_properties) = lines.next() else {
-                return Err(DscError::Command(resource.resource_type.clone(), exit_code, t!("dscresources.commandResource.testNoDiff").to_string()));
+                return Err(DscError::Command(resource.resource_type.to_string(), exit_code, t!("dscresources.commandResource.testNoDiff").to_string()));
             };
             let diff_properties: Vec<String> = serde_json::from_str(diff_properties)?;
             expected_value = redact(&expected_value);
@@ -481,7 +481,7 @@ pub fn invoke_validate(resource: &ResourceManifest, cwd: &Path, config: &str, ta
 /// Error if schema is not available or if there is an error getting the schema
 pub fn get_schema(resource: &ResourceManifest, cwd: &Path) -> Result<String, DscError> {
     let Some(schema_kind) = resource.schema.as_ref() else {
-        return Err(DscError::SchemaNotAvailable(resource.resource_type.clone()));
+        return Err(DscError::SchemaNotAvailable(resource.resource_type.to_string()));
     };
 
     match schema_kind {

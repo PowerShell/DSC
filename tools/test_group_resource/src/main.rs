@@ -5,8 +5,8 @@ mod args;
 
 use args::{Args, SubCommand};
 use clap::Parser;
-use dsc_lib::dscresources::resource_manifest::{ResourceManifest, GetMethod, Kind};
 use dsc_lib::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
+use dsc_lib::dscresources::resource_manifest::{GetMethod, Kind, ResourceManifest};
 use dsc_lib::schemas::dsc_repo::DscRepoSchema;
 use std::path::PathBuf;
 
@@ -30,7 +30,7 @@ fn main() {
                 manifest: Some(serde_json::to_value(ResourceManifest {
                     description: Some("This is a test resource.".to_string()),
                     schema_version: dsc_lib::dscresources::resource_manifest::ResourceManifest::default_schema_id_uri(),
-                    resource_type: "Test/TestResource1".to_string(),
+                    resource_type: "Test/TestResource1".parse().unwrap(),
                     kind: Some(Kind::Resource),
                     version: "1.0.0".to_string(),
                     get: Some(GetMethod {
@@ -56,7 +56,7 @@ fn main() {
                 manifest: Some(serde_json::to_value(ResourceManifest {
                     description: Some("This is a test resource.".to_string()),
                     schema_version: dsc_lib::dscresources::resource_manifest::ResourceManifest::default_schema_id_uri(),
-                    resource_type: "Test/TestResource2".to_string(),
+                    resource_type: "Test/TestResource2".parse().unwrap(),
                     kind: Some(Kind::Resource),
                     version: "1.0.1".to_string(),
                     get: Some(GetMethod {

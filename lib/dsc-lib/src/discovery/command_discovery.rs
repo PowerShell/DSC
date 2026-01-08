@@ -774,7 +774,7 @@ fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<Ds
     }
 
     let resource = DscResource {
-        type_name: manifest.resource_type.clone(),
+        type_name: manifest.resource_type.to_string(),
         kind,
         implemented_as: ImplementedAs::Command,
         description: manifest.description.clone(),
