@@ -145,7 +145,6 @@ impl DscResource {
         let mut configurator = self.clone().create_config_for_adapter(adapter, filter)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
-            debug!("Using single input kind for adapter '{}'", adapter.type_name);
             adapter.target_resource = Some(resource_name.to_string());
             return adapter.get(filter);
         }
@@ -200,11 +199,9 @@ impl DscResource {
     }
 
     fn invoke_test_with_adapter(&self, adapter: &str, resource_name: &str, expected: &str) -> Result<TestResult, DscError> {
-        info!("Invoking test on resource '{}' using adapter '{}'", self.type_name, adapter);
         let mut configurator = self.clone().create_config_for_adapter(adapter, expected)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
-            info!("Using single input kind for adapter '{}'", adapter.type_name);
             adapter.target_resource = Some(resource_name.to_string());
             return adapter.test(expected);
         }
