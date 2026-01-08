@@ -19,7 +19,6 @@ use crate::schemas::dsc_repo::DscRepoSchema;
 #[derive(
     Clone,
     Debug,
-    PartialEq,
     Eq,
     PartialOrd,
     Ord,
@@ -93,12 +92,41 @@ impl FullyQualifiedTypeName {
     }
 }
 
+// While it's technically never valid for a _defined_ FQTN to be empty, we need the default
+// implementation for creating empty instances of various structs to then populate/modify.
 impl Default for FullyQualifiedTypeName {
     fn default() -> Self {
         Self(String::new())
     }
 }
 
+// We implement `PartialEq` by hand for various types because FQTNs should be compared
+// case insensitively. This obviates the need to `.to_string().to_lowercase()` for comparisons.
+impl PartialEq for FullyQualifiedTypeName {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.to_lowercase() == other.0.to_lowercase()
+    }
+}
+
+impl PartialEq<String> for FullyQualifiedTypeName {
+    fn eq(&self, other: &String) -> bool {
+        self.0.to_lowercase() == other.to_lowercase()
+    }
+}
+
+impl PartialEq<str> for FullyQualifiedTypeName {
+    fn eq(&self, other: &str) -> bool {
+        self.0.to_lowercase() == other.to_lowercase()
+    }
+}
+
+impl PartialEq<&str> for FullyQualifiedTypeName {
+    fn eq(&self, other: &&str) -> bool {
+        self.0.to_lowercase() == other.to_lowercase()
+    }
+}
+
+// Enables using the construct `"Owner/Name".parse()` to convert a literal string into an FQTN.
 impl FromStr for FullyQualifiedTypeName {
     type Err = DscError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -106,6 +134,8 @@ impl FromStr for FullyQualifiedTypeName {
     }
 }
 
+// Enables converting from a `String` and raising the appropriate error message for an invalid
+// FQTN.
 impl TryFrom<String> for FullyQualifiedTypeName {
     type Error = DscError;
     fn try_from(value: String) -> Result<Self, Self::Error> {
@@ -113,18 +143,28 @@ impl TryFrom<String> for FullyQualifiedTypeName {
     }
 }
 
+// Enables converting an FQTN into a string.
+impl From<FullyQualifiedTypeName> for String {
+    fn from(value: FullyQualifiedTypeName) -> Self {
+        value.0
+    }
+}
+
+// Enables using FQTNs in `format!()` and similar macros.
 impl Display for FullyQualifiedTypeName {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
 }
 
+// Enables passing an FQTN as `&str`
 impl AsRef<str> for FullyQualifiedTypeName {
     fn as_ref(&self) -> &str {
         &self.0
     }
 }
 
+// Enables directly accessing string methods on an FQTN, like `.to_lowercase()` or `starts_with()`.
 impl Deref for FullyQualifiedTypeName {
     type Target = str;
 

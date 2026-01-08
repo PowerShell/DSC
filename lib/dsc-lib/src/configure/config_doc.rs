@@ -602,11 +602,11 @@ mod test {
 
         assert_eq!(config.resources.len(), 2);
         assert_eq!(config.resources[0].name, "echoResource");
-        assert_eq!(config.resources[0].resource_type, "Microsoft.DSC.Debug/Echo".parse().unwrap());
+        assert_eq!(config.resources[0].resource_type, "Microsoft.DSC.Debug/Echo");
         assert_eq!(config.resources[0].api_version.as_deref(), Some("1.0.0"));
 
         assert_eq!(config.resources[1].name, "processResource");
-        assert_eq!(config.resources[1].resource_type, "Microsoft/Process".parse().unwrap());
+        assert_eq!(config.resources[1].resource_type, "Microsoft/Process");
         assert_eq!(config.resources[1].api_version.as_deref(), Some("0.1.0"));
     }
 
@@ -649,10 +649,10 @@ mod test {
         let echo_resource = config.resources.iter().find(|r| r.name == "echoResource").unwrap();
         let process_resource = config.resources.iter().find(|r| r.name == "processResource").unwrap();
 
-        assert_eq!(echo_resource.resource_type, "Microsoft.DSC.Debug/Echo".parse().unwrap());
+        assert_eq!(echo_resource.resource_type, "Microsoft.DSC.Debug/Echo");
         assert_eq!(echo_resource.api_version.as_deref(), Some("1.0.0"));
 
-        assert_eq!(process_resource.resource_type, "Microsoft/Process".parse().unwrap());
+        assert_eq!(process_resource.resource_type, "Microsoft/Process");
         assert_eq!(process_resource.api_version.as_deref(), Some("0.1.0"));
     }
 }
