@@ -30,7 +30,7 @@ impl Function for DataUri {
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         let string_to_convert = args[0].as_str().unwrap_or_default();
         let base64_encoded = general_purpose::STANDARD.encode(string_to_convert);
-        let result = format!("data:text/plain;charset=utf8;base64,{base64_encoded}");
+        let result = format!("data:application/json;base64,{base64_encoded}");
         Ok(Value::String(result))
     }
 }
@@ -44,28 +44,42 @@ mod tests {
     fn test_data_uri_basic() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[dataUri('Hello')]", &Context::new()).unwrap();
-        assert_eq!(result, "data:text/plain;charset=utf8;base64,SGVsbG8=");
+        assert_eq!(result, "data:application/json;base64,SGVsbG8=");
     }
 
     #[test]
     fn test_data_uri_empty_string() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[dataUri('')]", &Context::new()).unwrap();
-        assert_eq!(result, "data:text/plain;charset=utf8;base64,");
+        assert_eq!(result, "data:application/json;base64,");
     }
 
     #[test]
     fn test_data_uri_with_spaces() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[dataUri('Hello, World!')]", &Context::new()).unwrap();
-        assert_eq!(result, "data:text/plain;charset=utf8;base64,SGVsbG8sIFdvcmxkIQ==");
+        assert_eq!(result, "data:application/json;base64,SGVsbG8sIFdvcmxkIQ==");
     }
 
     #[test]
     fn test_data_uri_unicode() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[dataUri('héllo')]", &Context::new()).unwrap();
-        assert_eq!(result, "data:text/plain;charset=utf8;base64,aMOpbGxv");
+        assert_eq!(result, "data:application/json;base64,aMOpbGxv");
+    }
+
+    #[test]
+    fn test_data_uri_json() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[dataUri('{\"name\":\"value\"}')]", &Context::new()).unwrap();
+        assert_eq!(result, "data:application/json;base64,eyJuYW1lIjoidmFsdWUifQ==");
+    }
+
+    #[test]
+    fn test_data_uri_json_array() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[dataUri('[1,2,3]')]", &Context::new()).unwrap();
+        assert_eq!(result, "data:application/json;base64,WzEsMiwzXQ==");
     }
 
     #[test]

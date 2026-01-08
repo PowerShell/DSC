@@ -52,34 +52,30 @@ impl Function for DataUriToString {
         let metadata = &data_uri[5..comma_pos]; // Skip "data:"
         let encoded_data = &data_uri[comma_pos + 1..];
 
-        // Check if it's base64 encoded
-        if metadata.contains(";base64") {
-            // Decode base64
-            let decoded_bytes = general_purpose::STANDARD.decode(encoded_data).map_err(|_| {
-                DscError::FunctionArg(
-                    "dataUriToString".to_string(),
-                    t!("functions.dataUriToString.invalidBase64").to_string(),
-                )
-            })?;
-
-            let result = String::from_utf8(decoded_bytes).map_err(|_| {
-                DscError::FunctionArg(
-                    "dataUriToString".to_string(),
-                    t!("functions.dataUriToString.invalidUtf8").to_string(),
-                )
-            })?;
-
-            Ok(Value::String(result))
-        } else {
-            // TODO: Not sure if this is also done in ARM
-            let decoded = urlencoding::decode(encoded_data).map_err(|_| {
-                DscError::FunctionArg(
-                    "dataUriToString".to_string(),
-                    t!("functions.dataUriToString.invalidEncoding").to_string(),
-                )
-            })?;
-            Ok(Value::String(decoded.into_owned()))
+        // Require base64 encoding (matching ARM behavior)
+        if !metadata.contains(";base64") {
+            return Err(DscError::FunctionArg(
+                "dataUriToString".to_string(),
+                t!("functions.dataUriToString.notBase64").to_string(),
+            ));
         }
+
+        // Decode base64
+        let decoded_bytes = general_purpose::STANDARD.decode(encoded_data).map_err(|_| {
+            DscError::FunctionArg(
+                "dataUriToString".to_string(),
+                t!("functions.dataUriToString.invalidBase64").to_string(),
+            )
+        })?;
+
+        let result = String::from_utf8(decoded_bytes).map_err(|_| {
+            DscError::FunctionArg(
+                "dataUriToString".to_string(),
+                t!("functions.dataUriToString.invalidUtf8").to_string(),
+            )
+        })?;
+
+        Ok(Value::String(result))
     }
 }
 
@@ -151,11 +147,10 @@ mod tests {
     }
 
     #[test]
-    fn test_data_uri_to_string_url_encoded() {
+    fn test_data_uri_to_string_url_encoded_fails() {
         let mut parser = Statement::new().unwrap();
         let result = parser
-            .parse_and_execute("[dataUriToString('data:text/plain,Hello%20World')]", &Context::new())
-            .unwrap();
-        assert_eq!(result, Value::String("Hello World".to_string()));
+            .parse_and_execute("[dataUriToString('data:text/plain,Hello%20World')]", &Context::new());
+        assert!(result.is_err());
     }
 }
