@@ -70,7 +70,7 @@ impl McpServer {
                         r#type: resource.type_name.to_string(),
                         kind: resource.kind.clone(),
                         description: resource.description.clone(),
-                        require_adapter: resource.require_adapter.clone(),
+                        require_adapter: resource.require_adapter.map(|fqtn| fqtn.to_string()),
                     };
                     resources.insert(resource.type_name.to_lowercase(), summary);
                 }

@@ -7,7 +7,7 @@ use rust_i18n::t;
 use serde::Deserialize;
 use serde_json::{Map, Value};
 use std::{collections::HashMap, env, path::Path, process::Stdio};
-use crate::{configure::{config_doc::ExecutionKind, config_result::{ResourceGetResult, ResourceTestResult}}, util::canonicalize_which};
+use crate::{configure::{config_doc::ExecutionKind, config_result::{ResourceGetResult, ResourceTestResult}}, types::FullyQualifiedTypeName, util::canonicalize_which};
 use crate::dscerror::DscError;
 use super::{dscresource::{get_diff, redact}, invoke_result::{ExportResult, GetResult, ResolveResult, SetResult, TestResult, ValidateResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse, get_in_desired_state}, resource_manifest::{ArgKind, InputKind, Kind, ResourceManifest, ReturnKind, SchemaKind}};
 use tracing::{error, warn, info, debug, trace};
@@ -25,7 +25,7 @@ pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
 /// # Errors
 ///
 /// Error returned if the resource does not successfully get the current state
-pub fn invoke_get(resource: &ResourceManifest, cwd: &Path, filter: &str, target_resource: Option<&str>) -> Result<GetResult, DscError> {
+pub fn invoke_get(resource: &ResourceManifest, cwd: &Path, filter: &str, target_resource: Option<FullyQualifiedTypeName>) -> Result<GetResult, DscError> {
     debug!("{}", t!("dscresources.commandResource.invokeGet", resource = &resource.resource_type));
     let mut command_input = CommandInput { env: None, stdin: None };
     let Some(get) = &resource.get else {
@@ -33,9 +33,9 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &Path, filter: &str, target_
     };
     let resource_type = match target_resource {
         Some(r) => r,
-        None => &resource.resource_type,
+        None => resource.resource_type.clone(),
     };
-    let args = process_args(get.args.as_ref(), filter, resource_type);
+    let args = process_args(get.args.as_ref(), filter, &resource_type);
     if !filter.is_empty() {
         verify_json(resource, cwd, filter)?;
         command_input = get_command_input(get.input.as_ref(), filter)?;
@@ -78,7 +78,7 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &Path, filter: &str, target_
 ///
 /// Error returned if the resource does not successfully set the desired state
 #[allow(clippy::too_many_lines)]
-pub fn invoke_set(resource: &ResourceManifest, cwd: &Path, desired: &str, skip_test: bool, execution_type: &ExecutionKind, target_resource: Option<&str>) -> Result<SetResult, DscError> {
+pub fn invoke_set(resource: &ResourceManifest, cwd: &Path, desired: &str, skip_test: bool, execution_type: &ExecutionKind, target_resource: Option<FullyQualifiedTypeName>) -> Result<SetResult, DscError> {
     debug!("{}", t!("dscresources.commandResource.invokeSet", resource = &resource.resource_type));
     let operation_type: String;
     let mut is_synthetic_what_if = false;
@@ -105,7 +105,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &Path, desired: &str, skip_t
     // if resource doesn't implement a pre-test, we execute test first to see if a set is needed
     if !skip_test && set.pre_test != Some(true) {
         info!("{}", t!("dscresources.commandResource.noPretest", resource = &resource.resource_type));
-        let test_result = invoke_test(resource, cwd, desired, target_resource)?;
+        let test_result = invoke_test(resource, cwd, desired, target_resource.clone())?;
         if is_synthetic_what_if {
             return Ok(test_result.into());
         }
@@ -140,11 +140,11 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &Path, desired: &str, skip_t
     let Some(get) = &resource.get else {
         return Err(DscError::NotImplemented("get".to_string()));
     };
-    let resource_type = match target_resource {
+    let resource_type = match target_resource.clone() {
         Some(r) => r,
-        None => &resource.resource_type,
+        None => resource.resource_type.clone(),
     };
-    let args = process_args(get.args.as_ref(), desired, resource_type);
+    let args = process_args(get.args.as_ref(), desired, &resource_type);
     let command_input = get_command_input(get.input.as_ref(), desired)?;
 
     info!("{}", t!("dscresources.commandResource.setGetCurrent", resource = &resource.resource_type, executable = &get.executable));
@@ -176,7 +176,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &Path, desired: &str, skip_t
 
     let mut env: Option<HashMap<String, String>> = None;
     let mut input_desired: Option<&str> = None;
-    let args = process_args(set.args.as_ref(), desired, resource_type);
+    let args = process_args(set.args.as_ref(), desired, &resource_type);
     match &set.input {
         Some(InputKind::Env) => {
             env = Some(json_to_hashmap(desired)?);
@@ -271,7 +271,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &Path, desired: &str, skip_t
 /// # Errors
 ///
 /// Error is returned if the underlying command returns a non-zero exit code.
-pub fn invoke_test(resource: &ResourceManifest, cwd: &Path, expected: &str, target_resource: Option<&str>) -> Result<TestResult, DscError> {
+pub fn invoke_test(resource: &ResourceManifest, cwd: &Path, expected: &str, target_resource: Option<FullyQualifiedTypeName>) -> Result<TestResult, DscError> {
     debug!("{}", t!("dscresources.commandResource.invokeTest", resource = &resource.resource_type));
     let Some(test) = &resource.test else {
         info!("{}", t!("dscresources.commandResource.testSyntheticTest", resource = &resource.resource_type));
@@ -280,11 +280,11 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &Path, expected: &str, targ
 
     verify_json(resource, cwd, expected)?;
 
-    let resource_type = match target_resource {
+    let resource_type = match target_resource.clone() {
         Some(r) => r,
-        None => &resource.resource_type,
+        None => resource.resource_type.clone(),
     };
-    let args = process_args(test.args.as_ref(), expected, resource_type);
+    let args = process_args(test.args.as_ref(), expected, &resource_type);
     let command_input = get_command_input(test.input.as_ref(), expected)?;
 
     info!("{}", t!("dscresources.commandResource.invokeTestUsing", resource = &resource.resource_type, executable = &test.executable));
@@ -380,7 +380,7 @@ fn get_desired_state(actual: &Value) -> Result<Option<bool>, DscError> {
     Ok(in_desired_state)
 }
 
-fn invoke_synthetic_test(resource: &ResourceManifest, cwd: &Path, expected: &str, target_resource: Option<&str>) -> Result<TestResult, DscError> {
+fn invoke_synthetic_test(resource: &ResourceManifest, cwd: &Path, expected: &str, target_resource: Option<FullyQualifiedTypeName>) -> Result<TestResult, DscError> {
     let get_result = invoke_get(resource, cwd, expected, target_resource)?;
     let actual_state = match get_result {
         GetResult::Group(results) => {
@@ -511,7 +511,7 @@ pub fn get_schema(resource: &ResourceManifest, cwd: &Path) -> Result<String, Dsc
 /// # Errors
 ///
 /// Error returned if the resource does not successfully export the current state
-pub fn invoke_export(resource: &ResourceManifest, cwd: &Path, input: Option<&str>, target_resource: Option<&str>) -> Result<ExportResult, DscError> {
+pub fn invoke_export(resource: &ResourceManifest, cwd: &Path, input: Option<&str>, target_resource: Option<FullyQualifiedTypeName>) -> Result<ExportResult, DscError> {
     let Some(export) = resource.export.as_ref() else {
         // see if get is supported and use that instead
         if resource.get.is_some() {
@@ -540,7 +540,7 @@ pub fn invoke_export(resource: &ResourceManifest, cwd: &Path, input: Option<&str
     let args: Option<Vec<String>>;
     let resource_type = match target_resource {
         Some(r) => r,
-        None => &resource.resource_type,
+        None => resource.resource_type.clone(),
     };
     if let Some(input) = input {
         if !input.is_empty() {
@@ -549,9 +549,9 @@ pub fn invoke_export(resource: &ResourceManifest, cwd: &Path, input: Option<&str
             command_input = get_command_input(export.input.as_ref(), input)?;
         }
 
-        args = process_args(export.args.as_ref(), input, resource_type);
+        args = process_args(export.args.as_ref(), input, &resource_type);
     } else {
-        args = process_args(export.args.as_ref(), "", resource_type);
+        args = process_args(export.args.as_ref(), "", &resource_type);
     }
 
     let (_exit_code, stdout, stderr) = invoke_command(&export.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, resource.exit_codes.as_ref())?;

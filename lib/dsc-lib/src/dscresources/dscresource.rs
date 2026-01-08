@@ -57,7 +57,7 @@ pub struct DscResource {
     #[serde(rename="requireAdapter")]
     pub require_adapter: Option<FullyQualifiedTypeName>,
     /// The target resource for the resource adapter.
-    pub target_resource: Option<String>,
+    pub target_resource: Option<FullyQualifiedTypeName>,
     /// The manifest of the resource.
     pub manifest: Option<Value>,
 }
@@ -140,11 +140,11 @@ impl DscResource {
         Ok(configurator)
     }
 
-    fn invoke_get_with_adapter(&self, adapter: &FullyQualifiedTypeName, resource_name: &str, filter: &str) -> Result<GetResult, DscError> {
+    fn invoke_get_with_adapter(&self, adapter: &FullyQualifiedTypeName, resource_name: &FullyQualifiedTypeName, filter: &str) -> Result<GetResult, DscError> {
         let mut configurator = self.clone().create_config_for_adapter(adapter, filter)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
-            adapter.target_resource = Some(resource_name.to_string());
+            adapter.target_resource = Some(resource_name.clone());
             return adapter.get(filter);
         }
 
@@ -164,11 +164,11 @@ impl DscResource {
         Ok(get_result)
     }
 
-    fn invoke_set_with_adapter(&self, adapter: &FullyQualifiedTypeName, resource_name: &str, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
+    fn invoke_set_with_adapter(&self, adapter: &FullyQualifiedTypeName, resource_name: &FullyQualifiedTypeName, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
         let mut configurator = self.clone().create_config_for_adapter(adapter, desired)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
-            adapter.target_resource = Some(resource_name.to_string());
+            adapter.target_resource = Some(resource_name.clone());
             return adapter.set(desired, skip_test, execution_type);
         }
 
@@ -197,11 +197,11 @@ impl DscResource {
         Ok(set_result)
     }
 
-    fn invoke_test_with_adapter(&self, adapter: &FullyQualifiedTypeName, resource_name: &str, expected: &str) -> Result<TestResult, DscError> {
+    fn invoke_test_with_adapter(&self, adapter: &FullyQualifiedTypeName, resource_name: &FullyQualifiedTypeName, expected: &str) -> Result<TestResult, DscError> {
         let mut configurator = self.clone().create_config_for_adapter(adapter, expected)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
-            adapter.target_resource = Some(resource_name.to_string());
+            adapter.target_resource = Some(resource_name.clone());
             return adapter.test(expected);
         }
 
@@ -231,12 +231,12 @@ impl DscResource {
         Ok(test_result)
     }
 
-    fn invoke_delete_with_adapter(&self, adapter: &FullyQualifiedTypeName, resource_name: &str, filter: &str) -> Result<(), DscError> {
+    fn invoke_delete_with_adapter(&self, adapter: &FullyQualifiedTypeName, resource_name: &FullyQualifiedTypeName, filter: &str) -> Result<(), DscError> {
         let mut configurator = self.clone().create_config_for_adapter(adapter, filter)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
             if adapter.capabilities.contains(&Capability::Delete) {
-                adapter.target_resource = Some(resource_name.to_string());
+                adapter.target_resource = Some(resource_name.clone());
                 return adapter.delete(filter);
             }
             return Err(DscError::NotSupported(t!("dscresources.dscresource.adapterDoesNotSupportDelete", adapter = adapter.type_name).to_string()));
@@ -250,7 +250,7 @@ impl DscResource {
         let mut configurator = self.clone().create_config_for_adapter(adapter, input)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
-            adapter.target_resource = Some(self.type_name.to_string());
+            adapter.target_resource = Some(self.type_name.clone());
             return adapter.export(input);
         }
 
@@ -394,7 +394,7 @@ impl Invoke for DscResource {
                     return Err(DscError::MissingManifest(self.type_name.to_string()));
                 };
                 let resource_manifest = import_manifest(manifest.clone())?;
-                command_resource::invoke_get(&resource_manifest, &self.directory, filter, self.target_resource.as_deref())
+                command_resource::invoke_get(&resource_manifest, &self.directory, filter, self.target_resource.clone())
             },
         }
     }
@@ -414,7 +414,7 @@ impl Invoke for DscResource {
                     return Err(DscError::MissingManifest(self.type_name.to_string()));
                 };
                 let resource_manifest = import_manifest(manifest.clone())?;
-                command_resource::invoke_set(&resource_manifest, &self.directory, desired, skip_test, execution_type, self.target_resource.as_deref())
+                command_resource::invoke_set(&resource_manifest, &self.directory, desired, skip_test, execution_type, self.target_resource.clone())
             },
         }
     }
@@ -462,7 +462,7 @@ impl Invoke for DscResource {
                     Ok(test_result)
                 }
                 else {
-                    command_resource::invoke_test(&resource_manifest, &self.directory, expected, self.target_resource.as_deref())
+                    command_resource::invoke_test(&resource_manifest, &self.directory, expected, self.target_resource.clone())
                 }
             },
         }
@@ -538,7 +538,7 @@ impl Invoke for DscResource {
             return Err(DscError::MissingManifest(self.type_name.to_string()));
         };
         let resource_manifest = import_manifest(manifest.clone())?;
-        command_resource::invoke_export(&resource_manifest, &self.directory, Some(input), self.target_resource.as_deref())
+        command_resource::invoke_export(&resource_manifest, &self.directory, Some(input), self.target_resource.clone())
     }
 
     fn resolve(&self, input: &str) -> Result<ResolveResult, DscError> {

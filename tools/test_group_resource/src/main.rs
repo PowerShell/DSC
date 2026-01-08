@@ -25,7 +25,7 @@ fn main() {
                 directory: PathBuf::from("test_directory"),
                 author: Some("Microsoft".to_string()),
                 properties: vec!["Property1".to_string(), "Property2".to_string()],
-                require_adapter: Some("Test/TestGroup".to_string()),
+                require_adapter: Some("Test/TestGroup".parse().unwrap()),
                 target_resource: None,
                 manifest: Some(serde_json::to_value(ResourceManifest {
                     description: Some("This is a test resource.".to_string()),
@@ -51,7 +51,7 @@ fn main() {
                 directory: PathBuf::from("test_directory"),
                 author: Some("Microsoft".to_string()),
                 properties: vec!["Property1".to_string(), "Property2".to_string()],
-                require_adapter: Some("Test/TestGroup".to_string()),
+                require_adapter: Some("Test/TestGroup".parse().unwrap()),
                 target_resource: None,
                 manifest: Some(serde_json::to_value(ResourceManifest {
                     description: Some("This is a test resource.".to_string()),

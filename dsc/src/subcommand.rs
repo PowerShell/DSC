@@ -824,7 +824,7 @@ pub fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adap
                     format!("{:?}", resource.kind),
                     resource.version,
                     capabilities,
-                    resource.require_adapter.unwrap_or_default(),
+                    resource.require_adapter.unwrap_or_default().to_string(),
                     resource.description.unwrap_or_default()
                 ]);
             }
