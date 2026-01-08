@@ -148,13 +148,13 @@ Describe 'tests for resource discovery' {
         Test-Path $script:lookupTableFilePath -PathType Leaf | Should -BeFalse
 
         # initial invocation should populate and save adapter lookup table
-        $null = dsc -l trace resource list -a Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
+        $null = dsc -l trace resource list -a 'Microsoft.*/PowerShell' 2> $TestDrive/tracing.txt
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Read 0 items into lookup table"
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Saving lookup table" -Because (Get-Content -Raw "$TestDrive/tracing.txt")
 
         # second invocation (without an update) should use but not save adapter lookup table
         "{'Name':'TestClassResource1'}" | dsc -l trace resource get -r 'TestClassResource/TestClassResource' -f - 2> $TestDrive/tracing.txt
-        "$TestDrive/tracing.txt" | Should -Not -FileContentMatchExactly "Saving lookup table"
+        "$TestDrive/tracing.txt" | Should -Not -FileContentMatchExactly "Saving lookup table" -Because (Get-Content -Raw "$TestDrive/tracing.txt")
 
         # third invocation (with an update) should save updated adapter lookup table
         $null = dsc -l trace resource list -a Test/TestGroup 2> $TestDrive/tracing.txt

@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{discovery::discovery_trait::{DiscoveryFilter, DiscoveryKind, ResourceDiscovery}, parser::Statement};
+use crate::{discovery::{discovery_trait::{DiscoveryFilter, DiscoveryKind, ResourceDiscovery}, matches_adapter_requirement}, parser::Statement};
 use crate::{locked_is_empty, locked_extend, locked_clone, locked_get};
 use crate::configure::context::Context;
 use crate::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
@@ -391,7 +391,6 @@ impl ResourceDiscovery for CommandDiscovery {
                 }
 
                 found_adapter = true;
-                info!("Enumerating resources for adapter '{}'", adapter_name);
                 let mut adapter_progress = ProgressBar::new(1, self.progress_format)?;
                 adapter_progress.write_activity(format!("Enumerating resources for adapter '{adapter_name}'").as_str());
                 let manifest = if let Some(manifest) = &adapter.manifest {
@@ -514,8 +513,22 @@ impl ResourceDiscovery for CommandDiscovery {
             return Ok(found_resources);
         }
 
-        // now go through the adapters, this is for implicit adapters so version can't be specified so use latest version
-        for adapter_name in locked_clone!(ADAPTERS).keys() {
+        // store the keys of the ADAPTERS into a vec
+        let mut adapters: Vec<String> = locked_clone!(ADAPTERS).keys().cloned().collect();
+        // sort the adapters by ones specified in the required resources first
+
+        for filter in required_resource_types {
+            if let Some(required_adapter) = filter.require_adapter() {
+                if !adapters.contains(&required_adapter.to_string()) {
+                    return Err(DscError::AdapterNotFound(required_adapter.to_string()));
+                }
+                // otherwise insert at the front of the list
+                adapters.retain(|a| a != required_adapter);
+                adapters.insert(0, required_adapter.to_string());
+            }
+        }
+
+        for adapter_name in &adapters {
             self.discover_adapted_resources("*", adapter_name)?;
             add_resources_to_lookup_table(&locked_clone!(ADAPTED_RESOURCES));
             for filter in required_resource_types {
@@ -547,7 +560,7 @@ fn filter_resources(found_resources: &mut BTreeMap<String, Vec<DscResource>>, re
         if let Some(required_version) = filter.version() {
             if let Ok(resource_version) = Version::parse(&resource.version) {
                 if let Ok(version_req) = VersionReq::parse(required_version) {
-                    if version_req.matches(&resource_version) {
+                    if version_req.matches(&resource_version) && matches_adapter_requirement(resource, filter) {
                         found_resources.entry(filter.resource_type().to_string()).or_default().push(resource.clone());
                         required_resources.insert(filter.clone(), true);
                         debug!("{}", t!("discovery.commandDiscovery.foundResourceWithVersion", resource = resource.type_name, version = resource.version));
@@ -556,7 +569,7 @@ fn filter_resources(found_resources: &mut BTreeMap<String, Vec<DscResource>>, re
                 }
             } else {
                 // if not semver, we do a string comparison
-                if resource.version == *required_version {
+                if resource.version == *required_version && matches_adapter_requirement(resource, filter) {
                     found_resources.entry(filter.resource_type().to_string()).or_default().push(resource.clone());
                     required_resources.insert(filter.clone(), true);
                     debug!("{}", t!("discovery.commandDiscovery.foundResourceWithVersion", resource = resource.type_name, version = resource.version));
@@ -564,10 +577,9 @@ fn filter_resources(found_resources: &mut BTreeMap<String, Vec<DscResource>>, re
                 }
             }
         } else {
-            // if no version specified, get first one which will be latest
-            if let Some(resource) = resources.first() {
-                required_resources.insert(filter.clone(), true);
+            if matches_adapter_requirement(resource, filter) {
                 found_resources.entry(filter.resource_type().to_string()).or_default().push(resource.clone());
+                required_resources.insert(filter.clone(), true);
                 break;
             }
         }
@@ -853,7 +865,6 @@ fn add_resources_to_lookup_table(adapted_resources: &BTreeMap<String, Vec<DscRes
             debug!("{}", t!("discovery.commandDiscovery.resourceMissingRequireAdapter", resource = resource_name));
         }
     }
-
     if lookup_table_changed {
         save_adapted_resources_lookup_table(&lookup_table);
     }

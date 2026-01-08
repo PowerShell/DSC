@@ -5,6 +5,7 @@ pub mod command_discovery;
 pub mod discovery_trait;
 
 use crate::discovery::discovery_trait::{DiscoveryKind, ResourceDiscovery, DiscoveryFilter};
+use crate::dscerror::DscError;
 use crate::extensions::dscextension::{Capability, DscExtension};
 use crate::{dscresources::dscresource::DscResource, progress::ProgressFormat};
 use core::result::Result::Ok;
@@ -87,38 +88,42 @@ impl Discovery {
     }
 
     #[must_use]
-    pub fn find_resource(&mut self, type_name: &str, version_string: Option<&str>) -> Option<&DscResource> {
+    pub fn find_resource(&mut self, filter: &DiscoveryFilter) -> Result<Option<&DscResource>, DscError> {
         if self.resources.is_empty() {
-            let discovery_filter = DiscoveryFilter::new(type_name, version_string.map(std::string::ToString::to_string));
-            self.find_resources(&[discovery_filter], ProgressFormat::None);
+            self.find_resources(&[filter.clone()], ProgressFormat::None)?;
         }
 
-        let type_name = type_name.to_lowercase();
+        let type_name = filter.resource_type().to_lowercase();
         if let Some(resources) = self.resources.get(&type_name) {
-            if let Some(version) = version_string {
+            if let Some(version) = filter.version() {
                 let version = fix_semver(version);
                 if let Ok(version_req) = VersionReq::parse(&version) {
                     for resource in resources {
                         if let Ok(resource_version) = Version::parse(&resource.version) {
-                            if version_req.matches(&resource_version) {
-                                return Some(resource);
+                            if version_req.matches(&resource_version) && matches_adapter_requirement(resource, filter) {
+                                return Ok(Some(resource));
                             }
                         }
                     }
-                    None
+                    Ok(None)
                 } else {
                     for resource in resources {
-                        if resource.version == version {
-                            return Some(resource);
+                        if resource.version == version && matches_adapter_requirement(resource, filter) {
+                            return Ok(Some(resource));
                         }
                     }
-                    None
+                    Ok(None)
                 }
             } else {
-                resources.first()
+                for resource in resources {
+                    if matches_adapter_requirement(resource, filter) {
+                        return Ok(Some(resource));
+                    }
+                }
+                Ok(None)
             }
         } else {
-            None
+            Ok(None)
         }
     }
 
@@ -127,10 +132,10 @@ impl Discovery {
     /// # Arguments
     ///
     /// * `required_resource_types` - The required resource types.
-    pub fn find_resources(&mut self, required_resource_types: &[DiscoveryFilter], progress_format: ProgressFormat) {
+    pub fn find_resources(&mut self, required_resource_types: &[DiscoveryFilter], progress_format: ProgressFormat) -> Result<(), DscError> {
         if !self.resources.is_empty() {
             // If resources are already discovered, no need to re-discover.
-            return;
+            return Ok(());
         }
 
         let command_discovery = CommandDiscovery::new(progress_format);
@@ -139,14 +144,7 @@ impl Discovery {
         ];
         for mut discovery_type in discovery_types {
 
-            let discovered_resources = match discovery_type.find_resources(required_resource_types) {
-                Ok(value) => value,
-                Err(err) => {
-                    error!("{err}");
-                    continue;
-                }
-            };
-
+            let discovered_resources = discovery_type.find_resources(required_resource_types)?;
             for (resource_name, resources) in discovered_resources {
                 self.resources.entry(resource_name).or_default().extend(resources);
             }
@@ -155,6 +153,27 @@ impl Discovery {
                 self.extensions.extend(extensions);
             }
         }
+        Ok(())
+    }
+}
+
+/// Check if a resource matches the adapter requirement specified in the filter.
+/// 
+/// # Arguments
+/// * `resource` - The resource to check.
+/// * `filter` - The discovery filter containing the adapter requirement.
+/// 
+/// # Returns
+/// `true` if the resource matches the adapter requirement, `false` otherwise.
+pub fn matches_adapter_requirement(resource: &DscResource, filter: &DiscoveryFilter) -> bool {
+    if let Some(required_adapter) = filter.require_adapter() {
+        if let Some(resource_adapter) = &resource.require_adapter {
+            required_adapter.to_lowercase() == resource_adapter.to_lowercase()
+        } else {
+            false
+        }
+    } else {
+        true
     }
 }
 
