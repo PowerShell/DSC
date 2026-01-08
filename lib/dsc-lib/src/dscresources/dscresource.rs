@@ -55,7 +55,7 @@ pub struct DscResource {
     pub properties: Vec<String>,
     /// The required resource adapter for the resource.
     #[serde(rename="requireAdapter")]
-    pub require_adapter: Option<String>,
+    pub require_adapter: Option<FullyQualifiedTypeName>,
     /// The target resource for the resource adapter.
     pub target_resource: Option<String>,
     /// The manifest of the resource.
@@ -114,7 +114,7 @@ impl DscResource {
         }
     }
 
-    fn create_config_for_adapter(self, adapter: &str, input: &str) -> Result<Configurator, DscError> {
+    fn create_config_for_adapter(self, adapter: &FullyQualifiedTypeName, input: &str) -> Result<Configurator, DscError> {
         // create new configuration with adapter and use this as the resource
         let mut configuration = Configuration::new();
         let mut property_map = Map::new();
@@ -140,7 +140,7 @@ impl DscResource {
         Ok(configurator)
     }
 
-    fn invoke_get_with_adapter(&self, adapter: &str, resource_name: &str, filter: &str) -> Result<GetResult, DscError> {
+    fn invoke_get_with_adapter(&self, adapter: &FullyQualifiedTypeName, resource_name: &str, filter: &str) -> Result<GetResult, DscError> {
         let mut configurator = self.clone().create_config_for_adapter(adapter, filter)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
@@ -164,7 +164,7 @@ impl DscResource {
         Ok(get_result)
     }
 
-    fn invoke_set_with_adapter(&self, adapter: &str, resource_name: &str, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
+    fn invoke_set_with_adapter(&self, adapter: &FullyQualifiedTypeName, resource_name: &str, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
         let mut configurator = self.clone().create_config_for_adapter(adapter, desired)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
@@ -197,7 +197,7 @@ impl DscResource {
         Ok(set_result)
     }
 
-    fn invoke_test_with_adapter(&self, adapter: &str, resource_name: &str, expected: &str) -> Result<TestResult, DscError> {
+    fn invoke_test_with_adapter(&self, adapter: &FullyQualifiedTypeName, resource_name: &str, expected: &str) -> Result<TestResult, DscError> {
         let mut configurator = self.clone().create_config_for_adapter(adapter, expected)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
@@ -231,7 +231,7 @@ impl DscResource {
         Ok(test_result)
     }
 
-    fn invoke_delete_with_adapter(&self, adapter: &str, resource_name: &str, filter: &str) -> Result<(), DscError> {
+    fn invoke_delete_with_adapter(&self, adapter: &FullyQualifiedTypeName, resource_name: &str, filter: &str) -> Result<(), DscError> {
         let mut configurator = self.clone().create_config_for_adapter(adapter, filter)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
@@ -246,7 +246,7 @@ impl DscResource {
         Ok(())
     }
 
-    fn invoke_export_with_adapter(&self, adapter: &str, input: &str) -> Result<ExportResult, DscError> {
+    fn invoke_export_with_adapter(&self, adapter: &FullyQualifiedTypeName, input: &str) -> Result<ExportResult, DscError> {
         let mut configurator = self.clone().create_config_for_adapter(adapter, input)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
@@ -276,7 +276,7 @@ impl DscResource {
         Ok(export_result)
     }
 
-    fn get_adapter_resource(configurator: &mut Configurator, adapter: &str) -> Result<DscResource, DscError> {
+    fn get_adapter_resource(configurator: &mut Configurator, adapter: &FullyQualifiedTypeName) -> Result<DscResource, DscError> {
         if let Some(adapter_resource) = configurator.discovery().find_resource(adapter, None) {
             return Ok(adapter_resource.clone());
         }
