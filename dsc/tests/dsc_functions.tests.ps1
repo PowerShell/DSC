@@ -1716,11 +1716,11 @@ Describe 'tests for function expressions' {
   }
 
   It 'dataUri function works for: <expression>' -TestCases @(
-    @{ expression = "[dataUri('Hello')]"; expected = 'data:text/plain;charset=utf8;base64,SGVsbG8=' }
-    @{ expression = "[dataUri('')]"; expected = 'data:text/plain;charset=utf8;base64,' }
-    @{ expression = "[dataUri('Hello, World!')]"; expected = 'data:text/plain;charset=utf8;base64,SGVsbG8sIFdvcmxkIQ==' }
-    @{ expression = "[dataUri('héllo')]"; expected = 'data:text/plain;charset=utf8;base64,aMOpbGxv' }
-    @{ expression = "[dataUri(concat('Hello', ', World!'))]"; expected = 'data:text/plain;charset=utf8;base64,SGVsbG8sIFdvcmxkIQ==' }
+    @{ expression = "[dataUri('Hello')]"; expected = 'data:application/json;base64,SGVsbG8=' }
+    @{ expression = "[dataUri('')]"; expected = 'data:application/json;base64,' }
+    @{ expression = "[dataUri('Hello, World!')]"; expected = 'data:application/json;base64,SGVsbG8sIFdvcmxkIQ==' }
+    @{ expression = "[dataUri('héllo')]"; expected = 'data:application/json;base64,aMOpbGxv' }
+    @{ expression = "[dataUri(concat('Hello', ', World!'))]"; expected = 'data:application/json;base64,SGVsbG8sIFdvcmxkIQ==' }
   ) {
     param($expression, $expected)
 

@@ -328,7 +328,7 @@ invoked = "dataUriToString function"
 invalidDataUri = "Invalid data URI format"
 invalidBase64 = "Invalid base64 encoding in data URI"
 invalidUtf8 = "Decoded bytes do not form valid UTF-8"
-invalidEncoding = "Invalid encoding in data URI"
+notBase64 = "Data URI must be base64 encoded"
 
 [functions.div]
 description = "Divides the first number by the second"
