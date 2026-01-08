@@ -128,7 +128,7 @@ impl DscResource {
         resources_map.insert("resources".to_string(), Value::Array(vec![Value::Object(property_map)]));
         let adapter_resource = Resource {
             name: self.type_name.to_string(),
-            resource_type: adapter.to_string(),
+            resource_type: adapter.parse()?,
             properties: Some(resources_map),
             ..Default::default()
         };
