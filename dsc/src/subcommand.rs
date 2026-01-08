@@ -820,7 +820,7 @@ pub fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adap
 
             if write_table {
                 table.add_row(vec![
-                    resource.type_name,
+                    resource.type_name.to_string(),
                     format!("{:?}", resource.kind),
                     resource.version,
                     capabilities,

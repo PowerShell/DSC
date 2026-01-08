@@ -66,7 +66,7 @@ impl McpServer {
                 Err(_) => None,
             };
             Ok(DscResource {
-                type_name: resource.type_name.clone(),
+                type_name: resource.type_name.to_string(),
                 kind: resource.kind.clone(),
                 version: resource.version.clone(),
                 capabilities: resource.capabilities.clone(),

@@ -67,7 +67,7 @@ impl McpServer {
             for resource in dsc.list_available(&DiscoveryKind::Resource, "*", &adapter_filter, ProgressFormat::None) {
                 if let Resource(resource) = resource {
                     let summary = ResourceSummary {
-                        r#type: resource.type_name.clone(),
+                        r#type: resource.type_name.to_string(),
                         kind: resource.kind.clone(),
                         description: resource.description.clone(),
                         require_adapter: resource.require_adapter.clone(),

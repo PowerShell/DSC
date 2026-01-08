@@ -15,7 +15,7 @@ fn main() {
     match args.subcommand {
         SubCommand::List => {
             let resource1 = DscResource {
-                type_name: "Test/TestResource1".to_string(),
+                type_name: "Test/TestResource1".parse().unwrap(),
                 kind: Kind::Resource,
                 version: "1.0.0".to_string(),
                 capabilities: vec![Capability::Get, Capability::Set],
@@ -41,7 +41,7 @@ fn main() {
                 }).unwrap()),
             };
             let resource2 = DscResource {
-                type_name: "Test/TestResource2".to_string(),
+                type_name: "Test/TestResource2".parse().unwrap(),
                 kind: Kind::Resource,
                 version: "1.0.1".to_string(),
                 capabilities: vec![Capability::Get, Capability::Set],
@@ -71,7 +71,7 @@ fn main() {
         },
         SubCommand::ListMissingRequires => {
             let resource1 = DscResource {
-                type_name: "InvalidResource".to_string(),
+                type_name: "InvalidResource".parse().unwrap(),
                 kind: Kind::Resource,
                 version: "1.0.0".to_string(),
                 capabilities: vec![Capability::Get],

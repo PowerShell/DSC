@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}, context::ProcessMode, parameters::{SECURE_VALUE_REDACTED, is_secure_value}}, dscresources::resource_manifest::{AdapterInputKind, Kind}};
+use crate::{configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}, context::ProcessMode, parameters::{SECURE_VALUE_REDACTED, is_secure_value}}, dscresources::resource_manifest::{AdapterInputKind, Kind}, types::FullyQualifiedTypeName};
 use crate::dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse};
 use crate::schemas::transforms::idiomaticize_string_enum;
 use dscerror::DscError;
@@ -33,7 +33,7 @@ use super::{
 pub struct DscResource {
     /// The namespaced name of the resource.
     #[serde(rename="type")]
-    pub type_name: String,
+    pub type_name: FullyQualifiedTypeName,
     /// The kind of resource.
     pub kind: Kind,
     /// The version of the resource.
@@ -98,7 +98,7 @@ impl DscResource {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            type_name: String::new(),
+            type_name: FullyQualifiedTypeName::default(),
             kind: Kind::Resource,
             version: String::new(),
             capabilities: Vec::new(),
@@ -118,8 +118,8 @@ impl DscResource {
         // create new configuration with adapter and use this as the resource
         let mut configuration = Configuration::new();
         let mut property_map = Map::new();
-        property_map.insert("name".to_string(), Value::String(self.type_name.clone()));
-        property_map.insert("type".to_string(), Value::String(self.type_name.clone()));
+        property_map.insert("name".to_string(), Value::String(self.type_name.to_string()));
+        property_map.insert("type".to_string(), Value::String(self.type_name.to_string()));
         if !input.is_empty() {
             let resource_properties: Value = serde_json::from_str(input)?;
             property_map.insert("properties".to_string(), resource_properties);
@@ -127,7 +127,7 @@ impl DscResource {
         let mut resources_map = Map::new();
         resources_map.insert("resources".to_string(), Value::Array(vec![Value::Object(property_map)]));
         let adapter_resource = Resource {
-            name: self.type_name.clone(),
+            name: self.type_name.to_string(),
             resource_type: adapter.to_string(),
             properties: Some(resources_map),
             ..Default::default()
@@ -250,7 +250,7 @@ impl DscResource {
         let mut configurator = self.clone().create_config_for_adapter(adapter, input)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
-            adapter.target_resource = Some(self.type_name.clone());
+            adapter.target_resource = Some(self.type_name.to_string());
             return adapter.export(input);
         }
 
@@ -391,7 +391,7 @@ impl Invoke for DscResource {
             },
             ImplementedAs::Command => {
                 let Some(manifest) = &self.manifest else {
-                    return Err(DscError::MissingManifest(self.type_name.clone()));
+                    return Err(DscError::MissingManifest(self.type_name.to_string()));
                 };
                 let resource_manifest = import_manifest(manifest.clone())?;
                 command_resource::invoke_get(&resource_manifest, &self.directory, filter, self.target_resource.as_deref())
@@ -411,7 +411,7 @@ impl Invoke for DscResource {
             },
             ImplementedAs::Command => {
                 let Some(manifest) = &self.manifest else {
-                    return Err(DscError::MissingManifest(self.type_name.clone()));
+                    return Err(DscError::MissingManifest(self.type_name.to_string()));
                 };
                 let resource_manifest = import_manifest(manifest.clone())?;
                 command_resource::invoke_set(&resource_manifest, &self.directory, desired, skip_test, execution_type, self.target_resource.as_deref())
@@ -431,7 +431,7 @@ impl Invoke for DscResource {
             },
             ImplementedAs::Command => {
                 let Some(manifest) = &self.manifest else {
-                    return Err(DscError::MissingManifest(self.type_name.clone()));
+                    return Err(DscError::MissingManifest(self.type_name.to_string()));
                 };
 
                 // if test is not directly implemented, then we need to handle it here
@@ -480,7 +480,7 @@ impl Invoke for DscResource {
             },
             ImplementedAs::Command => {
                 let Some(manifest) = &self.manifest else {
-                    return Err(DscError::MissingManifest(self.type_name.clone()));
+                    return Err(DscError::MissingManifest(self.type_name.to_string()));
                 };
                 let resource_manifest = import_manifest(manifest.clone())?;
                 command_resource::invoke_delete(&resource_manifest, &self.directory, filter, self.target_resource.as_deref())
@@ -500,7 +500,7 @@ impl Invoke for DscResource {
             },
             ImplementedAs::Command => {
                 let Some(manifest) = &self.manifest else {
-                    return Err(DscError::MissingManifest(self.type_name.clone()));
+                    return Err(DscError::MissingManifest(self.type_name.to_string()));
                 };
                 let resource_manifest = import_manifest(manifest.clone())?;
                 command_resource::invoke_validate(&resource_manifest, &self.directory, config, self.target_resource.as_deref())
@@ -520,7 +520,7 @@ impl Invoke for DscResource {
             },
             ImplementedAs::Command => {
                 let Some(manifest) = &self.manifest else {
-                    return Err(DscError::MissingManifest(self.type_name.clone()));
+                    return Err(DscError::MissingManifest(self.type_name.to_string()));
                 };
                 let resource_manifest = import_manifest(manifest.clone())?;
                 command_resource::get_schema(&resource_manifest, &self.directory)
@@ -535,7 +535,7 @@ impl Invoke for DscResource {
         }
 
         let Some(manifest) = &self.manifest else {
-            return Err(DscError::MissingManifest(self.type_name.clone()));
+            return Err(DscError::MissingManifest(self.type_name.to_string()));
         };
         let resource_manifest = import_manifest(manifest.clone())?;
         command_resource::invoke_export(&resource_manifest, &self.directory, Some(input), self.target_resource.as_deref())
@@ -548,7 +548,7 @@ impl Invoke for DscResource {
         }
 
         let Some(manifest) = &self.manifest else {
-            return Err(DscError::MissingManifest(self.type_name.clone()));
+            return Err(DscError::MissingManifest(self.type_name.to_string()));
         };
         let resource_manifest = import_manifest(manifest.clone())?;
         command_resource::invoke_resolve(&resource_manifest, &self.directory, input)

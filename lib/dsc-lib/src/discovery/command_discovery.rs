@@ -427,7 +427,7 @@ impl ResourceDiscovery for CommandDiscovery {
                     match serde_json::from_str::<DscResource>(line){
                         Result::Ok(resource) => {
                             if resource.require_adapter.is_none() {
-                                warn!("{}", DscError::MissingRequires(adapter_name.clone(), resource.type_name.clone()).to_string());
+                                warn!("{}", DscError::MissingRequires(adapter_name.clone(), resource.type_name.to_string()).to_string());
                                 continue;
                             }
 
@@ -774,7 +774,7 @@ fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<Ds
     }
 
     let resource = DscResource {
-        type_name: manifest.resource_type.to_string(),
+        type_name: manifest.resource_type.clone(),
         kind,
         implemented_as: ImplementedAs::Command,
         description: manifest.description.clone(),

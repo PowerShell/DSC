@@ -68,7 +68,7 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf
     } else {
         for (i, instance) in export_result.actual_state.iter().enumerate() {
             let mut r: Resource = config_doc::Resource::new();
-            r.resource_type.clone_from(&resource.type_name);
+            r.resource_type.clone_from(&resource.type_name.to_string());
             let mut props: Map<String, Value> = serde_json::from_value(instance.clone())?;
             if let Some(kind) = props.remove("_kind") {
                 if !kind.is_string() {
