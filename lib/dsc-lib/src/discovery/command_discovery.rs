@@ -185,6 +185,20 @@ impl CommandDiscovery {
                     }
                 }
             }
+
+            // if current working directory is not already in PATH env var then add it to env var and list of searched paths
+            if let Ok(cwd) = env::current_dir() {
+                if paths.contains(&cwd) {
+                    trace!("Current working directory already in path: {}", cwd.to_string_lossy());
+                } else {
+                    trace!("Adding current working directory to path: {}", cwd.to_string_lossy());
+                    paths.push(cwd);
+
+                    if let Ok(new_path) = env::join_paths(paths.clone()) {
+                        env::set_var("PATH", new_path);
+                    }
+                }
+            }
         }
 
         if let Ok(final_resource_path) = env::join_paths(paths.clone()) {
