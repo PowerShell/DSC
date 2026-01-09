@@ -17,6 +17,7 @@ members = [
     "resources/runcommandonset",
     "lib/dsc-lib-security_context",
     "resources/sshdconfig",
+    "resources/WindowsUpdate",
     "tools/dsctest",
     "tools/test_group_resource",
     "grammars/tree-sitter-dscexpression",
@@ -41,6 +42,7 @@ default-members = [
     "resources/runcommandonset",
     "lib/dsc-lib-security_context",
     "resources/sshdconfig",
+    "resources/WindowsUpdate",
     "tools/dsctest",
     "tools/test_group_resource",
     "grammars/tree-sitter-dscexpression",
@@ -67,6 +69,7 @@ Windows = [
     "resources/runcommandonset",
     "lib/dsc-lib-security_context",
     "resources/sshdconfig",
+    "resources/WindowsUpdate",
     "tools/dsctest",
     "tools/test_group_resource",
     "grammars/tree-sitter-dscexpression",
@@ -219,6 +222,8 @@ urlencoding = { version = "2.1" }
 which = { version = "8.0" }
 # dsc-lib
 ipnetwork = { version = "0.21" }
+# WindowsUpdate
+windows = { version = "0.62", features = ["Win32_Foundation", "Win32_System_Com", "Win32_System_Ole", "Win32_System_Variant"] }
 
 # build-only dependencies
 # dsc-lib, dsc-lib-registry, sshdconfig, tree-sitter-dscexpression, tree-sitter-ssh-server-config

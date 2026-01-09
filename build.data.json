@@ -82,6 +82,8 @@
       "sshd-windows.dsc.resource.json",
       "sshd_config.dsc.resource.json",
       "windowspowershell.dsc.resource.json",
+      "windowsupdate.dsc.resource.json",
+      "wu_dsc.exe",
       "wmi.dsc.resource.json",
       "wmi.resource.ps1",
       "wmiAdapter.psd1",
@@ -384,6 +386,21 @@
         ],
         "Windows": [
           "sshd-windows.dsc.resource.json"
+        ]
+      }
+    },
+    {
+      "Name": "windowsupdate",
+      "Kind": "Resource",
+      "RelativePath": "resources/WindowsUpdate",
+      "SupportedPlatformOS": "Windows",
+      "IsRust": true,
+      "Binaries": [
+        "wu_dsc"
+      ],
+      "CopyFiles": {
+        "Windows": [
+          "windowsupdate.dsc.resource.json"
         ]
       }
     },

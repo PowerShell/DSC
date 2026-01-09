@@ -1,0 +1,126 @@
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "description": "Query Windows Update information for specific updates.",
+    "tags": [
+        "windows",
+        "update",
+        "patch",
+        "security"
+    ],
+    "type": "Microsoft.Windows/Updates",
+    "version": "0.1.0",
+    "get": {
+        "executable": "wu_dsc",
+        "args": [
+            "get"
+        ],
+        "input": "stdin"
+    },
+    "schema": {
+        "embedded": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/resources/Microsoft.Windows/Updates/v0.1.0/schema.json",
+            "title": "Windows Update",
+            "description": "Query information about Windows Updates.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource\n",
+            "markdownDescription": "The `Microsoft.Windows/Updates` resource enables you to query information about Windows Updates using the Windows Update Agent COM APIs.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource\n",
+            "type": "object",
+            "additionalProperties": false,
+            "anyOf": [
+                {
+                    "required": ["title"]
+                },
+                {
+                    "required": ["id"]
+                }
+            ],
+            "properties": {
+                "title": {
+                    "type": "string",
+                    "title": "Update title",
+                    "description": "The title or partial title of the Windows Update to search for. Either title or id must be specified.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource#title\n",
+                    "markdownDescription": "The title or partial title of the Windows Update to search for. Either title or id must be specified.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource#title\n"
+                },
+                "id": {
+                    "type": "string",
+                    "title": "Update ID",
+                    "description": "The unique identifier (GUID) for the Windows Update to search for. Either title or id must be specified.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource#id\n",
+                    "markdownDescription": "The unique identifier (GUID) for the Windows Update to search for. Either title or id must be specified.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource#id\n"
+                },
+                "isInstalled": {
+                    "type": "boolean",
+                    "readOnly": true,
+                    "title": "Is installed",
+                    "description": "Indicates whether the update is currently installed on the system.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource#isinstalled\n",
+                    "markdownDescription": "Indicates whether the update is currently installed on the system.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource#isinstalled\n"
+                },
+                "description": {
+                    "type": "string",
+                    "readOnly": true,
+                    "title": "Update description",
+                    "description": "The detailed description of the Windows Update.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource#description\n",
+                    "markdownDescription": "The detailed description of the Windows Update.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource#description\n"
+                },
+
+                "isUninstallable": {
+                    "type": "boolean",
+                    "readOnly": true,
+                    "title": "Is uninstallable",
+                    "description": "Indicates whether the update can be uninstalled from the system.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource#isuninstallable\n",
+                    "markdownDescription": "Indicates whether the update can be uninstalled from the system.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource#isuninstallable\n"
+                },
+                "KBArticleIDs": {
+                    "type": "array",
+                    "readOnly": true,
+                    "items": {
+                        "type": "string"
+                    },
+                    "title": "KB Article IDs",
+                    "description": "The Knowledge Base (KB) article identifiers associated with the update.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource#kbarticleids\n",
+                    "markdownDescription": "The Knowledge Base (KB) article identifiers associated with the update.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource#kbarticleids\n"
+                },
+                "maxDownloadSize": {
+                    "type": "integer",
+                    "format": "int64",
+                    "readOnly": true,
+                    "title": "Maximum download size",
+                    "description": "The maximum download size of the update in bytes.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource#maxdownloadsize\n",
+                    "markdownDescription": "The maximum download size of the update in bytes.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource#maxdownloadsize\n"
+                },
+                "msrcSeverity": {
+                    "type": "string",
+                    "enum": [
+                        "Critical",
+                        "Important",
+                        "Moderate",
+                        "Low"
+                    ],
+                    "readOnly": true,
+                    "title": "MSRC severity rating",
+                    "description": "The Microsoft Security Response Center (MSRC) severity rating for the update.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource#msrcseverity\n",
+                    "markdownDescription": "The Microsoft Security Response Center (MSRC) severity rating for the update.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource#msrcseverity\n"
+                },
+                "securityBulletinIds": {
+                    "type": "array",
+                    "readOnly": true,
+                    "items": {
+                        "type": "string"
+                    },
+                    "title": "Security bulletin IDs",
+                    "description": "The security bulletin identifiers associated with the update.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource#securitybulletinids\n",
+                    "markdownDescription": "The security bulletin identifiers associated with the update.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource#securitybulletinids\n"
+                },
+                "updateType": {
+                    "type": "string",
+                    "enum": [
+                        "Software",
+                        "Driver"
+                    ],
+                    "readOnly": true,
+                    "title": "Update type",
+                    "description": "The type of the update (Software or Driver).\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource#updatetype\n",
+                    "markdownDescription": "The type of the update (Software or Driver).\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource#updatetype\n"
+                }
+            }
+        }
+    }
+}
