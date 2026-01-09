@@ -16,6 +16,22 @@
         ],
         "input": "stdin"
     },
+    "set": {
+        "executable": "wu_dsc",
+        "args": [
+            "set"
+        ],
+        "input": "stdin",
+        "preTest": true,
+        "return": "state"
+    },
+    "export": {
+        "executable": "wu_dsc",
+        "args": [
+            "export"
+        ],
+        "input": "stdin"
+    },
     "schema": {
         "embedded": {
             "$schema": "http://json-schema.org/draft-07/schema#",
@@ -25,33 +41,24 @@
             "markdownDescription": "The `Microsoft.Windows/Updates` resource enables you to query information about Windows Updates using the Windows Update Agent COM APIs.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource\n",
             "type": "object",
             "additionalProperties": false,
-            "anyOf": [
-                {
-                    "required": ["title"]
-                },
-                {
-                    "required": ["id"]
-                }
-            ],
             "properties": {
                 "title": {
                     "type": "string",
                     "title": "Update title",
-                    "description": "The title or partial title of the Windows Update to search for. Either title or id must be specified.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource#title\n",
-                    "markdownDescription": "The title or partial title of the Windows Update to search for. Either title or id must be specified.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource#title\n"
+                    "description": "The exact title of the Windows Update to search for (for get operation) or a title pattern with wildcards (* supported) for filtering (for export operation). Either title or id must be specified for get operation.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource#title\n",
+                    "markdownDescription": "The exact title of the Windows Update to search for (for get operation) or a title pattern with wildcards (* supported) for filtering (for export operation). Either title or id must be specified for get operation.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource#title\n"
                 },
                 "id": {
                     "type": "string",
                     "title": "Update ID",
-                    "description": "The unique identifier (GUID) for the Windows Update to search for. Either title or id must be specified.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource#id\n",
-                    "markdownDescription": "The unique identifier (GUID) for the Windows Update to search for. Either title or id must be specified.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource#id\n"
+                    "description": "The unique identifier (GUID) for the Windows Update to search for (for get operation) or filter by (for export operation). Either title or id must be specified for get operation.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource#id\n",
+                    "markdownDescription": "The unique identifier (GUID) for the Windows Update to search for (for get operation) or filter by (for export operation). Either title or id must be specified for get operation.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource#id\n"
                 },
                 "isInstalled": {
                     "type": "boolean",
-                    "readOnly": true,
                     "title": "Is installed",
-                    "description": "Indicates whether the update is currently installed on the system.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource#isinstalled\n",
-                    "markdownDescription": "Indicates whether the update is currently installed on the system.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource#isinstalled\n"
+                    "description": "Indicates whether the update is currently installed on the system. For export operation, this can be used as a filter.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource#isinstalled\n",
+                    "markdownDescription": "Indicates whether the update is currently installed on the system. For export operation, this can be used as a filter.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updates/resource#isinstalled\n"
                 },
                 "description": {
                     "type": "string",

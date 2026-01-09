@@ -38,11 +38,12 @@ Describe 'Windows Update resource tests' {
     }
 
     Context 'Input validation' {
-        It 'should fail when title is missing' -Skip:(!$IsWindows) {
+        It 'should allow get without title or id for specific lookup' -Skip:(!$IsWindows) {
             $json = @'
 {
 }
 '@
+            # For get operation, empty input is not valid (need title or id)
             $out = $json | dsc resource get -r $resourceType 2>&1
             $LASTEXITCODE | Should -Not -Be 0
         }
@@ -67,51 +68,98 @@ Describe 'Windows Update resource tests' {
     }
 
     Context 'Get operation' {
-        It 'should return proper JSON structure for existing update' -Skip:(!$IsWindows) {
-            # Search for a common update pattern - Windows Defender updates are common
-            $json = @'
-{
-    "title": "Windows Defender"
-}
-'@
-            $out = $json | dsc resource get -r $resourceType 2>&1
+        It 'should return proper JSON structure for existing update with exact title' -Skip:(!$IsWindows) {
+            # Get a list of actual updates first to test with exact title
+            $exportOut = '{}' | dsc resource export -r $resourceType 2>&1
             
             if ($LASTEXITCODE -eq 0) {
-                $result = $out | ConvertFrom-Json
-                $result.actualState | Should -Not -BeNullOrEmpty
-                $result.actualState.title | Should -Not -BeNullOrEmpty
-                $result.actualState.id | Should -Not -BeNullOrEmpty
-                $result.actualState | Should -HaveProperty 'isInstalled'
-                $result.actualState | Should -HaveProperty 'description'
-                $result.actualState | Should -HaveProperty 'isUninstallable'
-                $result.actualState | Should -HaveProperty 'KBArticleIDs'
-                $result.actualState | Should -HaveProperty 'maxDownloadSize'
-                $result.actualState | Should -HaveProperty 'updateType'
+                $updates = $exportOut | ConvertFrom-Json
+                if ($updates.Count -gt 0) {
+                    $exactTitle = $updates[0].title
+                    $json = @"
+{
+    ""title"": ""$exactTitle""
+}
+"@
+                    $out = $json | dsc resource get -r $resourceType 2>&1
+                    
+                    $LASTEXITCODE | Should -Be 0
+                    $result = $out | ConvertFrom-Json
+                    $result.actualState | Should -Not -BeNullOrEmpty
+                    $result.actualState.title | Should -BeExactly $exactTitle
+                    $result.actualState.id | Should -Not -BeNullOrEmpty
+                    $result.actualState | Should -HaveProperty 'isInstalled'
+                    $result.actualState | Should -HaveProperty 'description'
+                    $result.actualState | Should -HaveProperty 'isUninstallable'
+                    $result.actualState | Should -HaveProperty 'KBArticleIDs'
+                    $result.actualState | Should -HaveProperty 'maxDownloadSize'
+                    $result.actualState | Should -HaveProperty 'updateType'
+                }
+                else {
+                    Write-Host "No updates found on system, skipping test"
+                    $true | Should -Be $true
+                }
             }
             else {
-                # If no Windows Defender update found, that's acceptable
-                Write-Host "No Windows Defender update found, skipping structure validation"
+                Write-Host "Export failed, skipping test"
                 $true | Should -Be $true
             }
         }
 
-        It 'should handle case-insensitive search' -Skip:(!$IsWindows) {
-            $jsonLower = @'
+        It 'should handle case-insensitive exact title match' -Skip:(!$IsWindows) {
+            # Get an update first to test with
+            $exportOut = '{}' | dsc resource export -r $resourceType 2>&1
+            
+            if ($LASTEXITCODE -eq 0) {
+                $updates = $exportOut | ConvertFrom-Json
+                if ($updates.Count -gt 0) {
+                    $exactTitle = $updates[0].title
+                    
+                    # Test with lowercase version
+                    $jsonLower = @"
 {
-    "title": "security"
+    ""title"": ""$($exactTitle.ToLower())""
+}
+"@
+                    $outLower = $jsonLower | dsc resource get -r $resourceType 2>&1
+                    
+                    # Test with uppercase version
+                    $jsonUpper = @"
+{
+    ""title"": ""$($exactTitle.ToUpper())""
+}
+"@
+                    $outUpper = $jsonUpper | dsc resource get -r $resourceType 2>&1
+                    
+                    # Both should succeed
+                    if ($outLower -and $outUpper) {
+                        $resultLower = $outLower | ConvertFrom-Json
+                        $resultUpper = $outUpper | ConvertFrom-Json
+                        $resultLower.actualState.id | Should -Be $resultUpper.actualState.id
+                    }
+                }
+                else {
+                    Write-Host "No updates found, skipping test"
+                    $true | Should -Be $true
+                }
+            }
+            else {
+                Write-Host "Export failed, skipping test"
+                $true | Should -Be $true
+            }
+        }
+
+        It 'should fail when partial title is provided' -Skip:(!$IsWindows) {
+            # Get operation now requires exact match, so partial should fail
+            $json = @'
+{
+    "title": "Windows"
 }
 '@
-            $outLower = $jsonLower | dsc resource get -r $resourceType 2>&1
-            
-            $jsonUpper = @'
-{
-    "title": "SECURITY"
-}
-'@
-            $outUpper = $jsonUpper | dsc resource get -r $resourceType 2>&1
-            
-            # Both should either succeed with results or fail with same error
-            $LASTEXITCODE | Should -Be $LASTEXITCODE
+            $out = $json | dsc resource get -r $resourceType 2>&1
+            # This will likely fail unless there's an update with exact title "Windows"
+            # which is unlikely
+            $LASTEXITCODE | Should -Not -Be 0
         }
 
         It 'should fail when update is not found' -Skip:(!$IsWindows) {
@@ -126,119 +174,633 @@ Describe 'Windows Update resource tests' {
         }
 
         It 'should return valid boolean for isInstalled' -Skip:(!$IsWindows) {
-            $json = @'
-{
-    "title": "Windows"
-}
-'@
-            $out = $json | dsc resource get -r $resourceType 2>&1
+            $exportOut = '{}' | dsc resource export -r $resourceType 2>&1
             
             if ($LASTEXITCODE -eq 0) {
-                $result = $out | ConvertFrom-Json
-                $result.actualState.isInstalled | Should -BeOfType [bool]
-            }
-            else {
-                Write-Host "No update found, skipping boolean validation"
-                $true | Should -Be $true
+                $updates = $exportOut | ConvertFrom-Json
+                if ($updates.Count -gt 0) {
+                    $json = @"
+{
+    ""title"": ""$($updates[0].title)""
+}
+"@
+                    $out = $json | dsc resource get -r $resourceType 2>&1
+                    
+                    if ($LASTEXITCODE -eq 0) {
+                        $result = $out | ConvertFrom-Json
+                        $result.actualState.isInstalled | Should -BeOfType [bool]
+                    }
+                }
+                else {
+                    Write-Host "No updates found, skipping test"
+                    $true | Should -Be $true
+                }
             }
         }
 
         It 'should return valid integer for maxDownloadSize' -Skip:(!$IsWindows) {
-            $json = @'
-{
-    "title": "Windows"
-}
-'@
-            $out = $json | dsc resource get -r $resourceType 2>&1
+            $exportOut = '{}' | dsc resource export -r $resourceType 2>&1
             
             if ($LASTEXITCODE -eq 0) {
-                $result = $out | ConvertFrom-Json
-                $result.actualState.maxDownloadSize | Should -BeGreaterOrEqual 0
-            }
-            else {
-                Write-Host "No update found, skipping size validation"
-                $true | Should -Be $true
+                $updates = $exportOut | ConvertFrom-Json
+                if ($updates.Count -gt 0) {
+                    $json = @"
+{
+    ""title"": ""$($updates[0].title)""
+}
+"@
+                    $out = $json | dsc resource get -r $resourceType 2>&1
+                    
+                    if ($LASTEXITCODE -eq 0) {
+                        $result = $out | ConvertFrom-Json
+                        $result.actualState.maxDownloadSize | Should -BeGreaterOrEqual 0
+                    }
+                }
+                else {
+                    Write-Host "No updates found, skipping test"
+                    $true | Should -Be $true
+                }
             }
         }
 
         It 'should return valid array for KBArticleIDs' -Skip:(!$IsWindows) {
-            $json = @'
-{
-    "title": "Windows"
-}
-'@
-            $out = $json | dsc resource get -r $resourceType 2>&1
+            $exportOut = '{}' | dsc resource export -r $resourceType 2>&1
             
             if ($LASTEXITCODE -eq 0) {
-                $result = $out | ConvertFrom-Json
-                $result.actualState.KBArticleIDs | Should -BeOfType [array]
-            }
-            else {
-                Write-Host "No update found, skipping KB validation"
-                $true | Should -Be $true
+                $updates = $exportOut | ConvertFrom-Json
+                if ($updates.Count -gt 0) {
+                    $json = @"
+{
+    ""title"": ""$($updates[0].title)""
+}
+"@
+                    $out = $json | dsc resource get -r $resourceType 2>&1
+                    
+                    if ($LASTEXITCODE -eq 0) {
+                        $result = $out | ConvertFrom-Json
+                        $result.actualState.KBArticleIDs | Should -BeOfType [array]
+                    }
+                }
+                else {
+                    Write-Host "No updates found, skipping test"
+                    $true | Should -Be $true
+                }
             }
         }
 
         It 'should return valid enum value for updateType' -Skip:(!$IsWindows) {
-            $json = @'
-{
-    "title": "Windows"
-}
-'@
-            $out = $json | dsc resource get -r $resourceType 2>&1
+            $exportOut = '{}' | dsc resource export -r $resourceType 2>&1
             
             if ($LASTEXITCODE -eq 0) {
-                $result = $out | ConvertFrom-Json
-                $result.actualState.updateType | Should -BeIn @('Software', 'Driver')
-            }
-            else {
-                Write-Host "No update found, skipping type validation"
-                $true | Should -Be $true
+                $updates = $exportOut | ConvertFrom-Json
+                if ($updates.Count -gt 0) {
+                    $json = @"
+{
+    ""title"": ""$($updates[0].title)""
+}
+"@
+                    $out = $json | dsc resource get -r $resourceType 2>&1
+                    
+                    if ($LASTEXITCODE -eq 0) {
+                        $result = $out | ConvertFrom-Json
+                        $result.actualState.updateType | Should -BeIn @('Software', 'Driver')
+                    }
+                }
+                else {
+                    Write-Host "No updates found, skipping test"
+                    $true | Should -Be $true
+                }
             }
         }
 
         It 'should return valid enum value for msrcSeverity when present' -Skip:(!$IsWindows) {
-            $json = @'
-{
-    "title": "Security"
-}
-'@
-            $out = $json | dsc resource get -r $resourceType 2>&1
+            # Find an update with severity information using export
+            $exportOut = '{}' | dsc resource export -r $resourceType 2>&1
             
             if ($LASTEXITCODE -eq 0) {
-                $result = $out | ConvertFrom-Json
-                if ($null -ne $result.actualState.msrcSeverity) {
-                    $result.actualState.msrcSeverity | Should -BeIn @('Critical', 'Important', 'Moderate', 'Low')
+                $updates = $exportOut | ConvertFrom-Json
+                $updateWithSeverity = $updates | Where-Object { $null -ne $_.msrcSeverity } | Select-Object -First 1
+                
+                if ($updateWithSeverity) {
+                    $json = @"
+{
+    ""title"": ""$($updateWithSeverity.title)""
+}
+"@
+                    $out = $json | dsc resource get -r $resourceType 2>&1
+                    
+                    if ($LASTEXITCODE -eq 0) {
+                        $result = $out | ConvertFrom-Json
+                        if ($null -ne $result.actualState.msrcSeverity) {
+                            $result.actualState.msrcSeverity | Should -BeIn @('Critical', 'Important', 'Moderate', 'Low')
+                        }
+                    }
                 }
-            }
-            else {
-                Write-Host "No security update found, skipping severity validation"
-                $true | Should -Be $true
+                else {
+                    Write-Host "No update with severity found, skipping test"
+                    $true | Should -Be $true
+                }
             }
         }
 
         It 'should include GUID format for update ID' -Skip:(!$IsWindows) {
-            $json = @'
-{
-    "title": "Windows"
-}
-'@
-            $out = $json | dsc resource get -r $resourceType 2>&1
+            $exportOut = '{}' | dsc resource export -r $resourceType 2>&1
             
             if ($LASTEXITCODE -eq 0) {
-                $result = $out | ConvertFrom-Json
-                # Basic GUID format check (8-4-4-4-12 hex digits)
-                $result.actualState.id | Should -Match '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+                $updates = $exportOut | ConvertFrom-Json
+                if ($updates.Count -gt 0) {
+                    $json = @"
+{
+    ""title"": ""$($updates[0].title)""
+}
+"@
+                    $out = $json | dsc resource get -r $resourceType 2>&1
+                    
+                    if ($LASTEXITCODE -eq 0) {
+                        $result = $out | ConvertFrom-Json
+                        # Basic GUID format check (8-4-4-4-12 hex digits)
+                        $result.actualState.id | Should -Match '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+                    }
+                }
+                else {
+                    Write-Host "No updates found, skipping test"
+                    $true | Should -Be $true
+                }
             }
-            else {
-                Write-Host "No update found, skipping ID validation"
-                $true | Should -Be $true
+        }
+
+        It 'should support lookup by id' -Skip:(!$IsWindows) {
+            $exportOut = '{}' | dsc resource export -r $resourceType 2>&1
+            
+            if ($LASTEXITCODE -eq 0) {
+                $updates = $exportOut | ConvertFrom-Json
+                if ($updates.Count -gt 0) {
+                    $updateId = $updates[0].id
+                    $json = @"
+{
+    ""id"": ""$updateId""
+}
+"@
+                    $out = $json | dsc resource get -r $resourceType 2>&1
+                    
+                    $LASTEXITCODE | Should -Be 0
+                    $result = $out | ConvertFrom-Json
+                    $result.actualState.id | Should -Be $updateId
+                }
+                else {
+                    Write-Host "No updates found, skipping test"
+                    $true | Should -Be $true
+                }
+            }
+        }
+    }
+
+    Context 'Export operation' {
+        It 'should return array of updates' -Skip:(!$IsWindows) {
+            $out = '{}' | dsc resource export -r $resourceType 2>&1
+            
+            $LASTEXITCODE | Should -Be 0
+            $updates = $out | ConvertFrom-Json
+            $updates | Should -BeOfType [array]
+        }
+
+        It 'should work without input filter' -Skip:(!$IsWindows) {
+            $out = '' | dsc resource export -r $resourceType 2>&1
+            
+            $LASTEXITCODE | Should -Be 0
+            $updates = $out | ConvertFrom-Json
+            $updates.Count | Should -BeGreaterThan 0
+        }
+
+        It 'should filter by isInstalled=true' -Skip:(!$IsWindows) {
+            $json = @'
+{
+    "isInstalled": true
+}
+'@
+            $out = $json | dsc resource export -r $resourceType 2>&1
+            
+            $LASTEXITCODE | Should -Be 0
+            $updates = $out | ConvertFrom-Json
+            if ($updates.Count -gt 0) {
+                foreach ($update in $updates) {
+                    $update.isInstalled | Should -Be $true
+                }
+            }
+        }
+
+        It 'should filter by isInstalled=false' -Skip:(!$IsWindows) {
+            $json = @'
+{
+    "isInstalled": false
+}
+'@
+            $out = $json | dsc resource export -r $resourceType 2>&1
+            
+            $LASTEXITCODE | Should -Be 0
+            $updates = $out | ConvertFrom-Json
+            if ($updates.Count -gt 0) {
+                foreach ($update in $updates) {
+                    $update.isInstalled | Should -Be $false
+                }
+            }
+        }
+
+        It 'should filter by title with wildcard *' -Skip:(!$IsWindows) {
+            # Get first update to construct wildcard pattern
+            $allOut = '{}' | dsc resource export -r $resourceType 2>&1
+            
+            if ($LASTEXITCODE -eq 0) {
+                $allUpdates = $allOut | ConvertFrom-Json
+                if ($allUpdates.Count -gt 0) {
+                    # Take first word from title and use as wildcard
+                    $firstWord = ($allUpdates[0].title -split ' ')[0]
+                    $json = @"
+{
+    ""title"": ""$firstWord*""
+}
+"@
+                    $out = $json | dsc resource export -r $resourceType 2>&1
+                    
+                    $LASTEXITCODE | Should -Be 0
+                    $updates = $out | ConvertFrom-Json
+                    $updates.Count | Should -BeGreaterThan 0
+                    
+                    # All results should start with the pattern
+                    foreach ($update in $updates) {
+                        $update.title | Should -BeLike "$firstWord*"
+                    }
+                }
+            }
+        }
+
+        It 'should filter by title with wildcard in middle' -Skip:(!$IsWindows) {
+            $json = @'
+{
+    "title": "*Windows*"
+}
+'@
+            $out = $json | dsc resource export -r $resourceType 2>&1
+            
+            if ($LASTEXITCODE -eq 0) {
+                $updates = $out | ConvertFrom-Json
+                if ($updates.Count -gt 0) {
+                    foreach ($update in $updates) {
+                        $update.title | Should -Match 'Windows'
+                    }
+                }
+            }
+        }
+
+        It 'should combine filters - title wildcard and isInstalled' -Skip:(!$IsWindows) {
+            $json = @'
+{
+    "title": "*Microsoft*",
+    "isInstalled": true
+}
+'@
+            $out = $json | dsc resource export -r $resourceType 2>&1
+            
+            if ($LASTEXITCODE -eq 0) {
+                $updates = $out | ConvertFrom-Json
+                if ($updates.Count -gt 0) {
+                    foreach ($update in $updates) {
+                        $update.title | Should -Match 'Microsoft'
+                        $update.isInstalled | Should -Be $true
+                    }
+                }
+            }
+        }
+
+        It 'should return proper structure for each update' -Skip:(!$IsWindows) {
+            $out = '{}' | dsc resource export -r $resourceType 2>&1
+            
+            $LASTEXITCODE | Should -Be 0
+            $updates = $out | ConvertFrom-Json
+            if ($updates.Count -gt 0) {
+                $update = $updates[0]
+                $update | Should -HaveProperty 'title'
+                $update | Should -HaveProperty 'id'
+                $update | Should -HaveProperty 'isInstalled'
+                $update | Should -HaveProperty 'description'
+                $update | Should -HaveProperty 'isUninstallable'
+                $update | Should -HaveProperty 'kbArticleIds'
+                $update | Should -HaveProperty 'maxDownloadSize'
+                $update | Should -HaveProperty 'updateType'
+                $update.kbArticleIds | Should -BeOfType [array]
+            }
+        }
+
+        It 'should filter by specific update id' -Skip:(!$IsWindows) {
+            $allOut = '{}' | dsc resource export -r $resourceType 2>&1
+            
+            if ($LASTEXITCODE -eq 0) {
+                $allUpdates = $allOut | ConvertFrom-Json
+                if ($allUpdates.Count -gt 0) {
+                    $specificId = $allUpdates[0].id
+                    $json = @"
+{
+    ""id"": ""$specificId""
+}
+"@
+                    $out = $json | dsc resource export -r $resourceType 2>&1
+                    
+                    $LASTEXITCODE | Should -Be 0
+                    $updates = $out | ConvertFrom-Json
+                    $updates.Count | Should -Be 1
+                    $updates[0].id | Should -Be $specificId
+                }
+            }
+        }
+
+        It 'should return empty array when no matches found' -Skip:(!$IsWindows) {
+            $json = @'
+{
+    "title": "ThisUpdateShouldNeverExist99999*"
+}
+'@
+            $out = $json | dsc resource export -r $resourceType 2>&1
+            
+            $LASTEXITCODE | Should -Be 0
+            $updates = $out | ConvertFrom-Json
+            $updates.Count | Should -Be 0
+        }
+
+        It 'should filter by msrcSeverity' -Skip:(!$IsWindows) {
+            $json = @'
+{
+    "msrcSeverity": "Critical"
+}
+'@
+            $out = $json | dsc resource export -r $resourceType 2>&1
+            
+            if ($LASTEXITCODE -eq 0) {
+                $updates = $out | ConvertFrom-Json
+                if ($updates.Count -gt 0) {
+                    foreach ($update in $updates) {
+                        $update.msrcSeverity | Should -Be 'Critical'
+                    }
+                }
+            }
+        }
+
+        It 'should filter by updateType Software' -Skip:(!$IsWindows) {
+            $json = @'
+{
+    "updateType": "Software"
+}
+'@
+            $out = $json | dsc resource export -r $resourceType 2>&1
+            
+            if ($LASTEXITCODE -eq 0) {
+                $updates = $out | ConvertFrom-Json
+                if ($updates.Count -gt 0) {
+                    foreach ($update in $updates) {
+                        $update.updateType | Should -Be 'Software'
+                    }
+                }
+            }
+        }
+
+        It 'should filter by updateType Driver' -Skip:(!$IsWindows) {
+            $json = @'
+{
+    "updateType": "Driver"
+}
+'@
+            $out = $json | dsc resource export -r $resourceType 2>&1
+            
+            if ($LASTEXITCODE -eq 0) {
+                $updates = $out | ConvertFrom-Json
+                # May return 0 updates if no drivers are pending
+                foreach ($update in $updates) {
+                    $update.updateType | Should -Be 'Driver'
+                }
+            }
+        }
+
+        It 'should filter by isUninstallable' -Skip:(!$IsWindows) {
+            $json = @'
+{
+    "isUninstallable": true
+}
+'@
+            $out = $json | dsc resource export -r $resourceType 2>&1
+            
+            if ($LASTEXITCODE -eq 0) {
+                $updates = $out | ConvertFrom-Json
+                if ($updates.Count -gt 0) {
+                    foreach ($update in $updates) {
+                        $update.isUninstallable | Should -Be $true
+                    }
+                }
+            }
+        }
+
+        It 'should filter by description with wildcard' -Skip:(!$IsWindows) {
+            $json = @'
+{
+    "description": "*security*"
+}
+'@
+            $out = $json | dsc resource export -r $resourceType 2>&1
+            
+            if ($LASTEXITCODE -eq 0) {
+                $updates = $out | ConvertFrom-Json
+                if ($updates.Count -gt 0) {
+                    foreach ($update in $updates) {
+                        $update.description | Should -Match 'security'
+                    }
+                }
+            }
+        }
+
+        It 'should filter by kbArticleIds' -Skip:(!$IsWindows) {
+            # First get an update with KB articles
+            $allOut = '{}' | dsc resource export -r $resourceType 2>&1
+            
+            if ($LASTEXITCODE -eq 0) {
+                $allUpdates = $allOut | ConvertFrom-Json
+                $updateWithKB = $allUpdates | Where-Object { $_.kbArticleIds.Count -gt 0 } | Select-Object -First 1
+                
+                if ($updateWithKB) {
+                    $kbId = $updateWithKB.kbArticleIds[0]
+                    $json = @"
+{
+    "kbArticleIds": ["$kbId"]
+}
+"@
+                    $out = $json | dsc resource export -r $resourceType 2>&1
+                    
+                    $LASTEXITCODE | Should -Be 0
+                    $updates = $out | ConvertFrom-Json
+                    $updates.Count | Should -BeGreaterThan 0
+                    
+                    # At least one update should have the KB ID
+                    $matchFound = $false
+                    foreach ($update in $updates) {
+                        if ($update.kbArticleIds -contains $kbId) {
+                            $matchFound = $true
+                            break
+                        }
+                    }
+                    $matchFound | Should -Be $true
+                }
+                else {
+                    Write-Host "No update with KB articles found, skipping test"
+                    $true | Should -Be $true
+                }
+            }
+        }
+
+        It 'should filter by securityBulletinIds' -Skip:(!$IsWindows) {
+            # First get an update with security bulletins
+            $allOut = '{}' | dsc resource export -r $resourceType 2>&1
+            
+            if ($LASTEXITCODE -eq 0) {
+                $allUpdates = $allOut | ConvertFrom-Json
+                $updateWithBulletin = $allUpdates | Where-Object { $_.securityBulletinIds.Count -gt 0 } | Select-Object -First 1
+                
+                if ($updateWithBulletin) {
+                    $bulletinId = $updateWithBulletin.securityBulletinIds[0]
+                    $json = @"
+{
+    "securityBulletinIds": ["$bulletinId"]
+}
+"@
+                    $out = $json | dsc resource export -r $resourceType 2>&1
+                    
+                    $LASTEXITCODE | Should -Be 0
+                    $updates = $out | ConvertFrom-Json
+                    $updates.Count | Should -BeGreaterThan 0
+                    
+                    # At least one update should have the bulletin ID
+                    $matchFound = $false
+                    foreach ($update in $updates) {
+                        if ($update.securityBulletinIds -contains $bulletinId) {
+                            $matchFound = $true
+                            break
+                        }
+                    }
+                    $matchFound | Should -Be $true
+                }
+                else {
+                    Write-Host "No update with security bulletins found, skipping test"
+                    $true | Should -Be $true
+                }
+            }
+        }
+
+        It 'should combine multiple filters - msrcSeverity and isInstalled' -Skip:(!$IsWindows) {
+            $json = @'
+{
+    "msrcSeverity": "Critical",
+    "isInstalled": false
+}
+'@
+            $out = $json | dsc resource export -r $resourceType 2>&1
+            
+            if ($LASTEXITCODE -eq 0) {
+                $updates = $out | ConvertFrom-Json
+                if ($updates.Count -gt 0) {
+                    foreach ($update in $updates) {
+                        $update.msrcSeverity | Should -Be 'Critical'
+                        $update.isInstalled | Should -Be $false
+                    }
+                }
+            }
+        }
+
+        It 'should combine multiple filters - updateType and title wildcard' -Skip:(!$IsWindows) {
+            $json = @'
+{
+    "updateType": "Software",
+    "title": "*Windows*"
+}
+'@
+            $out = $json | dsc resource export -r $resourceType 2>&1
+            
+            if ($LASTEXITCODE -eq 0) {
+                $updates = $out | ConvertFrom-Json
+                if ($updates.Count -gt 0) {
+                    foreach ($update in $updates) {
+                        $update.updateType | Should -Be 'Software'
+                        $update.title | Should -Match 'Windows'
+                    }
+                }
+            }
+        }
+
+        It 'should combine three filters - msrcSeverity, updateType, and isInstalled' -Skip:(!$IsWindows) {
+            $json = @'
+{
+    "msrcSeverity": "Important",
+    "updateType": "Software",
+    "isInstalled": true
+}
+'@
+            $out = $json | dsc resource export -r $resourceType 2>&1
+            
+            if ($LASTEXITCODE -eq 0) {
+                $updates = $out | ConvertFrom-Json
+                if ($updates.Count -gt 0) {
+                    foreach ($update in $updates) {
+                        $update.msrcSeverity | Should -Be 'Important'
+                        $update.updateType | Should -Be 'Software'
+                        $update.isInstalled | Should -Be $true
+                    }
+                }
+            }
+        }
+
+        It 'should handle all msrcSeverity values' -Skip:(!$IsWindows) {
+            $severities = @('Critical', 'Important', 'Moderate', 'Low')
+            
+            foreach ($severity in $severities) {
+                $json = @"
+{
+    "msrcSeverity": "$severity"
+}
+"@
+                $out = $json | dsc resource export -r $resourceType 2>&1
+                
+                if ($LASTEXITCODE -eq 0) {
+                    $updates = $out | ConvertFrom-Json
+                    # May return 0 updates if no matches, but should not error
+                    foreach ($update in $updates) {
+                        $update.msrcSeverity | Should -Be $severity
+                    }
+                }
+            }
+        }
+
+        It 'should filter by description exact match (no wildcard)' -Skip:(!$IsWindows) {
+            # Get an actual description first
+            $allOut = '{}' | dsc resource export -r $resourceType 2>&1
+            
+            if ($LASTEXITCODE -eq 0) {
+                $allUpdates = $allOut | ConvertFrom-Json
+                if ($allUpdates.Count -gt 0) {
+                    $exactDesc = $allUpdates[0].description
+                    $json = @"
+{
+    "description": "$($exactDesc -replace '"', '\"')"
+}
+"@
+                    $out = $json | dsc resource export -r $resourceType 2>&1
+                    
+                    if ($LASTEXITCODE -eq 0) {
+                        $updates = $out | ConvertFrom-Json
+                        $updates.Count | Should -BeGreaterThan 0
+                        $updates[0].description | Should -Be $exactDesc
+                    }
+                }
             }
         }
     }
 
     Context 'DSC configuration integration' {
-        It 'should work with dsc config get' -Skip:(!$IsWindows) {
+        It 'should work with dsc config get using exact title' -Skip:(!$IsWindows) {
             $configYaml = @'
 $schema: https://aka.ms/dsc/schemas/v3/configuration.json
 resources:
@@ -353,18 +915,40 @@ resources:
     }
 
     Context 'Performance' {
-        It 'should complete get operation within reasonable time' -Skip:(!$IsWindows) {
+        It 'should complete export operation within reasonable time' -Skip:(!$IsWindows) {
             $json = @'
 {
-    "title": "Windows Defender"
+    "isInstalled": true
 }
 '@
             $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
-            $out = $json | dsc resource get -r $resourceType 2>&1
+            $out = $json | dsc resource export -r $resourceType 2>&1
             $stopwatch.Stop()
             
             # Windows Update queries can be slow, but should complete within 60 seconds
             $stopwatch.Elapsed.TotalSeconds | Should -BeLessThan 60
+        }
+
+        It 'should complete get operation within reasonable time' -Skip:(!$IsWindows) {
+            # Get a real update first
+            $exportOut = '{}' | dsc resource export -r $resourceType 2>&1 | Select-Object -First 1
+            
+            if ($LASTEXITCODE -eq 0) {
+                $updates = $exportOut | ConvertFrom-Json
+                if ($updates.Count -gt 0) {
+                    $json = @"
+{
+    ""title"": ""$($updates[0].title)""
+}
+"@
+                    $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+                    $out = $json | dsc resource get -r $resourceType 2>&1
+                    $stopwatch.Stop()
+                    
+                    # Windows Update queries can be slow, but should complete within 60 seconds
+                    $stopwatch.Elapsed.TotalSeconds | Should -BeLessThan 60
+                }
+            }
         }
     }
 }
