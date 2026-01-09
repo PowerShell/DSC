@@ -223,7 +223,13 @@ which = { version = "8.0" }
 # dsc-lib
 ipnetwork = { version = "0.21" }
 # WindowsUpdate
-windows = { version = "0.62", features = ["Win32_Foundation", "Win32_System_Com", "Win32_System_Ole", "Win32_System_Variant"] }
+windows = { version = "0.62", features = [
+    "Win32_Foundation",
+    "Win32_System_Com",
+    "Win32_System_Ole", 
+    "Win32_System_Variant",
+    "Win32_System_UpdateAgent"
+] }
 
 # build-only dependencies
 # dsc-lib, dsc-lib-registry, sshdconfig, tree-sitter-dscexpression, tree-sitter-ssh-server-config
