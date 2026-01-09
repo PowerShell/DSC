@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::DscError;
+use crate::types::FullyQualifiedTypeName;
 
 use clap::ValueEnum;
 use indicatif::ProgressStyle;
@@ -52,7 +53,7 @@ pub struct Progress {
     pub resource_name: Option<String>,
     /// The type of the resource being operated on.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub resource_type: Option<String>,
+    pub resource_type: Option<FullyQualifiedTypeName>,
     /// The result of the operation.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub result: Option<Value>,
@@ -139,9 +140,9 @@ impl ProgressBar {
     /// * `resource_type` - The type of the resource being operated on
     /// * `result` - The result of the operation
     ///
-    pub fn set_resource(&mut self, name: &str, resource_type: &str) {
+    pub fn set_resource(&mut self, name: &str, resource_type: &FullyQualifiedTypeName) {
         self.progress_value.resource_name = Some(name.to_string());
-        self.progress_value.resource_type = Some(resource_type.to_string());
+        self.progress_value.resource_type = Some(resource_type.clone());
         self.progress_value.result = None;
         self.progress_value.failure = None;
     }

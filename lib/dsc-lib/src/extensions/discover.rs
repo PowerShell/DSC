@@ -62,13 +62,13 @@ impl DscExtension {
             let extension = match serde_json::from_value::<ExtensionManifest>(self.manifest.clone()) {
                 Ok(manifest) => manifest,
                 Err(err) => {
-                    return Err(DscError::Manifest(self.type_name.clone(), err));
+                    return Err(DscError::Manifest(self.type_name.to_string(), err));
                 }
             };
             let Some(discover) = extension.discover else {
-                return Err(DscError::UnsupportedCapability(self.type_name.clone(), Capability::Discover.to_string()));
+                return Err(DscError::UnsupportedCapability(self.type_name.to_string(), Capability::Discover.to_string()));
             };
-            let args = process_args(discover.args.as_ref(), "", &self.type_name);
+            let args = process_args(discover.args.as_ref(), "", self.type_name.as_ref());
             let (_exit_code, stdout, _stderr) = invoke_command(
                 &discover.executable,
                 args,
@@ -103,7 +103,7 @@ impl DscExtension {
             Ok(resources)
         } else {
             Err(DscError::UnsupportedCapability(
-                self.type_name.clone(),
+                self.type_name.to_string(),
                 Capability::Discover.to_string()
             ))
         }
