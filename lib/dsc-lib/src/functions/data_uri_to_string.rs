@@ -60,6 +60,20 @@ impl Function for DataUriToString {
             ));
         }
 
+        // Parse charset from metadata if present and validate
+        // Format: data:[<mediatype>][;charset=<charset>][;base64],<data>
+        if let Some(charset_part) = metadata.split(';').find(|part| part.starts_with("charset=")) {
+            let charset_value = &charset_part[8..]; // Skip "charset="
+            let charset_lower = charset_value.to_lowercase();
+            if charset_lower != "utf-8" && charset_lower != "utf8" {
+                return Err(DscError::FunctionArg(
+                    "dataUriToString".to_string(),
+                    t!("functions.dataUriToString.unsupportedCharset", charset = charset_value).to_string(),
+                ));
+            }
+        }
+        // TODO: In the future add more support for charsets
+
         // Decode base64
         let decoded_bytes = general_purpose::STANDARD.decode(encoded_data).map_err(|_| {
             DscError::FunctionArg(
@@ -152,5 +166,22 @@ mod tests {
         let result = parser
             .parse_and_execute("[dataUriToString('data:text/plain,Hello%20World')]", &Context::new());
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_data_uri_to_string_unsupported_charset() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser
+            .parse_and_execute("[dataUriToString('data:text/plain;charset=utf-16;base64,SGVsbG8=')]", &Context::new());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_data_uri_to_string_no_charset_assumes_utf8() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser
+            .parse_and_execute("[dataUriToString('data:application/json;base64,SGVsbG8=')]", &Context::new())
+            .unwrap();
+        assert_eq!(result, Value::String("Hello".to_string()));
     }
 }
