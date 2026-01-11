@@ -1761,6 +1761,7 @@ Describe 'tests for function expressions' {
     @{ expression = "[dataUriToString('not a data uri')]" ; expectedError = 'Invalid data URI format' }
     @{ expression = "[dataUriToString('data:text/plain;base64')]" ; expectedError = 'Invalid data URI format' }
     @{ expression = "[dataUriToString('data:;base64,invalid!@#')]" ; expectedError = 'Invalid base64 encoding' }
+    @{ expression = "[dataUriToString('data:text/plain;charset=utf-16;base64,SGVsbG8=')]" ; expectedError = 'Unsupported charset' }
   ) {
     param($expression, $expectedError)
 
