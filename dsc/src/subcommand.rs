@@ -619,7 +619,7 @@ fn list_extensions(dsc: &mut DscManager, extension_name: Option<&String>, format
 
             if write_table {
                 table.add_row(vec![
-                    extension.type_name,
+                    extension.type_name.to_string(),
                     extension.version,
                     capabilities,
                     extension.description.unwrap_or_default()
@@ -820,11 +820,11 @@ pub fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adap
 
             if write_table {
                 table.add_row(vec![
-                    resource.type_name,
+                    resource.type_name.to_string(),
                     format!("{:?}", resource.kind),
                     resource.version,
                     capabilities,
-                    resource.require_adapter.unwrap_or_default(),
+                    resource.require_adapter.unwrap_or_default().to_string(),
                     resource.description.unwrap_or_default()
                 ]);
             }

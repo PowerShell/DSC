@@ -7,7 +7,7 @@ use dsc_lib::{
     dscresources::{
         dscresource::{Capability, Invoke},
         resource_manifest::Kind
-    },
+    }, types::FullyQualifiedTypeName,
 };
 use rmcp::{ErrorData as McpError, Json, tool, tool_router, handler::server::wrapper::Parameters};
 use rust_i18n::t;
@@ -20,7 +20,7 @@ use tokio::task;
 pub struct DscResource {
     /// The namespaced name of the resource.
     #[serde(rename="type")]
-    pub type_name: String,
+    pub type_name: FullyQualifiedTypeName,
     /// The kind of resource.
     pub kind: Kind,
     /// The version of the resource.

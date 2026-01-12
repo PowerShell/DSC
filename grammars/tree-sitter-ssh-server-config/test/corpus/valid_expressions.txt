@@ -611,7 +611,7 @@ parse multiple comments and multiple lines
 ====
 # comment line 1
 # comment line 2
-# comment lin3 3
+# comment line 3
 
 
 passwordauthentication yes
