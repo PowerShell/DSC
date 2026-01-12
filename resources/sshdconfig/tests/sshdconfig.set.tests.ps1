@@ -201,7 +201,7 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
             Remove-Item -Path $stderrFile -Force -ErrorAction SilentlyContinue
         }
 
-        It 'Should fail with purge set to false for multi-value keywords' {
+        It 'Should fail with purge set to false for repeatable keywords' {
             $inputConfig = @{
                 _metadata = @{
                     filepath = $TestConfigPath
@@ -250,13 +250,13 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
     Context 'Set with _purge=false' {
         BeforeEach {
             $initialContent = @"
-    Port 2222
-    AddressFamily inet
-    MaxAuthTries 5
-    PermitRootLogin yes
-    PasswordAuthentication no
-    Match Group administrators
-        GSSAPIAuthentication yes
+Port 2222
+AddressFamily inet
+MaxAuthTries 5
+PermitRootLogin yes
+PasswordAuthentication no
+Match Group administrators
+    GSSAPIAuthentication yes
 "@
             Set-Content -Path $TestConfigPath -Value $initialContent
         }
