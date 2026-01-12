@@ -269,6 +269,7 @@ resources:
       'set' {
         $out.results[0].result.beforeState.Name | Should -BeExactly 'TestInstance' -Because $text
         if ($adapter -eq 'Microsoft.Adapter/WindowsPowerShell') {
+          # the `single` mode of the adapter performs a `get` after `set` and returns that result so we can validate it
           $out.results[0].result.afterState.Name | Should -BeExactly 'TestInstance' -Because $text
         }
       }
