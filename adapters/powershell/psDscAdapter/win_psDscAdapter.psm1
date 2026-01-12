@@ -365,13 +365,13 @@ function Invoke-DscOperation {
                         $validateProperty = $cachedDscResourceInfo.Properties | Where-Object -Property Name -EQ $_.Name
                         Write-DscTrace -Operation Debug -Message "Property type: $($validateProperty.PropertyType)"
                         if ($validateProperty -and $validateProperty.PropertyType -eq '[PSCredential]') {
-                            if (-not $_.Value.Username -or -not $_.Value.Password) {
+                            if (-not $_.Value.secureObject.Username -or -not $_.Value.secureObject.Password) {
                                 "Credential object '$($_.Name)' requires both 'username' and 'password' properties" | Write-DscTrace -Operation Error
                                 exit 1
                             }
 
-                            $username = $_.Value.Username.secureString
-                            $password = $_.Value.Password | ConvertTo-SecureString -AsPlainText -Force
+                            $username = $_.Value.secureObject.username
+                            $password = $_.Value.secureObject.password | ConvertTo-SecureString -AsPlainText -Force
                             $property.$($_.Name) = [System.Management.Automation.PSCredential]::new($username, $password)
                             
                         } else {
