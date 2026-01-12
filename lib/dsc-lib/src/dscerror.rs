@@ -121,6 +121,9 @@ pub enum DscError {
     #[error("semver: {0}")]
     SemVer(#[from] semver::Error),
 
+    #[error("{t}: '{0}'", t = t!("dscerror.typeVersionToSemverConversion"))]
+    TypeVersionToSemverConversion(String),
+
     #[error("{t}: {0}", t = t!("dscerror.utf8Conversion"))]
     Utf8Conversion(#[from] Utf8Error),
 
