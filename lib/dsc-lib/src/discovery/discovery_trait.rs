@@ -68,7 +68,6 @@ pub trait ResourceDiscovery {
     ///
     /// * `name_filter` - The filter for the resource name.
     /// * `adapter_filter` - The filter for the adapter name.
-    /// * `fail_on_unknown_adapter` - Whether to fail if the adapter is unknown.
     ///
     /// # Returns
     ///
