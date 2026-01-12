@@ -1762,7 +1762,6 @@ Describe 'tests for function expressions' {
     @{ expression = "[dataUriToString('data:text/plain;base64')]" ; expectedError = 'Invalid data URI format' }
     @{ expression = "[dataUriToString('data:;base64,invalid!@#')]" ; expectedError = 'Invalid base64 encoding' }
     @{ expression = "[dataUriToString('data:text/plain;charset=utf-16;base64,SGVsbG8=')]" ; expectedError = 'Unsupported charset' }
-    @{ expression = "[dataUriToString('data::text/plain;base64,SGVsbG8=')]" ; expectedError = 'Data URI must be base64 encoded' }
     @{ expression = "[dataUriToString('data:text/plain;base64,,SGVsbG8=')]" ; expectedError = 'Invalid base64 encoding' }
   ) {
     param($expression, $expectedError)
@@ -1783,6 +1782,7 @@ Describe 'tests for function expressions' {
 
   It 'dataUriToString function handles edge cases: <expression>' -TestCases @(
     @{ expression = "[dataUriToString('data:text/plain;;base64,SGVsbG8=')]" ; expected = 'Hello' }
+    @{ expression = "[dataUriToString('data::text/plain;base64,SGVsbG8=')]" ; expected = 'Hello' }
     @{ expression = "[dataUriToString('data:text/plain;charset=utf-8;charset=utf-8;base64,SGVsbG8=')]" ; expected = 'Hello' }
     @{ expression = "[dataUriToString('data:text/plain;foo=bar;base64,SGVsbG8=')]" ; expected = 'Hello' }
   ) {

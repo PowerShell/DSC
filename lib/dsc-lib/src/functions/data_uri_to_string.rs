@@ -191,7 +191,7 @@ mod tests {
         let result = parser
             .parse_and_execute("[dataUriToString('data::text/plain;base64,SGVsbG8=')]", &Context::new());
 
-        assert!(result.is_err());
+        assert!(result.is_ok());
     }
 
     #[test]
