@@ -1762,6 +1762,29 @@ Describe 'tests for function expressions' {
     @{ expression = "[dataUriToString('data:text/plain;base64')]" ; expectedError = 'Invalid data URI format' }
     @{ expression = "[dataUriToString('data:;base64,invalid!@#')]" ; expectedError = 'Invalid base64 encoding' }
     @{ expression = "[dataUriToString('data:text/plain;charset=utf-16;base64,SGVsbG8=')]" ; expectedError = 'Unsupported charset' }
+    @{ expression = "[dataUriToString('data::text/plain;base64,SGVsbG8=')]" ; expectedError = 'Data URI must be base64 encoded' }
+    @{ expression = "[dataUriToString('data:text/plain;base64,,SGVsbG8=')]" ; expectedError = 'Invalid base64 encoding' }
+  ) {
+    param($expression, $expectedError)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: `"$expression`"
+"@
+    $null = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log
+    $LASTEXITCODE | Should -Not -Be 0
+    $errorContent = Get-Content $TestDrive/error.log -Raw
+    $errorContent | Should -Match $expectedError
+  }
+
+  It 'dataUriToString function handles edge cases: <expression>' -TestCases @(
+    @{ expression = "[dataUriToString('data:text/plain;;base64,SGVsbG8=')]" ; expected = 'Hello' }
+    @{ expression = "[dataUriToString('data:text/plain;charset=utf-8;charset=utf-8;base64,SGVsbG8=')]" ; expected = 'Hello' }
+    @{ expression = "[dataUriToString('data:text/plain;foo=bar;base64,SGVsbG8=')]" ; expected = 'Hello' }
   ) {
     param($expression, $expectedError)
 

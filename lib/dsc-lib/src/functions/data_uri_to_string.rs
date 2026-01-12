@@ -184,4 +184,45 @@ mod tests {
             .unwrap();
         assert_eq!(result, Value::String("Hello".to_string()));
     }
+
+    #[test]
+    fn test_data_uri_to_string_double_colon() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser
+            .parse_and_execute("[dataUriToString('data::text/plain;base64,SGVsbG8=')]", &Context::new());
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_data_uri_to_string_double_semicolon() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser
+            .parse_and_execute("[dataUriToString('data:text/plain;;base64,SGVsbG8=')]", &Context::new());
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_data_uri_to_string_double_charset() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser
+            .parse_and_execute("[dataUriToString('data:text/plain;charset=utf-8;charset=utf-8;base64,SGVsbG8=')]", &Context::new());
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_data_uri_to_string_double_comma() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser
+            .parse_and_execute("[dataUriToString('data:text/plain;base64,,SGVsbG8=')]", &Context::new());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_data_uri_to_string_invalid_property() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser
+            .parse_and_execute("[dataUriToString('data:text/plain;foo=bar;base64,SGVsbG8=')]", &Context::new());
+        assert!(result.is_ok());
+    }
 }
