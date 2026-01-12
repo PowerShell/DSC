@@ -280,6 +280,7 @@ pub fn build_command_info(input: Option<&String>, is_get: bool) -> Result<Comman
         });
         if is_get && !sshd_config.is_empty() {
             warn!("{}", t!("util.getIgnoresInputFilters"));
+            sshd_config.clear();
         }
         return Ok(CommandInfo {
             clobber,

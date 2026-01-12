@@ -277,7 +277,7 @@ impl ResourceDiscovery for CommandDiscovery {
                                             if regex.is_match(&extension.type_name) {
                                                 trace!("{}", t!("discovery.commandDiscovery.extensionFound", extension = extension.type_name, version = extension.version));
                                                 // we only keep newest version of the extension so compare the version and only keep the newest
-                                                if let Some(existing_extension) = extensions.get_mut(&extension.type_name) {
+                                                if let Some(existing_extension) = extensions.get_mut(extension.type_name.as_ref()) {
                                                     let Ok(existing_version) = Version::parse(&existing_extension.version) else {
                                                         return Err(DscError::Operation(t!("discovery.commandDiscovery.extensionInvalidVersion", extension = existing_extension.type_name, version = existing_extension.version).to_string()));
                                                     };
@@ -285,10 +285,10 @@ impl ResourceDiscovery for CommandDiscovery {
                                                         return Err(DscError::Operation(t!("discovery.commandDiscovery.extensionInvalidVersion", extension = extension.type_name, version = extension.version).to_string()));
                                                     };
                                                     if new_version > existing_version {
-                                                        extensions.insert(extension.type_name.clone(), extension.clone());
+                                                        extensions.insert(extension.type_name.to_string(), extension.clone());
                                                     }
                                                 } else {
-                                                    extensions.insert(extension.type_name.clone(), extension.clone());
+                                                    extensions.insert(extension.type_name.to_string(), extension.clone());
                                                 }
                                             }
                                         },
@@ -427,7 +427,7 @@ impl ResourceDiscovery for CommandDiscovery {
                     match serde_json::from_str::<DscResource>(line){
                         Result::Ok(resource) => {
                             if resource.require_adapter.is_none() {
-                                warn!("{}", DscError::MissingRequires(adapter_name.clone(), resource.type_name.clone()).to_string());
+                                warn!("{}", DscError::MissingRequires(adapter_name.clone(), resource.type_name.to_string()).to_string());
                                 continue;
                             }
 

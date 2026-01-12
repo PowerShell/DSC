@@ -11,6 +11,7 @@ use std::collections::HashMap;
 use crate::dscerror::DscError;
 use crate::extensions::{discover::DiscoverMethod, import::ImportMethod, secret::SecretMethod};
 use crate::schemas::dsc_repo::DscRepoSchema;
+use crate::types::FullyQualifiedTypeName;
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
@@ -31,7 +32,7 @@ pub struct ExtensionManifest {
     pub schema_version: String,
     /// The namespaced name of the extension.
     #[serde(rename = "type")]
-    pub r#type: String,
+    pub r#type: FullyQualifiedTypeName,
     /// The version of the extension using semantic versioning.
     pub version: String,
     /// An optional condition for the extension to be active.  If the condition evaluates to false, the extension is skipped.
@@ -106,7 +107,7 @@ mod test {
 
         let manifest = ExtensionManifest{
             schema_version: invalid_uri.clone(),
-            r#type: "Microsoft.Dsc.Test/InvalidSchemaUri".to_string(),
+            r#type: "Microsoft.Dsc.Test/InvalidSchemaUri".parse().unwrap(),
             version: "0.1.0".to_string(),
             ..Default::default()
         };
@@ -127,7 +128,7 @@ mod test {
     fn test_validate_schema_uri_with_valid_uri() {
         let manifest = ExtensionManifest{
             schema_version: ExtensionManifest::default_schema_id_uri(),
-            r#type: "Microsoft.Dsc.Test/ValidSchemaUri".to_string(),
+            r#type: "Microsoft.Dsc.Test/ValidSchemaUri".parse().unwrap(),
             version: "0.1.0".to_string(),
             ..Default::default()
         };

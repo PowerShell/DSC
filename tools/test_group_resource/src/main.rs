@@ -5,8 +5,8 @@ mod args;
 
 use args::{Args, SubCommand};
 use clap::Parser;
-use dsc_lib::dscresources::resource_manifest::{ResourceManifest, GetMethod, Kind};
 use dsc_lib::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
+use dsc_lib::dscresources::resource_manifest::{GetMethod, Kind, ResourceManifest};
 use dsc_lib::schemas::dsc_repo::DscRepoSchema;
 use std::path::PathBuf;
 
@@ -15,7 +15,7 @@ fn main() {
     match args.subcommand {
         SubCommand::List => {
             let resource1 = DscResource {
-                type_name: "Test/TestResource1".to_string(),
+                type_name: "Test/TestResource1".parse().unwrap(),
                 kind: Kind::Resource,
                 version: "1.0.0".to_string(),
                 capabilities: vec![Capability::Get, Capability::Set],
@@ -25,12 +25,12 @@ fn main() {
                 directory: PathBuf::from("test_directory"),
                 author: Some("Microsoft".to_string()),
                 properties: vec!["Property1".to_string(), "Property2".to_string()],
-                require_adapter: Some("Test/TestGroup".to_string()),
+                require_adapter: Some("Test/TestGroup".parse().unwrap()),
                 target_resource: None,
                 manifest: Some(serde_json::to_value(ResourceManifest {
                     description: Some("This is a test resource.".to_string()),
                     schema_version: dsc_lib::dscresources::resource_manifest::ResourceManifest::default_schema_id_uri(),
-                    resource_type: "Test/TestResource1".to_string(),
+                    resource_type: "Test/TestResource1".parse().unwrap(),
                     kind: Some(Kind::Resource),
                     version: "1.0.0".to_string(),
                     get: Some(GetMethod {
@@ -41,7 +41,7 @@ fn main() {
                 }).unwrap()),
             };
             let resource2 = DscResource {
-                type_name: "Test/TestResource2".to_string(),
+                type_name: "Test/TestResource2".parse().unwrap(),
                 kind: Kind::Resource,
                 version: "1.0.1".to_string(),
                 capabilities: vec![Capability::Get, Capability::Set],
@@ -51,12 +51,12 @@ fn main() {
                 directory: PathBuf::from("test_directory"),
                 author: Some("Microsoft".to_string()),
                 properties: vec!["Property1".to_string(), "Property2".to_string()],
-                require_adapter: Some("Test/TestGroup".to_string()),
+                require_adapter: Some("Test/TestGroup".parse().unwrap()),
                 target_resource: None,
                 manifest: Some(serde_json::to_value(ResourceManifest {
                     description: Some("This is a test resource.".to_string()),
                     schema_version: dsc_lib::dscresources::resource_manifest::ResourceManifest::default_schema_id_uri(),
-                    resource_type: "Test/TestResource2".to_string(),
+                    resource_type: "Test/TestResource2".parse().unwrap(),
                     kind: Some(Kind::Resource),
                     version: "1.0.1".to_string(),
                     get: Some(GetMethod {
@@ -71,7 +71,7 @@ fn main() {
         },
         SubCommand::ListMissingRequires => {
             let resource1 = DscResource {
-                type_name: "InvalidResource".to_string(),
+                type_name: "Test/InvalidResource".parse().unwrap(),
                 kind: Kind::Resource,
                 version: "1.0.0".to_string(),
                 capabilities: vec![Capability::Get],

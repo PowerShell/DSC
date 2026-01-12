@@ -5,6 +5,7 @@ use crate::configure::config_doc::Resource;
 use crate::configure::{Configuration, IntOrExpression, ProcessMode, invoke_property_expressions};
 use crate::DscError;
 use crate::parser::Statement;
+use crate::types::FullyQualifiedTypeName;
 
 use rust_i18n::t;
 use serde_json::Value;
@@ -131,14 +132,15 @@ fn unroll_and_push(order: &mut Vec<Resource>, resource: &Resource, parser: &mut 
   Ok(())
 }
 
-fn get_type_and_name(statement: &str) -> Result<(&str, String), DscError> {
+fn get_type_and_name(statement: &str) -> Result<(FullyQualifiedTypeName, String), DscError> {
     let parts: Vec<&str> = statement.split(':').collect();
     if parts.len() != 2 {
         return Err(DscError::Validation(t!("configure.dependsOn.syntaxIncorrect", dependency = statement).to_string()));
     }
     // the name is url encoded so we need to decode it
     let decoded_name = urlencoding::decode(parts[1]).map_err(|_| DscError::Validation(t!("configure.dependsOn.syntaxIncorrect", dependency = statement).to_string()))?;
-    Ok((parts[0], decoded_name.into_owned()))
+    let type_name = parts[0].parse()?;
+    Ok((type_name, decoded_name.into_owned()))
 }
 
 #[cfg(test)]
