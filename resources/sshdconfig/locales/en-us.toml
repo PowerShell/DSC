@@ -80,7 +80,6 @@ getIgnoresInputFilters = "get command does not support filtering based on input 
 inputMustBeBoolean = "value of '%{input}' must be true or false"
 invalidValue = "Key: '%{key}' cannot have empty value"
 matchBlockMissingCriteria = "Match block must contain 'criteria' field"
-sshdConfigNotFound = "sshd_config not found at path: '%{path}'"
 sshdConfigReadFailed = "failed to read sshd_config at path: '%{path}'"
 sshdElevation = "elevated security context required"
 tempFileCreated = "temporary file created at: %{path}"
