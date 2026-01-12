@@ -1786,7 +1786,7 @@ Describe 'tests for function expressions' {
     @{ expression = "[dataUriToString('data:text/plain;charset=utf-8;charset=utf-8;base64,SGVsbG8=')]" ; expected = 'Hello' }
     @{ expression = "[dataUriToString('data:text/plain;foo=bar;base64,SGVsbG8=')]" ; expected = 'Hello' }
   ) {
-    param($expression, $expectedError)
+    param($expression, $expected)
 
     $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
@@ -1796,9 +1796,8 @@ Describe 'tests for function expressions' {
               properties:
                 output: `"$expression`"
 "@
-    $null = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log
-    $LASTEXITCODE | Should -Not -Be 0
-    $errorContent = Get-Content $TestDrive/error.log -Raw
-    $errorContent | Should -Match $expectedError
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0
+    $out.results[0].result.actualState.output | Should -Be $expected
   }
 }
