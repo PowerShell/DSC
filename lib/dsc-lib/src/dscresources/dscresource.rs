@@ -145,7 +145,7 @@ impl DscResource {
         let mut configurator = self.clone().create_config_for_adapter(adapter, filter)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
-            adapter.target_resource = Some(resource_name.to_string());
+            adapter.target_resource = Some(FullyQualifiedTypeName::new(resource_name)?);
             return adapter.get(filter);
         }
 
