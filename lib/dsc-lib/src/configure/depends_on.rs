@@ -8,7 +8,7 @@ use crate::parser::Statement;
 use crate::types::FullyQualifiedTypeName;
 
 use rust_i18n::t;
-use serde_json::Value;
+use serde_json::{Map, Value};
 use super::context::Context;
 use tracing::debug;
 
@@ -177,23 +177,25 @@ fn unroll_and_push(order: &mut Vec<Resource>, resource: &Resource, parser: &mut 
 
                   // Find the dependency in config.resources - it might be a copy loop template
                   // We need to find by type since the name is the template expression
-                  if let Some(dependency_resource) = config.resources.iter().find(|r| r.resource_type == resource_type) {
-                      // If it's a copy loop resource, we need to expand it first
-                      if dependency_resource.copy.is_some() {
-                          // Save current copy context
-                          let saved_loop_name = context.copy_current_loop_name.clone();
-                          let saved_copy = context.copy.clone();
+                  let Some(dependency_resource) = config.resources.iter().find(|r| r.resource_type == resource_type) else {
+                      return Err(DscError::Validation(t!("configure.dependsOn.dependencyNotFound", dependency_name = resource_name, resource_name = resource.name).to_string()));
+                  };
 
-                          // Recursively unroll the dependency
-                          unroll_and_push(order, dependency_resource, parser, context, config)?;
+                  // If it's a copy loop resource, we need to expand it first
+                  if dependency_resource.copy.is_some() {
+                      // Save current copy context
+                      let saved_loop_name = context.copy_current_loop_name.clone();
+                      let saved_copy = context.copy.clone();
 
-                          // Restore copy context
-                          context.copy_current_loop_name = saved_loop_name;
-                          context.copy = saved_copy;
-                          context.process_mode = ProcessMode::Copy;
-                      } else {
-                          order.push(dependency_resource.clone());
-                      }
+                      // Recursively unroll the dependency
+                      unroll_and_push(order, dependency_resource, parser, context, config)?;
+
+                      // Restore copy context
+                      context.copy_current_loop_name = saved_loop_name;
+                      context.copy = saved_copy;
+                      context.process_mode = ProcessMode::Copy;
+                  } else {
+                      order.push(dependency_resource.clone());
                   }
               }
           }
@@ -204,10 +206,24 @@ fn unroll_and_push(order: &mut Vec<Resource>, resource: &Resource, parser: &mut 
           };
           new_resource.name = new_name.to_string();
 
-          // Store copy loop context in resource tags for later use by reference()
-          let mut tags = new_resource.tags.clone().unwrap_or_default();
-          tags.insert(format!("__dsc_copy_loop_{}", copy.name), Value::Number(i.into()));
-          new_resource.tags = Some(tags);
+          // Store copy loop context in resource metadata under Microsoft.DSC for later use by reference()
+          let mut metadata = new_resource.metadata.clone().unwrap_or_else(|| {
+              use crate::configure::config_doc::Metadata;
+              use serde_json::Map;
+              Metadata {
+                  microsoft: None,
+                  other: Map::new(),
+              }
+          });
+          
+          let mut copy_loops = if let Some(Value::Object(existing)) = metadata.other.get("Microsoft.DSC/copyLoops") {
+              existing.clone()
+          } else {
+              Map::new()
+          };
+          copy_loops.insert(copy.name.clone(), Value::Number(i.into()));
+          metadata.other.insert("Microsoft.DSC/copyLoops".to_string(), Value::Object(copy_loops));
+          new_resource.metadata = Some(metadata);
 
           new_resource.copy = None;
           copy_resources.push(new_resource);
