@@ -3,8 +3,7 @@
 
 use crate::mcp::mcp_server::McpServer;
 use dsc_lib::{
-    configure::config_doc::ExecutionKind,
-    dscresources::{
+    DscManager, configure::config_doc::ExecutionKind, dscresources::{
         dscresource::Invoke,
         invoke_result::{
             ExportResult,
@@ -12,8 +11,7 @@ use dsc_lib::{
             SetResult,
             TestResult,
         },
-    },
-    DscManager,
+    }, types::FullyQualifiedTypeName
 };
 use rmcp::{ErrorData as McpError, Json, tool, tool_router, handler::server::wrapper::Parameters};
 use rust_i18n::t;
@@ -51,7 +49,7 @@ pub struct InvokeDscResourceRequest {
     #[schemars(description = "The operation to perform on the DSC resource")]
     pub operation: DscOperation,
     #[schemars(description = "The type name of the DSC resource to invoke")]
-    pub resource_type: String,
+    pub resource_type: FullyQualifiedTypeName,
     #[schemars(description = "The properties to pass to the DSC resource as JSON.  Must match the resource JSON schema from `show_dsc_resource` tool.")]
     pub properties_json: String,
 }

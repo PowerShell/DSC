@@ -8,6 +8,7 @@ use serde_json::{Map, Value};
 use crate::dscresources::invoke_result::{GetResult, SetResult, TestResult};
 use crate::configure::config_doc::{Configuration, Metadata};
 use crate::schemas::{dsc_repo::DscRepoSchema, transforms::idiomaticize_string_enum};
+use crate::types::FullyQualifiedTypeName;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
@@ -24,7 +25,7 @@ pub enum MessageLevel {
 pub struct ResourceMessage {
     pub name: String,
     #[serde(rename="type")]
-    pub resource_type: String,
+    pub resource_type: FullyQualifiedTypeName,
     pub message: String,
     pub level: MessageLevel,
 }
@@ -37,7 +38,7 @@ pub struct ResourceGetResult {
     pub metadata: Option<Metadata>,
     pub name: String,
     #[serde(rename="type")]
-    pub resource_type: String,
+    pub resource_type: FullyQualifiedTypeName,
     pub result: GetResult,
 }
 
@@ -108,7 +109,7 @@ pub struct ResourceSetResult {
     pub metadata: Option<Metadata>,
     pub name: String,
     #[serde(rename="type")]
-    pub resource_type: String,
+    pub resource_type: FullyQualifiedTypeName,
     pub result: SetResult,
 }
 
@@ -184,7 +185,7 @@ pub struct ResourceTestResult {
     pub metadata: Option<Metadata>,
     pub name: String,
     #[serde(rename="type")]
-    pub resource_type: String,
+    pub resource_type: FullyQualifiedTypeName,
     pub result: TestResult,
 }
 

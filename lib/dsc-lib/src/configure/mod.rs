@@ -382,7 +382,7 @@ impl Configurator {
                 continue;
             }
             let Some(dsc_resource) = discovery.find_resource(&resource.resource_type, resource.api_version.as_deref()) else {
-                return Err(DscError::ResourceNotFound(resource.resource_type, resource.api_version.as_deref().unwrap_or("").to_string()));
+                return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.api_version.as_deref().unwrap_or("").to_string()));
             };
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             let filter = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
@@ -466,7 +466,7 @@ impl Configurator {
                 continue;
             }
             let Some(dsc_resource) = discovery.find_resource(&resource.resource_type, resource.api_version.as_deref()) else {
-                return Err(DscError::ResourceNotFound(resource.resource_type, resource.api_version.as_deref().unwrap_or("").to_string()));
+                return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.api_version.as_deref().unwrap_or("").to_string()));
             };
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
@@ -634,7 +634,7 @@ impl Configurator {
                 continue;
             }
             let Some(dsc_resource) = discovery.find_resource(&resource.resource_type, resource.api_version.as_deref()) else {
-                return Err(DscError::ResourceNotFound(resource.resource_type, resource.api_version.as_deref().unwrap_or("").to_string()));
+                return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.api_version.as_deref().unwrap_or("").to_string()));
             };
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
@@ -717,7 +717,7 @@ impl Configurator {
                 continue;
             }
             let Some(dsc_resource) = discovery.find_resource(&resource.resource_type, resource.api_version.as_deref()) else {
-                return Err(DscError::ResourceNotFound(resource.resource_type.clone(), resource.api_version.as_deref().unwrap_or("").to_string()));
+                return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.api_version.as_deref().unwrap_or("").to_string()));
             };
             let properties = self.get_properties(resource, &dsc_resource.kind)?;
             let input = add_metadata(dsc_resource, properties, resource.metadata.clone())?;

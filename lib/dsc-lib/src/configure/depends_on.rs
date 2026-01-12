@@ -5,6 +5,7 @@ use crate::configure::config_doc::Resource;
 use crate::configure::{Configuration, IntOrExpression, ProcessMode};
 use crate::DscError;
 use crate::parser::Statement;
+use crate::types::FullyQualifiedTypeName;
 
 use rust_i18n::t;
 use serde_json::Value;
@@ -219,31 +220,15 @@ fn unroll_and_push(order: &mut Vec<Resource>, resource: &Resource, parser: &mut 
   Ok(())
 }
 
-/// Parses a resource reference statement into type and name components.
-///
-/// Resource references in dependsOn and resourceId use the format "Type:Name" where
-/// the name portion is URL-encoded to handle special characters.
-///
-/// # Arguments
-/// * `statement` - A resource reference in the format "Microsoft.Resource/Type:EncodedName"
-///
-/// # Returns
-/// A tuple of (resource_type, decoded_name) on success.
-///
-/// # Errors
-/// Returns `DscError::Validation` if the statement doesn't contain exactly one colon
-/// separator or if the name portion cannot be URL-decoded.
-///
-/// # Examples
-/// - Input: `"Microsoft.DSC.Debug/Echo:Policy%2D0"` → Output: `("Microsoft.DSC.Debug/Echo", "Policy-0")`
-fn get_type_and_name(statement: &str) -> Result<(&str, String), DscError> {
+fn get_type_and_name(statement: &str) -> Result<(FullyQualifiedTypeName, String), DscError> {
     let parts: Vec<&str> = statement.split(':').collect();
     if parts.len() != 2 {
         return Err(DscError::Validation(t!("configure.dependsOn.syntaxIncorrect", dependency = statement).to_string()));
     }
     // the name is url encoded so we need to decode it
     let decoded_name = urlencoding::decode(parts[1]).map_err(|_| DscError::Validation(t!("configure.dependsOn.syntaxIncorrect", dependency = statement).to_string()))?;
-    Ok((parts[0], decoded_name.into_owned()))
+    let type_name = parts[0].parse()?;
+    Ok((type_name, decoded_name.into_owned()))
 }
 
 #[cfg(test)]

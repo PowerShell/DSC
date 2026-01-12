@@ -18,6 +18,7 @@ pub mod extensions;
 pub mod functions;
 pub mod parser;
 pub mod progress;
+pub mod types;
 pub mod util;
 
 // Re-export the dependency crate to minimize dependency management.
