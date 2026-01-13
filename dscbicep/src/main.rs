@@ -4,6 +4,7 @@
 use clap::Parser;
 use dsc_lib::{
     configure::config_doc::ExecutionKind,
+    discovery::discovery_trait::DiscoveryFilter,
     dscresources::{
         dscresource::Invoke,
         invoke_result::{GetResult, SetResult},
@@ -42,7 +43,7 @@ impl BicepExtension for BicepExtensionService {
         tracing::debug!("CreateOrUpdate called for {resource_type}@{version:?}: {properties}");
 
         let mut dsc = DscManager::new();
-        let Some(resource) = dsc.find_resource(&resource_type, version.as_deref()) else {
+        let Some(resource) = dsc.find_resource(&DiscoveryFilter::new(&resource_type, version.as_deref(), None)).unwrap_or(None) else {
             return Err(Status::not_found("Resource not found"));
         };
 
@@ -77,7 +78,7 @@ impl BicepExtension for BicepExtensionService {
         tracing::debug!("Preview called for {resource_type}@{version:?}: {properties}");
 
         let mut dsc = DscManager::new();
-        let Some(resource) = dsc.find_resource(&resource_type, version.as_deref()) else {
+        let Some(resource) = dsc.find_resource(&DiscoveryFilter::new(&resource_type, version.as_deref(), None)).unwrap_or(None) else {
             return Err(Status::not_found("Resource not found"));
         };
 
@@ -112,7 +113,7 @@ impl BicepExtension for BicepExtensionService {
         tracing::debug!("Get called for {resource_type}@{version:?}: {identifiers}");
 
         let mut dsc = DscManager::new();
-        let Some(resource) = dsc.find_resource(&resource_type, version.as_deref()) else {
+        let Some(resource) = dsc.find_resource(&DiscoveryFilter::new(&resource_type, version.as_deref(), None)).unwrap_or(None) else {
             return Err(Status::not_found("Resource not found"));
         };
 
@@ -152,7 +153,7 @@ impl BicepExtension for BicepExtensionService {
         );
 
         let mut dsc = DscManager::new();
-        let Some(resource) = dsc.find_resource(&resource_type, version.as_deref()) else {
+        let Some(resource) = dsc.find_resource(&DiscoveryFilter::new(&resource_type, version.as_deref(), None)).unwrap_or(None) else {
             return Err(Status::not_found("Resource not found"));
         };
 
