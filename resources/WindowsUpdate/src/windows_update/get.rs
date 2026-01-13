@@ -8,7 +8,7 @@ use windows::{
     Win32::System::UpdateAgent::*,
 };
 
-use crate::windows_update::types::{UpdateList, UpdateInfo, MsrcSeverity, UpdateType};
+use crate::windows_update::types::{UpdateList, extract_update_info};
 
 pub fn handle_get(input: &str) -> Result<String> {
     // Parse input as UpdateList
@@ -22,10 +22,15 @@ pub fn handle_get(input: &str) -> Result<String> {
     // Get the first filter
     let update_input = &update_list.updates[0];
     
-    // Initialize COM
-    unsafe {
-        CoInitializeEx(Some(std::ptr::null()), COINIT_MULTITHREADED).ok()?;
+    // Validate that at least one search criterion is provided
+    if update_input.title.is_none() && update_input.id.is_none() {
+        return Err(Error::new(E_INVALIDARG, "At least one of 'title' or 'id' must be specified for get operation"));
     }
+    
+    // Initialize COM
+    let com_initialized = unsafe {
+        CoInitializeEx(Some(std::ptr::null()), COINIT_MULTITHREADED).is_ok()
+    };
 
     let result = unsafe {
         // Create update session using the proper interface
@@ -46,7 +51,7 @@ pub fn handle_get(input: &str) -> Result<String> {
         let count = updates.Count()?;
 
         // Find the update by title or id
-        let mut found_update: Option<UpdateInfo> = None;
+        let mut found_update = None;
         for i in 0..count {
             let update = updates.get_Item(i)?;
             let title = update.Title()?.to_string();
@@ -66,93 +71,31 @@ pub fn handle_get(input: &str) -> Result<String> {
             };
 
             // Both must match if both are provided
-            let matches = title_match && id_match;
-
-            if matches {
-                // Extract update information
-                let is_installed = update.IsInstalled()?.as_bool();
-                let description = update.Description()?.to_string();
-                let id = update_id;
-                let is_uninstallable = update.IsUninstallable()?.as_bool();
-
-                // Get KB Article IDs
-                let kb_articles = update.KBArticleIDs()?;
-                let kb_count = kb_articles.Count()?;
-                let mut kb_article_ids = Vec::new();
-                for j in 0..kb_count {
-                    if let Ok(kb_str) = kb_articles.get_Item(j) {
-                        kb_article_ids.push(kb_str.to_string());
-                    }
-                }
-
-                // Get min download size (DECIMAL type - complex to convert, using 0 for now)
-                // Windows Update API returns DECIMAL which would require complex conversion
-                let min_download_size = 0i64;
-
-                // Get MSRC Severity
-                let msrc_severity = if let Ok(severity_str) = update.MsrcSeverity() {
-                    match severity_str.to_string().as_str() {
-                        "Critical" => Some(MsrcSeverity::Critical),
-                        "Important" => Some(MsrcSeverity::Important),
-                        "Moderate" => Some(MsrcSeverity::Moderate),
-                        "Low" => Some(MsrcSeverity::Low),
-                        _ => None,
-                    }
-                } else {
-                    None
-                };
-
-                // Get Security Bulletin IDs
-                let security_bulletins = update.SecurityBulletinIDs()?;
-                let bulletin_count = security_bulletins.Count()?;
-                let mut security_bulletin_ids = Vec::new();
-                for j in 0..bulletin_count {
-                    if let Ok(bulletin_str) = security_bulletins.get_Item(j) {
-                        security_bulletin_ids.push(bulletin_str.to_string());
-                    }
-                }
-
-                // Determine update type
-                let update_type = {
-                    use windows::Win32::System::UpdateAgent::UpdateType as WinUpdateType;
-                    match update.Type()? {
-                        WinUpdateType(2) => UpdateType::Driver, // utDriver = 2
-                        _ => UpdateType::Software,
-                    }
-                };
-
-                found_update = Some(UpdateInfo {
-                    title: Some(title),
-                    is_installed: Some(is_installed),
-                    description: Some(description),
-                    id: Some(id),
-                    is_uninstallable: Some(is_uninstallable),
-                    kb_article_ids: Some(kb_article_ids),
-                    min_download_size: Some(min_download_size),
-                    msrc_severity,
-                    security_bulletin_ids: Some(security_bulletin_ids),
-                    update_type: Some(update_type),
-                });
+            if title_match && id_match {
+                found_update = Some(extract_update_info(&update)?);
                 break;
             }
         }
 
-        found_update
+        Ok(found_update)
     };
 
-    unsafe {
-        CoUninitialize();
+    // Ensure COM is uninitialized if it was initialized
+    if com_initialized {
+        unsafe {
+            CoUninitialize();
+        }
     }
 
     match result {
-        Some(update_info) => {
+        Ok(Some(update_info)) => {
             let result = UpdateList {
                 updates: vec![update_info]
             };
             serde_json::to_string(&result)
                 .map_err(|e| Error::new(E_FAIL, format!("Failed to serialize output: {}", e)))
         }
-        None => {
+        Ok(None) => {
             let search_criteria = if let Some(title) = &update_input.title {
                 format!("title '{}'", title)
             } else if let Some(id) = &update_input.id {
@@ -162,5 +105,6 @@ pub fn handle_get(input: &str) -> Result<String> {
             };
             Err(Error::new(E_FAIL, format!("Update with {} not found", search_criteria)))
         }
+        Err(e) => Err(e),
     }
 }

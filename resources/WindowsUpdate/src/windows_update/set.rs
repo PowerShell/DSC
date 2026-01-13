@@ -8,7 +8,7 @@ use windows::{
     Win32::System::UpdateAgent::*,
 };
 
-use crate::windows_update::types::{UpdateList, UpdateInfo, MsrcSeverity, UpdateType};
+use crate::windows_update::types::{UpdateList, UpdateInfo, extract_update_info};
 
 pub fn handle_set(input: &str) -> Result<String> {
     // Parse input as UpdateList
@@ -22,12 +22,17 @@ pub fn handle_set(input: &str) -> Result<String> {
     // Get the first filter
     let update_input = &update_list.updates[0];
     
-    // Initialize COM
-    unsafe {
-        CoInitializeEx(Some(std::ptr::null()), COINIT_MULTITHREADED).ok()?;
+    // Validate that at least one search criterion is provided
+    if update_input.title.is_none() && update_input.id.is_none() {
+        return Err(Error::new(E_INVALIDARG, "At least one of 'title' or 'id' must be specified for set operation"));
     }
+    
+    // Initialize COM
+    let com_initialized = unsafe {
+        CoInitializeEx(Some(std::ptr::null()), COINIT_MULTITHREADED).is_ok()
+    };
 
-    let result = unsafe {
+    let result: Result<UpdateInfo> = unsafe {
         // Create update session
         let update_session: IUpdateSession = CoCreateInstance(
             &UpdateSession,
@@ -46,7 +51,7 @@ pub fn handle_set(input: &str) -> Result<String> {
         let count = updates.Count()?;
 
         // Find the update by title or id
-        let mut found_update: Option<(IUpdate, UpdateInfo)> = None;
+        let mut found_update: Option<(IUpdate, bool)> = None;
         for i in 0..count {
             let update = updates.get_Item(i)?;
             let title = update.Title()?.to_string();
@@ -70,176 +75,57 @@ pub fn handle_set(input: &str) -> Result<String> {
 
             if matches {
                 let is_installed = update.IsInstalled()?.as_bool();
-                
-                // If already installed, return current state without installing
-                if is_installed {
-                    let description = update.Description()?.to_string();
-                    let is_uninstallable = update.IsUninstallable()?.as_bool();
-
-                    // Get KB Article IDs
-                    let kb_articles = update.KBArticleIDs()?;
-                    let kb_count = kb_articles.Count()?;
-                    let mut kb_article_ids = Vec::new();
-                    for j in 0..kb_count {
-                        if let Ok(kb_str) = kb_articles.get_Item(j) {
-                            kb_article_ids.push(kb_str.to_string());
-                        }
-                    }
-
-                    let min_download_size = 0i64;
-
-                    let msrc_severity = if let Ok(severity_str) = update.MsrcSeverity() {
-                        match severity_str.to_string().as_str() {
-                            "Critical" => Some(MsrcSeverity::Critical),
-                            "Important" => Some(MsrcSeverity::Important),
-                            "Moderate" => Some(MsrcSeverity::Moderate),
-                            "Low" => Some(MsrcSeverity::Low),
-                            _ => None,
-                        }
-                    } else {
-                        None
-                    };
-
-                    let security_bulletins = update.SecurityBulletinIDs()?;
-                    let bulletin_count = security_bulletins.Count()?;
-                    let mut security_bulletin_ids = Vec::new();
-                    for j in 0..bulletin_count {
-                        if let Ok(bulletin_str) = security_bulletins.get_Item(j) {
-                            security_bulletin_ids.push(bulletin_str.to_string());
-                        }
-                    }
-
-                    let update_type = {
-                        use windows::Win32::System::UpdateAgent::UpdateType as WinUpdateType;
-                        match update.Type()? {
-                            WinUpdateType(2) => UpdateType::Driver,
-                            _ => UpdateType::Software,
-                        }
-                    };
-
-                    let info = UpdateInfo {
-                        title: Some(title),
-                        is_installed: Some(true),
-                        description: Some(description),
-                        id: Some(update_id),
-                        is_uninstallable: Some(is_uninstallable),
-                        kb_article_ids: Some(kb_article_ids),
-                        min_download_size: Some(min_download_size),
-                        msrc_severity,
-                        security_bulletin_ids: Some(security_bulletin_ids),
-                        update_type: Some(update_type),
-                    };
-
-                    let results = UpdateList {
-                        updates: vec![info]
-                    };
-                    return Ok(serde_json::to_string(&results)
-                        .map_err(|e| Error::new(E_FAIL, format!("Failed to serialize output: {}", e)))?);
-                }
-                
-                // Not installed - proceed with installation
-                found_update = Some((update.clone(), UpdateInfo {
-                    title: Some(title),
-                    is_installed: Some(false),
-                    description: None,
-                    id: Some(update_id),
-                    is_uninstallable: None,
-                    kb_article_ids: None,
-                    min_download_size: None,
-                    msrc_severity: None,
-                    security_bulletin_ids: None,
-                    update_type: None,
-                }));
+                found_update = Some((update.clone(), is_installed));
                 break;
             }
         }
 
-        if let Some((update, mut update_info)) = found_update {
-            // Create update collection for download/install
-            let updates_to_install: IUpdateCollection = CoCreateInstance(
-                &UpdateCollection,
-                None,
-                CLSCTX_INPROC_SERVER,
-            )?;
-            updates_to_install.Add(&update)?;
+        if let Some((update, is_installed)) = found_update {
+            // Extract info regardless of whether we need to install
+            if is_installed {
+                // Already installed, just return current state
+                extract_update_info(&update)
+            } else {
+                // Not installed - proceed with installation
+                // Create update collection for download/install
+                let updates_to_install: IUpdateCollection = CoCreateInstance(
+                    &UpdateCollection,
+                    None,
+                    CLSCTX_INPROC_SERVER,
+                )?;
+                updates_to_install.Add(&update)?;
 
-            // Download the update if needed
-            if !update.IsDownloaded()?.as_bool() {
-                let downloader = update_session.CreateUpdateDownloader()?;
-                downloader.SetUpdates(&updates_to_install)?;
-                let download_result = downloader.Download()?;
+                // Download the update if needed
+                if !update.IsDownloaded()?.as_bool() {
+                    let downloader = update_session.CreateUpdateDownloader()?;
+                    downloader.SetUpdates(&updates_to_install)?;
+                    let download_result = downloader.Download()?;
+                    
+                    use windows::Win32::System::UpdateAgent::OperationResultCode;
+                    let result_code = download_result.ResultCode()?;
+                    // Check if download was successful (orcSucceeded = 2)
+                    if result_code != OperationResultCode(2) {
+                        let hresult = download_result.HResult()?;
+                        return Err(Error::new(HRESULT(hresult), format!("Failed to download update. Result code: {}", result_code.0)));
+                    }
+                }
+
+                // Install the update
+                let installer = update_session.CreateUpdateInstaller()?;
+                installer.SetUpdates(&updates_to_install)?;
+                let install_result = installer.Install()?;
                 
                 use windows::Win32::System::UpdateAgent::OperationResultCode;
-                // Check if download was successful (orcSucceeded = 2)
-                if download_result.ResultCode()? != OperationResultCode(2) {
-                    return Err(Error::new(E_FAIL, "Failed to download update"));
+                let result_code = install_result.ResultCode()?;
+                // Check if installation was successful (orcSucceeded = 2)
+                if result_code != OperationResultCode(2) {
+                    let hresult = install_result.HResult()?;
+                    return Err(Error::new(HRESULT(hresult), format!("Failed to install update. Result code: {}", result_code.0)));
                 }
+                
+                // Get full details now that it's installed
+                extract_update_info(&update)
             }
-
-            // Install the update
-            let installer = update_session.CreateUpdateInstaller()?;
-            installer.SetUpdates(&updates_to_install)?;
-            let install_result = installer.Install()?;
-            
-            use windows::Win32::System::UpdateAgent::OperationResultCode;
-            // Check if installation was successful (orcSucceeded = 2)
-            if install_result.ResultCode()? != OperationResultCode(2) {
-                return Err(Error::new(E_FAIL, "Failed to install update"));
-            }
-
-            // Update the info to reflect installed state
-            update_info.is_installed = Some(true);
-            
-            // Get full details now that it's installed
-            let description = update.Description()?.to_string();
-            let is_uninstallable = update.IsUninstallable()?.as_bool();
-
-            let kb_articles = update.KBArticleIDs()?;
-            let kb_count = kb_articles.Count()?;
-            let mut kb_article_ids = Vec::new();
-            for j in 0..kb_count {
-                if let Ok(kb_str) = kb_articles.get_Item(j) {
-                    kb_article_ids.push(kb_str.to_string());
-                }
-            }
-
-            let msrc_severity = if let Ok(severity_str) = update.MsrcSeverity() {
-                match severity_str.to_string().as_str() {
-                    "Critical" => Some(MsrcSeverity::Critical),
-                    "Important" => Some(MsrcSeverity::Important),
-                    "Moderate" => Some(MsrcSeverity::Moderate),
-                    "Low" => Some(MsrcSeverity::Low),
-                    _ => None,
-                }
-            } else {
-                None
-            };
-
-            let security_bulletins = update.SecurityBulletinIDs()?;
-            let bulletin_count = security_bulletins.Count()?;
-            let mut security_bulletin_ids = Vec::new();
-            for j in 0..bulletin_count {
-                if let Ok(bulletin_str) = security_bulletins.get_Item(j) {
-                    security_bulletin_ids.push(bulletin_str.to_string());
-                }
-            }
-
-            let update_type = {
-                use windows::Win32::System::UpdateAgent::UpdateType as WinUpdateType;
-                match update.Type()? {
-                    WinUpdateType(2) => UpdateType::Driver,
-                    _ => UpdateType::Software,
-                }
-            };
-
-            update_info.description = Some(description);
-            update_info.is_uninstallable = Some(is_uninstallable);
-            update_info.kb_article_ids = Some(kb_article_ids);
-            update_info.msrc_severity = msrc_severity;
-            update_info.security_bulletin_ids = Some(security_bulletin_ids);
-            update_info.update_type = Some(update_type);
-
-            Ok(update_info)
         } else {
             let search_criteria = if let Some(title) = &update_input.title {
                 format!("title '{}'", title)
@@ -252,8 +138,11 @@ pub fn handle_set(input: &str) -> Result<String> {
         }
     };
 
-    unsafe {
-        CoUninitialize();
+    // Ensure COM is uninitialized if it was initialized
+    if com_initialized {
+        unsafe {
+            CoUninitialize();
+        }
     }
 
     match result {
