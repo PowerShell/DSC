@@ -204,6 +204,88 @@ resources:
     (Get-Content -Path "$testdrive/error.log" -Raw) | Should -BeLike "*ERROR*Credential object 'Credential' requires both 'username' and 'password' properties*" -Because (Get-Content -Path "$testdrive/error.log" -Raw | Out-String)
   }
 
+  ## Scipt base resources test 
+
+    It 'Config works with credential object with Script base resources' {
+
+$inDesiredState = $true
+$yaml =  @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: Working with classic DSC resources
+  type: Microsoft.Windows/WindowsPowerShell
+  properties:
+    resources:
+    - name: Script-resource Info
+      type: TestScriptBaseDSC/CredentialValidation
+      properties:
+        Name: TestScriptResource1
+        Credential:       
+          username: MyUser
+          password: Password
+'@
+
+
+$out = dsc -l debug config test -i $yaml 2> "$testdrive/error.log" | ConvertFrom-Json
+$LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path "$testdrive/error.log" -Raw | Out-String)
+$out.results[0].result.inDesiredState | Should -Be $inDesiredState
+
+}
+
+  It 'Config dont works with credential object with Script base resources - wrong user' {
+
+$inDesiredState = $true
+$yaml =  @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: Working with classic DSC resources
+  type: Microsoft.Windows/WindowsPowerShell
+  properties:
+    resources:
+    - name: Script-resource Info
+      type: TestScriptBaseDSC/CredentialValidation
+      properties:
+        Name: TestScriptResource1
+        Credential:       
+          username: MyUser1
+          password: Password
+'@
+
+
+$out = dsc -l debug config test -i $yaml 2> "$testdrive/error.log" | ConvertFrom-Json
+$LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path "$testdrive/error.log" -Raw | Out-String)
+$out.results[0].result.inDesiredState | Should -Be $inDesiredState
+
+}
+
+  It 'Config dont works with credential object with Script base resources - No passowrd' {
+
+$inDesiredState = $true
+$yaml =  @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: Working with classic DSC resources
+  type: Microsoft.Windows/WindowsPowerShell
+  properties:
+    resources:
+    - name: Script-resource Info
+      type: TestScriptBaseDSC/CredentialValidation
+      properties:
+        Name: TestScriptResource1
+        Credential:       
+          username: MyUser
+          Notpassword: Password
+'@
+
+
+$out = dsc -l debug config test -i $yaml 2> "$testdrive/error.log" | ConvertFrom-Json
+$LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path "$testdrive/error.log" -Raw | Out-String)
+$out.results[0].result.inDesiredState | Should -Be $inDesiredState
+
+}
+
+
+
   It 'List works with class-based PS DSC resources' {
     $out = dsc resource list --adapter Microsoft.Windows/WindowsPowerShell 2> "$testdrive/error.log" | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path "$testdrive/error.log" -Raw | Out-String)
