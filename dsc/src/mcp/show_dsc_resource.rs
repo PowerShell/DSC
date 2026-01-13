@@ -4,11 +4,13 @@
 use crate::mcp::mcp_server::McpServer;
 use dsc_lib::{
     DscManager,
+    FullyQualifiedTypeName,
+    TypeVersion,
     discovery::discovery_trait::DiscoveryFilter,
     dscresources::{
         dscresource::{Capability, Invoke},
         resource_manifest::Kind
-    }, FullyQualifiedTypeName,
+    }
 };
 use rmcp::{ErrorData as McpError, Json, tool, tool_router, handler::server::wrapper::Parameters};
 use rust_i18n::t;
@@ -25,7 +27,7 @@ pub struct DscResource {
     /// The kind of resource.
     pub kind: Kind,
     /// The version of the resource.
-    pub version: String,
+    pub version: TypeVersion,
     /// The capabilities of the resource.
     pub capabilities: Vec<Capability>,
     /// The description of the resource.

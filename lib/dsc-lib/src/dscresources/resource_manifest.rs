@@ -9,9 +9,7 @@ use serde_json::{Map, Value};
 use std::collections::HashMap;
 
 use crate::{
-    dscerror::DscError,
-    schemas::{dsc_repo::DscRepoSchema, transforms::idiomaticize_string_enum},
-    FullyQualifiedTypeName,
+    FullyQualifiedTypeName, TypeVersion, dscerror::DscError, schemas::{dsc_repo::DscRepoSchema, transforms::idiomaticize_string_enum}
 };
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
@@ -53,7 +51,7 @@ pub struct ResourceManifest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<Kind>,
     /// The version of the resource using semantic versioning.
-    pub version: String,
+    pub version: TypeVersion,
     /// The description of the resource.
     pub description: Option<String>,
     /// Tags for the resource.
@@ -334,7 +332,7 @@ mod test {
         let manifest = ResourceManifest{
             schema_version: invalid_uri.clone(),
             resource_type: "Microsoft.Dsc.Test/InvalidSchemaUri".parse().unwrap(),
-            version: "0.1.0".to_string(),
+            version: "0.1.0".into(),
             ..Default::default()
         };
 
@@ -355,7 +353,7 @@ mod test {
         let manifest = ResourceManifest{
             schema_version: ResourceManifest::default_schema_id_uri(),
             resource_type: "Microsoft.Dsc.Test/ValidSchemaUri".parse().unwrap(),
-            version: "0.1.0".to_string(),
+            version: "0.1.0".into(),
             ..Default::default()
         };
 
