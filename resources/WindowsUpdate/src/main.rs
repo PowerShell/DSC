@@ -11,7 +11,7 @@ fn main() {
     
     if args.len() < 2 {
         eprintln!("Error: Missing operation argument");
-        eprintln!("Usage: wu_dsc <get|set|test|export>");
+        eprintln!("Usage: wu_dsc <get|set|export>");
         std::process::exit(1);
     }
 
@@ -101,7 +101,7 @@ fn main() {
         }
         _ => {
             eprintln!("Error: Unknown operation '{}'", operation);
-            eprintln!("Usage: wu_dsc <get|set|test>");
+            eprintln!("Usage: wu_dsc <get|set|export>");
             std::process::exit(1);
         }
     }
