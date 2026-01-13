@@ -51,16 +51,16 @@ impl DscManager {
     /// * `name` - The name of the resource to find, can have wildcards.
     ///
     #[must_use]
-    pub fn find_resource(&mut self, name: &str, version: Option<&str>) -> Option<&DscResource> {
-        self.discovery.find_resource(name, version)
+    pub fn find_resource(&mut self, filter: &DiscoveryFilter) -> Result<Option<&DscResource>, DscError> {
+        self.discovery.find_resource(filter)
     }
 
     pub fn list_available(&mut self, kind: &DiscoveryKind, type_name_filter: &str, adapter_name_filter: &str, progress_format: ProgressFormat) -> Vec<ImportedManifest> {
         self.discovery.list_available(kind, type_name_filter, adapter_name_filter, progress_format)
     }
 
-    pub fn find_resources(&mut self, required_resource_types: &[DiscoveryFilter], progress_format: ProgressFormat) {
-        self.discovery.find_resources(required_resource_types, progress_format);
+    pub fn find_resources(&mut self, required_resource_types: &[DiscoveryFilter], progress_format: ProgressFormat) -> Result<(), DscError> {
+        self.discovery.find_resources(required_resource_types, progress_format)
     }
     /// Invoke the get operation on a resource.
     ///

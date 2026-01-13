@@ -13,18 +13,25 @@ pub enum DiscoveryKind {
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub struct DiscoveryFilter {
+    require_adapter: Option<String>,
     r#type: String,
     version: Option<String>,
 }
 
 impl DiscoveryFilter {
     #[must_use]
-    pub fn new(resource_type: &str, version: Option<String>) -> Self {
+    pub fn new(resource_type: &str, version: Option<&str>, adapter: Option<&str>) -> Self {
         let version = version.map(|v| fix_semver(&v));
         Self {
+            require_adapter: adapter.map(|a| a.to_lowercase()),
             r#type: resource_type.to_lowercase(),
             version,
         }
+    }
+
+    #[must_use]
+    pub fn require_adapter(&self) -> Option<&String> {
+        self.require_adapter.as_ref()
     }
 
     #[must_use]

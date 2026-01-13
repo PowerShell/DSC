@@ -6,12 +6,14 @@
             "psDscAdapter/powershell.resource.ps1",
             "psDscAdapter/psDscAdapter.psd1",
             "psDscAdapter/psDscAdapter.psm1",
-            "powershell.dsc.resource.json"
+            "powershell.dsc.resource.json",
+            "PowerShell_adapter.dsc.resource.json"
         ],
         "Windows": [
             "psDscAdapter/win_psDscAdapter.psd1",
             "psDscAdapter/win_psDscAdapter.psm1",
-            "windowspowershell.dsc.resource.json"
+            "windowspowershell.dsc.resource.json",
+            "WindowsPowerShell_adapter.dsc.resource.json"
         ]
     }
 }

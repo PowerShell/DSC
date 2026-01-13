@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::{configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}, context::ProcessMode, parameters::{SECURE_VALUE_REDACTED, is_secure_value}}, dscresources::resource_manifest::{AdapterInputKind, Kind}, types::FullyQualifiedTypeName};
+use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse};
 use crate::schemas::transforms::idiomaticize_string_enum;
 use dscerror::DscError;
@@ -144,7 +145,7 @@ impl DscResource {
         let mut configurator = self.clone().create_config_for_adapter(adapter, filter)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
-            adapter.target_resource = Some(resource_name.clone());
+            adapter.target_resource = Some(FullyQualifiedTypeName::new(resource_name)?);
             return adapter.get(filter);
         }
 
@@ -201,7 +202,7 @@ impl DscResource {
         let mut configurator = self.clone().create_config_for_adapter(adapter, expected)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
-            adapter.target_resource = Some(resource_name.clone());
+            adapter.target_resource = Some(FullyQualifiedTypeName::new(resource_name)?);
             return adapter.test(expected);
         }
 
@@ -277,7 +278,7 @@ impl DscResource {
     }
 
     fn get_adapter_resource(configurator: &mut Configurator, adapter: &FullyQualifiedTypeName) -> Result<DscResource, DscError> {
-        if let Some(adapter_resource) = configurator.discovery().find_resource(adapter, None) {
+        if let Some(adapter_resource) = configurator.discovery().find_resource(&DiscoveryFilter::new(adapter, None, None))? {
             return Ok(adapter_resource.clone());
         }
         Err(DscError::Operation(t!("dscresources.dscresource.adapterResourceNotFound", adapter = adapter).to_string()))

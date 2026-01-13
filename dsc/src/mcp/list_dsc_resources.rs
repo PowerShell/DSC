@@ -5,7 +5,7 @@ use crate::mcp::mcp_server::McpServer;
 use dsc_lib::{
     DscManager, discovery::{
         command_discovery::ImportedManifest::Resource,
-        discovery_trait::DiscoveryKind,
+        discovery_trait::{DiscoveryFilter, DiscoveryKind},
     }, dscresources::resource_manifest::Kind, progress::ProgressFormat, types::FullyQualifiedTypeName
 };
 use rmcp::{ErrorData as McpError, Json, tool, tool_router, handler::server::wrapper::Parameters};
@@ -52,7 +52,7 @@ impl McpServer {
             let mut dsc = DscManager::new();
             let adapter_filter = match adapter {
                 Some(adapter) => {
-                    if let Some(resource) = dsc.find_resource(&adapter, None) {
+                    if let Some(resource) = dsc.find_resource(&DiscoveryFilter::new(&adapter, None, None)).unwrap_or(None) {
                         if resource.kind != Kind::Adapter {
                             return Err(McpError::invalid_params(t!("mcp.list_dsc_resources.resourceNotAdapter", adapter = adapter), None));
                         }
