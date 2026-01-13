@@ -2,24 +2,16 @@
 // Licensed under the MIT License.
 
 use rust_i18n::t;
-use serde::Deserialize;
 use serde_json::{Map, Value};
-use std::{fmt::Write, path::PathBuf, process::Command};
+use std::{path::PathBuf, process::Command};
 use tracing::{debug, warn, Level};
 use tracing_subscriber::{EnvFilter, Layer, prelude::__tracing_subscriber_SubscriberExt};
 
 use crate::args::{TraceFormat, TraceLevel};
 use crate::error::SshdConfigError;
 use crate::inputs::{CommandInfo, Metadata, SshdCommandArgs};
-use crate::metadata::{MULTI_ARG_KEYWORDS_COMMA_SEP, REPEATABLE_KEYWORDS, SSHD_CONFIG_DEFAULT_PATH_UNIX, SSHD_CONFIG_DEFAULT_PATH_WINDOWS};
+use crate::metadata::{SSHD_CONFIG_DEFAULT_PATH_UNIX, SSHD_CONFIG_DEFAULT_PATH_WINDOWS};
 use crate::parser::parse_text_to_map;
-
-#[derive(Debug, Deserialize)]
-struct MatchBlock {
-    criteria: Map<String, Value>,
-    #[serde(flatten)]
-    contents: Map<String, Value>,
-}
 
 /// Enable tracing.
 ///
@@ -95,69 +87,6 @@ pub fn enable_tracing(trace_level: Option<&TraceLevel>, trace_format: &TraceForm
 
     if tracing::subscriber::set_global_default(subscriber).is_err() {
         eprintln!("{}", t!("util.tracingInitError"));
-    }
-}
-
-/// Format a JSON value for writing to `sshd_config`.
-///
-/// # Arguments
-///
-/// * `key` - The configuration key name (used to determine formatting rules)
-/// * `value` - The JSON value to format
-///
-/// # Returns
-///
-/// * `Ok(Some(String))` - Formatted value string
-/// * `Ok(None)` - Value is null and should be skipped
-/// * `Err(SshdConfigError)` - Invalid value type or formatting error
-///
-/// # Errors
-///
-/// Returns an error if the value type is not supported or if formatting fails.
-fn format_sshd_value(key: &str, value: &Value) -> Result<String, SshdConfigError> {
-    let key_lower = key.to_lowercase();
-    let result = format_value_as_string(value, MULTI_ARG_KEYWORDS_COMMA_SEP.contains(&key_lower.as_str()));
-    if result.is_empty() {
-        return Err(SshdConfigError::ParserError(t!("util.invalidValue", key = key).to_string()))
-    }
-    Ok(result)
-}
-
-fn format_value_as_string(value: &Value, is_comma_separated: bool) -> String {
-    match value {
-        Value::Array(arr) => {
-            if arr.is_empty() {
-                return String::new();
-            }
-
-            // Convert array elements to strings
-            let mut string_values = Vec::new();
-            for item in arr {
-                let result = format_value_as_string(item, false);
-                if !result.is_empty() {
-                    string_values.push(result);
-                }
-            }
-
-            if string_values.is_empty() {
-                return String::new();
-            }
-
-            let separator = if is_comma_separated {
-                ","
-            } else {
-                " "
-            };
-
-            string_values.join(separator)
-        },
-        Value::Bool(b) => {
-            let bool_str = if *b { "yes" } else { "no" };
-            bool_str.to_string()
-        },
-        Value::Number(n) => n.to_string(),
-        Value::String(s) => s.clone(),
-        _ => String::new()
     }
 }
 
@@ -336,91 +265,4 @@ fn get_bool_or_default(map: &mut Map<String, Value>, key: &str, default: bool) -
     } else {
         Ok(default)
     }
-}
-
-fn format_match_block(match_obj: &Value) -> Result<String, SshdConfigError> {
-    let match_block = match serde_json::from_value::<MatchBlock>(match_obj.clone()) {
-        Ok(result) => {
-            result
-        }
-        Err(e) => {
-            return Err(SshdConfigError::ParserError(t!("util.deserializeFailed", error = e).to_string()));
-        }
-    };
-
-    if match_block.criteria.is_empty() {
-        return Err(SshdConfigError::InvalidInput(
-            t!("util.matchBlockMissingCriteria").to_string()
-        ));
-    }
-
-    let mut match_parts = vec![];
-    let mut result = vec![];
-
-    for (key, value) in &match_block.criteria {
-        // all match criteria values are comma-separated
-        let value_formatted = format_value_as_string(value, true);
-        match_parts.push(format!("{key} {value_formatted}"));
-    }
-
-    // Write the Match line with the formatted criteria(s)
-    result.push(match_parts.join(" "));
-
-    // Format other keywords in the match block
-    for (key, value) in &match_block.contents {
-        let formatted_value = format_sshd_value(key, value)?;
-        result.push(format!("    {key} {formatted_value}"));
-    }
-
-    Ok(result.join("\n"))
-}
-
-/// Write configuration map to config text string
-///
-/// # Errors
-///
-/// This function will return an error if formatting fails.
-pub fn write_config_map_to_text(global_map: &Map<String, Value>) -> Result<String, SshdConfigError> {
-    let match_map = global_map.get("match");
-    let mut config_text = String::new();
-
-    for (key, value) in global_map {
-        let key_lower = key.to_lowercase();
-
-        if key_lower == "match" {
-            continue; // match blocks are handled after global settings
-        }
-
-        // Handle repeatable keywords - write multiple lines
-        if REPEATABLE_KEYWORDS.contains(&key_lower.as_str()) {
-            if let Value::Array(arr) = value {
-                for item in arr {
-                    let formatted = format_sshd_value(key, item)?;
-                    writeln!(&mut config_text, "{key} {formatted}")?;
-                }
-            } else {
-                // Single value for repeatable keyword, write as-is
-                let formatted = format_sshd_value(key, value)?;
-                writeln!(&mut config_text, "{key} {formatted}")?;
-            }
-        } else {
-            // Handle non-repeatable keywords - format and write single line
-            let formatted = format_sshd_value(key, value)?;
-            writeln!(&mut config_text, "{key} {formatted}")?;
-        }
-    }
-
-    if let Some(match_map) = match_map {
-        if let Value::Array(arr) = match_map {
-            for item in arr {
-                let formatted = format_match_block(&item)?;
-                writeln!(&mut config_text, "match {formatted}")?;
-            }
-        } else {
-            let formatted = format_match_block(&match_map)?;
-            writeln!(&mut config_text, "match {formatted}")?;
-        }
-    }
-
-    Ok(config_text)
 }

@@ -42,10 +42,10 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
                 _purge = $true
                 Port = "1234"
                 passwordauthentication = $false
-                allowusers = @("user1", "user2")
+                allowgroups = @("openssh users", "group2")
                 ciphers = @("aes128-ctr", "aes192-ctr", "aes256-ctr")
                 addressfamily = "inet6"
-                authorizedkeysfile = @(".ssh/authorized_keys", ".ssh/authorized_keys2")
+                authorizedkeysfile = @(".ssh/authorized_keys", ".ssh//authorized keys with spaces")
             } | ConvertTo-Json
 
             $output = sshdconfig set --input $inputConfig -s sshd-config 2>$null
@@ -56,11 +56,11 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
             $sshdConfigContents = Get-Content $TestConfigPath
             $sshdConfigContents | Should -Contain "Port 1234"
             $sshdConfigContents | Should -Contain "PasswordAuthentication no"
-            $sshdConfigContents | Should -Contain "AllowUsers user1"
-            $sshdConfigContents | Should -Contain "AllowUsers user2"
+            $sshdConfigContents | Should -Contain "AllowGroups `"openssh users`""
+            $sshdConfigContents | Should -Contain "AllowGroups group2"
             $sshdConfigContents | Should -Contain "Ciphers aes128-ctr,aes192-ctr,aes256-ctr"
             $sshdConfigContents | Should -Contain "AddressFamily inet6"
-            $sshdConfigContents | Should -Contain "AuthorizedKeysFile .ssh/authorized_keys .ssh/authorized_keys2"
+            $sshdConfigContents | Should -Contain "AuthorizedKeysFile .ssh/authorized_keys `".ssh//authorized keys with spaces`""
         }
 
         It 'Should set with valid match blocks' {

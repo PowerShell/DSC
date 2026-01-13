@@ -20,6 +20,12 @@ persist = "Persist"
 registry = "Registry"
 stringUtf8 = "String UTF-8"
 
+[formatter]
+deserializeFailed = "Failed to deserialize match input: %{error}"
+invalidArrayItem = "Array item '%{item}' for key '%{key}' is not valid"
+invalidValue = "Key: '%{key}' cannot have empty value"
+matchBlockMissingCriteria = "Match block must contain 'criteria' field"
+
 [get]
 debugSetting = "Get setting:"
 defaultShellCmdOptionMustBeString = "cmdOption must be a string"
@@ -75,11 +81,8 @@ writingTempConfig = "Writing temporary sshd_config file"
 
 [util]
 cleanupFailed = "Failed to clean up temporary file %{path}: %{error}"
-deserializeFailed = "Failed to deserialize match input: %{error}"
 getIgnoresInputFilters = "get command does not support filtering based on input settings, provided input will be ignored"
 inputMustBeBoolean = "value of '%{input}' must be true or false"
-invalidValue = "Key: '%{key}' cannot have empty value"
-matchBlockMissingCriteria = "Match block must contain 'criteria' field"
 sshdConfigReadFailed = "failed to read sshd_config at path: '%{path}'"
 sshdElevation = "elevated security context required"
 tempFileCreated = "temporary file created at: %{path}"

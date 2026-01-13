@@ -15,10 +15,11 @@ use tracing::{debug, info, warn};
 
 use crate::args::{DefaultShell, Setting};
 use crate::error::SshdConfigError;
+use crate::formatter::write_config_map_to_text;
 use crate::get::get_sshd_settings;
 use crate::inputs::{CommandInfo, SshdCommandArgs};
 use crate::metadata::{MULTI_ARG_KEYWORDS_COMMA_SEP, MULTI_ARG_KEYWORDS_SPACE_SEP, REPEATABLE_KEYWORDS, SSHD_CONFIG_HEADER, SSHD_CONFIG_HEADER_VERSION, SSHD_CONFIG_HEADER_WARNING};
-use crate::util::{build_command_info, get_default_sshd_config_path, invoke_sshd_config_validation, write_config_map_to_text};
+use crate::util::{build_command_info, get_default_sshd_config_path, invoke_sshd_config_validation};
 
 /// Invoke the set command.
 ///
