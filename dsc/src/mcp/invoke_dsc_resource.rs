@@ -13,7 +13,7 @@ use dsc_lib::{
             SetResult,
             TestResult,
         },
-    }, types::FullyQualifiedTypeName
+    }, FullyQualifiedTypeName
 };
 use rmcp::{ErrorData as McpError, Json, tool, tool_router, handler::server::wrapper::Parameters};
 use rust_i18n::t;

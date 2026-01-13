@@ -28,7 +28,7 @@ use serde::{Deserialize, Serialize};
 /// instances of `TypeVersion`, [`String`], and [`semver::Version`].
 ///
 /// ```rust
-/// use dsc_lib::types::TypeVersion;
+/// use dsc_lib::TypeVersion;
 /// use semver::Version;
 ///
 /// let semantic = TypeVersion::new("1.2.3");
@@ -68,7 +68,7 @@ use serde::{Deserialize, Serialize};
 /// You can freely convert between strings and `TypeVersion`:
 ///
 /// ```rust
-/// use dsc_lib::types::TypeVersion;
+/// use dsc_lib::TypeVersion;
 ///
 /// let semantic: TypeVersion = "1.2.3".parse().unwrap();
 /// let arbitrary = TypeVersion::from("foo");
@@ -152,7 +152,7 @@ impl TypeVersion {
     /// # Examples
     ///
     /// ```rust
-    /// use dsc_lib::types::TypeVersion;
+    /// use dsc_lib::TypeVersion;
     ///
     /// fn print_version_message(version: TypeVersion) {
     ///     match TypeVersion::new("1.2.3") {
@@ -179,7 +179,7 @@ impl TypeVersion {
     /// # Examples
     ///
     /// ```rust
-    /// use dsc_lib::types::TypeVersion;
+    /// use dsc_lib::TypeVersion;
     ///
     /// let semantic = TypeVersion::new("1.2.3");
     /// let arbitrary = TypeVersion::new("2026-01");
@@ -258,7 +258,7 @@ impl TypeVersion {
     /// The following example shows how comparisons work for different instances of [`TypeVersion`].
     ///
     /// ```rust
-    /// use dsc_lib::types::TypeVersion;
+    /// use dsc_lib::TypeVersion;
     /// use semver::VersionReq;
     ///
     /// let semantic = TypeVersion::new("1.2.3");

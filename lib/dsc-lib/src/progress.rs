@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::DscError;
-use crate::types::FullyQualifiedTypeName;
+use crate::FullyQualifiedTypeName;
 
 use clap::ValueEnum;
 use indicatif::ProgressStyle;

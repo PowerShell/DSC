@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}, context::ProcessMode, parameters::{SECURE_VALUE_REDACTED, is_secure_value}}, dscresources::resource_manifest::{AdapterInputKind, Kind}, types::FullyQualifiedTypeName};
+use crate::{configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}, context::ProcessMode, parameters::{SECURE_VALUE_REDACTED, is_secure_value}}, dscresources::resource_manifest::{AdapterInputKind, Kind}, FullyQualifiedTypeName};
 use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse};
 use crate::schemas::transforms::idiomaticize_string_enum;

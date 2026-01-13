@@ -3,7 +3,7 @@
 
 use crate::extensions::import::ImportMethod;
 use crate::schemas::{dsc_repo::DscRepoSchema, transforms::idiomaticize_string_enum};
-use crate::types::FullyQualifiedTypeName;
+use crate::FullyQualifiedTypeName;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use schemars::JsonSchema;

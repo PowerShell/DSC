@@ -8,7 +8,7 @@ use dsc_lib::{
     dscresources::{
         dscresource::{Capability, Invoke},
         resource_manifest::Kind
-    }, types::FullyQualifiedTypeName,
+    }, FullyQualifiedTypeName,
 };
 use rmcp::{ErrorData as McpError, Json, tool, tool_router, handler::server::wrapper::Parameters};
 use rust_i18n::t;

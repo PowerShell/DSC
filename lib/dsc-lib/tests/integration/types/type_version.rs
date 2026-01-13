@@ -3,7 +3,7 @@
 
 #[cfg(test)]
 mod methods {
-    use dsc_lib::types::TypeVersion;
+    use dsc_lib::TypeVersion;
     use test_case::test_case;
 
     #[test_case("1.2.3" => matches TypeVersion::Semantic(_); "for valid semantic version")]
@@ -47,7 +47,7 @@ mod methods {
 mod schema {
     use std::{ops::Index, sync::LazyLock};
 
-    use dsc_lib::types::TypeVersion;
+    use dsc_lib::TypeVersion;
     use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
     use jsonschema::Validator;
     use schemars::{schema_for, Schema};
@@ -129,7 +129,7 @@ mod schema {
 
 #[cfg(test)]
 mod serde {
-    use dsc_lib::types::TypeVersion;
+    use dsc_lib::TypeVersion;
     use serde_json::{json, Value};
     use test_case::test_case;
 
@@ -179,7 +179,7 @@ mod serde {
 mod traits {
     #[cfg(test)]
     mod default {
-        use dsc_lib::types::TypeVersion;
+        use dsc_lib::TypeVersion;
 
         #[test]
         fn default() {
@@ -189,7 +189,7 @@ mod traits {
 
     #[cfg(test)]
     mod display {
-        use dsc_lib::types::TypeVersion;
+        use dsc_lib::TypeVersion;
         use test_case::test_case;
 
         #[test_case("1.2.3"; "valid semantic version")]
@@ -219,7 +219,7 @@ mod traits {
 
     #[cfg(test)]
     mod from_str {
-        use dsc_lib::types::TypeVersion;
+        use dsc_lib::TypeVersion;
         use test_case::test_case;
 
         #[test_case("1.2.3" => TypeVersion::new("1.2.3"); "valid semantic version")]
@@ -234,7 +234,7 @@ mod traits {
 
     #[cfg(test)]
     mod from {
-        use dsc_lib::types::TypeVersion;
+        use dsc_lib::TypeVersion;
         use test_case::test_case;
 
         #[test]
@@ -264,7 +264,7 @@ mod traits {
     // `Into` for the reversing of the type pair.
     #[cfg(test)]
     mod into {
-        use dsc_lib::types::TypeVersion;
+        use dsc_lib::TypeVersion;
         use test_case::test_case;
 
         #[test_case("1.2.3"; "semantic version")]
@@ -279,7 +279,7 @@ mod traits {
 
     #[cfg(test)]
     mod try_into {
-        use dsc_lib::{dscerror::DscError, types::TypeVersion};
+        use dsc_lib::{dscerror::DscError, TypeVersion};
         use test_case::test_case;
 
         #[test_case("1.2.3" => matches Ok(_); "valid semantic version converts")]
@@ -294,7 +294,7 @@ mod traits {
 
     #[cfg(test)]
     mod partial_eq {
-        use dsc_lib::types::TypeVersion;
+        use dsc_lib::TypeVersion;
         use test_case::test_case;
 
         #[test_case("1.2.3", "1.2.3", true; "equal semantic versions")]
@@ -380,7 +380,7 @@ mod traits {
     mod partial_ord {
         use std::cmp::Ordering;
 
-        use dsc_lib::types::TypeVersion;
+        use dsc_lib::TypeVersion;
         use test_case::test_case;
 
         #[test_case("1.2.3", "1.2.3", Ordering::Equal; "equal semantic versions")]

@@ -6,7 +6,7 @@ use dsc_lib::{
     DscManager, discovery::{
         command_discovery::ImportedManifest::Resource,
         discovery_trait::{DiscoveryFilter, DiscoveryKind},
-    }, dscresources::resource_manifest::Kind, progress::ProgressFormat, types::FullyQualifiedTypeName
+    }, dscresources::resource_manifest::Kind, progress::ProgressFormat, FullyQualifiedTypeName
 };
 use rmcp::{ErrorData as McpError, Json, tool, tool_router, handler::server::wrapper::Parameters};
 use rust_i18n::t;

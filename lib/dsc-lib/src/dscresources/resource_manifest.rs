@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use crate::{
     dscerror::DscError,
     schemas::{dsc_repo::DscRepoSchema, transforms::idiomaticize_string_enum},
-    types::FullyQualifiedTypeName,
+    FullyQualifiedTypeName,
 };
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
