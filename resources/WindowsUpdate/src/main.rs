@@ -95,10 +95,6 @@ fn main() {
                 std::process::exit(1);
             }
         }
-        "test" => {
-            eprintln!("Error: Test operation is not implemented for Windows Update resource");
-            std::process::exit(1);
-        }
         _ => {
             eprintln!("Error: Unknown operation '{}'", operation);
             eprintln!("Usage: wu_dsc <get|set|export>");

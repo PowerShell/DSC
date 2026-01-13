@@ -83,7 +83,7 @@ Describe 'Windows Update Export operation tests' {
                 $update.PSObject.Properties.Name | Should -Contain 'description'
                 $update.PSObject.Properties.Name | Should -Contain 'isUninstallable'
                 $update.PSObject.Properties.Name | Should -Contain 'kbArticleIds'
-                $update.PSObject.Properties.Name | Should -Contain 'minDownloadSize'
+                $update.PSObject.Properties.Name | Should -Contain 'recommendedHardDiskSpace'
                 $update.PSObject.Properties.Name | Should -Contain 'updateType'
                 $update.kbArticleIds | Should -Not -BeNull
                 @($update.kbArticleIds).Count | Should -BeGreaterOrEqual 0

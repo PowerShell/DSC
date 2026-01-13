@@ -67,20 +67,6 @@ Describe 'Windows Update resource executable tests' -Skip:(!$IsWindows) {
             $LASTEXITCODE | Should -Not -Be 0
             $result | Should -Match 'Unknown operation|Error|Usage'
         }
-
-        It 'should fail set operation with appropriate message' -Skip:$skipTests {
-            $json = '[{"title": "test"}]'
-            $result = $json | & $exePath 'set' 2>&1
-            $LASTEXITCODE | Should -Not -Be 0
-            $result | Should -Match 'not implemented|Set operation|Error'
-        }
-
-        It 'should fail test operation with appropriate message' -Skip:$skipTests {
-            $json = '[{"title": "test"}]'
-            $result = $json | & $exePath 'test' 2>&1
-            $LASTEXITCODE | Should -Not -Be 0
-            $result | Should -Match 'not implemented|Test operation'
-        }
     }
 
     Context 'Get operation input handling' {

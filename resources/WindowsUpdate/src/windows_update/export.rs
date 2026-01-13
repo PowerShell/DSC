@@ -22,7 +22,7 @@ pub fn handle_export(input: &str) -> Result<String> {
                 description: None,
                 is_uninstallable: None,
                 kb_article_ids: None,
-                min_download_size: None,
+                recommended_hard_disk_space: None,
                 msrc_severity: None,
                 security_bulletin_ids: None,
                 update_type: None,
@@ -130,10 +130,10 @@ pub fn handle_export(input: &str) -> Result<String> {
                     }
                 }
 
-                // Filter by min_download_size (if specified, update size must be >= filter size)
-                if let Some(size_filter) = filter.min_download_size {
-                    if let Some(min_download_size) = update_info.min_download_size {
-                        matches = matches && (min_download_size >= size_filter);
+                // Filter by recommended_hard_disk_space (if specified, update space must be >= filter space)
+                if let Some(space_filter) = filter.recommended_hard_disk_space {
+                    if let Some(recommended_hard_disk_space) = update_info.recommended_hard_disk_space {
+                        matches = matches && (recommended_hard_disk_space >= space_filter);
                     } else {
                         matches = false;
                     }
@@ -182,7 +182,7 @@ pub fn handle_export(input: &str) -> Result<String> {
                     || filter.description.is_some()
                     || filter.is_uninstallable.is_some()
                     || filter.kb_article_ids.is_some()
-                    || filter.min_download_size.is_some()
+                    || filter.recommended_hard_disk_space.is_some()
                     || filter.msrc_severity.is_some()
                     || filter.security_bulletin_ids.is_some()
                     || filter.update_type.is_some();
@@ -208,8 +208,8 @@ pub fn handle_export(input: &str) -> Result<String> {
                     if let Some(kb_ids) = &filter.kb_article_ids {
                         criteria_parts.push(format!("kb_article_ids {:?}", kb_ids));
                     }
-                    if let Some(size) = filter.min_download_size {
-                        criteria_parts.push(format!("min_download_size {}", size));
+                    if let Some(space) = filter.recommended_hard_disk_space {
+                        criteria_parts.push(format!("recommended_hard_disk_space {}", space));
                     }
                     if let Some(severity) = &filter.msrc_severity {
                         criteria_parts.push(format!("msrc_severity {:?}", severity));

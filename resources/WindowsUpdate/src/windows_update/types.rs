@@ -25,7 +25,7 @@ pub struct UpdateInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kb_article_ids: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub min_download_size: Option<i64>,
+    pub recommended_hard_disk_space: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub msrc_severity: Option<MsrcSeverity>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -96,9 +96,11 @@ pub fn extract_update_info(update: &IUpdate) -> Result<UpdateInfo> {
             }
         }
 
-        // Get min download size (DECIMAL type - complex to convert, using 0 for now)
-        // TODO: Implement proper DECIMAL to i64 conversion
-        let min_download_size = 0i64;
+        // Get recommended hard disk space in MB
+        let recommended_hard_disk_space = match update.RecommendedHardDiskSpace() {
+            Ok(space) => space as i64,
+            Err(_) => 0i64,
+        };
 
         // Get MSRC Severity
         let msrc_severity = if let Ok(severity_str) = update.MsrcSeverity() {
@@ -142,7 +144,7 @@ pub fn extract_update_info(update: &IUpdate) -> Result<UpdateInfo> {
             id: Some(update_id),
             is_uninstallable: Some(is_uninstallable),
             kb_article_ids: Some(kb_article_ids),
-            min_download_size: Some(min_download_size),
+            recommended_hard_disk_space: Some(recommended_hard_disk_space),
             msrc_severity,
             security_bulletin_ids: Some(security_bulletin_ids),
             update_type: Some(update_type),

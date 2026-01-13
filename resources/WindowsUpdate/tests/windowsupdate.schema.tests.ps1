@@ -80,7 +80,7 @@ Describe 'Windows Update resource schema validation' {
                 'id',
                 'isUninstallable',
                 'kbArticleIds',
-                'minDownloadSize',
+                'recommendedHardDiskSpace',
                 'msrcSeverity',
                 'securityBulletinIds',
                 'updateType'
@@ -127,11 +127,11 @@ Describe 'Windows Update resource schema validation' {
             $kbArticles.items.type | Should -BeExactly 'string'
         }
 
-        It 'minDownloadSize property should be integer int64' {
+        It 'recommendedHardDiskSpace property should be integer int64' {
             $manifest = Get-Content $manifestPath | ConvertFrom-Json
-            $minDownloadSize = $manifest.schema.embedded.properties.updates.items.properties.minDownloadSize
-            $minDownloadSize.type | Should -BeExactly 'integer'
-            $minDownloadSize.format | Should -BeExactly 'int64'
+            $recommendedHardDiskSpace = $manifest.schema.embedded.properties.updates.items.properties.recommendedHardDiskSpace
+            $recommendedHardDiskSpace.type | Should -BeExactly 'integer'
+            $recommendedHardDiskSpace.format | Should -BeExactly 'int64'
         }
 
         It 'msrcSeverity property should be enum with correct values' {

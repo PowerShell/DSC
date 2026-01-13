@@ -90,12 +90,12 @@
                                 "description": "The Knowledge Base (KB) article identifiers associated with the update. Can be used as a filter in export operation.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#kbarticleids\n",
                                 "markdownDescription": "The Knowledge Base (KB) article identifiers associated with the update. Can be used as a filter in export operation.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#kbarticleids\n"
                             },
-                            "minDownloadSize": {
+                            "recommendedHardDiskSpace": {
                                 "type": "integer",
                                 "format": "int64",
-                                "title": "Minimum download size",
-                                "description": "The minimum download size of the update in bytes. Can be used as a filter in export operation (updates with size >= this value will be returned).\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#mindownloadsize\n",
-                                "markdownDescription": "The minimum download size of the update in bytes. Can be used as a filter in export operation (updates with size >= this value will be returned).\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#mindownloadsize\n"
+                                "title": "Recommended hard disk space",
+                                "description": "The recommended free hard disk space in megabytes (MB) that should be available before installing the update. Can be used as a filter in export operation (updates with space >= this value will be returned).\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#recommendedharddiskspace\n",
+                                "markdownDescription": "The recommended free hard disk space in megabytes (MB) that should be available before installing the update. Can be used as a filter in export operation (updates with space >= this value will be returned).\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#recommendedharddiskspace\n"
                             },
                             "msrcSeverity": {
                                 "type": "string",

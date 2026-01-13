@@ -30,7 +30,7 @@ Describe 'Windows Update Get operation tests' {
             $getResult.actualState.updates[0].isInstalled | Should -BeIn ($true, $false)
             $getResult.actualState.updates[0].description | Should -Not -BeNullOrEmpty
             $getResult.actualState.updates[0].isUninstallable | Should -BeIn ($true, $false)
-            $getResult.actualState.updates[0].minDownloadSize | Should -BeGreaterOrEqual 0
+            $getResult.actualState.updates[0].recommendedHardDiskSpace | Should -BeGreaterOrEqual 0
             $getResult.actualState.updates[0].updateType | Should -BeIn @('Software', 'Driver')
         }
 
@@ -157,7 +157,7 @@ Describe 'Windows Update Get operation tests' {
             $result.actualState.updates[0].isInstalled | Should -BeOfType [bool]
         }
 
-        It 'should return valid integer for minDownloadSize' -Skip:(!$IsWindows) {
+        It 'should return valid integer for recommendedHardDiskSpace' -Skip:(!$IsWindows) {
             $json = @{
                 updates = @(
                     @{
@@ -168,7 +168,7 @@ Describe 'Windows Update Get operation tests' {
             $out = $json | dsc resource get -r $resourceType 2>&1
             $LASTEXITCODE | Should -Be 0            
             $result = $out | ConvertFrom-Json
-            $result.actualState.updates[0].minDownloadSize | Should -BeGreaterOrEqual 0
+            $result.actualState.updates[0].recommendedHardDiskSpace | Should -BeGreaterOrEqual 0
         }
 
         It 'should return valid array for KBArticleIDs' -Skip:(!$IsWindows) {

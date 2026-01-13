@@ -12,7 +12,7 @@ The `Microsoft.Windows/UpdateList` resource enables querying information about W
   - Update description
   - Unique update identifier
   - KB article IDs
-  - Download size
+  - Recommended hard disk space
   - Security severity rating
   - Security bulletin IDs
   - Update type (Software or Driver)
@@ -27,7 +27,7 @@ The `Microsoft.Windows/UpdateList` resource enables querying information about W
 
 ### Get Operation
 
-The `get` operation searches for a Windows Update by title (supports partial matching) and returns detailed information about the update.
+The `get` operation searches for a Windows Update by title or id (as exact match) and returns detailed information about the update.
 
 #### Input Schema
 
@@ -63,7 +63,7 @@ resources:
     "id": "12345678-1234-1234-1234-123456789abc",
     "isUninstallable": true,
     "kbArticleIds": ["5034123"],
-    "minDownloadSize": 524288000,
+    "recommendedHardDiskSpace": 512,
     "msrcSeverity": "Critical",
     "securityBulletinIds": ["MS24-001"],
     "updateType": "Software"
@@ -73,15 +73,7 @@ resources:
 
 ## Properties
 
-### Input Properties
-
-| Property | Type   | Required | Description                                    |
-|----------|--------|----------|------------------------------------------------|
-| updates  | array  | Yes      | Array of update filter objects                 |
-| updates[].title | string | No | The title or partial title of the update to search for |
-| updates[].id | string | No | The unique identifier (GUID) for the update |
-
-### Output Properties
+### Input/Output Properties
 
 The resource returns an UpdateList object containing an array of updates:
 
@@ -94,7 +86,7 @@ The resource returns an UpdateList object containing an array of updates:
 | updates[].id          | string          | Unique identifier (GUID) for the update               |
 | updates[].isUninstallable | boolean     | Whether the update can be uninstalled                 |
 | updates[].kbArticleIds | array[string]  | Knowledge Base article identifiers                    |
-| updates[].minDownloadSize | integer (int64) | Minimum download size in bytes                   |
+| updates[].recommendedHardDiskSpace | integer (int64) | Recommended hard disk space in megabytes (MB) |
 | updates[].msrcSeverity | enum           | MSRC severity: Critical, Important, Moderate, or Low  |
 | updates[].securityBulletinIds | array[string] | Security bulletin identifiers                  |
 | updates[].updateType  | enum            | Type of update: Software or Driver                    |
@@ -111,8 +103,6 @@ The resource returns an UpdateList object containing an array of updates:
 
 ## Limitations
 
-- Only the `get` operation is currently implemented
-- The `set` and `test` operations are not supported (updates should be managed through Windows Update settings)
 - Requires Windows operating system
 - Search is case-insensitive and matches partial titles
 
