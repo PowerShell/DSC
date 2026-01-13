@@ -611,7 +611,6 @@ function Install-NodeJS {
             }
         } elseif ($IsWindows) {
             if (Get-Command 'winget' -ErrorAction Ignore) {
-                Write-Warning "WHY WHAT IS HAPPENING HERE"
                 Write-Verbose -Verbose "Using winget to install Node.js"
                 winget install OpenJS.NodeJS --accept-source-agreements --accept-package-agreements --source winget --silent
             } else {
@@ -623,6 +622,50 @@ function Install-NodeJS {
 
         if ($LASTEXITCODE -ne 0) {
             throw "Failed to install Node.js"
+        }
+    }
+}
+
+function Install-Protobuf {
+    <#
+        .SYNOPSIS
+        Installs Protobuf for the protoc executable.
+    #>
+
+    [cmdletbinding()]
+    param()
+
+    process {
+        if ((Get-Command 'protoc' -ErrorAction Ignore)) {
+            Write-Verbose "Protobuf already installed."
+            return
+        }
+
+        Write-Verbose -Verbose "Protobuf not found, installing..."
+        if ($IsMacOS) {
+            if (Get-Command 'brew' -ErrorAction Ignore) {
+                brew install protobuf
+            } else {
+                Write-Warning "Homebrew not found, please install Protobuf manually"
+            }
+        } elseif ($IsWindows) {
+            if (Get-Command 'winget' -ErrorAction Ignore) {
+                Write-Verbose -Verbose "Using winget to install Protobuf"
+                winget install Google.Protobuf --accept-source-agreements --accept-package-agreements --source winget --silent
+            } else {
+                Write-Warning "winget not found, please install Protobuf manually"
+            }
+        } else {
+            if (Get-Command 'apt' -ErrorAction Ignore) {
+                Write-Verbose -Verbose "Using apt to install Protobuf"
+                sudo apt install -y protobuf-compiler
+            } else {
+                Write-Warning "apt not found, please install Protobuf manually"
+            }
+        }
+
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to install Protobuf"
         }
     }
 }
