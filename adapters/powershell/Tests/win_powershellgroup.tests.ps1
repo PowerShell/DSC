@@ -234,7 +234,7 @@ $out.results[0].result.inDesiredState | Should -Be $inDesiredState
 
   It 'Config dont works with credential object with Script base resources - wrong user' {
 
-$inDesiredState = $true
+$inDesiredState = $false
 $yaml =  @'
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
@@ -260,7 +260,7 @@ $out.results[0].result.inDesiredState | Should -Be $inDesiredState
 
   It 'Config dont works with credential object with Script base resources - No passowrd' {
 
-$inDesiredState = $true
+$inDesiredState = $false
 $yaml =  @'
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
