@@ -248,7 +248,122 @@ Describe 'Windows Update Get operation tests' {
             $result = $out | ConvertFrom-Json
             $result.actualState.updates[0].id | Should -Be $updateId
         }
+
+        It 'should process multiple input objects and return all matches' -Skip:(!$IsWindows) {
+            # Get at least 2 updates to test with
+            if ($exportOut.updates.Count -ge 2) {
+                $update1 = $exportOut.updates[0]
+                $update2 = $exportOut.updates[1]
+                
+                $json = @{
+                    updates = @(
+                        @{
+                            title = $update1.title
+                        },
+                        @{
+                            title = $update2.title
+                        }
+                    )
+                } | ConvertTo-Json -Depth 10 -Compress
+                $out = $json | dsc resource get -r $resourceType 2>&1
+                
+                $LASTEXITCODE | Should -Be 0
+                $getResult = $out | ConvertFrom-Json
+                $getResult.actualState.updates.Count | Should -Be 2
+                $getResult.actualState.updates[0].title | Should -BeIn @($update1.title, $update2.title)
+                $getResult.actualState.updates[1].title | Should -BeIn @($update1.title, $update2.title)
+            } else {
+                Set-ItResult -Skipped -Because "Need at least 2 updates for this test"
+            }
+        }
+
+        It 'should fail if any input object does not have a match' -Skip:(!$IsWindows) {
+            $update1 = $exportOut.updates[0]
+            
+            $json = @{
+                updates = @(
+                    @{
+                        title = $update1.title
+                    },
+                    @{
+                        title = 'ThisUpdateShouldNeverExist12345XYZ'
+                    }
+                )
+            } | ConvertTo-Json -Depth 10 -Compress
+            $stderr = $json | dsc resource get -r $resourceType 2>&1
+            
+            # Should fail because second input has no match
+            $LASTEXITCODE | Should -Not -Be 0
+            
+            # Check for error message in stderr
+            $errorText = $stderr | Out-String
+            $errorText | Should -Match 'No matching update found'
+        }
+
+        It 'should support filtering by KB article IDs' -Skip:(!$IsWindows) {
+            # Find an update with KB article IDs
+            $updateWithKB = $exportOut.updates | Where-Object { $_.kbArticleIds.Count -gt 0 } | Select-Object -First 1
+            
+            if ($updateWithKB) {
+                $json = @{
+                    updates = @(
+                        @{
+                            kbArticleIds = @($updateWithKB.kbArticleIds[0])
+                        }
+                    )
+                } | ConvertTo-Json -Depth 10 -Compress
+                $out = $json | dsc resource get -r $resourceType 2>&1
+                
+                $LASTEXITCODE | Should -Be 0
+                $getResult = $out | ConvertFrom-Json
+                $getResult.actualState.updates[0].kbArticleIds | Should -Contain $updateWithKB.kbArticleIds[0]
+            } else {
+                Set-ItResult -Skipped -Because "No updates with KB article IDs found"
+            }
+        }
+
+        It 'should support filtering by update type' -Skip:(!$IsWindows) {
+            $softwareUpdate = $exportOut.updates | Where-Object { $_.updateType -eq 'Software' } | Select-Object -First 1
+            
+            if ($softwareUpdate) {
+                $json = @{
+                    updates = @(
+                        @{
+                            id = $softwareUpdate.id
+                            updateType = 'Software'
+                        }
+                    )
+                } | ConvertTo-Json -Depth 10 -Compress
+                $out = $json | dsc resource get -r $resourceType 2>&1
+                
+                $LASTEXITCODE | Should -Be 0
+                $getResult = $out | ConvertFrom-Json
+                $getResult.actualState.updates[0].updateType | Should -Be 'Software'
+            } else {
+                Set-ItResult -Skipped -Because "No software updates found"
+            }
+        }
+
+        It 'should support filtering by MSRC severity with AND logic' -Skip:(!$IsWindows) {
+            $updateWithSeverity = $exportOut.updates | Where-Object { $null -ne $_.msrcSeverity } | Select-Object -First 1
+            
+            if ($updateWithSeverity) {
+                $json = @{
+                    updates = @(
+                        @{
+                            id = $updateWithSeverity.id
+                            msrcSeverity = $updateWithSeverity.msrcSeverity
+                        }
+                    )
+                } | ConvertTo-Json -Depth 10 -Compress
+                $out = $json | dsc resource get -r $resourceType 2>&1
+                
+                $LASTEXITCODE | Should -Be 0
+                $getResult = $out | ConvertFrom-Json
+                $getResult.actualState.updates[0].msrcSeverity | Should -Be $updateWithSeverity.msrcSeverity
+            } else {
+                Set-ItResult -Skipped -Because "No updates with MSRC severity found"
+            }
+        }
     }
 }
-
-

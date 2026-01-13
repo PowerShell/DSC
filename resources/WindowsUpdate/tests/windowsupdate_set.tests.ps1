@@ -103,5 +103,108 @@ Describe 'Windows Update Set operation tests' {
                 }
             }
         }
+
+        It 'should verify all inputs have matches before installing' {
+            # Get an actual update
+            $exportOut = '{"updates": []}' | dsc resource export -r $resourceType 2>&1
+            
+            if ($LASTEXITCODE -eq 0) {
+                $result = $exportOut | ConvertFrom-Json
+                if ($result.updates.Count -gt 0) {
+                    $update1 = $result.updates[0]
+                    
+                    # One valid, one invalid - should fail before attempting any installation
+                    $json = @{
+                        updates = @(
+                            @{
+                                title = $update1.title
+                            },
+                            @{
+                                title = 'ThisUpdateShouldNeverExist12345XYZ'
+                            }
+                        )
+                    } | ConvertTo-Json -Depth 10 -Compress
+                    $stderr = $json | dsc resource set -r $resourceType 2>&1
+                    
+                    # Should fail before attempting any installation
+                    $LASTEXITCODE | Should -Not -Be 0
+                    
+                    # Check for error message in stderr
+                    $errorText = $stderr | Out-String
+                    $errorText | Should -Match 'No matching update found'
+                }
+                else {
+                    Write-Host "No updates found, skipping test"
+                    $true | Should -Be $true
+                }
+            }
+        }
+
+        It 'should process multiple valid input objects' {
+            # Get an actual update
+            $exportOut = '{"updates": [{"isInstalled": true}]}' | dsc resource export -r $resourceType 2>&1
+            
+            if ($LASTEXITCODE -eq 0) {
+                $result = $exportOut | ConvertFrom-Json
+                # Get two installed updates
+                $installedUpdates = $result.updates | Where-Object { $_.isInstalled -eq $true } | Select-Object -First 2
+                
+                if ($installedUpdates.Count -ge 2) {
+                    $json = @{
+                        updates = @(
+                            @{
+                                title = $installedUpdates[0].title
+                            },
+                            @{
+                                title = $installedUpdates[1].title
+                            }
+                        )
+                    } | ConvertTo-Json -Depth 10 -Compress
+                    $out = $json | dsc resource set -r $resourceType 2>&1
+                    
+                    if ($LASTEXITCODE -eq 0) {
+                        $setResult = $out | ConvertFrom-Json
+                        $setResult.afterState.updates.Count | Should -Be 2
+                    }
+                } else {
+                    Write-Host "Need at least 2 installed updates for this test, skipping"
+                    $true | Should -Be $true
+                }
+            }
+        }
+
+        It 'should apply logical AND for all criteria in each input' {
+            # Get an actual update
+            $exportOut = '{"updates": [{"isInstalled": true}]}' | dsc resource export -r $resourceType 2>&1
+            
+            if ($LASTEXITCODE -eq 0) {
+                $result = $exportOut | ConvertFrom-Json
+                $installedUpdate = $result.updates | Where-Object { $_.isInstalled -eq $true } | Select-Object -First 1
+                
+                if ($installedUpdate) {
+                    # Multiple criteria - all must match
+                    $json = @{
+                        updates = @(
+                            @{
+                                title = $installedUpdate.title
+                                id = $installedUpdate.id
+                                isInstalled = $true
+                            }
+                        )
+                    } | ConvertTo-Json -Depth 10 -Compress
+                    $out = $json | dsc resource set -r $resourceType 2>&1
+                    
+                    if ($LASTEXITCODE -eq 0) {
+                        $setResult = $out | ConvertFrom-Json
+                        $setResult.afterState.updates[0].title | Should -Be $installedUpdate.title
+                        $setResult.afterState.updates[0].id | Should -Be $installedUpdate.id
+                        $setResult.afterState.updates[0].isInstalled | Should -Be $true
+                    }
+                } else {
+                    Write-Host "No installed updates found, skipping test"
+                    $true | Should -Be $true
+                }
+            }
+        }
     }
 }

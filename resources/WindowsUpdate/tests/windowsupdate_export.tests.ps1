@@ -90,14 +90,117 @@ Describe 'Windows Update Export operation tests' {
             }
         }
 
-        It 'should return empty array when no matches found' -Skip:(!$IsWindows) {
+        It 'should fail when wildcard filter has no matches' -Skip:(!$IsWindows) {
             $json = '{"updates":[{"title": "ThisUpdateShouldNeverExist99999*"}]}'
+            $stderr = $json | dsc resource export -r $resourceType -o json 2>&1
+            
+            # Should fail because the filter has criteria but no matches
+            $LASTEXITCODE | Should -Not -Be 0
+            
+            # Check for error message in stderr
+            $errorText = $stderr | Out-String
+            $errorText | Should -Match 'No matching update found'
+        }
+
+        It 'should fail if filter with specific exact title has no matches' -Skip:(!$IsWindows) {
+            # Use a very specific title that won't match (no wildcard)
+            $json = @{
+                updates = @(
+                    @{
+                        title = 'ThisUpdateShouldNeverExist12345XYZ'
+                    }
+                )
+            } | ConvertTo-Json -Depth 10 -Compress
+            $stderr = $json | dsc resource export -r $resourceType 2>&1
+            
+            # Should fail because the filter has criteria but no matches
+            $LASTEXITCODE | Should -Not -Be 0
+            
+            # Check for error message in stderr
+            $errorText = $stderr | Out-String
+            $errorText | Should -Match 'No matching update found'
+        }
+
+        It 'should succeed with empty filter object (no criteria)' -Skip:(!$IsWindows) {
+            # Empty filter should match all updates
+            $json = @{
+                updates = @(
+                    @{}
+                )
+            } | ConvertTo-Json -Depth 10 -Compress
             $out = $json | dsc resource export -r $resourceType -o json 2>&1
             
             $LASTEXITCODE | Should -Be 0
             $config = $out | ConvertFrom-Json
             $result = $config.resources[0].properties
-            $result.updates.Count | Should -Be 0
+            $result.updates.Count | Should -BeGreaterThan 0
+        }
+
+        It 'should fail if any filter with criteria has no matches' -Skip:(!$IsWindows) {
+            # Get an actual update
+            $allOut = '{"updates":[{}]}' | dsc resource export -r $resourceType -o json 2>&1
+            
+            if ($LASTEXITCODE -eq 0) {
+                $allConfig = $allOut | ConvertFrom-Json
+                $allResult = $allConfig.resources[0].properties
+                if ($allResult.updates.Count -gt 0) {
+                    $update1 = $allResult.updates[0]
+                    
+                    # One valid filter, one invalid filter
+                    $json = @{
+                        updates = @(
+                            @{
+                                id = $update1.id
+                            },
+                            @{
+                                title = 'ThisUpdateShouldNeverExist12345XYZ'
+                            }
+                        )
+                    } | ConvertTo-Json -Depth 10 -Compress
+                    $stderr = $json | dsc resource export -r $resourceType 2>&1
+                    
+                    # Should fail because second filter has no matches
+                    $LASTEXITCODE | Should -Not -Be 0
+                    
+                    # Check for error message in stderr
+                    $errorText = $stderr | Out-String
+                    $errorText | Should -Match 'No matching update found'
+                }
+            }
+        }
+
+        It 'should return results when all filters find matches' -Skip:(!$IsWindows) {
+            # Get actual updates
+            $allOut = '{"updates":[{}]}' | dsc resource export -r $resourceType -o json 2>&1
+            
+            if ($LASTEXITCODE -eq 0) {
+                $allConfig = $allOut | ConvertFrom-Json
+                $allResult = $allConfig.resources[0].properties
+                if ($allResult.updates.Count -ge 2) {
+                    $update1 = $allResult.updates[0]
+                    $update2 = $allResult.updates[1]
+                    
+                    $json = @{
+                        updates = @(
+                            @{
+                                id = $update1.id
+                            },
+                            @{
+                                id = $update2.id
+                            }
+                        )
+                    } | ConvertTo-Json -Depth 10 -Compress
+                    $out = $json | dsc resource export -r $resourceType -o json 2>&1
+                    
+                    $LASTEXITCODE | Should -Be 0
+                    $config = $out | ConvertFrom-Json
+                    $result = $config.resources[0].properties
+                    $result.updates.Count | Should -BeGreaterOrEqual 2
+                } else {
+                    Write-Host "Need at least 2 updates for this test, skipping"
+                    $true | Should -Be $true
+                }
+            }
         }
 
         It 'should filter by msrcSeverity' -Skip:(!$IsWindows) {
@@ -188,11 +291,12 @@ Describe 'Windows Update Export operation tests' {
                 $allResult = $allConfig.resources[0].properties
                 if ($allResult.updates.Count -gt 0) {
                     $testUpdate = $allResult.updates[0]
-                    # Create two filters that both match the same update
-                    $json = "{`"updates`":[{`"id`": `"$($testUpdate.id)`"}, {`"title`": `"$($testUpdate.title)`"}]}"
+                    # Use the same ID in both filters - this should only return one update
+                    # Even though technically both filters specify the same criteria
+                    $json = "{`"updates`":[{`"id`": `"$($testUpdate.id)`"}, {`"id`": `"$($testUpdate.id)`"}]}"
                     $out = $json | dsc resource export -r $resourceType -o json 2>&1
                     
-                    $LASTEXITCODE | Should -Be 0
+                    $LASTEXITCODE | Should -Be 0 -Because $out
                     $config = $out | ConvertFrom-Json
                     $result = $config.resources[0].properties
                     

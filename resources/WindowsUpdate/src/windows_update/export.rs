@@ -64,17 +64,14 @@ pub fn handle_export(input: &str) -> Result<String> {
         let mut all_found_updates: Vec<UpdateInfo> = Vec::new();
 
         // Process each filter in the array (OR logic between filters)
-        for filter in filters {
+        for (filter_index, filter) in filters.iter().enumerate() {
+            let mut filter_found_match = false;
+            
             // Collect matching updates for this specific filter
             for i in 0..count {
                 let update = updates.get_Item(i)?;
                 let identity = update.Identity()?;
                 let update_id = identity.UpdateID()?.to_string();
-
-                // Skip if we've already matched this update with a previous filter
-                if matched_update_ids.contains(&update_id) {
-                    continue;
-                }
 
                 // Extract all update information for filtering
                 let update_info = extract_update_info(&update)?;
@@ -167,8 +164,70 @@ pub fn handle_export(input: &str) -> Result<String> {
                 }
 
                 if matches {
-                    matched_update_ids.insert(update_id);
-                    all_found_updates.push(update_info);
+                    filter_found_match = true;
+                    // Only add to results if we haven't seen this update ID before
+                    if !matched_update_ids.contains(&update_id) {
+                        matched_update_ids.insert(update_id);
+                        all_found_updates.push(update_info);
+                    }
+                }
+            }
+            
+            // Check if this filter found at least one match
+            if !filter_found_match {
+                // Only check if the filter has at least one criterion specified
+                let has_criteria = filter.title.is_some()
+                    || filter.id.is_some()
+                    || filter.is_installed.is_some()
+                    || filter.description.is_some()
+                    || filter.is_uninstallable.is_some()
+                    || filter.kb_article_ids.is_some()
+                    || filter.min_download_size.is_some()
+                    || filter.msrc_severity.is_some()
+                    || filter.security_bulletin_ids.is_some()
+                    || filter.update_type.is_some();
+                
+                if has_criteria {
+                    // Construct error message with filter criteria
+                    let mut criteria_parts = Vec::new();
+                    if let Some(title) = &filter.title {
+                        criteria_parts.push(format!("title '{}'", title));
+                    }
+                    if let Some(id) = &filter.id {
+                        criteria_parts.push(format!("id '{}'", id));
+                    }
+                    if let Some(is_installed) = filter.is_installed {
+                        criteria_parts.push(format!("is_installed {}", is_installed));
+                    }
+                    if let Some(description) = &filter.description {
+                        criteria_parts.push(format!("description '{}'", description));
+                    }
+                    if let Some(is_uninstallable) = filter.is_uninstallable {
+                        criteria_parts.push(format!("is_uninstallable {}", is_uninstallable));
+                    }
+                    if let Some(kb_ids) = &filter.kb_article_ids {
+                        criteria_parts.push(format!("kb_article_ids {:?}", kb_ids));
+                    }
+                    if let Some(size) = filter.min_download_size {
+                        criteria_parts.push(format!("min_download_size {}", size));
+                    }
+                    if let Some(severity) = &filter.msrc_severity {
+                        criteria_parts.push(format!("msrc_severity {:?}", severity));
+                    }
+                    if let Some(bulletin_ids) = &filter.security_bulletin_ids {
+                        criteria_parts.push(format!("security_bulletin_ids {:?}", bulletin_ids));
+                    }
+                    if let Some(update_type) = &filter.update_type {
+                        criteria_parts.push(format!("update_type {:?}", update_type));
+                    }
+                    
+                    let criteria_str = criteria_parts.join(", ");
+                    let error_msg = format!("No matching update found for filter {}: {}", filter_index, criteria_str);
+                    
+                    // Emit JSON error to stderr
+                    eprintln!("{{\"error\":\"{}\"}}", error_msg);
+                    
+                    return Err(Error::new(E_FAIL, error_msg));
                 }
             }
         }
