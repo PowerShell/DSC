@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'Windows Update resource executable tests' {
+Describe 'Windows Update resource executable tests' -Skip:(!$IsWindows) {
     BeforeAll {
         $exeName = 'wu_dsc'
         $resourceDir = Join-Path $PSScriptRoot ".."
