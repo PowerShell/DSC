@@ -23,7 +23,6 @@ pub struct SshdConfigValue<'a> {
     key: &'a str,
     separator: ValueSeparator,
     value: &'a Value,
-
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -52,7 +51,7 @@ impl<'a> SshdConfigValue<'a> {
         let separator = match override_separator {
             Some(separator) => separator,
             None => {
-                 if MULTI_ARG_KEYWORDS_COMMA_SEP.contains(&key) {
+                if MULTI_ARG_KEYWORDS_COMMA_SEP.contains(&key) {
                     ValueSeparator::Comma
                 } else {
                     ValueSeparator::Space
@@ -190,11 +189,11 @@ pub fn write_config_map_to_text(global_map: &Map<String, Value>) -> Result<Strin
         if let Value::Array(arr) = match_map {
             for item in arr {
                 let formatted = format_match_block(item)?;
-                writeln!(&mut config_text, "match {formatted}")?;
+                writeln!(&mut config_text, "Match {formatted}")?;
             }
         } else {
             let formatted = format_match_block(match_map)?;
-            writeln!(&mut config_text, "match {formatted}")?;
+            writeln!(&mut config_text, "Match {formatted}")?;
         }
     }
 
