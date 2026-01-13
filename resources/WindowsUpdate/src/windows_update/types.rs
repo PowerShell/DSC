@@ -3,38 +3,38 @@
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct UpdateInput {
+pub struct UpdateList {
+    pub updates: Vec<UpdateInfo>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateInfo {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
-    pub id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub is_installed: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub is_uninstallable: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub kb_article_ids: Option<Vec<String>>,
-    pub max_download_size: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub min_download_size: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub msrc_severity: Option<MsrcSeverity>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub security_bulletin_ids: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub update_type: Option<UpdateType>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UpdateInfo {
-    pub title: String,
-    pub is_installed: bool,
-    pub description: String,
-    pub id: String,
-    pub is_uninstallable: bool,
-    pub kb_article_ids: Vec<String>,
-    pub max_download_size: i64,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub msrc_severity: Option<MsrcSeverity>,
-    pub security_bulletin_ids: Vec<String>,
-    pub update_type: UpdateType,
-}
-
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum MsrcSeverity {
     Critical,
     Important,
@@ -42,7 +42,7 @@ pub enum MsrcSeverity {
     Low,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum UpdateType {
     Software,
     Driver,

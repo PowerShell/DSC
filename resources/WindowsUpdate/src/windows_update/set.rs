@@ -8,12 +8,19 @@ use windows::{
     Win32::System::UpdateAgent::*,
 };
 
-use crate::windows_update::types::{UpdateInput, UpdateInfo, MsrcSeverity, UpdateType};
+use crate::windows_update::types::{UpdateList, UpdateInfo, MsrcSeverity, UpdateType};
 
 pub fn handle_set(input: &str) -> Result<String> {
-    // Parse input
-    let update_input: UpdateInput = serde_json::from_str(input)
+    // Parse input as UpdateList
+    let update_list: UpdateList = serde_json::from_str(input)
         .map_err(|e| Error::new(E_INVALIDARG, format!("Failed to parse input: {}", e)))?;
+    
+    if update_list.updates.is_empty() {
+        return Err(Error::new(E_INVALIDARG, "Updates array cannot be empty for set operation"));
+    }
+
+    // Get the first filter
+    let update_input = &update_list.updates[0];
     
     // Initialize COM
     unsafe {
@@ -46,13 +53,20 @@ pub fn handle_set(input: &str) -> Result<String> {
             let identity = update.Identity()?;
             let update_id = identity.UpdateID()?.to_string();
 
-            let matches = if let Some(search_title) = &update_input.title {
+            let title_match = if let Some(search_title) = &update_input.title {
                 title.eq_ignore_ascii_case(search_title)
-            } else if let Some(search_id) = &update_input.id {
+            } else {
+                true // No title filter, so it matches
+            };
+
+            let id_match = if let Some(search_id) = &update_input.id {
                 update_id.eq_ignore_ascii_case(search_id)
             } else {
-                false
+                true // No id filter, so it matches
             };
+
+            // Both must match if both are provided
+            let matches = title_match && id_match;
 
             if matches {
                 let is_installed = update.IsInstalled()?.as_bool();
@@ -72,7 +86,7 @@ pub fn handle_set(input: &str) -> Result<String> {
                         }
                     }
 
-                    let max_download_size = 0i64;
+                    let min_download_size = 0i64;
 
                     let msrc_severity = if let Ok(severity_str) = update.MsrcSeverity() {
                         match severity_str.to_string().as_str() {
@@ -104,34 +118,37 @@ pub fn handle_set(input: &str) -> Result<String> {
                     };
 
                     let info = UpdateInfo {
-                        title,
-                        is_installed: true,
-                        description,
-                        id: update_id,
-                        is_uninstallable,
-                        kb_article_ids,
-                        max_download_size,
+                        title: Some(title),
+                        is_installed: Some(true),
+                        description: Some(description),
+                        id: Some(update_id),
+                        is_uninstallable: Some(is_uninstallable),
+                        kb_article_ids: Some(kb_article_ids),
+                        min_download_size: Some(min_download_size),
                         msrc_severity,
-                        security_bulletin_ids,
-                        update_type,
+                        security_bulletin_ids: Some(security_bulletin_ids),
+                        update_type: Some(update_type),
                     };
 
-                    return Ok(serde_json::to_string(&info)
+                    let results = UpdateList {
+                        updates: vec![info]
+                    };
+                    return Ok(serde_json::to_string(&results)
                         .map_err(|e| Error::new(E_FAIL, format!("Failed to serialize output: {}", e)))?);
                 }
                 
                 // Not installed - proceed with installation
                 found_update = Some((update.clone(), UpdateInfo {
-                    title,
-                    is_installed: false,
-                    description: String::new(),
-                    id: update_id,
-                    is_uninstallable: false,
-                    kb_article_ids: Vec::new(),
-                    max_download_size: 0,
+                    title: Some(title),
+                    is_installed: Some(false),
+                    description: None,
+                    id: Some(update_id),
+                    is_uninstallable: None,
+                    kb_article_ids: None,
+                    min_download_size: None,
                     msrc_severity: None,
-                    security_bulletin_ids: Vec::new(),
-                    update_type: UpdateType::Software,
+                    security_bulletin_ids: None,
+                    update_type: None,
                 }));
                 break;
             }
@@ -171,7 +188,7 @@ pub fn handle_set(input: &str) -> Result<String> {
             }
 
             // Update the info to reflect installed state
-            update_info.is_installed = true;
+            update_info.is_installed = Some(true);
             
             // Get full details now that it's installed
             let description = update.Description()?.to_string();
@@ -215,12 +232,12 @@ pub fn handle_set(input: &str) -> Result<String> {
                 }
             };
 
-            update_info.description = description;
-            update_info.is_uninstallable = is_uninstallable;
-            update_info.kb_article_ids = kb_article_ids;
+            update_info.description = Some(description);
+            update_info.is_uninstallable = Some(is_uninstallable);
+            update_info.kb_article_ids = Some(kb_article_ids);
             update_info.msrc_severity = msrc_severity;
-            update_info.security_bulletin_ids = security_bulletin_ids;
-            update_info.update_type = update_type;
+            update_info.security_bulletin_ids = Some(security_bulletin_ids);
+            update_info.update_type = Some(update_type);
 
             Ok(update_info)
         } else {
@@ -240,8 +257,13 @@ pub fn handle_set(input: &str) -> Result<String> {
     }
 
     match result {
-        Ok(update_info) => serde_json::to_string(&update_info)
-            .map_err(|e| Error::new(E_FAIL, format!("Failed to serialize output: {}", e))),
+        Ok(update_info) => {
+            let results = UpdateList {
+                updates: vec![update_info]
+            };
+            serde_json::to_string(&results)
+                .map_err(|e| Error::new(E_FAIL, format!("Failed to serialize output: {}", e)))
+        }
         Err(e) => Err(e),
     }
 }

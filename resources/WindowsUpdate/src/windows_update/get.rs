@@ -8,12 +8,19 @@ use windows::{
     Win32::System::UpdateAgent::*,
 };
 
-use crate::windows_update::types::{UpdateInput, UpdateInfo, MsrcSeverity, UpdateType};
+use crate::windows_update::types::{UpdateList, UpdateInfo, MsrcSeverity, UpdateType};
 
 pub fn handle_get(input: &str) -> Result<String> {
-    // Parse input
-    let update_input: UpdateInput = serde_json::from_str(input)
+    // Parse input as UpdateList
+    let update_list: UpdateList = serde_json::from_str(input)
         .map_err(|e| Error::new(E_INVALIDARG, format!("Failed to parse input: {}", e)))?;
+    
+    if update_list.updates.is_empty() {
+        return Err(Error::new(E_INVALIDARG, "Updates array cannot be empty for get operation"));
+    }
+
+    // Get the first filter
+    let update_input = &update_list.updates[0];
     
     // Initialize COM
     unsafe {
@@ -46,13 +53,20 @@ pub fn handle_get(input: &str) -> Result<String> {
             let identity = update.Identity()?;
             let update_id = identity.UpdateID()?.to_string();
 
-            let matches = if let Some(search_title) = &update_input.title {
+            let title_match = if let Some(search_title) = &update_input.title {
                 title.eq_ignore_ascii_case(search_title)
-            } else if let Some(search_id) = &update_input.id {
+            } else {
+                true // No title filter, so it matches
+            };
+
+            let id_match = if let Some(search_id) = &update_input.id {
                 update_id.eq_ignore_ascii_case(search_id)
             } else {
-                false
+                true // No id filter, so it matches
             };
+
+            // Both must match if both are provided
+            let matches = title_match && id_match;
 
             if matches {
                 // Extract update information
@@ -71,9 +85,9 @@ pub fn handle_get(input: &str) -> Result<String> {
                     }
                 }
 
-                // Get max download size (DECIMAL type - complex to convert, using 0 for now)
+                // Get min download size (DECIMAL type - complex to convert, using 0 for now)
                 // Windows Update API returns DECIMAL which would require complex conversion
-                let max_download_size = 0i64;
+                let min_download_size = 0i64;
 
                 // Get MSRC Severity
                 let msrc_severity = if let Ok(severity_str) = update.MsrcSeverity() {
@@ -108,16 +122,16 @@ pub fn handle_get(input: &str) -> Result<String> {
                 };
 
                 found_update = Some(UpdateInfo {
-                    title,
-                    is_installed,
-                    description,
-                    id,
-                    is_uninstallable,
-                    kb_article_ids,
-                    max_download_size,
+                    title: Some(title),
+                    is_installed: Some(is_installed),
+                    description: Some(description),
+                    id: Some(id),
+                    is_uninstallable: Some(is_uninstallable),
+                    kb_article_ids: Some(kb_article_ids),
+                    min_download_size: Some(min_download_size),
                     msrc_severity,
-                    security_bulletin_ids,
-                    update_type,
+                    security_bulletin_ids: Some(security_bulletin_ids),
+                    update_type: Some(update_type),
                 });
                 break;
             }
@@ -131,8 +145,13 @@ pub fn handle_get(input: &str) -> Result<String> {
     }
 
     match result {
-        Some(update_info) => serde_json::to_string(&update_info)
-            .map_err(|e| Error::new(E_FAIL, format!("Failed to serialize output: {}", e))),
+        Some(update_info) => {
+            let result = UpdateList {
+                updates: vec![update_info]
+            };
+            serde_json::to_string(&result)
+                .map_err(|e| Error::new(E_FAIL, format!("Failed to serialize output: {}", e)))
+        }
         None => {
             let search_criteria = if let Some(title) = &update_input.title {
                 format!("title '{}'", title)

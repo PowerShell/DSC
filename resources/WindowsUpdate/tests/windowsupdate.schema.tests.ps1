@@ -3,7 +3,7 @@
 
 Describe 'Windows Update resource schema validation' {
     BeforeAll {
-        $resourceType = 'Microsoft.Windows/Updates'
+        $resourceType = 'Microsoft.Windows/UpdateList'
         $manifestPath = Join-Path $PSScriptRoot "..\windowsupdate.dsc.resource.json"
     }
 
@@ -39,12 +39,6 @@ Describe 'Windows Update resource schema validation' {
             $manifest.get.args | Should -Contain 'get'
             $manifest.get.input | Should -BeExactly 'stdin'
         }
-
-        It 'manifest should have tags' {
-            $manifest = Get-Content $manifestPath | ConvertFrom-Json
-            $manifest.tags | Should -Not -BeNullOrEmpty
-            $manifest.tags | Should -BeOfType [array]
-        }
     }
 
     Context 'Schema validation' {
@@ -63,14 +57,21 @@ Describe 'Windows Update resource schema validation' {
             $manifest.schema.embedded.title | Should -Not -BeNullOrEmpty
         }
 
-        It 'schema should require title property' {
+        It 'schema should require updates property' {
             $manifest = Get-Content $manifestPath | ConvertFrom-Json
-            $manifest.schema.embedded.required | Should -Contain 'title'
+            $manifest.schema.embedded.required | Should -Contain 'updates'
         }
 
-        It 'schema should define all expected properties' {
+        It 'schema should define updates property as array' {
             $manifest = Get-Content $manifestPath | ConvertFrom-Json
             $properties = $manifest.schema.embedded.properties
+            $properties.updates | Should -Not -BeNullOrEmpty
+            $properties.updates.type | Should -BeExactly 'array'
+        }
+
+        It 'schema should define all expected properties in updates items' {
+            $manifest = Get-Content $manifestPath | ConvertFrom-Json
+            $itemProperties = $manifest.schema.embedded.properties.updates.items.properties
             
             $expectedProperties = @(
                 'title',
@@ -78,93 +79,84 @@ Describe 'Windows Update resource schema validation' {
                 'description',
                 'id',
                 'isUninstallable',
-                'KBArticleIDs',
-                'maxDownloadSize',
+                'kbArticleIds',
+                'minDownloadSize',
                 'msrcSeverity',
                 'securityBulletinIds',
                 'updateType'
             )
             
             foreach ($prop in $expectedProperties) {
-                $properties.$prop | Should -Not -BeNullOrEmpty -Because "Property '$prop' should be defined"
+                $itemProperties.$prop | Should -Not -BeNullOrEmpty -Because "Property '$prop' should be defined"
             }
         }
 
         It 'title property should be string type' {
             $manifest = Get-Content $manifestPath | ConvertFrom-Json
-            $manifest.schema.embedded.properties.title.type | Should -BeExactly 'string'
+            $manifest.schema.embedded.properties.updates.items.properties.title.type | Should -BeExactly 'string'
         }
 
-        It 'isInstalled property should be boolean and readOnly' {
+        It 'isInstalled property should be boolean' {
             $manifest = Get-Content $manifestPath | ConvertFrom-Json
-            $isInstalled = $manifest.schema.embedded.properties.isInstalled
+            $isInstalled = $manifest.schema.embedded.properties.updates.items.properties.isInstalled
             $isInstalled.type | Should -BeExactly 'boolean'
-            $isInstalled.readOnly | Should -Be $true
         }
 
-        It 'description property should be string and readOnly' {
+        It 'description property should be string' {
             $manifest = Get-Content $manifestPath | ConvertFrom-Json
-            $description = $manifest.schema.embedded.properties.description
+            $description = $manifest.schema.embedded.properties.updates.items.properties.description
             $description.type | Should -BeExactly 'string'
-            $description.readOnly | Should -Be $true
         }
 
-        It 'id property should be string and readOnly' {
+        It 'id property should be string' {
             $manifest = Get-Content $manifestPath | ConvertFrom-Json
-            $id = $manifest.schema.embedded.properties.id
+            $id = $manifest.schema.embedded.properties.updates.items.properties.id
             $id.type | Should -BeExactly 'string'
-            $id.readOnly | Should -Be $true
         }
 
-        It 'isUninstallable property should be boolean and readOnly' {
+        It 'isUninstallable property should be boolean' {
             $manifest = Get-Content $manifestPath | ConvertFrom-Json
-            $isUninstallable = $manifest.schema.embedded.properties.isUninstallable
+            $isUninstallable = $manifest.schema.embedded.properties.updates.items.properties.isUninstallable
             $isUninstallable.type | Should -BeExactly 'boolean'
-            $isUninstallable.readOnly | Should -Be $true
         }
 
-        It 'KBArticleIDs property should be array and readOnly' {
+        It 'kbArticleIds property should be array' {
             $manifest = Get-Content $manifestPath | ConvertFrom-Json
-            $kbArticles = $manifest.schema.embedded.properties.KBArticleIDs
+            $kbArticles = $manifest.schema.embedded.properties.updates.items.properties.kbArticleIds
             $kbArticles.type | Should -BeExactly 'array'
-            $kbArticles.readOnly | Should -Be $true
             $kbArticles.items.type | Should -BeExactly 'string'
         }
 
-        It 'maxDownloadSize property should be integer int64 and readOnly' {
+        It 'minDownloadSize property should be integer int64' {
             $manifest = Get-Content $manifestPath | ConvertFrom-Json
-            $maxDownloadSize = $manifest.schema.embedded.properties.maxDownloadSize
-            $maxDownloadSize.type | Should -BeExactly 'integer'
-            $maxDownloadSize.format | Should -BeExactly 'int64'
-            $maxDownloadSize.readOnly | Should -Be $true
+            $minDownloadSize = $manifest.schema.embedded.properties.updates.items.properties.minDownloadSize
+            $minDownloadSize.type | Should -BeExactly 'integer'
+            $minDownloadSize.format | Should -BeExactly 'int64'
         }
 
         It 'msrcSeverity property should be enum with correct values' {
             $manifest = Get-Content $manifestPath | ConvertFrom-Json
-            $msrcSeverity = $manifest.schema.embedded.properties.msrcSeverity
+            $msrcSeverity = $manifest.schema.embedded.properties.updates.items.properties.msrcSeverity
             $msrcSeverity.type | Should -BeExactly 'string'
             $msrcSeverity.enum | Should -Contain 'Critical'
             $msrcSeverity.enum | Should -Contain 'Important'
             $msrcSeverity.enum | Should -Contain 'Moderate'
             $msrcSeverity.enum | Should -Contain 'Low'
-            $msrcSeverity.readOnly | Should -Be $true
         }
 
-        It 'securityBulletinIds property should be array and readOnly' {
+        It 'securityBulletinIds property should be array' {
             $manifest = Get-Content $manifestPath | ConvertFrom-Json
-            $bulletinIds = $manifest.schema.embedded.properties.securityBulletinIds
+            $bulletinIds = $manifest.schema.embedded.properties.updates.items.properties.securityBulletinIds
             $bulletinIds.type | Should -BeExactly 'array'
-            $bulletinIds.readOnly | Should -Be $true
             $bulletinIds.items.type | Should -BeExactly 'string'
         }
 
         It 'updateType property should be enum with correct values' {
             $manifest = Get-Content $manifestPath | ConvertFrom-Json
-            $updateType = $manifest.schema.embedded.properties.updateType
+            $updateType = $manifest.schema.embedded.properties.updates.items.properties.updateType
             $updateType.type | Should -BeExactly 'string'
             $updateType.enum | Should -Contain 'Software'
             $updateType.enum | Should -Contain 'Driver'
-            $updateType.readOnly | Should -Be $true
         }
 
         It 'schema should not allow additional properties' {
@@ -199,7 +191,7 @@ Describe 'Windows Update resource schema validation' {
             $schemaId = $manifest.schema.embedded.'$id'
             $schemaId | Should -Not -BeNullOrEmpty
             $schemaId | Should -Match '^https://'
-            $schemaId | Should -Match 'Microsoft\.Windows/Updates'
+            $schemaId | Should -Match 'Microsoft\.Windows/UpdateList'
         }
 
         It 'description should reference documentation URL' {

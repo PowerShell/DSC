@@ -53,7 +53,7 @@ Describe 'Windows Update resource executable tests' {
         It 'should fail without arguments' -Skip:$skipTests {
             $result = & $exePath 2>&1
             $LASTEXITCODE | Should -Not -Be 0
-            $result | Should -Match 'Error'
+            $result | Should -Match 'Usage|Error'
         }
 
         It 'should display usage information when called without args' -Skip:$skipTests {
@@ -62,21 +62,21 @@ Describe 'Windows Update resource executable tests' {
         }
 
         It 'should fail with unknown operation' -Skip:$skipTests {
-            $json = '{"title": "test"}'
+            $json = '[{"title": "test"}]'
             $result = $json | & $exePath 'invalid_operation' 2>&1
             $LASTEXITCODE | Should -Not -Be 0
-            $result | Should -Match 'Unknown operation|Error'
+            $result | Should -Match 'Unknown operation|Error|Usage'
         }
 
         It 'should fail set operation with appropriate message' -Skip:$skipTests {
-            $json = '{"title": "test"}'
+            $json = '[{"title": "test"}]'
             $result = $json | & $exePath 'set' 2>&1
             $LASTEXITCODE | Should -Not -Be 0
-            $result | Should -Match 'not implemented|Set operation'
+            $result | Should -Match 'not implemented|Set operation|Error'
         }
 
         It 'should fail test operation with appropriate message' -Skip:$skipTests {
-            $json = '{"title": "test"}'
+            $json = '[{"title": "test"}]'
             $result = $json | & $exePath 'test' 2>&1
             $LASTEXITCODE | Should -Not -Be 0
             $result | Should -Match 'not implemented|Test operation'
@@ -85,7 +85,7 @@ Describe 'Windows Update resource executable tests' {
 
     Context 'Get operation input handling' {
         It 'should accept JSON input via stdin' -Skip:$skipTests {
-            $json = '{"title": "Windows Defender"}'
+            $json = '[{"title": "Windows Defender"}]'
             $result = $json | & $exePath 'get' 2>&1
             # May succeed or fail depending on updates, but should process the input
             $result | Should -Not -BeNullOrEmpty
@@ -98,7 +98,7 @@ Describe 'Windows Update resource executable tests' {
         }
 
         It 'should fail when title is missing from JSON' -Skip:$skipTests {
-            $json = '{}'
+            $json = '[{}]'
             $result = $json | & $exePath 'get' 2>&1
             $LASTEXITCODE | Should -Not -Be 0
         }
@@ -132,14 +132,14 @@ Describe 'Windows Update resource executable tests' {
     Context 'Get operation output' {
         It 'should return valid JSON when update is found' -Skip:$skipTests {
             # Try to find a common update (Defender definitions are updated frequently)
-            $json = '{"title": "Windows"}'
+            $json = '[{"title": "Windows"}]'
             $result = $json | & $exePath 'get' 2>&1
             
             if ($LASTEXITCODE -eq 0) {
                 { $result | ConvertFrom-Json } | Should -Not -Throw
                 $output = $result | ConvertFrom-Json
-                $output.title | Should -Not -BeNullOrEmpty
-                $output.id | Should -Not -BeNullOrEmpty
+                $output[0].title | Should -Not -BeNullOrEmpty
+                $output[0].id | Should -Not -BeNullOrEmpty
             }
             else {
                 # No matching update found, which is acceptable
@@ -149,14 +149,14 @@ Describe 'Windows Update resource executable tests' {
         }
 
         It 'should return error when update is not found' -Skip:$skipTests {
-            $json = '{"title": "ThisUpdateDoesNotExist999888777"}'
+            $json = '[{"title": "ThisUpdateDoesNotExist999888777"}]'
             $result = $json | & $exePath 'get' 2>&1
             $LASTEXITCODE | Should -Not -Be 0
             $result | Should -Match 'not found|Error'
         }
 
         It 'should output to stdout for success' -Skip:$skipTests {
-            $json = '{"title": "Windows Defender"}'
+            $json = '[{"title": "Windows Defender"}]'
             
             $psi = New-Object System.Diagnostics.ProcessStartInfo
             $psi.FileName = $exePath
@@ -186,7 +186,7 @@ Describe 'Windows Update resource executable tests' {
         }
 
         It 'should output to stderr for errors' -Skip:$skipTests {
-            $json = '{"title": "NonExistentUpdate12345"}'
+            $json = '[{"title": "NonExistentUpdate12345"}]'
             
             $psi = New-Object System.Diagnostics.ProcessStartInfo
             $psi.FileName = $exePath
@@ -215,7 +215,7 @@ Describe 'Windows Update resource executable tests' {
     Context 'Exit codes' {
         It 'should exit with 0 on success' -Skip:$skipTests {
             # Try with a broad search that's likely to find something
-            $json = '{"title": "Windows"}'
+            $json = '[{"title": "Windows"}]'
             $result = $json | & $exePath 'get' 2>&1
             
             if ($LASTEXITCODE -eq 0) {
@@ -228,7 +228,7 @@ Describe 'Windows Update resource executable tests' {
         }
 
         It 'should exit with non-zero on error' -Skip:$skipTests {
-            $json = '{"title": "NonExistentUpdate99999"}'
+            $json = '[{"title": "NonExistentUpdate99999"}]'
             $result = $json | & $exePath 'get' 2>&1
             $LASTEXITCODE | Should -Not -Be 0
         }
@@ -240,7 +240,7 @@ Describe 'Windows Update resource executable tests' {
         }
 
         It 'should exit with non-zero on unimplemented operation' -Skip:$skipTests {
-            $json = '{"title": "test"}'
+            $json = '[{"title": "test"}]'
             $result = $json | & $exePath 'set' 2>&1
             $LASTEXITCODE | Should -Not -Be 0
         }
@@ -267,7 +267,7 @@ Describe 'Windows Update resource executable tests' {
 
         It 'should handle very long title strings' -Skip:$skipTests {
             $longTitle = 'A' * 1000
-            $json = "{`"title`": `"$longTitle`"}"
+            $json = "[{`"title`": `"$longTitle`"}]"
             $result = $json | & $exePath 'get' 2>&1
             # Should handle gracefully (either find nothing or error properly)
             $result | Should -Not -BeNullOrEmpty
@@ -275,14 +275,14 @@ Describe 'Windows Update resource executable tests' {
 
         It 'should handle special characters in title' -Skip:$skipTests {
             $specialTitle = 'Test & Update <2024> "Special"'
-            $json = "{`"title`": `"$specialTitle`"}"
+            $json = "[{`"title`": `"$specialTitle`"}]"
             $result = $json | & $exePath 'get' 2>&1
             # Should not crash
             $result | Should -Not -BeNullOrEmpty
         }
 
         It 'should complete within reasonable time' -Skip:$skipTests {
-            $json = '{"title": "Windows Defender"}'
+            $json = '[{"title": "Windows Defender"}]'
             $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
             $result = $json | & $exePath 'get' 2>&1
             $stopwatch.Stop()

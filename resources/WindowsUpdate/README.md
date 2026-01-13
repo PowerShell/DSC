@@ -1,8 +1,8 @@
-# Microsoft.Windows/Updates DSC Resource
+# Microsoft.Windows/UpdateList DSC Resource
 
 ## Overview
 
-The `Microsoft.Windows/Updates` resource enables querying information about Windows Updates using the Windows Update Agent COM APIs. This resource allows you to retrieve detailed information about specific updates available on or installed on a Windows system.
+The `Microsoft.Windows/UpdateList` resource enables querying information about Windows Updates using the Windows Update Agent COM APIs. This resource allows you to retrieve detailed information about specific updates available on or installed on a Windows system.
 
 ## Features
 
@@ -33,7 +33,9 @@ The `get` operation searches for a Windows Update by title (supports partial mat
 
 ```json
 {
-  "title": "Security Update"
+  "updates": [{
+    "title": "Security Update"
+  }]
 }
 ```
 
@@ -44,25 +46,28 @@ The `get` operation searches for a Windows Update by title (supports partial mat
 $schema: https://aka.ms/dsc/schemas/v3/configuration.json
 resources:
 - name: QuerySecurityUpdate
-  type: Microsoft.Windows/Updates
+  type: Microsoft.Windows/UpdateList
   properties:
-    title: "Security Update for Windows"
+    updates:
+    - title: "Security Update for Windows"
 ```
 
 #### Output Example
 
 ```json
 {
-  "title": "2024-01 Security Update for Windows 11 Version 22H2 for x64-based Systems (KB5034123)",
-  "isInstalled": true,
-  "description": "Install this update to resolve issues in Windows...",
-  "id": "12345678-1234-1234-1234-123456789abc",
-  "isUninstallable": true,
-  "KBArticleIDs": ["5034123"],
-  "maxDownloadSize": 524288000,
-  "msrcSeverity": "Critical",
-  "securityBulletinIds": ["MS24-001"],
-  "updateType": "Software"
+  "updates": [{
+    "title": "2024-01 Security Update for Windows 11 Version 22H2 for x64-based Systems (KB5034123)",
+    "isInstalled": true,
+    "description": "Install this update to resolve issues in Windows...",
+    "id": "12345678-1234-1234-1234-123456789abc",
+    "isUninstallable": true,
+    "kbArticleIds": ["5034123"],
+    "minDownloadSize": 524288000,
+    "msrcSeverity": "Critical",
+    "securityBulletinIds": ["MS24-001"],
+    "updateType": "Software"
+  }]
 }
 ```
 
@@ -72,22 +77,27 @@ resources:
 
 | Property | Type   | Required | Description                                    |
 |----------|--------|----------|------------------------------------------------|
-| title    | string | Yes      | The title or partial title of the update to search for |
+| updates  | array  | Yes      | Array of update filter objects                 |
+| updates[].title | string | No | The title or partial title of the update to search for |
+| updates[].id | string | No | The unique identifier (GUID) for the update |
 
 ### Output Properties
 
+The resource returns an UpdateList object containing an array of updates:
+
 | Property              | Type            | Description                                           |
 |-----------------------|-----------------|-------------------------------------------------------|
-| title                 | string          | The full title of the Windows Update                  |
-| isInstalled           | boolean         | Whether the update is currently installed             |
-| description           | string          | Detailed description of the update                    |
-| id                    | string          | Unique identifier (GUID) for the update               |
-| isUninstallable       | boolean         | Whether the update can be uninstalled                 |
-| KBArticleIDs          | array[string]   | Knowledge Base article identifiers                    |
-| maxDownloadSize       | integer (int64) | Maximum download size in bytes                        |
-| msrcSeverity          | enum            | MSRC severity: Critical, Important, Moderate, or Low  |
-| securityBulletinIds   | array[string]   | Security bulletin identifiers                         |
-| updateType            | enum            | Type of update: Software or Driver                    |
+| updates               | array           | Array of update objects                               |
+| updates[].title       | string          | The full title of the Windows Update                  |
+| updates[].isInstalled | boolean         | Whether the update is currently installed             |
+| updates[].description | string          | Detailed description of the update                    |
+| updates[].id          | string          | Unique identifier (GUID) for the update               |
+| updates[].isUninstallable | boolean     | Whether the update can be uninstalled                 |
+| updates[].kbArticleIds | array[string]  | Knowledge Base article identifiers                    |
+| updates[].minDownloadSize | integer (int64) | Minimum download size in bytes                   |
+| updates[].msrcSeverity | enum           | MSRC severity: Critical, Important, Moderate, or Low  |
+| updates[].securityBulletinIds | array[string] | Security bulletin identifiers                  |
+| updates[].updateType  | enum            | Type of update: Software or Driver                    |
 
 ## Implementation Details
 
@@ -123,7 +133,7 @@ To test the resource manually:
 
 ```powershell
 # Create input JSON
-$input = @{ title = "Security Update" } | ConvertTo-Json
+$input = @{ updates = @(@{ title = "Security Update" }) } | ConvertTo-Json -Depth 3
 
 # Query for an update
 $input | .\wu_dsc.exe get

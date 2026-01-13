@@ -1,0 +1,254 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
+Describe 'Windows Update Get operation tests' {
+    BeforeAll {
+        $resourceType = 'Microsoft.Windows/UpdateList'
+        $result = dsc resource export -r $resourceType | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $exportOut = $result.resources[0].properties
+        $exportOut.updates.Count | Should -BeGreaterThan 0
+    }
+
+    Context 'Get operation' {
+        It 'should return proper JSON structure for existing update with exact title' -Skip:(!$IsWindows) {
+            $exactTitle = $exportOut.updates[0].title
+            $json = @{
+                updates = @(
+                    @{
+                        title = $exactTitle
+                    }
+                )
+            } | ConvertTo-Json -Depth 10 -Compress
+            $out = $json | dsc resource get -r $resourceType 2>&1
+            
+            $LASTEXITCODE | Should -Be 0
+            $getResult = $out | ConvertFrom-Json
+            $getResult.actualState | Should -Not -BeNullOrEmpty
+            $getResult.actualState.updates[0].title | Should -BeExactly $exactTitle
+            $getResult.actualState.updates[0].id | Should -Not -BeNullOrEmpty
+            $getResult.actualState.updates[0].isInstalled | Should -BeIn ($true, $false)
+            $getResult.actualState.updates[0].description | Should -Not -BeNullOrEmpty
+            $getResult.actualState.updates[0].isUninstallable | Should -BeIn ($true, $false)
+            $getResult.actualState.updates[0].minDownloadSize | Should -BeGreaterOrEqual 0
+            $getResult.actualState.updates[0].updateType | Should -BeIn @('Software', 'Driver')
+        }
+
+        It 'should handle case-insensitive exact title match' -Skip:(!$IsWindows) {
+            $exactTitle = $exportOut.updates[0].title
+            
+            # Test with lowercase version
+            $jsonLower = @{
+                updates = @(
+                    @{
+                        title = $exactTitle.ToLower()
+                    }
+                )
+            } | ConvertTo-Json -Depth 10 -Compress
+            $outLower = $jsonLower | dsc resource get -r $resourceType 2>&1
+            
+            # Test with uppercase version
+            $jsonUpper = @{
+                updates = @(
+                    @{
+                        title = $exactTitle.ToUpper()
+                    }
+                )
+            } | ConvertTo-Json -Depth 10 -Compress
+            $outUpper = $jsonUpper | dsc resource get -r $resourceType 2>&1
+            
+            # Both should succeed
+            if ($outLower -and $outUpper) {
+                $resultLower = $outLower | ConvertFrom-Json
+                $resultUpper = $outUpper | ConvertFrom-Json
+                $resultLower.actualState.updates[0].id | Should -Be $resultUpper.actualState.updates[0].id
+            }
+        }
+
+        It 'should fail when partial title is provided' -Skip:(!$IsWindows) {
+            # Get operation now requires exact match, so partial should fail
+            $json = @{
+                updates = @(
+                    @{
+                        title = 'Windows'
+                    }
+                )
+            } | ConvertTo-Json -Depth 10 -Compress
+            $null = $json | dsc resource get -r $resourceType 2>&1
+            # This will likely fail unless there's an update with exact title "Windows"
+            # which is unlikely
+            $LASTEXITCODE | Should -Not -Be 0
+        }
+
+        It 'should fail when update is not found' -Skip:(!$IsWindows) {
+            # Use a very unlikely update title
+            $json = @{
+                updates = @(
+                    @{
+                        title = 'ThisUpdateShouldNeverExist12345XYZ'
+                    }
+                )
+            } | ConvertTo-Json -Depth 10 -Compress
+            $null = $json | dsc resource get -r $resourceType 2>&1
+            $LASTEXITCODE | Should -Not -Be 0
+        }
+
+        It 'should match when both title and id are correct' -Skip:(!$IsWindows) {
+            $testUpdate = $exportOut.updates[0]
+            $json = @{
+                updates = @(
+                    @{
+                        title = $testUpdate.title
+                        id = $testUpdate.id
+                    }
+                )
+            } | ConvertTo-Json -Depth 10 -Compress
+            $out = $json | dsc resource get -r $resourceType 2>&1
+            
+            $LASTEXITCODE | Should -Be 0
+            $result = $out | ConvertFrom-Json
+            $result.actualState.updates[0].title | Should -Be $testUpdate.title
+            $result.actualState.updates[0].id | Should -Be $testUpdate.id
+        }
+
+        It 'should fail when title matches but id does not' -Skip:(!$IsWindows) {
+            $testUpdate = $exportOut.updates[0]
+            $json = @{
+                updates = @(
+                    @{
+                        title = $testUpdate.title
+                        id = '00000000-0000-0000-0000-000000000000'
+                    }
+                )
+            } | ConvertTo-Json -Depth 10 -Compress
+            $null = $json | dsc resource get -r $resourceType 2>&1
+            
+            # Should fail because id doesn't match
+            $LASTEXITCODE | Should -Not -Be 0
+        }
+
+        It 'should fail when id matches but title does not' -Skip:(!$IsWindows) {
+            $testUpdate = $exportOut.updates[0]
+            $json = @{
+                updates = @(
+                    @{
+                        title = 'ThisWrongTitle99999'
+                        id = $testUpdate.id
+                    }
+                )
+            } | ConvertTo-Json -Depth 10 -Compress
+            $null = $json | dsc resource get -r $resourceType 2>&1
+            
+            # Should fail because title doesn't match
+            $LASTEXITCODE | Should -Not -Be 0
+        }
+
+        It 'should return valid boolean for isInstalled' -Skip:(!$IsWindows) {
+            $json = @{
+                updates = @(
+                    @{
+                        title = $exportOut.updates[0].title
+                    }
+                )
+            } | ConvertTo-Json -Depth 10 -Compress
+            $out = $json | dsc resource get -r $resourceType 2>&1
+            $LASTEXITCODE | Should -Be 0            
+            $result = $out | ConvertFrom-Json
+            $result.actualState.updates[0].isInstalled | Should -BeOfType [bool]
+        }
+
+        It 'should return valid integer for minDownloadSize' -Skip:(!$IsWindows) {
+            $json = @{
+                updates = @(
+                    @{
+                        title = $exportOut.updates[0].title
+                    }
+                )
+            } | ConvertTo-Json -Depth 10 -Compress
+            $out = $json | dsc resource get -r $resourceType 2>&1
+            $LASTEXITCODE | Should -Be 0            
+            $result = $out | ConvertFrom-Json
+            $result.actualState.updates[0].minDownloadSize | Should -BeGreaterOrEqual 0
+        }
+
+        It 'should return valid array for KBArticleIDs' -Skip:(!$IsWindows) {
+            $json = @{
+                updates = @(
+                    @{
+                        title = $exportOut.updates[0].title
+                    }
+                )
+            } | ConvertTo-Json -Depth 10 -Compress
+            $out = $json | dsc resource get -r $resourceType 2>&1
+            $LASTEXITCODE | Should -Be 0            
+            $result = $out | ConvertFrom-Json
+            $result.actualState.updates[0].kbArticleIds.GetType().BaseType.Name | Should -Be 'Array'
+        }
+
+        It 'should return valid enum value for updateType' -Skip:(!$IsWindows) {
+            $json = @{
+                updates = @(
+                    @{
+                        title = $exportOut.updates[0].title
+                    }
+                )
+            } | ConvertTo-Json -Depth 10 -Compress
+            $out = $json | dsc resource get -r $resourceType 2>&1
+            $LASTEXITCODE | Should -Be 0            
+            $result = $out | ConvertFrom-Json
+            $result.actualState.updates[0].updateType | Should -BeIn @('Software', 'Driver')
+        }
+
+        It 'should return valid enum value for msrcSeverity when present' -Skip:(!$IsWindows) {
+            $updateWithSeverity = $exportOut.updates | Where-Object { $null -ne $_.msrcSeverity } | Select-Object -First 1
+                
+            if ($updateWithSeverity) {
+                $json = @{
+                    updates = @(
+                        @{
+                            title = $updateWithSeverity.title
+                        }
+                    )
+                } | ConvertTo-Json -Depth 10 -Compress
+                $out = $json | dsc resource get -r $resourceType 2>&1
+                $LASTEXITCODE | Should -Be 0
+                $result = $out | ConvertFrom-Json
+                $result.actualState.updates[0].msrcSeverity | Should -BeExactly $updateWithSeverity.msrcSeverity
+            }
+        }
+
+        It 'should include GUID format for update ID' -Skip:(!$IsWindows) {
+            $json = @{
+                updates = @(
+                    @{
+                        title = $exportOut.updates[0].title
+                    }
+                )
+            } | ConvertTo-Json -Depth 10 -Compress
+            $out = $json | dsc resource get -r $resourceType 2>&1
+                    
+            $LASTEXITCODE | Should -Be 0
+            $result = $out | ConvertFrom-Json
+            # Basic GUID format check (8-4-4-4-12 hex digits)
+            $result.actualState.updates[0].id | Should -Match '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+        }
+
+        It 'should support lookup by id' -Skip:(!$IsWindows) {
+            $updateId = $exportOut.updates[0].id
+            $json = @{
+                updates = @(
+                    @{
+                        id = $updateId
+                    }
+                )
+            } | ConvertTo-Json -Depth 10 -Compress
+            $out = $json | dsc resource get -r $resourceType 2>&1
+                    
+            $LASTEXITCODE | Should -Be 0
+            $result = $out | ConvertFrom-Json
+            $result.actualState.updates[0].id | Should -Be $updateId
+        }
+    }
+}
+
+
