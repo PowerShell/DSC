@@ -380,11 +380,16 @@ fn format_match_block(match_obj: &Value) -> Result<String, SshdConfigError> {
 /// # Errors
 ///
 /// This function will return an error if formatting fails.
-pub fn write_config_map_to_text(global_map: &Map<String, Value>, match_map: Option<Value>) -> Result<String, SshdConfigError> {
+pub fn write_config_map_to_text(global_map: &Map<String, Value>) -> Result<String, SshdConfigError> {
+    let match_map = global_map.get("match");
     let mut config_text = String::new();
 
     for (key, value) in global_map {
         let key_lower = key.to_lowercase();
+
+        if key_lower == "match" {
+            continue; // match blocks are handled after global settings
+        }
 
         // Handle repeatable keywords - write multiple lines
         if REPEATABLE_KEYWORDS.contains(&key_lower.as_str()) {

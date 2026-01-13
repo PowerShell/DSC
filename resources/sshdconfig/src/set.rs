@@ -114,8 +114,7 @@ fn set_sshd_config(cmd_info: &mut CommandInfo) -> Result<(), SshdConfigError> {
     debug!("{}", t!("set.writingTempConfig"));
     let mut config_text = SSHD_CONFIG_HEADER.to_string() + "\n" + SSHD_CONFIG_HEADER_VERSION + "\n" + SSHD_CONFIG_HEADER_WARNING + "\n";
     if cmd_info.purge {
-        let match_map = cmd_info.input.remove("match");
-        config_text.push_str(&write_config_map_to_text(&cmd_info.input, match_map)?);
+        config_text.push_str(&write_config_map_to_text(&cmd_info.input)?);
     } else {
         let mut get_cmd_info = cmd_info.clone();
         get_cmd_info.include_defaults = false;
@@ -147,8 +146,7 @@ fn set_sshd_config(cmd_info: &mut CommandInfo) -> Result<(), SshdConfigError> {
         }
         existing_config.remove("_metadata");
         existing_config.remove("_inheritedDefaults");
-        let match_map = existing_config.remove("match");
-        config_text.push_str(&write_config_map_to_text(&existing_config, match_map)?);
+        config_text.push_str(&write_config_map_to_text(&existing_config)?);
     }
 
     // Write input to a temporary file and validate it with SSHD -T
