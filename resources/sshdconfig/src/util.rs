@@ -259,18 +259,22 @@ pub fn extract_sshd_defaults() -> Result<Map<String, Value>, SshdConfigError> {
 ///
 /// This function will return an error if it fails to parse the input string and if the _metadata field exists, extract it.
 pub fn build_command_info(input: Option<&String>, is_get: bool) -> Result<CommandInfo, SshdConfigError> {
+    let mut include_defaults = is_get;
+    let mut metadata: Metadata = Metadata::new();
+    let mut purge = false;
+    let mut sshd_args: Option<SshdCommandArgs> = None;
+    let mut sshd_config: Map<String, Value> = Map::new();
+
     if let Some(inputs) = input {
-        let mut sshd_config: Map<String, Value> = serde_json::from_str(inputs.as_str())?;
-        let purge = get_bool_or_default(&mut sshd_config, "_purge", false)?;
-        let include_defaults = get_bool_or_default(&mut sshd_config, "_includeDefaults", is_get)?;
-        let metadata: Metadata = if let Some(value) = sshd_config.remove("_metadata") {
+        sshd_config = serde_json::from_str(inputs.as_str())?;
+        purge = get_bool_or_default(&mut sshd_config, "_purge", false)?;
+        include_defaults = get_bool_or_default(&mut sshd_config, "_includeDefaults", is_get)?;
+        metadata = if let Some(value) = sshd_config.remove("_metadata") {
             serde_json::from_value(value)?
         } else {
             Metadata::new()
         };
-        // lowercase keys for case-insensitive comparison later of SSHD -T output
-        sshd_config = sshd_config.into_iter().map(|(k, v)| (k.to_lowercase(), v)).collect();
-        let sshd_args = metadata.filepath.clone().map(|filepath| {
+        sshd_args = metadata.filepath.clone().map(|filepath| {
             SshdCommandArgs {
                 filepath: Some(filepath),
                 additional_args: None,
@@ -280,15 +284,9 @@ pub fn build_command_info(input: Option<&String>, is_get: bool) -> Result<Comman
             warn!("{}", t!("util.getIgnoresInputFilters"));
             sshd_config.clear();
         }
-        return Ok(CommandInfo {
-            purge,
-            include_defaults,
-            input: sshd_config,
-            metadata,
-            sshd_args
-        })
     }
-    Ok(CommandInfo::new(is_get))
+
+    Ok(CommandInfo::new(include_defaults, sshd_config, metadata, purge, sshd_args))
 }
 
 /// Reads `sshd_config` file.

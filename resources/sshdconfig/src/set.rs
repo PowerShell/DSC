@@ -131,8 +131,7 @@ fn set_sshd_config(cmd_info: &mut CommandInfo) -> Result<(), SshdConfigError> {
             Err(e) => return Err(e),
         };
         for (key, value) in &cmd_info.input {
-            let key_lower = key.to_lowercase();
-            let key_contains = key_lower.as_str();
+            let key_contains = key.as_str();
 
             if REPEATABLE_KEYWORDS.contains(&key_contains)
                 || MULTI_ARG_KEYWORDS_COMMA_SEP.contains(&key_contains)
