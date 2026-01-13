@@ -365,14 +365,45 @@ function Invoke-DscOperation {
                         $validateProperty = $cachedDscResourceInfo.Properties | Where-Object -Property Name -EQ $_.Name
                         Write-DscTrace -Operation Debug -Message "Property type: $($validateProperty.PropertyType)"
                         if ($validateProperty -and $validateProperty.PropertyType -eq '[PSCredential]') {
-                            if (-not $_.Value.secureObject.Username -or -not $_.Value.secureObject.Password) {
-                                "Credential object '$($_.Name)' requires both 'username' and 'password' properties" | Write-DscTrace -Operation Error
+
+                            "$($_.Value)" | Write-DscTrace -Operation Warn
+
+                            $hasSecureCred =
+                                $_.Value.secureObject.Username -and
+                                $_.Value.secureObject.Password
+
+                            $hasTextCred =
+                                $_.Value.Username -and
+                                $_.Value.Password
+
+                            if (-not $hasSecureCred -and -not $hasTextCred) {
+                                "$($_.Value)" | Write-DscTrace -Operation Warn
+                                "Credential object '$($_.Name)' requires both 'username' and 'password' properties" |
+                                    Write-DscTrace -Operation Error
                                 exit 1
                             }
 
-                            $username = $_.Value.secureObject.username
-                            $password = $_.Value.secureObject.password | ConvertTo-SecureString -AsPlainText -Force
-                            $property.$($_.Name) = [System.Management.Automation.PSCredential]::new($username, $password)
+                            if ($hasSecureCred) {
+                                "Credential object '$($_.Name)' - SecureObject" | Write-DscTrace -Operation Info
+
+                                $username = $_.Value.secureObject.Username
+                                $password = $_.Value.secureObject.Password |
+                                    ConvertTo-SecureString -AsPlainText -Force
+
+                                $property.$($_.Name) =
+                                    [System.Management.Automation.PSCredential]::new($username, $password)
+                            }
+                            elseif ($hasTextCred) {
+                                "Credential object '$($_.Name)' - Text" | Write-DscTrace -Operation Info
+
+                                $username = $_.Value.Username
+                                $password = $_.Value.Password |
+                                    ConvertTo-SecureString -AsPlainText -Force
+
+                                $property.$($_.Name) =
+                                    [System.Management.Automation.PSCredential]::new($username, $password)
+                            }
+
                             
                         } else {
                             $property.$($_.Name) = $_.Value.psobject.properties | ForEach-Object -Begin { $propertyHash = @{} } -Process { $propertyHash[$_.Name] = $_.Value } -End { $propertyHash }
@@ -423,15 +454,43 @@ function Invoke-DscOperation {
                                 $validateProperty = $cachedDscResourceInfo.Properties | Where-Object -Property Name -EQ $_.Name
                                 Write-DscTrace -Operation Debug -Message "Property type: $($validateProperty.PropertyType)"
                                 if ($validateProperty.PropertyType -eq 'PSCredential') {
-                                    if (-not $_.Value.secureObject.Username -or -not $_.Value.secureObject.Password) {
-                                        "Credential object '$($_.Name)' requires both 'username' and 'password' properties" | Write-DscTrace -Operation Error
-                                        exit 1
-                                    }
+                                
+                                $hasSecureCred =
+                                    $_.Value.secureObject.Username -and
+                                    $_.Value.secureObject.Password
 
-                                    $username = $_.Value.secureObject.username
-                                    $password = $_.Value.secureObject.password | ConvertTo-SecureString -AsPlainText -Force
-                                    
-                                    $dscResourceInstance.$($_.Name) = [System.Management.Automation.PSCredential]::new($username, $password)
+                                $hasTextCred =
+                                    $_.Value.Username -and
+                                    $_.Value.Password
+
+                                if (-not $hasSecureCred -and -not $hasTextCred) {
+                                    "$($_.Value)" | Write-DscTrace -Operation Warn
+                                    "Credential object '$($_.Name)' requires both 'username' and 'password' properties" |
+                                        Write-DscTrace -Operation Error
+                                    exit 1
+                                }
+
+                                 if ($hasSecureCred) {
+                                "Credential object '$($_.Name)' - SecureObject" | Write-DscTrace -Operation Info
+
+                                    $username = $_.Value.secureObject.Username
+                                    $password = $_.Value.secureObject.Password |
+                                        ConvertTo-SecureString -AsPlainText -Force
+
+                                    $dscResourceInstance.$($_.Name) =
+                                        [System.Management.Automation.PSCredential]::new($username, $password)
+                                }
+                                elseif ($hasTextCred) {
+                                    "Credential object '$($_.Name)' - Text" | Write-DscTrace -Operation Info
+
+                                    $username = $_.Value.Username
+                                    $password = $_.Value.Password |
+                                        ConvertTo-SecureString -AsPlainText -Force
+
+                                    $dscResourceInstance.$($_.Name) =
+                                        [System.Management.Automation.PSCredential]::new($username, $password)
+                                }
+
                                 } else {
                                     $dscResourceInstance.$($_.Name) = $_.Value.psobject.properties | ForEach-Object -Begin { $propertyHash = @{} } -Process { $propertyHash[$_.Name] = $_.Value } -End { $propertyHash }
                                 }
