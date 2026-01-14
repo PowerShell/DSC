@@ -133,6 +133,8 @@ fn set_sshd_config(cmd_info: &mut CommandInfo) -> Result<(), SshdConfigError> {
         for (key, value) in &cmd_info.input {
             let key_contains = key.as_str();
 
+            // TODO: remove when design for handling repeatable and multi-arg keywords is finalized
+            // and consider using SshdConfigValue instead of any remaining contains() checks
             if REPEATABLE_KEYWORDS.contains(&key_contains)
                 || MULTI_ARG_KEYWORDS_COMMA_SEP.contains(&key_contains)
                 || MULTI_ARG_KEYWORDS_SPACE_SEP.contains(&key_contains) {
