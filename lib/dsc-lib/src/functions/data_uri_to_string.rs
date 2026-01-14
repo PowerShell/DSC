@@ -51,17 +51,17 @@ impl Function for DataUriToString {
 
         let metadata = &data_uri[5..comma_pos]; // Skip "data:"
         let encoded_data = &data_uri[comma_pos + 1..];
-
         let parts: Vec<&str> = metadata.split(';').collect();
-        if parts.iter().any(|p| p.is_empty()) {
+        
+        let mediatype = parts[0];
+        if mediatype.contains('=') || mediatype.starts_with(':') {
             return Err(DscError::FunctionArg(
                 "dataUriToString".to_string(),
                 t!("functions.dataUriToString.invalidDataUri").to_string(),
             ));
         }
 
-        let mediatype = parts[0];
-        if mediatype.contains('=') {
+        if parts.len() > 1 && parts[1..].iter().any(|p| p.is_empty()) {
             return Err(DscError::FunctionArg(
                 "dataUriToString".to_string(),
                 t!("functions.dataUriToString.invalidDataUri").to_string(),
