@@ -52,23 +52,59 @@ impl Function for DataUriToString {
         let metadata = &data_uri[5..comma_pos]; // Skip "data:"
         let encoded_data = &data_uri[comma_pos + 1..];
 
-        // Require base64 encoding (matching ARM behavior)
-        if !metadata.contains(";base64") {
+        let parts: Vec<&str> = metadata.split(';').collect();
+        if parts.iter().any(|p| p.is_empty()) {
+            return Err(DscError::FunctionArg(
+                "dataUriToString".to_string(),
+                t!("functions.dataUriToString.invalidDataUri").to_string(),
+            ));
+        }
+
+        let mediatype = parts[0];
+        if mediatype.contains('=') {
+            return Err(DscError::FunctionArg(
+                "dataUriToString".to_string(),
+                t!("functions.dataUriToString.invalidDataUri").to_string(),
+            ));
+        }
+
+        // Validate remaining parts: must be either "base64" or "charset=value"
+        let mut has_base64 = false;
+        let mut charset_count = 0;
+        let mut charset_value = None;
+
+        for part in &parts[1..] {
+            if *part == "base64" {
+                has_base64 = true;
+            } else if part.starts_with("charset=") {
+                charset_count += 1;
+                if charset_count > 1 {
+                    return Err(DscError::FunctionArg(
+                        "dataUriToString".to_string(),
+                        t!("functions.dataUriToString.invalidDataUri").to_string(),
+                    ));
+                }
+                charset_value = Some(&part[8..]);
+            } else {
+                return Err(DscError::FunctionArg(
+                    "dataUriToString".to_string(),
+                    t!("functions.dataUriToString.invalidDataUri").to_string(),
+                ));
+            }
+        }
+
+        if !has_base64 {
             return Err(DscError::FunctionArg(
                 "dataUriToString".to_string(),
                 t!("functions.dataUriToString.notBase64").to_string(),
             ));
         }
-
-        // Parse charset from metadata if present and validate
-        // Format: data:[<mediatype>][;charset=<charset>][;base64],<data>
-        if let Some(charset_part) = metadata.split(';').find(|part| part.starts_with("charset=")) {
-            let charset_value = &charset_part[8..]; // Skip "charset="
-            let charset_lower = charset_value.to_lowercase();
+        if let Some(charset) = charset_value {
+            let charset_lower = charset.to_lowercase();
             if charset_lower != "utf-8" && charset_lower != "utf8" {
                 return Err(DscError::FunctionArg(
                     "dataUriToString".to_string(),
-                    t!("functions.dataUriToString.unsupportedCharset", charset = charset_value).to_string(),
+                    t!("functions.dataUriToString.unsupportedCharset", charset = charset).to_string(),
                 ));
             }
         }
@@ -191,7 +227,7 @@ mod tests {
         let result = parser
             .parse_and_execute("[dataUriToString('data::text/plain;base64,SGVsbG8=')]", &Context::new());
 
-        assert!(result.is_ok());
+        assert!(result.is_err());
     }
 
     #[test]
@@ -199,7 +235,7 @@ mod tests {
         let mut parser = Statement::new().unwrap();
         let result = parser
             .parse_and_execute("[dataUriToString('data:text/plain;;base64,SGVsbG8=')]", &Context::new());
-        assert!(result.is_ok());
+        assert!(result.is_err());
     }
 
     #[test]
@@ -207,7 +243,7 @@ mod tests {
         let mut parser = Statement::new().unwrap();
         let result = parser
             .parse_and_execute("[dataUriToString('data:text/plain;charset=utf-8;charset=utf-8;base64,SGVsbG8=')]", &Context::new());
-        assert!(result.is_ok());
+        assert!(result.is_err());
     }
 
     #[test]
@@ -223,6 +259,6 @@ mod tests {
         let mut parser = Statement::new().unwrap();
         let result = parser
             .parse_and_execute("[dataUriToString('data:text/plain;foo=bar;base64,SGVsbG8=')]", &Context::new());
-        assert!(result.is_ok());
+        assert!(result.is_err());
     }
 }
