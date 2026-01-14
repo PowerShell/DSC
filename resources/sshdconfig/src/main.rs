@@ -16,6 +16,7 @@ use util::{build_command_info, enable_tracing};
 
 mod args;
 mod error;
+mod formatter;
 mod get;
 mod inputs;
 mod metadata;

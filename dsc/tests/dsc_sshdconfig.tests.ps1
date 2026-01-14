@@ -139,7 +139,7 @@ resources:
     }
 
     Context 'Set Commands' {
-        It 'Set works with _clobber: true' {
+        It 'Set works with _purge: true' {
             $set_yaml = @"
 `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 metadata:
@@ -151,7 +151,7 @@ resources:
   metadata:
     filepath: $filepath
   properties:
-    _clobber: true
+    _purge: true
     port: 1234
     allowUsers:
       - user1
