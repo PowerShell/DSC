@@ -20,7 +20,7 @@ dataUri(<stringToConvert>)
 ## Description
 
 The `dataUri()` function converts a string value to a [data URI][01] format. The function encodes
-the input string as base64 and returns it as a data URI with the `text/plain` media type and
+the input string as base64 and returns it as a data URI with the `application/json` media type and
 `utf8` charset.
 
 Data URIs are useful for embedding small text content directly in configuration documents,
@@ -61,7 +61,7 @@ results:
     actualState:
       output:
         originalScript: Write-Host 'Hello, World!'
-        encodedScript: data:text/plain;charset=utf8;base64,V3JpdGUtSG9zdCAnSGVsbG8sIFdvcmxkISc=
+        encodedScript: data:application/json;base64,V3JpdGUtSG9zdCAnSGVsbG8sIFdvcmxkISc=
 messages: []
 hadErrors: false
 ```
@@ -91,7 +91,7 @@ results:
   type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
-      output: data:text/plain;charset=utf8;base64,eyJzZXR0aW5nIjoidmFsdWUiLCJlbmFibGVkIjp0cnVlfQ==
+      output: data:application/json;base64,eyJzZXR0aW5nIjoidmFsdWUiLCJlbmFibGVkIjp0cnVlfQ==
 messages: []
 hadErrors: false
 ```
@@ -126,7 +126,7 @@ results:
     actualState:
       output:
         base64Only: SGVsbG8=
-        fullDataUri: data:text/plain;charset=utf8;base64,SGVsbG8=
+        fullDataUri: data:application/json;base64,SGVsbG8=
 messages: []
 hadErrors: false
 ```
@@ -156,7 +156,7 @@ results:
   type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
-      output: data:text/plain;charset=utf8;base64,bGluZTEKbGluZTIKbGluZTM=
+      output: data:application/json;base64,bGluZTEKbGluZTIKbGluZTM=
 messages: []
 hadErrors: false
 ```
@@ -179,7 +179,7 @@ MaximumCount: 1
 ## Output
 
 The `dataUri()` function returns a data URI string in the format
-`data:text/plain;charset=utf8;base64,<encoded-content>` where `<encoded-content>` is the base64
+`data:application/json;charset=utf8;base64,<encoded-content>` where `<encoded-content>` is the base64
 representation of the **stringToConvert** value.
 
 ```yaml

@@ -23,8 +23,8 @@ The `dataUriToString()` function converts a [data URI][01] formatted value back 
 string representation. This function is the inverse of the [`dataUri()`][02] function and is useful
 for decoding data that was previously encoded as a data URI.
 
-The function supports both base64-encoded data URIs (those containing `;base64` in the metadata)
-and URL-encoded data URIs. It automatically detects the encoding method and decodes accordingly.
+The function supports only base64-encoded data URIs (those containing `;base64` in the metadata).
+Non-base64 or URL-encoded data URIs aren't supported and result in an error.
 
 ## Examples
 
@@ -177,8 +177,9 @@ hadErrors: false
 ### dataUriToConvert
 
 The `dataUriToString()` function expects a single string containing a valid data URI. The data URI
-must start with `data:` and contain a comma separating the metadata from the encoded data. If the
-metadata contains `;base64`, the data is decoded as base64; otherwise, it's decoded as URL-encoded.
+must start with `data:` and contain a comma separating the metadata from the encoded data. The
+metadata must include `;base64`, and the data portion is decoded as base64. Data URIs without
+`;base64` metadata are not supported and result in an error.
 
 ```yaml
 Type:         string
