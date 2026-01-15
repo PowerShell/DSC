@@ -1002,6 +1002,7 @@ impl Configurator {
                     security_context: Some(self.context.security_context.clone()),
                     start_datetime: Some(self.context.start_datetime.to_rfc3339()),
                     version: Some(version),
+                    copy_loops: None,
                 }
             ),
             other: Map::new(),
