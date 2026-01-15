@@ -400,8 +400,6 @@ function Invoke-DscOperation {
                                 $property.$($_.Name) =
                                     [System.Management.Automation.PSCredential]::new($username, $password)
                             }
-
-                            
                         } else {
                             $property.$($_.Name) = $_.Value.psobject.properties | ForEach-Object -Begin { $propertyHash = @{} } -Process { $propertyHash[$_.Name] = $_.Value } -End { $propertyHash }
                         }
