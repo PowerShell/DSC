@@ -1429,7 +1429,8 @@ function Copy-BuildArtifact {
     }
 
     process {
-        Write-Verbose -Verbose (Get-ChildItem (Split-Path $artifactDirectory.RustTarget -Parent) | Out-String)
+        Write-Verbose -Verbose (Get-ChildItem $PSScriptRoot | Out-String)
+        Write-Verbose -Verbose (Get-ChildItem $PSScriptRoot\target | Out-String)
 
         foreach ($p in $Project) {
             # SKip projects for non-current architecture if needed
