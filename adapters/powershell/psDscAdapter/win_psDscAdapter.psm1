@@ -366,8 +366,6 @@ function Invoke-DscOperation {
                         Write-DscTrace -Operation Debug -Message "Property type: $($validateProperty.PropertyType)"
                         if ($validateProperty -and $validateProperty.PropertyType -eq '[PSCredential]') {
 
-                            "$($_.Value)" | Write-DscTrace -Operation Warn
-
                             $hasSecureCred =
                                 $_.Value.secureObject.Username -and
                                 $_.Value.secureObject.Password
@@ -377,7 +375,6 @@ function Invoke-DscOperation {
                                 $_.Value.Password
 
                             if (-not $hasSecureCred -and -not $hasTextCred) {
-                                "$($_.Value)" | Write-DscTrace -Operation Warn
                                 "Credential object '$($_.Name)' requires both 'username' and 'password' properties" |
                                     Write-DscTrace -Operation Error
                                 exit 1
