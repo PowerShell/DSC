@@ -75,13 +75,7 @@ Describe 'PowerShell adapter resource tests' {
         $r = "{'Name':'TestClassResource1','Prop1':'ValueForProp1'}" | dsc resource test -r 'TestClassResource/TestClassResource' -f -
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.actualState.InDesiredState | Should -Be $True
-        $res.actualState.InDesiredState.GetType().Name | Should -Be "Boolean"
-
-        # verify that only properties with DscProperty attribute are returned
-        $propertiesNames = $res.actualState.InDesiredState | Get-Member -MemberType NoteProperty | % Name
-        $propertiesNames | Should -Not -Contain 'NonDscProperty'
-        $propertiesNames | Should -Not -Contain 'HiddenNonDscProperty'
+        $res.InDesiredState | Should -Be $True -Because $r
     }
 
     It 'Set works on class-based resource' {

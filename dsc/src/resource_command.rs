@@ -5,6 +5,7 @@ use crate::args::{GetOutputFormat, OutputFormat};
 use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_JSON_ERROR, EXIT_DSC_RESOURCE_NOT_FOUND, write_object};
 use dsc_lib::configure::config_doc::{Configuration, ExecutionKind};
 use dsc_lib::configure::add_resource_export_results_to_configuration;
+use dsc_lib::discovery::discovery_trait::DiscoveryFilter;
 use dsc_lib::dscresources::{resource_manifest::Kind, invoke_result::{GetResult, ResourceGetResponse, ResourceSetResponse, SetResult}};
 use dsc_lib::dscresources::dscresource::{Capability, get_diff};
 use dsc_lib::dscerror::DscError;
@@ -335,5 +336,5 @@ pub fn export(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, 
 #[must_use]
 pub fn get_resource<'a>(dsc: &'a mut DscManager, resource: &str, version: Option<&str>) -> Option<&'a DscResource> {
     //TODO: add dynamically generated resource to dsc
-    dsc.find_resource(resource, version)
+    dsc.find_resource(&DiscoveryFilter::new(resource, version, None)).unwrap_or(None)
 }

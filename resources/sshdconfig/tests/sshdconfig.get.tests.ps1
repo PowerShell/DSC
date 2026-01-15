@@ -147,4 +147,22 @@ PasswordAuthentication no
         $stderr | Should -BeLike "*WARN*Include directive found in sshd_config*"
         Remove-Item -Path $stderrFile -Force -ErrorAction SilentlyContinue
     }
+
+    It 'Should fail when config file does not exist' {
+        $nonExistentPath = Join-Path $TestDrive 'nonexistent_sshd_config'
+
+        $inputData = @{
+            _metadata = @{
+                filepath = $nonExistentPath
+            }
+        } | ConvertTo-Json
+
+        $stderrFile = Join-Path $TestDrive "stderr_filenotfound.txt"
+        sshdconfig get --input $inputData -s sshd-config 2>$stderrFile
+        $LASTEXITCODE | Should -Not -Be 0
+
+        $stderr = Get-Content -Path $stderrFile -Raw -ErrorAction SilentlyContinue
+        $stderr | Should -Match "File not found"
+        Remove-Item -Path $stderrFile -Force -ErrorAction SilentlyContinue
+    }
 }

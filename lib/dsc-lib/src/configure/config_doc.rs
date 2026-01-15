@@ -62,33 +62,36 @@ pub enum RestartRequired {
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub struct MicrosoftDscMetadata {
-    /// Version of DSC
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub version: Option<String>,
-    /// The operation being performed
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub operation: Option<Operation>,
-    /// The type of execution
-    #[serde(rename = "executionType", skip_serializing_if = "Option::is_none")]
-    pub execution_type: Option<ExecutionKind>,
-    /// The start time of the configuration operation
-    #[serde(rename = "startDatetime", skip_serializing_if = "Option::is_none")]
-    pub start_datetime: Option<String>,
-    /// The end time of the configuration operation
-    #[serde(rename = "endDatetime", skip_serializing_if = "Option::is_none")]
-    pub end_datetime: Option<String>,
     /// The duration of the configuration operation
     #[serde(skip_serializing_if = "Option::is_none")]
     pub duration: Option<String>,
-    /// The security context of the configuration operation, can be specified to be required
-    #[serde(rename = "securityContext", skip_serializing_if = "Option::is_none")]
-    pub security_context: Option<SecurityContextKind>,
+    /// The end time of the configuration operation
+    #[serde(rename = "endDatetime", skip_serializing_if = "Option::is_none")]
+    pub end_datetime: Option<String>,
+    /// The type of execution
+    #[serde(rename = "executionType", skip_serializing_if = "Option::is_none")]
+    pub execution_type: Option<ExecutionKind>,
+    /// The operation being performed
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub operation: Option<Operation>,
+    /// Specify specific adapter type used for implicit operations
+    #[serde(rename = "requireAdapter", skip_serializing_if = "Option::is_none")]
+    pub require_adapter: Option<String>,
     /// Indicates what needs to be restarted after the configuration operation
     #[serde(rename = "restartRequired", skip_serializing_if = "Option::is_none")]
     pub restart_required: Option<Vec<RestartRequired>>,
     /// Copy loop context for resources expanded from copy loops
     #[serde(rename = "copyLoops", skip_serializing_if = "Option::is_none")]
     pub copy_loops: Option<Map<String, Value>>,
+    /// The security context of the configuration operation, can be specified to be required
+    #[serde(rename = "securityContext", skip_serializing_if = "Option::is_none")]
+    pub security_context: Option<SecurityContextKind>,
+    /// The start time of the configuration operation
+    #[serde(rename = "startDatetime", skip_serializing_if = "Option::is_none")]
+    pub start_datetime: Option<String>,
+    /// Version of DSC
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
 }
 
 impl MicrosoftDscMetadata {

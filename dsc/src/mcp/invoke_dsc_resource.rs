@@ -3,7 +3,9 @@
 
 use crate::mcp::mcp_server::McpServer;
 use dsc_lib::{
-    DscManager, configure::config_doc::ExecutionKind, dscresources::{
+    DscManager, configure::config_doc::ExecutionKind,
+    discovery::discovery_trait::DiscoveryFilter,
+    dscresources::{
         dscresource::Invoke,
         invoke_result::{
             ExportResult,
@@ -69,7 +71,7 @@ impl McpServer {
     pub async fn invoke_dsc_resource(&self, Parameters(InvokeDscResourceRequest { operation, resource_type, properties_json }): Parameters<InvokeDscResourceRequest>) -> Result<Json<InvokeDscResourceResponse>, McpError> {
         let result = task::spawn_blocking(move || {
             let mut dsc = DscManager::new();
-            let Some(resource) = dsc.find_resource(&resource_type, None) else {
+            let Some(resource) = dsc.find_resource(&DiscoveryFilter::new(&resource_type, None, None)).unwrap_or(None) else {
                 return Err(McpError::invalid_request(t!("mcp.invoke_dsc_resource.resourceNotFound", resource = resource_type), None));
             };
             match operation {
