@@ -488,7 +488,7 @@ function Invoke-DscOperation {
                                             [System.Management.Automation.PSCredential]::new($username, $password)
                                     }
                                     elseif ($hasTextCred) {
-                                        "Credential object - Text" | Write-DscTrace -Operation Info
+                                        "Credential object '$($_.Name)' - Text" | Write-DscTrace -Operation Info
 
                                         $username = $_.Value.Username
                                         $password = $_.Value.Password |
