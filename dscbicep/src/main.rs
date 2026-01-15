@@ -11,6 +11,7 @@ use dsc_lib::{
     },
     DscManager,
 };
+use rust_i18n::{i18n, t};
 use std::{env, io, process};
 use tonic::{transport::Server, Request, Response, Status};
 
@@ -26,6 +27,8 @@ use proto::{
     TypeFilesResponse,
 };
 
+i18n!("locales", fallback = "en-us");
+
 #[derive(Debug, Default)]
 pub struct BicepExtensionService;
 
@@ -40,18 +43,38 @@ impl BicepExtension for BicepExtensionService {
         let version = spec.api_version;
         let properties = spec.properties;
 
-        tracing::debug!("CreateOrUpdate called for {resource_type}@{version:?}: {properties}");
+        tracing::debug!(
+            "{}",
+            t!(
+                "dscbicep.functionCalled",
+                function = "CreateOrUpdate",
+                resourceType = resource_type,
+                version = format!("{version:?}"),
+                properties = properties
+            )
+        );
 
         let mut dsc = DscManager::new();
-        let Some(resource) = dsc.find_resource(&DiscoveryFilter::new(&resource_type, version.as_deref(), None)).unwrap_or(None) else {
-            return Err(Status::not_found("Resource not found"));
+        let Some(resource) = dsc
+            .find_resource(&DiscoveryFilter::new(
+                &resource_type,
+                version.as_deref(),
+                None,
+            ))
+            .unwrap_or(None)
+        else {
+            return Err(Status::not_found(
+                t!("dscerror.resourceNotFound").to_string(),
+            ));
         };
 
         let SetResult::Resource(result) = resource
             .set(&properties, false, &ExecutionKind::Actual)
             .map_err(|e| Status::aborted(e.to_string()))?
         else {
-            return Err(Status::unimplemented("Group resources not supported"));
+            return Err(Status::unimplemented(
+                t!("dscerror.notSupported").to_string(),
+            ));
         };
 
         Ok(Response::new(LocalExtensibilityOperationResponse {
@@ -75,18 +98,38 @@ impl BicepExtension for BicepExtensionService {
         let version = spec.api_version;
         let properties = spec.properties;
 
-        tracing::debug!("Preview called for {resource_type}@{version:?}: {properties}");
+        tracing::debug!(
+            "{}",
+            t!(
+                "dscbicep.functionCalled",
+                function = "Preview",
+                resourceType = resource_type,
+                version = format!("{version:?}"),
+                properties = properties
+            )
+        );
 
         let mut dsc = DscManager::new();
-        let Some(resource) = dsc.find_resource(&DiscoveryFilter::new(&resource_type, version.as_deref(), None)).unwrap_or(None) else {
-            return Err(Status::not_found("Resource not found"));
+        let Some(resource) = dsc
+            .find_resource(&DiscoveryFilter::new(
+                &resource_type,
+                version.as_deref(),
+                None,
+            ))
+            .unwrap_or(None)
+        else {
+            return Err(Status::not_found(
+                t!("dscerror.resourceNotFound").to_string(),
+            ));
         };
 
         let SetResult::Resource(result) = resource
             .set(&properties, false, &ExecutionKind::WhatIf)
             .map_err(|e| Status::aborted(e.to_string()))?
         else {
-            return Err(Status::unimplemented("Group resources not supported"));
+            return Err(Status::unimplemented(
+                t!("dscerror.notSupported").to_string(),
+            ));
         };
 
         Ok(Response::new(LocalExtensibilityOperationResponse {
@@ -110,18 +153,38 @@ impl BicepExtension for BicepExtensionService {
         let version = reference.api_version.clone();
         let identifiers = reference.identifiers.clone();
 
-        tracing::debug!("Get called for {resource_type}@{version:?}: {identifiers}");
+        tracing::debug!(
+            "{}",
+            t!(
+                "dscbicep.functionCalled",
+                function = "Get",
+                resourceType = resource_type,
+                version = format!("{version:?}"),
+                properties = identifiers
+            )
+        );
 
         let mut dsc = DscManager::new();
-        let Some(resource) = dsc.find_resource(&DiscoveryFilter::new(&resource_type, version.as_deref(), None)).unwrap_or(None) else {
-            return Err(Status::not_found("Resource not found"));
+        let Some(resource) = dsc
+            .find_resource(&DiscoveryFilter::new(
+                &resource_type,
+                version.as_deref(),
+                None,
+            ))
+            .unwrap_or(None)
+        else {
+            return Err(Status::not_found(
+                t!("dscerror.resourceNotFound").to_string(),
+            ));
         };
 
         let GetResult::Resource(result) = resource
             .get(&identifiers)
             .map_err(|e| Status::aborted(e.to_string()))?
         else {
-            return Err(Status::unimplemented("Group resources not supported"));
+            return Err(Status::unimplemented(
+                t!("dscerror.notSupported").to_string(),
+            ));
         };
 
         Ok(Response::new(LocalExtensibilityOperationResponse {
@@ -146,15 +209,28 @@ impl BicepExtension for BicepExtensionService {
         let identifiers = reference.identifiers.clone();
 
         tracing::debug!(
-            "Delete called for {}@{:?}: {}",
-            resource_type,
-            version,
-            identifiers
+            "{}",
+            t!(
+                "dscbicep.functionCalled",
+                function = "Delete",
+                resourceType = resource_type,
+                version = format!("{version:?}"),
+                properties = identifiers
+            )
         );
 
         let mut dsc = DscManager::new();
-        let Some(resource) = dsc.find_resource(&DiscoveryFilter::new(&resource_type, version.as_deref(), None)).unwrap_or(None) else {
-            return Err(Status::not_found("Resource not found"));
+        let Some(resource) = dsc
+            .find_resource(&DiscoveryFilter::new(
+                &resource_type,
+                version.as_deref(),
+                None,
+            ))
+            .unwrap_or(None)
+        else {
+            return Err(Status::not_found(
+                t!("dscerror.resourceNotFound").to_string(),
+            ));
         };
 
         resource
@@ -177,15 +253,13 @@ impl BicepExtension for BicepExtensionService {
         &self,
         _request: Request<Empty>,
     ) -> Result<Response<TypeFilesResponse>, Status> {
-        tracing::debug!("GetTypeFiles called");
-
-        // TODO: Return actual Bicep type definitions...yet the extension already has these?
-        // Perhaps this is where we can dynamically get them from the current system.
-        Err(Status::unimplemented("GetTypeFiles not yet implemented"))
+        // TODO: Dynamically return type definitions for DSC resources found on the system.
+        Err(Status::unimplemented(
+            t!("dscerror.notImplemented").to_string(),
+        ))
     }
 
     async fn ping(&self, _request: Request<Empty>) -> Result<Response<Empty>, Status> {
-        tracing::debug!("Ping called");
         Ok(Response::new(Empty {}))
     }
 }
@@ -224,7 +298,14 @@ async fn run_server(
         use tokio::net::UnixListener;
         use tokio_stream::wrappers::UnixListenerStream;
 
-        tracing::info!("Starting Bicep gRPC server on Unix socket: {socket_path}");
+        tracing::info!(
+            "{}",
+            t!(
+                "dscbicep.starting",
+                transport = "socket",
+                address = socket_path
+            )
+        );
 
         // Remove the socket file if it exists
         let _ = std::fs::remove_file(&socket_path);
@@ -298,7 +379,14 @@ async fn run_server(
 
         // Windows named pipes must be in the format \\.\pipe\{name}
         let full_pipe_path = format!(r"\\.\pipe\{}", pipe_name);
-        tracing::info!("Starting Bicep gRPC server on named pipe: {full_pipe_path}");
+        tracing::info!(
+            "{}",
+            t!(
+                "dscbicep.starting",
+                transport = "named pipe",
+                address = full_pipe_path
+            )
+        );
 
         // Create a stream that accepts connections on the named pipe
         let incoming = async_stream::stream! {
@@ -318,21 +406,19 @@ async fn run_server(
                 let server = match pipe {
                     Ok(server) => server,
                     Err(e) => {
-                        tracing::error!("Failed to create named pipe: {}", e);
+                        tracing::error!("{}", t!("dscbicep.serverError", error = e.to_string()));
                         break;
                     }
                 };
 
                 is_first = false;
 
-                tracing::debug!("Waiting for client to connect to named pipe...");
                 match server.connect().await {
                     Ok(()) => {
-                        tracing::info!("Client connected to named pipe");
                         yield Ok::<_, std::io::Error>(NamedPipeConnection(server));
                     }
                     Err(e) => {
-                        tracing::error!("Failed to accept connection: {}", e);
+                        tracing::error!("{}", t!("dscbicep.serverError", error = e.to_string()));
                         break;
                     }
                 }
@@ -348,8 +434,15 @@ async fn run_server(
     }
 
     // Default to HTTP server on [::1]:50051 if no transport specified
-    let addr = http.unwrap_or_else(|| "[::1]:50051".to_string()).parse()?;
-    tracing::info!("Starting Bicep gRPC server on HTTP: {addr}");
+    let addr = http.unwrap_or_else(|| "[::1]:50051".to_string());
+    tracing::info!(
+        "{}",
+        t!(
+            "dscbicep.starting",
+            transport = "HTTP",
+            address = addr.to_string()
+        )
+    );
 
     let reflection_service = tonic_reflection::server::Builder::configure()
         .register_encoded_file_descriptor_set(proto::FILE_DESCRIPTOR_SET)
@@ -359,7 +452,7 @@ async fn run_server(
     Server::builder()
         .add_service(reflection_service)
         .add_service(BicepExtensionServer::new(service))
-        .serve(addr)
+        .serve(addr.parse()?)
         .await?;
 
     Ok(())
@@ -386,36 +479,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         .init();
 
     let args = Args::parse();
-    tracing::debug!("Args are {args:#?}");
 
     if args.wait_for_debugger
         || env::var_os("DSC_GRPC_DEBUG").is_some_and(|v| v.eq_ignore_ascii_case("true"))
     {
-        tracing::warn!(
-            "Press any key to continue after attaching to PID: {}",
-            process::id()
-        );
+        tracing::warn!("{}", t!("dscbicep.waitForDebugger", pid = process::id()));
         let mut input = String::new();
         io::stdin().read_line(&mut input)?;
     }
 
     // Set up graceful shutdown on SIGTERM/SIGINT
     let shutdown_signal = async {
-        tokio::signal::ctrl_c()
-            .await
-            .expect("Failed to listen for shutdown signal");
-        tracing::info!("Received shutdown signal, terminating gracefully...");
+        tokio::signal::ctrl_c().await.unwrap();
     };
 
     tokio::select! {
         result = run_server(args.socket, args.pipe, args.http) => {
             if let Err(e) = result {
-                tracing::error!("Server error: {e}");
+                tracing::error!("{}", t!("dscbicep.serverError", error = e.to_string()));
                 return Err(e);
             }
         }
         _ = shutdown_signal => {
-            tracing::info!("Shutdown complete");
         }
     }
 

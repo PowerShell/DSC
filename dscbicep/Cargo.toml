@@ -13,6 +13,7 @@ dsc-lib = { workspace = true }
 async-stream = { workspace = true }
 clap = { workspace = true }
 prost = { workspace = true }
+rust-i18n = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "signal", "io-std", "net"] }
 tokio-stream = { workspace = true, features = ["net"] }
 tonic = { workspace = true }
