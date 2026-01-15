@@ -70,21 +70,19 @@ impl Function for DataUriToString {
 
         // Validate remaining parts: must be either "base64" or "charset=value"
         let mut has_base64 = false;
-        let mut charset_count = 0;
-        let mut charset_value = None;
+        let mut charset = None;
 
         for part in &parts[1..] {
             if *part == "base64" {
                 has_base64 = true;
             } else if part.starts_with("charset=") {
-                charset_count += 1;
-                if charset_count > 1 {
+                if charset.is_some() {
                     return Err(DscError::FunctionArg(
                         "dataUriToString".to_string(),
                         t!("functions.dataUriToString.invalidDataUri").to_string(),
                     ));
                 }
-                charset_value = Some(&part[8..]);
+                charset = Some(&part[8..]);
             } else {
                 return Err(DscError::FunctionArg(
                     "dataUriToString".to_string(),
@@ -99,7 +97,7 @@ impl Function for DataUriToString {
                 t!("functions.dataUriToString.notBase64").to_string(),
             ));
         }
-        if let Some(charset) = charset_value {
+        if let Some(charset) = charset {
             let charset_lower = charset.to_lowercase();
             if charset_lower != "utf-8" && charset_lower != "utf8" {
                 return Err(DscError::FunctionArg(
