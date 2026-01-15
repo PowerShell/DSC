@@ -4,7 +4,7 @@
 use chrono::{DateTime, Local};
 use rust_i18n::t;
 use schemars::JsonSchema;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::{collections::HashMap, fmt::Display};
 
@@ -181,11 +181,6 @@ pub struct Configuration {
     #[serde(rename = "$schema")]
     #[schemars(schema_with = "Configuration::recognized_schema_uris_subschema")]
     pub schema: String,
-    /// Irrelevant Bicep metadata from using the extension
-    /// TODO: Potentially check this as a feature flag.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "languageVersion")]
-    pub language_version: Option<String>,
     #[serde(rename = "contentVersion")]
     pub content_version: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -196,53 +191,9 @@ pub struct Configuration {
     pub outputs: Option<HashMap<String, Output>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub parameters: Option<HashMap<String, Parameter>>,
-    #[serde(deserialize_with = "deserialize_resources")]
     pub resources: Vec<Resource>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub variables: Option<Map<String, Value>>,
-    /// Irrelevant Bicep metadata from using the extension
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub imports: Option<Map<String, Value>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub extensions: Option<Map<String, Value>>,
-}
-
-/// Simplest implementation of a custom deserializer that will map a JSON object
-/// of resources (where the keys are symbolic names) as found in ARMv2 back to a
-/// vector, so the rest of this codebase can remain untouched.
-fn deserialize_resources<'de, D>(deserializer: D) -> Result<Vec<Resource>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let value = Value::deserialize(deserializer)?;
-
-    match value {
-        Value::Array(resources) => {
-            resources.into_iter()
-                .map(|resource| serde_json::from_value::<Resource>(resource).map_err(serde::de::Error::custom))
-                .collect()
-        }
-        Value::Object(resources) => {
-            resources.into_iter()
-                .map(|(name, resource)| {
-                    let mut resource = serde_json::from_value::<Resource>(resource).map_err(serde::de::Error::custom)?;
-                    // Note that this is setting the symbolic name as the
-                    // resource's name property only if that isn't already set.
-                    // In the general use case from Bicep, it won't be, but
-                    // we're unsure of the implications in other use cases.
-                    //
-                    // TODO: We will need to update the 'dependsOn' logic to
-                    // accept both the symbolic name as mapped here in addition
-                    // to `resourceId()`, or possibly track both.
-                    if resource.name.is_empty() {
-                        resource.name = name;
-                    }
-                    Ok(resource)
-                })
-                .collect()
-        }
-        other => Err(serde::de::Error::custom(format!("Expected resources to be either an array or an object, but was {:?}", other))),
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
@@ -419,11 +370,6 @@ pub struct Resource {
     pub resources: Option<Vec<Resource>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Metadata>,
-    /// Irrelevant Bicep metadata from using the extension
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub import: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub extension: Option<String>,
 }
 
 impl Default for Configuration {
@@ -437,7 +383,6 @@ impl Configuration {
     pub fn new() -> Self {
         Self {
             schema: Self::default_schema_id_uri(),
-            language_version: None,
             content_version: Some("1.0.0".to_string()),
             metadata: None,
             parameters: None,
@@ -445,8 +390,6 @@ impl Configuration {
             functions: None,
             variables: None,
             outputs: None,
-            imports: None,
-            extensions: None,
         }
     }
 }
@@ -472,8 +415,6 @@ impl Resource {
             location: None,
             tags: None,
             api_version: None,
-            import: None,
-            extension: None,
         }
     }
 }
@@ -540,41 +481,11 @@ mod test {
     }
 
     #[test]
-    fn test_invalid_resource_field_in_object() {
-        let config_json = r#"{
-            "resources": {
-                "someResource": {
-                    "invalidField": "someValue"
-                }
-            }
-        }"#;
-
-        let result: Result<Configuration, _> = serde_json::from_str(config_json);
-        assert!(result.is_err());
-        let err = result.unwrap_err().to_string();
-        assert!(err.starts_with("unknown field `invalidField`, expected one of `condition`, `type`,"));
-    }
-
-    #[test]
     fn test_invalid_resource_type_in_array() {
         let config_json = r#"{
             "resources": [
                 "invalidType"
             ]
-        }"#;
-
-        let result: Result<Configuration, _> = serde_json::from_str(config_json);
-        assert!(result.is_err());
-        let err = result.unwrap_err().to_string();
-        assert!(err.contains("expected struct Resource"));
-    }
-
-    #[test]
-    fn test_invalid_resource_type_in_object() {
-        let config_json = r#"{
-            "resources": {
-                "someResource": "invalidType"
-            }
         }"#;
 
         let result: Result<Configuration, _> = serde_json::from_str(config_json);
@@ -613,49 +524,4 @@ mod test {
         assert_eq!(config.resources[1].api_version.as_deref(), Some("0.1.0"));
     }
 
-    #[test]
-    fn test_resources_with_symbolic_names() {
-        let config_json = r#"{
-            "$schema": "https://aka.ms/dsc/schemas/v3/bundled/config/document.json",
-            "languageVersion": "2.2-experimental",
-            "extensions": {
-                "dsc": {
-                    "name": "DesiredStateConfiguration",
-                    "version": "0.1.0"
-                }
-            },
-            "resources": {
-                "echoResource": {
-                    "extension": "dsc",
-                    "type": "Microsoft.DSC.Debug/Echo",
-                    "apiVersion": "1.0.0",
-                    "properties": {
-                        "output": "Hello World"
-                    }
-                },
-                "processResource": {
-                    "extension": "dsc",
-                    "type": "Microsoft/Process",
-                    "apiVersion": "0.1.0",
-                    "properties": {
-                        "name": "pwsh",
-                        "pid": 1234
-                    }
-                }
-            }
-        }"#;
-
-        let config: Configuration = serde_json::from_str(config_json).unwrap();
-        assert_eq!(config.resources.len(), 2);
-
-        // Find resources by name (order may vary in HashMap)
-        let echo_resource = config.resources.iter().find(|r| r.name == "echoResource").unwrap();
-        let process_resource = config.resources.iter().find(|r| r.name == "processResource").unwrap();
-
-        assert_eq!(echo_resource.resource_type, "Microsoft.DSC.Debug/Echo");
-        assert_eq!(echo_resource.api_version.as_deref(), Some("1.0.0"));
-
-        assert_eq!(process_resource.resource_type, "Microsoft/Process");
-        assert_eq!(process_resource.api_version.as_deref(), Some("0.1.0"));
-    }
 }
