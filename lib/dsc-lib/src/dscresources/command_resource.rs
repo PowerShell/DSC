@@ -866,7 +866,8 @@ fn verify_json(resource: &ResourceManifest, cwd: &Path, json: &str) -> Result<()
             return Ok(());
         }
 
-        return Err(DscError::Validation(t!("dscresources.commandResource.resourceInvalidJson").to_string()));
+        let reason = result.reason.unwrap_or_else(|| t!("dscresources.commandResource.resourceInvalidJson").to_string());
+        return Err(DscError::Validation(reason));
     }
 
     // otherwise, use schema validation
