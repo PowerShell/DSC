@@ -83,7 +83,9 @@ $filesForWindowsPackage = @(
     'wmiAdapter.psd1',
     'wmiAdapter.psm1',
     'windows_baseline.dsc.yaml',
-    'windows_inventory.dsc.yaml'
+    'windows_inventory.dsc.yaml',
+    'wu_dsc.exe',
+    'windowsupdate.dsc.resource.json'
 )
 
 $filesForLinuxPackage = @(
