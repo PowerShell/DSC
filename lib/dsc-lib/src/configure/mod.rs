@@ -331,11 +331,13 @@ impl Configurator {
     fn get_properties(&mut self, resource: &Resource, resource_kind: &Kind) -> Result<Option<Map<String, Value>>, DscError> {
         // Restore copy loop context from resource metadata under Microsoft.DSC/copyLoops if present
         if let Some(metadata) = &resource.metadata {
-            if let Some(Value::Object(copy_loops)) = metadata.other.get("Microsoft.DSC/copyLoops") {
-                for (loop_name, value) in copy_loops {
-                    if let Some(index) = value.as_i64() {
-                        self.context.copy.insert(loop_name.to_string(), index);
-                        self.context.copy_current_loop_name.clone_from(loop_name);
+            if let Some(microsoft) = &metadata.microsoft {
+                if let Some(copy_loops) = &microsoft.copy_loops {
+                    for (loop_name, value) in copy_loops {
+                        if let Some(index) = value.as_i64() {
+                            self.context.copy.insert(loop_name.to_string(), index);
+                            self.context.copy_current_loop_name.clone_from(loop_name);
+                        }
                     }
                 }
             }

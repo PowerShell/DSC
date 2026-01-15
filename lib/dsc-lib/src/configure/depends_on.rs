@@ -209,20 +209,17 @@ fn unroll_and_push(order: &mut Vec<Resource>, resource: &Resource, parser: &mut 
           // Store copy loop context in resource metadata under Microsoft.DSC for later use by reference()
           let mut metadata = new_resource.metadata.clone().unwrap_or_else(|| {
               use crate::configure::config_doc::Metadata;
-              use serde_json::Map;
               Metadata {
                   microsoft: None,
                   other: Map::new(),
               }
           });
           
-          let mut copy_loops = if let Some(Value::Object(existing)) = metadata.other.get("Microsoft.DSC/copyLoops") {
-              existing.clone()
-          } else {
-              Map::new()
-          };
+          let mut microsoft = metadata.microsoft.clone().unwrap_or_default();
+          let mut copy_loops = microsoft.copy_loops.clone().unwrap_or_default();
           copy_loops.insert(copy.name.clone(), Value::Number(i.into()));
-          metadata.other.insert("Microsoft.DSC/copyLoops".to_string(), Value::Object(copy_loops));
+          microsoft.copy_loops = Some(copy_loops);
+          metadata.microsoft = Some(microsoft);
           new_resource.metadata = Some(metadata);
 
           new_resource.copy = None;
@@ -444,5 +441,26 @@ mod tests {
         assert_eq!(order[1].name, "Second");
         assert_eq!(order[2].name, "Third");
         assert_eq!(order[3].name, "Fourth");
+    }
+
+    #[test]
+    fn test_copy_loop_missing_dependency() {
+        let config_yaml: &str = r#"
+        $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+        resources:
+        - name: "[format('Permission-{0}', copyIndex())]"
+          type: Test/Permission
+          copy:
+            name: permissionCopy
+            count: 2
+          dependsOn:
+          - "[resourceId('Test/Policy', format('Policy-{0}', copyIndex()))]"
+        "#;
+
+        let config: Configuration = serde_yaml::from_str(config_yaml).unwrap();
+        let mut parser = parser::Statement::new().unwrap();
+        let mut context = Context::new();
+        let order = get_resource_invocation_order(&config, &mut parser, &mut context);
+        assert!(order.is_err());
     }
 }
