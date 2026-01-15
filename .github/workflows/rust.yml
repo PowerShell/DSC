@@ -26,6 +26,10 @@ jobs:
     runs-on: ${{matrix.platform}}
     steps:
       - uses: actions/checkout@v5
+      - name: Add WinGet links to PATH
+        if: matrix.platform == 'windows-latest'
+        run: |
+          "$env:LOCALAPPDATA\\Microsoft\\WinGet\\Links" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_PATH
       - name: Install prerequisites
         run: ./build.ps1 -SkipBuild -Clippy -Verbose
       - name: Generate documentation
@@ -129,6 +133,9 @@ jobs:
   windows-build:
     runs-on: windows-latest
     steps:
+      - name: Add WinGet links to PATH
+        run: |
+          "$env:LOCALAPPDATA\\Microsoft\\WinGet\\Links" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_PATH
       - uses: actions/checkout@v5
       - name: Install prerequisites
         run: ./build.ps1 -SkipBuild -Clippy  -Verbose

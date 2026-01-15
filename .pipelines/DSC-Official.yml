@@ -321,7 +321,7 @@ extends:
             ob_restore_phase: true
         - pwsh: |
             apt update
-            apt -y install musl-tools rpm dpkg build-essential
+            apt -y install musl-tools rpm dpkg build-essential protobuf-compiler
             $header = "Bearer $(AzToken)"
             $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
             $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
@@ -381,6 +381,7 @@ extends:
             apt -y install rpm
             apt -y install dpkg
             apt -y install build-essential
+            apt install -y protobuf-compiler
             msrustup default stable-aarch64-unknown-linux-musl
             if ((openssl version -d) -match 'OPENSSLDIR: "(?<dir>.*?)"') {
               $env:OPENSSL_LIB_DIR = $matches['dir']

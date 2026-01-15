@@ -36,6 +36,7 @@ functionAbout = "Operations on DSC functions"
 listFunctionAbout = "List or find functions"
 version = "The version of the resource to invoke in semver format"
 mcpAbout = "Use DSC as a MCP server"
+bicepAbout = "Use DSC as a Bicep server over gRPC"
 
 [main]
 ctrlCReceived = "Ctrl-C received"
