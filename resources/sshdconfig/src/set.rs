@@ -18,7 +18,7 @@ use crate::error::SshdConfigError;
 use crate::formatter::write_config_map_to_text;
 use crate::get::get_sshd_settings;
 use crate::inputs::{CommandInfo, SshdCommandArgs};
-use crate::metadata::{MULTI_ARG_KEYWORDS_COMMA_SEP, MULTI_ARG_KEYWORDS_SPACE_SEP, REPEATABLE_KEYWORDS, SSHD_CONFIG_HEADER, SSHD_CONFIG_HEADER_VERSION, SSHD_CONFIG_HEADER_WARNING};
+use crate::metadata::{SSHD_CONFIG_HEADER, SSHD_CONFIG_HEADER_VERSION, SSHD_CONFIG_HEADER_WARNING};
 use crate::util::{build_command_info, get_default_sshd_config_path, invoke_sshd_config_validation};
 
 /// Invoke the set command.
@@ -131,16 +131,6 @@ fn set_sshd_config(cmd_info: &mut CommandInfo) -> Result<(), SshdConfigError> {
             Err(e) => return Err(e),
         };
         for (key, value) in &cmd_info.input {
-            let key_contains = key.as_str();
-
-            // TODO: remove when design for handling repeatable and multi-arg keywords is finalized
-            // and consider using SshdConfigValue instead of any remaining contains() checks
-            if REPEATABLE_KEYWORDS.contains(&key_contains)
-                || MULTI_ARG_KEYWORDS_COMMA_SEP.contains(&key_contains)
-                || MULTI_ARG_KEYWORDS_SPACE_SEP.contains(&key_contains) {
-                return Err(SshdConfigError::InvalidInput(t!("set.purgeFalseUnsupported").to_string()));
-            }
-
             if value.is_null() {
                 existing_config.remove(key);
             } else {
