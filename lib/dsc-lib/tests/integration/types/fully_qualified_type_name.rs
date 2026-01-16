@@ -5,7 +5,7 @@ use jsonschema::Validator;
 use schemars::schema_for;
 use serde_json::{json, Value};
 
-use dsc_lib::{dscerror::DscError, types::FullyQualifiedTypeName};
+use dsc_lib::{dscerror::DscError, FullyQualifiedTypeName};
 
 #[test]
 fn test_schema_without_segments() {
