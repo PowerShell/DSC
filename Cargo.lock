@@ -737,6 +737,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "dsc-bicep-ext"
+version = "0.1.0"
+dependencies = [
+ "async-stream",
+ "clap",
+ "dsc-lib",
+ "prost",
+ "rust-i18n",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+ "tonic-prost",
+ "tonic-prost-build",
+ "tonic-reflection",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "dsc-lib"
 version = "3.2.0"
 dependencies = [
@@ -933,24 +952,6 @@ dependencies = [
  "serde",
  "serde_json",
  "windows 0.62.2",
-]
-
-[[package]]
-name = "dscbicep"
-version = "0.1.0"
-dependencies = [
- "async-stream",
- "clap",
- "dsc-lib",
- "prost",
- "tokio",
- "tokio-stream",
- "tonic",
- "tonic-prost",
- "tonic-prost-build",
- "tonic-reflection",
- "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]
