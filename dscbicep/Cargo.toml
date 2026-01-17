@@ -1,10 +1,10 @@
 [package]
-name = "dscbicep"
+name = "dsc-bicep-ext"
 version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "dscbicep"
+name = "dsc-bicep-ext"
 path = "src/main.rs"
 
 [dependencies]

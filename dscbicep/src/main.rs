@@ -46,7 +46,7 @@ impl BicepExtension for BicepExtensionService {
         tracing::debug!(
             "{}",
             t!(
-                "dscbicep.functionCalled",
+                "bicep.functionCalled",
                 function = "CreateOrUpdate",
                 resourceType = resource_type,
                 version = format!("{version:?}"),
@@ -101,7 +101,7 @@ impl BicepExtension for BicepExtensionService {
         tracing::debug!(
             "{}",
             t!(
-                "dscbicep.functionCalled",
+                "bicep.functionCalled",
                 function = "Preview",
                 resourceType = resource_type,
                 version = format!("{version:?}"),
@@ -156,7 +156,7 @@ impl BicepExtension for BicepExtensionService {
         tracing::debug!(
             "{}",
             t!(
-                "dscbicep.functionCalled",
+                "bicep.functionCalled",
                 function = "Get",
                 resourceType = resource_type,
                 version = format!("{version:?}"),
@@ -211,7 +211,7 @@ impl BicepExtension for BicepExtensionService {
         tracing::debug!(
             "{}",
             t!(
-                "dscbicep.functionCalled",
+                "bicep.functionCalled",
                 function = "Delete",
                 resourceType = resource_type,
                 version = format!("{version:?}"),
@@ -265,7 +265,7 @@ impl BicepExtension for BicepExtensionService {
 }
 
 #[derive(Parser, Debug)]
-#[command(name = "dscbicep")]
+#[command(name = "dsc-bicep-ext")]
 #[command(about = "DSC Bicep Local Deploy Extension", long_about = None)]
 struct Args {
     /// The path to the domain socket to connect on (Unix-like systems)
@@ -301,7 +301,7 @@ async fn run_server(
         tracing::info!(
             "{}",
             t!(
-                "dscbicep.starting",
+                "bicep.serverStarting",
                 transport = "socket",
                 address = socket_path
             )
@@ -382,7 +382,7 @@ async fn run_server(
         tracing::info!(
             "{}",
             t!(
-                "dscbicep.starting",
+                "bicep.serverStarting",
                 transport = "named pipe",
                 address = full_pipe_path
             )
@@ -406,7 +406,7 @@ async fn run_server(
                 let server = match pipe {
                     Ok(server) => server,
                     Err(e) => {
-                        tracing::error!("{}", t!("dscbicep.serverError", error = e.to_string()));
+                        tracing::error!("{}", t!("bicep.serverError", error = e.to_string()));
                         break;
                     }
                 };
@@ -418,7 +418,7 @@ async fn run_server(
                         yield Ok::<_, std::io::Error>(NamedPipeConnection(server));
                     }
                     Err(e) => {
-                        tracing::error!("{}", t!("dscbicep.serverError", error = e.to_string()));
+                        tracing::error!("{}", t!("bicep.serverError", error = e.to_string()));
                         break;
                     }
                 }
@@ -438,7 +438,7 @@ async fn run_server(
     tracing::info!(
         "{}",
         t!(
-            "dscbicep.starting",
+            "bicep.serverStarting",
             transport = "HTTP",
             address = addr.to_string()
         )
@@ -483,7 +483,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     if args.wait_for_debugger
         || env::var_os("DSC_GRPC_DEBUG").is_some_and(|v| v.eq_ignore_ascii_case("true"))
     {
-        tracing::warn!("{}", t!("dscbicep.waitForDebugger", pid = process::id()));
+        tracing::warn!("{}", t!("bicep.waitForDebugger", pid = process::id()));
         let mut input = String::new();
         io::stdin().read_line(&mut input)?;
     }
@@ -496,7 +496,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     tokio::select! {
         result = run_server(args.socket, args.pipe, args.http) => {
             if let Err(e) = result {
-                tracing::error!("{}", t!("dscbicep.serverError", error = e.to_string()));
+                tracing::error!("{}", t!("bicep.serverError", error = e.to_string()));
                 return Err(e);
             }
         }
