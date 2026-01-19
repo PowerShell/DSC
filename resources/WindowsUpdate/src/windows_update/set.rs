@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use rust_i18n::t;
 use windows::{
     core::*,
     Win32::Foundation::*,
@@ -13,10 +14,10 @@ use crate::windows_update::types::{UpdateList, UpdateInfo, extract_update_info};
 pub fn handle_set(input: &str) -> Result<String> {
     // Parse input as UpdateList
     let update_list: UpdateList = serde_json::from_str(input)
-        .map_err(|e| Error::new(E_INVALIDARG, format!("Failed to parse input: {}", e)))?;
+        .map_err(|e| Error::new(E_INVALIDARG.into(), t!("set.failedParseInput", err = e.to_string()).to_string()))?;
     
     if update_list.updates.is_empty() {
-        return Err(Error::new(E_INVALIDARG, "Updates array cannot be empty for set operation"));
+        return Err(Error::new(E_INVALIDARG.into(), t!("set.updatesArrayEmpty").to_string()));
     }
     
     // Initialize COM
@@ -53,11 +54,12 @@ pub fn handle_set(input: &str) -> Result<String> {
                 && update_input.is_installed.is_none() 
                 && update_input.update_type.is_none() 
                 && update_input.msrc_severity.is_none() {
-                return Err(Error::new(E_INVALIDARG, "At least one search criterion must be specified for set operation"));
+                return Err(Error::new(E_INVALIDARG.into(), t!("set.atLeastOneCriterionRequired").to_string()));
             }
 
             // Find the update matching ALL provided criteria (logical AND)
             let mut found_update: Option<(IUpdate, bool)> = None;
+            let mut matching_updates: Vec<(IUpdate, bool)> = Vec::new();
             for i in 0..count {
                 let update = all_updates.get_Item(i)?;
                 
@@ -144,10 +146,23 @@ pub fn handle_set(input: &str) -> Result<String> {
                     }
                 }
 
-                // All criteria matched
+                // All criteria matched - collect this update
                 let is_installed = update.IsInstalled()?.as_bool();
-                found_update = Some((update.clone(), is_installed));
-                break;
+                matching_updates.push((update.clone(), is_installed));
+            }
+
+            // Check if title matched multiple updates
+            if let Some(search_title) = &update_input.title {
+                if matching_updates.len() > 1 {
+                    let error_msg = t!("set.titleMatchedMultipleUpdates", title = search_title, count = matching_updates.len()).to_string();
+                    eprintln!("{{\"error\":\"{}\"}}", error_msg);
+                    return Err(Error::new(E_INVALIDARG.into(), error_msg));
+                }
+            }
+
+            // Get the first (and should be only) match
+            if !matching_updates.is_empty() {
+                found_update = Some(matching_updates[0].clone());
             }
 
             if let Some(matched) = found_update {
@@ -156,31 +171,31 @@ pub fn handle_set(input: &str) -> Result<String> {
                 // No match found for this input - construct error message and return
                 let mut criteria_parts = Vec::new();
                 if let Some(title) = &update_input.title {
-                    criteria_parts.push(format!("title '{}'", title));
+                    criteria_parts.push(t!("set.criteriaTitle", value = title).to_string());
                 }
                 if let Some(id) = &update_input.id {
-                    criteria_parts.push(format!("id '{}'", id));
+                    criteria_parts.push(t!("set.criteriaId", value = id).to_string());
                 }
                 if let Some(is_installed) = update_input.is_installed {
-                    criteria_parts.push(format!("is_installed {}", is_installed));
+                    criteria_parts.push(t!("set.criteriaIsInstalled", value = is_installed).to_string());
                 }
                 if let Some(kb_ids) = &update_input.kb_article_ids {
-                    criteria_parts.push(format!("kb_article_ids {:?}", kb_ids));
+                    criteria_parts.push(t!("set.criteriaKbArticleIds", value = format!("{:?}", kb_ids)).to_string());
                 }
                 if let Some(update_type) = &update_input.update_type {
-                    criteria_parts.push(format!("update_type {:?}", update_type));
+                    criteria_parts.push(t!("set.criteriaUpdateType", value = format!("{:?}", update_type)).to_string());
                 }
                 if let Some(severity) = &update_input.msrc_severity {
-                    criteria_parts.push(format!("msrc_severity {:?}", severity));
+                    criteria_parts.push(t!("set.criteriaMsrcSeverity", value = format!("{:?}", severity)).to_string());
                 }
                 
                 let criteria_str = criteria_parts.join(", ");
-                let error_msg = format!("No matching update found for criteria: {}", criteria_str);
+                let error_msg = t!("set.noMatchingUpdateForCriteria", criteria = criteria_str).to_string();
                 
                 // Emit JSON error to stderr
                 eprintln!("{{\"error\":\"{}\"}}", error_msg);
                 
-                return Err(Error::new(E_FAIL, error_msg));
+                return Err(Error::new(E_FAIL.into(), error_msg));
             }
         }
 
@@ -212,7 +227,7 @@ pub fn handle_set(input: &str) -> Result<String> {
                     // Check if download was successful (orcSucceeded = 2)
                     if result_code != OperationResultCode(2) {
                         let hresult = download_result.HResult()?;
-                        return Err(Error::new(HRESULT(hresult), format!("Failed to download update. Result code: {}", result_code.0)));
+                        return Err(Error::new(HRESULT(hresult).into(), t!("set.failedDownloadUpdate", code = result_code.0).to_string()));
                     }
                 }
 
@@ -226,7 +241,7 @@ pub fn handle_set(input: &str) -> Result<String> {
                 // Check if installation was successful (orcSucceeded = 2)
                 if result_code != OperationResultCode(2) {
                     let hresult = install_result.HResult()?;
-                    return Err(Error::new(HRESULT(hresult), format!("Failed to install update. Result code: {}", result_code.0)));
+                    return Err(Error::new(HRESULT(hresult).into(), t!("set.failedInstallUpdate", code = result_code.0).to_string()));
                 }
                 
                 // Get full details now that it's installed
@@ -249,10 +264,11 @@ pub fn handle_set(input: &str) -> Result<String> {
     match result {
         Ok(updates) => {
             let results = UpdateList {
+                metadata: None,
                 updates
             };
             serde_json::to_string(&results)
-                .map_err(|e| Error::new(E_FAIL, format!("Failed to serialize output: {}", e)))
+                .map_err(|e| Error::new(E_FAIL.into(), t!("set.failedSerializeOutput", err = e.to_string()).to_string()))
         }
         Err(e) => Err(e),
     }

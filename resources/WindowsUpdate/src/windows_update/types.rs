@@ -2,10 +2,13 @@
 // Licensed under the MIT License.
 
 use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateList {
+    #[serde(rename = "_metadata", skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<Map<String, Value>>,
     pub updates: Vec<UpdateInfo>,
 }
 
