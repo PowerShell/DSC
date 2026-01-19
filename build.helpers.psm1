@@ -1021,7 +1021,7 @@ function Get-ArtifactDirectoryPath {
             return [DscArtifactDirectoryPath]@{
                 BinRoot    = Join-Path $PSScriptRoot 'bin'
                 Bin        = Join-Path $PSScriptRoot 'bin' $configuration
-                RustTarget = Join-Path $PSScriptRoot 'target' $configuration
+                RustTarget = $env:CARGO_TARGET_DIR ?? (Join-Path $PSScriptRoot 'target' $configuration)
                 MsixBundle = Join-Path $PSScriptRoot 'bin' 'msix'
             }
         }
@@ -1029,7 +1029,7 @@ function Get-ArtifactDirectoryPath {
         [DscArtifactDirectoryPath]@{
             BinRoot    = Join-Path $PSScriptRoot 'bin'
             Bin        = Join-Path $PSScriptRoot 'bin' $Architecture $configuration
-            RustTarget = Join-Path $PSScriptRoot 'target' $Architecture $configuration
+            RustTarget = $env:CARGO_TARGET_DIR ?? (Join-Path $PSScriptRoot 'target' $Architecture $configuration)
             MsixBundle = Join-Path $PSScriptRoot 'bin' 'msix'
             MsixTarget = Join-Path $PSScriptRoot 'bin' $Architecture 'msix'
             ZipTarget  = Join-Path $PSScriptRoot 'bin' $Architecture 'zip'
