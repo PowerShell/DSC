@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 use rust_i18n::t;
+use serde_json::{Map, Value};
 use windows::{
     core::*,
     Win32::Foundation::*,
@@ -10,6 +11,28 @@ use windows::{
 };
 
 use crate::windows_update::types::{UpdateList, UpdateInfo, extract_update_info};
+
+/// Gets the computer name using the COMPUTERNAME environment variable
+fn get_computer_name() -> String {
+    std::env::var("COMPUTERNAME").unwrap_or_else(|_| "localhost".to_string())
+}
+
+/// Checks if a reboot is or might be required for the given update based on InstallationBehavior
+/// Returns true if RebootBehavior indicates reboot is always required (2) or can request reboot (1)
+fn check_reboot_behavior(update: &IUpdate) -> bool {
+    unsafe {
+        if let Ok(behavior) = update.InstallationBehavior() {
+            if let Ok(reboot_behavior) = behavior.RebootBehavior() {
+                // InstallRebootBehavior values:
+                // 0 = irbNeverReboots - Never requires reboot
+                // 1 = irbAlwaysRequiresReboot - Always requires reboot  
+                // 2 = irbCanRequestReboot - Can request reboot
+                return reboot_behavior.0 == 1 || reboot_behavior.0 == 2;
+            }
+        }
+        false
+    }
+}
 
 pub fn handle_set(input: &str) -> Result<String> {
     // Parse input as UpdateList
@@ -25,7 +48,7 @@ pub fn handle_set(input: &str) -> Result<String> {
         CoInitializeEx(Some(std::ptr::null()), COINIT_MULTITHREADED).is_ok()
     };
 
-    let result: Result<Vec<UpdateInfo>> = unsafe {
+    let result: Result<(Vec<UpdateInfo>, bool)> = unsafe {
         // Create update session
         let update_session: IUpdateSession = CoCreateInstance(
             &UpdateSession,
@@ -201,6 +224,7 @@ pub fn handle_set(input: &str) -> Result<String> {
 
         // All inputs have matches - now proceed with installation/uninstallation
         let mut result_updates = Vec::new();
+        let mut reboot_required = false;
         
         for (update, is_installed) in matched_updates {
             let update_info = if is_installed {
@@ -208,6 +232,11 @@ pub fn handle_set(input: &str) -> Result<String> {
                 extract_update_info(&update)?
             } else {
                 // Not installed - proceed with installation
+                // Check if this update requires or might require a reboot
+                if !reboot_required && check_reboot_behavior(&update) {
+                    reboot_required = true;
+                }
+                
                 // Create update collection for download/install
                 let updates_to_install: IUpdateCollection = CoCreateInstance(
                     &UpdateCollection,
@@ -251,7 +280,7 @@ pub fn handle_set(input: &str) -> Result<String> {
             result_updates.push(update_info);
         }
 
-        Ok(result_updates)
+        Ok((result_updates, reboot_required))
     };
 
     // Ensure COM is uninitialized if it was initialized
@@ -262,9 +291,24 @@ pub fn handle_set(input: &str) -> Result<String> {
     }
 
     match result {
-        Ok(updates) => {
+        Ok((updates, reboot_required)) => {
+            // Build metadata if reboot is required
+            let metadata = if reboot_required {
+                let computer_name = get_computer_name();
+                let mut restart_required_item = Map::new();
+                restart_required_item.insert("system".to_string(), Value::String(computer_name));
+                
+                let restart_required_array = Value::Array(vec![Value::Object(restart_required_item)]);
+                
+                let mut metadata_map = Map::new();
+                metadata_map.insert("_restartRequired".to_string(), restart_required_array);
+                Some(metadata_map)
+            } else {
+                None
+            };
+
             let results = UpdateList {
-                metadata: None,
+                metadata,
                 updates
             };
             serde_json::to_string(&results)
