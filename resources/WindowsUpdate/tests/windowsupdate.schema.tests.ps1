@@ -83,7 +83,8 @@ Describe 'Windows Update resource schema validation' {
                 'recommendedHardDiskSpace',
                 'msrcSeverity',
                 'securityBulletinIds',
-                'updateType'
+                'updateType',
+                'installationBehavior'
             )
             
             foreach ($prop in $expectedProperties) {
@@ -157,6 +158,15 @@ Describe 'Windows Update resource schema validation' {
             $updateType.type | Should -BeExactly 'string'
             $updateType.enum | Should -Contain 'Software'
             $updateType.enum | Should -Contain 'Driver'
+        }
+
+        It 'installationBehavior property should be enum with correct values' {
+            $manifest = Get-Content $manifestPath | ConvertFrom-Json
+            $installationBehavior = $manifest.schema.embedded.properties.updates.items.properties.installationBehavior
+            $installationBehavior.type | Should -BeExactly 'string'
+            $installationBehavior.enum | Should -Contain 'NeverReboots'
+            $installationBehavior.enum | Should -Contain 'AlwaysRequiresReboot'
+            $installationBehavior.enum | Should -Contain 'CanRequestReboot'
         }
 
         It 'schema should not allow additional properties' {

@@ -365,5 +365,113 @@ Describe 'Windows Update Get operation tests' {
                 Set-ItResult -Skipped -Because "No updates with MSRC severity found"
             }
         }
+
+        It 'should return installationBehavior property when present' -Skip:(!$IsWindows) {
+            $json = @{
+                updates = @(
+                    @{
+                        title = $exportOut.updates[0].title
+                    }
+                )
+            } | ConvertTo-Json -Depth 10 -Compress
+            $out = $json | dsc resource get -r $resourceType 2>&1
+            
+            $LASTEXITCODE | Should -Be 0
+            $result = $out | ConvertFrom-Json
+            # installationBehavior should be one of the valid enum values if present
+            if ($null -ne $result.actualState.updates[0].installationBehavior) {
+                $result.actualState.updates[0].installationBehavior | Should -BeIn @('NeverReboots', 'AlwaysRequiresReboot', 'CanRequestReboot')
+            }
+        }
+
+        It 'should return valid enum value for installationBehavior' -Skip:(!$IsWindows) {
+            # Find an update that has installationBehavior set
+            $updateWithBehavior = $exportOut.updates | Where-Object { $null -ne $_.installationBehavior } | Select-Object -First 1
+            
+            if ($updateWithBehavior) {
+                $json = @{
+                    updates = @(
+                        @{
+                            id = $updateWithBehavior.id
+                        }
+                    )
+                } | ConvertTo-Json -Depth 10 -Compress
+                $out = $json | dsc resource get -r $resourceType 2>&1
+                
+                $LASTEXITCODE | Should -Be 0
+                $getResult = $out | ConvertFrom-Json
+                $getResult.actualState.updates[0].installationBehavior | Should -BeIn @('NeverReboots', 'AlwaysRequiresReboot', 'CanRequestReboot')
+            } else {
+                Set-ItResult -Skipped -Because "No updates with installationBehavior found"
+            }
+        }
+
+        It 'should fail when title matches multiple updates' -Skip:(!$IsWindows) {
+            # Find a title pattern that might match multiple updates
+            # Using isInstalled filter with a common partial title like 'Windows' could match multiple
+            # This test verifies the new multiple-match detection behavior
+            
+            # First, check if there are multiple updates with similar titles
+            $windowsUpdates = $exportOut.updates | Where-Object { $_.title -like '*Windows*' }
+            
+            if ($windowsUpdates.Count -ge 2) {
+                # Find a common substring that appears in multiple update titles
+                # Try to use a very generic criteria that would match multiple
+                $json = @{
+                    updates = @(
+                        @{
+                            isInstalled = $true
+                        }
+                    )
+                } | ConvertTo-Json -Depth 10 -Compress
+                $stderr = $json | dsc resource get -r $resourceType 2>&1
+                
+                # If multiple updates match isInstalled=true, it should error
+                $installedCount = ($exportOut.updates | Where-Object { $_.isInstalled -eq $true }).Count
+                if ($installedCount -gt 1) {
+                    $LASTEXITCODE | Should -Not -Be 0
+                    $errorText = $stderr | Out-String
+                    $errorText | Should -Match 'matched.*updates|multiple'
+                } else {
+                    # Only one installed update, so it should succeed
+                    $LASTEXITCODE | Should -Be 0
+                }
+            } else {
+                Set-ItResult -Skipped -Because "Need multiple updates to test multiple match detection"
+            }
+        }
+
+        It 'should provide helpful error message when multiple updates match title criteria' -Skip:(!$IsWindows) {
+            # Find a case where using title-only might match multiple updates
+            # Group updates by similar starting titles
+            $titleGroups = $exportOut.updates | Group-Object { ($_.title -split ' ')[0..2] -join ' ' } | Where-Object { $_.Count -gt 1 }
+            
+            if ($titleGroups.Count -gt 0) {
+                # Use the first duplicate-ish title group
+                $firstGroup = $titleGroups[0].Group
+                if ($firstGroup.Count -ge 2) {
+                    # There might be multiple updates with same starting title
+                    # The error message should mention using more specific identifiers
+                    $json = @{
+                        updates = @(
+                            @{
+                                isInstalled = $firstGroup[0].isInstalled
+                                updateType = $firstGroup[0].updateType
+                            }
+                        )
+                    } | ConvertTo-Json -Depth 10 -Compress
+                    $stderr = $json | dsc resource get -r $resourceType 2>&1
+                    
+                    # This may or may not fail depending on uniqueness
+                    if ($LASTEXITCODE -ne 0) {
+                        $errorText = $stderr | Out-String
+                        # Should contain helpful guidance
+                        $errorText | Should -Match 'specific|identifier|criteria'
+                    }
+                }
+            } else {
+                Set-ItResult -Skipped -Because "No duplicate title patterns found for testing"
+            }
+        }
     }
 }
