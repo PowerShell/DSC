@@ -17,23 +17,6 @@ fn get_computer_name() -> String {
     std::env::var("COMPUTERNAME").unwrap_or_else(|_| "localhost".to_string())
 }
 
-/// Checks if a reboot is or might be required for the given update based on InstallationBehavior
-/// Returns true if RebootBehavior indicates reboot is always required (2) or can request reboot (1)
-fn check_reboot_behavior(update: &IUpdate) -> bool {
-    unsafe {
-        if let Ok(behavior) = update.InstallationBehavior() {
-            if let Ok(reboot_behavior) = behavior.RebootBehavior() {
-                // InstallRebootBehavior values:
-                // 0 = irbNeverReboots - Never requires reboot
-                // 1 = irbAlwaysRequiresReboot - Always requires reboot  
-                // 2 = irbCanRequestReboot - Can request reboot
-                return reboot_behavior.0 == 1 || reboot_behavior.0 == 2;
-            }
-        }
-        false
-    }
-}
-
 pub fn handle_set(input: &str) -> Result<String> {
     // Parse input as UpdateList
     let update_list: UpdateList = serde_json::from_str(input)
@@ -245,11 +228,6 @@ pub fn handle_set(input: &str) -> Result<String> {
                 extract_update_info(&update)?
             } else {
                 // Not installed - proceed with installation
-                // Check if this update requires or might require a reboot
-                if !reboot_required && check_reboot_behavior(&update) {
-                    reboot_required = true;
-                }
-                
                 // Create update collection for download/install
                 let updates_to_install: IUpdateCollection = CoCreateInstance(
                     &UpdateCollection,
@@ -284,6 +262,15 @@ pub fn handle_set(input: &str) -> Result<String> {
                 if result_code != OperationResultCode(2) {
                     let hresult = install_result.HResult()?;
                     return Err(Error::new(HRESULT(hresult).into(), t!("set.failedInstallUpdate", code = result_code.0).to_string()));
+                }
+                
+                // Check if installation result indicates a reboot is required
+                if !reboot_required {
+                    if let Ok(reboot_req) = install_result.RebootRequired() {
+                        if reboot_req.as_bool() {
+                            reboot_required = true;
+                        }
+                    }
                 }
                 
                 // Get full details now that it's installed

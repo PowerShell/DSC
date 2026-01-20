@@ -18,15 +18,16 @@ pub fn handle_export(input: &str) -> Result<String> {
         UpdateList {
             metadata: None,
             updates: vec![UpdateInfo {
-                title: None,
-                id: None,
                 description: None,
+                id: None,
+                installation_behavior: None,
                 is_installed: None,
                 is_uninstallable: None,
                 kb_article_ids: None,
                 recommended_hard_disk_space: None,
                 msrc_severity: None,
                 security_bulletin_ids: None,
+                title: None,
                 update_type: None,
             }]
         }
