@@ -174,13 +174,26 @@ pub fn handle_set(input: &str) -> Result<String> {
                 matching_updates.push((update.clone(), is_installed));
             }
 
-            // Check if title matched multiple updates
-            if let Some(search_title) = &update_input.title {
-                if matching_updates.len() > 1 {
-                    let error_msg = t!("set.titleMatchedMultipleUpdates", title = search_title, count = matching_updates.len()).to_string();
-                    eprintln!("{{\"error\":\"{}\"}}", error_msg);
-                    return Err(Error::new(E_INVALIDARG.into(), error_msg));
-                }
+            // Check if multiple updates matched the provided criteria
+            if matching_updates.len() > 1 {
+                // Prefer the existing localized message when a title is provided,
+                // otherwise fall back to a generic message that does not assume title was used.
+                let error_msg = if let Some(search_title) = &update_input.title {
+                    t!(
+                        "set.titleMatchedMultipleUpdates",
+                        title = search_title,
+                        count = matching_updates.len()
+                    )
+                    .to_string()
+                } else {
+                    format!(
+                        "Multiple updates ({}) matched the provided criteria. \
+                         Please refine your criteria to uniquely identify a single update.",
+                        matching_updates.len()
+                    )
+                };
+                eprintln!("{{\"error\":\"{}\"}}", error_msg);
+                return Err(Error::new(E_INVALIDARG.into(), error_msg));
             }
 
             // Get the first (and should be only) match
