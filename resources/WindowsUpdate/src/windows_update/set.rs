@@ -162,18 +162,9 @@ pub fn handle_set(input: &str) -> Result<String> {
                 // Prefer the existing localized message when a title is provided,
                 // otherwise fall back to a generic message that does not assume title was used.
                 let error_msg = if let Some(search_title) = &update_input.title {
-                    t!(
-                        "set.titleMatchedMultipleUpdates",
-                        title = search_title,
-                        count = matching_updates.len()
-                    )
-                    .to_string()
+                    t!("set.titleMatchedMultipleUpdates", title = search_title, count = matching_updates.len()).to_string()
                 } else {
-                    format!(
-                        "Multiple updates ({}) matched the provided criteria. \
-                         Please refine your criteria to uniquely identify a single update.",
-                        matching_updates.len()
-                    )
+                    t!("set.criteriaMatchedMultipleUpdates", count = matching_updates.len()).to_string()
                 };
                 eprintln!("{{\"error\":\"{}\"}}", error_msg);
                 return Err(Error::new(E_INVALIDARG.into(), error_msg));

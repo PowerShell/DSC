@@ -164,11 +164,7 @@ pub fn handle_get(input: &str) -> Result<String> {
                     let search_title = update_input.title.as_ref().unwrap();
                     t!("get.titleMatchedMultipleUpdates", title = search_title, count = matching_updates.len()).to_string()
                 } else {
-                    // General message that does not assume which criterion caused ambiguity
-                    format!(
-                        "Multiple updates ({}) matched the specified criteria; please refine your search.",
-                        matching_updates.len()
-                    )
+                    t!("get.criteriaMatchedMultipleUpdates", count = matching_updates.len()).to_string()
                 };
 
                 eprintln!("{{\"error\":\"{}\"}}", error_msg);
