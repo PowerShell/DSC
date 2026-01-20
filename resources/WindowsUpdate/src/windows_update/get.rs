@@ -150,13 +150,29 @@ pub fn handle_get(input: &str) -> Result<String> {
                 matching_updates.push(update.clone());
             }
 
-            // Check if title matched multiple updates
-            if let Some(search_title) = &update_input.title {
-                if matching_updates.len() > 1 {
-                    let error_msg = t!("get.titleMatchedMultipleUpdates", title = search_title, count = matching_updates.len()).to_string();
-                    eprintln!("{{\"error\":\"{}\"}}", error_msg);
-                    return Err(Error::new(E_INVALIDARG.into(), error_msg));
-                }
+            // Check if multiple updates matched the provided criteria
+            if matching_updates.len() > 1 {
+                // Determine if title was the only search criterion
+                let title_only = update_input.title.is_some()
+                    && update_input.id.is_none()
+                    && update_input.kb_article_ids.is_none()
+                    && update_input.is_installed.is_none()
+                    && update_input.update_type.is_none()
+                    && update_input.msrc_severity.is_none();
+
+                let error_msg = if title_only {
+                    let search_title = update_input.title.as_ref().unwrap();
+                    t!("get.titleMatchedMultipleUpdates", title = search_title, count = matching_updates.len()).to_string()
+                } else {
+                    // General message that does not assume which criterion caused ambiguity
+                    format!(
+                        "Multiple updates ({}) matched the specified criteria; please refine your search.",
+                        matching_updates.len()
+                    )
+                };
+
+                eprintln!("{{\"error\":\"{}\"}}", error_msg);
+                return Err(Error::new(E_INVALIDARG.into(), error_msg));
             }
 
             // Get the first (and should be only) match
