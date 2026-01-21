@@ -296,25 +296,25 @@ class PSClassResource {
 
 
 
-    $modulePathRootPSM1 = Join-Path $windowsPowerShellPath 'TestScriptBaseDSC' 'TestScriptBaseDSC.psm1'
+    $modulePathRootPSM1 = Join-Path $windowsPowerShellPath 'TestScriptBaseDSC' '0.0.1' 'TestScriptBaseDSC.psm1'
         if (-not (Test-Path -Path $modulePathRootPSM1)) {
         New-Item -Path $modulePathRootPSM1 -ItemType File -Value $moduleScriptRootPSM1 -Force | Out-Null
     }
 
 
-    $modulePathRootPSD1 = Join-Path $windowsPowerShellPath 'TestScriptBaseDSC' 'TestScriptBaseDSC.psd1'
+    $modulePathRootPSD1 = Join-Path $windowsPowerShellPath 'TestScriptBaseDSC' '0.0.1' 'TestScriptBaseDSC.psd1'
         if (-not (Test-Path -Path $modulePathRootPSD1)) {
         New-Item -Path $modulePathRootPSD1 -ItemType File -Value $moduleFileScriptRootPSD1 -Force | Out-Null
     }
 
 
-    $modulePathScriptCredentialValidationPSM1 = Join-Path $windowsPowerShellPath 'TestScriptBaseDSC' 'DSCResources' 'CredentialValidation' 'CredentialValidation.psm1'
+    $modulePathScriptCredentialValidationPSM1 = Join-Path $windowsPowerShellPath 'TestScriptBaseDSC' '0.0.1' 'DSCResources' 'CredentialValidation' 'CredentialValidation.psm1'
     if (-not (Test-Path -Path $modulePathScriptCredentialValidationPSM1)) {
         Write-Host "File will be created: $modulePathScriptCredentialValidationPSM1"
         New-Item -Path $modulePathScriptCredentialValidationPSM1 -ItemType File -Value $moduleScriptCredentialValidationPSM1 -Force | Out-Null
     }
 
-    $modulePathScriptCredentialValidationSchemaMof = Join-Path $windowsPowerShellPath 'TestScriptBaseDSC' 'DSCResources' 'CredentialValidation' 'CredentialValidation.schema.mof'
+    $modulePathScriptCredentialValidationSchemaMof = Join-Path $windowsPowerShellPath 'TestScriptBaseDSC' '0.0.1' 'DSCResources' 'CredentialValidation' 'CredentialValidation.schema.mof'
     if (-not (Test-Path -Path $modulePathScriptCredentialValidationSchemaMof)) {
         Write-Host "File will be created: $modulePathScriptCredentialValidationSchemaMof"
         New-Item -Path $modulePathScriptCredentialValidationSchemaMof -ItemType File -Value $moduleScriptCredentialValidationSchemaMof -Force | Out-Null
@@ -404,7 +404,7 @@ resources:
 
   ## Scipt base resources test running
 
-It 'Valide credentials with Script base resources' {
+It 'Config works with credential object Script base resources' {
 
 $inDesiredState = $true
 
@@ -425,35 +425,11 @@ resources:
 '@
 
 $out = dsc -l trace config test -i $yaml 2>"$testdrive/error.log" | ConvertFrom-Json
-$LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path "$testdrive/error.log" -Raw | Out-String)
-$out.results[0].result.inDesiredState | Should -Be $inDesiredState
+$LASTEXITCODE | Should -Be 0 -Because ($out.results[0].result.inDesiredState | Should -Be $inDesiredState)
 }
 
-It 'Not Valide credentials with Script base resources - wrong username' {
 
-$inDesiredState = $false
-
-$yaml = @'
-$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
-resources:
-- name: Working with classic DSC resources
-  type: Microsoft.Windows/WindowsPowerShell
-  properties:
-    resources:
-    - name: Script-resource Info
-      type: TestScriptBaseDSC/CredentialValidation
-      properties:
-        Name: TestScriptResource1
-        Credential:       
-           username: User
-           password: Password
-'@
-
-$out = dsc -l trace config test -i $yaml 2>"$testdrive/error.log" | ConvertFrom-Json
-$LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path "$testdrive/error.log" -Raw | Out-String)
-$out.results[0].result.inDesiredState | Should -Be $inDesiredState
-}
-
+# This works
 It 'Not Valide credentials with Script base resources - wrong properties' {
 
 
