@@ -63,6 +63,7 @@ $filesForWindowsPackage = @(
     'NOTICE.txt',
     'osinfo.exe',
     'osinfo.dsc.resource.json',
+    'PowerShell_adapter.dsc.resource.json',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
     'psscript.ps1',
@@ -77,13 +78,16 @@ $filesForWindowsPackage = @(
     'sshdconfig.exe',
     'sshd-windows.dsc.resource.json',
     'sshd_config.dsc.resource.json',
+    'WindowsPowerShell_adapter.dsc.resource.json',
     'windowspowershell.dsc.resource.json',
     'wmi.dsc.resource.json',
     'wmi.resource.ps1',
     'wmiAdapter.psd1',
     'wmiAdapter.psm1',
     'windows_baseline.dsc.yaml',
-    'windows_inventory.dsc.yaml'
+    'windows_inventory.dsc.yaml',
+    'wu_dsc.exe',
+    'windowsupdate.dsc.resource.json'
 )
 
 $filesForLinuxPackage = @(
@@ -102,6 +106,7 @@ $filesForLinuxPackage = @(
     'NOTICE.txt',
     'osinfo',
     'osinfo.dsc.resource.json',
+    'PowerShell_adapter.dsc.resource.json',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
     'psscript.ps1',
@@ -128,6 +133,7 @@ $filesForMacPackage = @(
     'NOTICE.txt',
     'osinfo',
     'osinfo.dsc.resource.json',
+    'PowerShell_adapter.dsc.resource.json',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
     'psscript.ps1',
@@ -344,7 +350,7 @@ if (!$SkipBuild) {
     New-Item -ItemType Directory $target -ErrorAction Ignore > $null
 
     # make sure dependencies are built first so clippy runs correctly
-    $windows_projects = @("lib/dsc-lib-pal", "lib/dsc-lib-registry", "resources/registry", "resources/reboot_pending", "adapters/wmi", "configurations/windows", 'extensions/appx')
+    $windows_projects = @("lib/dsc-lib-pal", "lib/dsc-lib-registry", "resources/registry", "resources/reboot_pending", "resources/WindowsUpdate","adapters/wmi", "configurations/windows", 'extensions/appx')
     $macOS_projects = @("resources/brew")
     $linux_projects = @("resources/apt")
 
