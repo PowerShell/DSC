@@ -121,7 +121,7 @@ class PSClassResource {
     ## Add script base Classs for testing
 
     $moduleFileScriptRootPSD1 = @"
-    @{
+@{
         # Script module or binary module file associated with this manifest.
         RootModule            = 'TestScriptBaseDSC.psm1'
 
@@ -183,12 +183,12 @@ class PSClassResource {
             } # End of PSData hashtable
         } # End of PrivateData hashtable
     }
+"@
 
-    "@
     $moduleScriptRootPSM1 = @"
     # Root module for CredentialValidationDsc
     # No code required
-    "@
+"@
 
     $moduleScriptCredentialValidationPSM1 = @'
 
@@ -282,7 +282,8 @@ class PSClassResource {
         Write-Verbose "[SET]Credential cannot be remediated by DSC."
     }
 
-    '@
+'@
+
     $moduleScriptCredentialValidationSchemaMof = @"
     [ClassVersion("1.0.0.0"), FriendlyName("CredentialValidation")]
     class CredentialValidation : OMI_BaseResource
@@ -291,7 +292,7 @@ class PSClassResource {
         [Required, Description("Test Credentials for Script Base"), EmbeddedInstance("MSFT_Credential")] String Credential;
     };
 
-    "@
+"@
 
 
 
