@@ -80,6 +80,9 @@ pub struct MicrosoftDscMetadata {
     /// Indicates what needs to be restarted after the configuration operation
     #[serde(rename = "restartRequired", skip_serializing_if = "Option::is_none")]
     pub restart_required: Option<Vec<RestartRequired>>,
+    /// Copy loop context for resources expanded from copy loops
+    #[serde(rename = "copyLoops", skip_serializing_if = "Option::is_none")]
+    pub copy_loops: Option<Map<String, Value>>,
     /// The security context of the configuration operation, can be specified to be required
     #[serde(rename = "securityContext", skip_serializing_if = "Option::is_none")]
     pub security_context: Option<SecurityContextKind>,

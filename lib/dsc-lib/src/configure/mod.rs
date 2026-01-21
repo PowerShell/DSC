@@ -340,7 +340,21 @@ impl Configurator {
     }
 
     fn get_properties(&mut self, resource: &Resource, resource_kind: &Kind) -> Result<Option<Map<String, Value>>, DscError> {
-        match resource_kind {
+        // Restore copy loop context from resource metadata under Microsoft.DSC/copyLoops if present
+        if let Some(metadata) = &resource.metadata {
+            if let Some(microsoft) = &metadata.microsoft {
+                if let Some(copy_loops) = &microsoft.copy_loops {
+                    for (loop_name, value) in copy_loops {
+                        if let Some(index) = value.as_i64() {
+                            self.context.copy.insert(loop_name.to_string(), index);
+                            self.context.copy_current_loop_name.clone_from(loop_name);
+                        }
+                    }
+                }
+            }
+        }
+
+        let result = match resource_kind {
             Kind::Group => {
                 // if Group resource, we leave it to the resource to handle expressions
                 Ok(resource.properties.clone())
@@ -348,7 +362,13 @@ impl Configurator {
             _ => {
                 Ok(invoke_property_expressions(&mut self.statement_parser, &self.context, resource.properties.as_ref())?)
             },
-        }
+        };
+
+        // Clear copy loop context after processing resource
+        self.context.copy.clear();
+        self.context.copy_current_loop_name.clear();
+
+        result
     }
 
     /// Invoke the get operation on a resource.
@@ -982,6 +1002,7 @@ impl Configurator {
                     security_context: Some(self.context.security_context.clone()),
                     start_datetime: Some(self.context.start_datetime.to_rfc3339()),
                     version: Some(version),
+                    copy_loops: None,
                 }
             ),
             other: Map::new(),
