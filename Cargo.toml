@@ -149,8 +149,6 @@ darling = { version = "0.23" }
 derive_builder = { version = "0.20" }
 # dsc, dsc-lib
 indicatif = { version = "0.18" }
-# dsc-bicep-ext
-async-stream = { version = "0.3" }
 # dsc-lib-security_context::windows
 is_elevated = { version = "0.1" }
 # dsc, dsc-lib

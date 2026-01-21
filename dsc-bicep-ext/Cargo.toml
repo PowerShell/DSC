@@ -10,7 +10,6 @@ path = "src/main.rs"
 [dependencies]
 dsc-lib = { workspace = true }
 
-async-stream = { workspace = true }
 clap = { workspace = true }
 prost = { workspace = true }
 rust-i18n = { workspace = true }
