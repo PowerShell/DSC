@@ -118,7 +118,7 @@ class PSClassResource {
       New-Item -Path $modulePath -ItemType File -Value $module -Force | Out-Null
     }
 
-    ## Add script base Classs for testing
+    ## Add script base Classs for testing and credential object
 
     $moduleFileScriptRootPSD1 = @"
 @{
