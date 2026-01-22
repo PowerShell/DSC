@@ -11,7 +11,7 @@ use std::{collections::HashMap, fmt::Display};
 use crate::{schemas::{
     dsc_repo::DscRepoSchema,
     transforms::{idiomaticize_externally_tagged_enum, idiomaticize_string_enum}
-}, types::FullyQualifiedTypeName};
+}, FullyQualifiedTypeName};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]

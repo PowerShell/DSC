@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}, context::ProcessMode, parameters::{SECURE_VALUE_REDACTED, is_secure_value}}, dscresources::resource_manifest::{AdapterInputKind, Kind}, types::FullyQualifiedTypeName};
+use crate::{configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}, context::ProcessMode, parameters::{SECURE_VALUE_REDACTED, is_secure_value}}, dscresources::resource_manifest::{AdapterInputKind, Kind}, FullyQualifiedTypeName, TypeVersion};
 use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse};
 use crate::schemas::transforms::idiomaticize_string_enum;
@@ -38,7 +38,7 @@ pub struct DscResource {
     /// The kind of resource.
     pub kind: Kind,
     /// The version of the resource.
-    pub version: String,
+    pub version: TypeVersion,
     /// The capabilities of the resource.
     pub capabilities: Vec<Capability>,
     /// The file path to the resource.
@@ -101,7 +101,7 @@ impl DscResource {
         Self {
             type_name: FullyQualifiedTypeName::default(),
             kind: Kind::Resource,
-            version: String::new(),
+            version: TypeVersion::default(),
             capabilities: Vec::new(),
             description: None,
             path: PathBuf::new(),
@@ -282,6 +282,17 @@ impl DscResource {
             return Ok(adapter_resource.clone());
         }
         Err(DscError::Operation(t!("dscresources.dscresource.adapterResourceNotFound", adapter = adapter).to_string()))
+    }
+
+    /// Tries to retrieve the resource version as a semantic version.
+    ///
+    /// This method creates an instance of [`semver::Version`] from the [`version`] field, if
+    /// possible. If the underlying version is [`TypeVersion::Semantic`], it returns some
+    /// [`semver::Version`]. Otherwise, it returns [`None`].
+    ///
+    /// [`version`]: DscResource::version
+    pub fn semantic_version(&self) -> Option<&semver::Version> {
+        self.version.as_semver()
     }
 }
 

@@ -8,7 +8,7 @@ use serde_json::{Map, Value};
 use crate::dscresources::invoke_result::{GetResult, SetResult, TestResult};
 use crate::configure::config_doc::{Configuration, Metadata};
 use crate::schemas::{dsc_repo::DscRepoSchema, transforms::idiomaticize_string_enum};
-use crate::types::FullyQualifiedTypeName;
+use crate::FullyQualifiedTypeName;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]

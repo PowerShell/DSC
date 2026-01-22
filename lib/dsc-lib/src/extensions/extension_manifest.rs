@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use crate::dscerror::DscError;
 use crate::extensions::{discover::DiscoverMethod, import::ImportMethod, secret::SecretMethod};
 use crate::schemas::dsc_repo::DscRepoSchema;
-use crate::types::FullyQualifiedTypeName;
+use crate::FullyQualifiedTypeName;
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]

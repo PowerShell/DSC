@@ -5,7 +5,7 @@ use crate::configure::config_doc::Resource;
 use crate::configure::{Configuration, IntOrExpression, ProcessMode};
 use crate::DscError;
 use crate::parser::Statement;
-use crate::types::FullyQualifiedTypeName;
+use crate::FullyQualifiedTypeName;
 
 use rust_i18n::t;
 use serde_json::{Map, Value};
