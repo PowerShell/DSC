@@ -11,6 +11,14 @@ param(
     [string]$ResourceType
 )
 
+# Read JSON input from stdin using $input automatic variable for operations that need it
+if ($Operation -ne 'List' -and $Operation -ne 'ClearCache') {
+    $stdinData = $input | Out-String
+    if (-not [string]::IsNullOrWhiteSpace($stdinData)) {
+        $jsonInput = $stdinData
+    }
+}
+
 function Write-DscTrace {
     param(
         [Parameter(Mandatory = $false)]
