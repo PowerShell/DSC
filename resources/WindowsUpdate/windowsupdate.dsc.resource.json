@@ -127,6 +127,17 @@
                                 "title": "Update type",
                                 "description": "The type of the update (Software or Driver). Can be used as a filter in export operation.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#updatetype\n",
                                 "markdownDescription": "The type of the update (Software or Driver). Can be used as a filter in export operation.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#updatetype\n"
+                            },
+                            "installationBehavior": {
+                                "type": "string",
+                                "enum": [
+                                    "NeverReboots",
+                                    "AlwaysRequiresReboot",
+                                    "CanRequestReboot"
+                                ],
+                                "title": "Installation behavior",
+                                "description": "Indicates the reboot behavior expected from installing this update. NeverReboots means the update never requires a reboot, AlwaysRequiresReboot means it always requires one, and CanRequestReboot means it may request a reboot.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#installationbehavior\n",
+                                "markdownDescription": "Indicates the reboot behavior expected from installing this update.\n\n- **NeverReboots**: The update never requires a reboot\n- **AlwaysRequiresReboot**: The update always requires a reboot\n- **CanRequestReboot**: The update may request a reboot\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#installationbehavior\n"
                             }
                         }
                     }

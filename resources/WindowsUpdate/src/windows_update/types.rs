@@ -2,10 +2,13 @@
 // Licensed under the MIT License.
 
 use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateList {
+    #[serde(rename = "_metadata", skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<Map<String, Value>>,
     pub updates: Vec<UpdateInfo>,
 }
 
@@ -13,23 +16,25 @@ pub struct UpdateList {
 #[serde(rename_all = "camelCase")]
 pub struct UpdateInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub title: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub is_installed: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub installation_behavior: Option<InstallationBehavior>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_installed: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub is_uninstallable: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kb_article_ids: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub recommended_hard_disk_space: Option<i64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub msrc_severity: Option<MsrcSeverity>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub recommended_hard_disk_space: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub security_bulletin_ids: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub update_type: Option<UpdateType>,
 }
@@ -46,6 +51,18 @@ pub enum MsrcSeverity {
 pub enum UpdateType {
     Software,
     Driver,
+}
+
+/// Represents the installation behavior reboot options from Windows Update
+/// These values indicate what reboot behavior can be expected from an update
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub enum InstallationBehavior {
+    /// Never requires a reboot
+    NeverReboots,
+    /// Always requires a reboot
+    AlwaysRequiresReboot,
+    /// Can request a reboot
+    CanRequestReboot,
 }
 
 impl std::fmt::Display for MsrcSeverity {
@@ -137,6 +154,26 @@ pub fn extract_update_info(update: &IUpdate) -> Result<UpdateInfo> {
             }
         };
 
+        // Get installation behavior reboot setting
+        let installation_behavior = if let Ok(behavior) = update.InstallationBehavior() {
+            if let Ok(reboot_behavior) = behavior.RebootBehavior() {
+                // InstallRebootBehavior values:
+                // 0 = irbNeverReboots - Never requires reboot
+                // 1 = irbAlwaysRequiresReboot - Always requires reboot  
+                // 2 = irbCanRequestReboot - Can request reboot
+                match reboot_behavior.0 {
+                    0 => Some(InstallationBehavior::NeverReboots),
+                    1 => Some(InstallationBehavior::AlwaysRequiresReboot),
+                    2 => Some(InstallationBehavior::CanRequestReboot),
+                    _ => None,
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
         Ok(UpdateInfo {
             title: Some(title),
             is_installed: Some(is_installed),
@@ -148,6 +185,7 @@ pub fn extract_update_info(update: &IUpdate) -> Result<UpdateInfo> {
             msrc_severity,
             security_bulletin_ids: Some(security_bulletin_ids),
             update_type: Some(update_type),
+            installation_behavior,
         })
     }
 }
