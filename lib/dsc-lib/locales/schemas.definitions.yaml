@@ -33,3 +33,39 @@ schemas:
         a slash, like `Microsoft/OSInfo`. Type names may optionally include the group, area, and
         subarea segments to namespace the resource under the owner, like
         `Microsoft.Windows/Registry`.
+
+    semver:
+      title:
+        en-us: Semantic version
+      description:
+        en-us: |-
+          Defines a valid semantic version (semver)as a string.
+
+          For reference, see https://semver.org/
+      markdownDescription:
+        en-us: |-
+          Defines a valid semantic version ([semver][01]) as a string.
+
+          This value uses the [suggested regular expression][02] to validate whether the string is
+          valid semver. This is the same pattern, made multi-line for easier readability:
+
+          ```regex
+          ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)
+          (?:-(
+            (?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)
+            (?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))
+          *))?
+          (?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
+          ```
+
+          The first line matches the `major.minor.patch` components of the version. The middle
+          lines match the pre-release components. The last line matches the build metadata
+          component.
+
+          [01]: https://semver.org/
+          [02]: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
+      patternErrorMessage:
+        en-us: |-
+          Invalid value, must be a semantic version like `<major>.<minor>.<patch>`, such as `1.2.3`.
+
+          The value may also include pre-release version information and build metadata.
