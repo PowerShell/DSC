@@ -8,6 +8,8 @@ use serde_json::Map;
 use std::process::exit;
 use tracing::{debug, error};
 
+use crate::inputs::{RepeatInput, RepeatListInput};
+
 use args::{Args, Command, DefaultShell, Setting};
 use get::{get_sshd_settings, invoke_get};
 use parser::SshdConfigParser;
@@ -50,6 +52,12 @@ fn main() {
             let schema = match setting {
                 Setting::SshdConfig => {
                     schema_for!(SshdConfigParser)
+                },
+                Setting::SshdConfigRepeat => {
+                    schema_for!(RepeatInput)
+                },
+                Setting::SshdConfigRepeatList => {
+                    schema_for!(RepeatListInput)
                 },
                 Setting::WindowsGlobal => {
                     schema_for!(DefaultShell)

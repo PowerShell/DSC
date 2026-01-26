@@ -73,5 +73,7 @@ pub struct DefaultShell {
 #[derive(Clone, Debug, Eq, PartialEq, ValueEnum)]
 pub enum Setting {
     SshdConfig,
-    WindowsGlobal
+    SshdConfigRepeat,
+    SshdConfigRepeatList,
+    WindowsGlobal,
 }

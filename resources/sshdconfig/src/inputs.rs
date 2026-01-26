@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::path::PathBuf;
@@ -27,6 +28,7 @@ impl CommandInfo {
         input: Map<String, Value>,
         metadata: Metadata,
         purge: bool,
+        _purge_keyword_only: bool,
         sshd_args: Option<SshdCommandArgs>
     ) -> Self {
         // Lowercase keys for case-insensitive comparison
@@ -44,7 +46,7 @@ impl CommandInfo {
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 pub struct Metadata {
     /// Filepath for the `sshd_config` file to be processed
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -68,4 +70,42 @@ pub struct SshdCommandArgs {
     /// additional arguments to pass to the sshd -T command
     #[serde(rename = "additionalArgs", skip_serializing_if = "Option::is_none")]
     pub additional_args: Option<Vec<String>>,
+}
+
+/// A name-value entry for structured keywords like subsystem.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct NameValueEntry {
+    /// The entry name (e.g., subsystem name like "sftp")
+    pub name: String,
+    /// The entry value (e.g., subsystem command path and args)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub value: Option<String>,
+}
+
+/// Input for name-value keyword single-entry operations (e.g., subsystem).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub struct RepeatInput {
+    /// Whether the entry should exist (true) or be removed (false)
+    #[serde(rename = "_exist", default)]
+    pub exist: bool,
+    /// Metadata for the operation
+    #[serde(rename = "_metadata", skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<Metadata>,
+    /// The keyword and its entry (e.g., "subsystem": {"name": "sftp", "value": "/usr/bin/sftp"})
+    #[serde(flatten)]
+    pub additional_properties: Map<String, Value>,
+}
+
+/// Input for name-value keyword list operations with purge support (e.g., subsystem list).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub struct RepeatListInput {
+    /// Whether to remove entries not in the input list
+    #[serde(rename = "_purge", default)]
+    pub purge: bool,
+    /// Metadata for the operation
+    #[serde(rename = "_metadata", skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<Metadata>,
+    /// The keyword and its array of entries (e.g., "subsystem": [{"name": "sftp", "value": "..."}])
+    #[serde(flatten)]
+    pub additional_properties: Map<String, Value>,
 }

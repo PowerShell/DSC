@@ -17,7 +17,7 @@ use crate::args::{DefaultShell, Setting};
 use crate::error::SshdConfigError;
 use crate::formatter::write_config_map_to_text;
 use crate::get::get_sshd_settings;
-use crate::inputs::{CommandInfo, SshdCommandArgs};
+use crate::inputs::{CommandInfo, NameValueEntry, RepeatInput, RepeatListInput, SshdCommandArgs};
 use crate::metadata::{SSHD_CONFIG_HEADER, SSHD_CONFIG_HEADER_VERSION, SSHD_CONFIG_HEADER_WARNING};
 use crate::util::{build_command_info, get_default_sshd_config_path, invoke_sshd_config_validation};
 
@@ -36,6 +36,16 @@ pub fn invoke_set(input: &str, setting: &Setting) -> Result<Map<String, Value>, 
                 Err(e) => Err(e),
             }
         },
+        Setting::SshdConfigRepeat => {
+            debug!("{} {:?}", t!("set.settingSshdConfig").to_string(), setting);
+            let mut cmd_info = build_command_info(Some(&input.to_string()), false)?;
+            set_sshd_config_repeat(input, &mut cmd_info)
+        },
+        Setting::SshdConfigRepeatList => {
+            debug!("{} {:?}", t!("set.settingSshdConfig").to_string(), setting);
+            let mut cmd_info = build_command_info(Some(&input.to_string()), false)?;
+            set_sshd_config_repeat_list(input, &mut cmd_info)
+        },
         Setting::WindowsGlobal => {
             debug!("{} {:?}", t!("set.settingDefaultShell").to_string(), setting);
             match serde_json::from_str::<DefaultShell>(input) {
@@ -51,6 +61,75 @@ pub fn invoke_set(input: &str, setting: &Setting) -> Result<Map<String, Value>, 
             }
         }
     }
+}
+
+/// Handle single name-value keyword entry operations (add or remove).
+fn set_sshd_config_repeat(input: &str, cmd_info: &mut CommandInfo) -> Result<Map<String, Value>, SshdConfigError> {
+    let keyword_input: RepeatInput = serde_json::from_str(input)
+        .map_err(|e| SshdConfigError::InvalidInput(t!("set.failedToParse", input = e.to_string()).to_string()))?;
+
+    let (keyword, entry_value) = extract_single_keyword(keyword_input.additional_properties)?;
+
+    // Insert keyword into cmd_info.input to filter the get operation
+    cmd_info.input.insert(keyword.clone(), Value::Null);
+
+    let mut existing_config = export_existing_config(cmd_info)?;
+
+    // parses entry for name-value keywords, like subsystem, for now
+    // different keywords will likely need to be serialized into different structs
+    // and likely need to have different add/update/remove functions
+    let entry: NameValueEntry = serde_json::from_value(entry_value)
+        .map_err(|e| SshdConfigError::InvalidInput(t!("set.failedToParse", input = e.to_string()).to_string()))?;
+
+    if keyword_input.exist {
+        add_or_update_entry(&mut existing_config, &keyword, &entry)?;
+    } else {
+        remove_entry(&mut existing_config, &keyword, &entry.name);
+    }
+
+    cmd_info.input = existing_config;
+    cmd_info.purge = false;
+    set_sshd_config(cmd_info)?;
+    Ok(Map::new())
+}
+
+/// Handle list name-value keyword operations with purge support.
+fn set_sshd_config_repeat_list(input: &str, cmd_info: &mut CommandInfo) -> Result<Map<String, Value>, SshdConfigError> {
+    let list_input: RepeatListInput = serde_json::from_str(input)
+        .map_err(|e| SshdConfigError::InvalidInput(t!("set.failedToParse", input = e.to_string()).to_string()))?;
+
+    let (keyword, entries_value) = extract_single_keyword(list_input.additional_properties)?;
+
+    // Insert keyword into cmd_info.input to filter the get operation
+    cmd_info.input.insert(keyword.clone(), Value::Null);
+
+    let mut existing_config = export_existing_config(cmd_info)?;
+
+    // Ensure it's an array
+    let Value::Array(ref entries_array) = entries_value else {
+        return Err(SshdConfigError::InvalidInput(
+            t!("set.expectedArrayForKeyword", keyword = keyword).to_string()
+        ));
+    };
+
+    // Apply the changes based on _purge flag
+    if list_input.purge {
+        if entries_array.is_empty() {
+            existing_config.insert(keyword, Value::Null);
+        } else {
+            existing_config.insert(keyword, entries_value);
+        }
+    } else {
+        let entries = parse_and_validate_entries(entries_array)?;
+        for entry in entries {
+            add_or_update_entry(&mut existing_config, &keyword, &entry)?;
+        }
+    }
+
+    cmd_info.input = existing_config;
+    cmd_info.purge = false;
+    set_sshd_config(cmd_info)?;
+    Ok(Map::new())
 }
 
 #[cfg(windows)]
@@ -197,4 +276,111 @@ fn set_sshd_config(cmd_info: &mut CommandInfo) -> Result<(), SshdConfigError> {
         .map_err(|e| SshdConfigError::CommandError(e.to_string()))?;
 
     Ok(())
+}
+
+/// Extract and validate a single keyword from `additional_properties`.
+fn extract_single_keyword(additional_properties: Map<String, Value>) -> Result<(String, Value), SshdConfigError> {
+    let mut keywords: Vec<(String, Value)> = additional_properties.into_iter().collect();
+
+    if keywords.is_empty() {
+        return Err(SshdConfigError::InvalidInput(t!("set.noKeywordFoundInInput").to_string()));
+    }
+
+    if keywords.len() > 1 {
+        return Err(SshdConfigError::InvalidInput(
+            t!("set.multipleKeywordsNotAllowed", count = keywords.len()).to_string()
+        ));
+    }
+
+    Ok(keywords.remove(0))
+}
+
+/// Find the index of a name-value entry in a keyword array by matching the name field (case-sensitive).
+fn find_name_value_entry_index(keyword_array: &[Value], entry_name: &str) -> Option<usize> {
+    keyword_array.iter().position(|item| {
+        if let Value::Object(obj) = item {
+            if let Some(Value::String(name)) = obj.get("name") {
+                return name == entry_name;
+            }
+        }
+        false
+    })
+}
+
+/// Add or update a name-value entry in the config map.
+fn add_or_update_entry(config: &mut Map<String, Value>, keyword: &str, entry: &NameValueEntry) -> Result<(), SshdConfigError> {
+    if entry.value.is_none() {
+        return Err(SshdConfigError::InvalidInput(
+            t!("set.nameValueEntryRequiresValue").to_string()
+        ));
+    }
+
+    let entry_value = serde_json::to_value(entry)?;
+
+    if let Some(existing) = config.get_mut(keyword) {
+        if let Value::Array(arr) = existing {
+            if let Some(index) = find_name_value_entry_index(arr, &entry.name) {
+                // Entry exists, update it
+                arr[index] = entry_value;
+            } else {
+                // Entry doesn't exist, append it
+                arr.push(entry_value);
+            }
+        } else {
+            *existing = Value::Array(vec![entry_value]);
+        }
+    } else {
+        let new_array = Value::Array(vec![entry_value]);
+        config.insert(keyword.to_string(), new_array);
+    }
+    Ok(())
+}
+
+/// Remove a keyword entry based on the keyword's name field.
+fn remove_entry(config: &mut Map<String, Value>, keyword: &str, entry_name: &str) {
+    if let Some(Value::Array(arr)) = config.get_mut(keyword) {
+        if let Some(index) = find_name_value_entry_index(arr, entry_name) {
+            arr.remove(index);
+        }
+    }
+}
+
+/// Export existing config from file or return empty map if file doesn't exist.
+fn export_existing_config(cmd_info: &CommandInfo) -> Result<Map<String, Value>, SshdConfigError> {
+    match get_sshd_settings(cmd_info, false) {
+        Ok(config) => Ok(config),
+        Err(SshdConfigError::FileNotFound(_)) => {
+            // If file doesn't exist, create empty config
+            Ok(Map::new())
+        }
+        Err(e) => Err(e),
+    }
+}
+
+/// Parse and validate an array of name-value entries.
+fn parse_and_validate_entries(entries_array: &[Value]) -> Result<Vec<NameValueEntry>, SshdConfigError> {
+    let mut entries: Vec<NameValueEntry> = Vec::new();
+
+    for entry_value in entries_array {
+        let entry: NameValueEntry = serde_json::from_value(entry_value.clone())
+            .map_err(|e| SshdConfigError::InvalidInput(t!("set.failedToParse", input = e.to_string()).to_string()))?;
+
+        // Validate required name field
+        if entry.name.is_empty() {
+            return Err(SshdConfigError::InvalidInput(
+                t!("set.entryNameRequired").to_string()
+            ));
+        }
+
+        // Validate value field is present
+        if entry.value.is_none() || entry.value.as_ref().unwrap().is_empty() {
+            return Err(SshdConfigError::InvalidInput(
+                t!("set.entryValueRequired", name = entry.name).to_string()
+            ));
+        }
+
+        entries.push(entry);
+    }
+
+    Ok(entries)
 }
