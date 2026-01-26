@@ -296,4 +296,46 @@ Describe 'tests for resource discovery' {
             $env:DSC_RESOURCE_PATH = $null
         }
     }
+
+    It 'Resource discovery can be set to <mode>' -TestCases @(
+        @{ namespace = 'Microsoft.DSC'; mode = 'preDeployment' }
+        @{ namespace = 'Microsoft.DSC'; mode = 'duringDeployment' }
+        @{ namespace = 'Ignore'; mode = 'ignore' }
+    ) {
+        param($namespace, $mode)
+
+        $guid = (New-Guid).Guid.Replace('-', '')
+        $manifestPath = Join-Path (Split-Path (Get-Command dscecho -ErrorAction Stop).Source -Parent) echo.dsc.resource.json
+
+        $config_yaml = @"
+        `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/manifest.json
+        metadata:
+          ${namespace}:
+            resourceDiscovery: $mode
+        resources:
+        - type: Test/CopyResource
+          name: This should be found and executed
+          properties:
+            sourceFile: $manifestPath
+            typeName: "Test/$guid"
+        - type: Test/$guid
+          name: This is the new resource
+          properties:
+            output: Hello World
+"@
+        $out = dsc -l trace config get -i $config_yaml 2> "$testdrive/tracing.txt"
+        $traceLog = Get-Content -Raw -Path "$testdrive/tracing.txt"
+        if ($mode -ne 'duringDeployment') {
+            $LASTEXITCODE | Should -Be 2
+            $out | Should -BeNullOrEmpty
+            $traceLog | Should -Match "ERROR.*?Resource not found: Test/$guid"
+            $traceLog | Should -Not -Match "Invoking get for 'Test/CopyResource'"
+        } else {
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw -Path "$testdrive/tracing.txt")
+            $output = $out | ConvertFrom-Json
+            $output.actualState.output | Should -BeExactly 'Hello World'
+            $traceLog | Should -Match "Invoking get for 'Test/$guid'"
+            $traceLog | Should -Match "Skipping resource discovery due to 'resourceDiscovery' mode set to 'DuringDeployment'"
+        }
+    }
 }
