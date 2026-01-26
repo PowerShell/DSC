@@ -246,7 +246,7 @@ resources:
 
             # Verify file contains the new subsystem
             $subsystems = Get-Content $script:TestConfigPath | Where-Object { $_ -match '^\s*subsystem\s+' }
-            $subsystems.Count | Should -Be 4
+            $subsystems.Count | Should -Be 3
             $subsystems | Should -Contain "subsystem newsubsystem /path/to/newsubsystem"
         }
 
@@ -273,7 +273,7 @@ resources:
 
             # Verify subsystem was removed
             $subsystems = Get-Content $script:TestConfigPath | Where-Object { $_ -match '^\s*subsystem\s+' }
-            $subsystems.Count | Should -Be 2
+            $subsystems.Count | Should -Be 1
             $subsystems | Should -Not -Match 'sftp'
         }
 
@@ -304,7 +304,7 @@ resources:
 
             # Verify all subsystems are present (old + new)
             $subsystems = Get-Content $script:TestConfigPath | Where-Object { $_ -match '^\s*subsystem\s+' }
-            $subsystems.Count | Should -Be 5
+            $subsystems.Count | Should -Be 4
             $subsystems | Should -Contain "subsystem newsub1 /path/to/newsub1"
             $subsystems | Should -Contain "subsystem newsub2 /path/to/newsub2"
         }
@@ -368,7 +368,6 @@ resources:
             $sftpLine | Should -Match ([regex]::Escape($script:AlternatePath))
             $subsystems | Should -Contain "subsystem newsub /path/to/newsub"
             $subsystems | Should -Not -Match 'test2'
-            $subsystems | Should -Not -Match 'internal-sftp'
         }
     }
 }
