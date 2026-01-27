@@ -24,7 +24,7 @@
                 "_exist": {
                     "type": "boolean",
                     "description": "Whether the specified subsystem entry should exist (true) or be removed (false)",
-                    "default": false
+                    "default": true
                 },
                 "_metadata": {
                     "type": "object",
