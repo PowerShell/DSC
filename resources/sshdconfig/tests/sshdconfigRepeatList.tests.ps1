@@ -65,8 +65,8 @@ PasswordAuthentication yes
                 _purge = $false
                 subsystem = @(
                     @{
-                        name = "newsub1"
-                        value = "/path/to/newsub1"
+                        name = "powershell"
+                        value = "/usr/bin/pwsh -sshs -NoLogo"
                     },
                     @{
                         name = "newsub2"
@@ -90,9 +90,9 @@ PasswordAuthentication yes
             $result.subsystem.Count | Should -Be 4  # 2 existing + 2 new
 
             # Verify new subsystems were added
-            $newsub1 = $result.subsystem | Where-Object { $_.name -ceq 'newsub1' }
+            $newsub1 = $result.subsystem | Where-Object { $_.name -ceq 'powershell' }
             $newsub1 | Should -Not -BeNullOrEmpty
-            $newsub1.value | Should -Be '/path/to/newsub1'
+            $newsub1.value | Should -Be '/usr/bin/pwsh -sshs -NoLogo'
 
             $newsub2 = $result.subsystem | Where-Object { $_.name -ceq 'newsub2' }
             $newsub2 | Should -Not -BeNullOrEmpty

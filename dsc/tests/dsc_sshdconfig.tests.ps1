@@ -234,7 +234,7 @@ resources:
     _exist: true
     subsystem:
       name: newsubsystem
-      path: /path/to/newsubsystem
+      value: /path/to/newsubsystem
 "@
             $out = dsc config set -i "$config_yaml" | ConvertFrom-Json -Depth 10
             $LASTEXITCODE | Should -Be 0
@@ -292,9 +292,9 @@ resources:
     _purge: false
     subsystem:
     - name: newsub1
-      path: /path/to/newsub1
+      value: /path/to/newsub1
     - name: newsub2
-      path: /path/to/newsub2
+      value: /path/to/newsub2
 "@
             $out = dsc config set -i "$config_yaml" | ConvertFrom-Json -Depth 10
             $LASTEXITCODE | Should -Be 0
@@ -309,7 +309,7 @@ resources:
             $subsystems | Should -Contain "subsystem newsub2 /path/to/newsub2"
         }
 
-        It 'Should preserve unlisted subsystems when _purge is false' -Skip:($script:skipSubsystemTests) {
+        It 'Should preserve unlisted subsystems when _purge is false' {
             $config_yaml = @"
 `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 metadata:
@@ -324,7 +324,7 @@ resources:
     _purge: false
     subsystem:
     - name: onlythisone
-      path: /path/to/this
+      value: /path/to/this
 "@
             $out = dsc config set -i "$config_yaml" | ConvertFrom-Json -Depth 10
             $LASTEXITCODE | Should -Be 0
@@ -338,7 +338,7 @@ resources:
             $subsystems | Should -Contain "Subsystem test2 /path/to/test2"
         }
 
-        It 'Should remove unlisted subsystems when _purge is true' -Skip:($script:skipSubsystemTests) {
+        It 'Should remove unlisted subsystems when _purge is true' {
             $config_yaml = @"
 `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 metadata:
@@ -353,9 +353,9 @@ resources:
     _purge: true
     subsystem:
     - name: sftp
-      path: $($script:AlternatePath -replace '\\', '/')
+      value: $($script:AlternatePath -replace '\\', '/')
     - name: newsub
-      path: /path/to/newsub
+      value: /path/to/newsub
 "@
             $out = dsc config set -i "$config_yaml" | ConvertFrom-Json -Depth 10
             $LASTEXITCODE | Should -Be 0

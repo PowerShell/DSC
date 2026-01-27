@@ -79,7 +79,6 @@ multipleKeywordsNotAllowed = "Multiple keywords not allowed in input (found %{co
 nameValueEntryRequiresValue = "Name-value keyword entry requires 'value' field when _exist is true"
 noKeywordFoundInInput = "No keyword found in input (expected one keyword like 'subsystem')"
 purgeFalseRequiresExistingFile = "_purge=false requires an existing sshd_config file. Use _purge=true to create a new configuration file."
-purgeFalseUnsupported = "_purge=false is not supported for keywords that can have multiple values"
 settingDefaultShell = "Setting default shell"
 settingSshdConfig = "Setting sshd_config"
 shellPathDoesNotExist = "shell path does not exist: '%{shell}'"

@@ -22,11 +22,12 @@ pub struct SshdConfigValue<'a> {
     keyword_info: KeywordInfo,
     key: &'a str,
     value: &'a Value,
+    use_quotes: bool,
 }
 
 impl<'a> SshdConfigValue<'a> {
     /// Create a new SSHD config value, returning an error if the value is empty/invalid
-    pub fn try_new(key: &'a str, value: &'a Value, override_separator: Option<ValueSeparator>) -> Result<Self, SshdConfigError> {
+    pub fn try_new(key: &'a str, value: &'a Value, override_separator: Option<ValueSeparator>, use_quotes: bool) -> Result<Self, SshdConfigError> {
         // Structured keywords (objects with name/value) are allowed
         let is_structured_value = if let Value::Object(obj) = value {
             obj.contains_key("name") && obj.contains_key("value")
@@ -59,6 +60,7 @@ impl<'a> SshdConfigValue<'a> {
             keyword_info,
             key,
             value,
+            use_quotes,
         })
     }
 
@@ -66,7 +68,7 @@ impl<'a> SshdConfigValue<'a> {
         if self.keyword_info.is_repeatable {
             if let Value::Array(arr) = self.value {
                 for item in arr {
-                    let item = SshdConfigValue::try_new(self.key, item, Some(self.keyword_info.separator))?;
+                    let item = SshdConfigValue::try_new(self.key, item, Some(self.keyword_info.separator), self.use_quotes)?;
                     writeln!(config_text, "{} {item}", self.key)?;
                 }
             } else {
@@ -85,26 +87,11 @@ impl fmt::Display for SshdConfigValue<'_> {
             Value::Object(obj) => {
                 // Handle structured keywords (e.g., subsystem with name/value)
                 if let (Some(name), Some(value)) = (obj.get("name"), obj.get("value")) {
-                    // Format name
-                    if let Value::String(name_str) = name {
-                        if name_str.contains(char::is_whitespace) {
-                            write!(f, "\"{name_str}\" ")?;
-                        } else {
-                            write!(f, "{name_str} ")?;
-                        }
-                    } else {
-                        write!(f, "{name} ")?;
+                    if let Ok(name_formatted) = SshdConfigValue::try_new(self.key, name, Some(self.keyword_info.separator), false) {
+                        write!(f, "{name_formatted} ")?;
                     }
-
-                    // Format value
-                    if let Value::String(value_str) = value {
-                        if value_str.contains(char::is_whitespace) {
-                            write!(f, "\"{value_str}\"")?;
-                        } else {
-                            write!(f, "{value_str}")?;
-                        }
-                    } else {
-                        write!(f, "{value}")?;
+                    if let Ok(value_formatted) = SshdConfigValue::try_new(self.key, value, Some(self.keyword_info.separator), false) {
+                        write!(f, "{value_formatted}")?;
                     }
                     Ok(())
                 } else {
@@ -124,7 +111,7 @@ impl fmt::Display for SshdConfigValue<'_> {
 
                 let mut first = true;
                 for item in arr {
-                    if let Ok(sshd_config_value) = SshdConfigValue::try_new(self.key, item, Some(self.keyword_info.separator)) {
+                    if let Ok(sshd_config_value) = SshdConfigValue::try_new(self.key, item, Some(self.keyword_info.separator), self.use_quotes) {
                         let formatted = sshd_config_value.to_string();
                         if !formatted.is_empty() {
                             if !first {
@@ -142,7 +129,7 @@ impl fmt::Display for SshdConfigValue<'_> {
             Value::Bool(b) => write!(f, "{}", if *b { "yes" } else { "no" }),
             Value::Number(n) => write!(f, "{n}"),
             Value::String(s) => {
-                if s.contains(char::is_whitespace) {
+                if self.use_quotes && s.contains(char::is_whitespace) {
                     write!(f, "\"{s}\"")
                 } else {
                     write!(f, "{s}")
@@ -172,7 +159,7 @@ fn format_match_block(match_obj: &Value) -> Result<String, SshdConfigError> {
 
     for (key, value) in &match_block.criteria {
         // all match criteria values are comma-separated
-        let sshd_config_value = SshdConfigValue::try_new(key, value, Some(ValueSeparator::Comma))?;
+        let sshd_config_value = SshdConfigValue::try_new(key, value, Some(ValueSeparator::Comma), true)?;
         match_parts.push(format!("{key} {sshd_config_value}"));
     }
 
@@ -181,7 +168,7 @@ fn format_match_block(match_obj: &Value) -> Result<String, SshdConfigError> {
 
     // Format other keywords in the match block
     for (key, value) in &match_block.contents {
-        let sshd_config_value = SshdConfigValue::try_new(key, value, None)?;
+        let sshd_config_value = SshdConfigValue::try_new(key, value, None, true)?;
         result.push(format!("\t{key} {sshd_config_value}"));
     }
 
@@ -204,7 +191,7 @@ pub fn write_config_map_to_text(global_map: &Map<String, Value>) -> Result<Strin
             continue; // match blocks are handled after global settings
         }
 
-        let sshd_config_value = SshdConfigValue::try_new(key, value, None)?;
+        let sshd_config_value = SshdConfigValue::try_new(key, value, None, true)?;
         sshd_config_value.write_to_config(&mut config_text)?;
     }
 
