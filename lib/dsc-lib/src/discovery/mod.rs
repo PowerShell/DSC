@@ -139,6 +139,9 @@ impl Discovery {
         if !self.refresh_cache && !self.resources.is_empty() {
             // If resources are already discovered, no need to re-discover.
             return Ok(());
+        } else if self.refresh_cache {
+            self.resources.clear();
+            self.extensions.clear();
         }
 
         let mut command_discovery = CommandDiscovery::new(progress_format);

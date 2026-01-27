@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::{discovery::{discovery_trait::{DiscoveryFilter, DiscoveryKind, ResourceDiscovery}, matches_adapter_requirement}, parser::Statement};
-use crate::{locked_is_empty, locked_extend, locked_clone, locked_get};
+use crate::{locked_clear, locked_is_empty, locked_extend, locked_clone, locked_get};
 use crate::configure::{config_doc::ResourceDiscoveryMode, context::Context};
 use crate::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
 use crate::dscresources::resource_manifest::{import_manifest, validate_semver, Kind, ResourceManifest, SchemaKind};
@@ -209,6 +209,9 @@ impl ResourceDiscovery for CommandDiscovery {
     fn discover(&mut self, kind: &DiscoveryKind, filter: &str) -> Result<(), DscError> {
         if self.discovery_mode == ResourceDiscoveryMode::PreDeployment && !locked_is_empty!(RESOURCES) {
             return Ok(());
+        } else if self.discovery_mode == ResourceDiscoveryMode::DuringDeployment {
+            locked_clear!(RESOURCES);
+            locked_clear!(ADAPTERS);
         }
 
         // if kind is DscResource, we need to discover extensions first
