@@ -12,7 +12,7 @@ pub struct CopyResource {
 }
 
 pub fn copy_the_resource(source_file: &str, type_name: &str) -> Result<(), String> {
-    // open the source_file, derialize it from JSON, change the `type` property to type_name,
+    // open the source_file, deserialize it from JSON, change the `type` property to type_name,
     // serialize it back to JSON and save it to a new file named "<name>.dsc.resource.json"
     let file_content = std::fs::read_to_string(source_file)
         .map_err(|e| format!("Failed to read source file: {}", e))?;
