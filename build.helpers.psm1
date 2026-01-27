@@ -666,7 +666,7 @@ function Install-Protobuf {
 
         $WINGET_CANCEL_PACKAGE_ALREADY_INSTALLED = -1978335135
         if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne $WINGET_CANCEL_PACKAGE_ALREADY_INSTALLED) {
-            throw "Failed to install Protobuf"
+            throw "Failed to install Protobuf: $LASTEXITCODE"
         }
     }
 }
