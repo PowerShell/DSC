@@ -215,7 +215,7 @@ pub fn build_command_info(input: Option<&String>, is_get: bool) -> Result<Comman
         }
     }
 
-    Ok(CommandInfo::new(include_defaults, sshd_config, metadata, purge, false, sshd_args))
+    Ok(CommandInfo::new(include_defaults, sshd_config, metadata, purge, sshd_args))
 }
 
 /// Reads `sshd_config` file.

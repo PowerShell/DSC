@@ -28,7 +28,6 @@ impl CommandInfo {
         input: Map<String, Value>,
         metadata: Metadata,
         purge: bool,
-        _purge_keyword_only: bool,
         sshd_args: Option<SshdCommandArgs>
     ) -> Self {
         // Lowercase keys for case-insensitive comparison
