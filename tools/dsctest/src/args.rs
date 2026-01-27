@@ -19,6 +19,7 @@ pub enum Schemas {
     Trace,
     Version,
     WhatIf,
+    WhatIfResource,
 }
 
 #[derive(Debug, Parser)]
@@ -133,5 +134,15 @@ pub enum SubCommand {
     WhatIf {
         #[clap(name = "whatif", short, long, help = "Run as a whatif executionType instead of actual executionType")]
         what_if: bool,
-    }
+    },
+
+    #[clap(name = "whatif-resource", about = "Test resource for native what-if with whatIfArg")]
+    WhatIfResource {
+        #[clap(name = "operation", help = "The operation to perform (get, set, test, delete)")]
+        operation: String,
+        #[clap(name = "what-if", long, help = "Run in what-if mode")]
+        what_if: bool,
+        #[clap(name = "input", long, help = "The input JSON")]
+        input: Option<String>,
+    },
 }

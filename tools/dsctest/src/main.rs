@@ -16,6 +16,7 @@ mod sleep;
 mod trace;
 mod version;
 mod whatif;
+mod whatif_resource;
 
 use args::{Args, Schemas, SubCommand};
 use clap::Parser;
@@ -34,6 +35,7 @@ use crate::sleep::Sleep;
 use crate::trace::Trace;
 use crate::version::Version;
 use crate::whatif::WhatIf;
+use crate::whatif_resource::WhatIfResource;
 use std::{thread, time::Duration};
 
 #[allow(clippy::too_many_lines)]
@@ -266,6 +268,9 @@ fn main() {
                 Schemas::WhatIf => {
                     schema_for!(WhatIf)
                 },
+                Schemas::WhatIfResource => {
+                    schema_for!(WhatIfResource)
+                },
             };
             serde_json::to_string(&schema).unwrap()
         },
@@ -305,9 +310,81 @@ fn main() {
             };
             serde_json::to_string(&result).unwrap()
         },
+        SubCommand::WhatIfResource { operation, what_if, input } => {
+            handle_whatif_resource(&operation, what_if, input.as_deref())
+        },
     };
 
     if !json.is_empty() {
         println!("{json}");
+    }
+}
+
+fn handle_whatif_resource(operation: &str, what_if: bool, input: Option<&str>) -> String {
+    let input_str = input.unwrap_or("{}");
+
+    match operation {
+        "get" => {
+            let resource = if input_str == "{}" {
+                WhatIfResource::new("default".to_string(), "initial".to_string(), false)
+            } else {
+                match serde_json::from_str::<WhatIfResource>(input_str) {
+                    Ok(r) => r,
+                    Err(err) => {
+                        eprintln!("Error parsing input JSON: {err}");
+                        std::process::exit(1);
+                    }
+                }
+            };
+            serde_json::to_string(&resource).unwrap()
+        },
+        "set" => {
+            let mut resource = match serde_json::from_str::<WhatIfResource>(input_str) {
+                Ok(r) => r,
+                Err(err) => {
+                    eprintln!("Error parsing input JSON: {err}");
+                    std::process::exit(1);
+                }
+            };
+            resource.what_if_mode = Some(what_if);
+            if what_if {
+                eprintln!("What-if: Would set resource to: {}", serde_json::to_string(&resource).unwrap());
+            }
+            serde_json::to_string(&resource).unwrap()
+        },
+        "test" => {
+            let resource = match serde_json::from_str::<WhatIfResource>(input_str) {
+                Ok(r) => r,
+                Err(err) => {
+                    eprintln!("Error parsing input JSON: {err}");
+                    std::process::exit(1);
+                }
+            };
+            // Always return in desired state for test
+            let result = serde_json::json!({
+                "desiredState": resource,
+                "actualState": resource,
+                "inDesiredState": true,
+                "diffProperties": []
+            });
+            serde_json::to_string(&result).unwrap()
+        },
+        "delete" => {
+            let resource = match serde_json::from_str::<WhatIfResource>(input_str) {
+                Ok(r) => r,
+                Err(err) => {
+                    eprintln!("Error parsing input JSON: {err}");
+                    std::process::exit(1);
+                }
+            };
+            if what_if {
+                eprintln!("What-if: Would delete resource: {}", serde_json::to_string(&resource).unwrap());
+            }
+            String::new()
+        },
+        _ => {
+            eprintln!("Unknown operation: {operation}");
+            std::process::exit(1);
+        }
     }
 }
