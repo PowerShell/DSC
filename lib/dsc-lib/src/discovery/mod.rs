@@ -4,6 +4,7 @@
 pub mod command_discovery;
 pub mod discovery_trait;
 
+use crate::configure::config_doc::ResourceDiscoveryMode;
 use crate::discovery::discovery_trait::{DiscoveryKind, ResourceDiscovery, DiscoveryFilter};
 use crate::dscerror::DscError;
 use crate::extensions::dscextension::{Capability, DscExtension};
@@ -140,7 +141,10 @@ impl Discovery {
             return Ok(());
         }
 
-        let command_discovery = CommandDiscovery::new(progress_format);
+        let mut command_discovery = CommandDiscovery::new(progress_format);
+        if self.refresh_cache {
+            command_discovery.set_discovery_mode(&ResourceDiscoveryMode::DuringDeployment);
+        }
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
             Box::new(command_discovery),
         ];

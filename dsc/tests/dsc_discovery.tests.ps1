@@ -333,7 +333,8 @@ Describe 'tests for resource discovery' {
         } else {
             $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw -Path "$testdrive/tracing.txt")
             $output = $out | ConvertFrom-Json
-            $output.actualState.output | Should -BeExactly 'Hello World'
+            $output.results[0].result.actualState.typeName | Should -BeExactly "Test/$guid" -Because $out
+            $output.results[1].result.actualState.output | Should -BeExactly 'Hello World' -Because $out
             $traceLog | Should -Match "Invoking get for 'Test/$guid'"
             $traceLog | Should -Match "Skipping resource discovery due to 'resourceDiscovery' mode set to 'DuringDeployment'"
         }

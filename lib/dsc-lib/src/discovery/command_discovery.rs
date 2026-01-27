@@ -3,7 +3,7 @@
 
 use crate::{discovery::{discovery_trait::{DiscoveryFilter, DiscoveryKind, ResourceDiscovery}, matches_adapter_requirement}, parser::Statement};
 use crate::{locked_is_empty, locked_extend, locked_clone, locked_get};
-use crate::configure::context::Context;
+use crate::configure::{config_doc::ResourceDiscoveryMode, context::Context};
 use crate::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
 use crate::dscresources::resource_manifest::{import_manifest, validate_semver, Kind, ResourceManifest, SchemaKind};
 use crate::dscresources::command_resource::invoke_command;
@@ -56,6 +56,7 @@ pub enum ImportedManifest {
 #[derive(Clone)]
 pub struct CommandDiscovery {
     progress_format: ProgressFormat,
+    discovery_mode: ResourceDiscoveryMode,
 }
 
 #[derive(Deserialize)]
@@ -85,6 +86,7 @@ impl CommandDiscovery {
     pub fn new(progress_format: ProgressFormat) -> CommandDiscovery {
         CommandDiscovery {
             progress_format,
+            discovery_mode: ResourceDiscoveryMode::PreDeployment,
         }
     }
 
@@ -205,12 +207,12 @@ impl ResourceDiscovery for CommandDiscovery {
 
     #[allow(clippy::too_many_lines)]
     fn discover(&mut self, kind: &DiscoveryKind, filter: &str) -> Result<(), DscError> {
-        if !locked_is_empty!(RESOURCES) {
+        if self.discovery_mode == ResourceDiscoveryMode::PreDeployment && !locked_is_empty!(RESOURCES) {
             return Ok(());
         }
 
         // if kind is DscResource, we need to discover extensions first
-        if *kind == DiscoveryKind::Resource && locked_is_empty!(EXTENSIONS) {
+        if *kind == DiscoveryKind::Resource && (self.discovery_mode == ResourceDiscoveryMode::DuringDeployment || locked_is_empty!(EXTENSIONS)){
             self.discover(&DiscoveryKind::Extension, "*")?;
         }
 
@@ -351,7 +353,7 @@ impl ResourceDiscovery for CommandDiscovery {
     }
 
     fn discover_adapted_resources(&mut self, name_filter: &str, adapter_filter: &str) -> Result<(), DscError> {
-        if locked_is_empty!(RESOURCES) && locked_is_empty!(ADAPTERS) {
+        if self.discovery_mode == ResourceDiscoveryMode::DuringDeployment || (locked_is_empty!(RESOURCES) && locked_is_empty!(ADAPTERS)) {
             self.discover(&DiscoveryKind::Resource, "*")?;
         }
 
@@ -490,7 +492,7 @@ impl ResourceDiscovery for CommandDiscovery {
 
     fn find_resources(&mut self, required_resource_types: &[DiscoveryFilter]) -> Result<BTreeMap<String, Vec<DscResource>>, DscError> {
         debug!("{}", t!("discovery.commandDiscovery.searchingForResources", resources = required_resource_types : {:?}));
-        if locked_is_empty!(RESOURCES) {
+        if self.discovery_mode == ResourceDiscoveryMode::DuringDeployment || locked_is_empty!(RESOURCES) {
             self.discover(&DiscoveryKind::Resource, "*")?;
         }
         let mut found_resources = BTreeMap::<String, Vec<DscResource>>::new();
@@ -552,6 +554,10 @@ impl ResourceDiscovery for CommandDiscovery {
             self.discover(&DiscoveryKind::Extension, "*")?;
         }
         Ok(locked_clone!(EXTENSIONS))
+    }
+
+    fn set_discovery_mode(&mut self, mode: &ResourceDiscoveryMode) {
+        self.discovery_mode = mode.clone();
     }
 }
 
