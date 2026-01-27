@@ -542,7 +542,7 @@ impl Configurator {
                         },
                     };
                     start_datetime = chrono::Local::now();
-                    if let Err(e) = dsc_resource.delete(&desired) {
+                    if let Err(e) = dsc_resource.delete(&desired, &self.context.execution_type) {
                         progress.set_failure(get_failure_from_error(&e));
                         progress.write_increment(1);
                         return Err(e);

@@ -112,6 +112,12 @@ pub enum ArgKind {
         /// The argument that accepts the resource type name.
         #[serde(rename = "resourceTypeArg")]
         resource_type_arg: String,
+    },
+    /// The argument is passed when the resource is invoked in what-if mode.
+    WhatIf {
+        /// The argument to pass when in what-if mode.
+        #[serde(rename = "whatIfArg")]
+        what_if_arg: String,
     }
 }
 
@@ -300,6 +306,12 @@ pub fn import_manifest(manifest: Value) -> Result<ResourceManifest, DscError> {
     // if !manifest.schema_version.eq(MANIFEST_SCHEMA_VERSION) {
     //     return Err(DscError::InvalidManifestSchemaVersion(manifest.schema_version, MANIFEST_SCHEMA_VERSION.to_string()));
     // }
+
+    // Emit deprecation warning if whatIf operation is defined
+    if manifest.what_if.is_some() {
+        tracing::warn!("Resource '{}' uses deprecated 'whatIf' operation. Please migrate to using 'whatIfArg' in the set and/or delete method args instead.", manifest.resource_type);
+    }
+
     Ok(manifest)
 }
 
@@ -319,6 +331,23 @@ pub fn import_manifest(manifest: Value) -> Result<ResourceManifest, DscError> {
 pub fn validate_semver(version: &str) -> Result<(), semver::Error> {
     Version::parse(version)?;
     Ok(())
+}
+
+/// Check if args contain a WhatIf ArgKind variant.
+///
+/// # Arguments
+///
+/// * `args` - The optional vector of ArgKind to check.
+///
+/// # Returns
+///
+/// * `bool` - True if args contain a WhatIf variant, false otherwise.
+pub fn has_whatif_arg(args: &Option<Vec<ArgKind>>) -> bool {
+    if let Some(args_vec) = args {
+        args_vec.iter().any(|arg| matches!(arg, ArgKind::WhatIf { .. }))
+    } else {
+        false
+    }
 }
 
 #[cfg(test)]

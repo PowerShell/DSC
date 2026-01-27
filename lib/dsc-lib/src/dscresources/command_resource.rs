@@ -35,7 +35,7 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &Path, filter: &str, target_
         Some(r) => r,
         None => resource.resource_type.clone(),
     };
-    let args = process_args(get.args.as_ref(), filter, &resource_type);
+    let args = process_args(get.args.as_ref(), filter, &resource_type, &ExecutionKind::Actual);
     if !filter.is_empty() {
         verify_json(resource, cwd, filter)?;
         command_input = get_command_input(get.input.as_ref(), filter)?;
@@ -82,6 +82,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &Path, desired: &str, skip_t
     debug!("{}", t!("dscresources.commandResource.invokeSet", resource = &resource.resource_type));
     let operation_type: String;
     let mut is_synthetic_what_if = false;
+
     let set_method = match execution_type {
         ExecutionKind::Actual => {
             operation_type = "set".to_string();
@@ -89,11 +90,23 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &Path, desired: &str, skip_t
         },
         ExecutionKind::WhatIf => {
             operation_type = "whatif".to_string();
-            if resource.what_if.is_none() {
+            // Check if set args contain WhatIf ArgKind
+            let has_native_whatif = if let Some(set) = &resource.set {
+                super::resource_manifest::has_whatif_arg(&set.args)
+            } else {
+                false
+            };
+
+            // Fallback to deprecated whatIf operation if present and set doesn't have whatIfArg
+            if !has_native_whatif && resource.what_if.is_some() {
+                &resource.what_if
+            } else if !has_native_whatif {
+                // No native what-if support, use synthetic
                 is_synthetic_what_if = true;
                 &resource.set
             } else {
-                &resource.what_if
+                // Resource has native what-if via whatIfArg
+                &resource.set
             }
         }
     };
@@ -144,7 +157,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &Path, desired: &str, skip_t
         Some(r) => r,
         None => resource.resource_type.clone(),
     };
-    let args = process_args(get.args.as_ref(), desired, &resource_type);
+    let args = process_args(get.args.as_ref(), desired, &resource_type, execution_type);
     let command_input = get_command_input(get.input.as_ref(), desired)?;
 
     info!("{}", t!("dscresources.commandResource.setGetCurrent", resource = &resource.resource_type, executable = &get.executable));
@@ -176,7 +189,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &Path, desired: &str, skip_t
 
     let mut env: Option<HashMap<String, String>> = None;
     let mut input_desired: Option<&str> = None;
-    let args = process_args(set.args.as_ref(), desired, &resource_type);
+    let args = process_args(set.args.as_ref(), desired, &resource_type, execution_type);
     match &set.input {
         Some(InputKind::Env) => {
             env = Some(json_to_hashmap(desired)?);
@@ -284,7 +297,7 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &Path, expected: &str, targ
         Some(r) => r,
         None => resource.resource_type.clone(),
     };
-    let args = process_args(test.args.as_ref(), expected, &resource_type);
+    let args = process_args(test.args.as_ref(), expected, &resource_type, &ExecutionKind::Actual);
     let command_input = get_command_input(test.input.as_ref(), expected)?;
 
     info!("{}", t!("dscresources.commandResource.invokeTestUsing", resource = &resource.resource_type, executable = &test.executable));
@@ -411,11 +424,12 @@ fn invoke_synthetic_test(resource: &ResourceManifest, cwd: &Path, expected: &str
 /// * `resource` - The resource manifest for the command resource.
 /// * `cwd` - The current working directory.
 /// * `filter` - The filter to apply to the resource in JSON.
+/// * `execution_type` - Whether this is an actual delete or what-if.
 ///
 /// # Errors
 ///
 /// Error is returned if the underlying command returns a non-zero exit code.
-pub fn invoke_delete(resource: &ResourceManifest, cwd: &Path, filter: &str, target_resource: Option<&str>) -> Result<(), DscError> {
+pub fn invoke_delete(resource: &ResourceManifest, cwd: &Path, filter: &str, execution_type: &ExecutionKind, target_resource: Option<&str>) -> Result<(), DscError> {
     let Some(delete) = &resource.delete else {
         return Err(DscError::NotImplemented("delete".to_string()));
     };
@@ -426,10 +440,33 @@ pub fn invoke_delete(resource: &ResourceManifest, cwd: &Path, filter: &str, targ
         Some(r) => r,
         None => &resource.resource_type,
     };
-    let args = process_args(delete.args.as_ref(), filter, resource_type);
+
+    // Check if delete operation supports native what-if
+    let has_native_whatif = super::resource_manifest::has_whatif_arg(&delete.args);
+
+    if execution_type == &ExecutionKind::WhatIf && !has_native_whatif {
+        // Synthetic what-if for delete: call get to show what would be deleted
+        debug!("{}", t!("dscresources.commandResource.syntheticDeleteWhatIf", resource = resource_type));
+        let get_result = invoke_get(resource, cwd, filter, target_resource.map(|s| s.parse().unwrap()))?;
+
+        // Log the current state that would be deleted
+        match get_result {
+            GetResult::Resource(response) => {
+                info!("What-if: Would delete resource in state: {}", serde_json::to_string_pretty(&response.actual_state)?);
+            },
+            GetResult::Group(responses) => {
+                info!("What-if: Would delete {} resources", responses.len());
+            }
+        }
+        return Ok(());
+    }
+
+    let args = process_args(delete.args.as_ref(), filter, resource_type, execution_type);
     let command_input = get_command_input(delete.input.as_ref(), filter)?;
 
+    let operation = if execution_type == &ExecutionKind::WhatIf { "what-if delete" } else { "delete" };
     info!("{}", t!("dscresources.commandResource.invokeDeleteUsing", resource = resource_type, executable = &delete.executable));
+    debug!("Performing {} operation", operation);
     let (_exit_code, _stdout, _stderr) = invoke_command(&delete.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, resource.exit_codes.as_ref())?;
 
     Ok(())
@@ -461,7 +498,7 @@ pub fn invoke_validate(resource: &ResourceManifest, cwd: &Path, config: &str, ta
         Some(r) => r,
         None => &resource.resource_type,
     };
-    let args = process_args(validate.args.as_ref(), config, resource_type);
+    let args = process_args(validate.args.as_ref(), config, resource_type, &ExecutionKind::Actual);
     let command_input = get_command_input(validate.input.as_ref(), config)?;
 
     info!("{}", t!("dscresources.commandResource.invokeValidateUsing", resource = resource_type, executable = &validate.executable));
@@ -549,9 +586,9 @@ pub fn invoke_export(resource: &ResourceManifest, cwd: &Path, input: Option<&str
             command_input = get_command_input(export.input.as_ref(), input)?;
         }
 
-        args = process_args(export.args.as_ref(), input, &resource_type);
+        args = process_args(export.args.as_ref(), input, &resource_type, &ExecutionKind::Actual);
     } else {
-        args = process_args(export.args.as_ref(), "", &resource_type);
+        args = process_args(export.args.as_ref(), "", &resource_type, &ExecutionKind::Actual);
     }
 
     let (_exit_code, stdout, stderr) = invoke_command(&export.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, resource.exit_codes.as_ref())?;
@@ -596,7 +633,7 @@ pub fn invoke_resolve(resource: &ResourceManifest, cwd: &Path, input: &str) -> R
         return Err(DscError::Operation(t!("dscresources.commandResource.resolveNotSupported", resource = &resource.resource_type).to_string()));
     };
 
-    let args = process_args(resolve.args.as_ref(), input, &resource.resource_type);
+    let args = process_args(resolve.args.as_ref(), input, &resource.resource_type, &ExecutionKind::Actual);
     let command_input = get_command_input(resolve.input.as_ref(), input)?;
 
     info!("{}", t!("dscresources.commandResource.invokeResolveUsing", resource = &resource.resource_type, executable = &resolve.executable));
@@ -810,7 +847,7 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
 /// # Returns
 ///
 /// A vector of strings representing the processed arguments
-pub fn process_args(args: Option<&Vec<ArgKind>>, input: &str, resource_type: &str) -> Option<Vec<String>> {
+pub fn process_args(args: Option<&Vec<ArgKind>>, input: &str, resource_type: &str, execution_type: &ExecutionKind) -> Option<Vec<String>> {
     let Some(arg_values) = args else {
         debug!("{}", t!("dscresources.commandResource.noArgs"));
         return None;
@@ -833,6 +870,11 @@ pub fn process_args(args: Option<&Vec<ArgKind>>, input: &str, resource_type: &st
             ArgKind::ResourceType { resource_type_arg } => {
                 processed_args.push(resource_type_arg.clone());
                 processed_args.push(resource_type.to_string());
+            },
+            ArgKind::WhatIf { what_if_arg } => {
+                if execution_type == &ExecutionKind::WhatIf {
+                    processed_args.push(what_if_arg.clone());
+                }
             }
         }
     }

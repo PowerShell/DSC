@@ -760,10 +760,18 @@ fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<Ds
         if set.handles_exist == Some(true) {
             capabilities.push(Capability::SetHandlesExist);
         }
+        // Check for native what-if support via whatIfArg
+        if super::super::dscresources::resource_manifest::has_whatif_arg(&set.args) {
+            capabilities.push(Capability::WhatIf);
+        }
     }
+    // Deprecated whatIf operation - still supported for backward compatibility
     if let Some(what_if) = &manifest.what_if {
         verify_executable(&manifest.resource_type, "what_if", &what_if.executable, path.parent().unwrap());
-        capabilities.push(Capability::WhatIf);
+        // Only add capability if not already added via set whatIfArg
+        if !capabilities.contains(&Capability::WhatIf) {
+            capabilities.push(Capability::WhatIf);
+        }
     }
     if let Some(test) = &manifest.test {
         verify_executable(&manifest.resource_type, "test", &test.executable, path.parent().unwrap());
@@ -772,6 +780,13 @@ fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<Ds
     if let Some(delete) = &manifest.delete {
         verify_executable(&manifest.resource_type, "delete", &delete.executable, path.parent().unwrap());
         capabilities.push(Capability::Delete);
+        // Check for native what-if support in delete via whatIfArg
+        if super::super::dscresources::resource_manifest::has_whatif_arg(&delete.args) {
+            // Only add capability if not already added
+            if !capabilities.contains(&Capability::WhatIf) {
+                capabilities.push(Capability::WhatIf);
+            }
+        }
     }
     if let Some(export) = &manifest.export {
         verify_executable(&manifest.resource_type, "export", &export.executable, path.parent().unwrap());
