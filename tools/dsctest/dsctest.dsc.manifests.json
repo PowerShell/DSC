@@ -775,36 +775,17 @@
       "get": {
         "executable": "dsctest",
         "args": [
-          "whatif-resource",
-          "get",
-          {
-            "jsonInputArg": "--input"
-          }
+          "whatif",
+          "get"
         ]
       },
       "set": {
         "executable": "dsctest",
         "args": [
-          "whatif-resource",
+          "whatif",
           "set",
           {
-            "whatIfArg": "--what-if"
-          },
-          {
-            "jsonInputArg": "--input",
-            "mandatory": true
-          }
-        ],
-        "return": "state"
-      },
-      "test": {
-        "executable": "dsctest",
-        "args": [
-          "whatif-resource",
-          "test",
-          {
-            "jsonInputArg": "--input",
-            "mandatory": true
+            "whatIfArg": "-w"
           }
         ],
         "return": "state"
@@ -812,14 +793,10 @@
       "delete": {
         "executable": "dsctest",
         "args": [
-          "whatif-resource",
+          "whatif",
           "delete",
           {
-            "whatIfArg": "--what-if"
-          },
-          {
-            "jsonInputArg": "--input",
-            "mandatory": true
+            "whatIfArg": "-w"
           }
         ]
       },
@@ -829,7 +806,7 @@
           "args": [
             "schema",
             "-s",
-            "whatif-resource"
+            "whatif"
           ]
         }
       }
