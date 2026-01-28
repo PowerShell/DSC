@@ -2,6 +2,31 @@
   "resources": [
     {
       "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/CopyResource",
+      "version": "0.1.0",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "copy-resource",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ]
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "copy-resource"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
       "type": "Test/Delete",
       "version": "0.1.0",
       "get": {

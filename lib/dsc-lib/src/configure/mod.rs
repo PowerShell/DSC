@@ -3,7 +3,7 @@
 
 use crate::configure::context::{Context, ProcessMode};
 use crate::configure::parameters::import_parameters;
-use crate::configure::{config_doc::{ExecutionKind, IntOrExpression, Metadata, Parameter, Resource, RestartRequired, ValueOrCopy}};
+use crate::configure::{config_doc::{ExecutionKind, IntOrExpression, Metadata, Parameter, Resource, ResourceDiscoveryMode, RestartRequired, ValueOrCopy}};
 use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscerror::DscError;
 use crate::dscresources::{
@@ -998,6 +998,7 @@ impl Configurator {
                     end_datetime: Some(end_datetime.to_rfc3339()),
                     execution_type: Some(self.context.execution_type.clone()),
                     operation: Some(operation),
+                    resource_discovery: None,
                     restart_required: self.context.restart_required.clone(),
                     security_context: Some(self.context.security_context.clone()),
                     start_datetime: Some(self.context.start_datetime.to_rfc3339()),
@@ -1013,29 +1014,52 @@ impl Configurator {
         let config: Configuration = serde_json::from_str(self.json.as_str())?;
         check_security_context(config.metadata.as_ref())?;
 
-        // Perform discovery of resources used in config
-        // create an array of DiscoveryFilter using the resource types and api_versions from the config
-        let mut discovery_filter: Vec<DiscoveryFilter> = Vec::new();
-        let config_copy = config.clone();
-        for resource in config_copy.resources {
-            let adapter = get_require_adapter_from_metadata(&resource.metadata);
-            let filter = DiscoveryFilter::new(&resource.resource_type, resource.api_version.as_deref(), adapter.as_deref());
-            if !discovery_filter.contains(&filter) {
-                discovery_filter.push(filter);
-            }
-            // defer actual unrolling until parameters are available
-            if let Some(copy) = &resource.copy {
-                debug!("{}", t!("configure.mod.validateCopy", name = &copy.name, count = copy.count));
-                if copy.mode.is_some() {
-                    return Err(DscError::Validation(t!("configure.mod.copyModeNotSupported").to_string()));
-                }
-                if copy.batch_size.is_some() {
-                    return Err(DscError::Validation(t!("configure.mod.copyBatchSizeNotSupported").to_string()));
+        let mut skip_resource_validation = false;
+        if let Some(metadata) = &config.metadata {
+            if let Some(microsoft_metadata) = &metadata.microsoft {
+                if let Some(mode) = &microsoft_metadata.resource_discovery {
+                    if *mode == ResourceDiscoveryMode::DuringDeployment {
+                        debug!("{}", t!("configure.mod.skippingResourceDiscovery"));
+                        skip_resource_validation = true;
+                        self.discovery.refresh_cache = true;
+                    }
                 }
             }
         }
 
-        self.discovery.find_resources(&discovery_filter, self.progress_format)?;
+        if !skip_resource_validation {
+            // Perform discovery of resources used in config
+            // create an array of DiscoveryFilter using the resource types and api_versions from the config
+            let mut discovery_filter: Vec<DiscoveryFilter> = Vec::new();
+            let config_copy = config.clone();
+            for resource in config_copy.resources {
+                let adapter = get_require_adapter_from_metadata(&resource.metadata);
+                let filter = DiscoveryFilter::new(&resource.resource_type, resource.api_version.as_deref(), adapter.as_deref());
+                if !discovery_filter.contains(&filter) {
+                    discovery_filter.push(filter);
+                }
+                // defer actual unrolling until parameters are available
+                if let Some(copy) = &resource.copy {
+                    debug!("{}", t!("configure.mod.validateCopy", name = &copy.name, count = copy.count));
+                    if copy.mode.is_some() {
+                        return Err(DscError::Validation(t!("configure.mod.copyModeNotSupported").to_string()));
+                    }
+                    if copy.batch_size.is_some() {
+                        return Err(DscError::Validation(t!("configure.mod.copyBatchSizeNotSupported").to_string()));
+                    }
+                }
+            }
+            self.discovery.find_resources(&discovery_filter, self.progress_format)?;
+
+            // now check that each resource in the config was found
+            for resource in config.resources.iter() {
+                let adapter = get_require_adapter_from_metadata(&resource.metadata);
+                let Some(_dsc_resource) = self.discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.api_version.as_deref(), adapter.as_deref()))? else {
+                    return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.api_version.as_deref().unwrap_or("").to_string()));
+                };
+            }
+        }
+
         self.config = config;
         Ok(())
     }

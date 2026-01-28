@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{dscerror::DscError, dscresources::dscresource::DscResource, extensions::dscextension::DscExtension};
+use crate::{configure::config_doc::ResourceDiscoveryMode, dscerror::DscError, dscresources::dscresource::DscResource, extensions::dscextension::DscExtension};
 use std::collections::BTreeMap;
 use super::{command_discovery::ImportedManifest, fix_semver};
 
@@ -121,4 +121,11 @@ pub trait ResourceDiscovery {
     ///
     /// This function will return an error if the underlying discovery fails.
     fn get_extensions(&mut self) -> Result<BTreeMap<String, DscExtension>, DscError>;
+
+    /// Set the discovery mode.
+    ///
+    /// # Arguments
+    ///
+    /// * `mode` - The resource discovery mode to set.
+    fn set_discovery_mode(&mut self, mode: &ResourceDiscoveryMode);
 }
