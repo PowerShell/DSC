@@ -1,2 +1,0 @@
-bicep.dsc.extension.json
-bicepparams.dsc.extension.json

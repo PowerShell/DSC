@@ -24,37 +24,21 @@ Describe 'Discover extension tests' {
         $out = dsc extension list | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         if ($IsWindows) {
-            $out.Count | Should -Be 4 -Because ($out | Out-String)
-            $out[0].type | Should -Be 'Microsoft.DSC.Extension/Bicep'
+            $out.Count | Should -Be 2 -Because ($out | Out-String)
+            $out[0].type | Should -Be 'Microsoft.Windows.Appx/Discover'
             $out[0].version | Should -Be '0.1.0'
-            $out[0].capabilities | Should -BeExactly @('import')
+            $out[0].capabilities | Should -BeExactly @('discover')
             $out[0].manifest | Should -Not -BeNullOrEmpty
-            $out[1].type | Should -BeExactly 'Microsoft.DSC.Extension/BicepParameters'
+            $out[1].type | Should -BeExactly 'Test/Discover'
             $out[1].version | Should -BeExactly '0.1.0'
-            $out[1].capabilities | Should -BeExactly @('import')
+            $out[1].capabilities | Should -BeExactly @('discover')
             $out[1].manifest | Should -Not -BeNullOrEmpty
-            $out[2].type | Should -Be 'Microsoft.Windows.Appx/Discover'
-            $out[2].version | Should -Be '0.1.0'
-            $out[2].capabilities | Should -BeExactly @('discover')
-            $out[2].manifest | Should -Not -BeNullOrEmpty
-            $out[3].type | Should -BeExactly 'Test/Discover'
-            $out[3].version | Should -BeExactly '0.1.0'
-            $out[3].capabilities | Should -BeExactly @('discover')
-            $out[3].manifest | Should -Not -BeNullOrEmpty
         } else {
-            $out.Count | Should -Be 3 -Because ($out | Out-String)
-            $out[0].type | Should -Be 'Microsoft.DSC.Extension/Bicep'
-            $out[0].version | Should -Be '0.1.0'
-            $out[0].capabilities | Should -BeExactly @('import')
+            $out.Count | Should -Be 1 -Because ($out | Out-String)
+            $out[0].type | Should -BeExactly 'Test/Discover'
+            $out[0].version | Should -BeExactly '0.1.0'
+            $out[0].capabilities | Should -BeExactly @('discover')
             $out[0].manifest | Should -Not -BeNullOrEmpty
-            $out[1].type | Should -BeExactly 'Microsoft.DSC.Extension/BicepParameters'
-            $out[1].version | Should -BeExactly '0.1.0'
-            $out[1].capabilities | Should -BeExactly @('import')
-            $out[1].manifest | Should -Not -BeNullOrEmpty
-            $out[2].type | Should -BeExactly 'Test/Discover'
-            $out[2].version | Should -BeExactly '0.1.0'
-            $out[2].capabilities | Should -BeExactly @('discover')
-            $out[2].manifest | Should -Not -BeNullOrEmpty
         }
     }
 

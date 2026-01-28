@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{dscerror::DscError, dscresources::dscresource::DscResource, extensions::dscextension::DscExtension};
+use crate::{configure::config_doc::ResourceDiscoveryMode, dscerror::DscError, dscresources::dscresource::DscResource, extensions::dscextension::DscExtension};
 use std::collections::BTreeMap;
 use super::{command_discovery::ImportedManifest, fix_semver};
 
@@ -13,18 +13,25 @@ pub enum DiscoveryKind {
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub struct DiscoveryFilter {
+    require_adapter: Option<String>,
     r#type: String,
     version: Option<String>,
 }
 
 impl DiscoveryFilter {
     #[must_use]
-    pub fn new(resource_type: &str, version: Option<String>) -> Self {
+    pub fn new(resource_type: &str, version: Option<&str>, adapter: Option<&str>) -> Self {
         let version = version.map(|v| fix_semver(&v));
         Self {
+            require_adapter: adapter.map(|a| a.to_lowercase()),
             r#type: resource_type.to_lowercase(),
             version,
         }
+    }
+
+    #[must_use]
+    pub fn require_adapter(&self) -> Option<&String> {
+        self.require_adapter.as_ref()
     }
 
     #[must_use]
@@ -114,4 +121,11 @@ pub trait ResourceDiscovery {
     ///
     /// This function will return an error if the underlying discovery fails.
     fn get_extensions(&mut self) -> Result<BTreeMap<String, DscExtension>, DscError>;
+
+    /// Set the discovery mode.
+    ///
+    /// # Arguments
+    ///
+    /// * `mode` - The resource discovery mode to set.
+    fn set_discovery_mode(&mut self, mode: &ResourceDiscoveryMode);
 }

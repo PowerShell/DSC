@@ -224,11 +224,63 @@ resources:
   }
 
   It 'Export works with class-based PS DSC resources' {
-    $out = dsc resource export -r PSClassResource/PSClassResource 2> "$testdrive/error.log" | ConvertFrom-Json
+    $out = dsc -l trace resource export -r PSClassResource/PSClassResource 2> "$testdrive/error.log" | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path "$testdrive/error.log" -Raw | Out-String)
     $out | Should -Not -BeNullOrEmpty
     $out.resources.count | Should -Be 5
     $out.resources[0].properties.Ensure | Should -Be 'Present' # Check for enum property
+  }
+
+  It 'Config calling PS Resource directly works for <operation> with metadata <metadata> and adapter <adapter>' -TestCases @(
+    @{ Operation = 'get'; metadata = 'Microsoft.DSC'; adapter = 'Microsoft.Windows/WindowsPowerShell' }
+    @{ Operation = 'set'; metadata = 'Microsoft.DSC'; adapter = 'Microsoft.Windows/WindowsPowerShell' }
+    @{ Operation = 'test'; metadata = 'Microsoft.DSC'; adapter = 'Microsoft.Windows/WindowsPowerShell' }
+    @{ Operation = 'get'; metadata = 'Microsoft.DSC'; adapter = 'Microsoft.Adapter/WindowsPowerShell' }
+    @{ Operation = 'set'; metadata = 'Microsoft.DSC'; adapter = 'Microsoft.Adapter/WindowsPowerShell' }
+    @{ Operation = 'test'; metadata = 'Microsoft.DSC'; adapter = 'Microsoft.Adapter/WindowsPowerShell' }
+    @{ Operation = 'get'; metadata = 'Ignored' }
+    @{ Operation = 'set'; metadata = 'Ignored' }
+    @{ Operation = 'test'; metadata = 'Ignored' }
+  ) {
+    param($Operation, $metadata, $adapter)
+
+    $yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Class-resource Info
+              type: PSClassResource/PSClassResource
+              metadata:
+                ${metadata}:
+                  requireAdapter: $adapter
+              properties:
+                Name: TestInstance
+                Credential:
+                  UserName: 'MyUser'
+                  Password: 'MyPassword'
+"@
+    $out = dsc -l trace config $operation -i $yaml 2> $TestDrive/tracing.txt
+    $text = $out | Out-String
+    $out = $out | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw -Path $TestDrive/tracing.txt)
+    switch ($Operation) {
+      'get' {
+        $out.results[0].result.actualState.Name | Should -BeExactly 'TestInstance' -Because ("$text`n" + (Get-Content -Raw -Path $TestDrive/tracing.txt))
+      }
+      'set' {
+        $out.results[0].result.beforeState.Name | Should -BeExactly 'TestInstance' -Because $text
+        if ($adapter -eq 'Microsoft.Adapter/WindowsPowerShell') {
+          # the `single` mode of the adapter performs a `get` after `set` and returns that result so we can validate it
+          $out.results[0].result.afterState.Name | Should -BeExactly 'TestInstance' -Because $text
+        }
+      }
+      'test' {
+        $out.results[0].result.inDesiredState | Should -BeTrue -Because $text
+      }
+    }
+    if ($metadata -eq 'Microsoft.DSC') {
+      "$TestDrive/tracing.txt" | Should -FileContentMatch "Invoking $Operation for '$adapter'" -Because (Get-Content -Raw -Path $TestDrive/tracing.txt)
+
+    }
   }
 }
 

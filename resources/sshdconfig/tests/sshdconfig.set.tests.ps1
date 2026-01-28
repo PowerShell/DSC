@@ -6,12 +6,16 @@ BeforeDiscovery {
         $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
         $principal = [System.Security.Principal.WindowsPrincipal]::new($identity)
         $isElevated = $principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
-        $sshdExists = ($null -ne (Get-Command sshd -CommandType Application -ErrorAction Ignore))
-        $skipTest = !$isElevated -or !$sshdExists
     }
+    else {
+        $isElevated = (id -u) -eq 0
+    }
+
+    $sshdExists = ($null -ne (Get-Command sshd -CommandType Application -ErrorAction Ignore))
+    $skipTest = !$isElevated -or !$sshdExists
 }
 
-Describe 'sshd_config Set Tests' -Skip:(!$IsWindows -or $skipTest) {
+Describe 'sshd_config Set Tests' -Skip:($skipTest) {
     BeforeAll {
         # Create a temporary test directory for sshd_config files
         $TestDir = Join-Path $TestDrive "sshd_test"
@@ -35,13 +39,13 @@ Describe 'sshd_config Set Tests' -Skip:(!$IsWindows -or $skipTest) {
                 _metadata = @{
                     filepath = $TestConfigPath
                 }
-                _clobber = $true
+                _purge = $true
                 Port = "1234"
                 passwordauthentication = $false
-                allowusers = @("user1", "user2")
+                allowgroups = @("openssh users", "group2")
                 ciphers = @("aes128-ctr", "aes192-ctr", "aes256-ctr")
                 addressfamily = "inet6"
-                authorizedkeysfile = @(".ssh/authorized_keys", ".ssh/authorized_keys2")
+                authorizedkeysfile = @(".ssh/authorized_keys", ".ssh//authorized keys with spaces")
             } | ConvertTo-Json
 
             $output = sshdconfig set --input $inputConfig -s sshd-config 2>$null
@@ -52,11 +56,11 @@ Describe 'sshd_config Set Tests' -Skip:(!$IsWindows -or $skipTest) {
             $sshdConfigContents = Get-Content $TestConfigPath
             $sshdConfigContents | Should -Contain "Port 1234"
             $sshdConfigContents | Should -Contain "PasswordAuthentication no"
-            $sshdConfigContents | Should -Contain "AllowUsers user1"
-            $sshdConfigContents | Should -Contain "AllowUsers user2"
+            $sshdConfigContents | Should -Contain "AllowGroups `"openssh users`""
+            $sshdConfigContents | Should -Contain "AllowGroups group2"
             $sshdConfigContents | Should -Contain "Ciphers aes128-ctr,aes192-ctr,aes256-ctr"
             $sshdConfigContents | Should -Contain "AddressFamily inet6"
-            $sshdConfigContents | Should -Contain "AuthorizedKeysFile .ssh/authorized_keys .ssh/authorized_keys2"
+            $sshdConfigContents | Should -Contain "AuthorizedKeysFile .ssh/authorized_keys `".ssh//authorized keys with spaces`""
         }
 
         It 'Should set with valid match blocks' {
@@ -64,7 +68,7 @@ Describe 'sshd_config Set Tests' -Skip:(!$IsWindows -or $skipTest) {
                 _metadata = @{
                     filepath = $TestConfigPath
                 }
-                _clobber = $true
+                _purge = $true
                 match = @(
                     @{
                         criteria = @{
@@ -99,7 +103,7 @@ Describe 'sshd_config Set Tests' -Skip:(!$IsWindows -or $skipTest) {
                 _metadata = @{
                     filepath = $TestConfigPath
                 }
-                _clobber = $true
+                _purge = $true
                 Port = "5555"
             } | ConvertTo-Json
 
@@ -131,7 +135,7 @@ Describe 'sshd_config Set Tests' -Skip:(!$IsWindows -or $skipTest) {
                 _metadata = @{
                     filepath = $TestConfigPath
                 }
-                _clobber = $true
+                _purge = $true
                 Port = "6789"
             } | ConvertTo-Json
 
@@ -142,7 +146,7 @@ Describe 'sshd_config Set Tests' -Skip:(!$IsWindows -or $skipTest) {
                 _metadata = @{
                     filepath = $TestConfigPath
                 }
-                _clobber = $true
+                _purge = $true
                 Port = "7777"
             } | ConvertTo-Json
 
@@ -164,37 +168,58 @@ Describe 'sshd_config Set Tests' -Skip:(!$IsWindows -or $skipTest) {
     }
 
     Context 'Set with invalid configuration' {
-        It 'Should fail with clobber set to false' {
-            $inputConfig = @{
-                _metadata = @{
-                    filepath = $TestConfigPath
-                }
-                _clobber = $false
-                Port = "8888"
-            } | ConvertTo-Json
-
-            $logFile = Join-Path $TestDrive "clobber_error.log"
-            sshdconfig set --input $inputConfig -s sshd-config 2>$logFile
-            $LASTEXITCODE | Should -Not -Be 0
-
-            # Read log file and check for error message
-            $logContent = Get-Content $logFile -Raw
-            $logContent | Should -Match "clobber=false is not yet supported"
-        }
-
-        It 'Should fail with invalid keyword and not modify file' {
+        BeforeEach {
             # Create initial file with valid config
             $validConfig = @{
                 _metadata = @{
                     filepath = $TestConfigPath
                 }
-                _clobber = $true
+                _purge = $true
                 Port = "9999"
             } | ConvertTo-Json
+            sshdconfig set --input $validConfig -s sshd-config
+        }
 
-            sshdconfig set --input $validConfig -s sshd-config 2>$null
-            $LASTEXITCODE | Should -Be 0
+        It 'Should fail with purge=false when file does not exist' {
+            $nonExistentPath = Join-Path $TestDrive "nonexistent_sshd_config"
 
+            $inputConfig = @{
+                _metadata = @{
+                    filepath = $nonExistentPath
+                }
+                _purge = $false
+                Port = "8888"
+            } | ConvertTo-Json
+
+            $stderrFile = Join-Path $TestDrive "stderr_purgefalse_nofile.txt"
+            sshdconfig set --input $inputConfig -s sshd-config 2>$stderrFile
+            $LASTEXITCODE | Should -Not -Be 0
+
+            $stderr = Get-Content -Path $stderrFile -Raw -ErrorAction SilentlyContinue
+            $stderr | Should -Match "_purge=false requires an existing sshd_config file"
+            $stderr | Should -Match "Use _purge=true to create a new configuration file"
+            Remove-Item -Path $stderrFile -Force -ErrorAction SilentlyContinue
+        }
+
+        It 'Should fail with purge set to false for repeatable keywords' {
+            $inputConfig = @{
+                _metadata = @{
+                    filepath = $TestConfigPath
+                }
+                _purge = $false
+                Port = "8888"
+            } | ConvertTo-Json
+
+            $logFile = Join-Path $TestDrive "purge_error.log"
+            sshdconfig set --input $inputConfig -s sshd-config 2>$logFile
+            $LASTEXITCODE | Should -Not -Be 0
+
+            # Read log file and check for error message
+            $logContent = Get-Content $logFile -Raw
+            $logContent | Should -Match "purge=false is not supported for keywords that can have multiple values"
+        }
+
+        It 'Should fail with invalid keyword and not modify file' {
             # Get original content
             $getInput = @{
                 _metadata = @{
@@ -208,7 +233,7 @@ Describe 'sshd_config Set Tests' -Skip:(!$IsWindows -or $skipTest) {
                 _metadata = @{
                     filepath = $TestConfigPath
                 }
-                _clobber = $true
+                _purge = $true
                 FakeKeyword = "1234"
             } | ConvertTo-Json
 
@@ -219,6 +244,121 @@ Describe 'sshd_config Set Tests' -Skip:(!$IsWindows -or $skipTest) {
             $currentResult = sshdconfig get --input $getInput -s sshd-config 2>$null | ConvertFrom-Json
             $currentResult.Port | Should -Be "9999"
             $currentResult.Port | Should -Be $originalResult.Port
+        }
+    }
+
+    Context 'Set with _purge=false' {
+        BeforeEach {
+            $initialContent = @"
+Port 2222
+AddressFamily inet
+MaxAuthTries 5
+PermitRootLogin yes
+PasswordAuthentication no
+Match Group administrators
+    GSSAPIAuthentication yes
+"@
+            Set-Content -Path $TestConfigPath -Value $initialContent
+        }
+
+        It '<Title>' -TestCases @(
+            @{
+                Title = 'Should preserve unchanged regular keyword when value is the same'
+                InputConfig = @{ MaxAuthTries = "5" }
+                ExpectedContains = @("Port 2222", "AddressFamily inet", "MaxAuthTries 5", "PermitRootLogin yes", "PasswordAuthentication no")
+                ExpectedNotContains = @()
+                VerifyOrder = @()
+            },
+            @{
+                Title = 'Should overwrite regular keyword when value is different'
+                InputConfig = @{ MaxAuthTries = "3" }
+                ExpectedContains = @("Port 2222", "AddressFamily inet", "MaxAuthTries 3", "PermitRootLogin yes", "PasswordAuthentication no")
+                ExpectedNotContains = @("MaxAuthTries 5")
+                VerifyOrder = @()
+            },
+            @{
+                Title = 'Should add regular keyword when it does not exist'
+                InputConfig = @{ LoginGraceTime = "60" }
+                ExpectedContains = @("Port 2222", "AddressFamily inet", "MaxAuthTries 5", "PermitRootLogin yes", "PasswordAuthentication no", "LoginGraceTime 60")
+                ExpectedNotContains = @()
+                VerifyOrder = @()
+            },
+            @{
+                Title = 'Should remove regular keyword when value is NULL'
+                InputConfig = @{ MaxAuthTries = $null }
+                ExpectedContains = @("Port 2222", "AddressFamily inet", "PermitRootLogin yes", "PasswordAuthentication no")
+                ExpectedNotContains = @("MaxAuthTries 5")
+                VerifyOrder = @()
+            },
+            @{
+                Title = 'Should preserve unchanged boolean keyword when value is the same'
+                InputConfig = @{ PasswordAuthentication = $false }
+                ExpectedContains = @("Port 2222", "AddressFamily inet", "MaxAuthTries 5", "PermitRootLogin yes", "PasswordAuthentication no")
+                ExpectedNotContains = @()
+                VerifyOrder = @()
+            },
+            @{
+                Title = 'Should overwrite boolean keyword when value is different'
+                InputConfig = @{ PasswordAuthentication = $true }
+                ExpectedContains = @("Port 2222", "AddressFamily inet", "MaxAuthTries 5", "PermitRootLogin yes", "PasswordAuthentication yes")
+                ExpectedNotContains = @("PasswordAuthentication no")
+                VerifyOrder = @()
+            },
+            @{
+                Title = 'Should add boolean keyword when it does not exist'
+                InputConfig = @{ PubkeyAuthentication = $true }
+                ExpectedContains = @("Port 2222", "AddressFamily inet", "MaxAuthTries 5", "PermitRootLogin yes", "PasswordAuthentication no", "PubkeyAuthentication yes")
+                ExpectedNotContains = @()
+                VerifyOrder = @()
+            },
+            @{
+                Title = 'Should handle multiple keyword changes and preserve order'
+                InputConfig = @{
+                    PasswordAuthentication = $false
+                    PermitRootLogin = $false
+                    LoginGraceTime = "60"
+                }
+                ExpectedContains = @("Port 2222", "AddressFamily inet", "MaxAuthTries 5", "PermitRootLogin no", "PasswordAuthentication no", "LoginGraceTime 60")
+                ExpectedNotContains = @("PermitRootLogin yes")
+                VerifyOrder = @(
+                    @{ Before = "^Port"; Last = "^Match" },
+                    @{ Before = "^AddressFamily"; Last = "^Match" },
+                    @{ Before = "^MaxAuthTries"; Last = "^Match" },
+                    @{ Before = "^PermitRootLogin"; Last = "^Match" },
+                    @{ Before = "^PasswordAuthentication"; Last = "^Match" }
+                )
+            }
+        ) {
+            param($Title, $InputConfig, $ExpectedContains, $ExpectedNotContains, $VerifyOrder)
+
+            $config = @{
+                _metadata = @{
+                    filepath = $TestConfigPath
+                }
+                _purge = $false
+            }
+            foreach ($key in $InputConfig.Keys) {
+                $config[$key] = $InputConfig[$key]
+            }
+            $inputJson = $config | ConvertTo-Json
+
+            $output = sshdconfig set --input $inputJson -s sshd-config 2>$null
+            $LASTEXITCODE | Should -Be 0
+            $sshdConfigContents = Get-Content $TestConfigPath
+
+            foreach ($expected in $ExpectedContains) {
+                $sshdConfigContents | Should -Contain $expected
+            }
+
+            foreach ($notExpected in $ExpectedNotContains) {
+                $sshdConfigContents | Should -Not -Contain $notExpected
+            }
+
+            foreach ($orderCheck in $VerifyOrder) {
+                $beforeLine = ($sshdConfigContents | Select-String -Pattern $orderCheck.Before).LineNumber
+                $afterLine = ($sshdConfigContents | Select-String -Pattern $orderCheck.Last).LineNumber
+                $beforeLine | Should -BeLessThan $afterLine -Because "Expected '$($orderCheck.Before)' to appear before '$($orderCheck.Last)'"
+            }
         }
     }
 }

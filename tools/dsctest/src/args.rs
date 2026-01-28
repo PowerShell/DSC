@@ -6,6 +6,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
 pub enum Schemas {
     Adapter,
+    CopyResource,
     Delete,
     Exist,
     ExitCode,
@@ -49,6 +50,12 @@ pub enum SubCommand {
         resource_type: String,
         #[clap(name = "operation", short, long, help = "The operation to perform")]
         operation: AdapterOperation,
+    },
+
+    #[clap(name = "copy-resource", about = "Copy a resource")]
+    CopyResource {
+        #[clap(name = "input", short, long, help = "The input to the copy resource command as JSON")]
+        input: String,
     },
 
     #[clap(name = "delete", about = "delete operation")]

@@ -393,7 +393,7 @@ function Install-Rust {
     param()
 
     process {
-        if ((Test-CommandAvailable -Name 'cargo')) {
+        if (Test-CommandAvailable -Name 'cargo') {
             Write-Verbose "Rust already installed"
             return
         }
@@ -597,21 +597,20 @@ function Install-NodeJS {
     param()
 
     process {
-        if ((Get-Command 'node' -ErrorAction Ignore)) {
+        if (Test-CommandAvailable -Name 'node') {
             Write-Verbose "Node.js already installed."
             return
         }
 
         Write-Verbose -Verbose "Node.js not found, installing..."
         if ($IsMacOS) {
-            if (Get-Command 'brew' -ErrorAction Ignore) {
+            if (Test-CommandAvailable -Name 'brew') {
                 brew install node@24
             } else {
                 Write-Warning "Homebrew not found, please install Node.js manually"
             }
         } elseif ($IsWindows) {
-            if (Get-Command 'winget' -ErrorAction Ignore) {
-                Write-Warning "WHY WHAT IS HAPPENING HERE"
+            if (Test-CommandAvailable -Name 'winget') {
                 Write-Verbose -Verbose "Using winget to install Node.js"
                 winget install OpenJS.NodeJS --accept-source-agreements --accept-package-agreements --source winget --silent
             } else {
@@ -623,6 +622,57 @@ function Install-NodeJS {
 
         if ($LASTEXITCODE -ne 0) {
             throw "Failed to install Node.js"
+        }
+    }
+}
+
+function Install-Protobuf {
+    <#
+        .SYNOPSIS
+        Installs Protobuf for the protoc executable.
+    #>
+
+    [cmdletbinding()]
+    param()
+
+    process {
+        if (Test-CommandAvailable -Name 'protoc') {
+            Write-Verbose "Protobuf already installed."
+            return
+        }
+
+        Write-Verbose -Verbose "Protobuf not found, installing..."
+        if ($IsMacOS) {
+            if (Test-CommandAvailable -Name 'brew') {
+                brew install protobuf
+            } else {
+                Write-Warning "Homebrew not found, please install Protobuf manually"
+            }
+        } elseif ($IsWindows) {
+            if (Test-CommandAvailable -Name 'winget') {
+                Write-Verbose -Verbose "Using winget to install Protobuf"
+                winget install Google.Protobuf --accept-source-agreements --accept-package-agreements --source winget --force
+                # need to add to PATH
+                $protocFolder = "$env:USERPROFILE\AppData\Local\Microsoft\WinGet\Packages\Google.Protobuf_Microsoft.Winget.Source_8wekyb3d8bbwe\bin"
+                if (Test-Path $protocFolder) {
+                    $env:PATH += ";$protocFolder"
+                } else {
+                    throw "protoc folder not found after installation: $protocFolder"
+                }
+            } else {
+                Write-Warning "winget not found, please install Protobuf manually"
+            }
+        } else {
+            if (Test-CommandAvailable -Name 'apt') {
+                Write-Verbose -Verbose "Using apt to install Protobuf"
+                sudo apt install -y protobuf-compiler
+            } else {
+                Write-Warning "apt not found, please install Protobuf manually"
+            }
+        }
+
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to install Protobuf: $LASTEXITCODE"
         }
     }
 }
@@ -1021,7 +1071,7 @@ function Get-ArtifactDirectoryPath {
             return [DscArtifactDirectoryPath]@{
                 BinRoot    = Join-Path $PSScriptRoot 'bin'
                 Bin        = Join-Path $PSScriptRoot 'bin' $configuration
-                RustTarget = Join-Path $PSScriptRoot 'target' $configuration
+                RustTarget = $env:CARGO_TARGET_DIR ?? (Join-Path $PSScriptRoot 'target' $configuration)
                 MsixBundle = Join-Path $PSScriptRoot 'bin' 'msix'
             }
         }
@@ -1029,7 +1079,7 @@ function Get-ArtifactDirectoryPath {
         [DscArtifactDirectoryPath]@{
             BinRoot    = Join-Path $PSScriptRoot 'bin'
             Bin        = Join-Path $PSScriptRoot 'bin' $Architecture $configuration
-            RustTarget = Join-Path $PSScriptRoot 'target' $Architecture $configuration
+            RustTarget = $env:CARGO_TARGET_DIR ?? (Join-Path $PSScriptRoot 'target' $Architecture $configuration)
             MsixBundle = Join-Path $PSScriptRoot 'bin' 'msix'
             MsixTarget = Join-Path $PSScriptRoot 'bin' $Architecture 'msix'
             ZipTarget  = Join-Path $PSScriptRoot 'bin' $Architecture 'zip'
