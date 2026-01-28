@@ -39,6 +39,9 @@ pub fn invoke_get(input: Option<&String>, setting: &Setting) -> Result<Map<Strin
         Setting::WindowsGlobal => {
             get_default_shell()?;
             Ok(Map::new())
+        },
+        _ => {
+            Err(SshdConfigError::InvalidInput(t!("get.invalidSetting", setting = format!("{:?}", setting)).to_string()))
         }
     }
 }
