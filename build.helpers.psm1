@@ -651,7 +651,14 @@ function Install-Protobuf {
         } elseif ($IsWindows) {
             if (Test-CommandAvailable -Name 'winget') {
                 Write-Verbose -Verbose "Using winget to install Protobuf"
-                winget install Google.Protobuf --accept-source-agreements --accept-package-agreements --source winget --silent
+                winget install Google.Protobuf --accept-source-agreements --accept-package-agreements --source winget --force
+                # need to add to PATH
+                $protocFolder = "$env:USERPROFILE\AppData\Local\Microsoft\WinGet\Packages\Google.Protobuf_Microsoft.Winget.Source_8wekyb3d8bbwe\bin"
+                if (Test-Path $protocFolder) {
+                    $env:PATH += ";$protocFolder"
+                } else {
+                    throw "protoc folder not found after installation: $protocFolder"
+                }
             } else {
                 Write-Warning "winget not found, please install Protobuf manually"
             }
@@ -665,7 +672,7 @@ function Install-Protobuf {
         }
 
         if ($LASTEXITCODE -ne 0) {
-            throw "Failed to install Protobuf"
+            throw "Failed to install Protobuf: $LASTEXITCODE"
         }
     }
 }

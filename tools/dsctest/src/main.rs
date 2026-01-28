@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 mod args;
+mod copy_resource;
 mod delete;
 mod exist;
 mod exit_code;
@@ -21,6 +22,7 @@ use args::{Args, Schemas, SubCommand};
 use clap::Parser;
 use schemars::schema_for;
 use serde_json::Map;
+use crate::copy_resource::{CopyResource, copy_the_resource};
 use crate::delete::Delete;
 use crate::exist::{Exist, State};
 use crate::exit_code::ExitCode;
@@ -48,6 +50,20 @@ fn main() {
                     std::process::exit(1);
                 }
             }
+        },
+        SubCommand::CopyResource { input } => {
+            let copy_resource = match serde_json::from_str::<CopyResource>(&input) {
+                Ok(copy_resource) => copy_resource,
+                Err(err) => {
+                    eprintln!("Error JSON does not match schema: {err}");
+                    std::process::exit(1);
+                }
+            };
+            if let Err(err) = copy_the_resource(&copy_resource.source_file, &copy_resource.type_name) {
+                eprintln!("Error copying resource: {err}");
+                std::process::exit(1);
+            }
+            input
         },
         SubCommand::Delete { input } => {
             let mut delete = match serde_json::from_str::<Delete>(&input) {
@@ -226,6 +242,9 @@ fn main() {
             let schema = match subcommand {
                 Schemas::Adapter => {
                     schema_for!(adapter::DscResource)
+                },
+                Schemas::CopyResource => {
+                    schema_for!(CopyResource)
                 },
                 Schemas::Delete => {
                     schema_for!(Delete)
