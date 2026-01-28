@@ -306,5 +306,37 @@ Describe 'Windows Update Export operation tests' {
                 }
             }
         }
+
+        It 'should return installationBehavior property when present' -Skip:(!$IsWindows) {
+            $out = '{"updates":[{}]}' | dsc resource export -r $resourceType -o json 2>&1
+            
+            $LASTEXITCODE | Should -Be 0
+            $config = $out | ConvertFrom-Json
+            $result = $config.resources[0].properties
+            
+            if ($result.updates.Count -gt 0) {
+                # Check if any update has installationBehavior property
+                $updateWithBehavior = $result.updates | Where-Object { $null -ne $_.installationBehavior } | Select-Object -First 1
+                
+                if ($updateWithBehavior) {
+                    # Verify the value is one of the valid enum values
+                    $updateWithBehavior.installationBehavior | Should -BeIn @('NeverReboots', 'AlwaysRequiresReboot', 'CanRequestReboot')
+                }
+            }
+        }
+
+        It 'should return valid installationBehavior enum values for all updates' -Skip:(!$IsWindows) {
+            $out = '{"updates":[{}]}' | dsc resource export -r $resourceType -o json 2>&1
+            
+            $LASTEXITCODE | Should -Be 0
+            $config = $out | ConvertFrom-Json
+            $result = $config.resources[0].properties
+            
+            foreach ($update in $result.updates) {
+                if ($null -ne $update.installationBehavior) {
+                    $update.installationBehavior | Should -BeIn @('NeverReboots', 'AlwaysRequiresReboot', 'CanRequestReboot') -Because "Update '$($update.title)' has invalid installationBehavior"
+                }
+            }
+        }
     }
 }

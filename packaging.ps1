@@ -50,8 +50,6 @@ if ($GetPackageVersion) {
 $filesForWindowsPackage = @(
     'appx.dsc.extension.json',
     'appx-discover.ps1',
-    'bicep.dsc.extension.json',
-    'bicepparams.dsc.extension.json',
     'dsc.exe',
     'dsc_default.settings.json',
     'dsc.settings.json',
@@ -63,6 +61,7 @@ $filesForWindowsPackage = @(
     'NOTICE.txt',
     'osinfo.exe',
     'osinfo.dsc.resource.json',
+    'PowerShell_adapter.dsc.resource.json',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
     'psscript.ps1',
@@ -77,6 +76,7 @@ $filesForWindowsPackage = @(
     'sshdconfig.exe',
     'sshd-windows.dsc.resource.json',
     'sshd_config.dsc.resource.json',
+    'WindowsPowerShell_adapter.dsc.resource.json',
     'windowspowershell.dsc.resource.json',
     'wmi.dsc.resource.json',
     'wmi.resource.ps1',
@@ -89,8 +89,6 @@ $filesForWindowsPackage = @(
 )
 
 $filesForLinuxPackage = @(
-    'bicep.dsc.extension.json',
-    'bicepparams.dsc.extension.json',
     'dsc',
     'dsc_default.settings.json',
     'dsc.settings.json',
@@ -104,6 +102,7 @@ $filesForLinuxPackage = @(
     'NOTICE.txt',
     'osinfo',
     'osinfo.dsc.resource.json',
+    'PowerShell_adapter.dsc.resource.json',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
     'psscript.ps1',
@@ -115,8 +114,6 @@ $filesForLinuxPackage = @(
 )
 
 $filesForMacPackage = @(
-    'bicep.dsc.extension.json',
-    'bicepparams.dsc.extension.json',
     'dsc',
     'dsc_default.settings.json',
     'dsc.settings.json',
@@ -130,6 +127,7 @@ $filesForMacPackage = @(
     'NOTICE.txt',
     'osinfo',
     'osinfo.dsc.resource.json',
+    'PowerShell_adapter.dsc.resource.json',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
     'psscript.ps1',
@@ -346,7 +344,7 @@ if (!$SkipBuild) {
     New-Item -ItemType Directory $target -ErrorAction Ignore > $null
 
     # make sure dependencies are built first so clippy runs correctly
-    $windows_projects = @("lib/dsc-lib-pal", "lib/dsc-lib-registry", "resources/registry", "resources/reboot_pending", "adapters/wmi", "configurations/windows", 'extensions/appx')
+    $windows_projects = @("lib/dsc-lib-pal", "lib/dsc-lib-registry", "resources/registry", "resources/reboot_pending", "resources/WindowsUpdate","adapters/wmi", "configurations/windows", 'extensions/appx')
     $macOS_projects = @("resources/brew")
     $linux_projects = @("resources/apt")
 
@@ -361,7 +359,6 @@ if (!$SkipBuild) {
         "lib/dsc-lib",
         "dsc",
         "resources/dscecho",
-        "extensions/bicep",
         "resources/osinfo",
         "adapters/powershell",
         'resources/PSScript',

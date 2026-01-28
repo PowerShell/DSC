@@ -2,13 +2,13 @@
 // Licensed under the MIT License.
 
 use crate::configure::config_doc::Resource;
-use crate::configure::{Configuration, IntOrExpression, ProcessMode, invoke_property_expressions};
+use crate::configure::{Configuration, IntOrExpression, ProcessMode};
 use crate::DscError;
 use crate::parser::Statement;
 use crate::types::FullyQualifiedTypeName;
 
 use rust_i18n::t;
-use serde_json::Value;
+use serde_json::{Map, Value};
 use super::context::Context;
 use tracing::debug;
 
@@ -35,36 +35,39 @@ pub fn get_resource_invocation_order(config: &Configuration, parser: &mut Statem
         }
 
         let mut dependency_already_in_order = true;
-        if let Some(depends_on) = resource.depends_on.clone() {
-            for dependency in depends_on {
-                let statement = parser.parse_and_execute(&dependency, context)?;
-                let Some(string_result) = statement.as_str() else {
-                    return Err(DscError::Validation(t!("configure.dependsOn.syntaxIncorrect", dependency = dependency).to_string()));
-                };
-                let (resource_type, resource_name) = get_type_and_name(string_result)?;
+        // Skip dependency validation for copy loop resources here - it will be handled in unroll_and_push
+        // where the copy context is properly set up for copyIndex() expressions in dependsOn
+        if resource.copy.is_none() {
+            if let Some(depends_on) = resource.depends_on.clone() {
+                for dependency in depends_on {
+                    let statement = parser.parse_and_execute(&dependency, context)?;
+                    let Some(string_result) = statement.as_str() else {
+                        return Err(DscError::Validation(t!("configure.dependsOn.syntaxIncorrect", dependency = dependency).to_string()));
+                    };
+                    let (resource_type, resource_name) = get_type_and_name(string_result)?;
 
-                // find the resource by name
-                let Some(dependency_resource) = config.resources.iter().find(|r| r.name.eq(&resource_name)) else {
-                    return Err(DscError::Validation(t!("configure.dependsOn.dependencyNotFound", dependency_name = resource_name, resource_name = resource.name).to_string()));
-                };
-                // validate the type matches
-                if dependency_resource.resource_type != resource_type {
-                    return Err(DscError::Validation(t!("configure.dependsOn.dependencyTypeMismatch", resource_type = resource_type, dependency_type = dependency_resource.resource_type, resource_name = resource.name).to_string()));
+                    if order.iter().any(|r| r.name == resource_name && r.resource_type == resource_type) {
+                        continue;
+                    }
+
+                    let Some(dependency_resource) = config.resources.iter().find(|r| r.name.eq(&resource_name)) else {
+                        return Err(DscError::Validation(t!("configure.dependsOn.dependencyNotFound", dependency_name = resource_name, resource_name = resource.name).to_string()));
+                    };
+
+                    if dependency_resource.resource_type != resource_type {
+                        return Err(DscError::Validation(t!("configure.dependsOn.dependencyTypeMismatch", resource_type = resource_type, dependency_type = dependency_resource.resource_type, resource_name = resource.name).to_string()));
+                    }
+
+                    unroll_and_push(&mut order, dependency_resource, parser, context, config)?;
+                    dependency_already_in_order = false;
                 }
-                // see if the dependency is already in the order
-                if order.iter().any(|r| r.name == resource_name && r.resource_type == resource_type) {
-                    continue;
-                }
-                // add the dependency to the order
-                unroll_and_push(&mut order, dependency_resource, parser, context)?;
-                dependency_already_in_order = false;
             }
         }
 
-        // make sure the resource is not already in the order
         if order.iter().any(|r| r.name == resource.name && r.resource_type == resource.resource_type) {
             // if dependencies were already in the order, then this might be a circular dependency
-            if dependency_already_in_order {
+            // Skip this check for copy loop resources as their expanded names are different
+            if dependency_already_in_order && resource.copy.is_none() {
                 let Some(ref depends_on) = resource.depends_on else {
                   continue;
                 };
@@ -86,14 +89,55 @@ pub fn get_resource_invocation_order(config: &Configuration, parser: &mut Statem
             continue;
         }
 
-        unroll_and_push(&mut order, resource, parser, context)?;
+        unroll_and_push(&mut order, resource, parser, context, config)?;
     }
 
     debug!("{}: {order:?}", t!("configure.dependsOn.invocationOrder"));
     Ok(order)
 }
 
-fn unroll_and_push(order: &mut Vec<Resource>, resource: &Resource, parser: &mut Statement, context: &mut Context) -> Result<(), DscError> {
+/// Unrolls a resource (expanding copy loops if present) and pushes it to the order list.
+///
+/// This function handles both regular resources and copy loop resources. For copy loop resources,
+/// it expands the loop by creating individual resource instances with resolved names and properties.
+///
+/// # Copy Loop Handling
+///
+/// When a resource has a `copy` block, this function:
+/// 1. Sets up the copy context (`ProcessMode::Copy` and loop name)
+/// 2. Iterates `count` times, setting `copyIndex()` for each iteration
+/// 3. For each iteration:
+///    - Resolves dependencies that may use `copyIndex()` in their `dependsOn` expressions
+///    - Evaluates the resource name expression (e.g., `[format('Policy-{0}', copyIndex())]` -> `Policy-0`)
+///    - Stores the copy loop context in resource tags for later use by `reference()` function
+/// 4. Clears the copy context after expansion
+///
+/// # Dependency Resolution in Copy Loops
+///
+/// When a copy loop resource depends on another copy loop resource (e.g., `Permission-0` depends on `Policy-0`),
+/// the dependency must be resolved during the copy expansion phase where `copyIndex()` has the correct value.
+/// This function handles this by:
+/// - Evaluating `dependsOn` expressions with the current copy context
+/// - Recursively expanding dependency copy loops if they haven't been expanded yet
+/// - Preserving and restoring the copy context when recursing into dependencies
+///
+/// # Arguments
+///
+/// * `order` - The mutable list of resources in invocation order
+/// * `resource` - The resource to unroll and push
+/// * `parser` - The statement parser for evaluating expressions
+/// * `context` - The evaluation context containing copy loop state
+/// * `config` - The full configuration for finding dependency resources
+///
+/// # Returns
+///
+/// * `Result<(), DscError>` - Ok if successful, or an error if expansion fails
+///
+/// # Errors
+///
+/// * `DscError::Parser` - If copy count or name expressions fail to evaluate
+/// * `DscError::Validation` - If dependency syntax is incorrect
+fn unroll_and_push(order: &mut Vec<Resource>, resource: &Resource, parser: &mut Statement, context: &mut Context, config: &Configuration) -> Result<(), DscError> {
   // if the resource contains `Copy`, unroll it
   if let Some(copy) = &resource.copy {
       debug!("{}", t!("configure.mod.unrollingCopy", name = &copy.name, count = copy.count));
@@ -111,15 +155,72 @@ fn unroll_and_push(order: &mut Vec<Resource>, resource: &Resource, parser: &mut 
       };
       for i in 0..count {
           context.copy.insert(copy.name.clone(), i);
+
+          // Handle dependencies for this copy iteration
+          if let Some(depends_on) = &resource.depends_on {
+              for dependency in depends_on {
+                  let statement = parser.parse_and_execute(dependency, context)?;
+                  let Some(string_result) = statement.as_str() else {
+                      return Err(DscError::Validation(t!("configure.dependsOn.syntaxIncorrect", dependency = dependency).to_string()));
+                  };
+                  let (resource_type, resource_name) = get_type_and_name(string_result)?;
+
+                  // Check if the dependency is already in the order (expanded)
+                  if order.iter().any(|r| r.name == resource_name && r.resource_type == resource_type) {
+                      continue;
+                  }
+
+                  // Check if the dependency is also in copy_resources we're building
+                  if copy_resources.iter().any(|r| r.name == resource_name && r.resource_type == resource_type) {
+                      continue;
+                  }
+
+                  // Find the dependency in config.resources - it might be a copy loop template
+                  // We need to find by type since the name is the template expression
+                  let Some(dependency_resource) = config.resources.iter().find(|r| r.resource_type == resource_type) else {
+                      return Err(DscError::Validation(t!("configure.dependsOn.dependencyNotFound", dependency_name = resource_name, resource_name = resource.name).to_string()));
+                  };
+
+                  // If it's a copy loop resource, we need to expand it first
+                  if dependency_resource.copy.is_some() {
+                      // Save current copy context
+                      let saved_loop_name = context.copy_current_loop_name.clone();
+                      let saved_copy = context.copy.clone();
+
+                      // Recursively unroll the dependency
+                      unroll_and_push(order, dependency_resource, parser, context, config)?;
+
+                      // Restore copy context
+                      context.copy_current_loop_name = saved_loop_name;
+                      context.copy = saved_copy;
+                      context.process_mode = ProcessMode::Copy;
+                  } else {
+                      order.push(dependency_resource.clone());
+                  }
+              }
+          }
+
           let mut new_resource = resource.clone();
           let Value::String(new_name) = parser.parse_and_execute(&resource.name, context)? else {
               return Err(DscError::Parser(t!("configure.mod.copyNameResultNotString").to_string()))
           };
           new_resource.name = new_name.to_string();
 
-          if let Some(properties) = &resource.properties {
-              new_resource.properties = invoke_property_expressions(parser, context, Some(properties))?;
-          }
+          // Store copy loop context in resource metadata under Microsoft.DSC for later use by reference()
+          let mut metadata = new_resource.metadata.clone().unwrap_or_else(|| {
+              use crate::configure::config_doc::Metadata;
+              Metadata {
+                  microsoft: None,
+                  other: Map::new(),
+              }
+          });
+          
+          let mut microsoft = metadata.microsoft.clone().unwrap_or_default();
+          let mut copy_loops = microsoft.copy_loops.clone().unwrap_or_default();
+          copy_loops.insert(copy.name.clone(), Value::Number(i.into()));
+          microsoft.copy_loops = Some(copy_loops);
+          metadata.microsoft = Some(microsoft);
+          new_resource.metadata = Some(metadata);
 
           new_resource.copy = None;
           copy_resources.push(new_resource);
@@ -340,5 +441,26 @@ mod tests {
         assert_eq!(order[1].name, "Second");
         assert_eq!(order[2].name, "Third");
         assert_eq!(order[3].name, "Fourth");
+    }
+
+    #[test]
+    fn test_copy_loop_missing_dependency() {
+        let config_yaml: &str = r#"
+        $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+        resources:
+        - name: "[format('Permission-{0}', copyIndex())]"
+          type: Test/Permission
+          copy:
+            name: permissionCopy
+            count: 2
+          dependsOn:
+          - "[resourceId('Test/Policy', format('Policy-{0}', copyIndex()))]"
+        "#;
+
+        let config: Configuration = serde_yaml::from_str(config_yaml).unwrap();
+        let mut parser = parser::Statement::new().unwrap();
+        let mut context = Context::new();
+        let order = get_resource_invocation_order(&config, &mut parser, &mut context);
+        assert!(order.is_err());
     }
 }

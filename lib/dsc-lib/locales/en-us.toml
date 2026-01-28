@@ -84,6 +84,7 @@ skippingOutput = "Skipping output for '%{name}' due to condition evaluating to f
 secureOutputSkipped = "Secure output '%{name}' is skipped"
 outputTypeNotMatch = "Output '%{name}' type does not match expected type '%{expected_type}'"
 copyNotSupported = "Copy for output '%{name}' is currently not supported"
+skippingResourceDiscovery = "Skipping resource discovery due to 'resourceDiscovery' mode set to 'DuringDeployment'"
 
 [configure.parameters]
 importingParametersFromComplexInput = "Importing parameters from complex input"
@@ -319,6 +320,18 @@ invoked = "createObject function"
 argsMustBePairs = "Arguments must be provided in key-value pairs"
 keyMustBeString = "Object keys must be strings"
 
+[functions.dataUri]
+description = "Converts a value to a data URI"
+
+[functions.dataUriToString]
+description = "Converts a data URI formatted value to a string"
+invoked = "dataUriToString function"
+invalidDataUri = "Invalid data URI format"
+invalidBase64 = "Invalid base64 encoding in data URI"
+invalidUtf8 = "Decoded bytes do not form valid UTF-8"
+notBase64 = "Data URI must be base64 encoded"
+unsupportedCharset = "Unsupported charset: %{charset}. Only UTF-8 is supported."
+
 [functions.div]
 description = "Divides the first number by the second"
 invoked = "div function"
@@ -519,7 +532,6 @@ sumOverflow = "Sum of startIndex and count causes overflow"
 description = "Retrieves the output of a previously executed resource"
 invoked = "reference function"
 keyNotFound = "Invalid resourceId or resource has not executed yet: %{key}"
-cannotUseInCopyMode = "The 'reference()' function cannot be used when processing a 'Copy' loop"
 unavailableInUserFunction = "The 'reference()' function is not available in user-defined functions"
 
 [functions.resourceId]

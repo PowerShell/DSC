@@ -4,6 +4,7 @@
 pub mod command_discovery;
 pub mod discovery_trait;
 
+use crate::configure::config_doc::ResourceDiscoveryMode;
 use crate::discovery::discovery_trait::{DiscoveryKind, ResourceDiscovery, DiscoveryFilter};
 use crate::dscerror::DscError;
 use crate::extensions::dscextension::{Capability, DscExtension};
@@ -18,6 +19,7 @@ use tracing::error;
 pub struct Discovery {
     pub resources: BTreeMap<String, Vec<DscResource>>,
     pub extensions: BTreeMap<String, DscExtension>,
+    pub refresh_cache: bool,
 }
 
 impl Discovery {
@@ -32,6 +34,7 @@ impl Discovery {
         Self {
             resources: BTreeMap::new(),
             extensions: BTreeMap::new(),
+            refresh_cache: false,
         }
     }
 
@@ -89,7 +92,7 @@ impl Discovery {
 
     #[must_use]
     pub fn find_resource(&mut self, filter: &DiscoveryFilter) -> Result<Option<&DscResource>, DscError> {
-        if self.resources.is_empty() {
+        if self.refresh_cache || self.resources.is_empty() {
             self.find_resources(&[filter.clone()], ProgressFormat::None)?;
         }
 
@@ -133,12 +136,17 @@ impl Discovery {
     ///
     /// * `required_resource_types` - The required resource types.
     pub fn find_resources(&mut self, required_resource_types: &[DiscoveryFilter], progress_format: ProgressFormat) -> Result<(), DscError> {
-        if !self.resources.is_empty() {
+        if !self.refresh_cache && !self.resources.is_empty() {
             // If resources are already discovered, no need to re-discover.
             return Ok(());
         }
 
-        let command_discovery = CommandDiscovery::new(progress_format);
+        let mut command_discovery = CommandDiscovery::new(progress_format);
+        if self.refresh_cache {
+            self.resources.clear();
+            self.extensions.clear();
+            command_discovery.set_discovery_mode(&ResourceDiscoveryMode::DuringDeployment);
+        }
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
             Box::new(command_discovery),
         ];
@@ -158,11 +166,11 @@ impl Discovery {
 }
 
 /// Check if a resource matches the adapter requirement specified in the filter.
-/// 
+///
 /// # Arguments
 /// * `resource` - The resource to check.
 /// * `filter` - The discovery filter containing the adapter requirement.
-/// 
+///
 /// # Returns
 /// `true` if the resource matches the adapter requirement, `false` otherwise.
 pub fn matches_adapter_requirement(resource: &DscResource, filter: &DiscoveryFilter) -> bool {
