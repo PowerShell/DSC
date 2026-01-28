@@ -16,19 +16,25 @@ Enforces the desired state for a resource instance.
 ### Instance properties from input option
 
 ```sh
-dsc resource set --input <INPUT> --resource <RESOURCE>
+dsc resource set --input <INPUT> --resource <RESOURCE> [--what-if]
 ```
 
 ### Instance properties from file
 
 ```sh
-dsc resource set --file <FILE> --resource <RESOURCE>
+dsc resource set --file <FILE> --resource <RESOURCE> [--what-if]
 ```
 
 ### Instance properties from stdin
 
 ```sh
-cat <FILE> | dsc resource set [Options] --resource <RESOURCE> --file -
+cat <FILE> | dsc resource set [Options] --resource <RESOURCE> --file - [--what-if]
+```
+
+### What-if mode
+
+```sh
+dsc resource set --input <INPUT> --resource <RESOURCE> --what-if
 ```
 
 ## Description
@@ -215,6 +221,27 @@ LongSyntax  : --output-format <OUTPUT_FORMAT>
 ShortSyntax : -o <OUTPUT_FORMAT>
 ```
 
+### -w, --what-if
+
+<a id="-w"></a>
+<a id="--what-if"></a>
+
+When you specify this flag option, DSC doesn't actually change the system state with the `set`
+operation. Instead, it returns output indicating _how_ the operation will change system state when
+called without this option. Use this option to preview the changes DSC will make to a system.
+
+This option is useful for interactive and exploratory operations, allowing you to see what changes
+would be made before actually applying them.
+
+This option also supports the `--dry-run` and `--noop` aliases for compatibility with other tools.
+
+```yaml
+Type        : boolean
+Mandatory   : false
+LongSyntax  : --what-if
+ShortSyntax : -w
+```
+
 ### -h, --help
 
 <a id="-h"></a>
@@ -240,7 +267,6 @@ For more information about the formatting of the output data, see the
 [--output-format option](#--output-format).
 
 <!-- Link reference definitions -->
-[zz]: https://jsonlines.org/
 [01]: ../config/set.md
 [02]: ../config/set.md
 [03]: ../../schemas/resource/manifest/set.md#implementspretest
