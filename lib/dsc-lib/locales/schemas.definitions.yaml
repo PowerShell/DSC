@@ -2,34 +2,106 @@ _version: 2
 schemas:
   definitions:
     resourceType:
-      title: Fully qualified type name
-      description: >-
-        Uniquely identifies a DSC resource or extension.
-      markdownDescription: |-
-        The fully qualified type name of a DSC resource or extension uniquely identifies a resource
-        or extension.
+      title:
+        en-us: Fully qualified type name
+      description:
+        en-us: >-
+          Uniquely identifies a DSC resource or extension.
+      markdownDescription:
+        en-us: |-
+          The fully qualified type name of a DSC resource or extension uniquely identifies a resource
+          or extension.
 
-        Fully qualified type names use the following syntax:
+          Fully qualified type names use the following syntax:
 
-        ```yaml
-        <owner>[.<namespace>...]/<name>
-        ```
+          ```yaml
+          <owner>[.<namespace>...]/<name>
+          ```
 
-        Where the type may have zero or more namespace segments for organizing the type. The
-        `owner`, `namespace`, and `name` segments must consist only of alphanumeric characters and
-        underscores.
+          Where the type may have zero or more namespace segments for organizing the type. The
+          `owner`, `namespace`, and `name` segments must consist only of alphanumeric characters and
+          underscores.
 
-        Conventionally, the first character of each segment is capitalized. When a segment
-        contains a brand or proper name, use the correct casing for that word, like
-        `TailspinToys/Settings`, not `Tailspintoys/Settings`.
+          Conventionally, the first character of each segment is capitalized. When a segment
+          contains a brand or proper name, use the correct casing for that word, like
+          `TailspinToys/Settings`, not `Tailspintoys/Settings`.
 
-        Example fully qualified type names include:
+            Example fully qualified type names include:
 
-        - `Microsoft/OSInfo`
-        - `Microsoft.SqlServer/Database`
-        - `Microsoft.Windows.IIS/WebApp`
-      patternErrorMessage: >-
-        Invalid type name. Valid resource type names always define an owner and a name separated by
-        a slash, like `Microsoft/OSInfo`. Type names may optionally include the group, area, and
-        subarea segments to namespace the resource under the owner, like
-        `Microsoft.Windows/Registry`.
+            - `Microsoft/OSInfo`
+            - `Microsoft.SqlServer/Database`
+            - `Microsoft.Windows.IIS/WebApp`
+      patternErrorMessage:
+        en-us: >-
+          Invalid type name. Valid resource type names always define an owner and a name separated
+          by a slash, like `Microsoft/OSInfo`. Type names may optionally include the group, area,
+          and subarea segments to namespace the resource under the owner, like
+          `Microsoft.Windows/Registry`.
+
+    semver:
+      title:
+        en-us: Semantic version
+      description:
+        en-us: |-
+          A valid semantic version (semver) string.
+
+          For reference, see https://semver.org/
+      markdownDescription:
+        en-us: |-
+          A valid semantic version ([semver][01]) string.
+
+          This value uses the [suggested regular expression][02] to validate whether the string is
+          valid semver. This is the same pattern, made multi-line for easier readability:
+
+          ```regex
+          ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)
+          (?:-(
+            (?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)
+            (?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))
+          *))?
+          (?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
+          ```
+
+          The first line matches the `major.minor.patch` components of the version. The middle
+          lines match the pre-release components. The last line matches the build metadata
+          component.
+
+          [01]: https://semver.org/
+          [02]: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
+      patternErrorMessage:
+        en-us: |-
+          Invalid value, must be a semantic version like `<major>.<minor>.<patch>`, such as `1.2.3`.
+
+          The value may also include pre-release version information and build metadata.
+
+    version:
+      title:
+        en-us: Version
+      description:
+        en-us: >-
+          Defines the version for the type as either a semantic version (semver) or arbitrary string.
+      markdownDescription:
+        en-us: |-
+          Defines the version for the type as either a semantic version (semver) or arbitrary string.
+
+          If the type adheres to [semantic versioning][01], its manifest should define the version as
+          a valid semantic version like `1.2.3`. When a resource or extension specifies a semantic
+          version, DSC uses the latest available version of that resource or extension by default.
+
+          Instead of specifying a semantic version, the type can specify any arbitrary string. In
+          that case, DSC uses simple string sorting to determine the default version to use.
+
+          Users can override the default behavior and require a specific version of a resource with
+          the `something` field.
+      stringVariant:
+        title:
+          en-us: Arbitrary version string
+        description:
+          en-us: >-
+            Defines the version for the type as an arbitrary string.
+        markdownDescription:
+          en-us: |-
+            Defines the version for the type as an arbitrary string. When the version for the type
+            isn't a valid semantic version, DSC treats the version as a string. This enables
+            DSC to support non-semantically-versioned types, such as using a release date as the
+            version.

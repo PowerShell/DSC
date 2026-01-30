@@ -17,16 +17,7 @@ use crate::schemas::dsc_repo::DscRepoSchema;
 /// Defines the fully qualified type name for a DSC resource or extension. The fully qualified name
 /// uniquely identifies each resource and extension.
 #[derive(
-    Clone,
-    Debug,
-    Eq,
-    PartialOrd,
-    Ord,
-    Hash,
-    Serialize,
-    Deserialize,
-    JsonSchema,
-    DscRepoSchema,
+    Clone, Debug, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema, DscRepoSchema,
 )]
 #[serde(try_from = "String")]
 #[schemars(
@@ -86,6 +77,8 @@ impl FullyQualifiedTypeName {
     /// Creates a new instance of [`FullyQualifiedTypeName`] from a string if the input is valid for the
     /// [`VALIDATING_PATTERN`]. If the string is invalid, the method raises the
     /// [`DscError::InvalidTypeName`] error.
+    ///
+    /// [`VALIDATING_PATTERN`]: FullyQualifiedTypeName::VALIDATING_PATTERN
     pub fn new(name: &str) -> Result<Self, DscError> {
         Self::validate(name)?;
         Ok(Self(name.to_string()))

@@ -567,7 +567,7 @@ impl ResourceDiscovery for CommandDiscovery {
 fn filter_resources(found_resources: &mut BTreeMap<String, Vec<DscResource>>, required_resources: &mut HashMap<DiscoveryFilter, bool>, resources: &[DscResource], filter: &DiscoveryFilter) {
     for resource in resources {
         if let Some(required_version) = filter.version() {
-            if let Ok(resource_version) = Version::parse(&resource.version) {
+            if let Some(resource_version) = resource.semantic_version() {
                 if let Ok(version_req) = VersionReq::parse(required_version) {
                     if version_req.matches(&resource_version) && matches_adapter_requirement(resource, filter) {
                         found_resources.entry(filter.resource_type().to_string()).or_default().push(resource.clone());
@@ -604,15 +604,15 @@ fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource:
         // compare the resource versions and insert newest to oldest using semver
         let mut insert_index = resource_versions.len();
         for (index, resource_instance) in resource_versions.iter().enumerate() {
-            let resource_instance_version = match Version::parse(&resource_instance.version) {
-                Ok(v) => v,
-                Err(_err) => {
+            let resource_instance_version = match resource_instance.semantic_version() {
+                Some(v) => v,
+                None => {
                     continue;
                 },
             };
-            let resource_version = match Version::parse(&resource.version) {
-                Ok(v) => v,
-                Err(_err) => {
+            let resource_version = match resource.semantic_version() {
+                Some(v) => v,
+                None => {
                     continue;
                 },
             };
@@ -746,7 +746,7 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
 }
 
 fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<DscResource, DscError> {
-    if let Err(err) = validate_semver(&manifest.version) {
+    if let Err(err) = validate_semver(&manifest.version.to_string()) {
         warn!("{}", t!("discovery.commandDiscovery.invalidManifestVersion", path = path.to_string_lossy(), err = err).to_string());
     }
 
