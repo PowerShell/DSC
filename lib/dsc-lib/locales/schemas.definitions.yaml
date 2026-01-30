@@ -69,3 +69,47 @@ schemas:
           Invalid value, must be a semantic version like `<major>.<minor>.<patch>`, such as `1.2.3`.
 
           The value may also include pre-release version information and build metadata.
+
+    semverReq:
+      title:
+        en-us: Semantic version requirement
+      description:
+        en-us: >-
+          Defines one or more limitations for a semantic version to enable version pinning.
+      markdownDescription:
+        en-us: |-
+          Defines one or more limitations for a semantic version to enable version pinning.
+
+          DSC uses the semantic version requirements for Rust, as documented in the
+          ["Specifying dependencies" section of the Cargo Book][01]. DSC adheres closely to the
+          Rust syntax for defining semantic version requirements, with the following exceptions:
+
+          1. DSC semantic version requirements _forbid_ the inclusion of build metadata.
+
+            Rust allows and ignores them. DSC forbids the inclusion of build metadata to limit confusion
+            and unexpected behavior when specifying a version requirement for a DSC resource or
+            extension.
+          1. DSC semantic version requirements _must_ define a major version segment. All other segments
+            are optional.
+
+            Rust technically supports specifying a wildcard-only version requirement (`*`). DSC forbids
+            specifying this version requirement as it maps to the default version selection and is
+            discouraged when specifying version requirements for production systems.
+          1. DSC semantic version requirements only support the asterisk (`*`) character for wildcards,
+            not `x` or `X`.
+
+            DSC forbids specifying wildcards as non-asterisks to reduce ambiguity and unexpected
+            behavior for prerelease segments, where `1.2.3-X` and `1.2.3-rc.x` are _valid_ requirements
+            but where the characters are _not_ interpreted as wildcards. Forbidding the use of these
+            characters prevents users from accidentally defining a requirement they _believe_ will
+            wildcard match on a prerelease segment but actually won't.
+
+          For more information about defining semantic version requirements with DSC, see
+          [Defining semantic version requirements][01].
+
+          [01]: https://learn.microsoft.com/en-us/powershell/dsc/concepts/defining-semver-reqs.md
+      patternErrorMessage:
+        en-us: >-
+          Invalid semantic version requirement. A semantic version requirement must define one or
+          more valid comparators. For more information, see
+          [Defining semantic version requirements](https://learn.microsoft.com/en-us/powershell/dsc/concepts/defining-semver-reqs.md)

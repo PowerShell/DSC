@@ -127,6 +127,14 @@ pub enum DscError {
     #[error("semver: {0}")]
     SemVer(#[from] semver::Error),
 
+    #[error(
+        "{t}: '{0}' {t2} '{1}' - {t3}",
+        t = t!("dscerror.semverReqWithBuildMetadataPrefix"),
+        t2 = t!("dscerror.semverReqWithBuildMetadataInfix"),
+        t3 = t!("dscerror.semverReqWithBuildMetadataSuffix")
+    )]
+    SemVerReqWithBuildMetadata(String, String),
+
     #[error("{t}: {0}", t = t!("dscerror.utf8Conversion"))]
     Utf8Conversion(#[from] Utf8Error),
 
