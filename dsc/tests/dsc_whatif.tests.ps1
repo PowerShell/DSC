@@ -98,41 +98,23 @@ Describe 'whatif tests' {
         $LASTEXITCODE | Should -Be 0
     }
 
-    It 'Test/WhatIfNative resource with <operation> operation and WhatIfArgKind works' -TestCases @(
-        @{ operation = 'set' }
-        @{ operation = 'delete' }
-    ) {
-        param($operation)
-
-        if ($operation -eq 'set') {
-            $config_yaml = @"
-        `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
-        resources:
-        - name: NativeWhatIf
-          type: Test/WhatIfNative
-          properties:
-            executionType: Actual
+    It 'Test/WhatIfNative resource with set operation and WhatIfArgKind works' {
+        $config_yaml = @"
+    `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+    resources:
+    - name: WhatIfArgKind
+      type: Test/WhatIfArgKind
+      properties:
+        executionType: Actual
 "@
-            $what_if_result = $config_yaml | dsc config set -w -f - | ConvertFrom-Json
-            $set_result = $config_yaml | dsc config set -f - | ConvertFrom-Json
-            $what_if_result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'whatIf'
-            $set_result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'actual'
-            $what_if_result.results[0].result.afterState.execution_type | Should -BeExactly 'WhatIf'
-            $set_result.results[0].result.afterState.execution_type | Should -BeExactly 'Actual'
-            $what_if_result.hadErrors | Should -BeFalse
-            $set_result.hadErrors | Should -BeFalse
-        }
-        else {
-            $testInput = @{
-                execution_type = "Actual"
-            } | ConvertTo-Json
-
-            $what_if_result = $testInput | dsc resource delete -r Test/WhatIfNative --what-if 2>&1
-            $LASTEXITCODE | Should -Be 0
-
-            $actual_result = $testInput | dsc resource delete -r Test/WhatIfNative 2>&1
-            $LASTEXITCODE | Should -Be 0
-        }
+        $what_if_result = $config_yaml | dsc config set -w -f - | ConvertFrom-Json
+        $set_result = $config_yaml | dsc config set -f - | ConvertFrom-Json
+        $what_if_result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'whatIf'
+        $set_result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'actual'
+        $what_if_result.results[0].result.afterState.executionType | Should -BeExactly 'WhatIf'
+        $set_result.results[0].result.afterState.executionType | Should -BeExactly 'Actual'
+        $what_if_result.hadErrors | Should -BeFalse
+        $set_result.hadErrors | Should -BeFalse
     }
 
     It 'Echo resource with synthetic what-if works' {
@@ -150,18 +132,6 @@ Describe 'whatif tests' {
         $set_result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'actual'
         $what_if_result.hadErrors | Should -BeFalse
         $set_result.hadErrors | Should -BeFalse
-        $LASTEXITCODE | Should -Be 0
-    }
-
-    It 'Test/Delete resource with synthetic delete what-if without whatIfArg works' {
-        $testInput = @{
-            delete_called = $false
-        } | ConvertTo-Json
-
-        $what_if_result = $testInput | dsc resource delete -r Test/Delete --what-if 2>&1
-        $LASTEXITCODE | Should -Be 0
-
-        $actual_result = $testInput | dsc resource delete -r Test/Delete 2>&1
         $LASTEXITCODE | Should -Be 0
     }
 }

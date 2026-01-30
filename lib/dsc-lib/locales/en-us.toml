@@ -178,6 +178,7 @@ invalidKey = "Unsupported value for key '%{key}'.  Only string, bool, number, an
 inDesiredStateNotBool = "'_inDesiredState' is not a boolean"
 exportNotSupportedUsingGet = "Export is not supported by resource '%{resource}' using get operation"
 runProcessError = "Failed to run process '%{executable}': %{error}"
+whatIfWarning = "Resource '%{resource}' uses deprecated 'whatIf' operation. Please migrate to using 'whatIfArg' in the set and/or delete method args instead."
 
 [dscresources.dscresource]
 invokeGet = "Invoking get for '%{resource}'"

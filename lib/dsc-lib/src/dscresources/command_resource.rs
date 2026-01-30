@@ -9,7 +9,7 @@ use serde_json::{Map, Value};
 use std::{collections::HashMap, env, path::Path, process::Stdio};
 use crate::{configure::{config_doc::ExecutionKind, config_result::{ResourceGetResult, ResourceTestResult}}, types::FullyQualifiedTypeName, util::canonicalize_which};
 use crate::dscerror::DscError;
-use super::{dscresource::{get_diff, redact}, invoke_result::{ExportResult, GetResult, ResolveResult, SetResult, TestResult, ValidateResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse, get_in_desired_state}, resource_manifest::{GetArgKind, SetDeleteArgKind, InputKind, Kind, ResourceManifest, ReturnKind, SchemaKind, SetMethod, DeleteMethod}};
+use super::{dscresource::{get_diff, redact}, invoke_result::{ExportResult, GetResult, ResolveResult, SetResult, TestResult, ValidateResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse, get_in_desired_state}, resource_manifest::{GetArgKind, SetDeleteArgKind, InputKind, Kind, ResourceManifest, ReturnKind, SchemaKind}};
 use tracing::{error, warn, info, debug, trace};
 use tokio::{io::{AsyncBufReadExt, AsyncWriteExt, BufReader}, process::Command};
 
@@ -99,6 +99,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &Path, desired: &str, skip_t
 
             // Fallback to deprecated whatIf operation if present and set doesn't support whatIfArg
             if !has_native_whatif && resource.what_if.is_some() {
+                warn!("{}", t!("dscresources.commandResource.whatIfWarning", resource = &resource.resource_type));
                 &resource.what_if
             } else if !has_native_whatif {
                 // No native what-if support, use synthetic
@@ -110,7 +111,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &Path, desired: &str, skip_t
             }
         }
     };
-    let Some(mut set) = set_method.clone() else {
+    let Some(set) = set_method.clone() else {
         return Err(DscError::NotImplemented("set".to_string()));
     };
     verify_json(resource, cwd, desired)?;
@@ -189,7 +190,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &Path, desired: &str, skip_t
 
     let mut env: Option<HashMap<String, String>> = None;
     let mut input_desired: Option<&str> = None;
-    let (args, supports_whatif) = process_set_delete_args(set.args.as_ref(), desired, &resource_type, execution_type);
+    let (args, _) = process_set_delete_args(set.args.as_ref(), desired, &resource_type, execution_type);
     match &set.input {
         Some(InputKind::Env) => {
             env = Some(json_to_hashmap(desired)?);

@@ -234,7 +234,7 @@ impl BicepExtension for BicepExtensionService {
         };
 
         resource
-            .delete(&identifiers)
+            .delete(&identifiers, &ExecutionKind::Actual)
             .map_err(|e| Status::aborted(e.to_string()))?;
 
         Ok(Response::new(LocalExtensibilityOperationResponse {

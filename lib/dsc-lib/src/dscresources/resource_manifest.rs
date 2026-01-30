@@ -323,15 +323,10 @@ pub struct ListMethod {
 pub fn import_manifest(manifest: Value) -> Result<ResourceManifest, DscError> {
     // TODO: enable schema version validation, if not provided, use the latest
     // const MANIFEST_SCHEMA_VERSION: &str = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json";
-    let mut manifest = serde_json::from_value::<ResourceManifest>(manifest)?;
+    let manifest = serde_json::from_value::<ResourceManifest>(manifest)?;
     // if !manifest.schema_version.eq(MANIFEST_SCHEMA_VERSION) {
     //     return Err(DscError::InvalidManifestSchemaVersion(manifest.schema_version, MANIFEST_SCHEMA_VERSION.to_string()));
     // }
-
-    // Emit deprecation warning if whatIf operation is defined
-    if manifest.what_if.is_some() {
-        tracing::warn!("Resource '{}' uses deprecated 'whatIf' operation. Please migrate to using 'whatIfArg' in the set and/or delete method args instead.", manifest.resource_type);
-    }
 
     Ok(manifest)
 }
