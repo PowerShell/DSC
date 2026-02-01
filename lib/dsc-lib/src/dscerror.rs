@@ -58,6 +58,9 @@ pub enum DscError {
     #[error("{t} '{0}': {1}", t = t!("dscerror.invalidRequiredVersion"))]
     InvalidRequiredVersion(String, String),
 
+    #[error("{t} '{0}' - {t2}: '{1}'", t = t!("dscerror.invalidTypeNamePrefix"), t2 = t!("dscerror.InvalidTypeNameSuffix"))]
+    InvalidTypeName(String, String),
+
     #[error("IO: {0}")]
     Io(#[from] std::io::Error),
 

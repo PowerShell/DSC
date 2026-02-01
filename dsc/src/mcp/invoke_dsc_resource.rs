@@ -3,7 +3,8 @@
 
 use crate::mcp::mcp_server::McpServer;
 use dsc_lib::{
-    configure::config_doc::ExecutionKind,
+    DscManager, configure::config_doc::ExecutionKind,
+    discovery::discovery_trait::DiscoveryFilter,
     dscresources::{
         dscresource::Invoke,
         invoke_result::{
@@ -12,8 +13,7 @@ use dsc_lib::{
             SetResult,
             TestResult,
         },
-    },
-    DscManager,
+    }, types::FullyQualifiedTypeName
 };
 use rmcp::{ErrorData as McpError, Json, tool, tool_router, handler::server::wrapper::Parameters};
 use rust_i18n::t;
@@ -51,7 +51,7 @@ pub struct InvokeDscResourceRequest {
     #[schemars(description = "The operation to perform on the DSC resource")]
     pub operation: DscOperation,
     #[schemars(description = "The type name of the DSC resource to invoke")]
-    pub resource_type: String,
+    pub resource_type: FullyQualifiedTypeName,
     #[schemars(description = "The properties to pass to the DSC resource as JSON.  Must match the resource JSON schema from `show_dsc_resource` tool.")]
     pub properties_json: String,
 }
@@ -71,7 +71,7 @@ impl McpServer {
     pub async fn invoke_dsc_resource(&self, Parameters(InvokeDscResourceRequest { operation, resource_type, properties_json }): Parameters<InvokeDscResourceRequest>) -> Result<Json<InvokeDscResourceResponse>, McpError> {
         let result = task::spawn_blocking(move || {
             let mut dsc = DscManager::new();
-            let Some(resource) = dsc.find_resource(&resource_type, None) else {
+            let Some(resource) = dsc.find_resource(&DiscoveryFilter::new(&resource_type, None, None)).unwrap_or(None) else {
                 return Err(McpError::invalid_request(t!("mcp.invoke_dsc_resource.resourceNotFound", resource = resource_type), None));
             };
             match operation {

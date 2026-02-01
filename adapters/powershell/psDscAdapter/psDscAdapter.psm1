@@ -153,7 +153,7 @@ function FindAndParseResourceDefinitions {
 function GetExportMethod ($ResourceType, $HasFilterProperties, $ResourceTypeName) {
     $methods = $ResourceType.GetMethods() | Where-Object { $_.Name -eq 'Export' }
     $method = $null
-    
+
     if ($HasFilterProperties) {
         "Properties provided for filtered export" | Write-DscTrace -Operation Trace
         $method = foreach ($mt in $methods) {
@@ -162,7 +162,7 @@ function GetExportMethod ($ResourceType, $HasFilterProperties, $ResourceTypeName
                 break
             }
         }
-        
+
         if ($null -eq $method) {
             "Export method with parameters not implemented by resource '$ResourceTypeName'. Filtered export is not supported." | Write-DscTrace -Operation Error
             exit 1
@@ -176,13 +176,13 @@ function GetExportMethod ($ResourceType, $HasFilterProperties, $ResourceTypeName
                 break
             }
         }
-        
+
         if ($null -eq $method) {
             "Export method not implemented by resource '$ResourceTypeName'" | Write-DscTrace -Operation Error
             exit 1
         }
     }
-    
+
     return $method
 }
 
@@ -394,17 +394,28 @@ function Invoke-DscCacheRefresh {
 function Get-DscResourceObject {
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
-        $jsonInput
+        $jsonInput,
+        [Parameter(Mandatory = $false)]
+        $type
     )
     # normalize the INPUT object to an array of dscResourceObject objects
     $inputObj = $jsonInput | ConvertFrom-Json
-    $desiredState = [System.Collections.Generic.List[Object]]::new()
+    if ($type) {
+        $desiredState = [dscResourceObject]@{
+            name       = ''
+            type       = $type
+            properties = $inputObj
+        }
+    }
+    else {
+        $desiredState = [System.Collections.Generic.List[Object]]::new()
 
-    $inputObj.resources | ForEach-Object -Process {
-        $desiredState += [dscResourceObject]@{
-            name       = $_.name
-            type       = $_.type
-            properties = $_.properties
+        $inputObj.resources | ForEach-Object -Process {
+            $desiredState += [dscResourceObject]@{
+                name       = $_.name
+                type       = $_.type
+                properties = $_.properties
+            }
         }
     }
 
@@ -504,7 +515,7 @@ function Invoke-DscOperation {
                             }
                             else {
                                 if ($validateProperty -and $validateProperty.PropertyType -in @('SecureString', 'System.Security.SecureString') -and -not [string]::IsNullOrEmpty($_.Value)) {
-                                    $dscResourceInstance.$($_.Name) = ConvertTo-SecureString -AsPlainText $_.Value -Force   
+                                    $dscResourceInstance.$($_.Name) = ConvertTo-SecureString -AsPlainText $_.Value -Force
                                 } else {
                                     $dscResourceInstance.$($_.Name) = $_.Value
                                 }
@@ -516,7 +527,7 @@ function Invoke-DscOperation {
                         'Get' {
                             $Result = @{}
                             $raw_obj = $dscResourceInstance.Get()
-                            $ValidProperties | ForEach-Object { 
+                            $ValidProperties | ForEach-Object {
                                 if ($raw_obj.$_ -is [System.Enum]) {
                                     $Result[$_] = $raw_obj.$_.ToString()
 
@@ -536,7 +547,7 @@ function Invoke-DscOperation {
                         }
                         'Export' {
                             $t = $dscResourceInstance.GetType()
-                            $hasFilter = $null -ne $DesiredState.properties -and 
+                            $hasFilter = $null -ne $DesiredState.properties -and
                             ($DesiredState.properties.PSObject.Properties | Measure-Object).Count -gt 0
 
                             $method = GetExportMethod -ResourceType $t -HasFilterProperties $hasFilter -ResourceTypeName $DesiredState.Type
@@ -550,12 +561,12 @@ function Invoke-DscOperation {
 
                             foreach ($raw_obj in $raw_obj_array) {
                                 $Result_obj = @{}
-                                $ValidProperties | ForEach-Object { 
+                                $ValidProperties | ForEach-Object {
                                     if ($raw_obj.$_ -is [System.Enum]) {
                                         $Result_obj[$_] = $raw_obj.$_.ToString()
                                     }
-                                    else { 
-                                        $Result_obj[$_] = $raw_obj.$_ 
+                                    else {
+                                        $Result_obj[$_] = $raw_obj.$_
                                     }
                                 }
                                 $resultArray += $Result_obj

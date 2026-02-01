@@ -1,0 +1,35 @@
+_version: 2
+schemas:
+  definitions:
+    resourceType:
+      title: Fully qualified type name
+      description: >-
+        Uniquely identifies a DSC resource or extension.
+      markdownDescription: |-
+        The fully qualified type name of a DSC resource or extension uniquely identifies a resource
+        or extension.
+
+        Fully qualified type names use the following syntax:
+
+        ```yaml
+        <owner>[.<namespace>...]/<name>
+        ```
+
+        Where the type may have zero or more namespace segments for organizing the type. The
+        `owner`, `namespace`, and `name` segments must consist only of alphanumeric characters and
+        underscores.
+
+        Conventionally, the first character of each segment is capitalized. When a segment
+        contains a brand or proper name, use the correct casing for that word, like
+        `TailspinToys/Settings`, not `Tailspintoys/Settings`.
+
+        Example fully qualified type names include:
+
+        - `Microsoft/OSInfo`
+        - `Microsoft.SqlServer/Database`
+        - `Microsoft.Windows.IIS/WebApp`
+      patternErrorMessage: >-
+        Invalid type name. Valid resource type names always define an owner and a name separated by
+        a slash, like `Microsoft/OSInfo`. Type names may optionally include the group, area, and
+        subarea segments to namespace the resource under the owner, like
+        `Microsoft.Windows/Registry`.

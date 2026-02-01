@@ -5,12 +5,16 @@ BeforeDiscovery {
         $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
         $principal = [System.Security.Principal.WindowsPrincipal]::new($identity)
         $isElevated = $principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
-        $sshdExists = ($null -ne (Get-Command sshd -CommandType Application -ErrorAction Ignore))
-        $skipTest = !$isElevated -or !$sshdExists
     }
+    else {
+        $isElevated = (id -u) -eq 0
+    }
+
+    $sshdExists = ($null -ne (Get-Command sshd -CommandType Application -ErrorAction Ignore))
+    $skipTest = !$isElevated -or !$sshdExists
 }
 
-Describe 'SSHDConfig resource tests' -Skip:(!$IsWindows -or $skipTest) {
+Describe 'SSHDConfig resource tests' -Skip:($skipTest) {
     BeforeAll {
         # set a non-default value in a temporary sshd_config file
         "LogLevel Debug3`nPasswordAuthentication no" | Set-Content -Path $TestDrive/test_sshd_config
@@ -135,7 +139,7 @@ resources:
     }
 
     Context 'Set Commands' {
-        It 'Set works with _clobber: true' {
+        It 'Set works with _purge: true' {
             $set_yaml = @"
 `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 metadata:
@@ -147,7 +151,7 @@ resources:
   metadata:
     filepath: $filepath
   properties:
-    _clobber: true
+    _purge: true
     port: 1234
     allowUsers:
       - user1

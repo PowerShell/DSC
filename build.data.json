@@ -5,7 +5,6 @@
       "brew.dsc.resource.sh"
     ],
     "Linux": [
-      "bicep.dsc.extension.json",
       "dsc",
       "dsc_default.settings.json",
       "dsc.settings.json",
@@ -29,7 +28,6 @@
       "sshd_config.dsc.resource.json"
     ],
     "macOS": [
-      "bicep.dsc.extension.json",
       "dsc",
       "dsc_default.settings.json",
       "dsc.settings.json",
@@ -55,7 +53,6 @@
     "Windows": [
       "appx.dsc.extension.json",
       "appx-discover.ps1",
-      "bicep.dsc.extension.json",
       "dsc.exe",
       "dsc_default.settings.json",
       "dsc.settings.json",
@@ -82,6 +79,8 @@
       "sshd-windows.dsc.resource.json",
       "sshd_config.dsc.resource.json",
       "windowspowershell.dsc.resource.json",
+      "windowsupdate.dsc.resource.json",
+      "wu_dsc.exe",
       "wmi.dsc.resource.json",
       "wmi.resource.ps1",
       "wmiAdapter.psd1",
@@ -172,17 +171,6 @@
         "Windows": [
           "appx-discover.ps1",
           "appx.dsc.extension.json"
-        ]
-      }
-    },
-    {
-      "Name": "bicep",
-      "Kind": "Extension",
-      "RelativePath": "extensions/bicep",
-      "CopyFiles": {
-        "All": [
-          "bicep.dsc.extension.json",
-          "bicepparams.dsc.extension.json"
         ]
       }
     },
@@ -384,6 +372,21 @@
         ],
         "Windows": [
           "sshd-windows.dsc.resource.json"
+        ]
+      }
+    },
+    {
+      "Name": "windowsupdate",
+      "Kind": "Resource",
+      "RelativePath": "resources/WindowsUpdate",
+      "SupportedPlatformOS": "Windows",
+      "IsRust": true,
+      "Binaries": [
+        "wu_dsc"
+      ],
+      "CopyFiles": {
+        "Windows": [
+          "windowsupdate.dsc.resource.json"
         ]
       }
     },

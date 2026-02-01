@@ -11,6 +11,7 @@ use std::collections::HashMap;
 use crate::{
     dscerror::DscError,
     schemas::{dsc_repo::DscRepoSchema, transforms::idiomaticize_string_enum},
+    types::FullyQualifiedTypeName,
 };
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
@@ -44,7 +45,7 @@ pub struct ResourceManifest {
     pub schema_version: String,
     /// The namespaced name of the resource.
     #[serde(rename = "type")]
-    pub resource_type: String,
+    pub resource_type: FullyQualifiedTypeName,
     /// An optional condition for the resource to be active.  If the condition evaluates to false, the resource is skipped.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub condition: Option<String>,
@@ -332,7 +333,7 @@ mod test {
 
         let manifest = ResourceManifest{
             schema_version: invalid_uri.clone(),
-            resource_type: "Microsoft.Dsc.Test/InvalidSchemaUri".to_string(),
+            resource_type: "Microsoft.Dsc.Test/InvalidSchemaUri".parse().unwrap(),
             version: "0.1.0".to_string(),
             ..Default::default()
         };
@@ -353,7 +354,7 @@ mod test {
     fn test_validate_schema_uri_with_valid_uri() {
         let manifest = ResourceManifest{
             schema_version: ResourceManifest::default_schema_id_uri(),
-            resource_type: "Microsoft.Dsc.Test/ValidSchemaUri".to_string(),
+            resource_type: "Microsoft.Dsc.Test/ValidSchemaUri".parse().unwrap(),
             version: "0.1.0".to_string(),
             ..Default::default()
         };

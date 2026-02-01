@@ -2,7 +2,6 @@
 // Licensed under the MIT License.
 
 use rust_i18n::t;
-use serde::Deserialize;
 use serde_json::{Map, Value};
 use std::{path::PathBuf, process::Command};
 use tracing::{debug, warn, Level};
@@ -11,15 +10,8 @@ use tracing_subscriber::{EnvFilter, Layer, prelude::__tracing_subscriber_Subscri
 use crate::args::{TraceFormat, TraceLevel};
 use crate::error::SshdConfigError;
 use crate::inputs::{CommandInfo, Metadata, SshdCommandArgs};
-use crate::metadata::{MULTI_ARG_KEYWORDS_COMMA_SEP, SSHD_CONFIG_DEFAULT_PATH_UNIX, SSHD_CONFIG_DEFAULT_PATH_WINDOWS};
+use crate::metadata::{SSHD_CONFIG_DEFAULT_PATH_UNIX, SSHD_CONFIG_DEFAULT_PATH_WINDOWS};
 use crate::parser::parse_text_to_map;
-
-#[derive(Debug, Deserialize)]
-struct MatchBlock {
-    criteria: Map<String, Value>,
-    #[serde(flatten)]
-    contents: Map<String, Value>,
-}
 
 /// Enable tracing.
 ///
@@ -98,74 +90,6 @@ pub fn enable_tracing(trace_level: Option<&TraceLevel>, trace_format: &TraceForm
     }
 }
 
-/// Format a JSON value for writing to `sshd_config`.
-///
-/// # Arguments
-///
-/// * `key` - The configuration key name (used to determine formatting rules)
-/// * `value` - The JSON value to format
-///
-/// # Returns
-///
-/// * `Ok(Some(String))` - Formatted value string
-/// * `Ok(None)` - Value is null and should be skipped
-/// * `Err(SshdConfigError)` - Invalid value type or formatting error
-///
-/// # Errors
-///
-/// Returns an error if the value type is not supported or if formatting fails.
-pub fn format_sshd_value(key: &str, value: &Value) -> Result<String, SshdConfigError> {
-    let key_lower = key.to_lowercase();
-    let result = if key_lower == "match" {
-        format_match_block(value)?
-    } else {
-        format_value_as_string(value, MULTI_ARG_KEYWORDS_COMMA_SEP.contains(&key_lower.as_str()))?
-    };
-
-    if result.is_empty() {
-        return Err(SshdConfigError::ParserError(t!("util.invalidValue", key = key).to_string()))
-    }
-    Ok(result)
-}
-
-fn format_value_as_string(value: &Value, is_comma_separated: bool) -> Result<String, SshdConfigError> {
-    match value {
-        Value::Array(arr) => {
-            if arr.is_empty() {
-                return Ok(String::new());
-            }
-
-            // Convert array elements to strings
-            let mut string_values = Vec::new();
-            for item in arr {
-                let result = format_value_as_string(item, false)?;
-                if !result.is_empty() {
-                    string_values.push(result);
-                }
-            }
-
-            if string_values.is_empty() {
-                return Ok(String::new());
-            }
-
-            let separator = if is_comma_separated {
-                ","
-            } else {
-                " "
-            };
-
-            Ok(string_values.join(separator))
-        },
-        Value::Bool(b) => {
-            let bool_str = if *b { "yes" } else { "no" };
-            Ok(bool_str.to_string())
-        },
-        Value::Number(n) => Ok(n.to_string()),
-        Value::String(s) => Ok(s.clone()),
-        _ => Ok(String::new())
-    }
-}
-
 /// Get the `sshd_config` path
 /// Uses the input value, if provided.
 /// If input value not provided, get default path for the OS.
@@ -193,6 +117,9 @@ pub fn invoke_sshd_config_validation(args: Option<SshdCommandArgs>) -> Result<St
 
     if let Some(args) = args {
         if let Some(filepath) = args.filepath {
+            if !filepath.exists() {
+                return Err(SshdConfigError::FileNotFound(filepath.display().to_string()));
+            }
             command.arg("-f").arg(&filepath);
         }
         if let Some(additional_args) = args.additional_args {
@@ -261,18 +188,22 @@ pub fn extract_sshd_defaults() -> Result<Map<String, Value>, SshdConfigError> {
 ///
 /// This function will return an error if it fails to parse the input string and if the _metadata field exists, extract it.
 pub fn build_command_info(input: Option<&String>, is_get: bool) -> Result<CommandInfo, SshdConfigError> {
+    let mut include_defaults = is_get;
+    let mut metadata: Metadata = Metadata::new();
+    let mut purge = false;
+    let mut sshd_args: Option<SshdCommandArgs> = None;
+    let mut sshd_config: Map<String, Value> = Map::new();
+
     if let Some(inputs) = input {
-        let mut sshd_config: Map<String, Value> = serde_json::from_str(inputs.as_str())?;
-        let clobber = get_bool_or_default(&mut sshd_config, "_clobber", false)?;
-        let include_defaults = get_bool_or_default(&mut sshd_config, "_includeDefaults", is_get)?;
-        let metadata: Metadata = if let Some(value) = sshd_config.remove("_metadata") {
+        sshd_config = serde_json::from_str(inputs.as_str())?;
+        purge = get_bool_or_default(&mut sshd_config, "_purge", false)?;
+        include_defaults = get_bool_or_default(&mut sshd_config, "_includeDefaults", is_get)?;
+        metadata = if let Some(value) = sshd_config.remove("_metadata") {
             serde_json::from_value(value)?
         } else {
             Metadata::new()
         };
-        // lowercase keys for case-insensitive comparison later of SSHD -T output
-        sshd_config = sshd_config.into_iter().map(|(k, v)| (k.to_lowercase(), v)).collect();
-        let sshd_args = metadata.filepath.clone().map(|filepath| {
+        sshd_args = metadata.filepath.clone().map(|filepath| {
             SshdCommandArgs {
                 filepath: Some(filepath),
                 additional_args: None,
@@ -280,16 +211,11 @@ pub fn build_command_info(input: Option<&String>, is_get: bool) -> Result<Comman
         });
         if is_get && !sshd_config.is_empty() {
             warn!("{}", t!("util.getIgnoresInputFilters"));
+            sshd_config.clear();
         }
-        return Ok(CommandInfo {
-            clobber,
-            include_defaults,
-            input: sshd_config,
-            metadata,
-            sshd_args
-        })
     }
-    Ok(CommandInfo::new(is_get))
+
+    Ok(CommandInfo::new(include_defaults, sshd_config, metadata, purge, sshd_args))
 }
 
 /// Reads `sshd_config` file.
@@ -303,7 +229,6 @@ pub fn build_command_info(input: Option<&String>, is_get: bool) -> Result<Comman
 /// This function will return an error if the file cannot be found or read.
 pub fn read_sshd_config(input: Option<PathBuf>) -> Result<String, SshdConfigError> {
     let filepath = get_default_sshd_config_path(input)?;
-
     if filepath.exists() {
         let mut sshd_config_content = String::new();
         if let Ok(mut file) = std::fs::OpenOptions::new().read(true).open(&filepath) {
@@ -315,7 +240,7 @@ pub fn read_sshd_config(input: Option<PathBuf>) -> Result<String, SshdConfigErro
         }
         Ok(sshd_config_content)
     } else {
-        Err(SshdConfigError::CommandError(t!("util.sshdConfigNotFound", path = filepath.display()).to_string()))
+        Err(SshdConfigError::FileNotFound(filepath.display().to_string()))
     }
 }
 
@@ -340,41 +265,4 @@ fn get_bool_or_default(map: &mut Map<String, Value>, key: &str, default: bool) -
     } else {
         Ok(default)
     }
-}
-
-fn format_match_block(match_obj: &Value) -> Result<String, SshdConfigError> {
-    let match_block = match serde_json::from_value::<MatchBlock>(match_obj.clone()) {
-        Ok(result) => {
-            result
-        }
-        Err(e) => {
-            return Err(SshdConfigError::ParserError(t!("util.deserializeFailed", error = e).to_string()));
-        }
-    };
-
-    if match_block.criteria.is_empty() {
-        return Err(SshdConfigError::InvalidInput(
-            t!("util.matchBlockMissingCriteria").to_string()
-        ));
-    }
-
-    let mut match_parts = vec![];
-    let mut result = vec![];
-
-    for (key, value) in &match_block.criteria {
-        // all match criteria values are comma-separated
-        let value_formatted = format_value_as_string(value, true)?;
-        match_parts.push(format!("{key} {value_formatted}"));
-    }
-
-    // Write the Match line with the formatted criteria(s)
-    result.push(match_parts.join(" "));
-
-    // Format other keywords in the match block
-    for (key, value) in &match_block.contents {
-        let formatted_value = format_sshd_value(key, value)?;
-        result.push(format!("    {key} {formatted_value}"));
-    }
-
-    Ok(result.join("\n"))
 }

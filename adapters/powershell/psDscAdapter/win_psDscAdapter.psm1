@@ -280,18 +280,28 @@ function Invoke-DscCacheRefresh {
 function Get-DscResourceObject {
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
-        $jsonInput
+        $jsonInput,
+        [Parameter(Mandatory = $false)]
+        $type
     )
     # normalize the INPUT object to an array of dscResourceObject objects
     $inputObj = $jsonInput | ConvertFrom-Json
-    $desiredState = [System.Collections.Generic.List[Object]]::new()
+    if ($type) {
+        $desiredState = [dscResourceObject]@{
+            name       = ''
+            type       = $type
+            properties = $inputObj
+        }
+    }
+    else {
+        $desiredState = [System.Collections.Generic.List[Object]]::new()
 
-    # change the type from pscustomobject to dscResourceObject
-    $inputObj.resources | ForEach-Object -Process {
-        $desiredState += [dscResourceObject]@{
-            name       = $_.name
-            type       = $_.type
-            properties = $_.properties
+        $inputObj.resources | ForEach-Object -Process {
+            $desiredState += [dscResourceObject]@{
+                name       = $_.name
+                type       = $_.type
+                properties = $_.properties
+            }
         }
     }
 
@@ -499,7 +509,7 @@ function Invoke-DscOperation {
                         'Get' {
                             $Result = @{}
                             $raw_obj = $dscResourceInstance.Get()
-                            $ValidProperties | ForEach-Object { 
+                            $ValidProperties | ForEach-Object {
                                 if ($raw_obj.$_ -is [System.Enum]) {
                                     $Result[$_] = $raw_obj.$_.ToString()
                                 } else {
@@ -521,11 +531,11 @@ function Invoke-DscOperation {
                             $raw_obj_array = $method.Invoke($null, $null)
                             foreach ($raw_obj in $raw_obj_array) {
                                 $Result_obj = @{}
-                                $ValidProperties | ForEach-Object { 
+                                $ValidProperties | ForEach-Object {
                                     if ($raw_obj.$_ -is [System.Enum]) {
                                         $Result_obj[$_] = $raw_obj.$_.ToString()
-                                    } else { 
-                                        $Result_obj[$_] = $raw_obj.$_ 
+                                    } else {
+                                        $Result_obj[$_] = $raw_obj.$_
                                     }
                                 }
                                 $resultArray += $Result_obj

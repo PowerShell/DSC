@@ -1,0 +1,148 @@
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "description": "Query Windows Update information for specific updates.",
+    "tags": [
+        "windows",
+        "update",
+        "patch",
+        "security"
+    ],
+    "type": "Microsoft.Windows/UpdateList",
+    "version": "0.1.0",
+    "get": {
+        "executable": "wu_dsc",
+        "args": [
+            "get"
+        ],
+        "input": "stdin"
+    },
+    "set": {
+        "executable": "wu_dsc",
+        "args": [
+            "set"
+        ],
+        "input": "stdin",
+        "preTest": true,
+        "return": "state"
+    },
+    "export": {
+        "executable": "wu_dsc",
+        "args": [
+            "export"
+        ],
+        "input": "stdin"
+    },
+    "schema": {
+        "embedded": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/resources/Microsoft.Windows/UpdateList/v0.1.0/schema.json",
+            "title": "Windows Update List",
+            "description": "Query information about Windows Updates.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource\n",
+            "markdownDescription": "The `Microsoft.Windows/UpdateList` resource enables you to query information about Windows Updates using the Windows Update Agent COM APIs.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource\n",
+            "type": "object",
+            "required": ["updates"],
+            "additionalProperties": false,
+            "properties": {
+                "updates": {
+                    "type": "array",
+                    "title": "Updates",
+                    "description": "An array of update filters or update information objects.",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "title": {
+                                "type": "string",
+                                "title": "Update title",
+                                "description": "The exact title of the Windows Update to search for (for get operation) or a title pattern with wildcards (* supported) for filtering (for export operation). Either title or id must be specified for get operation.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#title\n",
+                                "markdownDescription": "The exact title of the Windows Update to search for (for get operation) or a title pattern with wildcards (* supported) for filtering (for export operation). Either title or id must be specified for get operation.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#title\n"
+                            },
+                            "id": {
+                                "type": "string",
+                                "title": "Update ID",
+                                "description": "The unique identifier (GUID) for the Windows Update to search for (for get operation) or filter by (for export operation). Either title or id must be specified for get operation.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#id\n",
+                                "markdownDescription": "The unique identifier (GUID) for the Windows Update to search for (for get operation) or filter by (for export operation). Either title or id must be specified for get operation.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#id\n"
+                            },
+                            "isInstalled": {
+                                "type": "boolean",
+                                "title": "Is installed",
+                                "description": "Indicates whether the update is currently installed on the system. For export operation, this can be used as a filter.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#isinstalled\n",
+                                "markdownDescription": "Indicates whether the update is currently installed on the system. For export operation, this can be used as a filter.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#isinstalled\n"
+                            },
+                            "description": {
+                                "type": "string",
+                                "title": "Update description",
+                                "description": "The detailed description of the Windows Update. Can be used with wildcards for filtering in export operation.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#description\n",
+                                "markdownDescription": "The detailed description of the Windows Update. Can be used with wildcards for filtering in export operation.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#description\n"
+                            },
+                            "isUninstallable": {
+                                "type": "boolean",
+                                "title": "Is uninstallable",
+                                "description": "Indicates whether the update can be uninstalled from the system. Can be used as a filter in export operation.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#isuninstallable\n",
+                                "markdownDescription": "Indicates whether the update can be uninstalled from the system. Can be used as a filter in export operation.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#isuninstallable\n"
+                            },
+                            "kbArticleIds": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "title": "KB Article IDs",
+                                "description": "The Knowledge Base (KB) article identifiers associated with the update. Can be used as a filter in export operation.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#kbarticleids\n",
+                                "markdownDescription": "The Knowledge Base (KB) article identifiers associated with the update. Can be used as a filter in export operation.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#kbarticleids\n"
+                            },
+                            "recommendedHardDiskSpace": {
+                                "type": "integer",
+                                "format": "int64",
+                                "title": "Recommended hard disk space",
+                                "description": "The recommended free hard disk space in megabytes (MB) that should be available before installing the update. Can be used as a filter in export operation (updates with space >= this value will be returned).\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#recommendedharddiskspace\n",
+                                "markdownDescription": "The recommended free hard disk space in megabytes (MB) that should be available before installing the update. Can be used as a filter in export operation (updates with space >= this value will be returned).\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#recommendedharddiskspace\n"
+                            },
+                            "msrcSeverity": {
+                                "type": "string",
+                                "enum": [
+                                    "Critical",
+                                    "Important",
+                                    "Moderate",
+                                    "Low"
+                                ],
+                                "title": "MSRC severity rating",
+                                "description": "The Microsoft Security Response Center (MSRC) severity rating for the update. Can be used as a filter in export operation.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#msrcseverity\n",
+                                "markdownDescription": "The Microsoft Security Response Center (MSRC) severity rating for the update. Can be used as a filter in export operation.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#msrcseverity\n"
+                            },
+                            "securityBulletinIds": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "title": "Security bulletin IDs",
+                                "description": "The security bulletin identifiers associated with the update. Can be used as a filter in export operation.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#securitybulletinids\n",
+                                "markdownDescription": "The security bulletin identifiers associated with the update. Can be used as a filter in export operation.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#securitybulletinids\n"
+                            },
+                            "updateType": {
+                                "type": "string",
+                                "enum": [
+                                    "Software",
+                                    "Driver"
+                                ],
+                                "title": "Update type",
+                                "description": "The type of the update (Software or Driver). Can be used as a filter in export operation.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#updatetype\n",
+                                "markdownDescription": "The type of the update (Software or Driver). Can be used as a filter in export operation.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#updatetype\n"
+                            },
+                            "installationBehavior": {
+                                "type": "string",
+                                "enum": [
+                                    "NeverReboots",
+                                    "AlwaysRequiresReboot",
+                                    "CanRequestReboot"
+                                ],
+                                "title": "Installation behavior",
+                                "description": "Indicates the reboot behavior expected from installing this update. NeverReboots means the update never requires a reboot, AlwaysRequiresReboot means it always requires one, and CanRequestReboot means it may request a reboot.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#installationbehavior\n",
+                                "markdownDescription": "Indicates the reboot behavior expected from installing this update.\n\n- **NeverReboots**: The update never requires a reboot\n- **AlwaysRequiresReboot**: The update always requires a reboot\n- **CanRequestReboot**: The update may request a reboot\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#installationbehavior\n"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
