@@ -238,7 +238,7 @@ impl DscResource {
         if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
             if adapter.capabilities.contains(&Capability::Delete) {
                 adapter.target_resource = Some(resource_name.clone());
-                return adapter.delete(filter, &ExecutionKind::Actual);
+                return adapter.delete(filter);
             }
             return Err(DscError::NotSupported(t!("dscresources.dscresource.adapterDoesNotSupportDelete", adapter = adapter.type_name).to_string()));
         }
@@ -336,7 +336,7 @@ pub trait Invoke {
     /// # Errors
     ///
     /// This function will return an error if the underlying resource fails.
-    fn delete(&self, filter: &str, execution_type: &ExecutionKind) -> Result<(), DscError>;
+    fn delete(&self, filter: &str) -> Result<(), DscError>;
 
     /// Invoke the validate operation on the resource.
     ///
@@ -469,7 +469,7 @@ impl Invoke for DscResource {
         }
     }
 
-    fn delete(&self, filter: &str, execution_type: &ExecutionKind) -> Result<(), DscError> {
+    fn delete(&self, filter: &str) -> Result<(), DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeDelete", resource = self.type_name));
         if let Some(adapter) = &self.require_adapter {
             return self.invoke_delete_with_adapter(adapter, &self.type_name, filter);
@@ -484,7 +484,7 @@ impl Invoke for DscResource {
                     return Err(DscError::MissingManifest(self.type_name.to_string()));
                 };
                 let resource_manifest = import_manifest(manifest.clone())?;
-                command_resource::invoke_delete(&resource_manifest, &self.directory, filter, execution_type, self.target_resource.as_deref())
+                command_resource::invoke_delete(&resource_manifest, &self.directory, filter, self.target_resource.as_deref())
             },
         }
     }

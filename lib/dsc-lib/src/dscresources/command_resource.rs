@@ -430,8 +430,8 @@ fn invoke_synthetic_test(resource: &ResourceManifest, cwd: &Path, expected: &str
 /// # Errors
 ///
 /// Error is returned if the underlying command returns a non-zero exit code.
-pub fn invoke_delete(resource: &ResourceManifest, cwd: &Path, filter: &str, execution_type: &ExecutionKind, target_resource: Option<&str>) -> Result<(), DscError> {
-    let Some(delete) = resource.delete.clone() else {
+pub fn invoke_delete(resource: &ResourceManifest, cwd: &Path, filter: &str, target_resource: Option<&str>) -> Result<(), DscError> {
+    let Some(delete) = &resource.delete else {
         return Err(DscError::NotImplemented("delete".to_string()));
     };
 
@@ -441,32 +441,11 @@ pub fn invoke_delete(resource: &ResourceManifest, cwd: &Path, filter: &str, exec
         Some(r) => r,
         None => &resource.resource_type,
     };
-
-    // Check if delete operation supports native what-if by checking args
-    let (args, has_native_whatif) = process_set_delete_args(delete.args.as_ref(), filter, resource_type, execution_type);
-
-    if execution_type == &ExecutionKind::WhatIf && !has_native_whatif {
-        // Synthetic what-if for delete: call get to show what would be deleted
-        debug!("{}", t!("dscresources.commandResource.syntheticDeleteWhatIf", resource = resource_type));
-        let get_result = invoke_get(resource, cwd, filter, target_resource.map(|s| s.parse().unwrap()))?;
-
-        // Log the current state that would be deleted
-        match get_result {
-            GetResult::Resource(response) => {
-                info!("What-if: Would delete resource in state: {}", serde_json::to_string_pretty(&response.actual_state)?);
-            },
-            GetResult::Group(responses) => {
-                info!("What-if: Would delete {} resources", responses.len());
-            }
-        }
-        return Ok(());
-    }
+    let (args, _) = process_set_delete_args(delete.args.as_ref(), filter, resource_type, &ExecutionKind::Actual);
 
     let command_input = get_command_input(delete.input.as_ref(), filter)?;
 
-    let operation = if execution_type == &ExecutionKind::WhatIf { "what-if delete" } else { "delete" };
     info!("{}", t!("dscresources.commandResource.invokeDeleteUsing", resource = resource_type, executable = &delete.executable));
-    debug!("Performing {} operation", operation);
     let (_exit_code, _stdout, _stderr) = invoke_command(&delete.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, resource.exit_codes.as_ref())?;
 
     Ok(())
