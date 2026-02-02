@@ -3,6 +3,8 @@
 
 mod fully_qualified_type_name;
 pub use fully_qualified_type_name::FullyQualifiedTypeName;
+mod resource_version;
+pub use resource_version::ResourceVersion;
 mod semantic_version;
 pub use semantic_version::SemanticVersion;
 mod semantic_version_req;

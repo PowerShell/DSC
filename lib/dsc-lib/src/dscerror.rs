@@ -115,6 +115,9 @@ pub enum DscError {
     #[error("{t}: {0}", t = t!("dscerror.resourceManifestNotFound"))]
     ResourceManifestNotFound(String),
 
+    #[error("{t}: '{0}'", t = t!("dscerror.resourceVersionToSemverConversion"))]
+    ResourceVersionToSemverConversion(String),
+
     #[error("{t}: {0}", t = t!("dscerror.schema"))]
     Schema(String),
 
