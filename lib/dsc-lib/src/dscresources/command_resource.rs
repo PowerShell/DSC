@@ -97,17 +97,16 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &Path, desired: &str, skip_t
                     supports_whatif
                 });
 
-            // Fallback to deprecated whatIf operation if present and set doesn't support whatIfArg
-            if !has_native_whatif && resource.what_if.is_some() {
-                warn!("{}", t!("dscresources.commandResource.whatIfWarning", resource = &resource.resource_type));
-                &resource.what_if
-            } else if !has_native_whatif {
-                // No native what-if support, use synthetic
-                is_synthetic_what_if = true;
+            if has_native_whatif {
                 &resource.set
             } else {
-                // Resource has native what-if via whatIfArg
-                &resource.set
+                if resource.what_if.is_some() {
+                    warn!("{}", t!("dscresources.commandResource.whatIfWarning", resource = &resource.resource_type));
+                    &resource.what_if
+                } else {
+                    is_synthetic_what_if = true;
+                    &resource.set
+                }
             }
         }
     };

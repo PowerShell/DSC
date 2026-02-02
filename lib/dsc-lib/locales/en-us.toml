@@ -148,7 +148,6 @@ testVerifyOutput = "Verifying output of test on '%{resource}' using '%{executabl
 testGroupTestResponse = "Import resource kind, returning group test response"
 testNoActualState = "No actual state returned"
 testNoDiff = "No diff properties returned"
-syntheticDeleteWhatIf = "Resource '%{resource}' does not implement native what-if for delete, performing synthetic what-if using get"
 invokeDeleteUsing = "Invoking delete on '%{resource}' using '%{executable}'"
 invokeValidateConfig = "Invoking validate on '%{resource}' using '%{config}'"
 invokeValidateUsing = "Invoking validate on '%{resource}' using '%{executable}'"
@@ -178,7 +177,7 @@ invalidKey = "Unsupported value for key '%{key}'.  Only string, bool, number, an
 inDesiredStateNotBool = "'_inDesiredState' is not a boolean"
 exportNotSupportedUsingGet = "Export is not supported by resource '%{resource}' using get operation"
 runProcessError = "Failed to run process '%{executable}': %{error}"
-whatIfWarning = "Resource '%{resource}' uses deprecated 'whatIf' operation. Please migrate to using 'whatIfArg' in the set and/or delete method args instead."
+whatIfWarning = "Resource '%{resource}' uses deprecated 'whatIf' operation. See https://github.com/PowerShell/DSC/issues/1361 for migration information."
 
 [dscresources.dscresource]
 invokeGet = "Invoking get for '%{resource}'"

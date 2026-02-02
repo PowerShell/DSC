@@ -327,7 +327,6 @@ pub fn import_manifest(manifest: Value) -> Result<ResourceManifest, DscError> {
     // if !manifest.schema_version.eq(MANIFEST_SCHEMA_VERSION) {
     //     return Err(DscError::InvalidManifestSchemaVersion(manifest.schema_version, MANIFEST_SCHEMA_VERSION.to_string()));
     // }
-
     Ok(manifest)
 }
 
