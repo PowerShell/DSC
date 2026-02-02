@@ -110,7 +110,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &Path, desired: &str, skip_t
             }
         }
     };
-    let Some(set) = set_method.clone() else {
+    let Some(set) = set_method.as_ref() else {
         return Err(DscError::NotImplemented("set".to_string()));
     };
     verify_json(resource, cwd, desired)?;

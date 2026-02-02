@@ -100,12 +100,12 @@ Describe 'whatif tests' {
 
     It 'Test/WhatIfNative resource with set operation and WhatIfArgKind works' {
         $config_yaml = @"
-    `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
-    resources:
-    - name: WhatIfArgKind
-      type: Test/WhatIfArgKind
-      properties:
-        executionType: Actual
+        `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+        resources:
+        - name: WhatIfArgKind
+        type: Test/WhatIfArgKind
+        properties:
+            executionType: Actual
 "@
         $what_if_result = $config_yaml | dsc config set -w -f - | ConvertFrom-Json
         $set_result = $config_yaml | dsc config set -f - | ConvertFrom-Json
