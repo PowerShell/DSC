@@ -175,7 +175,7 @@ Describe 'Tests for adapter support' {
             $out.kind | Should -BeExactly 'resource'
             $out.capabilities | Should -Be @('get', 'set', 'test', 'export')
             $parent = (Split-Path -Path (Get-Command dsc).Source -Parent)
-            $expectedPath = Join-Path -Path $parent -ChildPath 'dsctest'
+            $expectedPath = Join-Path -Path $parent -ChildPath 'adaptedTest.dsc.adaptedResource.json'
             $out.path | Should -BeExactly $expectedPath
             $out.directory | Should -BeExactly $parent
             $out.requireAdapter | Should -BeExactly 'Test/Adapter'
