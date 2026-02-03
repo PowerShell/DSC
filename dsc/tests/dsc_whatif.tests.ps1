@@ -103,8 +103,8 @@ Describe 'whatif tests' {
         `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
         resources:
         - name: WhatIfArgKind
-        type: Test/WhatIfArgKind
-        properties:
+          type: Test/WhatIfArgKind
+          properties:
             executionType: Actual
 "@
         $what_if_result = $config_yaml | dsc config set -w -f - | ConvertFrom-Json
