@@ -13,7 +13,7 @@
       "description": "An adapted resource for testing.",
       "author": "DSC Team",
       "requireAdapter": "Test/Adapter",
-      "path": "dsctest",
+      "path": "adaptedTest.dsc.adaptedResource.json",
       "schema": {
         "embedded": {
           "$schema": "http://json-schema.org/draft-07/schema#",
@@ -51,7 +51,7 @@
       "description": "An adapted resource for testing.",
       "author": "DSC Team",
       "requireAdapter": "Test/Adapter",
-      "path": "dsctest",
+      "path": "adaptedTest.dsc.adaptedResource.json",
       "condition": "[false()]",
       "schema": {
         "embedded": {
