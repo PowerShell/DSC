@@ -661,7 +661,10 @@ fn evaluate_condition(condition: Option<&str>) -> Result<bool, DscError> {
 /// * Returns a `DscError` if the manifest could not be loaded or parsed.
 pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
     let contents = read_to_string(path)?;
-    let file_name_lowercase = path.file_name().and_then(OsStr::to_str).expect(t!("discovery.commandDiscovery.failedToConvertOsStr", path = path.to_string_lossy()).to_string().as_str()).to_lowercase();    let extension_is_json = path.extension().is_some_and(|ext| ext.eq_ignore_ascii_case("json"));
+    let Some(file_name_lowercase) = path.file_name().and_then(OsStr::to_str).map(|s| s.to_lowercase()) else {
+        return Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.invalidManifestFileName", resource = path.to_string_lossy()).to_string()));
+    };
+    let extension_is_json = path.extension().is_some_and(|ext| ext.eq_ignore_ascii_case("json"));
     if DSC_ADAPTED_RESOURCE_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)) {
         let mut resource = if extension_is_json {
             match serde_json::from_str::<DscResource>(&contents) {
@@ -846,7 +849,7 @@ fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<Ds
     }
 
     let mut resource = DscResource::new();
-    resource.kind = kind.clone();
+    resource.kind = kind;
     resource.type_name = manifest.resource_type.clone();
     resource.implemented_as = Some(ImplementedAs::Command);
     resource.description = manifest.description.clone();
