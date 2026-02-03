@@ -142,7 +142,6 @@ Describe 'whatif tests' {
         - name: WhatIfDelete
           type: Test/WhatIfDelete
           properties:
-            executionType: Actual
             _exist: false
 "@
         $what_if_result = $config_yaml | dsc config set -w -f - | ConvertFrom-Json

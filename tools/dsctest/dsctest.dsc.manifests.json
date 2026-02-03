@@ -831,13 +831,13 @@
       "get": {
         "executable": "dsctest",
         "args": [
-          "whatif"
+          "whatif-delete"
         ]
       },
       "delete": {
         "executable": "dsctest",
         "args": [
-          "whatif",
+          "whatif-delete",
           {
             "whatIfArg": "-w"
           }
@@ -849,7 +849,7 @@
           "args": [
             "schema",
             "-s",
-            "what-if"
+            "what-if-delete"
           ]
         }
       }
