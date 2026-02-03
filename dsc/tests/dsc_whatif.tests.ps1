@@ -134,4 +134,24 @@ Describe 'whatif tests' {
         $set_result.hadErrors | Should -BeFalse
         $LASTEXITCODE | Should -Be 0
     }
+
+    It 'Test/WhatIfDelete resource with set operation and WhatIfArgKind works' {
+        $config_yaml = @"
+        `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+        resources:
+        - name: WhatIfDelete
+          type: Test/WhatIfDelete
+          properties:
+            executionType: Actual
+            _exist: false
+"@
+        $what_if_result = $config_yaml | dsc config set -w -f - | ConvertFrom-Json
+        $set_result = $config_yaml | dsc config set -f - | ConvertFrom-Json
+        $what_if_result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'whatIf'
+        $set_result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'actual'
+        $what_if_result.results[0].result.afterState.executionType | Should -BeExactly 'WhatIf'
+        $set_result.results[0].result.afterState.executionType | Should -BeExactly 'Actual'
+        $what_if_result.hadErrors | Should -BeFalse
+        $set_result.hadErrors | Should -BeFalse
+    }
 }
