@@ -10,5 +10,5 @@ pub struct WhatIf {
     #[serde(rename = "executionType")]
     pub execution_type: String,
     #[serde(rename = "_exist", skip_serializing_if = "Option::is_none")]
-    pub exist: bool,
+    pub exist: Option<bool>,
 }

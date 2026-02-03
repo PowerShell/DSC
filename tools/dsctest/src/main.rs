@@ -318,9 +318,9 @@ fn main() {
         },
         SubCommand::WhatIf { what_if } => {
             let result: WhatIf = if what_if {
-                WhatIf { execution_type: "WhatIf".to_string() }
+                WhatIf { execution_type: "WhatIf".to_string(), exist: None }
             } else {
-                WhatIf { execution_type: "Actual".to_string() }
+                WhatIf { execution_type: "Actual".to_string(), exist: None }
             };
             serde_json::to_string(&result).unwrap()
         },
