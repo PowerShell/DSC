@@ -130,6 +130,7 @@ conditionNotBoolean = "Condition '%{condition}' did not evaluate to a boolean"
 conditionNotMet = "Condition '%{condition}' not met, skipping manifest at '%{path}' for resource '%{resource}'"
 adaptedMissingRequireAdapter = "Adapted resource manifest '%{resource}' missing required 'requireAdapter' property"
 adaptedResourcePathNotFound = "Adapted resource '%{resource}' path not found: %{path}"
+invalidManifestFileName = "Invalid manifest file name '%{path}'"
 
 [dscresources.commandResource]
 invokeGet = "Invoking get for '%{resource}'"

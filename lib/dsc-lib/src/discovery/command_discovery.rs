@@ -662,7 +662,7 @@ fn evaluate_condition(condition: Option<&str>) -> Result<bool, DscError> {
 pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
     let contents = read_to_string(path)?;
     let Some(file_name_lowercase) = path.file_name().and_then(OsStr::to_str).map(|s| s.to_lowercase()) else {
-        return Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.invalidManifestFileName", resource = path.to_string_lossy()).to_string()));
+        return Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.invalidManifestFileName", path = path.to_string_lossy()).to_string()));
     };
     let extension_is_json = path.extension().is_some_and(|ext| ext.eq_ignore_ascii_case("json"));
     if DSC_ADAPTED_RESOURCE_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)) {
