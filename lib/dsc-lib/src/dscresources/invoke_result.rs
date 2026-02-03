@@ -176,3 +176,12 @@ pub struct DeleteWhatIfResult {
     #[serde(rename = "whatIf", skip_serializing_if = "Option::is_none")]
     pub what_if: Option<Value>
 }
+
+pub enum DeleteResultKind {
+    /// Synthetic what-if created from test operation
+    SyntheticWhatIf(TestResult),
+    /// Native what-if result from resource
+    ResourceWhatIf(DeleteResult),
+    /// Actual delete from resource has no output
+    ResourceActual
+}
