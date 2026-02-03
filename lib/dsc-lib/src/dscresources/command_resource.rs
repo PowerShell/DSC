@@ -9,7 +9,7 @@ use serde_json::{Map, Value};
 use std::{collections::HashMap, env, path::Path, process::Stdio};
 use crate::{configure::{config_doc::ExecutionKind, config_result::{ResourceGetResult, ResourceTestResult}}, types::FullyQualifiedTypeName, util::canonicalize_which};
 use crate::dscerror::DscError;
-use super::{dscresource::{get_diff, redact}, invoke_result::{ExportResult, GetResult, ResolveResult, SetResult, TestResult, ValidateResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse, get_in_desired_state}, resource_manifest::{GetArgKind, SetDeleteArgKind, InputKind, Kind, ResourceManifest, ReturnKind, SchemaKind}};
+use super::{dscresource::{get_diff, redact}, invoke_result::{DeleteResult, ExportResult, GetResult, ResolveResult, SetResult, TestResult, ValidateResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse, get_in_desired_state}, resource_manifest::{GetArgKind, SetDeleteArgKind, InputKind, Kind, ResourceManifest, ReturnKind, SchemaKind}};
 use tracing::{error, warn, info, debug, trace};
 use tokio::{io::{AsyncBufReadExt, AsyncWriteExt, BufReader}, process::Command};
 
@@ -429,7 +429,7 @@ fn invoke_synthetic_test(resource: &ResourceManifest, cwd: &Path, expected: &str
 /// # Errors
 ///
 /// Error is returned if the underlying command returns a non-zero exit code.
-pub fn invoke_delete(resource: &ResourceManifest, cwd: &Path, filter: &str, target_resource: Option<&str>) -> Result<(), DscError> {
+pub fn invoke_delete(resource: &ResourceManifest, cwd: &Path, filter: &str, target_resource: Option<&str>, execution_type: &ExecutionKind) -> Result<Option<DeleteResult>, DscError> {
     let Some(delete) = &resource.delete else {
         return Err(DscError::NotImplemented("delete".to_string()));
     };
@@ -440,14 +440,19 @@ pub fn invoke_delete(resource: &ResourceManifest, cwd: &Path, filter: &str, targ
         Some(r) => r,
         None => &resource.resource_type,
     };
-    let (args, _) = process_set_delete_args(delete.args.as_ref(), filter, resource_type, &ExecutionKind::Actual);
+    let (args, _) = process_set_delete_args(delete.args.as_ref(), filter, resource_type, execution_type);
 
     let command_input = get_command_input(delete.input.as_ref(), filter)?;
 
     info!("{}", t!("dscresources.commandResource.invokeDeleteUsing", resource = resource_type, executable = &delete.executable));
-    let (_exit_code, _stdout, _stderr) = invoke_command(&delete.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, resource.exit_codes.as_ref())?;
-
-    Ok(())
+    let (_exit_code, stdout, _stderr) = invoke_command(&delete.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, resource.exit_codes.as_ref())?;
+    let result = if execution_type == &ExecutionKind::WhatIf {
+        let delete_result: DeleteResult = serde_json::from_str(&stdout)?;
+        Some(delete_result)
+    } else {
+        None
+    };
+    Ok(result)
 }
 
 /// Invoke the validate operation against a command resource.
