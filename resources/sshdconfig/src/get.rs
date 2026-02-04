@@ -120,22 +120,26 @@ pub fn get_sshd_settings(cmd_info: &CommandInfo, is_get: bool) -> Result<Map<Str
     let sshd_config_file = read_sshd_config(cmd_info.metadata.filepath.clone())?;
     let explicit_settings = parse_text_to_map(&sshd_config_file)?;
 
-    // get default from SSHD -T with empty config
-    let mut defaults = extract_sshd_defaults()?;
+    // handle special cases for keywords
+    if explicit_settings.contains_key("include") {
+        warn!("{}", t!("get.includeWarning").to_string());
+    }
 
-    // remove any explicit keys from default settings list
-    for (key, value) in &explicit_settings {
-        if defaults.contains_key(key) {
-            defaults.remove(key);
-        }
-        if key == "include" {
-            warn!("{}", t!("get.includeWarning").to_string());
-        } else if key == "match" {
-            result.insert(key.clone(), value.clone());
-        }
+    if explicit_settings.contains_key("match") {
+        let Some(match_value) = explicit_settings.get("match") else {
+            return Err(SshdConfigError::InvalidInput(t!("get.matchParsingError").to_string()));
+        };
+        result.insert("match".to_string(), match_value.clone());
     }
 
     if cmd_info.include_defaults {
+        // get default from SSHD -T with empty config
+        let mut defaults = extract_sshd_defaults()?;
+        for key in explicit_settings.keys() {
+            if defaults.contains_key(key) {
+                defaults.remove(key);
+            }
+        }
         // Update inherited_defaults with any keys that are not explicitly set
         // check result for any keys that are in defaults
         for (key, value) in &result {
@@ -146,15 +150,8 @@ pub fn get_sshd_settings(cmd_info: &CommandInfo, is_get: bool) -> Result<Map<Str
             }
         }
     } else {
-        // Filter result based on default settings
-        // If a value in result is equal to the default, it will be excluded
-        result.retain(|key, value| {
-            if let Some(default) = defaults.get(key) {
-                default != value
-            } else {
-                true
-            }
-        });
+        // only need to return keys that are explicitly set in the config file
+        result.retain(|key, _| explicit_settings.contains_key(key));
     }
 
     if !cmd_info.input.is_empty() {

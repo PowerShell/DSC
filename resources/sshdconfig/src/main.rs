@@ -11,6 +11,7 @@ use tracing::{debug, error};
 use crate::inputs::{RepeatInput, RepeatListInput};
 
 use args::{Args, Command, DefaultShell, Setting};
+use export::invoke_export;
 use get::{get_sshd_settings, invoke_get};
 use parser::SshdConfigParser;
 use set::invoke_set;
@@ -18,6 +19,7 @@ use util::{build_command_info, enable_tracing};
 
 mod args;
 mod error;
+mod export;
 mod formatter;
 mod get;
 mod inputs;
@@ -37,12 +39,9 @@ fn main() {
     enable_tracing(args.trace_level.as_ref(), &args.trace_format);
 
     let result = match &args.command {
-        Command::Export { input } => {
+        Command::Export { input, compare } => {
             debug!("{}: {:?}", t!("main.export").to_string(), input);
-            match build_command_info(input.as_ref(), false) {
-                Ok(cmd_info) => get_sshd_settings(&cmd_info, false),
-                Err(e) => Err(e),
-            }
+            invoke_export(input.as_ref(), *compare)
         },
         Command::Get { input, setting } => {
             invoke_get(input.as_ref(), setting)

@@ -3,6 +3,17 @@
     "type": "Microsoft.OpenSSH.SSHD/Subsystem",
     "description": "Manage SSH Server Subsystem keyword (single entry)",
     "version": "0.1.0",
+    "get": {
+        "executable": "sshdconfig",
+        "args": [
+            "export",
+            "-c",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ]
+    },
     "set": {
         "executable": "sshdconfig",
         "args": [
@@ -13,7 +24,8 @@
                 "jsonInputArg": "--input",
                 "mandatory": true
             }
-        ]
+        ],
+        "handlesExist": true
     },
     "schema": {
         "embedded": {

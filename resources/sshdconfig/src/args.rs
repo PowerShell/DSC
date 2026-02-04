@@ -51,7 +51,9 @@ pub enum Command {
     /// Export `sshd_config`, eventually to be used for repeatable keywords
     Export {
         #[clap(short = 'i', long, help = t!("args.exportInput").to_string())]
-        input: Option<String>
+        input: Option<String>,
+        #[clap(short = 'c', long, help = t!("args.exportCompare").to_string())]
+        compare: bool,
     },
     Schema {
         // Used to inform which schema to generate

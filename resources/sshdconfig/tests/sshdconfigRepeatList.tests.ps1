@@ -49,7 +49,7 @@ Describe 'sshd-config-repeat-list Set Tests' -Skip:($skipTest) {
         BeforeEach {
             # Create test config with existing subsystems
             $initialContent = @"
-Port 22
+Port 1234
 subsystem sftp $script:DefaultSftpPath
 Subsystem test2 /path/to/test2
 PasswordAuthentication yes
@@ -86,7 +86,7 @@ PasswordAuthentication yes
             } | ConvertTo-Json
             $result = sshdconfig get --input $getInput -s sshd-config 2>$null | ConvertFrom-Json
             $LASTEXITCODE | Should -Be 0
-
+            $result.port | Should -Be 1234 # Verify non-subsystem lines are preserved
             $result.subsystem.Count | Should -Be 4  # 2 existing + 2 new
 
             # Verify new subsystems were added

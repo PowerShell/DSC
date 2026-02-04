@@ -94,9 +94,9 @@ fn set_sshd_config_repeat_list(input: &str, cmd_info: &CommandInfo) -> Result<Ma
         .map_err(|e| SshdConfigError::InvalidInput(t!("set.failedToParse", input = e.to_string()).to_string()))?;
 
     let (keyword, entries_value) = extract_single_keyword(list_input.additional_properties)?;
-
+    println!("cmd_info: {:#?}", cmd_info);
     let mut existing_config = get_existing_config(cmd_info)?;
-
+    println!("Existing config: {:#?}", existing_config);
     // Ensure it's an array
     let Value::Array(ref entries_array) = entries_value else {
         return Err(SshdConfigError::InvalidInput(
@@ -117,7 +117,7 @@ fn set_sshd_config_repeat_list(input: &str, cmd_info: &CommandInfo) -> Result<Ma
             add_or_update_entry(&mut existing_config, &keyword, &entry)?;
         }
     }
-
+    println!("Existing config after update: {:#?}", existing_config);
     write_and_validate_config(&mut existing_config, cmd_info.metadata.filepath.as_ref())?;
     Ok(Map::new())
 }
@@ -346,7 +346,10 @@ fn remove_entry(config: &mut Map<String, Value>, keyword: &str, entry_name: &str
 
 /// Get existing config from file or return empty map if file doesn't exist.
 fn get_existing_config(cmd_info: &CommandInfo) -> Result<Map<String, Value>, SshdConfigError> {
-    match get_sshd_settings(cmd_info, false) {
+    let mut get_cmd_info = cmd_info.clone();
+    get_cmd_info.include_defaults = false;
+    get_cmd_info.input = Map::new();
+    match get_sshd_settings(&get_cmd_info, false) {
         Ok(config) => Ok(config),
         Err(SshdConfigError::FileNotFound(_)) => {
             // If file doesn't exist, create empty config

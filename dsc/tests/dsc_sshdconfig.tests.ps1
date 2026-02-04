@@ -287,7 +287,7 @@ resources:
 - name: multisubsystem
   type: Microsoft.OpenSSH.SSHD/SubsystemList
   metadata:
-    filepath: $($script:TestConfigPath -replace '\\', '/')
+    filepath: $script:TestConfigPath
   properties:
     _purge: false
     subsystem:
@@ -300,7 +300,7 @@ resources:
             $LASTEXITCODE | Should -Be 0
             $out.hadErrors | Should -BeFalse
             $out.results[0].type | Should -BeExactly 'Microsoft.OpenSSH.SSHD/SubsystemList'
-            $out.results[0].result.afterState.subsystem.Count | Should -Be 2
+            $out.results[0].result.afterState.subsystem.Count | Should -Be 4
 
             # Verify all subsystems are present (old + new)
             $subsystems = Get-Content $script:TestConfigPath | Where-Object { $_ -match '^\s*subsystem\s+' }
@@ -319,7 +319,7 @@ resources:
 - name: preservesubsystem
   type: Microsoft.OpenSSH.SSHD/SubsystemList
   metadata:
-    filepath: $($script:TestConfigPath -replace '\\', '/')
+    filepath: $script:TestConfigPath
   properties:
     _purge: false
     subsystem:
@@ -348,12 +348,12 @@ resources:
 - name: purgesubsystem
   type: Microsoft.OpenSSH.SSHD/SubsystemList
   metadata:
-    filepath: $($script:TestConfigPath -replace '\\', '/')
+    filepath: $script:TestConfigPath
   properties:
     _purge: true
     subsystem:
     - name: sftp
-      value: $($script:AlternatePath -replace '\\', '/')
+      value: $script:AlternatePath
     - name: newsub
       value: /path/to/newsub
 "@
