@@ -1,6 +1,7 @@
 {
   "adaptedResources": [
     {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/adaptedresource/manifest.json",
       "type": "Adapted/Two",
       "kind": "resource",
       "version": "1.0.0",
@@ -39,6 +40,7 @@
       }
     },
     {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/adaptedresource/manifest.json",
       "type": "Adapted/Four",
       "kind": "resource",
       "version": "1.0.0",

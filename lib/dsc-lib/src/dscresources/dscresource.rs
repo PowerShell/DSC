@@ -39,14 +39,12 @@ pub struct DscResource {
     pub version: String,
     /// The capabilities of the resource.
     pub capabilities: Vec<Capability>,
-    /// An optional condition for the resource to be active.
-    pub condition: Option<String>,
     /// The file path to the resource.
-    path: Option<PathBuf>,
+    pub path: PathBuf,
     /// The description of the resource.
     pub description: Option<String>,
     // The directory path to the resource.
-    directory: Option<PathBuf>,
+    pub directory: PathBuf,
     /// The implementation of the resource.
     #[serde(rename="implementedAs")]
     pub implemented_as: Option<ImplementedAs>,
@@ -105,10 +103,9 @@ impl DscResource {
             kind: Kind::Resource,
             version: String::new(),
             capabilities: Vec::new(),
-            condition: None,
             description: None,
-            path: None,
-            directory: None,
+            path: PathBuf::new(),
+            directory: PathBuf::new(),
             implemented_as: Some(ImplementedAs::Command),
             author: None,
             properties: None,
@@ -117,28 +114,6 @@ impl DscResource {
             target_resource: None,
             manifest: None,
         }
-    }
-
-    pub fn get_path(&self) -> Result<&PathBuf, DscError> {
-        match &self.path {
-            Some(path) => Ok(path),
-            None => Err(DscError::ResourceMissingPath(self.type_name.to_string())),
-        }
-    }
-
-    pub fn set_path(&mut self, path: PathBuf) {
-        self.path = Some(path);
-    }
-
-    pub fn get_directory(&self) -> Result<&PathBuf, DscError> {
-        match &self.directory {
-            Some(directory) => Ok(directory),
-            None => Err(DscError::ResourceMissingDirectory(self.type_name.to_string())),
-        }
-    }
-
-    pub fn set_directory(&mut self, directory: PathBuf) {
-        self.directory = Some(directory);
     }
 
     fn create_config_for_adapter(self, adapter: &FullyQualifiedTypeName, input: &str) -> Result<Configurator, DscError> {
@@ -311,6 +286,12 @@ impl DscResource {
     }
 }
 
+impl Default for DscResource {
+    fn default() -> Self {
+        DscResource::new()
+    }
+}
+
 /// The interface for a DSC resource.
 pub trait Invoke {
     /// Invoke the get operation on the resource.
@@ -408,7 +389,7 @@ impl Invoke for DscResource {
 
         match &self.implemented_as {
             Some(ImplementedAs::Command) => {
-                command_resource::invoke_get(&self, &self.get_directory()?, filter, self.target_resource.as_deref())
+                command_resource::invoke_get(&self, filter, self.target_resource.as_deref())
             },
             _ => {
                 Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
@@ -424,7 +405,7 @@ impl Invoke for DscResource {
 
         match &self.implemented_as {
             Some(ImplementedAs::Command) => {
-                command_resource::invoke_set(&self, &self.get_directory()?, desired, skip_test, execution_type, self.target_resource.as_deref())
+                command_resource::invoke_set(&self, desired, skip_test, execution_type, self.target_resource.as_deref())
             },
             _ => {
                 Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
@@ -471,7 +452,7 @@ impl Invoke for DscResource {
                     Ok(test_result)
                 }
                 else {
-                    command_resource::invoke_test(&self, &self.get_directory()?, expected, self.target_resource.as_deref())
+                    command_resource::invoke_test(&self, expected, self.target_resource.as_deref())
                 }
             },
             _ => {
@@ -488,7 +469,7 @@ impl Invoke for DscResource {
 
         match &self.implemented_as {
             Some(ImplementedAs::Command) => {
-                command_resource::invoke_delete(&self, &self.get_directory()?, filter, self.target_resource.as_deref())
+                command_resource::invoke_delete(&self, filter, self.target_resource.as_deref())
             },
             _ => {
                 Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
@@ -504,7 +485,7 @@ impl Invoke for DscResource {
 
         match &self.implemented_as {
             Some(ImplementedAs::Command) => {
-                command_resource::invoke_validate(&self, &self.get_directory()?, config, self.target_resource.as_deref())
+                command_resource::invoke_validate(&self, config, self.target_resource.as_deref())
             },
             _ => {
                 Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
@@ -520,7 +501,7 @@ impl Invoke for DscResource {
 
         match &self.implemented_as {
             Some(ImplementedAs::Command) => {
-                command_resource::get_schema(&self, &self.get_directory()?)
+                command_resource::get_schema(&self)
             },
             _ => {
                 Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
@@ -534,7 +515,7 @@ impl Invoke for DscResource {
             return self.invoke_export_with_adapter(adapter, &self, input);
         }
 
-        command_resource::invoke_export(&self, &self.get_directory()?, Some(input), self.target_resource.as_deref())
+        command_resource::invoke_export(&self, Some(input), self.target_resource.as_deref())
     }
 
     fn resolve(&self, input: &str) -> Result<ResolveResult, DscError> {
@@ -543,7 +524,7 @@ impl Invoke for DscResource {
             return Err(DscError::NotSupported(t!("dscresources.dscresource.invokeResolveNotSupported", resource = self.type_name).to_string()));
         }
 
-        command_resource::invoke_resolve(&self, &self.get_directory()?, input)
+        command_resource::invoke_resolve(&self, input)
     }
 }
 

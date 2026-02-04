@@ -1,4 +1,5 @@
 {
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/adaptedresource/manifest.json",
     "type": "Adapted/Three",
     "kind": "resource",
     "version": "1.0.0",

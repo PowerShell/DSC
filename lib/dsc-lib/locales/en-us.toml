@@ -128,7 +128,6 @@ resourceMissingRequireAdapter = "Resource '%{resource}' is missing 'require_adap
 extensionDiscoverFailed = "Extension '%{extension}' failed to discover resources: %{error}"
 conditionNotBoolean = "Condition '%{condition}' did not evaluate to a boolean"
 conditionNotMet = "Condition '%{condition}' not met, skipping manifest at '%{path}' for resource '%{resource}'"
-adaptedMissingRequireAdapter = "Adapted resource manifest '%{resource}' missing required 'requireAdapter' property"
 adaptedResourcePathNotFound = "Adapted resource '%{resource}' path not found: %{path}"
 invalidManifestFileName = "Invalid manifest file name '%{path}'"
 
@@ -225,6 +224,8 @@ validatingAgainstSchema = "Validating against resource schema"
 [dscresources.resource_manifest]
 resourceManifestSchemaTitle = "Resource manifest schema URI"
 resourceManifestSchemaDescription = "Defines the JSON Schema the resource manifest adheres to."
+adaptedResourceManifestSchemaTitle = "Adapted resource manifest schema URI"
+adaptedResourceManifestSchemaDescription = "Defines the JSON Schema the adapted resource manifest adheres to."
 
 [extensions.dscextension]
 discoverNoResults = "No results returned for discovery extension '%{extension}'"

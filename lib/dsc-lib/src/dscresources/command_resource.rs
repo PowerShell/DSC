@@ -30,7 +30,7 @@ pub struct CommandResourceInfo {
 /// # Errors
 ///
 /// Error returned if the resource does not successfully get the current state
-pub fn invoke_get(resource: &DscResource, cwd: &Path, filter: &str, target_resource: Option<&DscResource>) -> Result<GetResult, DscError> {
+pub fn invoke_get(resource: &DscResource, filter: &str, target_resource: Option<&DscResource>) -> Result<GetResult, DscError> {
     debug!("{}", t!("dscresources.commandResource.invokeGet", resource = &resource.type_name));
     let Some(manifest) = &resource.manifest else {
         return Err(DscError::MissingManifest(resource.type_name.to_string()));
@@ -44,7 +44,7 @@ pub fn invoke_get(resource: &DscResource, cwd: &Path, filter: &str, target_resou
         None => resource.type_name.clone(),
     };
     let path = if let Some(target_resource) = target_resource {
-        Some(target_resource.get_path()?.clone())
+        Some(target_resource.path.clone())
     } else {
         None
     };
@@ -54,15 +54,15 @@ pub fn invoke_get(resource: &DscResource, cwd: &Path, filter: &str, target_resou
     };
     let args = process_get_args(get.args.as_ref(), filter, &command_resource_info);
     if !filter.is_empty() {
-        verify_json_from_manifest(&resource, cwd, filter)?;
+        verify_json_from_manifest(&resource, filter)?;
         command_input = get_command_input(get.input.as_ref(), filter)?;
     }
 
     info!("{}", t!("dscresources.commandResource.invokeGetUsing", resource = &resource.type_name, executable = &get.executable));
-    let (_exit_code, stdout, stderr) = invoke_command(&get.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, manifest.exit_codes.as_ref())?;
+    let (_exit_code, stdout, stderr) = invoke_command(&get.executable, args, command_input.stdin.as_deref(), Some(&resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
     if resource.kind == Kind::Resource {
         debug!("{}", t!("dscresources.commandResource.verifyOutputUsing", resource = &resource.type_name, executable = &get.executable));
-        verify_json_from_manifest(&resource, cwd, &stdout)?;
+        verify_json_from_manifest(&resource, &stdout)?;
     }
 
     let result: GetResult = if let Ok(group_response) = serde_json::from_str::<Vec<ResourceGetResult>>(&stdout) {
@@ -95,7 +95,7 @@ pub fn invoke_get(resource: &DscResource, cwd: &Path, filter: &str, target_resou
 ///
 /// Error returned if the resource does not successfully set the desired state
 #[allow(clippy::too_many_lines)]
-pub fn invoke_set(resource: &DscResource, cwd: &Path, desired: &str, skip_test: bool, execution_type: &ExecutionKind, target_resource: Option<&DscResource>) -> Result<SetResult, DscError> {
+pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, execution_type: &ExecutionKind, target_resource: Option<&DscResource>) -> Result<SetResult, DscError> {
     debug!("{}", t!("dscresources.commandResource.invokeSet", resource = &resource.type_name));
     let Some(manifest) = &resource.manifest else {
         return Err(DscError::MissingManifest(resource.type_name.to_string()));
@@ -107,7 +107,7 @@ pub fn invoke_set(resource: &DscResource, cwd: &Path, desired: &str, skip_test: 
         None => resource.type_name.clone(),
     };
     let path = if let Some(target_resource) = target_resource {
-        Some(target_resource.get_path()?.clone())
+        Some(target_resource.path.clone())
     } else {
         None
     };
@@ -146,12 +146,12 @@ pub fn invoke_set(resource: &DscResource, cwd: &Path, desired: &str, skip_test: 
     let Some(set) = set_method.as_ref() else {
         return Err(DscError::NotImplemented("set".to_string()));
     };
-    verify_json_from_manifest(&resource, cwd, desired)?;
+    verify_json_from_manifest(&resource, desired)?;
 
     // if resource doesn't implement a pre-test, we execute test first to see if a set is needed
     if !skip_test && set.pre_test != Some(true) {
         info!("{}", t!("dscresources.commandResource.noPretest", resource = &resource.type_name));
-        let test_result = invoke_test(resource, cwd, desired, target_resource)?;
+        let test_result = invoke_test(resource, desired, target_resource)?;
         if is_synthetic_what_if {
             return Ok(test_result.into());
         }
@@ -191,7 +191,7 @@ pub fn invoke_set(resource: &DscResource, cwd: &Path, desired: &str, skip_test: 
         None => resource.type_name.clone(),
     };
     let path = if let Some(target_resource) = target_resource {
-        Some(target_resource.get_path()?.clone())
+        Some(target_resource.path.clone())
     } else {
         None
     };
@@ -203,11 +203,11 @@ pub fn invoke_set(resource: &DscResource, cwd: &Path, desired: &str, skip_test: 
     let command_input = get_command_input(get.input.as_ref(), desired)?;
 
     info!("{}", t!("dscresources.commandResource.setGetCurrent", resource = &resource.type_name, executable = &get.executable));
-    let (exit_code, stdout, stderr) = invoke_command(&get.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, manifest.exit_codes.as_ref())?;
+    let (exit_code, stdout, stderr) = invoke_command(&get.executable, args, command_input.stdin.as_deref(), Some(&resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
 
     if resource.kind == Kind::Resource {
         debug!("{}", t!("dscresources.commandResource.setVerifyGet", resource = &resource.type_name, executable = &get.executable));
-        verify_json_from_manifest(&resource, cwd, &stdout)?;
+        verify_json_from_manifest(&resource, &stdout)?;
     }
 
     let pre_state_value: Value = if exit_code == 0 {
@@ -244,14 +244,14 @@ pub fn invoke_set(resource: &DscResource, cwd: &Path, desired: &str, skip_test: 
         },
     }
 
-    let (exit_code, stdout, stderr) = invoke_command(&set.executable, args, input_desired, Some(cwd), env, manifest.exit_codes.as_ref())?;
+    let (exit_code, stdout, stderr) = invoke_command(&set.executable, args, input_desired, Some(&resource.directory), env, manifest.exit_codes.as_ref())?;
 
     match set.returns {
         Some(ReturnKind::State) => {
 
             if resource.kind == Kind::Resource {
                 debug!("{}", t!("dscresources.commandResource.setVerifyOutput", operation = operation_type, resource = &resource.type_name, executable = &set.executable));
-                verify_json_from_manifest(&resource, cwd, &stdout)?;
+                verify_json_from_manifest(&resource, &stdout)?;
             }
 
             let actual_value: Value = match serde_json::from_str(&stdout){
@@ -290,7 +290,7 @@ pub fn invoke_set(resource: &DscResource, cwd: &Path, desired: &str, skip_test: 
         },
         None => {
             // perform a get and compare the result to the expected state
-            let get_result = invoke_get(resource, cwd, desired, target_resource)?;
+            let get_result = invoke_get(resource, desired, target_resource)?;
             // for changed_properties, we compare post state to pre state
             let actual_state = match get_result {
                 GetResult::Group(results) => {
@@ -325,24 +325,24 @@ pub fn invoke_set(resource: &DscResource, cwd: &Path, desired: &str, skip_test: 
 /// # Errors
 ///
 /// Error is returned if the underlying command returns a non-zero exit code.
-pub fn invoke_test(resource: &DscResource, cwd: &Path, expected: &str, target_resource: Option<&DscResource>) -> Result<TestResult, DscError> {
+pub fn invoke_test(resource: &DscResource, expected: &str, target_resource: Option<&DscResource>) -> Result<TestResult, DscError> {
     debug!("{}", t!("dscresources.commandResource.invokeTest", resource = &resource.type_name));
     let Some(manifest) = &resource.manifest else {
         return Err(DscError::MissingManifest(resource.type_name.to_string()));
     };
     let Some(test) = &manifest.test else {
         info!("{}", t!("dscresources.commandResource.testSyntheticTest", resource = &resource.type_name));
-        return invoke_synthetic_test(resource, cwd, expected, target_resource);
+        return invoke_synthetic_test(resource, expected, target_resource);
     };
 
-    verify_json_from_manifest(&resource, cwd, expected)?;
+    verify_json_from_manifest(&resource, expected)?;
 
     let resource_type = match target_resource.clone() {
         Some(r) => r.type_name.clone(),
         None => resource.type_name.clone(),
     };
     let path = if let Some(target_resource) = target_resource {
-        Some(target_resource.get_path()?.clone())
+        Some(target_resource.path.clone())
     } else {
         None
     };
@@ -354,11 +354,11 @@ pub fn invoke_test(resource: &DscResource, cwd: &Path, expected: &str, target_re
     let command_input = get_command_input(test.input.as_ref(), expected)?;
 
     info!("{}", t!("dscresources.commandResource.invokeTestUsing", resource = &resource.type_name, executable = &test.executable));
-    let (exit_code, stdout, stderr) = invoke_command(&test.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, manifest.exit_codes.as_ref())?;
+    let (exit_code, stdout, stderr) = invoke_command(&test.executable, args, command_input.stdin.as_deref(), Some(&resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
 
     if resource.kind == Kind::Resource {
         debug!("{}", t!("dscresources.commandResource.testVerifyOutput", resource = &resource.type_name, executable = &test.executable));
-        verify_json_from_manifest(&resource, cwd, &stdout)?;
+        verify_json_from_manifest(&resource, &stdout)?;
     }
 
     if resource.kind == Kind::Importer {
@@ -408,7 +408,7 @@ pub fn invoke_test(resource: &DscResource, cwd: &Path, expected: &str, target_re
         },
         None => {
             // perform a get and compare the result to the expected state
-            let get_result = invoke_get(resource, cwd, expected, target_resource)?;
+            let get_result = invoke_get(resource, expected, target_resource)?;
             let actual_state = match get_result {
                 GetResult::Group(results) => {
                     let mut result_array: Vec<Value> = Vec::new();
@@ -446,7 +446,7 @@ fn get_desired_state(actual: &Value) -> Result<Option<bool>, DscError> {
     Ok(in_desired_state)
 }
 
-fn invoke_synthetic_test(resource: &DscResource, cwd: &Path, expected: &str, target_resource: Option<&DscResource>) -> Result<TestResult, DscError> {    let get_result = invoke_get(resource, cwd, expected, target_resource)?;
+fn invoke_synthetic_test(resource: &DscResource, expected: &str, target_resource: Option<&DscResource>) -> Result<TestResult, DscError> {    let get_result = invoke_get(resource, expected, target_resource)?;
     let actual_state = match get_result {
         GetResult::Group(results) => {
             let mut result_array: Vec<Value> = Vec::new();
@@ -481,7 +481,7 @@ fn invoke_synthetic_test(resource: &DscResource, cwd: &Path, expected: &str, tar
 /// # Errors
 ///
 /// Error is returned if the underlying command returns a non-zero exit code.
-pub fn invoke_delete(resource: &DscResource, cwd: &Path, filter: &str, target_resource: Option<&DscResource>) -> Result<(), DscError> {
+pub fn invoke_delete(resource: &DscResource, filter: &str, target_resource: Option<&DscResource>) -> Result<(), DscError> {
     let Some(manifest) = &resource.manifest else {
         return Err(DscError::MissingManifest(resource.type_name.to_string()));
     };
@@ -489,14 +489,14 @@ pub fn invoke_delete(resource: &DscResource, cwd: &Path, filter: &str, target_re
         return Err(DscError::NotImplemented("delete".to_string()));
     };
 
-    verify_json_from_manifest(&resource, cwd, filter)?;
+    verify_json_from_manifest(&resource, filter)?;
 
     let resource_type = match target_resource {
         Some(r) => r.type_name.clone(),
         None => resource.type_name.clone(),
     };
     let path = if let Some(target_resource) = target_resource {
-        Some(target_resource.get_path()?.clone())
+        Some(target_resource.path.clone())
     } else {
         None
     };
@@ -508,7 +508,7 @@ pub fn invoke_delete(resource: &DscResource, cwd: &Path, filter: &str, target_re
     let command_input = get_command_input(delete.input.as_ref(), filter)?;
 
     info!("{}", t!("dscresources.commandResource.invokeDeleteUsing", resource = resource_type, executable = &delete.executable));
-    let (_exit_code, _stdout, _stderr) = invoke_command(&delete.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, manifest.exit_codes.as_ref())?;
+    let (_exit_code, _stdout, _stderr) = invoke_command(&delete.executable, args, command_input.stdin.as_deref(), Some(&resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
 
     Ok(())
 }
@@ -528,7 +528,7 @@ pub fn invoke_delete(resource: &DscResource, cwd: &Path, filter: &str, target_re
 /// # Errors
 ///
 /// Error is returned if the underlying command returns a non-zero exit code.
-pub fn invoke_validate(resource: &DscResource, cwd: &Path, config: &str, target_resource: Option<&DscResource>) -> Result<ValidateResult, DscError> {
+pub fn invoke_validate(resource: &DscResource, config: &str, target_resource: Option<&DscResource>) -> Result<ValidateResult, DscError> {
     trace!("{}", t!("dscresources.commandResource.invokeValidateConfig", resource = &resource.type_name, config = &config));
     let Some(manifest) = &resource.manifest else {
         return Err(DscError::MissingManifest(resource.type_name.to_string()));
@@ -543,7 +543,7 @@ pub fn invoke_validate(resource: &DscResource, cwd: &Path, config: &str, target_
         None => resource.type_name.clone(),
     };
     let path = if let Some(target_resource) = target_resource {
-        Some(target_resource.get_path()?.clone())
+        Some(target_resource.path.clone())
     } else {
         None
     };
@@ -555,7 +555,7 @@ pub fn invoke_validate(resource: &DscResource, cwd: &Path, config: &str, target_
     let command_input = get_command_input(validate.input.as_ref(), config)?;
 
     info!("{}", t!("dscresources.commandResource.invokeValidateUsing", resource = resource_type, executable = &validate.executable));
-    let (_exit_code, stdout, _stderr) = invoke_command(&validate.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, manifest.exit_codes.as_ref())?;
+    let (_exit_code, stdout, _stderr) = invoke_command(&validate.executable, args, command_input.stdin.as_deref(), Some(&resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
     let result: ValidateResult = serde_json::from_str(&stdout)?;
     Ok(result)
 }
@@ -569,7 +569,7 @@ pub fn invoke_validate(resource: &DscResource, cwd: &Path, config: &str, target_
 /// # Errors
 ///
 /// Error if schema is not available or if there is an error getting the schema
-pub fn get_schema(resource: &DscResource, cwd: &Path) -> Result<String, DscError> {
+pub fn get_schema(resource: &DscResource) -> Result<String, DscError> {
     let Some(manifest) = &resource.manifest else {
         return Err(DscError::MissingManifest(resource.type_name.to_string()));
     };
@@ -579,7 +579,7 @@ pub fn get_schema(resource: &DscResource, cwd: &Path) -> Result<String, DscError
 
     match schema_kind {
         SchemaKind::Command(ref command) => {
-            let (_exit_code, stdout, _stderr) = invoke_command(&command.executable, command.args.clone(), None, Some(cwd), None, manifest.exit_codes.as_ref())?;
+            let (_exit_code, stdout, _stderr) = invoke_command(&command.executable, command.args.clone(), None, Some(&resource.directory), None, manifest.exit_codes.as_ref())?;
             Ok(stdout)
         },
         SchemaKind::Embedded(ref schema) => {
@@ -604,7 +604,7 @@ pub fn get_schema(resource: &DscResource, cwd: &Path) -> Result<String, DscError
 /// # Errors
 ///
 /// Error returned if the resource does not successfully export the current state
-pub fn invoke_export(resource: &DscResource, cwd: &Path, input: Option<&str>, target_resource: Option<&DscResource>) -> Result<ExportResult, DscError> {
+pub fn invoke_export(resource: &DscResource, input: Option<&str>, target_resource: Option<&DscResource>) -> Result<ExportResult, DscError> {
     let Some(manifest) = &resource.manifest else {
         return Err(DscError::MissingManifest(resource.type_name.to_string()));
     };
@@ -612,7 +612,7 @@ pub fn invoke_export(resource: &DscResource, cwd: &Path, input: Option<&str>, ta
         // see if get is supported and use that instead
         if manifest.get.is_some() {
             info!("{}", t!("dscresources.commandResource.exportNotSupportedUsingGet", resource = &resource.type_name));
-            let get_result = invoke_get(resource, cwd, input.unwrap_or(""), target_resource)?;
+            let get_result = invoke_get(resource, input.unwrap_or(""), target_resource)?;
             let mut instances: Vec<Value> = Vec::new();
             match get_result {
                 GetResult::Group(group_response) => {
@@ -639,7 +639,7 @@ pub fn invoke_export(resource: &DscResource, cwd: &Path, input: Option<&str>, ta
         None => resource.type_name.clone(),
     };
     let path = if let Some(target_resource) = target_resource {
-        Some(target_resource.get_path()?.clone())
+        Some(target_resource.path.clone())
     } else {
         None
     };
@@ -649,7 +649,7 @@ pub fn invoke_export(resource: &DscResource, cwd: &Path, input: Option<&str>, ta
     };
     if let Some(input) = input {
         if !input.is_empty() {
-            verify_json_from_manifest(&resource, cwd, input)?;
+            verify_json_from_manifest(&resource, input)?;
 
             command_input = get_command_input(export.input.as_ref(), input)?;
         }
@@ -659,7 +659,7 @@ pub fn invoke_export(resource: &DscResource, cwd: &Path, input: Option<&str>, ta
         args = process_get_args(export.args.as_ref(), "", &command_resource_info);
     }
 
-    let (_exit_code, stdout, stderr) = invoke_command(&export.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, manifest.exit_codes.as_ref())?;
+    let (_exit_code, stdout, stderr) = invoke_command(&export.executable, args, command_input.stdin.as_deref(), Some(&resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
     let mut instances: Vec<Value> = Vec::new();
     for line in stdout.lines()
     {
@@ -671,7 +671,7 @@ pub fn invoke_export(resource: &DscResource, cwd: &Path, input: Option<&str>, ta
         };
         if resource.kind == Kind::Resource {
             debug!("{}", t!("dscresources.commandResource.exportVerifyOutput", resource = &resource.type_name, executable = &export.executable));
-            verify_json_from_manifest(&resource, cwd, line)?;
+            verify_json_from_manifest(&resource, line)?;
         }
         instances.push(instance);
     }
@@ -696,7 +696,7 @@ pub fn invoke_export(resource: &DscResource, cwd: &Path, input: Option<&str>, ta
 /// # Errors
 ///
 /// Error returned if the resource does not successfully resolve the input
-pub fn invoke_resolve(resource: &DscResource, cwd: &Path, input: &str) -> Result<ResolveResult, DscError> {
+pub fn invoke_resolve(resource: &DscResource, input: &str) -> Result<ResolveResult, DscError> {
     let Some(manifest) = &resource.manifest else {
         return Err(DscError::MissingManifest(resource.type_name.to_string()));
     };
@@ -706,14 +706,14 @@ pub fn invoke_resolve(resource: &DscResource, cwd: &Path, input: &str) -> Result
 
     let command_resource_info = CommandResourceInfo {
         type_name: resource.type_name.clone(),
-        path: if resource.require_adapter.is_some() { Some(resource.get_path()?.clone()) } else { None },
+        path: if resource.require_adapter.is_some() { Some(resource.path.clone()) } else { None },
     };
 
     let args = process_get_args(resolve.args.as_ref(), input, &command_resource_info);
     let command_input = get_command_input(resolve.input.as_ref(), input)?;
 
     info!("{}", t!("dscresources.commandResource.invokeResolveUsing", resource = &resource.type_name, executable = &resolve.executable));
-    let (_exit_code, stdout, _stderr) = invoke_command(&resolve.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, manifest.exit_codes.as_ref())?;
+    let (_exit_code, stdout, _stderr) = invoke_command(&resolve.executable, args, command_input.stdin.as_deref(), Some(&resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
     let result: ResolveResult = serde_json::from_str(&stdout)?;
     Ok(result)
 }
@@ -1041,7 +1041,7 @@ fn get_command_input(input_kind: Option<&InputKind>, input: &str) -> Result<Comm
     })
 }
 
-fn verify_json_from_manifest(resource: &DscResource, cwd: &Path, json: &str) -> Result<(), DscError> {
+fn verify_json_from_manifest(resource: &DscResource, json: &str) -> Result<(), DscError> {
     debug!("{}", t!("dscresources.commandResource.verifyJson", resource = resource.type_name));
     let Some(manifest) = &resource.manifest else {
         return Err(DscError::MissingManifest(resource.type_name.to_string()));
@@ -1050,7 +1050,7 @@ fn verify_json_from_manifest(resource: &DscResource, cwd: &Path, json: &str) -> 
     // see if resource implements validate
     if  manifest.validate.is_some() {
         trace!("{}", t!("dscresources.commandResource.validateJson", json = json));
-        let result = invoke_validate(resource, cwd, json, None)?;
+        let result = invoke_validate(resource, json, None)?;
         if result.valid {
             return Ok(());
         }
@@ -1059,7 +1059,7 @@ fn verify_json_from_manifest(resource: &DscResource, cwd: &Path, json: &str) -> 
     }
 
     // otherwise, use schema validation
-    let schema = get_schema(resource, cwd)?;
+    let schema = get_schema(resource)?;
     let schema: Value = serde_json::from_str(&schema)?;
     let compiled_schema = match Validator::new(&schema) {
         Ok(schema) => schema,
