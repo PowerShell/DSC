@@ -420,12 +420,13 @@ resources:
       properties:
         Name: TestScriptResource1
         Credential:       
-           username: MyUser
-           password: Password
+           UserName: MyUser
+           Password: Password
 '@
 
 $out = dsc -l trace config test -i $yaml 2>"$testdrive/error.log" | ConvertFrom-Json
-$LASTEXITCODE | Should -Be 0 -Because ($out.results[0].result.inDesiredState | Should -Be $inDesiredState)
+$LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path "$testdrive/error.log" -Raw | Out-String)
+$out.results[0].result.inDesiredState | Should -Be $inDesiredState
 }
 
 
