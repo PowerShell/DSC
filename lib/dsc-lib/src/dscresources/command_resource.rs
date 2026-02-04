@@ -9,7 +9,7 @@ use serde_json::{Map, Value};
 use std::{collections::HashMap, env, path::Path, process::Stdio};
 use crate::{configure::{config_doc::ExecutionKind, config_result::{ResourceGetResult, ResourceTestResult}}, types::FullyQualifiedTypeName, util::canonicalize_which};
 use crate::dscerror::DscError;
-use super::{dscresource::{get_diff, redact}, invoke_result::{ExportResult, GetResult, ResolveResult, SetResult, TestResult, ValidateResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse, get_in_desired_state}, resource_manifest::{ArgKind, InputKind, Kind, ResourceManifest, ReturnKind, SchemaKind}};
+use super::{dscresource::{get_diff, redact}, invoke_result::{ExportResult, GetResult, ResolveResult, SetResult, TestResult, ValidateResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse, get_in_desired_state}, resource_manifest::{GetArgKind, SetDeleteArgKind, InputKind, Kind, ResourceManifest, ReturnKind, SchemaKind}};
 use tracing::{error, warn, info, debug, trace};
 use tokio::{io::{AsyncBufReadExt, AsyncWriteExt, BufReader}, process::Command};
 
@@ -35,7 +35,7 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &Path, filter: &str, target_
         Some(r) => r,
         None => resource.resource_type.clone(),
     };
-    let args = process_args(get.args.as_ref(), filter, &resource_type);
+    let args = process_get_args(get.args.as_ref(), filter, &resource_type);
     if !filter.is_empty() {
         verify_json(resource, cwd, filter)?;
         command_input = get_command_input(get.input.as_ref(), filter)?;
@@ -82,6 +82,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &Path, desired: &str, skip_t
     debug!("{}", t!("dscresources.commandResource.invokeSet", resource = &resource.resource_type));
     let operation_type: String;
     let mut is_synthetic_what_if = false;
+
     let set_method = match execution_type {
         ExecutionKind::Actual => {
             operation_type = "set".to_string();
@@ -89,15 +90,27 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &Path, desired: &str, skip_t
         },
         ExecutionKind::WhatIf => {
             operation_type = "whatif".to_string();
-            if resource.what_if.is_none() {
-                is_synthetic_what_if = true;
+            // Check if set supports native what-if
+            let has_native_whatif = resource.set.as_ref()
+                .map_or(false, |set| {
+                    let (_, supports_whatif) = process_set_delete_args(set.args.as_ref(), "", &resource.resource_type, execution_type);
+                    supports_whatif
+                });
+
+            if has_native_whatif {
                 &resource.set
             } else {
-                &resource.what_if
+                if resource.what_if.is_some() {
+                    warn!("{}", t!("dscresources.commandResource.whatIfWarning", resource = &resource.resource_type));
+                    &resource.what_if
+                } else {
+                    is_synthetic_what_if = true;
+                    &resource.set
+                }
             }
         }
     };
-    let Some(set) = set_method else {
+    let Some(set) = set_method.as_ref() else {
         return Err(DscError::NotImplemented("set".to_string()));
     };
     verify_json(resource, cwd, desired)?;
@@ -144,7 +157,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &Path, desired: &str, skip_t
         Some(r) => r,
         None => resource.resource_type.clone(),
     };
-    let args = process_args(get.args.as_ref(), desired, &resource_type);
+    let args = process_get_args(get.args.as_ref(), desired, &resource_type);
     let command_input = get_command_input(get.input.as_ref(), desired)?;
 
     info!("{}", t!("dscresources.commandResource.setGetCurrent", resource = &resource.resource_type, executable = &get.executable));
@@ -176,7 +189,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &Path, desired: &str, skip_t
 
     let mut env: Option<HashMap<String, String>> = None;
     let mut input_desired: Option<&str> = None;
-    let args = process_args(set.args.as_ref(), desired, &resource_type);
+    let (args, _) = process_set_delete_args(set.args.as_ref(), desired, &resource_type, execution_type);
     match &set.input {
         Some(InputKind::Env) => {
             env = Some(json_to_hashmap(desired)?);
@@ -284,7 +297,7 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &Path, expected: &str, targ
         Some(r) => r,
         None => resource.resource_type.clone(),
     };
-    let args = process_args(test.args.as_ref(), expected, &resource_type);
+    let args = process_get_args(test.args.as_ref(), expected, &resource_type);
     let command_input = get_command_input(test.input.as_ref(), expected)?;
 
     info!("{}", t!("dscresources.commandResource.invokeTestUsing", resource = &resource.resource_type, executable = &test.executable));
@@ -411,6 +424,7 @@ fn invoke_synthetic_test(resource: &ResourceManifest, cwd: &Path, expected: &str
 /// * `resource` - The resource manifest for the command resource.
 /// * `cwd` - The current working directory.
 /// * `filter` - The filter to apply to the resource in JSON.
+/// * `execution_type` - Whether this is an actual delete or what-if.
 ///
 /// # Errors
 ///
@@ -426,7 +440,8 @@ pub fn invoke_delete(resource: &ResourceManifest, cwd: &Path, filter: &str, targ
         Some(r) => r,
         None => &resource.resource_type,
     };
-    let args = process_args(delete.args.as_ref(), filter, resource_type);
+    let (args, _) = process_set_delete_args(delete.args.as_ref(), filter, resource_type, &ExecutionKind::Actual);
+
     let command_input = get_command_input(delete.input.as_ref(), filter)?;
 
     info!("{}", t!("dscresources.commandResource.invokeDeleteUsing", resource = resource_type, executable = &delete.executable));
@@ -461,7 +476,7 @@ pub fn invoke_validate(resource: &ResourceManifest, cwd: &Path, config: &str, ta
         Some(r) => r,
         None => &resource.resource_type,
     };
-    let args = process_args(validate.args.as_ref(), config, resource_type);
+    let args = process_get_args(validate.args.as_ref(), config, resource_type);
     let command_input = get_command_input(validate.input.as_ref(), config)?;
 
     info!("{}", t!("dscresources.commandResource.invokeValidateUsing", resource = resource_type, executable = &validate.executable));
@@ -549,9 +564,9 @@ pub fn invoke_export(resource: &ResourceManifest, cwd: &Path, input: Option<&str
             command_input = get_command_input(export.input.as_ref(), input)?;
         }
 
-        args = process_args(export.args.as_ref(), input, &resource_type);
+        args = process_get_args(export.args.as_ref(), input, &resource_type);
     } else {
-        args = process_args(export.args.as_ref(), "", &resource_type);
+        args = process_get_args(export.args.as_ref(), "", &resource_type);
     }
 
     let (_exit_code, stdout, stderr) = invoke_command(&export.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, resource.exit_codes.as_ref())?;
@@ -596,7 +611,7 @@ pub fn invoke_resolve(resource: &ResourceManifest, cwd: &Path, input: &str) -> R
         return Err(DscError::Operation(t!("dscresources.commandResource.resolveNotSupported", resource = &resource.resource_type).to_string()));
     };
 
-    let args = process_args(resolve.args.as_ref(), input, &resource.resource_type);
+    let args = process_get_args(resolve.args.as_ref(), input, &resource.resource_type);
     let command_input = get_command_input(resolve.input.as_ref(), input)?;
 
     info!("{}", t!("dscresources.commandResource.invokeResolveUsing", resource = &resource.resource_type, executable = &resolve.executable));
@@ -800,17 +815,17 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
     }
 }
 
-/// Process the arguments for a command resource.
+/// Process the arguments for a command resource's get operation.
 ///
 /// # Arguments
 ///
-/// * `args` - The arguments to process
+/// * `args` - The Get arguments to process
 /// * `value` - The value to use for JSON input arguments
 ///
 /// # Returns
 ///
 /// A vector of strings representing the processed arguments
-pub fn process_args(args: Option<&Vec<ArgKind>>, input: &str, resource_type: &str) -> Option<Vec<String>> {
+pub fn process_get_args(args: Option<&Vec<GetArgKind>>, input: &str, resource_type: &str) -> Option<Vec<String>> {
     let Some(arg_values) = args else {
         debug!("{}", t!("dscresources.commandResource.noArgs"));
         return None;
@@ -819,10 +834,10 @@ pub fn process_args(args: Option<&Vec<ArgKind>>, input: &str, resource_type: &st
     let mut processed_args = Vec::<String>::new();
     for arg in arg_values {
         match arg {
-            ArgKind::String(s) => {
+            GetArgKind::String(s) => {
                 processed_args.push(s.clone());
             },
-            ArgKind::Json { json_input_arg, mandatory } => {
+            GetArgKind::Json { json_input_arg, mandatory } => {
                 if input.is_empty() && *mandatory != Some(true) {
                     continue;
                 }
@@ -830,14 +845,61 @@ pub fn process_args(args: Option<&Vec<ArgKind>>, input: &str, resource_type: &st
                 processed_args.push(json_input_arg.clone());
                 processed_args.push(input.to_string());
             },
-            ArgKind::ResourceType { resource_type_arg } => {
+            GetArgKind::ResourceType { resource_type_arg } => {
                 processed_args.push(resource_type_arg.clone());
                 processed_args.push(resource_type.to_string());
-            }
+            },
         }
     }
 
     Some(processed_args)
+}
+
+/// Process the arguments for a command resource's set or delete operation.
+///
+/// # Arguments
+///
+/// * `args` - The Set/Delete arguments to process
+/// * `value` - The value to use for JSON input arguments
+///
+/// # Returns
+///
+/// A vector of strings representing the processed arguments
+pub fn process_set_delete_args(args: Option<&Vec<SetDeleteArgKind>>, input: &str, resource_type: &str, execution_type: &ExecutionKind) -> (Option<Vec<String>>, bool) {
+    let Some(arg_values) = args else {
+        debug!("{}", t!("dscresources.commandResource.noArgs"));
+        return (None, false);
+    };
+
+    let mut processed_args = Vec::<String>::new();
+    let mut supports_whatif = false;
+    for arg in arg_values {
+        match arg {
+            SetDeleteArgKind::String(s) => {
+                processed_args.push(s.clone());
+            },
+            SetDeleteArgKind::Json { json_input_arg, mandatory } => {
+                if input.is_empty() && *mandatory != Some(true) {
+                    continue;
+                }
+
+                processed_args.push(json_input_arg.clone());
+                processed_args.push(input.to_string());
+            },
+            SetDeleteArgKind::ResourceType { resource_type_arg } => {
+                processed_args.push(resource_type_arg.clone());
+                processed_args.push(resource_type.to_string());
+            },
+            SetDeleteArgKind::WhatIf { what_if_arg } => {
+                supports_whatif = true;
+                if execution_type == &ExecutionKind::WhatIf {
+                    processed_args.push(what_if_arg.clone());
+                }
+            }
+        }
+    }
+
+    (Some(processed_args), supports_whatif)
 }
 
 struct CommandInput {
