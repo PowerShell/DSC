@@ -452,7 +452,7 @@ pub fn invoke_delete(resource: &ResourceManifest, cwd: &Path, filter: &str, targ
     };
     let (args, supports_whatif) = process_set_delete_args(delete.args.as_ref(), filter, resource_type, execution_type);
     if execution_type == &ExecutionKind::WhatIf && !supports_whatif {
-        // we need to do a synthetic what-if here by calling test and returning a setResult
+        // perform a synthetic what-if by calling test and wrapping the TestResult in DeleteResultKind::SyntheticWhatIf
         let test_result = invoke_test(resource, cwd, filter, target_resource.clone())?;
         return Ok(DeleteResultKind::SyntheticWhatIf(test_result));
     }

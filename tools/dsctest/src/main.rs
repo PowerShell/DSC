@@ -225,6 +225,7 @@ fn main() {
                 };
                 metadata.name = Some(format!("Metadata example {}", i+1));
                 metadata.count = Some(i + 1);
+                println!("{}", serde_json::to_string(&metadata).unwrap());
             }
             String::new()
         },
