@@ -791,6 +791,38 @@
           ]
         }
       }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/WhatIfArgKind",
+      "version": "0.1.0",
+      "description": "Test resource for validating native WhatIf functionality with whatIfArg",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "whatif"
+        ]
+      },
+      "set": {
+        "executable": "dsctest",
+        "args": [
+          "whatif",
+          {
+            "whatIfArg": "-w"
+          }
+        ],
+        "return": "state"
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "what-if"
+          ]
+        }
+      }
     }
   ]
 }
