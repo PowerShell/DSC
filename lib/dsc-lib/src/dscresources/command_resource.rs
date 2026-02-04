@@ -815,11 +815,11 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
     }
 }
 
-/// Process the arguments for a command resource.
+/// Process the arguments for a command resource's get operation.
 ///
 /// # Arguments
 ///
-/// * `args` - The arguments to process
+/// * `args` - The Get arguments to process
 /// * `value` - The value to use for JSON input arguments
 ///
 /// # Returns
@@ -855,6 +855,16 @@ pub fn process_get_args(args: Option<&Vec<GetArgKind>>, input: &str, resource_ty
     Some(processed_args)
 }
 
+/// Process the arguments for a command resource's set or delete operation.
+///
+/// # Arguments
+///
+/// * `args` - The Set/Delete arguments to process
+/// * `value` - The value to use for JSON input arguments
+///
+/// # Returns
+///
+/// A vector of strings representing the processed arguments
 pub fn process_set_delete_args(args: Option<&Vec<SetDeleteArgKind>>, input: &str, resource_type: &str, execution_type: &ExecutionKind) -> (Option<Vec<String>>, bool) {
     let Some(arg_values) = args else {
         debug!("{}", t!("dscresources.commandResource.noArgs"));
