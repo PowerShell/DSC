@@ -43,8 +43,6 @@ pub fn invoke_get(resource: &DscResource, cwd: &Path, filter: &str, target_resou
         Some(r) => r.type_name.clone(),
         None => resource.type_name.clone(),
     };
-    debug!("Resource requires adapter: {:?}", resource.require_adapter);
-    debug!("Resource path: {:?}", resource.get_directory()?);
     let path = if let Some(target_resource) = target_resource {
         Some(target_resource.get_path()?.clone())
     } else {
@@ -104,6 +102,19 @@ pub fn invoke_set(resource: &DscResource, cwd: &Path, desired: &str, skip_test: 
     };
     let operation_type: String;
     let mut is_synthetic_what_if = false;
+    let resource_type = match target_resource {
+        Some(r) => r.type_name.clone(),
+        None => resource.type_name.clone(),
+    };
+    let path = if let Some(target_resource) = target_resource {
+        Some(target_resource.get_path()?.clone())
+    } else {
+        None
+    };
+    let command_resource_info = CommandResourceInfo {
+        type_name: resource_type.clone(),
+        path,
+    };
 
     let set_method = match execution_type {
         ExecutionKind::Actual => {
@@ -113,21 +124,21 @@ pub fn invoke_set(resource: &DscResource, cwd: &Path, desired: &str, skip_test: 
         ExecutionKind::WhatIf => {
             operation_type = "whatif".to_string();
             // Check if set supports native what-if
-            let has_native_whatif = resource.set.as_ref()
+            let has_native_whatif = manifest.set.as_ref()
                 .map_or(false, |set| {
-                    let (_, supports_whatif) = process_set_delete_args(set.args.as_ref(), "", &resource.resource_type, execution_type);
+                    let (_, supports_whatif) = process_set_delete_args(set.args.as_ref(), "", &command_resource_info, execution_type);
                     supports_whatif
                 });
 
             if has_native_whatif {
-                &resource.set
+                &manifest.set
             } else {
-                if resource.what_if.is_some() {
-                    warn!("{}", t!("dscresources.commandResource.whatIfWarning", resource = &resource.resource_type));
-                    &resource.what_if
+                if manifest.what_if.is_some() {
+                    warn!("{}", t!("dscresources.commandResource.whatIfWarning", resource = &resource_type));
+                    &manifest.what_if
                 } else {
                     is_synthetic_what_if = true;
-                    &resource.set
+                    &manifest.set
                 }
             }
         }
@@ -220,7 +231,7 @@ pub fn invoke_set(resource: &DscResource, cwd: &Path, desired: &str, skip_test: 
 
     let mut env: Option<HashMap<String, String>> = None;
     let mut input_desired: Option<&str> = None;
-    let args = process_set_delete_args(set.args.as_ref(), desired, &command_resource_info);
+    let (args, _) = process_set_delete_args(set.args.as_ref(), desired, &command_resource_info, execution_type);
     match &set.input {
         Some(InputKind::Env) => {
             env = Some(json_to_hashmap(desired)?);
@@ -233,7 +244,6 @@ pub fn invoke_set(resource: &DscResource, cwd: &Path, desired: &str, skip_test: 
         },
     }
 
-    info!("Invoking {} '{}' using '{}'", operation_type, &resource.type_name, &set.executable);
     let (exit_code, stdout, stderr) = invoke_command(&set.executable, args, input_desired, Some(cwd), env, manifest.exit_codes.as_ref())?;
 
     match set.returns {
@@ -494,7 +504,7 @@ pub fn invoke_delete(resource: &DscResource, cwd: &Path, filter: &str, target_re
         type_name: resource_type.clone(),
         path,
     };
-    let args = process_set_delete_args(delete.args.as_ref(), filter, &command_resource_info, &ExecutionKind::Actual);
+    let (args, _) = process_set_delete_args(delete.args.as_ref(), filter, &command_resource_info, &ExecutionKind::Actual);
     let command_input = get_command_input(delete.input.as_ref(), filter)?;
 
     info!("{}", t!("dscresources.commandResource.invokeDeleteUsing", resource = resource_type, executable = &delete.executable));
@@ -913,7 +923,7 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
 /// # Returns
 ///
 /// A vector of strings representing the processed arguments
-pub fn process_args(args: Option<&Vec<GetArgKind>>, input: &str, command_resource_info: &CommandResourceInfo) -> Option<Vec<String>> {
+pub fn process_get_args(args: Option<&Vec<GetArgKind>>, input: &str, command_resource_info: &CommandResourceInfo) -> Option<Vec<String>> {
     let Some(arg_values) = args else {
         debug!("{}", t!("dscresources.commandResource.noArgs"));
         return None;
@@ -937,9 +947,7 @@ pub fn process_args(args: Option<&Vec<GetArgKind>>, input: &str, command_resourc
                 processed_args.push(resource_type_arg.clone());
                 processed_args.push(command_resource_info.type_name.to_string());
             },
-            ArgKind::ResourcePath { resource_path_arg } => {
-                debug!("ResourcePath Arg: {:?}", resource_path_arg);
-                debug!("Command Resource Info Path: {:?}", command_resource_info.path);
+            GetArgKind::ResourcePath { resource_path_arg } => {
                 if let Some(path) = &command_resource_info.path {
                     processed_args.push(resource_path_arg.clone());
                     processed_args.push(path.to_string_lossy().to_string());
@@ -961,7 +969,7 @@ pub fn process_args(args: Option<&Vec<GetArgKind>>, input: &str, command_resourc
 /// # Returns
 ///
 /// A vector of strings representing the processed arguments
-pub fn process_set_delete_args(args: Option<&Vec<SetDeleteArgKind>>, input: &str, resource_type: &str, execution_type: &ExecutionKind) -> (Option<Vec<String>>, bool) {
+pub fn process_set_delete_args(args: Option<&Vec<SetDeleteArgKind>>, input: &str, command_resource_info: &CommandResourceInfo, execution_type: &ExecutionKind) -> (Option<Vec<String>>, bool) {
     let Some(arg_values) = args else {
         debug!("{}", t!("dscresources.commandResource.noArgs"));
         return (None, false);
@@ -982,9 +990,15 @@ pub fn process_set_delete_args(args: Option<&Vec<SetDeleteArgKind>>, input: &str
                 processed_args.push(json_input_arg.clone());
                 processed_args.push(input.to_string());
             },
+            SetDeleteArgKind::ResourcePath { resource_path_arg } => {
+                if let Some(path) = &command_resource_info.path {
+                    processed_args.push(resource_path_arg.clone());
+                    processed_args.push(path.to_string_lossy().to_string());
+                }
+            },
             SetDeleteArgKind::ResourceType { resource_type_arg } => {
                 processed_args.push(resource_type_arg.clone());
-                processed_args.push(resource_type.to_string());
+                processed_args.push(command_resource_info.type_name.to_string());
             },
             SetDeleteArgKind::WhatIf { what_if_arg } => {
                 supports_whatif = true;

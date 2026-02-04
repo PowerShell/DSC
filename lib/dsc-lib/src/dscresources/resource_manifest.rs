@@ -117,7 +117,6 @@ pub enum GetArgKind {
         #[serde(rename = "resourceTypeArg")]
         resource_type_arg: String,
     },
-<<<<<<< HEAD
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
@@ -134,6 +133,11 @@ pub enum SetDeleteArgKind {
         /// Indicates if argument is mandatory which will pass an empty string if no JSON input is provided.  Default is false.
         mandatory: Option<bool>,
     },
+    ResourcePath {
+        /// The argument that accepts the resource path.
+        #[serde(rename = "resourcePathArg")]
+        resource_path_arg: String,
+    },
     ResourceType {
         /// The argument that accepts the resource type name.
         #[serde(rename = "resourceTypeArg")]
@@ -145,10 +149,6 @@ pub enum SetDeleteArgKind {
         #[serde(rename = "whatIfArg")]
         what_if_arg: String,
     }
-||||||| parent of 89f901ff (Enable support for adapted resource manifests)
-    }
-=======
->>>>>>> 89f901ff (Enable support for adapted resource manifests)
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
