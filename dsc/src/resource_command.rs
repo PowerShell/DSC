@@ -168,7 +168,7 @@ pub fn set(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, inp
             }
         };
 
-        if let Err(err) = resource.delete(input) {
+        if let Err(err) = resource.delete(input, &ExecutionKind::Actual) {
             error!("{err}");
             exit(EXIT_DSC_ERROR);
         }
@@ -268,8 +268,8 @@ pub fn delete(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, 
         exit(EXIT_DSC_ERROR);
     }
 
-    match resource.delete(input) {
-        Ok(()) => {}
+    match resource.delete(input, &ExecutionKind::Actual) {
+        Ok(_) => {}
         Err(err) => {
             error!("{err}");
             exit(EXIT_DSC_ERROR);

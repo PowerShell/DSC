@@ -138,4 +138,47 @@ Describe 'whatif tests' {
         $set_result.hadErrors | Should -BeFalse
         $set_result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'actual'
     }
+
+    It 'Test/WhatIfDelete resource and WhatIfArgKind works' {
+        $config_yaml = @"
+        `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+        resources:
+        - name: WhatIfDelete
+          type: Test/WhatIfDelete
+          properties:
+            _exist: false
+"@
+        $what_if_result = $config_yaml | dsc config set -w -f - | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $what_if_result.hadErrors | Should -BeFalse
+        $what_if_result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'whatIf'
+        $what_if_result.results[0].metadata.whatIf[0] | Should -BeExactly 'Delete what-if message 1'
+        $what_if_result.results[0].metadata.whatIf[1] | Should -BeExactly 'Delete what-if message 2'
+        $set_result = $config_yaml | dsc config set -f - | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $set_result.hadErrors | Should -BeFalse
+        $set_result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'actual'
+        $set_result.results[0].metadata.whatIf | Should -BeNullOrEmpty
+    }
+
+    It 'Synthetic what-if for delete resource works' {
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Delete
+              type: Test/Delete
+              properties:
+                _exist: false
+"@
+        $out = $config_yaml | dsc config set -w -f - | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.hadErrors | Should -BeFalse
+        $out.results.Count | Should -Be 1
+        $out.results[0].type | Should -BeExactly 'Test/Delete'
+        $out.results[0].result.beforeState.deleteCalled | Should -BeTrue
+        $out.results[0].result.beforeState._exist | Should -BeFalse
+        $out.results[0].result.afterState.deleteCalled | Should -BeNullOrEmpty
+        $out.results[0].result.afterState._exist | Should -BeFalse
+        $out.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'whatIf'
+    }
 }

@@ -159,3 +159,29 @@ pub struct ResolveResult {
     /// The optional resolved parameters.
     pub parameters: Option<HashMap<String, Value>>,
 }
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[serde(deny_unknown_fields)]
+#[dsc_repo_schema(base_name = "delete", folder_path = "outputs/resource")]
+pub struct DeleteResult {
+    /// The return from the resource by the Delete method with what-if simulation.
+    #[serde(rename = "_metadata", skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<DeleteWhatIfResult>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[dsc_repo_schema(base_name = "delete", folder_path = "outputs/resource")]
+#[serde(deny_unknown_fields)]
+pub struct DeleteWhatIfResult {
+    #[serde(rename = "whatIf", skip_serializing_if = "Option::is_none")]
+    pub what_if: Option<Value>
+}
+
+pub enum DeleteResultKind {
+    /// Synthetic what-if created from test operation
+    SyntheticWhatIf(TestResult),
+    /// Native what-if result from resource
+    ResourceWhatIf(DeleteResult),
+    /// Actual delete from resource has no output
+    ResourceActual
+}
