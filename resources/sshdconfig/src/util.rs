@@ -8,6 +8,7 @@ use tracing::{debug, warn, Level};
 use tracing_subscriber::{EnvFilter, Layer, prelude::__tracing_subscriber_SubscriberExt};
 
 use crate::args::{TraceFormat, TraceLevel};
+use crate::canonical_properties::{CanonicalProperty, CanonicalProperties};
 use crate::error::SshdConfigError;
 use crate::inputs::{CommandInfo, Metadata, SshdCommandArgs};
 use crate::metadata::{SSHD_CONFIG_DEFAULT_PATH_UNIX, SSHD_CONFIG_DEFAULT_PATH_WINDOWS};
@@ -196,9 +197,9 @@ pub fn build_command_info(input: Option<&String>, is_get: bool) -> Result<Comman
 
     if let Some(inputs) = input {
         sshd_config = serde_json::from_str(inputs.as_str())?;
-        purge = get_bool_or_default(&mut sshd_config, "_purge", false)?;
-        include_defaults = get_bool_or_default(&mut sshd_config, "_includeDefaults", is_get)?;
-        metadata = if let Some(value) = sshd_config.remove("_metadata") {
+        purge = CanonicalProperties::extract_bool(&mut sshd_config, CanonicalProperty::Purge, false)?;
+        include_defaults = CanonicalProperties::extract_bool(&mut sshd_config, CanonicalProperty::IncludeDefaults, is_get)?;
+        metadata = if let Some(value) = sshd_config.remove(CanonicalProperty::Metadata.as_str()) {
             serde_json::from_value(value)?
         } else {
             Metadata::new()
@@ -244,25 +245,4 @@ pub fn read_sshd_config(input: Option<PathBuf>) -> Result<String, SshdConfigErro
     }
 }
 
-/// Helper function to extract a boolean value from a map, or return a default value.
-///
-/// # Arguments
-///
-/// * `map` - The map to extract the value from
-/// * `key` - The key to look for in the map
-/// * `default` - The default value to return if the key is not found
-///
-/// # Errors
-///
-/// Returns an error if the value exists but is not a boolean.
-fn get_bool_or_default(map: &mut Map<String, Value>, key: &str, default: bool) -> Result<bool, SshdConfigError> {
-    if let Some(value) = map.remove(key) {
-        if let Value::Bool(b) = value {
-            Ok(b)
-        } else {
-            Err(SshdConfigError::InvalidInput(t!("util.inputMustBeBoolean", input = key).to_string()))
-        }
-    } else {
-        Ok(default)
-    }
-}
+
