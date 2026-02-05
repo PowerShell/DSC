@@ -8,12 +8,11 @@ use serde_json::Map;
 use std::process::exit;
 use tracing::{debug, error};
 
-use crate::inputs::{RepeatInput, RepeatListInput};
-
 use args::{Args, Command, DefaultShell, Setting};
 use export::invoke_export;
 use get::{get_sshd_settings, invoke_get};
 use parser::SshdConfigParser;
+use repeat_keyword::{RepeatInput, RepeatListInput};
 use set::invoke_set;
 use util::{build_command_info, enable_tracing};
 
@@ -25,6 +24,7 @@ mod get;
 mod inputs;
 mod metadata;
 mod parser;
+mod repeat_keyword;
 mod set;
 mod util;
 

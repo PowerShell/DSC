@@ -8,7 +8,7 @@ use std::{fmt, fmt::Write};
 use tracing::warn;
 
 use crate::error::SshdConfigError;
-use crate::metadata::{KeywordInfo, ValueSeparator};
+use crate::repeat_keyword::{KeywordInfo, ValueSeparator};
 
 #[derive(Debug, Deserialize)]
 struct MatchBlock {

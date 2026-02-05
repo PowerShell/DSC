@@ -6,8 +6,7 @@ use serde_json::{Map, Value};
 use crate::build_command_info;
 use crate::error::SshdConfigError;
 use crate::get_sshd_settings;
-use crate::inputs::NameValueEntry;
-use crate::set::find_name_value_entry_index;
+use crate::repeat_keyword::{find_name_value_entry_index, NameValueEntry};
 
 pub fn invoke_export(input: Option<&String>, compare: bool) -> Result<Map<String, Value>, SshdConfigError> {
     let cmd_info = build_command_info(input, false)?;

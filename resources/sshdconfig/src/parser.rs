@@ -8,7 +8,7 @@ use tracing::debug;
 use tree_sitter::Parser;
 
 use crate::error::SshdConfigError;
-use crate::metadata::KeywordInfo;
+use crate::repeat_keyword::{KeywordInfo, ValueSeparator};
 
 /// Unescape backslashes in strings. sshd -T outputs paths with escaped backslashes
 /// (e.g., "c:\\openssh\\bin\\sftp.exe") but we want to normalize them to the original
@@ -125,7 +125,7 @@ impl SshdConfigParser {
                 // the keyword_info to force multi-arg behavior
                 let mut keyword_info = KeywordInfo::from_keyword(&key);
                 // Force comma separator and multi-arg for match criteria
-                keyword_info.separator = crate::metadata::ValueSeparator::Comma;
+                keyword_info.separator = ValueSeparator::Comma;
                 values = parse_arguments_node_as_array(value_node, input, input_bytes, &keyword_info)?;
             }
             else {

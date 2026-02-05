@@ -17,8 +17,12 @@ use crate::args::{DefaultShell, Setting};
 use crate::error::SshdConfigError;
 use crate::formatter::write_config_map_to_text;
 use crate::get::get_sshd_settings;
-use crate::inputs::{CommandInfo, NameValueEntry, RepeatInput, RepeatListInput, SshdCommandArgs};
+use crate::inputs::{CommandInfo, SshdCommandArgs};
 use crate::metadata::{SSHD_CONFIG_HEADER, SSHD_CONFIG_HEADER_VERSION, SSHD_CONFIG_HEADER_WARNING};
+use crate::repeat_keyword::{
+    RepeatInput, RepeatListInput, NameValueEntry,
+    add_or_update_entry, extract_single_keyword, remove_entry, parse_and_validate_entries
+};
 use crate::util::{build_command_info, get_default_sshd_config_path, invoke_sshd_config_validation};
 
 /// Invoke the set command.
@@ -277,86 +281,6 @@ fn write_and_validate_config(config: &mut Map<String, Value>, filepath: Option<&
     Ok(())
 }
 
-/// Extract and validate a single keyword from `additional_properties`.
-fn extract_single_keyword(additional_properties: Map<String, Value>) -> Result<(String, Value), SshdConfigError> {
-    let mut keywords: Vec<(String, Value)> = additional_properties.into_iter().collect();
-
-    if keywords.is_empty() {
-        return Err(SshdConfigError::InvalidInput(t!("set.noKeywordFoundInInput").to_string()));
-    }
-
-    if keywords.len() > 1 {
-        return Err(SshdConfigError::InvalidInput(
-            t!("set.multipleKeywordsNotAllowed", count = keywords.len()).to_string()
-        ));
-    }
-
-    Ok(keywords.remove(0))
-}
-
-/// Find the index of a name-value entry in a keyword array by matching the name field (case-sensitive).
-/// If `match_value` is provided, both name and value must match.
-pub fn find_name_value_entry_index(keyword_array: &[Value], entry_name: &str, match_value: Option<&str>) -> Option<usize> {
-    keyword_array.iter().position(|item| {
-        if let Value::Object(obj) = item {
-            if let Some(Value::String(name)) = obj.get("name") {
-                if name != entry_name {
-                    return false;
-                }
-
-                // If match_value is specified, also check the value field
-                if let Some(expected_value) = match_value {
-                    if let Some(Value::String(actual_value)) = obj.get("value") {
-                        return actual_value == expected_value;
-                    }
-                    return false;
-                }
-
-                return true;
-            }
-        }
-        false
-    })
-}
-
-/// Add or update a name-value entry in the config map.
-fn add_or_update_entry(config: &mut Map<String, Value>, keyword: &str, entry: &NameValueEntry) -> Result<(), SshdConfigError> {
-    if entry.value.is_none() {
-        return Err(SshdConfigError::InvalidInput(
-            t!("set.nameValueEntryRequiresValue").to_string()
-        ));
-    }
-
-    let entry_value = serde_json::to_value(entry)?;
-
-    if let Some(existing) = config.get_mut(keyword) {
-        if let Value::Array(arr) = existing {
-            if let Some(index) = find_name_value_entry_index(arr, &entry.name, None) {
-                // Entry exists, update it
-                arr[index] = entry_value;
-            } else {
-                // Entry doesn't exist, append it
-                arr.push(entry_value);
-            }
-        } else {
-            *existing = Value::Array(vec![entry_value]);
-        }
-    } else {
-        let new_array = Value::Array(vec![entry_value]);
-        config.insert(keyword.to_string(), new_array);
-    }
-    Ok(())
-}
-
-/// Remove a keyword entry based on the keyword's name field.
-fn remove_entry(config: &mut Map<String, Value>, keyword: &str, entry_name: &str) {
-    if let Some(Value::Array(arr)) = config.get_mut(keyword) {
-        if let Some(index) = find_name_value_entry_index(arr, entry_name, None) {
-            arr.remove(index);
-        }
-    }
-}
-
 /// Get existing config from file or return empty map if file doesn't exist.
 fn get_existing_config(cmd_info: &CommandInfo) -> Result<Map<String, Value>, SshdConfigError> {
     let mut get_cmd_info = cmd_info.clone();
@@ -370,32 +294,4 @@ fn get_existing_config(cmd_info: &CommandInfo) -> Result<Map<String, Value>, Ssh
         }
         Err(e) => Err(e),
     }
-}
-
-/// Parse and validate an array of name-value entries.
-fn parse_and_validate_entries(entries_array: &[Value]) -> Result<Vec<NameValueEntry>, SshdConfigError> {
-    let mut entries: Vec<NameValueEntry> = Vec::new();
-
-    for entry_value in entries_array {
-        let entry: NameValueEntry = serde_json::from_value(entry_value.clone())
-            .map_err(|e| SshdConfigError::InvalidInput(t!("set.failedToParse", input = e.to_string()).to_string()))?;
-
-        // Validate required name field
-        if entry.name.is_empty() {
-            return Err(SshdConfigError::InvalidInput(
-                t!("set.entryNameRequired").to_string()
-            ));
-        }
-
-        // Validate value field is present
-        if entry.value.is_none() || entry.value.as_ref().unwrap().is_empty() {
-            return Err(SshdConfigError::InvalidInput(
-                t!("set.entryValueRequired", name = entry.name).to_string()
-            ));
-        }
-
-        entries.push(entry);
-    }
-
-    Ok(entries)
 }
