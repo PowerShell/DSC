@@ -35,6 +35,7 @@ defaultShellEscapeArgsMustBeDWord = "escapeArguments must be a DWord"
 defaultShellMustBeString = "shell must be a string"
 includeWarning = "Include directive found in sshd_config. This resource uses 'sshd -T' to process the overall configuration state, which merges all included files but does not return the Include directive itself"
 invalidSetting = "Invalid setting: %{setting}"
+matchParsingError = "Error parsing match keyword: %{error}"
 traceInput = "Get input:"
 windowsOnly = "Microsoft.OpenSSH.SSHD/Windows is only applicable to Windows"
 
