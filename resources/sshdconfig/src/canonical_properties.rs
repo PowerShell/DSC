@@ -102,7 +102,7 @@ impl CanonicalProperties {
                 Ok(b)
             } else {
                 Err(SshdConfigError::InvalidInput(
-                    t!("util.inputMustBeBoolean", input = prop.as_str()).to_string()
+                    t!("canonical_properties.inputMustBeBoolean", input = prop.as_str()).to_string()
                 ))
             }
         } else {
