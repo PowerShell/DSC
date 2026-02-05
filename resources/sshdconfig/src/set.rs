@@ -295,11 +295,24 @@ fn extract_single_keyword(additional_properties: Map<String, Value>) -> Result<(
 }
 
 /// Find the index of a name-value entry in a keyword array by matching the name field (case-sensitive).
-fn find_name_value_entry_index(keyword_array: &[Value], entry_name: &str) -> Option<usize> {
+/// If `match_value` is provided, both name and value must match.
+pub fn find_name_value_entry_index(keyword_array: &[Value], entry_name: &str, match_value: Option<&str>) -> Option<usize> {
     keyword_array.iter().position(|item| {
         if let Value::Object(obj) = item {
             if let Some(Value::String(name)) = obj.get("name") {
-                return name == entry_name;
+                if name != entry_name {
+                    return false;
+                }
+
+                // If match_value is specified, also check the value field
+                if let Some(expected_value) = match_value {
+                    if let Some(Value::String(actual_value)) = obj.get("value") {
+                        return actual_value == expected_value;
+                    }
+                    return false;
+                }
+
+                return true;
             }
         }
         false
@@ -318,7 +331,7 @@ fn add_or_update_entry(config: &mut Map<String, Value>, keyword: &str, entry: &N
 
     if let Some(existing) = config.get_mut(keyword) {
         if let Value::Array(arr) = existing {
-            if let Some(index) = find_name_value_entry_index(arr, &entry.name) {
+            if let Some(index) = find_name_value_entry_index(arr, &entry.name, None) {
                 // Entry exists, update it
                 arr[index] = entry_value;
             } else {
@@ -338,7 +351,7 @@ fn add_or_update_entry(config: &mut Map<String, Value>, keyword: &str, entry: &N
 /// Remove a keyword entry based on the keyword's name field.
 fn remove_entry(config: &mut Map<String, Value>, keyword: &str, entry_name: &str) {
     if let Some(Value::Array(arr)) = config.get_mut(keyword) {
-        if let Some(index) = find_name_value_entry_index(arr, entry_name) {
+        if let Some(index) = find_name_value_entry_index(arr, entry_name, None) {
             arr.remove(index);
         }
     }
