@@ -548,7 +548,6 @@ match user bob
         let match_array = result.get("match").unwrap().as_array().unwrap();
         assert_eq!(match_array.len(), 1);
         let match_obj = match_array[0].as_object().unwrap();
-        println!("match_obj: {:?}", match_obj);
         let criteria = match_obj.get("criteria").unwrap().as_object().unwrap();
         let user_array = criteria.get("user").unwrap().as_array().unwrap();
         assert_eq!(user_array[0], Value::String("bob".to_string()));

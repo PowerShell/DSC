@@ -14,6 +14,7 @@ use std::{path::PathBuf, string::String};
 use tracing::{debug, info, warn};
 
 use crate::args::{DefaultShell, Setting};
+use crate::canonical_properties::CanonicalProperties;
 use crate::error::SshdConfigError;
 use crate::formatter::write_config_map_to_text;
 use crate::get::get_sshd_settings;
@@ -98,9 +99,7 @@ fn set_sshd_config_repeat_list(input: &str, cmd_info: &CommandInfo) -> Result<Ma
         .map_err(|e| SshdConfigError::InvalidInput(t!("set.failedToParse", input = e.to_string()).to_string()))?;
 
     let (keyword, entries_value) = extract_single_keyword(list_input.additional_properties)?;
-    println!("cmd_info: {:#?}", cmd_info);
     let mut existing_config = get_existing_config(cmd_info)?;
-    println!("Existing config: {:#?}", existing_config);
     // Ensure it's an array
     let Value::Array(ref entries_array) = entries_value else {
         return Err(SshdConfigError::InvalidInput(
@@ -121,7 +120,6 @@ fn set_sshd_config_repeat_list(input: &str, cmd_info: &CommandInfo) -> Result<Ma
             add_or_update_entry(&mut existing_config, &keyword, &entry)?;
         }
     }
-    println!("Existing config after update: {:#?}", existing_config);
     write_and_validate_config(&mut existing_config, cmd_info.metadata.filepath.as_ref())?;
     Ok(Map::new())
 }
@@ -217,10 +215,7 @@ fn set_sshd_config(cmd_info: &mut CommandInfo) -> Result<(), SshdConfigError> {
 /// Write configuration to file after validation.
 fn write_and_validate_config(config: &mut Map<String, Value>, filepath: Option<&PathBuf>) -> Result<(), SshdConfigError> {
     debug!("{}", t!("set.writingTempConfig"));
-    config.remove("_purge");
-    config.remove("_exist");
-    config.remove("_inheritedDefaults");
-    config.remove("_metadata");
+    CanonicalProperties::remove_all(config);
     let mut config_text = SSHD_CONFIG_HEADER.to_string() + "\n" + SSHD_CONFIG_HEADER_VERSION + "\n" + SSHD_CONFIG_HEADER_WARNING + "\n";
     config_text.push_str(&write_config_map_to_text(config)?);
 

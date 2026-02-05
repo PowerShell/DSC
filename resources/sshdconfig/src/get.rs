@@ -13,6 +13,7 @@ use serde_json::{Map, Value};
 use tracing::{debug, trace, warn};
 
 use crate::args::Setting;
+use crate::canonical_properties::CanonicalProperty;
 use crate::error::SshdConfigError;
 use crate::inputs::CommandInfo;
 use crate::parser::parse_text_to_map;
@@ -165,10 +166,10 @@ pub fn get_sshd_settings(cmd_info: &CommandInfo, is_get: bool) -> Result<Map<Str
     }
 
     if cmd_info.metadata.filepath.is_some() {
-        result.insert("_metadata".to_string(), serde_json::to_value(cmd_info.metadata.clone())?);
+        result.insert(CanonicalProperty::Metadata.to_string(), serde_json::to_value(cmd_info.metadata.clone())?);
     }
     if cmd_info.include_defaults && is_get {
-        result.insert("_inheritedDefaults".to_string(), serde_json::to_value(inherited_defaults)?);
+        result.insert(CanonicalProperty::InheritedDefaults.to_string(), serde_json::to_value(inherited_defaults)?);
     }
     Ok(result)
 }

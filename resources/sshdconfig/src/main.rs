@@ -17,6 +17,7 @@ use set::invoke_set;
 use util::{build_command_info, enable_tracing};
 
 mod args;
+mod canonical_properties;
 mod error;
 mod export;
 mod formatter;
