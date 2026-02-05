@@ -177,7 +177,7 @@ mod schema {
         LazyLock::new(|| Validator::new((&*ROOT_SCHEMA).as_value()).unwrap());
 
     static KEYWORD_PATTERN: LazyLock<Regex> =
-        LazyLock::new(|| Regex::new(r"^\w+(\.\w+)+$").expect("pattern is semantic"));
+        LazyLock::new(|| Regex::new(r"^\w+(\.\w+)+$").expect("pattern is valid"));
 
     #[test_case("title", &*ROOT_SCHEMA; "title")]
     #[test_case("description", &*ROOT_SCHEMA; "description")]
@@ -207,18 +207,18 @@ mod schema {
         )
     }
 
-    #[test_case(&json!("^1.2.3") => true ; "single comparator semantic version req string value is semantic")]
-    #[test_case(&json!("^1.2.3, <1.5") => true ; "multi comparator semantic version req string value is semantic")]
-    #[test_case(&json!("=1.2.3a") => true ; "invalid semantic version req string value is semantic")]
-    #[test_case(&json!("2026-01-15") => true ; "iso8601 date full string value is semantic")]
-    #[test_case(&json!("2026-01") => true ; "iso8601 date year month string value is semantic")]
-    #[test_case(&json!("arbitrary_string") => true ; "arbitrary string value is semantic")]
-    #[test_case(&json!(true) => false; "boolean value is arbitrary")]
-    #[test_case(&json!(1) => false; "integer value is arbitrary")]
-    #[test_case(&json!(1.2) => false; "float value is arbitrary")]
-    #[test_case(&json!({"version": "1.2.3"}) => false; "object value is arbitrary")]
-    #[test_case(&json!(["1.2.3"]) => false; "array value is arbitrary")]
-    #[test_case(&serde_json::Value::Null => false; "null value is arbitrary")]
+    #[test_case(&json!("^1.2.3") => true ; "single comparator semantic version req string value is valid")]
+    #[test_case(&json!("^1.2.3, <1.5") => true ; "multi comparator semantic version req string value is valid")]
+    #[test_case(&json!("=1.2.3a") => true ; "invalid semantic version req string value is valid")]
+    #[test_case(&json!("2026-01-15") => true ; "iso8601 date full string value is valid")]
+    #[test_case(&json!("2026-01") => true ; "iso8601 date year month string value is valid")]
+    #[test_case(&json!("arbitrary_string") => true ; "arbitrary string value is valid")]
+    #[test_case(&json!(true) => false; "boolean value is invalid")]
+    #[test_case(&json!(1) => false; "integer value is invalid")]
+    #[test_case(&json!(1.2) => false; "float value is invalid")]
+    #[test_case(&json!({"version": "1.2.3"}) => false; "object value is invalid")]
+    #[test_case(&json!(["1.2.3"]) => false; "array value is invalid")]
+    #[test_case(&serde_json::Value::Null => false; "null value is invalid")]
     fn validation(input_json: &Value) -> bool {
         (&*VALIDATOR).validate(input_json).is_ok()
     }

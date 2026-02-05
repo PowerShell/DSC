@@ -118,7 +118,7 @@ use crate::{dscerror::DscError, schemas::dsc_repo::DscRepoSchema, types::Semanti
 ///
 /// You can specify the minor and patch version segments as a wildcard with the asterisk (`*`)
 /// character, indicating that it should match any version for that segment. If the minor version
-/// segment is a wildcard,the patch version segment must either be a wildcard or omitted.
+/// segment is a wildcard, the patch version segment must either be a wildcard or omitted.
 ///
 /// When specifying an explicit operator, specifying the version for a comparator with wildcards is
 /// equivalent to omitting those version segments. When you define a comparator without an explicit
@@ -144,7 +144,7 @@ use crate::{dscerror::DscError, schemas::dsc_repo::DscRepoSchema, types::Semanti
 /// | `^1.2`     | `>=1.2.0, <2.0.0`     | `1.2`, `^1.2.*`                                                |
 /// | `^1.2.*`   | `>=1.2.0, <2.0.0`     | `1.2`                                                          |
 /// | `=1`       | `>=1.0.0, <2.0.0`     | `1`, `1.*`, `1.*.*`, `^1`, `^1.*`, `^1.*.*`, `=1.*`, `=1.*.*`  |
-/// | `=1.*`     | `>=1,0.0, <2.0.0`     | `1`, `1.*`, `1.*.*`, `^1`, `^1.*`, `^1.*.*`, `=1`, `=1.*.*`    |
+/// | `=1.*`     | `>=1.0.0, <2.0.0`     | `1`, `1.*`, `1.*.*`, `^1`, `^1.*`, `^1.*.*`, `=1`, `=1.*.*`    |
 /// | `=1.*.*`   | `>=1.0.0, <2.0.0`     | `1`, `1.*`, `1.*.*`, `^1`, `^1.*`, `^1.*.*`, `=1`, `=1.*`      |
 /// | `=1.2`     | `>=1.2.0, <1.3.0`     | `1.2.*`, `=1.2.*`                                              |
 /// | `=1.2.*`   | `>=1.2.0, <1.3.0`     | `1.2.*`, `=1.2`                                                |
@@ -263,15 +263,15 @@ use crate::{dscerror::DscError, schemas::dsc_repo::DscRepoSchema, types::Semanti
 ///   be less than the version for this comparator. Versions equal to or greater than the
 ///   comparator version don't match the comparator.
 ///
-///   | Literal comparator | Effective requirement | Valid versions                         | Invalid versions                                |
-///   |:------------------:|:---------------------:|:---------------------------------------|:------------------------------------------------|
-///   | `<1`               | `<1.0.0`               |`0.1.0`                                 | `1.0.0`, `1.2.0`, `1.2.3`, `0.1.0-rc.1`         |
-///   | `<1.*`             | `<1.0.0`               |`0.1.0`                                 | `1.0.0`, `1.2.0`, `1.2.3`, `0.1.0-rc.1`         |
-///   | `<1.*.*`           | `<1.0.0`               |`0.1.0`                                 | `1.0.0`, `1.2.0`, `1.2.3`, `0.1.0-rc.1`         |
-///   | `<1.2`             | `<1.2.0`               | 0.1.0`, `1.0.0`, `1.1.1`               | `1.2.0`, `1.2.3`, `1.3.0`, `1.2.0-rc.1`,        |
-///   | `<1.2.*`           | `<1.2.0`               | 0.1.0`, `1.0.0`, `1.1.1`               | `1.2.0`, `1.2.3`, `1.3.0`, `1.2.0-rc.1`,        |
-///   | `<1.2.3`           | `<1.2.3`               | 0.1.0`, `1.0.0`, `1.2.0`               | `1.2.3`, `1.3.0`, `1.2.3-rc.1`                  |
-///   | `<1.2.3-rc.2`      | `<1.2.3-rc.2`          | 0.1.0`, `1.0.0`, `1.2.0`, `1.2.3-rc.1` | `1.2.3`, `1.3.0`, `1.0.0-rc.1`, ``1.2.3-rc.2  |
+///   | Literal comparator | Effective requirement  | Valid versions                          | Invalid versions                             |
+///   |:------------------:|:----------------------:|:----------------------------------------|:---------------------------------------------|
+///   | `<1`               | `<1.0.0`               | `0.1.0`                                 | `1.0.0`, `1.2.0`, `1.2.3`, `0.1.0-rc.1`      |
+///   | `<1.*`             | `<1.0.0`               | `0.1.0`                                 | `1.0.0`, `1.2.0`, `1.2.3`, `0.1.0-rc.1`      |
+///   | `<1.*.*`           | `<1.0.0`               | `0.1.0`                                 | `1.0.0`, `1.2.0`, `1.2.3`, `0.1.0-rc.1`      |
+///   | `<1.2`             | `<1.2.0`               | `0.1.0`, `1.0.0`, `1.1.1`               | `1.2.0`, `1.2.3`, `1.3.0`, `1.2.0-rc.1`,     |
+///   | `<1.2.*`           | `<1.2.0`               | `0.1.0`, `1.0.0`, `1.1.1`               | `1.2.0`, `1.2.3`, `1.3.0`, `1.2.0-rc.1`,     |
+///   | `<1.2.3`           | `<1.2.3`               | `0.1.0`, `1.0.0`, `1.2.0`               | `1.2.3`, `1.3.0`, `1.2.3-rc.1`               |
+///   | `<1.2.3-rc.2`      | `<1.2.3-rc.2`          | `0.1.0`, `1.0.0`, `1.2.0`, `1.2.3-rc.1` | `1.2.3`, `1.3.0`, `1.0.0-rc.1`, `1.2.3-rc.2` |
 ///
 /// - <a id="operator-less-than-or-equal-to"></a>Less than or equal to (`<=`) - Indicates that the
 ///   [`SemanticVersion`] must be any version up to the version for this comparator. Versions
@@ -355,7 +355,7 @@ use crate::{dscerror::DscError, schemas::dsc_repo::DscRepoSchema, types::Semanti
 /// 1. If the version doesn't define any wildcards, the implicit operator for the comparator is
 ///    the caret operator. The following sets of comparators are parsed identically:
 ///
-///    - `1` and `^ `
+///    - `1` and `^1`
 ///    - `1.2` and `^1.2`
 ///    - `1.2.3` and `^1.2.3`
 ///    - `1.2.3-rc.1` and `^1.2.3-rc.1`
@@ -657,7 +657,7 @@ impl SemanticVersionReq {
     /// |:----------------:|:-----:|:------------------------------------------------------------------------------------|
     /// |       `1.*`      |  Yes  | Defines a literal major version segment followed by a wildcard minor version.       |
     /// |      `1.2.*`     |  Yes  | Defines literal major and minor segments followed by a wildcard patch version.      |
-    /// |      `1.*.*`     |   No  | Defines more than one wildcard, which is forbidden.                                 |
+    /// |      `1.*.*`     |  Yes  | Equivalent to `1.*` - both wildcards match any minor and patch version.             |
     /// |      `1.*.3`     |   No  | If the version includes any wildcards, it must be the last defined version segment. |
     /// |     `1.2.3-*`    |   No  | Defines the prerelease segment as a wildcard, which is forbidden.                   |
     pub const WILDCARD_VERSION_PATTERN: &str = const_str::concat!(
@@ -771,10 +771,7 @@ impl FromStr for SemanticVersionReq {
 impl TryFrom<String> for SemanticVersionReq {
     type Error = DscError;
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        match semver::VersionReq::parse(value.as_str()) {
-            Ok(r) => Ok(Self(r)),
-            Err(e) => Err(DscError::SemVer(e)),
-        }
+        Self::parse(value.as_str())
     }
 }
 

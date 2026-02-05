@@ -190,7 +190,7 @@ use serde::{Deserialize, Serialize};
 /// let v2_0_0: SemanticVersion = "2.0.0".parse().unwrap();
 /// let v1_2_3: SemanticVersion = "1.2.3".parse().unwrap();
 /// let v1_2_3_pre: SemanticVersion = "1.2.3-rc.1".parse().unwrap();
-/// let v1_2_3_build: SemanticVersion = "1.2.3+rci.1".parse().unwrap();
+/// let v1_2_3_build: SemanticVersion = "1.2.3+ci.1".parse().unwrap();
 /// let v1_2_3_pre_build: SemanticVersion = "1.2.3-rc.1+ci.1".parse().unwrap();
 ///
 /// // Comparisons of stable versions work as expected
@@ -573,7 +573,7 @@ impl PartialEq<str> for SemanticVersion {
 
 impl PartialEq<SemanticVersion> for str {
     fn eq(&self, other: &SemanticVersion) -> bool {
-        match SemanticVersion::parse(&self) {
+        match SemanticVersion::parse(self) {
             Ok(version) => version.eq(other),
             Err(_) => false,
         }

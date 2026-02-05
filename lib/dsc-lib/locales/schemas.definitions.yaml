@@ -58,14 +58,7 @@ schemas:
           exactly the same characters - the comparison is case-sensitive. If you're defining a
           resource that doesn't follow semantic versioning, consider defining the version as an
           [ISO 8601 date][04], like `2026-01-15`. When you do, DSC can correctly determine that a
-          later date should be treated as a newer version. stringVariant: title: en-us: Arbitrary
-          version string description: en-us: >- Defines the version for the type as an arbitrary
-          string. deprecationMessage: en-us: >- Arbitrary string versions for resources are only in
-          place for compatibility with ARM. Resource authors should define their resources with
-          valid semantic versions, like `1.2.3`. markdownDescription: en-us: |- Defines the version
-          for the type as an arbitrary string. When the version for the type isn't a valid semantic
-          version, DSC treats the version as a string. This enables DSC to support
-          non-semantically-versioned types, such as using a release date as the version.
+          later date should be treated as a newer version.
 
           [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/semver
           [02]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/semverReq
@@ -151,7 +144,7 @@ schemas:
           version requirements.
 
           [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/resourceVersion
-          [02]:https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/semverReq
+          [02]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/semverReq
       semanticVariant:
         title:
           en-us: Semantic resource version requirement
@@ -196,12 +189,14 @@ schemas:
                version and this version requirement are exactly the same. The comparison is
                case-sensitive.
 
+            [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/resourceVersion
+
     semver:
       title:
         en-us: Semantic version
       description:
         en-us: |-
-          Defines a valid semantic version (semver)as a string.
+          Defines a valid semantic version (semver) as a string.
 
           For reference, see https://semver.org/
       markdownDescription:
