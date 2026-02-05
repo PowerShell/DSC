@@ -118,6 +118,9 @@ pub enum DscError {
     #[error("{t}: '{0}'", t = t!("dscerror.resourceVersionToSemverConversion"))]
     ResourceVersionToSemverConversion(String),
 
+    #[error("{t}: '{0}'", t = t!("dscerror.resourceVersionReqToSemverConversion"))]
+    ResourceVersionReqToSemverConversion(String),
+
     #[error("{t}: {0}", t = t!("dscerror.schema"))]
     Schema(String),
 

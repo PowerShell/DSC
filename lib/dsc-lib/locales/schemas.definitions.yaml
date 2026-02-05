@@ -119,6 +119,83 @@ schemas:
 
             [01]: https://doc.rust-lang.org/std/cmp/trait.Ord.html#lexicographical-comparison
 
+    resourceVersionReq:
+      title:
+        en-us: Resource version requirement
+      description:
+        en-us: >-
+          Defines one or more limitations for a resource version to enable version pinning.
+      markdownDescription:
+        en-us: |-
+          Defines one or more limitations for a [resource version][01] to enable version pinning.
+
+          DSC supports both semantic versioning and arbitrary versioning for resources. Semantic
+          versioning is the preferred and recommended versioning strategy. DSC only supports
+          arbitrary versioning for compatibility scenarios.
+
+          Because DSC supports arbitrary string versions for compatibility, version requirements
+          must also support arbitrary string versions.
+
+          When a resource version requirement is semantic, it behaves like a
+          [semantic version requirement][02] and only matches resource versions that are semantic
+          _and_ valid for the given requirement. Arbitrary string versions never match a semantic
+          resource version requirement.
+
+          Similarly, when a resource version requirement is an arbitrary string, it can never match
+          a semantically versioned resource. Instead, it matches an arbitrary resource version when
+          the arbitrary string version is _exactly_ the same as the arbitrary resource version
+          requirement.
+
+          Arbitrary resource versions and resource version requirements are only defined for
+          compatibility scenarios. You should use semantic versions for resources and resource
+          version requirements.
+
+          [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/resourceVersion
+          [02]:https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/semverReq
+      semanticVariant:
+        title:
+          en-us: Semantic resource version requirement
+        description:
+          en-us: >-
+            Defines the required version range for a resource using the Rust version requirement
+            syntax.
+        markdownDescription:
+          en-us: |-
+            Defines the required version range for a resource using the Rust version requirement
+            syntax. This is the preferred and recommended way to pin versions for DSC resources.
+
+            For more information about defining semantic version requirements with DSC, see
+            [Defining semantic version requirements][01].
+
+            [01]: https://learn.microsoft.com/en-us/powershell/dsc/concepts/defining-semver-reqs.md
+      arbitraryVariant:
+        title:
+          en-us: Arbitrary resource version requirement
+        description:
+          en-us: >-
+            Defines the required version for the resource as an arbitrary string.
+        deprecationMessage:
+          en-us: >-
+            Defining a resource version requirement as an arbitrary string is supported only for
+            compatibility purposes. If possible, define your version requirement as a valid
+            semantic version requirement. For more information about defining semantic version
+            requirements with DSC, see
+            [Defining semantic version requirements](https://learn.microsoft.com/en-us/powershell/dsc/concepts/defining-semver-reqs.md)
+        markdownDescription:
+          en-us: |-
+            Defines the required version for the resource as an arbitrary string.
+
+            DSC considers any requirement that can't be parsed as a semantic version requirement as
+            an arbitrary resource version requirement. This kind of requirement remains supported
+            for compatibility purposes but is _not_ recommended for production usage.
+
+            When a resource version requirement is defined as an arbitrary string:
+
+            1. It can never match a semantically versioned resource.
+            1. It only matches a resource with an [arbitrary string version][01] when the resource
+               version and this version requirement are exactly the same. The comparison is
+               case-sensitive.
+
     semver:
       title:
         en-us: Semantic version
