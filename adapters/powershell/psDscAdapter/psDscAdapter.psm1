@@ -3,20 +3,6 @@
 
 $script:CurrentCacheSchemaVersion = 3
 
-function Write-DscTrace {
-    param(
-        [Parameter(Mandatory = $false)]
-        [ValidateSet('Error', 'Warn', 'Info', 'Debug', 'Trace')]
-        [string]$Operation = 'Debug',
-
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
-        [string]$Message
-    )
-
-    $trace = @{$Operation.ToLower() = $Message } | ConvertTo-Json -Compress
-    $host.ui.WriteErrorLine($trace)
-}
-
 function Import-PSDSCModule {
     $m = Get-Module PSDesiredStateConfiguration -ListAvailable | Sort-Object -Descending | Select-Object -First 1
     $PSDesiredStateConfiguration = Import-Module $m -Force -PassThru
@@ -105,13 +91,13 @@ function FindAndParseResourceDefinitions {
         return
     }
 
-    "Loading resources from file '$filePath'" | Write-DscTrace -Operation Trace
+    Write-Debug ("Loading resources from file '$filePath'")
     #TODO: Ensure embedded instances in properties are working correctly
     [System.Management.Automation.Language.Token[]] $tokens = $null
     [System.Management.Automation.Language.ParseError[]] $errors = $null
     $ast = [System.Management.Automation.Language.Parser]::ParseFile($filePath, [ref]$tokens, [ref]$errors)
     foreach ($e in $errors) {
-        $e | Out-String | Write-DscTrace -Operation Error
+        $e | Out-String | Write-Error
     }
 
     $typeDefinitions = $ast.FindAll(
@@ -155,7 +141,7 @@ function GetExportMethod ($ResourceType, $HasFilterProperties, $ResourceTypeName
     $method = $null
 
     if ($HasFilterProperties) {
-        "Properties provided for filtered export" | Write-DscTrace -Operation Trace
+        Write-Verbose "Properties provided for filtered export"
         $method = foreach ($mt in $methods) {
             if ($mt.GetParameters().Count -gt 0) {
                 $mt
@@ -164,12 +150,12 @@ function GetExportMethod ($ResourceType, $HasFilterProperties, $ResourceTypeName
         }
 
         if ($null -eq $method) {
-            "Export method with parameters not implemented by resource '$ResourceTypeName'. Filtered export is not supported." | Write-DscTrace -Operation Error
+            Write-Error ("Export method with parameters not implemented by resource '$ResourceTypeName'. Filtered export is not supported.")
             exit 1
         }
     }
     else {
-        "No properties provided, using parameterless export" | Write-DscTrace -Operation Trace
+        Write-Verbose "No properties provided, using parameterless export"
         $method = foreach ($mt in $methods) {
             if ($mt.GetParameters().Count -eq 0) {
                 $mt
@@ -178,7 +164,7 @@ function GetExportMethod ($ResourceType, $HasFilterProperties, $ResourceTypeName
         }
 
         if ($null -eq $method) {
-            "Export method not implemented by resource '$ResourceTypeName'" | Write-DscTrace -Operation Error
+            Write-Error ("Export method not implemented by resource '$ResourceTypeName'")
             exit 1
         }
     }
@@ -193,12 +179,12 @@ function LoadPowerShellClassResourcesFromModule {
         [PSModuleInfo]$moduleInfo
     )
 
-    "Loading resources from module '$($moduleInfo.Path)'" | Write-DscTrace -Operation Trace
+    Write-Debug ("Loading resources from module '$($moduleInfo.Path)'")
 
     if ($moduleInfo.RootModule) {
         if (".psm1", ".ps1" -notcontains ([System.IO.Path]::GetExtension($moduleInfo.RootModule)) -and
             (-not $moduleInfo.NestedModules)) {
-            "RootModule is neither psm1 nor ps1 '$($moduleInfo.RootModule)'" | Write-DscTrace -Operation Trace
+            Write-Debug ("RootModule is neither psm1 nor ps1 '$($moduleInfo.RootModule)'")
             return [System.Collections.Generic.List[DscResourceInfo]]::new()
         }
 
@@ -255,13 +241,13 @@ function Invoke-DscCacheRefresh {
     }
 
     if (Test-Path $cacheFilePath) {
-        "Reading from Get-DscResource cache file $cacheFilePath" | Write-DscTrace
+        Write-Verbose ("Reading from Get-DscResource cache file $cacheFilePath")
 
         $cache = Get-Content -Raw $cacheFilePath | ConvertFrom-Json
 
         if ($cache.CacheSchemaVersion -ne $script:CurrentCacheSchemaVersion) {
             $refreshCache = $true
-            "Incompatible version of cache in file '" + $cache.CacheSchemaVersion + "' (expected '" + $script:CurrentCacheSchemaVersion + "')" | Write-DscTrace
+            Write-Verbose ("Incompatible version of cache in file '" + $cache.CacheSchemaVersion + "' (expected '" + $script:CurrentCacheSchemaVersion + "')")
         }
         else {
             $dscResourceCacheEntries = $cache.ResourceCache
@@ -270,10 +256,10 @@ function Invoke-DscCacheRefresh {
                 # if there is nothing in the cache file - refresh cache
                 $refreshCache = $true
 
-                "Filtered DscResourceCache cache is empty" | Write-DscTrace
+                Write-Debug "Filtered DscResourceCache cache is empty"
             }
             else {
-                "Checking cache for stale entries" | Write-DscTrace
+                Write-Debug "Checking cache for stale entries"
 
                 foreach ($cacheEntry in $dscResourceCacheEntries) {
 
@@ -289,13 +275,13 @@ function Invoke-DscCacheRefresh {
                             $cache_LastWriteTime = $cache_LastWriteTime.AddTicks( - ($cache_LastWriteTime.Ticks % [TimeSpan]::TicksPerSecond));
 
                             if (-not ($file_LastWriteTime.Equals($cache_LastWriteTime))) {
-                                "Detected stale cache entry '$($_.Name)'" | Write-DscTrace
+                                Write-Debug ("Detected stale cache entry '$($_.Name)'")
                                 $refreshCache = $true
                                 break
                             }
                         }
                         else {
-                            "Detected non-existent cache entry '$($_.Name)'" | Write-DscTrace
+                            Write-Debug ("Detected non-existent cache entry '$($_.Name)'")
                             $refreshCache = $true
                             break
                         }
@@ -305,7 +291,7 @@ function Invoke-DscCacheRefresh {
                 }
 
                 if (-not $refreshCache) {
-                    "Checking cache for stale PSModulePath" | Write-DscTrace
+                    Write-Debug "Checking cache for stale PSModulePath"
 
                     $m = $env:PSModulePath -split [IO.Path]::PathSeparator | % { Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue }
 
@@ -314,8 +300,7 @@ function Invoke-DscCacheRefresh {
                     $hs_cache.SymmetricExceptWith($hs_live)
                     $diff = $hs_cache
 
-                    "PSModulePath diff '$diff'" | Write-DscTrace
-
+                    Write-Debug ("PSModulePath diff '$diff'")
                     if ($diff.Count -gt 0) {
                         $refreshCache = $true
                     }
@@ -324,12 +309,12 @@ function Invoke-DscCacheRefresh {
         }
     }
     else {
-        "Cache file not found '$cacheFilePath'" | Write-DscTrace
+        Write-Verbose ("Cache file not found '$cacheFilePath'")
         $refreshCache = $true
     }
 
     if ($refreshCache) {
-        'Constructing Get-DscResource cache' | Write-DscTrace
+        Write-Verbose "Constructing Get-DscResource cache"
 
         # create a list object to store cache of Get-DscResource
         [dscResourceCacheEntry[]]$dscResourceCacheEntries = [System.Collections.Generic.List[Object]]::new()
@@ -346,7 +331,7 @@ function Invoke-DscCacheRefresh {
                     # from several modules with the same name select the one with the highest version
                     $selectedMod = $modules | Where-Object Name -EQ $mod.Name
                     if ($selectedMod.Count -gt 1) {
-                        "Found $($selectedMod.Count) modules with name '$($mod.Name)'" | Write-DscTrace -Operation Trace
+                        Write-Debug ("Found $($selectedMod.Count) modules with name '$($mod.Name)'")
                         $selectedMod = $selectedMod | Sort-Object -Property Version -Descending | Select-Object -First 1
                     }
 
@@ -382,7 +367,7 @@ function Invoke-DscCacheRefresh {
 
         # save cache for future use
         # TODO: replace this with a high-performance serializer
-        "Saving Get-DscResource cache to '$cacheFilePath'" | Write-DscTrace
+        Write-Debug ("Saving Get-DscResource cache to '$cacheFilePath'")
         $jsonCache = $cache | ConvertTo-Json -Depth 90
         New-Item -Force -Path $cacheFilePath -Value $jsonCache -Type File | Out-Null
     }
@@ -435,10 +420,10 @@ function Invoke-DscOperation {
     )
 
     $osVersion = [System.Environment]::OSVersion.VersionString
-    'OS version: ' + $osVersion | Write-DscTrace
+    Write-Debug ('OS version: ' + $osVersion)
 
     $psVersion = $PSVersionTable.PSVersion.ToString()
-    'PowerShell version: ' + $psVersion | Write-DscTrace
+    Write-Debug ('PowerShell version: ' + $psVersion)
 
     # get details from cache about the DSC resource, if it exists
     $cachedDscResourceInfo = $dscResourceCache | Where-Object Type -EQ $DesiredState.type | ForEach-Object DscResourceInfo | Select-Object -First 1
@@ -465,7 +450,7 @@ function Invoke-DscOperation {
 
                     $ValidProperties = $cachedDscResourceInfo.Properties.Name
 
-                    $ValidProperties | ConvertTo-Json | Write-DscTrace -Operation Trace
+                    Write-Debug ("Valid properties: " + ($ValidProperties | ConvertTo-Json))
 
                     if ($DesiredState.properties) {
                         # set each property of $dscResourceInstance to the value of the property in the $desiredState INPUT object
@@ -475,7 +460,7 @@ function Invoke-DscOperation {
                             if ($_.Value -is [System.Management.Automation.PSCustomObject]) {
                                 if ($validateProperty -and $validateProperty.PropertyType -in @('PSCredential', 'System.Management.Automation.PSCredential')) {
                                     if (-not $_.Value.Username -or -not $_.Value.Password) {
-                                        "Credential object '$($_.Name)' requires both 'username' and 'password' properties" | Write-DscTrace -Operation Error
+                                        Write-Error ("Credential object '$($_.Name)' requires both 'username' and 'password' properties")
                                         exit 1
                                     }
                                     $dscResourceInstance.$($_.Name) = [System.Management.Automation.PSCredential]::new($_.Value.Username, (ConvertTo-SecureString -AsPlainText $_.Value.Password -Force))
@@ -548,22 +533,22 @@ function Invoke-DscOperation {
                 }
                 catch {
 
-                    'Exception: ' + $_.Exception.Message | Write-DscTrace -Operation Error
+                    Write-Error ('Exception: ' + $_.Exception.Message)
                     exit 1
                 }
             }
             Default {
-                'Resource ImplementationDetail not supported: ' + $cachedDscResourceInfo.ImplementationDetail | Write-DscTrace -Operation Error
+                Write-Error ('Resource ImplementationDetail not supported: ' + $cachedDscResourceInfo.ImplementationDetail)
                 exit 1
             }
         }
 
-        "Output: $($addToActualState | ConvertTo-Json -Depth 10 -Compress)" | Write-DscTrace -Operation Trace
+        Write-Debug ("Output: $($addToActualState | ConvertTo-Json -Depth 10 -Compress)")
         return $addToActualState
     }
     else {
         $dsJSON = $DesiredState | ConvertTo-Json -Depth 10
-        'Can not find type "' + $DesiredState.type + '" for resource "' + $dsJSON + '". Please ensure that Get-DscResource returns this resource type.' | Write-DscTrace -Operation Error
+        Write-Error ('Can not find type "' + $DesiredState.type + '" for resource "' + $dsJSON + '". Please ensure that Get-DscResource returns this resource type.')
         exit 1
     }
 }

@@ -54,10 +54,14 @@ class TestClassResource : BaseTestClass
 
     [void] Set()
     {
+        Write-Host "This is a Host message"
+        Write-Information "This is an Information message"
+        Write-Error "This is an Error message"
     }
 
     [bool] Test()
     {
+        Write-Warning "This is a Warning message"
         if (($this.Name -eq "TestClassResource1") -and ($this.Prop1 -eq "ValueForProp1"))
         {
             return $true
@@ -70,6 +74,7 @@ class TestClassResource : BaseTestClass
 
     [TestClassResource] Get()
     {
+        Write-Verbose "This is a Verbose message"
         if ($this.Name -eq "TestClassResource1")
         {
             $this.Prop1 = "ValueForProp1"
@@ -88,6 +93,7 @@ class TestClassResource : BaseTestClass
 
     static [TestClassResource[]] Export()
     {
+        Write-Debug "This is a Debug message"
         $resultList = [List[TestClassResource]]::new()
         $resultCount = 5
         if ($env:TestClassResourceResultCount) {

@@ -26,8 +26,8 @@ Describe 'PowerShell adapter resource tests' {
 
   It 'Get works on config with class-based resources' {
 
-    $r = Get-Content -Raw $pwshConfigPath | dsc config get -f -
-    $LASTEXITCODE | Should -Be 0
+    $r = Get-Content -Raw $pwshConfigPath | dsc -l trace config get -f - 2> $TestDrive/tracing.txt
+    $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw -Path $TestDrive/tracing.txt)
     $res = $r | ConvertFrom-Json
     $res.results[0].result.actualState.result[0].properties.Prop1 | Should -BeExactly 'ValueForProp1'
     $res.results[0].result.actualState.result[0].properties.EnumProp | Should -BeExactly 'Expected'
@@ -126,7 +126,7 @@ Describe 'PowerShell adapter resource tests' {
     $res.resources[0].properties.result.count | Should -Be 1
     $res.resources[0].properties.result[0].Name | Should -Be "FilteredExport"
     $res.resources[0].properties.result[0].Prop1 | Should -Be "Filtered Property for FilteredExport"
-    "$TestDrive/export_trace.txt" | Should -FileContentMatch "Properties provided for filtered export"
+    "$TestDrive/export_trace.txt" | Should -FileContentMatch "Properties provided for filtered export" -Because (Get-Content -Raw -Path $TestDrive/export_trace.txt)
   }
 
   It 'Export fails when filtered export is requested but not implemented' {
