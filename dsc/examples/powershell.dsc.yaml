@@ -4,18 +4,14 @@ metadata:
   Microsoft.DSC:
     securityContext: elevated
 resources:
-- name: Use class PowerShell resources
-  type: Microsoft.Windows/WindowsPowerShell
+- name: OpenSSH service
+  type: PsDesiredStateConfiguration/Service
   properties:
-    resources:
-    - name: OpenSSH service
-      type: PsDesiredStateConfiguration/Service
-      properties:
-        Name: sshd
-    - name: Administrator
-      type: PsDesiredStateConfiguration/User
-      properties:
-        UserName: administrator
+    Name: sshd
+- name: Administrator
+  type: PsDesiredStateConfiguration/User
+  properties:
+    UserName: administrator
 - name: current user registry
   type: Microsoft.Windows/Registry
   properties:

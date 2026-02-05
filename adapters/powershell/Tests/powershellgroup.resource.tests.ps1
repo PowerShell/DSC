@@ -377,4 +377,48 @@ Describe 'PowerShell adapter resource tests' {
         $res = $r | ConvertFrom-Json
         $res.actualState.SecureStringProp | Should -Not -BeNullOrEmpty
     }
+
+    Context 'Tracing works' {
+        It 'Error messages come from Write-Error' {
+            $null = dsc -l error resource set -r TestClassResource/TestClassResource -i '{"Name":"TestClassResource1"}' 2> $TestDrive/error.log
+            $logContent = Get-Content -Path $TestDrive/error.log -Raw
+            $LASTEXITCODE | Should -Be 2 -Because $logContent
+            $logContent | Should -Match 'ERROR .*? This is an Error message' -Because $logContent
+        }
+
+        It 'Warning messages come from Write-Warning' {
+            $null = "{'Name':'TestClassResource1','Prop1':'ValueForProp1'}" | dsc -l warn resource test -r 'TestClassResource/TestClassResource' -f - 2> $TestDrive/warning.log
+            $logContent = Get-Content -Path $TestDrive/warning.log -Raw
+            $LASTEXITCODE | Should -Be 0 -Because $logContent
+            $logContent | Should -Match 'WARN .*? This is a Warning message' -Because $logContent
+        }
+
+        It 'Info messages come from Write-Host' {
+            $null = "{'Name':'TestClassResource1'}" | dsc -l info resource set -r 'TestClassResource/TestClassResource' -f - 2> $TestDrive/verbose.log
+            $logContent = Get-Content -Path $TestDrive/verbose.log -Raw
+            $LASTEXITCODE | Should -Be 2 -Because $logContent
+            $logContent | Should -Match 'INFO .*? This is a Host message' -Because $logContent
+        }
+
+        It 'Debug messages come from Write-Verbose' {
+            $null = "{'Name':'TestClassResource1'}" | dsc -l debug resource get -r 'TestClassResource/TestClassResource' -f - 2> $TestDrive/debug.log
+            $logContent = Get-Content -Path $TestDrive/debug.log -Raw
+            $LASTEXITCODE | Should -Be 0 -Because $logContent
+            $logContent | Should -Match 'DEBUG .*? This is a Verbose message' -Because $logContent
+        }
+
+        It 'Trace messages come from Write-Debug' {
+            $null = dsc -l trace resource export -r TestClassResource/TestClassResource 2> $TestDrive/trace.log
+            $logContent = Get-Content -Path $TestDrive/trace.log -Raw
+            $LASTEXITCODE | Should -Be 2 -Because $logContent
+            $logContent | Should -Match 'TRACE .*? This is a Debug message' -Because $logContent
+        }
+
+        It 'Trace messages come from Write-Information' {
+            $null = dsc -l trace resource set -r TestClassResource/TestClassResource -i '{"Name":"TestClassResource1"}' 2> $TestDrive/trace_info.log
+            $logContent = Get-Content -Path $TestDrive/trace_info.log -Raw
+            $LASTEXITCODE | Should -Be 2 -Because $logContent
+            $logContent | Should -Match 'TRACE .*? This is an Information message' -Because $logContent
+        }
+    }
 }
