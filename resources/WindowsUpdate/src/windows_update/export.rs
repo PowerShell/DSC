@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use rust_i18n::t;
 use windows::{
     core::*,
     Win32::Foundation::*,
@@ -15,22 +16,24 @@ pub fn handle_export(input: &str) -> Result<String> {
     // Parse optional filter input as UpdateList
     let update_list: UpdateList = if input.trim().is_empty() {
         UpdateList {
+            metadata: None,
             updates: vec![UpdateInfo {
-                title: None,
-                id: None,
-                is_installed: None,
                 description: None,
+                id: None,
+                installation_behavior: None,
+                is_installed: None,
                 is_uninstallable: None,
                 kb_article_ids: None,
                 recommended_hard_disk_space: None,
                 msrc_severity: None,
                 security_bulletin_ids: None,
+                title: None,
                 update_type: None,
             }]
         }
     } else {
         serde_json::from_str(input)
-            .map_err(|e| Error::new(E_INVALIDARG, format!("Failed to parse input: {}", e)))?
+            .map_err(|e| Error::new(E_INVALIDARG.into(), t!("export.failedParseInput", err = e.to_string()).to_string()))?
     };
     
     let filters = &update_list.updates;
@@ -191,43 +194,43 @@ pub fn handle_export(input: &str) -> Result<String> {
                     // Construct error message with filter criteria
                     let mut criteria_parts = Vec::new();
                     if let Some(title) = &filter.title {
-                        criteria_parts.push(format!("title '{}'", title));
+                        criteria_parts.push(t!("export.criteriaTitle", value = title).to_string());
                     }
                     if let Some(id) = &filter.id {
-                        criteria_parts.push(format!("id '{}'", id));
+                        criteria_parts.push(t!("export.criteriaId", value = id).to_string());
                     }
                     if let Some(is_installed) = filter.is_installed {
-                        criteria_parts.push(format!("is_installed {}", is_installed));
+                        criteria_parts.push(t!("export.criteriaIsInstalled", value = is_installed).to_string());
                     }
                     if let Some(description) = &filter.description {
-                        criteria_parts.push(format!("description '{}'", description));
+                        criteria_parts.push(t!("export.criteriaDescription", value = description).to_string());
                     }
                     if let Some(is_uninstallable) = filter.is_uninstallable {
-                        criteria_parts.push(format!("is_uninstallable {}", is_uninstallable));
+                        criteria_parts.push(t!("export.criteriaIsUninstallable", value = is_uninstallable).to_string());
                     }
                     if let Some(kb_ids) = &filter.kb_article_ids {
-                        criteria_parts.push(format!("kb_article_ids {:?}", kb_ids));
+                        criteria_parts.push(t!("export.criteriaKbArticleIds", value = format!("{:?}", kb_ids)).to_string());
                     }
                     if let Some(space) = filter.recommended_hard_disk_space {
-                        criteria_parts.push(format!("recommended_hard_disk_space {}", space));
+                        criteria_parts.push(t!("export.criteriaRecommendedHardDiskSpace", value = space).to_string());
                     }
                     if let Some(severity) = &filter.msrc_severity {
-                        criteria_parts.push(format!("msrc_severity {:?}", severity));
+                        criteria_parts.push(t!("export.criteriaMsrcSeverity", value = format!("{:?}", severity)).to_string());
                     }
                     if let Some(bulletin_ids) = &filter.security_bulletin_ids {
-                        criteria_parts.push(format!("security_bulletin_ids {:?}", bulletin_ids));
+                        criteria_parts.push(t!("export.criteriaSecurityBulletinIds", value = format!("{:?}", bulletin_ids)).to_string());
                     }
                     if let Some(update_type) = &filter.update_type {
-                        criteria_parts.push(format!("update_type {:?}", update_type));
+                        criteria_parts.push(t!("export.criteriaUpdateType", value = format!("{:?}", update_type)).to_string());
                     }
                     
                     let criteria_str = criteria_parts.join(", ");
-                    let error_msg = format!("No matching update found for filter {}: {}", filter_index, criteria_str);
+                    let error_msg = t!("export.noMatchingUpdateForFilter", index = filter_index, criteria = criteria_str).to_string();
                     
                     // Emit JSON error to stderr
                     eprintln!("{{\"error\":\"{}\"}}", error_msg);
                     
-                    return Err(Error::new(E_FAIL, error_msg));
+                    return Err(Error::new(E_FAIL.into(), error_msg));
                 }
             }
         }
@@ -245,10 +248,11 @@ pub fn handle_export(input: &str) -> Result<String> {
     match result {
         Ok(updates) => {
             let result = UpdateList {
+                metadata: None,
                 updates
             };
             serde_json::to_string(&result)
-                .map_err(|e| Error::new(E_FAIL, format!("Failed to serialize output: {}", e)))
+                .map_err(|e| Error::new(E_FAIL.into(), t!("export.failedSerializeOutput", err = e.to_string()).to_string()))
         }
         Err(e) => Err(e),
     }

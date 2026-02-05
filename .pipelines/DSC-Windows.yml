@@ -50,7 +50,7 @@ steps:
     $env:PATH += ";$LLVMBIN"
     write-verbose -verbose (gcm clang.exe | out-string)
     Write-Verbose -Verbose "Building for ${{ parameters.buildName }}"
-    ./packaging.ps1 -Release -Architecture ${{ parameters.buildName }} -SkipLinkCheck
+    ./build.ps1 -Release -Architecture ${{ parameters.buildName }} -SkipLinkCheck -Verbose
   displayName: 'Build ${{ parameters.buildName }}'
   env:
     ob_restore_phase: true
@@ -66,7 +66,7 @@ steps:
     # workaround known issue of building in OneBranch copying from TMP folder
     $null = New-Item -ItemType Directory -Path "${{ parameters.signSrcPath }}" -ErrorAction Ignore
     # copy only the exes from the TMP folder since it contains intermediately built files we don't want to sign
-    write-host 'Binaries in $(env:CARGO_TARGET_DIR)'
+    write-host 'Binaries in ${env:CARGO_TARGET_DIR}'
     Copy-Item -Path "$env:CARGO_TARGET_DIR/${{ parameters.buildName }}/${{ parameters.BuildConfiguration }}/*.exe" -Destination "${{ parameters.signSrcPath }}" -Verbose
     Copy-Item -Path "$(Build.SourcesDirectory)/DSC/bin/${{ parameters.buildName }}/${{ parameters.BuildConfiguration }}/*" -Recurse -Destination "${{ parameters.signSrcPath }}" -Verbose -Force
     write-host 'Binaries in ${{ parameters.signSrcPath }}'

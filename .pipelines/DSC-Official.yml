@@ -321,11 +321,11 @@ extends:
             ob_restore_phase: true
         - pwsh: |
             apt update
-            apt -y install musl-tools rpm dpkg build-essential
+            apt -y install musl-tools rpm dpkg build-essential protobuf-compiler
             $header = "Bearer $(AzToken)"
             $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
             $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
-            ./packaging.ps1 -Release -Architecture x86_64-unknown-linux-musl
+            ./build.ps1 -Release -Architecture x86_64-unknown-linux-musl
             ./packaging.ps1 -PackageType tgz -Architecture x86_64-unknown-linux-musl -Release
             ./packaging.ps1 -PackageType rpm -Architecture x86_64-unknown-linux-musl -Release
             ./packaging.ps1 -PackageType deb -Architecture x86_64-unknown-linux-musl -Release
@@ -381,6 +381,7 @@ extends:
             apt -y install rpm
             apt -y install dpkg
             apt -y install build-essential
+            apt install -y protobuf-compiler
             msrustup default stable-aarch64-unknown-linux-musl
             if ((openssl version -d) -match 'OPENSSLDIR: "(?<dir>.*?)"') {
               $env:OPENSSL_LIB_DIR = $matches['dir']
@@ -388,7 +389,7 @@ extends:
             $header = "Bearer $(AzToken)"
             $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
             $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
-            ./packaging.ps1 -Release -Architecture aarch64-unknown-linux-musl
+            ./build.ps1 -Release -Architecture aarch64-unknown-linux-musl
             ./packaging.ps1 -PackageType tgz -Architecture aarch64-unknown-linux-musl -Release
             ./packaging.ps1 -PackageType rpm -Architecture aarch64-unknown-linux-musl -Release
             ./packaging.ps1 -PackageType deb -Architecture aarch64-unknown-linux-musl -Release
@@ -438,7 +439,7 @@ extends:
             $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
             $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
             Write-Verbose -Verbose "Building for $(buildName)"
-            ./packaging.ps1 -Release -Architecture $(buildName)
+            ./build.ps1 -Release -Architecture $(buildName)
             ./packaging.ps1 -PackageType tgz -Architecture $(buildName) -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
             Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(ob_outputDirectory)/DSC-$(PackageVersion)-$(buildName).tar.gz"

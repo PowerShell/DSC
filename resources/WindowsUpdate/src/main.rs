@@ -4,14 +4,17 @@
 #[cfg(windows)]
 mod windows_update;
 
+use rust_i18n::t;
 use std::io::{self, Read, IsTerminal};
+
+rust_i18n::i18n!("locales", fallback = "en-us");
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     
     if args.len() < 2 {
-        eprintln!("Error: Missing operation argument");
-        eprintln!("Usage: wu_dsc <get|set|export>");
+        eprintln!("Error: {}", t!("main.missingOperation"));
+        eprintln!("{}", t!("main.usage"));
         std::process::exit(1);
     }
 
@@ -39,7 +42,7 @@ fn main() {
 
             #[cfg(not(windows))]
             {
-                eprintln!("Error: Windows Update resource is only supported on Windows");
+                eprintln!("Error: {}", t!("main.windowsUpdateOnlySupported"));
                 std::process::exit(1);
             }
         }
@@ -47,7 +50,7 @@ fn main() {
             // Read input from stdin
             let mut buffer = String::new();
             if let Err(e) = io::stdin().read_to_string(&mut buffer) {
-                eprintln!("Error reading input: {}", e);
+                eprintln!("{}", t!("main.errorReadingInput", err = e));
                 std::process::exit(1);
             }
 
@@ -65,7 +68,7 @@ fn main() {
 
             #[cfg(not(windows))]
             {
-                eprintln!("Error: Windows Update resource is only supported on Windows");
+                eprintln!("Error: {}", t!("main.windowsUpdateOnlySupported"));
                 std::process::exit(1);
             }
         }
@@ -73,7 +76,7 @@ fn main() {
             // Read input from stdin
             let mut buffer = String::new();
             if let Err(e) = io::stdin().read_to_string(&mut buffer) {
-                eprintln!("Error reading input: {}", e);
+                eprintln!("{}", t!("main.errorReadingInput", err = e));
                 std::process::exit(1);
             }
 
@@ -91,13 +94,13 @@ fn main() {
 
             #[cfg(not(windows))]
             {
-                eprintln!("Error: Windows Update resource is only supported on Windows");
+                eprintln!("Error: {}", t!("main.windowsUpdateOnlySupported"));
                 std::process::exit(1);
             }
         }
         _ => {
-            eprintln!("Error: Unknown operation '{}'", operation);
-            eprintln!("Usage: wu_dsc <get|set|export>");
+            eprintln!("{}", t!("main.unknownOperation", operation = operation));
+            eprintln!("{}", t!("main.usage"));
             std::process::exit(1);
         }
     }

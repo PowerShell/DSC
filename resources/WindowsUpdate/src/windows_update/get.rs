@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use rust_i18n::t;
 use windows::{
     core::*,
     Win32::Foundation::*,
@@ -13,10 +14,10 @@ use crate::windows_update::types::{UpdateList, extract_update_info};
 pub fn handle_get(input: &str) -> Result<String> {
     // Parse input as UpdateList
     let update_list: UpdateList = serde_json::from_str(input)
-        .map_err(|e| Error::new(E_INVALIDARG, format!("Failed to parse input: {}", e)))?;
+        .map_err(|e| Error::new(E_INVALIDARG.into(), t!("get.failedParseInput", err = e.to_string()).to_string()))?;
     
     if update_list.updates.is_empty() {
-        return Err(Error::new(E_INVALIDARG, "Updates array cannot be empty for get operation"));
+        return Err(Error::new(E_INVALIDARG.into(), t!("get.updatesArrayEmpty").to_string()));
     }
     
     // Initialize COM
@@ -53,11 +54,12 @@ pub fn handle_get(input: &str) -> Result<String> {
                 && update_input.is_installed.is_none() 
                 && update_input.update_type.is_none() 
                 && update_input.msrc_severity.is_none() {
-                return Err(Error::new(E_INVALIDARG, "At least one search criterion must be specified for get operation"));
+                return Err(Error::new(E_INVALIDARG.into(), t!("get.atLeastOneCriterionRequired").to_string()));
             }
 
             // Find the update matching ALL provided criteria (logical AND)
             let mut found_update = None;
+            let mut matching_updates: Vec<IUpdate> = Vec::new();
             for i in 0..count {
                 let update = all_updates.get_Item(i)?;
                 
@@ -144,9 +146,34 @@ pub fn handle_get(input: &str) -> Result<String> {
                     }
                 }
 
-                // All criteria matched - extract and store the update
-                found_update = Some(extract_update_info(&update)?);
-                break;
+                // All criteria matched - collect this update
+                matching_updates.push(update.clone());
+            }
+
+            // Check if multiple updates matched the provided criteria
+            if matching_updates.len() > 1 {
+                // Determine if title was the only search criterion
+                let title_only = update_input.title.is_some()
+                    && update_input.id.is_none()
+                    && update_input.kb_article_ids.is_none()
+                    && update_input.is_installed.is_none()
+                    && update_input.update_type.is_none()
+                    && update_input.msrc_severity.is_none();
+
+                let error_msg = if title_only {
+                    let search_title = update_input.title.as_ref().unwrap();
+                    t!("get.titleMatchedMultipleUpdates", title = search_title, count = matching_updates.len()).to_string()
+                } else {
+                    t!("get.criteriaMatchedMultipleUpdates", count = matching_updates.len()).to_string()
+                };
+
+                eprintln!("{{\"error\":\"{}\"}}", error_msg);
+                return Err(Error::new(E_INVALIDARG.into(), error_msg));
+            }
+
+            // Get the first (and should be only) match
+            if !matching_updates.is_empty() {
+                found_update = Some(extract_update_info(&matching_updates[0])?);
             }
 
             if let Some(update_info) = found_update {
@@ -155,31 +182,31 @@ pub fn handle_get(input: &str) -> Result<String> {
                 // No match found for this input - construct error message and return
                 let mut criteria_parts = Vec::new();
                 if let Some(title) = &update_input.title {
-                    criteria_parts.push(format!("title '{}'", title));
+                    criteria_parts.push(t!("get.criteriaTitle", value = title).to_string());
                 }
                 if let Some(id) = &update_input.id {
-                    criteria_parts.push(format!("id '{}'", id));
+                    criteria_parts.push(t!("get.criteriaId", value = id).to_string());
                 }
                 if let Some(is_installed) = update_input.is_installed {
-                    criteria_parts.push(format!("is_installed {}", is_installed));
+                    criteria_parts.push(t!("get.criteriaIsInstalled", value = is_installed).to_string());
                 }
                 if let Some(kb_ids) = &update_input.kb_article_ids {
-                    criteria_parts.push(format!("kb_article_ids {:?}", kb_ids));
+                    criteria_parts.push(t!("get.criteriaKbArticleIds", value = format!("{:?}", kb_ids)).to_string());
                 }
                 if let Some(update_type) = &update_input.update_type {
-                    criteria_parts.push(format!("update_type {:?}", update_type));
+                    criteria_parts.push(t!("get.criteriaUpdateType", value = format!("{:?}", update_type)).to_string());
                 }
                 if let Some(severity) = &update_input.msrc_severity {
-                    criteria_parts.push(format!("msrc_severity {:?}", severity));
+                    criteria_parts.push(t!("get.criteriaMsrcSeverity", value = format!("{:?}", severity)).to_string());
                 }
                 
                 let criteria_str = criteria_parts.join(", ");
-                let error_msg = format!("No matching update found for criteria: {}", criteria_str);
+                let error_msg = t!("get.noMatchingUpdateForCriteria", criteria = criteria_str).to_string();
                 
                 // Emit JSON error to stderr
                 eprintln!("{{\"error\":\"{}\"}}", error_msg);
                 
-                return Err(Error::new(E_FAIL, error_msg));
+                return Err(Error::new(E_FAIL.into(), error_msg));
             }
         }
 
@@ -196,10 +223,11 @@ pub fn handle_get(input: &str) -> Result<String> {
     match result {
         Ok(updates) => {
             let result = UpdateList {
+                metadata: None,
                 updates
             };
             serde_json::to_string(&result)
-                .map_err(|e| Error::new(E_FAIL, format!("Failed to serialize output: {}", e)))
+                .map_err(|e| Error::new(E_FAIL.into(), t!("get.failedSerializeOutput", err = e.to_string()).to_string()))
         }
         Err(e) => Err(e),
     }

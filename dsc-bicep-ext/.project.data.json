@@ -1,0 +1,6 @@
+{
+  "Name": "dsc-bicep-ext",
+  "Kind": "CLI",
+  "IsRust": true,
+  "Binaries": ["dsc-bicep-ext"]
+}

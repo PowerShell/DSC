@@ -3,8 +3,6 @@
 
 Describe 'tests for resource discovery' {
     BeforeAll {
-        $env:DSC_RESOURCE_PATH = $testdrive
-
         $script:lookupTableFilePath = if ($IsWindows) {
             Join-Path $env:LocalAppData "dsc\AdaptedResourcesLookupTable.json"
         } else {
@@ -14,10 +12,6 @@ Describe 'tests for resource discovery' {
 
     AfterEach {
         Remove-Item -Path "$testdrive/test.dsc.resource.*" -ErrorAction SilentlyContinue
-    }
-
-    AfterAll {
-        $env:DSC_RESOURCE_PATH = $null
     }
 
     It 'Use DSC_RESOURCE_PATH instead of PATH when defined' {
@@ -31,74 +25,84 @@ Describe 'tests for resource discovery' {
             }
           }
 '@
-
-        Set-Content -Path "$testdrive/test.dsc.resource.json" -Value $resourceJson
-        $resources = dsc resource list | ConvertFrom-Json
-        $resources.Count | Should -Be 1
-        $resources.type | Should -BeExactly 'DSC/TestPathResource'
+        try {
+            $oldPath = $env:PATH
+            $env:DSC_RESOURCE_PATH = $testdrive
+            Set-Content -Path "$testdrive/test.dsc.resource.json" -Value $resourceJson
+            $resources = dsc resource list | ConvertFrom-Json
+            $resources.Count | Should -Be 1
+            $resources.type | Should -BeExactly 'DSC/TestPathResource'
+        }
+        finally {
+            $env:PATH = $oldPath
+            $env:DSC_RESOURCE_PATH = $null
+        }
     }
 
-    It 'support discovering <extension>' -TestCases @(
-        @{ extension = 'yaml' }
-        @{ extension = 'yml' }
-    ) {
-        param($extension)
+    Context 'Forced discovery using $testdrive' {
+        BeforeAll {
+            $env:DSC_RESOURCE_PATH = $testdrive
+        }
 
-        $resourceYaml = @'
-        $schema: https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json
-        type: DSC/TestYamlResource
-        version: 0.1.0
-        get:
-          executable: dsc
+        AfterAll {
+            $env:DSC_RESOURCE_PATH = $null
+        }
+
+        It 'support discovering <extension>' -TestCases @(
+            @{ extension = 'yaml' }
+            @{ extension = 'yml' }
+        ) {
+            param($extension)
+
+            $resourceYaml = @'
+            $schema: https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json
+            type: DSC/TestYamlResource
+            version: 0.1.0
+            get:
+              executable: dsc
 '@
 
-        Set-Content -Path "$testdrive/test.dsc.resource.$extension" -Value $resourceYaml
-        $resources = dsc resource list | ConvertFrom-Json
-        $resources.Count | Should -Be 1
-        $resources.type | Should -BeExactly 'DSC/TestYamlResource'
-    }
+            Set-Content -Path "$testdrive/test.dsc.resource.$extension" -Value $resourceYaml
+            $resources = dsc resource list | ConvertFrom-Json
+            $resources.Count | Should -Be 1
+            $resources.type | Should -BeExactly 'DSC/TestYamlResource'
+        }
 
-    It 'does not support discovering a file with an extension that is not json or yaml' {
-        param($extension)
+        It 'does not support discovering a file with an extension that is not json or yaml' {
+            param($extension)
 
-        $resourceInput = @'
-        $schema: https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json
-        type: DSC/TestYamlResource
-        version: 0.1.0
-        get:
-          executable: dsc
+            $resourceInput = @'
+            $schema: https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json
+            type: DSC/TestYamlResource
+            version: 0.1.0
+            get:
+              executable: dsc
 '@
 
-        Set-Content -Path "$testdrive/test.dsc.resource.txt" -Value $resourceInput
-        $resources = dsc resource list | ConvertFrom-Json
-        $resources.Count | Should -Be 0
-    }
+            Set-Content -Path "$testdrive/test.dsc.resource.txt" -Value $resourceInput
+            $resources = dsc resource list | ConvertFrom-Json
+            $resources.Count | Should -Be 0
+        }
 
-    It 'warns on invalid semver' {
-        $manifest = @'
-        {
-            "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
-            "type": "Test/InvalidSemver",
-            "version": "1.1.0..1",
-            "get": {
-                "executable": "dsctest"
-            },
-            "schema": {
-                "command": {
+        It 'warns on invalid semver' {
+            $manifest = @'
+            {
+                "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+                "type": "Test/InvalidSemver",
+                "version": "1.1.0..1",
+                "get": {
                     "executable": "dsctest"
+                },
+                "schema": {
+                    "command": {
+                        "executable": "dsctest"
+                    }
                 }
             }
-        }
 '@
-        $oldPath = $env:DSC_RESOURCE_PATH
-        try {
-            $env:DSC_RESOURCE_PATH = $testdrive
             Set-Content -Path "$testdrive/test.dsc.resource.json" -Value $manifest
             $null = dsc resource list 2> "$testdrive/error.txt"
             "$testdrive/error.txt" | Should -FileContentMatchExactly 'WARN.*?does not use semver' -Because (Get-Content -Raw "$testdrive/error.txt")
-        }
-        finally {
-            $env:DSC_RESOURCE_PATH = $oldPath
         }
     }
 
@@ -294,6 +298,49 @@ Describe 'tests for resource discovery' {
         }
         finally {
             $env:DSC_RESOURCE_PATH = $null
+        }
+    }
+
+    It 'Resource discovery can be set to <mode>' -TestCases @(
+        @{ namespace = 'Microsoft.DSC'; mode = 'preDeployment' }
+        @{ namespace = 'Microsoft.DSC'; mode = 'duringDeployment' }
+        @{ namespace = 'Ignore'; mode = 'ignore' }
+    ) {
+        param($namespace, $mode)
+
+        $guid = (New-Guid).Guid.Replace('-', '')
+        $manifestPath = Join-Path (Split-Path (Get-Command dscecho -ErrorAction Stop).Source -Parent) echo.dsc.resource.json
+
+        $config_yaml = @"
+        `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/manifest.json
+        metadata:
+          ${namespace}:
+            resourceDiscovery: $mode
+        resources:
+        - type: Test/CopyResource
+          name: This should be found and executed
+          properties:
+            sourceFile: $manifestPath
+            typeName: "Test/$guid"
+        - type: Test/$guid
+          name: This is the new resource
+          properties:
+            output: Hello World
+"@
+        $out = dsc -l trace config get -i $config_yaml 2> "$testdrive/tracing.txt"
+        $traceLog = Get-Content -Raw -Path "$testdrive/tracing.txt"
+        if ($mode -ne 'duringDeployment') {
+            $LASTEXITCODE | Should -Be 2
+            $out | Should -BeNullOrEmpty
+            $traceLog | Should -Match "ERROR.*?Resource not found: Test/$guid"
+            $traceLog | Should -Not -Match "Invoking get for 'Test/CopyResource'"
+        } else {
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw -Path "$testdrive/tracing.txt")
+            $output = $out | ConvertFrom-Json
+            $output.results[0].result.actualState.typeName | Should -BeExactly "Test/$guid" -Because $out
+            $output.results[1].result.actualState.output | Should -BeExactly 'Hello World' -Because $out
+            $traceLog | Should -Match "Invoking get for 'Test/$guid'"
+            $traceLog | Should -Match "Skipping resource discovery due to 'resourceDiscovery' mode set to 'DuringDeployment'"
         }
     }
 }
