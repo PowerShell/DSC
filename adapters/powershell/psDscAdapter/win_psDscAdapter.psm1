@@ -247,7 +247,7 @@ function Invoke-DscCacheRefresh {
 
         [dscResourceCache]$cache = [dscResourceCache]::new()
         $cache.ResourceCache = $dscResourceCacheEntries.ToArray()
-        $m = $env:PSModulePath -split [IO.Path]::PathSeparator | ForEach-Object { Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue }
+        $m = $env:PSModulePath -split [IO.Path]::PathSeparator | ForEach-Object { Get-ChildItem -Directory -Path $_ -Depth 1 -ErrorAction Ignore }
         $cache.PSModulePaths = $m.FullName
         $cache.CacheSchemaVersion = $script:CurrentCacheSchemaVersion
 
