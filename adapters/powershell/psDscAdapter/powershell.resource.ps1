@@ -339,6 +339,7 @@ $traceLevel = if ($env:DSC_TRACE_LEVEL) {
     try {
         [DscTraceLevel]$env:DSC_TRACE_LEVEL
     } catch {
+        Write-DscTrace -Operation Warn -Message ("Invalid DSC_TRACE_LEVEL value '{0}'. Defaulting to 'Warn'." -f $env:DSC_TRACE_LEVEL) -Now
         [DscTraceLevel]::Warn
     }
 } else {
