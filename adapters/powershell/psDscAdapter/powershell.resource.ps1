@@ -59,8 +59,15 @@ $ps = [PowerShell]::Create().AddScript({
         [string]$ScriptRoot
     )
 
+    trap {
+        Write-Error ($_ | Format-List -Force | Out-String)
+    }
+
     $DebugPreference = 'Continue'
     $VerbosePreference = 'Continue'
+    $ErrorActionPreference = 'Continue'
+    $InformationPreference = 'Continue'
+    $ProgressPreference = 'SilentlyContinue'
 
     if ($Operation -eq 'ClearCache') {
         $cacheFilePath = if ($IsWindows) {
@@ -75,8 +82,8 @@ $ps = [PowerShell]::Create().AddScript({
             }
         }
 
-        Remove-Item -Force -ea SilentlyContinue -Path $cacheFilePath
-        exit 0
+        Remove-Item -Force -ErrorAction Ignore -Path $cacheFilePath
+        exit
     }
 
     # Adding some debug info to STDERR
@@ -336,7 +343,6 @@ $traceLevel = if ($env:DSC_TRACE_LEVEL) {
 } else {
     [DscTraceLevel]::Warn
 }
-Write-DscTrace -Operation Debug -Now -Message ("Trace level set to: $traceLevel")
 
 $null = Register-ObjectEvent -InputObject $ps.Streams.Error -EventName DataAdding -MessageData $traceQueue -Action {
     $traceQueue = $Event.MessageData
@@ -393,9 +399,8 @@ try {
     Write-TraceQueue
 
     if ($ps.HadErrors) {
-        # If there are any errors, we will exit with an error code
-        Write-DscTrace -Now -Operation Error -Message 'Errors occurred during script execution.'
-        exit 1
+        # Anything written to stderr sets this flag, so we'll write a debug trace, but not treat as error
+        Write-DscTrace -Now -Operation Debug -Message 'HadErrors set during script execution.'
     }
 
     foreach ($output in $outputCollection) {
