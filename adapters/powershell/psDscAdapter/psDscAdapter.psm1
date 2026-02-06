@@ -12,7 +12,7 @@ function Get-DSCResourceModules {
     $listPSModuleFolders = $env:PSModulePath.Split([IO.Path]::PathSeparator)
     $dscModulePsd1List = [System.Collections.Generic.HashSet[System.String]]::new()
     foreach ($folder in $listPSModuleFolders) {
-        if (!(Test-Path $folder)) {
+        if (!(Test-Path $folder -ErrorAction Ignore)) {
             continue
         }
 
