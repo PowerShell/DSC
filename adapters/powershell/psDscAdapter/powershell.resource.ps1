@@ -64,7 +64,7 @@ $ps = [PowerShell]::Create().AddScript({
         Write-Error ($_ | Format-List -Force | Out-String)
     }
 
-    $DebugPreference = 'Continue'
+    $DebugPreference = 'SilentlyContinue'
     $VerbosePreference = 'SilentlyContinue'
     $ErrorActionPreference = 'Continue'
     $InformationPreference = 'Continue'
@@ -88,9 +88,9 @@ $ps = [PowerShell]::Create().AddScript({
     }
 
     # Adding some debug info to STDERR
-    Write-Debug ('PSVersion=' + $PSVersionTable.PSVersion.ToString())
-    Write-Debug ('PSPath=' + $PSHome)
-    Write-Debug ('PSModulePath=' + $env:PSModulePath)
+    Write-Debug -Debug ('PSVersion=' + $PSVersionTable.PSVersion.ToString())
+    Write-Debug -Debug ('PSPath=' + $PSHome)
+    Write-Debug -Debug ('PSModulePath=' + $env:PSModulePath)
 
     if ($PSVersionTable.PSVersion.Major -le 5) {
         # For Windows PowerShell, we want to remove any PowerShell 7 paths from PSModulePath
@@ -105,7 +105,7 @@ $ps = [PowerShell]::Create().AddScript({
     }
 
     if ('Validate' -ne $Operation) {
-        Write-Debug ("jsonInput=$jsonInput")
+        Write-Debug -Debug ("jsonInput=$jsonInput")
 
         # load private functions of psDscAdapter stub module
         if ($PSVersionTable.PSVersion.Major -le 5) {
@@ -207,7 +207,7 @@ $ps = [PowerShell]::Create().AddScript({
         }
         { @('Get','Set','Test','Export') -contains $_ } {
             if ($ResourceType) {
-                Write-Debug ("Using resource type override: $ResourceType")
+                Write-Debug -Debug ("Using resource type override: $ResourceType")
                 $dscResourceCache = Invoke-DscCacheRefresh -Module $ResourceType.Split('/')[0]
                 if ($null -eq $dscResourceCache) {
                     Write-Error ("DSC resource '{0}' module not found." -f $ResourceType)

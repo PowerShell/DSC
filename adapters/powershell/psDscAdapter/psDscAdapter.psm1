@@ -90,7 +90,7 @@ function FindAndParseResourceDefinitions {
         return
     }
 
-    Write-Debug ("Loading resources from file '$filePath'")
+    Write-Debug -Debug ("Loading resources from file '$filePath'")
     #TODO: Ensure embedded instances in properties are working correctly
     [System.Management.Automation.Language.Token[]] $tokens = $null
     [System.Management.Automation.Language.ParseError[]] $errors = $null
@@ -140,7 +140,7 @@ function GetExportMethod ($ResourceType, $HasFilterProperties, $ResourceTypeName
     $method = $null
 
     if ($HasFilterProperties) {
-        Write-Verbose "Properties provided for filtered export"
+        Write-Verbose -Verbose "Properties provided for filtered export"
         $method = foreach ($mt in $methods) {
             if ($mt.GetParameters().Count -gt 0) {
                 $mt
@@ -154,7 +154,7 @@ function GetExportMethod ($ResourceType, $HasFilterProperties, $ResourceTypeName
         }
     }
     else {
-        Write-Verbose "No properties provided, using parameterless export"
+        Write-Verbose -Verbose "No properties provided, using parameterless export"
         $method = foreach ($mt in $methods) {
             if ($mt.GetParameters().Count -eq 0) {
                 $mt
@@ -178,12 +178,12 @@ function LoadPowerShellClassResourcesFromModule {
         [PSModuleInfo]$moduleInfo
     )
 
-    Write-Debug ("Loading resources from module '$($moduleInfo.Path)'")
+    Write-Debug -Debug ("Loading resources from module '$($moduleInfo.Path)'")
 
     if ($moduleInfo.RootModule) {
         if (".psm1", ".ps1" -notcontains ([System.IO.Path]::GetExtension($moduleInfo.RootModule)) -and
             (-not $moduleInfo.NestedModules)) {
-            Write-Debug ("RootModule is neither psm1 nor ps1 '$($moduleInfo.RootModule)'")
+            Write-Debug -Debug ("RootModule is neither psm1 nor ps1 '$($moduleInfo.RootModule)'")
             return [System.Collections.Generic.List[DscResourceInfo]]::new()
         }
 
@@ -240,13 +240,13 @@ function Invoke-DscCacheRefresh {
     }
 
     if (Test-Path $cacheFilePath) {
-        Write-Verbose ("Reading from Get-DscResource cache file $cacheFilePath")
+        Write-Verbose -Verbose ("Reading from Get-DscResource cache file $cacheFilePath")
 
         $cache = Get-Content -Raw $cacheFilePath | ConvertFrom-Json
 
         if ($cache.CacheSchemaVersion -ne $script:CurrentCacheSchemaVersion) {
             $refreshCache = $true
-            Write-Verbose ("Incompatible version of cache in file '" + $cache.CacheSchemaVersion + "' (expected '" + $script:CurrentCacheSchemaVersion + "')")
+            Write-Verbose -Verbose ("Incompatible version of cache in file '" + $cache.CacheSchemaVersion + "' (expected '" + $script:CurrentCacheSchemaVersion + "')")
         }
         else {
             $dscResourceCacheEntries = $cache.ResourceCache
@@ -255,10 +255,10 @@ function Invoke-DscCacheRefresh {
                 # if there is nothing in the cache file - refresh cache
                 $refreshCache = $true
 
-                Write-Debug "Filtered DscResourceCache cache is empty"
+                Write-Debug -Debug "Filtered DscResourceCache cache is empty"
             }
             else {
-                Write-Debug "Checking cache for stale entries"
+                Write-Debug -Debug "Checking cache for stale entries"
 
                 foreach ($cacheEntry in $dscResourceCacheEntries) {
 
@@ -274,13 +274,13 @@ function Invoke-DscCacheRefresh {
                             $cache_LastWriteTime = $cache_LastWriteTime.AddTicks( - ($cache_LastWriteTime.Ticks % [TimeSpan]::TicksPerSecond));
 
                             if (-not ($file_LastWriteTime.Equals($cache_LastWriteTime))) {
-                                Write-Debug ("Detected stale cache entry '$($_.Name)'")
+                                Write-Debug -Debug ("Detected stale cache entry '$($_.Name)'")
                                 $refreshCache = $true
                                 break
                             }
                         }
                         else {
-                            Write-Debug ("Detected non-existent cache entry '$($_.Name)'")
+                            Write-Debug -Debug ("Detected non-existent cache entry '$($_.Name)'")
                             $refreshCache = $true
                             break
                         }
@@ -290,7 +290,7 @@ function Invoke-DscCacheRefresh {
                 }
 
                 if (-not $refreshCache) {
-                    Write-Debug "Checking cache for stale PSModulePath"
+                    Write-Debug -Debug "Checking cache for stale PSModulePath"
 
                     $m = $env:PSModulePath -split [IO.Path]::PathSeparator | % { Get-ChildItem -Directory -Path $_ -Depth 1 -ErrorAction Ignore }
 
@@ -299,7 +299,7 @@ function Invoke-DscCacheRefresh {
                     $hs_cache.SymmetricExceptWith($hs_live)
                     $diff = $hs_cache
 
-                    Write-Debug ("PSModulePath diff '$diff'")
+                    Write-Debug -Debug ("PSModulePath diff '$diff'")
                     if ($diff.Count -gt 0) {
                         $refreshCache = $true
                     }
@@ -308,12 +308,12 @@ function Invoke-DscCacheRefresh {
         }
     }
     else {
-        Write-Verbose ("Cache file not found '$cacheFilePath'")
+        Write-Verbose -Verbose ("Cache file not found '$cacheFilePath'")
         $refreshCache = $true
     }
 
     if ($refreshCache) {
-        Write-Verbose "Constructing Get-DscResource cache"
+        Write-Verbose -Verbose "Constructing Get-DscResource cache"
 
         # create a list object to store cache of Get-DscResource
         [dscResourceCacheEntry[]]$dscResourceCacheEntries = [System.Collections.Generic.List[Object]]::new()
@@ -330,7 +330,7 @@ function Invoke-DscCacheRefresh {
                     # from several modules with the same name select the one with the highest version
                     $selectedMod = $modules | Where-Object Name -EQ $mod.Name
                     if ($selectedMod.Count -gt 1) {
-                        Write-Debug ("Found $($selectedMod.Count) modules with name '$($mod.Name)'")
+                        Write-Debug -Debug ("Found $($selectedMod.Count) modules with name '$($mod.Name)'")
                         $selectedMod = $selectedMod | Sort-Object -Property Version -Descending | Select-Object -First 1
                     }
 
@@ -366,7 +366,7 @@ function Invoke-DscCacheRefresh {
 
         # save cache for future use
         # TODO: replace this with a high-performance serializer
-        Write-Debug ("Saving Get-DscResource cache to '$cacheFilePath'")
+        Write-Debug -Debug ("Saving Get-DscResource cache to '$cacheFilePath'")
         $jsonCache = $cache | ConvertTo-Json -Depth 90
         New-Item -Force -Path $cacheFilePath -Value $jsonCache -Type File | Out-Null
     }
@@ -419,10 +419,10 @@ function Invoke-DscOperation {
     )
 
     $osVersion = [System.Environment]::OSVersion.VersionString
-    Write-Debug ('OS version: ' + $osVersion)
+    Write-Debug -Debug ('OS version: ' + $osVersion)
 
     $psVersion = $PSVersionTable.PSVersion.ToString()
-    Write-Debug ('PowerShell version: ' + $psVersion)
+    Write-Debug -Debug ('PowerShell version: ' + $psVersion)
 
     # get details from cache about the DSC resource, if it exists
     $cachedDscResourceInfo = $dscResourceCache | Where-Object Type -EQ $DesiredState.type | ForEach-Object DscResourceInfo | Select-Object -First 1
@@ -449,7 +449,7 @@ function Invoke-DscOperation {
 
                     $ValidProperties = $cachedDscResourceInfo.Properties.Name
 
-                    Write-Debug ("Valid properties: " + ($ValidProperties | ConvertTo-Json))
+                    Write-Debug -Debug ("Valid properties: " + ($ValidProperties | ConvertTo-Json))
 
                     if ($DesiredState.properties) {
                         # set each property of $dscResourceInstance to the value of the property in the $desiredState INPUT object
@@ -542,7 +542,7 @@ function Invoke-DscOperation {
             }
         }
 
-        Write-Debug ("Output: $($addToActualState | ConvertTo-Json -Depth 10 -Compress)")
+        Write-Debug -Debug ("Output: $($addToActualState | ConvertTo-Json -Depth 10 -Compress)")
         return $addToActualState
     }
     else {
