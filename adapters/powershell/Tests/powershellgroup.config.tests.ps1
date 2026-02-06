@@ -99,10 +99,10 @@ Describe 'PowerShell adapter resource tests' {
                 - name: Class-resource Info
                   type: TestClassResource/NoExport
 '@
-    $out = $yaml | dsc config export -f - 2>&1 | Out-String
-    $LASTEXITCODE | Should -Be 2
-    $out | Should -Not -BeNullOrEmpty
-    $out | Should -BeLike "*ERROR*Export method not implemented by resource 'TestClassResource/NoExport'*"
+    $null = $yaml | dsc -l trace config export -f - 2>$TestDrive/error.log
+    $logContent = Get-Content -Raw -Path $TestDrive/error.log
+    $LASTEXITCODE | Should -Be 2 -Because $logContent
+    $logContent | Should -BeLike "*ERROR*Export method not implemented by resource 'TestClassResource/NoExport'*"
   }
 
   It 'Export works with filtered export property' {
