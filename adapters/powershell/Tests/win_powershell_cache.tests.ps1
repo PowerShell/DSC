@@ -88,12 +88,14 @@ Describe 'WindowsPowerShell adapter resource tests - requires elevated permissio
   It 'Verify that there are no cache rebuilds for several sequential executions' {
     # first execution should build the cache
     $null = dsc -l trace resource list -a Microsoft.Windows/WindowsPowerShell 2> $TestDrive/tracing.txt
-    "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Constructing Get-DscResource cache'
+    $tracingContent = Get-Content -Path $TestDrive/tracing.txt | Out-String
+    $tracingContent | Should -BeLike '*Constructing Get-DscResource cache*' -Because $tracingContent
 
     # next executions following shortly after should Not rebuild the cache
     1..3 | ForEach-Object {
       $null = dsc -l trace resource list -a Microsoft.Windows/WindowsPowerShell 2> $TestDrive/tracing.txt
-      "$TestDrive/tracing.txt" | Should -Not -FileContentMatchExactly 'Constructing Get-DscResource cache'
+      $tracingContent = Get-Content -Path $TestDrive/tracing.txt | Out-String
+      $tracingContent | Should -Not -BeLike '*Constructing Get-DscResource cache*' -Because $tracingContent
     }
   }
 
