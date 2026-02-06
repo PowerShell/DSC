@@ -212,8 +212,8 @@ class StreamResource : BaseTestClass
 
     [void] Set()
     {
-        Write-Verbose "This is a Verbose message"
-        Write-Debug "This is a Debug message"
+        Write-Verbose -Verbose "This is a Verbose message"
+        Write-Debug -Debug "This is a Debug message"
         Write-Error "This is an Error message"
     }
 
