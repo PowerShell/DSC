@@ -2,6 +2,7 @@
 # Licensed under the MIT License.
 
 $global:ProgressPreference = 'SilentlyContinue'
+$ErrorActionPreference = 'Stop'
 $script:CurrentCacheSchemaVersion = 1
 
 trap {

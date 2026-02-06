@@ -2,6 +2,7 @@
 # Licensed under the MIT License.
 
 $script:CurrentCacheSchemaVersion = 3
+$ErrorActionPreference = 'Stop'
 
 function Import-PSDSCModule {
     $m = Get-Module PSDesiredStateConfiguration -ListAvailable | Sort-Object -Descending | Select-Object -First 1
