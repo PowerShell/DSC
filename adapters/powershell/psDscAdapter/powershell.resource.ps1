@@ -65,7 +65,7 @@ $ps = [PowerShell]::Create().AddScript({
     }
 
     $DebugPreference = 'Continue'
-    $VerbosePreference = 'Continue'
+    $VerbosePreference = 'SilentlyContinue'
     $ErrorActionPreference = 'Continue'
     $InformationPreference = 'Continue'
     $ProgressPreference = 'SilentlyContinue'
