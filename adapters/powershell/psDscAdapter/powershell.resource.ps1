@@ -34,7 +34,7 @@ function Write-DscTrace {
 }
 
 trap {
-    Write-DscTrace -Operation Error -Message ($_ | Format-List -Force | Out-String)
+    Write-DscTrace -Operation Error -Message ($_ | Format-List -Force | Out-String) -Now
 }
 
 function Write-TraceQueue() {
