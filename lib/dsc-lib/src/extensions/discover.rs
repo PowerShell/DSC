@@ -8,7 +8,7 @@ use crate::{
     dscerror::DscError,
     dscresources::{
         command_resource::{
-            invoke_command, process_get_args
+            invoke_command, process_get_args, CommandResourceInfo
         },
         dscresource::DscResource,
         resource_manifest::GetArgKind,
@@ -68,7 +68,11 @@ impl DscExtension {
             let Some(discover) = extension.discover else {
                 return Err(DscError::UnsupportedCapability(self.type_name.to_string(), Capability::Discover.to_string()));
             };
-            let args = process_get_args(discover.args.as_ref(), "", self.type_name.as_ref());
+            let command_resource_info = CommandResourceInfo {
+                type_name: self.type_name.clone(),
+                path: None,
+            };
+            let args = process_get_args(discover.args.as_ref(), "", &command_resource_info);
             let (_exit_code, stdout, _stderr) = invoke_command(
                 &discover.executable,
                 args,

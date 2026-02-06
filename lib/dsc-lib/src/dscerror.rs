@@ -103,6 +103,12 @@ pub enum DscError {
     #[error("{t}: {0}", t = t!("dscerror.progress"))]
     Progress(#[from] TemplateError),
 
+    #[error("{t}: {0}", t = t!("dscerror.resourceMissingDirectory"))]
+    ResourceMissingDirectory(String),
+
+    #[error("{t}: {0}", t = t!("dscerror.resourceMissingPath"))]
+    ResourceMissingPath(String),
+
     #[error("{t}: {0} {1}", t = t!("dscerror.resourceNotFound"))]
     ResourceNotFound(String, String),
 
