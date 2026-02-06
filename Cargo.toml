@@ -139,6 +139,8 @@ chrono = { version = "0.4" }
 clap = { version = "4.5", features = ["derive"] }
 # dsc
 clap_complete = { version = "4.5" }
+# dsc-lib
+const-str = {version = "1.0" }
 # dsc, registry, dsc-lib-registry, sshdconfig
 crossterm = { version = "0.29" }
 # dsc
@@ -255,8 +257,10 @@ cc = { version = "1.2" }
 tonic-prost-build = { version = "0.14" }
 
 # test-only dependencies
-# dsc-lib-jsonschema
+# dsc-lib-jsonschema, dsc-lib
 pretty_assertions = { version = "1.4.1" }
+# dsc-lib
+test-case = { version = "3.3" }
 
 # Workspace crates as dependencies
 dsc-lib = { path = "lib/dsc-lib" }
