@@ -16,9 +16,8 @@ function Get-DSCResourceModules {
             continue
         }
 
-        foreach ($moduleFolder in Get-ChildItem $folder -Directory) {
-            $addModule = $false
-            foreach ($psd1 in Get-ChildItem -Recurse -Filter "$($moduleFolder.Name).psd1" -Path $moduleFolder.fullname -Depth 2) {
+        foreach ($moduleFolder in Get-ChildItem $folder -Directory -ErrorAction Ignore) {
+            foreach ($psd1 in Get-ChildItem -Recurse -Filter "$($moduleFolder.Name).psd1" -Path $moduleFolder.fullname -Depth 2 -ErrorAction Ignore) {
                 $containsDSCResource = select-string -LiteralPath $psd1 -pattern '^[^#]*\bDscResourcesToExport\b.*'
                 if ($null -ne $containsDSCResource) {
                     $dscModulePsd1List.Add($psd1) | Out-Null
@@ -322,7 +321,7 @@ function Invoke-DscCacheRefresh {
         $DscResources = [System.Collections.Generic.List[DscResourceInfo]]::new()
         $dscResourceModulePsd1s = Get-DSCResourceModules
         if ($null -ne $dscResourceModulePsd1s) {
-            $modules = Get-Module -ListAvailable -Name ($dscResourceModulePsd1s)
+            $modules = Get-Module -ListAvailable -Name ($dscResourceModulePsd1s) -ErrorAction Ignore
             $processedModuleNames = @{}
             foreach ($mod in $modules) {
                 if (-not ($processedModuleNames.ContainsKey($mod.Name))) {
@@ -348,7 +347,7 @@ function Invoke-DscCacheRefresh {
 
             # fill in resource files (and their last-write-times) that will be used for up-do-date checks
             $lastWriteTimes = @{}
-            Get-ChildItem -Recurse -File -Path $dscResource.ParentPath -Include "*.ps1", "*.psd1", "*.psm1", "*.mof" -ea Ignore | ForEach-Object {
+            Get-ChildItem -Recurse -File -Path $dscResource.ParentPath -Include "*.ps1", "*.psd1", "*.psm1", "*.mof" -ErrorAction Ignore | ForEach-Object {
                 $lastWriteTimes.Add($_.FullName, $_.LastWriteTime)
             }
 
