@@ -46,8 +46,10 @@ pub enum SubCommand {
     Adapter {
         #[clap(name = "input", short, long, help = "The input to the adapter command as JSON")]
         input: String,
-        #[clap(name = "resource-type", short, long, help = "The resource type to adapt to")]
+        #[clap(name = "resource-type", long, help = "The resource type to adapt to")]
         resource_type: String,
+        #[clap(name = "resource-path", long, help = "The path to the adapted resource")]
+        resource_path: Option<String>,
         #[clap(name = "operation", short, long, help = "The operation to perform")]
         operation: AdapterOperation,
     },

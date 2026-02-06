@@ -9,7 +9,6 @@ use serde_json::{Map, Value};
 use std::collections::HashMap;
 
 use crate::{
-    dscerror::DscError,
     schemas::{dsc_repo::DscRepoSchema, transforms::idiomaticize_string_enum},
     types::FullyQualifiedTypeName,
 };
@@ -108,6 +107,11 @@ pub enum GetArgKind {
         /// Indicates if argument is mandatory which will pass an empty string if no JSON input is provided.  Default is false.
         mandatory: Option<bool>,
     },
+    ResourcePath {
+        /// The argument that accepts the resource path.
+        #[serde(rename = "resourcePathArg")]
+        resource_path_arg: String,
+    },
     ResourceType {
         /// The argument that accepts the resource type name.
         #[serde(rename = "resourceTypeArg")]
@@ -128,6 +132,11 @@ pub enum SetDeleteArgKind {
         json_input_arg: String,
         /// Indicates if argument is mandatory which will pass an empty string if no JSON input is provided.  Default is false.
         mandatory: Option<bool>,
+    },
+    ResourcePath {
+        /// The argument that accepts the resource path.
+        #[serde(rename = "resourcePathArg")]
+        resource_path_arg: String,
     },
     ResourceType {
         /// The argument that accepts the resource type name.
@@ -305,29 +314,6 @@ pub struct ListMethod {
     pub executable: String,
     /// The arguments to pass to the command to perform a List.
     pub args: Option<Vec<String>>,
-}
-
-/// Import a resource manifest from a JSON value.
-///
-/// # Arguments
-///
-/// * `manifest` - The JSON value to import.
-///
-/// # Returns
-///
-/// * `Result<ResourceManifest, DscError>` - The imported resource manifest.
-///
-/// # Errors
-///
-/// * `DscError` - The JSON value is invalid or the schema version is not supported.
-pub fn import_manifest(manifest: Value) -> Result<ResourceManifest, DscError> {
-    // TODO: enable schema version validation, if not provided, use the latest
-    // const MANIFEST_SCHEMA_VERSION: &str = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json";
-    let manifest = serde_json::from_value::<ResourceManifest>(manifest)?;
-    // if !manifest.schema_version.eq(MANIFEST_SCHEMA_VERSION) {
-    //     return Err(DscError::InvalidManifestSchemaVersion(manifest.schema_version, MANIFEST_SCHEMA_VERSION.to_string()));
-    // }
-    Ok(manifest)
 }
 
 /// Validate a semantic version string.
