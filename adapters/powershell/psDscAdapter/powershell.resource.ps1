@@ -12,6 +12,7 @@ param(
 )
 
 $traceQueue = [System.Collections.Concurrent.ConcurrentQueue[object]]::new()
+$hadErrors = [System.Collections.Concurrent.ConcurrentQueue[bool]]::new()
 
 function Write-DscTrace {
     param(
@@ -344,10 +345,11 @@ $traceLevel = if ($env:DSC_TRACE_LEVEL) {
     [DscTraceLevel]::Warn
 }
 
-$null = Register-ObjectEvent -InputObject $ps.Streams.Error -EventName DataAdding -MessageData $traceQueue -Action {
-    $traceQueue = $Event.MessageData
+$null = Register-ObjectEvent -InputObject $ps.Streams.Error -EventName DataAdding -MessageData @{traceQueue=$traceQueue; hadErrors=$hadErrors} -Action {
+    $traceQueue = $Event.MessageData.traceQueue
     # convert error to string since it's an ErrorRecord
     $traceQueue.Enqueue(@{ error = [string]$EventArgs.ItemAdded })
+    $Event.MessageData.hadErrors.Enqueue($true)
 }
 
 if ($traceLevel -ge [DscTraceLevel]::Warn) {
@@ -392,7 +394,7 @@ try {
     $asyncResult = $ps.BeginInvoke()
     while (-not $asyncResult.IsCompleted) {
         Write-TraceQueue
-    
+
         Start-Sleep -Milliseconds 100
     }
     $outputCollection = $ps.EndInvoke($asyncResult)
@@ -414,6 +416,11 @@ catch {
 finally {
     $ps.Dispose()
     Get-EventSubscriber | Unregister-Event
+}
+
+if ($hadErrors.Count -gt 0) {
+    Write-DscTrace -Now -Operation Error -Message 'Errors were captured during script execution. Check previous error traces for details.'
+    exit 1
 }
 
 foreach ($obj in $outputObjects) {
