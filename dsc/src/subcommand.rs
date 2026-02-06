@@ -579,13 +579,13 @@ pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat
                 resource_command::get(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref());
             }
         },
-        ResourceSubCommand::Set { resource, version, input, file: path, output_format } => {
+        ResourceSubCommand::Set { resource, version, input, file: path, output_format, what_if } => {
             if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new(resource, version.as_deref(), None)], progress_format) {
                 error!("{}: {err}", t!("subcommand.failedDiscoverResource"));
                 exit(EXIT_DSC_ERROR);
             }
             let parsed_input = get_input(input.as_ref(), path.as_ref());
-            resource_command::set(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref());
+            resource_command::set(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref(), *what_if);
         },
         ResourceSubCommand::Test { resource, version, input, file: path, output_format } => {
             if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new(resource, version.as_deref(), None)], progress_format) {
