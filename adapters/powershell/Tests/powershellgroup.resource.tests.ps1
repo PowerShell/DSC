@@ -115,7 +115,7 @@ Describe 'PowerShell adapter resource tests' {
 
     It 'Verify that ClearCache works in PSAdapter' {
         # generate the cache
-        $null = dsc resource list '*' -a Microsoft.DSC/PowerShell 
+        $null = dsc resource list '*' -a Microsoft.DSC/PowerShell
         # call the ClearCache operation
         $scriptPath = Join-Path $PSScriptRoot '..' 'psDscAdapter' 'powershell.resource.ps1'
         $null = & $scriptPath -Operation ClearCache 2>$null
@@ -418,7 +418,7 @@ Describe 'PowerShell adapter resource tests' {
             $null = dsc -l trace resource test -r TestClassResource/StreamResource -i '{"Name":"TestClassResource1"}' 2> $TestDrive/trace_info.log
             $logContent = Get-Content -Path $TestDrive/trace_info.log -Raw
             $LASTEXITCODE | Should -Be 0 -Because $logContent
-            $logContent | Should -Match 'TRACE .*? This is an Information message' -Because $logContent
+            $logContent | Should -Match 'INFO .*? This is an Information message' -Because $logContent
         }
     }
 }

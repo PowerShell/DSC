@@ -99,7 +99,7 @@ $ps = [PowerShell]::Create().AddScript({
         }
 
         Remove-Item -Force -ErrorAction Ignore -Path $cacheFilePath
-        exit
+        return
     }
 
     # Adding some debug info to STDERR
@@ -379,12 +379,7 @@ if ($traceLevel -ge [DscTraceLevel]::Info) {
     $null = Register-ObjectEvent -InputObject $ps.Streams.Information -EventName DataAdding -MessageData $traceQueue -Action {
         $traceQueue = $Event.MessageData
         if ($null -ne $EventArgs.ItemAdded.MessageData) {
-            if ($EventArgs.ItemAdded.Tags -contains 'PSHOST') {
-                $traceQueue.Enqueue(@{ info = $EventArgs.ItemAdded.MessageData.ToString() })
-            } else {
-                $traceQueue.Enqueue(@{ trace = $EventArgs.ItemAdded.MessageData.ToString() })
-            }
-            return
+            $traceQueue.Enqueue(@{ info = $EventArgs.ItemAdded.MessageData.ToString() })
         }
     }
 }
