@@ -434,6 +434,8 @@ finally {
     Get-EventSubscriber | Unregister-Event
 }
 
+# Allow any remaining event handlers time to enqueue to $traceQueue and $hadErrors
+Start-Sleep -Milliseconds 200
 if ($hadErrors.Count -gt 0) {
     Write-DscTrace -Now -Operation Error -Message 'Errors were captured during script execution. Check previous error traces for details.'
     exit 1
