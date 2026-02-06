@@ -1048,7 +1048,7 @@ fn verify_json_from_manifest(resource: &DscResource, json: &str) -> Result<(), D
     };
 
     // see if resource implements validate
-    if  manifest.validate.is_some() {
+    if manifest.validate.is_some() {
         trace!("{}", t!("dscresources.commandResource.validateJson", json = json));
         let result = invoke_validate(resource, json, None)?;
         if result.valid {
