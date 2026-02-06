@@ -784,7 +784,6 @@ pub fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adap
                 (Capability::Get, "g"),
                 (Capability::Set, "s"),
                 (Capability::SetHandlesExist, "x"),
-                (Capability::WhatIf, "w"),
                 (Capability::Test, "t"),
                 (Capability::Delete, "d"),
                 (Capability::Export, "e"),

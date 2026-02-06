@@ -177,6 +177,7 @@ invalidKey = "Unsupported value for key '%{key}'.  Only string, bool, number, an
 inDesiredStateNotBool = "'_inDesiredState' is not a boolean"
 exportNotSupportedUsingGet = "Export is not supported by resource '%{resource}' using get operation"
 runProcessError = "Failed to run process '%{executable}': %{error}"
+whatIfWarning = "Resource '%{resource}' uses deprecated 'whatIf' operation. See https://github.com/PowerShell/DSC/issues/1361 for migration information."
 
 [dscresources.dscresource]
 invokeGet = "Invoking get for '%{resource}'"

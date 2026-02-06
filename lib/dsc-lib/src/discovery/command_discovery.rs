@@ -770,10 +770,6 @@ fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<Ds
             capabilities.push(Capability::SetHandlesExist);
         }
     }
-    if let Some(what_if) = &manifest.what_if {
-        verify_executable(&manifest.resource_type, "what_if", &what_if.executable, path.parent().unwrap());
-        capabilities.push(Capability::WhatIf);
-    }
     if let Some(test) = &manifest.test {
         verify_executable(&manifest.resource_type, "test", &test.executable, path.parent().unwrap());
         capabilities.push(Capability::Test);
