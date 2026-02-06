@@ -64,6 +64,21 @@ $ps = [PowerShell]::Create().AddScript({
         Write-Error ($_ | Format-List -Force | Out-String)
     }
 
+    # NOTE:
+    # The adapter explicitly suppresses Debug and Verbose output by default to avoid
+    # excessively noisy logs from DSC resources that call Write-Debug / Write-Verbose.
+    # As a result, plain:
+    #   Write-Verbose "message"
+    #   Write-Debug   "message"
+    # will NOT emit any output when invoked through this adapter.
+    #
+    # Resource authors who need to guarantee that diagnostic output is emitted MUST
+    # use the -Verbose / -Debug switches, for example:
+    #   Write-Verbose -Verbose "message"
+    #   Write-Debug   -Debug   "message"
+    #
+    # See the adapter's own usage below (e.g. Write-Debug -Debug 'PSVersion=...') for
+    # an example of this pattern.
     $DebugPreference = 'SilentlyContinue'
     $VerbosePreference = 'SilentlyContinue'
     $ErrorActionPreference = 'Continue'
