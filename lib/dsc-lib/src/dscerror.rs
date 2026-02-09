@@ -58,7 +58,10 @@ pub enum DscError {
     #[error("{t} '{0}': {1}", t = t!("dscerror.invalidRequiredVersion"))]
     InvalidRequiredVersion(String, String),
 
-    #[error("{t} '{0}' - {t2}: '{1}'", t = t!("dscerror.invalidTypeNamePrefix"), t2 = t!("dscerror.InvalidTypeNameSuffix"))]
+    #[error("{t} '{0}' - {t2}: '{1}'", t = t!("dscerror.invalidTagPrefix"), t2 = t!("dscerror.invalidTagSuffix"))]
+    InvalidTag(String, String),
+
+    #[error("{t} '{0}' - {t2}: '{1}'", t = t!("dscerror.invalidTypeNamePrefix"), t2 = t!("dscerror.invalidTypeNameSuffix"))]
     InvalidTypeName(String, String),
 
     #[error("IO: {0}")]
