@@ -6,12 +6,11 @@ use schemars::JsonSchema;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
-use std::collections::HashMap;
 
 use crate::dscerror::DscError;
 use crate::extensions::{discover::DiscoverMethod, import::ImportMethod, secret::SecretMethod};
 use crate::schemas::dsc_repo::DscRepoSchema;
-use crate::types::{FullyQualifiedTypeName, TagList};
+use crate::types::{ExitCodesMap, FullyQualifiedTypeName, TagList};
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
@@ -53,8 +52,8 @@ pub struct ExtensionManifest {
     /// Details how to call the Secret method of the extension.
     pub secret: Option<SecretMethod>,
     /// Mapping of exit codes to descriptions.  Zero is always success and non-zero is always failure.
-    #[serde(rename = "exitCodes", skip_serializing_if = "Option::is_none")]
-    pub exit_codes: Option<HashMap<String, String>>,
+    #[serde(rename = "exitCodes", skip_serializing_if = "ExitCodesMap::is_empty_or_default", default)]
+    pub exit_codes: ExitCodesMap,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Map<String, Value>>,
 }

@@ -6,11 +6,10 @@ use schemars::JsonSchema;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
-use std::collections::HashMap;
 
 use crate::{
     schemas::{dsc_repo::DscRepoSchema, transforms::idiomaticize_string_enum},
-    types::{FullyQualifiedTypeName, TagList},
+    types::{ExitCodesMap, FullyQualifiedTypeName, TagList},
 };
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
@@ -85,8 +84,8 @@ pub struct ResourceManifest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub adapter: Option<Adapter>,
     /// Mapping of exit codes to descriptions.  Zero is always success and non-zero is always failure.
-    #[serde(rename = "exitCodes", skip_serializing_if = "Option::is_none")]
-    pub exit_codes: Option<HashMap<String, String>>, // we have to make this a string key instead of i32 due to https://github.com/serde-rs/json/issues/560
+    #[serde(rename = "exitCodes", skip_serializing_if = "ExitCodesMap::is_empty_or_default", default)]
+    pub exit_codes: ExitCodesMap,
     /// Details how to get the schema of the resource.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub schema: Option<SchemaKind>,
