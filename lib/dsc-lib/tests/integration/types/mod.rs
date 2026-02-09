@@ -2,6 +2,10 @@
 // Licensed under the MIT License.
 
 #[cfg(test)]
+mod exit_code;
+#[cfg(test)]
+mod exit_code_map;
+#[cfg(test)]
 mod fully_qualified_type_name;
 #[cfg(test)]
 mod resource_version;
