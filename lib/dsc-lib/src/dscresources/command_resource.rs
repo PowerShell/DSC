@@ -7,7 +7,7 @@ use rust_i18n::t;
 use serde::Deserialize;
 use serde_json::{Map, Value};
 use std::{collections::HashMap, env, path::{Path, PathBuf}, process::Stdio};
-use crate::{configure::{config_doc::ExecutionKind, config_result::{ResourceGetResult, ResourceTestResult}}, types::FullyQualifiedTypeName, util::canonicalize_which};
+use crate::{configure::{config_doc::ExecutionKind, config_result::{ResourceGetResult, ResourceTestResult}}, types::{ExitCodesMap, FullyQualifiedTypeName}, util::canonicalize_which};
 use crate::dscerror::DscError;
 use super::{
     dscresource::{get_diff, redact, DscResource},
@@ -747,13 +747,14 @@ pub fn invoke_resolve(resource: &DscResource, input: &str) -> Result<ResolveResu
 /// * `input` - Optional input to pass to the command
 /// * `cwd` - Optional working directory to execute the command in
 /// * `env` - Optional environment variable mappings to add or update
-/// * `exit_codes` - Optional descriptions of exit codes
+/// * `exit_codes` - Descriptions of exit codes, either defined by the manifest or using the
+///   default descriptions for success and failure.
 ///
 /// # Errors
 ///
 /// Error is returned if the command fails to execute or stdin/stdout/stderr cannot be opened.
 ///
-async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&Path>, env: Option<HashMap<String, String>>, exit_codes: Option<&HashMap<i32, String>>) -> Result<(i32, String, String), DscError> {
+async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&Path>, env: Option<HashMap<String, String>>, exit_codes: &ExitCodesMap) -> Result<(i32, String, String), DscError> {
 
     // use somewhat large initial buffer to avoid early string reallocations;
     // the value is based on list result of largest of built-in adapters - WMI adapter ~500KB
@@ -843,9 +844,15 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
         debug!("{}", t!("dscresources.commandResource.processChildExit", executable = executable, id = child_id, code = code));
 
         if code != 0 {
-            if let Some(exit_codes) = exit_codes {
-                if let Some(error_message) = exit_codes.get(&code) {
-                    return Err(DscError::CommandExitFromManifest(executable.to_string(), code, error_message.to_string()));
+            // Only use manifest-provided exit code mappings when the map is not empty/default,  
+            // so that default mappings do not suppress stderr-based diagnostics.
+            if !exit_codes.is_empty_or_default() {
+                if let Some(error_message) = exit_codes.get_code(code) {
+                    return Err(DscError::CommandExitFromManifest(
+                        executable.to_string(),
+                        code,
+                        error_message.clone()
+                    ));
                 }
             }
             return Err(DscError::Command(executable.to_string(), code, stderr_result));
@@ -858,22 +865,6 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
     }
 }
 
-fn convert_hashmap_string_keys_to_i32(input: Option<&HashMap<String, String>>) -> Result<Option<HashMap<i32, String>>, DscError> {
-    if input.is_none() {
-        return Ok(None);
-    }
-
-    let mut output: HashMap<i32, String> = HashMap::new();
-    for (key, value) in input.unwrap() {
-        if let Ok(key_int) = key.parse::<i32>() {
-            output.insert(key_int, value.clone());
-        } else {
-            return Err(DscError::NotSupported(t!("util.invalidExitCodeKey", key = key).to_string()));
-        }
-    }
-    Ok(Some(output))
-}
-
 /// Invoke a command and return the exit code, stdout, and stderr.
 ///
 /// # Arguments
@@ -883,7 +874,8 @@ fn convert_hashmap_string_keys_to_i32(input: Option<&HashMap<String, String>>) -
 /// * `input` - Optional input to pass to the command
 /// * `cwd` - Optional working directory to execute the command in
 /// * `env` - Optional environment variable mappings to add or update
-/// * `exit_codes` - Optional descriptions of exit codes
+/// * `exit_codes` - Descriptions of exit codes, either defined by the manifest or using the
+///   default descriptions for success and failure.
 ///
 /// # Errors
 ///
@@ -894,8 +886,7 @@ fn convert_hashmap_string_keys_to_i32(input: Option<&HashMap<String, String>>) -
 /// Will panic if tokio runtime can't be created.
 ///
 #[allow(clippy::implicit_hasher)]
-pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&Path>, env: Option<HashMap<String, String>>, exit_codes: Option<&HashMap<String, String>>) -> Result<(i32, String, String), DscError> {
-    let exit_codes = convert_hashmap_string_keys_to_i32(exit_codes)?;
+pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&Path>, env: Option<HashMap<String, String>>, exit_codes: &ExitCodesMap) -> Result<(i32, String, String), DscError> {
     let executable = canonicalize_which(executable, cwd)?;
 
     let run_async = async {
@@ -904,7 +895,7 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
             trace!("{}", t!("dscresources.commandResource.commandCwd", cwd = cwd.display()));
         }
 
-        match run_process_async(&executable, args, input, cwd, env, exit_codes.as_ref()).await {
+        match run_process_async(&executable, args, input, cwd, env, exit_codes).await {
             Ok((code, stdout, stderr)) => {
                 Ok((code, stdout, stderr))
             },
