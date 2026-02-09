@@ -52,6 +52,12 @@ pub enum DscError {
     #[error("{t} '{0}', {t2} {1}, {t3} {2}", t = t!("dscerror.invalidFunctionParameterCount"), t2 = t!("dscerror.expected"), t3 = t!("dscerror.got"))]
     InvalidFunctionParameterCount(String, usize, usize),
 
+    #[error("{t} '{0}': {1}", t = t!("dscerror.invalidExitCode"))]
+    InvalidExitCode(String, core::num::ParseIntError),
+
+    #[error("{t} '{0}': {t2}", t = t!("dscerror.invalidExitCode"), t2 = t!("dscerror.invalidExitCodePlusPrefix"))]
+    InvalidExitCodePlusPrefix(String),
+
     #[error("{0}")]
     InvalidManifest(String),
 
