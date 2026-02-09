@@ -10,7 +10,7 @@ use std::collections::HashMap;
 
 use crate::{
     schemas::{dsc_repo::DscRepoSchema, transforms::idiomaticize_string_enum},
-    types::FullyQualifiedTypeName,
+    types::{FullyQualifiedTypeName, TagList},
 };
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
@@ -56,7 +56,8 @@ pub struct ResourceManifest {
     /// The description of the resource.
     pub description: Option<String>,
     /// Tags for the resource.
-    pub tags: Option<Vec<String>>,
+    #[serde(default, skip_serializing_if = "TagList::is_empty")]
+    pub tags: TagList,
     /// Details how to call the Get method of the resource.
     pub get: Option<GetMethod>,
     /// Details how to call the Set method of the resource.
