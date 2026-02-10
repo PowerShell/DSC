@@ -10,7 +10,7 @@ on:
       - "*.md"
       - ".vscode/*.json"
       - ".github/ISSUE_TEMPLATE/**"
-
+  workflow_dispatch:
 env:
   CARGO_TERM_COLOR: always
 
