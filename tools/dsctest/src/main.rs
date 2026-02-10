@@ -44,8 +44,8 @@ use std::{thread, time::Duration};
 fn main() {
     let args = Args::parse();
     let json = match args.subcommand {
-        SubCommand::Adapter { input , resource_type, operation } => {
-            match adapter::adapt(&resource_type, &input, &operation) {
+        SubCommand::Adapter { input , resource_type, resource_path, operation } => {
+            match adapter::adapt(&resource_type, &input, &operation, &resource_path) {
                 Ok(result) => result,
                 Err(err) => {
                     eprintln!("Error adapting resource: {err}");

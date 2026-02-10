@@ -103,11 +103,23 @@ pub enum DscError {
     #[error("{t}: {0}", t = t!("dscerror.progress"))]
     Progress(#[from] TemplateError),
 
+    #[error("{t}: {0}", t = t!("dscerror.resourceMissingDirectory"))]
+    ResourceMissingDirectory(String),
+
+    #[error("{t}: {0}", t = t!("dscerror.resourceMissingPath"))]
+    ResourceMissingPath(String),
+
     #[error("{t}: {0} {1}", t = t!("dscerror.resourceNotFound"))]
     ResourceNotFound(String, String),
 
     #[error("{t}: {0}", t = t!("dscerror.resourceManifestNotFound"))]
     ResourceManifestNotFound(String),
+
+    #[error("{t}: '{0}'", t = t!("dscerror.resourceVersionToSemverConversion"))]
+    ResourceVersionToSemverConversion(String),
+
+    #[error("{t}: '{0}'", t = t!("dscerror.resourceVersionReqToSemverConversion"))]
+    ResourceVersionReqToSemverConversion(String),
 
     #[error("{t}: {0}", t = t!("dscerror.schema"))]
     Schema(String),
@@ -120,6 +132,14 @@ pub enum DscError {
 
     #[error("semver: {0}")]
     SemVer(#[from] semver::Error),
+
+    #[error(
+        "{t}: '{0}' {t2} '{1}' - {t3}",
+        t = t!("dscerror.semverReqWithBuildMetadataPrefix"),
+        t2 = t!("dscerror.semverReqWithBuildMetadataInfix"),
+        t3 = t!("dscerror.semverReqWithBuildMetadataSuffix")
+    )]
+    SemVerReqWithBuildMetadata(String, String),
 
     #[error("{t}: {0}", t = t!("dscerror.utf8Conversion"))]
     Utf8Conversion(#[from] Utf8Error),

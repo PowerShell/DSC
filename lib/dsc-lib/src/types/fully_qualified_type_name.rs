@@ -86,6 +86,8 @@ impl FullyQualifiedTypeName {
     /// Creates a new instance of [`FullyQualifiedTypeName`] from a string if the input is valid for the
     /// [`VALIDATING_PATTERN`]. If the string is invalid, the method raises the
     /// [`DscError::InvalidTypeName`] error.
+    ///
+    /// [`VALIDATING_PATTERN`]: Self::VALIDATING_PATTERN
     pub fn new(name: &str) -> Result<Self, DscError> {
         Self::validate(name)?;
         Ok(Self(name.to_string()))
