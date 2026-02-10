@@ -20,6 +20,7 @@ pub enum Schemas {
     Trace,
     Version,
     WhatIf,
+    WhatIfDelete
 }
 
 #[derive(Debug, Parser)]
@@ -140,6 +141,12 @@ pub enum SubCommand {
 
     #[clap(name = "whatif", about = "Check if it is a whatif operation")]
     WhatIf {
+        #[clap(name = "whatif", short, long, help = "Run as a whatif executionType instead of actual executionType")]
+        what_if: bool,
+    },
+
+    #[clap(name = "whatif-delete", about = "Check if it is a whatif delete operation")]
+    WhatIfDelete {
         #[clap(name = "whatif", short, long, help = "Run as a whatif executionType instead of actual executionType")]
         what_if: bool,
     }

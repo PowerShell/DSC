@@ -9,7 +9,17 @@ use serde_json::{Map, Value};
 use std::{collections::HashMap, env, path::{Path, PathBuf}, process::Stdio};
 use crate::{configure::{config_doc::ExecutionKind, config_result::{ResourceGetResult, ResourceTestResult}}, types::FullyQualifiedTypeName, util::canonicalize_which};
 use crate::dscerror::DscError;
-use super::{dscresource::{get_diff, redact, DscResource}, invoke_result::{ExportResult, GetResult, ResolveResult, SetResult, TestResult, ValidateResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse, get_in_desired_state}, resource_manifest::{GetArgKind, SetDeleteArgKind, InputKind, Kind, ReturnKind, SchemaKind}};
+use super::{
+    dscresource::{get_diff, redact, DscResource},
+    invoke_result::{
+        DeleteResult, DeleteResultKind, ExportResult,
+        GetResult, ResolveResult, SetResult, TestResult, ValidateResult,
+        ResourceGetResponse, ResourceSetResponse, ResourceTestResponse, get_in_desired_state
+    },
+    resource_manifest::{
+        GetArgKind, SetDeleteArgKind, InputKind, Kind, ReturnKind, SchemaKind
+    }
+};
 use tracing::{error, warn, info, debug, trace};
 use tokio::{io::{AsyncBufReadExt, AsyncWriteExt, BufReader}, process::Command};
 
@@ -481,7 +491,7 @@ fn invoke_synthetic_test(resource: &DscResource, expected: &str, target_resource
 /// # Errors
 ///
 /// Error is returned if the underlying command returns a non-zero exit code.
-pub fn invoke_delete(resource: &DscResource, filter: &str, target_resource: Option<&DscResource>) -> Result<(), DscError> {
+pub fn invoke_delete(resource: &DscResource, filter: &str, target_resource: Option<&DscResource>, execution_type: &ExecutionKind) -> Result<DeleteResultKind, DscError> {
     let Some(manifest) = &resource.manifest else {
         return Err(DscError::MissingManifest(resource.type_name.to_string()));
     };
@@ -504,13 +514,23 @@ pub fn invoke_delete(resource: &DscResource, filter: &str, target_resource: Opti
         type_name: resource_type.clone(),
         path,
     };
-    let (args, _) = process_set_delete_args(delete.args.as_ref(), filter, &command_resource_info, &ExecutionKind::Actual);
+    let (args, supports_whatif) = process_set_delete_args(delete.args.as_ref(), filter, &command_resource_info, execution_type);
+    if execution_type == &ExecutionKind::WhatIf && !supports_whatif {
+        // perform a synthetic what-if by calling test and wrapping the TestResult in DeleteResultKind::SyntheticWhatIf
+        let test_result = invoke_test(resource, filter, target_resource.clone())?;
+        return Ok(DeleteResultKind::SyntheticWhatIf(test_result));
+    }
     let command_input = get_command_input(delete.input.as_ref(), filter)?;
 
     info!("{}", t!("dscresources.commandResource.invokeDeleteUsing", resource = resource_type, executable = &delete.executable));
-    let (_exit_code, _stdout, _stderr) = invoke_command(&delete.executable, args, command_input.stdin.as_deref(), Some(&resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
-
-    Ok(())
+    let (_exit_code, stdout, _stderr) = invoke_command(&delete.executable, args, command_input.stdin.as_deref(), Some(&resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
+    let result = if execution_type == &ExecutionKind::WhatIf {
+        let delete_result: DeleteResult = serde_json::from_str(&stdout)?;
+        DeleteResultKind::ResourceWhatIf(delete_result)
+    } else {
+        DeleteResultKind::ResourceActual
+    };
+    Ok(result)
 }
 
 /// Invoke the validate operation against a command resource.
