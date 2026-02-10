@@ -525,7 +525,6 @@ pub fn invoke_delete(resource: &DscResource, filter: &str, target_resource: Opti
     info!("{}", t!("dscresources.commandResource.invokeDeleteUsing", resource = resource_type, executable = &delete.executable));
     let (_exit_code, stdout, _stderr) = invoke_command(&delete.executable, args, command_input.stdin.as_deref(), Some(&resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
     let result = if execution_type == &ExecutionKind::WhatIf {
-        println!("RESULT: {}", stdout);
         let delete_result: DeleteResult = serde_json::from_str(&stdout)?;
         DeleteResultKind::ResourceWhatIf(delete_result)
     } else {
