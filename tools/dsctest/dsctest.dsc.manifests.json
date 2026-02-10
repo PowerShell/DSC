@@ -907,6 +907,36 @@
           ]
         }
       }
+    },
+        {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/WhatIfDelete",
+      "version": "0.1.0",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "whatif-delete"
+        ]
+      },
+      "delete": {
+        "executable": "dsctest",
+        "args": [
+          "whatif-delete",
+          {
+            "whatIfArg": "-w"
+          }
+        ]
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "what-if-delete"
+          ]
+        }
+      }
     }
   ]
 }
