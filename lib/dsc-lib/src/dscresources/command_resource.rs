@@ -514,7 +514,7 @@ pub fn invoke_delete(resource: &DscResource, filter: &str, target_resource: Opti
         type_name: resource_type.clone(),
         path,
     };
-    let (args, supports_whatif) = process_set_delete_args(delete.args.as_ref(), filter, &command_resource_info, &ExecutionKind::Actual);
+    let (args, supports_whatif) = process_set_delete_args(delete.args.as_ref(), filter, &command_resource_info, execution_type);
     if execution_type == &ExecutionKind::WhatIf && !supports_whatif {
         // perform a synthetic what-if by calling test and wrapping the TestResult in DeleteResultKind::SyntheticWhatIf
         let test_result = invoke_test(resource, filter, target_resource.clone())?;
@@ -525,6 +525,7 @@ pub fn invoke_delete(resource: &DscResource, filter: &str, target_resource: Opti
     info!("{}", t!("dscresources.commandResource.invokeDeleteUsing", resource = resource_type, executable = &delete.executable));
     let (_exit_code, stdout, _stderr) = invoke_command(&delete.executable, args, command_input.stdin.as_deref(), Some(&resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
     let result = if execution_type == &ExecutionKind::WhatIf {
+        println!("RESULT: {}", stdout);
         let delete_result: DeleteResult = serde_json::from_str(&stdout)?;
         DeleteResultKind::ResourceWhatIf(delete_result)
     } else {
