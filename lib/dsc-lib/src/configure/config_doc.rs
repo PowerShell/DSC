@@ -23,6 +23,17 @@ pub enum SecurityContextKind {
     Restricted,
 }
 
+impl Display for SecurityContextKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let context_str = match self {
+            SecurityContextKind::Current => "current",
+            SecurityContextKind::Elevated => "elevated",
+            SecurityContextKind::Restricted => "restricted",
+        };
+        write!(f, "{context_str}")
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
 #[schemars(transform = idiomaticize_string_enum)]
@@ -158,7 +169,25 @@ pub struct ExecutionInformation {
     pub version: Option<String>,
     /// Information about what-if operations performed during this execution, if any
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub what_if: Option<Vec<String>>,
+    pub what_if: Option<Vec<Value>>,
+}
+
+impl ExecutionInformation {
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            duration: None,
+            end_datetime: None,
+            execution_type: None,
+            operation: None,
+            restart_required: None,
+            copy_loops: None,
+            security_context: None,
+            start_datetime: None,
+            version: None,
+            what_if: None,
+        }
+    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
