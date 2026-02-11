@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use crate::configure::config_doc::ConfigDirective;
 use crate::configure::context::{Context, ProcessMode};
 use crate::configure::parameters::import_parameters;
 use crate::configure::{config_doc::{ExecutionKind, IntOrExpression, Metadata, Parameter, Resource, ResourceDiscoveryMode, RestartRequired, ValueOrCopy}};
@@ -15,6 +16,7 @@ use crate::DscResource;
 use crate::discovery::Discovery;
 use crate::parser::Statement;
 use crate::progress::{Failure, ProgressBar, ProgressFormat};
+use crate::types::{SemanticVersion, SemanticVersionReq};
 use crate::util::resource_id;
 use self::config_doc::{Configuration, DataType, MicrosoftDscMetadata, Operation, SecurityContextKind};
 use self::depends_on::get_resource_invocation_order;
@@ -233,31 +235,44 @@ fn get_require_adapter_from_metadata(resource_metadata: &Option<Metadata>) -> Op
     None
 }
 
-fn check_security_context(metadata: Option<&Metadata>) -> Result<(), DscError> {
-    if metadata.is_none() {
+fn check_security_context(metadata: Option<&Metadata>, directives: Option<&ConfigDirective>) -> Result<(), DscError> {
+    if metadata.is_none() && directives.is_none() {
         return Ok(());
     }
 
+    let mut security_context_required: Option<&SecurityContextKind> = None;
     if let Some(metadata) = &metadata {
         if let Some(microsoft_dsc) = &metadata.microsoft {
             if let Some(required_security_context) = &microsoft_dsc.security_context {
-                match required_security_context {
-                    SecurityContextKind::Current => {
-                        // no check needed
-                    },
-                    SecurityContextKind::Elevated => {
-                        if get_security_context() != SecurityContext::Admin {
-                            return Err(DscError::SecurityContext(t!("configure.mod.elevationRequired").to_string()));
-                        }
-                    },
-                    SecurityContextKind::Restricted => {
-                        if get_security_context() != SecurityContext::User {
-                            return Err(DscError::SecurityContext(t!("configure.mod.restrictedRequired").to_string()));
-                        }
-                    },
-                }
+                warn!("{}", t!("configure.mod.securityContextInMetadataDeprecated"));
+                security_context_required = Some(required_security_context);
             }
         }
+    }
+
+    if let Some(directives) = directives {
+        if let Some(directive_security_context) = &directives.security_context {
+            if security_context_required.is_some() && security_context_required != Some(directive_security_context) {
+                return Err(DscError::SecurityContext(t!("configure.mod.conflictingSecurityContext", metadata = security_context_required : {:?}, directive = directive_security_context : {:?}).to_string()));
+            }
+            security_context_required = Some(directive_security_context);
+        }
+    }
+
+    match security_context_required {
+        Some(SecurityContextKind::Elevated) => {
+            if get_security_context() != SecurityContext::Admin {
+                return Err(DscError::SecurityContext(t!("configure.mod.elevationRequired").to_string()));
+            }
+        },
+        Some(SecurityContextKind::Restricted) => {
+            if get_security_context() != SecurityContext::User {
+                return Err(DscError::SecurityContext(t!("configure.mod.restrictedRequired").to_string()));
+            }
+        },
+        None | Some(SecurityContextKind::Current) => {
+            // no check needed
+        },
     }
 
     Ok(())
@@ -1028,7 +1043,16 @@ impl Configurator {
 
     fn validate_config(&mut self) -> Result<(), DscError> {
         let config: Configuration = serde_json::from_str(self.json.as_str())?;
-        check_security_context(config.metadata.as_ref())?;
+        check_security_context(config.metadata.as_ref(), config.directives.as_ref())?;
+        if let Some(directives) = &config.directives {
+            if let Some(version) = &directives.version {
+                let dsc_version = SemanticVersion::parse(env!("CARGO_PKG_VERSION"))?;
+                let version_req = SemanticVersionReq::parse(&version)?;
+                if !version_req.matches(&dsc_version) {
+                    return Err(DscError::Validation(t!("configure.mod.versionNotSatisfied", required_version = version, current_version = env!("CARGO_PKG_VERSION")).to_string()));
+                }
+            }
+        }
 
         let mut skip_resource_validation = false;
         if let Some(metadata) = &config.metadata {

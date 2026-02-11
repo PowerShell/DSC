@@ -85,6 +85,9 @@ secureOutputSkipped = "Secure output '%{name}' is skipped"
 outputTypeNotMatch = "Output '%{name}' type does not match expected type '%{expected_type}'"
 copyNotSupported = "Copy for output '%{name}' is currently not supported"
 skippingResourceDiscovery = "Skipping resource discovery due to 'resourceDiscovery' mode set to 'DuringDeployment'"
+securityContextInMetadataDeprecated = "Using Microsoft.DSC metadata to specify required security context is deprecated. Please use the 'securityContext' directive in the configuration document instead.  See https://github.com/PowerShell/DSC/issues/1369 for more details."
+conflictingSecurityContext = "Conflicting security context specified in configuration document: metadata '%{security_context_required}' and directive '%{directive_security_context}'"
+versionNotSatisfied = "Configuration requires DSC version '%{required_version}', but the current version is '%{current_version}'"
 
 [configure.parameters]
 importingParametersFromComplexInput = "Importing parameters from complex input"
