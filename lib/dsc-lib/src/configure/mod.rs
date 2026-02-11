@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::configure::config_doc::ConfigDirective;
+use crate::configure::config_doc::{ConfigDirective, ExecutionInformation};
 use crate::configure::context::{Context, ProcessMode};
 use crate::configure::parameters::import_parameters;
 use crate::configure::{config_doc::{ExecutionKind, IntOrExpression, Metadata, Parameter, Resource, ResourceDiscoveryMode, RestartRequired, ValueOrCopy}};
@@ -105,13 +105,15 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf
             }
             r.properties = escape_property_values(&props)?;
             let mut properties = serde_json::to_value(&r.properties)?;
-            get_metadata_from_result(None, &mut properties, &mut metadata)?;
+            let mut execution_information = ExecutionInformation::new();
+            get_metadata_from_result(None, &mut properties, &mut metadata, &mut execution_information)?;
             r.properties = Some(properties.as_object().cloned().unwrap_or_default());
             r.metadata = if metadata.microsoft.is_some() || !metadata.other.is_empty() {
                 Some(metadata)
             } else {
                 None
             };
+            r.execution_information = Some(execution_information);
 
             conf.resources.push(r);
         }
@@ -253,7 +255,7 @@ fn check_security_context(metadata: Option<&Metadata>, directives: Option<&Confi
     if let Some(directives) = directives {
         if let Some(directive_security_context) = &directives.security_context {
             if security_context_required.is_some() && security_context_required != Some(directive_security_context) {
-                return Err(DscError::SecurityContext(t!("configure.mod.conflictingSecurityContext", metadata = security_context_required : {:?}, directive = directive_security_context : {:?}).to_string()));
+                return Err(DscError::SecurityContext(t!("configure.mod.conflictingSecurityContext", metadata = security_context_required.unwrap(), directive = directive_security_context).to_string()));
             }
             security_context_required = Some(directive_security_context);
         }
@@ -278,7 +280,7 @@ fn check_security_context(metadata: Option<&Metadata>, directives: Option<&Confi
     Ok(())
 }
 
-fn get_metadata_from_result(mut context: Option<&mut Context>, result: &mut Value, metadata: &mut Metadata) -> Result<(), DscError> {
+fn get_metadata_from_result(mut context: Option<&mut Context>, result: &mut Value, metadata: &mut Metadata, execution_information: &mut ExecutionInformation) -> Result<(), DscError> {
     if let Some(metadata_value) = result.get("_metadata") {
         if let Some(metadata_map) = metadata_value.as_object() {
             for (key, value) in metadata_map {
@@ -290,6 +292,7 @@ fn get_metadata_from_result(mut context: Option<&mut Context>, result: &mut Valu
                     if key == "_restartRequired" {
                         if let Ok(restart_required) = serde_json::from_value::<Vec<RestartRequired>>(value.clone()) {
                             context.restart_required.get_or_insert_with(Vec::new).extend(restart_required);
+                            execution_information.restart_required = context.restart_required.clone();
                         } else {
                             warn!("{}", t!("configure.mod.metadataRestartRequiredInvalid", value = value));
                             continue;
@@ -432,10 +435,11 @@ impl Configurator {
                 other: Map::new(),
             };
 
+            let mut execution_information = ExecutionInformation::new();
             match &mut get_result {
                 GetResult::Resource(ref mut resource_result) => {
                     self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), serde_json::to_value(&resource_result.actual_state)?);
-                    get_metadata_from_result(Some(&mut self.context), &mut resource_result.actual_state, &mut metadata)?;
+                    get_metadata_from_result(Some(&mut self.context), &mut resource_result.actual_state, &mut metadata, &mut execution_information)?;
                 },
                 GetResult::Group(group) => {
                     let mut results = Vec::<Value>::new();
@@ -446,6 +450,7 @@ impl Configurator {
                 },
             }
             let resource_result = config_result::ResourceGetResult {
+                execution_information: Some(execution_information),
                 metadata: Some(metadata),
                 name: evaluated_name,
                 resource_type: resource.resource_type.clone(),
@@ -459,6 +464,9 @@ impl Configurator {
         result.metadata = Some(
             self.get_result_metadata(Operation::Get)
         );
+        let mut execution_information = ExecutionInformation::new();
+        self.get_execution_information(Operation::Get, &mut execution_information);
+        result.execution_information = Some(execution_information);
         self.process_output()?;
         if !self.context.outputs.is_empty() {
             result.outputs = Some(self.context.outputs.clone());
@@ -622,10 +630,11 @@ impl Configurator {
                 ),
                 other: other_metadata,
             };
+            let mut execution_information = ExecutionInformation::new();
             match &mut set_result {
                 SetResult::Resource(resource_result) => {
                     self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), serde_json::to_value(&resource_result.after_state)?);
-                    get_metadata_from_result(Some(&mut self.context), &mut resource_result.after_state, &mut metadata)?;
+                    get_metadata_from_result(Some(&mut self.context), &mut resource_result.after_state, &mut metadata, &mut execution_information)?;
                 },
                 SetResult::Group(group) => {
                     let mut results = Vec::<Value>::new();
@@ -636,6 +645,7 @@ impl Configurator {
                 },
             }
             let resource_result = config_result::ResourceSetResult {
+                execution_information: Some(execution_information),
                 metadata: Some(metadata),
                 name: evaluated_name,
                 resource_type: resource.resource_type.clone(),
@@ -649,6 +659,9 @@ impl Configurator {
         result.metadata = Some(
             self.get_result_metadata(Operation::Set)
         );
+        let mut execution_information = ExecutionInformation::new();
+        self.get_execution_information(Operation::Set, &mut execution_information);
+        result.execution_information = Some(execution_information);
         self.process_output()?;
         if !self.context.outputs.is_empty() {
             result.outputs = Some(self.context.outputs.clone());
@@ -703,10 +716,11 @@ impl Configurator {
                 ),
                 other: Map::new(),
             };
+            let mut execution_information = ExecutionInformation::new();
             match &mut test_result {
                 TestResult::Resource(resource_test_result) => {
                     self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), serde_json::to_value(&resource_test_result.actual_state)?);
-                    get_metadata_from_result(Some(&mut self.context), &mut resource_test_result.actual_state, &mut metadata)?;
+                    get_metadata_from_result(Some(&mut self.context), &mut resource_test_result.actual_state, &mut metadata, &mut execution_information)?;
                 },
                 TestResult::Group(group) => {
                     let mut results = Vec::<Value>::new();
@@ -717,6 +731,7 @@ impl Configurator {
                 },
             }
             let resource_result = config_result::ResourceTestResult {
+                execution_information: Some(execution_information),
                 metadata: Some(metadata),
                 name: evaluated_name,
                 resource_type: resource.resource_type.clone(),
@@ -730,6 +745,9 @@ impl Configurator {
         result.metadata = Some(
             self.get_result_metadata(Operation::Test)
         );
+        let mut execution_information = ExecutionInformation::new();
+        self.get_execution_information(Operation::Test, &mut execution_information);
+        result.execution_information = Some(execution_information);
         self.process_output()?;
         if !self.context.outputs.is_empty() {
             result.outputs = Some(self.context.outputs.clone());
@@ -1039,6 +1057,15 @@ impl Configurator {
             ),
             other: Map::new(),
         }
+    }
+
+    fn get_execution_information(&self, operation: Operation, execution_information: &mut ExecutionInformation) {
+        let end_datetime = chrono::Local::now();
+        execution_information.duration = Some(end_datetime.signed_duration_since(self.context.start_datetime).to_string());
+        execution_information.end_datetime = Some(end_datetime.to_rfc3339());
+        execution_information.execution_type = Some(self.context.execution_type.clone());
+        execution_information.operation = Some(operation);
+        execution_information.restart_required = self.context.restart_required.clone();
     }
 
     fn validate_config(&mut self) -> Result<(), DscError> {

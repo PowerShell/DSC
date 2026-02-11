@@ -36,7 +36,7 @@ resources:
 '@
         $out = dsc config get -i $configYaml 2>$testdrive/error.log
         $errorLog = Get-Content -Path $testdrive/error.log -Raw
-        $errorLog | Should -Contain 'Using Microsoft.DSC metadata to specify required security context is deprecated. Please use the ''securityContext'' directive in the configuration document instead.'
+        $errorLog | Should -BeLike "*Using 'Microsoft.DSC' metadata to specify required security context is deprecated. Please use the 'securityContext' directive in the configuration document instead.*"
         if ($isAdmin) {
             $LASTEXITCODE | Should -Be 0
             $out | Should -Not -BeNullOrEmpty
@@ -70,9 +70,9 @@ resources:
   type: Microsoft/OSInfo
   properties: {}
 '@
-        $out = dsc config get -i $configYaml 2>$testdrive/error.log
+        $null = dsc config get -i $configYaml 2>$testdrive/error.log
         $errorLog = Get-Content -Path $testdrive/error.log -Raw
-        $errorLog | Should -Contain 'Conflicting security context specified in configuration document: metadata ''elevated'' and directive ''restricted'''
+        $errorLog | Should -BeLike "*Conflicting security context specified in configuration document: metadata 'elevated' and directive 'restricted'*"
         $LASTEXITCODE | Should -Be 2
     }
 
@@ -81,7 +81,7 @@ resources:
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 metadata:
   Microsoft.DSC:
-    securityContext: non-elevated
+    securityContext: restricted
 resources:
 - name: os
   type: Microsoft/OSInfo
@@ -89,7 +89,7 @@ resources:
 '@
         $out = dsc config get -i $configYaml 2>$testdrive/error.log
         $errorLog = Get-Content -Path $testdrive/error.log -Raw
-        $errorLog | Should -Contain 'Using Microsoft.DSC metadata to specify required security context is deprecated. Please use the ''securityContext'' directive in the configuration document instead.'
+        $errorLog | Should -BeLike "*Using 'Microsoft.DSC' metadata to specify required security context is deprecated. Please use the 'securityContext' directive in the configuration document instead.*"
         if ($isAdmin) {
             $LASTEXITCODE | Should -Be 2
         }
