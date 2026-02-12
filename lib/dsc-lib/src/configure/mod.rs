@@ -291,8 +291,8 @@ fn get_metadata_from_result(mut context: Option<&mut Context>, result: &mut Valu
                 if let Some(ref mut context) = context {
                     if key == "_restartRequired" {
                         if let Ok(restart_required) = serde_json::from_value::<Vec<RestartRequired>>(value.clone()) {
+                            execution_information.restart_required = Some(restart_required.clone());
                             context.restart_required.get_or_insert_with(Vec::new).extend(restart_required);
-                            execution_information.restart_required = context.restart_required.clone();
                         } else {
                             warn!("{}", t!("configure.mod.metadataRestartRequiredInvalid", value = value));
                             continue;
@@ -613,11 +613,13 @@ impl Configurator {
             }
 
             // Process metadata - only add whatIf if we have ResourceWhatIf variant
+            let mut execution_information = ExecutionInformation::new_with_duration(&start_datetime, &end_datetime);
             let mut other_metadata = Map::new();
             if self.context.execution_type == ExecutionKind::WhatIf {
                 if let Some(delete_res) = delete_what_if_metadata {
                     if let Some(metadata) = delete_res.metadata {
                         if let Some(what_if) = metadata.what_if {
+                            execution_information.what_if = Some(what_if.clone());
                             other_metadata.insert("whatIf".to_string(), what_if);
                         }
                     }
@@ -630,7 +632,6 @@ impl Configurator {
                 ),
                 other: other_metadata,
             };
-            let mut execution_information = ExecutionInformation::new();
             match &mut set_result {
                 SetResult::Resource(resource_result) => {
                     self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), serde_json::to_value(&resource_result.after_state)?);
