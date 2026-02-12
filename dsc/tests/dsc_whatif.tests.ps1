@@ -153,12 +153,15 @@ Describe 'whatif tests' {
         $what_if_result.hadErrors | Should -BeFalse
         $what_if_result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'whatIf'
         $what_if_result.results[0].metadata.whatIf[0] | Should -BeExactly 'Delete what-if message 1'
+        $what_if_result.results[0].executionInformation.whatIf[0] | Should -BeExactly 'Delete what-if message 1'
         $what_if_result.results[0].metadata.whatIf[1] | Should -BeExactly 'Delete what-if message 2'
+        $what_if_result.results[0].executionInformation.whatIf[1] | Should -BeExactly 'Delete what-if message 2'
         $set_result = $config_yaml | dsc config set -f - | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $set_result.hadErrors | Should -BeFalse
         $set_result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'actual'
         $set_result.results[0].metadata.whatIf | Should -BeNullOrEmpty
+        $set_result.results[0].executionInformation.whatIf | Should -BeNullOrEmpty
     }
 
     It 'Synthetic what-if for delete resource works' {
