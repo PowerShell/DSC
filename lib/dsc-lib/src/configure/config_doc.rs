@@ -169,7 +169,7 @@ pub struct ExecutionInformation {
     pub version: Option<String>,
     /// Information about what-if operations performed during this execution, if any
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub what_if: Option<Vec<Value>>,
+    pub what_if: Option<Value>,
 }
 
 impl ExecutionInformation {
@@ -186,6 +186,13 @@ impl ExecutionInformation {
             start_datetime: None,
             version: None,
             what_if: None,
+        }
+    }
+
+    pub fn new_with_duration(start: &DateTime<Local>, end: &DateTime<Local>) -> Self {
+        Self {
+            duration: Some(end.signed_duration_since(*start).to_string()),
+            ..Self::new()
         }
     }
 }
