@@ -428,6 +428,7 @@ impl Configurator {
                 },
             };
             let end_datetime = chrono::Local::now();
+            let mut execution_information = ExecutionInformation::new_with_duration(&start_datetime, &end_datetime);
             let mut metadata = Metadata {
                 microsoft: Some(
                     MicrosoftDscMetadata::new_with_duration(&start_datetime, &end_datetime)
@@ -435,7 +436,6 @@ impl Configurator {
                 other: Map::new(),
             };
 
-            let mut execution_information = ExecutionInformation::new();
             match &mut get_result {
                 GetResult::Resource(ref mut resource_result) => {
                     self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), serde_json::to_value(&resource_result.actual_state)?);
@@ -711,13 +711,13 @@ impl Configurator {
                 },
             };
             let end_datetime = chrono::Local::now();
+            let mut execution_information = ExecutionInformation::new_with_duration(&start_datetime, &end_datetime);
             let mut metadata = Metadata {
                 microsoft: Some(
                     MicrosoftDscMetadata::new_with_duration(&start_datetime, &end_datetime)
                 ),
                 other: Map::new(),
             };
-            let mut execution_information = ExecutionInformation::new();
             match &mut test_result {
                 TestResult::Resource(resource_test_result) => {
                     self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), serde_json::to_value(&resource_test_result.actual_state)?);
@@ -1064,6 +1064,8 @@ impl Configurator {
         let end_datetime = chrono::Local::now();
         execution_information.duration = Some(end_datetime.signed_duration_since(self.context.start_datetime).to_string());
         execution_information.end_datetime = Some(end_datetime.to_rfc3339());
+        execution_information.start_datetime = Some(self.context.start_datetime.to_rfc3339());
+        execution_information.version = self.context.dsc_version.clone();
         execution_information.execution_type = Some(self.context.execution_type.clone());
         execution_information.operation = Some(operation);
         execution_information.restart_required = self.context.restart_required.clone();
