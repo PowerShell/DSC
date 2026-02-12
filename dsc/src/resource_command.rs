@@ -128,7 +128,7 @@ pub fn get_all(dsc: &mut DscManager, resource_type: &str, version: Option<&str>,
     }
 }
 
-pub fn set(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, input: &str, format: Option<&OutputFormat>) {
+pub fn set(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, input: &str, format: Option<&OutputFormat>, what_if: bool) {
     if input.is_empty() {
         error!("{}", t!("resource_command.setInputEmpty"));
         exit(EXIT_INVALID_ARGS);
@@ -144,6 +144,8 @@ pub fn set(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, inp
         error!("{}: {}", t!("resource_command.invalidOperationOnAdapter"), resource.type_name);
         exit(EXIT_DSC_ERROR);
     }
+
+    let execution_kind = if what_if { ExecutionKind::WhatIf } else { ExecutionKind::Actual };
 
     let exist = match serde_json::from_str::<Value>(input) {
         Ok(v) => {
@@ -201,7 +203,7 @@ pub fn set(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, inp
         return;
     }
 
-    match resource.set(input, true, &ExecutionKind::Actual) {
+    match resource.set(input, true, &execution_kind) {
         Ok(result) => {
             // convert to json
             let json = match serde_json::to_string(&result) {
