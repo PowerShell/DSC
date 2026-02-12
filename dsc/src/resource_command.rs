@@ -182,15 +182,6 @@ pub fn set(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, inp
                 error!("{err}");
                 exit(EXIT_DSC_ERROR);
             }
-
-            match resource.get(input) {
-                Ok(GetResult::Resource(response)) => response.actual_state,
-                Ok(_) => unreachable!(),
-                Err(err) => {
-                    error!("{err}");
-                    exit(EXIT_DSC_ERROR);
-                }
-            }
         };
 
         let diff = get_diff(&before_state, &after_state);
