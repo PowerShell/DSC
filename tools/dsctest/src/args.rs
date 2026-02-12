@@ -20,6 +20,7 @@ pub enum Schemas {
     Trace,
     Version,
     WhatIf,
+    WhatIfDelete
 }
 
 #[derive(Debug, Parser)]
@@ -46,8 +47,10 @@ pub enum SubCommand {
     Adapter {
         #[clap(name = "input", short, long, help = "The input to the adapter command as JSON")]
         input: String,
-        #[clap(name = "resource-type", short, long, help = "The resource type to adapt to")]
+        #[clap(name = "resource-type", long, help = "The resource type to adapt to")]
         resource_type: String,
+        #[clap(name = "resource-path", long, help = "The path to the adapted resource")]
+        resource_path: Option<String>,
         #[clap(name = "operation", short, long, help = "The operation to perform")]
         operation: AdapterOperation,
     },
@@ -138,6 +141,12 @@ pub enum SubCommand {
 
     #[clap(name = "whatif", about = "Check if it is a whatif operation")]
     WhatIf {
+        #[clap(name = "whatif", short, long, help = "Run as a whatif executionType instead of actual executionType")]
+        what_if: bool,
+    },
+
+    #[clap(name = "whatif-delete", about = "Check if it is a whatif delete operation")]
+    WhatIfDelete {
         #[clap(name = "whatif", short, long, help = "Run as a whatif executionType instead of actual executionType")]
         what_if: bool,
     }

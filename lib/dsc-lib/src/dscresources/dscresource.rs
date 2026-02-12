@@ -21,11 +21,9 @@ use super::{
     command_resource,
     dscerror,
     invoke_result::{
-        ExportResult, GetResult, ResolveResult, ResourceTestResponse, SetResult, TestResult, ValidateResult
+        DeleteResultKind, ExportResult, GetResult, ResolveResult, ResourceTestResponse, SetResult, TestResult, ValidateResult
     },
-    resource_manifest::{
-        import_manifest, ResourceManifest
-    }
+    resource_manifest::ResourceManifest,
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
@@ -49,18 +47,20 @@ pub struct DscResource {
     pub directory: PathBuf,
     /// The implementation of the resource.
     #[serde(rename="implementedAs")]
-    pub implemented_as: ImplementedAs,
+    pub implemented_as: Option<ImplementedAs>,
     /// The author of the resource.
     pub author: Option<String>,
     /// The properties of the resource.
-    pub properties: Vec<String>,
+    pub properties: Option<Vec<String>>,
     /// The required resource adapter for the resource.
     #[serde(rename="requireAdapter")]
     pub require_adapter: Option<FullyQualifiedTypeName>,
+    /// The JSON Schema of the resource.
+    pub schema: Option<Map<String, Value>>,
     /// The target resource for the resource adapter.
-    pub target_resource: Option<FullyQualifiedTypeName>,
+    pub target_resource: Option<Box<DscResource>>,
     /// The manifest of the resource.
-    pub manifest: Option<Value>,
+    pub manifest: Option<ResourceManifest>,
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
@@ -106,10 +106,11 @@ impl DscResource {
             description: None,
             path: PathBuf::new(),
             directory: PathBuf::new(),
-            implemented_as: ImplementedAs::Command,
+            implemented_as: Some(ImplementedAs::Command),
             author: None,
-            properties: Vec::new(),
+            properties: None,
             require_adapter: None,
+            schema: None,
             target_resource: None,
             manifest: None,
         }
@@ -141,11 +142,11 @@ impl DscResource {
         Ok(configurator)
     }
 
-    fn invoke_get_with_adapter(&self, adapter: &FullyQualifiedTypeName, resource_name: &FullyQualifiedTypeName, filter: &str) -> Result<GetResult, DscError> {
+    fn invoke_get_with_adapter(&self, adapter: &FullyQualifiedTypeName, target_resource: &DscResource, filter: &str) -> Result<GetResult, DscError> {
         let mut configurator = self.clone().create_config_for_adapter(adapter, filter)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
-            adapter.target_resource = Some(FullyQualifiedTypeName::new(resource_name)?);
+            adapter.target_resource = Some(Box::new(target_resource.clone()));
             return adapter.get(filter);
         }
 
@@ -165,11 +166,11 @@ impl DscResource {
         Ok(get_result)
     }
 
-    fn invoke_set_with_adapter(&self, adapter: &FullyQualifiedTypeName, resource_name: &FullyQualifiedTypeName, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
+    fn invoke_set_with_adapter(&self, adapter: &FullyQualifiedTypeName, target_resource: &DscResource, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
         let mut configurator = self.clone().create_config_for_adapter(adapter, desired)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
-            adapter.target_resource = Some(resource_name.clone());
+            adapter.target_resource = Some(Box::new(target_resource.clone()));
             return adapter.set(desired, skip_test, execution_type);
         }
 
@@ -198,11 +199,11 @@ impl DscResource {
         Ok(set_result)
     }
 
-    fn invoke_test_with_adapter(&self, adapter: &FullyQualifiedTypeName, resource_name: &FullyQualifiedTypeName, expected: &str) -> Result<TestResult, DscError> {
+    fn invoke_test_with_adapter(&self, adapter: &FullyQualifiedTypeName, target_resource: &DscResource, expected: &str) -> Result<TestResult, DscError> {
         let mut configurator = self.clone().create_config_for_adapter(adapter, expected)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
-            adapter.target_resource = Some(FullyQualifiedTypeName::new(resource_name)?);
+            adapter.target_resource = Some(Box::new(target_resource.clone()));
             return adapter.test(expected);
         }
 
@@ -232,26 +233,26 @@ impl DscResource {
         Ok(test_result)
     }
 
-    fn invoke_delete_with_adapter(&self, adapter: &FullyQualifiedTypeName, resource_name: &FullyQualifiedTypeName, filter: &str) -> Result<(), DscError> {
+    fn invoke_delete_with_adapter(&self, adapter: &FullyQualifiedTypeName, target_resource: &DscResource, filter: &str, execution_type: &ExecutionKind) -> Result<DeleteResultKind, DscError> {
         let mut configurator = self.clone().create_config_for_adapter(adapter, filter)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
             if adapter.capabilities.contains(&Capability::Delete) {
-                adapter.target_resource = Some(resource_name.clone());
-                return adapter.delete(filter);
+                adapter.target_resource = Some(Box::new(target_resource.clone()));
+                return adapter.delete(filter, execution_type);
             }
             return Err(DscError::NotSupported(t!("dscresources.dscresource.adapterDoesNotSupportDelete", adapter = adapter.type_name).to_string()));
         }
 
         configurator.invoke_set(false)?;
-        Ok(())
+        Ok(DeleteResultKind::ResourceActual)
     }
 
-    fn invoke_export_with_adapter(&self, adapter: &FullyQualifiedTypeName, input: &str) -> Result<ExportResult, DscError> {
+    fn invoke_export_with_adapter(&self, adapter: &FullyQualifiedTypeName, target_resource: &DscResource,input: &str) -> Result<ExportResult, DscError> {
         let mut configurator = self.clone().create_config_for_adapter(adapter, input)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
-            adapter.target_resource = Some(self.type_name.clone());
+            adapter.target_resource = Some(Box::new(target_resource.clone()));
             return adapter.export(input);
         }
 
@@ -336,7 +337,7 @@ pub trait Invoke {
     /// # Errors
     ///
     /// This function will return an error if the underlying resource fails.
-    fn delete(&self, filter: &str) -> Result<(), DscError>;
+    fn delete(&self, filter: &str, execution_type: &ExecutionKind) -> Result<DeleteResultKind, DscError>;
 
     /// Invoke the validate operation on the resource.
     ///
@@ -383,19 +384,15 @@ impl Invoke for DscResource {
     fn get(&self, filter: &str) -> Result<GetResult, DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeGet", resource = self.type_name));
         if let Some(adapter) = &self.require_adapter {
-            return self.invoke_get_with_adapter(adapter, &self.type_name, filter);
+            return self.invoke_get_with_adapter(adapter, &self, filter);
         }
 
         match &self.implemented_as {
-            ImplementedAs::Custom(_custom) => {
-                Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
+            Some(ImplementedAs::Command) => {
+                command_resource::invoke_get(&self, filter, self.target_resource.as_deref())
             },
-            ImplementedAs::Command => {
-                let Some(manifest) = &self.manifest else {
-                    return Err(DscError::MissingManifest(self.type_name.to_string()));
-                };
-                let resource_manifest = import_manifest(manifest.clone())?;
-                command_resource::invoke_get(&resource_manifest, &self.directory, filter, self.target_resource.clone())
+            _ => {
+                Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
             },
         }
     }
@@ -403,19 +400,15 @@ impl Invoke for DscResource {
     fn set(&self, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeSet", resource = self.type_name));
         if let Some(adapter) = &self.require_adapter {
-            return self.invoke_set_with_adapter(adapter, &self.type_name, desired, skip_test, execution_type);
+            return self.invoke_set_with_adapter(adapter, &self, desired, skip_test, execution_type);
         }
 
         match &self.implemented_as {
-            ImplementedAs::Custom(_custom) => {
-                Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
+            Some(ImplementedAs::Command) => {
+                command_resource::invoke_set(&self, desired, skip_test, execution_type, self.target_resource.as_deref())
             },
-            ImplementedAs::Command => {
-                let Some(manifest) = &self.manifest else {
-                    return Err(DscError::MissingManifest(self.type_name.to_string()));
-                };
-                let resource_manifest = import_manifest(manifest.clone())?;
-                command_resource::invoke_set(&resource_manifest, &self.directory, desired, skip_test, execution_type, self.target_resource.clone())
+            _ => {
+                Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
             },
         }
     }
@@ -423,21 +416,17 @@ impl Invoke for DscResource {
     fn test(&self, expected: &str) -> Result<TestResult, DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeTest", resource = self.type_name));
         if let Some(adapter) = &self.require_adapter {
-            return self.invoke_test_with_adapter(adapter, &self.type_name, expected);
+            return self.invoke_test_with_adapter(adapter, &self, expected);
         }
 
         match &self.implemented_as {
-            ImplementedAs::Custom(_custom) => {
-                Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
-            },
-            ImplementedAs::Command => {
+            Some(ImplementedAs::Command) => {
                 let Some(manifest) = &self.manifest else {
                     return Err(DscError::MissingManifest(self.type_name.to_string()));
                 };
 
                 // if test is not directly implemented, then we need to handle it here
-                let resource_manifest = import_manifest(manifest.clone())?;
-                if resource_manifest.test.is_none() {
+                if manifest.test.is_none() {
                     let get_result = self.get(expected)?;
                     let mut desired_state = serde_json::from_str(expected)?;
                     let actual_state = match get_result {
@@ -463,28 +452,27 @@ impl Invoke for DscResource {
                     Ok(test_result)
                 }
                 else {
-                    command_resource::invoke_test(&resource_manifest, &self.directory, expected, self.target_resource.clone())
+                    command_resource::invoke_test(&self, expected, self.target_resource.as_deref())
                 }
+            },
+            _ => {
+                Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
             },
         }
     }
 
-    fn delete(&self, filter: &str) -> Result<(), DscError> {
+    fn delete(&self, filter: &str, execution_type: &ExecutionKind) -> Result<DeleteResultKind, DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeDelete", resource = self.type_name));
         if let Some(adapter) = &self.require_adapter {
-            return self.invoke_delete_with_adapter(adapter, &self.type_name, filter);
+            return self.invoke_delete_with_adapter(adapter, &self, filter, execution_type);
         }
 
         match &self.implemented_as {
-            ImplementedAs::Custom(_custom) => {
-                Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
+            Some(ImplementedAs::Command) => {
+                command_resource::invoke_delete(&self, filter, self.target_resource.as_deref(), execution_type)
             },
-            ImplementedAs::Command => {
-                let Some(manifest) = &self.manifest else {
-                    return Err(DscError::MissingManifest(self.type_name.to_string()));
-                };
-                let resource_manifest = import_manifest(manifest.clone())?;
-                command_resource::invoke_delete(&resource_manifest, &self.directory, filter, self.target_resource.as_deref())
+            _ => {
+                Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
             },
         }
     }
@@ -496,15 +484,11 @@ impl Invoke for DscResource {
         }
 
         match &self.implemented_as {
-            ImplementedAs::Custom(_custom) => {
-                Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
+            Some(ImplementedAs::Command) => {
+                command_resource::invoke_validate(&self, config, self.target_resource.as_deref())
             },
-            ImplementedAs::Command => {
-                let Some(manifest) = &self.manifest else {
-                    return Err(DscError::MissingManifest(self.type_name.to_string()));
-                };
-                let resource_manifest = import_manifest(manifest.clone())?;
-                command_resource::invoke_validate(&resource_manifest, &self.directory, config, self.target_resource.as_deref())
+            _ => {
+                Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
             },
         }
     }
@@ -516,15 +500,11 @@ impl Invoke for DscResource {
         }
 
         match &self.implemented_as {
-            ImplementedAs::Custom(_custom) => {
-                Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
+            Some(ImplementedAs::Command) => {
+                command_resource::get_schema(&self)
             },
-            ImplementedAs::Command => {
-                let Some(manifest) = &self.manifest else {
-                    return Err(DscError::MissingManifest(self.type_name.to_string()));
-                };
-                let resource_manifest = import_manifest(manifest.clone())?;
-                command_resource::get_schema(&resource_manifest, &self.directory)
+            _ => {
+                Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
             },
         }
     }
@@ -532,14 +512,10 @@ impl Invoke for DscResource {
     fn export(&self, input: &str) -> Result<ExportResult, DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeExport", resource = self.type_name));
         if let Some(adapter) = &self.require_adapter {
-            return self.invoke_export_with_adapter(adapter, input);
+            return self.invoke_export_with_adapter(adapter, &self, input);
         }
 
-        let Some(manifest) = &self.manifest else {
-            return Err(DscError::MissingManifest(self.type_name.to_string()));
-        };
-        let resource_manifest = import_manifest(manifest.clone())?;
-        command_resource::invoke_export(&resource_manifest, &self.directory, Some(input), self.target_resource.clone())
+        command_resource::invoke_export(&self, Some(input), self.target_resource.as_deref())
     }
 
     fn resolve(&self, input: &str) -> Result<ResolveResult, DscError> {
@@ -548,11 +524,7 @@ impl Invoke for DscResource {
             return Err(DscError::NotSupported(t!("dscresources.dscresource.invokeResolveNotSupported", resource = self.type_name).to_string()));
         }
 
-        let Some(manifest) = &self.manifest else {
-            return Err(DscError::MissingManifest(self.type_name.to_string()));
-        };
-        let resource_manifest = import_manifest(manifest.clone())?;
-        command_resource::invoke_resolve(&resource_manifest, &self.directory, input)
+        command_resource::invoke_resolve(&self, input)
     }
 }
 
@@ -605,10 +577,8 @@ pub fn redact(value: &Value) -> Value {
 /// * `DscError` - The adapter manifest is not found or invalid
 pub fn get_adapter_input_kind(adapter: &DscResource) -> Result<AdapterInputKind, DscError> {
     if let Some(manifest) = &adapter.manifest {
-        if let Ok(manifest) = serde_json::from_value::<ResourceManifest>(manifest.clone()) {
-            if let Some(adapter_operation) = manifest.adapter {
-                return Ok(adapter_operation.input_kind);
-            }
+        if let Some(adapter_operation) = &manifest.adapter {
+            return Ok(adapter_operation.input_kind.clone());
         }
     }
     Err(DscError::Operation(t!("dscresources.dscresource.adapterManifestNotFound", adapter = adapter.type_name).to_string()))
@@ -712,9 +682,12 @@ pub fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
 pub fn validate_properties(resource: &DscResource, properties: &Value) -> Result<(), DscError> {
     // if so, see if it implements validate via the resource manifest
     let type_name = resource.type_name.clone();
+    if let Some(schema) = &resource.schema {
+        debug!("{}: {type_name} ", t!("dscresources.dscresource.validatingAgainstSchema"));
+        let schema = serde_json::to_value(schema)?;
+        return validate_json(&resource.type_name, &schema, properties);
+    }
     if let Some(manifest) = resource.manifest.clone() {
-        // convert to resource_manifest``
-        let manifest: ResourceManifest = serde_json::from_value(manifest)?;
         if manifest.validate.is_some() {
             debug!("{}: {type_name} ", t!("dscresources.dscresource.resourceImplementsValidate"));
             let resource_config = properties.to_string();

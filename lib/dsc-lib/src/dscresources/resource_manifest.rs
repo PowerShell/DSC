@@ -9,7 +9,6 @@ use serde_json::{Map, Value};
 use std::collections::HashMap;
 
 use crate::{
-    dscerror::DscError,
     schemas::{dsc_repo::DscRepoSchema, transforms::idiomaticize_string_enum},
     types::FullyQualifiedTypeName,
 };
@@ -96,8 +95,8 @@ pub struct ResourceManifest {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(untagged)]
-#[dsc_repo_schema(base_name = "commandArgs", folder_path = "definitions")]
-pub enum ArgKind {
+#[dsc_repo_schema(base_name = "commandArgs.get", folder_path = "definitions")]
+pub enum GetArgKind {
     /// The argument is a string.
     String(String),
     /// The argument accepts the JSON input object.
@@ -108,10 +107,47 @@ pub enum ArgKind {
         /// Indicates if argument is mandatory which will pass an empty string if no JSON input is provided.  Default is false.
         mandatory: Option<bool>,
     },
+    ResourcePath {
+        /// The argument that accepts the resource path.
+        #[serde(rename = "resourcePathArg")]
+        resource_path_arg: String,
+    },
     ResourceType {
         /// The argument that accepts the resource type name.
         #[serde(rename = "resourceTypeArg")]
         resource_type_arg: String,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[serde(untagged)]
+#[dsc_repo_schema(base_name = "commandArgs.setDelete", folder_path = "definitions")]
+pub enum SetDeleteArgKind {
+    /// The argument is a string.
+    String(String),
+    /// The argument accepts the JSON input object.
+    Json {
+        /// The argument that accepts the JSON input object.
+        #[serde(rename = "jsonInputArg")]
+        json_input_arg: String,
+        /// Indicates if argument is mandatory which will pass an empty string if no JSON input is provided.  Default is false.
+        mandatory: Option<bool>,
+    },
+    ResourcePath {
+        /// The argument that accepts the resource path.
+        #[serde(rename = "resourcePathArg")]
+        resource_path_arg: String,
+    },
+    ResourceType {
+        /// The argument that accepts the resource type name.
+        #[serde(rename = "resourceTypeArg")]
+        resource_type_arg: String,
+    },
+    /// The argument is passed when the resource is invoked in what-if mode.
+    WhatIf {
+        /// The argument to pass when in what-if mode.
+        #[serde(rename = "whatIfArg")]
+        what_if_arg: String,
     }
 }
 
@@ -164,7 +200,7 @@ pub struct GetMethod {
     /// The command to run to get the state of the resource.
     pub executable: String,
     /// The arguments to pass to the command to perform a Get.
-    pub args: Option<Vec<ArgKind>>,
+    pub args: Option<Vec<GetArgKind>>,
     /// How to pass optional input for a Get.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub input: Option<InputKind>,
@@ -176,7 +212,7 @@ pub struct SetMethod {
     /// The command to run to set the state of the resource.
     pub executable: String,
     /// The arguments to pass to the command to perform a Set.
-    pub args: Option<Vec<ArgKind>>,
+    pub args: Option<Vec<SetDeleteArgKind>>,
     /// How to pass required input for a Set.
     pub input: Option<InputKind>,
     /// Whether to run the Test method before the Set method.  True means the resource will perform its own test before running the Set method.
@@ -196,7 +232,7 @@ pub struct TestMethod {
     /// The command to run to test the state of the resource.
     pub executable: String,
     /// The arguments to pass to the command to perform a Test.
-    pub args: Option<Vec<ArgKind>>,
+    pub args: Option<Vec<GetArgKind>>,
     /// How to pass required input for a Test.
     pub input: Option<InputKind>,
     /// The type of return value expected from the Test method.
@@ -210,7 +246,7 @@ pub struct DeleteMethod {
     /// The command to run to delete the state of the resource.
     pub executable: String,
     /// The arguments to pass to the command to perform a Delete.
-    pub args: Option<Vec<ArgKind>>,
+    pub args: Option<Vec<SetDeleteArgKind>>,
     /// How to pass required input for a Delete.
     pub input: Option<InputKind>,
 }
@@ -221,7 +257,7 @@ pub struct ValidateMethod { // TODO: enable validation via schema or command
     /// The command to run to validate the state of the resource.
     pub executable: String,
     /// The arguments to pass to the command to perform a Validate.
-    pub args: Option<Vec<ArgKind>>,
+    pub args: Option<Vec<GetArgKind>>,
     /// How to pass required input for a Validate.
     pub input: Option<InputKind>,
 }
@@ -232,7 +268,7 @@ pub struct ExportMethod {
     /// The command to run to enumerate instances of the resource.
     pub executable: String,
     /// The arguments to pass to the command to perform a Export.
-    pub args: Option<Vec<ArgKind>>,
+    pub args: Option<Vec<GetArgKind>>,
     /// How to pass input for a Export.
     pub input: Option<InputKind>,
 }
@@ -243,7 +279,7 @@ pub struct ResolveMethod {
     /// The command to run to enumerate instances of the resource.
     pub executable: String,
     /// The arguments to pass to the command to perform a Export.
-    pub args: Option<Vec<ArgKind>>,
+    pub args: Option<Vec<GetArgKind>>,
     /// How to pass input for a Export.
     pub input: Option<InputKind>,
 }
@@ -278,29 +314,6 @@ pub struct ListMethod {
     pub executable: String,
     /// The arguments to pass to the command to perform a List.
     pub args: Option<Vec<String>>,
-}
-
-/// Import a resource manifest from a JSON value.
-///
-/// # Arguments
-///
-/// * `manifest` - The JSON value to import.
-///
-/// # Returns
-///
-/// * `Result<ResourceManifest, DscError>` - The imported resource manifest.
-///
-/// # Errors
-///
-/// * `DscError` - The JSON value is invalid or the schema version is not supported.
-pub fn import_manifest(manifest: Value) -> Result<ResourceManifest, DscError> {
-    // TODO: enable schema version validation, if not provided, use the latest
-    // const MANIFEST_SCHEMA_VERSION: &str = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json";
-    let manifest = serde_json::from_value::<ResourceManifest>(manifest)?;
-    // if !manifest.schema_version.eq(MANIFEST_SCHEMA_VERSION) {
-    //     return Err(DscError::InvalidManifestSchemaVersion(manifest.schema_version, MANIFEST_SCHEMA_VERSION.to_string()));
-    // }
-    Ok(manifest)
 }
 
 /// Validate a semantic version string.

@@ -401,6 +401,7 @@
       "TestOnly": true,
       "CopyFiles": {
         "All": [
+          "adaptedTest.dsc.adaptedResource.json",
           "dsctest.dsc.manifests.json"
         ]
       }

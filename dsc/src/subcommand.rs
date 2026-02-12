@@ -27,7 +27,6 @@ use dsc_lib::{
         ValidateResult,
     },
     dscresources::dscresource::{Capability, ImplementedAs, validate_json, validate_properties},
-    dscresources::resource_manifest::import_manifest,
     extensions::dscextension::Capability as ExtensionCapability,
     functions::FunctionDispatcher,
     progress::ProgressFormat,
@@ -513,7 +512,7 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
         };
 
         // see if the resource is command based
-        if resource.implemented_as == ImplementedAs::Command {
+        if resource.implemented_as == Some(ImplementedAs::Command) {
             validate_properties(resource, &resource_block["properties"])?;
         }
     }
@@ -784,7 +783,6 @@ pub fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adap
                 (Capability::Get, "g"),
                 (Capability::Set, "s"),
                 (Capability::SetHandlesExist, "x"),
-                (Capability::WhatIf, "w"),
                 (Capability::Test, "t"),
                 (Capability::Delete, "d"),
                 (Capability::Export, "e"),
@@ -799,28 +797,19 @@ pub fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adap
             }
 
             // if description, tags, or write_table is specified, pull resource manifest if it exists
-            if let Some(ref resource_manifest) = resource.manifest {
-                let manifest = match import_manifest(resource_manifest.clone()) {
-                    Ok(resource_manifest) => resource_manifest,
-                    Err(err) => {
-                        error!("{} {}: {err}", t!("subcommand.invalidManifest"), resource.type_name);
-                        continue;
-                    }
-                };
-
+            if let Some(ref manifest) = resource.manifest {
                 // if description is specified, skip if resource description does not contain it
-                if description.is_some() &&
-                    (manifest.description.is_none() | !manifest.description.unwrap_or_default().to_lowercase().contains(&description.unwrap_or(&String::new()).to_lowercase())) {
+                if description.is_some() && (manifest.description.is_none() | !manifest.description.clone().unwrap_or_default().to_lowercase().contains(&description.unwrap_or(&String::new()).to_lowercase())) {
                     continue;
                 }
 
                 // if tags is specified, skip if resource tags do not contain the tags
                 if let Some(tags) = tags {
-                    let Some(manifest_tags) = manifest.tags else { continue; };
+                    let Some(manifest_tags) = &manifest.tags else { continue; };
 
                     let mut found = false;
                     for tag_to_find in tags {
-                        for tag in &manifest_tags {
+                        for tag in manifest_tags {
                             if tag.to_lowercase() == tag_to_find.to_lowercase() {
                                 found = true;
                                 break;

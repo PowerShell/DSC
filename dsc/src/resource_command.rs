@@ -170,14 +170,15 @@ pub fn set(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, inp
             }
         };
 
-        let after_state = if what_if {
-            let mut simulated_state = before_state.clone();
-            if let Value::Object(ref mut map) = simulated_state {
-                map.insert("_exist".to_string(), Value::Bool(false));
-            }
-            simulated_state
-        } else {
-            if let Err(err) = resource.delete(input) {
+        if let Err(err) = resource.delete(input, &ExecutionKind::Actual) {
+            error!("{err}");
+            exit(EXIT_DSC_ERROR);
+        }
+
+        let after_state = match resource.get(input) {
+            Ok(GetResult::Resource(response)) => response.actual_state,
+            Ok(_) => unreachable!(),
+            Err(err) => {
                 error!("{err}");
                 exit(EXIT_DSC_ERROR);
             }
@@ -278,8 +279,8 @@ pub fn delete(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, 
         exit(EXIT_DSC_ERROR);
     }
 
-    match resource.delete(input) {
-        Ok(()) => {}
+    match resource.delete(input, &ExecutionKind::Actual) {
+        Ok(_) => {}
         Err(err) => {
             error!("{err}");
             exit(EXIT_DSC_ERROR);

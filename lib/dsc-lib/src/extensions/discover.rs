@@ -8,10 +8,10 @@ use crate::{
     dscerror::DscError,
     dscresources::{
         command_resource::{
-            invoke_command, process_args
+            invoke_command, process_get_args, CommandResourceInfo
         },
         dscresource::DscResource,
-        resource_manifest::ArgKind,
+        resource_manifest::GetArgKind,
     },
     extensions::{
         dscextension::{
@@ -34,7 +34,7 @@ pub struct DiscoverMethod {
     /// The command to run to get the state of the resource.
     pub executable: String,
     /// The arguments to pass to the command to perform a Get.
-    pub args: Option<Vec<ArgKind>>,
+    pub args: Option<Vec<GetArgKind>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
@@ -68,7 +68,11 @@ impl DscExtension {
             let Some(discover) = extension.discover else {
                 return Err(DscError::UnsupportedCapability(self.type_name.to_string(), Capability::Discover.to_string()));
             };
-            let args = process_args(discover.args.as_ref(), "", self.type_name.as_ref());
+            let command_resource_info = CommandResourceInfo {
+                type_name: self.type_name.clone(),
+                path: None,
+            };
+            let args = process_get_args(discover.args.as_ref(), "", &command_resource_info);
             let (_exit_code, stdout, _stderr) = invoke_command(
                 &discover.executable,
                 args,
