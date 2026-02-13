@@ -1,6 +1,10 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+mod exit_code;
+pub use exit_code::ExitCode;
+mod exit_codes_map;
+pub use exit_codes_map::ExitCodesMap;
 mod fully_qualified_type_name;
 pub use fully_qualified_type_name::FullyQualifiedTypeName;
 mod resource_version;
