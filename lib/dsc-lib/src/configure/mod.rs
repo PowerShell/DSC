@@ -1074,6 +1074,7 @@ impl Configurator {
     fn validate_config(&mut self) -> Result<(), DscError> {
         let config: Configuration = serde_json::from_str(self.json.as_str())?;
         check_security_context(config.metadata.as_ref(), config.directives.as_ref())?;
+
         if let Some(directives) = &config.directives {
             if let Some(version) = &directives.version {
                 let dsc_version = SemanticVersion::parse(env!("CARGO_PKG_VERSION"))?;
@@ -1084,20 +1085,30 @@ impl Configurator {
             }
         }
 
-        let mut skip_resource_validation = false;
+        let mut resource_discovery_mode: Option<ResourceDiscoveryMode> = None;
         if let Some(metadata) = &config.metadata {
             if let Some(microsoft_metadata) = &metadata.microsoft {
                 if let Some(mode) = &microsoft_metadata.resource_discovery {
-                    if *mode == ResourceDiscoveryMode::DuringDeployment {
-                        debug!("{}", t!("configure.mod.skippingResourceDiscovery"));
-                        skip_resource_validation = true;
-                        self.discovery.refresh_cache = true;
-                    }
+                    resource_discovery_mode = Some(mode.clone());
                 }
             }
         }
 
-        if !skip_resource_validation {
+        if let Some(directives) = &config.directives {
+            if let Some(resource_discovery_directive) = &directives.resource_discovery {
+                if let Some(discovery_mode) = resource_discovery_mode {
+                    if discovery_mode != *resource_discovery_directive {
+                        return Err(DscError::Validation(t!("configure.mod.conflictingResourceDiscoveryDirectives", metadata = discovery_mode, directive = resource_discovery_directive).to_string()));
+                    }
+                }
+                resource_discovery_mode = Some(resource_discovery_directive.clone());
+            }
+        }
+
+        if resource_discovery_mode == Some(ResourceDiscoveryMode::DuringDeployment) {
+            debug!("{}", t!("configure.mod.skippingResourceDiscovery"));
+            self.discovery.refresh_cache = true;
+        } else {
             // Perform discovery of resources used in config
             // create an array of DiscoveryFilter using the resource types and requireVersion from the config
             let mut discovery_filter: Vec<DiscoveryFilter> = Vec::new();

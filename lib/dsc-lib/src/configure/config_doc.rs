@@ -79,6 +79,16 @@ pub enum ResourceDiscoveryMode {
     DuringDeployment,
 }
 
+impl Display for ResourceDiscoveryMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mode_str = match self {
+            ResourceDiscoveryMode::PreDeployment => "preDeployment",
+            ResourceDiscoveryMode::DuringDeployment => "duringDeployment",
+        };
+        write!(f, "{mode_str}")
+    }
+}
+
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct MicrosoftDscMetadata {

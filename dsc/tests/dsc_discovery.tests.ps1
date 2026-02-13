@@ -343,4 +343,65 @@ Describe 'tests for resource discovery' {
             $traceLog | Should -Match "Skipping resource discovery due to 'resourceDiscovery' mode set to 'DuringDeployment'"
         }
     }
+
+    It 'Resource discovery directive can be set to <mode>' -TestCases @(
+        @{ mode = 'resourceDiscovery: preDeployment' }
+        @{ mode = 'resourceDiscovery: duringDeployment' }
+        @{ mode = '' }
+    ) {
+        param($mode)
+
+        $guid = (New-Guid).Guid.Replace('-', '')
+        $manifestPath = Join-Path (Split-Path (Get-Command dscecho -ErrorAction Stop).Source -Parent) echo.dsc.resource.json
+
+        $config_yaml = @"
+        `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/manifest.json
+        directives:
+          $mode
+        resources:
+        - type: Test/CopyResource
+          name: This should be found and executed
+          properties:
+            sourceFile: $manifestPath
+            typeName: "Test/$guid"
+        - type: Test/$guid
+          name: This is the new resource
+          properties:
+            output: Hello World
+"@
+        $out = dsc -l trace config get -i $config_yaml 2> "$testdrive/tracing.txt"
+        $traceLog = Get-Content -Raw -Path "$testdrive/tracing.txt"
+        if ($mode -notlike '*duringDeployment') {
+            $LASTEXITCODE | Should -Be 2
+            $out | Should -BeNullOrEmpty
+            $traceLog | Should -Match "ERROR.*?Resource not found: Test/$guid"
+            $traceLog | Should -Not -Match "Invoking get for 'Test/CopyResource'"
+        } else {
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw -Path "$testdrive/tracing.txt")
+            $output = $out | ConvertFrom-Json
+            $output.results[0].result.actualState.typeName | Should -BeExactly "Test/$guid" -Because $out
+            $output.results[1].result.actualState.output | Should -BeExactly 'Hello World' -Because $out
+            $traceLog | Should -Match "Invoking get for 'Test/$guid'"
+            $traceLog | Should -Match "Skipping resource discovery due to 'resourceDiscovery' mode set to 'DuringDeployment'"
+        }
+    }
+
+    It 'Setting metadata and directives resource discovery modes to conflicting values should result in validation error' {
+        $config_yaml = @"
+        `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/manifest.json
+        metadata:
+          Microsoft.DSC:
+            resourceDiscovery: preDeployment
+        directives:
+          resourceDiscovery: duringDeployment
+        resources:
+        - type: Microsoft.DSC.Debug/Echo
+          name: This should not be executed
+          properties:
+            output: Hello World
+"@
+        $null = dsc config get -i $config_yaml 2> "$testdrive/error.txt"
+        $LASTEXITCODE | Should -Be 2
+        (Get-Content -Raw -Path "$testdrive/error.txt") | Should -Match "ERROR.*?Conflicting resource discovery modes specified: metadata 'preDeployment' and directive 'duringDeployment'"
+    }
 }
