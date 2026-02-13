@@ -11,3 +11,7 @@ mod resource_version_req;
 mod semantic_version;
 #[cfg(test)]
 mod semantic_version_req;
+#[cfg(test)]
+mod tag;
+#[cfg(test)]
+mod tag_list;

@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use crate::dscerror::DscError;
 use crate::extensions::{discover::DiscoverMethod, import::ImportMethod, secret::SecretMethod};
 use crate::schemas::dsc_repo::DscRepoSchema;
-use crate::types::FullyQualifiedTypeName;
+use crate::types::{FullyQualifiedTypeName, TagList};
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
@@ -41,7 +41,8 @@ pub struct ExtensionManifest {
     /// The description of the extension.
     pub description: Option<String>,
     /// Tags for the extension.
-    pub tags: Option<Vec<String>>,
+    #[serde(default, skip_serializing_if = "TagList::is_empty")]
+    pub tags: TagList,
     /// Details how to call the Discover method of the extension.
     pub discover: Option<DiscoverMethod>,
     /// Details how to call the Import method of the extension.

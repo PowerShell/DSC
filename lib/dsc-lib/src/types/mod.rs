@@ -11,3 +11,7 @@ mod semantic_version;
 pub use semantic_version::SemanticVersion;
 mod semantic_version_req;
 pub use semantic_version_req::SemanticVersionReq;
+mod tag;
+pub use tag::Tag;
+mod tag_list;
+pub use tag_list::TagList;
