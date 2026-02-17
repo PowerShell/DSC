@@ -104,12 +104,6 @@ pub struct MicrosoftDscMetadata {
     /// The operation being performed
     #[serde(skip_serializing_if = "Option::is_none")]
     pub operation: Option<Operation>,
-    /// Specify specific adapter type used for implicit operations
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub require_adapter: Option<String>,
-    /// Indicates if resources are discovered pre-deployment or during deployment
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub resource_discovery: Option<ResourceDiscoveryMode>,
     /// Indicates what needs to be restarted after the configuration operation
     #[serde(skip_serializing_if = "Option::is_none")]
     pub restart_required: Option<Vec<RestartRequired>>,

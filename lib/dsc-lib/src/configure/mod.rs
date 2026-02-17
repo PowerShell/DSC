@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::configure::config_doc::{ConfigDirective, ExecutionInformation};
+use crate::configure::config_doc::{ConfigDirective, ExecutionInformation, ResourceDirective};
 use crate::configure::context::{Context, ProcessMode};
 use crate::configure::parameters::import_parameters;
 use crate::configure::{config_doc::{ExecutionKind, IntOrExpression, Metadata, Parameter, Resource, ResourceDiscoveryMode, RestartRequired, ValueOrCopy}};
@@ -226,12 +226,10 @@ fn add_metadata(dsc_resource: &DscResource, mut properties: Option<Map<String, V
     }
 }
 
-fn get_require_adapter_from_metadata(resource_metadata: &Option<Metadata>) -> Option<String> {
-    if let Some(resource_metadata) = resource_metadata {
-        if let Some(microsoft_metadata) = &resource_metadata.microsoft {
-            if let Some(require_adapter) = &microsoft_metadata.require_adapter {
-                return Some(require_adapter.clone());
-            }
+fn get_require_adapter_from_directive(resource_directives: &Option<ResourceDirective>) -> Option<String> {
+    if let Some(directives) = resource_directives {
+        if let Some(require_adapter) = &directives.require_adapter {
+            return Some(require_adapter.clone());
         }
     }
     None
@@ -412,7 +410,7 @@ impl Configurator {
                 progress.write_increment(1);
                 continue;
             }
-            let adapter = get_require_adapter_from_metadata(&resource.metadata);
+            let adapter = get_require_adapter_from_directive(&resource.directives);
             let Some(dsc_resource) = discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.require_version.as_deref(), adapter.as_deref()))? else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.require_version.as_deref().unwrap_or("").to_string()));
             };
@@ -502,7 +500,7 @@ impl Configurator {
                 progress.write_increment(1);
                 continue;
             }
-            let adapter = get_require_adapter_from_metadata(&resource.metadata);
+            let adapter = get_require_adapter_from_directive(&resource.directives);
             let Some(dsc_resource) = discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.require_version.as_deref(), adapter.as_deref()))? else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.require_version.as_deref().unwrap_or("").to_string()));
             };
@@ -693,7 +691,7 @@ impl Configurator {
                 progress.write_increment(1);
                 continue;
             }
-            let adapter = get_require_adapter_from_metadata(&resource.metadata);
+            let adapter = get_require_adapter_from_directive(&resource.directives);
             let Some(dsc_resource) = discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.require_version.as_deref(), adapter.as_deref()))? else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.require_version.as_deref().unwrap_or("").to_string()));
             };
@@ -782,7 +780,7 @@ impl Configurator {
                 progress.write_increment(1);
                 continue;
             }
-            let adapter = get_require_adapter_from_metadata(&resource.metadata);
+            let adapter = get_require_adapter_from_directive(&resource.directives);
             let Some(dsc_resource) = discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.require_version.as_deref(), adapter.as_deref()))? else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.require_version.as_deref().unwrap_or("").to_string()));
             };
@@ -1043,12 +1041,10 @@ impl Configurator {
         Metadata {
             microsoft: Some(
                 MicrosoftDscMetadata {
-                    require_adapter: None,
                     duration: Some(end_datetime.signed_duration_since(self.context.start_datetime).to_string()),
                     end_datetime: Some(end_datetime.to_rfc3339()),
                     execution_type: Some(self.context.execution_type.clone()),
                     operation: Some(operation),
-                    resource_discovery: None,
                     restart_required: self.context.restart_required.clone(),
                     security_context: Some(self.context.security_context.clone()),
                     start_datetime: Some(self.context.start_datetime.to_rfc3339()),
@@ -1085,27 +1081,14 @@ impl Configurator {
             }
         }
 
-        let mut resource_discovery_mode: Option<ResourceDiscoveryMode> = None;
-        if let Some(metadata) = &config.metadata {
-            if let Some(microsoft_metadata) = &metadata.microsoft {
-                if let Some(mode) = &microsoft_metadata.resource_discovery {
-                    resource_discovery_mode = Some(mode.clone());
-                }
-            }
-        }
-
+        let mut resource_discovery_mode = ResourceDiscoveryMode::PreDeployment;
         if let Some(directives) = &config.directives {
             if let Some(resource_discovery_directive) = &directives.resource_discovery {
-                if let Some(discovery_mode) = resource_discovery_mode {
-                    if discovery_mode != *resource_discovery_directive {
-                        return Err(DscError::Validation(t!("configure.mod.conflictingResourceDiscoveryDirectives", metadata = discovery_mode, directive = resource_discovery_directive).to_string()));
-                    }
-                }
-                resource_discovery_mode = Some(resource_discovery_directive.clone());
+                resource_discovery_mode = resource_discovery_directive.clone();
             }
         }
 
-        if resource_discovery_mode == Some(ResourceDiscoveryMode::DuringDeployment) {
+        if resource_discovery_mode == ResourceDiscoveryMode::DuringDeployment {
             debug!("{}", t!("configure.mod.skippingResourceDiscovery"));
             self.discovery.refresh_cache = true;
         } else {
@@ -1114,7 +1097,7 @@ impl Configurator {
             let mut discovery_filter: Vec<DiscoveryFilter> = Vec::new();
             let config_copy = config.clone();
             for resource in config_copy.resources {
-                let adapter = get_require_adapter_from_metadata(&resource.metadata);
+                let adapter = get_require_adapter_from_directive(&resource.directives);
                 let filter = DiscoveryFilter::new(&resource.resource_type, resource.require_version.as_deref(), adapter.as_deref());
                 if !discovery_filter.contains(&filter) {
                     discovery_filter.push(filter);
@@ -1134,7 +1117,7 @@ impl Configurator {
 
             // now check that each resource in the config was found
             for resource in config.resources.iter() {
-                let adapter = get_require_adapter_from_metadata(&resource.metadata);
+                let adapter = get_require_adapter_from_directive(&resource.directives);
                 let Some(_dsc_resource) = self.discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.require_version.as_deref(), adapter.as_deref()))? else {
                     return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.require_version.as_deref().unwrap_or("").to_string()));
                 };

@@ -88,7 +88,6 @@ skippingResourceDiscovery = "Skipping resource discovery due to 'resourceDiscove
 securityContextInMetadataDeprecated = "Using 'Microsoft.DSC' metadata to specify required security context is deprecated. Please use the 'securityContext' directive in the configuration document instead.  See https://github.com/PowerShell/DSC/issues/1369 for more details."
 conflictingSecurityContext = "Conflicting security context specified in configuration document: metadata '%{metadata}' and directive '%{directive}'"
 versionNotSatisfied = "Configuration requires DSC version '%{required_version}', but the current version is '%{current_version}'"
-conflictingResourceDiscoveryDirectives = "Conflicting resource discovery modes specified: metadata '%{metadata}' and directive '%{directive}'"
 
 [configure.parameters]
 importingParametersFromComplexInput = "Importing parameters from complex input"
