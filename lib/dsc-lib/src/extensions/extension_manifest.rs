@@ -3,7 +3,6 @@
 
 use rust_i18n::t;
 use schemars::JsonSchema;
-use semver::Version;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
@@ -11,7 +10,7 @@ use std::collections::HashMap;
 use crate::dscerror::DscError;
 use crate::extensions::{discover::DiscoverMethod, import::ImportMethod, secret::SecretMethod};
 use crate::schemas::dsc_repo::DscRepoSchema;
-use crate::types::FullyQualifiedTypeName;
+use crate::types::{FullyQualifiedTypeName, SemanticVersion};
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
@@ -34,7 +33,7 @@ pub struct ExtensionManifest {
     #[serde(rename = "type")]
     pub r#type: FullyQualifiedTypeName,
     /// The version of the extension using semantic versioning.
-    pub version: String,
+    pub version: SemanticVersion,
     /// An optional condition for the extension to be active.  If the condition evaluates to false, the extension is skipped.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub condition: Option<String>,
@@ -77,24 +76,6 @@ pub fn import_manifest(manifest: Value) -> Result<ExtensionManifest, DscError> {
     Ok(manifest)
 }
 
-/// Validate a semantic version string.
-///
-/// # Arguments
-///
-/// * `version` - The semantic version string to validate.
-///
-/// # Returns
-///
-/// * `Result<(), Error>` - The result of the validation.
-///
-/// # Errors
-///
-/// * `Error` - The version string is not a valid semantic version.
-pub fn validate_semver(version: &str) -> Result<(), semver::Error> {
-    Version::parse(version)?;
-    Ok(())
-}
-
 #[cfg(test)]
 mod test {
     use crate::schemas::dsc_repo::{DscRepoSchema, UnrecognizedSchemaUri};
@@ -108,7 +89,7 @@ mod test {
         let manifest = ExtensionManifest{
             schema_version: invalid_uri.clone(),
             r#type: "Microsoft.Dsc.Test/InvalidSchemaUri".parse().unwrap(),
-            version: "0.1.0".to_string(),
+            version: "0.1.0".parse().unwrap(),
             ..Default::default()
         };
 
@@ -129,7 +110,7 @@ mod test {
         let manifest = ExtensionManifest{
             schema_version: ExtensionManifest::default_schema_id_uri(),
             r#type: "Microsoft.Dsc.Test/ValidSchemaUri".parse().unwrap(),
-            version: "0.1.0".to_string(),
+            version: "0.1.0".parse().unwrap(),
             ..Default::default()
         };
 

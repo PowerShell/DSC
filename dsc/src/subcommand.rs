@@ -637,7 +637,7 @@ fn list_extensions(dsc: &mut DscManager, extension_name: Option<&String>, format
             if write_table {
                 table.add_row(vec![
                     extension.type_name.to_string(),
-                    extension.version,
+                    extension.version.to_string(),
                     capabilities,
                     extension.description.unwrap_or_default()
                 ]);
