@@ -8,10 +8,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::{collections::HashMap, fmt::Display};
 
-use crate::{schemas::{
+use crate::{configure::get_require_adapter_from_metadata, discovery::discovery_trait::DiscoveryFilter, schemas::{
     dsc_repo::DscRepoSchema,
     transforms::{idiomaticize_externally_tagged_enum, idiomaticize_string_enum}
-}, types::FullyQualifiedTypeName};
+}, types::{FullyQualifiedTypeName, ResourceVersionReq}};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
@@ -354,7 +354,7 @@ pub struct Resource {
     #[serde(rename = "type")]
     pub resource_type: FullyQualifiedTypeName,
     #[serde(skip_serializing_if = "Option::is_none", rename = "apiVersion")]
-    pub api_version: Option<String>,
+    pub api_version: Option<ResourceVersionReq>,
     /// A friendly name for the resource instance
     #[serde(default)]
     pub name: String, // friendly unique instance name
@@ -440,11 +440,23 @@ impl Default for Resource {
     }
 }
 
+// Enable converting a resource instance into a discovery filter
+impl From<&Resource> for DiscoveryFilter {
+    fn from(value: &Resource) -> Self {
+        Self::new(
+            &value.resource_type.clone(),
+            value.api_version.clone().map(|r| r.to_string()).as_deref(),
+            get_require_adapter_from_metadata(&value.metadata).as_deref()
+        )
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::schemas::dsc_repo::{DscRepoSchema, UnrecognizedSchemaUri};
 
     use crate::configure::config_doc::Configuration;
+    use crate::types::ResourceVersionReq;
 
     #[test]
     fn test_validate_schema_uri_with_invalid_uri() {
@@ -532,11 +544,11 @@ mod test {
         assert_eq!(config.resources.len(), 2);
         assert_eq!(config.resources[0].name, "echoResource");
         assert_eq!(config.resources[0].resource_type, "Microsoft.DSC.Debug/Echo");
-        assert_eq!(config.resources[0].api_version.as_deref(), Some("1.0.0"));
+        assert_eq!(config.resources[0].api_version, Some(ResourceVersionReq::new("1.0.0")));
 
         assert_eq!(config.resources[1].name, "processResource");
         assert_eq!(config.resources[1].resource_type, "Microsoft/Process");
-        assert_eq!(config.resources[1].api_version.as_deref(), Some("0.1.0"));
+        assert_eq!(config.resources[1].api_version, Some(ResourceVersionReq::new("0.1.0")));
     }
 
 }

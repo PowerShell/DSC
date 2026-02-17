@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{configure::config_doc::ResourceDiscoveryMode, dscerror::DscError, dscresources::dscresource::DscResource, extensions::dscextension::DscExtension};
+use crate::{configure::config_doc::ResourceDiscoveryMode, dscerror::DscError, dscresources::dscresource::DscResource, extensions::dscextension::DscExtension, types::ResourceVersionReq};
 use std::collections::BTreeMap;
-use super::{command_discovery::ImportedManifest, fix_semver};
+use super::command_discovery::ImportedManifest;
 
 #[derive(Debug, PartialEq)]
 pub enum DiscoveryKind {
@@ -15,17 +15,16 @@ pub enum DiscoveryKind {
 pub struct DiscoveryFilter {
     require_adapter: Option<String>,
     r#type: String,
-    version: Option<String>,
+    version_req: Option<ResourceVersionReq>,
 }
 
 impl DiscoveryFilter {
     #[must_use]
-    pub fn new(resource_type: &str, version: Option<&str>, adapter: Option<&str>) -> Self {
-        let version = version.map(|v| fix_semver(&v));
+    pub fn new(resource_type: &str, version_req: Option<&str>, adapter: Option<&str>) -> Self {
         Self {
             require_adapter: adapter.map(|a| a.to_lowercase()),
             r#type: resource_type.to_lowercase(),
-            version,
+            version_req: version_req.map(|r| ResourceVersionReq::new(r)),
         }
     }
 
@@ -40,8 +39,8 @@ impl DiscoveryFilter {
     }
 
     #[must_use]
-    pub fn version(&self) -> Option<&String> {
-        self.version.as_ref()
+    pub fn version_req(&self) -> Option<&ResourceVersionReq> {
+        self.version_req.as_ref()
     }
 }
 

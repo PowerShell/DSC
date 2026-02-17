@@ -66,7 +66,7 @@ use crate::{dscerror::DscError, schemas::dsc_repo::DscRepoSchema, types::{Resour
 /// ```
 ///
 /// [01]: SemanticVersionReq
-#[derive(Debug, Clone, Eq, Serialize, Deserialize, JsonSchema, DscRepoSchema)]
+#[derive(Debug, Clone, Hash, Eq, Serialize, Deserialize, JsonSchema, DscRepoSchema)]
 #[dsc_repo_schema(base_name = "resourceVersionReq", folder_path = "definitions")]
 #[serde(untagged)]
 #[schemars(

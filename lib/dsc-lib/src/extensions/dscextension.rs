@@ -3,7 +3,7 @@
 
 use crate::extensions::import::ImportMethod;
 use crate::schemas::{dsc_repo::DscRepoSchema, transforms::idiomaticize_string_enum};
-use crate::types::FullyQualifiedTypeName;
+use crate::types::{FullyQualifiedTypeName, SemanticVersion};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use schemars::JsonSchema;
@@ -18,7 +18,7 @@ pub struct DscExtension {
     #[serde(rename="type")]
     pub type_name: FullyQualifiedTypeName,
     /// The version of the resource.
-    pub version: String,
+    pub version: SemanticVersion,
     /// The capabilities of the resource.
     pub capabilities: Vec<Capability>,
     /// The import specifics.
@@ -63,7 +63,7 @@ impl DscExtension {
     pub fn new() -> Self {
         Self {
             type_name: FullyQualifiedTypeName::default(),
-            version: String::new(),
+            version: SemanticVersion::default(),
             capabilities: Vec::new(),
             import: None,
             description: None,

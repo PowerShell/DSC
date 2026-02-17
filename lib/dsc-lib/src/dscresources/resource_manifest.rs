@@ -3,14 +3,13 @@
 
 use rust_i18n::t;
 use schemars::JsonSchema;
-use semver::Version;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
 
 use crate::{
     schemas::{dsc_repo::DscRepoSchema, transforms::idiomaticize_string_enum},
-    types::FullyQualifiedTypeName,
+    types::{FullyQualifiedTypeName, ResourceVersion},
 };
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
@@ -52,7 +51,7 @@ pub struct ResourceManifest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<Kind>,
     /// The version of the resource using semantic versioning.
-    pub version: String,
+    pub version: ResourceVersion,
     /// The description of the resource.
     pub description: Option<String>,
     /// Tags for the resource.
@@ -316,24 +315,6 @@ pub struct ListMethod {
     pub args: Option<Vec<String>>,
 }
 
-/// Validate a semantic version string.
-///
-/// # Arguments
-///
-/// * `version` - The semantic version string to validate.
-///
-/// # Returns
-///
-/// * `Result<(), Error>` - The result of the validation.
-///
-/// # Errors
-///
-/// * `Error` - The version string is not a valid semantic version.
-pub fn validate_semver(version: &str) -> Result<(), semver::Error> {
-    Version::parse(version)?;
-    Ok(())
-}
-
 #[cfg(test)]
 mod test {
     use crate::schemas::dsc_repo::{DscRepoSchema, UnrecognizedSchemaUri};
@@ -347,7 +328,7 @@ mod test {
         let manifest = ResourceManifest{
             schema_version: invalid_uri.clone(),
             resource_type: "Microsoft.Dsc.Test/InvalidSchemaUri".parse().unwrap(),
-            version: "0.1.0".to_string(),
+            version: "0.1.0".parse().unwrap(),
             ..Default::default()
         };
 
@@ -368,7 +349,7 @@ mod test {
         let manifest = ResourceManifest{
             schema_version: ResourceManifest::default_schema_id_uri(),
             resource_type: "Microsoft.Dsc.Test/ValidSchemaUri".parse().unwrap(),
-            version: "0.1.0".to_string(),
+            version: "0.1.0".parse().unwrap(),
             ..Default::default()
         };
 
