@@ -10,7 +10,6 @@ use crate::dscerror::DscError;
 use crate::extensions::dscextension::{Capability, DscExtension};
 use crate::{dscresources::dscresource::DscResource, progress::ProgressFormat};
 use core::result::Result::Ok;
-use semver::{Version, VersionReq};
 use std::collections::BTreeMap;
 use command_discovery::{CommandDiscovery, ImportedManifest};
 use tracing::error;
@@ -98,25 +97,13 @@ impl Discovery {
 
         let type_name = filter.resource_type().to_lowercase();
         if let Some(resources) = self.resources.get(&type_name) {
-            if let Some(version) = filter.version() {
-                let version = fix_semver(version);
-                if let Ok(version_req) = VersionReq::parse(&version) {
-                    for resource in resources {
-                        if let Ok(resource_version) = Version::parse(&resource.version) {
-                            if version_req.matches(&resource_version) && matches_adapter_requirement(resource, filter) {
-                                return Ok(Some(resource));
-                            }
-                        }
+            if let Some(version_req) = filter.version_req() {
+                for resource in resources {
+                    if version_req.matches(&resource.version) && matches_adapter_requirement(resource, filter) {
+                        return Ok(Some(resource));
                     }
-                    Ok(None)
-                } else {
-                    for resource in resources {
-                        if resource.version == version && matches_adapter_requirement(resource, filter) {
-                            return Ok(Some(resource));
-                        }
-                    }
-                    Ok(None)
                 }
+                Ok(None)
             } else {
                 for resource in resources {
                     if matches_adapter_requirement(resource, filter) {
@@ -183,23 +170,6 @@ pub fn matches_adapter_requirement(resource: &DscResource, filter: &DiscoveryFil
     } else {
         true
     }
-}
-
-/// Fix the semantic versioning requirements of a given version requirements string.
-/// The `semver` crate uses caret (meaning compatible) by default instead of exact if not specified
-///
-/// # Parameters
-/// * `version` - The version requirements string to fix.
-///
-/// # Returns
-/// The fixed version requirements string.
-#[must_use]
-pub fn fix_semver(version: &str) -> String {
-    // Check if is semver, then if the first character is a number, then we prefix with =
-    if Version::parse(version).is_ok() && version.chars().next().is_some_and(|c| c.is_ascii_digit()) {
-        return format!("={version}");
-    }
-    version.to_string()
 }
 
 impl Default for Discovery {

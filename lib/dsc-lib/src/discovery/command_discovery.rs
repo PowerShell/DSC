@@ -5,7 +5,7 @@ use crate::{discovery::{discovery_trait::{DiscoveryFilter, DiscoveryKind, Resour
 use crate::{locked_clear, locked_is_empty, locked_extend, locked_clone, locked_get};
 use crate::configure::{config_doc::ResourceDiscoveryMode, context::Context};
 use crate::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
-use crate::dscresources::resource_manifest::{validate_semver, Kind, ResourceManifest, SchemaKind};
+use crate::dscresources::resource_manifest::{Kind, ResourceManifest, SchemaKind};
 use crate::dscresources::command_resource::invoke_command;
 use crate::dscerror::DscError;
 use crate::extensions::dscextension::{self, DscExtension, Capability as ExtensionCapability};
@@ -15,7 +15,6 @@ use crate::util::convert_wildcard_to_regex;
 use crate::schemas::transforms::idiomaticize_externally_tagged_enum;
 use regex::RegexBuilder;
 use rust_i18n::t;
-use semver::{Version, VersionReq};
 use schemars::JsonSchema;
 use serde::Deserialize;
 use std::{collections::{BTreeMap, HashMap, HashSet}, sync::{LazyLock, RwLock}};
@@ -560,24 +559,12 @@ impl ResourceDiscovery for CommandDiscovery {
 
 fn filter_resources(found_resources: &mut BTreeMap<String, Vec<DscResource>>, required_resources: &mut HashMap<DiscoveryFilter, bool>, resources: &[DscResource], filter: &DiscoveryFilter) {
     for resource in resources {
-        if let Some(required_version) = filter.version() {
-            if let Ok(resource_version) = Version::parse(&resource.version) {
-                if let Ok(version_req) = VersionReq::parse(required_version) {
-                    if version_req.matches(&resource_version) && matches_adapter_requirement(resource, filter) {
-                        found_resources.entry(filter.resource_type().to_string()).or_default().push(resource.clone());
-                        required_resources.insert(filter.clone(), true);
-                        debug!("{}", t!("discovery.commandDiscovery.foundResourceWithVersion", resource = resource.type_name, version = resource.version));
-                        break;
-                    }
-                }
-            } else {
-                // if not semver, we do a string comparison
-                if resource.version == *required_version && matches_adapter_requirement(resource, filter) {
-                    found_resources.entry(filter.resource_type().to_string()).or_default().push(resource.clone());
-                    required_resources.insert(filter.clone(), true);
-                    debug!("{}", t!("discovery.commandDiscovery.foundResourceWithVersion", resource = resource.type_name, version = resource.version));
-                    break;
-                }
+        if let Some(version_req) = filter.version_req() {
+            if version_req.matches(&resource.version) && matches_adapter_requirement(resource, filter) {
+                found_resources.entry(filter.resource_type().to_string()).or_default().push(resource.clone());
+                required_resources.insert(filter.clone(), true);
+                debug!("{}", t!("discovery.commandDiscovery.foundResourceWithVersion", resource = resource.type_name, version = resource.version));
+                break;
             }
         } else {
             if matches_adapter_requirement(resource, filter) {
@@ -595,23 +582,10 @@ fn filter_resources(found_resources: &mut BTreeMap<String, Vec<DscResource>>, re
 /// Inserts a resource into tree adding to vector if already exists
 fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource: &DscResource) {
     if let Some(resource_versions) = resources.get_mut(&resource.type_name.to_lowercase()) {
-        // compare the resource versions and insert newest to oldest using semver
+        // compare the resource versions and insert newest to oldest
         let mut insert_index = resource_versions.len();
         for (index, resource_instance) in resource_versions.iter().enumerate() {
-            let resource_instance_version = match Version::parse(&resource_instance.version) {
-                Ok(v) => v,
-                Err(_err) => {
-                    continue;
-                },
-            };
-            let resource_version = match Version::parse(&resource.version) {
-                Ok(v) => v,
-                Err(_err) => {
-                    continue;
-                },
-            };
-
-            if resource_instance_version < resource_version {
+            if &resource_instance.version < &resource.version {
                 insert_index = index;
                 break;
             }
@@ -775,10 +749,6 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
 }
 
 fn load_adapted_resource_manifest(path: &Path, manifest: &AdaptedDscResourceManifest) -> Result<DscResource, DscError> {
-    if let Err(err) = validate_semver(&manifest.version) {
-        warn!("{}", t!("discovery.commandDiscovery.invalidManifestVersion", path = path.to_string_lossy(), err = err).to_string());
-    }
-
     let directory = path.parent().unwrap();
     let resource_path = directory.join(&manifest.path);
     if !resource_path.exists() {
@@ -804,10 +774,6 @@ fn load_adapted_resource_manifest(path: &Path, manifest: &AdaptedDscResourceMani
 }
 
 fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<DscResource, DscError> {
-    if let Err(err) = validate_semver(&manifest.version) {
-        warn!("{}", t!("discovery.commandDiscovery.invalidManifestVersion", path = path.to_string_lossy(), err = err).to_string());
-    }
-
     let kind = if let Some(kind) = manifest.kind.clone() {
         kind
     } else if manifest.adapter.is_some() {

@@ -17,7 +17,7 @@ fn main() {
             let resource1 = DscResource {
                 type_name: "Test/TestResource1".parse().unwrap(),
                 kind: Kind::Resource,
-                version: "1.0.0".to_string(),
+                version: "1.0.0".parse().unwrap(),
                 capabilities: vec![Capability::Get, Capability::Set],
                 description: Some("This is a test resource.".to_string()),
                 implemented_as: Some(ImplementedAs::Custom("TestResource".to_string())),
@@ -33,7 +33,7 @@ fn main() {
                     schema_version: dsc_lib::dscresources::resource_manifest::ResourceManifest::default_schema_id_uri(),
                     resource_type: "Test/TestResource1".parse().unwrap(),
                     kind: Some(Kind::Resource),
-                    version: "1.0.0".to_string(),
+                    version: "1.0.0".parse().unwrap(),
                     get: Some(GetMethod {
                         executable: String::new(),
                         ..Default::default()
@@ -44,7 +44,7 @@ fn main() {
             let resource2 = DscResource {
                 type_name: "Test/TestResource2".parse().unwrap(),
                 kind: Kind::Resource,
-                version: "1.0.1".to_string(),
+                version: "1.0.1".parse().unwrap(),
                 capabilities: vec![Capability::Get, Capability::Set],
                 description: Some("This is a test resource.".to_string()),
                 implemented_as: Some(ImplementedAs::Custom("TestResource".to_string())),
@@ -60,7 +60,7 @@ fn main() {
                     schema_version: dsc_lib::dscresources::resource_manifest::ResourceManifest::default_schema_id_uri(),
                     resource_type: "Test/TestResource2".parse().unwrap(),
                     kind: Some(Kind::Resource),
-                    version: "1.0.1".to_string(),
+                    version: "1.0.1".parse().unwrap(),
                     get: Some(GetMethod {
                         executable: String::new(),
                         ..Default::default()
@@ -75,7 +75,7 @@ fn main() {
             let resource1 = DscResource {
                 type_name: "Test/InvalidResource".parse().unwrap(),
                 kind: Kind::Resource,
-                version: "1.0.0".to_string(),
+                version: "1.0.0".parse().unwrap(),
                 capabilities: vec![Capability::Get],
                 description: Some("This is a test resource.".to_string()),
                 implemented_as: Some(ImplementedAs::Custom("TestResource".to_string())),
