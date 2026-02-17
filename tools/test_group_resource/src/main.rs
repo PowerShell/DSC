@@ -17,7 +17,7 @@ fn main() {
             let resource1 = DscResource {
                 type_name: "Test/TestResource1".parse().unwrap(),
                 kind: Kind::Resource,
-                version: "1.0.0".parse().unwrap(),
+                version: "1.0.0".into(),
                 capabilities: vec![Capability::Get, Capability::Set],
                 description: Some("This is a test resource.".to_string()),
                 implemented_as: Some(ImplementedAs::Custom("TestResource".to_string())),
@@ -44,7 +44,7 @@ fn main() {
             let resource2 = DscResource {
                 type_name: "Test/TestResource2".parse().unwrap(),
                 kind: Kind::Resource,
-                version: "1.0.1".parse().unwrap(),
+                version: "1.0.1".into(),
                 capabilities: vec![Capability::Get, Capability::Set],
                 description: Some("This is a test resource.".to_string()),
                 implemented_as: Some(ImplementedAs::Custom("TestResource".to_string())),
@@ -75,7 +75,7 @@ fn main() {
             let resource1 = DscResource {
                 type_name: "Test/InvalidResource".parse().unwrap(),
                 kind: Kind::Resource,
-                version: "1.0.0".parse().unwrap(),
+                version: "1.0.0".into(),
                 capabilities: vec![Capability::Get],
                 description: Some("This is a test resource.".to_string()),
                 implemented_as: Some(ImplementedAs::Custom("TestResource".to_string())),

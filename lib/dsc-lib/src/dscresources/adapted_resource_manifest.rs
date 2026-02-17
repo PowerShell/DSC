@@ -1,12 +1,19 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{dscresources::{
-    dscresource::Capability, resource_manifest::{Kind, ResourceManifest}
-}, types::ResourceVersion};
 use crate::{
+    dscresources::{
+        dscresource::Capability,
+        resource_manifest::{
+            Kind,
+            ResourceManifest,
+        },
+    },
     schemas::dsc_repo::DscRepoSchema,
-    types::FullyQualifiedTypeName,
+    types::{
+        FullyQualifiedTypeName,
+        ResourceVersion,
+    },
 };
 use rust_i18n::t;
 use schemars::JsonSchema;

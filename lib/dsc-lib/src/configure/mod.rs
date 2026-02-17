@@ -296,11 +296,11 @@ fn get_metadata_from_result(mut context: Option<&mut Context>, result: &mut Valu
 /// Returns an instance of [`DscError::ResourceNotFound`] from the given resource instance.
 /// 
 /// This helper function simplifies the generation of the error instead of having to repeatedly
-/// handling the optional version requirement everywhere this error needs to be raised.
+/// handle the optional version requirement everywhere this error needs to be raised.
 fn fail_resource_not_found(resource: &Resource) -> DscError {
     DscError::ResourceNotFound(
         resource.resource_type.to_string(),
-        resource.api_version.clone().map(|r| r.to_string()).unwrap_or_default()
+        resource.api_version.as_ref().map(|r| r.to_string()).unwrap_or_default()
     )
 }
 
