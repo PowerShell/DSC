@@ -11,6 +11,7 @@ executionInformation:
   endDatetime: *
   executionType: actual
   operation: get
+  securityContext: *
   startDatetime: *
   version: 3*
 metadata:
