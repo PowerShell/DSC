@@ -141,7 +141,7 @@ impl MicrosoftDscMetadata {
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ExecutionInformation {
     /// The duration of the configuration operation
