@@ -1,6 +1,36 @@
 _version: 2
 schemas:
   definitions:
+    exitCodes:
+      title:
+        en-us: Exit codes
+      description:
+        en-us: >-
+          Defines a map of valid exit codes for operation commands.
+      markdownDescription:
+        en-us: |-
+          Defines a map of valid exit codes for operation commands. DSC always interprets exit code
+          `0` as a successful operation and any other exit code as an error. Use this property to
+          indicate human-readable semantic meanings for the DSC resource's exit codes.
+
+          When this field isn't defined, DSC can only report "Success" (for exit code `0`) and
+          "Error" (for all other exit codes).
+
+          Define the keys in this property as strings representing a valid 32-bit signed integer.
+          You can't use alternate formats for the exit code. For example, instead of the
+          hexadecimal value `0x80070005` for "Access denied", specify the exit code as
+          `-2147024891`.
+          
+          If you're authoring your resource manifest in YAML, be sure to wrap the exit code in
+          single quotes, like `'0': Success` instead of `0: Success` to ensure the YAML file can be
+          parsed correctly.
+
+          Define the value for each key as a string explaining what the exit code indicates.
+      invalidKeyErrorMessage:
+        en-us: >-
+          Invalid exit code. Each exit code must be defined as a string representing a 32-bit
+          signed integer, like `5` or `-2147024891`.
+
     resourceType:
       title: Fully qualified type name
       description: >-
