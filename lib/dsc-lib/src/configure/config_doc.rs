@@ -201,7 +201,7 @@ impl ExecutionInformation {
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ConfigDirective {
     /// Indicates if resources are discovered pre-deployment or during deployment
