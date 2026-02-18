@@ -1065,6 +1065,7 @@ impl Configurator {
         execution_information.execution_type = Some(self.context.execution_type.clone());
         execution_information.operation = Some(operation);
         execution_information.restart_required = self.context.restart_required.clone();
+        execution_information.security_context = Some(self.context.security_context.clone());
     }
 
     fn validate_config(&mut self) -> Result<(), DscError> {
