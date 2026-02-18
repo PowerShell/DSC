@@ -89,7 +89,7 @@ results:
         output: Last
 messages: `[`]
 hadErrors: false
-'@
+'@ -Because $out
     }
 
 }
