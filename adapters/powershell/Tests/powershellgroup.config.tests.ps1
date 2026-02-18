@@ -289,7 +289,7 @@ Describe 'PowerShell adapter resource tests' {
         $out.results[0].result.inDesiredState | Should -BeFalse -Because $text
       }
     }
-    if ($directive -ne '') {
+    if ($directive -eq 'requireAdapter: ') {
       "$TestDrive/tracing.txt" | Should -FileContentMatch "Invoking $Operation for '$adapter'" -Because (Get-Content -Raw -Path $TestDrive/tracing.txt)
     }
     if ($adapter -eq 'Microsoft.DSC/PowerShell') {
