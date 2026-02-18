@@ -215,7 +215,7 @@ pub struct ConfigDirective {
     pub version: Option<String>,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ResourceDirective {
     /// Specify specific adapter type used for implicit operations
