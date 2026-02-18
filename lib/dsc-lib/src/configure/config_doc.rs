@@ -16,7 +16,7 @@ use crate::{schemas::{
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
 #[schemars(transform = idiomaticize_string_enum)]
-#[dsc_repo_schema(base_name = "securityContext", folder_path = "metadata/Microsoft.DSC")]
+#[dsc_repo_schema(base_name = "securityContext", folder_path = "executionInformation")]
 pub enum SecurityContextKind {
     Current,
     Elevated,
@@ -37,7 +37,7 @@ impl Display for SecurityContextKind {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
 #[schemars(transform = idiomaticize_string_enum)]
-#[dsc_repo_schema(base_name = "operation", folder_path = "metadata/Microsoft.DSC")]
+#[dsc_repo_schema(base_name = "operation", folder_path = "executionInformation")]
 pub enum Operation {
     Get,
     Set,
@@ -48,7 +48,7 @@ pub enum Operation {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
 #[schemars(transform = idiomaticize_string_enum)]
-#[dsc_repo_schema(base_name = "executionType", folder_path = "metadata/Microsoft.DSC")]
+#[dsc_repo_schema(base_name = "executionType", folder_path = "executionInformation")]
 pub enum ExecutionKind {
     Actual,
     WhatIf,
@@ -64,7 +64,7 @@ pub struct Process {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
 #[schemars(transform = idiomaticize_externally_tagged_enum)]
-#[dsc_repo_schema(base_name = "restartRequired", folder_path = "metadata/Microsoft.DSC")]
+#[dsc_repo_schema(base_name = "restartRequired", folder_path = "executionInformation")]
 pub enum RestartRequired {
     System(String),
     Service(String),
@@ -73,7 +73,7 @@ pub enum RestartRequired {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
-#[dsc_repo_schema(base_name = "resourceDiscovery", folder_path = "metadata/Microsoft.DSC")]
+#[dsc_repo_schema(base_name = "resourceDiscovery", folder_path = "directive")]
 pub enum ResourceDiscoveryMode {
     PreDeployment,
     DuringDeployment,
@@ -143,6 +143,7 @@ impl MicrosoftDscMetadata {
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
+#[dsc_repo_schema(base_name = "executionInformation", folder_path = "config")]
 pub struct ExecutionInformation {
     /// The duration of the configuration operation
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -203,6 +204,7 @@ impl ExecutionInformation {
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
+#[dsc_repo_schema(base_name = "directive", folder_path = "config")]
 pub struct ConfigDirective {
     /// Indicates if resources are discovered pre-deployment or during deployment
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -217,6 +219,7 @@ pub struct ConfigDirective {
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
+#[dsc_repo_schema(base_name = "directive", folder_path = "resource")]
 pub struct ResourceDirective {
     /// Specify specific adapter type used for implicit operations
     #[serde(skip_serializing_if = "Option::is_none")]
