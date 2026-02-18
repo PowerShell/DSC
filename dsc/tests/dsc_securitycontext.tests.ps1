@@ -98,4 +98,34 @@ resources:
             $out | Should -Not -BeNullOrEmpty
         }
     }
+
+    It 'Resource with directive security context for <operation>' -TestCases @(
+        @{ operation = 'get' }
+        @{ operation = 'set' }
+        @{ operation = 'test' }
+        @{ operation = 'export' }
+    ) {
+        param($operation)
+        $configYaml = @"
+`$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: echo
+  type: Microsoft.DSC.Debug/Echo
+  properties:
+    output: 'Hello'
+  directives:
+    securityContext: elevated
+"@
+        $out = dsc config $operation -i $configYaml 2>$testdrive/error.log
+        $errorLog = Get-Content -Path $testdrive/error.log -Raw
+        if ($isAdmin) {
+            $LASTEXITCODE | Should -Be 0
+            $result = $out | ConvertFrom-Json
+            $result.results[0].output | Should -Be 'Hello'
+        }
+        else {
+            $errorLog | Should -BeLike "*ERROR*Security context: Elevated security context required*"
+            $LASTEXITCODE | Should -Be 2
+        }
+    }
 }

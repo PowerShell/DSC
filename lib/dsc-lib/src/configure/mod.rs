@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::configure::config_doc::{ConfigDirective, ExecutionInformation, ResourceDirective};
+use crate::configure::config_doc::{ExecutionInformation, ResourceDirective};
 use crate::configure::context::{Context, ProcessMode};
 use crate::configure::parameters::import_parameters;
 use crate::configure::{config_doc::{ExecutionKind, IntOrExpression, Metadata, Parameter, Resource, ResourceDiscoveryMode, RestartRequired, ValueOrCopy}};
@@ -235,8 +235,8 @@ fn get_require_adapter_from_directive(resource_directives: &Option<ResourceDirec
     None
 }
 
-fn check_security_context(metadata: Option<&Metadata>, directives: Option<&ConfigDirective>) -> Result<(), DscError> {
-    if metadata.is_none() && directives.is_none() {
+fn check_security_context(metadata: Option<&Metadata>, directive_security_context: Option<&SecurityContextKind>) -> Result<(), DscError> {
+    if metadata.is_none() && directive_security_context.is_none() {
         return Ok(());
     }
 
@@ -250,13 +250,11 @@ fn check_security_context(metadata: Option<&Metadata>, directives: Option<&Confi
         }
     }
 
-    if let Some(directives) = directives {
-        if let Some(directive_security_context) = &directives.security_context {
-            if security_context_required.is_some() && security_context_required != Some(directive_security_context) {
-                return Err(DscError::SecurityContext(t!("configure.mod.conflictingSecurityContext", metadata = security_context_required.unwrap(), directive = directive_security_context).to_string()));
-            }
-            security_context_required = Some(directive_security_context);
+    if let Some(directive_security_context) = &directive_security_context {
+        if security_context_required.is_some() && security_context_required != Some(directive_security_context) {
+            return Err(DscError::SecurityContext(t!("configure.mod.conflictingSecurityContext", metadata = security_context_required.unwrap(), directive = directive_security_context).to_string()));
         }
+        security_context_required = Some(directive_security_context);
     }
 
     match security_context_required {
@@ -410,6 +408,8 @@ impl Configurator {
                 progress.write_increment(1);
                 continue;
             }
+            let directive_security_context = resource.directives.as_ref().and_then(|d| d.security_context.as_ref());
+            check_security_context(resource.metadata.as_ref(), directive_security_context)?;
             let adapter = get_require_adapter_from_directive(&resource.directives);
             let Some(dsc_resource) = discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.require_version.as_deref(), adapter.as_deref()))? else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.require_version.as_deref().unwrap_or("").to_string()));
@@ -500,6 +500,8 @@ impl Configurator {
                 progress.write_increment(1);
                 continue;
             }
+            let directive_security_context = resource.directives.as_ref().and_then(|d| d.security_context.as_ref());
+            check_security_context(resource.metadata.as_ref(), directive_security_context)?;
             let adapter = get_require_adapter_from_directive(&resource.directives);
             let Some(dsc_resource) = discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.require_version.as_deref(), adapter.as_deref()))? else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.require_version.as_deref().unwrap_or("").to_string()));
@@ -691,6 +693,8 @@ impl Configurator {
                 progress.write_increment(1);
                 continue;
             }
+            let directive_security_context = resource.directives.as_ref().and_then(|d| d.security_context.as_ref());
+            check_security_context(resource.metadata.as_ref(), directive_security_context)?;
             let adapter = get_require_adapter_from_directive(&resource.directives);
             let Some(dsc_resource) = discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.require_version.as_deref(), adapter.as_deref()))? else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.require_version.as_deref().unwrap_or("").to_string()));
@@ -780,6 +784,8 @@ impl Configurator {
                 progress.write_increment(1);
                 continue;
             }
+            let directive_security_context = resource.directives.as_ref().and_then(|d| d.security_context.as_ref());
+            check_security_context(resource.metadata.as_ref(), directive_security_context)?;
             let adapter = get_require_adapter_from_directive(&resource.directives);
             let Some(dsc_resource) = discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.require_version.as_deref(), adapter.as_deref()))? else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.require_version.as_deref().unwrap_or("").to_string()));
@@ -1070,7 +1076,16 @@ impl Configurator {
 
     fn validate_config(&mut self) -> Result<(), DscError> {
         let config: Configuration = serde_json::from_str(self.json.as_str())?;
-        check_security_context(config.metadata.as_ref(), config.directives.as_ref())?;
+        let config_security_context = if let Some(directives) = &config.directives {
+            if let Some(security_context) = &directives.security_context {
+                Some(security_context.clone())
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+        check_security_context(config.metadata.as_ref(), config_security_context.as_ref())?;
 
         if let Some(directives) = &config.directives {
             if let Some(version) = &directives.version {
