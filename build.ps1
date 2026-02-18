@@ -2,7 +2,7 @@
 
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
-using module ./build.helpers.psm1
+using module ./helpers.build.psm1
 
 <#
     .SYNOPSIS
@@ -111,7 +111,7 @@ begin {
         $ProgressPreference = 'SilentlyContinue'
     }
 
-    Import-Module ./build.helpers.psm1 -Force -Verbose:$false
+    Import-Module ./helpers.build.psm1 -Force -Verbose:$false
     $usingADO = ($null -ne $env:TF_BUILD)
     if ($usingADO -or $UseCFSAuth) {
         $UseCFS = $true

@@ -170,7 +170,7 @@ function Import-DscBuildData {
     )
 
     begin {
-        $buildDataFilePath = Join-Path $PSScriptRoot "build.data.json"
+        $buildDataFilePath = Join-Path $PSScriptRoot "data.build.json"
     }
 
     process {
@@ -248,7 +248,7 @@ function Update-DscBuildData {
             'SkipTest.macOS'
             'SkipTest.Windows'
         )
-        $buildDataFilePath = Join-Path $PSScriptRoot "build.data.json"
+        $buildDataFilePath = Join-Path $PSScriptRoot "data.build.json"
     }
 
     process {
