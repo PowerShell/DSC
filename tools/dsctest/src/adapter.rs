@@ -107,6 +107,14 @@ pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation, res
                     };
                     Ok(serde_json::to_string(&adapted_three).unwrap())
                 },
+                "Adapted/Deprecated" => {
+                    let adapted_deprecated = AdaptedOne {
+                        one: "deprecated".to_string(),
+                        name: None,
+                        path: resource_path.clone(),
+                    };
+                    Ok(serde_json::to_string(&adapted_deprecated).unwrap())
+                },
                 _ => Err(format!("Unknown resource type: {resource_type}")),
             }
         },

@@ -25,7 +25,7 @@ pub enum Kind {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
-#[serde(deny_unknown_fields)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 #[dsc_repo_schema(
     base_name = "manifest",
     folder_path = "resource",
@@ -47,12 +47,16 @@ pub struct ResourceManifest {
     /// An optional condition for the resource to be active.  If the condition evaluates to false, the resource is skipped.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub condition: Option<String>,
+    /// An optional message indicating the resource is deprecated.  If provided, the message will be shown when the resource is used.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub deprecation_message: Option<String>,
     /// The kind of resource.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<Kind>,
     /// The version of the resource using semantic versioning.
     pub version: String,
     /// The description of the resource.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     /// Tags for the resource.
     #[serde(default, skip_serializing_if = "TagList::is_empty")]
@@ -63,7 +67,7 @@ pub struct ResourceManifest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub set: Option<SetMethod>,
     /// Details how to call the `WhatIf` method of the resource.
-    #[serde(rename = "whatIf", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub what_if: Option<SetMethod>,
     /// Details how to call the Test method of the resource.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -84,7 +88,7 @@ pub struct ResourceManifest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub adapter: Option<Adapter>,
     /// Mapping of exit codes to descriptions.  Zero is always success and non-zero is always failure.
-    #[serde(rename = "exitCodes", skip_serializing_if = "ExitCodesMap::is_empty_or_default", default)]
+    #[serde(skip_serializing_if = "ExitCodesMap::is_empty_or_default", default)]
     pub exit_codes: ExitCodesMap,
     /// Details how to get the schema of the resource.
     #[serde(skip_serializing_if = "Option::is_none")]

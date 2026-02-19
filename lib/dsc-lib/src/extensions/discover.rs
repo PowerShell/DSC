@@ -26,7 +26,7 @@ use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use tracing::{info, trace};
+use tracing::{info, trace, warn};
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[dsc_repo_schema(base_name = "manifest.discover", folder_path = "extension")]
@@ -73,6 +73,9 @@ impl DscExtension {
                 path: None,
             };
             let args = process_get_args(discover.args.as_ref(), "", &command_resource_info);
+            if let Some(deprecation_message) = extension.deprecation_message.as_ref() {
+                warn!("{}", t!("extensions.dscextension.deprecationMessage", extension = self.type_name, message = deprecation_message));
+            }
             let (_exit_code, stdout, _stderr) = invoke_command(
                 &discover.executable,
                 args,

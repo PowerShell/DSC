@@ -16,7 +16,7 @@ use serde_json::{Map, Value};
 use std::path::PathBuf;
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
-#[serde(deny_unknown_fields)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 #[dsc_repo_schema(
     base_name = "manifest",
     folder_path = "resource",
@@ -43,6 +43,9 @@ pub struct AdaptedDscResourceManifest {
     pub capabilities: Vec<Capability>,
     /// An optional condition for the resource to be active.
     pub condition: Option<String>,
+    /// An optional message indicating the resource is deprecated.  If provided, the message will be shown when the resource is used.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub deprecation_message: Option<String>,
     /// The file path to the resource.
     pub path: PathBuf,
     /// The description of the resource.
@@ -50,7 +53,6 @@ pub struct AdaptedDscResourceManifest {
     /// The author of the resource.
     pub author: Option<String>,
     /// The required resource adapter for the resource.
-    #[serde(rename="requireAdapter")]
     pub require_adapter: FullyQualifiedTypeName,
     /// The JSON Schema of the resource.
     pub schema: Map<String, Value>,
