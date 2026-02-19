@@ -1045,7 +1045,7 @@ impl Configurator {
 
         if !skip_resource_validation {
             // Perform discovery of resources used in config
-            // create an array of DiscoveryFilter using the resource types and api_versions from the config
+            // create an array of DiscoveryFilter using the resource types and requireVersion from the config
             let mut discovery_filter: Vec<DiscoveryFilter> = Vec::new();
             let config_copy = config.clone();
             for resource in config_copy.resources {

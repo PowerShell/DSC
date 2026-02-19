@@ -517,12 +517,12 @@ mod test {
                 {
                     "type": "Microsoft.DSC.Debug/Echo",
                     "name": "echoResource",
-                    "apiVersion": "1.0.0"
+                    "requireVersion": "1.0.0"
                 },
                 {
                     "type": "Microsoft/Process",
                     "name": "processResource",
-                    "apiVersion": "0.1.0"
+                    "requireVersion": "0.1.0"
                 }
             ]
         }"#;
