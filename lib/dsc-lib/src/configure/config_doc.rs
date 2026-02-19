@@ -353,8 +353,8 @@ pub struct Resource {
     /// The fully qualified name of the resource type
     #[serde(rename = "type")]
     pub resource_type: FullyQualifiedTypeName,
-    #[serde(skip_serializing_if = "Option::is_none", rename = "apiVersion")]
-    pub api_version: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "requireVersion", alias = "apiVersion")]
+    pub require_version: Option<String>,
     /// A friendly name for the resource instance
     #[serde(default)]
     pub name: String, // friendly unique instance name
@@ -429,7 +429,7 @@ impl Resource {
             comments: None,
             location: None,
             tags: None,
-            api_version: None,
+            require_version: None,
         }
     }
 }
@@ -517,12 +517,12 @@ mod test {
                 {
                     "type": "Microsoft.DSC.Debug/Echo",
                     "name": "echoResource",
-                    "apiVersion": "1.0.0"
+                    "requireVersion": "1.0.0"
                 },
                 {
                     "type": "Microsoft/Process",
                     "name": "processResource",
-                    "apiVersion": "0.1.0"
+                    "requireVersion": "0.1.0"
                 }
             ]
         }"#;
@@ -532,11 +532,11 @@ mod test {
         assert_eq!(config.resources.len(), 2);
         assert_eq!(config.resources[0].name, "echoResource");
         assert_eq!(config.resources[0].resource_type, "Microsoft.DSC.Debug/Echo");
-        assert_eq!(config.resources[0].api_version.as_deref(), Some("1.0.0"));
+        assert_eq!(config.resources[0].require_version.as_deref(), Some("1.0.0"));
 
         assert_eq!(config.resources[1].name, "processResource");
         assert_eq!(config.resources[1].resource_type, "Microsoft/Process");
-        assert_eq!(config.resources[1].api_version.as_deref(), Some("0.1.0"));
+        assert_eq!(config.resources[1].require_version.as_deref(), Some("0.1.0"));
     }
 
 }
