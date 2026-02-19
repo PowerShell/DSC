@@ -170,7 +170,11 @@ Describe 'Tests for the secret() function and extensions' {
     }
 
     It 'Deprecated extension shows message' {
-      $configYaml = @'
+      try {
+        $dscHome = Split-Path (Get-Command dsc).Source -Parent
+        $env:DSC_RESOURCE_PATH = (Join-Path -Path $dscHome -ChildPath 'deprecated') + [System.IO.Path]::PathSeparator + $dscHome
+
+        $configYaml = @'
           $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
           variables:
             myString: "[secret('nonExisting')]"
@@ -180,8 +184,11 @@ Describe 'Tests for the secret() function and extensions' {
             properties:
               output: "[variables('myString')]"
 '@
-      dsc -l trace config get -i $configYaml 2> $TestDrive/error.log | ConvertFrom-Json
-      $LASTEXITCODE | Should -Be 4
-      (Get-Content -Raw -Path "$TestDrive/error.log") | Should -Match "Extension 'Test/ExtensionDeprecated' is deprecated: This extension is deprecated" -Because (Get-Content -Raw -Path "$TestDrive/error.log")
+        dsc -l trace config get -i $configYaml 2> $TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 4
+        (Get-Content -Raw -Path "$TestDrive/error.log") | Should -Match "Extension 'Test/ExtensionDeprecated' is deprecated: This extension is deprecated" -Because (Get-Content -Raw -Path "$TestDrive/error.log")
+      } finally {
+        $env:DSC_RESOURCE_PATH = $null
+      }
     }
 }
