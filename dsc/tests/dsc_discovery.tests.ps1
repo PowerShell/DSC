@@ -301,21 +301,20 @@ Describe 'tests for resource discovery' {
         }
     }
 
-    It 'Resource discovery can be set to <mode>' -TestCases @(
-        @{ namespace = 'Microsoft.DSC'; mode = 'preDeployment' }
-        @{ namespace = 'Microsoft.DSC'; mode = 'duringDeployment' }
-        @{ namespace = 'Ignore'; mode = 'ignore' }
+    It 'Resource discovery directive can be set to <mode>' -TestCases @(
+        @{ mode = 'resourceDiscovery: preDeployment' }
+        @{ mode = 'resourceDiscovery: duringDeployment' }
+        @{ mode = '' }
     ) {
-        param($namespace, $mode)
+        param($mode)
 
         $guid = (New-Guid).Guid.Replace('-', '')
         $manifestPath = Join-Path (Split-Path (Get-Command dscecho -ErrorAction Stop).Source -Parent) echo.dsc.resource.json
 
         $config_yaml = @"
         `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/manifest.json
-        metadata:
-          ${namespace}:
-            resourceDiscovery: $mode
+        directives:
+          $mode
         resources:
         - type: Test/CopyResource
           name: This should be found and executed
@@ -329,7 +328,7 @@ Describe 'tests for resource discovery' {
 "@
         $out = dsc -l trace config get -i $config_yaml 2> "$testdrive/tracing.txt"
         $traceLog = Get-Content -Raw -Path "$testdrive/tracing.txt"
-        if ($mode -ne 'duringDeployment') {
+        if ($mode -notlike '*duringDeployment') {
             $LASTEXITCODE | Should -Be 2
             $out | Should -BeNullOrEmpty
             $traceLog | Should -Match "ERROR.*?Resource not found: Test/$guid"

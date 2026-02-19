@@ -2,9 +2,8 @@
 # note that the resource doesn't require admin, but this will fail to even try to run the
 # config if the user is not root or elevated as administrator
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
-metadata:
-  Microsoft.DSC:
-    securityContext: elevated
+directives:
+  securityContext: elevated
 resources:
 - name: os
   type: Microsoft/OSInfo
