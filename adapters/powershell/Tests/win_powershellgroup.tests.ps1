@@ -281,7 +281,7 @@ resources:
       "$TestDrive/tracing.txt" | Should -FileContentMatch "Invoking $Operation for '$adapter'" -Because (Get-Content -Raw -Path $TestDrive/tracing.txt)
     }
     if ($adapter -eq 'Microsoft.Windows/WindowsPowerShell') {
-      (Get-Content -Raw -Path $TestDrive.tracing.txt) | Should -Match "Resource 'Microsoft.Windows/WindowsPowerShell' is deprecated" -Because (Get-Content -Raw -Path $TestDrive.tracing.txt)
+      (Get-Content -Raw -Path $TestDrive/tracing.txt) | Should -Match "Resource 'Microsoft.Windows/WindowsPowerShell' is deprecated" -Because (Get-Content -Raw -Path $TestDrive/tracing.txt)
     }
   }
 }
