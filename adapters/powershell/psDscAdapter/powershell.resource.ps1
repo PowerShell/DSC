@@ -177,7 +177,7 @@ $ps = [PowerShell]::Create().AddScript({
                 }
                 elseif ($module.Description) {
                     # some modules have long multi-line descriptions. to avoid issue, use only the first line.
-                    $description = $module.Description.split("`r`n")[0]
+                    $description = ($module.Description -split '\r?\n')[0]
                 }
                 else {
                     $description = ''
@@ -379,7 +379,7 @@ if ($traceLevel -ge [DscTraceLevel]::Info) {
     $null = Register-ObjectEvent -InputObject $ps.Streams.Information -EventName DataAdding -MessageData $traceQueue -Action {
         $traceQueue = $Event.MessageData
         if ($null -ne $EventArgs.ItemAdded.MessageData) {
-            $traceQueue.Enqueue(@{ info = $EventArgs.ItemAdded.MessageData.ToString() })
+            $traceQueue.Enqueue(@{ info = [string]$EventArgs.ItemAdded.MessageData })
         }
     }
 }
@@ -403,6 +403,8 @@ $outputObjects = [System.Collections.Generic.List[Object]]::new()
 
 try {
     $asyncResult = $ps.BeginInvoke()
+    # This while loop with sleep must remain so that registered object events 
+    # can take over the pipeline thread.
     while (-not $asyncResult.IsCompleted) {
         Write-TraceQueue
 

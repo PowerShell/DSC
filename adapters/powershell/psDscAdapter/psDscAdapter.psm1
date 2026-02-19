@@ -13,12 +13,12 @@ function Get-DSCResourceModules {
     $listPSModuleFolders = $env:PSModulePath.Split([IO.Path]::PathSeparator)
     $dscModulePsd1List = [System.Collections.Generic.HashSet[System.String]]::new()
     foreach ($folder in $listPSModuleFolders) {
-        if (!(Test-Path $folder -ErrorAction Ignore)) {
+        if (!(Test-Path -LiteralPath $folder -ErrorAction Ignore)) {
             continue
         }
 
-        foreach ($moduleFolder in Get-ChildItem $folder -Directory -ErrorAction Ignore) {
-            foreach ($psd1 in Get-ChildItem -Recurse -Filter "$($moduleFolder.Name).psd1" -Path $moduleFolder.fullname -Depth 2 -ErrorAction Ignore) {
+        foreach ($moduleFolder in Get-ChildItem -LiteralPath $folder -Directory -ErrorAction Ignore) {
+            foreach ($psd1 in Get-ChildItem -Recurse -Filter "$($moduleFolder.Name).psd1" -LiteralPath $moduleFolder.fullname -Depth 2 -ErrorAction Ignore) {
                 $containsDSCResource = select-string -LiteralPath $psd1 -pattern '^[^#]*\bDscResourcesToExport\b.*'
                 if ($null -ne $containsDSCResource) {
                     $dscModulePsd1List.Add($psd1) | Out-Null
@@ -137,7 +137,10 @@ function FindAndParseResourceDefinitions {
 }
 
 function GetExportMethod ($ResourceType, $HasFilterProperties, $ResourceTypeName) {
-    $methods = $ResourceType.GetMethods() | Where-Object { $_.Name -eq 'Export' }
+    $methods = $ResourceType.GetMember(
+        'Export',
+        [System.Reflection.MemberTypes]::Method,
+        [System.Reflection.BindingFlags]'Public, Instance')
     $method = $null
 
     if ($HasFilterProperties) {
@@ -185,7 +188,7 @@ function LoadPowerShellClassResourcesFromModule {
         if (".psm1", ".ps1" -notcontains ([System.IO.Path]::GetExtension($moduleInfo.RootModule)) -and
             (-not $moduleInfo.NestedModules)) {
             Write-Debug -Debug ("RootModule is neither psm1 nor ps1 '$($moduleInfo.RootModule)'")
-            return [System.Collections.Generic.List[DscResourceInfo]]::new()
+            return
         }
 
         $scriptPath = Join-Path $moduleInfo.ModuleBase  $moduleInfo.RootModule
@@ -275,7 +278,7 @@ function Invoke-DscCacheRefresh {
                             $cache_LastWriteTime = $cache_LastWriteTime.AddTicks( - ($cache_LastWriteTime.Ticks % [TimeSpan]::TicksPerSecond));
 
                             if (-not ($file_LastWriteTime.Equals($cache_LastWriteTime))) {
-                                Write-Debug -Debug ("Detected stale cache entry '$($_.Name)'")
+                                Write-Debug -Debug "Detected stale cache entry '$($_.Name)'"
                                 $refreshCache = $true
                                 break
                             }
@@ -293,7 +296,7 @@ function Invoke-DscCacheRefresh {
                 if (-not $refreshCache) {
                     Write-Debug -Debug "Checking cache for stale PSModulePath"
 
-                    $m = $env:PSModulePath -split [IO.Path]::PathSeparator | % { Get-ChildItem -Directory -Path $_ -Depth 1 -ErrorAction Ignore }
+                    $m = $env:PSModulePath -split [IO.Path]::PathSeparator | % { Get-ChildItem -Directory -LiteralPath $_ -Depth 1 -ErrorAction Ignore }
 
                     $hs_cache = [System.Collections.Generic.HashSet[string]]($cache.PSModulePaths)
                     $hs_live = [System.Collections.Generic.HashSet[string]]($m.FullName)
