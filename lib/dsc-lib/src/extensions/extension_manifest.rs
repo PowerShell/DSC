@@ -37,7 +37,7 @@ pub struct ExtensionManifest {
     /// An optional condition for the extension to be active.  If the condition evaluates to false, the extension is skipped.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub condition: Option<String>,
-    /// An optional message indicating the resource is deprecated.  If provided, the message will be shown when the resource is used.
+    /// An optional message indicating the extension is deprecated. If provided, the message will be shown when the extension is used.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub deprecation_message: Option<String>,
     /// The description of the extension.
