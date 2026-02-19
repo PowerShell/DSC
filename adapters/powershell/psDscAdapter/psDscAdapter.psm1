@@ -137,10 +137,7 @@ function FindAndParseResourceDefinitions {
 }
 
 function GetExportMethod ($ResourceType, $HasFilterProperties, $ResourceTypeName) {
-    $methods = $ResourceType.GetMember(
-        'Export',
-        [System.Reflection.MemberTypes]::Method,
-        [System.Reflection.BindingFlags]'Public, Instance')
+    $methods = $ResourceType.GetMethods() | Where-Object { $_.Name -eq 'Export' }
     $method = $null
 
     if ($HasFilterProperties) {
