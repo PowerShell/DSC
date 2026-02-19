@@ -227,5 +227,12 @@ Describe 'Tests for adapter support' {
                 }
             }
         }
+
+        It 'Deprecated adapted resource shows message' {
+            $out = dsc resource get -r Adapted/Deprecated -i '{}' 2>$TestDrive/error.log | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log | Out-String)
+            $out | Should -Not -BeNullOrEmpty
+            (Get-Content $TestDrive/error.log -Raw) | Should -Match "Resource 'Adapted/Deprecated' is deprecated: This adapted resource is deprecated" -Because (Get-Content $TestDrive/error.log | Out-String)
+        }
     }
 }

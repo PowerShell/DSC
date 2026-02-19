@@ -18,7 +18,7 @@ use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[dsc_repo_schema(base_name = "manifest.import", folder_path = "extension")]
@@ -82,6 +82,9 @@ impl DscExtension {
                 return Err(DscError::UnsupportedCapability(self.type_name.to_string(), Capability::Import.to_string()));
             };
             let args = process_import_args(import.args.as_ref(), file)?;
+            if let Some(deprecation_message) = extension.deprecation_message.as_ref() {
+                warn!("{}", t!("extensions.dscextension.deprecationMessage", extension = self.type_name, message = deprecation_message));
+            }
             let (_exit_code, stdout, _stderr) = invoke_command(
                 &import.executable,
                 args,

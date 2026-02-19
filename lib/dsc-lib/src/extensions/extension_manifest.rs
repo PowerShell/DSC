@@ -13,7 +13,7 @@ use crate::schemas::dsc_repo::DscRepoSchema;
 use crate::types::{ExitCodesMap, FullyQualifiedTypeName, TagList};
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
-#[serde(deny_unknown_fields)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 #[dsc_repo_schema(
     base_name = "manifest",
     folder_path = "extension",
@@ -37,6 +37,8 @@ pub struct ExtensionManifest {
     /// An optional condition for the extension to be active.  If the condition evaluates to false, the extension is skipped.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub condition: Option<String>,
+    /// An optional message indicating the resource is deprecated.  If provided, the message will be shown when the resource is used.
+    pub deprecation_message: Option<String>,
     /// The description of the extension.
     pub description: Option<String>,
     /// Tags for the extension.
@@ -47,18 +49,17 @@ pub struct ExtensionManifest {
     /// Details how to call the Import method of the extension.
     pub import: Option<ImportMethod>,
     /// Details how to call the ImportParameters method of the extension.
-    #[serde(rename = "importParameters")]
     pub import_parameters: Option<ImportMethod>,
     /// Details how to call the Secret method of the extension.
     pub secret: Option<SecretMethod>,
     /// Mapping of exit codes to descriptions.  Zero is always success and non-zero is always failure.
-    #[serde(rename = "exitCodes", skip_serializing_if = "ExitCodesMap::is_empty_or_default", default)]
+    #[serde(skip_serializing_if = "ExitCodesMap::is_empty_or_default", default)]
     pub exit_codes: ExitCodesMap,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Map<String, Value>>,
 }
 
-/// Import a resource manifest from a JSON value.
+/// Import an extension manifest from a JSON value.
 ///
 /// # Arguments
 ///
@@ -66,7 +67,7 @@ pub struct ExtensionManifest {
 ///
 /// # Returns
 ///
-/// * `Result<ResourceManifest, DscError>` - The imported resource manifest.
+/// * `Result<ExtensionManifest, DscError>` - The imported extension manifest.
 ///
 /// # Errors
 ///
