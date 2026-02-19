@@ -44,6 +44,7 @@ pub struct AdaptedDscResourceManifest {
     /// An optional condition for the resource to be active.
     pub condition: Option<String>,
     /// An optional message indicating the resource is deprecated.  If provided, the message will be shown when the resource is used.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub deprecation_message: Option<String>,
     /// The file path to the resource.
     pub path: PathBuf,
