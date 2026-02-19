@@ -144,7 +144,7 @@ Describe 'Discover extension tests' {
         }
     }
 
-    It 'Deprecated exntesion shows message' {
+    It 'Deprecated extension shows message' {
         $null = dsc resource list 2> $TestDrive/error.log
         $LASTEXITCODE | Should -Be 0
         (Get-Content -Path "$TestDrive/error.log" -Raw) | Should -Match "Extension 'Test/ExtensionDeprecated' is deprecated: This extension is deprecated" -Because (Get-Content -Path "$TestDrive/error.log" -Raw | Out-String)
