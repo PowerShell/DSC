@@ -348,7 +348,7 @@ Describe 'PowerShell adapter resource tests' {
         # next executions following shortly after should Not rebuild the cache
         1..3 | ForEach-Object {
             dsc -l trace resource list -a Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
-            "$TestDrive/tracing.txt" | Should -Not -FileContentMatchExactly 'Constructing Get-DscResource cache'
+            "$TestDrive/tracing.txt" | Should -Not -FileContentMatchExactly 'Constructing Get-DscResource cache' -Because (Get-Content -Raw -Path "$TestDrive/tracing.txt")
         }
     }
 
