@@ -225,8 +225,7 @@ $ps = [PowerShell]::Create().AddScript({
                 Write-Debug -Debug ("Using resource type override: $ResourceType")
                 $dscResourceCache = Invoke-DscCacheRefresh -Module $ResourceType.Split('/')[0]
                 if ($null -eq $dscResourceCache) {
-                    Write-Error ("DSC resource '{0}' module not found." -f $ResourceType)
-                    exit 1
+                    throw ("DSC resource '{0}' module not found." -f $ResourceType)
                 }
 
                 $desiredState = $psDscAdapter.invoke(   { param($jsonInput, $type) Get-DscResourceObject -jsonInput $jsonInput -type $type }, $jsonInput, $ResourceType )
