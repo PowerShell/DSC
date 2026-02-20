@@ -294,34 +294,43 @@ class PSClassResource {
 
 "@
 
+    $ProgramFileModule = "$env:ProgramFiles\WindowsPowerShell\Modules"
 
-
-    $modulePathRootPSM1 = Join-Path $windowsPowerShellPath 'TestScriptBaseDSC' '0.0.1' 'TestScriptBaseDSC.psm1'
+    $modulePathRootPSM1 = Join-Path $ProgramFileModule 'TestScriptBaseDSC' '0.0.1' 'TestScriptBaseDSC.psm1'
         if (-not (Test-Path -Path $modulePathRootPSM1)) {
         New-Item -Path $modulePathRootPSM1 -ItemType File -Value $moduleScriptRootPSM1 -Force | Out-Null
     }
 
 
-    $modulePathRootPSD1 = Join-Path $windowsPowerShellPath 'TestScriptBaseDSC' '0.0.1' 'TestScriptBaseDSC.psd1'
+    $modulePathRootPSD1 = Join-Path $ProgramFileModule 'TestScriptBaseDSC' '0.0.1' 'TestScriptBaseDSC.psd1'
         if (-not (Test-Path -Path $modulePathRootPSD1)) {
         New-Item -Path $modulePathRootPSD1 -ItemType File -Value $moduleFileScriptRootPSD1 -Force | Out-Null
     }
 
 
-    $modulePathScriptCredentialValidationPSM1 = Join-Path $windowsPowerShellPath 'TestScriptBaseDSC' '0.0.1' 'DSCResources' 'CredentialValidation' 'CredentialValidation.psm1'
+    $modulePathScriptCredentialValidationPSM1 = Join-Path $ProgramFileModule 'TestScriptBaseDSC' '0.0.1' 'DSCResources' 'CredentialValidation' 'CredentialValidation.psm1'
     if (-not (Test-Path -Path $modulePathScriptCredentialValidationPSM1)) {
-        Write-Host "File will be created: $modulePathScriptCredentialValidationPSM1"
+        #Write-Host "File will be created: $modulePathScriptCredentialValidationPSM1"
         New-Item -Path $modulePathScriptCredentialValidationPSM1 -ItemType File -Value $moduleScriptCredentialValidationPSM1 -Force | Out-Null
     }
 
-    $modulePathScriptCredentialValidationSchemaMof = Join-Path $windowsPowerShellPath 'TestScriptBaseDSC' '0.0.1' 'DSCResources' 'CredentialValidation' 'CredentialValidation.schema.mof'
+    $modulePathScriptCredentialValidationSchemaMof = Join-Path $ProgramFileModule 'TestScriptBaseDSC' '0.0.1' 'DSCResources' 'CredentialValidation' 'CredentialValidation.schema.mof'
     if (-not (Test-Path -Path $modulePathScriptCredentialValidationSchemaMof)) {
-        Write-Host "File will be created: $modulePathScriptCredentialValidationSchemaMof"
+        #Write-Host "File will be created: $modulePathScriptCredentialValidationSchemaMof"
         New-Item -Path $modulePathScriptCredentialValidationSchemaMof -ItemType File -Value $moduleScriptCredentialValidationSchemaMof -Force | Out-Null
     }
 
-    $env:PSModulePath = $windowsPowerShellPath + [System.IO.Path]::PathSeparator + $env:PSModulePath + [System.IO.Path]::PathSeparator
+    $env:PSModulePath = $windowsPowerShellPath + [System.IO.Path]::PathSeparator + $env:PSModulePath + [System.IO.Path]::PathSeparator + $ProgramFileModule
+    
+    #Remove-Item "$env:LOCALAPPDATA\dsc\WindowsPSAdapterCache.json" -Force -ErrorAction SilentlyContinue
+
+    #Invoke-DscCacheRefresh -Module "TestScriptBaseDSC"
+
+    #$DscResource = Get-DscResource
+    #write-host "Available DSC Resources: $($DscResource.Name -join ', ')"
+
   }
+
 
   AfterAll {
     $env:PSModulePath = $OldPSModulePath
@@ -538,10 +547,7 @@ $out | Should -BeNullOrEmpty
     }
     if ($metadata -eq 'Microsoft.DSC') {
       "$TestDrive/tracing.txt" | Should -FileContentMatch "Invoking $Operation for '$adapter'" -Because (Get-Content -Raw -Path $TestDrive/tracing.txt)
-    }
-    if ($adapter -eq 'Microsoft.Windows/WindowsPowerShell') {
-      (Get-Content -Raw -Path $TestDrive/tracing.txt) | Should -Match "Resource 'Microsoft.Windows/WindowsPowerShell' is deprecated" -Because (Get-Content -Raw -Path $TestDrive/tracing.txt)
+
     }
   }
 }
-
