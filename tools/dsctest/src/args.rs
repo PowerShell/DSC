@@ -39,6 +39,7 @@ pub enum AdapterOperation {
     List,
     Export,
     Validate,
+    Schema,
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
