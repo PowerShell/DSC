@@ -16,25 +16,23 @@
       "requireAdapter": "Test/Adapter",
       "path": "adaptedTest.dsc.adaptedResource.json",
       "schema": {
-        "embedded": {
-          "$schema": "http://json-schema.org/draft-07/schema#",
-          "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/resources/Microsoft/OSInfo/v0.1.0/schema.json",
-          "title": "OsInfo",
-          "description": "Returns information about the operating system.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource\n",
-          "type": "object",
-          "required": [],
-          "additionalProperties": false,
-          "properties": {
-            "two": {
-              "type": "string",
-              "title": "Property Two",
-              "description": "This is property two of the adapted resource."
-            },
-            "name": {
-              "type": "string",
-              "title": "Name",
-              "description": "The name of the adapted resource instance."
-            }
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "https://github.com/powershell/dsc",
+        "title": "AdaptedTwo",
+        "description": "Adapted test resource number two",
+        "type": "object",
+        "required": [],
+        "additionalProperties": false,
+        "properties": {
+          "two": {
+            "type": "string",
+            "title": "Property Two",
+            "description": "This is property two of the adapted resource."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the adapted resource instance."
           }
         }
       }
@@ -58,9 +56,9 @@
       "schema": {
         "embedded": {
           "$schema": "http://json-schema.org/draft-07/schema#",
-          "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/resources/Microsoft/OSInfo/v0.1.0/schema.json",
-          "title": "OsInfo",
-          "description": "Returns information about the operating system.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource\n",
+          "$id": "https://github.com/powershell/dsc",
+          "title": "AdaptedFour",
+          "description": "An adapted resource for testing.",
           "type": "object",
           "required": [],
           "additionalProperties": false,
@@ -631,6 +629,21 @@
             "resourceTypeArg": "--resource-type"
           }
         ]
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "adapter",
+            "--operation",
+            "schema",
+            "--input",
+            "{}",
+            {
+              "resourceTypeArg": "--resource-type"
+            }
+          ]
+        }
       },
       "validate": {
         "executable": "dsctest",

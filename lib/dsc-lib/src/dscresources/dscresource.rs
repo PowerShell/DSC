@@ -279,6 +279,17 @@ impl DscResource {
         Ok(export_result)
     }
 
+    fn invoke_schema_with_adapter(&self, adapter: &FullyQualifiedTypeName, target_resource: &DscResource) -> Result<String, DscError> {
+        let mut configurator = self.clone().create_config_for_adapter(adapter, "")?;
+        let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
+        if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
+            adapter.target_resource = Some(Box::new(target_resource.clone()));
+            return adapter.schema();
+        }
+
+        return Err(DscError::NotSupported(t!("dscresources.dscresource.invokeSchemaNotSupported", resource = self.type_name).to_string()));
+    }
+
     fn get_adapter_resource(configurator: &mut Configurator, adapter: &FullyQualifiedTypeName) -> Result<DscResource, DscError> {
         if let Some(adapter_resource) = configurator.discovery().find_resource(&DiscoveryFilter::new(adapter, None, None))? {
             return Ok(adapter_resource.clone());
@@ -514,13 +525,16 @@ impl Invoke for DscResource {
         if let Some(deprecation_message) = self.deprecation_message.as_ref() {
             warn!("{}", t!("dscresources.dscresource.deprecationMessage", resource = self.type_name, message = deprecation_message));
         }
-        if self.require_adapter.is_some() {
-            return Err(DscError::NotSupported(t!("dscresources.dscresource.invokeSchemaNotSupported", resource = self.type_name).to_string()));
+        if let Some(schema) = &self.schema {
+            return Ok(serde_json::to_string(schema)?);
+        }
+        if let Some(adapter) = &self.require_adapter {
+            return self.invoke_schema_with_adapter(adapter, &self);
         }
 
         match &self.implemented_as {
             Some(ImplementedAs::Command) => {
-                command_resource::get_schema(&self)
+                command_resource::get_schema(&self, self.target_resource.as_deref())
             },
             _ => {
                 Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))

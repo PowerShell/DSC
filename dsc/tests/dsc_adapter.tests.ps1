@@ -179,7 +179,7 @@ Describe 'Tests for adapter support' {
             $out.path | Should -BeExactly $expectedPath
             $out.directory | Should -BeExactly $parent
             $out.requireAdapter | Should -BeExactly 'Test/Adapter'
-            $out.schema.embedded | Should -Not -BeNullOrEmpty
+            $out.schema | Should -Not -BeNullOrEmpty
         }
 
         It 'Adapted resource with condition false should not be returned' {

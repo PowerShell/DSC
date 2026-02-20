@@ -188,6 +188,23 @@ pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation, res
                 _ => Err(format!("Unknown resource type: {resource_type}")),
             }
         },
+        AdapterOperation::Schema => {
+            match resource_type {
+                "Adapted/One" => {
+                    let schema = schemars::schema_for!(AdaptedOne);
+                    Ok(serde_json::to_string(&schema).unwrap())
+                },
+                "Adapted/Two" => {
+                    let schema = schemars::schema_for!(AdaptedTwo);
+                    Ok(serde_json::to_string(&schema).unwrap())
+                },
+                "Adapted/Three" => {
+                    let schema = schemars::schema_for!(AdaptedOne);
+                    Ok(serde_json::to_string(&schema).unwrap())
+                },
+                _ => Err(format!("Unknown resource type: {resource_type}")),
+            }
+        },
         AdapterOperation::Validate => {
             Ok("{\"valid\": true}".to_string())
         },
