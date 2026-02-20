@@ -104,7 +104,7 @@ $ps = [PowerShell]::Create().AddScript({
 
     # Adding some debug info to STDERR
     Write-Debug -Debug ('PSVersion=' + $PSVersionTable.PSVersion.ToString())
-    Write-Debug -Debug ('PSPath=' + $PSHome)
+    Write-Debug -Debug ('PSHome=' + $PSHome)
     Write-Debug -Debug ('PSModulePath=' + $env:PSModulePath)
 
     if ($PSVersionTable.PSVersion.Major -le 5) {
