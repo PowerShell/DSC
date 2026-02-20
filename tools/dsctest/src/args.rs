@@ -111,6 +111,9 @@ pub enum SubCommand {
         export: bool,
     },
 
+    #[clap(name = "no-op", about = "Perform no operation, just return success")]
+    NoOp,
+
     #[clap(name = "operation", about = "Perform an operation")]
     Operation {
         #[clap(name = "operation", short, long, help = "The name of the operation to perform")]

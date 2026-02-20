@@ -805,12 +805,12 @@ pub fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adap
 
                 // if tags is specified, skip if resource tags do not contain the tags
                 if let Some(tags) = tags {
-                    let Some(manifest_tags) = &manifest.tags else { continue; };
+                    if manifest.tags.is_empty() { continue; }
 
                     let mut found = false;
                     for tag_to_find in tags {
-                        for tag in manifest_tags {
-                            if tag.to_lowercase() == tag_to_find.to_lowercase() {
+                        for tag in manifest.tags.as_ref() {
+                            if tag == tag_to_find {
                                 found = true;
                                 break;
                             }

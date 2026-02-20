@@ -229,6 +229,10 @@ fn main() {
             }
             String::new()
         },
+        SubCommand::NoOp => {
+            // do nothing and just return success
+            String::new()
+        },
         SubCommand::Operation { operation, input } => {
             let mut operation_result = match serde_json::from_str::<Operation>(&input) {
                 Ok(op) => op,

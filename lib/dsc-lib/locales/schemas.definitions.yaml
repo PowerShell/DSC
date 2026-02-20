@@ -1,6 +1,36 @@
 _version: 2
 schemas:
   definitions:
+    exitCodes:
+      title:
+        en-us: Exit codes
+      description:
+        en-us: >-
+          Defines a map of valid exit codes for operation commands.
+      markdownDescription:
+        en-us: |-
+          Defines a map of valid exit codes for operation commands. DSC always interprets exit code
+          `0` as a successful operation and any other exit code as an error. Use this property to
+          indicate human-readable semantic meanings for the DSC resource's exit codes.
+
+          When this field isn't defined, DSC can only report "Success" (for exit code `0`) and
+          "Error" (for all other exit codes).
+
+          Define the keys in this property as strings representing a valid 32-bit signed integer.
+          You can't use alternate formats for the exit code. For example, instead of the
+          hexadecimal value `0x80070005` for "Access denied", specify the exit code as
+          `-2147024891`.
+          
+          If you're authoring your resource manifest in YAML, be sure to wrap the exit code in
+          single quotes, like `'0': Success` instead of `0: Success` to ensure the YAML file can be
+          parsed correctly.
+
+          Define the value for each key as a string explaining what the exit code indicates.
+      invalidKeyErrorMessage:
+        en-us: >-
+          Invalid exit code. Each exit code must be defined as a string representing a 32-bit
+          signed integer, like `5` or `-2147024891`.
+
     resourceType:
       title: Fully qualified type name
       description: >-
@@ -270,3 +300,72 @@ schemas:
           Invalid semantic version requirement. A semantic version requirement must define one or
           more valid comparators. For more information, see
           [Defining semantic version requirements](https://learn.microsoft.com/en-us/powershell/dsc/concepts/defining-semver-reqs.md)
+
+    tag:
+      title:
+        en-us: Tag
+      description:
+        en-us: >-
+          Defines a short search term for a DSC resource or extension.
+      markdownDescription:
+        en-us: |-
+          Defines a short search term for a DSC resource or extension.
+
+          To help with discovery, DSC enables users to filter the list of available resources or
+          extensions by tags. DSC treats tags case-insensitively.
+
+          Define each tag as a non-empty string consisting of only unicode word characters. The
+          following list contains the valid character sets for a tag:
+
+          - `\p{alpha}` - All alphabetic characters, regardless of casing, use of marks, or script.
+          - `\p{gc=Mark}` - Characters that modify other characters
+          - `\p{digit}` - Characters `[0-9]`
+          - `\p{gc=Connector_Punctuation}` - Underscore (`_`) and similar characters
+          - `\p{Join_Control}` - characters that function for cursive joining and ligatures
+
+          A tag with any other characters, including spaces, is invalid.
+
+          For more information about unicode word characters, see
+          [Annex C: Compatibility property][01] in [Unicode Technical Standard #18][02].
+
+          [01]: https://www.unicode.org/reports/tr18/#Compatibility_Properties
+          [02]: https://www.unicode.org/reports/tr18
+      patternErrorMessage:
+        en-us: |-
+          Invalid tag. Tags must be non-empty strings consisting of only unicode word characters.
+
+    tags:
+      title:
+        en-us: Tag list
+      description:
+        en-us: >-
+          Defines a set of short search terms for a DSC resource or extension.
+      markdownDescription:
+        en-us: |-
+          Defines a set of short search terms for a DSC resource or extension.
+
+          To help with discovery, DSC enables users to filter the list of available resources or
+          extensions by tags. DSC treats tags case-insensitively.
+
+          Every tag in the list must be unique within the list. Defining a list with a repeated tag
+          is invalid. This schema will raise a validation error if you define an identical pair of
+          strings as list items, like `["macOS", "macOS"]`. However, due to limitations in the
+          expressiveness of JSON Schema, a list that defines the same tag with different casing
+          will pass JSON Schema validation, like `["MACOS", "macos", "macOS"]`. When DSC
+          deserializes that JSON array value, it only records the _first_ tag for any set of tags
+          that differ only by casing. Subsequent values are discarded.
+
+          For example, the following tag lists are functionally equivalent:
+
+          ```yaml
+          tags: [apt, Linux]
+          ---
+          tags: [apt, Linux, APT]
+          ```
+
+          When DSC processes the second tag list, the uppercased `APT` is ignored.
+
+          Don't define the same tag, regardless of casing, more than once in any tag list. While
+          JSON Schema and DSC are _resilient_ for lists that repeat the same tag with different
+          casing, it is best practice to ensure that every tag in the list is unique regardless of
+          casing.

@@ -9,7 +9,8 @@
     "CopyFiles": {
         "All": [
             "adaptedTest.dsc.adaptedResource.json",
-            "dsctest.dsc.manifests.json"
+            "dsctest.dsc.manifests.json",
+            "deprecated/deprecated.dsc.manifests.json"
         ]
     }
 }

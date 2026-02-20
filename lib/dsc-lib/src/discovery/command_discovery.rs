@@ -795,6 +795,7 @@ fn load_adapted_resource_manifest(path: &Path, manifest: &AdaptedDscResourceMani
         type_name: manifest.type_name.clone(),
         kind: Kind::Resource,
         implemented_as: None,
+        deprecation_message: manifest.deprecation_message.clone(),
         description: manifest.description.clone(),
         version: manifest.version.clone(),
         capabilities: manifest.capabilities.clone(),
@@ -858,6 +859,7 @@ fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<Ds
         type_name: manifest.resource_type.clone(),
         kind,
         implemented_as: Some(ImplementedAs::Command),
+        deprecation_message: manifest.deprecation_message.clone(),
         description: manifest.description.clone(),
         version: manifest.version.clone(),
         capabilities,
@@ -899,6 +901,7 @@ fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<
 
     let extension = DscExtension {
         type_name: manifest.r#type.clone(),
+        deprecation_message: manifest.deprecation_message.clone(),
         description: manifest.description.clone(),
         version: manifest.version.clone(),
         capabilities,

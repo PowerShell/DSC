@@ -293,6 +293,9 @@ Describe 'PowerShell adapter resource tests' {
     if ($metadata -eq 'Microsoft.DSC') {
       "$TestDrive/tracing.txt" | Should -FileContentMatch "Invoking $Operation for '$adapter'" -Because (Get-Content -Raw -Path $TestDrive/tracing.txt)
     }
+    if ($adapter -eq 'Microsoft.DSC/PowerShell') {
+      (Get-Content -Raw -Path $TestDrive/tracing.txt) | Should -Match "Resource 'Microsoft.DSC/PowerShell' is deprecated" -Because (Get-Content -Raw -Path $TestDrive/tracing.txt)
+    }
   }
 
   It 'Config works with credential object' {
