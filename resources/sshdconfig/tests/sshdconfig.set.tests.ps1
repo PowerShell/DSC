@@ -201,24 +201,6 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
             Remove-Item -Path $stderrFile -Force -ErrorAction SilentlyContinue
         }
 
-        It 'Should fail with purge set to false for repeatable keywords' {
-            $inputConfig = @{
-                _metadata = @{
-                    filepath = $TestConfigPath
-                }
-                _purge = $false
-                Port = "8888"
-            } | ConvertTo-Json
-
-            $logFile = Join-Path $TestDrive "purge_error.log"
-            sshdconfig set --input $inputConfig -s sshd-config 2>$logFile
-            $LASTEXITCODE | Should -Not -Be 0
-
-            # Read log file and check for error message
-            $logContent = Get-Content $logFile -Raw
-            $logContent | Should -Match "purge=false is not supported for keywords that can have multiple values"
-        }
-
         It 'Should fail with invalid keyword and not modify file' {
             # Get original content
             $getInput = @{
@@ -359,6 +341,38 @@ Match Group administrators
                 $afterLine = ($sshdConfigContents | Select-String -Pattern $orderCheck.Last).LineNumber
                 $beforeLine | Should -BeLessThan $afterLine -Because "Expected '$($orderCheck.Before)' to appear before '$($orderCheck.Last)'"
             }
+        }
+    }
+
+    Context 'Set overwrites repeatable keywords' {
+        BeforeEach {
+            $initialContent = @"
+        Port 2222
+        AddressFamily inet
+        MaxAuthTries 5
+        PermitRootLogin yes
+        PasswordAuthentication no
+        Match Group administrators
+            GSSAPIAuthentication yes
+"@
+            Set-Content -Path $TestConfigPath -Value $initialContent
+        }
+
+        It 'Should overwrite all instances of a repeatable keyword' {
+            $inputConfig = @{
+                _metadata = @{
+                    filepath = $TestConfigPath
+                }
+                _purge = $false
+                Port = @(8888, 9999)
+            } | ConvertTo-Json
+
+            sshdconfig set --input $inputConfig -s sshd-config 2>$logFile
+            $LASTEXITCODE | Should -Be 0
+            $sshdConfigContents = Get-Content $TestConfigPath
+            $sshdConfigContents | Should -Contain "port 8888"
+            $sshdConfigContents | Should -Contain "port 9999"
+            $sshdConfigContents | Should -Not -Contain "port 2222"
         }
     }
 }
