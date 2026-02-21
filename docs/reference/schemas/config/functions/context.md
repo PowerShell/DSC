@@ -34,22 +34,26 @@ You can access individual properties from the returned object using dot-path not
 
 ### os properties
 
-| Property       | Type    | Always present | Description                                                      |
-|----------------|---------|:--------------:|------------------------------------------------------------------|
-| `family`       | string  |      Yes       | The OS family: `Linux`, `macOS`, or `Windows`.                   |
-| `version`      | string  |      Yes       | The OS version string.                                           |
-| `edition`      | string  |       No       | The Windows edition, e.g. `Windows 11 Enterprise`. Windows only. |
-| `codename`     | string  |       No       | The Linux distribution codename from `lsb_release`. Linux only.  |
-| `bitness`      | integer |       No       | The OS bitness: `32` or `64`.                                    |
-| `architecture` | string  |       No       | The processor architecture, e.g. `x86_64` or `arm64`.            |
+| Property       | Type    | Always present | Description                                                                |
+|----------------|---------|:--------------:|----------------------------------------------------------------------------|
+| `family`       | string  |      Yes       | The OS family: `Linux`, `macOS`, or `Windows`.                             |
+| `version`      | string  |      Yes       | The OS version string.                                                     |
+| `edition`      | string  |       No       | The Windows edition, e.g. `Windows 11 Enterprise`. Windows only.           |
+| `codename`     | string  |       No       | The Linux distribution codename from `lsb_release`. Linux only.            |
+| `bitness`      | integer |       No       | The OS bitness: `32` or `64`. May be `null` if the bitness can't be found. |
+| `architecture` | string  |       No       | The processor architecture, e.g. `x86_64` or `arm64`.                      |
 
 ### security values
 
 | Value        | Description                                                                   |
 |--------------|-------------------------------------------------------------------------------|
-| `Elevated`   | DSC is running with elevated (administrator or root) privileges.              |
-| `Restricted` | DSC is running with restricted (standard user) privileges.                    |
-| `Current`    | The security context is forwarded from the calling process without elevation. |
+| `elevated`   | DSC is running with elevated (administrator or root) privileges.              |
+| `restricted` | DSC is running with restricted (standard user) privileges.                    |
+| `current`    | The security context is forwarded from the calling process without elevation. |
+
+When called on the local node, `context().security` is derived from the effective privileges
+and will be either `elevated` or `restricted`. The `current` value represents a forwarded,
+non-elevated security context.
 
 ## Examples
 
@@ -85,7 +89,7 @@ results:
           edition: Windows 11 Enterprise
           bitness: 64
           architecture: x86_64
-        security: Elevated
+        security: elevated
 messages: []
 hadErrors: false
 ```
@@ -124,7 +128,7 @@ results:
         family: Linux
         version: 22.04
         architecture: x86_64
-        security: Restricted
+        security: restricted
 messages: []
 hadErrors: false
 ```
@@ -144,7 +148,7 @@ resources:
   properties:
     output:
       platform: "[context().os.family]"
-      isElevated: "[equals(context().security, 'Elevated')]"
+      isElevated: "[equals(context().security, 'elevated')]"
       encodedContext: "[base64(string(context()))]"
 ```
 
