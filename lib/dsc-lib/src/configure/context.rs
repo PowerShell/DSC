@@ -12,6 +12,7 @@ use super::config_doc::{DataType, RestartRequired, SecurityContextKind};
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ProcessMode {
     Copy,
+    Lambda,
     Normal,
     NoExpressionEvaluation,
     ParametersDefault,
@@ -25,6 +26,9 @@ pub struct Context {
     pub dsc_version: Option<String>,
     pub execution_type: ExecutionKind,
     pub extensions: Vec<DscExtension>,
+    pub lambda_raw_args: std::cell::RefCell<Option<Vec<crate::parser::functions::FunctionArg>>>,
+    pub lambda_variables: HashMap<String, Value>,
+    pub lambdas: std::cell::RefCell<HashMap<String, crate::parser::functions::Lambda>>,
     pub outputs: Map<String, Value>,
     pub parameters: HashMap<String, (Value, DataType)>,
     pub process_expressions: bool,
@@ -49,6 +53,9 @@ impl Context {
             dsc_version: None,
             execution_type: ExecutionKind::Actual,
             extensions: Vec::new(),
+            lambda_raw_args: std::cell::RefCell::new(None),
+            lambda_variables: HashMap::new(),
+            lambdas: std::cell::RefCell::new(HashMap::new()),
             outputs: Map::new(),
             parameters: HashMap::new(),
             process_expressions: true,

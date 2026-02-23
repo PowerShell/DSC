@@ -258,9 +258,12 @@ argCountRequired = "Function '%{name}' requires between %{min_args} and %{max_ar
 noArrayArgs = "Function '%{name}' does not accept array arguments, accepted types are: %{accepted_args_string}"
 noBooleanArgs = "Function '%{name}' does not accept boolean arguments, accepted types are: %{accepted_args_string}"
 noNumberArgs = "Function '%{name}' does not accept number arguments, accepted types are: %{accepted_args_string}"
+noLambdaArgs = "Function '%{name}' does not accept lambda arguments, accepted types are: %{accepted_args_string}"
 noNullArgs = "Function '%{name}' does not accept null arguments, accepted types are: %{accepted_args_string}"
 noObjectArgs = "Function '%{name}' does not accept object arguments, accepted types are: %{accepted_args_string}"
 noStringArgs = "Function '%{name}' does not accept string arguments, accepted types are: %{accepted_args_string}"
+lambdaNotFound = "Function '%{name}' could not find lambda with ID '%{id}'"
+lambdaTooManyParams = "Function '%{name}' requires lambda with 1 or 2 parameters (element and optional index)"
 
 [functions.add]
 description = "Adds two or more numbers together"
@@ -367,6 +370,11 @@ description = "Evaluates if the two values are the same"
 description = "Returns the boolean value false"
 invoked = "false function"
 
+[functions.filter]
+description = "Filters an array with a custom filtering function"
+invoked = "filter function"
+lambdaMustReturnBool = "filter() lambda must return a boolean value"
+
 [functions.first]
 description = "Returns the first element of an array or first character of a string"
 invoked = "first function"
@@ -432,10 +440,26 @@ invalidObjectElement = "Array elements cannot be objects"
 description = "Converts a valid JSON string into a JSON data type"
 invalidJson = "Invalid JSON string"
 
+[functions.lambda]
+description = "Creates a lambda function with parameters and a body expression"
+invoked = "lambda function"
+requiresParamAndBody = "lambda() requires at least one parameter name and a body expression"
+paramsMustBeStrings = "lambda() parameter names must be string literals"
+bodyMustBeExpression = "lambda() body must be an expression"
+
+[functions.lambdaVariables]
+description = "Retrieves the value of a lambda parameter"
+invoked = "lambdaVariables function"
+notFound = "Lambda parameter '%{name}' not found in current context"
+
 [functions.lastIndexOf]
 description = "Returns the index of the last occurrence of an item in an array"
 invoked = "lastIndexOf function"
 invalidArrayArg = "First argument must be an array"
+
+[functions.map]
+description = "Transforms an array by applying a lambda function to each element"
+invoked = "map function"
 
 [functions.length]
 description = "Returns the length of a string, array, or object"
@@ -705,6 +729,7 @@ functionName = "Function name: '%{name}'"
 argIsExpression = "Argument is an expression"
 argIsValue = "Argument is a value: '%{value}'"
 unknownArgType = "Unknown argument type '%{kind}'"
+unexpectedLambda = "Lambda expressions cannot be used as function arguments directly. Use the lambda() function to create a lambda expression."
 
 [parser]
 parsingStatement = "Parsing statement: %{statement}"
