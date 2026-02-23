@@ -495,7 +495,7 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
         let Some(type_name) = resource_block["type"].as_str() else {
             return Err(DscError::Validation(t!("subcommand.resourceTypeNotSpecified").to_string()));
         };
-        resource_types.push(DiscoveryFilter::new(type_name, resource_block["api_version"].as_str(), None));
+        resource_types.push(DiscoveryFilter::new(type_name, resource_block["requireVersion"].as_str(), None));
     }
     dsc.find_resources(&resource_types, progress_format)?;
 
@@ -507,7 +507,7 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
         trace!("{} '{}'", t!("subcommand.validatingResource"), resource_block["name"].as_str().unwrap_or_default());
 
         // get the actual resource
-        let Some(resource) = get_resource(&mut dsc, type_name, resource_block["api_version"].as_str()) else {
+        let Some(resource) = get_resource(&mut dsc, type_name, resource_block["requireVersion"].as_str()) else {
             return Err(DscError::Validation(format!("{}: '{type_name}'", t!("subcommand.resourceNotFound"))));
         };
 
