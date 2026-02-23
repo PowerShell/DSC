@@ -212,10 +212,10 @@ PasswordAuthentication yes
         AfterEach {
             # Clean up test config file after each test
             if (Test-Path $script:TestConfigPath) {
-                Remove-Item -Path $script:TestConfigPath -Force -ErrorAction SilentlyContinue
+                Remove-Item -Path $script:TestConfigPath -Force -ErrorAction Ignore
             }
             if (Test-Path "$script:TestConfigPath.bak") {
-                Remove-Item -Path "$script:TestConfigPath.bak" -Force -ErrorAction SilentlyContinue
+                Remove-Item -Path "$script:TestConfigPath.bak" -Force -ErrorAction Ignore
             }
         }
 
@@ -229,7 +229,7 @@ resources:
 - name: newsub
   type: Microsoft.OpenSSH.SSHD/Subsystem
   metadata:
-    filepath: $($script:TestConfigPath -replace '\\', '/')
+    filepath: $script:TestConfigPath
   properties:
     _exist: true
     subsystem:
@@ -260,7 +260,7 @@ resources:
 - name: removesub
   type: Microsoft.OpenSSH.SSHD/Subsystem
   metadata:
-    filepath: $($script:TestConfigPath -replace '\\', '/')
+    filepath: $script:TestConfigPath
   properties:
     _exist: false
     subsystem:

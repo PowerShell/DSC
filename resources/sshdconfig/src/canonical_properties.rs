@@ -11,38 +11,38 @@ use crate::error::SshdConfigError;
 /// These properties are prefixed with underscore and are not SSH configuration keywords.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum CanonicalProperty {
-    /// Metadata object containing filepath and other configuration info
-    Metadata,
     /// Boolean flag indicating if an entry should exist or be removed
     Exist,
-    /// Boolean flag indicating if non-specified entries should be removed
-    Purge,
-    /// Contains SSH default values inherited from system
-    InheritedDefaults,
     /// Boolean flag to include default values in output
     IncludeDefaults,
+    /// Contains SSH default values inherited from system
+    InheritedDefaults,
+    /// Metadata object containing filepath and other configuration info
+    Metadata,
+    /// Boolean flag indicating if non-specified entries should be removed
+    Purge,
 }
 
 impl CanonicalProperty {
     /// Returns the string key for this canonical property.
     pub const fn as_str(self) -> &'static str {
         match self {
-            Self::Metadata => "_metadata",
             Self::Exist => "_exist",
-            Self::Purge => "_purge",
-            Self::InheritedDefaults => "_inheritedDefaults",
             Self::IncludeDefaults => "_includeDefaults",
+            Self::InheritedDefaults => "_inheritedDefaults",
+            Self::Metadata => "_metadata",
+            Self::Purge => "_purge",
         }
     }
 
     /// Parse a string into a canonical property.
     pub fn from_str(s: &str) -> Option<Self> {
         match s {
-            "_metadata" => Some(Self::Metadata),
             "_exist" => Some(Self::Exist),
-            "_purge" => Some(Self::Purge),
-            "_inheritedDefaults" => Some(Self::InheritedDefaults),
             "_includeDefaults" => Some(Self::IncludeDefaults),
+            "_inheritedDefaults" => Some(Self::InheritedDefaults),
+            "_metadata" => Some(Self::Metadata),
+            "_purge" => Some(Self::Purge),
             _ => None,
         }
     }
@@ -50,11 +50,11 @@ impl CanonicalProperty {
     /// Returns all canonical properties as a slice.
     pub const fn all() -> &'static [CanonicalProperty] {
         &[
-            Self::Metadata,
             Self::Exist,
-            Self::Purge,
-            Self::InheritedDefaults,
             Self::IncludeDefaults,
+            Self::InheritedDefaults,
+            Self::Metadata,
+            Self::Purge,
         ]
     }
 }
