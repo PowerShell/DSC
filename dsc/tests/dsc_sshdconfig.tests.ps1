@@ -214,8 +214,8 @@ PasswordAuthentication yes
             if (Test-Path $script:TestConfigPath) {
                 Remove-Item -Path $script:TestConfigPath -Force -ErrorAction Ignore
             }
-            if (Test-Path "$script:TestConfigPath.bak") {
-                Remove-Item -Path "$script:TestConfigPath.bak" -Force -ErrorAction Ignore
+            if (Test-Path "${script:TestConfigPath}_backup") {
+                Remove-Item -Path "${script:TestConfigPath}_backup" -Force -ErrorAction Ignore
             }
         }
 
@@ -244,10 +244,11 @@ resources:
             $out.results[0].result.afterState._exist | Should -Be $true
             $out.results[0].result.afterState.subsystem.name | Should -Be 'newsubsystem'
 
-            # Verify file contains the new subsystem
-            $subsystems = Get-Content $script:TestConfigPath | Where-Object { $_ -match '^\s*subsystem\s+' }
-            $subsystems.Count | Should -Be 3
-            $subsystems | Should -Contain "subsystem newsubsystem /path/to/newsubsystem"
+            $getResult = dsc config get -i "$config_yaml" | ConvertFrom-Json -Depth 10
+            $LASTEXITCODE | Should -Be 0
+            $getResult.results[0].result.actualState._exist | Should -Be $true
+            $getResult.results[0].result.actualState.subsystem.name | Should -Be 'newsubsystem'
+            $getResult.results[0].result.actualState.subsystem.value | Should -Be '/path/to/newsubsystem'
         }
 
         It 'Should remove a subsystem when _exist is false' -Skip:($script:skipSubsystemTests) {
@@ -271,10 +272,9 @@ resources:
             $out.hadErrors | Should -BeFalse
             $out.results[0].result.afterState._exist | Should -Be $false
 
-            # Verify subsystem was removed
-            $subsystems = Get-Content $script:TestConfigPath | Where-Object { $_ -match '^\s*subsystem\s+' }
-            $subsystems.Count | Should -Be 1
-            $subsystems | Should -Not -Match 'sftp'
+            $getResult = dsc config get -i "$config_yaml" | ConvertFrom-Json -Depth 10
+            $LASTEXITCODE | Should -Be 0
+            $getResult.results[0].result.actualState._exist | Should -Be $false
         }
 
         It 'Should add multiple new subsystems with SubsystemList' -Skip:($script:skipSubsystemTests) {
@@ -307,6 +307,19 @@ resources:
             $subsystems.Count | Should -Be 4
             $subsystems | Should -Contain "subsystem newsub1 /path/to/newsub1"
             $subsystems | Should -Contain "subsystem newsub2 /path/to/newsub2"
+
+            # Verify that new subsystems were appended (not inserted)
+            $allLines = Get-Content $script:TestConfigPath
+            $newsub1Line = ($allLines | Select-String -Pattern 'subsystem\s+newsub1').LineNumber
+            $newsub2Line = ($allLines | Select-String -Pattern 'subsystem\s+newsub2').LineNumber
+            $sftpLine = ($allLines | Select-String -Pattern 'subsystem\s+sftp').LineNumber
+            $test2Line = ($allLines | Select-String -Pattern 'Subsystem\s+test2').LineNumber
+
+            # New subsystems should be added after the original subsystems
+            $newsub1Line | Should -BeGreaterThan $sftpLine
+            $newsub1Line | Should -BeGreaterThan $test2Line
+            $newsub2Line | Should -BeGreaterThan $sftpLine
+            $newsub2Line | Should -BeGreaterThan $test2Line
         }
 
         It 'Should preserve unlisted subsystems when _purge is false' {
@@ -323,19 +336,26 @@ resources:
   properties:
     _purge: false
     subsystem:
-    - name: onlythisone
+    - name: addedSubsystem
       value: /path/to/this
 "@
             $out = dsc config set -i "$config_yaml" | ConvertFrom-Json -Depth 10
             $LASTEXITCODE | Should -Be 0
             $out.hadErrors | Should -BeFalse
 
-            # Verify all existing subsystems are still present plus the new one
-            $subsystems = Get-Content $script:TestConfigPath | Where-Object { $_ -match '^\s*subsystem\s+' }
+            # Verify using dsc config get
+            $getResult = dsc config get -i "$config_yaml" | ConvertFrom-Json -Depth 10
+            $LASTEXITCODE | Should -Be 0
+            $subsystems = $getResult.results[0].result.actualState.subsystem
             $subsystems.Count | Should -Be 3
-            $subsystems | Should -Contain "subsystem onlythisone /path/to/this"
-            $subsystems | Should -Contain "subsystem sftp $script:DefaultSftpPath"
-            $subsystems | Should -Contain "Subsystem test2 /path/to/test2"
+
+            # Verify each subsystem
+            foreach ($subsystem in $subsystems) {
+                $subsystem.name | Should -BeIn @('addedSubsystem', 'sftp', 'test2')
+                if ($subsystem.name -eq 'addedSubsystem') {
+                    $subsystem.value | Should -Be '/path/to/this'
+                }
+            }
         }
 
         It 'Should remove unlisted subsystems when _purge is true' {
@@ -354,20 +374,30 @@ resources:
     subsystem:
     - name: sftp
       value: $script:AlternatePath
-    - name: newsub
-      value: /path/to/newsub
+    - name: newSub
+      value: /path/to/newSub
 "@
             $out = dsc config set -i "$config_yaml" | ConvertFrom-Json -Depth 10
             $LASTEXITCODE | Should -Be 0
             $out.hadErrors | Should -BeFalse
 
-            # Verify only specified subsystems remain
-            $subsystems = Get-Content $script:TestConfigPath | Where-Object { $_ -match '^\s*subsystem\s+' }
+            # Verify using dsc config get
+            $getResult = dsc config get -i "$config_yaml" | ConvertFrom-Json -Depth 10
+            $LASTEXITCODE | Should -Be 0
+            $subsystems = $getResult.results[0].result.actualState.subsystem
             $subsystems.Count | Should -Be 2
-            $sftpLine = $subsystems | Where-Object { $_ -match 'sftp' }
-            $sftpLine | Should -Match ([regex]::Escape($script:AlternatePath))
-            $subsystems | Should -Contain "subsystem newsub /path/to/newsub"
-            $subsystems | Should -Not -Match 'test2'
+
+            # Verify each subsystem
+            foreach ($subsystem in $subsystems) {
+                $subsystem.name | Should -BeIn @('sftp', 'newSub')
+                $subsystem.name | Should -Not -Be 'test2'
+                if ($subsystem.name -eq 'sftp') {
+                    $subsystem.value | Should -Be $script:AlternatePath
+                }
+                if ($subsystem.name -eq 'newSub') {
+                    $subsystem.value | Should -Be '/path/to/newSub'
+                }
+            }
         }
     }
 }
