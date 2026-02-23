@@ -164,7 +164,7 @@ Describe 'Tests for MCP server' {
     }
 
     It 'Calling show_dsc_resource works' {
-        $resource = (dsc resource list | Select-Object -First 1 | ConvertFrom-Json -Depth 20)
+        $resource = (dsc resource list 'Microsoft/OSInfo' | ConvertFrom-Json -Depth 20)
 
         $mcpRequest = @{
             jsonrpc = "2.0"
@@ -227,10 +227,10 @@ Describe 'Tests for MCP server' {
         $response.id | Should -Be 8
         $functions = dsc function list --output-format json | ConvertFrom-Json
         $response.result.structuredContent.functions.Count | Should -Be $functions.Count
-        
+
         $mcpFunctions = $response.result.structuredContent.functions | Sort-Object name
         $dscFunctions = $functions | Sort-Object name
-        
+
         for ($i = 0; $i -lt $dscFunctions.Count; $i++) {
             ($mcpFunctions[$i].psobject.properties | Measure-Object).Count | Should -BeGreaterOrEqual 8
             $mcpFunctions[$i].name | Should -BeExactly $dscFunctions[$i].name -Because ($response.result.structuredContent | ConvertTo-Json -Depth 10 | Out-String)

@@ -135,4 +135,17 @@ Describe 'Discover extension tests' {
             $env:PATH = $oldPath
         }
     }
+
+    It 'Deprecated extension shows message' {
+        try {
+            $dscHome = Split-Path (Get-Command dsc).Source -Parent
+            $env:DSC_RESOURCE_PATH = (Join-Path -Path $dscHome -ChildPath 'deprecated') + [System.IO.Path]::PathSeparator + $dscHome
+
+            $null = dsc resource list 2> $TestDrive/error.log
+            $LASTEXITCODE | Should -Be 0
+            (Get-Content -Path "$TestDrive/error.log" -Raw) | Should -Match "Extension 'Test/ExtensionDeprecated' is deprecated: This extension is deprecated" -Because (Get-Content -Path "$TestDrive/error.log" -Raw | Out-String)
+        } finally {
+            $env:DSC_RESOURCE_PATH = $null
+        }
+    }
 }

@@ -97,8 +97,8 @@ impl McpServer {
                     Ok(ResourceOperationResult::TestResult(result))
                 },
                 DscOperation::Delete => {
-                    match resource.delete(&properties_json) {
-                        Ok(()) => Ok(ResourceOperationResult::DeleteResult { success: true }),
+                    match resource.delete(&properties_json, &ExecutionKind::Actual) {
+                        Ok(_) => Ok(ResourceOperationResult::DeleteResult { success: true }),
                         Err(e) => Err(McpError::internal_error(e.to_string(), None)),
                     }
                 },

@@ -41,7 +41,7 @@ Describe 'Apt resource tests' {
 
             $out = dsc config test -f $yamlPath| ConvertFrom-Json -Depth 10
             $LASTEXITCODE | Should -Be 0
-            $exists = $null -ne (Get-Command pkgName -CommandType Application -ErrorAction Ignore)
+            $exists = $null -ne (Get-Command $pkgName -CommandType Application -ErrorAction Ignore)
             $out.results[1].result.inDesiredState | Should -Be $exists
         }
     }

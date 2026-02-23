@@ -8,7 +8,7 @@ use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscerror::DscError;
 use crate::dscresources::{
     {dscresource::{Capability, Invoke, get_diff, validate_properties, get_adapter_input_kind},
-    invoke_result::{GetResult, SetResult, TestResult, ExportResult, ResourceSetResponse}},
+    invoke_result::{DeleteResult, DeleteResultKind, GetResult, SetResult, TestResult, ExportResult, ResourceSetResponse}},
     resource_manifest::{AdapterInputKind, Kind},
 };
 use crate::DscResource;
@@ -506,6 +506,7 @@ impl Configurator {
             let start_datetime;
             let end_datetime;
             let mut set_result;
+            let mut delete_what_if_metadata: Option<DeleteResult> = None;
             if exist || dsc_resource.capabilities.contains(&Capability::SetHandlesExist) {
                 debug!("{}", t!("configure.mod.handlesExist"));
                 start_datetime = chrono::Local::now();
@@ -520,76 +521,91 @@ impl Configurator {
                 end_datetime = chrono::Local::now();
             } else if dsc_resource.capabilities.contains(&Capability::Delete) {
                 debug!("{}", t!("configure.mod.implementsDelete"));
-                if self.context.execution_type == ExecutionKind::WhatIf {
-                    // Let the resource handle WhatIf via set (-w), which may route to delete
-                    start_datetime = chrono::Local::now();
-                    set_result = match dsc_resource.set(&desired, skip_test, &self.context.execution_type) {
-                        Ok(result) => result,
-                        Err(e) => {
-                            progress.set_failure(get_failure_from_error(&e));
-                            progress.write_increment(1);
-                            return Err(e);
-                        },
-                    };
-                    end_datetime = chrono::Local::now();
-                } else {
-                    let before_result = match dsc_resource.get(&desired) {
-                        Ok(result) => result,
-                        Err(e) => {
-                            progress.set_failure(get_failure_from_error(&e));
-                            progress.write_increment(1);
-                            return Err(e);
-                        },
-                    };
-                    start_datetime = chrono::Local::now();
-                    if let Err(e) = dsc_resource.delete(&desired) {
+
+                let before_result = match dsc_resource.get(&desired) {
+                    Ok(result) => result,
+                    Err(e) => {
                         progress.set_failure(get_failure_from_error(&e));
                         progress.write_increment(1);
                         return Err(e);
-                    }
-                    let after_result = match dsc_resource.get(&desired) {
-                        Ok(result) => result,
-                        Err(e) => {
-                            progress.set_failure(get_failure_from_error(&e));
-                            progress.write_increment(1);
-                            return Err(e);
-                        },
-                    };
-                    // convert get result to set result
-                    set_result = match before_result {
-                        GetResult::Resource(before_response) => {
-                            let GetResult::Resource(after_result) = after_result else {
+                    },
+                };
+
+                start_datetime = chrono::Local::now();
+                let delete_result = match dsc_resource.delete(&desired, &self.context.execution_type) {
+                    Ok(result) => result,
+                    Err(e) => {
+                        progress.set_failure(get_failure_from_error(&e));
+                        progress.write_increment(1);
+                        return Err(e);
+                    },
+                };
+
+                match delete_result {
+                    DeleteResultKind::SyntheticWhatIf(test_result) => {
+                        end_datetime = chrono::Local::now();
+                        set_result = test_result.into();
+                    },
+                    _ => {
+                        if let DeleteResultKind::ResourceWhatIf(delete_res) = delete_result {
+                            delete_what_if_metadata = Some(delete_res);
+                        }
+
+                        let after_result = match dsc_resource.get(&desired) {
+                            Ok(result) => result,
+                            Err(e) => {
+                                progress.set_failure(get_failure_from_error(&e));
+                                progress.write_increment(1);
+                                return Err(e);
+                            },
+                        };
+                        end_datetime = chrono::Local::now();
+
+                        set_result = match before_result {
+                            GetResult::Resource(before_response) => {
+                                let GetResult::Resource(after_result) = after_result else {
+                                    return Err(DscError::NotSupported(t!("configure.mod.groupNotSupportedForDelete").to_string()))
+                                };
+                                let diff = get_diff(&before_response.actual_state, &after_result.actual_state);
+                                let mut before: Map<String, Value> = serde_json::from_value(before_response.actual_state)?;
+                                if before.contains_key("result") && !before.contains_key("resources") {
+                                    before.insert("resources".to_string(), before["result"].clone());
+                                    before.remove("result");
+                                }
+                                let before_value = serde_json::to_value(&before)?;
+                                SetResult::Resource(ResourceSetResponse {
+                                    before_state: before_value.clone(),
+                                    after_state: after_result.actual_state,
+                                    changed_properties: Some(diff),
+                                })
+                            },
+                            GetResult::Group(_) => {
                                 return Err(DscError::NotSupported(t!("configure.mod.groupNotSupportedForDelete").to_string()))
-                            };
-                            let diff = get_diff(&before_response.actual_state, &after_result.actual_state);
-                            let mut before: Map<String, Value> = serde_json::from_value(before_response.actual_state)?;
-                            // a `get` will return a `result` property, but an actual `set` will have that as `resources`
-                            if before.contains_key("result") && !before.contains_key("resources") {
-                                before.insert("resources".to_string(), before["result"].clone());
-                                before.remove("result");
-                            }
-                            let before_value = serde_json::to_value(&before)?;
-                            SetResult::Resource(ResourceSetResponse {
-                                before_state: before_value.clone(),
-                                after_state: after_result.actual_state,
-                                changed_properties: Some(diff),
-                            })
-                        },
-                        GetResult::Group(_) => {
-                            return Err(DscError::NotSupported(t!("configure.mod.groupNotSupportedForDelete").to_string()))
-                        },
-                    };
-                    end_datetime = chrono::Local::now();
+                            },
+                        };
+                    },
                 }
             } else {
                 return Err(DscError::NotImplemented(t!("configure.mod.deleteNotSupported", resource = resource.resource_type).to_string()));
+            }
+
+            // Process metadata - only add whatIf if we have ResourceWhatIf variant
+            let mut other_metadata = Map::new();
+            if self.context.execution_type == ExecutionKind::WhatIf {
+                if let Some(delete_res) = delete_what_if_metadata {
+                    if let Some(metadata) = delete_res.metadata {
+                        if let Some(what_if) = metadata.what_if {
+                            other_metadata.insert("whatIf".to_string(), what_if);
+                        }
+                    }
+                }
             }
 
             let mut metadata = Metadata {
                 microsoft: Some(
                     MicrosoftDscMetadata::new_with_duration(&start_datetime, &end_datetime)
                 ),
-                other: Map::new(),
+                other: other_metadata,
             };
             match &mut set_result {
                 SetResult::Resource(resource_result) => {

@@ -368,7 +368,7 @@ Describe 'PowerShell adapter resource tests' {
     It 'Specifying a non-existent version returns an error' {
         $null = dsc resource get -r TestClassResource/TestClassResource --version 0.0.2 2> $TestDrive/error.log
         $LASTEXITCODE | Should -Be 7
-        Get-Content -Path $TestDrive/error.log | Should -Match 'Resource not found: TestClassResource/TestClassResource 0.0.2'
+        (Get-Content -Raw -Path $TestDrive/error.log) | Should -BeLike '*Resource not found: TestClassResource/TestClassResource 0.0.2*' -Because (Get-Content -Raw -Path $TestDrive/error.log)
     }
 
     It 'Can process SecureString property' {

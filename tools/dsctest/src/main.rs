@@ -17,6 +17,7 @@ mod sleep;
 mod trace;
 mod version;
 mod whatif;
+mod whatif_delete;
 
 use args::{Args, Schemas, SubCommand};
 use clap::Parser;
@@ -36,14 +37,15 @@ use crate::sleep::Sleep;
 use crate::trace::Trace;
 use crate::version::Version;
 use crate::whatif::WhatIf;
+use crate::whatif_delete::WhatIfDelete;
 use std::{thread, time::Duration};
 
 #[allow(clippy::too_many_lines)]
 fn main() {
     let args = Args::parse();
     let json = match args.subcommand {
-        SubCommand::Adapter { input , resource_type, operation } => {
-            match adapter::adapt(&resource_type, &input, &operation) {
+        SubCommand::Adapter { input , resource_type, resource_path, operation } => {
+            match adapter::adapt(&resource_type, &input, &operation, &resource_path) {
                 Ok(result) => result,
                 Err(err) => {
                     eprintln!("Error adapting resource: {err}");
@@ -227,6 +229,10 @@ fn main() {
             }
             String::new()
         },
+        SubCommand::NoOp => {
+            // do nothing and just return success
+            String::new()
+        },
         SubCommand::Operation { operation, input } => {
             let mut operation_result = match serde_json::from_str::<Operation>(&input) {
                 Ok(op) => op,
@@ -285,6 +291,9 @@ fn main() {
                 Schemas::WhatIf => {
                     schema_for!(WhatIf)
                 },
+                Schemas::WhatIfDelete => {
+                    schema_for!(WhatIfDelete)
+                }
             };
             serde_json::to_string(&schema).unwrap()
         },
@@ -318,12 +327,25 @@ fn main() {
         },
         SubCommand::WhatIf { what_if } => {
             let result: WhatIf = if what_if {
-                WhatIf { execution_type: "WhatIf".to_string() }
+                WhatIf { execution_type: "WhatIf".to_string(), exist: None }
             } else {
-                WhatIf { execution_type: "Actual".to_string() }
+                WhatIf { execution_type: "Actual".to_string(), exist: None }
             };
             serde_json::to_string(&result).unwrap()
         },
+        SubCommand::WhatIfDelete { what_if } => {
+            let result = if what_if {
+                let mut map = Map::<String, serde_json::Value>::new();
+                map.insert("whatIf".to_string(), serde_json::Value::Array(vec![
+                    serde_json::Value::String("Delete what-if message 1".to_string()),
+                    serde_json::Value::String("Delete what-if message 2".to_string()),
+                ]));
+                WhatIfDelete { exist: None, metadata: Some(map) }
+            } else {
+                WhatIfDelete { exist: Some(false), metadata: None }
+            };
+            serde_json::to_string(&result).unwrap()
+        }
     };
 
     if !json.is_empty() {
