@@ -653,6 +653,10 @@ function Install-ProtobufRelease($arch) {
     Write-Host "Extracting protoc to $installDir..."
     Expand-Archive -Path $zipPath -DestinationPath $installDir -Force
 
+    # Clean up downloaded archive to avoid leaving temporary files behind
+    if (Test-Path $zipPath) {
+        Remove-Item -Path $zipPath -Force -ErrorAction SilentlyContinue
+    }
     $env:PATH = "$installDir" + [System.IO.Path]::DirectorySeparatorChar + "bin" + [System.IO.Path]::PathSeparator + $env:PATH
 
     Write-Host "Verifying protoc installation..."
