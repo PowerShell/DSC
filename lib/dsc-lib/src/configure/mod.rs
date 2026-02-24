@@ -281,6 +281,21 @@ fn get_metadata_from_result(mut context: Option<&mut Context>, result: &mut Valu
                         }
                     }
                 }
+                if key == "_refreshEnv" {
+                    #[cfg(not(windows))]
+                    {
+                        warn!("{}", t!("configure.mod.metadataRefreshEnvIgnored"));
+                        continue;
+                    }
+                    #[cfg(windows)]
+                    {
+                        if let Some(context) = context.as_mut() {
+                            // rebuild the environment variables from Windows registry
+
+                        }
+                        continue;
+                    }
+                }
                 metadata.other.insert(key.clone(), value.clone());
             }
         } else {
