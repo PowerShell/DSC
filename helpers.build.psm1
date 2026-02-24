@@ -638,7 +638,8 @@ function Install-ProtobufRelease($arch) {
     }
     $asset = $assets[0]
     $downloadUrl = $asset.browser_download_url
-    $zipPath = "$env:TEMP\protoc.zip"
+    $tempDir = [System.IO.Path]::GetTempPath()
+    $zipPath = Join-Path -Path $tempDir -ChildPath ("protoc-{0}.zip" -f [System.Guid]::NewGuid())
 
     Write-Host "Downloading protoc from $downloadUrl..."
     Invoke-WebRequest -Uri $downloadUrl -OutFile $zipPath
