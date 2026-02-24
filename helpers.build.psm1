@@ -646,7 +646,7 @@ function Install-ProtobufRelease($arch) {
     Write-Host "Extracting protoc to $installDir..."
     Expand-Archive -Path $zipPath -DestinationPath $installDir -Force
 
-    $env:PATH += [System.IO.Path]::PathSeparator + "$installDir\bin"
+    $env:PATH = "$installDir\bin" + [System.IO.Path]::PathSeparator + $env:PATH
 
     Write-Host "Verifying protoc installation..."
     Write-Host -Verbose "protoc version: $(protoc --version)"
