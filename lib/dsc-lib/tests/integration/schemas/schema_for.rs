@@ -103,7 +103,8 @@ macro_rules! test_schema_for {
         #[allow(unused_must_use)]
         #[cfg(test)] mod resource_manifest {
             test_schema_for!(dsc_lib::dscresources::resource_manifest::Kind);
-            test_schema_for!(dsc_lib::dscresources::resource_manifest::ArgKind);
+            test_schema_for!(dsc_lib::dscresources::resource_manifest::GetArgKind);
+            test_schema_for!(dsc_lib::dscresources::resource_manifest::SetDeleteArgKind);
             test_schema_for!(dsc_lib::dscresources::resource_manifest::InputKind);
             test_schema_for!(dsc_lib::dscresources::resource_manifest::SchemaKind);
             test_schema_for!(dsc_lib::dscresources::resource_manifest::SchemaCommand);

@@ -1,6 +1,36 @@
 _version: 2
 schemas:
   definitions:
+    exitCodes:
+      title:
+        en-us: Exit codes
+      description:
+        en-us: >-
+          Defines a map of valid exit codes for operation commands.
+      markdownDescription:
+        en-us: |-
+          Defines a map of valid exit codes for operation commands. DSC always interprets exit code
+          `0` as a successful operation and any other exit code as an error. Use this property to
+          indicate human-readable semantic meanings for the DSC resource's exit codes.
+
+          When this field isn't defined, DSC can only report "Success" (for exit code `0`) and
+          "Error" (for all other exit codes).
+
+          Define the keys in this property as strings representing a valid 32-bit signed integer.
+          You can't use alternate formats for the exit code. For example, instead of the
+          hexadecimal value `0x80070005` for "Access denied", specify the exit code as
+          `-2147024891`.
+          
+          If you're authoring your resource manifest in YAML, be sure to wrap the exit code in
+          single quotes, like `'0': Success` instead of `0: Success` to ensure the YAML file can be
+          parsed correctly.
+
+          Define the value for each key as a string explaining what the exit code indicates.
+      invalidKeyErrorMessage:
+        en-us: >-
+          Invalid exit code. Each exit code must be defined as a string representing a 32-bit
+          signed integer, like `5` or `-2147024891`.
+
     resourceType:
       title: Fully qualified type name
       description: >-
@@ -33,3 +63,309 @@ schemas:
         a slash, like `Microsoft/OSInfo`. Type names may optionally include the group, area, and
         subarea segments to namespace the resource under the owner, like
         `Microsoft.Windows/Registry`.
+
+    resourceVersion:
+      title:
+        en-us: Resource version
+      description:
+        en-us: >-
+          Defines the version of a DSC resource as a semantic version or arbitrary string.
+      markdownDescription:
+        en-us: |-
+          Defines the version of a DSC resource.
+
+          DSC supports both semantic versioning and arbitrary versioning for resources. Semantic
+          versioning is the preferred and recommended versioning strategy. DSC only supports
+          arbitrary versioning for compatibility scenarios.
+
+          When the version is defined as a valid [semantic version][01], DSC can correctly compare
+          versions to determine the latest version or match a [semantic version requirement][02].
+          Where possible, resource and extension authors should follow semantic versioning for the
+          best user experience.
+
+          When the version is an arbitrary string, DSC compares the strings
+          [lexicographically][03]. Arbitrary string versions are only equivalent when they contain
+          exactly the same characters - the comparison is case-sensitive. If you're defining a
+          resource that doesn't follow semantic versioning, consider defining the version as an
+          [ISO 8601 date][04], like `2026-01-15`. When you do, DSC can correctly determine that a
+          later date should be treated as a newer version.
+
+          [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/semver
+          [02]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/semverReq
+          [03]: https://doc.rust-lang.org/std/cmp/trait.Ord.html#lexicographical-comparison
+          [04]: https://www.iso.org/iso-8601-date-and-time-format.html
+      semanticVariant:
+        title:
+          en-us: Semantic resource version
+        description:
+          en-us: >-
+            Defines the resource's version as a valid semantic version.
+        markdownDescription:
+          en-us: |-
+            Defines the resource's version as a valid semantic version. This is
+            the preferred and recommended versioning scheme for DSC resources.
+
+            For more information about defining semantic versions, see
+            [Semantic version JSON Schema reference][01]. For more information
+            about semantic versioning, see [semver.org][02].
+
+            [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/semver
+            [02]: https://semver.org
+      arbitraryVariant:
+        title:
+          en-us: Arbitrary string resource version
+        description:
+          en-us: >-
+            Defines the resource's version as an arbitrary string.
+        deprecationMessage:
+          en-us: >-
+            Defining a resource version as an arbitrary string is supported only for compatibility
+            purposes. If possible, define your resource version as a valid semantic version. For
+            more information about defining a semantic version, see [semver.org](https://semver.org).
+        markdownDescription:
+          en-us: |-
+            Defines the resource's version as an arbitrary string.
+
+            DSC uses this variant for the version of any DSC resource that defines its version as a
+            string that can't be parsed as a semantic version. This variant remains supported for
+            compatibility purposes but is _not_ recommended for production usage.
+
+            When a resource defines the version as an arbitrary string:
+
+            1. You can only use exact match version requirements for that resource.
+            1. When a resource defines the version as an arbitrary string, DSC uses Rust's
+               [lexicographic comparison][01] logic to determine the "latest" version of the
+               resource to use as the default version when no version requirement is specified.
+            1. When DSC discovers a multiple manifests for a resource, DSC always treats
+               semantically versioned resources as newer than resources with an arbitrary string
+               version.
+
+            [01]: https://doc.rust-lang.org/std/cmp/trait.Ord.html#lexicographical-comparison
+
+    resourceVersionReq:
+      title:
+        en-us: Resource version requirement
+      description:
+        en-us: >-
+          Defines one or more limitations for a resource version to enable version pinning.
+      markdownDescription:
+        en-us: |-
+          Defines one or more limitations for a [resource version][01] to enable version pinning.
+
+          DSC supports both semantic versioning and arbitrary versioning for resources. Semantic
+          versioning is the preferred and recommended versioning strategy. DSC only supports
+          arbitrary versioning for compatibility scenarios.
+
+          Because DSC supports arbitrary string versions for compatibility, version requirements
+          must also support arbitrary string versions.
+
+          When a resource version requirement is semantic, it behaves like a
+          [semantic version requirement][02] and only matches resource versions that are semantic
+          _and_ valid for the given requirement. Arbitrary string versions never match a semantic
+          resource version requirement.
+
+          Similarly, when a resource version requirement is an arbitrary string, it can never match
+          a semantically versioned resource. Instead, it matches an arbitrary resource version when
+          the arbitrary string version is _exactly_ the same as the arbitrary resource version
+          requirement.
+
+          Arbitrary resource versions and resource version requirements are only defined for
+          compatibility scenarios. You should use semantic versions for resources and resource
+          version requirements.
+
+          [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/resourceVersion
+          [02]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/semverReq
+      semanticVariant:
+        title:
+          en-us: Semantic resource version requirement
+        description:
+          en-us: >-
+            Defines the required version range for a resource using the Rust version requirement
+            syntax.
+        markdownDescription:
+          en-us: |-
+            Defines the required version range for a resource using the Rust version requirement
+            syntax. This is the preferred and recommended way to pin versions for DSC resources.
+
+            For more information about defining semantic version requirements with DSC, see
+            [Defining semantic version requirements][01].
+
+            [01]: https://learn.microsoft.com/en-us/powershell/dsc/concepts/defining-semver-reqs.md
+      arbitraryVariant:
+        title:
+          en-us: Arbitrary resource version requirement
+        description:
+          en-us: >-
+            Defines the required version for the resource as an arbitrary string.
+        deprecationMessage:
+          en-us: >-
+            Defining a resource version requirement as an arbitrary string is supported only for
+            compatibility purposes. If possible, define your version requirement as a valid
+            semantic version requirement. For more information about defining semantic version
+            requirements with DSC, see
+            [Defining semantic version requirements](https://learn.microsoft.com/en-us/powershell/dsc/concepts/defining-semver-reqs.md)
+        markdownDescription:
+          en-us: |-
+            Defines the required version for the resource as an arbitrary string.
+
+            DSC considers any requirement that can't be parsed as a semantic version requirement as
+            an arbitrary resource version requirement. This kind of requirement remains supported
+            for compatibility purposes but is _not_ recommended for production usage.
+
+            When a resource version requirement is defined as an arbitrary string:
+
+            1. It can never match a semantically versioned resource.
+            1. It only matches a resource with an [arbitrary string version][01] when the resource
+               version and this version requirement are exactly the same. The comparison is
+               case-sensitive.
+
+            [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/resourceVersion
+
+    semver:
+      title:
+        en-us: Semantic version
+      description:
+        en-us: |-
+          Defines a valid semantic version (semver) as a string.
+
+          For reference, see https://semver.org/
+      markdownDescription:
+        en-us: |-
+          Defines a valid semantic version ([semver][01]) as a string.
+
+          This value uses the [suggested regular expression][02] to validate whether the string is
+          valid semver. This is the same pattern, made multi-line for easier readability:
+
+          ```regex
+          ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)
+          (?:-(
+            (?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)
+            (?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))
+          *))?
+          (?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
+          ```
+
+          The first line matches the `major.minor.patch` components of the version. The middle
+          lines match the pre-release components. The last line matches the build metadata
+          component.
+
+          [01]: https://semver.org/
+          [02]: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
+      patternErrorMessage:
+        en-us: |-
+          Invalid value, must be a semantic version like `<major>.<minor>.<patch>`, such as `1.2.3`.
+
+          The value may also include pre-release version information and build metadata.
+
+    semverReq:
+      title:
+        en-us: Semantic version requirement
+      description:
+        en-us: >-
+          Defines one or more limitations for a semantic version to enable version pinning.
+      markdownDescription:
+        en-us: |-
+          Defines one or more limitations for a semantic version to enable version pinning.
+
+          DSC uses the semantic version requirements for Rust, as documented in the
+          ["Specifying dependencies" section of the Cargo Book][01]. DSC adheres closely to the
+          Rust syntax for defining semantic version requirements, with the following exceptions:
+
+          1. DSC semantic version requirements _forbid_ the inclusion of build metadata.
+
+            Rust allows and ignores them. DSC forbids the inclusion of build metadata to limit confusion
+            and unexpected behavior when specifying a version requirement for a DSC resource or
+            extension.
+          1. DSC semantic version requirements _must_ define a major version segment. All other segments
+            are optional.
+
+            Rust technically supports specifying a wildcard-only version requirement (`*`). DSC forbids
+            specifying this version requirement as it maps to the default version selection and is
+            discouraged when specifying version requirements for production systems.
+          1. DSC semantic version requirements only support the asterisk (`*`) character for wildcards,
+            not `x` or `X`.
+
+            DSC forbids specifying wildcards as non-asterisks to reduce ambiguity and unexpected
+            behavior for prerelease segments, where `1.2.3-X` and `1.2.3-rc.x` are _valid_ requirements
+            but where the characters are _not_ interpreted as wildcards. Forbidding the use of these
+            characters prevents users from accidentally defining a requirement they _believe_ will
+            wildcard match on a prerelease segment but actually won't.
+
+          For more information about defining semantic version requirements with DSC, see
+          [Defining semantic version requirements][01].
+
+          [01]: https://learn.microsoft.com/en-us/powershell/dsc/concepts/defining-semver-reqs.md
+      patternErrorMessage:
+        en-us: >-
+          Invalid semantic version requirement. A semantic version requirement must define one or
+          more valid comparators. For more information, see
+          [Defining semantic version requirements](https://learn.microsoft.com/en-us/powershell/dsc/concepts/defining-semver-reqs.md)
+
+    tag:
+      title:
+        en-us: Tag
+      description:
+        en-us: >-
+          Defines a short search term for a DSC resource or extension.
+      markdownDescription:
+        en-us: |-
+          Defines a short search term for a DSC resource or extension.
+
+          To help with discovery, DSC enables users to filter the list of available resources or
+          extensions by tags. DSC treats tags case-insensitively.
+
+          Define each tag as a non-empty string consisting of only unicode word characters. The
+          following list contains the valid character sets for a tag:
+
+          - `\p{alpha}` - All alphabetic characters, regardless of casing, use of marks, or script.
+          - `\p{gc=Mark}` - Characters that modify other characters
+          - `\p{digit}` - Characters `[0-9]`
+          - `\p{gc=Connector_Punctuation}` - Underscore (`_`) and similar characters
+          - `\p{Join_Control}` - characters that function for cursive joining and ligatures
+
+          A tag with any other characters, including spaces, is invalid.
+
+          For more information about unicode word characters, see
+          [Annex C: Compatibility property][01] in [Unicode Technical Standard #18][02].
+
+          [01]: https://www.unicode.org/reports/tr18/#Compatibility_Properties
+          [02]: https://www.unicode.org/reports/tr18
+      patternErrorMessage:
+        en-us: |-
+          Invalid tag. Tags must be non-empty strings consisting of only unicode word characters.
+
+    tags:
+      title:
+        en-us: Tag list
+      description:
+        en-us: >-
+          Defines a set of short search terms for a DSC resource or extension.
+      markdownDescription:
+        en-us: |-
+          Defines a set of short search terms for a DSC resource or extension.
+
+          To help with discovery, DSC enables users to filter the list of available resources or
+          extensions by tags. DSC treats tags case-insensitively.
+
+          Every tag in the list must be unique within the list. Defining a list with a repeated tag
+          is invalid. This schema will raise a validation error if you define an identical pair of
+          strings as list items, like `["macOS", "macOS"]`. However, due to limitations in the
+          expressiveness of JSON Schema, a list that defines the same tag with different casing
+          will pass JSON Schema validation, like `["MACOS", "macos", "macOS"]`. When DSC
+          deserializes that JSON array value, it only records the _first_ tag for any set of tags
+          that differ only by casing. Subsequent values are discarded.
+
+          For example, the following tag lists are functionally equivalent:
+
+          ```yaml
+          tags: [apt, Linux]
+          ---
+          tags: [apt, Linux, APT]
+          ```
+
+          When DSC processes the second tag list, the uppercased `APT` is ignored.
+
+          Don't define the same tag, regardless of casing, more than once in any tag list. While
+          JSON Schema and DSC are _resilient_ for lists that repeat the same tag with different
+          casing, it is best practice to ensure that every tag in the list is unique regardless of
+          casing.

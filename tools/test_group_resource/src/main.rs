@@ -19,15 +19,17 @@ fn main() {
                 kind: Kind::Resource,
                 version: "1.0.0".to_string(),
                 capabilities: vec![Capability::Get, Capability::Set],
+                deprecation_message: None,
                 description: Some("This is a test resource.".to_string()),
-                implemented_as: ImplementedAs::Custom("TestResource".to_string()),
+                implemented_as: Some(ImplementedAs::Custom("TestResource".to_string())),
                 path: PathBuf::from("test_resource1"),
                 directory: PathBuf::from("test_directory"),
                 author: Some("Microsoft".to_string()),
-                properties: vec!["Property1".to_string(), "Property2".to_string()],
+                properties: Some(vec!["Property1".to_string(), "Property2".to_string()]),
                 require_adapter: Some("Test/TestGroup".parse().unwrap()),
                 target_resource: None,
-                manifest: Some(serde_json::to_value(ResourceManifest {
+                schema: None,
+                manifest: Some(ResourceManifest {
                     description: Some("This is a test resource.".to_string()),
                     schema_version: dsc_lib::dscresources::resource_manifest::ResourceManifest::default_schema_id_uri(),
                     resource_type: "Test/TestResource1".parse().unwrap(),
@@ -38,22 +40,24 @@ fn main() {
                         ..Default::default()
                     }),
                     ..Default::default()
-                }).unwrap()),
+                }),
             };
             let resource2 = DscResource {
                 type_name: "Test/TestResource2".parse().unwrap(),
                 kind: Kind::Resource,
                 version: "1.0.1".to_string(),
                 capabilities: vec![Capability::Get, Capability::Set],
+                deprecation_message: None,
                 description: Some("This is a test resource.".to_string()),
-                implemented_as: ImplementedAs::Custom("TestResource".to_string()),
+                implemented_as: Some(ImplementedAs::Custom("TestResource".to_string())),
                 path: PathBuf::from("test_resource2"),
                 directory: PathBuf::from("test_directory"),
                 author: Some("Microsoft".to_string()),
-                properties: vec!["Property1".to_string(), "Property2".to_string()],
+                properties: Some(vec!["Property1".to_string(), "Property2".to_string()]),
                 require_adapter: Some("Test/TestGroup".parse().unwrap()),
                 target_resource: None,
-                manifest: Some(serde_json::to_value(ResourceManifest {
+                schema: None,
+                manifest: Some(ResourceManifest {
                     description: Some("This is a test resource.".to_string()),
                     schema_version: dsc_lib::dscresources::resource_manifest::ResourceManifest::default_schema_id_uri(),
                     resource_type: "Test/TestResource2".parse().unwrap(),
@@ -64,7 +68,7 @@ fn main() {
                         ..Default::default()
                     }),
                     ..Default::default()
-                }).unwrap()),
+                }),
             };
             println!("{}", serde_json::to_string(&resource1).unwrap());
             println!("{}", serde_json::to_string(&resource2).unwrap());
@@ -75,15 +79,17 @@ fn main() {
                 kind: Kind::Resource,
                 version: "1.0.0".to_string(),
                 capabilities: vec![Capability::Get],
+                deprecation_message: None,
                 description: Some("This is a test resource.".to_string()),
-                implemented_as: ImplementedAs::Custom("TestResource".to_string()),
+                implemented_as: Some(ImplementedAs::Custom("TestResource".to_string())),
                 path: PathBuf::from("test_resource1"),
                 directory: PathBuf::from("test_directory"),
                 author: Some("Microsoft".to_string()),
-                properties: vec!["Property1".to_string(), "Property2".to_string()],
+                properties: Some(vec!["Property1".to_string(), "Property2".to_string()]),
                 require_adapter: None,
                 target_resource: None,
                 manifest: None,
+                schema: None,
             };
             println!("{}", serde_json::to_string(&resource1).unwrap());
         }

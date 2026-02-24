@@ -150,4 +150,95 @@ Describe 'Tests for adapter support' {
             "$TestDrive/error.log" | Should -FileContentMatch "Invoking get for 'Microsoft.Adapter/PowerShell'" -Because (Get-Content $TestDrive/error.log | Out-String)
         }
     }
+
+    Context 'Adapted resource manifests' {
+        It 'Adapted resource are found in individual manifest' {
+            $out = dsc resource list 'Adapted/Three' 2>$TestDrive/error.log | ConvertFrom-Json -Depth 10
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log | Out-String)
+            $out.count | Should -Be 1
+            $out.type | Should -BeExactly 'Adapted/Three'
+            $out.kind | Should -BeExactly 'resource'
+            $out.capabilities | Should -Be @('get', 'set', 'test', 'export')
+            $parent = (Split-Path -Path (Get-Command dsc).Source -Parent)
+            $expectedPath = Join-Path -Path $parent -ChildPath 'adaptedTest.dsc.adaptedResource.json'
+            $out.path | Should -BeExactly $expectedPath
+            $out.directory | Should -BeExactly $parent
+            $out.requireAdapter | Should -BeExactly 'Test/Adapter'
+            $out.schema.embedded | Should -Not -BeNullOrEmpty
+        }
+
+        It 'Adapted resource found in manifest list' {
+            $out = dsc resource list 'Adapted/Two' 2>$TestDrive/error.log | ConvertFrom-Json -Depth 10
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log | Out-String)
+            $out.count | Should -Be 1
+            $out.type | Should -BeExactly 'Adapted/Two'
+            $out.kind | Should -BeExactly 'resource'
+            $out.capabilities | Should -Be @('get', 'set', 'test', 'export')
+            $parent = (Split-Path -Path (Get-Command dsc).Source -Parent)
+            $expectedPath = Join-Path -Path $parent -ChildPath 'adaptedTest.dsc.adaptedResource.json'
+            $out.path | Should -BeExactly $expectedPath
+            $out.directory | Should -BeExactly $parent
+            $out.requireAdapter | Should -BeExactly 'Test/Adapter'
+            $out.schema.embedded | Should -Not -BeNullOrEmpty
+        }
+
+        It 'Adapted resource with condition false should not be returned' {
+            $out = dsc -l debug resource list 'Adapted/Four' 2>$TestDrive/error.log
+            $errorLog = Get-Content $TestDrive/error.log -Raw
+            $LASTEXITCODE | Should -Be 0 -Because $errorLog
+            $out | Should -BeNullOrEmpty -Because $errorLog
+            $errorLog | Should -Match "Condition '.*?' not met, skipping manifest at .*? for resource 'Adapted/Four" -Because $errorLog
+        }
+
+        It 'Invoking <operation> on adapted resource works' -TestCases @(
+            @{ operation = 'get' },
+            @{ operation = 'set' },
+            @{ operation = 'test' },
+            @{ operation = 'export' }
+        ){
+            param($operation)
+            $out = dsc resource $operation -r Adapted/Three -i '{"one":"3"}' 2>$TestDrive/error.log | ConvertFrom-Json -Depth 10
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log | Out-String)
+            $parent = (Split-Path -Path (Get-Command dsc).Source -Parent)
+            $expectedPath = Join-Path -Path $parent -ChildPath 'adaptedTest.dsc.adaptedResource.json'
+            switch ($operation) {
+                'get' {
+                    $out.actualState.one | Should -BeExactly 'value3'
+                    $out.actualState.path | Should -BeExactly $expectedPath
+                }
+                'set' {
+                    $out.afterState.one | Should -BeExactly 'value3'
+                    $out.afterState.path | Should -BeExactly $expectedPath
+                }
+                'test' {
+                    $out.actualState.one | Should -BeExactly 'value3'
+                    $out.actualState.path | Should -BeExactly $expectedPath
+                    $out.inDesiredState | Should -BeFalse
+                    $out.differingProperties | Should -Be @('one')
+                }
+                'export' {
+                    $out.resources.count | Should -Be 2
+                    $out.resources[0].type | Should -BeExactly 'Adapted/Three'
+                    $out.resources[0].name | Should -BeExactly 'first'
+                    $out.resources[0].properties.one | Should -BeExactly 'first3'
+                    $out.resources[1].type | Should -BeExactly 'Adapted/Three'
+                    $out.resources[1].name | Should -BeExactly 'second'
+                    $out.resources[1].properties.one | Should -BeExactly 'second3'
+                }
+            }
+        }
+
+        It 'Deprecated adapted resource shows message' {
+            try {
+                $dscHome = Split-Path (Get-Command dsc).Source -Parent
+                $env:DSC_RESOURCE_PATH = (Join-Path -Path $dscHome -ChildPath 'deprecated') + [System.IO.Path]::PathSeparator + $dscHome
+                $out = dsc resource get -r Adapted/Deprecated -i '{}' 2>$TestDrive/error.log | ConvertFrom-Json
+                $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log | Out-String)
+                $out | Should -Not -BeNullOrEmpty
+                (Get-Content $TestDrive/error.log -Raw) | Should -Match "Resource 'Adapted/Deprecated' is deprecated: This adapted resource is deprecated" -Because (Get-Content $TestDrive/error.log | Out-String)
+            } finally {
+                $env:DSC_RESOURCE_PATH = $null
+            }
+        }
+    }
 }

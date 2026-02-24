@@ -189,7 +189,6 @@ Describe 'tests for resource discovery' {
         @{ operation = 'delete' }
         @{ operation = 'export' }
         @{ operation = 'resolve' }
-        @{ operation = 'whatIf' }
     ) {
         param($operation)
 
@@ -212,6 +211,7 @@ Describe 'tests for resource discovery' {
             $out.Count | Should -Be 1
             $out.Type | Should -BeExactly 'Test/ExecutableNotFound'
             $out.Kind | Should -BeExactly 'resource'
+            (Get-Content -Path "$testdrive/error.txt" -Raw)
             (Get-Content -Path "$testdrive/error.txt" -Raw) | Should -Match "INFO.*?Executable 'doesNotExist' not found"
         }
         finally {
