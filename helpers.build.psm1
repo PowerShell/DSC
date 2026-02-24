@@ -626,6 +626,28 @@ function Install-NodeJS {
     }
 }
 
+function Install-ProtobufRelease($arch) {
+    Write-Verbose -Verbose "Fetching latest Protocol Buffers release info..."
+    $release = Invoke-RestMethod -Uri "https://api.github.com/repos/protocolbuffers/protobuf/releases/latest"
+    $asset = $release.assets | Where-Object { $_.name -match "protoc-.*-$arch\.zip" }
+    if (-not $asset) { throw "No matching protoc binary found for $arch" }
+    $downloadUrl = $asset.browser_download_url
+    $zipPath = "$env:TEMP\protoc.zip"
+
+    Write-Host "Downloading protoc from $downloadUrl..."
+    Invoke-WebRequest -Uri $downloadUrl -OutFile $zipPath
+    $installDir = "$env:USERPROFILE\protoc"
+    if (-not (Test-Path $installDir)) { New-Item -ItemType Directory -Path $installDir | Out-Null }
+
+    Write-Host "Extracting protoc to $installDir..."
+    Expand-Archive -Path $zipPath -DestinationPath $installDir -Force
+
+    $env:PATH += [System.Environment]::PathSeparator + "$installDir\bin"
+
+    Write-Host "Verifying protoc installation..."
+    Write-Host -Verbose "protoc version: $(protoc --version)"
+}
+
 function Install-Protobuf {
     <#
         .SYNOPSIS
@@ -653,31 +675,7 @@ function Install-Protobuf {
             if ($env:TF_BUILD) {
                 Write-Verbose -Verbose "Running in Azure DevOps, installing from zip"
                 $arch = if ([Environment]::Is64BitOperatingSystem) { "win64" } else { "win32" }
-
-                Write-Host "Fetching latest Protocol Buffers release info..."
-                $release = Invoke-RestMethod -Uri "https://api.github.com/repos/protocolbuffers/protobuf/releases/latest"
-                $asset = $release.assets | Where-Object { $_.name -match "protoc-.*-$arch\.zip" }
-                if (-not $asset) { throw "No matching protoc binary found for $arch" }
-                $downloadUrl = $asset.browser_download_url
-                $zipPath = "$env:TEMP\protoc.zip"
-
-                Write-Host "Downloading protoc from $downloadUrl..."
-                Invoke-WebRequest -Uri $downloadUrl -OutFile $zipPath
-                $installDir = "$env:USERPROFILE\protoc"
-                if (-not (Test-Path $installDir)) { New-Item -ItemType Directory -Path $installDir | Out-Null }
-
-                Write-Host "Extracting protoc to $installDir..."
-                Expand-Archive -Path $zipPath -DestinationPath $installDir -Force
-
-                $envPath = [Environment]::GetEnvironmentVariable("Path", "Machine")
-                if ($envPath -notlike "*$installDir\bin*") {
-                    $env:PATH += ";$installDir\bin"
-                }
-
-                Write-Host "Verifying protoc installation..."
-                & "$installDir\bin\protoc.exe" --version
-
-                Write-Host "✅ Protocol Buffers installed successfully!"
+                Install-ProtobufRelease -arch $arch
             }
             elseif (Test-CommandAvailable -Name 'winget') {
                 Write-Verbose -Verbose "Using winget to install Protobuf"
@@ -693,7 +691,16 @@ function Install-Protobuf {
                 Write-Warning "winget not found, please install Protobuf manually"
             }
         } else {
-            if (Test-CommandAvailable -Name 'apt') {
+            if ($env:TF_BUILD) {
+                Write-Verbose -Verbose "Running in Azure DevOps on Linux, installing from zip"
+                # check if ARM64 or x64
+                $arch = if ([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture -eq [System.Runtime.InteropServices.Architecture]::Arm64) {
+                    "linux-aarch_64"
+                } else {
+                    "linux-x86_64"
+                }
+                Install-ProtobufRelease -arch $arch
+            } elseif (Test-CommandAvailable -Name 'apt') {
                 Write-Verbose -Verbose "Using apt to install Protobuf"
                 sudo apt install -y protobuf-compiler
                 Write-Verbose -Verbose (Get-Command protoc | Out-String)
