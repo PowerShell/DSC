@@ -23,6 +23,7 @@ pub struct Context {
     pub copy: HashMap<String, i64>,
     pub copy_current_loop_name: String,
     pub dsc_version: Option<String>,
+    pub environment_variables: Map<String, Value>,
     pub execution_type: ExecutionKind,
     pub extensions: Vec<DscExtension>,
     pub outputs: Map<String, Value>,
@@ -43,10 +44,12 @@ pub struct Context {
 impl Context {
     #[must_use]
     pub fn new() -> Self {
+        let environment_variables = std::env::vars().map(|(k, v)| (k, Value::String(v))).collect();
         Self {
             copy: HashMap::new(),
             copy_current_loop_name: String::new(),
             dsc_version: None,
+            environment_variables,
             execution_type: ExecutionKind::Actual,
             extensions: Vec::new(),
             outputs: Map::new(),
