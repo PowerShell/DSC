@@ -629,8 +629,14 @@ function Install-NodeJS {
 function Install-ProtobufRelease($arch) {
     Write-Verbose -Verbose "Fetching latest Protocol Buffers release info..."
     $release = Invoke-RestMethod -Uri "https://api.github.com/repos/protocolbuffers/protobuf/releases/latest"
-    $asset = $release.assets | Where-Object { $_.name -match "protoc-.*-$arch\.zip" }
-    if (-not $asset) { throw "No matching protoc binary found for $arch" }
+    $assets = @($release.assets | Where-Object { $_.name -match "protoc-.*-$arch\.zip$" })
+    if (-not $assets -or $assets.Count -eq 0) {
+        throw "No matching protoc binary found for $arch"
+    }
+    if ($assets.Count -gt 1) {
+        throw "Multiple matching protoc binaries found for $arch"
+    }
+    $asset = $assets[0]
     $downloadUrl = $asset.browser_download_url
     $zipPath = "$env:TEMP\protoc.zip"
 
