@@ -649,7 +649,8 @@ function Install-ProtobufRelease($arch) {
     $env:PATH = "$installDir\bin" + [System.IO.Path]::PathSeparator + $env:PATH
 
     Write-Host "Verifying protoc installation..."
-    Write-Host -Verbose "protoc version: $(protoc --version)"
+    Write-Host (Get-Command protoc | Out-String)
+    Write-Host "protoc version: $(protoc --version)"
 }
 
 function Install-Protobuf {
