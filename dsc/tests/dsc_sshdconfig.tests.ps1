@@ -187,9 +187,9 @@ resources:
 
             # Define OS-specific paths with spaces
             if ($IsWindows) {
-                $script:PathWithSpaces = "C:\Program Files\OpenSSH\sftp-server.exe"
+                $script:PathWithSpaces = "$env:ProgramFiles\OpenSSH\sftp-server.exe"
                 $script:DefaultSftpPath = "sftp-server.exe"
-                $script:AlternatePath = "C:\OpenSSH\bin\sftp.exe"
+                $script:AlternatePath = "$env:SystemDrive\OpenSSH\bin\sftp.exe"
             }
             else {
                 $script:PathWithSpaces = "/usr/local/lib/openssh server/sftp-server"
