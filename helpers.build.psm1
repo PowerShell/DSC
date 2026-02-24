@@ -636,8 +636,9 @@ function Install-Protobuf {
     param()
 
     process {
-        if (Test-CommandAvailable -Name 'protoc') {
-            Write-Verbose "Protobuf already installed."
+        # if ADO, we install the latest version
+        if ($null -eq $env:TF_BUILD -and (Test-CommandAvailable -Name 'protoc')) {
+            Write-Verbose -Verbose "Protobuf already installed: $(protoc --version)"
             return
         }
 
@@ -696,6 +697,7 @@ function Install-Protobuf {
                 Write-Verbose -Verbose "Using apt to install Protobuf"
                 sudo apt install -y protobuf-compiler
                 Write-Verbose -Verbose (Get-Command protoc | Out-String)
+                Write-Verbose -Verbose "protoc version: $(protoc --version)"
             } else {
                 Write-Warning "apt not found, please install Protobuf manually"
             }
