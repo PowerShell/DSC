@@ -13,8 +13,14 @@ use crate::repeat_keyword::{KeywordInfo, ValueSeparator};
 /// Unescape backslashes in strings. sshd -T outputs paths with escaped backslashes
 /// (e.g., "c:\\openssh\\bin\\sftp.exe") but we want to normalize them to the original
 /// form (e.g., "c:\openssh\bin\sftp.exe") for comparison and storage.
+#[cfg(windows)]
 fn unescape_backslashes(s: &str) -> String {
     s.replace("\\\\", "\\")
+}
+
+#[cfg(not(windows))]
+fn unescape_backslashes(s: &str) -> String {
+    s.to_string()
 }
 
 #[derive(Debug, JsonSchema)]
