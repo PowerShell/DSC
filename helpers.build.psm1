@@ -636,13 +636,17 @@ function Install-ProtobufRelease($arch) {
 
     Write-Host "Downloading protoc from $downloadUrl..."
     Invoke-WebRequest -Uri $downloadUrl -OutFile $zipPath
-    $installDir = "$env:USERPROFILE\protoc"
+    $installDir = if ($IsWindows) {
+        "$env:USERPROFILE\protoc"
+    } else {
+        "$env:HOME/protoc"
+    }
     if (-not (Test-Path $installDir)) { New-Item -ItemType Directory -Path $installDir | Out-Null }
 
     Write-Host "Extracting protoc to $installDir..."
     Expand-Archive -Path $zipPath -DestinationPath $installDir -Force
 
-    $env:PATH += [System.Environment]::PathSeparator + "$installDir\bin"
+    $env:PATH += [System.IO.Path]::PathSeparator + "$installDir\bin"
 
     Write-Host "Verifying protoc installation..."
     Write-Host -Verbose "protoc version: $(protoc --version)"
