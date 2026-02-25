@@ -1,0 +1,6 @@
+{
+    "Name": "xtask",
+    "Kind": "CLI",
+    "IsRust": true,
+    "TestOnly": true
+}
