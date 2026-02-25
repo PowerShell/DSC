@@ -690,11 +690,195 @@ test_cases_for_get_keyword_as_mut!(
     }
 }
 
+#[cfg(test)] mod get_bundled_schema_resource_defs_key {
+    use schemars::json_schema;
+
+    use crate::schema_utility_extensions::SchemaUtilityExtensions;
+
+    #[test] fn when_defs_not_defined() {
+        let schema = &json_schema!({
+            "$id": "https://contoso.com/schemas/example.json",
+            "properties": {
+                "foo": { "$ref": "#/$defs/foo" },
+                "bar": { "$ref": "/schemas/properties/bar.json" },
+                "baz": { "$ref": "https://contoso.com/schemas/properties/baz.json" },
+            }
+        });
+        pretty_assertions::assert_eq!(
+            schema.get_bundled_schema_resource_defs_key(
+                &"https://contoso.com/schemas/properties/bar.json".to_string()
+            ),
+            None
+        );
+    }
+
+    #[test] fn when_defs_not_contains_bundled_resource() {
+        let schema = &json_schema!({
+            "$id": "https://contoso.com/schemas/example.json",
+            "properties": {
+                "foo": { "$ref": "#/$defs/foo" },
+                "bar": { "$ref": "/schemas/properties/bar.json" },
+                "baz": { "$ref": "https://contoso.com/schemas/properties/baz.json" },
+            },
+            "$defs": {
+                "foo": {
+                    "$id": "https://contoso.com/schemas/properties/foo.json",
+                    "type": "string",
+                },
+            },
+        });
+        pretty_assertions::assert_eq!(
+            schema.get_bundled_schema_resource_defs_key(
+                &"https://contoso.com/schemas/properties/bar.json".to_string()
+            ),
+            None
+        );
+    }
+
+    #[test] fn when_defs_contains_bundled_resource() {
+        let schema = &json_schema!({
+            "$id": "https://contoso.com/schemas/example.json",
+            "properties": {
+                "foo": { "$ref": "#/$defs/foo" },
+                "bar": { "$ref": "/schemas/properties/bar.json" },
+                "baz": { "$ref": "https://contoso.com/schemas/properties/baz.json" },
+            },
+            "$defs": {
+                "foo": {
+                    "$id": "https://contoso.com/schemas/properties/foo.json",
+                    "type": "string",
+                },
+            },
+        });
+        pretty_assertions::assert_eq!(
+            schema.get_bundled_schema_resource_defs_key(
+                &"https://contoso.com/schemas/properties/foo.json".to_string()
+            ),
+            Some(&"foo".to_string())
+        );
+    }
+}
+
 #[cfg(test)] mod insert_defs_subschema {
     #[test] fn when_defs_keyword_missing() {}
     #[test] fn when_defs_keyword_is_not_object() {}
     #[test] fn when_defs_keyword_is_object_and_entry_not_exist() {}
     #[test] fn when_defs_keyword_is_object_and_entry_exists() {}
+}
+
+#[cfg(test)] mod remove_bundled_schema_resources {
+    use schemars::json_schema;
+
+    use crate::schema_utility_extensions::SchemaUtilityExtensions;
+
+    #[test] fn when_defs_not_defined() {
+        let schema = &mut json_schema!({
+            "$id": "https://contoso.com/schemas/example.json",
+            "properties": {
+                "foo": { "$ref": "#/$defs/foo" },
+                "bar": { "$ref": "/schemas/properties/bar.json" },
+                "baz": { "$ref": "https://contoso.com/schemas/properties/baz.json" },
+            }
+        });
+        let expected = serde_json::to_string_pretty(schema).unwrap();
+        schema.remove_bundled_schema_resources();
+        let actual = serde_json::to_string_pretty(schema).unwrap();
+
+        pretty_assertions::assert_eq!(actual, expected);
+    }
+
+    #[test] fn when_defs_not_contains_bundled_resources() {
+        let schema = &mut json_schema!({
+            "$id": "https://contoso.com/schemas/example.json",
+            "properties": {
+                "foo": { "$ref": "#/$defs/foo" },
+                "bar": { "$ref": "/schemas/properties/bar.json" },
+                "baz": { "$ref": "https://contoso.com/schemas/properties/baz.json" },
+            },
+            "$defs": {
+                "foo": { "type": "string" },
+            },
+        });
+        let expected = serde_json::to_string_pretty(schema).unwrap();
+        schema.remove_bundled_schema_resources();
+        let actual = serde_json::to_string_pretty(schema).unwrap();
+
+        pretty_assertions::assert_eq!(actual, expected);
+    }
+
+    #[test] fn when_defs_contains_some_bundled_resources() {
+        let schema = &mut json_schema!({
+            "$id": "https://contoso.com/schemas/example.json",
+            "properties": {
+                "foo": { "$ref": "#/$defs/foo" },
+                "bar": { "$ref": "/schemas/properties/bar.json" },
+                "baz": { "$ref": "https://contoso.com/schemas/properties/baz.json" },
+            },
+            "$defs": {
+                "foo": { "type": "string" },
+                "bar": {
+                    "$id": "https://contoso.com/schemas/properties/bar.json",
+                    "type": "string",
+                },
+                "baz": {
+                    "$id": "https://contoso.com/schemas/properties/baz.json",
+                    "type": "string",
+                },
+            },
+        });
+        schema.remove_bundled_schema_resources();
+        let actual = serde_json::to_string_pretty(schema).unwrap();
+        let expected = serde_json::to_string_pretty(&json_schema!({
+            "$id": "https://contoso.com/schemas/example.json",
+            "properties": {
+                "foo": { "$ref": "#/$defs/foo" },
+                "bar": { "$ref": "/schemas/properties/bar.json" },
+                "baz": { "$ref": "https://contoso.com/schemas/properties/baz.json" },
+            },
+            "$defs": {
+                "foo": { "type": "string" },
+            },
+        })).unwrap();
+
+        pretty_assertions::assert_eq!(actual, expected);
+    }
+
+    #[test] fn when_all_defs_are_bundled_resources() {
+        let schema = &mut json_schema!({
+            "$id": "https://contoso.com/schemas/example.json",
+            "properties": {
+                "foo": { "$ref": "#/$defs/foo" },
+                "bar": { "$ref": "/schemas/properties/bar.json" },
+                "baz": { "$ref": "https://contoso.com/schemas/properties/baz.json" },
+            },
+            "$defs": {
+                "foo": {
+                    "$id": "https://contoso.com/schemas/properties/foo.json",
+                    "type": "string",
+                },
+                "bar": {
+                    "$id": "https://contoso.com/schemas/properties/bar.json",
+                    "type": "string",
+                },
+                "baz": {
+                    "$id": "https://contoso.com/schemas/properties/baz.json",
+                    "type": "string",
+                },
+            },
+        });
+        schema.remove_bundled_schema_resources();
+        let actual = serde_json::to_string_pretty(schema).unwrap();
+        let expected = serde_json::to_string_pretty(&json_schema!({
+            "$id": "https://contoso.com/schemas/example.json",
+            "properties": {
+                "foo": { "$ref": "#/$defs/foo" },
+                "bar": { "$ref": "/schemas/properties/bar.json" },
+                "baz": { "$ref": "https://contoso.com/schemas/properties/baz.json" },
+            },
+        })).unwrap();
+
+        pretty_assertions::assert_eq!(actual, expected);
+    }
 }
 
 #[cfg(test)] mod rename_defs_subschema_for_reference {
@@ -981,5 +1165,164 @@ test_cases_for_get_keyword_as_mut!(
             schema.get_property_subschema_mut("foo").unwrap(),
             property
         )
+    }
+}
+
+#[cfg(test)] mod get_references_to_bundled_schema_resource {
+    use schemars::json_schema;
+
+    use crate::schema_utility_extensions::SchemaUtilityExtensions;
+
+    #[test] fn when_defs_not_defined() {
+        let schema = &json_schema!({
+            "$id": "https://contoso.com/schemas/example.json",
+            "properties": {
+                "fragment_uri": { "$ref": "#/$defs/foo" },
+                "absolute_uri": { "$ref": "https://contoso.com/schemas/properties/foo.json" },
+                "relative_uri": { "$ref": "/schemas/properties/foo.json" },
+            },
+        });
+
+        assert!(
+            schema.get_references_to_bundled_schema_resource(
+                "https://contoso.com/schemas/properties/foo.json"
+            ).is_empty()
+        );
+    }
+
+    #[test] fn when_bundled_resource_defined() {
+        let schema = &json_schema!({
+            "$id": "https://contoso.com/schemas/example.json",
+            "properties": {
+                "fragment_uri": { "$ref": "#/$defs/foo" },
+                "absolute_uri": { "$ref": "https://contoso.com/schemas/properties/foo.json" },
+                "relative_uri": { "$ref": "/schemas/properties/foo.json" },
+            },
+            "$defs": {
+                "foo": {
+                    "$id": "https://contoso.com/schemas/properties/foo.json",
+                    "type": "string",
+                },
+            },
+        });
+
+        let expected: std::collections::HashSet<&str> = vec![
+            "#/$defs/foo",
+            "https://contoso.com/schemas/properties/foo.json",
+            "/schemas/properties/foo.json",
+        ].iter().cloned().collect();
+
+        pretty_assertions::assert_eq!(
+            schema.get_references_to_bundled_schema_resource(
+                "https://contoso.com/schemas/properties/foo.json"
+            ),
+            expected
+        )
+    }
+}
+
+#[test] fn to_value_with_stable_order() {
+    let schema = &schemars::json_schema!({
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "https://contoso.com/schemas/example.json",
+        "type": "object",
+        "properties": {
+            "foo": { "$ref": "#/$defs/foo" },
+            "bar": { "type": "boolean" },
+        },
+        "$defs": {
+            "foo": { "type": "string" },
+        },
+    });
+    let actual = &schema.to_value_with_stable_order();
+    let expected = &serde_json::json!({
+        "$defs": {
+            "foo": { "type": "string" },
+        },
+        "$id": "https://contoso.com/schemas/example.json",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+            "bar": { "type": "boolean" },
+            "foo": { "$ref": "#/$defs/foo" },
+        },
+        "type": "object",
+    });
+
+    pretty_assertions::assert_eq!(
+        serde_json::to_string_pretty(actual).unwrap(),
+        serde_json::to_string_pretty(expected).unwrap()
+    )
+}
+
+#[cfg(test)] mod canonicalize_refs_and_defs_for_bundled_resources {
+    use schemars::json_schema;
+
+    use crate::schema_utility_extensions::SchemaUtilityExtensions;
+
+    #[test] fn when_schema_has_no_bundled_resources() {
+        let schema = &mut json_schema!({
+            "$id": "https://contoso.com/schemas/example.json",
+            "properties": {
+                "foo": { "$ref": "#/$defs/foo" },
+                "bar": { "$ref": "/schemas/properties/bar.json" },
+                "baz": { "$ref": "https://contoso.com/schemas/properties/baz.json" },
+            },
+        });
+        let expected = serde_json::to_string_pretty(schema).unwrap();
+        schema.canonicalize_refs_and_defs_for_bundled_resources();
+        let actual = serde_json::to_string_pretty(schema).unwrap();
+
+        pretty_assertions::assert_eq!(actual, expected);
+    }
+
+    #[test] fn when_schema_has_bundled_resources() {
+        let schema = &mut json_schema!({
+            "$id": "https://contoso.com/schemas/example.json",
+            "properties": {
+                "foo": { "$ref": "#/$defs/foo" },
+                "bar": { "$ref": "/schemas/properties/bar.json" },
+                "baz": { "$ref": "https://contoso.com/schemas/properties/baz.json" },
+            },
+            "$defs": {
+                "foo": {
+                    "$id": "https://contoso.com/schemas/properties/foo.json",
+                    "type": "string",
+                },
+                "bar": {
+                    "$id": "https://contoso.com/schemas/properties/bar.json",
+                    "type": "string",
+                },
+                "baz": {
+                    "$id": "https://contoso.com/schemas/properties/baz.json",
+                    "type": "string",
+                },
+            },
+        });
+        schema.canonicalize_refs_and_defs_for_bundled_resources();
+        let actual = serde_json::to_string_pretty(schema).unwrap();
+        let expected = serde_json::to_string_pretty(&json_schema!({
+            "$id": "https://contoso.com/schemas/example.json",
+            "properties": {
+                "foo": { "$ref": "https://contoso.com/schemas/properties/foo.json" },
+                "bar": { "$ref": "https://contoso.com/schemas/properties/bar.json" },
+                "baz": { "$ref": "https://contoso.com/schemas/properties/baz.json" },
+            },
+            "$defs": {
+                "https://contoso.com/schemas/properties/foo.json": {
+                    "$id": "https://contoso.com/schemas/properties/foo.json",
+                    "type": "string",
+                },
+                "https://contoso.com/schemas/properties/bar.json": {
+                    "$id": "https://contoso.com/schemas/properties/bar.json",
+                    "type": "string",
+                },
+                "https://contoso.com/schemas/properties/baz.json": {
+                    "$id": "https://contoso.com/schemas/properties/baz.json",
+                    "type": "string",
+                },
+            },
+        })).unwrap();
+
+        pretty_assertions::assert_eq!(actual, expected);
     }
 }

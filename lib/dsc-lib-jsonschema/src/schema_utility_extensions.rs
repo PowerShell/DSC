@@ -1138,6 +1138,46 @@ pub trait SchemaUtilityExtensions {
     /// [schemars#478]: https://github.com/GREsau/schemars/issues/478
     /// [fixing PR]: https://github.com/GREsau/schemars/pull/479
     fn get_defs_subschema_from_reference_mut(&mut self, reference: &str) -> Option<&mut Schema>;
+    /// Retrieves the key for a bundled schema resource in the `$defs` keyword if it exists.
+    ///
+    /// This method looks up a bundled schema resource by the value of its `$id` keyword. If the
+    /// schema resource is defined in the `$defs` keyword, this function returns a reference to
+    /// the key and otherwise [`None`].
+    ///
+    /// # Examples
+    ///
+    /// The following snippet shows how you can retrieve the key for a bundled schema resource from
+    /// the `$defs` object in a schema.
+    ///
+    /// ```rust
+    /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
+    /// use schemars::json_schema;
+    ///
+    /// let foo_id = &"https://contoso.com/schemas/properties/foo.json".to_string();
+    /// let bar_id = &"https://contoso.com/schemas/properties/bar.json".to_string();
+    /// let schema = json_schema!({
+    ///     "$id": "https://contoso.com/schemas/example.json",
+    ///     "properties": {
+    ///         "foo": { "$ref": "/schemas/properties/foo.json" },
+    ///     },
+    ///     "$defs": {
+    ///         "foo": {
+    ///             "$id": foo_id
+    ///         },
+    ///     },
+    /// });
+    ///
+    /// assert_eq!(
+    ///     schema.get_bundled_schema_resource_defs_key(foo_id),
+    ///     Some(&"foo".to_string())
+    /// );
+    ///
+    /// assert_eq!(
+    ///     schema.get_bundled_schema_resource_defs_key(bar_id),
+    ///     None
+    /// );
+    /// ```
+    fn get_bundled_schema_resource_defs_key(&self, id: &String) -> Option<&String>;
     /// Inserts a subschema entry into the `$defs` keyword for the [`Schema`]. If an entry for the
     /// given key already exists, this function returns the old value as a map.
     ///
@@ -1175,6 +1215,109 @@ pub trait SchemaUtilityExtensions {
     /// )
     /// ```
     fn insert_defs_subschema(&mut self, definition_key: &str, definition_value: &Map<String, Value>) -> Option<Map<String, Value>>;
+    /// Removes every entry in the `$defs` keyword that contains a bundled schema resource.
+    ///
+    /// Bundled schema resources are any definition in the `$defs` keyword that specifies the `$id`
+    /// keyword.
+    ///
+    /// This method doesn't update any references to the bundled schema resources. If the reference
+    /// to the bundled resource uses the URI fragment pointer to the `$defs` keyword, those
+    /// references will be broken. If the references point to the bundled schema resource by
+    /// absolute or relative URI, those references are still valid.
+    ///
+    /// After removing bundled schema resources from the `$defs` keyword, the method removes the
+    /// `$defs` keyword if it's empty.
+    ///
+    /// # Examples
+    ///
+    /// The following snippet shows how this method removes bundled schema resources.
+    ///
+    /// ```rust
+    /// use schemars::json_schema;
+    /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// let schema = &mut json_schema!({
+    ///     "$id": "https://contoso.com/schemas/example.json",
+    ///     "$schema": "https://json-schema.org/draft/2020-12/schema",
+    ///     "properties": {
+    ///         "foo": { "$ref": "https://contoso.com/schemas/definitions/foo.json" },
+    ///         "bar": { "$ref": "https://contoso.com/schemas/definitions/bar.json" },
+    ///         "baz": { "$ref": "https://tstoys.com/schemas/baz.json" },
+    ///     },
+    ///     "$defs": {
+    ///         "https://contoso.com/schemas/definitions/foo.json": {
+    ///             "$id": "https://contoso.com/schemas/definitions/foo.json",
+    ///             "$schema": "https://json-schema.org/draft/2020-12/schema",
+    ///             "type": "string",
+    ///         },
+    ///         "https://contoso.com/schemas/definitions/bar.json": {
+    ///             "$id": "https://contoso.com/schemas/definitions/bar.json",
+    ///             "$schema": "https://json-schema.org/draft/2020-12/schema",
+    ///             "type": "string",
+    ///         },
+    ///         "https://tstoys.com/schemas/baz.json": {
+    ///             "$id": "https://tstoys.com/schemas/baz.json",
+    ///             "$schema": "https://json-schema.org/draft/2020-12/schema",
+    ///             "type": "string",
+    ///         },
+    ///     },
+    /// });
+    ///
+    /// schema.remove_bundled_schema_resources();
+    /// let actual = serde_json::to_string_pretty(schema).unwrap();
+    ///
+    /// let expected = serde_json::to_string_pretty(&json_schema!({
+    ///     "$id": "https://contoso.com/schemas/example.json",
+    ///     "$schema": "https://json-schema.org/draft/2020-12/schema",
+    ///     "properties": {
+    ///         "foo": { "$ref": "https://contoso.com/schemas/definitions/foo.json" },
+    ///         "bar": { "$ref": "https://contoso.com/schemas/definitions/bar.json" },
+    ///         "baz": { "$ref": "https://tstoys.com/schemas/baz.json" },
+    ///     }
+    /// })).unwrap();
+    ///
+    /// assert_eq!(actual, expected);
+    /// ```
+    fn remove_bundled_schema_resources(&mut self);
+    /// Replaces an existing key in the `$defs` keyword with a new key.
+    ///
+    /// This enables canonicalizing the keys for bundled schema resources. It only renames the
+    /// definition. It doesn't update the references to that definition.
+    ///
+    /// # Examples
+    ///
+    /// The following example shows how you can rename a definition.
+    ///
+    /// ```rust
+    /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
+    /// use schemars::json_schema;
+    ///
+    /// let schema = &mut json_schema!({
+    ///     "type": "object",
+    ///     "properties": {
+    ///         "foo": { "$ref": "#/$defs/foo" },
+    ///     },
+    ///     "$defs": {
+    ///         "foo": { "type": "string" }
+    ///     }
+    /// });
+    /// schema.rename_defs_subschema("foo", "bar");
+    ///
+    /// let actual = serde_json::to_string_pretty(schema).unwrap();
+    /// let expected = serde_json::to_string_pretty(&json_schema!({
+    ///     "type": "object",
+    ///     "properties": {
+    ///         "foo": { "$ref": "#/$defs/foo" },
+    ///     },
+    ///     "$defs": {
+    ///         "bar": { "type": "string" }
+    ///     }
+    /// })).unwrap();
+    ///
+    /// pretty_assertions::assert_eq!(actual, expected);
+    /// ```
+    fn rename_defs_subschema(&mut self, old_key: &str, new_key: &str);
     /// Looks up a subschema in the `$defs` keyword by reference and, if it exists, renames the
     /// _key_ for the definition.
     ///
@@ -1215,7 +1358,6 @@ pub trait SchemaUtilityExtensions {
     /// )
     /// ```
     fn rename_defs_subschema_for_reference(&mut self, reference: &str, new_name: &str);
-
     //********************* properties keyword functions *********************//
     /// Retrieves the `properties` keyword and returns the object if it exists.
     ///
@@ -1369,6 +1511,69 @@ pub trait SchemaUtilityExtensions {
     /// )
     /// ```
     fn get_references(&self) -> HashSet<&str>;
+    /// Retrieves a [`HashSet`] of the `$ref` keyword values that point to a bundled schema
+    /// resource.
+    ///
+    /// The lookup for the bundled schema resource is by `$id`. This method discovers the bundled
+    /// schema resource in the `$defs` keyword, looking for a definition with the given ID URI.
+    /// Then the method recursively searches the schema for references to the bundled resource by:
+    ///
+    /// - Fragment pointer URI to the definition, like `#/$defs/foo`
+    /// - Absolute URI, like `https://contoso.com/schemas/example/foo.json`
+    /// - Site-relative URI if the bundled schema resource and root schema share the same host for
+    ///   their `$id` keywords like, `/schemas/example/foo.json`.
+    ///
+    /// # Examples
+    ///
+    /// The following snippet shows how the method returns the unique set of references to a bundled
+    /// schema resource.
+    ///
+    /// ```rust
+    /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
+    /// use schemars::json_schema;
+    ///
+    /// let schema = json_schema!({
+    ///     "$id": "https://contoso.com/schemas/example.json",
+    ///     "type": "object",
+    ///     "properties": {
+    ///         "foo": { "$ref": "#/$defs/foo" },
+    ///         "bar": { "$ref": "https://contoso.com/schemas/properties/bar.json" },
+    ///         "baz": { "$ref": "/schemas/properties/baz.json" },
+    ///     },
+    ///     "$defs": {
+    ///         "foo": {
+    ///             "$id": "https://contoso.com/schemas/properties/foo.json",
+    ///             "type": "string",
+    ///             "pattern": r"^\S+$",
+    ///         },
+    ///         "bar": {
+    ///             "$id": "https://contoso.com/schemas/properties/bar.json",
+    ///             "type": "string",
+    ///             "pattern": r"^\S+$",
+    ///         },
+    ///         "baz": {
+    ///             "$id": "https://contoso.com/schemas/properties/bar.json",
+    ///             "type": "object",
+    ///             "properties": {
+    ///                 "nestedFoo": { "$ref": "https://contoso.com/schemas/properties/foo.json" },
+    ///                 "nestedBar": { "$ref": "#/$defs/bar" },
+    ///             },
+    ///         },
+    /// 
+    ///     },
+    /// });
+    ///
+    /// let actual_foo = schema.get_references_to_bundled_schema_resource(
+    ///     "https://contoso.com/schemas/properties/foo.json"
+    /// );
+    /// let expected_foo: std::collections::HashSet<&str> = vec![
+    ///     "#/$defs/foo",
+    ///     "https://contoso.com/schemas/properties/foo.json"
+    /// ].iter().cloned().collect();
+    ///
+    /// pretty_assertions::assert_eq!(actual_foo, expected_foo);
+    /// ```
+    fn get_references_to_bundled_schema_resource(&self, resource_id: &str) -> HashSet<&str>;
     /// Searches the schema for instances of the `$ref` keyword defined as a
     /// given value and replaces each instance with a new value.
     /// 
@@ -1459,6 +1664,127 @@ pub trait SchemaUtilityExtensions {
     /// assert_eq!(schema.reference_is_for_bundled_resource("#/$defs/invalid"), false);
     /// ```
     fn reference_is_for_bundled_resource(&self, reference: &str) -> bool;
+    /// Returns the schema as a [`Value`] with the keys pre-sorted lexicographically.
+    ///
+    /// If the schema can't be converted to an object, this method returns the schema as a
+    /// [`Value`] without any modifications.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use schemars::json_schema;
+    /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
+    /// use serde_json::{json, to_string_pretty};
+    /// // define a schema with randomly sorted keywords:
+    /// let schema = &mut json_schema!({
+    ///     "title": "Tag",
+    ///     "$schema": "https://json-schema.org/draft/2020-12/schema",
+    ///     "$id": "https://contoso.com/schemas/tag.json",
+    ///     "type": "string",
+    ///     "pattern": r"^\w+$",
+    ///     "description": "Defines a metadata tag",
+    /// });
+    /// let stable_value = &schema.to_value_with_stable_order();
+    /// let expected_value = &json!({
+    ///     "$id": "https://contoso.com/schemas/tag.json",
+    ///     "$schema": "https://json-schema.org/draft/2020-12/schema",
+    ///     "description": "Defines a metadata tag",
+    ///     "pattern": r"^\w+$",
+    ///     "title": "Tag",
+    ///     "type": "string",
+    /// });
+    ///
+    /// assert_eq!(
+    ///     to_string_pretty(stable_value).unwrap(),
+    ///     to_string_pretty(expected_value).unwrap()
+    /// );
+    /// ```
+    fn to_value_with_stable_order(&self) -> Value;
+    /// Canonicalizes the references to and definitions for bundled schema resources.
+    ///
+    /// Bundled schema resources are any definition in the `$defs` keyword that specifies the `$id`
+    /// keyword.
+    ///
+    /// This method:
+    ///
+    /// 1. Standardizes the key for bundled schema resources to the ID URI for that resource. When
+    ///    a JSON Schema client resolves bundled schema resources.
+    /// 1. Replaces _all_ references to the bundled schema resource with the ID for that resource.
+    ///    This converts all fragment pointer references, like `#/$defs/foo`, to the absolute URI
+    ///    for the schema resource. Similarly, any relative URIs to the bundled resource, like
+    ///    `/schemas/foo.json`, are also updated to the absolute URI.
+    ///
+    /// This standardizes the structure and references for bundled schema resources to enable more
+    /// consistent operations on them.
+    ///
+    /// # Examples
+    ///
+    /// The following snippet shows how this method transforms the schema.
+    ///
+    /// ```rust
+    /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
+    /// use schemars::json_schema;
+    /// # use pretty_assertions::assert_eq;
+    ///
+    /// let schema = &mut json_schema!({
+    ///     "$id": "https://contoso.com/schemas/example.json",
+    ///     "$schema": "https://json-schema.org/draft/2020-12/schema",
+    ///     "properties": {
+    ///         "foo": { "$ref": "#/$defs/foo" },
+    ///         "bar": { "$ref": "/schemas/definitions/bar.json" },
+    ///         "baz": { "$ref": "https://tstoys.com/schemas/baz.json" },
+    ///     },
+    ///     "$defs": {
+    ///         "foo": {
+    ///             "$id": "https://contoso.com/schemas/definitions/foo.json",
+    ///             "$schema": "https://json-schema.org/draft/2020-12/schema",
+    ///             "type": "string",
+    ///         },
+    ///         "bar": {
+    ///             "$id": "https://contoso.com/schemas/definitions/bar.json",
+    ///             "$schema": "https://json-schema.org/draft/2020-12/schema",
+    ///             "type": "string",
+    ///         },
+    ///         "baz": {
+    ///             "$id": "https://tstoys.com/schemas/baz.json",
+    ///             "$schema": "https://json-schema.org/draft/2020-12/schema",
+    ///             "type": "string",
+    ///         },
+    ///     },
+    /// });
+    /// schema.canonicalize_refs_and_defs_for_bundled_resources();
+    /// let actual = serde_json::to_string_pretty(schema).unwrap();
+    ///
+    /// let expected = serde_json::to_string_pretty(&json_schema!({
+    ///     "$id": "https://contoso.com/schemas/example.json",
+    ///     "$schema": "https://json-schema.org/draft/2020-12/schema",
+    ///     "properties": {
+    ///         "foo": { "$ref": "https://contoso.com/schemas/definitions/foo.json" },
+    ///         "bar": { "$ref": "https://contoso.com/schemas/definitions/bar.json" },
+    ///         "baz": { "$ref": "https://tstoys.com/schemas/baz.json" },
+    ///     },
+    ///     "$defs": {
+    ///         "https://contoso.com/schemas/definitions/foo.json": {
+    ///             "$id": "https://contoso.com/schemas/definitions/foo.json",
+    ///             "$schema": "https://json-schema.org/draft/2020-12/schema",
+    ///             "type": "string",
+    ///         },
+    ///         "https://contoso.com/schemas/definitions/bar.json": {
+    ///             "$id": "https://contoso.com/schemas/definitions/bar.json",
+    ///             "$schema": "https://json-schema.org/draft/2020-12/schema",
+    ///             "type": "string",
+    ///         },
+    ///         "https://tstoys.com/schemas/baz.json": {
+    ///             "$id": "https://tstoys.com/schemas/baz.json",
+    ///             "$schema": "https://json-schema.org/draft/2020-12/schema",
+    ///             "type": "string",
+    ///         },
+    ///     },
+    /// })).unwrap();
+    ///
+    /// assert_eq!(actual, expected);
+    /// ```
+    fn canonicalize_refs_and_defs_for_bundled_resources(&mut self);
 }
 
 impl SchemaUtilityExtensions for Schema {
@@ -1599,6 +1925,25 @@ impl SchemaUtilityExtensions for Schema {
 
         None
     }
+    fn get_bundled_schema_resource_defs_key(&self, id: &String) -> Option<&String> {
+        let Some(defs) = self.get_defs() else {
+            return None;
+        };
+
+        for (def_key, def_value) in defs {
+            let Ok(def_subschema) = Schema::try_from(def_value.clone()) else {
+                continue;
+            };
+
+            if let Some(def_id) = def_subschema.get_id() {
+                if def_id == id.as_str() {
+                    return Some(def_key);
+                }
+            }
+        }
+
+        None
+    }
     fn insert_defs_subschema(
         &mut self,
         definition_key: &str,
@@ -1619,6 +1964,39 @@ impl SchemaUtilityExtensions for Schema {
 
             None
         }
+    }
+    fn remove_bundled_schema_resources(&mut self) {
+        let lookup_schema = self.clone();
+        let Some(defs) = self.get_defs_mut() else {
+            return;
+        };
+
+        for bundled_id in lookup_schema.get_bundled_schema_resource_ids(true) {
+            let Some(bundled_key) = lookup_schema.get_bundled_schema_resource_defs_key(
+                &bundled_id.to_string()
+            ) else {
+                continue;
+            };
+
+            defs.remove(bundled_key);
+        }
+
+        if self.get_defs_mut().is_some_and(|defs| defs.is_empty()) {
+            self.remove("$defs");
+        }
+    }
+    fn rename_defs_subschema(&mut self, old_key: &str, new_key: &str) {
+        let Some(defs) = self.get_defs_mut() else {
+            return;
+        };
+
+        *defs = defs.iter_mut().map(|(k, v)| {
+            if k.as_str() == old_key {
+                (new_key.to_string(), v.clone())
+            } else {
+                (k.clone(), v.clone())
+            }
+        }).collect();
     }
     fn rename_defs_subschema_for_reference(&mut self, reference: &str, new_name: &str) {
         let lookup_self = self.clone();
@@ -1769,6 +2147,29 @@ impl SchemaUtilityExtensions for Schema {
 
         references
     }
+    fn get_references_to_bundled_schema_resource(&self, resource_id: &str) -> HashSet<&str> {
+        let Some(def_key) = self.get_bundled_schema_resource_defs_key(&resource_id.to_string()) else {
+            return HashSet::new();
+        };
+        
+        let matching_references = &mut vec![
+            format!("#/$defs/{def_key}"),
+            resource_id.to_string(),
+        ];
+
+        if let Some(schema_id_url) = self.get_id_as_url() {
+            let resource_id_url = url::Url::parse(resource_id)
+                .expect("$id keyword values should always parse as URLs");
+            if schema_id_url.host() == resource_id_url.host() {
+                matching_references.push(resource_id_url[Position::BeforePath..].to_string());
+            }
+        }
+
+        self.get_references()
+            .into_iter()
+            .filter(|reference| matching_references.contains(&&reference.to_string()))
+            .collect()
+    }
     fn replace_references(&mut self, find_value: &str, new_value: &str) {
         if self.get_keyword_as_str("$ref").is_some_and(|r| r == find_value) {
             self.insert("$ref".to_string(), Value::String(new_value.to_string()));
@@ -1827,5 +2228,30 @@ impl SchemaUtilityExtensions for Schema {
     }
     fn reference_is_for_bundled_resource(&self, reference: &str) -> bool {
         self.get_defs_subschema_from_reference(reference).is_some()
+    }
+    fn to_value_with_stable_order(&self) -> Value {
+        let Some(map) = self.as_object() else {
+            return self.clone().to_value();
+        };
+
+        let mut stable_map = map.clone();
+        stable_map.sort_keys();
+        stable_map.values_mut().for_each(Value::sort_all_objects);
+
+        serde_json::json!(stable_map)
+    }
+    fn canonicalize_refs_and_defs_for_bundled_resources(&mut self) {
+        let lookup_schema = self.clone();
+        let bundled_ids = lookup_schema.get_bundled_schema_resource_ids(true);
+        for bundled_id in bundled_ids {
+            let Some(defs_key) = lookup_schema.get_bundled_schema_resource_defs_key(&bundled_id.to_string()) else {
+                continue;
+            };
+            let reference_lookup = format!("#/$defs/{defs_key}");
+            for reference in lookup_schema.get_references_to_bundled_schema_resource(bundled_id) {
+                self.replace_references(reference, bundled_id);
+            }
+            self.rename_defs_subschema_for_reference(&reference_lookup, bundled_id);
+        }
     }
 }
