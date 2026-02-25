@@ -461,6 +461,7 @@ function Invoke-DscOperation {
                                 Write-DscTrace -Operation Debug -Message "Property type: $($validateProperty.PropertyType)"
                                 if ($validateProperty.PropertyType -eq 'PSCredential') {
                                 $hasSecureCred =
+                                    $_.Value.PSObject.Properties['secureObject'] -and
                                     $_.Value.secureObject.Username -and
                                     $_.Value.secureObject.Password
 
