@@ -386,7 +386,7 @@ function Invoke-DscOperation {
                                 $_.Value.Password
 
                             if (-not $hasSecureCred -and -not $hasTextCred) {
-                                "Credential object '$($_.Name)' requires both 'username' and 'password' properties" |
+                                "Credential object '$($_.Name)' requires both 'Username' and 'Password' properties" |
                                     Write-DscTrace -Operation Error
                                 exit 1
                             }
@@ -470,7 +470,7 @@ function Invoke-DscOperation {
 
                                 if (-not $hasSecureCred -and -not $hasTextCred) {
                                     "Invalid credential object for property '$($_.Name)'" | Write-DscTrace -Operation Warn
-                                    "Credential object '$($_.Name)' requires both 'username' and 'password' properties" |
+                                    "Credential object '$($_.Name)' requires both 'Username' and 'Password' properties" |
                                         Write-DscTrace -Operation Error
                                     exit 1
                                 }
@@ -570,7 +570,7 @@ function Invoke-DscOperation {
                         Write-DscTrace -Operation Debug -Message "Property type: $($validateProperty.PropertyType)"
                         if ($validateProperty.PropertyType -eq '[PSCredential]') {
                             if (-not $_.Value.Username -or -not $_.Value.Password) {
-                                "Credential object '$($_.Name)' requires both 'username' and 'password' properties" | Write-DscTrace -Operation Error
+                                "Credential object '$($_.Name)' requires both 'Username' and 'Password' properties" | Write-DscTrace -Operation Error
                                 exit 1
                             }
                             $property.$($_.Name) = [System.Management.Automation.PSCredential]::new($_.Value.Username, (ConvertTo-SecureString -AsPlainText $_.Value.Password -Force))

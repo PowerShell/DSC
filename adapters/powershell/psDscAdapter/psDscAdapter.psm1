@@ -483,7 +483,7 @@ function Invoke-DscOperation {
                                     $_.Value.Password
 
                                     if (-not $hasSecureCred -and -not $hasTextCred) {
-                                        "Credential object '$($_.Name)' requires both 'username' and 'password' properties" |
+                                        "Credential object '$($_.Name)' requires both 'Username' and 'Password' properties" |
                                             Write-DscTrace -Operation Error
                                         exit 1
                                     }
