@@ -460,7 +460,6 @@ function Invoke-DscOperation {
                                 $validateProperty = $cachedDscResourceInfo.Properties | Where-Object -Property Name -EQ $_.Name
                                 Write-DscTrace -Operation Debug -Message "Property type: $($validateProperty.PropertyType)"
                                 if ($validateProperty.PropertyType -eq 'PSCredential') {
-                                
                                 $hasSecureCred =
                                     $_.Value.secureObject.Username -and
                                     $_.Value.secureObject.Password
