@@ -29,7 +29,7 @@
             "title": "Property Two",
             "description": "This is property two of the adapted resource."
           },
-          "name": {
+          "_name": {
             "type": "string",
             "title": "Name",
             "description": "The name of the adapted resource instance."

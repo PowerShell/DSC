@@ -37,7 +37,7 @@ Describe 'tests for the Resource schema within a configuration' {
         $schema.type | Should -BeExactly 'object'
         $schema.additionalProperties | Should -Be $false
         $schema.properties.two.type | Should -BeExactly 'string'
-        $schema.properties.name.title | Should -BeExactly 'Name'
+        $schema.properties._name.title | Should -BeExactly 'Name'
     }
 
     It 'resource schema can be returned from adapter' {
