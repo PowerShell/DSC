@@ -475,7 +475,7 @@ function Invoke-DscOperation {
                                     exit 1
                                 }
 
-                                 if ($hasSecureCred) {
+                                if ($hasSecureCred) {
                                 "Credential object '$($_.Name)' - SecureObject" | Write-DscTrace -Operation Info
 
                                     $username = $_.Value.secureObject.Username
