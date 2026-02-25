@@ -27,4 +27,28 @@ Describe 'tests for the Resource schema within a configuration' {
         $schema.title | Should -BeExactly 'Resource'
         $schema.additionalProperties | Should -Be $false
     }
+
+    It 'adapted resource manifest can return schema' {
+        $schema = dsc resource schema -r Adapted/Two | ConvertFrom-Json -Depth 10
+        $LASTEXITCODE | Should -Be 0
+        $schema.'$id' | Should -BeExactly 'https://github.com/powershell/dsc'
+        $schema.title | Should -BeExactly 'AdaptedTwo'
+        $schema.description | Should -BeExactly 'Adapted test resource number two'
+        $schema.type | Should -BeExactly 'object'
+        $schema.additionalProperties | Should -Be $false
+        $schema.properties.two.type | Should -BeExactly 'string'
+        $schema.properties._name.title | Should -BeExactly 'Name'
+    }
+
+    It 'resource schema can be returned from adapter' {
+        $schema = dsc resource schema -r Adapted/One | ConvertFrom-Json -Depth 10
+        $LASTEXITCODE | Should -Be 0
+        $schema.title | Should -BeExactly 'AdaptedOne'
+        $schema.type | Should -BeExactly 'object'
+        $schema.properties.one.type | Should -BeExactly 'string'
+        $schema.properties._name.type | Should -BeExactly @('string', 'null')
+        $schema.properties.path.type | Should -BeExactly @('string', 'null')
+        $schema.additionalProperties | Should -Be $false
+        $schema.required | Should -BeExactly @('one')
+    }
 }

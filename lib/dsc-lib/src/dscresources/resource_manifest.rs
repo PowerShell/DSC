@@ -156,6 +156,19 @@ pub enum SetDeleteArgKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[serde(untagged)]
+#[dsc_repo_schema(base_name = "commandArgs.schema", folder_path = "definitions")]
+pub enum SchemaArgKind {
+    /// The argument is a string.
+    String(String),
+    ResourceType {
+        /// The argument that accepts the resource type name.
+        #[serde(rename = "resourceTypeArg")]
+        resource_type_arg: String,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[schemars(transform = idiomaticize_string_enum)]
 #[dsc_repo_schema(base_name = "inputKind", folder_path = "definitions")]
 pub enum InputKind {
@@ -183,7 +196,7 @@ pub struct SchemaCommand {
     /// The command to run to get the schema.
     pub executable: String,
     /// The arguments to pass to the command.
-    pub args: Option<Vec<String>>,
+    pub args: Option<Vec<SchemaArgKind>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
