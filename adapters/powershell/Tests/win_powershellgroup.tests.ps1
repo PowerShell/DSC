@@ -440,7 +440,7 @@ $out.results[0].result.inDesiredState | Should -Be $inDesiredState
 
 
 # This works
-It 'Not Valide credentials with Script base resources - wrong properties' {
+It 'Not Valid credentials with Script base resources - wrong properties' {
 
 
 $yaml = @'
