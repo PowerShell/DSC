@@ -1,19 +1,21 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use std::path::PathBuf;
+
 use rust_i18n::t;
-use schemars::{JsonSchema, Schema};
+use schemars::{JsonSchema, Schema, schema_for};
 use thiserror::Error;
 
-use crate::dsc_repo::{
+use crate::{dsc_repo::{
     RecognizedSchemaVersion,
     SchemaForm,
     SchemaUriPrefix,
     get_default_schema_uri,
     get_recognized_schema_uri,
     get_recognized_schema_uris,
-    get_recognized_uris_subschema
-};
+    get_recognized_uris_subschema, sync_bundled_resource_id_versions
+}, schema_utility_extensions::SchemaUtilityExtensions};
 
 /// Defines a reusable trait to simplify managing multiple versions of JSON Schemas for DSC
 /// structs and enums.
@@ -68,6 +70,76 @@ pub trait DscRepoSchema : JsonSchema {
         )
     }
 
+    /// Returns the default `$id` for the schema when exporting:
+    ///
+    /// The default export URI is for the canonical form of the schema in the `vNext` version
+    /// folder, with the GitHub URI prefix.
+    ///
+    /// The export URI should be set as the default `$id` for the type. The [`generate_exportable_schema()`]
+    /// function overrides this default when exporting schemas for various versions and forms.
+    ///
+    /// [`generate_exportable_schema()`]: DscRepoSchema::generate_exportable_schema
+    fn default_export_schema_id_uri() -> String {
+        Self::get_schema_id_uri(
+            RecognizedSchemaVersion::VNext,
+            SchemaForm::Canonical,
+            SchemaUriPrefix::Github
+        )
+    }
+
+    /// Returns the default URI for the `$schema` keyword.
+    ///
+    /// Use this to define the `$schema` keyword when deriving or manually implementing the
+    /// [`schemars::JsonSchema`] trait.
+    fn default_export_meta_schema_uri() -> String {
+        "https://json-schema.org/draft/2020-12/schema".to_string()
+    }
+
+    /// Generates the JSON schema for a given version and form. This function is
+    /// useful for exporting the JSON Schema to disk.
+    fn generate_exportable_schema(
+        schema_version: RecognizedSchemaVersion,
+        schema_form: SchemaForm
+    ) -> Schema {
+        Self::generate_schema(schema_version, schema_form, SchemaUriPrefix::Github)
+    }
+
+    /// Generates the JSON Schema for a given version, form, and URI prefix.
+    fn generate_schema(
+        schema_version: RecognizedSchemaVersion,
+        schema_form: SchemaForm,
+        schema_uri_prefix: SchemaUriPrefix
+    ) -> Schema {
+        // Start from the "full" schema, which includes definitions and VS Code keywords.
+        let mut schema = schema_for!(Self);
+
+        // Set the ID for the schema
+        let id = Self::get_schema_id_uri(
+            schema_version,
+            schema_form,
+            schema_uri_prefix
+        );
+        schema.set_id(id.as_str());
+        schema.canonicalize_refs_and_defs_for_bundled_resources();
+        sync_bundled_resource_id_versions(&mut schema);
+
+        // Munge the schema for the given form
+        match schema_form {
+            SchemaForm::Canonical => {
+                crate::vscode::transforms::remove_vs_code_keywords(&mut schema);
+                crate::transforms::remove_bundled_schema_resources(&mut schema);
+            },
+            SchemaForm::Bundled => {
+                crate::vscode::transforms::remove_vs_code_keywords(&mut schema);
+            },
+            SchemaForm::VSCode => {
+                crate::vscode::transforms::vscodify_refs_and_defs(&mut schema);
+            },
+        }
+
+        schema
+    }
+
     /// Returns the schema URI for a given version, form, and prefix.
     #[must_use]
     fn get_schema_id_uri(
@@ -82,6 +154,44 @@ pub trait DscRepoSchema : JsonSchema {
             schema_form,
             uri_prefix
         )
+    }
+
+    /// Sets the `$id` for a schema to the URI for a given version, form, and prefix.
+    fn set_schema_id_uri(
+        schema: &mut Schema,
+        schema_version: RecognizedSchemaVersion,
+        schema_form: SchemaForm,
+        uri_prefix: SchemaUriPrefix
+    ) {
+        schema.set_id(&Self::get_schema_id_uri(schema_version, schema_form, uri_prefix));
+    }
+
+    /// Returns the path for a schema relative to the `schemas` folder.
+    fn get_schema_relative_path(
+        schema_version: RecognizedSchemaVersion,
+        schema_form: SchemaForm
+    ) -> PathBuf {
+        let mut path = PathBuf::new();
+
+        path.push(schema_version.to_string());
+
+        let form_folder = schema_form.to_folder_prefix();
+        let form_folder = form_folder.trim_end_matches("/");
+        if !form_folder.is_empty() {
+            path.push(form_folder);
+        }
+
+        for segment in Self::SCHEMA_FOLDER_PATH.split("/") {
+            path.push(segment);
+        }
+
+        let file_name = format!(
+            "{}{}", Self::SCHEMA_FILE_BASE_NAME,
+            schema_form.to_extension()
+        );
+        path.push(file_name);
+
+        path
     }
 
     /// Returns the URI for the VS Code form of the schema with the default prefix for a given
@@ -103,6 +213,14 @@ pub trait DscRepoSchema : JsonSchema {
         ))
     }
 
+    /// Sets the `$id` for a schema to the URI for the enhanced form of the schema with the
+    /// default prefix for a given version.
+    fn set_enhanced_schema_id_uri(schema: &mut Schema, schema_version: RecognizedSchemaVersion) {
+        if let Some(id_uri) = Self::get_enhanced_schema_id_uri(schema_version) {
+            schema.set_id(&id_uri);
+        };
+    }
+
     /// Returns the URI for the canonical (non-bundled) form of the schema with the default
     /// prefix for a given version.
     #[must_use]
@@ -114,6 +232,12 @@ pub trait DscRepoSchema : JsonSchema {
             SchemaForm::Canonical,
             SchemaUriPrefix::default()
         )
+    }
+
+    /// Sets the `$id` for a schema to the URI for the canonical form of the schema with the
+    /// default prefix for a given version.
+    fn set_canonical_schema_id_uri(schema: &mut Schema, schema_version: RecognizedSchemaVersion) {
+        schema.set_id(&Self::get_canonical_schema_id_uri(schema_version));
     }
 
     /// Returns the URI for the bundled form of the schema with the default prefix for a given
@@ -131,6 +255,14 @@ pub trait DscRepoSchema : JsonSchema {
             SchemaForm::Bundled,
             SchemaUriPrefix::default()
         ))
+    }
+
+    /// Sets the `$id` for a schema to the URI for the bundled form of the schema with the
+    /// default prefix for a given version.
+    fn set_bundled_schema_id_uri(schema: &mut Schema, schema_version: RecognizedSchemaVersion) {
+        if let Some(id_uri) = Self::get_bundled_schema_id_uri(schema_version) {
+            schema.set_id(&id_uri);
+        };
     }
 
     /// Returns the list of recognized schema URIs for the struct or enum.
@@ -188,6 +320,20 @@ pub trait DscRepoSchema : JsonSchema {
     /// [`UnrecognizedSchemaUri`] error.
     fn validate_schema_uri(&self) -> Result<(), UnrecognizedSchemaUri> {
         Ok(())
+    }
+
+    /// Returns a vector of the [`SchemaForm`]s that are valid for the type.
+    ///
+    /// The valid schema forms depend on the value of [`DscRepoSchema::SCHEMA_SHOULD_BUNDLE`]:
+    ///
+    /// - If the value is `true`, all schema forms are valid for the type.
+    /// - If the value is `false`, only [`SchemaForm::Canonical`] is valid for the type.
+    fn get_valid_schema_forms() -> Vec<SchemaForm> {
+        if Self::SCHEMA_SHOULD_BUNDLE {
+            vec![SchemaForm::VSCode, SchemaForm::Bundled, SchemaForm::Canonical]
+        } else {
+            vec![SchemaForm::Canonical]
+        }
     }
 }
 
