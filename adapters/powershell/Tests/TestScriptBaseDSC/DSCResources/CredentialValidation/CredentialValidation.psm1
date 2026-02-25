@@ -82,7 +82,6 @@ function Set-TargetResource {
                 $inDesiredState = $true
         }
 
-
-        return $inDesiredState
     Write-Verbose "[SET]Credential cannot be remediated by DSC."
+        return $inDesiredState
 }
