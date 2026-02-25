@@ -377,15 +377,15 @@ resources:
 
   It 'Config works with credential object' {
   $yaml = @'
-   $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
-   resources:
-     - name: Cred test
-       type: PSClassResource/PSClassResource
-       properties:
-         Name: Test
-         Credential:
-           UserName: 'MyUser'
-           Password: 'MyPassword'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+  - name: Cred test
+    type: PSClassResource/PSClassResource
+    properties:
+      Name: Test
+      Credential:
+        UserName: 'MyUser'
+        Password: 'MyPassword'
 '@
 
     $out = dsc -l debug config set -i $yaml 2> "$testdrive/error.log" | ConvertFrom-Json
