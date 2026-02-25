@@ -411,7 +411,7 @@ resources:
     (Get-Content -Path "$testdrive/error.log" -Raw) | Should -BeLike "*ERROR*Credential object 'Credential' requires both 'username' and 'password' properties*" -Because (Get-Content -Path "$testdrive/error.log" -Raw | Out-String)
   }
 
-  ## Scipt base resources test running
+  ## Script base resources test running
 
 It 'Config works with credential object Script base resources' {
 
