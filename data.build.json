@@ -429,6 +429,13 @@
       "Binaries": [
         "y2j"
       ]
+    },
+    {
+      "Name": "xtask",
+      "Kind": "CLI",
+      "RelativePath": "xtask",
+      "IsRust": true,
+      "TestOnly": true
     }
   ]
 }
