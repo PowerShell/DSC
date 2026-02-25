@@ -377,6 +377,7 @@ function Invoke-DscOperation {
                         if ($validateProperty -and $validateProperty.PropertyType -eq '[PSCredential]') {
 
                             $hasSecureCred =
+                                $_.Value.PSObject.Properties['secureObject'] -and
                                 $_.Value.secureObject.Username -and
                                 $_.Value.secureObject.Password
 
