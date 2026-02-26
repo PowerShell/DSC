@@ -31,7 +31,7 @@ Describe 'Invoke a resource set directly' {
         $result = dsc resource set $alias -r Test/WhatIf --input '{"executionType":"Actual"}' | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $result.afterState.executionType | Should -BeExactly 'WhatIf'
-        $result.changedProperties | Should -BeExactly 'executionType'
+        $result.changedProperties | Should -Contain 'executionType'
     }
 
     It 'actual execution of WhatIf resource' {

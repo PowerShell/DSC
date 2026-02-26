@@ -327,10 +327,18 @@ fn main() {
         },
         SubCommand::WhatIf { what_if, state_and_diff } => {
             let result: WhatIf = if what_if {
-                WhatIf {
-                    execution_type: "WhatIf".to_string(),
-                    exist: None,
-                    from_resource: Some("ResourceProvidedDiff".to_string())
+                if state_and_diff {
+                    WhatIf {
+                        execution_type: "WhatIf".to_string(),
+                        exist: None,
+                        from_resource: Some("ResourceProvidedDiff".to_string())
+                    }
+                } else {
+                    WhatIf {
+                        execution_type: "WhatIf".to_string(),
+                        exist: None,
+                        from_resource: None
+                    }
                 }
             } else {
                 WhatIf {

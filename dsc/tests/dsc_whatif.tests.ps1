@@ -94,7 +94,7 @@ Describe 'whatif tests' {
         $LASTEXITCODE | Should -Be 0
         $result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'whatIf'
         $result.results.result.afterState.executionType | Should -BeExactly 'WhatIf'
-        $result.results.result.changedProperties | Should -Contain 'executionType'
+        $result.results.result.changedProperties | Should -BeExactly 'executionType'
         $result.hadErrors | Should -BeFalse
         $result.results.Count | Should -Be 1
     }
@@ -198,7 +198,7 @@ Describe 'whatif tests' {
         $what_if_result.results[0].result.beforeState.executionType | Should -BeExactly 'Actual'
         $what_if_result.results[0].result.afterState.executionType | Should -BeExactly 'WhatIf'
         $what_if_result.results[0].result.afterState.fromResource | Should -BeExactly 'ResourceProvidedDiff'
-        $what_if_result.results[0].result.changedProperties | Should -Contain 'fromResource'
+        $what_if_result.results[0].result.changedProperties | Should -BeExactly 'fromResource'
         $what_if_result.results.Count | Should -Be 1
     }
 
