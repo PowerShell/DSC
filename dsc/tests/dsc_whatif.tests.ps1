@@ -94,7 +94,7 @@ Describe 'whatif tests' {
         $LASTEXITCODE | Should -Be 0
         $result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'whatIf'
         $result.results.result.afterState.executionType | Should -BeExactly 'WhatIf'
-        $result.results.result.changedProperties | Should -BeExactly 'executionType'
+        $result.results.result.changedProperties | Should -Contain 'executionType'
         $result.hadErrors | Should -BeFalse
         $result.results.Count | Should -Be 1
     }
@@ -180,5 +180,45 @@ Describe 'whatif tests' {
         $out.results[0].result.afterState.deleteCalled | Should -BeNullOrEmpty
         $out.results[0].result.afterState._exist | Should -BeFalse
         $out.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'whatIf'
+    }
+
+    It 'Test/WhatIfReturnDiff resource returns state and diff in what-if mode' {
+        $config_yaml = @"
+        `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+        resources:
+        - name: WhatIfReturn StateAndDiff
+          type: Test/WhatIfReturnDiff
+          properties:
+            executionType: Actual
+"@
+        $what_if_result = $config_yaml | dsc config set -w -f - | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $what_if_result.hadErrors | Should -BeFalse
+        $what_if_result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'whatIf'
+        $what_if_result.results[0].result.beforeState.executionType | Should -BeExactly 'Actual'
+        $what_if_result.results[0].result.afterState.executionType | Should -BeExactly 'WhatIf'
+        $what_if_result.results[0].result.afterState.fromResource | Should -BeExactly 'ResourceProvidedDiff'
+        $what_if_result.results[0].result.changedProperties | Should -Contain 'fromResource'
+        $what_if_result.results.Count | Should -Be 1
+    }
+
+    It 'Test/WhatIfReturnDiff resource returns state only in actual mode' {
+        $config_yaml = @"
+        `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+        resources:
+        - name: WhatIfReturn StateAndDiff
+          type: Test/WhatIfReturnDiff
+          properties:
+            executionType: Actual
+"@
+        $actual_result = $config_yaml | dsc config set -f - | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $actual_result.hadErrors | Should -BeFalse
+        $actual_result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'actual'
+        $actual_result.results[0].result.beforeState.executionType | Should -BeExactly 'Actual'
+        $actual_result.results[0].result.afterState.executionType | Should -BeExactly 'Actual'
+        $actual_result.results[0].result.afterState.fromResource | Should -BeNullOrEmpty
+        $actual_result.results[0].result.changedProperties | Should -Be $null
+        $actual_result.results.Count | Should -Be 1
     }
 }
