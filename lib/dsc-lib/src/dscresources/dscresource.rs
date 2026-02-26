@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}, context::ProcessMode, parameters::{SECURE_VALUE_REDACTED, is_secure_value}}, dscresources::resource_manifest::{AdapterInputKind, Kind}, types::FullyQualifiedTypeName};
+use crate::{configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}, context::{Context, ProcessMode}, parameters::{SECURE_VALUE_REDACTED, is_secure_value}}, dscresources::resource_manifest::{AdapterInputKind, Kind}, types::FullyQualifiedTypeName};
 use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse};
 use crate::schemas::transforms::idiomaticize_string_enum;
@@ -61,6 +61,9 @@ pub struct DscResource {
     pub target_resource: Option<Box<DscResource>>,
     /// The manifest of the resource.
     pub manifest: Option<ResourceManifest>,
+    /// The execution context for the resource.
+    #[serde(skip)]
+    context: Option<Context>,
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
@@ -114,6 +117,7 @@ impl DscResource {
             schema: None,
             target_resource: None,
             manifest: None,
+            context: None,
         }
     }
 
@@ -295,6 +299,21 @@ impl DscResource {
             return Ok(adapter_resource.clone());
         }
         Err(DscError::Operation(t!("dscresources.dscresource.adapterResourceNotFound", adapter = adapter).to_string()))
+    }
+
+    /// Get the execution context for the resource, or a default context if one is not set.
+    pub fn get_context(&self) -> Context {
+        self.context.clone().unwrap_or_else(Context::new)
+    }
+
+    /// Set the execution context for the resource.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `context` - The context to set for the resource.
+    ///     
+    pub fn set_context(&mut self, context: &Context) {
+        self.context = Some(context.clone());
     }
 }
 

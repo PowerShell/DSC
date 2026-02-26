@@ -112,6 +112,15 @@ pub enum DscError {
     #[error("{t}: {0}", t = t!("dscerror.progress"))]
     Progress(#[from] TemplateError),
 
+    #[error("{t}: {0}", t = t!("dscerror.registryHive"))]
+    RegistryHive(#[from] registry::Error),
+
+    #[error("{t}: {0}", t = t!("dscerror.registryKey"))]
+    RegistryKey(#[from] registry::key::Error),
+
+    #[error("{t}: {0}", t = t!("dscerror.registryIterator"))]
+    RegistryIterator(#[from] registry::iter::values::Error),
+
     #[error("{t}: {0}", t = t!("dscerror.resourceMissingDirectory"))]
     ResourceMissingDirectory(String),
 
@@ -149,6 +158,9 @@ pub enum DscError {
         t3 = t!("dscerror.semverReqWithBuildMetadataSuffix")
     )]
     SemVerReqWithBuildMetadata(String, String),
+
+    #[error("{t}: {0}", t = t!("dscerror.utf16Conversion"))]
+    Utf16Conversion(#[from] std::string::FromUtf16Error),
 
     #[error("{t}: {0}", t = t!("dscerror.utf8Conversion"))]
     Utf8Conversion(#[from] Utf8Error),

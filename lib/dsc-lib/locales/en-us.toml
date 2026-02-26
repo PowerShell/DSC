@@ -88,6 +88,9 @@ skippingResourceDiscovery = "Skipping resource discovery due to 'resourceDiscove
 securityContextInMetadataDeprecated = "Using 'Microsoft.DSC' metadata to specify required security context is deprecated. Please use the 'securityContext' directive in the configuration document instead.  See https://github.com/PowerShell/DSC/issues/1369 for more details."
 conflictingSecurityContext = "Conflicting security context specified in configuration document: metadata '%{metadata}' and directive '%{directive}'"
 versionNotSatisfied = "Configuration requires DSC version '%{required_version}', but the current version is '%{current_version}'"
+invalidRegistryHive = "Invalid registry hive '%{hive}'"
+metadataRefreshEnvIgnored = "Resource returned '_refreshEnv' which is ignored on non-Windows platforms"
+metadataRefreshEnvFound = "Resource returned '_refreshEnv' which indicates environment variable refresh is needed"
 
 [configure.parameters]
 importingParametersFromComplexInput = "Importing parameters from complex input"
@@ -285,6 +288,7 @@ description = "Converts a base64 representation to a string"
 invoked = "base64ToString function"
 invalidBase64 = "Invalid base64 encoding"
 invalidUtf8 = "Decoded bytes do not form valid UTF-8"
+utf16Conversion = "Failed to convert UTF-16 bytes to string"
 
 [functions.bool]
 description = "Converts a string or number to a boolean"
@@ -776,6 +780,9 @@ setting = "Setting"
 invalidRequiredVersion = "Invalid required version '%{version}' for resource '%{resource}'"
 resourceMissingDirectory = "Resource is missing 'directory' field."
 resourceMissingPath = "Resource is missing 'path' field."
+registryHive = "Failed to open registry hive"
+registryKey = "Failed to access registry key"
+registryIterator = "Failed to iterate over registry values"
 
 [progress]
 failedToSerialize = "Failed to serialize progress JSON: %{json}"
