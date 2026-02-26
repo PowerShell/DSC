@@ -7,7 +7,9 @@
     ],
     "CopyFiles": {
         "All": [
-            "sshd_config.dsc.resource.json"
+            "sshd_config.dsc.resource.json",
+            "sshd-subsystem.dsc.resource.json",
+            "sshd-subsystemList.dsc.resource.json"
         ],
         "Windows": [
             "sshd-windows.dsc.resource.json"
