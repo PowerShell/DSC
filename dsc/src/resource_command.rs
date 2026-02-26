@@ -296,7 +296,6 @@ pub fn delete(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, 
                     }
                 }
             }
-
         },
         Err(err) => {
             error!("{err}");
