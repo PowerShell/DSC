@@ -325,13 +325,42 @@ fn main() {
             };
             serde_json::to_string(&version).unwrap()
         },
-        SubCommand::WhatIf { what_if } => {
+        SubCommand::WhatIf { what_if, state_and_diff } => {
             let result: WhatIf = if what_if {
-                WhatIf { execution_type: "WhatIf".to_string(), exist: None }
+                if state_and_diff {
+                    WhatIf {
+                        execution_type: "WhatIf".to_string(),
+                        exist: None,
+                        from_resource: Some("ResourceProvidedDiff".to_string())
+                    }
+                } else {
+                    WhatIf {
+                        execution_type: "WhatIf".to_string(),
+                        exist: None,
+                        from_resource: None
+                    }
+                }
             } else {
-                WhatIf { execution_type: "Actual".to_string(), exist: None }
+                WhatIf {
+                    execution_type: "Actual".to_string(),
+                    exist: None,
+                    from_resource: None
+                }
             };
-            serde_json::to_string(&result).unwrap()
+
+            // Output state as first line
+            let state_json = serde_json::to_string(&result).unwrap();
+            println!("{state_json}");
+
+            // If state_and_diff is requested and it's a what-if operation, output diff on second line
+            if state_and_diff && what_if {
+                let diff = vec!["fromResource"];
+                let diff_json = serde_json::to_string(&diff).unwrap();
+                println!("{diff_json}");
+            }
+
+            // Return empty string since we already printed
+            String::new()
         },
         SubCommand::WhatIfDelete { what_if } => {
             let result = if what_if {
