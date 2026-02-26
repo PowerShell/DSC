@@ -237,7 +237,7 @@ Describe 'metadata tests' {
           if ($IsWindows) {
               $out.results[1].result.afterState.output | Should -BeExactly 'myTestValue' -Because ($out | ConvertTo-Json -Depth 10)
           } else {
-              $errorLogContent | Should -BeLike "*WARN*Resource returned '_refreshEnv' which is ignored on non-Windows platforms*" -Because $errorLogContent
+              $errorLogContent | Should -BeLike "*INFO*Resource returned '_refreshEnv' which is ignored on non-Windows platforms*" -Because $errorLogContent
           }
         } finally {
             if ($IsWindows) {
