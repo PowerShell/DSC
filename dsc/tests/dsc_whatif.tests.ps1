@@ -181,4 +181,12 @@ Describe 'whatif tests' {
         $out.results[0].result.afterState._exist | Should -BeFalse
         $out.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'whatIf'
     }
+
+    It 'dsc resource delete supports what-if flag' {
+        $result = dsc resource delete -r Test/WhatIfDelete -i '{"_exist": false}' --what-if | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $result._metadata.whatIf | Should -Not -BeNullOrEmpty
+        $result._metadata.whatIf | Should -Contain 'Delete what-if message 1'
+        $result._metadata.whatIf | Should -Contain 'Delete what-if message 2'
+    }
 }
