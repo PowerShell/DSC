@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
 use std::path::PathBuf;
-use tracing::{debug, info, trace};
+use tracing::{debug, info, trace, warn};
 
 use crate::schemas::dsc_repo::DscRepoSchema;
 
@@ -27,7 +27,7 @@ use super::{
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
-#[serde(deny_unknown_fields)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 #[dsc_repo_schema(base_name = "list", folder_path = "outputs/resource")]
 pub struct DscResource {
     /// The namespaced name of the resource.
@@ -39,6 +39,8 @@ pub struct DscResource {
     pub version: String,
     /// The capabilities of the resource.
     pub capabilities: Vec<Capability>,
+    /// An optional message indicating the resource is deprecated.  If provided, the message will be shown when the resource is used.
+    pub deprecation_message: Option<String>,
     /// The file path to the resource.
     pub path: PathBuf,
     /// The description of the resource.
@@ -46,14 +48,12 @@ pub struct DscResource {
     // The directory path to the resource.
     pub directory: PathBuf,
     /// The implementation of the resource.
-    #[serde(rename="implementedAs")]
     pub implemented_as: Option<ImplementedAs>,
     /// The author of the resource.
     pub author: Option<String>,
     /// The properties of the resource.
     pub properties: Option<Vec<String>>,
     /// The required resource adapter for the resource.
-    #[serde(rename="requireAdapter")]
     pub require_adapter: Option<FullyQualifiedTypeName>,
     /// The JSON Schema of the resource.
     pub schema: Option<Map<String, Value>>,
@@ -103,6 +103,7 @@ impl DscResource {
             kind: Kind::Resource,
             version: String::new(),
             capabilities: Vec::new(),
+            deprecation_message: None,
             description: None,
             path: PathBuf::new(),
             directory: PathBuf::new(),
@@ -278,6 +279,17 @@ impl DscResource {
         Ok(export_result)
     }
 
+    fn invoke_schema_with_adapter(&self, adapter: &FullyQualifiedTypeName, target_resource: &DscResource) -> Result<String, DscError> {
+        let mut configurator = self.clone().create_config_for_adapter(adapter, "")?;
+        let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
+        if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
+            adapter.target_resource = Some(Box::new(target_resource.clone()));
+            return adapter.schema();
+        }
+
+        return Err(DscError::NotSupported(t!("dscresources.dscresource.invokeSchemaNotSupported", resource = self.type_name).to_string()));
+    }
+
     fn get_adapter_resource(configurator: &mut Configurator, adapter: &FullyQualifiedTypeName) -> Result<DscResource, DscError> {
         if let Some(adapter_resource) = configurator.discovery().find_resource(&DiscoveryFilter::new(adapter, None, None))? {
             return Ok(adapter_resource.clone());
@@ -383,6 +395,9 @@ pub trait Invoke {
 impl Invoke for DscResource {
     fn get(&self, filter: &str) -> Result<GetResult, DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeGet", resource = self.type_name));
+        if let Some(deprecation_message) = self.deprecation_message.as_ref() {
+            warn!("{}", t!("dscresources.dscresource.deprecationMessage", resource = self.type_name, message = deprecation_message));
+        }
         if let Some(adapter) = &self.require_adapter {
             return self.invoke_get_with_adapter(adapter, &self, filter);
         }
@@ -399,6 +414,9 @@ impl Invoke for DscResource {
 
     fn set(&self, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeSet", resource = self.type_name));
+        if let Some(deprecation_message) = self.deprecation_message.as_ref() {
+            warn!("{}", t!("dscresources.dscresource.deprecationMessage", resource = self.type_name, message = deprecation_message));
+        }
         if let Some(adapter) = &self.require_adapter {
             return self.invoke_set_with_adapter(adapter, &self, desired, skip_test, execution_type);
         }
@@ -415,6 +433,9 @@ impl Invoke for DscResource {
 
     fn test(&self, expected: &str) -> Result<TestResult, DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeTest", resource = self.type_name));
+        if let Some(deprecation_message) = self.deprecation_message.as_ref() {
+            warn!("{}", t!("dscresources.dscresource.deprecationMessage", resource = self.type_name, message = deprecation_message));
+        }
         if let Some(adapter) = &self.require_adapter {
             return self.invoke_test_with_adapter(adapter, &self, expected);
         }
@@ -463,6 +484,9 @@ impl Invoke for DscResource {
 
     fn delete(&self, filter: &str, execution_type: &ExecutionKind) -> Result<DeleteResultKind, DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeDelete", resource = self.type_name));
+        if let Some(deprecation_message) = self.deprecation_message.as_ref() {
+            warn!("{}", t!("dscresources.dscresource.deprecationMessage", resource = self.type_name, message = deprecation_message));
+        }
         if let Some(adapter) = &self.require_adapter {
             return self.invoke_delete_with_adapter(adapter, &self, filter, execution_type);
         }
@@ -479,6 +503,9 @@ impl Invoke for DscResource {
 
     fn validate(&self, config: &str) -> Result<ValidateResult, DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeValidate", resource = self.type_name));
+        if let Some(deprecation_message) = self.deprecation_message.as_ref() {
+            warn!("{}", t!("dscresources.dscresource.deprecationMessage", resource = self.type_name, message = deprecation_message));
+        }
         if self.require_adapter.is_some() {
             return Err(DscError::NotSupported(t!("dscresources.dscresource.invokeValidateNotSupported", resource = self.type_name).to_string()));
         }
@@ -495,13 +522,19 @@ impl Invoke for DscResource {
 
     fn schema(&self) -> Result<String, DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeSchema", resource = self.type_name));
-        if self.require_adapter.is_some() {
-            return Err(DscError::NotSupported(t!("dscresources.dscresource.invokeSchemaNotSupported", resource = self.type_name).to_string()));
+        if let Some(deprecation_message) = self.deprecation_message.as_ref() {
+            warn!("{}", t!("dscresources.dscresource.deprecationMessage", resource = self.type_name, message = deprecation_message));
+        }
+        if let Some(schema) = &self.schema {
+            return Ok(serde_json::to_string(schema)?);
+        }
+        if let Some(adapter) = &self.require_adapter {
+            return self.invoke_schema_with_adapter(adapter, &self);
         }
 
         match &self.implemented_as {
             Some(ImplementedAs::Command) => {
-                command_resource::get_schema(&self)
+                command_resource::get_schema(&self, self.target_resource.as_deref())
             },
             _ => {
                 Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
@@ -511,6 +544,9 @@ impl Invoke for DscResource {
 
     fn export(&self, input: &str) -> Result<ExportResult, DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeExport", resource = self.type_name));
+        if let Some(deprecation_message) = self.deprecation_message.as_ref() {
+            warn!("{}", t!("dscresources.dscresource.deprecationMessage", resource = self.type_name, message = deprecation_message));
+        }
         if let Some(adapter) = &self.require_adapter {
             return self.invoke_export_with_adapter(adapter, &self, input);
         }
@@ -520,6 +556,9 @@ impl Invoke for DscResource {
 
     fn resolve(&self, input: &str) -> Result<ResolveResult, DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeResolve", resource = self.type_name));
+        if let Some(deprecation_message) = self.deprecation_message.as_ref() {
+            warn!("{}", t!("dscresources.dscresource.deprecationMessage", resource = self.type_name, message = deprecation_message));
+        }
         if self.require_adapter.is_some() {
             return Err(DscError::NotSupported(t!("dscresources.dscresource.invokeResolveNotSupported", resource = self.type_name).to_string()));
         }

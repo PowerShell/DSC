@@ -179,7 +179,7 @@ Describe 'Tests for adapter support' {
             $out.path | Should -BeExactly $expectedPath
             $out.directory | Should -BeExactly $parent
             $out.requireAdapter | Should -BeExactly 'Test/Adapter'
-            $out.schema.embedded | Should -Not -BeNullOrEmpty
+            $out.schema | Should -Not -BeNullOrEmpty
         }
 
         It 'Adapted resource with condition false should not be returned' {
@@ -225,6 +225,19 @@ Describe 'Tests for adapter support' {
                     $out.resources[1].name | Should -BeExactly 'second'
                     $out.resources[1].properties.one | Should -BeExactly 'second3'
                 }
+            }
+        }
+
+        It 'Deprecated adapted resource shows message' {
+            try {
+                $dscHome = Split-Path (Get-Command dsc).Source -Parent
+                $env:DSC_RESOURCE_PATH = (Join-Path -Path $dscHome -ChildPath 'deprecated') + [System.IO.Path]::PathSeparator + $dscHome
+                $out = dsc resource get -r Adapted/Deprecated -i '{}' 2>$TestDrive/error.log | ConvertFrom-Json
+                $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log | Out-String)
+                $out | Should -Not -BeNullOrEmpty
+                (Get-Content $TestDrive/error.log -Raw) | Should -Match "Resource 'Adapted/Deprecated' is deprecated: This adapted resource is deprecated" -Because (Get-Content $TestDrive/error.log | Out-String)
+            } finally {
+                $env:DSC_RESOURCE_PATH = $null
             }
         }
     }

@@ -107,6 +107,14 @@ pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation, res
                     };
                     Ok(serde_json::to_string(&adapted_three).unwrap())
                 },
+                "Adapted/Deprecated" => {
+                    let adapted_deprecated = AdaptedOne {
+                        one: "deprecated".to_string(),
+                        name: None,
+                        path: resource_path.clone(),
+                    };
+                    Ok(serde_json::to_string(&adapted_deprecated).unwrap())
+                },
                 _ => Err(format!("Unknown resource type: {resource_type}")),
             }
         },
@@ -176,6 +184,23 @@ pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation, res
                     };
                     println!("{}", serde_json::to_string(&adapted_three).unwrap());
                     std::process::exit(0);
+                },
+                _ => Err(format!("Unknown resource type: {resource_type}")),
+            }
+        },
+        AdapterOperation::Schema => {
+            match resource_type {
+                "Adapted/One" => {
+                    let schema = schemars::schema_for!(AdaptedOne);
+                    Ok(serde_json::to_string(&schema).unwrap())
+                },
+                "Adapted/Two" => {
+                    let schema = schemars::schema_for!(AdaptedTwo);
+                    Ok(serde_json::to_string(&schema).unwrap())
+                },
+                "Adapted/Three" => {
+                    let schema = schemars::schema_for!(AdaptedOne);
+                    Ok(serde_json::to_string(&schema).unwrap())
                 },
                 _ => Err(format!("Unknown resource type: {resource_type}")),
             }

@@ -395,8 +395,8 @@ impl Configurator {
                 continue;
             }
             let adapter = get_require_adapter_from_metadata(&resource.metadata);
-            let Some(dsc_resource) = discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.api_version.as_deref(), adapter.as_deref()))? else {
-                return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.api_version.as_deref().unwrap_or("").to_string()));
+            let Some(dsc_resource) = discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.require_version.as_deref(), adapter.as_deref()))? else {
+                return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.require_version.as_deref().unwrap_or("").to_string()));
             };
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             let filter = add_metadata(&dsc_resource, properties, resource.metadata.clone())?;
@@ -480,8 +480,8 @@ impl Configurator {
                 continue;
             }
             let adapter = get_require_adapter_from_metadata(&resource.metadata);
-            let Some(dsc_resource) = discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.api_version.as_deref(), adapter.as_deref()))? else {
-                return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.api_version.as_deref().unwrap_or("").to_string()));
+            let Some(dsc_resource) = discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.require_version.as_deref(), adapter.as_deref()))? else {
+                return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.require_version.as_deref().unwrap_or("").to_string()));
             };
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
@@ -665,8 +665,8 @@ impl Configurator {
                 continue;
             }
             let adapter = get_require_adapter_from_metadata(&resource.metadata);
-            let Some(dsc_resource) = discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.api_version.as_deref(), adapter.as_deref()))? else {
-                return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.api_version.as_deref().unwrap_or("").to_string()));
+            let Some(dsc_resource) = discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.require_version.as_deref(), adapter.as_deref()))? else {
+                return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.require_version.as_deref().unwrap_or("").to_string()));
             };
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
@@ -749,8 +749,8 @@ impl Configurator {
                 continue;
             }
             let adapter = get_require_adapter_from_metadata(&resource.metadata);
-            let Some(dsc_resource) = discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.api_version.as_deref(), adapter.as_deref()))? else {
-                return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.api_version.as_deref().unwrap_or("").to_string()));
+            let Some(dsc_resource) = discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.require_version.as_deref(), adapter.as_deref()))? else {
+                return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.require_version.as_deref().unwrap_or("").to_string()));
             };
             let properties = self.get_properties(resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
@@ -1045,12 +1045,12 @@ impl Configurator {
 
         if !skip_resource_validation {
             // Perform discovery of resources used in config
-            // create an array of DiscoveryFilter using the resource types and api_versions from the config
+            // create an array of DiscoveryFilter using the resource types and requireVersion from the config
             let mut discovery_filter: Vec<DiscoveryFilter> = Vec::new();
             let config_copy = config.clone();
             for resource in config_copy.resources {
                 let adapter = get_require_adapter_from_metadata(&resource.metadata);
-                let filter = DiscoveryFilter::new(&resource.resource_type, resource.api_version.as_deref(), adapter.as_deref());
+                let filter = DiscoveryFilter::new(&resource.resource_type, resource.require_version.as_deref(), adapter.as_deref());
                 if !discovery_filter.contains(&filter) {
                     discovery_filter.push(filter);
                 }
@@ -1070,8 +1070,8 @@ impl Configurator {
             // now check that each resource in the config was found
             for resource in config.resources.iter() {
                 let adapter = get_require_adapter_from_metadata(&resource.metadata);
-                let Some(_dsc_resource) = self.discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.api_version.as_deref(), adapter.as_deref()))? else {
-                    return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.api_version.as_deref().unwrap_or("").to_string()));
+                let Some(_dsc_resource) = self.discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.require_version.as_deref(), adapter.as_deref()))? else {
+                    return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.require_version.as_deref().unwrap_or("").to_string()));
                 };
             }
         }

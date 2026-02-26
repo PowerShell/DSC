@@ -495,7 +495,7 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
         let Some(type_name) = resource_block["type"].as_str() else {
             return Err(DscError::Validation(t!("subcommand.resourceTypeNotSpecified").to_string()));
         };
-        resource_types.push(DiscoveryFilter::new(type_name, resource_block["api_version"].as_str(), None));
+        resource_types.push(DiscoveryFilter::new(type_name, resource_block["requireVersion"].as_str(), None));
     }
     dsc.find_resources(&resource_types, progress_format)?;
 
@@ -507,7 +507,7 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
         trace!("{} '{}'", t!("subcommand.validatingResource"), resource_block["name"].as_str().unwrap_or_default());
 
         // get the actual resource
-        let Some(resource) = get_resource(&mut dsc, type_name, resource_block["api_version"].as_str()) else {
+        let Some(resource) = get_resource(&mut dsc, type_name, resource_block["requireVersion"].as_str()) else {
             return Err(DscError::Validation(format!("{}: '{type_name}'", t!("subcommand.resourceNotFound"))));
         };
 
@@ -579,13 +579,13 @@ pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat
                 resource_command::get(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref());
             }
         },
-        ResourceSubCommand::Set { resource, version, input, file: path, output_format } => {
+        ResourceSubCommand::Set { resource, version, input, file: path, output_format, what_if } => {
             if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new(resource, version.as_deref(), None)], progress_format) {
                 error!("{}: {err}", t!("subcommand.failedDiscoverResource"));
                 exit(EXIT_DSC_ERROR);
             }
             let parsed_input = get_input(input.as_ref(), path.as_ref());
-            resource_command::set(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref());
+            resource_command::set(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref(), *what_if);
         },
         ResourceSubCommand::Test { resource, version, input, file: path, output_format } => {
             if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new(resource, version.as_deref(), None)], progress_format) {
@@ -805,12 +805,12 @@ pub fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adap
 
                 // if tags is specified, skip if resource tags do not contain the tags
                 if let Some(tags) = tags {
-                    let Some(manifest_tags) = &manifest.tags else { continue; };
+                    if manifest.tags.is_empty() { continue; }
 
                     let mut found = false;
                     for tag_to_find in tags {
-                        for tag in manifest_tags {
-                            if tag.to_lowercase() == tag_to_find.to_lowercase() {
+                        for tag in manifest.tags.as_ref() {
+                            if tag == tag_to_find {
                                 found = true;
                                 break;
                             }

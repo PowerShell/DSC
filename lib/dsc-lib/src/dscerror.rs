@@ -52,13 +52,22 @@ pub enum DscError {
     #[error("{t} '{0}', {t2} {1}, {t3} {2}", t = t!("dscerror.invalidFunctionParameterCount"), t2 = t!("dscerror.expected"), t3 = t!("dscerror.got"))]
     InvalidFunctionParameterCount(String, usize, usize),
 
+    #[error("{t} '{0}': {1}", t = t!("dscerror.invalidExitCode"))]
+    InvalidExitCode(String, core::num::ParseIntError),
+
+    #[error("{t} '{0}': {t2}", t = t!("dscerror.invalidExitCode"), t2 = t!("dscerror.invalidExitCodePlusPrefix"))]
+    InvalidExitCodePlusPrefix(String),
+
     #[error("{0}")]
     InvalidManifest(String),
 
     #[error("{t} '{0}': {1}", t = t!("dscerror.invalidRequiredVersion"))]
     InvalidRequiredVersion(String, String),
 
-    #[error("{t} '{0}' - {t2}: '{1}'", t = t!("dscerror.invalidTypeNamePrefix"), t2 = t!("dscerror.InvalidTypeNameSuffix"))]
+    #[error("{t} '{0}' - {t2}: '{1}'", t = t!("dscerror.invalidTagPrefix"), t2 = t!("dscerror.invalidTagSuffix"))]
+    InvalidTag(String, String),
+
+    #[error("{t} '{0}' - {t2}: '{1}'", t = t!("dscerror.invalidTypeNamePrefix"), t2 = t!("dscerror.invalidTypeNameSuffix"))]
     InvalidTypeName(String, String),
 
     #[error("IO: {0}")]

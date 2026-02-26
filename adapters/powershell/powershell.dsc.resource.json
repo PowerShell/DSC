@@ -3,6 +3,7 @@
     "type": "Microsoft.DSC/PowerShell",
     "version": "0.1.0",
     "kind": "adapter",
+    "deprecationMessage": "Use the 'Microsoft.Adapters/PowerShell' adapter instead.",
     "description": "Resource adapter to classic DSC Powershell resources.",
     "tags": [
       "PowerShell"

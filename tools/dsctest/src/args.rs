@@ -39,6 +39,7 @@ pub enum AdapterOperation {
     List,
     Export,
     Validate,
+    Schema,
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
@@ -110,6 +111,9 @@ pub enum SubCommand {
         #[clap(name = "export", short, long, help = "Use export operation")]
         export: bool,
     },
+
+    #[clap(name = "no-op", about = "Perform no operation, just return success")]
+    NoOp,
 
     #[clap(name = "operation", about = "Perform an operation")]
     Operation {

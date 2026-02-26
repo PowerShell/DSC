@@ -140,7 +140,7 @@ clap = { version = "4.5", features = ["derive"] }
 # dsc
 clap_complete = { version = "4.5" }
 # dsc-lib
-const-str = {version = "1.0" }
+const-str = {version = "1.1" }
 # dsc, registry, dsc-lib-registry, sshdconfig
 crossterm = { version = "0.29" }
 # dsc
@@ -162,7 +162,7 @@ linked-hash-map = { version = "0.5" }
 # dsc-lib
 murmurhash64 = { version = "0.3" }
 # dsc-lib-security_context::not_windows
-nix = { version = "0.30" }
+nix = { version = "0.31" }
 # dsc-lib
 num-traits = { version = "0.2" }
 # dsc-lib-osinfo
@@ -180,7 +180,7 @@ regex = { version = "1.12" }
 # registry, dsc-lib-registry
 registry = { version = "1.3" }
 # dsc
-rmcp = { version = "0.12" }
+rmcp = { version = "0.16" }
 # dsc_lib
 rt-format = { version = "0.3" }
 # dsc, dsc-lib, dsc-bicep-ext, dscecho, registry, dsc-lib-registry, runcommandonset, sshdconfig
@@ -200,9 +200,9 @@ syn = { version = "2.0" }
 # dsc, y2j
 syntect = { version = "5.3", features = ["default-fancy"], default-features = false }
 # dsc, process
-sysinfo = { version = "0.37" }
+sysinfo = { version = "0.38" }
 # sshdconfig
-tempfile = { version = "3.24" }
+tempfile = { version = "3.25" }
 # dsc, dsc-lib, registry, dsc-lib-registry, sshdconfig
 thiserror = { version = "2.0" }
 # dsc, dsc-lib, dsc-bicep-ext
@@ -232,7 +232,7 @@ tree-sitter-rust = { version = "0.24" }
 # registry, dsc-lib-registry
 utfx = { version = "0.1" }
 # dsc-lib
-uuid = { version = "1.19", features = ["v4"] }
+uuid = { version = "1.21", features = ["v4"] }
 # dsc-lib, dsc-lib-jsonschema
 url = { version = "2.5" }
 # dsc-lib, dsc-lib-jsonschema

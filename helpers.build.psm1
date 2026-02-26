@@ -170,7 +170,7 @@ function Import-DscBuildData {
     )
 
     begin {
-        $buildDataFilePath = Join-Path $PSScriptRoot "build.data.json"
+        $buildDataFilePath = Join-Path $PSScriptRoot "data.build.json"
     }
 
     process {
@@ -248,7 +248,7 @@ function Update-DscBuildData {
             'SkipTest.macOS'
             'SkipTest.Windows'
         )
-        $buildDataFilePath = Join-Path $PSScriptRoot "build.data.json"
+        $buildDataFilePath = Join-Path $PSScriptRoot "data.build.json"
     }
 
     process {
@@ -626,6 +626,44 @@ function Install-NodeJS {
     }
 }
 
+function Install-ProtobufRelease($arch) {
+    Write-Verbose -Verbose "Fetching latest Protocol Buffers release info..."
+    $release = Invoke-RestMethod -Uri "https://api.github.com/repos/protocolbuffers/protobuf/releases/latest"
+    $assets = @($release.assets | Where-Object { $_.name -match "protoc-.*-$arch\.zip$" })
+    if (-not $assets -or $assets.Count -eq 0) {
+        throw "No matching protoc binary found for $arch"
+    }
+    if ($assets.Count -gt 1) {
+        throw "Multiple matching protoc binaries found for $arch"
+    }
+    $asset = $assets[0]
+    $downloadUrl = $asset.browser_download_url
+    $tempDir = [System.IO.Path]::GetTempPath()
+    $zipPath = Join-Path -Path $tempDir -ChildPath ("protoc-{0}.zip" -f [System.Guid]::NewGuid())
+
+    Write-Host "Downloading protoc from $downloadUrl..."
+    Invoke-WebRequest -Uri $downloadUrl -OutFile $zipPath
+    $installDir = if ($IsWindows) {
+        "$env:USERPROFILE\protoc"
+    } else {
+        "$env:HOME/protoc"
+    }
+    if (-not (Test-Path $installDir)) { New-Item -ItemType Directory -Path $installDir | Out-Null }
+
+    Write-Host "Extracting protoc to $installDir..."
+    Expand-Archive -Path $zipPath -DestinationPath $installDir -Force
+
+    # Clean up downloaded archive to avoid leaving temporary files behind
+    if (Test-Path $zipPath) {
+        Remove-Item -Path $zipPath -Force -ErrorAction SilentlyContinue
+    }
+    $env:PATH = "$installDir" + [System.IO.Path]::DirectorySeparatorChar + "bin" + [System.IO.Path]::PathSeparator + $env:PATH
+
+    Write-Host "Verifying protoc installation..."
+    Write-Host (Get-Command protoc | Out-String)
+    Write-Host "protoc version: $(protoc --version)"
+}
+
 function Install-Protobuf {
     <#
         .SYNOPSIS
@@ -636,8 +674,9 @@ function Install-Protobuf {
     param()
 
     process {
-        if (Test-CommandAvailable -Name 'protoc') {
-            Write-Verbose "Protobuf already installed."
+        # if ADO, we install the latest version
+        if ($null -eq $env:TF_BUILD -and (Test-CommandAvailable -Name 'protoc')) {
+            Write-Verbose -Verbose "Protobuf already installed: $(protoc --version)"
             return
         }
 
@@ -649,7 +688,12 @@ function Install-Protobuf {
                 Write-Warning "Homebrew not found, please install Protobuf manually"
             }
         } elseif ($IsWindows) {
-            if (Test-CommandAvailable -Name 'winget') {
+            if ($env:TF_BUILD) {
+                Write-Verbose -Verbose "Running in Azure DevOps, installing from zip"
+                $arch = if ([Environment]::Is64BitOperatingSystem) { "win64" } else { "win32" }
+                Install-ProtobufRelease -arch $arch
+            }
+            elseif (Test-CommandAvailable -Name 'winget') {
                 Write-Verbose -Verbose "Using winget to install Protobuf"
                 winget install Google.Protobuf --accept-source-agreements --accept-package-agreements --source winget --force
                 # need to add to PATH
@@ -663,9 +707,20 @@ function Install-Protobuf {
                 Write-Warning "winget not found, please install Protobuf manually"
             }
         } else {
-            if (Test-CommandAvailable -Name 'apt') {
+            if ($env:TF_BUILD) {
+                Write-Verbose -Verbose "Running in Azure DevOps on Linux, installing from zip"
+                # check if ARM64 or x64
+                $arch = if ([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture -eq [System.Runtime.InteropServices.Architecture]::Arm64) {
+                    "linux-aarch_64"
+                } else {
+                    "linux-x86_64"
+                }
+                Install-ProtobufRelease -arch $arch
+            } elseif (Test-CommandAvailable -Name 'apt') {
                 Write-Verbose -Verbose "Using apt to install Protobuf"
                 sudo apt install -y protobuf-compiler
+                Write-Verbose -Verbose (Get-Command protoc | Out-String)
+                Write-Verbose -Verbose "protoc version: $(protoc --version)"
             } else {
                 Write-Warning "apt not found, please install Protobuf manually"
             }

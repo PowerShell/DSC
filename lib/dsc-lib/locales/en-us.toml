@@ -220,6 +220,7 @@ adapterResourceNotFound = "Adapter resource '%{adapter}' not found"
 adapterManifestNotFound = "Adapter manifest for '%{adapter}' not found"
 adapterDoesNotSupportDelete = "Adapter '%{adapter}' does not support delete operation"
 validatingAgainstSchema = "Validating against resource schema"
+deprecationMessage = "Resource '%{resource}' is deprecated: %{message}"
 
 [dscresources.resource_manifest]
 resourceManifestSchemaTitle = "Resource manifest schema URI"
@@ -239,6 +240,7 @@ importNotSupported = "Import is not supported by extension '%{extension}' for fi
 importNoResults = "Extension '%{extension}' returned no results for import"
 secretMultipleLinesReturned = "Extension '%{extension}' returned multiple lines which is not supported for secrets"
 importProcessingOutput = "Processing output from extension '%{extension}'"
+deprecationMessage = "Extension '%{extension}' is deprecated: %{message}"
 
 [extensions.extension_manifest]
 extensionManifestSchemaTitle = "Extension manifest schema URI"
@@ -729,6 +731,10 @@ forExecutable = "for executable"
 function = "Function"
 integerConversion = "Function integer argument conversion"
 invalidConfiguration = "Invalid configuration"
+invalidTagPrefix = "Invalid tag"
+invalidTagSuffix = "valid tags must match the following pattern"
+invalidExitCode = "Invalid key in 'exitCodes' map"
+invalidExitCodePlusPrefix = "Exit codes must not begin with a plus sign (+)"
 invalidTypeNamePrefix = "Invalid type name"
 invalidTypeNameSuffix = "valid resource type names must match the following pattern"
 unsupportedManifestVersion = "Unsupported manifest version"
@@ -777,6 +783,9 @@ notFoundSetting = "Setting '%{name}' not found in %{path}"
 failedToGetExePath = "Can't get 'dsc' executable path"
 settingNotFound = "Setting '%{name}' not found"
 failedToAbsolutizePath = "Failed to absolutize path '%{path}'"
-invalidExitCodeKey = "Invalid exit code key '%{key}'"
 executableNotFoundInWorkingDirectory = "Executable '%{executable}' not found with working directory '%{cwd}'"
 executableNotFound = "Executable '%{executable}' not found"
+
+[types.exit_codes_map]
+successText = "Success"
+failureText = "Error"
