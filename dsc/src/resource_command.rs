@@ -6,7 +6,7 @@ use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_JSON_ERROR, EXIT_DSC_R
 use dsc_lib::configure::config_doc::{Configuration, ExecutionKind};
 use dsc_lib::configure::add_resource_export_results_to_configuration;
 use dsc_lib::discovery::discovery_trait::DiscoveryFilter;
-use dsc_lib::dscresources::{resource_manifest::Kind, invoke_result::{GetResult, ResourceGetResponse, ResourceSetResponse, SetResult}};
+use dsc_lib::dscresources::{resource_manifest::Kind, invoke_result::{DeleteResultKind, GetResult, ResourceGetResponse, ResourceSetResponse, SetResult}};
 use dsc_lib::dscresources::dscresource::{Capability, get_diff};
 use dsc_lib::dscerror::DscError;
 use rust_i18n::t;
@@ -258,7 +258,7 @@ pub fn test(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, in
     }
 }
 
-pub fn delete(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, input: &str) {
+pub fn delete(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, input: &str, format: Option<&OutputFormat>, what_if: bool) {
     let Some(resource) = get_resource(dsc, resource_type, version) else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string(), version.unwrap_or("").to_string()).to_string());
         exit(EXIT_DSC_RESOURCE_NOT_FOUND);
@@ -270,8 +270,33 @@ pub fn delete(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, 
         exit(EXIT_DSC_ERROR);
     }
 
-    match resource.delete(input, &ExecutionKind::Actual) {
-        Ok(_) => {}
+    let execution_kind = if what_if { ExecutionKind::WhatIf } else { ExecutionKind::Actual };
+
+    match resource.delete(input, &execution_kind) {
+        Ok(result) => {
+            match result {
+                DeleteResultKind::ResourceActual => {
+                },
+                DeleteResultKind::ResourceWhatIf(delete_result) => {
+                    match serde_json::to_string(&delete_result) {
+                        Ok(json) => write_object(&json, format, false),
+                        Err(err) => {
+                            error!("JSON: {err}");
+                            exit(EXIT_JSON_ERROR);
+                        }
+                    }
+                },
+                DeleteResultKind::SyntheticWhatIf(test_result) => {
+                    match serde_json::to_string(&test_result) {
+                        Ok(json) => write_object(&json, format, false),
+                        Err(err) => {
+                            error!("JSON: {err}");
+                            exit(EXIT_JSON_ERROR);
+                        }
+                    }
+                }
+            }
+        },
         Err(err) => {
             error!("{err}");
             exit(EXIT_DSC_ERROR);
