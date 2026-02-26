@@ -147,6 +147,8 @@ pub enum SubCommand {
     WhatIf {
         #[clap(name = "whatif", short, long, help = "Run as a whatif executionType instead of actual executionType")]
         what_if: bool,
+        #[clap(name = "state-and-diff", short, long, help = "Output stateAndDiff format (state on first line, diff array on second line)")]
+        state_and_diff: bool,
     },
 
     #[clap(name = "whatif-delete", about = "Check if it is a whatif delete operation")]

@@ -29,7 +29,8 @@
             {
                 "whatIfArg": "-w"
             }
-        ]
+        ],
+        "whatIfReturns": "state"
     },
     "delete": {
         "executable": "registry",

@@ -241,6 +241,9 @@ pub struct SetMethod {
     /// The type of return value expected from the Set method.
     #[serde(rename = "return", skip_serializing_if = "Option::is_none")]
     pub returns: Option<ReturnKind>,
+    /// The type of return value expected from the Set method when running in what-if mode. When specified, this overrides the `return` property during what-if execution.
+    #[serde(rename = "whatIfReturns", skip_serializing_if = "Option::is_none")]
+    pub what_if_returns: Option<ReturnKind>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]

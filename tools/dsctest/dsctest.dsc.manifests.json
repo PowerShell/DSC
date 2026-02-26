@@ -950,6 +950,40 @@
           ]
         }
       }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/WhatIfReturnDiff",
+      "version": "0.1.0",
+      "description": "Test resource for validating whatIfReturn with stateAndDiff return type",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "whatif"
+        ]
+      },
+      "set": {
+        "executable": "dsctest",
+        "args": [
+          "whatif",
+          {
+            "whatIfArg": "-w"
+          },
+          "--state-and-diff"
+        ],
+        "return": "state",
+        "whatIfReturns": "stateAndDiff"
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "what-if"
+          ]
+        }
+      }
     }
   ]
 }
