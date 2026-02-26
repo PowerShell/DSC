@@ -7,7 +7,7 @@ use rust_i18n::t;
 use serde::Deserialize;
 use serde_json::{Map, Value};
 use std::{collections::HashMap, env, path::{Path, PathBuf}, process::Stdio};
-use crate::{configure::{config_doc::ExecutionKind, config_result::{ResourceGetResult, ResourceTestResult}}, dscresources::resource_manifest::SchemaArgKind, types::{ExitCodesMap, FullyQualifiedTypeName}, util::canonicalize_which};
+use crate::{configure::{config_doc::ExecutionKind, config_result::{ResourceGetResult, ResourceTestResult}, context::Context},  dscresources::resource_manifest::SchemaArgKind, types::{ExitCodesMap, FullyQualifiedTypeName}, util::canonicalize_which};
 use crate::dscerror::DscError;
 use super::{
     dscresource::{get_diff, redact, DscResource},
@@ -45,7 +45,7 @@ pub fn invoke_get(resource: &DscResource, filter: &str, target_resource: Option<
     let Some(manifest) = &resource.manifest else {
         return Err(DscError::MissingManifest(resource.type_name.to_string()));
     };
-    let mut command_input = CommandInput { env: None, stdin: None };
+    let mut command_input = CommandInput { env: Some(resource.get_context().environment_variables.clone()), stdin: None };
     let Some(get) = &manifest.get else {
         return Err(DscError::NotImplemented("get".to_string()));
     };
@@ -65,7 +65,7 @@ pub fn invoke_get(resource: &DscResource, filter: &str, target_resource: Option<
     let args = process_get_args(get.args.as_ref(), filter, &command_resource_info);
     if !filter.is_empty() {
         verify_json_from_manifest(&resource, filter, target_resource)?;
-        command_input = get_command_input(get.input.as_ref(), filter)?;
+        command_input = get_command_input(get.input.as_ref(), filter, &resource.get_context())?;
     }
 
     info!("{}", t!("dscresources.commandResource.invokeGetUsing", resource = &resource.type_name, executable = &get.executable));
@@ -193,6 +193,7 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, execut
         return Err(DscError::NotImplemented(t!("dscresources.commandResource.syntheticWhatIf").to_string()));
     }
 
+    // `get` is required so that the pre-state can be retrieved for the set operation and returned in the final result
     let Some(get) = &manifest.get else {
         return Err(DscError::NotImplemented("get".to_string()));
     };
@@ -210,7 +211,7 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, execut
         path,
     };
     let args = process_get_args(get.args.as_ref(), desired, &command_resource_info);
-    let command_input = get_command_input(get.input.as_ref(), desired)?;
+    let command_input = get_command_input(get.input.as_ref(), desired, &resource.get_context())?;
 
     info!("{}", t!("dscresources.commandResource.setGetCurrent", resource = &resource.type_name, executable = &get.executable));
     let (exit_code, stdout, stderr) = invoke_command(&get.executable, args, command_input.stdin.as_deref(), Some(&resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
@@ -239,12 +240,14 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, execut
         pre_state_value
     };
 
-    let mut env: Option<HashMap<String, String>> = None;
+    let mut env: HashMap<String, String> = resource.get_context().environment_variables.clone();
     let mut input_desired: Option<&str> = None;
     let (args, _) = process_set_delete_args(set.args.as_ref(), desired, &command_resource_info, execution_type);
     match &set.input {
         Some(InputKind::Env) => {
-            env = Some(json_to_hashmap(desired)?);
+            for (key, value) in json_to_hashmap(desired)? {
+                env.insert(key, value);
+            }
         },
         Some(InputKind::Stdin) => {
             input_desired = Some(desired);
@@ -254,7 +257,7 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, execut
         },
     }
 
-    let (exit_code, stdout, stderr) = invoke_command(&set.executable, args, input_desired, Some(&resource.directory), env, manifest.exit_codes.as_ref())?;
+    let (exit_code, stdout, stderr) = invoke_command(&set.executable, args, input_desired, Some(&resource.directory), Some(env), manifest.exit_codes.as_ref())?;
 
     match set.returns {
         Some(ReturnKind::State) => {
@@ -361,7 +364,7 @@ pub fn invoke_test(resource: &DscResource, expected: &str, target_resource: Opti
         path,
     };
     let args = process_get_args(test.args.as_ref(), expected, &command_resource_info);
-    let command_input = get_command_input(test.input.as_ref(), expected)?;
+    let command_input = get_command_input(test.input.as_ref(), expected, &resource.get_context())?;
 
     info!("{}", t!("dscresources.commandResource.invokeTestUsing", resource = &resource.type_name, executable = &test.executable));
     let (exit_code, stdout, stderr) = invoke_command(&test.executable, args, command_input.stdin.as_deref(), Some(&resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
@@ -520,7 +523,7 @@ pub fn invoke_delete(resource: &DscResource, filter: &str, target_resource: Opti
         let test_result = invoke_test(resource, filter, target_resource.clone())?;
         return Ok(DeleteResultKind::SyntheticWhatIf(test_result));
     }
-    let command_input = get_command_input(delete.input.as_ref(), filter)?;
+    let command_input = get_command_input(delete.input.as_ref(), filter, &resource.get_context())?;
 
     info!("{}", t!("dscresources.commandResource.invokeDeleteUsing", resource = resource_type, executable = &delete.executable));
     let (_exit_code, stdout, _stderr) = invoke_command(&delete.executable, args, command_input.stdin.as_deref(), Some(&resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
@@ -572,7 +575,7 @@ pub fn invoke_validate(resource: &DscResource, config: &str, target_resource: Op
         path,
     };
     let args = process_get_args(validate.args.as_ref(), config, &command_resource_info);
-    let command_input = get_command_input(validate.input.as_ref(), config)?;
+    let command_input = get_command_input(validate.input.as_ref(), config, &resource.get_context())?;
 
     info!("{}", t!("dscresources.commandResource.invokeValidateUsing", resource = resource_type, executable = &validate.executable));
     let (_exit_code, stdout, _stderr) = invoke_command(&validate.executable, args, command_input.stdin.as_deref(), Some(&resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
@@ -676,7 +679,7 @@ pub fn invoke_export(resource: &DscResource, input: Option<&str>, target_resourc
         if !input.is_empty() {
             verify_json_from_manifest(&resource, input, target_resource)?;
 
-            command_input = get_command_input(export.input.as_ref(), input)?;
+            command_input = get_command_input(export.input.as_ref(), input, &resource.get_context())?;
         }
 
         args = process_get_args(export.args.as_ref(), input, &command_resource_info);
@@ -735,7 +738,7 @@ pub fn invoke_resolve(resource: &DscResource, input: &str) -> Result<ResolveResu
     };
 
     let args = process_get_args(resolve.args.as_ref(), input, &command_resource_info);
-    let command_input = get_command_input(resolve.input.as_ref(), input)?;
+    let command_input = get_command_input(resolve.input.as_ref(), input, &resource.get_context())?;
 
     info!("{}", t!("dscresources.commandResource.invokeResolveUsing", resource = &resource.type_name, executable = &resolve.executable));
     let (_exit_code, stdout, _stderr) = invoke_command(&resolve.executable, args, command_input.stdin.as_deref(), Some(&resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
@@ -1055,8 +1058,8 @@ struct CommandInput {
     stdin: Option<String>,
 }
 
-fn get_command_input(input_kind: Option<&InputKind>, input: &str) -> Result<CommandInput, DscError> {
-    let mut env: Option<HashMap<String, String>> = None;
+fn get_command_input(input_kind: Option<&InputKind>, input: &str, context: &Context) -> Result<CommandInput, DscError> {
+    let mut env = Some(context.environment_variables.clone());
     let mut stdin: Option<String> = None;
     match input_kind {
         Some(InputKind::Env) => {

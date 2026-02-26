@@ -784,6 +784,7 @@ dependencies = [
  "path-absolutize",
  "pretty_assertions",
  "regex",
+ "registry",
  "rt-format",
  "rust-i18n",
  "schemars",
@@ -969,9 +970,11 @@ name = "dsctest"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "registry",
  "schemars",
  "serde",
  "serde_json",
+ "utfx",
 ]
 
 [[package]]

@@ -281,17 +281,33 @@ fn get_metadata_from_result(mut context: Option<&mut Context>, result: &mut Valu
                         }
                     }
                 }
-                if key == "_refreshEnv" {
+                if key == "_refreshEnv" && value.as_bool() == Some(true) {
+                    debug!("{}", t!("configure.mod.metadataRefreshEnvFound"));
                     #[cfg(not(windows))]
                     {
-                        warn!("{}", t!("configure.mod.metadataRefreshEnvIgnored"));
+                        info!("{}", t!("configure.mod.metadataRefreshEnvIgnored"));
                         continue;
                     }
                     #[cfg(windows)]
                     {
                         if let Some(context) = context.as_mut() {
                             // rebuild the environment variables from Windows registry
-
+                            // read the environment variables from HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment
+                            // overlay with HKCU\Environment for user level variables except for PATH which is appended instead of overlayed
+                            let mut env_vars = read_windows_registry("HKLM", r"SYSTEM\CurrentControlSet\Control\Session Manager\Environment")?;
+                            let user_env_vars = read_windows_registry("HKCU", r"Environment")?;
+                            for (key, value) in user_env_vars {
+                                if key == "PATH" {
+                                    if let Some(system_path) = env_vars.get("PATH") {
+                                        env_vars.insert("PATH".to_string(), format!("{};{}", system_path, value));
+                                    } else {
+                                        env_vars.insert("PATH".to_string(), value.to_string());
+                                    }
+                                } else {
+                                    env_vars.insert(key, value.to_string());
+                                }
+                            }
+                            context.environment_variables = env_vars;
                         }
                         continue;
                     }
@@ -306,6 +322,30 @@ fn get_metadata_from_result(mut context: Option<&mut Context>, result: &mut Valu
         }
     }
     Ok(())
+}
+
+#[cfg(windows)]
+fn read_windows_registry(hive: &str, path: &str) -> Result<HashMap<String, String>, DscError> {
+    use registry::Hive;
+    let hive = match hive {
+        "HKLM" => Hive::LocalMachine,
+        "HKCU" => Hive::CurrentUser,
+        _ => return Err(DscError::Parser(t!("configure.mod.invalidRegistryHive", hive = hive).to_string())),
+    };
+    let reg_key = hive.open(path, registry::Security::Read)?;
+    let mut result = HashMap::new();
+    for value in reg_key.values() {
+        let value = value?;
+        let name = value.name().to_string()?;
+        let data = match value.data() {
+            // for env var we only need to handle string and expand string types, other types will be ignored
+            registry::Data::String(s) => s.to_string()?,
+            registry::Data::ExpandString(s) => s.to_string()?,
+            _ => continue,
+        };
+        result.insert(name, data);
+    }
+    Ok(result)
 }
 
 impl Configurator {
@@ -415,6 +455,8 @@ impl Configurator {
             };
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             let filter = add_metadata(&dsc_resource, properties, resource.metadata.clone())?;
+            let mut dsc_resource = dsc_resource.clone();
+            dsc_resource.set_context(&self.context);
             let start_datetime = chrono::Local::now();
             let mut get_result = match dsc_resource.get(&filter) {
                 Ok(result) => result,
@@ -500,6 +542,8 @@ impl Configurator {
             };
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
+            let mut dsc_resource = dsc_resource.clone();
+            dsc_resource.set_context(&self.context);
 
             // see if the properties contains `_exist` and is false
             let exist = match &properties {
@@ -687,6 +731,8 @@ impl Configurator {
             debug!("resource_type {}", &resource.resource_type);
             let expected = add_metadata(&dsc_resource, properties, resource.metadata.clone())?;
             trace!("{}", t!("configure.mod.expectedState", state = expected));
+            let mut dsc_resource = dsc_resource.clone();
+            dsc_resource.set_context(&self.context);
             let start_datetime = chrono::Local::now();
             let mut test_result = match dsc_resource.test(&expected) {
                 Ok(result) => result,
@@ -769,6 +815,8 @@ impl Configurator {
             };
             let properties = self.get_properties(resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
+            let mut dsc_resource = dsc_resource.clone();
+            dsc_resource.set_context(&self.context);
             let input = add_metadata(&dsc_resource, properties, resource.metadata.clone())?;
             trace!("{}", t!("configure.mod.exportInput", input = input));
             let export_result = match add_resource_export_results_to_configuration(&dsc_resource, &mut conf, input.as_str()) {

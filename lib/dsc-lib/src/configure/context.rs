@@ -18,12 +18,12 @@ pub enum ProcessMode {
     UserFunction,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Context {
     pub copy: HashMap<String, i64>,
     pub copy_current_loop_name: String,
     pub dsc_version: Option<String>,
-    pub environment_variables: Map<String, Value>,
+    pub environment_variables: HashMap<String, String>,
     pub execution_type: ExecutionKind,
     pub extensions: Vec<DscExtension>,
     pub outputs: Map<String, Value>,
@@ -44,7 +44,7 @@ pub struct Context {
 impl Context {
     #[must_use]
     pub fn new() -> Self {
-        let environment_variables = std::env::vars().map(|(k, v)| (k, Value::String(v))).collect();
+        let environment_variables = std::env::vars().map(|(k, v)| (k, v)).collect();
         Self {
             copy: HashMap::new(),
             copy_current_loop_name: String::new(),

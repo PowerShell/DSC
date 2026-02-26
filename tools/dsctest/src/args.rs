@@ -16,6 +16,7 @@ pub enum Schemas {
     InDesiredState,
     Metadata,
     Operation,
+    RefreshEnv,
     Sleep,
     Trace,
     Version,
@@ -40,6 +41,12 @@ pub enum AdapterOperation {
     Export,
     Validate,
     Schema,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
+pub enum RefreshEnvOperation {
+    Get,
+    Set,
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
@@ -120,6 +127,14 @@ pub enum SubCommand {
         #[clap(name = "operation", short, long, help = "The name of the operation to perform")]
         operation: String,
         #[clap(name = "input", short, long, help = "The input to the operation command as JSON")]
+        input: String,
+    },
+
+    #[clap(name = "refresh-env", about = "Refresh an environment variable in the registry")]
+    RefreshEnv {
+        #[clap(name = "operation", short, long, help = "The operation to perform: get or set")]
+        operation: RefreshEnvOperation,
+        #[clap(name = "input", short, long, help = "The input to the refresh env command as JSON")]
         input: String,
     },
 

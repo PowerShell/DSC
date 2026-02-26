@@ -791,21 +791,19 @@ fn load_adapted_resource_manifest(path: &Path, manifest: &AdaptedDscResourceMani
         return Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.adaptedResourcePathNotFound", path = resource_path.to_string_lossy(), resource = manifest.type_name).to_string()));
     }
 
-    let resource = DscResource {
-        type_name: manifest.type_name.clone(),
-        kind: Kind::Resource,
-        implemented_as: None,
-        deprecation_message: manifest.deprecation_message.clone(),
-        description: manifest.description.clone(),
-        version: manifest.version.clone(),
-        capabilities: manifest.capabilities.clone(),
-        require_adapter: Some(manifest.require_adapter.clone()),
-        path: resource_path,
-        directory: directory.to_path_buf(),
-        manifest: None,
-        schema: Some(manifest.schema.clone()),
-        ..Default::default()
-    };
+    let mut resource = DscResource::new();
+    resource.type_name = manifest.type_name.clone();
+    resource.kind = Kind::Resource;
+    resource.implemented_as = None;
+    resource.deprecation_message = manifest.deprecation_message.clone();
+    resource.description = manifest.description.clone();
+    resource.version = manifest.version.clone();
+    resource.capabilities = manifest.capabilities.clone();
+    resource.require_adapter = Some(manifest.require_adapter.clone());
+    resource.path = resource_path;
+    resource.directory = directory.to_path_buf();
+    resource.manifest = None;
+    resource.schema = Some(manifest.schema.clone());    
 
     Ok(resource)
 }
@@ -855,19 +853,17 @@ fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<Ds
         verify_executable(&manifest.resource_type, "schema", &command.executable, path.parent().unwrap());
     }
 
-    let resource = DscResource {
-        type_name: manifest.resource_type.clone(),
-        kind,
-        implemented_as: Some(ImplementedAs::Command),
-        deprecation_message: manifest.deprecation_message.clone(),
-        description: manifest.description.clone(),
-        version: manifest.version.clone(),
-        capabilities,
-        path: path.to_path_buf(),
-        directory: path.parent().unwrap().to_path_buf(),
-        manifest: Some(manifest.clone()),
-        ..Default::default()
-    };
+    let mut resource = DscResource::new();
+    resource.type_name = manifest.resource_type.clone();
+    resource.kind = kind;
+    resource.implemented_as = Some(ImplementedAs::Command);
+    resource.deprecation_message = manifest.deprecation_message.clone();
+    resource.description = manifest.description.clone();
+    resource.version = manifest.version.clone();
+    resource.capabilities = capabilities;
+    resource.path = path.to_path_buf();
+    resource.directory = path.parent().unwrap().to_path_buf();
+    resource.manifest = Some(manifest.clone());
 
     Ok(resource)
 }
