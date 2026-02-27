@@ -234,13 +234,11 @@ class PSClassResource {
         Write-Verbose "[TEST]Checking credentials Password:  $($Credential.Password)"
 
       if ($null -eq $Credential) {
-              throw 'Credential property is required'
               $inDesiredState = $false
               return $false
             }
 
         if ($Credential.UserName -ne 'MyUser') {
-                throw 'Invalid user name'
                 $inDesiredState = $false
         } else {
                 $inDesiredState = $true
@@ -265,13 +263,11 @@ class PSClassResource {
         )
 
           if ($null -eq $Credential) {
-              throw 'Credential property is required'
               $inDesiredState = $false
               return $false
             }
 
             if ($Credential.UserName -ne 'MyUser') {
-                    throw 'Invalid user name'
                     $inDesiredState = $false
             } else {
                     $inDesiredState = $true
