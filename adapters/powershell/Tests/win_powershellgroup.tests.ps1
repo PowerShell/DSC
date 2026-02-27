@@ -231,7 +231,7 @@ class PSClassResource {
         )
         Write-Verbose "[TEST]Checking credentials"
         Write-Verbose "[TEST]Checking credentials UserName:  $($Credential.UserName)"
-        Write-Verbose "[TEST]Checking credentials Password:  $($Credential.Password)"
+        Write-Verbose "[TEST]Checking credentials Password:  <redacted>"
 
       if ($null -eq $Credential) {
               $inDesiredState = $false
