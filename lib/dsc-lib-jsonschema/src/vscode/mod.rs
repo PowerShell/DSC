@@ -5,7 +5,9 @@
 
 pub mod dialect;
 pub mod keywords;
+pub mod transforms;
 pub mod vocabulary;
+
 mod schema_extensions;
 pub use schema_extensions::VSCodeSchemaExtensions;
 mod validation_options_extensions;

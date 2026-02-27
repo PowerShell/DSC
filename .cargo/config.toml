@@ -39,3 +39,7 @@ rustflags = [
 # The following is only needed for release builds
 [source.crates-io]
 replace-with = "POWERSHELL"
+
+# Enable running `cargo xtask <command>`
+[alias]
+xtask = "run --package xtask --"
