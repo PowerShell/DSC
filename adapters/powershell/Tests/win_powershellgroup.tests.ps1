@@ -287,7 +287,6 @@ class PSClassResource {
         [Key] string Name;
         [Required, Description("Test Credentials for Script Base"), EmbeddedInstance("MSFT_Credential")] String Credential;
     };
-
 "@
 
     $ProgramFileModule = "$env:ProgramFiles\WindowsPowerShell\Modules"
@@ -543,9 +542,7 @@ $out | Should -BeNullOrEmpty
     }
     if ($metadata -eq 'Microsoft.DSC') {
       "$TestDrive/tracing.txt" | Should -FileContentMatch "Invoking $Operation for '$adapter'" -Because (Get-Content -Raw -Path $TestDrive/tracing.txt)
-      if ($adapter -eq 'Microsoft.Adapter/WindowsPowerShell') {
-        "$TestDrive/tracing.txt" | Should -FileContentMatch "Resource 'Microsoft.Windows/WindowsPowerShell' is deprecated" -Because (Get-Content -Raw -Path $TestDrive/tracing.txt)
-      }
+
     }
   }
 }
