@@ -270,6 +270,8 @@ You must specify a specific architecture (not `current`) when packaging.
 ./build.ps1 -PackageType zip -Architecture x86_64-pc-windows-msvc -Release
 ```
 
+> Debug builds will package unsigned and so can be installed in developer mode.
+
 #### Linux/macOS Packages
 
 ```powershell
