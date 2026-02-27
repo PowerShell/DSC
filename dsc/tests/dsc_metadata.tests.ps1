@@ -233,8 +233,8 @@ Describe 'metadata tests' {
           $out = dsc -l trace config set -i $configYaml 2>$TestDrive/error.log | ConvertFrom-Json
           $errorLogContent = Get-Content $TestDrive/error.log -Raw
           $LASTEXITCODE | Should -Be 0 -Because $errorLogContent
-          $errorLogContent | Should -BeLike "*Resource returned '_refreshEnv' which indicates environment variable refresh is needed*" -Because $errorLogContent
           if ($IsWindows) {
+              $errorLogContent | Should -BeLike "*Resource returned '_refreshEnv' which indicates environment variable refresh is needed*" -Because $errorLogContent
               $out.results[1].result.afterState.output | Should -BeExactly 'myTestValue' -Because ($out | ConvertTo-Json -Depth 10)
           } else {
               $errorLogContent | Should -BeLike "*INFO*Resource returned '_refreshEnv' which is ignored on non-Windows platforms*" -Because $errorLogContent
