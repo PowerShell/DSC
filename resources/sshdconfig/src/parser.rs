@@ -8,7 +8,20 @@ use tracing::debug;
 use tree_sitter::Parser;
 
 use crate::error::SshdConfigError;
-use crate::metadata::{MULTI_ARG_KEYWORDS_COMMA_SEP, MULTI_ARG_KEYWORDS_SPACE_SEP, REPEATABLE_KEYWORDS};
+use crate::repeat_keyword::{KeywordInfo, ValueSeparator};
+
+/// Unescape backslashes in strings. sshd -T outputs paths with escaped backslashes
+/// (e.g., "c:\\openssh\\bin\\sftp.exe") but we want to normalize them to the original
+/// form (e.g., "c:\openssh\bin\sftp.exe") for comparison and storage.
+#[cfg(windows)]
+fn unescape_backslashes(s: &str) -> String {
+    s.replace("\\\\", "\\")
+}
+
+#[cfg(not(windows))]
+fn unescape_backslashes(s: &str) -> String {
+    s.to_string()
+}
 
 #[derive(Debug, JsonSchema)]
 pub struct SshdConfigParser {
@@ -114,7 +127,12 @@ impl SshdConfigParser {
 
             let values: Value;
             if let Some(value_node) = criteria_node.child_by_field_name("argument") {
-                values = parse_arguments_node(value_node, input, input_bytes, true)?;
+                // Match criteria are always treated as arrays (comma-separated), so we override
+                // the keyword_info to force multi-arg behavior
+                let mut keyword_info = KeywordInfo::from_keyword(&key);
+                // Force comma separator and multi-arg for match criteria
+                keyword_info.separator = ValueSeparator::Comma;
+                values = parse_arguments_node_as_array(value_node, input, input_bytes, &keyword_info)?;
             }
             else {
                 return Err(SshdConfigError::ParserError(t!("parser.missingValueInCriteria", input = input).to_string()));
@@ -139,17 +157,15 @@ impl SshdConfigParser {
         let mut cursor = keyword_node.walk();
         let mut key = None;
         let mut value = Value::Null;
-        let mut is_repeatable = false;
-        let mut is_vec = false;
+        let mut keyword_info: Option<KeywordInfo> = None;
         let mut operator: Option<String> = None;
 
         if let Some(keyword) = keyword_node.child_by_field_name("keyword") {
             let Ok(text) = keyword.utf8_text(input_bytes) else {
                 return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
             };
-            let lowercase_key = text.to_lowercase();
-            is_repeatable = REPEATABLE_KEYWORDS.contains(&lowercase_key.as_str());
-            is_vec = is_repeatable || MULTI_ARG_KEYWORDS_COMMA_SEP.contains(&lowercase_key.as_str()) || MULTI_ARG_KEYWORDS_SPACE_SEP.contains(&lowercase_key.as_str());
+            let info = KeywordInfo::from_keyword(text);
+            keyword_info = Some(info);
             key = Some(text.to_string());
         }
 
@@ -163,13 +179,24 @@ impl SshdConfigParser {
             operator = Some(op_text.to_string());
         }
 
+        // Validate that structured keywords cannot use operators
+        if let Some(ref info) = keyword_info {
+            if !info.allows_operator() && operator.is_some() {
+                return Err(SshdConfigError::ParserError(
+                    t!("parser.structuredKeywordCannotUseOperator", keyword = &info.name).to_string()
+                ));
+            }
+        }
+
         for node in keyword_node.named_children(&mut cursor) {
             if node.is_error() {
                 return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
             }
             if node.kind() == "arguments" {
-                value = parse_arguments_node(node, input, input_bytes, is_vec)?;
-                debug!("{}: {:?}", t!("parser.valueDebug").to_string(), value);
+                if let Some(ref info) = keyword_info {
+                    value = parse_arguments_node(node, input, input_bytes, info)?;
+                    debug!("{}: {:?}", t!("parser.valueDebug").to_string(), value);
+                }
             }
         }
 
@@ -188,6 +215,7 @@ impl SshdConfigParser {
 
             // If target_map is provided, insert the value with repeatability handling
             if let Some(map) = target_map {
+                let is_repeatable = keyword_info.as_ref().is_some_and(|i| i.is_repeatable);
                 Self::insert_into_map(map, &key, value.clone(), is_repeatable)?;
             }
 
@@ -237,14 +265,17 @@ impl SshdConfigParser {
     }
 }
 
-fn parse_arguments_node(arg_node: tree_sitter::Node, input: &str, input_bytes: &[u8], is_vec: bool) -> Result<Value, SshdConfigError> {
+fn parse_arguments_node(arg_node: tree_sitter::Node, input: &str, input_bytes: &[u8], keyword_info: &KeywordInfo) -> Result<Value, SshdConfigError> {
     let mut cursor = arg_node.walk();
     let mut vec: Vec<Value> = Vec::new();
+    let is_vec = keyword_info.is_multi_arg();
+
     // if there is more than one argument, but a vector is not expected for the keyword, throw an error
     let children: Vec<_> = arg_node.named_children(&mut cursor).collect();
     if children.len() > 1 && !is_vec {
         return Err(SshdConfigError::ParserError(t!("parser.invalidMultiArgNode", input = input).to_string()));
     }
+
     for node in &children {
         if node.is_error() {
             return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
@@ -257,7 +288,9 @@ fn parse_arguments_node(arg_node: tree_sitter::Node, input: &str, input_bytes: &
             }
             "string" => {
                 let arg_str = arg.trim();
-                vec.push(Value::String(arg_str.to_string()));
+                // Unescape backslashes (sshd -T escapes them on Windows)
+                let unescaped = unescape_backslashes(arg_str);
+                vec.push(Value::String(unescaped));
             },
             "number" => {
                 vec.push(Value::Number(arg.parse::<u64>()?.into()));
@@ -265,6 +298,35 @@ fn parse_arguments_node(arg_node: tree_sitter::Node, input: &str, input_bytes: &
             _ => return Err(SshdConfigError::ParserError(t!("parser.unknownNode", kind = node.kind()).to_string()))
         }
     }
+
+    // Handle structured keywords (e.g., subsystem)
+    if keyword_info.requires_structured_format() {
+        if vec.len() < 2 {
+            return Err(SshdConfigError::ParserError(
+                t!("parser.structuredKeywordRequiresMinArgs", keyword = &keyword_info.name).to_string()
+            ));
+        }
+
+        // Extract name (first element) and value (remaining elements joined with space)
+        let name = vec[0].clone();
+        let value_parts: Vec<String> = vec[1..].iter()
+            .filter_map(|v| {
+                match v {
+                    Value::String(s) => Some(s.clone()),
+                    Value::Number(n) => Some(n.to_string()),
+                    Value::Bool(b) => Some(if *b { "yes".to_string() } else { "no".to_string() }),
+                    _ => None
+                }
+            })
+            .collect();
+        let value_str = value_parts.join(" ");
+
+        let mut structured = Map::new();
+        structured.insert("name".to_string(), name);
+        structured.insert("value".to_string(), Value::String(value_str));
+        return Ok(Value::Object(structured));
+    }
+
     // Always return array if is_vec is true (for MULTI_ARG_KEYWORDS, and REPEATABLE_KEYWORDS)
     if is_vec {
         Ok(Value::Array(vec))
@@ -273,6 +335,41 @@ fn parse_arguments_node(arg_node: tree_sitter::Node, input: &str, input_bytes: &
     } else { /* shouldn't happen */
         Err(SshdConfigError::ParserError(t!("parser.noArgumentsFound", input = input).to_string()))
     }
+}
+
+/// Parse arguments node for match criteria, always returning an array.
+/// Match criteria are always comma-separated and should be arrays.
+fn parse_arguments_node_as_array(arg_node: tree_sitter::Node, input: &str, input_bytes: &[u8], _keyword_info: &KeywordInfo) -> Result<Value, SshdConfigError> {
+    let mut cursor = arg_node.walk();
+    let mut vec: Vec<Value> = Vec::new();
+
+    let children: Vec<_> = arg_node.named_children(&mut cursor).collect();
+
+    for node in &children {
+        if node.is_error() {
+            return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
+        }
+        let arg = node.utf8_text(input_bytes)?;
+        match node.kind() {
+            "boolean" => {
+                let arg_str = arg.trim();
+                vec.push(Value::Bool(arg_str.eq_ignore_ascii_case("yes")));
+            }
+            "string" => {
+                let arg_str = arg.trim();
+                // Unescape backslashes (sshd -T escapes them on Windows)
+                let unescaped = unescape_backslashes(arg_str);
+                vec.push(Value::String(unescaped));
+            },
+            "number" => {
+                vec.push(Value::Number(arg.parse::<u64>()?.into()));
+            },
+            _ => return Err(SshdConfigError::ParserError(t!("parser.unknownNode", kind = node.kind()).to_string()))
+        }
+    }
+
+    // Always return array for match criteria
+    Ok(Value::Array(vec))
 }
 
 /// Parse `sshd_config` to map.
@@ -306,6 +403,53 @@ mod tests {
         let result: Map<String, Value> = parse_text_to_map(input).unwrap();
         let expected = vec![Value::Number(1234.into()), Value::Number(5678.into())];
         assert_eq!(result.get("port").unwrap(), &Value::Array(expected));
+    }
+
+    #[test]
+    fn subsystem_keyword() {
+        let input = r#"
+          subsystem sftp /usr/bin/sftp
+          subsystem pwsh c:/progra~1/powershell/7/pwsh.exe -sshs -NoLogo -NoProfile
+        "#.trim_start();
+        let result: Map<String, Value> = parse_text_to_map(input).unwrap();
+        let subsystems = result.get("subsystem").unwrap().as_array().unwrap();
+        assert_eq!(subsystems.len(), 2);
+
+        // Check first subsystem
+        let sftp = subsystems[0].as_object().unwrap();
+        assert_eq!(sftp.get("name").unwrap(), &Value::String("sftp".to_string()));
+        assert_eq!(sftp.get("value").unwrap(), &Value::String("/usr/bin/sftp".to_string()));
+
+        // Check second subsystem with multiple arguments
+        let pwsh = subsystems[1].as_object().unwrap();
+        assert_eq!(pwsh.get("name").unwrap(), &Value::String("pwsh".to_string()));
+        assert_eq!(pwsh.get("value").unwrap(), &Value::String("c:/progra~1/powershell/7/pwsh.exe -sshs -NoLogo -NoProfile".to_string()));
+    }
+
+    #[test]
+    fn subsystem_single_entry() {
+        let input = "subsystem sftp /usr/lib/openssh/sftp-server\n";
+        let result: Map<String, Value> = parse_text_to_map(input).unwrap();
+        let subsystems = result.get("subsystem").unwrap().as_array().unwrap();
+        assert_eq!(subsystems.len(), 1);
+
+        let sftp = subsystems[0].as_object().unwrap();
+        assert_eq!(sftp.get("name").unwrap(), &Value::String("sftp".to_string()));
+        assert_eq!(sftp.get("value").unwrap(), &Value::String("/usr/lib/openssh/sftp-server".to_string()));
+    }
+
+    #[test]
+    fn subsystem_name_only_should_error() {
+        let input = "subsystem sftp\n";
+        let result = parse_text_to_map(input);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn subsystem_with_operator_should_error() {
+        let input = "subsystem +sftp /usr/bin/sftp\n";
+        let result = parse_text_to_map(input);
+        assert!(result.is_err());
     }
 
     #[test]
@@ -410,7 +554,6 @@ match user bob
         let match_array = result.get("match").unwrap().as_array().unwrap();
         assert_eq!(match_array.len(), 1);
         let match_obj = match_array[0].as_object().unwrap();
-        println!("match_obj: {:?}", match_obj);
         let criteria = match_obj.get("criteria").unwrap().as_object().unwrap();
         let user_array = criteria.get("user").unwrap().as_array().unwrap();
         assert_eq!(user_array[0], Value::String("bob".to_string()));
@@ -570,4 +713,67 @@ match group administrators
         assert_eq!(value_array.len(), 1);
         assert_eq!(value_array[0], Value::String("ssh-rsa".to_string()));
     }
+
+    #[test]
+    fn subsystem_in_match_block() {
+        let input = r#"
+match user alice
+    subsystem sftp /usr/bin/sftp
+"#;
+        let result: Map<String, Value> = parse_text_to_map(input).unwrap();
+        let match_array = result.get("match").unwrap().as_array().unwrap();
+        let match_obj = match_array[0].as_object().unwrap();
+
+        let subsystems = match_obj.get("subsystem").unwrap().as_array().unwrap();
+        assert_eq!(subsystems.len(), 1);
+
+        let sftp = subsystems[0].as_object().unwrap();
+        assert_eq!(sftp.get("name").unwrap(), &Value::String("sftp".to_string()));
+        assert_eq!(sftp.get("value").unwrap(), &Value::String("/usr/bin/sftp".to_string()));
+    }
+
+    #[test]
+    fn subsystem_multiple_in_match_block() {
+        let input = r#"
+match user developer
+    subsystem sftp /usr/bin/sftp
+    subsystem pwsh /usr/bin/pwsh -sshs
+"#;
+        let result: Map<String, Value> = parse_text_to_map(input).unwrap();
+        let match_array = result.get("match").unwrap().as_array().unwrap();
+        let match_obj = match_array[0].as_object().unwrap();
+
+        let subsystems = match_obj.get("subsystem").unwrap().as_array().unwrap();
+        assert_eq!(subsystems.len(), 2);
+
+        let sftp = subsystems[0].as_object().unwrap();
+        assert_eq!(sftp.get("name").unwrap(), &Value::String("sftp".to_string()));
+        assert_eq!(sftp.get("value").unwrap(), &Value::String("/usr/bin/sftp".to_string()));
+
+        let pwsh = subsystems[1].as_object().unwrap();
+        assert_eq!(pwsh.get("name").unwrap(), &Value::String("pwsh".to_string()));
+        assert_eq!(pwsh.get("value").unwrap(), &Value::String("/usr/bin/pwsh -sshs".to_string()));
+    }
+
+    #[test]
+    fn subsystem_roundtrip() {
+        use crate::formatter::write_config_map_to_text;
+
+        let input = r#"subsystem sftp /usr/bin/sftp
+subsystem pwsh c:/progra~1/powershell/7/pwsh.exe -sshs -NoLogo
+"#;
+        let parsed = parse_text_to_map(input).unwrap();
+        let formatted = write_config_map_to_text(&parsed).unwrap();
+
+        // Parse again to verify round-trip
+        let reparsed = parse_text_to_map(&formatted).unwrap();
+
+        let subsystems1 = parsed.get("subsystem").unwrap().as_array().unwrap();
+        let subsystems2 = reparsed.get("subsystem").unwrap().as_array().unwrap();
+
+        assert_eq!(subsystems1.len(), subsystems2.len());
+        assert_eq!(subsystems1[0], subsystems2[0]);
+        assert_eq!(subsystems1[1], subsystems2[1]);
+    }
 }
+

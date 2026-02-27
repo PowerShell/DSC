@@ -177,4 +177,227 @@ resources:
             $out.results.result.afterState.authorizedkeysfile | Should -Be @('./.ssh/authorized_keys', './.ssh/authorized_keys2')
         }
     }
+
+    Context 'Subsystem and SubsystemList Tests' {
+        BeforeAll {
+            # Create a temporary test directory for sshd_config files
+            $TestDir = Join-Path $TestDrive "sshd_test"
+            New-Item -Path $TestDir -ItemType Directory -Force | Out-Null
+            $script:TestConfigPath = Join-Path $TestDir "sshd_config"
+
+            # Define OS-specific paths with spaces
+            if ($IsWindows) {
+                $script:PathWithSpaces = "$env:ProgramFiles\OpenSSH\sftp-server.exe"
+                $script:DefaultSftpPath = "sftp-server.exe"
+                $script:AlternatePath = "$env:SystemDrive\OpenSSH\bin\sftp.exe"
+            }
+            else {
+                $script:PathWithSpaces = "/usr/local/lib/openssh server/sftp-server"
+                $script:DefaultSftpPath = "/usr/lib/openssh/sftp-server"
+                $script:AlternatePath = "/usr/libexec/sftp-server"
+            }
+        }
+
+        BeforeEach {
+            # Create test config with existing subsystems
+            $initialContent = @"
+Port 22
+subsystem sftp $script:DefaultSftpPath
+Subsystem test2 /path/to/test2
+PasswordAuthentication yes
+"@
+            Set-Content -Path $script:TestConfigPath -Value $initialContent
+        }
+
+        AfterEach {
+            # Clean up test config file after each test
+            if (Test-Path $script:TestConfigPath) {
+                Remove-Item -Path $script:TestConfigPath -Force -ErrorAction Ignore
+            }
+            if (Test-Path "${script:TestConfigPath}_backup") {
+                Remove-Item -Path "${script:TestConfigPath}_backup" -Force -ErrorAction Ignore
+            }
+        }
+
+        It 'Should add a new subsystem that does not already exist' -Skip:($script:skipSubsystemTests) {
+            $config_yaml = @"
+`$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+metadata:
+  Microsoft.DSC:
+    securityContext: elevated
+resources:
+- name: newsub
+  type: Microsoft.OpenSSH.SSHD/Subsystem
+  metadata:
+    filepath: $script:TestConfigPath
+  properties:
+    _exist: true
+    subsystem:
+      name: newsubsystem
+      value: /path/to/newsubsystem
+"@
+            $out = dsc config set -i "$config_yaml" | ConvertFrom-Json -Depth 10
+            $LASTEXITCODE | Should -Be 0
+            $out.hadErrors | Should -BeFalse
+            $out.results.Count | Should -Be 1
+            $out.results[0].type | Should -BeExactly 'Microsoft.OpenSSH.SSHD/Subsystem'
+            $out.results[0].result.afterState._exist | Should -Be $true
+            $out.results[0].result.afterState.subsystem.name | Should -Be 'newsubsystem'
+
+            $getResult = dsc config get -i "$config_yaml" | ConvertFrom-Json -Depth 10
+            $LASTEXITCODE | Should -Be 0
+            $getResult.results[0].result.actualState._exist | Should -Be $true
+            $getResult.results[0].result.actualState.subsystem.name | Should -Be 'newsubsystem'
+            $getResult.results[0].result.actualState.subsystem.value | Should -Be '/path/to/newsubsystem'
+        }
+
+        It 'Should remove a subsystem when _exist is false' -Skip:($script:skipSubsystemTests) {
+            $config_yaml = @"
+`$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+metadata:
+  Microsoft.DSC:
+    securityContext: elevated
+resources:
+- name: removesub
+  type: Microsoft.OpenSSH.SSHD/Subsystem
+  metadata:
+    filepath: $script:TestConfigPath
+  properties:
+    _exist: false
+    subsystem:
+      name: sftp
+"@
+            $out = dsc config set -i "$config_yaml" | ConvertFrom-Json -Depth 10
+            $LASTEXITCODE | Should -Be 0
+            $out.hadErrors | Should -BeFalse
+            $out.results[0].result.afterState._exist | Should -Be $false
+
+            $getResult = dsc config get -i "$config_yaml" | ConvertFrom-Json -Depth 10
+            $LASTEXITCODE | Should -Be 0
+            $getResult.results[0].result.actualState._exist | Should -Be $false
+        }
+
+        It 'Should add multiple new subsystems with SubsystemList' -Skip:($script:skipSubsystemTests) {
+            $config_yaml = @"
+`$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+metadata:
+  Microsoft.DSC:
+    securityContext: elevated
+resources:
+- name: multisubsystem
+  type: Microsoft.OpenSSH.SSHD/SubsystemList
+  metadata:
+    filepath: $script:TestConfigPath
+  properties:
+    _purge: false
+    subsystem:
+    - name: newsub1
+      value: /path/to/newsub1
+    - name: newsub2
+      value: /path/to/newsub2
+"@
+            $out = dsc config set -i "$config_yaml" | ConvertFrom-Json -Depth 10
+            $LASTEXITCODE | Should -Be 0
+            $out.hadErrors | Should -BeFalse
+            $out.results[0].type | Should -BeExactly 'Microsoft.OpenSSH.SSHD/SubsystemList'
+            $out.results[0].result.afterState.subsystem.Count | Should -Be 4
+
+            # Verify all subsystems are present (old + new)
+            $subsystems = Get-Content $script:TestConfigPath | Where-Object { $_ -match '^\s*subsystem\s+' }
+            $subsystems.Count | Should -Be 4
+            $subsystems | Should -Contain "subsystem newsub1 /path/to/newsub1"
+            $subsystems | Should -Contain "subsystem newsub2 /path/to/newsub2"
+
+            # Verify that new subsystems were appended (not inserted)
+            $allLines = Get-Content $script:TestConfigPath
+            $newsub1Line = ($allLines | Select-String -Pattern 'subsystem\s+newsub1').LineNumber
+            $newsub2Line = ($allLines | Select-String -Pattern 'subsystem\s+newsub2').LineNumber
+            $sftpLine = ($allLines | Select-String -Pattern 'subsystem\s+sftp').LineNumber
+            $test2Line = ($allLines | Select-String -Pattern 'Subsystem\s+test2').LineNumber
+
+            # New subsystems should be added after the original subsystems
+            $newsub1Line | Should -BeGreaterThan $sftpLine
+            $newsub1Line | Should -BeGreaterThan $test2Line
+            $newsub2Line | Should -BeGreaterThan $sftpLine
+            $newsub2Line | Should -BeGreaterThan $test2Line
+        }
+
+        It 'Should preserve unlisted subsystems when _purge is false' {
+            $config_yaml = @"
+`$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+metadata:
+  Microsoft.DSC:
+    securityContext: elevated
+resources:
+- name: preservesubsystem
+  type: Microsoft.OpenSSH.SSHD/SubsystemList
+  metadata:
+    filepath: $script:TestConfigPath
+  properties:
+    _purge: false
+    subsystem:
+    - name: addedSubsystem
+      value: /path/to/this
+"@
+            $out = dsc config set -i "$config_yaml" | ConvertFrom-Json -Depth 10
+            $LASTEXITCODE | Should -Be 0
+            $out.hadErrors | Should -BeFalse
+
+            # Verify using dsc config get
+            $getResult = dsc config get -i "$config_yaml" | ConvertFrom-Json -Depth 10
+            $LASTEXITCODE | Should -Be 0
+            $subsystems = $getResult.results[0].result.actualState.subsystem
+            $subsystems.Count | Should -Be 3
+
+            # Verify each subsystem
+            foreach ($subsystem in $subsystems) {
+                $subsystem.name | Should -BeIn @('addedSubsystem', 'sftp', 'test2')
+                if ($subsystem.name -eq 'addedSubsystem') {
+                    $subsystem.value | Should -Be '/path/to/this'
+                }
+            }
+        }
+
+        It 'Should remove unlisted subsystems when _purge is true' {
+            $config_yaml = @"
+`$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+metadata:
+  Microsoft.DSC:
+    securityContext: elevated
+resources:
+- name: purgesubsystem
+  type: Microsoft.OpenSSH.SSHD/SubsystemList
+  metadata:
+    filepath: $script:TestConfigPath
+  properties:
+    _purge: true
+    subsystem:
+    - name: sftp
+      value: $script:AlternatePath
+    - name: newSub
+      value: /path/to/newSub
+"@
+            $out = dsc config set -i "$config_yaml" | ConvertFrom-Json -Depth 10
+            $LASTEXITCODE | Should -Be 0
+            $out.hadErrors | Should -BeFalse
+
+            # Verify using dsc config get
+            $getResult = dsc config get -i "$config_yaml" | ConvertFrom-Json -Depth 10
+            $LASTEXITCODE | Should -Be 0
+            $subsystems = $getResult.results[0].result.actualState.subsystem
+            $subsystems.Count | Should -Be 2
+
+            # Verify each subsystem
+            foreach ($subsystem in $subsystems) {
+                $subsystem.name | Should -BeIn @('sftp', 'newSub')
+                $subsystem.name | Should -Not -Be 'test2'
+                if ($subsystem.name -eq 'sftp') {
+                    $subsystem.value | Should -Be $script:AlternatePath
+                }
+                if ($subsystem.name -eq 'newSub') {
+                    $subsystem.value | Should -Be '/path/to/newSub'
+                }
+            }
+        }
+    }
 }
