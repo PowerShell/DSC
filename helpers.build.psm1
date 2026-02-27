@@ -1812,7 +1812,7 @@ function Build-DscMsixPackage {
     )
 
     begin {
-        if ($IsWindows) {
+        if (-not $IsWindows) {
             throw "MSIX packaging is only supported on Windows"
         }
         if ($null -eq $BuildData) {
@@ -1884,12 +1884,18 @@ function Build-DscMsixPackage {
         $arch = ($architecture -eq 'aarch64-pc-windows-msvc') ? 'arm64' : 'x64'
 
         # Appx manifest needs to be in root of source path, but the embedded version needs to be updated
-        # cp-459155 is 'CN=Microsoft Windows Store Publisher (Store EKU), O=Microsoft Corporation, L=Redmond, S=Washington, C=US'
-        # authenticodeFormer is 'CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US'
-        $releasePublisher = 'CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US'
         # Retrieve manifest and set version correctly
         $appxManifest = Get-Content "$PSScriptRoot\packaging\msix\AppxManifest.xml" -Raw
-        $appxManifest = $appxManifest.Replace('$VERSION$', $ProductVersion).Replace('$ARCH$', $Arch).Replace('$PRODUCTNAME$', $productName).Replace('$DISPLAYNAME$', $displayName).Replace('$PUBLISHER$', $releasePublisher)
+        if ($Release) {
+            # CP-459155 is 'CN=Microsoft Windows Store Publisher (Store EKU), O=Microsoft Corporation, L=Redmond, S=Washington, C=US'
+            # authenticodeFormer is 'CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US'
+            $publisher = 'CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US'
+        } else {
+            # For debug builds, use a self-signed developer identity per
+            # https://learn.microsoft.com/en-us/windows/msix/package/unsigned-package
+            $publisher = 'CN=AppModelSamples, OID.2.25.311729368913984317654407730594956997722=1'
+        }
+        $appxManifest = $appxManifest.Replace('$VERSION$', $ProductVersion).Replace('$ARCH$', $Arch).Replace('$PRODUCTNAME$', $productName).Replace('$DISPLAYNAME$', $displayName).Replace('$PUBLISHER$', $publisher)
         # Remove the output directory if it already exists, then recreate it.
         $msixTarget = $artifactDirectory.MsixTarget
         if (Test-Path $msixTarget) {
@@ -1970,7 +1976,12 @@ function Build-DscMsixPackage {
         if ($LASTEXITCODE -ne 0) {
             throw "Failed to create msix package"
         }
-        Write-Host -ForegroundColor Green "`nMSIX package is created at $packageName"
+
+        if ($Release) {
+            Write-Host -ForegroundColor Green "`nMSIX package is created at $packageName"
+        } else {
+            Write-Host -ForegroundColor Green "`nInstall the debug MSIX package with:`nAdd-AppxPackage -AllowUnsigned -Path $packageName"
+        }
     }
 }
 
