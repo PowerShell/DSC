@@ -112,12 +112,15 @@ pub enum DscError {
     #[error("{t}: {0}", t = t!("dscerror.progress"))]
     Progress(#[from] TemplateError),
 
+    #[cfg(windows)]
     #[error("{t}: {0}", t = t!("dscerror.registryHive"))]
     RegistryHive(#[from] registry::Error),
 
+    #[cfg(windows)]
     #[error("{t}: {0}", t = t!("dscerror.registryKey"))]
     RegistryKey(#[from] registry::key::Error),
 
+    #[cfg(windows)]
     #[error("{t}: {0}", t = t!("dscerror.registryIterator"))]
     RegistryIterator(#[from] registry::iter::values::Error),
 
