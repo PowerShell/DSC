@@ -17,8 +17,9 @@
           "-NoProfile",
           "-ExecutionPolicy",
           "Bypass",
-          "-Command",
-          "./psDscAdapter/powershell.resource.ps1 List"
+          "-File",
+          "./psDscAdapter/powershell.resource.ps1",
+          "List"
         ]
         },
       "config": "full"
@@ -31,8 +32,9 @@
         "-NoProfile",
         "-ExecutionPolicy",
         "Bypass",
-        "-Command",
-        "$Input | ./psDscAdapter/powershell.resource.ps1 Get"
+        "-File",
+        "./psDscAdapter/powershell.resource.ps1",
+        "Get"
       ],
       "input": "stdin"
       },
@@ -44,8 +46,9 @@
         "-NoProfile",
         "-ExecutionPolicy",
         "Bypass",
-        "-Command",
-        "$Input | ./psDscAdapter/powershell.resource.ps1 Set"
+        "-File",
+        "./psDscAdapter/powershell.resource.ps1",
+        "Set"
       ],
       "input": "stdin",
       "implementsPretest": true
@@ -58,8 +61,9 @@
         "-NoProfile",
         "-ExecutionPolicy",
         "Bypass",
-        "-Command",
-        "$Input | ./psDscAdapter/powershell.resource.ps1 Test"
+        "-File",
+        "./psDscAdapter/powershell.resource.ps1",
+        "Test"
       ],
       "input": "stdin",
       "return": "state"
@@ -72,8 +76,9 @@
         "-NoProfile",
         "-ExecutionPolicy",
         "Bypass",
-        "-Command",
-        "$Input | ./psDscAdapter/powershell.resource.ps1 Export"
+        "-File",
+        "./psDscAdapter/powershell.resource.ps1",
+        "Export"
       ],
       "input": "stdin",
       "return": "state"
@@ -86,8 +91,9 @@
           "-NoProfile",
           "-ExecutionPolicy",
           "Bypass",
-          "-Command",
-          "$Input | ./psDscAdapter/powershell.resource.ps1 Validate"
+          "-File",
+          "./psDscAdapter/powershell.resource.ps1",
+          "Validate"
           ],
         "input": "stdin"
       },
