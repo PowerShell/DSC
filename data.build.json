@@ -54,6 +54,7 @@
       "appx.dsc.extension.json",
       "appx-discover.ps1",
       "dsc.exe",
+      "dsc-bicep-ext.exe",
       "dsc_default.settings.json",
       "dsc.settings.json",
       "dscecho.exe",
@@ -428,6 +429,16 @@
       "IsRust": true,
       "Binaries": [
         "y2j"
+      ]
+    },
+    {
+      "Name": "dsc-bicep-ext",
+      "Kind": "Extension",
+      "RelativePath": "dsc-bicep-ext",
+      "SupportedPlatformOS": "Windows",
+      "IsRust": true,
+      "Binaries": [
+        "dsc-bicep-ext"
       ]
     }
   ]

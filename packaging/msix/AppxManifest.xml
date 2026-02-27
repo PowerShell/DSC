@@ -39,6 +39,17 @@
       <uap:VisualElements DisplayName="$DISPLAYNAME$" Description="DesiredStateConfiguration (DSC) enables a declarative model for configuration, also known as configuration as code." BackgroundColor="transparent" Square150x150Logo="assets\Square150x150Logo.png" Square44x44Logo="assets\Square44x44Logo.png">
       </uap:VisualElements>
     </Application>
+    <Application Id="BicepExt" Executable="dsc-bicep-ext.exe" EntryPoint="Windows.FullTrustApplication">
+      <Extensions>
+        <uap3:Extension Category="windows.appExecutionAlias" EntryPoint="Windows.FullTrustApplication" Executable="dsc-bicep-ext.exe">
+          <uap3:AppExecutionAlias>
+            <desktop:ExecutionAlias Alias="dsc-bicep-ext.exe" />
+          </uap3:AppExecutionAlias>
+        </uap3:Extension>
+      </Extensions>
+      <uap:VisualElements DisplayName="DSC Bicep Extension" Description="gRPC server for Bicep extensibility with DSC." BackgroundColor="transparent" Square150x150Logo="assets\Square150x150Logo.png" Square44x44Logo="assets\Square44x44Logo.png">
+      </uap:VisualElements>
+    </Application>
   </Applications>
 
   <Capabilities>
