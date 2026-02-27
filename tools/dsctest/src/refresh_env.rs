@@ -1,10 +1,12 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+#[cfg(windows)]
 use registry::{Hive, Security, value::Data};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
+#[cfg(windows)]
 use utfx::UCString;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -47,7 +49,7 @@ impl RefreshEnv {
                     };
                 }
             }
-            
+
             RefreshEnv {
                 metadata: None,
                 name: self.name.clone(),
