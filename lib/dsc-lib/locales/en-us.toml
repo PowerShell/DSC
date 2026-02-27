@@ -285,7 +285,6 @@ description = "Converts a base64 representation to a string"
 invoked = "base64ToString function"
 invalidBase64 = "Invalid base64 encoding"
 invalidUtf8 = "Decoded bytes do not form valid UTF-8"
-utf16Conversion = "Failed to convert UTF-16 bytes to string"
 
 [functions.bool]
 description = "Converts a string or number to a boolean"
@@ -780,6 +779,7 @@ resourceMissingPath = "Resource is missing 'path' field."
 registryHive = "Failed to open registry hive"
 registryKey = "Failed to access registry key"
 registryIterator = "Failed to iterate over registry values"
+utf16Conversion = "Failed to convert UTF-16 bytes to string"
 
 [progress]
 failedToSerialize = "Failed to serialize progress JSON: %{json}"
