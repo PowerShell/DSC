@@ -718,6 +718,7 @@ function Install-Protobuf {
                 Install-ProtobufRelease -arch $arch
             } elseif (Test-CommandAvailable -Name 'apt') {
                 Write-Verbose -Verbose "Using apt to install Protobuf"
+                sudo apt update
                 sudo apt install -y protobuf-compiler
                 Write-Verbose -Verbose (Get-Command protoc | Out-String)
                 Write-Verbose -Verbose "protoc version: $(protoc --version)"
