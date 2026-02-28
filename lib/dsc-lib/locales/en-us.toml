@@ -88,6 +88,9 @@ skippingResourceDiscovery = "Skipping resource discovery due to 'resourceDiscove
 invalidRegistryHive = "Invalid registry hive '%{hive}'"
 metadataRefreshEnvIgnored = "Resource returned '_refreshEnv' which is ignored on non-Windows platforms"
 metadataRefreshEnvFound = "Resource returned '_refreshEnv' which indicates environment variable refresh is needed"
+metadataRefreshEnvOnlyAffectsSet = "Resource returned '_refreshEnv' which indicates environment variable refresh is needed but current operation is '%{operation}' which is not 'set', so ignoring"
+metadataRefreshEnvNoOperationContext = "Resource returned '_refreshEnv' which indicates environment variable refresh is needed but no operation context is available"
+metadataRefreshEnvNoContext = "Resource returned '_refreshEnv' which indicates environment variable refresh is needed but no context is available"
 
 [configure.parameters]
 importingParametersFromComplexInput = "Importing parameters from complex input"

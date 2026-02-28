@@ -270,4 +270,32 @@ Describe 'metadata tests' {
             [System.Environment]::SetEnvironmentVariable('PATH', $oldUserPath, [System.EnvironmentVariableTarget]::User)
         }
     }
+
+    It '_refreshEnv does not trigger for <operation>' -Skip:(!$IsWindows) -TestCases @(
+        @{ operation = 'get' }
+        @{ operation = 'test' }
+    ) {
+        param($operation)
+
+        $configYaml = @'
+        $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+        resources:
+          - name: test
+            type: Test/RefreshEnv
+            properties:
+              name: myTestVariable
+              value: myTestValue
+          - name: return variable
+            type: Microsoft.DSC.Transitional/PowerShellScript
+            properties:
+              SetScript: |
+                if ($IsWindows) {
+                  $env:myTestVariable
+                }
+'@
+        $out = dsc -l trace config $operation -i $configYaml 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+        (Get-Content $TestDrive/error.log -Raw) | Should -BeLike "*Resource returned '_refreshEnv' which indicates environment variable refresh is needed but current operation is '$operation' which is not 'set', so ignoring*" -Because (Get-Content $TestDrive/error.log -Raw)
+        $out.results[0].result.afterState.output | Should -Not -Be 'myTestValue'
+    }
 }

@@ -282,6 +282,20 @@ fn get_metadata_from_result(mut context: Option<&mut Context>, result: &mut Valu
                     }
                 }
                 if key == "_refreshEnv" && value.as_bool() == Some(true) {
+                    if let Some(ref context) = context {
+                        if let Some(operation) = &context.operation {
+                            if *operation != Operation::Set {
+                                info!("{}", t!("configure.mod.metadataRefreshEnvOnlyAffectsSet", operation = operation));
+                                continue;
+                            }
+                        } else {
+                            debug!("{}", t!("configure.mod.metadataRefreshEnvNoOperationContext"));
+                            continue;
+                        }
+                    } else {
+                        debug!("{}", t!("configure.mod.metadataRefreshEnvNoContext"));
+                        continue;
+                    }
                     #[cfg(not(windows))]
                     {
                         info!("{}", t!("configure.mod.metadataRefreshEnvIgnored"));
@@ -292,14 +306,14 @@ fn get_metadata_from_result(mut context: Option<&mut Context>, result: &mut Valu
                         info!("{}", t!("configure.mod.metadataRefreshEnvFound"));
                         // rebuild the environment variables from Windows registry
                         // read the environment variables from HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment
-                        // overlay with HKCU\Environment for user level variables except for PATH which is appended instead of overlayed
+                        // overlay with HKCU\Environment for user level variables except for PATH which is prefixed instead of overlayed
                         let mut env_vars = read_windows_registry("HKLM", r"SYSTEM\CurrentControlSet\Control\Session Manager\Environment")?;
                         let user_env_vars = read_windows_registry("HKCU", r"Environment")?;
                         for (key, value) in user_env_vars {
                             if key == "PATH" {
                                 if let Some(system_path) = env_vars.get(&key) {
-                                    trace!("Appending user PATH '{value}' to system PATH '{system_path}'");
-                                    env_vars.insert(key, format!("{};{}", system_path, value));
+                                    trace!("Prefixing user PATH '{value}' to system PATH '{system_path}'");
+                                    env_vars.insert(key, format!("{};{}", value, system_path));
                                 } else {
                                     trace!("System PATH not found, using user PATH '{value}' as PATH");
                                     env_vars.insert(key, value.to_string());
@@ -310,7 +324,6 @@ fn get_metadata_from_result(mut context: Option<&mut Context>, result: &mut Valu
                         }
                         // set the current process env vars to the new values
                         for (key, value) in env_vars {
-                            trace!("Setting environment variable {key}='{value}'");
                             std::env::set_var(&key.to_string(), &value);
                         }
                     }
@@ -441,6 +454,7 @@ impl Configurator {
     /// This function will return an error if the underlying resource fails.
     pub fn invoke_get(&mut self) -> Result<ConfigurationGetResult, DscError> {
         let mut result = ConfigurationGetResult::new();
+        self.context.operation = Some(Operation::Get);
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &mut self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
         let discovery = &mut self.discovery.clone();
@@ -526,6 +540,7 @@ impl Configurator {
     #[allow(clippy::too_many_lines)]
     pub fn invoke_set(&mut self, skip_test: bool) -> Result<ConfigurationSetResult, DscError> {
         let mut result = ConfigurationSetResult::new();
+        self.context.operation = Some(Operation::Set);
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &mut self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
         let discovery = &mut self.discovery.clone();
@@ -710,6 +725,7 @@ impl Configurator {
     /// This function will return an error if the underlying resource fails.
     pub fn invoke_test(&mut self) -> Result<ConfigurationTestResult, DscError> {
         let mut result = ConfigurationTestResult::new();
+        self.context.operation = Some(Operation::Test);
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &mut self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
         let discovery = &mut self.discovery.clone();
@@ -791,6 +807,7 @@ impl Configurator {
     /// This function will return an error if the underlying resource fails.
     pub fn invoke_export(&mut self) -> Result<ConfigurationExportResult, DscError> {
         let mut result = ConfigurationExportResult::new();
+        self.context.operation = Some(Operation::Export);
         let mut conf = config_doc::Configuration::new();
         conf.metadata.clone_from(&self.config.metadata);
 

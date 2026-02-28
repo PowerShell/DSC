@@ -41,12 +41,15 @@ impl RefreshEnv {
             // Get the environment variable from the registry for current user
             let hkcu = Hive::CurrentUser.open("Environment", Security::Read).unwrap();
             if let Ok(data) = hkcu.value(&self.name) {
-                if let Data::String(value) = data {
-                    return RefreshEnv {
-                        metadata: None,
-                        name: self.name.clone(),
-                        value: value.to_string_lossy(),
-                    };
+                match data {
+                    Data::String(value) | Data::ExpandString(value) => {
+                        return RefreshEnv {
+                            metadata: None,
+                            name: self.name.clone(),
+                            value: value.to_string_lossy(),
+                        };
+                    }
+                    _ => {}
                 }
             }
 
