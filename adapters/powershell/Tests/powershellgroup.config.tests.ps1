@@ -248,26 +248,25 @@ Describe 'PowerShell adapter resource tests' {
   }
 
   It 'Config calling PS Resource directly works for <operation> with metadata <metadata> and adapter <adapter>' -TestCases @(
-    @{ Operation = 'get'; metadata = 'Microsoft.DSC'; adapter = 'Microsoft.DSC/PowerShell' }
-    @{ Operation = 'set'; metadata = 'Microsoft.DSC'; adapter = 'Microsoft.DSC/PowerShell' }
-    @{ Operation = 'test'; metadata = 'Microsoft.DSC'; adapter = 'Microsoft.DSC/PowerShell' }
-    @{ Operation = 'get'; metadata = 'Microsoft.DSC'; adapter = 'Microsoft.Adapter/PowerShell' }
-    @{ Operation = 'set'; metadata = 'Microsoft.DSC'; adapter = 'Microsoft.Adapter/PowerShell' }
-    @{ Operation = 'test'; metadata = 'Microsoft.DSC'; adapter = 'Microsoft.Adapter/PowerShell' }
-    @{ Operation = 'get'; metadata = 'Ignored' }
-    @{ Operation = 'set'; metadata = 'Ignored' }
-    @{ Operation = 'test'; metadata = 'Ignored' }
+    @{ Operation = 'get'; directive = 'requireAdapter: '; adapter = 'Microsoft.DSC/PowerShell' }
+    @{ Operation = 'set'; directive = 'requireAdapter: '; adapter = 'Microsoft.DSC/PowerShell' }
+    @{ Operation = 'test'; directive = 'requireAdapter: '; adapter = 'Microsoft.DSC/PowerShell' }
+    @{ Operation = 'get'; directive = 'requireAdapter: '; adapter = 'Microsoft.Adapter/PowerShell' }
+    @{ Operation = 'set'; directive = 'requireAdapter: '; adapter = 'Microsoft.Adapter/PowerShell' }
+    @{ Operation = 'test'; directive = 'requireAdapter: '; adapter = 'Microsoft.Adapter/PowerShell' }
+    @{ Operation = 'get'; directive = '' }
+    @{ Operation = 'set'; directive = '' }
+    @{ Operation = 'test'; directive = '' }
   ) {
-    param($Operation, $metadata, $adapter)
+    param($Operation, $directive, $adapter)
 
     $yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: Class-resource Info
               type: TestClassResource/TestClassResource
-              metadata:
-                ${metadata}:
-                  requireAdapter: $adapter
+              directives:
+                $directive$adapter
               properties:
                 Name: 'TestClassResource1'
                 HashTableProp:
@@ -290,7 +289,7 @@ Describe 'PowerShell adapter resource tests' {
         $out.results[0].result.inDesiredState | Should -BeFalse -Because $text
       }
     }
-    if ($metadata -eq 'Microsoft.DSC') {
+    if ($directive -eq 'requireAdapter: ') {
       "$TestDrive/tracing.txt" | Should -FileContentMatch "Invoking $Operation for '$adapter'" -Because (Get-Content -Raw -Path $TestDrive/tracing.txt)
     }
     if ($adapter -eq 'Microsoft.DSC/PowerShell') {

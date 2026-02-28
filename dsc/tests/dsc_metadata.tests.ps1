@@ -189,6 +189,22 @@ Describe 'metadata tests' {
         $out.metadata.'Microsoft.DSC'.restartRequired[3].process.id | Should -Be 1234
         $out.metadata.'Microsoft.DSC'.restartRequired[4].process.name | Should -BeExactly 'anotherProcess'
         $out.metadata.'Microsoft.DSC'.restartRequired[4].process.id | Should -Be 5678
+        $out.results[0].executionInformation.restartRequired.count | Should -Be 2
+        $out.results[0].executionInformation.restartRequired[0].system | Should -BeExactly 'mySystem'
+        $out.results[0].executionInformation.restartRequired[1].service | Should -BeExactly 'myService'
+        $out.results[1].executionInformation.restartRequired.count | Should -Be 1
+        $out.results[1].executionInformation.restartRequired[0].service | Should -BeExactly 'sshd'
+        $out.results[2].executionInformation.restartRequired.count | Should -Be 2
+        $out.results[2].executionInformation.restartRequired[0].process.name | Should -BeExactly 'myProcess'
+        $out.results[2].executionInformation.restartRequired[0].process.id | Should -Be 1234
+        $out.executionInformation.restartRequired.count | Should -Be 5
+        $out.executionInformation.restartRequired[0].system | Should -BeExactly 'mySystem'
+        $out.executionInformation.restartRequired[1].service | Should -BeExactly 'myService'
+        $out.executionInformation.restartRequired[2].service | Should -BeExactly 'sshd'
+        $out.executionInformation.restartRequired[3].process.name | Should -BeExactly 'myProcess'
+        $out.executionInformation.restartRequired[3].process.id | Should -Be 1234
+        $out.executionInformation.restartRequired[4].process.name | Should -BeExactly 'anotherProcess'
+        $out.executionInformation.restartRequired[4].process.id | Should -Be 5678
     }
 
     It 'invalid item in _restartRequired metadata is a warning' {

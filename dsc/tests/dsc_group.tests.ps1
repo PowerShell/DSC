@@ -6,6 +6,14 @@ Describe 'Group resource tests' {
         $out = (dsc config get -f $PSScriptRoot/../examples/groups.dsc.yaml -o yaml | Out-String).Trim()
         $LASTEXITCODE | Should -Be 0
         $out | Should -BeLike @'
+executionInformation:
+  duration: PT*S
+  endDatetime: *
+  executionType: actual
+  operation: get
+  securityContext: *
+  startDatetime: *
+  version: 3*
 metadata:
   Microsoft.DSC:
     duration: PT*S
@@ -16,13 +24,17 @@ metadata:
     startDatetime: *
     version: 3*
 results:
-- metadata:
+- executionInformation:
+    duration: *
+  metadata:
     Microsoft.DSC:
       duration: *
   name: First Group
   type: Microsoft.DSC/Group
   result:
-  - metadata:
+  - executionInformation:
+      duration: *
+    metadata:
       Microsoft.DSC:
         duration: *
     name: First
@@ -30,13 +42,17 @@ results:
     result:
       actualState:
         output: First
-  - metadata:
+  - executionInformation:
+      duration: *
+    metadata:
       Microsoft.DSC:
         duration: *
     name: Nested Group
     type: Microsoft.DSC/Group
     result:
-    - metadata:
+    - executionInformation:
+        duration: *
+      metadata:
         Microsoft.DSC:
           duration: *
       name: Nested First
@@ -44,7 +60,9 @@ results:
       result:
         actualState:
           output: Nested First
-    - metadata:
+    - executionInformation:
+        duration: *
+      metadata:
         Microsoft.DSC:
           duration: *
       name: Nested Second
@@ -52,13 +70,17 @@ results:
       result:
         actualState:
           output: Nested Second
-- metadata:
+- executionInformation:
+    duration: *
+  metadata:
     Microsoft.DSC:
       duration: *
   name: Last Group
   type: Microsoft.DSC/Group
   result:
-  - metadata:
+  - executionInformation:
+      duration: *
+    metadata:
       Microsoft.DSC:
         duration: *
     name: Last
@@ -68,7 +90,7 @@ results:
         output: Last
 messages: `[`]
 hadErrors: false
-'@
+'@ -Because $out
     }
 
 }

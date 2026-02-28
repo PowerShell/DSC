@@ -107,9 +107,8 @@ Describe 'Tests for adapter support' {
                   type: Test/Invalid
                   properties:
                     output: '1'
-                  metadata:
-                    Microsoft.DSC:
-                      requireAdapter: InvalidAdapter/Invalid
+                  directives:
+                    requireAdapter: InvalidAdapter/Invalid
 "@
             $out = dsc config get -i $config_yaml 2>$TestDrive/error.log
             $LASTEXITCODE | Should -Be 2 -Because (Get-Content $TestDrive/error.log | Out-String)
@@ -126,16 +125,14 @@ Describe 'Tests for adapter support' {
                   type: TestClassResource/TestClassResource
                   properties:
                     Name: 'Hello'
-                  metadata:
-                    Microsoft.DSC:
-                      requireAdapter: Microsoft.DSC/PowerShell
+                  directives:
+                    requireAdapter: Microsoft.DSC/PowerShell
                 - name: Test2
                   type: TestClassResource/TestClassResource
                   properties:
                     Name: 'Bye'
-                  metadata:
-                    Microsoft.DSC:
-                      requireAdapter: Microsoft.Adapter/PowerShell
+                  directives:
+                    requireAdapter: Microsoft.Adapter/PowerShell
 '@
             $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json -Depth 10
             $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log | Out-String)
