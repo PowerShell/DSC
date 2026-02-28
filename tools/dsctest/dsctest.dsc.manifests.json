@@ -406,6 +406,18 @@
         "implementsPretest": true,
         "return": "state"
       },
+      "export": {
+        "executable": "dsctest",
+        "args": [
+          "refresh-env",
+          "--operation",
+          "get",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ]
+      },
       "schema": {
         "command": {
           "executable": "dsctest",

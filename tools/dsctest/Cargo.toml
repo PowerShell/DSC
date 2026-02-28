@@ -7,8 +7,10 @@ edition = "2021"
 
 [dependencies]
 clap = { workspace = true }
-registry = { workspace = true }
 schemars = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 utfx = { workspace = true }
+
+[target.'cfg(windows)'.dependencies]
+registry = { workspace = true }

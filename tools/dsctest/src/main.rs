@@ -256,7 +256,8 @@ fn main() {
             };
             match operation {
                 RefreshEnvOperation::Get => {
-                    let result = refresh_env.get();
+                    let mut result = refresh_env.get();
+                    result.metadata.get_or_insert(Map::new()).insert("_refreshEnv".to_string(), serde_json::Value::Bool(true));
                     serde_json::to_string(&result).unwrap()
                 },
                 RefreshEnvOperation::Set => {
