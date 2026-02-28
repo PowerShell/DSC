@@ -13,13 +13,14 @@ mod in_desired_state;
 mod metadata;
 mod operation;
 mod adapter;
+mod refresh_env;
 mod sleep;
 mod trace;
 mod version;
 mod whatif;
 mod whatif_delete;
 
-use args::{Args, Schemas, SubCommand};
+use args::{Args, RefreshEnvOperation, Schemas, SubCommand};
 use clap::Parser;
 use schemars::schema_for;
 use serde_json::Map;
@@ -33,6 +34,7 @@ use crate::get::Get;
 use crate::in_desired_state::InDesiredState;
 use crate::metadata::Metadata;
 use crate::operation::Operation;
+use crate::refresh_env::RefreshEnv;
 use crate::sleep::Sleep;
 use crate::trace::Trace;
 use crate::version::Version;
@@ -244,6 +246,27 @@ fn main() {
             operation_result.operation = Some(operation.to_lowercase());
             serde_json::to_string(&operation_result).unwrap()
         },
+        SubCommand::RefreshEnv { operation, input } => {
+            let mut refresh_env = match serde_json::from_str::<refresh_env::RefreshEnv>(&input) {
+                Ok(re) => re,
+                Err(err) => {
+                    eprintln!("Error JSON does not match schema: {err}");
+                    std::process::exit(1);
+                }
+            };
+            match operation {
+                RefreshEnvOperation::Get => {
+                    let mut result = refresh_env.get();
+                    result.metadata.get_or_insert(Map::new()).insert("_refreshEnv".to_string(), serde_json::Value::Bool(true));
+                    serde_json::to_string(&result).unwrap()
+                },
+                RefreshEnvOperation::Set => {
+                    refresh_env.set();
+                    refresh_env.metadata.get_or_insert(Map::new()).insert("_refreshEnv".to_string(), serde_json::Value::Bool(true));
+                    serde_json::to_string(&refresh_env).unwrap()
+                }
+            }
+        },
         SubCommand::Schema { subcommand } => {
             let schema = match subcommand {
                 Schemas::Adapter => {
@@ -278,6 +301,9 @@ fn main() {
                 },
                 Schemas::Operation => {
                     schema_for!(Operation)
+                },
+                Schemas::RefreshEnv => {
+                    schema_for!(RefreshEnv)
                 },
                 Schemas::Sleep => {
                     schema_for!(Sleep)

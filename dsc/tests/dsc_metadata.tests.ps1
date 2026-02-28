@@ -207,4 +207,95 @@ Describe 'metadata tests' {
         (Get-Content $TestDrive/error.log) | Should -BeLike "*WARN*Resource returned '_metadata' property '_restartRequired' which contains invalid value: ``[{`"invalid`":`"item`"}]*"
         $out.results[0].metadata._restartRequired | Should -BeNullOrEmpty
     }
+
+    It '_refreshEnv refreshes the environment variables for subsequent resources' {
+        if ($IsWindows) {
+            Remove-Item -Path "HKCU:\Environment\myTestVariable" -ErrorAction Ignore
+        }
+
+        $configYaml = @'
+        $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+        resources:
+          - name: create variable
+            type: Test/RefreshEnv
+            properties:
+              name: myTestVariable
+              value: myTestValue
+          - name: return variable
+            type: Microsoft.DSC.Transitional/PowerShellScript
+            properties:
+              SetScript: |
+                if ($IsWindows) {
+                  $env:myTestVariable
+                }
+'@
+        try {
+          $out = dsc -l trace config set -i $configYaml 2>$TestDrive/error.log | ConvertFrom-Json
+          $errorLogContent = Get-Content $TestDrive/error.log -Raw
+          $LASTEXITCODE | Should -Be 0 -Because $errorLogContent
+          if ($IsWindows) {
+              $errorLogContent | Should -BeLike "*Resource returned '_refreshEnv' which indicates environment variable refresh is needed*" -Because $errorLogContent
+              $out.results[1].result.afterState.output | Should -BeExactly 'myTestValue' -Because ($out | ConvertTo-Json -Depth 10)
+          } else {
+              $errorLogContent | Should -BeLike "*INFO*Resource returned '_refreshEnv' which is ignored on non-Windows platforms*" -Because $errorLogContent
+          }
+        } finally {
+            if ($IsWindows) {
+                Remove-Item -Path "HKCU:\Environment\myTestVariable" -ErrorAction Ignore
+            }
+        }
+    }
+
+    It '_refreshEnv handles PATH correctly' -Skip:(!$IsWindows) {
+        $configYaml = @'
+        $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+        resources:
+          - name: add to path
+            type: Test/RefreshEnv
+            properties:
+              name: PATH
+              value: C:\MyTestPath
+          - name: return path
+            type: Microsoft.DSC.Transitional/PowerShellScript
+            properties:
+              SetScript: |
+                $env:PATH
+'@
+        $oldUserPath = [System.Environment]::GetEnvironmentVariable('PATH', [System.EnvironmentVariableTarget]::User)
+        try {
+          $out = dsc -l trace config set -i $configYaml 2>$TestDrive/error.log | ConvertFrom-Json
+          $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+          $out.results[1].result.afterState.output.Split(';') | Should -Contain 'C:\MyTestPath'
+        } finally {
+            [System.Environment]::SetEnvironmentVariable('PATH', $oldUserPath, [System.EnvironmentVariableTarget]::User)
+        }
+    }
+
+    It '_refreshEnv does not trigger for <operation>' -Skip:(!$IsWindows) -TestCases @(
+        @{ operation = 'get' }
+        @{ operation = 'test' }
+    ) {
+        param($operation)
+
+        $configYaml = @'
+        $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+        resources:
+          - name: test
+            type: Test/RefreshEnv
+            properties:
+              name: myTestVariable
+              value: myTestValue
+          - name: return variable
+            type: Microsoft.DSC.Transitional/PowerShellScript
+            properties:
+              SetScript: |
+                if ($IsWindows) {
+                  $env:myTestVariable
+                }
+'@
+        $out = dsc -l trace config $operation -i $configYaml 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+        (Get-Content $TestDrive/error.log -Raw) | Should -BeLike "*Resource returned '_refreshEnv' which indicates environment variable refresh is needed but current operation is '$operation' which is not 'set', so ignoring*" -Because (Get-Content $TestDrive/error.log -Raw)
+        $out.results[0].result.afterState.output | Should -Not -Be 'myTestValue'
+    }
 }

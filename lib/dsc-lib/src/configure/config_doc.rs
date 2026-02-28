@@ -34,6 +34,18 @@ pub enum Operation {
     Export,
 }
 
+impl Display for Operation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let operation_str = match self {
+            Operation::Get => "get",
+            Operation::Set => "set",
+            Operation::Test => "test",
+            Operation::Export => "export",
+        };
+        write!(f, "{operation_str}")
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
 #[schemars(transform = idiomaticize_string_enum)]

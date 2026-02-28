@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use chrono::{DateTime, Local};
-use crate::{configure::config_doc::{ExecutionKind, UserFunctionDefinition}, extensions::dscextension::DscExtension};
+use crate::{configure::config_doc::{ExecutionKind, Operation, UserFunctionDefinition}, extensions::dscextension::DscExtension};
 use dsc_lib_security_context::{get_security_context, SecurityContext};
 use serde_json::{Map, Value};
 use std::{collections::HashMap, path::PathBuf};
@@ -18,13 +18,14 @@ pub enum ProcessMode {
     UserFunction,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Context {
     pub copy: HashMap<String, i64>,
     pub copy_current_loop_name: String,
     pub dsc_version: Option<String>,
     pub execution_type: ExecutionKind,
     pub extensions: Vec<DscExtension>,
+    pub operation: Option<Operation>,
     pub outputs: Map<String, Value>,
     pub parameters: HashMap<String, (Value, DataType)>,
     pub process_expressions: bool,
@@ -49,6 +50,7 @@ impl Context {
             dsc_version: None,
             execution_type: ExecutionKind::Actual,
             extensions: Vec::new(),
+            operation: None,
             outputs: Map::new(),
             parameters: HashMap::new(),
             process_expressions: true,
