@@ -301,19 +301,28 @@ Describe 'PowerShell adapter resource tests' {
   It 'Config works with credential object' {
     $yaml = @"
         `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+        parameters:
+          Credential:
+            type: secureObject
+            defaultValue:
+              username: User
+              password: Password
         resources:
-        - name: Class-resource Info
-          type: TestClassResource/TestClassResource
+        - name: Working with classic DSC resources
+          type: Microsoft.DSC/PowerShell
           properties:
-            Name: 'TestClassResource'
-            Credential:
-              UserName: 'User'
-              Password: 'Password'
+            resources:
+            - name: Class-resource Info
+              type: TestClassResource/TestClassResource
+              properties:
+                Name: TestClassResource1
+                Prop1: ValueForProp1
+                Credential: "[parameters('Credential')]"
 "@
     $out = dsc config get -i $yaml | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0
-    $out.results.result.actualstate.Credential.UserName | Should -Be 'User'
-    $out.results.result.actualState.result.Credential.Password.Length | Should -Not -BeNullOrEmpty
+    $out.results.result.actualstate.result.properties.Credential.UserName | Should -Be 'User'
+    $out.results.result.actualState.result.properties.Credential.Password.Length | Should -Not -BeNullOrEmpty
   }
 
   It 'Config does not work when credential properties are missing required fields' {
