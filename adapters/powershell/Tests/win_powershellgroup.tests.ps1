@@ -232,26 +232,25 @@ resources:
   }
 
   It 'Config calling PS Resource directly works for <operation> with metadata <metadata> and adapter <adapter>' -TestCases @(
-    @{ Operation = 'get'; metadata = 'Microsoft.DSC'; adapter = 'Microsoft.Windows/WindowsPowerShell' }
-    @{ Operation = 'set'; metadata = 'Microsoft.DSC'; adapter = 'Microsoft.Windows/WindowsPowerShell' }
-    @{ Operation = 'test'; metadata = 'Microsoft.DSC'; adapter = 'Microsoft.Windows/WindowsPowerShell' }
-    @{ Operation = 'get'; metadata = 'Microsoft.DSC'; adapter = 'Microsoft.Adapter/WindowsPowerShell' }
-    @{ Operation = 'set'; metadata = 'Microsoft.DSC'; adapter = 'Microsoft.Adapter/WindowsPowerShell' }
-    @{ Operation = 'test'; metadata = 'Microsoft.DSC'; adapter = 'Microsoft.Adapter/WindowsPowerShell' }
-    @{ Operation = 'get'; metadata = 'Ignored' }
-    @{ Operation = 'set'; metadata = 'Ignored' }
-    @{ Operation = 'test'; metadata = 'Ignored' }
+    @{ Operation = 'get'; directive = 'requireAdapter: '; adapter = 'Microsoft.Windows/WindowsPowerShell' }
+    @{ Operation = 'set'; directive = 'requireAdapter: '; adapter = 'Microsoft.Windows/WindowsPowerShell' }
+    @{ Operation = 'test'; directive = 'requireAdapter: '; adapter = 'Microsoft.Windows/WindowsPowerShell' }
+    @{ Operation = 'get'; directive = 'requireAdapter: '; adapter = 'Microsoft.Adapter/WindowsPowerShell' }
+    @{ Operation = 'set'; directive = 'requireAdapter: '; adapter = 'Microsoft.Adapter/WindowsPowerShell' }
+    @{ Operation = 'test'; directive = 'requireAdapter: '; adapter = 'Microsoft.Adapter/WindowsPowerShell' }
+    @{ Operation = 'get'; directive = ''; adapter = '' }
+    @{ Operation = 'set'; directive = ''; adapter = '' }
+    @{ Operation = 'test'; directive = ''; adapter = '' }
   ) {
-    param($Operation, $metadata, $adapter)
+    param($Operation, $directive, $adapter)
 
     $yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: Class-resource Info
               type: PSClassResource/PSClassResource
-              metadata:
-                ${metadata}:
-                  requireAdapter: $adapter
+              directives:
+                $directive$adapter
               properties:
                 Name: TestInstance
                 Credential:
@@ -277,7 +276,7 @@ resources:
         $out.results[0].result.inDesiredState | Should -BeTrue -Because $text
       }
     }
-    if ($metadata -eq 'Microsoft.DSC') {
+    if ($directive -eq 'requireAdapter: ') {
       "$TestDrive/tracing.txt" | Should -FileContentMatch "Invoking $Operation for '$adapter'" -Because (Get-Content -Raw -Path $TestDrive/tracing.txt)
     }
     if ($adapter -eq 'Microsoft.Windows/WindowsPowerShell') {
