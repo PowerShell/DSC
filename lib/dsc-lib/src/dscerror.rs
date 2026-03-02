@@ -117,12 +117,12 @@ pub enum DscError {
     RegistryHive(#[from] registry::Error),
 
     #[cfg(windows)]
-    #[error("{t}: {0}", t = t!("dscerror.registryKey"))]
-    RegistryKey(#[from] registry::key::Error),
-
-    #[cfg(windows)]
     #[error("{t}: {0}", t = t!("dscerror.registryIterator"))]
     RegistryIterator(#[from] registry::iter::values::Error),
+
+    #[cfg(windows)]
+    #[error("{t}: {0}", t = t!("dscerror.registryKey"))]
+    RegistryKey(#[from] registry::key::Error),
 
     #[error("{t}: {0}", t = t!("dscerror.resourceMissingDirectory"))]
     ResourceMissingDirectory(String),
