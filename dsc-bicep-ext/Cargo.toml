@@ -1,0 +1,26 @@
+[package]
+name = "dsc-bicep-ext"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "dsc-bicep-ext"
+path = "src/main.rs"
+
+[dependencies]
+dsc-lib = { workspace = true }
+
+async-stream = { workspace = true }
+clap = { workspace = true }
+prost = { workspace = true }
+rust-i18n = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "signal", "io-std", "net"] }
+tokio-stream = { workspace = true, features = ["net"] }
+tonic = { workspace = true }
+tonic-prost = { workspace = true }
+tonic-reflection = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+[build-dependencies]
+tonic-prost-build = { workspace = true }

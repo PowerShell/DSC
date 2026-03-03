@@ -10,14 +10,21 @@ use {
 
 use rust_i18n::t;
 use serde_json::{Map, Value};
-use std::{fmt::Write, string::String};
+use std::{path::PathBuf, string::String};
 use tracing::{debug, info, warn};
 
 use crate::args::{DefaultShell, Setting};
+use crate::canonical_properties::CanonicalProperties;
 use crate::error::SshdConfigError;
+use crate::formatter::write_config_map_to_text;
+use crate::get::get_sshd_settings;
 use crate::inputs::{CommandInfo, SshdCommandArgs};
-use crate::metadata::{REPEATABLE_KEYWORDS, SSHD_CONFIG_HEADER, SSHD_CONFIG_HEADER_VERSION, SSHD_CONFIG_HEADER_WARNING};
-use crate::util::{build_command_info, format_sshd_value, get_default_sshd_config_path, invoke_sshd_config_validation};
+use crate::metadata::{SSHD_CONFIG_HEADER, SSHD_CONFIG_HEADER_VERSION, SSHD_CONFIG_HEADER_WARNING};
+use crate::repeat_keyword::{
+    RepeatInput, RepeatListInput, NameValueEntry,
+    add_or_update_entry, extract_single_keyword, remove_entry, parse_and_validate_entries
+};
+use crate::util::{build_command_info, get_default_sshd_config_path, invoke_sshd_config_validation};
 
 /// Invoke the set command.
 ///
@@ -28,11 +35,21 @@ pub fn invoke_set(input: &str, setting: &Setting) -> Result<Map<String, Value>, 
     match setting {
         Setting::SshdConfig => {
             debug!("{} {:?}", t!("set.settingSshdConfig").to_string(), setting);
-            let cmd_info = build_command_info(Some(&input.to_string()), false)?;
-            match set_sshd_config(&cmd_info) {
+            let mut cmd_info = build_command_info(Some(&input.to_string()), false)?;
+            match set_sshd_config(&mut cmd_info) {
                 Ok(()) => Ok(Map::new()),
                 Err(e) => Err(e),
             }
+        },
+        Setting::SshdConfigRepeat => {
+            debug!("{} {:?}", t!("set.settingSshdConfig").to_string(), setting);
+            let cmd_info = build_command_info(Some(&input.to_string()), false)?;
+            set_sshd_config_repeat(input, &cmd_info)
+        },
+        Setting::SshdConfigRepeatList => {
+            debug!("{} {:?}", t!("set.settingSshdConfig").to_string(), setting);
+            let cmd_info = build_command_info(Some(&input.to_string()), false)?;
+            set_sshd_config_repeat_list(input, &cmd_info)
         },
         Setting::WindowsGlobal => {
             debug!("{} {:?}", t!("set.settingDefaultShell").to_string(), setting);
@@ -49,6 +66,62 @@ pub fn invoke_set(input: &str, setting: &Setting) -> Result<Map<String, Value>, 
             }
         }
     }
+}
+
+/// Handle single name-value keyword entry operations (add or remove).
+fn set_sshd_config_repeat(input: &str, cmd_info: &CommandInfo) -> Result<Map<String, Value>, SshdConfigError> {
+    let keyword_input: RepeatInput = serde_json::from_str(input)
+        .map_err(|e| SshdConfigError::InvalidInput(t!("set.failedToParse", input = e.to_string()).to_string()))?;
+
+    let (keyword, entry_value) = extract_single_keyword(keyword_input.additional_properties)?;
+
+    let mut existing_config = get_existing_config(cmd_info)?;
+
+    // parses entry for name-value keywords, like subsystem, for now
+    // different keywords will likely need to be serialized into different structs
+    // and likely need to have different add/update/remove functions
+    let entry: NameValueEntry = serde_json::from_value(entry_value)
+        .map_err(|e| SshdConfigError::InvalidInput(t!("set.failedToParse", input = e.to_string()).to_string()))?;
+
+    if keyword_input.exist {
+        add_or_update_entry(&mut existing_config, &keyword, &entry)?;
+    } else {
+        remove_entry(&mut existing_config, &keyword, &entry.name);
+    }
+
+    write_and_validate_config(&mut existing_config, cmd_info.metadata.filepath.as_ref())?;
+    Ok(Map::new())
+}
+
+/// Handle list name-value keyword operations with purge support.
+fn set_sshd_config_repeat_list(input: &str, cmd_info: &CommandInfo) -> Result<Map<String, Value>, SshdConfigError> {
+    let list_input: RepeatListInput = serde_json::from_str(input)
+        .map_err(|e| SshdConfigError::InvalidInput(t!("set.failedToParse", input = e.to_string()).to_string()))?;
+
+    let (keyword, entries_value) = extract_single_keyword(list_input.additional_properties)?;
+    let mut existing_config = get_existing_config(cmd_info)?;
+    // Ensure it's an array
+    let Value::Array(ref entries_array) = entries_value else {
+        return Err(SshdConfigError::InvalidInput(
+            t!("set.expectedArrayForKeyword", keyword = keyword).to_string()
+        ));
+    };
+
+    // Apply the changes based on _purge flag
+    if list_input.purge {
+        if entries_array.is_empty() {
+            existing_config.remove(&keyword);
+        } else {
+            existing_config.insert(keyword, entries_value);
+        }
+    } else {
+        let entries = parse_and_validate_entries(entries_array)?;
+        for entry in entries {
+            add_or_update_entry(&mut existing_config, &keyword, &entry)?;
+        }
+    }
+    write_and_validate_config(&mut existing_config, cmd_info.metadata.filepath.as_ref())?;
+    Ok(Map::new())
 }
 
 #[cfg(windows)]
@@ -106,38 +179,45 @@ fn remove_registry(name: &str) -> Result<(), SshdConfigError> {
     Ok(())
 }
 
-fn set_sshd_config(cmd_info: &CommandInfo) -> Result<(), SshdConfigError> {
+fn set_sshd_config(cmd_info: &mut CommandInfo) -> Result<(), SshdConfigError> {
     // this should be its own helper function that checks that the value makes sense for the key type
     // i.e. if the key can be repeated or have multiple values, etc.
     // or if the value is something besides a string (like an object to convert back into a comma-separated list)
-    debug!("{}", t!("set.writingTempConfig"));
-    let mut config_text = SSHD_CONFIG_HEADER.to_string() + "\n" + SSHD_CONFIG_HEADER_VERSION + "\n" + SSHD_CONFIG_HEADER_WARNING + "\n";
-    if cmd_info.clobber {
-        for (key, value) in &cmd_info.input {
-            let key_lower = key.to_lowercase();
+    let mut config_to_write = if cmd_info.purge {
+        cmd_info.input.clone()
+    } else {
+        let mut get_cmd_info = cmd_info.clone();
+        get_cmd_info.include_defaults = false;
+        get_cmd_info.input = Map::new();
 
-            // Handle repeatable keywords - write multiple lines
-            if REPEATABLE_KEYWORDS.contains(&key_lower.as_str()) {
-                if let Value::Array(arr) = value {
-                    for item in arr {
-                        let formatted = format_sshd_value(key, item)?;
-                        writeln!(&mut config_text, "{key} {formatted}")?;
-                    }
-                } else {
-                    // Single value for repeatable keyword, write as-is
-                    let formatted = format_sshd_value(key, value)?;
-                    writeln!(&mut config_text, "{key} {formatted}")?;
-                }
+        let mut existing_config = match get_sshd_settings(&get_cmd_info, true) {
+            Ok(config) => config,
+            Err(SshdConfigError::FileNotFound(_)) => {
+                return Err(SshdConfigError::InvalidInput(
+                    t!("set.purgeFalseRequiresExistingFile").to_string()
+                ));
+            }
+            Err(e) => return Err(e),
+        };
+        for (key, value) in &cmd_info.input {
+            if value.is_null() {
+                existing_config.remove(key);
             } else {
-                // Handle non-repeatable keywords - format and write single line
-                let formatted = format_sshd_value(key, value)?;
-                writeln!(&mut config_text, "{key} {formatted}")?;
+                existing_config.insert(key.clone(), value.clone());
             }
         }
-    } else {
-        /* TODO: preserve existing settings that are not in input, probably need to call get */
-        return Err(SshdConfigError::InvalidInput(t!("set.clobberFalseUnsupported").to_string()));
-    }
+        existing_config
+    };
+
+    write_and_validate_config(&mut config_to_write, cmd_info.metadata.filepath.as_ref())
+}
+
+/// Write configuration to file after validation.
+fn write_and_validate_config(config: &mut Map<String, Value>, filepath: Option<&PathBuf>) -> Result<(), SshdConfigError> {
+    debug!("{}", t!("set.writingTempConfig"));
+    CanonicalProperties::remove_all(config);
+    let mut config_text = SSHD_CONFIG_HEADER.to_string() + "\n" + SSHD_CONFIG_HEADER_VERSION + "\n" + SSHD_CONFIG_HEADER_WARNING + "\n";
+    config_text.push_str(&write_config_map_to_text(config)?);
 
     // Write input to a temporary file and validate it with SSHD -T
     let temp_file = tempfile::Builder::new()
@@ -167,7 +247,7 @@ fn set_sshd_config(cmd_info: &CommandInfo) -> Result<(), SshdConfigError> {
     // Propagate failure, if any
     result?;
 
-    let sshd_config_path = get_default_sshd_config_path(cmd_info.metadata.filepath.clone())?;
+    let sshd_config_path = get_default_sshd_config_path(filepath.cloned())?;
 
     if sshd_config_path.exists() {
         let mut sshd_config_content = String::new();
@@ -194,4 +274,19 @@ fn set_sshd_config(cmd_info: &CommandInfo) -> Result<(), SshdConfigError> {
         .map_err(|e| SshdConfigError::CommandError(e.to_string()))?;
 
     Ok(())
+}
+
+/// Get existing config from file or return empty map if file doesn't exist.
+fn get_existing_config(cmd_info: &CommandInfo) -> Result<Map<String, Value>, SshdConfigError> {
+    let mut get_cmd_info = cmd_info.clone();
+    get_cmd_info.include_defaults = false;
+    get_cmd_info.input = Map::new();
+    match get_sshd_settings(&get_cmd_info, false) {
+        Ok(config) => Ok(config),
+        Err(SshdConfigError::FileNotFound(_)) => {
+            // If file doesn't exist, create empty config
+            Ok(Map::new())
+        }
+        Err(e) => Err(e),
+    }
 }

@@ -501,20 +501,27 @@ fn main() {
         .expect("env var 'OUT_DIR' not defined");
     let dest_path = Path::new(&out_dir).join("recognized_schema_version.rs");
 
-    // Update the versions data if needed.
-    let output = update_versions_data(&script_path);
-    assert!(
-        output.status.success(),
-        "Failed to update versions data via PowerShell script.\nExit code: {:?}\nStdout: {}\nStderr: {}",
-        output.status.code(),
-        String::from_utf8_lossy(&output.stdout),
-        String::from_utf8_lossy(&output.stderr)
-    );
+    let profile = env::var_os("PROFILE")
+        .expect("env var 'PROFILE' not defined");
+
+    // Update the versions data if needed, only on debug builds.
+    if profile == "debug" {
+        let output = update_versions_data(&script_path);
+        assert!(
+            output.status.success(),
+            "Failed to update versions data via PowerShell script.\nExit code: {:?}\nStdout: {}\nStderr: {}",
+            output.status.code(),
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
 
     let version_data = read_to_string(data_path)
         .expect("Failed to read .versions.json file");
     let version_info: VersionInfo = serde_json::from_str(&version_data)
-        .expect("Failed to parse version data from .versions.json");
+        .expect(format!(
+            "Failed to parse version data from .versions.json:\n---FILE TEXT START---\n{version_data}\n---FILE TEXT END---\n"
+        ).as_str());
     let contents = format_file_content(&version_info);
 
     fs::write(

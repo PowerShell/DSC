@@ -1,3 +1,5 @@
+#!/usr/bin/env pwsh
+
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
@@ -32,7 +34,12 @@ begin {
         param()
 
         process {
-            $null = git fetch --all --tags
+            $allOut = git fetch --all --tags *>&1
+
+            if ($LASTEXITCODE -ne 0) {
+                throw "Unable to fetch git tags:`n`t$($allOut -join "`n`t")"
+            }
+            
             git tag -l
             | Where-Object -FilterScript {$_ -match '^v\d+(\.\d+){2}$' }
             | ForEach-Object -Process { [semver]($_.Substring(1)) }

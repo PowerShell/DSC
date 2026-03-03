@@ -4,7 +4,7 @@
 use rmcp::{
     ErrorData as McpError,
     handler::server::tool::ToolRouter,
-    model::{InitializeResult, InitializeRequestParam, ServerCapabilities, ServerInfo},
+    model::{InitializeResult, InitializeRequestParams, ServerCapabilities, ServerInfo},
     service::{RequestContext, RoleServer},
     ServerHandler,
     tool_handler,
@@ -48,7 +48,7 @@ impl ServerHandler for McpServer {
         }
     }
 
-    async fn initialize(&self, _request: InitializeRequestParam, _context: RequestContext<RoleServer>) -> Result<InitializeResult, McpError> {
+    async fn initialize(&self, _request: InitializeRequestParams, _context: RequestContext<RoleServer>) -> Result<InitializeResult, McpError> {
         Ok(self.get_info())
     }
 }

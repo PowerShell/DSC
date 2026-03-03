@@ -30,7 +30,7 @@ impl Function for CopyIndex {
 
     fn invoke(&self, args: &[Value], context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.copyIndex.invoked"));
-        if context.process_mode != ProcessMode::Copy {
+        if context.process_mode != ProcessMode::Copy && context.copy.is_empty() {
             return Err(DscError::Parser(t!("functions.copyIndex.cannotUseOutsideCopy").to_string()));
         }
         match args.len() {

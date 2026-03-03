@@ -6,8 +6,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
 use crate::dscresources::invoke_result::{GetResult, SetResult, TestResult};
-use crate::configure::config_doc::{Configuration, Metadata};
+use crate::configure::config_doc::{Configuration, ExecutionInformation, Metadata};
 use crate::schemas::{dsc_repo::DscRepoSchema, transforms::idiomaticize_string_enum};
+use crate::types::FullyQualifiedTypeName;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
@@ -24,7 +25,7 @@ pub enum MessageLevel {
 pub struct ResourceMessage {
     pub name: String,
     #[serde(rename="type")]
-    pub resource_type: String,
+    pub resource_type: FullyQualifiedTypeName,
     pub message: String,
     pub level: MessageLevel,
 }
@@ -33,17 +34,20 @@ pub struct ResourceMessage {
 #[serde(deny_unknown_fields)]
 #[dsc_repo_schema(base_name = "get.full", folder_path = "outputs/resource")]
 pub struct ResourceGetResult {
+    #[serde(rename = "executionInformation", skip_serializing_if = "Option::is_none")]
+    pub execution_information: Option<ExecutionInformation>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Metadata>,
     pub name: String,
     #[serde(rename="type")]
-    pub resource_type: String,
+    pub resource_type: FullyQualifiedTypeName,
     pub result: GetResult,
 }
 
 impl From<ResourceTestResult> for ResourceGetResult {
     fn from(test_result: ResourceTestResult) -> Self {
         Self {
+            execution_information: None,
             metadata: None,
             name: test_result.name,
             resource_type: test_result.resource_type,
@@ -53,13 +57,13 @@ impl From<ResourceTestResult> for ResourceGetResult {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
-#[serde(deny_unknown_fields)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 #[dsc_repo_schema(base_name = "get", folder_path = "outputs/config")]
 pub struct ConfigurationGetResult {
+    pub execution_information: Option<ExecutionInformation>,
     pub metadata: Option<Metadata>,
     pub results: Vec<ResourceGetResult>,
     pub messages: Vec<ResourceMessage>,
-    #[serde(rename = "hadErrors")]
     pub had_errors: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub outputs: Option<Map<String, Value>>,
@@ -69,6 +73,7 @@ impl ConfigurationGetResult {
     #[must_use]
     pub fn new() -> Self {
         Self {
+            execution_information: None,
             metadata: None,
             results: Vec::new(),
             messages: Vec::new(),
@@ -91,6 +96,7 @@ impl From<ConfigurationTestResult> for ConfigurationGetResult {
             results.push(result.into());
         }
         Self {
+            execution_information: None,
             metadata: None,
             results,
             messages: test_result.messages,
@@ -104,17 +110,20 @@ impl From<ConfigurationTestResult> for ConfigurationGetResult {
 #[serde(deny_unknown_fields)]
 #[dsc_repo_schema(base_name = "set.full", folder_path = "outputs/resource")]
 pub struct ResourceSetResult {
+    #[serde(rename = "executionInformation", skip_serializing_if = "Option::is_none")]
+    pub execution_information: Option<ExecutionInformation>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Metadata>,
     pub name: String,
     #[serde(rename="type")]
-    pub resource_type: String,
+    pub resource_type: FullyQualifiedTypeName,
     pub result: SetResult,
 }
 
 impl From<ResourceTestResult> for ResourceSetResult {
     fn from(test_result: ResourceTestResult) -> Self {
         Self {
+            execution_information: None,
             metadata: None,
             name: test_result.name,
             resource_type: test_result.resource_type,
@@ -145,13 +154,13 @@ impl Default for GroupResourceSetResult {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
-#[serde(deny_unknown_fields)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 #[dsc_repo_schema(base_name = "set", folder_path = "outputs/config")]
 pub struct ConfigurationSetResult {
+    pub execution_information: Option<ExecutionInformation>,
     pub metadata: Option<Metadata>,
     pub results: Vec<ResourceSetResult>,
     pub messages: Vec<ResourceMessage>,
-    #[serde(rename = "hadErrors")]
     pub had_errors: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub outputs: Option<Map<String, Value>>,
@@ -161,6 +170,7 @@ impl ConfigurationSetResult {
     #[must_use]
     pub fn new() -> Self {
         Self {
+            execution_information: None,
             metadata: None,
             results: Vec::new(),
             messages: Vec::new(),
@@ -180,11 +190,13 @@ impl Default for ConfigurationSetResult {
 #[serde(deny_unknown_fields)]
 #[dsc_repo_schema(base_name = "test.full", folder_path = "outputs/resource")]
 pub struct ResourceTestResult {
+    #[serde(rename = "executionInformation", skip_serializing_if = "Option::is_none")]
+    pub execution_information: Option<ExecutionInformation>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Metadata>,
     pub name: String,
     #[serde(rename="type")]
-    pub resource_type: String,
+    pub resource_type: FullyQualifiedTypeName,
     pub result: TestResult,
 }
 
@@ -210,13 +222,13 @@ impl Default for GroupResourceTestResult {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
-#[serde(deny_unknown_fields)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 #[dsc_repo_schema(base_name = "test", folder_path = "outputs/config")]
 pub struct ConfigurationTestResult {
+    pub execution_information: Option<ExecutionInformation>,
     pub metadata: Option<Metadata>,
     pub results: Vec<ResourceTestResult>,
     pub messages: Vec<ResourceMessage>,
-    #[serde(rename = "hadErrors")]
     pub had_errors: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub outputs: Option<Map<String, Value>>,
@@ -226,6 +238,7 @@ impl ConfigurationTestResult {
     #[must_use]
     pub fn new() -> Self {
         Self {
+            execution_information: None,
             metadata: None,
             results: Vec::new(),
             messages: Vec::new(),
@@ -242,13 +255,13 @@ impl Default for ConfigurationTestResult {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
-#[serde(deny_unknown_fields)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 #[dsc_repo_schema(base_name = "export", folder_path = "outputs/config")]
 pub struct ConfigurationExportResult {
+    pub execution_information: Option<ExecutionInformation>,
     pub metadata: Option<Metadata>,
     pub result: Option<Configuration>,
     pub messages: Vec<ResourceMessage>,
-    #[serde(rename = "hadErrors")]
     pub had_errors: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub outputs: Option<Map<String, Value>>,
@@ -258,6 +271,7 @@ impl ConfigurationExportResult {
     #[must_use]
     pub fn new() -> Self {
         Self {
+            execution_information: None,
             metadata: None,
             result: None,
             messages: Vec::new(),

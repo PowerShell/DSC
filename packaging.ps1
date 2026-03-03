@@ -50,8 +50,6 @@ if ($GetPackageVersion) {
 $filesForWindowsPackage = @(
     'appx.dsc.extension.json',
     'appx-discover.ps1',
-    'bicep.dsc.extension.json',
-    'bicepparams.dsc.extension.json',
     'dsc.exe',
     'dsc_default.settings.json',
     'dsc.settings.json',
@@ -63,6 +61,7 @@ $filesForWindowsPackage = @(
     'NOTICE.txt',
     'osinfo.exe',
     'osinfo.dsc.resource.json',
+    'PowerShell_adapter.dsc.resource.json',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
     'psscript.ps1',
@@ -77,18 +76,19 @@ $filesForWindowsPackage = @(
     'sshdconfig.exe',
     'sshd-windows.dsc.resource.json',
     'sshd_config.dsc.resource.json',
+    'WindowsPowerShell_adapter.dsc.resource.json',
     'windowspowershell.dsc.resource.json',
     'wmi.dsc.resource.json',
     'wmi.resource.ps1',
     'wmiAdapter.psd1',
     'wmiAdapter.psm1',
     'windows_baseline.dsc.yaml',
-    'windows_inventory.dsc.yaml'
+    'windows_inventory.dsc.yaml',
+    'wu_dsc.exe',
+    'windowsupdate.dsc.resource.json'
 )
 
 $filesForLinuxPackage = @(
-    'bicep.dsc.extension.json',
-    'bicepparams.dsc.extension.json',
     'dsc',
     'dsc_default.settings.json',
     'dsc.settings.json',
@@ -102,6 +102,7 @@ $filesForLinuxPackage = @(
     'NOTICE.txt',
     'osinfo',
     'osinfo.dsc.resource.json',
+    'PowerShell_adapter.dsc.resource.json',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
     'psscript.ps1',
@@ -113,8 +114,6 @@ $filesForLinuxPackage = @(
 )
 
 $filesForMacPackage = @(
-    'bicep.dsc.extension.json',
-    'bicepparams.dsc.extension.json',
     'dsc',
     'dsc_default.settings.json',
     'dsc.settings.json',
@@ -128,6 +127,7 @@ $filesForMacPackage = @(
     'NOTICE.txt',
     'osinfo',
     'osinfo.dsc.resource.json',
+    'PowerShell_adapter.dsc.resource.json',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
     'psscript.ps1',
@@ -279,9 +279,9 @@ if ($null -ne $packageType) {
     if ($null -eq (Get-Command tree-sitter -ErrorAction Ignore)) {
         Write-Verbose -Verbose "tree-sitter not found, installing..."
         if ($UseCFS) {
-            cargo install tree-sitter-cli --config .cargo/config.toml
+            cargo install tree-sitter-cli --config .cargo/config.toml --version 0.25.10
         } else {
-            cargo install tree-sitter-cli
+            cargo install tree-sitter-cli --version 0.25.10
         }
         if ($LASTEXITCODE -ne 0) {
             throw "Failed to install tree-sitter-cli"
@@ -344,7 +344,7 @@ if (!$SkipBuild) {
     New-Item -ItemType Directory $target -ErrorAction Ignore > $null
 
     # make sure dependencies are built first so clippy runs correctly
-    $windows_projects = @("lib/dsc-lib-pal", "lib/dsc-lib-registry", "resources/registry", "resources/reboot_pending", "adapters/wmi", "configurations/windows", 'extensions/appx')
+    $windows_projects = @("lib/dsc-lib-pal", "lib/dsc-lib-registry", "resources/registry", "resources/reboot_pending", "resources/WindowsUpdate","adapters/wmi", "configurations/windows", 'extensions/appx')
     $macOS_projects = @("resources/brew")
     $linux_projects = @("resources/apt")
 
@@ -359,7 +359,6 @@ if (!$SkipBuild) {
         "lib/dsc-lib",
         "dsc",
         "resources/dscecho",
-        "extensions/bicep",
         "resources/osinfo",
         "adapters/powershell",
         'resources/PSScript',
@@ -925,10 +924,10 @@ if ($packageType -eq 'msixbundle') {
 
     Write-Verbose -Verbose "Building RPM package"
     $rpmPackageName = "dsc-$productVersion-1.$rpmArch.rpm"
-    
+
     # Build the RPM
     rpmbuild -v -bb --define "_topdir $rpmBuildRoot" --buildroot "$rpmBuildRoot/BUILDROOT" $specFile 2>&1 > $rpmTarget/rpmbuild.log
-    
+
     if ($LASTEXITCODE -ne 0) {
         Write-Error (Get-Content $rpmTarget/rpmbuild.log -Raw)
         throw "Failed to create RPM package"
@@ -1011,10 +1010,10 @@ if ($packageType -eq 'msixbundle') {
 
     Write-Verbose -Verbose "Building DEB package"
     $debPackageName = "dsc_$productVersion-1_$debArch.deb"
-    
+
     # Build the DEB
     dpkg-deb --build $debBuildRoot 2>&1 > $debTarget/debbuild.log
-    
+
     if ($LASTEXITCODE -ne 0) {
         Write-Error (Get-Content $debTarget/debbuild.log -Raw)
         throw "Failed to create DEB package"

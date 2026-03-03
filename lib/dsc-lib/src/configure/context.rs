@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use chrono::{DateTime, Local};
-use crate::{configure::config_doc::{ExecutionKind, UserFunctionDefinition}, extensions::dscextension::DscExtension};
+use crate::{configure::config_doc::{ExecutionKind, Operation, UserFunctionDefinition}, extensions::dscextension::DscExtension};
 use dsc_lib_security_context::{get_security_context, SecurityContext};
 use serde_json::{Map, Value};
 use std::{collections::HashMap, path::PathBuf};
@@ -19,7 +19,7 @@ pub enum ProcessMode {
     UserFunction,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Context {
     pub copy: HashMap<String, i64>,
     pub copy_current_loop_name: String,
@@ -29,6 +29,7 @@ pub struct Context {
     pub lambda_raw_args: std::cell::RefCell<Option<Vec<crate::parser::functions::FunctionArg>>>,
     pub lambda_variables: HashMap<String, Value>,
     pub lambdas: std::cell::RefCell<HashMap<String, crate::parser::functions::Lambda>>,
+    pub operation: Option<Operation>,
     pub outputs: Map<String, Value>,
     pub parameters: HashMap<String, (Value, DataType)>,
     pub process_expressions: bool,
@@ -56,6 +57,7 @@ impl Context {
             lambda_raw_args: std::cell::RefCell::new(None),
             lambda_variables: HashMap::new(),
             lambdas: std::cell::RefCell::new(HashMap::new()),
+            operation: None,
             outputs: Map::new(),
             parameters: HashMap::new(),
             process_expressions: true,
