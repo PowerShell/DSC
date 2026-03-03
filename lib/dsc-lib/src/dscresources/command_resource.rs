@@ -1093,7 +1093,11 @@ fn verify_json_from_manifest(resource: &DscResource, json: &str, target_resource
             return Ok(());
         }
 
-        let reason = result.reason.unwrap_or_else(|| t!("dscresources.commandResource.resourceInvalidJson").to_string());
+        let reason = result
+            .reason
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| t!("dscresources.commandResource.resourceInvalidJson").to_string());
         return Err(DscError::Validation(reason));
     }
 
