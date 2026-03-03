@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 mod args;
+mod copy_resource;
 mod delete;
 mod exist;
 mod exit_code;
@@ -12,15 +13,18 @@ mod in_desired_state;
 mod metadata;
 mod operation;
 mod adapter;
+mod refresh_env;
 mod sleep;
 mod trace;
 mod version;
 mod whatif;
+mod whatif_delete;
 
-use args::{Args, Schemas, SubCommand};
+use args::{Args, RefreshEnvOperation, Schemas, SubCommand};
 use clap::Parser;
 use schemars::schema_for;
 use serde_json::Map;
+use crate::copy_resource::{CopyResource, copy_the_resource};
 use crate::delete::Delete;
 use crate::exist::{Exist, State};
 use crate::exit_code::ExitCode;
@@ -30,24 +34,40 @@ use crate::get::Get;
 use crate::in_desired_state::InDesiredState;
 use crate::metadata::Metadata;
 use crate::operation::Operation;
+use crate::refresh_env::RefreshEnv;
 use crate::sleep::Sleep;
 use crate::trace::Trace;
 use crate::version::Version;
 use crate::whatif::WhatIf;
+use crate::whatif_delete::WhatIfDelete;
 use std::{thread, time::Duration};
 
 #[allow(clippy::too_many_lines)]
 fn main() {
     let args = Args::parse();
     let json = match args.subcommand {
-        SubCommand::Adapter { input , resource_type, operation } => {
-            match adapter::adapt(&resource_type, &input, &operation) {
+        SubCommand::Adapter { input , resource_type, resource_path, operation } => {
+            match adapter::adapt(&resource_type, &input, &operation, &resource_path) {
                 Ok(result) => result,
                 Err(err) => {
                     eprintln!("Error adapting resource: {err}");
                     std::process::exit(1);
                 }
             }
+        },
+        SubCommand::CopyResource { input } => {
+            let copy_resource = match serde_json::from_str::<CopyResource>(&input) {
+                Ok(copy_resource) => copy_resource,
+                Err(err) => {
+                    eprintln!("Error JSON does not match schema: {err}");
+                    std::process::exit(1);
+                }
+            };
+            if let Err(err) = copy_the_resource(&copy_resource.source_file, &copy_resource.type_name) {
+                eprintln!("Error copying resource: {err}");
+                std::process::exit(1);
+            }
+            input
         },
         SubCommand::Delete { input } => {
             let mut delete = match serde_json::from_str::<Delete>(&input) {
@@ -211,6 +231,10 @@ fn main() {
             }
             String::new()
         },
+        SubCommand::NoOp => {
+            // do nothing and just return success
+            String::new()
+        },
         SubCommand::Operation { operation, input } => {
             let mut operation_result = match serde_json::from_str::<Operation>(&input) {
                 Ok(op) => op,
@@ -222,10 +246,34 @@ fn main() {
             operation_result.operation = Some(operation.to_lowercase());
             serde_json::to_string(&operation_result).unwrap()
         },
+        SubCommand::RefreshEnv { operation, input } => {
+            let mut refresh_env = match serde_json::from_str::<refresh_env::RefreshEnv>(&input) {
+                Ok(re) => re,
+                Err(err) => {
+                    eprintln!("Error JSON does not match schema: {err}");
+                    std::process::exit(1);
+                }
+            };
+            match operation {
+                RefreshEnvOperation::Get => {
+                    let mut result = refresh_env.get();
+                    result.metadata.get_or_insert(Map::new()).insert("_refreshEnv".to_string(), serde_json::Value::Bool(true));
+                    serde_json::to_string(&result).unwrap()
+                },
+                RefreshEnvOperation::Set => {
+                    refresh_env.set();
+                    refresh_env.metadata.get_or_insert(Map::new()).insert("_refreshEnv".to_string(), serde_json::Value::Bool(true));
+                    serde_json::to_string(&refresh_env).unwrap()
+                }
+            }
+        },
         SubCommand::Schema { subcommand } => {
             let schema = match subcommand {
                 Schemas::Adapter => {
                     schema_for!(adapter::DscResource)
+                },
+                Schemas::CopyResource => {
+                    schema_for!(CopyResource)
                 },
                 Schemas::Delete => {
                     schema_for!(Delete)
@@ -254,6 +302,9 @@ fn main() {
                 Schemas::Operation => {
                     schema_for!(Operation)
                 },
+                Schemas::RefreshEnv => {
+                    schema_for!(RefreshEnv)
+                },
                 Schemas::Sleep => {
                     schema_for!(Sleep)
                 },
@@ -266,6 +317,9 @@ fn main() {
                 Schemas::WhatIf => {
                     schema_for!(WhatIf)
                 },
+                Schemas::WhatIfDelete => {
+                    schema_for!(WhatIfDelete)
+                }
             };
             serde_json::to_string(&schema).unwrap()
         },
@@ -299,12 +353,25 @@ fn main() {
         },
         SubCommand::WhatIf { what_if } => {
             let result: WhatIf = if what_if {
-                WhatIf { execution_type: "WhatIf".to_string() }
+                WhatIf { execution_type: "WhatIf".to_string(), exist: None }
             } else {
-                WhatIf { execution_type: "Actual".to_string() }
+                WhatIf { execution_type: "Actual".to_string(), exist: None }
             };
             serde_json::to_string(&result).unwrap()
         },
+        SubCommand::WhatIfDelete { what_if } => {
+            let result = if what_if {
+                let mut map = Map::<String, serde_json::Value>::new();
+                map.insert("whatIf".to_string(), serde_json::Value::Array(vec![
+                    serde_json::Value::String("Delete what-if message 1".to_string()),
+                    serde_json::Value::String("Delete what-if message 2".to_string()),
+                ]));
+                WhatIfDelete { exist: None, metadata: Some(map) }
+            } else {
+                WhatIfDelete { exist: Some(false), metadata: None }
+            };
+            serde_json::to_string(&result).unwrap()
+        }
     };
 
     if !json.is_empty() {

@@ -11,6 +11,8 @@ pub enum SshdConfigError {
     CommandError(String),
     #[error("{t}: {0}", t = t!("error.envVar"))]
     EnvVarError(#[from] std::env::VarError),
+    #[error("{t}", t = t!("error.fileNotFound", path = .0))]
+    FileNotFound(String),
     #[error("{t}: {0}", t = t!("error.fmt"))]
     FmtError(#[from] std::fmt::Error),
     #[error("{t}: {0}", t = t!("error.invalidInput"))]

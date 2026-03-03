@@ -252,6 +252,13 @@ pub fn canonicalize_which(executable: &str, cwd: Option<&Path>) -> Result<String
 }
 
 #[macro_export]
+macro_rules! locked_clear {
+    ($lockable:expr) => {{
+        $lockable.write().unwrap().clear();
+    }};
+}
+
+#[macro_export]
 macro_rules! locked_is_empty {
     ($lockable:expr) => {{
         $lockable.read().unwrap().is_empty()

@@ -5,6 +5,7 @@ use crate::args::{GetOutputFormat, OutputFormat};
 use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_JSON_ERROR, EXIT_DSC_RESOURCE_NOT_FOUND, write_object};
 use dsc_lib::configure::config_doc::{Configuration, ExecutionKind};
 use dsc_lib::configure::add_resource_export_results_to_configuration;
+use dsc_lib::discovery::discovery_trait::DiscoveryFilter;
 use dsc_lib::dscresources::{resource_manifest::Kind, invoke_result::{GetResult, ResourceGetResponse, ResourceSetResponse, SetResult}};
 use dsc_lib::dscresources::dscresource::{Capability, get_diff};
 use dsc_lib::dscerror::DscError;
@@ -127,7 +128,7 @@ pub fn get_all(dsc: &mut DscManager, resource_type: &str, version: Option<&str>,
     }
 }
 
-pub fn set(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, input: &str, format: Option<&OutputFormat>) {
+pub fn set(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, input: &str, format: Option<&OutputFormat>, what_if: bool) {
     if input.is_empty() {
         error!("{}", t!("resource_command.setInputEmpty"));
         exit(EXIT_INVALID_ARGS);
@@ -143,6 +144,8 @@ pub fn set(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, inp
         error!("{}: {}", t!("resource_command.invalidOperationOnAdapter"), resource.type_name);
         exit(EXIT_DSC_ERROR);
     }
+
+    let execution_kind = if what_if { ExecutionKind::WhatIf } else { ExecutionKind::Actual };
 
     let exist = match serde_json::from_str::<Value>(input) {
         Ok(v) => {
@@ -167,7 +170,7 @@ pub fn set(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, inp
             }
         };
 
-        if let Err(err) = resource.delete(input) {
+        if let Err(err) = resource.delete(input, &ExecutionKind::Actual) {
             error!("{err}");
             exit(EXIT_DSC_ERROR);
         }
@@ -200,7 +203,7 @@ pub fn set(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, inp
         return;
     }
 
-    match resource.set(input, true, &ExecutionKind::Actual) {
+    match resource.set(input, true, &execution_kind) {
         Ok(result) => {
             // convert to json
             let json = match serde_json::to_string(&result) {
@@ -267,8 +270,8 @@ pub fn delete(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, 
         exit(EXIT_DSC_ERROR);
     }
 
-    match resource.delete(input) {
-        Ok(()) => {}
+    match resource.delete(input, &ExecutionKind::Actual) {
+        Ok(_) => {}
         Err(err) => {
             error!("{err}");
             exit(EXIT_DSC_ERROR);
@@ -335,5 +338,5 @@ pub fn export(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, 
 #[must_use]
 pub fn get_resource<'a>(dsc: &'a mut DscManager, resource: &str, version: Option<&str>) -> Option<&'a DscResource> {
     //TODO: add dynamically generated resource to dsc
-    dsc.find_resource(resource, version)
+    dsc.find_resource(&DiscoveryFilter::new(resource, version, None)).unwrap_or(None)
 }

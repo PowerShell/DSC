@@ -8,10 +8,10 @@ use crate::{
     dscerror::DscError,
     dscresources::{
         command_resource::{
-            invoke_command, process_args
+            invoke_command, process_get_args, CommandResourceInfo
         },
         dscresource::DscResource,
-        resource_manifest::ArgKind,
+        resource_manifest::GetArgKind,
     },
     extensions::{
         dscextension::{
@@ -26,7 +26,7 @@ use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use tracing::{info, trace};
+use tracing::{info, trace, warn};
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[dsc_repo_schema(base_name = "manifest.discover", folder_path = "extension")]
@@ -34,7 +34,7 @@ pub struct DiscoverMethod {
     /// The command to run to get the state of the resource.
     pub executable: String,
     /// The arguments to pass to the command to perform a Get.
-    pub args: Option<Vec<ArgKind>>,
+    pub args: Option<Vec<GetArgKind>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
@@ -62,13 +62,20 @@ impl DscExtension {
             let extension = match serde_json::from_value::<ExtensionManifest>(self.manifest.clone()) {
                 Ok(manifest) => manifest,
                 Err(err) => {
-                    return Err(DscError::Manifest(self.type_name.clone(), err));
+                    return Err(DscError::Manifest(self.type_name.to_string(), err));
                 }
             };
             let Some(discover) = extension.discover else {
-                return Err(DscError::UnsupportedCapability(self.type_name.clone(), Capability::Discover.to_string()));
+                return Err(DscError::UnsupportedCapability(self.type_name.to_string(), Capability::Discover.to_string()));
             };
-            let args = process_args(discover.args.as_ref(), "", &self.type_name);
+            let command_resource_info = CommandResourceInfo {
+                type_name: self.type_name.clone(),
+                path: None,
+            };
+            let args = process_get_args(discover.args.as_ref(), "", &command_resource_info);
+            if let Some(deprecation_message) = extension.deprecation_message.as_ref() {
+                warn!("{}", t!("extensions.dscextension.deprecationMessage", extension = self.type_name, message = deprecation_message));
+            }
             let (_exit_code, stdout, _stderr) = invoke_command(
                 &discover.executable,
                 args,
@@ -103,7 +110,7 @@ impl DscExtension {
             Ok(resources)
         } else {
             Err(DscError::UnsupportedCapability(
-                self.type_name.clone(),
+                self.type_name.to_string(),
                 Capability::Discover.to_string()
             ))
         }

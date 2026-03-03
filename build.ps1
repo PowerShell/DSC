@@ -2,7 +2,7 @@
 
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
-using module ./build.helpers.psm1
+using module ./helpers.build.psm1
 
 <#
     .SYNOPSIS
@@ -111,7 +111,7 @@ begin {
         $ProgressPreference = 'SilentlyContinue'
     }
 
-    Import-Module ./build.helpers.psm1 -Force -Verbose:$false
+    Import-Module ./helpers.build.psm1 -Force -Verbose:$false
     $usingADO = ($null -ne $env:TF_BUILD)
     if ($usingADO -or $UseCFSAuth) {
         $UseCFS = $true
@@ -203,11 +203,12 @@ process {
         }
 
         if (-not ($SkipBuild -and $Test -and $ExcludeRustTests)) {
-            # Install Node if needed
+            Write-BuildProgress @progressParams -Status 'Ensuring Protobuf is available'
+            Install-Protobuf @VerboseParam
+
             Write-BuildProgress @progressParams -Status 'Ensuring Node.JS is available'
             Install-NodeJS @VerboseParam
-    
-            # Ensure tree-sitter is installed
+
             Write-BuildProgress @progressParams -Status 'Ensuring tree-sitter is available'
             Install-TreeSitter -UseCFS:$UseCFS @VerboseParam
         }
@@ -259,7 +260,7 @@ process {
     if ($Test) {
         $progressParams.Activity = 'Testing projects'
         Write-BuildProgress @progressParams
-        
+
         if (-not $ExcludeRustTests) {
             $rustTestParams = @{
                 Project      = $BuildData.Projects

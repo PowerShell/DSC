@@ -671,6 +671,8 @@ The following list of functions are for manipulating strings:
 - [concat()][concat] - Return a combined string where the input strings are concatenated in the
   order they're specified.
 - [contains()][contains] - Check if an array contains a value or an object contains a key.
+- [dataUri()][dataUri] - Convert a value to a data URI.
+- [dataUriToString()][dataUriToString] - Convert a data URI formatted value to a string.
 - [empty()][empty] - Check if a value (string, array, or object) is empty.
 - [endsWith()][endsWith] - Check if a string ends with a specified suffix.
 - [first()][first] - Return the first element of an array or the first character of a string.
@@ -729,6 +731,8 @@ The following list of functions create or convert values of a given type:
 [copyIndex]:            ./copyIndex.md
 [createArray]:          ./createArray.md
 [createObject]:         ./createObject.md
+[dataUri]:              ./dataUri.md
+[dataUriToString]:      ./dataUriToString.md
 [div]:                  ./div.md
 [empty]:                ./empty.md
 [endsWith]:             ./endsWith.md
