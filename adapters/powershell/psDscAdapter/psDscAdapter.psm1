@@ -12,6 +12,18 @@ function Import-PSDSCModule {
 function Get-DSCResourceModules {
     $listPSModuleFolders = $env:PSModulePath.Split([IO.Path]::PathSeparator)
     $dscModulePsd1List = [System.Collections.Generic.HashSet[System.String]]::new()
+
+    # Include any imported modules that contain DSC Resources
+    foreach ($importedModule in Get-Module) {
+        if ($importedModule.ExportedDscResources.Count -gt 0) {
+            # See if the module has a psd1 and then add that to the list, otherwise ignore
+            foreach ($psd1 in (Get-ChildItem -LiteralPath $importedModule.ModuleBase -Filter "$($importedModule.Name).psd1" -ErrorAction Ignore)) {
+                Write-Debug -Debug ("Adding imported module with DSC resources: $psd1")
+                $dscModulePsd1List.Add($psd1) | Out-Null
+            }
+        }
+    }
+
     foreach ($folder in $listPSModuleFolders) {
         if (!(Test-Path -LiteralPath $folder -ErrorAction Ignore)) {
             continue
@@ -228,6 +240,26 @@ function Invoke-DscCacheRefresh {
         [Object[]]
         $Module
     )
+
+    # if the module is already imported and has DSC resources, we can skip refreshing the cache and return the resources directly
+    $importedModule = Get-Module -Name $Module -ErrorAction Ignore
+    if ($null -ne $importedModule -and $importedModule.ExportedDscResources.Count -gt 0) {
+        [dscResourceCacheEntry[]]$dscResourceCacheEntries = [System.Collections.Generic.List[Object]]::new()
+        $DscResources = [System.Collections.Generic.List[DscResourceInfo]]::new()
+        [System.Collections.Generic.List[DscResourceInfo]]$r = LoadPowerShellClassResourcesFromModule -moduleInfo $importedModule
+        if ($r) {
+            $DscResources.AddRange($r)
+        }
+        foreach ($dscResource in $DscResources) {
+            $moduleName = $dscResource.ModuleName
+            $dscResourceCacheEntries += [dscResourceCacheEntry]@{
+                Type            = "$moduleName/$($dscResource.Name)"
+                DscResourceInfo = $dscResource
+                LastWriteTimes  = (Get-Date) # use current time since we aren't caching this data
+            }
+        }
+        return $dscResourceCacheEntries
+    }
 
     $refreshCache = $false
 
@@ -561,7 +593,11 @@ function GetTypeInstanceFromModule {
         [Parameter(Mandatory = $true)]
         [string] $classname
     )
-    $instance = & (Import-Module $modulename -PassThru) ([scriptblock]::Create("'$classname' -as 'type'"))
+    $module = Get-Module -Name $modulename -ErrorAction Ignore
+    if ($null -eq $module) {
+        $module = Import-Module -Name $modulename -ErrorAction Stop -PassThru
+    }
+    $instance = & ($module) ([scriptblock]::Create("'$classname' -as 'type'"))
     return $instance
 }
 

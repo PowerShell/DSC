@@ -1,0 +1,14 @@
+{
+    "Name": "PSTestClassResource",
+    "Kind": "Resource",
+    "IsRust": false,
+    "TestOnly": true,
+    "CopyFiles": {
+        "All": [
+            "PSAdaptedTestClassResource.psd1",
+            "PSAdaptedTestClassResource.psm1",
+            "PSAdaptedTestClassResource.dsc.adaptedResource.json",
+            "WinPSAdaptedTestClassResource.dsc.adaptedResource.json"
+        ]
+    }
+}
