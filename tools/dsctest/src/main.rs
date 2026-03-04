@@ -14,6 +14,7 @@ mod metadata;
 mod operation;
 mod adapter;
 mod refresh_env;
+mod restart_required;
 mod sleep;
 mod trace;
 mod version;
@@ -35,6 +36,7 @@ use crate::in_desired_state::InDesiredState;
 use crate::metadata::Metadata;
 use crate::operation::Operation;
 use crate::refresh_env::RefreshEnv;
+use crate::restart_required::RestartRequired;
 use crate::sleep::Sleep;
 use crate::trace::Trace;
 use crate::version::Version;
@@ -267,6 +269,16 @@ fn main() {
                 }
             }
         },
+        SubCommand::RestartRequired { input } => {
+            let restart_required = match serde_json::from_str::<RestartRequired>(&input) {
+                Ok(rr) => rr,
+                Err(err) => {
+                    eprintln!("Error JSON does not match schema: {err}");
+                    std::process::exit(1);
+                }
+            };
+            serde_json::to_string(&restart_required).unwrap()
+        },
         SubCommand::Schema { subcommand } => {
             let schema = match subcommand {
                 Schemas::Adapter => {
@@ -304,6 +316,9 @@ fn main() {
                 },
                 Schemas::RefreshEnv => {
                     schema_for!(RefreshEnv)
+                },
+                Schemas::RestartRequired => {
+                    schema_for!(RestartRequired)
                 },
                 Schemas::Sleep => {
                     schema_for!(Sleep)

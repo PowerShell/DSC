@@ -7,8 +7,8 @@ use serde_json::{Map, Value};
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateList {
-    #[serde(rename = "_metadata", skip_serializing_if = "Option::is_none")]
-    pub metadata: Option<Map<String, Value>>,
+    #[serde(rename = "_restartRequired", skip_serializing_if = "Option::is_none")]
+    pub restart_required: Option<Map<String, Value>>,
     pub updates: Vec<UpdateInfo>,
 }
 
@@ -94,7 +94,7 @@ use windows::{
 /// Extract complete update information from an IUpdate interface
 #[cfg(windows)]
 pub fn extract_update_info(update: &IUpdate) -> Result<UpdateInfo> {
-    
+
     unsafe {
         let title = update.Title()?.to_string();
         let identity = update.Identity()?;
@@ -159,7 +159,7 @@ pub fn extract_update_info(update: &IUpdate) -> Result<UpdateInfo> {
             if let Ok(reboot_behavior) = behavior.RebootBehavior() {
                 // InstallRebootBehavior values:
                 // 0 = irbNeverReboots - Never requires reboot
-                // 1 = irbAlwaysRequiresReboot - Always requires reboot  
+                // 1 = irbAlwaysRequiresReboot - Always requires reboot
                 // 2 = irbCanRequestReboot - Can request reboot
                 match reboot_behavior.0 {
                     0 => Some(InstallationBehavior::NeverReboots),
