@@ -25,28 +25,3 @@ class PSAdaptedTestClass
         return $this
     }
 }
-
-[DscResource()]
-class WinPSAdaptedTestClass
-{
-    [DscProperty(Key)]
-    [string] $Name
-
-    [DscProperty()]
-    [int] $Value
-
-    [void] Set()
-    {
-    }
-
-    [bool] Test()
-    {
-        return $true
-    }
-
-    [WinPSAdaptedTestClass] Get()
-    {
-        $this.Value = 17
-        return $this
-    }
-}
