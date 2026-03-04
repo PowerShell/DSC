@@ -979,9 +979,12 @@ if ($packageType -eq 'msixbundle') {
         }
     }
 
-    # Create symlink in usr/bin
+    # Create symlinks in usr/bin
     $symlinkPath = Join-Path $debBuildRoot 'usr' 'bin' 'dsc'
     New-Item -ItemType SymbolicLink -Path $symlinkPath -Target '/opt/dsc/dsc' -Force > $null
+
+    $symlinkPath = Join-Path $debBuildRoot 'usr' 'bin' 'dsc-bicep-ext'
+    New-Item -ItemType SymbolicLink -Path $symlinkPath -Target '/opt/dsc/dsc-bicep-ext' -Force > $null
 
     # Determine DEB architecture
     $debArch = if ($architecture -eq 'current') {
