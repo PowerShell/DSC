@@ -1,5 +1,5 @@
 {
-    "Name": "PSTestClassResource",
+    "Name": "PSAdaptedTestClassResource",
     "Kind": "Resource",
     "IsRust": false,
     "TestOnly": true,
