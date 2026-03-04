@@ -7,8 +7,7 @@
         "All": [
             "PSAdaptedTestClassResource.psd1",
             "PSAdaptedTestClassResource.psm1",
-            "PSAdaptedTestClassResource.dsc.adaptedResource.json",
-            "WinPSAdaptedTestClassResource.dsc.adaptedResource.json"
+            "PSAdaptedTestClassResource.dsc.adaptedResource.json"
         ]
     }
 }
