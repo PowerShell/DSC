@@ -38,9 +38,6 @@
             "Get",
             {
                 "resourceTypeArg": "-ResourceType"
-            },
-            {
-                "resourcePathArg": "-ResourcePath"
             }
         ],
         "input": "stdin"
@@ -58,9 +55,6 @@
             "Set",
             {
                 "resourceTypeArg": "-ResourceType"
-            },
-            {
-                "resourcePathArg": "-ResourcePath"
             }
         ],
         "input": "stdin",
@@ -80,9 +74,6 @@
             "Test",
             {
                 "resourceTypeArg": "-ResourceType"
-            },
-            {
-                "resourcePathArg": "-ResourcePath"
             }
         ],
         "input": "stdin",
@@ -101,9 +92,6 @@
             "Export",
             {
                 "resourceTypeArg": "-ResourceType"
-            },
-            {
-                "resourcePathArg": "-ResourcePath"
             }
         ],
         "input": "stdin",

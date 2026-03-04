@@ -228,9 +228,6 @@ $ps = [PowerShell]::Create().AddScript({
             if ($ResourceType) {
                 Write-Debug -Debug ("Using resource type override: $ResourceType")
                 if ($ResourcePath) {
-                    if ($PSVersionTable.PSVersion.Major -le 5) {
-                        throw 'Adapted resource manifests are not supported on Windows PowerShell.'
-                    }
                     Write-Debug -Debug ("Using resource path override: $ResourcePath")
                     Import-Module -Name $ResourcePath -Global -Force -ErrorAction Stop
                 }

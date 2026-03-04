@@ -327,7 +327,7 @@ function Invoke-DscCacheRefresh {
                 if (-not $refreshCache) {
                     Write-Debug -Debug "Checking cache for stale PSModulePath"
 
-                    $m = $env:PSModulePath -split [IO.Path]::PathSeparator | % { Get-ChildItem -Directory -LiteralPath $_ -Depth 1 -ErrorAction Ignore }
+                    $m = $env:PSModulePath.Split([IO.Path]::PathSeparator, [System.StringSplitOptions]::RemoveEmptyEntries) | ForEach-Object { Get-ChildItem -Directory -LiteralPath $_ -Depth 1 -ErrorAction Ignore }
 
                     $hs_cache = [System.Collections.Generic.HashSet[string]]($cache.PSModulePaths)
                     $hs_live = [System.Collections.Generic.HashSet[string]]($m.FullName)
@@ -395,7 +395,7 @@ function Invoke-DscCacheRefresh {
 
         [dscResourceCache]$cache = [dscResourceCache]::new()
         $cache.ResourceCache = $dscResourceCacheEntries
-        $m = $env:PSModulePath -split [IO.Path]::PathSeparator | ForEach-Object { Get-ChildItem -Directory -LiteralPath $_ -Depth 1 -ErrorAction Ignore }
+        $m = $env:PSModulePath.Split([IO.Path]::PathSeparator, [System.StringSplitOptions]::RemoveEmptyEntries) | ForEach-Object { Get-ChildItem -Directory -LiteralPath $_ -Depth 1 -ErrorAction Ignore }
         $cache.PSModulePaths = $m.FullName
         $cache.CacheSchemaVersion = $script:CurrentCacheSchemaVersion
 

@@ -24,11 +24,4 @@ Describe 'Tests for PS adapted manifests' {
         $out.actualState.Name | Should -BeExactly 'hello' -Because ($out | ConvertTo-Json)
         $out.actualState.Value | Should -Be 42
     }
-
-    It 'WinPS adapted resource is not supported' -Skip:(!$IsWindows) {
-        $null = dsc resource get -r 'PSAdaptedTestClassResource/WinPSAdaptedTestClass' -i '{"name":"world"}' 2>$TestDrive/error.log
-        $LASTEXITCODE | Should -Be 2
-        $errorContent = Get-Content -Path "$TestDrive\error.log" -Raw
-        $errorContent | Should -Match 'Adapted resource manifests are not supported on Windows PowerShell.'
-    }
 }
