@@ -242,23 +242,25 @@ function Invoke-DscCacheRefresh {
     )
 
     # if the module is already imported and has DSC resources, we can skip refreshing the cache and return the resources directly
-    $importedModule = Get-Module -Name $Module -ErrorAction Ignore
-    if ($null -ne $importedModule -and $importedModule.ExportedDscResources.Count -gt 0) {
-        [dscResourceCacheEntry[]]$dscResourceCacheEntries = [System.Collections.Generic.List[Object]]::new()
-        $DscResources = [System.Collections.Generic.List[DscResourceInfo]]::new()
-        [System.Collections.Generic.List[DscResourceInfo]]$r = LoadPowerShellClassResourcesFromModule -moduleInfo $importedModule
-        if ($r) {
-            $DscResources.AddRange($r)
-        }
-        foreach ($dscResource in $DscResources) {
-            $moduleName = $dscResource.ModuleName
-            $dscResourceCacheEntries += [dscResourceCacheEntry]@{
-                Type            = "$moduleName/$($dscResource.Name)"
-                DscResourceInfo = $dscResource
-                LastWriteTimes  = [pscustomobject]@{} # we aren't caching file timestamps in this fast path
+    if ($Module -and $Module.Count -eq 1) {
+        $importedModule = Get-Module -Name $Module -ErrorAction Ignore
+        if ($null -ne $importedModule -and $importedModule.ExportedDscResources.Count -gt 0) {
+            [dscResourceCacheEntry[]]$dscResourceCacheEntries = [System.Collections.Generic.List[Object]]::new()
+            $DscResources = [System.Collections.Generic.List[DscResourceInfo]]::new()
+            [System.Collections.Generic.List[DscResourceInfo]]$r = LoadPowerShellClassResourcesFromModule -moduleInfo $importedModule
+            if ($r) {
+                $DscResources.AddRange($r)
             }
+            foreach ($dscResource in $DscResources) {
+                $moduleName = $dscResource.ModuleName
+                $dscResourceCacheEntries += [dscResourceCacheEntry]@{
+                    Type            = "$moduleName/$($dscResource.Name)"
+                    DscResourceInfo = $dscResource
+                    LastWriteTimes  = [pscustomobject]@{} # we aren't caching file timestamps in this fast path
+                }
+            }
+            return $dscResourceCacheEntries
         }
-        return $dscResourceCacheEntries
     }
 
     $refreshCache = $false
