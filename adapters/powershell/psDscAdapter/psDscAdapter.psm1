@@ -255,7 +255,7 @@ function Invoke-DscCacheRefresh {
             $dscResourceCacheEntries += [dscResourceCacheEntry]@{
                 Type            = "$moduleName/$($dscResource.Name)"
                 DscResourceInfo = $dscResource
-                LastWriteTimes  = (Get-Date) # use current time since we aren't caching this data
+                LastWriteTimes  = [pscustomobject]@{} # we aren't caching file timestamps in this fast path
             }
         }
         return $dscResourceCacheEntries
