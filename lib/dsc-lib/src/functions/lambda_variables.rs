@@ -22,12 +22,12 @@ impl Function for LambdaVariables {
             accepted_arg_ordered_types: vec![vec![FunctionArgKind::String]],
             remaining_arg_accepted_types: None,
             return_types: vec![
-                FunctionArgKind::String,
-                FunctionArgKind::Number,
-                FunctionArgKind::Boolean,
                 FunctionArgKind::Array,
-                FunctionArgKind::Object,
+                FunctionArgKind::Boolean,
                 FunctionArgKind::Null,
+                FunctionArgKind::Number,
+                FunctionArgKind::Object,
+                FunctionArgKind::String,
             ],
         }
     }
