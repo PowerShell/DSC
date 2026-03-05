@@ -1,0 +1,8 @@
+[args]
+about = "xtask provides build helpers for the DSC rust project."
+schemaAbout = "Commands for managing DSC repository schemas."
+schemaExportAbout = "Export DSC schemas to disk."
+
+[schemas.export]
+serializationFailure = "Failed to serialize JSON Schema as string"
+ioError = "Failed to export JSON Schema, IO error"

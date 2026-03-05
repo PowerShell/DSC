@@ -23,7 +23,8 @@ members = [
     "tools/test_group_resource",
     "grammars/tree-sitter-dscexpression",
     "grammars/tree-sitter-ssh-server-config",
-    "y2j"
+    "y2j",
+    "xtask"
 ]
 # This value is modified by the `Set-DefaultWorkspaceMember` helper.
 # Be sure to use `Reset-DefaultWorkspaceMember` before committing to
@@ -49,7 +50,8 @@ default-members = [
     "tools/test_group_resource",
     "grammars/tree-sitter-dscexpression",
     "grammars/tree-sitter-ssh-server-config",
-    "y2j"
+    "y2j",
+    "xtask"
 ]
 
 [workspace.metadata.groups]
@@ -77,7 +79,8 @@ Windows = [
     "tools/test_group_resource",
     "grammars/tree-sitter-dscexpression",
     "grammars/tree-sitter-ssh-server-config",
-    "y2j"
+    "y2j",
+    "xtask"
 ]
 macOS = [
     "dsc",
@@ -96,7 +99,8 @@ macOS = [
     "tools/test_group_resource",
     "grammars/tree-sitter-dscexpression",
     "grammars/tree-sitter-ssh-server-config",
-    "y2j"
+    "y2j",
+    "xtask"
 ]
 Linux = [
     "dsc",
@@ -115,7 +119,8 @@ Linux = [
     "tools/test_group_resource",
     "grammars/tree-sitter-dscexpression",
     "grammars/tree-sitter-ssh-server-config",
-    "y2j"
+    "y2j",
+    "xtask"
 ]
 
 [profile.release]
