@@ -256,7 +256,13 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, execut
 
     let (exit_code, stdout, stderr) = invoke_command(&set.executable, args, input_desired, Some(&resource.directory), env, manifest.exit_codes.as_ref())?;
 
-    match set.returns {
+    let return_kind = if execution_type == &ExecutionKind::WhatIf {
+        set.what_if_returns.as_ref().or(set.returns.as_ref())
+    } else {
+        set.returns.as_ref()
+    };
+
+    match return_kind {
         Some(ReturnKind::State) => {
 
             if resource.kind == Kind::Resource {
