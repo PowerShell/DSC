@@ -33,4 +33,36 @@ Describe 'Invoke a resource test directly' {
         $out.actualState.version | Should -BeExactly '1.1.2'
         $out.inDesiredState | Should -Be $true
     }
+
+    It 'stateAndDiff returns correctly when in desired state' {
+        $out = '{"valueOne":1,"valueTwo":2}' | dsc resource test -r Test/StateAndDiff -f - | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.actualState.valueOne | Should -Be 1
+        $out.actualState.valueTwo | Should -Be 2
+        $out.actualState._inDesiredState | Should -Be $true
+        $out.inDesiredState | Should -Be $true
+        $out.differingProperties | Should -BeNullOrEmpty
+    }
+
+    It 'stateAndDiff returns correctly when not in desired state' {
+        $out = '{"valueOne":3,"valueTwo":4}' | dsc resource test -r Test/StateAndDiff -f - | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.actualState.valueOne | Should -Be 1
+        $out.actualState.valueTwo | Should -Be 2
+        $out.actualState._inDesiredState | Should -Be $false
+        $out.inDesiredState | Should -Be $false
+        $out.differingProperties | Should -Contain 'valueOne'
+        $out.differingProperties | Should -Contain 'valueTwo'
+    }
+
+    It 'stateAndDiff returns correctly when partially in desired state' {
+        $out = '{"valueOne":1,"valueTwo":4}' | dsc resource test -r Test/StateAndDiff -f - | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.actualState.valueOne | Should -Be 1
+        $out.actualState.valueTwo | Should -Be 2
+        $out.actualState._inDesiredState | Should -Be $false
+        $out.inDesiredState | Should -Be $false
+        $out.differingProperties | Should -Contain 'valueTwo'
+        $out.differingProperties | Should -Not -Contain 'valueOne'
+    }
 }
