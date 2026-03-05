@@ -18,6 +18,7 @@ pub enum Schemas {
     Operation,
     RefreshEnv,
     Sleep,
+    StateAndDiff,
     Trace,
     Version,
     WhatIf,
@@ -142,6 +143,12 @@ pub enum SubCommand {
     Schema {
         #[clap(name = "subcommand", short, long, help = "The subcommand to get the schema for")]
         subcommand: Schemas,
+    },
+
+    #[clap(name = "state-and-diff", about = "Return state and diff as separate JSON lines")]
+    StateAndDiff {
+        #[clap(name = "input", short, long, help = "The input to the state-and-diff command as JSON")]
+        input: String,
     },
 
     #[clap(name = "sleep", about = "Sleep for a specified number of seconds")]

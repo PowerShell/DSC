@@ -286,6 +286,12 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, execut
             let Some(actual_line) = lines.next() else {
                 return Err(DscError::Command(resource.type_name.to_string(), exit_code, t!("dscresources.commandResource.setUnexpectedOutput").to_string()));
             };
+
+            if resource.kind == Kind::Resource {
+                debug!("{}", t!("dscresources.commandResource.setVerifyOutput", operation = operation_type, resource = &resource.type_name, executable = &set.executable));
+                verify_json_from_manifest(&resource, actual_line, target_resource)?;
+            }
+
             let actual_value: Value = serde_json::from_str(actual_line)?;
             // TODO: need schema for diff_properties to validate against
             let Some(diff_line) = lines.next() else {
@@ -366,11 +372,6 @@ pub fn invoke_test(resource: &DscResource, expected: &str, target_resource: Opti
     info!("{}", t!("dscresources.commandResource.invokeTestUsing", resource = &resource.type_name, executable = &test.executable));
     let (exit_code, stdout, stderr) = invoke_command(&test.executable, args, command_input.stdin.as_deref(), Some(&resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
 
-    if resource.kind == Kind::Resource {
-        debug!("{}", t!("dscresources.commandResource.testVerifyOutput", resource = &resource.type_name, executable = &test.executable));
-        verify_json_from_manifest(&resource, &stdout, target_resource)?;
-    }
-
     if resource.kind == Kind::Importer {
         debug!("{}", t!("dscresources.commandResource.testGroupTestResponse"));
         let group_test_response: Vec<ResourceTestResult> = serde_json::from_str(&stdout)?;
@@ -380,6 +381,11 @@ pub fn invoke_test(resource: &DscResource, expected: &str, target_resource: Opti
     let mut expected_value: Value = serde_json::from_str(expected)?;
     match test.returns {
         Some(ReturnKind::State) => {
+            if resource.kind == Kind::Resource {
+                debug!("{}", t!("dscresources.commandResource.testVerifyOutput", resource = &resource.type_name, executable = &test.executable));
+                verify_json_from_manifest(&resource, &stdout, target_resource)?;
+            }
+
             let actual_value: Value = match serde_json::from_str(&stdout){
                 Result::Ok(r) => {r},
                 Result::Err(err) => {
@@ -402,6 +408,12 @@ pub fn invoke_test(resource: &DscResource, expected: &str, target_resource: Opti
             let Some(actual_value) = lines.next() else {
                 return Err(DscError::Command(resource.type_name.to_string(), exit_code, t!("dscresources.commandResource.testNoActualState").to_string()));
             };
+
+            if resource.kind == Kind::Resource {
+                debug!("{}", t!("dscresources.commandResource.testVerifyOutput", resource = &resource.type_name, executable = &test.executable));
+                verify_json_from_manifest(&resource, actual_value, target_resource)?;
+            }
+
             let actual_value: Value = serde_json::from_str(actual_value)?;
             let Some(diff_properties) = lines.next() else {
                 return Err(DscError::Command(resource.type_name.to_string(), exit_code, t!("dscresources.commandResource.testNoDiff").to_string()));

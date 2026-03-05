@@ -40,4 +40,21 @@ Describe 'Invoke a resource set directly' {
         $result.afterState.executionType | Should -BeExactly 'Actual'
         $result.changedProperties | Should -Be $null
     }
+
+    It 'stateAndDiff resource set returns changed properties when not in desired state' {
+        $result = '{"valueOne":3,"valueTwo":4}' | dsc resource set -r Test/StateAndDiff -f - | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $result.afterState.valueOne | Should -Be 1
+        $result.afterState.valueTwo | Should -Be 2
+        $result.changedProperties | Should -Contain 'valueOne'
+        $result.changedProperties | Should -Contain 'valueTwo'
+    }
+
+    It 'stateAndDiff resource set returns no changed properties when in desired state' {
+        $result = '{"valueOne":1,"valueTwo":2}' | dsc resource set -r Test/StateAndDiff -f - | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $result.afterState.valueOne | Should -Be 1
+        $result.afterState.valueTwo | Should -Be 2
+        $result.changedProperties | Should -BeNullOrEmpty
+    }
 }
