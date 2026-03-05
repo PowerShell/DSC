@@ -64,6 +64,7 @@ Describe '_restartRequired tests' {
         $out = dsc config get -i $configYaml 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
         (Get-Content $TestDrive/error.log) | Should -BeLike "*WARN*Resource returned property '_restartRequired' which contains invalid value: ``[{`"invalid`":`"item`"}]*" -Because (Get-Content $TestDrive/error.log -Raw)
-        $out.results[0].metadata._restartRequired | Should -BeNullOrEmpty
+        $out.results[0].executionInformation.restartRequired | Should -BeNullOrEmpty
+        $out.executionInformation.restartRequired | Should -BeNullOrEmpty
     }
 }
