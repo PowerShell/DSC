@@ -17,6 +17,7 @@ pub enum Schemas {
     Metadata,
     Operation,
     RefreshEnv,
+    RestartRequired,
     Sleep,
     StateAndDiff,
     Trace,
@@ -136,6 +137,12 @@ pub enum SubCommand {
         #[clap(name = "operation", short, long, help = "The operation to perform: get or set")]
         operation: RefreshEnvOperation,
         #[clap(name = "input", short, long, help = "The input to the refresh env command as JSON")]
+        input: String,
+    },
+
+    #[clap(name = "restart-required", about = "Check if a restart is required based on the input")]
+    RestartRequired {
+        #[clap(name = "input", short, long, help = "The input to the restart required command as JSON")]
         input: String,
     },
 

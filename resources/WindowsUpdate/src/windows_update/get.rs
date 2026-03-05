@@ -223,7 +223,7 @@ pub fn handle_get(input: &str) -> Result<String> {
     match result {
         Ok(updates) => {
             let result = UpdateList {
-                metadata: None,
+                restart_required: None,
                 updates
             };
             serde_json::to_string(&result)
