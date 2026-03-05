@@ -313,7 +313,7 @@ extends:
         steps:
         - task: RustInstaller@1
           inputs:
-            rustVersion: ms-stable
+            rustVersion: ms-prod-1.93
             toolchainFeed: $(Rust.SDK)
             additionalTargets: x86_64-unknown-linux-musl
           displayName: Install Rust
@@ -352,7 +352,7 @@ extends:
         steps:
         - task: RustInstaller@1
           inputs:
-            rustVersion: ms-stable
+            rustVersion: ms-prod-1.93
             toolchainFeed: $(Rust.SDK)
             additionalTargets: aarch64-unknown-linux-musl
           displayName: Install Rust
@@ -420,7 +420,7 @@ extends:
         steps:
         - task: RustInstaller@1
           inputs:
-            rustVersion: ms-stable
+            rustVersion: ms-prod-1.93
             toolchainFeed: $(Rust.SDK)
             additionalTargets: $(buildName)
           displayName: Install Rust
