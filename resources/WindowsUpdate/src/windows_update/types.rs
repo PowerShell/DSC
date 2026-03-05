@@ -8,7 +8,7 @@ use serde_json::{Map, Value};
 #[serde(rename_all = "camelCase")]
 pub struct UpdateList {
     #[serde(rename = "_restartRequired", skip_serializing_if = "Option::is_none")]
-    pub restart_required: Option<Map<String, Value>>,
+    pub restart_required: Option<Vec<Map<String, Value>>>,
     pub updates: Vec<UpdateInfo>,
 }
 
