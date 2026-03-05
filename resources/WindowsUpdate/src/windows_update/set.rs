@@ -288,10 +288,7 @@ pub fn handle_set(input: &str) -> Result<String> {
                 let computer_name = get_computer_name();
                 let mut restart_required_item = Map::new();
                 restart_required_item.insert("system".to_string(), Value::String(computer_name));
-
-                let restart_required_array = Value::Array(vec![Value::Object(restart_required_item)]);
-
-                Some(restart_required_array)
+                Some(Vec::from([restart_required_item]))
             } else {
                 None
             };

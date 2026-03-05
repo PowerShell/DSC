@@ -16,7 +16,7 @@ pub fn handle_export(input: &str) -> Result<String> {
     // Parse optional filter input as UpdateList
     let update_list: UpdateList = if input.trim().is_empty() {
         UpdateList {
-            metadata: None,
+            restart_required: None,
             updates: vec![UpdateInfo {
                 description: None,
                 id: None,
@@ -248,7 +248,7 @@ pub fn handle_export(input: &str) -> Result<String> {
     match result {
         Ok(updates) => {
             let result = UpdateList {
-                metadata: None,
+                restart_required: None,
                 updates
             };
             serde_json::to_string(&result)
