@@ -32,7 +32,7 @@ steps:
     ob_restore_phase: true
 - task: RustInstaller@1
   inputs:
-    rustVersion: ms-stable
+    rustVersion: ms-prod-1.93
     toolchainFeed: ${{ parameters.RustSDK }}
     additionalTargets: ${{ parameters.buildName }}
   displayName: Install Rust
