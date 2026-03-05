@@ -291,9 +291,7 @@ pub fn handle_set(input: &str) -> Result<String> {
 
                 let restart_required_array = Value::Array(vec![Value::Object(restart_required_item)]);
 
-                let mut map = Map::new();
-                map.insert("_restartRequired".to_string(), restart_required_array);
-                Some(map)
+                Some(restart_required_array)
             } else {
                 None
             };
