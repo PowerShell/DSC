@@ -101,7 +101,7 @@ steps:
   condition: succeeded()
 - pwsh: |
     Set-Location "$(Build.SourcesDirectory)/DSC"
-    ./packaging.ps1 -PackageType msix -Architecture ${{ parameters.buildName }} -Release -UseX64MakeAppx
+    ./build.ps1 -PackageType msix -Architecture ${{ parameters.buildName }} -Release -UseX64MakeAppx
     Copy-Item ./bin/msix/*.msix "$(Build.ArtifactStagingDirectory)" -Verbose
   displayName: 'Create msix for ${{ parameters.buildName }}'
   condition: succeeded()
