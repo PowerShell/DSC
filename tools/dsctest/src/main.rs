@@ -339,7 +339,7 @@ fn main() {
             thread::sleep(Duration::from_secs(sleep.seconds));
             serde_json::to_string(&sleep).unwrap()
         },
-        SubCommand::StateAndDiff { input } => {
+        SubCommand::StateAndDiff { input, state_only } => {
             let mut state_and_diff = match serde_json::from_str::<StateAndDiff>(&input) {
                 Ok(s) => s,
                 Err(err) => {
@@ -361,11 +361,16 @@ fn main() {
                 diff.push("valueTwo".to_string());
             }
             state_and_diff.in_desired_state = Some(diff.is_empty());
-            // Output line 1: state JSON, line 2: diff array JSON
             let state_json = serde_json::to_string(&state_and_diff).unwrap();
-            let diff_json = serde_json::to_string(&diff).unwrap();
-            println!("{state_json}");
-            println!("{diff_json}");
+            if state_only {
+                // For get operations: output only the state JSON
+                println!("{state_json}");
+            } else {
+                // For set/test operations: output state JSON line, then diff array JSON line
+                let diff_json = serde_json::to_string(&diff).unwrap();
+                println!("{state_json}");
+                println!("{diff_json}");
+            }
             String::new()
         },
         SubCommand::Trace => {

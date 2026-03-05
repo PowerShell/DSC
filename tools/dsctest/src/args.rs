@@ -149,6 +149,8 @@ pub enum SubCommand {
     StateAndDiff {
         #[clap(name = "input", short, long, help = "The input to the state-and-diff command as JSON")]
         input: String,
+        #[clap(name = "state-only", long, help = "Only output the state JSON (for get operations)")]
+        state_only: bool,
     },
 
     #[clap(name = "sleep", about = "Sleep for a specified number of seconds")]

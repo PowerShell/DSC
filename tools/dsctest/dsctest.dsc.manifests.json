@@ -1012,6 +1012,7 @@
         "executable": "dsctest",
         "args": [
           "state-and-diff",
+          "--state-only",
           {
             "jsonInputArg": "--input",
             "mandatory": true
