@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use crate::configure::config_doc::{ExecutionInformation, ResourceDirective};
 use crate::configure::context::{Context, ProcessMode};
 use crate::configure::parameters::import_parameters;
 use crate::configure::{config_doc::{ExecutionKind, IntOrExpression, Metadata, Parameter, Resource, ResourceDiscoveryMode, RestartRequired, ValueOrCopy}};
@@ -15,6 +16,7 @@ use crate::DscResource;
 use crate::discovery::Discovery;
 use crate::parser::Statement;
 use crate::progress::{Failure, ProgressBar, ProgressFormat};
+use crate::types::{SemanticVersion, SemanticVersionReq};
 use crate::util::resource_id;
 use self::config_doc::{Configuration, DataType, MicrosoftDscMetadata, Operation, SecurityContextKind};
 use self::depends_on::get_resource_invocation_order;
@@ -103,13 +105,15 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf
             }
             r.properties = escape_property_values(&props)?;
             let mut properties = serde_json::to_value(&r.properties)?;
-            get_metadata_from_result(None, &mut properties, &mut metadata)?;
+            let mut execution_information = ExecutionInformation::new();
+            get_metadata_from_result(None, &mut properties, &mut metadata, &mut execution_information)?;
             r.properties = Some(properties.as_object().cloned().unwrap_or_default());
             r.metadata = if metadata.microsoft.is_some() || !metadata.other.is_empty() {
                 Some(metadata)
             } else {
                 None
             };
+            r.execution_information = Some(execution_information);
 
             conf.resources.push(r);
         }
@@ -222,48 +226,57 @@ fn add_metadata(dsc_resource: &DscResource, mut properties: Option<Map<String, V
     }
 }
 
-fn get_require_adapter_from_metadata(resource_metadata: &Option<Metadata>) -> Option<String> {
-    if let Some(resource_metadata) = resource_metadata {
-        if let Some(microsoft_metadata) = &resource_metadata.microsoft {
-            if let Some(require_adapter) = &microsoft_metadata.require_adapter {
-                return Some(require_adapter.clone());
-            }
+fn get_require_adapter_from_directive(resource_directives: &Option<ResourceDirective>) -> Option<String> {
+    if let Some(directives) = resource_directives {
+        if let Some(require_adapter) = &directives.require_adapter {
+            return Some(require_adapter.clone());
         }
     }
     None
 }
 
-fn check_security_context(metadata: Option<&Metadata>) -> Result<(), DscError> {
-    if metadata.is_none() {
+fn check_security_context(metadata: Option<&Metadata>, directive_security_context: Option<&SecurityContextKind>) -> Result<(), DscError> {
+    if metadata.is_none() && directive_security_context.is_none() {
         return Ok(());
     }
 
+    let mut security_context_required: Option<&SecurityContextKind> = None;
     if let Some(metadata) = &metadata {
         if let Some(microsoft_dsc) = &metadata.microsoft {
             if let Some(required_security_context) = &microsoft_dsc.security_context {
-                match required_security_context {
-                    SecurityContextKind::Current => {
-                        // no check needed
-                    },
-                    SecurityContextKind::Elevated => {
-                        if get_security_context() != SecurityContext::Admin {
-                            return Err(DscError::SecurityContext(t!("configure.mod.elevationRequired").to_string()));
-                        }
-                    },
-                    SecurityContextKind::Restricted => {
-                        if get_security_context() != SecurityContext::User {
-                            return Err(DscError::SecurityContext(t!("configure.mod.restrictedRequired").to_string()));
-                        }
-                    },
-                }
+                warn!("{}", t!("configure.mod.securityContextInMetadataDeprecated"));
+                security_context_required = Some(required_security_context);
             }
         }
+    }
+
+    if let Some(directive_security_context) = &directive_security_context {
+        if security_context_required.is_some() && security_context_required != Some(directive_security_context) {
+            return Err(DscError::SecurityContext(t!("configure.mod.conflictingSecurityContext", metadata = security_context_required.unwrap(), directive = directive_security_context).to_string()));
+        }
+        security_context_required = Some(directive_security_context);
+    }
+
+    match security_context_required {
+        Some(SecurityContextKind::Elevated) => {
+            if get_security_context() != SecurityContext::Admin {
+                return Err(DscError::SecurityContext(t!("configure.mod.elevationRequired").to_string()));
+            }
+        },
+        Some(SecurityContextKind::Restricted) => {
+            if get_security_context() != SecurityContext::User {
+                return Err(DscError::SecurityContext(t!("configure.mod.restrictedRequired").to_string()));
+            }
+        },
+        None | Some(SecurityContextKind::Current) => {
+            // no check needed
+        },
     }
 
     Ok(())
 }
 
-fn get_metadata_from_result(mut context: Option<&mut Context>, result: &mut Value, metadata: &mut Metadata) -> Result<(), DscError> {
+fn get_metadata_from_result(mut context: Option<&mut Context>, result: &mut Value, metadata: &mut Metadata, execution_information: &mut ExecutionInformation) -> Result<(), DscError> {
     if let Some(metadata_value) = result.get("_metadata") {
         if let Some(metadata_map) = metadata_value.as_object() {
             for (key, value) in metadata_map {
@@ -274,10 +287,58 @@ fn get_metadata_from_result(mut context: Option<&mut Context>, result: &mut Valu
                 if let Some(ref mut context) = context {
                     if key == "_restartRequired" {
                         if let Ok(restart_required) = serde_json::from_value::<Vec<RestartRequired>>(value.clone()) {
+                            execution_information.restart_required = Some(restart_required.clone());
                             context.restart_required.get_or_insert_with(Vec::new).extend(restart_required);
                         } else {
                             warn!("{}", t!("configure.mod.metadataRestartRequiredInvalid", value = value));
                             continue;
+                        }
+                    }
+                }
+                if key == "_refreshEnv" && value.as_bool() == Some(true) {
+                    if let Some(ref context) = context {
+                        if let Some(operation) = &context.operation {
+                            if *operation != Operation::Set {
+                                info!("{}", t!("configure.mod.metadataRefreshEnvOnlyAffectsSet", operation = operation));
+                                continue;
+                            }
+                        } else {
+                            debug!("{}", t!("configure.mod.metadataRefreshEnvNoOperationContext"));
+                            continue;
+                        }
+                    } else {
+                        debug!("{}", t!("configure.mod.metadataRefreshEnvNoContext"));
+                        continue;
+                    }
+                    #[cfg(not(windows))]
+                    {
+                        info!("{}", t!("configure.mod.metadataRefreshEnvIgnored"));
+                        continue;
+                    }
+                    #[cfg(windows)]
+                    {
+                        info!("{}", t!("configure.mod.metadataRefreshEnvFound"));
+                        // rebuild the environment variables from Windows registry
+                        // read the environment variables from HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment
+                        // overlay with HKCU\Environment for user level variables except for PATH which is prefixed instead of overlayed
+                        let mut env_vars = read_windows_registry("HKLM", r"SYSTEM\CurrentControlSet\Control\Session Manager\Environment")?;
+                        let user_env_vars = read_windows_registry("HKCU", r"Environment")?;
+                        for (key, value) in user_env_vars {
+                            if key == "PATH" {
+                                if let Some(system_path) = env_vars.get(&key) {
+                                    trace!("Prefixing user PATH '{value}' to system PATH '{system_path}'");
+                                    env_vars.insert(key, format!("{};{}", value, system_path));
+                                } else {
+                                    trace!("System PATH not found, using user PATH '{value}' as PATH");
+                                    env_vars.insert(key, value.to_string());
+                                }
+                            } else {
+                                env_vars.insert(key, value.to_string());
+                            }
+                        }
+                        // set the current process env vars to the new values
+                        for (key, value) in env_vars {
+                            std::env::set_var(&key.to_string(), &value);
                         }
                     }
                 }
@@ -291,6 +352,31 @@ fn get_metadata_from_result(mut context: Option<&mut Context>, result: &mut Valu
         }
     }
     Ok(())
+}
+
+#[cfg(windows)]
+fn read_windows_registry(hive: &str, path: &str) -> Result<HashMap<String, String>, DscError> {
+    use registry::Hive;
+    let hive = match hive {
+        "HKLM" => Hive::LocalMachine,
+        "HKCU" => Hive::CurrentUser,
+        _ => return Err(DscError::Parser(t!("configure.mod.invalidRegistryHive", hive = hive).to_string())),
+    };
+    let reg_key = hive.open(path, registry::Security::Read)?;
+    let mut result: HashMap<String, String> = HashMap::new();
+    for value in reg_key.values() {
+        let value = value?;
+        // env vars on Windows aren't case-sensitive, so we use uppercase to keep them consistent
+        let name = value.name().to_string()?.to_uppercase();
+        let data = match value.data() {
+            // for env var we only need to handle string and expand string types, other types will be ignored
+            registry::Data::String(s) => s.to_string()?,
+            registry::Data::ExpandString(s) => s.to_string()?,
+            _ => continue,
+        };
+        result.insert(name, data);
+    }
+    Ok(result)
 }
 
 impl Configurator {
@@ -382,6 +468,7 @@ impl Configurator {
     /// This function will return an error if the underlying resource fails.
     pub fn invoke_get(&mut self) -> Result<ConfigurationGetResult, DscError> {
         let mut result = ConfigurationGetResult::new();
+        self.context.operation = Some(Operation::Get);
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &mut self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
         let discovery = &mut self.discovery.clone();
@@ -394,7 +481,9 @@ impl Configurator {
                 progress.write_increment(1);
                 continue;
             }
-            let adapter = get_require_adapter_from_metadata(&resource.metadata);
+            let directive_security_context = resource.directives.as_ref().and_then(|d| d.security_context.as_ref());
+            check_security_context(resource.metadata.as_ref(), directive_security_context)?;
+            let adapter = get_require_adapter_from_directive(&resource.directives);
             let Some(dsc_resource) = discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.require_version.as_deref(), adapter.as_deref()))? else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.require_version.as_deref().unwrap_or("").to_string()));
             };
@@ -410,6 +499,7 @@ impl Configurator {
                 },
             };
             let end_datetime = chrono::Local::now();
+            let mut execution_information = ExecutionInformation::new_with_duration(&start_datetime, &end_datetime);
             let mut metadata = Metadata {
                 microsoft: Some(
                     MicrosoftDscMetadata::new_with_duration(&start_datetime, &end_datetime)
@@ -420,7 +510,7 @@ impl Configurator {
             match &mut get_result {
                 GetResult::Resource(ref mut resource_result) => {
                     self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), serde_json::to_value(&resource_result.actual_state)?);
-                    get_metadata_from_result(Some(&mut self.context), &mut resource_result.actual_state, &mut metadata)?;
+                    get_metadata_from_result(Some(&mut self.context), &mut resource_result.actual_state, &mut metadata, &mut execution_information)?;
                 },
                 GetResult::Group(group) => {
                     let mut results = Vec::<Value>::new();
@@ -431,6 +521,7 @@ impl Configurator {
                 },
             }
             let resource_result = config_result::ResourceGetResult {
+                execution_information: Some(execution_information),
                 metadata: Some(metadata),
                 name: evaluated_name,
                 resource_type: resource.resource_type.clone(),
@@ -444,6 +535,9 @@ impl Configurator {
         result.metadata = Some(
             self.get_result_metadata(Operation::Get)
         );
+        let mut execution_information = ExecutionInformation::new();
+        self.get_execution_information(Operation::Get, &mut execution_information);
+        result.execution_information = Some(execution_information);
         self.process_output()?;
         if !self.context.outputs.is_empty() {
             result.outputs = Some(self.context.outputs.clone());
@@ -467,6 +561,7 @@ impl Configurator {
     #[allow(clippy::too_many_lines)]
     pub fn invoke_set(&mut self, skip_test: bool) -> Result<ConfigurationSetResult, DscError> {
         let mut result = ConfigurationSetResult::new();
+        self.context.operation = Some(Operation::Set);
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &mut self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
         let discovery = &mut self.discovery.clone();
@@ -479,13 +574,14 @@ impl Configurator {
                 progress.write_increment(1);
                 continue;
             }
-            let adapter = get_require_adapter_from_metadata(&resource.metadata);
+            let directive_security_context = resource.directives.as_ref().and_then(|d| d.security_context.as_ref());
+            check_security_context(resource.metadata.as_ref(), directive_security_context)?;
+            let adapter = get_require_adapter_from_directive(&resource.directives);
             let Some(dsc_resource) = discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.require_version.as_deref(), adapter.as_deref()))? else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.require_version.as_deref().unwrap_or("").to_string()));
             };
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
-
             // see if the properties contains `_exist` and is false
             let exist = match &properties {
                 Some(property_map) => {
@@ -590,11 +686,13 @@ impl Configurator {
             }
 
             // Process metadata - only add whatIf if we have ResourceWhatIf variant
+            let mut execution_information = ExecutionInformation::new_with_duration(&start_datetime, &end_datetime);
             let mut other_metadata = Map::new();
             if self.context.execution_type == ExecutionKind::WhatIf {
                 if let Some(delete_res) = delete_what_if_metadata {
                     if let Some(metadata) = delete_res.metadata {
                         if let Some(what_if) = metadata.what_if {
+                            execution_information.what_if = Some(what_if.clone());
                             other_metadata.insert("whatIf".to_string(), what_if);
                         }
                     }
@@ -610,7 +708,7 @@ impl Configurator {
             match &mut set_result {
                 SetResult::Resource(resource_result) => {
                     self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), serde_json::to_value(&resource_result.after_state)?);
-                    get_metadata_from_result(Some(&mut self.context), &mut resource_result.after_state, &mut metadata)?;
+                    get_metadata_from_result(Some(&mut self.context), &mut resource_result.after_state, &mut metadata, &mut execution_information)?;
                 },
                 SetResult::Group(group) => {
                     let mut results = Vec::<Value>::new();
@@ -621,6 +719,7 @@ impl Configurator {
                 },
             }
             let resource_result = config_result::ResourceSetResult {
+                execution_information: Some(execution_information),
                 metadata: Some(metadata),
                 name: evaluated_name,
                 resource_type: resource.resource_type.clone(),
@@ -634,6 +733,9 @@ impl Configurator {
         result.metadata = Some(
             self.get_result_metadata(Operation::Set)
         );
+        let mut execution_information = ExecutionInformation::new();
+        self.get_execution_information(Operation::Set, &mut execution_information);
+        result.execution_information = Some(execution_information);
         self.process_output()?;
         if !self.context.outputs.is_empty() {
             result.outputs = Some(self.context.outputs.clone());
@@ -652,6 +754,7 @@ impl Configurator {
     /// This function will return an error if the underlying resource fails.
     pub fn invoke_test(&mut self) -> Result<ConfigurationTestResult, DscError> {
         let mut result = ConfigurationTestResult::new();
+        self.context.operation = Some(Operation::Test);
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &mut self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
         let discovery = &mut self.discovery.clone();
@@ -664,7 +767,9 @@ impl Configurator {
                 progress.write_increment(1);
                 continue;
             }
-            let adapter = get_require_adapter_from_metadata(&resource.metadata);
+            let directive_security_context = resource.directives.as_ref().and_then(|d| d.security_context.as_ref());
+            check_security_context(resource.metadata.as_ref(), directive_security_context)?;
+            let adapter = get_require_adapter_from_directive(&resource.directives);
             let Some(dsc_resource) = discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.require_version.as_deref(), adapter.as_deref()))? else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.require_version.as_deref().unwrap_or("").to_string()));
             };
@@ -682,6 +787,7 @@ impl Configurator {
                 },
             };
             let end_datetime = chrono::Local::now();
+            let mut execution_information = ExecutionInformation::new_with_duration(&start_datetime, &end_datetime);
             let mut metadata = Metadata {
                 microsoft: Some(
                     MicrosoftDscMetadata::new_with_duration(&start_datetime, &end_datetime)
@@ -691,7 +797,7 @@ impl Configurator {
             match &mut test_result {
                 TestResult::Resource(resource_test_result) => {
                     self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), serde_json::to_value(&resource_test_result.actual_state)?);
-                    get_metadata_from_result(Some(&mut self.context), &mut resource_test_result.actual_state, &mut metadata)?;
+                    get_metadata_from_result(Some(&mut self.context), &mut resource_test_result.actual_state, &mut metadata, &mut execution_information)?;
                 },
                 TestResult::Group(group) => {
                     let mut results = Vec::<Value>::new();
@@ -702,6 +808,7 @@ impl Configurator {
                 },
             }
             let resource_result = config_result::ResourceTestResult {
+                execution_information: Some(execution_information),
                 metadata: Some(metadata),
                 name: evaluated_name,
                 resource_type: resource.resource_type.clone(),
@@ -715,6 +822,9 @@ impl Configurator {
         result.metadata = Some(
             self.get_result_metadata(Operation::Test)
         );
+        let mut execution_information = ExecutionInformation::new();
+        self.get_execution_information(Operation::Test, &mut execution_information);
+        result.execution_information = Some(execution_information);
         self.process_output()?;
         if !self.context.outputs.is_empty() {
             result.outputs = Some(self.context.outputs.clone());
@@ -733,6 +843,7 @@ impl Configurator {
     /// This function will return an error if the underlying resource fails.
     pub fn invoke_export(&mut self) -> Result<ConfigurationExportResult, DscError> {
         let mut result = ConfigurationExportResult::new();
+        self.context.operation = Some(Operation::Export);
         let mut conf = config_doc::Configuration::new();
         conf.metadata.clone_from(&self.config.metadata);
 
@@ -748,7 +859,9 @@ impl Configurator {
                 progress.write_increment(1);
                 continue;
             }
-            let adapter = get_require_adapter_from_metadata(&resource.metadata);
+            let directive_security_context = resource.directives.as_ref().and_then(|d| d.security_context.as_ref());
+            check_security_context(resource.metadata.as_ref(), directive_security_context)?;
+            let adapter = get_require_adapter_from_directive(&resource.directives);
             let Some(dsc_resource) = discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.require_version.as_deref(), adapter.as_deref()))? else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.require_version.as_deref().unwrap_or("").to_string()));
             };
@@ -1009,12 +1122,10 @@ impl Configurator {
         Metadata {
             microsoft: Some(
                 MicrosoftDscMetadata {
-                    require_adapter: None,
                     duration: Some(end_datetime.signed_duration_since(self.context.start_datetime).to_string()),
                     end_datetime: Some(end_datetime.to_rfc3339()),
                     execution_type: Some(self.context.execution_type.clone()),
                     operation: Some(operation),
-                    resource_discovery: None,
                     restart_required: self.context.restart_required.clone(),
                     security_context: Some(self.context.security_context.clone()),
                     start_datetime: Some(self.context.start_datetime.to_rfc3339()),
@@ -1026,30 +1137,58 @@ impl Configurator {
         }
     }
 
+    fn get_execution_information(&self, operation: Operation, execution_information: &mut ExecutionInformation) {
+        let end_datetime = chrono::Local::now();
+        execution_information.duration = Some(end_datetime.signed_duration_since(self.context.start_datetime).to_string());
+        execution_information.end_datetime = Some(end_datetime.to_rfc3339());
+        execution_information.start_datetime = Some(self.context.start_datetime.to_rfc3339());
+        execution_information.version = self.context.dsc_version.clone();
+        execution_information.execution_type = Some(self.context.execution_type.clone());
+        execution_information.operation = Some(operation);
+        execution_information.restart_required = self.context.restart_required.clone();
+        execution_information.security_context = Some(self.context.security_context.clone());
+    }
+
     fn validate_config(&mut self) -> Result<(), DscError> {
         let config: Configuration = serde_json::from_str(self.json.as_str())?;
-        check_security_context(config.metadata.as_ref())?;
+        let config_security_context = if let Some(directives) = &config.directives {
+            if let Some(security_context) = &directives.security_context {
+                Some(security_context.clone())
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+        check_security_context(config.metadata.as_ref(), config_security_context.as_ref())?;
 
-        let mut skip_resource_validation = false;
-        if let Some(metadata) = &config.metadata {
-            if let Some(microsoft_metadata) = &metadata.microsoft {
-                if let Some(mode) = &microsoft_metadata.resource_discovery {
-                    if *mode == ResourceDiscoveryMode::DuringDeployment {
-                        debug!("{}", t!("configure.mod.skippingResourceDiscovery"));
-                        skip_resource_validation = true;
-                        self.discovery.refresh_cache = true;
-                    }
+        if let Some(directives) = &config.directives {
+            if let Some(version) = &directives.version {
+                let dsc_version = SemanticVersion::parse(env!("CARGO_PKG_VERSION"))?;
+                let version_req = SemanticVersionReq::parse(&version)?;
+                if !version_req.matches(&dsc_version) {
+                    return Err(DscError::Validation(t!("configure.mod.versionNotSatisfied", required_version = version, current_version = env!("CARGO_PKG_VERSION")).to_string()));
                 }
             }
         }
 
-        if !skip_resource_validation {
+        let mut resource_discovery_mode = ResourceDiscoveryMode::PreDeployment;
+        if let Some(directives) = &config.directives {
+            if let Some(resource_discovery_directive) = &directives.resource_discovery {
+                resource_discovery_mode = resource_discovery_directive.clone();
+            }
+        }
+
+        if resource_discovery_mode == ResourceDiscoveryMode::DuringDeployment {
+            debug!("{}", t!("configure.mod.skippingResourceDiscovery"));
+            self.discovery.refresh_cache = true;
+        } else {
             // Perform discovery of resources used in config
             // create an array of DiscoveryFilter using the resource types and requireVersion from the config
             let mut discovery_filter: Vec<DiscoveryFilter> = Vec::new();
             let config_copy = config.clone();
             for resource in config_copy.resources {
-                let adapter = get_require_adapter_from_metadata(&resource.metadata);
+                let adapter = get_require_adapter_from_directive(&resource.directives);
                 let filter = DiscoveryFilter::new(&resource.resource_type, resource.require_version.as_deref(), adapter.as_deref());
                 if !discovery_filter.contains(&filter) {
                     discovery_filter.push(filter);
@@ -1069,7 +1208,7 @@ impl Configurator {
 
             // now check that each resource in the config was found
             for resource in config.resources.iter() {
-                let adapter = get_require_adapter_from_metadata(&resource.metadata);
+                let adapter = get_require_adapter_from_directive(&resource.directives);
                 let Some(_dsc_resource) = self.discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.require_version.as_deref(), adapter.as_deref()))? else {
                     return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.require_version.as_deref().unwrap_or("").to_string()));
                 };

@@ -378,6 +378,59 @@
     },
     {
       "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/RefreshEnv",
+      "version": "0.1.0",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "refresh-env",
+          "--operation",
+          "get",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ]
+      },
+      "set": {
+        "executable": "dsctest",
+        "args": [
+          "refresh-env",
+          "--operation",
+          "set",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ],
+        "implementsPretest": true,
+        "return": "state"
+      },
+      "export": {
+        "executable": "dsctest",
+        "args": [
+          "refresh-env",
+          "--operation",
+          "get",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ]
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "refresh-env"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
       "type": "Test/Sleep",
       "version": "0.1.0",
       "get": {
