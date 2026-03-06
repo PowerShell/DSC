@@ -1819,7 +1819,7 @@ function Build-DscMsixPackage {
             $msixArguments = @(
                 'bundle'
                 '/d', $artifactDirectory.MsixBundle
-                '/p', "$($artifactDirectory.Bin)\$packageName.msixbundle"
+                '/p', "$($artifactDirectory.BinRoot)\$packageName.msixbundle"
             )
             & $makeappx @msixArguments
             return
