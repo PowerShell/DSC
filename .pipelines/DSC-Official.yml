@@ -103,6 +103,8 @@ extends:
           ob_sdl_sbom_enabled: true
           ob_signing_setup_enabled: true
           ob_sdl_codeql_compiled_enabled: true
+          ob_symbolsPublishing_enabled: true
+          ob_symbolsPublishing_indexSources: true
         pool:
           type: windows
         steps:
@@ -121,6 +123,8 @@ extends:
           ob_sdl_sbom_enabled: true
           ob_signing_setup_enabled: true
           ob_sdl_codeql_compiled_enabled: true
+          ob_symbolsPublishing_enabled: true
+          ob_symbolsPublishing_indexSources: true
         pool:
           type: windows
         steps:
@@ -137,10 +141,6 @@ extends:
           - BuildWin_arm64
         variables:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
-          ob_symbolsPublishing_enabled: true
-          ob_symbolsPublishing_symbolsFolder: '$(Build.SourcesDirectory)\bin'
-          ob_symbolsPublishing_searchPattern: '**/*.pdb'
-          ob_symbolsPublishing_indexSources: true
           ob_sdl_sbom_enabled: false
           ob_signing_setup_enabled: false
           ob_sdl_codeql_compiled_enabled: false
@@ -277,9 +277,6 @@ extends:
           LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2204:latest'
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
-          ob_linuxSymbolsPublishing_enabled: true
-          ob_linuxSymbolsPublishing_symbolsFolder: '$(Build.SourcesDirectory)/bin'
-          ob_linuxSymbolsPublishing_searchPattern: '**/*.dbg'
         displayName: Linux-x64-musl
         pool:
           type: linux
@@ -313,9 +310,6 @@ extends:
           LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2204-arm64:latest'
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
-          ob_linuxSymbolsPublishing_enabled: true
-          ob_linuxSymbolsPublishing_symbolsFolder: '$(Build.SourcesDirectory)/bin'
-          ob_linuxSymbolsPublishing_searchPattern: '**/*.dbg'
         displayName: Linux-ARM64-musl
         pool:
           type: linux
