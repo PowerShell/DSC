@@ -12,6 +12,18 @@ function Import-PSDSCModule {
 function Get-DSCResourceModules {
     $listPSModuleFolders = $env:PSModulePath.Split([IO.Path]::PathSeparator)
     $dscModulePsd1List = [System.Collections.Generic.HashSet[System.String]]::new()
+
+    # Include any imported modules that contain DSC Resources
+    foreach ($importedModule in Get-Module) {
+        if ($importedModule.ExportedDscResources.Count -gt 0) {
+            # See if the module has a psd1 and then add that to the list, otherwise ignore
+            foreach ($psd1 in (Get-ChildItem -LiteralPath $importedModule.ModuleBase -Filter "$($importedModule.Name).psd1" -ErrorAction Ignore)) {
+                Write-Debug -Debug ("Adding imported module with DSC resources: $psd1")
+                $dscModulePsd1List.Add($psd1) | Out-Null
+            }
+        }
+    }
+
     foreach ($folder in $listPSModuleFolders) {
         if (!(Test-Path -LiteralPath $folder -ErrorAction Ignore)) {
             continue
@@ -229,6 +241,28 @@ function Invoke-DscCacheRefresh {
         $Module
     )
 
+    # if the module is already imported and has DSC resources, we can skip refreshing the cache and return the resources directly
+    if ($Module -and $Module.Count -eq 1) {
+        $importedModule = Get-Module -Name $Module -ErrorAction Ignore
+        if ($null -ne $importedModule -and $importedModule.ExportedDscResources.Count -gt 0) {
+            [dscResourceCacheEntry[]]$dscResourceCacheEntries = [System.Collections.Generic.List[Object]]::new()
+            $DscResources = [System.Collections.Generic.List[DscResourceInfo]]::new()
+            [System.Collections.Generic.List[DscResourceInfo]]$r = LoadPowerShellClassResourcesFromModule -moduleInfo $importedModule
+            if ($r) {
+                $DscResources.AddRange($r)
+            }
+            foreach ($dscResource in $DscResources) {
+                $moduleName = $dscResource.ModuleName
+                $dscResourceCacheEntries += [dscResourceCacheEntry]@{
+                    Type            = "$moduleName/$($dscResource.Name)"
+                    DscResourceInfo = $dscResource
+                    LastWriteTimes  = [pscustomobject]@{} # we aren't caching file timestamps in this fast path
+                }
+            }
+            return $dscResourceCacheEntries
+        }
+    }
+
     $refreshCache = $false
 
     $cacheFilePath = if ($IsWindows) {
@@ -293,7 +327,7 @@ function Invoke-DscCacheRefresh {
                 if (-not $refreshCache) {
                     Write-Debug -Debug "Checking cache for stale PSModulePath"
 
-                    $m = $env:PSModulePath -split [IO.Path]::PathSeparator | % { Get-ChildItem -Directory -LiteralPath $_ -Depth 1 -ErrorAction Ignore }
+                    $m = $env:PSModulePath.Split([IO.Path]::PathSeparator, [System.StringSplitOptions]::RemoveEmptyEntries) | ForEach-Object { Get-ChildItem -Directory -LiteralPath $_ -Depth 1 -ErrorAction Ignore }
 
                     $hs_cache = [System.Collections.Generic.HashSet[string]]($cache.PSModulePaths)
                     $hs_live = [System.Collections.Generic.HashSet[string]]($m.FullName)
@@ -361,7 +395,7 @@ function Invoke-DscCacheRefresh {
 
         [dscResourceCache]$cache = [dscResourceCache]::new()
         $cache.ResourceCache = $dscResourceCacheEntries
-        $m = $env:PSModulePath -split [IO.Path]::PathSeparator | ForEach-Object { Get-ChildItem -Directory -LiteralPath $_ -Depth 1 -ErrorAction Ignore }
+        $m = $env:PSModulePath.Split([IO.Path]::PathSeparator, [System.StringSplitOptions]::RemoveEmptyEntries) | ForEach-Object { Get-ChildItem -Directory -LiteralPath $_ -Depth 1 -ErrorAction Ignore }
         $cache.PSModulePaths = $m.FullName
         $cache.CacheSchemaVersion = $script:CurrentCacheSchemaVersion
 
@@ -561,7 +595,11 @@ function GetTypeInstanceFromModule {
         [Parameter(Mandatory = $true)]
         [string] $classname
     )
-    $instance = & (Import-Module $modulename -PassThru) ([scriptblock]::Create("'$classname' -as 'type'"))
+    $module = Get-Module -Name $modulename -ErrorAction Ignore
+    if ($null -eq $module) {
+        $module = Import-Module -Name $modulename -ErrorAction Stop -PassThru
+    }
+    $instance = & ($module) ([scriptblock]::Create("'$classname' -as 'type'"))
     return $instance
 }
 
