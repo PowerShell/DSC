@@ -299,10 +299,11 @@ process {
     if (-not [string]::IsNullOrEmpty($PackageType)) {
         $progressParams.Activity = "Packaging"
         $packageParams = @{
-            BuildData    = $BuildData
-            PackageType  = $PackageType
-            Architecture = $Architecture
-            Release      = $Release
+            BuildData      = $BuildData
+            PackageType    = $PackageType
+            Architecture   = $Architecture
+            Release        = $Release
+            UseX64MakeAppx = $UseX64MakeAppx
         }
         Write-BuildProgress @progressParams
         Build-DscPackage @packageParams @VerboseParam
