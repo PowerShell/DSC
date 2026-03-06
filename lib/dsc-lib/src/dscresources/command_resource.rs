@@ -2,12 +2,13 @@
 // Licensed under the MIT License.
 
 use clap::ValueEnum;
+use dsc_lib_security_context::{SecurityContext, get_security_context};
 use jsonschema::Validator;
 use rust_i18n::t;
 use serde::Deserialize;
 use serde_json::{Map, Value};
 use std::{collections::HashMap, env, path::{Path, PathBuf}, process::Stdio};
-use crate::{configure::{config_doc::ExecutionKind, config_result::{ResourceGetResult, ResourceTestResult}}, dscresources::resource_manifest::SchemaArgKind, types::{ExitCodesMap, FullyQualifiedTypeName}, util::canonicalize_which};
+use crate::{configure::{config_doc::{ExecutionKind, SecurityContextKind}, config_result::{ResourceGetResult, ResourceTestResult}}, dscresources::resource_manifest::SchemaArgKind, types::{ExitCodesMap, FullyQualifiedTypeName}, util::canonicalize_which};
 use crate::dscerror::DscError;
 use super::{
     dscresource::{get_diff, redact, DscResource},
@@ -53,6 +54,7 @@ pub fn invoke_get(resource: &DscResource, filter: &str, target_resource: Option<
         Some(r) => r.type_name.clone(),
         None => resource.type_name.clone(),
     };
+    validate_security_context(&get.require_security_context, &resource_type, "get")?;
     let path = if let Some(target_resource) = target_resource {
         Some(target_resource.path.clone())
     } else {
@@ -156,6 +158,7 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, execut
     let Some(set) = set_method.as_ref() else {
         return Err(DscError::NotImplemented("set".to_string()));
     };
+    validate_security_context(&set.require_security_context, &resource_type, "set")?;
     verify_json_from_manifest(&resource, desired, target_resource)?;
 
     // if resource doesn't implement a pre-test, we execute test first to see if a set is needed
@@ -200,6 +203,7 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, execut
         Some(r) => r.type_name.clone(),
         None => resource.type_name.clone(),
     };
+    validate_security_context(&get.require_security_context, &resource_type, "get")?;
     let path = if let Some(target_resource) = target_resource {
         Some(target_resource.path.clone())
     } else {
@@ -357,6 +361,7 @@ pub fn invoke_test(resource: &DscResource, expected: &str, target_resource: Opti
         Some(r) => r.type_name.clone(),
         None => resource.type_name.clone(),
     };
+    validate_security_context(&test.require_security_context, &resource_type, "test")?;
     let path = if let Some(target_resource) = target_resource {
         Some(target_resource.path.clone())
     } else {
@@ -517,6 +522,7 @@ pub fn invoke_delete(resource: &DscResource, filter: &str, target_resource: Opti
         Some(r) => r.type_name.clone(),
         None => resource.type_name.clone(),
     };
+    validate_security_context(&delete.require_security_context, &resource_type, "delete")?;
     let path = if let Some(target_resource) = target_resource {
         Some(target_resource.path.clone())
     } else {
@@ -649,6 +655,7 @@ pub fn invoke_export(resource: &DscResource, input: Option<&str>, target_resourc
         // see if get is supported and use that instead
         if manifest.get.is_some() {
             info!("{}", t!("dscresources.commandResource.exportNotSupportedUsingGet", resource = &resource.type_name));
+            validate_security_context(&manifest.get.as_ref().unwrap().require_security_context, &resource.type_name, "get")?;
             let get_result = invoke_get(resource, input.unwrap_or(""), target_resource)?;
             let mut instances: Vec<Value> = Vec::new();
             match get_result {
@@ -675,6 +682,7 @@ pub fn invoke_export(resource: &DscResource, input: Option<&str>, target_resourc
         Some(r) => r.type_name.clone(),
         None => resource.type_name.clone(),
     };
+    validate_security_context(&export.require_security_context, &resource_type, "export")?;
     let path = if let Some(target_resource) = target_resource {
         Some(target_resource.path.clone())
     } else {
@@ -1243,6 +1251,25 @@ pub fn log_stderr_line<'a>(process_id: &u32, trace_line: &'a str) -> &'a str
     }
 
     ""
+}
+
+fn validate_security_context(required_security_context: &Option<SecurityContextKind>, resource_type: &str, operation: &str) -> Result<(), DscError> {
+    match required_security_context {
+        Some(SecurityContextKind::Elevated) => {
+            if get_security_context() != SecurityContext::Admin {
+                return Err(DscError::SecurityContext(t!("dscresources.commandResource.securityContextRequired", operation = operation, resource = resource_type, context = "elevated").to_string()));
+            }
+        },
+        Some(SecurityContextKind::Restricted) => {
+            if get_security_context() != SecurityContext::User {
+                return Err(DscError::SecurityContext(t!("dscresources.commandResource.securityContextRequired", operation = operation, resource = resource_type, context = "restricted").to_string()));
+            }
+        },
+        None | Some(SecurityContextKind::Current) => {
+            // no specific context required, so allow any context
+        },
+    }
+    Ok(())
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, ValueEnum)]

@@ -8,8 +8,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
 use crate::{
-    schemas::{dsc_repo::DscRepoSchema, transforms::idiomaticize_string_enum},
-    types::{ExitCodesMap, FullyQualifiedTypeName, TagList},
+    configure::config_doc::SecurityContextKind, schemas::{dsc_repo::DscRepoSchema, transforms::idiomaticize_string_enum}, types::{ExitCodesMap, FullyQualifiedTypeName, TagList}
 };
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
@@ -221,6 +220,9 @@ pub struct GetMethod {
     /// How to pass optional input for a Get.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub input: Option<InputKind>,
+    /// The security context required to run the Get method.  Default if not specified is `current`.
+    #[serde(rename = "requireSecurityContext", skip_serializing_if = "Option::is_none")]
+    pub require_security_context: Option<SecurityContextKind>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
@@ -241,6 +243,9 @@ pub struct SetMethod {
     /// The type of return value expected from the Set method.
     #[serde(rename = "return", skip_serializing_if = "Option::is_none")]
     pub returns: Option<ReturnKind>,
+    /// The security context required to run the Set method.  Default if not specified is `current`.
+    #[serde(rename = "requireSecurityContext", skip_serializing_if = "Option::is_none")]
+    pub require_security_context: Option<SecurityContextKind>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
@@ -255,6 +260,9 @@ pub struct TestMethod {
     /// The type of return value expected from the Test method.
     #[serde(rename = "return", skip_serializing_if = "Option::is_none")]
     pub returns: Option<ReturnKind>,
+    /// The security context required to run the Test method.  Default if not specified is `current`.
+    #[serde(rename = "requireSecurityContext", skip_serializing_if = "Option::is_none")]
+    pub require_security_context: Option<SecurityContextKind>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
@@ -266,6 +274,9 @@ pub struct DeleteMethod {
     pub args: Option<Vec<SetDeleteArgKind>>,
     /// How to pass required input for a Delete.
     pub input: Option<InputKind>,
+    /// The security context required to run the Delete method.  Default if not specified is `current`.
+    #[serde(rename = "requireSecurityContext", skip_serializing_if = "Option::is_none")]
+    pub require_security_context: Option<SecurityContextKind>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
@@ -277,6 +288,9 @@ pub struct ValidateMethod { // TODO: enable validation via schema or command
     pub args: Option<Vec<GetArgKind>>,
     /// How to pass required input for a Validate.
     pub input: Option<InputKind>,
+    /// The security context required to run the Validate method.  Default if not specified is `current`.
+    #[serde(rename = "requireSecurityContext", skip_serializing_if = "Option::is_none")]
+    pub require_security_context: Option<SecurityContextKind>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
@@ -288,6 +302,9 @@ pub struct ExportMethod {
     pub args: Option<Vec<GetArgKind>>,
     /// How to pass input for a Export.
     pub input: Option<InputKind>,
+    /// The security context required to run the Export method.  Default if not specified is `current`.
+    #[serde(rename = "requireSecurityContext", skip_serializing_if = "Option::is_none")]
+    pub require_security_context: Option<SecurityContextKind>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
