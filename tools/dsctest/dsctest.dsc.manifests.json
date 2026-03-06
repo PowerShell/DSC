@@ -431,6 +431,43 @@
     },
     {
       "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/RestartRequired",
+      "version": "0.1.0",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "restart-required",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ]
+      },
+      "set": {
+        "executable": "dsctest",
+        "args": [
+          "restart-required",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ],
+        "implementsPretest": true,
+        "return": "state"
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "restart-required"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
       "type": "Test/Sleep",
       "version": "0.1.0",
       "get": {
@@ -1000,6 +1037,54 @@
             "schema",
             "-s",
             "what-if-delete"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/StateAndDiff",
+      "version": "0.1.0",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "state-and-diff",
+          "--state-only",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ]
+      },
+      "set": {
+        "executable": "dsctest",
+        "args": [
+          "state-and-diff",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ],
+        "return": "stateAndDiff"
+      },
+      "test": {
+        "executable": "dsctest",
+        "args": [
+          "state-and-diff",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ],
+        "return": "stateAndDiff"
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "state-and-diff"
           ]
         }
       }

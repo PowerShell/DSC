@@ -276,24 +276,23 @@ fn check_security_context(metadata: Option<&Metadata>, directive_security_contex
     Ok(())
 }
 
-fn get_metadata_from_result(mut context: Option<&mut Context>, result: &mut Value, metadata: &mut Metadata, execution_information: &mut ExecutionInformation) -> Result<(), DscError> {
-    if let Some(metadata_value) = result.get("_metadata") {
+fn get_metadata_from_result(mut context: Option<&mut Context>, properties: &mut Value, metadata: &mut Metadata, execution_information: &mut ExecutionInformation) -> Result<(), DscError> {
+    if let Some(restart_required) = properties.get("_restartRequired") {
+        if let Ok(restart_required) = serde_json::from_value::<Vec<RestartRequired>>(restart_required.clone()) {
+            execution_information.restart_required = Some(restart_required.clone());
+            if let Some(ref mut context) = context {
+                context.restart_required.get_or_insert_with(Vec::new).extend(restart_required);
+            }
+        } else {
+            warn!("{}", t!("configure.mod.propertyRestartRequiredInvalid", value = restart_required));
+        }
+    }
+    if let Some(metadata_value) = properties.get("_metadata") {
         if let Some(metadata_map) = metadata_value.as_object() {
             for (key, value) in metadata_map {
                 if key.starts_with("Microsoft.DSC") {
                     warn!("{}", t!("configure.mod.metadataMicrosoftDscIgnored", key = key));
                     continue;
-                }
-                if let Some(ref mut context) = context {
-                    if key == "_restartRequired" {
-                        if let Ok(restart_required) = serde_json::from_value::<Vec<RestartRequired>>(value.clone()) {
-                            execution_information.restart_required = Some(restart_required.clone());
-                            context.restart_required.get_or_insert_with(Vec::new).extend(restart_required);
-                        } else {
-                            warn!("{}", t!("configure.mod.metadataRestartRequiredInvalid", value = value));
-                            continue;
-                        }
-                    }
                 }
                 if key == "_refreshEnv" && value.as_bool() == Some(true) {
                     if let Some(ref context) = context {
@@ -347,7 +346,7 @@ fn get_metadata_from_result(mut context: Option<&mut Context>, result: &mut Valu
         } else {
             return Err(DscError::Parser(t!("configure.mod.metadataNotObject", value = metadata_value).to_string()));
         }
-        if let Some(value_map) = result.as_object_mut() {
+        if let Some(value_map) = properties.as_object_mut() {
             value_map.remove("_metadata");
         }
     }

@@ -21,11 +21,11 @@ pub fn handle_set(input: &str) -> Result<String> {
     // Parse input as UpdateList
     let update_list: UpdateList = serde_json::from_str(input)
         .map_err(|e| Error::new(E_INVALIDARG.into(), t!("set.failedParseInput", err = e.to_string()).to_string()))?;
-    
+
     if update_list.updates.is_empty() {
         return Err(Error::new(E_INVALIDARG.into(), t!("set.updatesArrayEmpty").to_string()));
     }
-    
+
     // Initialize COM
     let com_initialized = unsafe {
         CoInitializeEx(Some(std::ptr::null()), COINIT_MULTITHREADED).is_ok()
@@ -51,14 +51,14 @@ pub fn handle_set(input: &str) -> Result<String> {
 
         // First pass: Verify all input objects have matches
         let mut matched_updates: Vec<(IUpdate, bool)> = Vec::new();
-        
+
         for update_input in &update_list.updates {
             // Validate that at least one search criterion is provided
-            if update_input.title.is_none() 
-                && update_input.id.is_none() 
-                && update_input.kb_article_ids.is_none() 
-                && update_input.is_installed.is_none() 
-                && update_input.update_type.is_none() 
+            if update_input.title.is_none()
+                && update_input.id.is_none()
+                && update_input.kb_article_ids.is_none()
+                && update_input.is_installed.is_none()
+                && update_input.update_type.is_none()
                 && update_input.msrc_severity.is_none() {
                 return Err(Error::new(E_INVALIDARG.into(), t!("set.atLeastOneCriterionRequired").to_string()));
             }
@@ -68,7 +68,7 @@ pub fn handle_set(input: &str) -> Result<String> {
             let mut matching_updates: Vec<(IUpdate, bool)> = Vec::new();
             for i in 0..count {
                 let update = all_updates.get_Item(i)?;
-                
+
                 // Check title match
                 if let Some(search_title) = &update_input.title {
                     let title = update.Title()?.to_string();
@@ -104,7 +104,7 @@ pub fn handle_set(input: &str) -> Result<String> {
                             kb_article_ids.push(kb_str.to_string());
                         }
                     }
-                    
+
                     // Check if all search KB IDs are present
                     let mut all_match = true;
                     for search_kb in search_kb_ids {
@@ -127,7 +127,7 @@ pub fn handle_set(input: &str) -> Result<String> {
                     } else {
                         crate::windows_update::types::UpdateType::Software
                     };
-                    
+
                     if &update_type != search_type {
                         continue; // Update type doesn't match, skip this update
                     }
@@ -146,7 +146,7 @@ pub fn handle_set(input: &str) -> Result<String> {
                     } else {
                         None
                     };
-                    
+
                     if msrc_severity.as_ref() != Some(search_severity) {
                         continue; // Severity doesn't match, skip this update
                     }
@@ -198,13 +198,13 @@ pub fn handle_set(input: &str) -> Result<String> {
                 if let Some(severity) = &update_input.msrc_severity {
                     criteria_parts.push(t!("set.criteriaMsrcSeverity", value = format!("{:?}", severity)).to_string());
                 }
-                
+
                 let criteria_str = criteria_parts.join(", ");
                 let error_msg = t!("set.noMatchingUpdateForCriteria", criteria = criteria_str).to_string();
-                
+
                 // Emit JSON error to stderr
                 eprintln!("{{\"error\":\"{}\"}}", error_msg);
-                
+
                 return Err(Error::new(E_FAIL.into(), error_msg));
             }
         }
@@ -212,7 +212,7 @@ pub fn handle_set(input: &str) -> Result<String> {
         // All inputs have matches - now proceed with installation/uninstallation
         let mut result_updates = Vec::new();
         let mut reboot_required = false;
-        
+
         for (update, is_installed) in matched_updates {
             let update_info = if is_installed {
                 // Already installed, just return current state
@@ -232,7 +232,7 @@ pub fn handle_set(input: &str) -> Result<String> {
                     let downloader = update_session.CreateUpdateDownloader()?;
                     downloader.SetUpdates(&updates_to_install)?;
                     let download_result = downloader.Download()?;
-                    
+
                     use windows::Win32::System::UpdateAgent::OperationResultCode;
                     let result_code = download_result.ResultCode()?;
                     // Check if download was successful (orcSucceeded = 2)
@@ -246,7 +246,7 @@ pub fn handle_set(input: &str) -> Result<String> {
                 let installer = update_session.CreateUpdateInstaller()?;
                 installer.SetUpdates(&updates_to_install)?;
                 let install_result = installer.Install()?;
-                
+
                 use windows::Win32::System::UpdateAgent::OperationResultCode;
                 let result_code = install_result.ResultCode()?;
                 // Check if installation was successful (orcSucceeded = 2)
@@ -254,7 +254,7 @@ pub fn handle_set(input: &str) -> Result<String> {
                     let hresult = install_result.HResult()?;
                     return Err(Error::new(HRESULT(hresult).into(), t!("set.failedInstallUpdate", code = result_code.0).to_string()));
                 }
-                
+
                 // Check if installation result indicates a reboot is required
                 if !reboot_required {
                     if let Ok(reboot_req) = install_result.RebootRequired() {
@@ -263,11 +263,11 @@ pub fn handle_set(input: &str) -> Result<String> {
                         }
                     }
                 }
-                
+
                 // Get full details now that it's installed
                 extract_update_info(&update)?
             };
-            
+
             result_updates.push(update_info);
         }
 
@@ -284,22 +284,17 @@ pub fn handle_set(input: &str) -> Result<String> {
     match result {
         Ok((updates, reboot_required)) => {
             // Build metadata if reboot is required
-            let metadata = if reboot_required {
+            let restart_required = if reboot_required {
                 let computer_name = get_computer_name();
                 let mut restart_required_item = Map::new();
                 restart_required_item.insert("system".to_string(), Value::String(computer_name));
-                
-                let restart_required_array = Value::Array(vec![Value::Object(restart_required_item)]);
-                
-                let mut metadata_map = Map::new();
-                metadata_map.insert("_restartRequired".to_string(), restart_required_array);
-                Some(metadata_map)
+                Some(Vec::from([restart_required_item]))
             } else {
                 None
             };
 
             let results = UpdateList {
-                metadata,
+                restart_required,
                 updates
             };
             serde_json::to_string(&results)

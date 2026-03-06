@@ -14,7 +14,9 @@ mod metadata;
 mod operation;
 mod adapter;
 mod refresh_env;
+mod restart_required;
 mod sleep;
+mod state_and_diff;
 mod trace;
 mod version;
 mod whatif;
@@ -35,7 +37,9 @@ use crate::in_desired_state::InDesiredState;
 use crate::metadata::Metadata;
 use crate::operation::Operation;
 use crate::refresh_env::RefreshEnv;
+use crate::restart_required::RestartRequired;
 use crate::sleep::Sleep;
+use crate::state_and_diff::StateAndDiff;
 use crate::trace::Trace;
 use crate::version::Version;
 use crate::whatif::WhatIf;
@@ -267,6 +271,16 @@ fn main() {
                 }
             }
         },
+        SubCommand::RestartRequired { input } => {
+            let restart_required = match serde_json::from_str::<RestartRequired>(&input) {
+                Ok(rr) => rr,
+                Err(err) => {
+                    eprintln!("Error JSON does not match schema: {err}");
+                    std::process::exit(1);
+                }
+            };
+            serde_json::to_string(&restart_required).unwrap()
+        },
         SubCommand::Schema { subcommand } => {
             let schema = match subcommand {
                 Schemas::Adapter => {
@@ -305,8 +319,14 @@ fn main() {
                 Schemas::RefreshEnv => {
                     schema_for!(RefreshEnv)
                 },
+                Schemas::RestartRequired => {
+                    schema_for!(RestartRequired)
+                },
                 Schemas::Sleep => {
                     schema_for!(Sleep)
+                },
+                Schemas::StateAndDiff => {
+                    schema_for!(StateAndDiff)
                 },
                 Schemas::Trace => {
                     schema_for!(Trace)
@@ -333,6 +353,40 @@ fn main() {
             };
             thread::sleep(Duration::from_secs(sleep.seconds));
             serde_json::to_string(&sleep).unwrap()
+        },
+        SubCommand::StateAndDiff { input, state_only } => {
+            let mut state_and_diff = match serde_json::from_str::<StateAndDiff>(&input) {
+                Ok(s) => s,
+                Err(err) => {
+                    eprintln!("Error JSON does not match schema: {err}");
+                    std::process::exit(1);
+                }
+            };
+            // Actual state always returns valueOne=1, valueTwo=2
+            let desired_one = state_and_diff.value_one;
+            let desired_two = state_and_diff.value_two;
+            state_and_diff.value_one = 1;
+            state_and_diff.value_two = 2;
+            // Compute diff properties
+            let mut diff: Vec<String> = Vec::new();
+            if desired_one != 1 {
+                diff.push("valueOne".to_string());
+            }
+            if desired_two != 2 {
+                diff.push("valueTwo".to_string());
+            }
+            state_and_diff.in_desired_state = Some(diff.is_empty());
+            let state_json = serde_json::to_string(&state_and_diff).unwrap();
+            if state_only {
+                // For get operations: output only the state JSON
+                println!("{state_json}");
+            } else {
+                // For set/test operations: output state JSON line, then diff array JSON line
+                let diff_json = serde_json::to_string(&diff).unwrap();
+                println!("{state_json}");
+                println!("{diff_json}");
+            }
+            String::new()
         },
         SubCommand::Trace => {
             // get level from DSC_TRACE_LEVEL env var
