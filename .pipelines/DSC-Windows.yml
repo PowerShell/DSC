@@ -33,7 +33,6 @@ steps:
     configFile: '$(Build.SourcesDirectory)/DSC/.cargo/config.toml'
   displayName: Authenticate with Azure Artifacts
 - pwsh: |
-    Set-Location "$(Build.SourcesDirectory)/DSC"
     $LLVMBIN = "$($env:PROGRAMFILES)\Microsoft Visual Studio\2022\Enterprise\VC\Tools\Llvm\bin"
     if (!(Test-Path $LLVMBIN)) {
       throw "LLVM path '$LLVMBIN' does not exist"
@@ -42,8 +41,8 @@ steps:
     write-verbose -verbose (gcm clang.exe | out-string)
     Write-Verbose -Verbose "Building for ${{ parameters.buildName }}"
     ./build.ps1 -Release -Architecture ${{ parameters.buildName }} -SkipLinkCheck -Verbose
+  workingDirectory: $(Build.SourcesDirectory)/DSC
   displayName: 'Build ${{ parameters.buildName }}'
-  condition: succeeded()
 - task: CodeQL3000Finalize@0 # Add CodeQL Finalize task right after your 'Build' step.
   condition: always()
 - pwsh: |
@@ -59,7 +58,6 @@ steps:
     write-host 'Binaries in ${{ parameters.signSrcPath }}'
     dir -r "${{ parameters.signSrcPath }}"
   displayName: Copy built binaries
-  condition: succeeded()
 - task: onebranch.pipeline.signing@1
   displayName: Sign 1st party files
   inputs:
@@ -79,14 +77,12 @@ steps:
     TargetFolder: $(Build.SourcesDirectory)/DSC/bin/${{ parameters.buildName }}/${{ parameters.BuildConfiguration }}
     OverWrite: true
 - pwsh: |
-    Set-Location "$(Build.SourcesDirectory)/DSC"
     ./packaging.ps1 -PackageType zip -Architecture ${{ parameters.buildName }} -Release
     Copy-Item ./bin/*.zip "$(Build.ArtifactStagingDirectory)" -Verbose
+  workingDirectory: $(Build.SourcesDirectory)/DSC
   displayName: 'Zip ${{ parameters.buildName }}'
-  condition: succeeded()
 - pwsh: |
-    Set-Location "$(Build.SourcesDirectory)/DSC"
     ./build.ps1 -PackageType msix -Architecture ${{ parameters.buildName }} -Release -UseX64MakeAppx
     Copy-Item ./bin/msix/*.msix "$(Build.ArtifactStagingDirectory)" -Verbose
+  workingDirectory: $(Build.SourcesDirectory)/DSC
   displayName: 'Create msix for ${{ parameters.buildName }}'
-  condition: succeeded()
