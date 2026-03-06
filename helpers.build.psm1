@@ -1209,7 +1209,12 @@ function Update-PathEnvironment {
     }
 }
 
-function Find-MakeAppx() {
+function Find-MakeAppx {
+    [CmdletBinding()]
+    param(
+        [switch]$UseX64MakeAppx
+    )
+
     $makeappx = Get-Command makeappx -CommandType Application -ErrorAction Ignore
     if ($null -eq $makeappx) {
         # try to find
@@ -1786,7 +1791,8 @@ function Build-DscMsixPackage {
             'x86_64-unknown-linux-musl'
         )]
         $Architecture = 'current',
-        [switch]$Release
+        [switch]$Release,
+        [switch]$UseX64MakeAppx
     )
 
     begin {
@@ -1803,7 +1809,7 @@ function Build-DscMsixPackage {
         $productVersion = Get-DscCliVersion
         $isPrivate = $packageType -eq 'msix-private'
         $isPreview = $productVersion -like '*-*'
-        $makeappx = Find-MakeAppx
+        $makeappx = Find-MakeAppx -UseX64MakeAppx:$UseX64MakeAppx
         $makepri  = Get-Item (Join-Path $makeappx.Directory "makepri.exe") -ErrorAction Stop
     }
 
@@ -2144,7 +2150,8 @@ function Build-DscPackage {
             'x86_64-unknown-linux-musl'
         )]
         $Architecture = 'current',
-        [switch]$Release
+        [switch]$Release,
+        [switch]$UseX64MakeAppx
     )
 
     begin {
@@ -2159,6 +2166,7 @@ function Build-DscPackage {
             ArtifactDirectory = $artifactDirectory
             Architecture = $Architecture
             Release = $Release
+            UseX64MakeAppx = $UseX64MakeAppx
         }
     }
 
