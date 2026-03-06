@@ -30,7 +30,7 @@ steps:
   displayName: Install Rust
 - task: CargoAuthenticate@0
   inputs:
-    configFile: '.cargo/config.toml'
+    configFile: '$(Build.SourcesDirectory)/DSC/.cargo/config.toml'
   displayName: Authenticate with Azure Artifacts
 - pwsh: |
     Set-Location "$(Build.SourcesDirectory)/DSC"

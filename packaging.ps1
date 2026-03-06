@@ -18,7 +18,6 @@ param(
     [switch]$UseCFS,
     [switch]$UpdateLockFile,
     [switch]$Audit,
-    [switch]$UseCFSAuth,
     [switch]$Clean,
     [switch]$Verbose
 )
@@ -30,7 +29,7 @@ trap {
 
 $env:RUSTC_LOG=$null
 $usingADO = ($null -ne $env:TF_BUILD)
-if ($usingADO -or $UseCFSAuth) {
+if ($usingADO) {
     $UseCFS = $true
 }
 
@@ -178,23 +177,6 @@ if ($null -ne $packageType) {
         Write-Host "Using CFS for cargo source replacement"
         ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = $null
         $env:CARGO_REGISTRIES_CRATESIO_INDEX = $null
-
-        if ($UseCFSAuth) {
-            if ($null -eq (Get-Command 'az' -ErrorAction Ignore)) {
-                throw "Azure CLI not found"
-            }
-
-            Write-Host "Getting token"
-            $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
-            if ($LASTEXITCODE -ne 0) {
-                Write-Warning "Failed to get access token, use 'az login' first, or use '-useCratesIO' to use crates.io.  Proceeding with anonymous access."
-            } else {
-                $header = "Bearer $accessToken"
-                $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
-                $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
-                $env:CARGO_REGISTRIES_POWERSHELL_INDEX = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell~force-auth/Cargo/index/"
-            }
-        }
     } else {
         # this will override the config.toml
         Write-Host "Setting CARGO_SOURCE_crates-io_REPLACE_WITH to 'crates-io'"
