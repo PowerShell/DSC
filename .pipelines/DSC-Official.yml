@@ -65,7 +65,6 @@ extends:
         forStages: [Build]
         credscan:
           enabled: true
-          scanFolder:  $(System.DefaultWorkingDirectory)
         binskim:
           enabled: true
         apiscan:
@@ -83,17 +82,13 @@ extends:
           type: windows
           vmImage: windows-latest
         variables:
-          repoRoot: '$(System.DefaultWorkingDirectory)\DSC'
-          ob_sdl_tsa_configFile: '$(System.DefaultWorkingDirectory)\.config\tsaoptions.json'
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           ob_sdl_sbom_enabled: false
           ob_signing_setup_enabled: false
           ob_sdl_codeql_compiled_enabled: false
         steps:
-        - checkout: self
         - pwsh: |
-            Write-Verbose -Verbose (Get-ChildItem '$(repoRoot)' | Out-String)
-            $packageVersion = $(repoRoot)/packaging.ps1 -GetPackageVersion
+            $packageVersion = ./packaging.ps1 -GetPackageVersion
             $vstsCommandString = "vso[task.setvariable variable=Version;isoutput=true]$packageVersion"
             Write-Host ("sending " + $vstsCommandString)
             Write-Host "##$vstsCommandString"
@@ -103,7 +98,6 @@ extends:
       - job: BuildWin_x64
         dependsOn: SetPackageVersion
         variables:
-          ob_sdl_tsa_configFile: '$(System.DefaultWorkingDirectory)\.config\tsaoptions.json'
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           signSrcPath: '$(System.DefaultWorkingDirectory)\out'
           ob_sdl_sbom_enabled: true
@@ -122,7 +116,6 @@ extends:
       - job: BuildWin_arm64
         dependsOn: SetPackageVersion
         variables:
-          ob_sdl_tsa_configFile: '$(System.DefaultWorkingDirectory)\.config\tsaoptions.json'
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           signSrcPath: '$(System.DefaultWorkingDirectory)\out'
           ob_sdl_sbom_enabled: true
@@ -144,9 +137,8 @@ extends:
           - BuildWin_arm64
         variables:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
-          ob_sdl_tsa_configFile: '$(System.DefaultWorkingDirectory)\.config\tsaoptions.json'
           ob_symbolsPublishing_enabled: true
-          ob_symbolsPublishing_symbolsFolder: '$(System.DefaultWorkingDirectory)\DSC\bin'
+          ob_symbolsPublishing_symbolsFolder: '$(Build.SourcesDirectory)\bin'
           ob_symbolsPublishing_searchPattern: '**/*.pdb'
           ob_symbolsPublishing_indexSources: true
           ob_sdl_sbom_enabled: false
@@ -155,7 +147,6 @@ extends:
         pool:
           type: windows
         steps:
-        - checkout: self
         - download: current
           artifact: drop_BuildAndSign_BuildWin_x64
           patterns: '*.msix'
@@ -163,12 +154,11 @@ extends:
           artifact: drop_BuildAndSign_BuildWin_arm64
           patterns: '*.msix'
         - pwsh: |
-            Set-Location "$(System.DefaultWorkingDirectory)\DSC"
             $null = New-Item -ItemType Directory -Path "./bin/msix" -Force -ErrorAction Ignore
             Copy-Item "$(Pipeline.Workspace)/drop_BuildAndSign_BuildWin_x64/*.msix" ./bin/msix -Verbose
             Copy-Item "$(Pipeline.Workspace)/drop_BuildAndSign_BuildWin_arm64/*.msix" ./bin/msix -Verbose
             ./build.ps1 -PackageType msixbundle
-            Copy-Item "$(System.DefaultWorkingDirectory)/DSC/bin/*.msixbundle" "$(ob_outputDirectory)"
+            Copy-Item "./bin/*.msixbundle" "$(ob_outputDirectory)"
           displayName: 'Create msixbundle'
           condition: succeeded()
 
@@ -288,7 +278,7 @@ extends:
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           ob_linuxSymbolsPublishing_enabled: true
-          ob_linuxSymbolsPublishing_symbolsFolder: '$(System.DefaultWorkingDirectory)/DSC/bin'
+          ob_linuxSymbolsPublishing_symbolsFolder: '$(Build.SourcesDirectory)/bin'
           ob_linuxSymbolsPublishing_searchPattern: '**/*.dbg'
         displayName: Linux-x64-musl
         pool:
@@ -324,7 +314,7 @@ extends:
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           ob_linuxSymbolsPublishing_enabled: true
-          ob_linuxSymbolsPublishing_symbolsFolder: '$(System.DefaultWorkingDirectory)/DSC/bin'
+          ob_linuxSymbolsPublishing_symbolsFolder: '$(Build.SourcesDirectory)/bin'
           ob_linuxSymbolsPublishing_searchPattern: '**/*.dbg'
         displayName: Linux-ARM64-musl
         pool:
