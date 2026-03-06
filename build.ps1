@@ -94,7 +94,6 @@ param(
     [switch]$UseCFS,
     [switch]$UpdateLockFile,
     [switch]$Audit,
-    [switch]$UseCFSAuth,
     [switch]$Clean,
     [switch]$CacheRustBuild,
     [switch]$RustDocs,
@@ -113,7 +112,7 @@ begin {
 
     Import-Module ./helpers.build.psm1 -Force -Verbose:$false
     $usingADO = ($null -ne $env:TF_BUILD)
-    if ($usingADO -or $UseCFSAuth) {
+    if ($usingADO) {
         $UseCFS = $true
     }
     # Import the build data
@@ -183,7 +182,7 @@ process {
         Write-BuildProgress @progressParams -Status 'Configuring Rust environment'
         [hashtable]$priorRustEnvironment = Set-RustEnvironment -CacheRustBuild:$CacheRustBuild @VerboseParam
         Write-BuildProgress @progressParams -Status 'Configuring Cargo environment'
-        Set-CargoEnvironment -UseCFS:$UseCFS -UseCFSAuth:$UseCFSAuth @VerboseParam
+        Set-CargoEnvironment -UseCFS:$UseCFS @VerboseParam
 
         # Install or update rust
         if (!$usingADO) {
@@ -300,10 +299,11 @@ process {
     if (-not [string]::IsNullOrEmpty($PackageType)) {
         $progressParams.Activity = "Packaging"
         $packageParams = @{
-            BuildData    = $BuildData
-            PackageType  = $PackageType
-            Architecture = $Architecture
-            Release      = $Release
+            BuildData      = $BuildData
+            PackageType    = $PackageType
+            Architecture   = $Architecture
+            Release        = $Release
+            UseX64MakeAppx = $UseX64MakeAppx
         }
         Write-BuildProgress @progressParams
         Build-DscPackage @packageParams @VerboseParam

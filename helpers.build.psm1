@@ -370,7 +370,7 @@ function Get-RustUp {
         if ($null -ne (Get-Command msrustup -CommandType Application -ErrorAction Ignore)) {
             Write-Verbose -Verbose "Using msrustup"
             $rustup = 'msrustup'
-            $channel = 'ms-stable'
+            $channel = 'ms-prod-1.93'
             if ($architecture -eq 'current') {
                 $env:MSRUSTUP_TOOLCHAIN = "$architecture"
             }
@@ -805,8 +805,7 @@ function Set-CargoEnvironment {
     #>
     [cmdletbinding()]
     param(
-        [switch]$UseCFS,
-        [switch]$UseCFSAuth
+        [switch]$UseCFS
     )
 
     process {
@@ -814,28 +813,6 @@ function Set-CargoEnvironment {
             Write-Host "Using CFS for cargo source replacement"
             ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = $null
             $env:CARGO_REGISTRIES_CRATESIO_INDEX = $null
-
-            if ($UseCFSAuth) {
-                if ($null -eq (Get-Command 'az' -ErrorAction Ignore)) {
-                    throw "Azure CLI not found"
-                }
-
-                if ($null -ne (Get-Command az -ErrorAction Ignore)) {
-                    Write-Host "Getting token"
-                    $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
-                    if ($LASTEXITCODE -ne 0) {
-                        Write-Warning "Failed to get access token, use 'az login' first, or use '-useCratesIO' to use crates.io.  Proceeding with anonymous access."
-                    } else {
-                        $header = "Bearer $accessToken"
-                        $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
-                        $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
-                        $env:CARGO_REGISTRIES_POWERSHELL_INDEX = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell~force-auth/Cargo/index/"
-                    }
-                }
-                else {
-                    Write-Warning "Azure CLI not found, proceeding with anonymous access."
-                }
-            }
         } else {
             # this will override the config.toml
             Write-Host "Setting CARGO_SOURCE_crates-io_REPLACE_WITH to 'crates-io'"
@@ -1232,7 +1209,12 @@ function Update-PathEnvironment {
     }
 }
 
-function Find-MakeAppx() {
+function Find-MakeAppx {
+    [CmdletBinding()]
+    param(
+        [switch]$UseX64MakeAppx
+    )
+
     $makeappx = Get-Command makeappx -CommandType Application -ErrorAction Ignore
     if ($null -eq $makeappx) {
         # try to find
@@ -1809,7 +1791,8 @@ function Build-DscMsixPackage {
             'x86_64-unknown-linux-musl'
         )]
         $Architecture = 'current',
-        [switch]$Release
+        [switch]$Release,
+        [switch]$UseX64MakeAppx
     )
 
     begin {
@@ -1826,7 +1809,7 @@ function Build-DscMsixPackage {
         $productVersion = Get-DscCliVersion
         $isPrivate = $packageType -eq 'msix-private'
         $isPreview = $productVersion -like '*-*'
-        $makeappx = Find-MakeAppx
+        $makeappx = Find-MakeAppx -UseX64MakeAppx:$UseX64MakeAppx
         $makepri  = Get-Item (Join-Path $makeappx.Directory "makepri.exe") -ErrorAction Stop
     }
 
@@ -1836,7 +1819,7 @@ function Build-DscMsixPackage {
             $msixArguments = @(
                 'bundle'
                 '/d', $artifactDirectory.MsixBundle
-                '/p', "$($artifactDirectory.Bin)\$packageName.msixbundle"
+                '/p', "$($artifactDirectory.BinRoot)\$packageName.msixbundle"
             )
             & $makeappx @msixArguments
             return
@@ -2167,7 +2150,8 @@ function Build-DscPackage {
             'x86_64-unknown-linux-musl'
         )]
         $Architecture = 'current',
-        [switch]$Release
+        [switch]$Release,
+        [switch]$UseX64MakeAppx
     )
 
     begin {
@@ -2182,6 +2166,7 @@ function Build-DscPackage {
             ArtifactDirectory = $artifactDirectory
             Architecture = $Architecture
             Release = $Release
+            UseX64MakeAppx = $UseX64MakeAppx
         }
     }
 

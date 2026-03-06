@@ -65,7 +65,6 @@ extends:
         forStages: [Build]
         credscan:
           enabled: true
-          scanFolder:  $(System.DefaultWorkingDirectory)
         binskim:
           enabled: true
         apiscan:
@@ -83,44 +82,29 @@ extends:
           type: windows
           vmImage: windows-latest
         variables:
-          repoRoot: '$(System.DefaultWorkingDirectory)\DSC'
-          ob_sdl_tsa_configFile: '$(System.DefaultWorkingDirectory)\.config\tsaoptions.json'
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           ob_sdl_sbom_enabled: false
           ob_signing_setup_enabled: false
           ob_sdl_codeql_compiled_enabled: false
         steps:
-        - checkout: self
         - pwsh: |
-            Write-Verbose -Verbose (Get-ChildItem '$(repoRoot)' | Out-String)
-            $packageVersion = $(repoRoot)/packaging.ps1 -GetPackageVersion
+            $packageVersion = ./packaging.ps1 -GetPackageVersion
             $vstsCommandString = "vso[task.setvariable variable=Version;isoutput=true]$packageVersion"
             Write-Host ("sending " + $vstsCommandString)
             Write-Host "##$vstsCommandString"
           name: Package
           displayName: Set Package Version
-        - task: AzureCLI@2
-          displayName: Get Az Token
-          inputs:
-            azureSubscription: PowerShell-CICD-Feed-Access
-            scriptType: pscore
-            scriptLocation: inlineScript
-            inlineScript: |
-              $token = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
-              $vstsCommandString = "vso[task.setvariable variable=AzToken;isoutput=true]$token"
-              Write-Host "Setting token"
-              Write-Host "##$vstsCommandString"
 
       - job: BuildWin_x64
         dependsOn: SetPackageVersion
         variables:
-          ob_sdl_tsa_configFile: '$(System.DefaultWorkingDirectory)\.config\tsaoptions.json'
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           signSrcPath: '$(System.DefaultWorkingDirectory)\out'
-          AzToken: $[ dependencies.SetPackageVersion.outputs['AzToken'] ]
           ob_sdl_sbom_enabled: true
           ob_signing_setup_enabled: true
           ob_sdl_codeql_compiled_enabled: true
+          ob_symbolsPublishing_enabled: true
+          ob_symbolsPublishing_indexSources: true
         pool:
           type: windows
         steps:
@@ -129,19 +113,18 @@ extends:
             buildName: x86_64-pc-windows-msvc
             signSrcPath: '$(signSrcPath)'
             PackageRoot: '$(PackageRoot)'
-            aztoken: '$(AzToken)'
             rustSDK: '$(Rust.SDK)'
 
       - job: BuildWin_arm64
         dependsOn: SetPackageVersion
         variables:
-          ob_sdl_tsa_configFile: '$(System.DefaultWorkingDirectory)\.config\tsaoptions.json'
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           signSrcPath: '$(System.DefaultWorkingDirectory)\out'
-          AzToken: $[ dependencies.SetPackageVersion.outputs['AzToken'] ]
           ob_sdl_sbom_enabled: true
           ob_signing_setup_enabled: true
           ob_sdl_codeql_compiled_enabled: true
+          ob_symbolsPublishing_enabled: true
+          ob_symbolsPublishing_indexSources: true
         pool:
           type: windows
         steps:
@@ -150,7 +133,6 @@ extends:
             buildName: aarch64-pc-windows-msvc
             signSrcPath: '$(signSrcPath)'
             PackageRoot: '$(PackageRoot)'
-            aztoken: '$(AzToken)'
             rustSDK: '$(Rust.SDK)'
 
       - job: CreateMsixBundle
@@ -159,19 +141,12 @@ extends:
           - BuildWin_arm64
         variables:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
-          ob_sdl_tsa_configFile: '$(System.DefaultWorkingDirectory)\.config\tsaoptions.json'
-          ob_symbolsPublishing_enabled: true
-          ob_symbolsPublishing_symbolsFolder: '$(System.DefaultWorkingDirectory)\DSC\bin'
-          ob_symbolsPublishing_searchPattern: '**/*.pdb'
-          ob_symbolsPublishing_indexSources: true
           ob_sdl_sbom_enabled: false
           ob_signing_setup_enabled: false
           ob_sdl_codeql_compiled_enabled: false
-          ob_restore_phase: true
         pool:
           type: windows
         steps:
-        - checkout: self
         - download: current
           artifact: drop_BuildAndSign_BuildWin_x64
           patterns: '*.msix'
@@ -179,12 +154,11 @@ extends:
           artifact: drop_BuildAndSign_BuildWin_arm64
           patterns: '*.msix'
         - pwsh: |
-            Set-Location "$(System.DefaultWorkingDirectory)\DSC"
             $null = New-Item -ItemType Directory -Path "./bin/msix" -Force -ErrorAction Ignore
             Copy-Item "$(Pipeline.Workspace)/drop_BuildAndSign_BuildWin_x64/*.msix" ./bin/msix -Verbose
             Copy-Item "$(Pipeline.Workspace)/drop_BuildAndSign_BuildWin_arm64/*.msix" ./bin/msix -Verbose
-            ./build.ps1 -PackageType msixbundle
-            Copy-Item "$(System.DefaultWorkingDirectory)/DSC/bin/*.msixbundle" "$(ob_outputDirectory)"
+            ./build.ps1 -Release -PackageType msixbundle
+            Copy-Item "./bin/*.msixbundle" "$(ob_outputDirectory)"
           displayName: 'Create msixbundle'
           condition: succeeded()
 
@@ -302,29 +276,24 @@ extends:
         variables:
           LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2204:latest'
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
-          AzToken: $[ dependencies.SetPackageVersion.outputs['AzToken'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
-          ob_linuxSymbolsPublishing_enabled: true
-          ob_linuxSymbolsPublishing_symbolsFolder: '$(System.DefaultWorkingDirectory)/DSC/bin'
-          ob_linuxSymbolsPublishing_searchPattern: '**/*.dbg'
         displayName: Linux-x64-musl
         pool:
           type: linux
         steps:
         - task: RustInstaller@1
           inputs:
-            rustVersion: ms-stable
+            rustVersion: ms-prod-1.93
             toolchainFeed: $(Rust.SDK)
             additionalTargets: x86_64-unknown-linux-musl
           displayName: Install Rust
-          env:
-            ob_restore_phase: true
+        - task: CargoAuthenticate@0
+          inputs:
+            configFile: '.cargo/config.toml'
+          displayName: Authenticate with Azure Artifacts
         - pwsh: |
             apt update
             apt -y install musl-tools rpm dpkg build-essential protobuf-compiler
-            $header = "Bearer $(AzToken)"
-            $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
-            $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
             ./build.ps1 -Release -Architecture x86_64-unknown-linux-musl
             ./packaging.ps1 -PackageType tgz -Architecture x86_64-unknown-linux-musl -Release
             ./packaging.ps1 -PackageType rpm -Architecture x86_64-unknown-linux-musl -Release
@@ -340,11 +309,7 @@ extends:
         variables:
           LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2204-arm64:latest'
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
-          AzToken: $[ dependencies.SetPackageVersion.outputs['AzToken'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
-          ob_linuxSymbolsPublishing_enabled: true
-          ob_linuxSymbolsPublishing_symbolsFolder: '$(System.DefaultWorkingDirectory)/DSC/bin'
-          ob_linuxSymbolsPublishing_searchPattern: '**/*.dbg'
         displayName: Linux-ARM64-musl
         pool:
           type: linux
@@ -352,20 +317,14 @@ extends:
         steps:
         - task: RustInstaller@1
           inputs:
-            rustVersion: ms-stable
+            rustVersion: ms-prod-1.93
             toolchainFeed: $(Rust.SDK)
             additionalTargets: aarch64-unknown-linux-musl
           displayName: Install Rust
-          env:
-            ob_restore_phase: true
-        - task: AzureCLI@2
-          displayName: Azure CLI
+        - task: CargoAuthenticate@0
           inputs:
-            azureSubscription: PowerShell-CICD-Feed-Access
-            scriptType: pscore
-            scriptLocation: inlineScript
-            inlineScript: |
-              az account show
+            configFile: '.cargo/config.toml'
+          displayName: Authenticate with Azure Artifacts
         - pwsh: |
             $env:CC_aarch64_unknown_linux_musl='clang'
             $env:AR_aarch64_unknown_linux_musl='llvm-ar'
@@ -386,9 +345,6 @@ extends:
             if ((openssl version -d) -match 'OPENSSLDIR: "(?<dir>.*?)"') {
               $env:OPENSSL_LIB_DIR = $matches['dir']
             }
-            $header = "Bearer $(AzToken)"
-            $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
-            $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
             ./build.ps1 -Release -Architecture aarch64-unknown-linux-musl
             ./packaging.ps1 -PackageType tgz -Architecture aarch64-unknown-linux-musl -Release
             ./packaging.ps1 -PackageType rpm -Architecture aarch64-unknown-linux-musl -Release
@@ -403,7 +359,6 @@ extends:
         dependsOn: SetPackageVersion
         variables:
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
-          AzToken: $[ dependencies.SetPackageVersion.outputs['AzToken'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
         displayName: BuildMac
         pool:
@@ -420,24 +375,15 @@ extends:
         steps:
         - task: RustInstaller@1
           inputs:
-            rustVersion: ms-stable
+            rustVersion: ms-prod-1.93
             toolchainFeed: $(Rust.SDK)
             additionalTargets: $(buildName)
           displayName: Install Rust
-          env:
-            ob_restore_phase: true
-        - task: AzureCLI@2
-          displayName: Azure CLI
+        - task: CargoAuthenticate@0
           inputs:
-            azureSubscription: PowerShell-CICD-Feed-Access
-            scriptType: pscore
-            scriptLocation: inlineScript
-            inlineScript: |
-              az account show
+            configFile: '.cargo/config.toml'
+          displayName: Authenticate with Azure Artifacts
         - pwsh: |
-            $header = "Bearer $(AzToken)"
-            $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
-            $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
             Write-Verbose -Verbose "Building for $(buildName)"
             ./build.ps1 -Release -Architecture $(buildName)
             ./packaging.ps1 -PackageType tgz -Architecture $(buildName) -Release

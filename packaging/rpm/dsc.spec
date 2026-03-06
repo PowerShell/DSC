@@ -33,6 +33,7 @@ ln -s /opt/dsc/dsc-bicep-ext $RPM_BUILD_ROOT/usr/bin/dsc-bicep-ext
 %files
 /opt/dsc/*
 /usr/bin/dsc
+/usr/bin/dsc-bicep-ext
 
 %changelog
 * Wed Oct 22 2025 Microsoft Corporation
