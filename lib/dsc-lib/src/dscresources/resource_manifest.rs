@@ -288,9 +288,6 @@ pub struct ValidateMethod { // TODO: enable validation via schema or command
     pub args: Option<Vec<GetArgKind>>,
     /// How to pass required input for a Validate.
     pub input: Option<InputKind>,
-    /// The security context required to run the Validate method.  Default if not specified is `current`.
-    #[serde(rename = "requireSecurityContext", skip_serializing_if = "Option::is_none")]
-    pub require_security_context: Option<SecurityContextKind>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
