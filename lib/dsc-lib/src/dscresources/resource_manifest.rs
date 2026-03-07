@@ -8,7 +8,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
 use crate::{
-    configure::config_doc::SecurityContextKind, schemas::{dsc_repo::DscRepoSchema, transforms::idiomaticize_string_enum}, types::{ExitCodesMap, FullyQualifiedTypeName, TagList}
+    configure::config_doc::SecurityContextKind,
+    schemas::{dsc_repo::DscRepoSchema, transforms::idiomaticize_string_enum},
+    types::{ExitCodesMap, FullyQualifiedTypeName, TagList},
 };
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
