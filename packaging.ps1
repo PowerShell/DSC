@@ -548,16 +548,16 @@ if ($Test) {
         $repository = 'CFS'
         if ($null -eq (Get-PSResourceRepository -Name CFS -ErrorAction Ignore)) {
             "Registering CFS repository"
-            Register-PSResourceRepository -uri 'https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/nuget/v2' -Name CFS -Trusted
+            Register-PSResourceRepository -Uri "https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/PowerShellGalleryMirror/nuget/v3/index.json" -Name CFS -Trusted
         }
     }
 
     if ($IsWindows) {
         # PSDesiredStateConfiguration module is needed for Microsoft.Windows/WindowsPowerShell adapter
-        $FullyQualifiedName = @{ModuleName="PSDesiredStateConfiguration";ModuleVersion="2.0.7"}
+        $FullyQualifiedName = @{ModuleName="PSDesiredStateConfiguration";ModuleVersion="2.0.8"}
         if (-not(Get-Module -ListAvailable -FullyQualifiedName $FullyQualifiedName))
         {
-            Install-PSResource -Name PSDesiredStateConfiguration -Version 2.0.7 -Repository $repository -TrustRepository
+            Install-PSResource -Name PSDesiredStateConfiguration -Version 2.0.8 -Repository $repository -TrustRepository
         }
     }
 
