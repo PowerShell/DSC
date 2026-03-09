@@ -655,9 +655,9 @@ pub fn invoke_export(resource: &DscResource, input: Option<&str>, target_resourc
         // see if get is supported and use that instead
         if manifest.get.is_some() {
             info!("{}", t!("dscresources.commandResource.exportNotSupportedUsingGet", resource = &resource.type_name));
-            validate_security_context(&manifest.get.as_ref().unwrap().require_security_context, &resource.type_name, "get")?;
             let get_result = invoke_get(resource, input.unwrap_or(""), target_resource)?;
             let mut instances: Vec<Value> = Vec::new();
+            match get_result {
             match get_result {
                 GetResult::Group(group_response) => {
                     for result in group_response {
