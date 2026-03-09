@@ -658,7 +658,6 @@ pub fn invoke_export(resource: &DscResource, input: Option<&str>, target_resourc
             let get_result = invoke_get(resource, input.unwrap_or(""), target_resource)?;
             let mut instances: Vec<Value> = Vec::new();
             match get_result {
-            match get_result {
                 GetResult::Group(group_response) => {
                     for result in group_response {
                         instances.push(serde_json::to_value(result)?);
