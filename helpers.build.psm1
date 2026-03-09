@@ -1212,6 +1212,10 @@ function Update-PathEnvironment {
 function Find-MakeAppx {
     [CmdletBinding()]
     param(
+        # When packaging in OneBranch, the MSIX is created on an x64 image for
+        # the arm64 package, and our tooling expects to use the architecture
+        # passed, so we have to override it here. It may be possible to
+        # workaround this in another way, but deferring further investigation.
         [switch]$UseX64MakeAppx
     )
 
@@ -2166,14 +2170,13 @@ function Build-DscPackage {
             ArtifactDirectory = $artifactDirectory
             Architecture = $Architecture
             Release = $Release
-            UseX64MakeAppx = $UseX64MakeAppx
         }
     }
 
     process {
         Write-Verbose "Packaging DSC..."
         if ($packageType -match 'msix') {
-            Build-DscMsixPackage @buildParams -PackageType $packageType
+            Build-DscMsixPackage @buildParams -PackageType $packageType -UseX64MakeAppx:$UseX64MakeAppx
         } elseif ($packageType -eq 'tgz') {
             Build-DscTgzPackage @buildParams
         } elseif ($packageType -eq 'zip') {
