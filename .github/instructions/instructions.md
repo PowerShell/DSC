@@ -416,7 +416,6 @@ The build script automatically installs these. If issues persist:
 | `-UseCFS` | Switch | Use Component Framework Service |
 | `-UpdateLockFile` | Switch | Update Cargo.lock file |
 | `-Audit` | Switch | Run cargo audit for security vulnerabilities |
-| `-UseCFSAuth` | Switch | Use CFS authentication |
 | `-Clean` | Switch | Clean build artifacts before building |
 | `-CacheRustBuild` | Switch | Cache Rust build artifacts |
 | `-RustDocs` | Switch | Generate Rust documentation |
