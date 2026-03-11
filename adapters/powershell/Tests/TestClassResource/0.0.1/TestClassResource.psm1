@@ -201,6 +201,36 @@ class FilteredExport : BaseTestClass
     }
 }
 
+[DscResource()]
+class StreamResource : BaseTestClass
+{
+    [DscProperty(Key)]
+    [string] $Name
+
+    [DscProperty()]
+    [string] $Prop1
+
+    [void] Set()
+    {
+        Write-Verbose -Verbose "This is a Verbose message"
+        Write-Debug -Debug "This is a Debug message"
+        Write-Error "This is an Error message"
+    }
+
+    [bool] Test()
+    {
+        Write-Host "This is a Host message"
+        Write-Information "This is an Information message"
+        return $true
+    }
+
+    [StreamResource] Get()
+    {
+        Write-Warning "This is a Warning message"
+        return $this
+    }
+}
+
 function Test-World()
 {
     "Hello world from PSTestModule!"

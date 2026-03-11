@@ -51,6 +51,9 @@ dsc-lib-security_context = { workspace = true }
 dsc-lib-jsonschema = { workspace = true }
 tree-sitter-dscexpression = { workspace = true }
 
+[target.'cfg(windows)'.dependencies]
+registry = { workspace = true }
+
 [dev-dependencies]
 serde_yaml = { workspace = true }
 # Helps review complex comparisons, like schemas

@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 
 use crate::DscError;
-use crate::configure::context::Context;
+use crate::configure::context::{Context, ProcessMode};
 use crate::functions::user_function::invoke_user_function;
 use crate::schemas::dsc_repo::DscRepoSchema;
 use rust_i18n::t;
@@ -35,6 +35,7 @@ pub mod empty;
 pub mod ends_with;
 pub mod envvar;
 pub mod equals;
+pub mod filter;
 pub mod greater;
 pub mod greater_or_equals;
 pub mod r#if;
@@ -51,7 +52,11 @@ pub mod intersection;
 pub mod items;
 pub mod join;
 pub mod json;
+pub mod lambda;
+pub mod lambda_helpers;
+pub mod lambda_variables;
 pub mod last_index_of;
+pub mod map;
 pub mod max;
 pub mod min;
 pub mod mod_function;
@@ -98,6 +103,7 @@ pub mod try_which;
 pub enum FunctionArgKind {
     Array,
     Boolean,
+    Lambda,
     Null,
     Number,
     Object,
@@ -109,6 +115,7 @@ impl Display for FunctionArgKind {
         match self {
             FunctionArgKind::Array => write!(f, "Array"),
             FunctionArgKind::Boolean => write!(f, "Boolean"),
+            FunctionArgKind::Lambda => write!(f, "Lambda"),
             FunctionArgKind::Null => write!(f, "Null"),
             FunctionArgKind::Number => write!(f, "Number"),
             FunctionArgKind::Object => write!(f, "Object"),
@@ -192,7 +199,11 @@ impl FunctionDispatcher {
             Box::new(items::Items{}),
             Box::new(join::Join{}),
             Box::new(json::Json{}),
+            Box::new(filter::Filter{}),
+            Box::new(lambda::LambdaFn{}),
+            Box::new(lambda_variables::LambdaVariables{}),
             Box::new(last_index_of::LastIndexOf{}),
+            Box::new(map::Map{}),
             Box::new(max::Max{}),
             Box::new(min::Min{}),
             Box::new(mod_function::Mod{}),
@@ -288,27 +299,40 @@ impl FunctionDispatcher {
         }
 
         // if we have remaining args, they must match one of the remaining_arg_types
-        if let Some(remaining_arg_types) = metadata.remaining_arg_accepted_types {
+        if let Some(ref remaining_arg_types) = metadata.remaining_arg_accepted_types {
             for value in args.iter().skip(metadata.accepted_arg_ordered_types.len()) {
-                Self::check_arg_against_expected_types(name, value, &remaining_arg_types)?;
+                Self::check_arg_against_expected_types(name, value, remaining_arg_types)?;
             }
         }
 
-        function.invoke(args, context)
+        let accepts_lambda = metadata.accepted_arg_ordered_types.iter().any(|types| types.contains(&FunctionArgKind::Lambda))
+            || metadata.remaining_arg_accepted_types.as_ref().is_some_and(|types| types.contains(&FunctionArgKind::Lambda));
+
+        if accepts_lambda {
+            let mut lambda_context = context.clone();
+            lambda_context.process_mode = ProcessMode::Lambda;
+            function.invoke(args, &lambda_context)
+        } else {
+            function.invoke(args, context)
+        }
     }
 
     fn check_arg_against_expected_types(name: &str, arg: &Value, expected_types: &[FunctionArgKind]) -> Result<(), DscError> {
+        let is_lambda = arg.as_str().is_some_and(|s| s.starts_with("__lambda_"));
+
         if arg.is_array() && !expected_types.contains(&FunctionArgKind::Array) {
             return Err(DscError::Parser(t!("functions.noArrayArgs", name = name, accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
         } else if arg.is_boolean() && !expected_types.contains(&FunctionArgKind::Boolean) {
             return Err(DscError::Parser(t!("functions.noBooleanArgs", name = name, accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
+        } else if is_lambda && !expected_types.contains(&FunctionArgKind::Lambda) {
+            return Err(DscError::Parser(t!("functions.noLambdaArgs", name = name, accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
         } else if arg.is_null() && !expected_types.contains(&FunctionArgKind::Null) {
             return Err(DscError::Parser(t!("functions.noNullArgs", name = name, accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
         } else if arg.is_number() && !expected_types.contains(&FunctionArgKind::Number) {
             return Err(DscError::Parser(t!("functions.noNumberArgs", name = name, accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
         } else if arg.is_object() && !expected_types.contains(&FunctionArgKind::Object) {
             return Err(DscError::Parser(t!("functions.noObjectArgs", name = name, accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
-        } else if arg.is_string() && !expected_types.contains(&FunctionArgKind::String) {
+        } else if arg.is_string() && !is_lambda && !expected_types.contains(&FunctionArgKind::String) {
             return Err(DscError::Parser(t!("functions.noStringArgs", name = name, accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
         }
         Ok(())

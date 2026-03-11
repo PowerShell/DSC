@@ -370,7 +370,7 @@ function Get-RustUp {
         if ($null -ne (Get-Command msrustup -CommandType Application -ErrorAction Ignore)) {
             Write-Verbose -Verbose "Using msrustup"
             $rustup = 'msrustup'
-            $channel = 'ms-stable'
+            $channel = 'ms-prod-1.93'
             if ($architecture -eq 'current') {
                 $env:MSRUSTUP_TOOLCHAIN = "$architecture"
             }
@@ -718,6 +718,7 @@ function Install-Protobuf {
                 Install-ProtobufRelease -arch $arch
             } elseif (Test-CommandAvailable -Name 'apt') {
                 Write-Verbose -Verbose "Using apt to install Protobuf"
+                sudo apt update
                 sudo apt install -y protobuf-compiler
                 Write-Verbose -Verbose (Get-Command protoc | Out-String)
                 Write-Verbose -Verbose "protoc version: $(protoc --version)"
@@ -744,7 +745,7 @@ function Install-PowerShellTestPrerequisite {
             $repository = 'CFS'
             if ($null -eq (Get-PSResourceRepository -Name CFS -ErrorAction Ignore)) {
                 "Registering CFS repository"
-                Register-PSResourceRepository -uri 'https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/nuget/v2' -Name CFS -Trusted
+                Register-PSResourceRepository -Uri "https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/PowerShellGalleryMirror/nuget/v3/index.json" -Name CFS -Trusted
             }
         }
     }
@@ -752,10 +753,10 @@ function Install-PowerShellTestPrerequisite {
     process {
         if ($IsWindows) {
             # PSDesiredStateConfiguration module is needed for Microsoft.Windows/WindowsPowerShell adapter
-            $FullyQualifiedName = @{ModuleName="PSDesiredStateConfiguration";ModuleVersion="2.0.7"}
+            $FullyQualifiedName = @{ModuleName="PSDesiredStateConfiguration";ModuleVersion="2.0.8"}
             if (-not(Get-Module -ListAvailable -FullyQualifiedName $FullyQualifiedName))
             {
-                Install-PSResource -Name PSDesiredStateConfiguration -Version 2.0.7 -Repository $repository -TrustRepository
+                Install-PSResource -Name PSDesiredStateConfiguration -Version 2.0.8 -Repository $repository -TrustRepository
             }
         }
 
@@ -804,8 +805,7 @@ function Set-CargoEnvironment {
     #>
     [cmdletbinding()]
     param(
-        [switch]$UseCFS,
-        [switch]$UseCFSAuth
+        [switch]$UseCFS
     )
 
     process {
@@ -813,28 +813,6 @@ function Set-CargoEnvironment {
             Write-Host "Using CFS for cargo source replacement"
             ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = $null
             $env:CARGO_REGISTRIES_CRATESIO_INDEX = $null
-
-            if ($UseCFSAuth) {
-                if ($null -eq (Get-Command 'az' -ErrorAction Ignore)) {
-                    throw "Azure CLI not found"
-                }
-
-                if ($null -ne (Get-Command az -ErrorAction Ignore)) {
-                    Write-Host "Getting token"
-                    $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
-                    if ($LASTEXITCODE -ne 0) {
-                        Write-Warning "Failed to get access token, use 'az login' first, or use '-useCratesIO' to use crates.io.  Proceeding with anonymous access."
-                    } else {
-                        $header = "Bearer $accessToken"
-                        $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
-                        $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
-                        $env:CARGO_REGISTRIES_POWERSHELL_INDEX = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell~force-auth/Cargo/index/"
-                    }
-                }
-                else {
-                    Write-Warning "Azure CLI not found, proceeding with anonymous access."
-                }
-            }
         } else {
             # this will override the config.toml
             Write-Host "Setting CARGO_SOURCE_crates-io_REPLACE_WITH to 'crates-io'"
@@ -1231,7 +1209,16 @@ function Update-PathEnvironment {
     }
 }
 
-function Find-MakeAppx() {
+function Find-MakeAppx {
+    [CmdletBinding()]
+    param(
+        # When packaging in OneBranch, the MSIX is created on an x64 image for
+        # the arm64 package, and our tooling expects to use the architecture
+        # passed, so we have to override it here. It may be possible to
+        # workaround this in another way, but deferring further investigation.
+        [switch]$UseX64MakeAppx
+    )
+
     $makeappx = Get-Command makeappx -CommandType Application -ErrorAction Ignore
     if ($null -eq $makeappx) {
         # try to find
@@ -1808,11 +1795,12 @@ function Build-DscMsixPackage {
             'x86_64-unknown-linux-musl'
         )]
         $Architecture = 'current',
-        [switch]$Release
+        [switch]$Release,
+        [switch]$UseX64MakeAppx
     )
 
     begin {
-        if ($IsWindows) {
+        if (!$IsWindows) {
             throw "MSIX packaging is only supported on Windows"
         }
         if ($null -eq $BuildData) {
@@ -1825,7 +1813,7 @@ function Build-DscMsixPackage {
         $productVersion = Get-DscCliVersion
         $isPrivate = $packageType -eq 'msix-private'
         $isPreview = $productVersion -like '*-*'
-        $makeappx = Find-MakeAppx
+        $makeappx = Find-MakeAppx -UseX64MakeAppx:$UseX64MakeAppx
         $makepri  = Get-Item (Join-Path $makeappx.Directory "makepri.exe") -ErrorAction Stop
     }
 
@@ -1835,7 +1823,7 @@ function Build-DscMsixPackage {
             $msixArguments = @(
                 'bundle'
                 '/d', $artifactDirectory.MsixBundle
-                '/p', "$($artifactDirectory.Bin)\$packageName.msixbundle"
+                '/p', "$($artifactDirectory.BinRoot)\$packageName.msixbundle"
             )
             & $makeappx @msixArguments
             return
@@ -1884,12 +1872,18 @@ function Build-DscMsixPackage {
         $arch = ($architecture -eq 'aarch64-pc-windows-msvc') ? 'arm64' : 'x64'
 
         # Appx manifest needs to be in root of source path, but the embedded version needs to be updated
-        # cp-459155 is 'CN=Microsoft Windows Store Publisher (Store EKU), O=Microsoft Corporation, L=Redmond, S=Washington, C=US'
-        # authenticodeFormer is 'CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US'
-        $releasePublisher = 'CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US'
         # Retrieve manifest and set version correctly
         $appxManifest = Get-Content "$PSScriptRoot\packaging\msix\AppxManifest.xml" -Raw
-        $appxManifest = $appxManifest.Replace('$VERSION$', $ProductVersion).Replace('$ARCH$', $Arch).Replace('$PRODUCTNAME$', $productName).Replace('$DISPLAYNAME$', $displayName).Replace('$PUBLISHER$', $releasePublisher)
+        if ($Release) {
+            # CP-459155 is 'CN=Microsoft Windows Store Publisher (Store EKU), O=Microsoft Corporation, L=Redmond, S=Washington, C=US'
+            # authenticodeFormer is 'CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US'
+            $publisher = 'CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US'
+        } else {
+            # For debug builds, use a self-signed developer identity per
+            # https://learn.microsoft.com/en-us/windows/msix/package/unsigned-package
+            $publisher = 'CN=AppModelSamples, OID.2.25.311729368913984317654407730594956997722=1'
+        }
+        $appxManifest = $appxManifest.Replace('$VERSION$', $ProductVersion).Replace('$ARCH$', $Arch).Replace('$PRODUCTNAME$', $productName).Replace('$DISPLAYNAME$', $displayName).Replace('$PUBLISHER$', $publisher)
         # Remove the output directory if it already exists, then recreate it.
         $msixTarget = $artifactDirectory.MsixTarget
         if (Test-Path $msixTarget) {
@@ -1970,7 +1964,12 @@ function Build-DscMsixPackage {
         if ($LASTEXITCODE -ne 0) {
             throw "Failed to create msix package"
         }
-        Write-Host -ForegroundColor Green "`nMSIX package is created at $packageName"
+
+        if ($Release) {
+            Write-Host -ForegroundColor Green "`nMSIX package is created at $packageName"
+        } else {
+            Write-Host -ForegroundColor Green "`nInstall the debug MSIX package with:`nAdd-AppxPackage -AllowUnsigned -Path $packageName"
+        }
     }
 }
 
@@ -2155,7 +2154,8 @@ function Build-DscPackage {
             'x86_64-unknown-linux-musl'
         )]
         $Architecture = 'current',
-        [switch]$Release
+        [switch]$Release,
+        [switch]$UseX64MakeAppx
     )
 
     begin {
@@ -2176,7 +2176,7 @@ function Build-DscPackage {
     process {
         Write-Verbose "Packaging DSC..."
         if ($packageType -match 'msix') {
-            Build-DscMsixPackage @buildParams -PackageType $packageType
+            Build-DscMsixPackage @buildParams -PackageType $packageType -UseX64MakeAppx:$UseX64MakeAppx
         } elseif ($packageType -eq 'tgz') {
             Build-DscTgzPackage @buildParams
         } elseif ($packageType -eq 'zip') {
