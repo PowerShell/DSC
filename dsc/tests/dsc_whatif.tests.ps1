@@ -189,4 +189,11 @@ Describe 'whatif tests' {
         $result._metadata.whatIf | Should -Contain 'Delete what-if message 1'
         $result._metadata.whatIf | Should -Contain 'Delete what-if message 2'
     }
+
+    It 'dsc resource delete synthetic what-if logs info message and produces no output' {
+        $result = dsc -l info resource delete -r Test/Delete -i '{"_exist": false}' --what-if 2>&1
+        $LASTEXITCODE | Should -Be 0
+        "$result" | Should -Match 'generate synthetic what-if'
+        "$result" | Should -Not -Match '^\s*\{'
+    }
 }
