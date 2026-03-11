@@ -77,15 +77,15 @@ impl Drop for ScHandle {
 /// - If both are provided, the service is looked up by name and the display name is verified.
 ///
 /// If the service does not exist, returns a `WindowsService` with `_exist: false`.
-pub fn get_service(input: &WindowsService) -> Result<WindowsService, String> {
+pub fn get_service(input: &WindowsService) -> Result<WindowsService, ServiceError> {
     if input.name.is_none() && input.display_name.is_none() {
-        return Err(t!("get.nameOrDisplayNameRequired").to_string());
+        return Err(t!("get.nameOrDisplayNameRequired").to_string().into());
     }
 
     unsafe {
         // Open Service Control Manager
         let scm = OpenSCManagerW(None, None, SC_MANAGER_CONNECT)
-            .map_err(|e| t!("get.openScmFailed", error = e.to_string()).to_string())?;
+            .map_err(|e| ServiceError::from(t!("get.openScmFailed", error = e.to_string()).to_string()))?;
         let scm = ScHandle(scm);
 
         // Resolve the service key name
@@ -139,7 +139,7 @@ pub fn get_service(input: &WindowsService) -> Result<WindowsService, String> {
             bytes_needed,
             &mut bytes_needed,
         )
-        .map_err(|e| t!("get.queryConfigFailed", error = e.to_string()).to_string())?;
+        .map_err(|e| ServiceError::from(t!("get.queryConfigFailed", error = e.to_string()).to_string()))?;
 
         let config = &*config_ptr;
         let actual_display_name = pwstr_to_string(config.lpDisplayName);
@@ -151,7 +151,8 @@ pub fn get_service(input: &WindowsService) -> Result<WindowsService, String> {
             if !actual_dn.eq_ignore_ascii_case(expected_dn) {
                 return Err(
                     t!("get.displayNameMismatch", expected = expected_dn, actual = actual_dn)
-                        .to_string(),
+                        .to_string()
+                        .into(),
                 );
             }
         }
@@ -209,7 +210,7 @@ pub fn get_service(input: &WindowsService) -> Result<WindowsService, String> {
 unsafe fn resolve_key_name_from_display_name(
     scm: SC_HANDLE,
     display_name: &str,
-) -> Result<String, String> {
+) -> Result<String, ServiceError> {
     let dn_wide = to_wide(display_name);
     let mut size: u32 = 0;
 
@@ -220,7 +221,7 @@ unsafe fn resolve_key_name_from_display_name(
 
     if size == 0 {
         return Err(
-            t!("get.getKeyNameFailed", error = "service not found").to_string(),
+            t!("get.getKeyNameFailed", error = "service not found").to_string().into(),
         );
     }
 
@@ -314,7 +315,7 @@ unsafe fn query_description(service_handle: SC_HANDLE) -> Option<String> {
 }
 
 /// Query the current runtime status of a service.
-unsafe fn query_status(service_handle: SC_HANDLE) -> Result<ServiceStatus, String> {
+unsafe fn query_status(service_handle: SC_HANDLE) -> Result<ServiceStatus, ServiceError> {
     let mut buffer = vec![0u8; mem::size_of::<SERVICE_STATUS_PROCESS>()];
     let mut bytes_needed: u32 = 0;
 
@@ -340,20 +341,22 @@ unsafe fn query_status(service_handle: SC_HANDLE) -> Result<ServiceStatus, Strin
         SERVICE_PAUSED => Ok(ServiceStatus::Paused),
         other => Err(
             t!("get.queryStatusFailed", error = format!("unknown state: {}", other.0))
-                .to_string(),
+                .to_string()
+                .into(),
         ),
     }
 }
 
 /// Export (enumerate) all services, optionally filtering by the provided criteria.
-/// Each matching service is printed as a JSON line to stdout.
-pub fn export_services(filter: Option<&WindowsService>) -> Result<(), String> {
+/// Returns a list of matching services.
+pub fn export_services(filter: Option<&WindowsService>) -> Result<Vec<WindowsService>, ServiceError> {
     unsafe {
         let scm = OpenSCManagerW(None, None, SC_MANAGER_CONNECT | SC_MANAGER_ENUMERATE_SERVICE)
             .map_err(|e| t!("get.openScmFailed", error = e.to_string()).to_string())?;
         let scm = ScHandle(scm);
 
         let service_names = enumerate_service_names(scm.0)?;
+        let mut results = Vec::new();
 
         for service_name in &service_names {
             let svc = match get_service_details(scm.0, service_name) {
@@ -367,20 +370,15 @@ pub fn export_services(filter: Option<&WindowsService>) -> Result<(), String> {
                 }
             }
 
-            match serde_json::to_string(&svc) {
-                Ok(json) => println!("{json}"),
-                Err(e) => {
-                    eprintln!("{}", t!("export.serializeFailed", error = e.to_string()));
-                }
-            }
+            results.push(svc);
         }
 
-        Ok(())
+        Ok(results)
     }
 }
 
 /// Enumerate all Win32 service names using `EnumServicesStatusExW`.
-unsafe fn enumerate_service_names(scm: SC_HANDLE) -> Result<Vec<String>, String> {
+unsafe fn enumerate_service_names(scm: SC_HANDLE) -> Result<Vec<String>, ServiceError> {
     unsafe {
         let mut bytes_needed: u32 = 0;
         let mut services_returned: u32 = 0;
@@ -436,7 +434,7 @@ unsafe fn enumerate_service_names(scm: SC_HANDLE) -> Result<Vec<String>, String>
 }
 
 /// Get full service details given an SCM handle and a service key name.
-unsafe fn get_service_details(scm: SC_HANDLE, service_name: &str) -> Result<WindowsService, String> {
+unsafe fn get_service_details(scm: SC_HANDLE, service_name: &str) -> Result<WindowsService, ServiceError> {
     unsafe {
         let name_wide = to_wide(service_name);
         let service_handle = OpenServiceW(
@@ -565,7 +563,7 @@ fn deps_to_multi_string(deps: &[String]) -> Vec<u16> {
 }
 
 /// Apply the desired service configuration and status changes, then return the final state.
-pub fn set_service(input: &WindowsService) -> Result<WindowsService, String> {
+pub fn set_service(input: &WindowsService) -> Result<WindowsService, ServiceError> {
     let name = input.name.as_deref()
         .ok_or_else(|| t!("set.nameRequired").to_string())?;
 
@@ -608,6 +606,18 @@ pub fn set_service(input: &WindowsService) -> Result<WindowsService, String> {
                 None => SERVICE_ERROR(SERVICE_NO_CHANGE_VALUE),
             };
 
+            // When setting AutomaticDelayedStart, the service must not belong to a load
+            // order group — Windows rejects ChangeServiceConfig2W for the delayed auto-start
+            // flag with ERROR_INVALID_PARAMETER if one is set. Clear the group by passing an
+            // empty string instead of null (which means "no change").
+            let clear_group_wide;
+            let load_order_group_ptr = if matches!(&input.start_type, Some(StartType::AutomaticDelayedStart)) {
+                clear_group_wide = to_wide("");
+                PCWSTR(clear_group_wide.as_ptr())
+            } else {
+                PCWSTR::null()
+            };
+
             // Build wide strings; they must live through the API call.
             let exe_wide = input.executable_path.as_ref().map(|s| to_wide(s));
             let logon_wide = input.logon_account.as_ref().map(|s| to_wide(s));
@@ -625,8 +635,8 @@ pub fn set_service(input: &WindowsService) -> Result<WindowsService, String> {
                 dw_start_type,
                 dw_error_control,
                 exe_ptr,
-                PCWSTR::null(), // load order group unchanged
-                None,           // tag id unchanged
+                load_order_group_ptr,
+                None, // tag id unchanged
                 deps_ptr,
                 logon_ptr,
                 PCWSTR::null(), // password unchanged
@@ -701,7 +711,7 @@ pub fn set_service(input: &WindowsService) -> Result<WindowsService, String> {
                                 return Err(t!("set.unsupportedTransition",
                                     current = current.to_string(),
                                     desired = desired_status.to_string()
-                                ).to_string());
+                                ).to_string().into());
                             }
                         }
                         wait_for_status(service_handle.0, desired_status)?;
@@ -717,7 +727,7 @@ pub fn set_service(input: &WindowsService) -> Result<WindowsService, String> {
                             return Err(t!("set.unsupportedTransition",
                                 current = current.to_string(),
                                 desired = desired_status.to_string()
-                            ).to_string());
+                            ).to_string().into());
                         }
                         let mut svc_status = SERVICE_STATUS::default();
                         ControlService(service_handle.0, SERVICE_CONTROL_PAUSE, &mut svc_status)
@@ -727,7 +737,7 @@ pub fn set_service(input: &WindowsService) -> Result<WindowsService, String> {
                     _ => {
                         return Err(t!("set.unsupportedStatus",
                             status = desired_status.to_string()
-                        ).to_string());
+                        ).to_string().into());
                     }
                 }
             }
@@ -743,7 +753,7 @@ pub fn set_service(input: &WindowsService) -> Result<WindowsService, String> {
 unsafe fn wait_for_status(
     service_handle: SC_HANDLE,
     desired: &ServiceStatus,
-) -> Result<(), String> {
+) -> Result<(), ServiceError> {
     let start = std::time::Instant::now();
     let timeout = std::time::Duration::from_secs(STATUS_WAIT_TIMEOUT_SECS);
     loop {
@@ -755,7 +765,7 @@ unsafe fn wait_for_status(
             return Err(t!("set.statusTimeout",
                 expected = desired.to_string(),
                 actual = current.to_string()
-            ).to_string());
+            ).to_string().into());
         }
         std::thread::sleep(std::time::Duration::from_millis(STATUS_POLL_INTERVAL_MS));
     }

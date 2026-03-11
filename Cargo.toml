@@ -75,6 +75,7 @@ Windows = [
     "lib/dsc-lib-security_context",
     "resources/sshdconfig",
     "resources/WindowsUpdate",
+    "resources/windows_service",
     "tools/dsctest",
     "tools/test_group_resource",
     "grammars/tree-sitter-dscexpression",

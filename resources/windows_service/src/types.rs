@@ -143,3 +143,23 @@ impl std::fmt::Display for ErrorControl {
         }
     }
 }
+
+/// Represents an error from a Windows service operation.
+#[derive(Debug)]
+pub struct ServiceError {
+    pub message: String,
+}
+
+impl std::fmt::Display for ServiceError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.message)
+    }
+}
+
+impl std::error::Error for ServiceError {}
+
+impl From<String> for ServiceError {
+    fn from(message: String) -> Self {
+        Self { message }
+    }
+}

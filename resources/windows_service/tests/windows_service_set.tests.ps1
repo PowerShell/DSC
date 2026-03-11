@@ -22,8 +22,8 @@ Describe 'Windows Service set tests' {
         function Get-ServiceState {
             param([string]$Name)
             $json = @{ name = $Name } | ConvertTo-Json -Compress
-            $out = $json | dsc resource get -r $resourceType -f - 2>$null
-            $LASTEXITCODE | Should -Be 0
+            $out = $json | dsc resource get -r $resourceType -f - 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
             return ($out | ConvertFrom-Json).actualState
         }
     }
@@ -53,14 +53,14 @@ Describe 'Windows Service set tests' {
                     name      = $testServiceName
                     startType = $script:originalState.startType
                 } | ConvertTo-Json -Compress
-                $restoreJson | dsc resource set -r $resourceType -f - 2>$null
+                $restoreJson | dsc resource set -r $resourceType -f - 2>$testdrive/error.log
             }
         }
 
         It 'Can set startType to Disabled' {
             $json = @{ name = $testServiceName; startType = 'Disabled' } | ConvertTo-Json -Compress
-            $out = $json | dsc resource set -r $resourceType -f - 2>$null
-            $LASTEXITCODE | Should -Be 0
+            $out = $json | dsc resource set -r $resourceType -f - 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
             $result = ($out | ConvertFrom-Json).afterState
             $result.name | Should -BeExactly $testServiceName
             $result.startType | Should -BeExactly 'Disabled'
@@ -68,24 +68,24 @@ Describe 'Windows Service set tests' {
 
         It 'Can set startType to Manual' {
             $json = @{ name = $testServiceName; startType = 'Manual' } | ConvertTo-Json -Compress
-            $out = $json | dsc resource set -r $resourceType -f - 2>$null
-            $LASTEXITCODE | Should -Be 0
+            $out = $json | dsc resource set -r $resourceType -f - 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
             $result = ($out | ConvertFrom-Json).afterState
             $result.startType | Should -BeExactly 'Manual'
         }
 
         It 'Can set startType to Automatic' {
             $json = @{ name = $testServiceName; startType = 'Automatic' } | ConvertTo-Json -Compress
-            $out = $json | dsc resource set -r $resourceType -f - 2>$null
-            $LASTEXITCODE | Should -Be 0
+            $out = $json | dsc resource set -r $resourceType -f - 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
             $result = ($out | ConvertFrom-Json).afterState
             $result.startType | Should -BeExactly 'Automatic'
         }
 
         It 'Can set startType to AutomaticDelayedStart' {
             $json = @{ name = $testServiceName; startType = 'AutomaticDelayedStart' } | ConvertTo-Json -Compress
-            $out = $json | dsc resource set -r $resourceType -f - 2>$null
-            $LASTEXITCODE | Should -Be 0
+            $out = $json | dsc resource set -r $resourceType -f - 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
             $result = ($out | ConvertFrom-Json).afterState
             $result.startType | Should -BeExactly 'AutomaticDelayedStart'
         }
@@ -103,15 +103,15 @@ Describe 'Windows Service set tests' {
                     name        = $testServiceName
                     description = $script:originalState.description
                 } | ConvertTo-Json -Compress
-                $restoreJson | dsc resource set -r $resourceType -f - 2>$null
+                $restoreJson | dsc resource set -r $resourceType -f - 2>$testdrive/error.log
             }
         }
 
         It 'Can set description' {
             $testDesc = 'DSC test description'
             $json = @{ name = $testServiceName; description = $testDesc } | ConvertTo-Json -Compress
-            $out = $json | dsc resource set -r $resourceType -f - 2>$null
-            $LASTEXITCODE | Should -Be 0
+            $out = $json | dsc resource set -r $resourceType -f - 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
             $result = ($out | ConvertFrom-Json).afterState
             $result.description | Should -BeExactly $testDesc
         }
@@ -123,7 +123,7 @@ Describe 'Windows Service set tests' {
             # Ensure the service is startable (not disabled)
             if ($script:originalState.startType -eq 'Disabled') {
                 $json = @{ name = $testServiceName; startType = 'Manual' } | ConvertTo-Json -Compress
-                $json | dsc resource set -r $resourceType -f - 2>$null
+                $json | dsc resource set -r $resourceType -f - 2>$testdrive/error.log
             }
         }
 
@@ -135,19 +135,19 @@ Describe 'Windows Service set tests' {
                     startType = $script:originalState.startType
                     status    = $script:originalState.status
                 } | ConvertTo-Json -Compress
-                $restoreJson | dsc resource set -r $resourceType -f - 2>$null
+                $restoreJson | dsc resource set -r $resourceType -f - 2>$testdrive/error.log
             }
         }
 
         It 'Can start a stopped service' {
             # First ensure it is stopped
             $json = @{ name = $testServiceName; status = 'Stopped' } | ConvertTo-Json -Compress
-            $json | dsc resource set -r $resourceType -f - 2>$null
+            $json | dsc resource set -r $resourceType -f - 2>$testdrive/error.log
 
             # Now start it
             $json = @{ name = $testServiceName; status = 'Running' } | ConvertTo-Json -Compress
-            $out = $json | dsc resource set -r $resourceType -f - 2>$null
-            $LASTEXITCODE | Should -Be 0
+            $out = $json | dsc resource set -r $resourceType -f - 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
             $result = ($out | ConvertFrom-Json).afterState
             $result.status | Should -BeExactly 'Running'
         }
@@ -155,12 +155,12 @@ Describe 'Windows Service set tests' {
         It 'Can stop a running service' {
             # First ensure it is running
             $json = @{ name = $testServiceName; status = 'Running' } | ConvertTo-Json -Compress
-            $json | dsc resource set -r $resourceType -f - 2>$null
+            $json | dsc resource set -r $resourceType -f - 2>$testdrive/error.log
 
             # Now stop it
             $json = @{ name = $testServiceName; status = 'Stopped' } | ConvertTo-Json -Compress
-            $out = $json | dsc resource set -r $resourceType -f - 2>$null
-            $LASTEXITCODE | Should -Be 0
+            $out = $json | dsc resource set -r $resourceType -f - 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
             $result = ($out | ConvertFrom-Json).afterState
             $result.status | Should -BeExactly 'Stopped'
         }
@@ -168,11 +168,11 @@ Describe 'Windows Service set tests' {
         It 'Is idempotent when service is already in desired status' {
             # Ensure it is stopped
             $json = @{ name = $testServiceName; status = 'Stopped' } | ConvertTo-Json -Compress
-            $json | dsc resource set -r $resourceType -f - 2>$null
+            $json | dsc resource set -r $resourceType -f - 2>$testdrive/error.log
 
             # Set to Stopped again — should succeed without error
-            $out = $json | dsc resource set -r $resourceType -f - 2>$null
-            $LASTEXITCODE | Should -Be 0
+            $out = $json | dsc resource set -r $resourceType -f - 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
             $result = ($out | ConvertFrom-Json).afterState
             $result.status | Should -BeExactly 'Stopped'
         }
@@ -192,7 +192,7 @@ Describe 'Windows Service set tests' {
                     description = $script:originalState.description
                     status      = $script:originalState.status
                 } | ConvertTo-Json -Compress
-                $restoreJson | dsc resource set -r $resourceType -f - 2>$null
+                $restoreJson | dsc resource set -r $resourceType -f - 2>$testdrive/error.log
             }
         }
 
@@ -202,8 +202,8 @@ Describe 'Windows Service set tests' {
                 startType   = 'Manual'
                 description = 'DSC combined test'
             } | ConvertTo-Json -Compress
-            $out = $json | dsc resource set -r $resourceType -f - 2>$null
-            $LASTEXITCODE | Should -Be 0
+            $out = $json | dsc resource set -r $resourceType -f - 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
             $result = ($out | ConvertFrom-Json).afterState
             $result.startType | Should -BeExactly 'Manual'
             $result.description | Should -BeExactly 'DSC combined test'
@@ -211,8 +211,8 @@ Describe 'Windows Service set tests' {
 
         It 'Returns full service state after set' {
             $json = @{ name = $testServiceName; startType = 'Manual' } | ConvertTo-Json -Compress
-            $out = $json | dsc resource set -r $resourceType -f - 2>$null
-            $LASTEXITCODE | Should -Be 0
+            $out = $json | dsc resource set -r $resourceType -f - 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
             $result = ($out | ConvertFrom-Json).afterState
             $result.name | Should -Not -BeNullOrEmpty
             $result.displayName | Should -Not -BeNullOrEmpty
@@ -228,8 +228,8 @@ Describe 'Windows Service set tests' {
     Context 'Set with no changes (idempotent)' -Skip:(!$IsWindows -or !$isAdmin) {
         It 'Succeeds when only name is provided (no properties to change)' {
             $json = @{ name = $testServiceName } | ConvertTo-Json -Compress
-            $out = $json | dsc resource set -r $resourceType -f - 2>$null
-            $LASTEXITCODE | Should -Be 0
+            $out = $json | dsc resource set -r $resourceType -f - 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
             $result = ($out | ConvertFrom-Json).afterState
             $result.name | Should -BeExactly $testServiceName
             $result._exist | Should -BeTrue

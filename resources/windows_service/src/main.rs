@@ -11,6 +11,11 @@ use std::process::exit;
 
 use types::WindowsService;
 
+/// Write a JSON error object to stderr: `{"error":"<message>"}`
+fn write_error(message: &str) {
+    eprintln!("{}", serde_json::json!({"error": message}));
+}
+
 rust_i18n::i18n!("locales", fallback = "en-us");
 
 const EXIT_SUCCESS: i32 = 0;
@@ -22,7 +27,7 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
 
     if args.len() < 2 {
-        eprintln!("Error: {}", t!("main.missingOperation"));
+        write_error(&t!("main.missingOperation"));
         exit(EXIT_INVALID_ARGS);
     }
 
@@ -34,7 +39,7 @@ fn main() {
             let json = match input_json {
                 Some(j) => j,
                 None => {
-                    eprintln!("Error: {}", t!("main.missingInput"));
+                    write_error(&t!("main.missingInput"));
                     exit(EXIT_INVALID_ARGS);
                 }
             };
@@ -42,7 +47,7 @@ fn main() {
             let input: WindowsService = match serde_json::from_str(&json) {
                 Ok(s) => s,
                 Err(e) => {
-                    eprintln!("Error: {}", t!("main.invalidJson", error = e.to_string()));
+                    write_error(&t!("main.invalidJson", error = e.to_string()));
                     exit(EXIT_INVALID_INPUT);
                 }
             };
@@ -55,7 +60,7 @@ fn main() {
                         exit(EXIT_SUCCESS);
                     }
                     Err(e) => {
-                        eprintln!("Error: {e}");
+                        write_error(&e.to_string());
                         exit(EXIT_SERVICE_ERROR);
                     }
                 }
@@ -64,7 +69,7 @@ fn main() {
             #[cfg(not(windows))]
             {
                 let _ = input;
-                eprintln!("Error: {}", t!("main.windowsOnly"));
+                write_error(&t!("main.windowsOnly"));
                 exit(EXIT_SERVICE_ERROR);
             }
         }
@@ -72,7 +77,7 @@ fn main() {
             let json = match input_json {
                 Some(j) => j,
                 None => {
-                    eprintln!("Error: {}", t!("main.missingInput"));
+                    write_error(&t!("main.missingInput"));
                     exit(EXIT_INVALID_ARGS);
                 }
             };
@@ -80,7 +85,7 @@ fn main() {
             let input: WindowsService = match serde_json::from_str(&json) {
                 Ok(s) => s,
                 Err(e) => {
-                    eprintln!("Error: {}", t!("main.invalidJson", error = e.to_string()));
+                    write_error(&t!("main.invalidJson", error = e.to_string()));
                     exit(EXIT_INVALID_INPUT);
                 }
             };
@@ -93,7 +98,7 @@ fn main() {
                         exit(EXIT_SUCCESS);
                     }
                     Err(e) => {
-                        eprintln!("Error: {e}");
+                        write_error(&e.to_string());
                         exit(EXIT_SERVICE_ERROR);
                     }
                 }
@@ -102,7 +107,7 @@ fn main() {
             #[cfg(not(windows))]
             {
                 let _ = input;
-                eprintln!("Error: {}", t!("main.windowsOnly"));
+                write_error(&t!("main.windowsOnly"));
                 exit(EXIT_SERVICE_ERROR);
             }
         }
@@ -111,7 +116,7 @@ fn main() {
                 Some(json) => match serde_json::from_str(&json) {
                     Ok(s) => Some(s),
                     Err(e) => {
-                        eprintln!("Error: {}", t!("main.invalidJson", error = e.to_string()));
+                        write_error(&t!("main.invalidJson", error = e.to_string()));
                         exit(EXIT_INVALID_INPUT);
                     }
                 },
@@ -121,9 +126,14 @@ fn main() {
             #[cfg(windows)]
             {
                 match service::export_services(filter.as_ref()) {
-                    Ok(()) => exit(EXIT_SUCCESS),
+                    Ok(services) => {
+                        for svc in &services {
+                            println!("{}", serde_json::to_string(svc).unwrap());
+                        }
+                        exit(EXIT_SUCCESS);
+                    }
                     Err(e) => {
-                        eprintln!("Error: {e}");
+                        write_error(&e.to_string());
                         exit(EXIT_SERVICE_ERROR);
                     }
                 }
@@ -132,15 +142,12 @@ fn main() {
             #[cfg(not(windows))]
             {
                 let _ = filter;
-                eprintln!("Error: {}", t!("main.windowsOnly"));
+                write_error(&t!("main.windowsOnly"));
                 exit(EXIT_SERVICE_ERROR);
             }
         }
         _ => {
-            eprintln!(
-                "Error: {}",
-                t!("main.unknownOperation", operation = operation)
-            );
+            write_error(&t!("main.unknownOperation", operation = operation));
             exit(EXIT_INVALID_ARGS);
         }
     }
@@ -154,7 +161,7 @@ fn parse_input_arg(args: &[String]) -> Option<String> {
             if i + 1 < args.len() {
                 return Some(args[i + 1].clone());
             }
-            eprintln!("Error: {}", t!("main.missingInputValue"));
+            write_error(&t!("main.missingInputValue"));
             exit(EXIT_INVALID_ARGS);
         }
         i += 1;

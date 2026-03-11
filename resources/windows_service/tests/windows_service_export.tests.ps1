@@ -10,9 +10,9 @@ Describe 'Windows Service export tests' {
                 [string]$InputJson
             )
             if ($InputJson) {
-                $raw = $InputJson | dsc resource export -r $resourceType -f - 2>$null
+                $raw = $InputJson | dsc resource export -r $resourceType -f - 2>$testdrive/error.log
             } else {
-                $raw = dsc resource export -r $resourceType 2>$null
+                $raw = dsc resource export -r $resourceType 2>$testdrive/error.log
             }
             $parsed = $raw | ConvertFrom-Json
             return $parsed
@@ -22,7 +22,7 @@ Describe 'Windows Service export tests' {
     Context 'Export without filter' {
         It 'Returns multiple services' -Skip:(!$IsWindows) {
             $result = Invoke-DscExport
-            $LASTEXITCODE | Should -Be 0
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
             $result.resources.Count | Should -BeGreaterThan 10
         }
 
@@ -53,7 +53,7 @@ Describe 'Windows Service export tests' {
         It 'Filters by exact service name' -Skip:(!$IsWindows) {
             $json = @{ name = 'wuauserv' } | ConvertTo-Json -Compress
             $result = Invoke-DscExport -InputJson $json
-            $LASTEXITCODE | Should -Be 0
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
             $result.resources.Count | Should -Be 1
             $result.resources[0].properties.name | Should -BeExactly 'wuauserv'
         }
@@ -61,7 +61,7 @@ Describe 'Windows Service export tests' {
         It 'Filters by name with leading wildcard' -Skip:(!$IsWindows) {
             $json = @{ name = '*serv' } | ConvertTo-Json -Compress
             $result = Invoke-DscExport -InputJson $json
-            $LASTEXITCODE | Should -Be 0
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
             $result.resources.Count | Should -BeGreaterThan 0
             foreach ($resource in $result.resources) {
                 $resource.properties.name | Should -BeLike '*serv'
@@ -71,7 +71,7 @@ Describe 'Windows Service export tests' {
         It 'Filters by name with trailing wildcard' -Skip:(!$IsWindows) {
             $json = @{ name = 'w*' } | ConvertTo-Json -Compress
             $result = Invoke-DscExport -InputJson $json
-            $LASTEXITCODE | Should -Be 0
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
             $result.resources.Count | Should -BeGreaterThan 0
             foreach ($resource in $result.resources) {
                 $resource.properties.name | Should -BeLike 'w*'
@@ -81,7 +81,7 @@ Describe 'Windows Service export tests' {
         It 'Filters by name with surrounding wildcards' -Skip:(!$IsWindows) {
             $json = @{ name = '*update*' } | ConvertTo-Json -Compress
             $result = Invoke-DscExport -InputJson $json
-            $LASTEXITCODE | Should -Be 0
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
             $result.resources.Count | Should -BeGreaterThan 0
             foreach ($resource in $result.resources) {
                 $resource.properties.name | Should -BeLike '*update*'
@@ -91,7 +91,7 @@ Describe 'Windows Service export tests' {
         It 'Returns empty when name filter matches nothing' -Skip:(!$IsWindows) {
             $json = @{ name = 'nonexistent_service_xyz_12345' } | ConvertTo-Json -Compress
             $result = Invoke-DscExport -InputJson $json
-            $LASTEXITCODE | Should -Be 0
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
             $result.resources.Count | Should -Be 0
         }
     }
@@ -100,7 +100,7 @@ Describe 'Windows Service export tests' {
         It 'Filters by display name with wildcard' -Skip:(!$IsWindows) {
             $json = @{ displayName = '*Update*' } | ConvertTo-Json -Compress
             $result = Invoke-DscExport -InputJson $json
-            $LASTEXITCODE | Should -Be 0
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
             $result.resources.Count | Should -BeGreaterThan 0
             foreach ($resource in $result.resources) {
                 $resource.properties.displayName | Should -BeLike '*Update*'
@@ -110,7 +110,7 @@ Describe 'Windows Service export tests' {
         It 'Filters by exact display name' -Skip:(!$IsWindows) {
             $json = @{ displayName = 'Windows Update' } | ConvertTo-Json -Compress
             $result = Invoke-DscExport -InputJson $json
-            $LASTEXITCODE | Should -Be 0
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
             $result.resources.Count | Should -Be 1
             $result.resources[0].properties.displayName | Should -BeExactly 'Windows Update'
         }
@@ -120,7 +120,7 @@ Describe 'Windows Service export tests' {
         It 'Filters by Running status' -Skip:(!$IsWindows) {
             $json = @{ status = 'Running' } | ConvertTo-Json -Compress
             $result = Invoke-DscExport -InputJson $json
-            $LASTEXITCODE | Should -Be 0
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
             $result.resources.Count | Should -BeGreaterThan 0
             foreach ($resource in $result.resources) {
                 $resource.properties.status | Should -BeExactly 'Running'
@@ -130,7 +130,7 @@ Describe 'Windows Service export tests' {
         It 'Filters by Stopped status' -Skip:(!$IsWindows) {
             $json = @{ status = 'Stopped' } | ConvertTo-Json -Compress
             $result = Invoke-DscExport -InputJson $json
-            $LASTEXITCODE | Should -Be 0
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
             $result.resources.Count | Should -BeGreaterThan 0
             foreach ($resource in $result.resources) {
                 $resource.properties.status | Should -BeExactly 'Stopped'
@@ -142,7 +142,7 @@ Describe 'Windows Service export tests' {
         It 'Filters by Automatic start type' -Skip:(!$IsWindows) {
             $json = @{ startType = 'Automatic' } | ConvertTo-Json -Compress
             $result = Invoke-DscExport -InputJson $json
-            $LASTEXITCODE | Should -Be 0
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
             $result.resources.Count | Should -BeGreaterThan 0
             foreach ($resource in $result.resources) {
                 $resource.properties.startType | Should -BeExactly 'Automatic'
@@ -152,7 +152,7 @@ Describe 'Windows Service export tests' {
         It 'Filters by Manual start type' -Skip:(!$IsWindows) {
             $json = @{ startType = 'Manual' } | ConvertTo-Json -Compress
             $result = Invoke-DscExport -InputJson $json
-            $LASTEXITCODE | Should -Be 0
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
             $result.resources.Count | Should -BeGreaterThan 0
             foreach ($resource in $result.resources) {
                 $resource.properties.startType | Should -BeExactly 'Manual'
@@ -162,7 +162,7 @@ Describe 'Windows Service export tests' {
         It 'Filters by Disabled start type' -Skip:(!$IsWindows) {
             $json = @{ startType = 'Disabled' } | ConvertTo-Json -Compress
             $result = Invoke-DscExport -InputJson $json
-            $LASTEXITCODE | Should -Be 0
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
             $result.resources.Count | Should -BeGreaterOrEqual 0
             foreach ($resource in $result.resources) {
                 $resource.properties.startType | Should -BeExactly 'Disabled'
@@ -174,7 +174,7 @@ Describe 'Windows Service export tests' {
         It 'Filters by status AND startType together' -Skip:(!$IsWindows) {
             $json = @{ status = 'Running'; startType = 'Automatic' } | ConvertTo-Json -Compress
             $result = Invoke-DscExport -InputJson $json
-            $LASTEXITCODE | Should -Be 0
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
             $result.resources.Count | Should -BeGreaterThan 0
             foreach ($resource in $result.resources) {
                 $resource.properties.status | Should -BeExactly 'Running'
@@ -185,7 +185,7 @@ Describe 'Windows Service export tests' {
         It 'Filters by name wildcard AND status' -Skip:(!$IsWindows) {
             $json = @{ name = 'w*'; status = 'Stopped' } | ConvertTo-Json -Compress
             $result = Invoke-DscExport -InputJson $json
-            $LASTEXITCODE | Should -Be 0
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
             foreach ($resource in $result.resources) {
                 $resource.properties.name | Should -BeLike 'w*'
                 $resource.properties.status | Should -BeExactly 'Stopped'
@@ -197,7 +197,7 @@ Describe 'Windows Service export tests' {
         It 'Filters by a single dependency' -Skip:(!$IsWindows) {
             $json = @{ dependencies = @('rpcss') } | ConvertTo-Json -Compress
             $result = Invoke-DscExport -InputJson $json
-            $LASTEXITCODE | Should -Be 0
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
             $result.resources.Count | Should -BeGreaterThan 0
             foreach ($resource in $result.resources) {
                 $resource.properties.dependencies | Should -Not -BeNullOrEmpty
