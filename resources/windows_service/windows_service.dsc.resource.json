@@ -1,0 +1,115 @@
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "type": "Microsoft.Windows/Service",
+    "description": "Manage Windows services",
+    "tags": [
+        "Windows"
+    ],
+    "version": "0.1.0",
+    "get": {
+        "executable": "windows_service",
+        "args": [
+            "get",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ]
+    },
+    "set": {
+        "executable": "windows_service",
+        "args": [
+            "set",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ],
+        "implementsPretest": false,
+        "return": "state"
+    },
+    "export": {
+        "executable": "windows_service",
+        "args": [
+            "export",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": false
+            }
+        ]
+    },
+    "exitCodes": {
+        "0": "Success",
+        "1": "Invalid arguments",
+        "2": "Invalid input",
+        "3": "Service error"
+    },
+    "schema": {
+        "embedded": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Windows Service",
+            "description": "Manage Windows services.",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "title": "Service name",
+                    "description": "The name of the service in the Service Control Manager."
+                },
+                "displayName": {
+                    "type": "string",
+                    "title": "Display name",
+                    "description": "The display name of the service shown in the Services console."
+                },
+                "description": {
+                    "type": "string",
+                    "title": "Description",
+                    "description": "A description of the service."
+                },
+                "_exist": {
+                    "type": "boolean",
+                    "title": "Exists",
+                    "description": "Indicates whether the service exists.",
+                    "readOnly": true
+                },
+                "status": {
+                    "type": "string",
+                    "title": "Status",
+                    "description": "The current status of the service.",
+                    "enum": ["Running", "Stopped", "Paused", "StartPending", "StopPending", "PausePending", "ContinuePending"]
+                },
+                "startType": {
+                    "type": "string",
+                    "title": "Start type",
+                    "description": "The start type of the service.",
+                    "enum": ["Automatic", "AutomaticDelayedStart", "Manual", "Disabled"]
+                },
+                "executablePath": {
+                    "type": "string",
+                    "title": "Executable path",
+                    "description": "The fully qualified path to the service binary."
+                },
+                "logonAccount": {
+                    "type": "string",
+                    "title": "Logon account",
+                    "description": "The account under which the service runs."
+                },
+                "errorControl": {
+                    "type": "string",
+                    "title": "Error control",
+                    "description": "The error control level for the service.",
+                    "enum": ["Ignore", "Normal", "Severe", "Critical"]
+                },
+                "dependencies": {
+                    "type": "array",
+                    "title": "Dependencies",
+                    "description": "A list of service names that this service depends on.",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            },
+            "additionalProperties": false
+        }
+    }
+}

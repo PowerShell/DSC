@@ -1,0 +1,14 @@
+{
+    "Name": "windows_service",
+    "Kind": "Resource",
+    "IsRust": true,
+    "SupportedPlatformOS": "Windows",
+    "Binaries": [
+        "windows_service"
+    ],
+    "CopyFiles": {
+        "Windows": [
+            "windows_service.dsc.resource.json"
+        ]
+    }
+}

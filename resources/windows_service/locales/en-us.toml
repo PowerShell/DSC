@@ -1,0 +1,38 @@
+_version = 1
+
+[main]
+missingOperation = "Missing operation. Usage: windows_service <get|set|export> --input <json>"
+unknownOperation = "Unknown operation: '%{operation}'. Expected: get, set, or export"
+missingInput = "Missing --input argument"
+missingInputValue = "Missing value for --input argument"
+invalidJson = "Invalid JSON input: %{error}"
+setNotImplemented = "The 'set' operation is not yet implemented"
+exportNotImplemented = "The 'export' operation is not yet implemented"
+windowsOnly = "This resource is only supported on Windows"
+
+[get]
+nameOrDisplayNameRequired = "At least one of 'name' or 'displayName' must be provided"
+openScmFailed = "Failed to open Service Control Manager: %{error}"
+queryConfigFailed = "Failed to query service configuration: %{error}"
+queryStatusFailed = "Failed to query service status: %{error}"
+getKeyNameFailed = "Failed to resolve service name from display name: %{error}"
+displayNameMismatch = "Service display name mismatch: expected '%{expected}', got '%{actual}'"
+
+[export]
+enumServicesFailed = "Failed to enumerate services: %{error}"
+openServiceFailed = "Failed to open service '%{name}': %{error}"
+serializeFailed = "Failed to serialize service: %{error}"
+
+[set]
+nameRequired = "'name' is required for the set operation"
+openScmFailed = "Failed to open Service Control Manager: %{error}"
+openServiceFailed = "Failed to open service: %{error}"
+changeConfigFailed = "Failed to change service configuration: %{error}"
+changeConfig2Failed = "Failed to change service extended configuration: %{error}"
+startFailed = "Failed to start service: %{error}"
+stopFailed = "Failed to stop service: %{error}"
+pauseFailed = "Failed to pause service: %{error}"
+continueFailed = "Failed to continue service: %{error}"
+unsupportedTransition = "Unsupported status transition from '%{current}' to '%{desired}'"
+unsupportedStatus = "Cannot set service to status '%{status}'; only Running, Stopped, and Paused are supported"
+statusTimeout = "Timed out waiting for service to reach status '%{expected}'; current status is '%{actual}'"
