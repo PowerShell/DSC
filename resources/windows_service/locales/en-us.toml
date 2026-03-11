@@ -6,8 +6,6 @@ unknownOperation = "Unknown operation: '%{operation}'. Expected: get, set, or ex
 missingInput = "Missing --input argument"
 missingInputValue = "Missing value for --input argument"
 invalidJson = "Invalid JSON input: %{error}"
-setNotImplemented = "The 'set' operation is not yet implemented"
-exportNotImplemented = "The 'export' operation is not yet implemented"
 windowsOnly = "This resource is only supported on Windows"
 
 [get]
