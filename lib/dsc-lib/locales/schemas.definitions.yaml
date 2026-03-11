@@ -1,6 +1,62 @@
 _version: 2
 schemas:
   definitions:
+    dateVersion:
+      title:
+        en-us: Date version
+      description:
+        en-us: >-
+          Defines the version for a resource as a date instead of a semantic version.
+      markdownDescription:
+        en-us: |-
+          Defines the version for a resource as a date instead of a semantic version. DSC supports
+          date versions for compatibility. Unless required for compatibility scenarios, resources
+          should use semantic versioning.
+
+          A date version is represented as one of two string forms, both conforming to ISO8601 for
+          dates:
+
+          - `YYYY-MM-DD`, like `2026-02-11` or `2027-11-01`. These date versions are defined without
+            the optional `prerelease` segment.
+          - `YYYY-MM-DD-PRE`, like `2026-02-11-preview` or `2027-11-01-rc`. These date versions are
+            defined with the optional `prerelease` segment.
+
+          A date version _must_ represent a valid date. Defining an invalid month, like `00` or `15`,
+          raises a parsing error. Defining an invalid day of the month, like `00` or `33`, raises a
+          parsing error. For February, `29` is only a valid day for leap years.
+
+          The year for a date version must not be defined with a leading zero. Defining a date with
+          a leading zero for the year, like `0123`, raises a parsing error.
+
+          If the date version is for a prerelease, the prerelease segment must be a string of ASCII
+          alphabetic characters (`[a-zA-Z]`).
+
+          The following list shows a set of input strings and whether they're valid for this pattern.
+          If the input string is invalid, the list item explains why that input is invalid.
+
+          - `2026-07-15` - valid input, defining the year as `2026`, the month as July, and the day
+            of the month as `15`.
+          - `2026-07-15-preview` - valid input, defining the year as `2026`, the month as July, the
+            day of the month as `15`, and the prerelease segment as `preview`.
+          - `2026-00-01` - invalid input. The month segment must not be defined as `00`.
+          - `2026-15-01` - invalid input. The month segment is defined as `15`, which isn't a valid
+            month.
+          - `0123-11-01` - invalid input. The year segment must not begin with a leading zero.
+          - `2026-05-00` - invalid input. The day segment must not be defined as `00`.
+          - `2026-03-38` - invalid input. The day segment must not be defined as a number greater
+            than `31`.
+          - `2026-07-15-rc.1` - invalid input. The prerelease segment must be a string consisting of
+            only ASCII alphabetic characters.
+          - `2026-02-29` - valid pattern, invalid input. While this construction is valid for the
+            regular expression, defining this value for a [`DateVersion`] fails parsing. It defines
+            the date as February 29, 2026. 2026 isn't a leap year and February 29 isn't a valid date
+            for a non-leap year.
+
+      patternErrorMessage:
+        en-us: >-
+          Invalid date version. A date version must be defined as a string containing an ISO8601
+          date, like `2026-02-12`. The version may define an optional prerelease segment, like
+          `2026-03-15-rc`.
     exitCodes:
       title:
         en-us: Exit codes

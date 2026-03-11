@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+mod date_version;
+pub use date_version::DateVersion;
 mod exit_code;
 pub use exit_code::ExitCode;
 mod exit_codes_map;

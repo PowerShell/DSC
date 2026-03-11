@@ -825,6 +825,14 @@ failedToAbsolutizePath = "Failed to absolutize path '%{path}'"
 executableNotFoundInWorkingDirectory = "Executable '%{executable}' not found with working directory '%{cwd}'"
 executableNotFound = "Executable '%{executable}' not found"
 
+[types.date_version]
+invalidDay = "Day `%{day}` for month `%{month}` is invalid - the day for that month must be between `01` and `%{max_days}`."
+invalidLeapDay = "Invalid version date '%{year}-%{month}-%{day}' - the specified date is for a leap day in a year that doesn't have a leap day. Only leap years, like 2024 and 2028, have February 29th. %{year} is not a leap year."
+invalidMonth = "Month `%{month}` is invalid. Date version months must be between `01` and `12` inclusive."
+invalidYear = "Year `%{year}` is invalid. Date version years must be between `1000` and `9999` inclusive."
+notMatchPattern = "Input string '%{text}' didn't match the validating pattern '%{pattern}'"
+parseError = "Unable to parse '%{text}' as a date version: %{details}"
+
 [types.exit_codes_map]
 successText = "Success"
 failureText = "Error"
