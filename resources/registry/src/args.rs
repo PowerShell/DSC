@@ -30,6 +30,8 @@ pub enum ConfigSubCommand {
     Delete {
         #[clap(short, long, required = true, help = t!("args.configArgsInputHelp").to_string())]
         input: String,
+        #[clap(short = 'w', long, help = t!("args.configArgsWhatIfHelp").to_string())]
+        what_if: bool,
     },
 }
 

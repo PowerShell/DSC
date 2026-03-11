@@ -179,4 +179,25 @@ Describe 'registry config whatif tests' {
         # For delete what-if, payload should only include keyPath (and optionally valueName when deleting a value)
         ($result.psobject.properties | Where-Object { $_.Name -ne '_metadata' } | Measure-Object).Count | Should -Be 1
     }
+
+    It 'Can whatif delete an existing subkey' -Skip:(!$IsWindows) {
+        $set_key = @'
+        {
+            "keyPath": "HKCU\\1\\2\\3"
+        }
+'@
+        registry config set --input $set_key | Out-Null
+
+        $whatif_delete_key = @'
+        {
+            "keyPath": "HKCU\\1\\2\\3"
+        }
+'@
+        $result = registry config delete -w --input $whatif_delete_key 2>$null | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $result.keyPath | Should -Be 'HKCU\1\2\3'
+        $result._metadata.whatIf | Should -Match "Would delete subkey '3'"
+        # For delete what-if, payload should only include keyPath (and optionally valueName when deleting a value)
+        ($result.psobject.properties | Where-Object { $_.Name -ne '_metadata' } | Measure-Object).Count | Should -Be 1
+    }
 }

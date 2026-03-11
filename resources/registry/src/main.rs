@@ -109,15 +109,16 @@ fn main() {
                         }
                     }
                 },
-                args::ConfigSubCommand::Delete{input} => {
-                    debug!("Delete input: {input}");
-                    let reg_helper = match RegistryHelper::new_from_json(&input) {
+                args::ConfigSubCommand::Delete{input, what_if} => {
+                    debug!("Delete input: {input}, what_if: {what_if}");
+                    let mut reg_helper = match RegistryHelper::new_from_json(&input) {
                         Ok(reg_helper) => reg_helper,
                         Err(err) => {
                             error!("{err}");
                             exit(EXIT_INVALID_INPUT);
                         }
                     };
+                    if what_if { reg_helper.enable_what_if(); }
                     match reg_helper.remove() {
                         Ok(Some(reg_config)) => {
                             let json = serde_json::to_string(&reg_config).unwrap();
