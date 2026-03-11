@@ -1,16 +1,17 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'Windows Service get tests' {
+Describe 'Windows Service get tests' -Skip:(!$IsWindows) {
     BeforeAll {
         # Use a well-known Windows service that exists on all Windows machines
         $resourceType = 'Microsoft.Windows/Service'
         $knownServiceName = 'wuauserv'
-        $knownDisplayName = 'Windows Update'
+        $service = Get-Service -Name $knownServiceName -ErrorAction Stop
+        $knownDisplayName = $service.DisplayName
     }
 
     Context 'Get by name' {
-        It 'Returns service info for an existing service' -Skip:(!$IsWindows) {
+        It 'Returns service info for an existing service' {
             $json = @{ name = $knownServiceName } | ConvertTo-Json -Compress
             $out = $json | dsc resource get -r $resourceType -f - 2>$testdrive/error.log
             $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
@@ -26,7 +27,7 @@ Describe 'Windows Service get tests' {
             $result.errorControl | Should -Not -BeNullOrEmpty
         }
 
-        It 'Returns _exist false for a non-existent service' -Skip:(!$IsWindows) {
+        It 'Returns _exist false for a non-existent service' {
             $json = @{ name = 'nonexistent_service_xyz' } | ConvertTo-Json -Compress
             $out = $json | dsc resource get -r $resourceType -f - 2>$testdrive/error.log
             $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
@@ -39,7 +40,7 @@ Describe 'Windows Service get tests' {
     }
 
     Context 'Get by displayName' {
-        It 'Returns service info when only displayName is provided' -Skip:(!$IsWindows) {
+        It 'Returns service info when only displayName is provided' {
             $json = @{ displayName = $knownDisplayName } | ConvertTo-Json -Compress
             $out = $json | dsc resource get -r $resourceType -f - 2>$testdrive/error.log
             $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
@@ -50,7 +51,7 @@ Describe 'Windows Service get tests' {
             $result._exist | Should -BeTrue
         }
 
-        It 'Returns _exist false for a non-existent display name' -Skip:(!$IsWindows) {
+        It 'Returns _exist false for a non-existent display name' {
             $json = @{ displayName = 'Nonexistent Display Name XYZ' } | ConvertTo-Json -Compress
             $out = $json | dsc resource get -r $resourceType -f - 2>$testdrive/error.log
             $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
@@ -61,7 +62,7 @@ Describe 'Windows Service get tests' {
     }
 
     Context 'Get by both name and displayName' {
-        It 'Returns service info when both name and displayName match' -Skip:(!$IsWindows) {
+        It 'Returns service info when both name and displayName match' {
             $json = @{ name = $knownServiceName; displayName = $knownDisplayName } | ConvertTo-Json -Compress
             $out = $json | dsc resource get -r $resourceType -f - 2>$testdrive/error.log
             $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
@@ -72,7 +73,7 @@ Describe 'Windows Service get tests' {
             $result._exist | Should -BeTrue
         }
 
-        It 'Returns error when name and displayName do not match' -Skip:(!$IsWindows) {
+        It 'Returns error when name and displayName do not match' {
             $json = @{ name = $knownServiceName; displayName = 'Wrong Display Name' } | ConvertTo-Json -Compress
             $out = $json | dsc resource get -r $resourceType -f - 2>&1
             $LASTEXITCODE | Should -Not -Be 0
@@ -80,7 +81,7 @@ Describe 'Windows Service get tests' {
     }
 
     Context 'Service properties' {
-        It 'Returns valid startType values' -Skip:(!$IsWindows) {
+        It 'Returns valid startType values' {
             $json = @{ name = $knownServiceName } | ConvertTo-Json -Compress
             $out = $json | dsc resource get -r $resourceType -f - 2>$testdrive/error.log
             $output = $out | ConvertFrom-Json
@@ -88,7 +89,7 @@ Describe 'Windows Service get tests' {
             $result.startType | Should -BeIn @('Automatic', 'AutomaticDelayedStart', 'Manual', 'Disabled')
         }
 
-        It 'Returns valid status values' -Skip:(!$IsWindows) {
+        It 'Returns valid status values' {
             $json = @{ name = $knownServiceName } | ConvertTo-Json -Compress
             $out = $json | dsc resource get -r $resourceType -f - 2>$testdrive/error.log
             $output = $out | ConvertFrom-Json
@@ -96,7 +97,7 @@ Describe 'Windows Service get tests' {
             $result.status | Should -BeIn @('Running', 'Stopped', 'Paused', 'StartPending', 'StopPending', 'PausePending', 'ContinuePending')
         }
 
-        It 'Returns valid errorControl values' -Skip:(!$IsWindows) {
+        It 'Returns valid errorControl values' {
             $json = @{ name = $knownServiceName } | ConvertTo-Json -Compress
             $out = $json | dsc resource get -r $resourceType -f - 2>$testdrive/error.log
             $output = $out | ConvertFrom-Json
@@ -104,7 +105,7 @@ Describe 'Windows Service get tests' {
             $result.errorControl | Should -BeIn @('Ignore', 'Normal', 'Severe', 'Critical')
         }
 
-        It 'Returns dependencies as an array when present' -Skip:(!$IsWindows) {
+        It 'Returns dependencies as an array when present' {
             $json = @{ name = $knownServiceName } | ConvertTo-Json -Compress
             $out = $json | dsc resource get -r $resourceType -f - 2>$testdrive/error.log
             $output = $out | ConvertFrom-Json

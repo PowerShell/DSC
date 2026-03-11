@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'Windows Service set tests' {
+Describe 'Windows Service set tests' -Skip:(!$IsWindows) {
     BeforeDiscovery {
         $isAdmin = if ($IsWindows) {
             $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -28,7 +28,7 @@ Describe 'Windows Service set tests' {
         }
     }
 
-    Context 'Input validation' -Skip:(!$IsWindows -or !$isAdmin) {
+    Context 'Input validation' -Skip:(!$isAdmin) {
         It 'Fails when name is not provided' {
             $json = @{ startType = 'Manual' } | ConvertTo-Json -Compress
             $out = $json | dsc resource set -r $resourceType -f - 2>&1
@@ -41,7 +41,7 @@ Describe 'Windows Service set tests' {
         }
     }
 
-    Context 'Set startType' -Skip:(!$IsWindows -or !$isAdmin) {
+    Context 'Set startType' -Skip:(!$isAdmin) {
         BeforeAll {
             $script:originalState = Get-ServiceState -Name $testServiceName
         }
@@ -91,7 +91,7 @@ Describe 'Windows Service set tests' {
         }
     }
 
-    Context 'Set description' -Skip:(!$IsWindows -or !$isAdmin) {
+    Context 'Set description' -Skip:(!$isAdmin) {
         BeforeAll {
             $script:originalState = Get-ServiceState -Name $testServiceName
         }
@@ -117,7 +117,7 @@ Describe 'Windows Service set tests' {
         }
     }
 
-    Context 'Set service status' -Skip:(!$IsWindows -or !$isAdmin) {
+    Context 'Set service status' -Skip:(!$isAdmin) {
         BeforeAll {
             $script:originalState = Get-ServiceState -Name $testServiceName
             # Ensure the service is startable (not disabled)
@@ -178,7 +178,7 @@ Describe 'Windows Service set tests' {
         }
     }
 
-    Context 'Set multiple properties at once' -Skip:(!$IsWindows -or !$isAdmin) {
+    Context 'Set multiple properties at once' -Skip:(!$isAdmin) {
         BeforeAll {
             $script:originalState = Get-ServiceState -Name $testServiceName
         }
@@ -225,7 +225,7 @@ Describe 'Windows Service set tests' {
         }
     }
 
-    Context 'Set with no changes (idempotent)' -Skip:(!$IsWindows -or !$isAdmin) {
+    Context 'Set with no changes (idempotent)' -Skip:(!$isAdmin) {
         It 'Succeeds when only name is provided (no properties to change)' {
             $json = @{ name = $testServiceName } | ConvertTo-Json -Compress
             $out = $json | dsc resource set -r $resourceType -f - 2>$testdrive/error.log

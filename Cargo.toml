@@ -24,8 +24,9 @@ members = [
     "grammars/tree-sitter-dscexpression",
     "grammars/tree-sitter-ssh-server-config",
     "y2j",
-    "xtask"
-, "resources/windows_service"]
+    "xtask", "resources/windows_service"
+]
+
 # This value is modified by the `Set-DefaultWorkspaceMember` helper.
 # Be sure to use `Reset-DefaultWorkspaceMember` before committing to
 # avoid unintentionally modifying this value.
@@ -51,8 +52,8 @@ default-members = [
     "grammars/tree-sitter-dscexpression",
     "grammars/tree-sitter-ssh-server-config",
     "y2j",
-    "xtask"
-, "resources/windows_service"]
+    "xtask", "resources/windows_service"
+]
 
 [workspace.metadata.groups]
 # The entries in this table map crates by operating system. Use the helper
