@@ -11,7 +11,7 @@ use dsc_lib::dscresources::dscresource::{Capability, get_diff};
 use dsc_lib::dscerror::DscError;
 use rust_i18n::t;
 use serde_json::Value;
-use tracing::{error, debug};
+use tracing::{debug, error, info};
 
 use dsc_lib::{
     dscresources::dscresource::{Invoke, DscResource},
@@ -286,14 +286,8 @@ pub fn delete(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, 
                         }
                     }
                 },
-                DeleteResultKind::SyntheticWhatIf(test_result) => {
-                    match serde_json::to_string(&test_result) {
-                        Ok(json) => write_object(&json, format, false),
-                        Err(err) => {
-                            error!("JSON: {err}");
-                            exit(EXIT_JSON_ERROR);
-                        }
-                    }
+                DeleteResultKind::SyntheticWhatIf(_) => {
+                    info!("{} {}", resource.type_name, t!("resource_command.syntheticWhatIf"));
                 }
             }
         },
