@@ -8,6 +8,7 @@
       "dsc",
       "dsc_default.settings.json",
       "dsc.settings.json",
+      "dsc-bicep-ext",
       "dscecho",
       "echo.dsc.resource.json",
       "assertion.dsc.resource.json",
@@ -31,6 +32,7 @@
       "dsc",
       "dsc_default.settings.json",
       "dsc.settings.json",
+      "dsc-bicep-ext",
       "dscecho",
       "echo.dsc.resource.json",
       "assertion.dsc.resource.json",
@@ -56,6 +58,7 @@
       "dsc.exe",
       "dsc_default.settings.json",
       "dsc.settings.json",
+      "dsc-bicep-ext.exe",
       "dscecho.exe",
       "echo.dsc.resource.json",
       "assertion.dsc.resource.json",
@@ -161,6 +164,15 @@
           "include.dsc.resource.json"
         ]
       }
+    },
+    {
+      "Name": "dsc-bicep-ext",
+      "Kind": "CLI",
+      "RelativePath": "dsc-bicep-ext",
+      "IsRust": true,
+      "Binaries": [
+        "dsc-bicep-ext"
+      ]
     },
     {
       "Name": "extensions/appx",
@@ -429,6 +441,13 @@
       "Binaries": [
         "y2j"
       ]
+    },
+    {
+      "Name": "xtask",
+      "Kind": "CLI",
+      "RelativePath": "xtask",
+      "IsRust": true,
+      "TestOnly": true
     }
   ]
 }

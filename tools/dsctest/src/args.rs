@@ -16,7 +16,10 @@ pub enum Schemas {
     InDesiredState,
     Metadata,
     Operation,
+    RefreshEnv,
+    RestartRequired,
     Sleep,
+    StateAndDiff,
     Trace,
     Version,
     WhatIf,
@@ -40,6 +43,12 @@ pub enum AdapterOperation {
     Export,
     Validate,
     Schema,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
+pub enum RefreshEnvOperation {
+    Get,
+    Set,
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
@@ -123,6 +132,20 @@ pub enum SubCommand {
         input: String,
     },
 
+    #[clap(name = "refresh-env", about = "Refresh an environment variable in the registry")]
+    RefreshEnv {
+        #[clap(name = "operation", short, long, help = "The operation to perform: get or set")]
+        operation: RefreshEnvOperation,
+        #[clap(name = "input", short, long, help = "The input to the refresh env command as JSON")]
+        input: String,
+    },
+
+    #[clap(name = "restart-required", about = "Check if a restart is required based on the input")]
+    RestartRequired {
+        #[clap(name = "input", short, long, help = "The input to the restart required command as JSON")]
+        input: String,
+    },
+
     #[clap(name = "schema", about = "Get the JSON schema for a subcommand")]
     Schema {
         #[clap(name = "subcommand", short, long, help = "The subcommand to get the schema for")]
@@ -133,6 +156,14 @@ pub enum SubCommand {
     Sleep {
         #[clap(name = "input", short, long, help = "The input to the sleep command as JSON")]
         input: String,
+    },
+
+    #[clap(name = "state-and-diff", about = "Return state and diff as separate JSON lines")]
+    StateAndDiff {
+        #[clap(name = "input", short, long, help = "The input to the state-and-diff command as JSON")]
+        input: String,
+        #[clap(name = "state-only", long, help = "Only output the state JSON (for get operations)")]
+        state_only: bool,
     },
 
     #[clap(name = "trace", about = "The trace level")]

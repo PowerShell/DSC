@@ -2,12 +2,13 @@
 // Licensed under the MIT License.
 
 use clap::ValueEnum;
+use dsc_lib_security_context::{SecurityContext, get_security_context};
 use jsonschema::Validator;
 use rust_i18n::t;
 use serde::Deserialize;
 use serde_json::{Map, Value};
 use std::{collections::HashMap, env, path::{Path, PathBuf}, process::Stdio};
-use crate::{configure::{config_doc::ExecutionKind, config_result::{ResourceGetResult, ResourceTestResult}}, dscresources::resource_manifest::SchemaArgKind, types::{ExitCodesMap, FullyQualifiedTypeName}, util::canonicalize_which};
+use crate::{configure::{config_doc::{ExecutionKind, SecurityContextKind}, config_result::{ResourceGetResult, ResourceTestResult}}, dscresources::resource_manifest::SchemaArgKind, types::{ExitCodesMap, FullyQualifiedTypeName}, util::canonicalize_which};
 use crate::dscerror::DscError;
 use super::{
     dscresource::{get_diff, redact, DscResource},
@@ -53,6 +54,7 @@ pub fn invoke_get(resource: &DscResource, filter: &str, target_resource: Option<
         Some(r) => r.type_name.clone(),
         None => resource.type_name.clone(),
     };
+    validate_security_context(&get.require_security_context, &resource_type, "get")?;
     let path = if let Some(target_resource) = target_resource {
         Some(target_resource.path.clone())
     } else {
@@ -156,6 +158,7 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, execut
     let Some(set) = set_method.as_ref() else {
         return Err(DscError::NotImplemented("set".to_string()));
     };
+    validate_security_context(&set.require_security_context, &resource_type, "set")?;
     verify_json_from_manifest(&resource, desired, target_resource)?;
 
     // if resource doesn't implement a pre-test, we execute test first to see if a set is needed
@@ -200,6 +203,7 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, execut
         Some(r) => r.type_name.clone(),
         None => resource.type_name.clone(),
     };
+    validate_security_context(&get.require_security_context, &resource_type, "get")?;
     let path = if let Some(target_resource) = target_resource {
         Some(target_resource.path.clone())
     } else {
@@ -286,6 +290,12 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, execut
             let Some(actual_line) = lines.next() else {
                 return Err(DscError::Command(resource.type_name.to_string(), exit_code, t!("dscresources.commandResource.setUnexpectedOutput").to_string()));
             };
+
+            if resource.kind == Kind::Resource {
+                debug!("{}", t!("dscresources.commandResource.setVerifyOutput", operation = operation_type, resource = &resource.type_name, executable = &set.executable));
+                verify_json_from_manifest(&resource, actual_line, target_resource)?;
+            }
+
             let actual_value: Value = serde_json::from_str(actual_line)?;
             // TODO: need schema for diff_properties to validate against
             let Some(diff_line) = lines.next() else {
@@ -351,6 +361,7 @@ pub fn invoke_test(resource: &DscResource, expected: &str, target_resource: Opti
         Some(r) => r.type_name.clone(),
         None => resource.type_name.clone(),
     };
+    validate_security_context(&test.require_security_context, &resource_type, "test")?;
     let path = if let Some(target_resource) = target_resource {
         Some(target_resource.path.clone())
     } else {
@@ -366,11 +377,6 @@ pub fn invoke_test(resource: &DscResource, expected: &str, target_resource: Opti
     info!("{}", t!("dscresources.commandResource.invokeTestUsing", resource = &resource.type_name, executable = &test.executable));
     let (exit_code, stdout, stderr) = invoke_command(&test.executable, args, command_input.stdin.as_deref(), Some(&resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
 
-    if resource.kind == Kind::Resource {
-        debug!("{}", t!("dscresources.commandResource.testVerifyOutput", resource = &resource.type_name, executable = &test.executable));
-        verify_json_from_manifest(&resource, &stdout, target_resource)?;
-    }
-
     if resource.kind == Kind::Importer {
         debug!("{}", t!("dscresources.commandResource.testGroupTestResponse"));
         let group_test_response: Vec<ResourceTestResult> = serde_json::from_str(&stdout)?;
@@ -380,6 +386,11 @@ pub fn invoke_test(resource: &DscResource, expected: &str, target_resource: Opti
     let mut expected_value: Value = serde_json::from_str(expected)?;
     match test.returns {
         Some(ReturnKind::State) => {
+            if resource.kind == Kind::Resource {
+                debug!("{}", t!("dscresources.commandResource.testVerifyOutput", resource = &resource.type_name, executable = &test.executable));
+                verify_json_from_manifest(&resource, &stdout, target_resource)?;
+            }
+
             let actual_value: Value = match serde_json::from_str(&stdout){
                 Result::Ok(r) => {r},
                 Result::Err(err) => {
@@ -402,6 +413,12 @@ pub fn invoke_test(resource: &DscResource, expected: &str, target_resource: Opti
             let Some(actual_value) = lines.next() else {
                 return Err(DscError::Command(resource.type_name.to_string(), exit_code, t!("dscresources.commandResource.testNoActualState").to_string()));
             };
+
+            if resource.kind == Kind::Resource {
+                debug!("{}", t!("dscresources.commandResource.testVerifyOutput", resource = &resource.type_name, executable = &test.executable));
+                verify_json_from_manifest(&resource, actual_value, target_resource)?;
+            }
+
             let actual_value: Value = serde_json::from_str(actual_value)?;
             let Some(diff_properties) = lines.next() else {
                 return Err(DscError::Command(resource.type_name.to_string(), exit_code, t!("dscresources.commandResource.testNoDiff").to_string()));
@@ -505,6 +522,7 @@ pub fn invoke_delete(resource: &DscResource, filter: &str, target_resource: Opti
         Some(r) => r.type_name.clone(),
         None => resource.type_name.clone(),
     };
+    validate_security_context(&delete.require_security_context, &resource_type, "delete")?;
     let path = if let Some(target_resource) = target_resource {
         Some(target_resource.path.clone())
     } else {
@@ -663,6 +681,7 @@ pub fn invoke_export(resource: &DscResource, input: Option<&str>, target_resourc
         Some(r) => r.type_name.clone(),
         None => resource.type_name.clone(),
     };
+    validate_security_context(&export.require_security_context, &resource_type, "export")?;
     let path = if let Some(target_resource) = target_resource {
         Some(target_resource.path.clone())
     } else {
@@ -1093,7 +1112,12 @@ fn verify_json_from_manifest(resource: &DscResource, json: &str, target_resource
             return Ok(());
         }
 
-        return Err(DscError::Validation(t!("dscresources.commandResource.resourceInvalidJson").to_string()));
+        let reason = result
+            .reason
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| t!("dscresources.commandResource.resourceInvalidJson").to_string());
+        return Err(DscError::Validation(reason));
     }
 
     // otherwise, use schema validation
@@ -1226,6 +1250,25 @@ pub fn log_stderr_line<'a>(process_id: &u32, trace_line: &'a str) -> &'a str
     }
 
     ""
+}
+
+fn validate_security_context(required_security_context: &Option<SecurityContextKind>, resource_type: &str, operation: &str) -> Result<(), DscError> {
+    match required_security_context {
+        Some(SecurityContextKind::Elevated) => {
+            if get_security_context() != SecurityContext::Admin {
+                return Err(DscError::SecurityContext(t!("dscresources.commandResource.securityContextRequired", operation = operation, resource = resource_type, context = "elevated").to_string()));
+            }
+        },
+        Some(SecurityContextKind::Restricted) => {
+            if get_security_context() != SecurityContext::User {
+                return Err(DscError::SecurityContext(t!("dscresources.commandResource.securityContextRequired", operation = operation, resource = resource_type, context = "restricted").to_string()));
+            }
+        },
+        None | Some(SecurityContextKind::Current) => {
+            // no specific context required, so allow any context
+        },
+    }
+    Ok(())
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, ValueEnum)]

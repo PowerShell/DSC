@@ -23,6 +23,48 @@ pub struct Function {
 pub enum FunctionArg {
     Value(Value),
     Expression(Expression),
+    Lambda(Lambda),
+}
+
+/// Represents a lambda expression for use in DSC function expressions.
+///
+/// Lambda expressions are anonymous functions created using the `lambda()` function
+/// and are primarily used with higher-order functions like `map()` to transform data.
+/// Each lambda is stored in the context's lambda registry with a unique UUID identifier.
+///
+/// # Structure
+///
+/// A lambda consists of:
+/// - **parameters**: A list of parameter names (e.g., `["item", "index"]`) that will be
+///   bound to values when the lambda is invoked
+/// - **body**: An expression tree that is evaluated with the bound parameters in scope
+///
+/// # Usage in DSC
+///
+/// Lambdas are created using the `lambda()` function syntax:
+/// ```text
+/// "[lambda(['item', 'index'], mul(variables('item'), 2))]"
+/// ```
+///
+/// The lambda is stored in the context and referenced by UUID:
+/// ```text
+/// __lambda_<uuid>
+/// ```
+///
+/// When used with `map()`, the lambda is invoked for each array element with bound parameters:
+/// ```text
+/// "[map(createArray(1, 2, 3), lambda(['item'], mul(variables('item'), 2)))]"
+/// ```
+///
+/// # Lifetime
+///
+/// Lambdas are stored for the duration of a single configuration evaluation and are
+/// automatically cleaned up when the `Context` is dropped at the end of processing.
+/// Each configuration evaluation starts with a fresh, empty lambda registry.
+#[derive(Clone, Debug)]
+pub struct Lambda {
+    pub parameters: Vec<String>,
+    pub body: Expression,
 }
 
 impl Function {
@@ -66,6 +108,16 @@ impl Function {
     ///
     /// This function will return an error if the function fails to execute.
     pub fn invoke(&self, function_dispatcher: &FunctionDispatcher, context: &Context) -> Result<Value, DscError> {
+        // Special handling for lambda() function - pass raw args through context
+        if self.name.to_lowercase() == "lambda" {
+            // Store raw args in context for lambda function to access
+            *context.lambda_raw_args.borrow_mut() = self.args.clone();
+            let result = function_dispatcher.invoke("lambda", &[], context);
+            // Clear raw args
+            *context.lambda_raw_args.borrow_mut() = None;
+            return result;
+        }
+
         // if any args are expressions, we need to invoke those first
         let mut resolved_args: Vec<Value> = vec![];
         if let Some(args) = &self.args {
@@ -79,6 +131,9 @@ impl Function {
                     FunctionArg::Value(value) => {
                         debug!("{}", t!("parser.functions.argIsValue", value = value : {:?}));
                         resolved_args.push(value.clone());
+                    },
+                    FunctionArg::Lambda(_lambda) => {
+                        return Err(DscError::Parser(t!("parser.functions.unexpectedLambda").to_string()));
                     }
                 }
             }
