@@ -26,7 +26,8 @@
             }
         ],
         "implementsPretest": false,
-        "return": "state"
+        "return": "state",
+        "requireSecurityContext": "elevated"
     },
     "export": {
         "executable": "windows_service",
