@@ -19,7 +19,6 @@ displayNameMismatch = "Service display name mismatch: expected '%{expected}', go
 [export]
 enumServicesFailed = "Failed to enumerate services: %{error}"
 openServiceFailed = "Failed to open service '%{name}': %{error}"
-serializeFailed = "Failed to serialize service: %{error}"
 
 [set]
 nameRequired = "'name' is required for the set operation"
