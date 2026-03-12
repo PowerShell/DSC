@@ -198,6 +198,8 @@ Describe 'whatif tests' {
         $LASTEXITCODE | Should -Be 0
         "$result" | Should -Match 'generate synthetic what-if'
         "$result" | Should -Not -Match '^\s*\{'
+    }
+    
     It 'Test/WhatIfReturnDiff resource returns state and diff in what-if mode' {
         $config_yaml = @"
         `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
