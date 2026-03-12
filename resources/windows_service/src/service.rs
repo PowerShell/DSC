@@ -4,7 +4,7 @@
 use rust_i18n::t;
 use std::mem;
 use windows::core::{PCWSTR, PWSTR};
-use windows::Win32::Foundation::{ERROR_INSUFFICIENT_BUFFER, ERROR_SERVICE_DOES_NOT_EXIST};
+use windows::Win32::Foundation::{ERROR_INSUFFICIENT_BUFFER, ERROR_MORE_DATA, ERROR_SERVICE_DOES_NOT_EXIST};
 use windows::Win32::System::Services::*;
 
 const SERVICE_NO_CHANGE_VALUE: u32 = 0xFFFF_FFFF;
@@ -71,6 +71,93 @@ impl Drop for ScHandle {
     }
 }
 
+impl From<windows::core::Error> for ServiceError {
+    fn from(e: windows::core::Error) -> Self {
+        Self { message: e.to_string() }
+    }
+}
+
+/// Read the full configuration and status of an already-opened service handle.
+///
+/// # Safety
+///
+/// `service_handle` must be a valid, open service handle with `SERVICE_QUERY_CONFIG`
+/// and `SERVICE_QUERY_STATUS` access rights.
+unsafe fn read_service_state(
+    service_handle: SC_HANDLE,
+    service_name: &str,
+) -> Result<WindowsService, ServiceError> {
+    // Query basic configuration
+    let mut bytes_needed: u32 = 0;
+    let sizing_result = unsafe {
+        QueryServiceConfigW(service_handle, None, 0, &mut bytes_needed)
+    };
+    if let Err(e) = sizing_result {
+        if e.code() != ERROR_INSUFFICIENT_BUFFER.to_hresult() {
+            return Err(t!("get.queryConfigFailed", error = e.to_string()).to_string().into());
+        }
+    }
+    if bytes_needed == 0 {
+        return Err(t!("get.queryConfigFailed", error = "buffer size is 0").to_string().into());
+    }
+    let mut config_buffer = vec![0u8; bytes_needed as usize];
+    let config_ptr = config_buffer.as_mut_ptr().cast::<QUERY_SERVICE_CONFIGW>();
+    unsafe {
+        QueryServiceConfigW(
+            service_handle,
+            Some(&mut *config_ptr),
+            bytes_needed,
+            &mut bytes_needed,
+        )
+        .map_err(|e| ServiceError::from(t!("get.queryConfigFailed", error = e.to_string()).to_string()))?;
+    }
+
+    let config = unsafe { &*config_ptr };
+    let display_name = unsafe { pwstr_to_string(config.lpDisplayName) };
+
+    let start_type = match config.dwStartType {
+        SERVICE_AUTO_START => {
+            if unsafe { is_delayed_auto_start(service_handle) } {
+                Some(StartType::AutomaticDelayedStart)
+            } else {
+                Some(StartType::Automatic)
+            }
+        }
+        SERVICE_DEMAND_START => Some(StartType::Manual),
+        SERVICE_DISABLED => Some(StartType::Disabled),
+        _ => None,
+    };
+
+    let error_control = match config.dwErrorControl {
+        SERVICE_ERROR_IGNORE => Some(ErrorControl::Ignore),
+        SERVICE_ERROR_NORMAL => Some(ErrorControl::Normal),
+        SERVICE_ERROR_SEVERE => Some(ErrorControl::Severe),
+        SERVICE_ERROR_CRITICAL => Some(ErrorControl::Critical),
+        _ => None,
+    };
+
+    let executable_path = unsafe { pwstr_to_string(config.lpBinaryPathName) };
+    let logon_account = unsafe { pwstr_to_string(config.lpServiceStartName) };
+    let deps = unsafe { parse_multi_string(config.lpDependencies) };
+    let dependencies = if deps.is_empty() { None } else { Some(deps) };
+
+    let description = unsafe { query_description(service_handle) };
+    let status = unsafe { query_status(service_handle) }?;
+
+    Ok(WindowsService {
+        name: Some(service_name.to_string()),
+        display_name,
+        description,
+        exist: Some(true),
+        status: Some(status),
+        start_type,
+        executable_path,
+        logon_account,
+        error_control,
+        dependencies,
+    })
+}
+
 /// Look up a service by `name` and/or `display_name` and return the full service info.
 ///
 /// - If only `name` is provided, the service is looked up by name.
@@ -83,139 +170,72 @@ pub fn get_service(input: &WindowsService) -> Result<WindowsService, ServiceErro
         return Err(t!("get.nameOrDisplayNameRequired").to_string().into());
     }
 
-    unsafe {
-        // Open Service Control Manager
-        let scm = OpenSCManagerW(None, None, SC_MANAGER_CONNECT)
-            .map_err(|e| ServiceError::from(t!("get.openScmFailed", error = e.to_string()).to_string()))?;
-        let scm = ScHandle(scm);
+    // Open Service Control Manager
+    let scm = unsafe { OpenSCManagerW(None, None, SC_MANAGER_CONNECT) }
+        .map_err(|e| ServiceError::from(t!("get.openScmFailed", error = e.to_string()).to_string()))?;
+    let scm = ScHandle(scm);
 
-        // Resolve the service key name
-        let service_key_name = match &input.name {
-            Some(name) => Some(name.clone()),
-            None => {
-                let display_name = input.display_name.as_ref().unwrap();
-                resolve_key_name_from_display_name(scm.0, display_name)?
-            }
-        };
+    // Resolve the service key name
+    let service_key_name = match &input.name {
+        Some(name) => Some(name.clone()),
+        None => {
+            let display_name = input.display_name.as_ref().unwrap();
+            unsafe { resolve_key_name_from_display_name(scm.0, display_name) }?
+        }
+    };
 
-        // If we couldn't resolve a key name, the service doesn't exist
-        let service_key_name = match service_key_name {
-            Some(n) => n,
-            None => {
-                return Ok(WindowsService {
-                    name: input.name.clone(),
-                    display_name: input.display_name.clone(),
-                    exist: Some(false),
-                    ..Default::default()
-                });
-            }
-        };
+    // If we couldn't resolve a key name, the service doesn't exist
+    let service_key_name = match service_key_name {
+        Some(n) => n,
+        None => {
+            return Ok(WindowsService {
+                name: input.name.clone(),
+                display_name: input.display_name.clone(),
+                exist: Some(false),
+                ..Default::default()
+            });
+        }
+    };
 
-        // Open the service
-        let name_wide = to_wide(&service_key_name);
-        let service_handle = match OpenServiceW(
+    // Open the service
+    let name_wide = to_wide(&service_key_name);
+    let service_handle = match unsafe {
+        OpenServiceW(
             scm.0,
             PCWSTR(name_wide.as_ptr()),
             SERVICE_QUERY_CONFIG | SERVICE_QUERY_STATUS,
-        ) {
-            Ok(h) => ScHandle(h),
-            Err(e) if e.code() == ERROR_SERVICE_DOES_NOT_EXIST.to_hresult() => {
-                return Ok(WindowsService {
-                    name: input.name.clone(),
-                    display_name: input.display_name.clone(),
-                    exist: Some(false),
-                    ..Default::default()
-                });
-            }
-            Err(e) => {
-                return Err(ServiceError::from(t!("get.openServiceFailed", error = e.to_string()).to_string()));
-            }
-        };
-
-        // Query basic configuration
-        let mut bytes_needed: u32 = 0;
-        let sizing_result = QueryServiceConfigW(service_handle.0, None, 0, &mut bytes_needed);
-        if let Err(e) = sizing_result {
-            if e.code() != ERROR_INSUFFICIENT_BUFFER.to_hresult() {
-                return Err(ServiceError::from(t!("get.queryConfigFailed", error = e.to_string()).to_string()));
-            }
-        }
-        if bytes_needed == 0 {
-            return Err(ServiceError::from(t!("get.queryConfigFailed", error = "buffer size is 0").to_string()));
-        }
-        let mut config_buffer = vec![0u8; bytes_needed as usize];
-        let config_ptr = config_buffer.as_mut_ptr().cast::<QUERY_SERVICE_CONFIGW>();
-        QueryServiceConfigW(
-            service_handle.0,
-            Some(&mut *config_ptr),
-            bytes_needed,
-            &mut bytes_needed,
         )
-        .map_err(|e| ServiceError::from(t!("get.queryConfigFailed", error = e.to_string()).to_string()))?;
-
-        let config = &*config_ptr;
-        let actual_display_name = pwstr_to_string(config.lpDisplayName);
-
-        // If both name and display_name were provided, verify they match
-        if input.name.is_some() && input.display_name.is_some() {
-            let expected_dn = input.display_name.as_ref().unwrap();
-            let actual_dn = actual_display_name.as_deref().unwrap_or("");
-            if !actual_dn.eq_ignore_ascii_case(expected_dn) {
-                return Err(
-                    t!("get.displayNameMismatch", expected = expected_dn, actual = actual_dn)
-                        .to_string()
-                        .into(),
-                );
-            }
+    } {
+        Ok(h) => ScHandle(h),
+        Err(e) if e.code() == ERROR_SERVICE_DOES_NOT_EXIST.to_hresult() => {
+            return Ok(WindowsService {
+                name: input.name.clone(),
+                display_name: input.display_name.clone(),
+                exist: Some(false),
+                ..Default::default()
+            });
         }
+        Err(e) => {
+            return Err(ServiceError::from(t!("get.openServiceFailed", error = e.to_string()).to_string()));
+        }
+    };
 
-        // Determine start type (with delayed auto-start check)
-        let start_type = match config.dwStartType {
-            SERVICE_AUTO_START => {
-                if is_delayed_auto_start(service_handle.0) {
-                    Some(StartType::AutomaticDelayedStart)
-                } else {
-                    Some(StartType::Automatic)
-                }
-            }
-            SERVICE_DEMAND_START => Some(StartType::Manual),
-            SERVICE_DISABLED => Some(StartType::Disabled),
-            _ => None,
-        };
+    let svc = unsafe { read_service_state(service_handle.0, &service_key_name) }?;
 
-        // Determine error control
-        let error_control = match config.dwErrorControl {
-            SERVICE_ERROR_IGNORE => Some(ErrorControl::Ignore),
-            SERVICE_ERROR_NORMAL => Some(ErrorControl::Normal),
-            SERVICE_ERROR_SEVERE => Some(ErrorControl::Severe),
-            SERVICE_ERROR_CRITICAL => Some(ErrorControl::Critical),
-            _ => None,
-        };
-
-        let executable_path = pwstr_to_string(config.lpBinaryPathName);
-        let logon_account = pwstr_to_string(config.lpServiceStartName);
-        let deps = parse_multi_string(config.lpDependencies);
-        let dependencies = if deps.is_empty() { None } else { Some(deps) };
-
-        // Query description
-        let description = query_description(service_handle.0);
-
-        // Query current status
-        let status = query_status(service_handle.0)?;
-
-        Ok(WindowsService {
-            name: Some(service_key_name),
-            display_name: actual_display_name,
-            description,
-            exist: Some(true),
-            status: Some(status),
-            start_type,
-            executable_path,
-            logon_account,
-            error_control,
-            dependencies,
-        })
+    // If both name and display_name were provided, verify they match
+    if input.name.is_some() && input.display_name.is_some() {
+        let expected_dn = input.display_name.as_ref().unwrap();
+        let actual_dn = svc.display_name.as_deref().unwrap_or("");
+        if !actual_dn.eq_ignore_ascii_case(expected_dn) {
+            return Err(
+                t!("get.displayNameMismatch", expected = expected_dn, actual = actual_dn)
+                    .to_string()
+                    .into(),
+            );
+        }
     }
+
+    Ok(svc)
 }
 
 /// Resolve a service key name from its display name via SCM.
@@ -364,45 +384,68 @@ unsafe fn query_status(service_handle: SC_HANDLE) -> Result<ServiceStatus, Servi
     }
 }
 
-/// Export (enumerate) all services, optionally filtering by the provided criteria.
-/// Returns a list of matching services.
-pub fn export_services(filter: Option<&WindowsService>) -> Result<Vec<WindowsService>, ServiceError> {
-    unsafe {
-        let scm = OpenSCManagerW(None, None, SC_MANAGER_CONNECT | SC_MANAGER_ENUMERATE_SERVICE)
-            .map_err(|e| t!("get.openScmFailed", error = e.to_string()).to_string())?;
-        let scm = ScHandle(scm);
-
-        let service_names = enumerate_service_names(scm.0)?;
-        let mut results = Vec::new();
-
-        for service_name in &service_names {
-            let svc = match get_service_details(scm.0, service_name) {
-                Ok(s) => s,
-                Err(_) => continue, // skip services we can't query
-            };
-
-            if let Some(f) = filter {
-                if !matches_filter(&svc, f) {
-                    continue;
-                }
-            }
-
-            results.push(svc);
-        }
-
-        Ok(results)
+/// Convert a `ServiceStatus` to the corresponding Windows `SERVICE_STATUS_CURRENT_STATE` constant.
+fn status_to_current_state(status: &ServiceStatus) -> SERVICE_STATUS_CURRENT_STATE {
+    match status {
+        ServiceStatus::Running => SERVICE_RUNNING,
+        ServiceStatus::Stopped => SERVICE_STOPPED,
+        ServiceStatus::Paused => SERVICE_PAUSED,
+        ServiceStatus::StartPending => SERVICE_START_PENDING,
+        ServiceStatus::StopPending => SERVICE_STOP_PENDING,
+        ServiceStatus::PausePending => SERVICE_PAUSE_PENDING,
+        ServiceStatus::ContinuePending => SERVICE_CONTINUE_PENDING,
     }
 }
 
-/// Enumerate all Win32 service names using `EnumServicesStatusExW`.
-unsafe fn enumerate_service_names(scm: SC_HANDLE) -> Result<Vec<String>, ServiceError> {
+/// Export (enumerate) all services, optionally filtering by the provided criteria.
+/// Returns a list of matching services.
+pub fn export_services(filter: Option<&WindowsService>) -> Result<Vec<WindowsService>, ServiceError> {
+    let scm = unsafe { OpenSCManagerW(None, None, SC_MANAGER_CONNECT | SC_MANAGER_ENUMERATE_SERVICE) }
+        .map_err(|e| ServiceError::from(t!("get.openScmFailed", error = e.to_string()).to_string()))?;
+    let scm = ScHandle(scm);
+
+    let services = unsafe { enumerate_services(scm.0) }?;
+    let mut results = Vec::new();
+
+    // Pre-compute the status filter value for early rejection before expensive per-service queries
+    let status_filter_dw = filter.and_then(|f| f.status.as_ref()).map(status_to_current_state);
+
+    for (service_name, current_state) in &services {
+        // Quick reject based on status before opening the service handle
+        if let Some(expected_state) = status_filter_dw {
+            if *current_state != expected_state {
+                continue;
+            }
+        }
+
+        let svc = match unsafe { get_service_details(scm.0, service_name) } {
+            Ok(s) => s,
+            Err(_) => continue, // skip services we can't query
+        };
+
+        if let Some(f) = filter {
+            if !matches_filter(&svc, f) {
+                continue;
+            }
+        }
+
+        results.push(svc);
+    }
+
+    Ok(results)
+}
+
+/// Enumerate all Win32 services using `EnumServicesStatusExW`, handling pagination.
+/// Returns a list of `(service_name, current_state)` tuples.
+unsafe fn enumerate_services(scm: SC_HANDLE) -> Result<Vec<(String, SERVICE_STATUS_CURRENT_STATE)>, ServiceError> {
     unsafe {
+        let mut all_services = Vec::new();
         let mut bytes_needed: u32 = 0;
         let mut services_returned: u32 = 0;
         let mut resume_handle: u32 = 0;
 
-        // First call to get required buffer size
-        let sizing_result = EnumServicesStatusExW(
+        // Sizing call to determine required buffer size
+        let _ = EnumServicesStatusExW(
             scm,
             SC_ENUM_PROCESS_INFO,
             SERVICE_WIN32,
@@ -413,131 +456,81 @@ unsafe fn enumerate_service_names(scm: SC_HANDLE) -> Result<Vec<String>, Service
             Some(&mut resume_handle),
             None,
         );
-        if let Err(e) = sizing_result {
-            if e.code() != ERROR_INSUFFICIENT_BUFFER.to_hresult() {
-                return Err(t!("export.enumServicesFailed", error = e.to_string()).to_string().into());
-            }
-        }
 
         if bytes_needed == 0 {
             return Ok(Vec::new());
         }
 
-        let mut buffer = vec![0u8; bytes_needed as usize];
         resume_handle = 0;
 
-        EnumServicesStatusExW(
-            scm,
-            SC_ENUM_PROCESS_INFO,
-            SERVICE_WIN32,
-            SERVICE_STATE_ALL,
-            Some(&mut buffer),
-            &mut bytes_needed,
-            &mut services_returned,
-            Some(&mut resume_handle),
-            None,
-        )
-        .map_err(|e| t!("export.enumServicesFailed", error = e.to_string()).to_string())?;
+        loop {
+            let mut buffer = vec![0u8; bytes_needed as usize];
+            services_returned = 0;
 
-        let entries = std::slice::from_raw_parts(
-            buffer.as_ptr().cast::<ENUM_SERVICE_STATUS_PROCESSW>(),
-            services_returned as usize,
-        );
+            let result = EnumServicesStatusExW(
+                scm,
+                SC_ENUM_PROCESS_INFO,
+                SERVICE_WIN32,
+                SERVICE_STATE_ALL,
+                Some(&mut buffer),
+                &mut bytes_needed,
+                &mut services_returned,
+                Some(&mut resume_handle),
+                None,
+            );
 
-        let mut names = Vec::with_capacity(services_returned as usize);
-        for entry in entries {
-            if let Ok(name) = entry.lpServiceName.to_string() {
-                names.push(name);
+            if services_returned > 0 {
+                let entries = std::slice::from_raw_parts(
+                    buffer.as_ptr().cast::<ENUM_SERVICE_STATUS_PROCESSW>(),
+                    services_returned as usize,
+                );
+
+                for entry in entries {
+                    if let Ok(name) = entry.lpServiceName.to_string() {
+                        all_services.push((name, entry.ServiceStatusProcess.dwCurrentState));
+                    }
+                }
+            }
+
+            match result {
+                Ok(()) => break,
+                Err(e) => {
+                    if e.code() == ERROR_MORE_DATA.to_hresult() {
+                        // More services to enumerate; bytes_needed has the required buffer size
+                        continue;
+                    }
+                    return Err(t!("export.enumServicesFailed", error = e.to_string()).to_string().into());
+                }
             }
         }
 
-        Ok(names)
+        Ok(all_services)
     }
 }
 
 /// Get full service details given an SCM handle and a service key name.
 unsafe fn get_service_details(scm: SC_HANDLE, service_name: &str) -> Result<WindowsService, ServiceError> {
-    unsafe {
-        let name_wide = to_wide(service_name);
-        let service_handle = OpenServiceW(
+    let name_wide = to_wide(service_name);
+    let service_handle = unsafe {
+        OpenServiceW(
             scm,
             PCWSTR(name_wide.as_ptr()),
             SERVICE_QUERY_CONFIG | SERVICE_QUERY_STATUS,
         )
-        .map_err(|e| t!("export.openServiceFailed", name = service_name, error = e.to_string()).to_string())?;
-        let service_handle = ScHandle(service_handle);
-
-        // Query basic configuration
-        let mut bytes_needed: u32 = 0;
-        let sizing_result = QueryServiceConfigW(service_handle.0, None, 0, &mut bytes_needed);
-        if let Err(e) = sizing_result {
-            if e.code() != ERROR_INSUFFICIENT_BUFFER.to_hresult() {
-                return Err(t!("get.queryConfigFailed", error = e.to_string()).to_string().into());
-            }
-        }
-        if bytes_needed == 0 {
-            return Err(t!("get.queryConfigFailed", error = "buffer size is 0").to_string().into());
-        }
-        let mut config_buffer = vec![0u8; bytes_needed as usize];
-        let config_ptr = config_buffer.as_mut_ptr().cast::<QUERY_SERVICE_CONFIGW>();
-        QueryServiceConfigW(
-            service_handle.0,
-            Some(&mut *config_ptr),
-            bytes_needed,
-            &mut bytes_needed,
-        )
-        .map_err(|e| t!("get.queryConfigFailed", error = e.to_string()).to_string())?;
-
-        let config = &*config_ptr;
-        let display_name = pwstr_to_string(config.lpDisplayName);
-
-        let start_type = match config.dwStartType {
-            SERVICE_AUTO_START => {
-                if is_delayed_auto_start(service_handle.0) {
-                    Some(StartType::AutomaticDelayedStart)
-                } else {
-                    Some(StartType::Automatic)
-                }
-            }
-            SERVICE_DEMAND_START => Some(StartType::Manual),
-            SERVICE_DISABLED => Some(StartType::Disabled),
-            _ => None,
-        };
-
-        let error_control = match config.dwErrorControl {
-            SERVICE_ERROR_IGNORE => Some(ErrorControl::Ignore),
-            SERVICE_ERROR_NORMAL => Some(ErrorControl::Normal),
-            SERVICE_ERROR_SEVERE => Some(ErrorControl::Severe),
-            SERVICE_ERROR_CRITICAL => Some(ErrorControl::Critical),
-            _ => None,
-        };
-
-        let executable_path = pwstr_to_string(config.lpBinaryPathName);
-        let logon_account = pwstr_to_string(config.lpServiceStartName);
-        let deps = parse_multi_string(config.lpDependencies);
-        let dependencies = if deps.is_empty() { None } else { Some(deps) };
-
-        let description = query_description(service_handle.0);
-        let status = query_status(service_handle.0).ok();
-
-        Ok(WindowsService {
-            name: Some(service_name.to_string()),
-            display_name,
-            description,
-            exist: Some(true),
-            status,
-            start_type,
-            executable_path,
-            logon_account,
-            error_control,
-            dependencies,
-        })
     }
+    .map_err(|e| ServiceError::from(t!("export.openServiceFailed", name = service_name, error = e.to_string()).to_string()))?;
+    let service_handle = ScHandle(service_handle);
+
+    unsafe { read_service_state(service_handle.0, service_name) }
 }
 
 /// Match a string against a pattern supporting `*` wildcards.
 /// If no wildcard is present, performs an exact case-insensitive comparison.
 fn matches_wildcard(text: &str, pattern: &str) -> bool {
+    if pattern == "*" {
+        return true;
+    }
+
     let text_lower = text.to_lowercase();
     let pattern_lower = pattern.to_lowercase();
 
@@ -788,8 +781,7 @@ pub fn set_service(input: &WindowsService) -> Result<WindowsService, ServiceErro
         }
 
         // Return final state
-        drop(service_handle);
-        get_service(&WindowsService::new(name))
+        read_service_state(service_handle.0, name)
     }
 }
 
@@ -872,6 +864,8 @@ fn matches_filter(service: &WindowsService, filter: &WindowsService) -> bool {
             return false;
         }
     }
+
+    // Note: executable_path and error_control are intentionally not filtered.
 
     // dependencies — service must have at least all specified dependencies
     if let Some(ref expected_deps) = filter.dependencies {

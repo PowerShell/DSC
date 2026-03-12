@@ -23,6 +23,35 @@ const EXIT_INVALID_ARGS: i32 = 1;
 const EXIT_INVALID_INPUT: i32 = 2;
 const EXIT_SERVICE_ERROR: i32 = 3;
 
+/// Deserialize the required JSON input into a `WindowsService`, or exit with an error.
+fn require_input(input_json: Option<String>) -> WindowsService {
+    let json = match input_json {
+        Some(j) => j,
+        None => {
+            write_error(&t!("main.missingInput"));
+            exit(EXIT_INVALID_ARGS);
+        }
+    };
+    match serde_json::from_str(&json) {
+        Ok(v) => v,
+        Err(e) => {
+            write_error(&t!("main.invalidJson", error = e.to_string()));
+            exit(EXIT_INVALID_INPUT);
+        }
+    }
+}
+
+/// Serialize a value to JSON and print it to stdout, or exit with an error.
+fn print_json(value: &impl serde::Serialize) {
+    match serde_json::to_string(value) {
+        Ok(json) => println!("{json}"),
+        Err(e) => {
+            write_error(&t!("main.invalidJson", error = e.to_string()));
+            exit(EXIT_SERVICE_ERROR);
+        }
+    }
+}
+
 fn main() {
     let args: Vec<String> = std::env::args().collect();
 
@@ -36,27 +65,13 @@ fn main() {
 
     match operation {
         "get" => {
-            let json = match input_json {
-                Some(j) => j,
-                None => {
-                    write_error(&t!("main.missingInput"));
-                    exit(EXIT_INVALID_ARGS);
-                }
-            };
-
-            let input: WindowsService = match serde_json::from_str(&json) {
-                Ok(s) => s,
-                Err(e) => {
-                    write_error(&t!("main.invalidJson", error = e.to_string()));
-                    exit(EXIT_INVALID_INPUT);
-                }
-            };
+            let input = require_input(input_json);
 
             #[cfg(windows)]
             {
                 match service::get_service(&input) {
                     Ok(result) => {
-                        println!("{}", serde_json::to_string(&result).unwrap());
+                        print_json(&result);
                         exit(EXIT_SUCCESS);
                     }
                     Err(e) => {
@@ -74,27 +89,13 @@ fn main() {
             }
         }
         "set" => {
-            let json = match input_json {
-                Some(j) => j,
-                None => {
-                    write_error(&t!("main.missingInput"));
-                    exit(EXIT_INVALID_ARGS);
-                }
-            };
-
-            let input: WindowsService = match serde_json::from_str(&json) {
-                Ok(s) => s,
-                Err(e) => {
-                    write_error(&t!("main.invalidJson", error = e.to_string()));
-                    exit(EXIT_INVALID_INPUT);
-                }
-            };
+            let input = require_input(input_json);
 
             #[cfg(windows)]
             {
                 match service::set_service(&input) {
                     Ok(result) => {
-                        println!("{}", serde_json::to_string(&result).unwrap());
+                        print_json(&result);
                         exit(EXIT_SUCCESS);
                     }
                     Err(e) => {
@@ -128,7 +129,7 @@ fn main() {
                 match service::export_services(filter.as_ref()) {
                     Ok(services) => {
                         for svc in &services {
-                            println!("{}", serde_json::to_string(svc).unwrap());
+                            print_json(svc);
                         }
                         exit(EXIT_SUCCESS);
                     }
