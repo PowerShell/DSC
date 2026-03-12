@@ -1195,6 +1195,7 @@ impl Configurator {
                 // defer actual unrolling until parameters are available
                 if let Some(copy) = &resource.copy {
                     debug!("{}", t!("configure.mod.validateCopy", name = &copy.name, count = copy.count));
+                    warn!("{}", t!("configure.mod.copyDeprecated", name = &copy.name));
                     if copy.mode.is_some() {
                         return Err(DscError::Validation(t!("configure.mod.copyModeNotSupported").to_string()));
                     }
