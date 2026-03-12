@@ -297,6 +297,7 @@ function Get-DscResourceObject {
     return $desiredState
 }
 
+
 # Get the actual state using DSC Get method from any type of DSC resource
 function Invoke-DscOperation {
     param(
@@ -363,11 +364,41 @@ function Invoke-DscOperation {
                         $validateProperty = $cachedDscResourceInfo.Properties | Where-Object -Property Name -EQ $_.Name
                         Write-Debug -Debug ("Property type: $($validateProperty.PropertyType)")
                         if ($validateProperty -and $validateProperty.PropertyType -eq '[PSCredential]') {
-                            if (-not $_.Value.Username -or -not $_.Value.Password) {
+
+                            $hasSecureCred =
+                                $_.Value.PSObject.Properties['secureObject'] -and
+                                $_.Value.secureObject.Username -and
+                                $_.Value.secureObject.Password
+
+                            $hasTextCred =
+                                $_.Value.Username -and
+                                $_.Value.Password
+
+                            if (-not $hasSecureCred -and -not $hasTextCred) {
                                 Write-Error ("Credential object '$($_.Name)' requires both 'username' and 'password' properties")
                                 exit 1
                             }
-                            $property.$($_.Name) = [System.Management.Automation.PSCredential]::new($_.Value.Username, (ConvertTo-SecureString -AsPlainText $_.Value.Password -Force))
+
+                            if ($hasSecureCred) {
+                                Write-Debug -Debug "Credential object '$($_.Name)' - SecureObject"
+
+                                $username = $_.Value.secureObject.Username
+                                $password = $_.Value.secureObject.Password |
+                                    ConvertTo-SecureString -AsPlainText -Force
+
+                                $property.$($_.Name) =
+                                    [System.Management.Automation.PSCredential]::new($username, $password)
+                            }
+                            elseif ($hasTextCred) {
+                                Write-Debug -Debug "Credential object '$($_.Name)' - Text"
+
+                                $username = $_.Value.Username
+                                $password = $_.Value.Password |
+                                    ConvertTo-SecureString -AsPlainText -Force
+
+                                $property.$($_.Name) =
+                                    [System.Management.Automation.PSCredential]::new($username, $password)
+                            }
                         } else {
                             $property.$($_.Name) = $_.Value.psobject.properties | ForEach-Object -Begin { $propertyHash = @{} } -Process { $propertyHash[$_.Name] = $_.Value } -End { $propertyHash }
                         }
@@ -417,11 +448,42 @@ function Invoke-DscOperation {
                                 $validateProperty = $cachedDscResourceInfo.Properties | Where-Object -Property Name -EQ $_.Name
                                 Write-Debug -Debug ("Property type: $($validateProperty.PropertyType)")
                                 if ($validateProperty.PropertyType -eq 'PSCredential') {
-                                    if (-not $_.Value.Username -or -not $_.Value.Password) {
-                                        Write-Error ("Credential object '$($_.Name)' requires both 'username' and 'password' properties")
-                                        exit 1
-                                    }
-                                    $dscResourceInstance.$($_.Name) = [System.Management.Automation.PSCredential]::new($_.Value.Username, (ConvertTo-SecureString -AsPlainText $_.Value.Password -Force))
+                                $hasSecureCred =
+                                    $_.Value.PSObject.Properties['secureObject'] -and
+                                    $_.Value.secureObject.Username -and
+                                    $_.Value.secureObject.Password
+
+                                $hasTextCred =
+                                    $_.Value.Username -and
+                                    $_.Value.Password
+
+                                if (-not $hasSecureCred -and -not $hasTextCred) {
+                                Write-Debug -Debug "Invalid credential object for property '$($_.Name)'"
+                                    Write-Error ("Credential object '$($_.Name)' requires both 'username' and 'password' properties")
+                                    exit 1
+                                }
+
+                                if ($hasSecureCred) {
+                                Write-Debug -Debug "Credential object '$($_.Name)' - SecureObject"
+
+                                    $username = $_.Value.secureObject.Username
+                                    $password = $_.Value.secureObject.Password |
+                                        ConvertTo-SecureString -AsPlainText -Force
+
+                                    $dscResourceInstance.$($_.Name) =
+                                        [System.Management.Automation.PSCredential]::new($username, $password)
+                                }
+                                elseif ($hasTextCred) {
+                                    Write-Debug -Debug "Credential object '$($_.Name)' - Text"
+
+                                    $username = $_.Value.Username
+                                    $password = $_.Value.Password |
+                                        ConvertTo-SecureString -AsPlainText -Force
+
+                                    $dscResourceInstance.$($_.Name) =
+                                        [System.Management.Automation.PSCredential]::new($username, $password)
+                                }
+
                                 } else {
                                     $dscResourceInstance.$($_.Name) = $_.Value.psobject.properties | ForEach-Object -Begin { $propertyHash = @{} } -Process { $propertyHash[$_.Name] = $_.Value } -End { $propertyHash }
                                 }
