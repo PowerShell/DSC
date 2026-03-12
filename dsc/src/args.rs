@@ -264,6 +264,10 @@ pub enum ResourceSubCommand {
         input: Option<String>,
         #[clap(short = 'f', long, help = t!("args.file").to_string(), conflicts_with = "input")]
         file: Option<String>,
+        #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
+        output_format: Option<OutputFormat>,
+        #[clap(short = 'w', long, visible_aliases = ["dry-run", "noop"], help = t!("args.whatIf").to_string())]
+        what_if: bool,
     },
     #[clap(name = "schema", about = "Get the JSON schema for a resource", arg_required_else_help = true)]
     Schema {

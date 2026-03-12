@@ -109,6 +109,7 @@ setInputEmpty = "Desired input is empty"
 testInputEmpty = "Expected input is required"
 jsonError = "JSON: %{err}"
 routingToDelete = "Routing to delete operation because _exist is false"
+syntheticWhatIf = "Resource does not natively support what-if, engine will generate synthetic what-if"
 
 [subcommand]
 actualStateNotObject = "actual_state is not an object"

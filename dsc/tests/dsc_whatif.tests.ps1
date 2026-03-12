@@ -185,6 +185,21 @@ Describe 'whatif tests' {
         $out.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'whatIf'
     }
 
+    It 'dsc resource delete supports what-if flag' {
+        $result = dsc resource delete -r Test/WhatIfDelete -i '{"_exist": false}' --what-if | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $result._metadata.whatIf | Should -Not -BeNullOrEmpty
+        $result._metadata.whatIf | Should -Contain 'Delete what-if message 1'
+        $result._metadata.whatIf | Should -Contain 'Delete what-if message 2'
+    }
+
+    It 'dsc resource delete synthetic what-if logs info message and produces no output' {
+        $result = dsc -l info resource delete -r Test/Delete -i '{"_exist": false}' --what-if 2>&1
+        $LASTEXITCODE | Should -Be 0
+        "$result" | Should -Match 'generate synthetic what-if'
+        "$result" | Should -Not -Match '^\s*\{'
+    }
+    
     It 'Test/WhatIfReturnDiff resource returns state and diff in what-if mode' {
         $config_yaml = @"
         `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
