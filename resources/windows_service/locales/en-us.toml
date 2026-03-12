@@ -13,6 +13,7 @@ nameOrDisplayNameRequired = "At least one of 'name' or 'displayName' must be pro
 openScmFailed = "Failed to open Service Control Manager: %{error}"
 queryConfigFailed = "Failed to query service configuration: %{error}"
 queryStatusFailed = "Failed to query service status: %{error}"
+openServiceFailed = "Failed to open service: %{error}"
 getKeyNameFailed = "Failed to resolve service name from display name: %{error}"
 displayNameMismatch = "Service display name mismatch: expected '%{expected}', got '%{actual}'"
 

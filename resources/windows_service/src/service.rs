@@ -4,6 +4,7 @@
 use rust_i18n::t;
 use std::mem;
 use windows::core::{PCWSTR, PWSTR};
+use windows::Win32::Foundation::{ERROR_INSUFFICIENT_BUFFER, ERROR_SERVICE_DOES_NOT_EXIST};
 use windows::Win32::System::Services::*;
 
 const SERVICE_NO_CHANGE_VALUE: u32 = 0xFFFF_FFFF;
@@ -49,7 +50,7 @@ unsafe fn parse_multi_string(ptr: PWSTR) -> Vec<String> {
             let pcwstr = PCWSTR(current);
             match pcwstr.to_string() {
                 Ok(s) => {
-                    current = current.add(s.len() + 1);
+                    current = current.add(s.encode_utf16().count() + 1);
                     result.push(s);
                 }
                 Err(_) => break,
@@ -118,7 +119,7 @@ pub fn get_service(input: &WindowsService) -> Result<WindowsService, ServiceErro
             SERVICE_QUERY_CONFIG | SERVICE_QUERY_STATUS,
         ) {
             Ok(h) => ScHandle(h),
-            Err(_) => {
+            Err(e) if e.code() == ERROR_SERVICE_DOES_NOT_EXIST.to_hresult() => {
                 return Ok(WindowsService {
                     name: input.name.clone(),
                     display_name: input.display_name.clone(),
@@ -126,11 +127,22 @@ pub fn get_service(input: &WindowsService) -> Result<WindowsService, ServiceErro
                     ..Default::default()
                 });
             }
+            Err(e) => {
+                return Err(ServiceError::from(t!("get.openServiceFailed", error = e.to_string()).to_string()));
+            }
         };
 
         // Query basic configuration
         let mut bytes_needed: u32 = 0;
-        let _ = QueryServiceConfigW(service_handle.0, None, 0, &mut bytes_needed);
+        let sizing_result = QueryServiceConfigW(service_handle.0, None, 0, &mut bytes_needed);
+        if let Err(e) = sizing_result {
+            if e.code() != ERROR_INSUFFICIENT_BUFFER.to_hresult() {
+                return Err(ServiceError::from(t!("get.queryConfigFailed", error = e.to_string()).to_string()));
+            }
+        }
+        if bytes_needed == 0 {
+            return Err(ServiceError::from(t!("get.queryConfigFailed", error = "buffer size is 0").to_string()));
+        }
         let mut config_buffer = vec![0u8; bytes_needed as usize];
         let config_ptr = config_buffer.as_mut_ptr().cast::<QUERY_SERVICE_CONFIGW>();
         QueryServiceConfigW(
@@ -447,7 +459,15 @@ unsafe fn get_service_details(scm: SC_HANDLE, service_name: &str) -> Result<Wind
 
         // Query basic configuration
         let mut bytes_needed: u32 = 0;
-        let _ = QueryServiceConfigW(service_handle.0, None, 0, &mut bytes_needed);
+        let sizing_result = QueryServiceConfigW(service_handle.0, None, 0, &mut bytes_needed);
+        if let Err(e) = sizing_result {
+            if e.code() != ERROR_INSUFFICIENT_BUFFER.to_hresult() {
+                return Err(t!("get.queryConfigFailed", error = e.to_string()).to_string().into());
+            }
+        }
+        if bytes_needed == 0 {
+            return Err(t!("get.queryConfigFailed", error = "buffer size is 0").to_string().into());
+        }
         let mut config_buffer = vec![0u8; bytes_needed as usize];
         let config_ptr = config_buffer.as_mut_ptr().cast::<QUERY_SERVICE_CONFIGW>();
         QueryServiceConfigW(
@@ -556,9 +576,12 @@ fn deps_to_multi_string(deps: &[String]) -> Vec<u16> {
     let mut buf = Vec::new();
     for dep in deps {
         buf.extend(dep.encode_utf16());
-        buf.push(0);
+        buf.push(0); // null terminator for each string
     }
-    buf.push(0); // double-null terminator
+    if buf.is_empty() {
+        buf.push(0); // first null for empty multi-string
+    }
+    buf.push(0); // final null terminator (double-null)
     buf
 }
 
@@ -574,8 +597,19 @@ pub fn set_service(input: &WindowsService) -> Result<WindowsService, ServiceErro
 
         let name_wide = to_wide(name);
         let mut access = SERVICE_CHANGE_CONFIG | SERVICE_QUERY_CONFIG | SERVICE_QUERY_STATUS;
-        if input.status.is_some() {
-            access |= SERVICE_START | SERVICE_STOP | SERVICE_PAUSE_CONTINUE;
+        if let Some(ref status) = input.status {
+            match status {
+                ServiceStatus::Running => {
+                    access |= SERVICE_START | SERVICE_PAUSE_CONTINUE;
+                }
+                ServiceStatus::Stopped => {
+                    access |= SERVICE_STOP;
+                }
+                ServiceStatus::Paused => {
+                    access |= SERVICE_PAUSE_CONTINUE;
+                }
+                _ => {}
+            }
         }
 
         let service_handle = OpenServiceW(scm.0, PCWSTR(name_wide.as_ptr()), access)
