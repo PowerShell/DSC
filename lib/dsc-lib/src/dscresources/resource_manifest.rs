@@ -248,6 +248,9 @@ pub struct SetMethod {
     /// The security context required to run the Set method.  Default if not specified is `current`.
     #[serde(rename = "requireSecurityContext", skip_serializing_if = "Option::is_none")]
     pub require_security_context: Option<SecurityContextKind>,
+    /// The type of return value expected from the Set method when running in what-if mode. When specified, this overrides the `return` property during what-if execution.
+    #[serde(rename = "whatIfReturns", skip_serializing_if = "Option::is_none")]
+    pub what_if_returns: Option<ReturnKind>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
