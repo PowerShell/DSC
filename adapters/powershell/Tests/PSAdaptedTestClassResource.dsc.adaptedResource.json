@@ -1,0 +1,36 @@
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/adaptedresource/manifest.json",
+    "type": "PSAdaptedTestClassResource/PSAdaptedTestClass",
+    "kind": "resource",
+    "version": "0.1.0",
+    "capabilities": [
+        "get"
+    ],
+    "description": "An adapted resource for testing.",
+    "author": "DSC Team",
+    "requireAdapter": "Microsoft.Adapter/PowerShell",
+    "path": "PSAdaptedTestClassResource.psd1",
+    "schema": {
+        "embedded": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/resources/PSAdaptedTestClass/v0.1.0/schema.json",
+            "title": "PSAdaptedTestClass",
+            "description": "An adapted resource for testing.",
+            "type": "object",
+            "required": [],
+            "additionalProperties": false,
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "title": "Name",
+                    "description": "This is property one of the adapted resource."
+                },
+                "value": {
+                    "type": "integer",
+                    "title": "Value",
+                    "description": "The value of the adapted resource instance."
+                }
+            }
+        }
+    }
+}

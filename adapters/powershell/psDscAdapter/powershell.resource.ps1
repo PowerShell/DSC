@@ -8,7 +8,9 @@ param(
     [Parameter(Mandatory = $false, Position = 1, ValueFromPipeline = $true, HelpMessage = 'Configuration or resource input in JSON format.')]
     [string]$jsonInput = '{}',
     [Parameter()]
-    [string]$ResourceType
+    [string]$ResourceType,
+    [Parameter()]
+    [string]$ResourcePath
 )
 
 $traceQueue = [System.Collections.Concurrent.ConcurrentQueue[object]]::new()
@@ -56,6 +58,8 @@ $ps = [PowerShell]::Create().AddScript({
         [string]$jsonInput = '{}',
         [Parameter()]
         [string]$ResourceType,
+        [Parameter()]
+        [string]$ResourcePath,
         [Parameter()]
         [string]$ScriptRoot
     )
@@ -223,6 +227,11 @@ $ps = [PowerShell]::Create().AddScript({
         { @('Get','Set','Test','Export') -contains $_ } {
             if ($ResourceType) {
                 Write-Debug -Debug ("Using resource type override: $ResourceType")
+                if ($ResourcePath) {
+                    Write-Debug -Debug ("Using resource path override: $ResourcePath")
+                    Import-Module -Name $ResourcePath -Global -Force -ErrorAction Stop
+                }
+
                 $dscResourceCache = Invoke-DscCacheRefresh -Module $ResourceType.Split('/')[0]
                 if ($null -eq $dscResourceCache) {
                     throw ("DSC resource '{0}' module not found." -f $ResourceType)
@@ -339,7 +348,7 @@ $ps = [PowerShell]::Create().AddScript({
         [string] $requireAdapter
         [string] $description
     }
-}).AddParameter('Operation', $Operation).AddParameter('jsonInput', $jsonInput).AddParameter('ResourceType', $ResourceType).AddParameter('ScriptRoot', $PSScriptRoot)
+}).AddParameter('Operation', $Operation).AddParameter('jsonInput', $jsonInput).AddParameter('ResourceType', $ResourceType).AddParameter('ResourcePath', $ResourcePath).AddParameter('ScriptRoot', $PSScriptRoot)
 
 enum DscTraceLevel {
     Error
