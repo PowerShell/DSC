@@ -94,7 +94,7 @@ pub fn get_service(input: &WindowsService) -> Result<WindowsService, ServiceErro
             Some(name) => Some(name.clone()),
             None => {
                 let display_name = input.display_name.as_ref().unwrap();
-                resolve_key_name_from_display_name(scm.0, display_name).ok()
+                resolve_key_name_from_display_name(scm.0, display_name)?
             }
         };
 
@@ -222,19 +222,24 @@ pub fn get_service(input: &WindowsService) -> Result<WindowsService, ServiceErro
 unsafe fn resolve_key_name_from_display_name(
     scm: SC_HANDLE,
     display_name: &str,
-) -> Result<String, ServiceError> {
+) -> Result<Option<String>, ServiceError> {
     let dn_wide = to_wide(display_name);
     let mut size: u32 = 0;
 
     // First call to determine the required buffer size
-    let _ = unsafe {
+    let sizing_result = unsafe {
         GetServiceKeyNameW(scm, PCWSTR(dn_wide.as_ptr()), None, &mut size)
     };
 
-    if size == 0 {
-        return Err(
-            t!("get.getKeyNameFailed", error = "service not found").to_string().into(),
-        );
+    if let Err(e) = sizing_result {
+        if e.code() == ERROR_SERVICE_DOES_NOT_EXIST.to_hresult() {
+            return Ok(None);
+        }
+        if size == 0 {
+            return Err(
+                t!("get.getKeyNameFailed", error = e.to_string()).to_string().into(),
+            );
+        }
     }
 
     size += 1; // null terminator
@@ -250,7 +255,7 @@ unsafe fn resolve_key_name_from_display_name(
         .map_err(|e| t!("get.getKeyNameFailed", error = e.to_string()).to_string())?;
     }
 
-    Ok(String::from_utf16_lossy(&buffer[..size as usize]))
+    Ok(Some(String::from_utf16_lossy(&buffer[..size as usize])))
 }
 
 /// Check whether the service is configured for delayed automatic start.
@@ -397,7 +402,7 @@ unsafe fn enumerate_service_names(scm: SC_HANDLE) -> Result<Vec<String>, Service
         let mut resume_handle: u32 = 0;
 
         // First call to get required buffer size
-        let _ = EnumServicesStatusExW(
+        let sizing_result = EnumServicesStatusExW(
             scm,
             SC_ENUM_PROCESS_INFO,
             SERVICE_WIN32,
@@ -408,6 +413,11 @@ unsafe fn enumerate_service_names(scm: SC_HANDLE) -> Result<Vec<String>, Service
             Some(&mut resume_handle),
             None,
         );
+        if let Err(e) = sizing_result {
+            if e.code() != ERROR_INSUFFICIENT_BUFFER.to_hresult() {
+                return Err(t!("export.enumServicesFailed", error = e.to_string()).to_string().into());
+            }
+        }
 
         if bytes_needed == 0 {
             return Ok(Vec::new());
