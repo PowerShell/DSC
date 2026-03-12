@@ -94,7 +94,7 @@ metadataRefreshEnvFound = "Resource returned '_refreshEnv' which indicates envir
 metadataRefreshEnvOnlyAffectsSet = "Resource returned '_refreshEnv' which indicates environment variable refresh is needed but current operation is '%{operation}' which is not 'set', so ignoring"
 metadataRefreshEnvNoOperationContext = "Resource returned '_refreshEnv' which indicates environment variable refresh is needed but no operation context is available"
 metadataRefreshEnvNoContext = "Resource returned '_refreshEnv' which indicates environment variable refresh is needed but no context is available"
-copyDeprecated = "Copy for resource '%{name}' is deprecated and will be removed in a future release. See https://github.com/PowerShell/DSC/issues/1429 for more details."
+copyDeprecated = "Copy for loop '%{name}' is deprecated and will be removed in a future release. See https://github.com/PowerShell/DSC/issues/1429 for more details."
 
 [configure.parameters]
 importingParametersFromComplexInput = "Importing parameters from complex input"

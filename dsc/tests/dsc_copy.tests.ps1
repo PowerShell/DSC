@@ -458,6 +458,6 @@ resources:
         $out.results.Count | Should -Be 1
         $out.results[0].name | Should -Be 'Test-0'
         $out.results[0].result.actualState.output | Should -Be 'Hello'
-        (Get-Content $testdrive/error.log -Raw) | Should -Match "Copy for resource 'testLoop' is deprecated and will be removed in a future release. See https://github.com/PowerShell/DSC/issues/1429 for more details."
+        (Get-Content $testdrive/error.log -Raw) | Should -BeLike "*WARN*Copy for loop 'testLoop' is deprecated and will be removed in a future release. See https://github.com/PowerShell/DSC/issues/1429 for more details.*"
     }
 }
