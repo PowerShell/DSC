@@ -76,7 +76,7 @@
                 "status": {
                     "type": "string",
                     "title": "Status",
-                    "description": "The current status of the service.",
+                    "description": "The status of the service. When used as desired state, only \"Running\", \"Stopped\", and \"Paused\" are accepted. Additional values (\"StartPending\", \"StopPending\", \"PausePending\", \"ContinuePending\") may be returned to report the current status but must not be used as desired values.",
                     "enum": ["Running", "Stopped", "Paused", "StartPending", "StopPending", "PausePending", "ContinuePending"]
                 },
                 "startType": {
