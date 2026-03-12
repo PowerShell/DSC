@@ -2,6 +2,8 @@
 // Licensed under the MIT License.
 
 #[cfg(test)]
+mod date_version;
+#[cfg(test)]
 mod exit_code;
 #[cfg(test)]
 mod exit_code_map;
