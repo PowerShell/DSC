@@ -78,7 +78,6 @@ type DismDeleteFn = unsafe extern "system" fn(*const c_void) -> i32;
 
 // Kernel32 functions for dynamic loading
 extern "system" {
-    fn LoadLibraryW(lp_lib_file_name: *const u16) -> *mut c_void;
     fn GetProcAddress(h_module: *mut c_void, lp_proc_name: *const u8) -> *mut c_void;
     fn FreeLibrary(h_lib_module: *mut c_void) -> i32;
 }

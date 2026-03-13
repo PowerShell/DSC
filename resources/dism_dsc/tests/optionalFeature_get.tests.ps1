@@ -13,13 +13,17 @@ Describe 'Microsoft.Windows/OptionalFeatureList - get operation' -Skip:(!$IsWind
 
     BeforeAll {
         # Use dism command to get a known feature name
-        $dismOutput = & dism /Online /Get-Features /Format:Table 2>&1
+        $dismOutput = & dism /Online /Get-Features /Format:Table /English 2>&1
         if ($LASTEXITCODE -ne 0) {
             throw "Failed to get features using dism: $dismOutput"
         }
-        # Use the first feature name for tests
-        $knownFeatureNameOne = ($dismOutput | Select-String -Pattern '^\s*(\S+)\s+\|\s+Enabled\s*$').Matches[0].Groups[1].Value
-        $knownFeatureNameTwo = ($dismOutput | Select-String -Pattern '^\s*(\S+)\s+\|\s+Disabled\s*$').Matches[0].Groups[1].Value
+        $enabledMatches = $dismOutput | Select-String -Pattern '^\s*(\S+)\s+\|\s+Enabled\s*$'
+        $disabledMatches = $dismOutput | Select-String -Pattern '^\s*(\S+)\s+\|\s+Disabled\s*$'
+        if (-not $enabledMatches -or -not $disabledMatches) {
+            throw "Failed to find both enabled and disabled features in DISM output.`nOutput:`n$dismOutput"
+        }
+        $knownFeatureNameOne = $enabledMatches[0].Matches[0].Groups[1].Value
+        $knownFeatureNameTwo = $disabledMatches[0].Matches[0].Groups[1].Value        
     }
 
     It 'gets a known optional feature by name' -Skip:(!$isElevated) {
@@ -76,11 +80,11 @@ Describe 'Microsoft.Windows/OptionalFeatureList - get operation' -Skip:(!$IsWind
     }
 
     It 'returns _exist false alongside valid features' -Skip:(!$isElevated) {
-        $inputJson = '{"features":[{"featureName":"Microsoft-Windows-Subsystem-Linux"},{"featureName":"NonExistent-Feature-1234567890"}]}'
+        $inputJson = '{"features":[{"featureName":"' + $knownFeatureNameOne + '"},{"featureName":"NonExistent-Feature-1234567890"}]}'
         $output = dsc resource get -r Microsoft.Windows/OptionalFeatureList -i $inputJson | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $output.actualState.features.Count | Should -Be 2
-        $output.actualState.features[0].featureName | Should -BeExactly 'Microsoft-Windows-Subsystem-Linux'
+        $output.actualState.features[0].featureName | Should -BeExactly $knownFeatureNameOne
         $output.actualState.features[0].PSObject.Properties.Name | Should -Not -Contain '_exist'
         $output.actualState.features[1].featureName | Should -BeExactly 'NonExistent-Feature-1234567890'
         $output.actualState.features[1]._exist | Should -BeFalse

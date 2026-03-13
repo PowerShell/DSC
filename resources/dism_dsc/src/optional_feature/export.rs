@@ -25,11 +25,39 @@ pub fn handle_export(input: &str) -> Result<String, String> {
 
     let mut results = Vec::new();
 
+    // When full info is needed, pre-partition filters by whether they specify a feature_name.
+    // This lets us skip get_feature_info() for features that cannot match any name-constrained filter.
+    let (filters_with_name, filters_without_name): (Vec<&OptionalFeatureInfo>, Vec<&OptionalFeatureInfo>) =
+        if needs_full_info {
+            filters.iter().partition(|f| f.feature_name.is_some())
+        } else {
+            (Vec::new(), Vec::new())
+        };
+        
     for (name, state_val) in &all_basics {
         let state = FeatureState::from_dism(*state_val);
 
         if needs_full_info {
-            // Get full info first so we can filter on displayName/description
+            // Decide whether this feature could possibly match any filter based on its name.
+            // If any filter does not constrain feature_name, we must consider every feature,
+            // since such filters may match on displayName/description alone.
+            let mut should_get_full = !filters_without_name.is_empty();
+            if !should_get_full {
+                for f in &filters_with_name {
+                    if let Some(ref filter_name) = f.feature_name {
+                        if filter_name == name {
+                            should_get_full = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            if !should_get_full {
+                // This feature cannot satisfy any name-constrained filter, and there are
+                // no filters without a feature_name, so skip the expensive get_feature_info().
+                continue;
+            }
+            // Get full info so we can filter on displayName/description and other fields.
             let info = match session.get_feature_info(name) {
                 Ok(info) => info,
                 Err(_) => OptionalFeatureInfo {
