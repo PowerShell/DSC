@@ -12,6 +12,7 @@ const DISM_ONLINE_IMAGE: &str = "DISM_{53BFAE52-B167-4E2F-A258-0A37B57FF845}";
 const DISM_LOG_ERRORS: i32 = 0;
 const DISM_PACKAGE_NONE: i32 = 0;
 const ERROR_SUCCESS_REBOOT_REQUIRED: i32 = 3010;
+const DISMAPI_E_UNKNOWN_FEATURE: i32 = 0x800F080Cu32 as i32;
 
 #[repr(C, packed)]
 struct DismFeature {
@@ -204,6 +205,14 @@ impl DismSessionHandle {
             )
         };
 
+        if hr == DISMAPI_E_UNKNOWN_FEATURE {
+            return Ok(OptionalFeatureInfo {
+                feature_name: Some(feature_name.to_string()),
+                exist: Some(false),
+                ..OptionalFeatureInfo::default()
+            });
+        }
+
         if hr < 0 {
             return Err(t!("dism.getFeatureInfoFailed", name = feature_name, hr = format!("0x{:08X}", hr as u32)).to_string());
         }
@@ -216,6 +225,7 @@ impl DismSessionHandle {
             let restart_val = std::ptr::addr_of!((*info_ptr).restart_required).read_unaligned();
             let feature_info = OptionalFeatureInfo {
                 feature_name: Some(from_wide_ptr(feature_name_val)),
+                exist: None,
                 state: FeatureState::from_dism(state_val),
                 display_name: Some(from_wide_ptr(display_name_val)),
                 description: Some(from_wide_ptr(description_val)),

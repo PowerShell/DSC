@@ -44,6 +44,9 @@
             "markdownDescription": "The `Microsoft.Windows/OptionalFeatureList` resource enables you to manage Windows Optional Features using the DISM API. Supports enabling (`Installed`) and disabling (`NotPresent`, `Removed`) features.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/optionalfeaturelist/resource\n",
             "type": "object",
             "additionalProperties": false,
+            "required": [
+                "features"
+            ],
             "properties": {
                 "_restartRequired": {
                     "type": "array",
@@ -67,6 +70,11 @@
                                 "title": "Feature name",
                                 "description": "The name of the Windows optional feature. Required for get operation. For export operation, this is optional and wildcards (*) are supported for case-insensitive filtering."
                             },
+                            "_exist": {
+                                "type": "boolean",
+                                "title": "Exists",
+                                "description": "Indicates whether the feature exists on the system. Set to false when the requested feature name is not recognized by DISM."
+                            },
                             "state": {
                                 "type": "string",
                                 "enum": [
@@ -80,8 +88,7 @@
                                     "PartiallyInstalled"
                                 ],
                                 "title": "Feature state",
-                                "description": "The current state of the optional feature."
-                            },
+                                "description": "The current state of the optional feature. For set operations, only Installed, NotPresent, and Removed are accepted; other states are returned by get and export operations and are not valid inputs for set."},
                             "displayName": {
                                 "type": "string",
                                 "title": "Display name",

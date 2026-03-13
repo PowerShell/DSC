@@ -11,14 +11,25 @@ Describe 'Microsoft.Windows/OptionalFeatureList - get operation' -Skip:(!$IsWind
         }
     }
 
+    BeforeAll {
+        # Use dism command to get a known feature name
+        $dismOutput = & dism /Online /Get-Features /Format:Table 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to get features using dism: $dismOutput"
+        }
+        # Use the first feature name for tests
+        $knownFeatureNameOne = ($dismOutput | Select-String -Pattern '^\s*(\S+)\s+\|\s+Enabled\s*$').Matches[0].Groups[1].Value
+        $knownFeatureNameTwo = ($dismOutput | Select-String -Pattern '^\s*(\S+)\s+\|\s+Disabled\s*$').Matches[0].Groups[1].Value
+    }
+
     It 'gets a known optional feature by name' -Skip:(!$isElevated) {
-        $inputJson = '{"features":[{"featureName":"Microsoft-Windows-Subsystem-Linux"}]}'
+        $inputJson = '{"features":[{"featureName":"' + $knownFeatureNameOne + '"}]}'
         $output = dsc resource get -r Microsoft.Windows/OptionalFeatureList -i $inputJson | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $output.actualState.features | Should -Not -BeNullOrEmpty
         $output.actualState.features.Count | Should -Be 1
         $feature = $output.actualState.features[0]
-        $feature.featureName | Should -BeExactly 'Microsoft-Windows-Subsystem-Linux'
+        $feature.featureName | Should -BeExactly $knownFeatureNameOne
         $feature.state | Should -BeIn @(
             'NotPresent', 'UninstallPending', 'Staged', 'Removed',
             'Installed', 'InstallPending', 'Superseded', 'PartiallyInstalled'
@@ -29,12 +40,12 @@ Describe 'Microsoft.Windows/OptionalFeatureList - get operation' -Skip:(!$IsWind
     }
 
     It 'gets multiple features in a single request' -Skip:(!$isElevated) {
-        $inputJson = '{"features":[{"featureName":"Microsoft-Windows-Subsystem-Linux"},{"featureName":"Printing-PrintToPDFServices-Features"}]}'
+        $inputJson = '{"features":[{"featureName":"' + $knownFeatureNameOne + '"} ,{"featureName":"' + $knownFeatureNameTwo + '"}]}'
         $output = dsc resource get -r Microsoft.Windows/OptionalFeatureList -i $inputJson | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $output.actualState.features.Count | Should -Be 2
-        $output.actualState.features[0].featureName | Should -BeExactly 'Microsoft-Windows-Subsystem-Linux'
-        $output.actualState.features[1].featureName | Should -BeExactly 'Printing-PrintToPDFServices-Features'
+        $output.actualState.features[0].featureName | Should -BeExactly $knownFeatureNameOne
+        $output.actualState.features[1].featureName | Should -BeExactly $knownFeatureNameTwo
     }
 
     It 'returns error when featureName is missing' -Skip:(!$isElevated) {
@@ -49,9 +60,29 @@ Describe 'Microsoft.Windows/OptionalFeatureList - get operation' -Skip:(!$IsWind
         $LASTEXITCODE | Should -Not -Be 0
     }
 
-    It 'returns error for a non-existent feature name' -Skip:(!$isElevated) {
+    It 'returns _exist false for a non-existent feature name' -Skip:(!$isElevated) {
         $inputJson = '{"features":[{"featureName":"NonExistent-Feature-1234567890"}]}'
-        $testError = & { dsc resource get -r Microsoft.Windows/OptionalFeatureList -i $inputJson 2>&1 }
-        $LASTEXITCODE | Should -Not -Be 0
+        $output = dsc resource get -r Microsoft.Windows/OptionalFeatureList -i $inputJson | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $output.actualState.features | Should -Not -BeNullOrEmpty
+        $output.actualState.features.Count | Should -Be 1
+        $feature = $output.actualState.features[0]
+        $feature.featureName | Should -BeExactly 'NonExistent-Feature-1234567890'
+        $feature._exist | Should -BeFalse
+        $feature.state | Should -BeNullOrEmpty
+        $feature.displayName | Should -BeNullOrEmpty
+        $feature.description | Should -BeNullOrEmpty
+        $feature.restartRequired | Should -BeNullOrEmpty
+    }
+
+    It 'returns _exist false alongside valid features' -Skip:(!$isElevated) {
+        $inputJson = '{"features":[{"featureName":"Microsoft-Windows-Subsystem-Linux"},{"featureName":"NonExistent-Feature-1234567890"}]}'
+        $output = dsc resource get -r Microsoft.Windows/OptionalFeatureList -i $inputJson | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $output.actualState.features.Count | Should -Be 2
+        $output.actualState.features[0].featureName | Should -BeExactly 'Microsoft-Windows-Subsystem-Linux'
+        $output.actualState.features[0].PSObject.Properties.Name | Should -Not -Contain '_exist'
+        $output.actualState.features[1].featureName | Should -BeExactly 'NonExistent-Feature-1234567890'
+        $output.actualState.features[1]._exist | Should -BeFalse
     }
 }

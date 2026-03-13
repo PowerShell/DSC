@@ -34,6 +34,7 @@ pub fn handle_export(input: &str) -> Result<String, String> {
                 Ok(info) => info,
                 Err(_) => OptionalFeatureInfo {
                     feature_name: Some(name.clone()),
+                    exist: None,
                     state,
                     display_name: None,
                     description: None,
@@ -58,6 +59,7 @@ pub fn handle_export(input: &str) -> Result<String, String> {
                     Err(_) => {
                         results.push(OptionalFeatureInfo {
                             feature_name: Some(name.clone()),
+                            exist: None,
                             state,
                             display_name: None,
                             description: None,

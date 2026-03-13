@@ -28,7 +28,6 @@ fn dispatch(handler: impl FnOnce(&str) -> Result<String, String>, stdin_required
         }
     };
 
-    #[cfg(windows)]
     match handler(&buffer) {
         Ok(output) => {
             println!("{output}");
@@ -39,15 +38,15 @@ fn dispatch(handler: impl FnOnce(&str) -> Result<String, String>, stdin_required
             std::process::exit(1);
         }
     }
-
-    #[cfg(not(windows))]
-    {
-        let _ = buffer;
-        eprintln!("Error: {}", t!("main.windowsOnly"));
-        std::process::exit(1);
-    }
 }
 
+#[cfg(not(windows))]
+fn main() {
+    eprintln!("Error: {}", t!("main.windowsOnly"));
+    std::process::exit(1);
+}
+
+#[cfg(windows)]
 fn main() {
     let args: Vec<String> = std::env::args().collect();
 

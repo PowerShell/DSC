@@ -18,6 +18,8 @@ pub struct OptionalFeatureList {
 pub struct OptionalFeatureInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub feature_name: Option<String>,
+    #[serde(rename = "_exist", skip_serializing_if = "Option::is_none")]
+    pub exist: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub state: Option<FeatureState>,
     #[serde(skip_serializing_if = "Option::is_none")]
