@@ -630,7 +630,18 @@ pub fn set_service(input: &WindowsService) -> Result<WindowsService, ServiceErro
         let scm = ScHandle(scm);
 
         let name_wide = to_wide(name);
-        let mut access = SERVICE_CHANGE_CONFIG | SERVICE_QUERY_CONFIG | SERVICE_QUERY_STATUS;
+        let needs_config_change = input.start_type.is_some()
+            || input.executable_path.is_some()
+            || input.logon_account.is_some()
+            || input.error_control.is_some()
+            || input.display_name.is_some()
+            || input.dependencies.is_some()
+            || input.description.is_some();
+
+        let mut access = SERVICE_QUERY_CONFIG | SERVICE_QUERY_STATUS;
+        if needs_config_change {
+            access |= SERVICE_CHANGE_CONFIG;
+        }
         if let Some(ref status) = input.status {
             match status {
                 ServiceStatus::Running => {
