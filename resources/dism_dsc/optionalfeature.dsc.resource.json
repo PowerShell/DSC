@@ -1,0 +1,92 @@
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "description": "Manage Windows Optional Features using the DISM API.",
+    "tags": [
+        "windows",
+        "dism",
+        "optionalfeature",
+        "feature"
+    ],
+    "type": "Microsoft.Windows/OptionalFeatureList",
+    "version": "0.1.0",
+    "get": {
+        "executable": "dism_dsc",
+        "args": [
+            "get"
+        ],
+        "input": "stdin",
+        "requireSecurityContext": "elevated"
+    },
+    "export": {
+        "executable": "dism_dsc",
+        "args": [
+            "export"
+        ],
+        "input": "stdin",
+        "requireSecurityContext": "elevated"
+    },
+    "schema": {
+        "embedded": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/resources/Microsoft.Windows/OptionalFeatureList/v0.1.0/schema.json",
+            "title": "Windows Optional Feature",
+            "description": "Query information about Windows Optional Features using the DISM API.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/optionalfeaturelist/resource\n",
+            "markdownDescription": "The `Microsoft.Windows/OptionalFeatureList` resource enables you to query information about Windows Optional Features using the DISM API.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/optionalfeaturelist/resource\n",
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "features": {
+                    "type": "array",
+                    "title": "Features",
+                    "description": "An array of optional feature filters or feature information objects.",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "featureName": {
+                                "type": "string",
+                                "title": "Feature name",
+                                "description": "The name of the Windows optional feature. Required for get operation. For export operation, this is optional and wildcards (*) are supported for case-insensitive filtering."
+                            },
+                            "state": {
+                                "type": "string",
+                                "enum": [
+                                    "NotPresent",
+                                    "UninstallPending",
+                                    "Staged",
+                                    "Removed",
+                                    "Installed",
+                                    "InstallPending",
+                                    "Superseded",
+                                    "PartiallyInstalled"
+                                ],
+                                "title": "Feature state",
+                                "description": "The current state of the optional feature."
+                            },
+                            "displayName": {
+                                "type": "string",
+                                "title": "Display name",
+                                "description": "The display name of the optional feature. Returned by get and export operations. For export, wildcards (*) are supported for case-insensitive filtering."
+                            },
+                            "description": {
+                                "type": "string",
+                                "title": "Description",
+                                "description": "The description of the optional feature. Returned by get and export operations. For export, wildcards (*) are supported for case-insensitive filtering."
+                            },
+                            "restartRequired": {
+                                "type": "string",
+                                "enum": [
+                                    "No",
+                                    "Possible",
+                                    "Required"
+                                ],
+                                "title": "Restart required",
+                                "description": "Whether a restart is required after enabling or disabling the feature. This is a read-only property returned by get and export operations."
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
