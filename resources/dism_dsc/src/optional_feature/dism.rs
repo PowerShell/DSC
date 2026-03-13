@@ -110,7 +110,10 @@ struct DismApi {
 
 impl DismApi {
     fn load() -> Result<Self, String> {
-        let lib_name = to_wide_null("dismapi.dll");
+        // Load dismapi.dll from the trusted System32 directory to avoid DLL search order hijacking.
+        let system_root = std::env::var("SystemRoot").unwrap_or_else(|_| String::from(r"C:\Windows"));
+        let dll_path = format!(r"{}\System32\dismapi.dll", system_root);
+        let lib_name = to_wide_null(&dll_path);
         let lib = unsafe { LoadLibraryW(lib_name.as_ptr()) };
         if lib.is_null() {
             return Err(t!("dism.failedLoadLibrary").to_string());
