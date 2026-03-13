@@ -72,6 +72,32 @@ fn main() {
                 std::process::exit(1);
             }
         }
+        "set" => {
+            // Read input from stdin
+            let mut buffer = String::new();
+            if let Err(e) = io::stdin().read_to_string(&mut buffer) {
+                eprintln!("{}", t!("main.errorReadingInput", err = e));
+                std::process::exit(1);
+            }
+
+            #[cfg(windows)]
+            match optional_feature::handle_set(&buffer) {
+                Ok(output) => {
+                    println!("{output}");
+                    std::process::exit(0);
+                }
+                Err(e) => {
+                    eprintln!("Error: {e}");
+                    std::process::exit(1);
+                }
+            }
+
+            #[cfg(not(windows))]
+            {
+                eprintln!("Error: {}", t!("main.windowsOnly"));
+                std::process::exit(1);
+            }
+        }
         _ => {
             eprintln!("{}", t!("main.unknownOperation", operation = operation));
             eprintln!("{}", t!("main.usage"));

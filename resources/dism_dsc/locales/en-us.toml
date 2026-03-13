@@ -2,7 +2,7 @@ _version = 1
 
 [main]
 missingOperation = "Missing operation argument"
-usage = "Usage: dism_dsc <get|export>"
+usage = "Usage: dism_dsc <get|set|export>"
 windowsOnly = "This resource is only supported on Windows"
 unknownOperation = "Unknown operation '%{operation}'"
 errorReadingInput = "Error reading input: %{err}"
@@ -15,4 +15,12 @@ failedSerializeOutput = "Failed to serialize output: %{err}"
 
 [export]
 failedParseInput = "Failed to parse input: %{err}"
+failedSerializeOutput = "Failed to serialize output: %{err}"
+
+[set]
+failedParseInput = "Failed to parse input: %{err}"
+featuresArrayEmpty = "Features array cannot be empty for set operation"
+featureNameRequired = "featureName is required for set operation"
+stateRequired = "state is required for set operation"
+unsupportedDesiredState = "Unsupported desired state '%{state}'. Supported states for set are: Installed, NotPresent, Removed"
 failedSerializeOutput = "Failed to serialize output: %{err}"

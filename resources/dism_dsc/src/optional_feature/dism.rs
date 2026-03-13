@@ -36,6 +36,28 @@ type DismGetFeaturesFn =
     unsafe extern "system" fn(u32, *const u16, i32, *mut *mut DismFeature, *mut u32) -> i32;
 type DismGetFeatureInfoFn =
     unsafe extern "system" fn(u32, *const u16, *const u16, i32, *mut *mut DismFeatureInfo) -> i32;
+type DismEnableFeatureFn = unsafe extern "system" fn(
+    u32,              // Session
+    *const u16,       // FeatureName
+    *const u16,       // Identifier (NULL)
+    i32,              // PackageIdentifier (DismPackageNone)
+    i32,              // LimitAccess (BOOL)
+    *const *const u16,// SourcePaths (NULL)
+    u32,              // SourcePathCount
+    i32,              // EnableAll (BOOL)
+    *mut c_void,      // CancelEvent (NULL)
+    *mut c_void,      // Progress callback (NULL)
+    *mut c_void,      // UserData (NULL)
+) -> i32;
+type DismDisableFeatureFn = unsafe extern "system" fn(
+    u32,              // Session
+    *const u16,       // FeatureName
+    *const u16,       // PackageName (NULL)
+    i32,              // RemovePayload (BOOL)
+    *mut c_void,      // CancelEvent (NULL)
+    *mut c_void,      // Progress callback (NULL)
+    *mut c_void,      // UserData (NULL)
+) -> i32;
 type DismCloseSessionFn = unsafe extern "system" fn(u32) -> i32;
 type DismShutdownFn = unsafe extern "system" fn() -> i32;
 type DismDeleteFn = unsafe extern "system" fn(*const c_void) -> i32;
@@ -80,6 +102,8 @@ struct DismApi {
     shutdown: DismShutdownFn,
     get_features: DismGetFeaturesFn,
     get_feature_info: DismGetFeatureInfoFn,
+    enable_feature: DismEnableFeatureFn,
+    disable_feature: DismDisableFeatureFn,
     delete: DismDeleteFn,
 }
 
@@ -98,6 +122,8 @@ impl DismApi {
                 shutdown: load_fn(lib, b"DismShutdown\0")?,
                 get_features: load_fn(lib, b"DismGetFeatures\0")?,
                 get_feature_info: load_fn(lib, b"DismGetFeatureInfo\0")?,
+                enable_feature: load_fn(lib, b"DismEnableFeature\0")?,
+                disable_feature: load_fn(lib, b"DismDisableFeature\0")?,
                 delete: load_fn(lib, b"DismDelete\0")?,
             })
         }
@@ -194,6 +220,54 @@ impl DismSessionHandle {
         };
 
         Ok(result)
+    }
+
+    pub fn enable_feature(&self, feature_name: &str) -> Result<(), String> {
+        let wide_name = to_wide_null(feature_name);
+        let hr = unsafe {
+            (self.api.enable_feature)(
+                self.handle,
+                wide_name.as_ptr(),
+                std::ptr::null(),       // Identifier
+                DISM_PACKAGE_NONE,      // PackageIdentifier
+                0,                      // LimitAccess = FALSE
+                std::ptr::null(),       // SourcePaths
+                0,                      // SourcePathCount
+                0,                      // EnableAll = FALSE
+                std::ptr::null_mut(),   // CancelEvent
+                std::ptr::null_mut(),   // Progress
+                std::ptr::null_mut(),   // UserData
+            )
+        };
+        if hr < 0 {
+            return Err(format!(
+                "DismEnableFeature failed for '{}': HRESULT 0x{:08X}",
+                feature_name, hr as u32
+            ));
+        }
+        Ok(())
+    }
+
+    pub fn disable_feature(&self, feature_name: &str, remove_payload: bool) -> Result<(), String> {
+        let wide_name = to_wide_null(feature_name);
+        let hr = unsafe {
+            (self.api.disable_feature)(
+                self.handle,
+                wide_name.as_ptr(),
+                std::ptr::null(),       // PackageName
+                i32::from(remove_payload), // RemovePayload
+                std::ptr::null_mut(),   // CancelEvent
+                std::ptr::null_mut(),   // Progress
+                std::ptr::null_mut(),   // UserData
+            )
+        };
+        if hr < 0 {
+            return Err(format!(
+                "DismDisableFeature failed for '{}': HRESULT 0x{:08X}",
+                feature_name, hr as u32
+            ));
+        }
+        Ok(())
     }
 
     pub fn get_all_feature_basics(&self) -> Result<Vec<(String, i32)>, String> {

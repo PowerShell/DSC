@@ -17,6 +17,16 @@
         "input": "stdin",
         "requireSecurityContext": "elevated"
     },
+    "set": {
+        "executable": "dism_dsc",
+        "args": [
+            "set"
+        ],
+        "input": "stdin",
+        "implementsPretest": false,
+        "return": "state",
+        "requireSecurityContext": "elevated"
+    },
     "export": {
         "executable": "dism_dsc",
         "args": [
@@ -30,8 +40,8 @@
             "$schema": "http://json-schema.org/draft-07/schema#",
             "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/resources/Microsoft.Windows/OptionalFeatureList/v0.1.0/schema.json",
             "title": "Windows Optional Feature",
-            "description": "Query information about Windows Optional Features using the DISM API.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/optionalfeaturelist/resource\n",
-            "markdownDescription": "The `Microsoft.Windows/OptionalFeatureList` resource enables you to query information about Windows Optional Features using the DISM API.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/optionalfeaturelist/resource\n",
+            "description": "Manage Windows Optional Features using the DISM API. Supports get, set, and export operations.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/optionalfeaturelist/resource\n",
+            "markdownDescription": "The `Microsoft.Windows/OptionalFeatureList` resource enables you to manage Windows Optional Features using the DISM API. Supports enabling (`Installed`) and disabling (`NotPresent`, `Removed`) features.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/optionalfeaturelist/resource\n",
             "type": "object",
             "additionalProperties": false,
             "properties": {
