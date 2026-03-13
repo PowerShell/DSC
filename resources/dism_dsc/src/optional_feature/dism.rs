@@ -13,6 +13,16 @@ const DISM_LOG_ERRORS: i32 = 0;
 const DISM_PACKAGE_NONE: i32 = 0;
 const ERROR_SUCCESS_REBOOT_REQUIRED: i32 = 3010;
 const DISMAPI_E_UNKNOWN_FEATURE: i32 = 0x800F080Cu32 as i32;
+const LOAD_LIBRARY_SEARCH_SYSTEM32: u32 = 0x0000_0800;
+
+#[link(name = "kernel32")]
+extern "system" {
+    fn LoadLibraryExW(
+        lpLibFileName: *const u16,
+        hFile: *mut c_void,
+        dwFlags: u32,
+    ) -> *mut c_void;
+}
 
 #[repr(C, packed)]
 struct DismFeature {
@@ -112,10 +122,16 @@ struct DismApi {
 impl DismApi {
     fn load() -> Result<Self, String> {
         // Load dismapi.dll from the trusted System32 directory to avoid DLL search order hijacking.
-        let system_root = std::env::var("SystemRoot").unwrap_or_else(|_| String::from(r"C:\Windows"));
-        let dll_path = format!(r"{}\System32\dismapi.dll", system_root);
-        let lib_name = to_wide_null(&dll_path);
-        let lib = unsafe { LoadLibraryW(lib_name.as_ptr()) };
+        // Use LoadLibraryExW with LOAD_LIBRARY_SEARCH_SYSTEM32 so the DLL location cannot be
+        // redirected via environment variables or the default DLL search order.
+        let lib_name = to_wide_null("dismapi.dll");
+        let lib = unsafe {
+            LoadLibraryExW(
+                lib_name.as_ptr(),
+                std::ptr::null_mut(),
+                LOAD_LIBRARY_SEARCH_SYSTEM32,
+            )
+        };
         if lib.is_null() {
             return Err(t!("dism.failedLoadLibrary").to_string());
         }
