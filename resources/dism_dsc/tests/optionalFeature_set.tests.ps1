@@ -3,9 +3,12 @@
 
 Describe 'Microsoft.Windows/OptionalFeatureList - set operation' -Skip:(!$IsWindows) {
     BeforeDiscovery {
-        $isElevated = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
-            [Security.Principal.WindowsBuiltInRole]::Administrator
-        )
+        $isElevated = if ($IsWindows) {
+            ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
+                [Security.Principal.WindowsBuiltInRole]::Administrator)
+        } else {
+            $false
+        }
     }
 
     It 'returns error when featureName is missing' -Skip:(!$isElevated) {

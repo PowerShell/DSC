@@ -2,11 +2,14 @@
 // Licensed under the MIT License.
 
 use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
 use std::fmt;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct OptionalFeatureList {
+    #[serde(rename = "_restartRequired", skip_serializing_if = "Option::is_none")]
+    pub restart_required_meta: Option<Vec<Map<String, Value>>>,
     pub features: Vec<OptionalFeatureInfo>,
 }
 

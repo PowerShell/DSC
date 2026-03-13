@@ -2,9 +2,14 @@
 // Licensed under the MIT License.
 
 use rust_i18n::t;
+use serde_json::{Map, Value};
 
 use crate::optional_feature::dism::DismSessionHandle;
 use crate::optional_feature::types::{FeatureState, OptionalFeatureList};
+
+fn get_computer_name() -> String {
+    std::env::var("COMPUTERNAME").unwrap_or_else(|_| "localhost".to_string())
+}
 
 pub fn handle_set(input: &str) -> Result<String, String> {
     let feature_list: OptionalFeatureList = serde_json::from_str(input)
@@ -16,6 +21,7 @@ pub fn handle_set(input: &str) -> Result<String, String> {
 
     let session = DismSessionHandle::open()?;
     let mut results = Vec::new();
+    let mut reboot_required = false;
 
     for feature_input in &feature_list.features {
         let feature_name = feature_input
@@ -28,15 +34,15 @@ pub fn handle_set(input: &str) -> Result<String, String> {
             .as_ref()
             .ok_or_else(|| t!("set.stateRequired").to_string())?;
 
-        match desired_state {
+        let needs_reboot = match desired_state {
             FeatureState::Installed => {
-                session.enable_feature(feature_name)?;
+                session.enable_feature(feature_name)?
             }
             FeatureState::NotPresent => {
-                session.disable_feature(feature_name, false)?;
+                session.disable_feature(feature_name, false)?
             }
             FeatureState::Removed => {
-                session.disable_feature(feature_name, true)?;
+                session.disable_feature(feature_name, true)?
             }
             _ => {
                 return Err(t!(
@@ -45,13 +51,23 @@ pub fn handle_set(input: &str) -> Result<String, String> {
                 )
                 .to_string());
             }
-        }
+        };
+
+        reboot_required = reboot_required || needs_reboot;
 
         let info = session.get_feature_info(feature_name)?;
         results.push(info);
     }
 
-    let output = OptionalFeatureList { features: results };
+    let restart_required_meta = if reboot_required {
+        let mut entry = Map::new();
+        entry.insert("system".to_string(), Value::String(get_computer_name()));
+        Some(vec![entry])
+    } else {
+        None
+    };
+
+    let output = OptionalFeatureList { restart_required_meta, features: results };
     serde_json::to_string(&output)
         .map_err(|e| t!("set.failedSerializeOutput", err = e.to_string()).to_string())
 }

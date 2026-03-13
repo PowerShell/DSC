@@ -3,9 +3,12 @@
 
 Describe 'Microsoft.Windows/OptionalFeatureList - get operation' -Skip:(!$IsWindows) {
     BeforeDiscovery {
-        $isElevated = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
-            [Security.Principal.WindowsBuiltInRole]::Administrator
-        )
+        $isElevated = if ($IsWindows) {
+            ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
+                [Security.Principal.WindowsBuiltInRole]::Administrator)
+        } else {
+            $false
+        }
     }
 
     It 'gets a known optional feature by name' -Skip:(!$isElevated) {

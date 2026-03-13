@@ -45,6 +45,15 @@
             "type": "object",
             "additionalProperties": false,
             "properties": {
+                "_restartRequired": {
+                    "type": "array",
+                    "title": "Restart required",
+                    "description": "Indicates that a system restart is required to complete the state change. Returned by the set operation when DISM reports that a reboot is needed.",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                    }
+                },
                 "features": {
                     "type": "array",
                     "title": "Features",

@@ -11,6 +11,7 @@ use crate::optional_feature::types::{FeatureState, OptionalFeatureInfo, RestartT
 const DISM_ONLINE_IMAGE: &str = "DISM_{53BFAE52-B167-4E2F-A258-0A37B57FF845}";
 const DISM_LOG_ERRORS: i32 = 0;
 const DISM_PACKAGE_NONE: i32 = 0;
+const ERROR_SUCCESS_REBOOT_REQUIRED: i32 = 3010;
 
 #[repr(C, packed)]
 struct DismFeature {
@@ -224,7 +225,8 @@ impl DismSessionHandle {
         Ok(result)
     }
 
-    pub fn enable_feature(&self, feature_name: &str) -> Result<(), String> {
+    /// Returns `Ok(true)` if DISM reports a reboot is required (HRESULT 3010).
+    pub fn enable_feature(&self, feature_name: &str) -> Result<bool, String> {
         let wide_name = to_wide_null(feature_name);
         let hr = unsafe {
             (self.api.enable_feature)(
@@ -244,10 +246,11 @@ impl DismSessionHandle {
         if hr < 0 {
             return Err(t!("dism.enableFeatureFailed", name = feature_name, hr = format!("0x{:08X}", hr as u32)).to_string());
         }
-        Ok(())
+        Ok(hr == ERROR_SUCCESS_REBOOT_REQUIRED)
     }
 
-    pub fn disable_feature(&self, feature_name: &str, remove_payload: bool) -> Result<(), String> {
+    /// Returns `Ok(true)` if DISM reports a reboot is required (HRESULT 3010).
+    pub fn disable_feature(&self, feature_name: &str, remove_payload: bool) -> Result<bool, String> {
         let wide_name = to_wide_null(feature_name);
         let hr = unsafe {
             (self.api.disable_feature)(
@@ -263,7 +266,7 @@ impl DismSessionHandle {
         if hr < 0 {
             return Err(t!("dism.disableFeatureFailed", name = feature_name, hr = format!("0x{:08X}", hr as u32)).to_string());
         }
-        Ok(())
+        Ok(hr == ERROR_SUCCESS_REBOOT_REQUIRED)
     }
 
     pub fn get_all_feature_basics(&self) -> Result<Vec<(String, i32)>, String> {

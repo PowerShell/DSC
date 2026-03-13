@@ -3,9 +3,12 @@
 
 Describe 'Microsoft.Windows/OptionalFeatureList - export operation' -Skip:(!$IsWindows) {
     BeforeDiscovery {
-        $isElevated = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
-            [Security.Principal.WindowsBuiltInRole]::Administrator
-        )
+        $isElevated = if ($IsWindows) {
+            ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
+                [Security.Principal.WindowsBuiltInRole]::Administrator)
+        } else {
+            $false
+        }
     }
 
     It 'exports all features with no input' -Skip:(!$isElevated) {

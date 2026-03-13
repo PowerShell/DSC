@@ -69,7 +69,7 @@ pub fn handle_export(input: &str) -> Result<String, String> {
         }
     }
 
-    let output = OptionalFeatureList { features: results };
+    let output = OptionalFeatureList { restart_required_meta: None, features: results };
     serde_json::to_string(&output)
         .map_err(|e| t!("export.failedSerializeOutput", err = e.to_string()).to_string())
 }
