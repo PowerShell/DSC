@@ -52,6 +52,13 @@ fn print_json(value: &impl serde::Serialize) {
     }
 }
 
+#[cfg(not(windows))]
+fn main() {
+    eprintln!("Error: {}", t!("main.windowsOnly"));
+    std::process::exit(1);
+}
+
+#[cfg(windows)]
 fn main() {
     let args: Vec<String> = std::env::args().collect();
 
@@ -67,49 +74,29 @@ fn main() {
         "get" => {
             let input = require_input(input_json);
 
-            #[cfg(windows)]
-            {
-                match service::get_service(&input) {
-                    Ok(result) => {
-                        print_json(&result);
-                        exit(EXIT_SUCCESS);
-                    }
-                    Err(e) => {
-                        write_error(&e.to_string());
-                        exit(EXIT_SERVICE_ERROR);
-                    }
+            match service::get_service(&input) {
+                Ok(result) => {
+                    print_json(&result);
+                    exit(EXIT_SUCCESS);
                 }
-            }
-
-            #[cfg(not(windows))]
-            {
-                let _ = input;
-                write_error(&t!("main.windowsOnly"));
-                exit(EXIT_SERVICE_ERROR);
+                Err(e) => {
+                    write_error(&e.to_string());
+                    exit(EXIT_SERVICE_ERROR);
+                }
             }
         }
         "set" => {
             let input = require_input(input_json);
 
-            #[cfg(windows)]
-            {
-                match service::set_service(&input) {
-                    Ok(result) => {
-                        print_json(&result);
-                        exit(EXIT_SUCCESS);
-                    }
-                    Err(e) => {
-                        write_error(&e.to_string());
-                        exit(EXIT_SERVICE_ERROR);
-                    }
+            match service::set_service(&input) {
+                Ok(result) => {
+                    print_json(&result);
+                    exit(EXIT_SUCCESS);
                 }
-            }
-
-            #[cfg(not(windows))]
-            {
-                let _ = input;
-                write_error(&t!("main.windowsOnly"));
-                exit(EXIT_SERVICE_ERROR);
+                Err(e) => {
+                    write_error(&e.to_string());
+                    exit(EXIT_SERVICE_ERROR);
+                }
             }
         }
         "export" => {
@@ -124,27 +111,17 @@ fn main() {
                 None => None,
             };
 
-            #[cfg(windows)]
-            {
-                match service::export_services(filter.as_ref()) {
-                    Ok(services) => {
-                        for svc in &services {
-                            print_json(svc);
-                        }
-                        exit(EXIT_SUCCESS);
+            match service::export_services(filter.as_ref()) {
+                Ok(services) => {
+                    for svc in &services {
+                        print_json(svc);
                     }
-                    Err(e) => {
-                        write_error(&e.to_string());
-                        exit(EXIT_SERVICE_ERROR);
-                    }
+                    exit(EXIT_SUCCESS);
                 }
-            }
-
-            #[cfg(not(windows))]
-            {
-                let _ = filter;
-                write_error(&t!("main.windowsOnly"));
-                exit(EXIT_SERVICE_ERROR);
+                Err(e) => {
+                    write_error(&e.to_string());
+                    exit(EXIT_SERVICE_ERROR);
+                }
             }
         }
         _ => {
