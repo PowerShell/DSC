@@ -500,6 +500,19 @@ function Install-TreeSitter {
         if ($LASTEXITCODE -ne 0) {
             throw "Failed to install tree-sitter-cli"
         }
+
+        # Ensure cargo bin directory is in PATH so tree-sitter can be found
+        if (!$IsWindows) {
+            $cargoBin = "$env:HOME/.cargo/bin"
+            if ($env:PATH -notlike "*$cargoBin*") {
+                $env:PATH += ":$cargoBin"
+            }
+        } else {
+            $cargoBin = "$env:USERPROFILE\.cargo\bin"
+            if ($env:PATH -notlike "*$cargoBin*") {
+                $env:PATH += ";$cargoBin"
+            }
+        }
     }
 }
 
