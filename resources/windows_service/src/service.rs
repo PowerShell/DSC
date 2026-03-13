@@ -685,6 +685,45 @@ pub fn set_service(input: &WindowsService) -> Result<WindowsService, ServiceErro
                 None => SERVICE_ERROR(SERVICE_NO_CHANGE_VALUE),
             };
 
+            // When changing the logon account to a non-LocalSystem account, the
+            // deprecated SERVICE_INTERACTIVE_PROCESS flag (0x100) must be stripped
+            // from the service type, because Windows only allows interactive
+            // services under LocalSystem. Query the current type and clear the
+            // flag when necessary; otherwise pass SERVICE_NO_CHANGE.
+            const SERVICE_INTERACTIVE_PROCESS_FLAG: u32 = 0x100;
+            let dw_service_type = if let Some(ref account) = input.logon_account {
+                let upper = account.to_ascii_uppercase();
+                let is_local_system = matches!(
+                    upper.as_str(),
+                    "LOCALSYSTEM" | "LOCAL SYSTEM" | ".\\LOCALSYSTEM"
+                );
+                if !is_local_system {
+                    let mut qc_bytes: u32 = 0;
+                    let _ = QueryServiceConfigW(service_handle.0, None, 0, &mut qc_bytes);
+                    if qc_bytes > 0 {
+                        let mut qc_buf = vec![0u8; qc_bytes as usize];
+                        let qc_ptr = qc_buf.as_mut_ptr().cast::<QUERY_SERVICE_CONFIGW>();
+                        if QueryServiceConfigW(
+                            service_handle.0,
+                            Some(&mut *qc_ptr),
+                            qc_bytes,
+                            &mut qc_bytes,
+                        ).is_ok() {
+                            let cur_type = (*qc_ptr).dwServiceType.0;
+                            ENUM_SERVICE_TYPE(cur_type & !SERVICE_INTERACTIVE_PROCESS_FLAG)
+                        } else {
+                            ENUM_SERVICE_TYPE(SERVICE_NO_CHANGE_VALUE)
+                        }
+                    } else {
+                        ENUM_SERVICE_TYPE(SERVICE_NO_CHANGE_VALUE)
+                    }
+                } else {
+                    ENUM_SERVICE_TYPE(SERVICE_NO_CHANGE_VALUE)
+                }
+            } else {
+                ENUM_SERVICE_TYPE(SERVICE_NO_CHANGE_VALUE)
+            };
+
             // When setting AutomaticDelayedStart, the service must not belong to a load
             // order group — Windows rejects ChangeServiceConfig2W for the delayed auto-start
             // flag with ERROR_INVALID_PARAMETER if one is set. Clear the group by passing an
@@ -708,9 +747,14 @@ pub fn set_service(input: &WindowsService) -> Result<WindowsService, ServiceErro
             let display_ptr = display_wide.as_ref().map_or(PCWSTR::null(), |w| PCWSTR(w.as_ptr()));
             let deps_ptr = deps_wide.as_ref().map_or(PCWSTR::null(), |w| PCWSTR(w.as_ptr()));
 
+            // When changing the logon account to a built-in service account,
+            // Windows requires an empty string password rather than null.
+            let password_wide = input.logon_account.as_ref().map(|_| to_wide(""));
+            let password_ptr = password_wide.as_ref().map_or(PCWSTR::null(), |w| PCWSTR(w.as_ptr()));
+
             ChangeServiceConfigW(
                 service_handle.0,
-                ENUM_SERVICE_TYPE(SERVICE_NO_CHANGE_VALUE), // service type unchanged
+                dw_service_type,
                 dw_start_type,
                 dw_error_control,
                 exe_ptr,
@@ -718,7 +762,7 @@ pub fn set_service(input: &WindowsService) -> Result<WindowsService, ServiceErro
                 None, // tag id unchanged
                 deps_ptr,
                 logon_ptr,
-                PCWSTR::null(), // password unchanged
+                password_ptr,
                 display_ptr,
             )
             .map_err(|e| t!("set.changeConfigFailed", error = e.to_string()).to_string())?;
