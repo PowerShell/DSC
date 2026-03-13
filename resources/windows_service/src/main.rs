@@ -54,8 +54,8 @@ fn print_json(value: &impl serde::Serialize) {
 
 #[cfg(not(windows))]
 fn main() {
-    eprintln!("Error: {}", t!("main.windowsOnly"));
-    std::process::exit(1);
+    write_error(&t!("main.windowsOnly"));
+    exit(EXIT_SERVICE_ERROR);
 }
 
 #[cfg(windows)]

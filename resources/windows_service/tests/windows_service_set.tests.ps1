@@ -29,6 +29,21 @@ Describe 'Windows Service set tests' -Skip:(!$IsWindows) {
     }
 
     Context 'Input validation' -Skip:(!$isAdmin) {
+        BeforeAll {
+            $script:originalState = Get-ServiceState -Name $testServiceName
+        }
+
+        AfterAll {
+            # Restore original logon account
+            if ($script:originalState -and $script:originalState.logonAccount) {
+                $restoreJson = @{
+                    name         = $testServiceName
+                    logonAccount = $script:originalState.logonAccount
+                } | ConvertTo-Json -Compress
+                $restoreJson | dsc resource set -r $resourceType -f - 2>$testdrive/error.log
+            }
+        }
+
         It 'Fails when name is not provided' {
             $json = @{ startType = 'Manual' } | ConvertTo-Json -Compress
             $out = $json | dsc resource set -r $resourceType -f - 2>&1
@@ -38,6 +53,24 @@ Describe 'Windows Service set tests' -Skip:(!$IsWindows) {
         It 'Fails when input JSON is invalid' {
             $out = 'not-json' | dsc resource set -r $resourceType -f - 2>&1
             $LASTEXITCODE | Should -Not -Be 0
+        }
+
+        It 'Fails when logonAccount is not a built-in service account' {
+            $json = @{ name = 'Spooler'; logonAccount = 'DOMAIN\SomeUser' } | ConvertTo-Json -Compress
+            $out = $json | dsc resource set -r $resourceType -f - 2>&1
+            $LASTEXITCODE | Should -Not -Be 0
+        }
+
+        It 'Accepts LocalSystem as logonAccount' {
+            $json = @{ name = 'Spooler'; logonAccount = 'LocalSystem' } | ConvertTo-Json -Compress
+            $out = $json | dsc resource set -r $resourceType -f - 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
+        }
+
+        It 'Accepts NT AUTHORITY\NetworkService as logonAccount' {
+            $json = @{ name = 'Spooler'; logonAccount = 'NT AUTHORITY\NetworkService' } | ConvertTo-Json -Compress
+            $out = $json | dsc resource set -r $resourceType -f - 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
         }
     }
 

@@ -445,7 +445,7 @@ unsafe fn enumerate_services(scm: SC_HANDLE) -> Result<Vec<(String, SERVICE_STAT
         let mut resume_handle: u32 = 0;
 
         // Sizing call to determine required buffer size
-        let _ = EnumServicesStatusExW(
+        let sizing_result = EnumServicesStatusExW(
             scm,
             SC_ENUM_PROCESS_INFO,
             SERVICE_WIN32,
@@ -456,6 +456,14 @@ unsafe fn enumerate_services(scm: SC_HANDLE) -> Result<Vec<(String, SERVICE_STAT
             Some(&mut resume_handle),
             None,
         );
+
+        if let Err(e) = sizing_result {
+            if e.code() != ERROR_MORE_DATA.to_hresult()
+                && e.code() != ERROR_INSUFFICIENT_BUFFER.to_hresult()
+            {
+                return Err(t!("export.enumServicesFailed", error = e.to_string()).to_string().into());
+            }
+        }
 
         if bytes_needed == 0 {
             return Ok(Vec::new());
@@ -589,9 +597,32 @@ fn deps_to_multi_string(deps: &[String]) -> Vec<u16> {
 }
 
 /// Apply the desired service configuration and status changes, then return the final state.
+/// Check whether the given account name is a built-in service account.
+fn is_builtin_service_account(account: &str) -> bool {
+    let normalized = account.to_ascii_uppercase();
+    matches!(
+        normalized.as_str(),
+        "LOCALSYSTEM"
+            | "LOCAL SYSTEM"
+            | "NT AUTHORITY\\LOCALSERVICE"
+            | "NT AUTHORITY\\NETWORKSERVICE"
+            | "NT AUTHORITY\\LOCAL SERVICE"
+            | "NT AUTHORITY\\NETWORK SERVICE"
+            | ".\\LOCALSYSTEM"
+    )
+}
+
 pub fn set_service(input: &WindowsService) -> Result<WindowsService, ServiceError> {
     let name = input.name.as_deref()
         .ok_or_else(|| t!("set.nameRequired").to_string())?;
+
+    if let Some(ref account) = input.logon_account {
+        if !is_builtin_service_account(account) {
+            return Err(ServiceError::from(
+                t!("set.unsupportedLogonAccount", account = account).to_string(),
+            ));
+        }
+    }
 
     unsafe {
         let scm = OpenSCManagerW(None, None, SC_MANAGER_CONNECT)

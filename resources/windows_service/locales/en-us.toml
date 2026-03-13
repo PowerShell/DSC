@@ -1,7 +1,7 @@
 _version = 1
 
 [main]
-missingOperation = "Missing operation. Usage: windows_service <get|set|export> --input <json>"
+missingOperation = "Missing operation. Usage: windows_service get --input <json> | set --input <json> | export [--input <json>]"
 unknownOperation = "Unknown operation: '%{operation}'. Expected: get, set, or export"
 missingInput = "Missing --input argument"
 missingInputValue = "Missing value for --input argument"
@@ -32,5 +32,6 @@ stopFailed = "Failed to stop service: %{error}"
 pauseFailed = "Failed to pause service: %{error}"
 continueFailed = "Failed to continue service: %{error}"
 unsupportedTransition = "Unsupported status transition from '%{current}' to '%{desired}'"
+unsupportedLogonAccount = "Unsupported logon account '%{account}'; only built-in service accounts are supported (LocalSystem, NT AUTHORITY\\LocalService, NT AUTHORITY\\NetworkService)"
 unsupportedStatus = "Cannot set service to status '%{status}'; only Running, Stopped, and Paused are supported"
 statusTimeout = "Timed out waiting for service to reach status '%{expected}'; current status is '%{actual}'"
