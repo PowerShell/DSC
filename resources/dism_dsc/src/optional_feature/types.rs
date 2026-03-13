@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 use serde::{Deserialize, Serialize};
+use std::fmt;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -41,6 +42,21 @@ pub enum RestartType {
     No,
     Possible,
     Required,
+}
+
+impl fmt::Display for FeatureState {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            FeatureState::NotPresent => write!(f, "NotPresent"),
+            FeatureState::UninstallPending => write!(f, "UninstallPending"),
+            FeatureState::Staged => write!(f, "Staged"),
+            FeatureState::Removed => write!(f, "Removed"),
+            FeatureState::Installed => write!(f, "Installed"),
+            FeatureState::InstallPending => write!(f, "InstallPending"),
+            FeatureState::Superseded => write!(f, "Superseded"),
+            FeatureState::PartiallyInstalled => write!(f, "PartiallyInstalled"),
+        }
+    }
 }
 
 impl FeatureState {

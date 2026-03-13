@@ -24,3 +24,13 @@ featureNameRequired = "featureName is required for set operation"
 stateRequired = "state is required for set operation"
 unsupportedDesiredState = "Unsupported desired state '%{state}'. Supported states for set are: Installed, NotPresent, Removed"
 failedSerializeOutput = "Failed to serialize output: %{err}"
+
+[dism]
+failedLoadLibrary = "Failed to load dismapi.dll. Ensure DISM is available on this system."
+functionNotFound = "Failed to find function '%{name}' in dismapi.dll"
+initializeFailed = "DismInitialize failed: HRESULT %{hr}"
+openSessionFailed = "DismOpenSession failed: HRESULT %{hr}"
+getFeatureInfoFailed = "DismGetFeatureInfo failed for '%{name}': HRESULT %{hr}"
+enableFeatureFailed = "DismEnableFeature failed for '%{name}': HRESULT %{hr}"
+disableFeatureFailed = "DismDisableFeature failed for '%{name}': HRESULT %{hr}"
+getFeaturesFailed = "DismGetFeatures failed: HRESULT %{hr}"

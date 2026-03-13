@@ -4,6 +4,8 @@
 use std::ffi::c_void;
 use std::os::windows::ffi::OsStrExt;
 
+use rust_i18n::t;
+
 use crate::optional_feature::types::{FeatureState, OptionalFeatureInfo, RestartType};
 
 const DISM_ONLINE_IMAGE: &str = "DISM_{53BFAE52-B167-4E2F-A258-0A37B57FF845}";
@@ -80,7 +82,7 @@ unsafe fn from_wide_ptr(ptr: *const u16) -> String {
     if ptr.is_null() {
         return String::new();
     }
-    let len = (0..).take_while(|&i| *ptr.add(i) != 0).count();
+    let len = (0..65536).take_while(|&i| *ptr.add(i) != 0).count();
     let slice = std::slice::from_raw_parts(ptr, len);
     String::from_utf16_lossy(slice)
 }
@@ -88,10 +90,8 @@ unsafe fn from_wide_ptr(ptr: *const u16) -> String {
 unsafe fn load_fn<T>(lib: *mut c_void, name: &[u8]) -> Result<T, String> {
     let ptr = GetProcAddress(lib, name.as_ptr());
     if ptr.is_null() {
-        return Err(format!(
-            "Failed to find function '{}' in dismapi.dll",
-            std::str::from_utf8(&name[..name.len() - 1]).unwrap_or("?")
-        ));
+        let fn_name = std::str::from_utf8(&name[..name.len() - 1]).unwrap_or("?");
+        return Err(t!("dism.functionNotFound", name = fn_name).to_string());
     }
     Ok(std::mem::transmute_copy(&ptr))
 }
@@ -112,7 +112,7 @@ impl DismApi {
         let lib_name = to_wide_null("dismapi.dll");
         let lib = unsafe { LoadLibraryW(lib_name.as_ptr()) };
         if lib.is_null() {
-            return Err("Failed to load dismapi.dll. Ensure DISM is available on this system.".to_string());
+            return Err(t!("dism.failedLoadLibrary").to_string());
         }
 
         unsafe {
@@ -144,6 +144,13 @@ pub struct DismSessionHandle {
 }
 
 impl DismSessionHandle {
+    /// Opens a new DISM session for the online image.
+    ///
+    /// NOTE: `DismInitialize` and `DismShutdown` are per-process globals.
+    /// Only one `DismSessionHandle` should exist at a time. Creating a
+    /// second session while one is already open (or after one has been
+    /// dropped) will call `DismInitialize` again, which returns
+    /// `DISMAPI_E_DISMAPI_ALREADY_INITIALIZED`.
     pub fn open() -> Result<Self, String> {
         let api = DismApi::load()?;
 
@@ -156,10 +163,7 @@ impl DismSessionHandle {
         unsafe {
             let hr = dism_initialize(DISM_LOG_ERRORS, std::ptr::null(), std::ptr::null());
             if hr < 0 {
-                return Err(format!(
-                    "DismInitialize failed: HRESULT 0x{:08X}",
-                    hr as u32
-                ));
+                return Err(t!("dism.initializeFailed", hr = format!("0x{:08X}", hr as u32)).to_string());
             }
 
             let image_path = to_wide_null(DISM_ONLINE_IMAGE);
@@ -172,10 +176,7 @@ impl DismSessionHandle {
             );
             if hr < 0 {
                 (api.shutdown)();
-                return Err(format!(
-                    "DismOpenSession failed: HRESULT 0x{:08X}",
-                    hr as u32
-                ));
+                return Err(t!("dism.openSessionFailed", hr = format!("0x{:08X}", hr as u32)).to_string());
             }
 
             Ok(DismSessionHandle {
@@ -200,20 +201,21 @@ impl DismSessionHandle {
         };
 
         if hr < 0 {
-            return Err(format!(
-                "DismGetFeatureInfo failed for '{}': HRESULT 0x{:08X}",
-                feature_name, hr as u32
-            ));
+            return Err(t!("dism.getFeatureInfoFailed", name = feature_name, hr = format!("0x{:08X}", hr as u32)).to_string());
         }
 
         let result = unsafe {
-            let info = &*info_ptr;
+            let feature_name_val = std::ptr::addr_of!((*info_ptr).feature_name).read_unaligned();
+            let state_val = std::ptr::addr_of!((*info_ptr).state).read_unaligned();
+            let display_name_val = std::ptr::addr_of!((*info_ptr).display_name).read_unaligned();
+            let description_val = std::ptr::addr_of!((*info_ptr).description).read_unaligned();
+            let restart_val = std::ptr::addr_of!((*info_ptr).restart_required).read_unaligned();
             let feature_info = OptionalFeatureInfo {
-                feature_name: Some(from_wide_ptr(info.feature_name)),
-                state: FeatureState::from_dism(info.state),
-                display_name: Some(from_wide_ptr(info.display_name)),
-                description: Some(from_wide_ptr(info.description)),
-                restart_required: RestartType::from_dism(info.restart_required),
+                feature_name: Some(from_wide_ptr(feature_name_val)),
+                state: FeatureState::from_dism(state_val),
+                display_name: Some(from_wide_ptr(display_name_val)),
+                description: Some(from_wide_ptr(description_val)),
+                restart_required: RestartType::from_dism(restart_val),
             };
             (self.api.delete)(info_ptr as *const c_void);
             feature_info
@@ -240,10 +242,7 @@ impl DismSessionHandle {
             )
         };
         if hr < 0 {
-            return Err(format!(
-                "DismEnableFeature failed for '{}': HRESULT 0x{:08X}",
-                feature_name, hr as u32
-            ));
+            return Err(t!("dism.enableFeatureFailed", name = feature_name, hr = format!("0x{:08X}", hr as u32)).to_string());
         }
         Ok(())
     }
@@ -262,10 +261,7 @@ impl DismSessionHandle {
             )
         };
         if hr < 0 {
-            return Err(format!(
-                "DismDisableFeature failed for '{}': HRESULT 0x{:08X}",
-                feature_name, hr as u32
-            ));
+            return Err(t!("dism.disableFeatureFailed", name = feature_name, hr = format!("0x{:08X}", hr as u32)).to_string());
         }
         Ok(())
     }
@@ -285,18 +281,16 @@ impl DismSessionHandle {
         };
 
         if hr < 0 {
-            return Err(format!(
-                "DismGetFeatures failed: HRESULT 0x{:08X}",
-                hr as u32
-            ));
+            return Err(t!("dism.getFeaturesFailed", hr = format!("0x{:08X}", hr as u32)).to_string());
         }
 
         let mut result = Vec::new();
         unsafe {
             for i in 0..count as usize {
-                let feature = &*features_ptr.add(i);
-                let name = from_wide_ptr(feature.feature_name);
-                result.push((name, feature.state));
+                let name_ptr = std::ptr::addr_of!((*features_ptr.add(i)).feature_name).read_unaligned();
+                let state_val = std::ptr::addr_of!((*features_ptr.add(i)).state).read_unaligned();
+                let name = from_wide_ptr(name_ptr);
+                result.push((name, state_val));
             }
             (self.api.delete)(features_ptr as *const c_void);
         }

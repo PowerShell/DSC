@@ -132,24 +132,31 @@ fn matches_wildcard(text: &str, pattern: &str) -> bool {
         return false;
     }
 
-    // Check suffix (part after last *)
-    if let Some(last) = parts.last() {
-        if !last.is_empty() && !text_lower.ends_with(last) {
+    // Track position through the text, starting after the prefix
+    let mut pos = parts[0].len();
+
+    // The suffix is the last part; we need to reserve space for it
+    let suffix = *parts.last().unwrap_or(&"");
+    let end = if suffix.is_empty() {
+        text_lower.len()
+    } else {
+        // Verify suffix matches and compute the boundary
+        if !text_lower.ends_with(suffix) {
             return false;
         }
-    }
+        text_lower.len() - suffix.len()
+    };
 
-    // Check middle parts appear in order
-    let mut pos = parts[0].len();
+    // Check middle parts appear in order within [pos..end]
     for part in &parts[1..parts.len().saturating_sub(1)] {
         if part.is_empty() {
             continue;
         }
-        match text_lower[pos..].find(part) {
+        match text_lower[pos..end].find(part) {
             Some(idx) => pos += idx + part.len(),
             None => return false,
         }
     }
 
-    true
+    pos <= end
 }

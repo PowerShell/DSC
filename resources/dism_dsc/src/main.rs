@@ -9,6 +9,45 @@ use std::io::{self, Read, IsTerminal};
 
 rust_i18n::i18n!("locales", fallback = "en-us");
 
+fn read_stdin(required: bool) -> Result<String, String> {
+    let mut buffer = String::new();
+    if required || !io::stdin().is_terminal() {
+        io::stdin()
+            .read_to_string(&mut buffer)
+            .map_err(|e| t!("main.errorReadingInput", err = e).to_string())?;
+    }
+    Ok(buffer)
+}
+
+fn dispatch(handler: impl FnOnce(&str) -> Result<String, String>, stdin_required: bool) {
+    let buffer = match read_stdin(stdin_required) {
+        Ok(b) => b,
+        Err(e) => {
+            eprintln!("{e}");
+            std::process::exit(1);
+        }
+    };
+
+    #[cfg(windows)]
+    match handler(&buffer) {
+        Ok(output) => {
+            println!("{output}");
+            std::process::exit(0);
+        }
+        Err(e) => {
+            eprintln!("Error: {e}");
+            std::process::exit(1);
+        }
+    }
+
+    #[cfg(not(windows))]
+    {
+        let _ = buffer;
+        eprintln!("Error: {}", t!("main.windowsOnly"));
+        std::process::exit(1);
+    }
+}
+
 fn main() {
     let args: Vec<String> = std::env::args().collect();
 
@@ -21,83 +60,9 @@ fn main() {
     let operation = args[1].as_str();
 
     match operation {
-        "export" => {
-            // Read optional input from stdin (only if stdin is not a terminal/TTY)
-            let mut buffer = String::new();
-            if !io::stdin().is_terminal() {
-                let _ = io::stdin().read_to_string(&mut buffer);
-            }
-
-            #[cfg(windows)]
-            match optional_feature::handle_export(&buffer) {
-                Ok(output) => {
-                    println!("{output}");
-                    std::process::exit(0);
-                }
-                Err(e) => {
-                    eprintln!("Error: {e}");
-                    std::process::exit(1);
-                }
-            }
-
-            #[cfg(not(windows))]
-            {
-                eprintln!("Error: {}", t!("main.windowsOnly"));
-                std::process::exit(1);
-            }
-        }
-        "get" => {
-            // Read input from stdin
-            let mut buffer = String::new();
-            if let Err(e) = io::stdin().read_to_string(&mut buffer) {
-                eprintln!("{}", t!("main.errorReadingInput", err = e));
-                std::process::exit(1);
-            }
-
-            #[cfg(windows)]
-            match optional_feature::handle_get(&buffer) {
-                Ok(output) => {
-                    println!("{output}");
-                    std::process::exit(0);
-                }
-                Err(e) => {
-                    eprintln!("Error: {e}");
-                    std::process::exit(1);
-                }
-            }
-
-            #[cfg(not(windows))]
-            {
-                eprintln!("Error: {}", t!("main.windowsOnly"));
-                std::process::exit(1);
-            }
-        }
-        "set" => {
-            // Read input from stdin
-            let mut buffer = String::new();
-            if let Err(e) = io::stdin().read_to_string(&mut buffer) {
-                eprintln!("{}", t!("main.errorReadingInput", err = e));
-                std::process::exit(1);
-            }
-
-            #[cfg(windows)]
-            match optional_feature::handle_set(&buffer) {
-                Ok(output) => {
-                    println!("{output}");
-                    std::process::exit(0);
-                }
-                Err(e) => {
-                    eprintln!("Error: {e}");
-                    std::process::exit(1);
-                }
-            }
-
-            #[cfg(not(windows))]
-            {
-                eprintln!("Error: {}", t!("main.windowsOnly"));
-                std::process::exit(1);
-            }
-        }
+        "export" => dispatch(optional_feature::handle_export, false),
+        "get" => dispatch(optional_feature::handle_get, true),
+        "set" => dispatch(optional_feature::handle_set, true),
         _ => {
             eprintln!("{}", t!("main.unknownOperation", operation = operation));
             eprintln!("{}", t!("main.usage"));

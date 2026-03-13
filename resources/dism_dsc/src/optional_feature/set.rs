@@ -32,13 +32,16 @@ pub fn handle_set(input: &str) -> Result<String, String> {
             FeatureState::Installed => {
                 session.enable_feature(feature_name)?;
             }
-            FeatureState::NotPresent | FeatureState::Removed => {
+            FeatureState::NotPresent => {
+                session.disable_feature(feature_name, false)?;
+            }
+            FeatureState::Removed => {
                 session.disable_feature(feature_name, true)?;
             }
             _ => {
                 return Err(t!(
                     "set.unsupportedDesiredState",
-                    state = format!("{desired_state:?}")
+                    state = desired_state.to_string()
                 )
                 .to_string());
             }
