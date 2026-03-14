@@ -17,6 +17,7 @@ members = [
     "lib/dsc-lib-registry",
     "resources/runcommandonset",
     "lib/dsc-lib-security_context",
+    "resources/dism_dsc",
     "resources/sshdconfig",
     "resources/WindowsUpdate",
     "tools/dsctest",
@@ -44,6 +45,7 @@ default-members = [
     "lib/dsc-lib-registry",
     "resources/runcommandonset",
     "lib/dsc-lib-security_context",
+    "resources/dism_dsc",
     "resources/sshdconfig",
     "resources/WindowsUpdate",
     "tools/dsctest",
@@ -80,7 +82,8 @@ Windows = [
     "grammars/tree-sitter-dscexpression",
     "grammars/tree-sitter-ssh-server-config",
     "y2j",
-    "xtask"
+    "xtask",
+    "resources/dism_dsc"
 ]
 macOS = [
     "dsc",
