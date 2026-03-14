@@ -1,10 +1,11 @@
 _version = 1
 
 [main]
-missingOperation = "Missing operation argument"
-usage = "Usage: dism_dsc <get|set|export>"
+missingArguments = "Missing operation and resource type arguments"
+usage = "Usage: dism_dsc <get|set|export> <optional-feature|feature-on-demand>"
 windowsOnly = "This resource is only supported on Windows"
 unknownOperation = "Unknown operation '%{operation}'"
+unknownResourceType = "Unknown resource type '%{resource_type}'. Expected 'optional-feature' or 'feature-on-demand'"
 errorReadingInput = "Error reading input: %{err}"
 
 [get]
@@ -15,6 +16,24 @@ failedSerializeOutput = "Failed to serialize output: %{err}"
 
 [export]
 failedParseInput = "Failed to parse input: %{err}"
+failedSerializeOutput = "Failed to serialize output: %{err}"
+
+[fod_get]
+failedParseInput = "Failed to parse input: %{err}"
+capabilitiesArrayEmpty = "Capabilities array cannot be empty for get operation"
+nameRequired = "name is required for get operation"
+failedSerializeOutput = "Failed to serialize output: %{err}"
+
+[fod_export]
+failedParseInput = "Failed to parse input: %{err}"
+failedSerializeOutput = "Failed to serialize output: %{err}"
+
+[fod_set]
+failedParseInput = "Failed to parse input: %{err}"
+capabilitiesArrayEmpty = "Capabilities array cannot be empty for set operation"
+nameRequired = "name is required for set operation"
+stateRequired = "state is required for set operation"
+unsupportedDesiredState = "Unsupported desired state '%{state}'. Supported states for set are: Installed, NotPresent"
 failedSerializeOutput = "Failed to serialize output: %{err}"
 
 [set]
@@ -34,3 +53,8 @@ getFeatureInfoFailed = "DismGetFeatureInfo failed for '%{name}': HRESULT %{hr}"
 enableFeatureFailed = "DismEnableFeature failed for '%{name}': HRESULT %{hr}"
 disableFeatureFailed = "DismDisableFeature failed for '%{name}': HRESULT %{hr}"
 getFeaturesFailed = "DismGetFeatures failed: HRESULT %{hr}"
+capabilitiesNotSupported = "Capability operations are not supported on this system. DismGetCapabilities not found in dismapi.dll."
+getCapabilitiesFailed = "DismGetCapabilities failed: HRESULT %{hr}"
+getCapabilityInfoFailed = "DismGetCapabilityInfo failed for '%{name}': HRESULT %{hr}"
+addCapabilityFailed = "DismAddCapability failed for '%{name}': HRESULT %{hr}"
+removeCapabilityFailed = "DismRemoveCapability failed for '%{name}': HRESULT %{hr}"
