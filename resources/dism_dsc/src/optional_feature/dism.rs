@@ -13,6 +13,7 @@ const DISM_LOG_ERRORS: i32 = 0;
 const DISM_PACKAGE_NONE: i32 = 0;
 const ERROR_SUCCESS_REBOOT_REQUIRED: i32 = 3010;
 const DISMAPI_E_UNKNOWN_FEATURE: i32 = 0x800F080Cu32 as i32;
+const DISMAPI_E_CAPABILITY_NOT_APPLICABLE: i32 = 0x800F0825u32 as i32;
 const LOAD_LIBRARY_SEARCH_SYSTEM32: u32 = 0x0000_0800;
 
 #[link(name = "kernel32")]
@@ -426,6 +427,20 @@ impl DismSessionHandle {
             cap_info
         };
 
+        // Some Windows versions return success with empty name for unknown capabilities
+        // instead of DISMAPI_E_UNKNOWN_FEATURE; detect and treat as unknown.
+        if result.name.is_empty() {
+            return Ok(DismCapabilityResult {
+                name: name.to_string(),
+                unknown: true,
+                state: 0,
+                display_name: String::new(),
+                description: String::new(),
+                download_size: 0,
+                install_size: 0,
+            });
+        }
+
         Ok(result)
     }
 
@@ -468,6 +483,9 @@ impl DismSessionHandle {
                 std::ptr::null_mut(),   // UserData
             )
         };
+        if hr == DISMAPI_E_CAPABILITY_NOT_APPLICABLE {
+            return Ok(false); // Already not present — nothing to do
+        }
         if hr < 0 {
             return Err(t!("dism.removeCapabilityFailed", name = name, hr = format!("0x{:08X}", hr as u32)).to_string());
         }

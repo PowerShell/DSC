@@ -31,12 +31,18 @@ pub fn handle_set(input: &str) -> Result<String, String> {
             .as_ref()
             .ok_or_else(|| t!("fod_set.stateRequired").to_string())?;
 
+        let current = session.get_capability_info(name)?;
+        let current_state = CapabilityState::from_dism(current.state);
+
         let needs_reboot = match desired_state {
             CapabilityState::Installed => {
                 session.add_capability(name)?
             }
             CapabilityState::NotPresent => {
-                session.remove_capability(name)?
+                match current_state {
+                    Some(CapabilityState::NotPresent) | Some(CapabilityState::Removed) => false,
+                    _ => session.remove_capability(name)?,
+                }
             }
             _ => {
                 return Err(t!(
