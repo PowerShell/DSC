@@ -128,6 +128,14 @@ Describe 'Microsoft.Windows/FeatureOnDemandList - export operation' -Skip:(!$IsW
         $capabilities.Count | Should -Be 0
     }
 
+    It 'returns empty results for empty capabilities array input' -Skip:(!$isElevated) {
+        $inputJson = '{"capabilities":[]}'
+        $output = dsc resource export -r Microsoft.Windows/FeatureOnDemandList -i $inputJson | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $capabilities = $output.resources[0].properties.capabilities
+        $capabilities.Count | Should -Be 0
+    }
+
     It 'returns complete capability properties when full-info filter is used' -Skip:(!$isElevated) {
         $inputJson = '{"capabilities":[{"name":"' + $knownCapabilityNameOne + '","displayName":"*"}]}'
         $output = dsc resource export -r Microsoft.Windows/FeatureOnDemandList -i $inputJson | ConvertFrom-Json
