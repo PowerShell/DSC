@@ -23,5 +23,11 @@
         "."
     ],
     "azure-pipelines.1ESPipelineTemplatesSchemaFile": true,
-    "powershell.codeFormatting.preset": "OTBS"
+    "powershell.codeFormatting.preset": "OTBS",
+    "chat.tools.terminal.autoApprove": {
+        "cargo check": true,
+        "cargo test": true,
+        "cargo clippy": true,
+        "Invoke-Pester": true
+    }
 }
