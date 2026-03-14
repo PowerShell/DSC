@@ -10,7 +10,7 @@ use crate::types::FullyQualifiedTypeName;
 use rust_i18n::t;
 use serde_json::{Map, Value};
 use super::context::Context;
-use tracing::debug;
+use tracing::{debug, warn};
 
 /// Gets the invocation order of resources based on their dependencies
 ///
@@ -141,6 +141,7 @@ fn unroll_and_push(order: &mut Vec<Resource>, resource: &Resource, parser: &mut 
   // if the resource contains `Copy`, unroll it
   if let Some(copy) = &resource.copy {
       debug!("{}", t!("configure.mod.unrollingCopy", name = &copy.name, count = copy.count));
+      warn!("{}", t!("configure.mod.copyDeprecated", name = &copy.name));
       context.process_mode = ProcessMode::Copy;
       context.copy_current_loop_name.clone_from(&copy.name);
       let mut copy_resources = Vec::<Resource>::new();
@@ -214,7 +215,7 @@ fn unroll_and_push(order: &mut Vec<Resource>, resource: &Resource, parser: &mut 
                   other: Map::new(),
               }
           });
-          
+
           let mut microsoft = metadata.microsoft.clone().unwrap_or_default();
           let mut copy_loops = microsoft.copy_loops.clone().unwrap_or_default();
           copy_loops.insert(copy.name.clone(), Value::Number(i.into()));

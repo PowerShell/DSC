@@ -440,4 +440,24 @@ resources:
         $out.results[5].name | Should -Be 'Secondary-2'
         $out.results[5].result.actualState.output | Should -Be 'From 2: Data-1002'
     }
+
+    It 'Use of copy emits a deprecation warning' {
+        $configYaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: "[format('Test-{0}', copyIndex())]"
+  copy:
+    name: testLoop
+    count: 1
+  type: Microsoft.DSC.Debug/Echo
+  properties:
+    output: Hello
+'@
+        $out = dsc -l trace config get -i $configYaml 2>$testdrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because ((Get-Content $testdrive/error.log) | Out-String)
+        $out.results.Count | Should -Be 1
+        $out.results[0].name | Should -Be 'Test-0'
+        $out.results[0].result.actualState.output | Should -Be 'Hello'
+        (Get-Content $testdrive/error.log -Raw) | Should -BeLike "*WARN*Copy for loop 'testLoop' is deprecated and will be removed in a future release. See https://github.com/PowerShell/DSC/issues/1429 for more details.*"
+    }
 }
