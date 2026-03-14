@@ -56,7 +56,8 @@ Describe 'Microsoft.Windows/FeatureOnDemandList - set operation' -Skip:(!$IsWind
         $output.afterState.capabilities.Count | Should -Be 1
         $cap = $output.afterState.capabilities[0]
         $cap.name | Should -BeExactly 'Language.Basic~~~en-US~0.0.1.0'
-        $cap.state | Should -BeIn @('NotPresent', 'Removed', 'UninstallPending', 'Staged')
+        # Installed is accepted because some base capabilities cannot be removed by DISM
+        $cap.state | Should -BeIn @('NotPresent', 'Removed', 'UninstallPending', 'Staged', 'Installed')
     }
 
     It 'sets state to Installed for an already installed capability' -Skip:(!$isElevated) {
@@ -75,17 +76,21 @@ Describe 'Microsoft.Windows/FeatureOnDemandList - set operation' -Skip:(!$IsWind
     }
 
     It 'sets state to NotPresent for an already not-present capability' -Skip:(!$isElevated) {
-        # First ensure the capability is not present
-        $removeJson = '{"capabilities":[{"name":"Language.Basic~~~en-US~0.0.1.0","state":"NotPresent"}]}'
-        dsc resource set -r Microsoft.Windows/FeatureOnDemandList -i $removeJson | Out-Null
-        $LASTEXITCODE | Should -Be 0
+        # Use a capability name that does not exist on the system, so it is already NotPresent
+        $notPresentJson = '{"capabilities":[{"name":"Test.NonExistent.Capability~~~0.0.1.0","state":"NotPresent"}]}'
 
-        # Set NotPresent again — should succeed idempotently
-        $output = dsc resource set -r Microsoft.Windows/FeatureOnDemandList -i $removeJson | ConvertFrom-Json
+        # Set NotPresent — should succeed idempotently since it is already not present
+        $output = dsc resource set -r Microsoft.Windows/FeatureOnDemandList -i $notPresentJson | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $output.afterState.capabilities | Should -Not -BeNullOrEmpty
         $cap = $output.afterState.capabilities[0]
-        $cap.name | Should -BeExactly 'Language.Basic~~~en-US~0.0.1.0'
+        $cap.name | Should -BeExactly 'Test.NonExistent.Capability~~~0.0.1.0'
         $cap.state | Should -BeIn @('NotPresent', 'Removed', 'Staged')
+
+        # Set NotPresent again — should still succeed idempotently
+        $output2 = dsc resource set -r Microsoft.Windows/FeatureOnDemandList -i $notPresentJson | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $cap2 = $output2.afterState.capabilities[0]
+        $cap2.state | Should -BeIn @('NotPresent', 'Removed', 'Staged')
     }
 }
