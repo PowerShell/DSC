@@ -4307,6 +4307,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e7ac75179f18232fe9c285163565a57ef8d3c89254a30685b57d83a38d326c2"
 
 [[package]]
+name = "windows_service"
+version = "0.1.0"
+dependencies = [
+ "rust-i18n",
+ "serde",
+ "serde_json",
+ "windows 0.62.2",
+]
+
+[[package]]
 name = "windows_x86_64_gnu"
 version = "0.52.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
