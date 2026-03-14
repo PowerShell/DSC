@@ -6,56 +6,42 @@ use serde_json::{Map, Value};
 
 use crate::util::{DismState, WildcardFilterable, matches_optional_wildcard, matches_optional_exact};
 
-pub type FeatureState = DismState;
+pub type CapabilityState = DismState;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct OptionalFeatureList {
+pub struct FeatureOnDemandList {
     #[serde(rename = "_restartRequired", skip_serializing_if = "Option::is_none")]
     pub restart_required_meta: Option<Vec<Map<String, Value>>>,
-    pub features: Vec<OptionalFeatureInfo>,
+    pub capabilities: Vec<FeatureOnDemandInfo>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(rename_all = "camelCase")]
-pub struct OptionalFeatureInfo {
+pub struct FeatureOnDemandInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub feature_name: Option<String>,
+    pub name: Option<String>,
     #[serde(rename = "_exist", skip_serializing_if = "Option::is_none")]
     pub exist: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub state: Option<FeatureState>,
+    pub state: Option<CapabilityState>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub display_name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub restart_required: Option<RestartType>,
+    pub download_size: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub install_size: Option<u32>,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub enum RestartType {
-    No,
-    Possible,
-    Required,
-}
-
-impl RestartType {
-    pub fn from_dism(restart: i32) -> Option<Self> {
-        match restart {
-            0 => Some(RestartType::No),
-            1 => Some(RestartType::Possible),
-            2 => Some(RestartType::Required),
-            _ => None,
-        }
-    }
-}
-
-impl WildcardFilterable for OptionalFeatureInfo {
+impl WildcardFilterable for FeatureOnDemandInfo {
     fn matches_filter(&self, filter: &Self) -> bool {
-        matches_optional_wildcard(&self.feature_name, &filter.feature_name)
+        matches_optional_wildcard(&self.name, &filter.name)
             && matches_optional_exact(&self.state, &filter.state)
             && matches_optional_wildcard(&self.display_name, &filter.display_name)
             && matches_optional_wildcard(&self.description, &filter.description)
+            && matches_optional_exact(&self.download_size, &filter.download_size)
+            && matches_optional_exact(&self.install_size, &filter.install_size)
     }
 }
