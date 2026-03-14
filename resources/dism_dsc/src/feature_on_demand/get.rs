@@ -33,12 +33,12 @@ pub fn handle_get(input: &str) -> Result<String, String> {
         } else {
             FeatureOnDemandInfo {
                 name: Some(raw.name),
-                exist: None,
                 state: CapabilityState::from_dism(raw.state),
                 display_name: Some(raw.display_name),
                 description: Some(raw.description),
                 download_size: Some(raw.download_size),
                 install_size: Some(raw.install_size),
+                ..FeatureOnDemandInfo::default()
             }
         };
         results.push(info);

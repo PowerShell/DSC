@@ -57,10 +57,18 @@ Describe 'Microsoft.Windows/FeatureOnDemandList - get operation' -Skip:(!$IsWind
         $inputJson = '{"capabilities":[{"state":"Installed"}]}'
         $testError = & { dsc resource get -r Microsoft.Windows/FeatureOnDemandList -i $inputJson 2>&1 }
         $LASTEXITCODE | Should -Not -Be 0
+        "$testError" | Should -Match 'name is required'
     }
 
     It 'returns error when capabilities array is empty' -Skip:(!$isElevated) {
         $inputJson = '{"capabilities":[]}'
+        $testError = & { dsc resource get -r Microsoft.Windows/FeatureOnDemandList -i $inputJson 2>&1 }
+        $LASTEXITCODE | Should -Not -Be 0
+        "$testError" | Should -Match 'cannot be empty'
+    }
+
+    It 'returns error for malformed JSON input' -Skip:(!$isElevated) {
+        $inputJson = '{"capabilities":[{invalid'
         $testError = & { dsc resource get -r Microsoft.Windows/FeatureOnDemandList -i $inputJson 2>&1 }
         $LASTEXITCODE | Should -Not -Be 0
     }

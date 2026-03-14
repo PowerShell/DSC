@@ -33,6 +33,7 @@ failedParseInput = "Failed to parse input: %{err}"
 capabilitiesArrayEmpty = "Capabilities array cannot be empty for set operation"
 nameRequired = "name is required for set operation"
 stateRequired = "state is required for set operation"
+capabilityNotFound = "Capability '%{name}' was not found on this system"
 unsupportedDesiredState = "Unsupported desired state '%{state}'. Supported states for set are: Installed, NotPresent"
 failedSerializeOutput = "Failed to serialize output: %{err}"
 

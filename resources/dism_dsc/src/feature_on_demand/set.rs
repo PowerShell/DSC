@@ -32,11 +32,19 @@ pub fn handle_set(input: &str) -> Result<String, String> {
             .ok_or_else(|| t!("fod_set.stateRequired").to_string())?;
 
         let current = session.get_capability_info(name)?;
+
+        if current.unknown {
+            return Err(t!("fod_set.capabilityNotFound", name = name).to_string());
+        }
+
         let current_state = CapabilityState::from_dism(current.state);
 
         let needs_reboot = match desired_state {
             CapabilityState::Installed => {
-                session.add_capability(name)?
+                match current_state {
+                    Some(CapabilityState::Installed) => false,
+                    _ => session.add_capability(name)?,
+                }
             }
             CapabilityState::NotPresent => {
                 match current_state {
@@ -58,12 +66,12 @@ pub fn handle_set(input: &str) -> Result<String, String> {
         let raw = session.get_capability_info(name)?;
         let info = FeatureOnDemandInfo {
             name: Some(raw.name),
-            exist: None,
             state: CapabilityState::from_dism(raw.state),
             display_name: Some(raw.display_name),
             description: Some(raw.description),
             download_size: Some(raw.download_size),
             install_size: Some(raw.install_size),
+            ..FeatureOnDemandInfo::default()
         };
         results.push(info);
     }
