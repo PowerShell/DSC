@@ -337,7 +337,9 @@ fn get_metadata_from_result(mut context: Option<&mut Context>, properties: &mut 
                         }
                         // set the current process env vars to the new values
                         for (key, value) in env_vars {
-                            std::env::set_var(&key.to_string(), &value);
+                            unsafe {
+                                std::env::set_var(&key.to_string(), &value);
+                            }
                         }
                     }
                 }
