@@ -429,7 +429,9 @@ pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Op
     }
 
     // set DSC_TRACE_LEVEL for child processes
-    env::set_var(DSC_TRACE_LEVEL, tracing_level.to_string().to_ascii_lowercase());
+    unsafe {
+        env::set_var(DSC_TRACE_LEVEL, tracing_level.to_string().to_ascii_lowercase());
+    }
     info!("Trace-level is {:?}", tracing_setting.level);
 }
 
@@ -549,7 +551,9 @@ pub fn set_dscconfigroot(config_path: &str) -> String
 
     // Set env var so child processes (of resources) can use it
     debug!("{} '{config_root_path}'", t!("util.settingDscConfigRoot"));
-    env::set_var(DSC_CONFIG_ROOT, config_root_path);
+    unsafe {
+        env::set_var(DSC_CONFIG_ROOT, config_root_path);
+    }
 
     full_path.to_string_lossy().into_owned()
 }
@@ -625,11 +629,11 @@ fn parse_input_to_json_value(input: &str, context: &str) -> Result<serde_json::V
 /// Returns an error if the input cannot be parsed or is not an object
 fn params_to_map(params: &str, context: &str) -> Result<serde_json::Map<String, serde_json::Value>, DscError> {
     let value = parse_input_to_json_value(params, context)?;
-    
+
     let Some(map) = value.as_object().cloned() else {
         return Err(DscError::Parser(t!("util.parametersNotObject").to_string()));
     };
-    
+
     Ok(map)
 }
 
@@ -653,7 +657,7 @@ fn params_to_map(params: &str, context: &str) -> Result<serde_json::Map<String, 
 /// - The merged result cannot be serialized to JSON
 pub fn merge_parameters(file_params: &str, inline_params: &str) -> Result<String, DscError> {
     use serde_json::Value;
-    
+
     // Convert both parameter inputs to maps
     let mut file_map = params_to_map(file_params, "FileParameters")?;
     let inline_map = params_to_map(inline_params, "InlineParameters")?;

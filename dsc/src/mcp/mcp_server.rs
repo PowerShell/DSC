@@ -39,13 +39,13 @@ impl Default for McpServer {
 #[tool_handler]
 impl ServerHandler for McpServer {
     fn get_info(&self) -> ServerInfo {
-        ServerInfo {
-            capabilities: ServerCapabilities::builder()
+        let mut info = ServerInfo::new(
+            ServerCapabilities::builder()
                 .enable_tools()
-                .build(),
-            instructions: Some(t!("mcp.mod.instructions").to_string()),
-            ..Default::default()
-        }
+                .build()
+        );
+        info.instructions = Some(t!("mcp.mod.instructions").to_string());
+        info
     }
 
     async fn initialize(&self, _request: InitializeRequestParams, _context: RequestContext<RoleServer>) -> Result<InitializeResult, McpError> {
