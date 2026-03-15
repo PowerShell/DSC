@@ -232,7 +232,7 @@ impl SshdConfigParser {
             if is_repeatable {
                 let existing_value = map.get_mut(key);
                 if let Some(existing_value) = existing_value {
-                    if let Value::Array(ref mut arr) = existing_value {
+                    if let Value::Array(arr) = existing_value {
                         if let Value::Array(vector) = value {
                             for v in vector {
                                 arr.push(v);

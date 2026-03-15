@@ -507,7 +507,7 @@ impl Configurator {
             };
 
             match &mut get_result {
-                GetResult::Resource(ref mut resource_result) => {
+                GetResult::Resource(resource_result) => {
                     self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), serde_json::to_value(&resource_result.actual_state)?);
                     get_metadata_from_result(Some(&mut self.context), &mut resource_result.actual_state, &mut metadata, &mut execution_information)?;
                 },

@@ -50,6 +50,17 @@
       <uap:VisualElements DisplayName="DSC Bicep Extension" Description="gRPC server for Bicep extensibility with DSC." BackgroundColor="transparent" Square150x150Logo="assets\Square150x150Logo.png" Square44x44Logo="assets\Square44x44Logo.png">
       </uap:VisualElements>
     </Application>
+    <Application Id="Y2J" Executable="y2j.exe" EntryPoint="Windows.FullTrustApplication">
+      <Extensions>
+        <uap3:Extension Category="windows.appExecutionAlias" EntryPoint="Windows.FullTrustApplication" Executable="y2j.exe">
+          <uap3:AppExecutionAlias>
+            <desktop:ExecutionAlias Alias="y2j.exe" />
+          </uap3:AppExecutionAlias>
+        </uap3:Extension>
+      </Extensions>
+      <uap:VisualElements DisplayName="Yaml2Json" Description="Command-line tool to convert to/from YAML and JSON." BackgroundColor="transparent" Square150x150Logo="assets\Square150x150Logo.png" Square44x44Logo="assets\Square44x44Logo.png">
+      </uap:VisualElements>
+    </Application>
   </Applications>
 
   <Capabilities>
