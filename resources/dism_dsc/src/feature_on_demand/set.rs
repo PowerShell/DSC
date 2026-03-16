@@ -4,7 +4,7 @@
 use rust_i18n::t;
 use serde_json::{Map, Value};
 
-use crate::optional_feature::dism::DismSessionHandle;
+use crate::dism::DismSessionHandle;
 use crate::feature_on_demand::types::{CapabilityState, FeatureOnDemandInfo, FeatureOnDemandList};
 use crate::util::get_computer_name;
 

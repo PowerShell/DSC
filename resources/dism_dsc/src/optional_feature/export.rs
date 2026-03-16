@@ -3,7 +3,7 @@
 
 use rust_i18n::t;
 
-use crate::optional_feature::dism::DismSessionHandle;
+use crate::dism::DismSessionHandle;
 use crate::optional_feature::types::{FeatureState, OptionalFeatureInfo, OptionalFeatureList};
 use crate::util::{matches_wildcard, WildcardFilterable};
 

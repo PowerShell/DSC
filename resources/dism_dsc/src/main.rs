@@ -4,6 +4,8 @@
 #[cfg(windows)]
 mod util;
 #[cfg(windows)]
+pub(crate) mod dism;
+#[cfg(windows)]
 mod optional_feature;
 #[cfg(windows)]
 mod feature_on_demand;
