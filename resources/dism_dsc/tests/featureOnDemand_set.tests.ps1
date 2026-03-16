@@ -29,6 +29,8 @@ Describe 'Microsoft.Windows/FeatureOnDemandList - set operation' -Skip:(!$IsWind
         $knownCapability = 'SNMP.Client~~~~0.0.1.0'
 
         # Get current state from dism.exe
+        $out = dism /online /Get-Capabilities /Format:Table /English 2>&1 | Out-String
+        write-verbose -verbose $out
         $script:initialInstalledState = Get-CapabilityState -capabilityName $knownCapability
         if (-not $script:initialInstalledState) {
             throw "Failed to parse capability state for $knownCapability during test setup. DISM output: $($dismOutput)"
