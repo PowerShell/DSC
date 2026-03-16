@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 mod types;
-pub mod dism;
+pub(crate) mod dism;
 mod get;
 mod export;
 mod set;

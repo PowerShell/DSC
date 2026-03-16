@@ -27,9 +27,9 @@ pub fn handle_export(input: &str) -> Result<String, String> {
 
     let mut results = Vec::new();
 
-    let (filters_with_name, filters_without_name): (Vec<&FeatureOnDemandInfo>, Vec<&FeatureOnDemandInfo>) =
+    let (filters_with_identity, filters_without_identity): (Vec<&FeatureOnDemandInfo>, Vec<&FeatureOnDemandInfo>) =
         if needs_full_info {
-            filters.iter().partition(|f| f.name.is_some())
+            filters.iter().partition(|f| f.identity.is_some())
         } else {
             (Vec::new(), Vec::new())
         };
@@ -38,11 +38,11 @@ pub fn handle_export(input: &str) -> Result<String, String> {
         let state = CapabilityState::from_dism(*state_val);
 
         if needs_full_info {
-            let mut should_get_full = !filters_without_name.is_empty();
+            let mut should_get_full = !filters_without_identity.is_empty();
             if !should_get_full {
-                for f in &filters_with_name {
-                    if let Some(ref filter_name) = f.name {
-                        if matches_wildcard(name, filter_name) {
+                for f in &filters_with_identity {
+                    if let Some(ref filter_identity) = f.identity {
+                        if matches_wildcard(name, filter_identity) {
                             should_get_full = true;
                             break;
                         }
@@ -55,7 +55,7 @@ pub fn handle_export(input: &str) -> Result<String, String> {
 
             let info = match session.get_capability_info(name) {
                 Ok(raw) if !raw.unknown => FeatureOnDemandInfo {
-                    name: Some(raw.name),
+                    identity: Some(raw.name),
                     exist: None,
                     state: CapabilityState::from_dism(raw.state),
                     display_name: Some(raw.display_name),
@@ -64,7 +64,7 @@ pub fn handle_export(input: &str) -> Result<String, String> {
                     install_size: Some(raw.install_size),
                 },
                 _ => FeatureOnDemandInfo {
-                    name: Some(name.clone()),
+                    identity: Some(name.clone()),
                     exist: None,
                     state,
                     display_name: None,
@@ -78,10 +78,10 @@ pub fn handle_export(input: &str) -> Result<String, String> {
                 results.push(info);
             }
         } else {
-            // Fast path: only need name and state for filtering, skip expensive
+            // Fast path: only need identity and state for filtering, skip expensive
             // per-capability DismGetCapabilityInfo calls to match dism /online /get-capabilities speed.
             let basic = FeatureOnDemandInfo {
-                name: Some(name.clone()),
+                identity: Some(name.clone()),
                 state: state.clone(),
                 ..FeatureOnDemandInfo::default()
             };

@@ -69,10 +69,10 @@
                         "type": "object",
                         "additionalProperties": false,
                         "properties": {
-                            "name": {
+                            "identity": {
                                 "type": "string",
-                                "title": "Capability name",
-                                "description": "The name of the Windows capability (Feature on Demand). Required for get operation. For export operation, this is optional and wildcards (*) are supported for case-insensitive filtering."
+                                "title": "Capability identity",
+                                "description": "The identity of the Windows capability (Feature on Demand). Required for get and set operations. For export operation, this is optional and wildcards (*) are supported for case-insensitive filtering."
                             },
                             "_exist": {
                                 "type": "boolean",
@@ -92,7 +92,7 @@
                                     "PartiallyInstalled"
                                 ],
                                 "title": "Capability state",
-                                "description": "The current state of the capability. For set operations, only Installed and NotPresent are accepted; other states are returned by get and export operations and are not valid inputs for set."
+                                "description": "The current state of the capability. For set operations, this property is required and only Installed and NotPresent are accepted; other states are returned by get and export operations and are not valid inputs for set."
                             },
                             "displayName": {
                                 "type": "string",

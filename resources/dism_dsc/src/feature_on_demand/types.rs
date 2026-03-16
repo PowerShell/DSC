@@ -20,7 +20,7 @@ pub struct FeatureOnDemandList {
 #[serde(rename_all = "camelCase")]
 pub struct FeatureOnDemandInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
+    pub identity: Option<String>,
     #[serde(rename = "_exist", skip_serializing_if = "Option::is_none")]
     pub exist: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -37,7 +37,7 @@ pub struct FeatureOnDemandInfo {
 
 impl WildcardFilterable for FeatureOnDemandInfo {
     fn matches_filter(&self, filter: &Self) -> bool {
-        matches_optional_wildcard(&self.name, &filter.name)
+        matches_optional_wildcard(&self.identity, &filter.identity)
             && matches_optional_exact(&self.state, &filter.state)
             && matches_optional_wildcard(&self.display_name, &filter.display_name)
             && matches_optional_wildcard(&self.description, &filter.description)

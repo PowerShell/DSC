@@ -18,21 +18,21 @@ pub fn handle_get(input: &str) -> Result<String, String> {
     let mut results = Vec::new();
 
     for cap_input in &capability_list.capabilities {
-        let name = cap_input
-            .name
+        let identity = cap_input
+            .identity
             .as_ref()
-            .ok_or_else(|| t!("fod_get.nameRequired").to_string())?;
+            .ok_or_else(|| t!("fod_get.identityRequired").to_string())?;
 
-        let raw = session.get_capability_info(name)?;
+        let raw = session.get_capability_info(identity)?;
         let info = if raw.unknown {
             FeatureOnDemandInfo {
-                name: Some(name.clone()),
+                identity: Some(identity.clone()),
                 exist: Some(false),
                 ..FeatureOnDemandInfo::default()
             }
         } else {
             FeatureOnDemandInfo {
-                name: Some(raw.name),
+                identity: Some(raw.name),
                 state: CapabilityState::from_dism(raw.state),
                 display_name: Some(raw.display_name),
                 description: Some(raw.description),

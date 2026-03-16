@@ -79,7 +79,7 @@ pub fn matches_wildcard(text: &str, pattern: &str) -> bool {
         if part.is_empty() {
             continue;
         }
-        match text_lower[pos..end].find(part) {
+        match text_lower.get(pos..end).and_then(|s| s.find(part)) {
             Some(idx) => pos += idx + part.len(),
             None => return false,
         }

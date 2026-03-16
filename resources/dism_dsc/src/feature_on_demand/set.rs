@@ -21,20 +21,20 @@ pub fn handle_set(input: &str) -> Result<String, String> {
     let mut reboot_required = false;
 
     for cap_input in &capability_list.capabilities {
-        let name = cap_input
-            .name
+        let identity = cap_input
+            .identity
             .as_ref()
-            .ok_or_else(|| t!("fod_set.nameRequired").to_string())?;
+            .ok_or_else(|| t!("fod_set.identityRequired").to_string())?;
 
         let desired_state = cap_input
             .state
             .as_ref()
             .ok_or_else(|| t!("fod_set.stateRequired").to_string())?;
 
-        let current = session.get_capability_info(name)?;
+        let current = session.get_capability_info(identity)?;
 
         if current.unknown {
-            return Err(t!("fod_set.capabilityNotFound", name = name).to_string());
+            return Err(t!("fod_set.capabilityNotFound", identity = identity).to_string());
         }
 
         let current_state = CapabilityState::from_dism(current.state);
@@ -43,13 +43,13 @@ pub fn handle_set(input: &str) -> Result<String, String> {
             CapabilityState::Installed => {
                 match current_state {
                     Some(CapabilityState::Installed) => false,
-                    _ => session.add_capability(name)?,
+                    _ => session.add_capability(identity)?,
                 }
             }
             CapabilityState::NotPresent => {
                 match current_state {
                     Some(CapabilityState::NotPresent) | Some(CapabilityState::Removed) => false,
-                    _ => session.remove_capability(name)?,
+                    _ => session.remove_capability(identity)?,
                 }
             }
             _ => {
@@ -63,9 +63,9 @@ pub fn handle_set(input: &str) -> Result<String, String> {
 
         reboot_required = reboot_required || needs_reboot;
 
-        let raw = session.get_capability_info(name)?;
+        let raw = session.get_capability_info(identity)?;
         let info = FeatureOnDemandInfo {
-            name: Some(raw.name),
+            identity: Some(raw.name),
             state: CapabilityState::from_dism(raw.state),
             display_name: Some(raw.display_name),
             description: Some(raw.description),

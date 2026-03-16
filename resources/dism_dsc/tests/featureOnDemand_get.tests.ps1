@@ -26,14 +26,14 @@ Describe 'Microsoft.Windows/FeatureOnDemandList - get operation' -Skip:(!$IsWind
         $knownCapabilityNameTwo = $notPresentMatches[0].Matches[0].Groups[1].Value
     }
 
-    It 'gets a known capability by name' -Skip:(!$isElevated) {
-        $inputJson = '{"capabilities":[{"name":"' + $knownCapabilityNameOne + '"}]}'
+    It 'gets a known capability by identity' -Skip:(!$isElevated) {
+        $inputJson = '{"capabilities":[{"identity":"' + $knownCapabilityNameOne + '"}]}'
         $output = dsc resource get -r Microsoft.Windows/FeatureOnDemandList -i $inputJson | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $output.actualState.capabilities | Should -Not -BeNullOrEmpty
         $output.actualState.capabilities.Count | Should -Be 1
         $cap = $output.actualState.capabilities[0]
-        $cap.name | Should -BeExactly $knownCapabilityNameOne
+        $cap.identity | Should -BeExactly $knownCapabilityNameOne
         $cap.state | Should -BeIn @(
             'NotPresent', 'UninstallPending', 'Staged', 'Removed',
             'Installed', 'InstallPending', 'Superseded', 'PartiallyInstalled'
@@ -45,19 +45,19 @@ Describe 'Microsoft.Windows/FeatureOnDemandList - get operation' -Skip:(!$IsWind
     }
 
     It 'gets multiple capabilities in a single request' -Skip:(!$isElevated) {
-        $inputJson = '{"capabilities":[{"name":"' + $knownCapabilityNameOne + '"},{"name":"' + $knownCapabilityNameTwo + '"}]}'
+        $inputJson = '{"capabilities":[{"identity":"' + $knownCapabilityNameOne + '"},{"identity":"' + $knownCapabilityNameTwo + '"}]}'
         $output = dsc resource get -r Microsoft.Windows/FeatureOnDemandList -i $inputJson | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $output.actualState.capabilities.Count | Should -Be 2
-        $output.actualState.capabilities[0].name | Should -BeExactly $knownCapabilityNameOne
-        $output.actualState.capabilities[1].name | Should -BeExactly $knownCapabilityNameTwo
+        $output.actualState.capabilities[0].identity | Should -BeExactly $knownCapabilityNameOne
+        $output.actualState.capabilities[1].identity | Should -BeExactly $knownCapabilityNameTwo
     }
 
-    It 'returns error when name is missing' -Skip:(!$isElevated) {
+    It 'returns error when identity is missing' -Skip:(!$isElevated) {
         $inputJson = '{"capabilities":[{"state":"Installed"}]}'
         $testError = & { dsc resource get -r Microsoft.Windows/FeatureOnDemandList -i $inputJson 2>&1 }
         $LASTEXITCODE | Should -Not -Be 0
-        "$testError" | Should -Match 'name is required'
+        "$testError" | Should -Match 'identity is required'
     }
 
     It 'returns error when capabilities array is empty' -Skip:(!$isElevated) {
@@ -73,14 +73,14 @@ Describe 'Microsoft.Windows/FeatureOnDemandList - get operation' -Skip:(!$IsWind
         $LASTEXITCODE | Should -Not -Be 0
     }
 
-    It 'returns _exist false for a non-existent capability name' -Skip:(!$isElevated) {
-        $inputJson = '{"capabilities":[{"name":"NonExistent-Capability-1234567890"}]}'
+    It 'returns _exist false for a non-existent capability identity' -Skip:(!$isElevated) {
+        $inputJson = '{"capabilities":[{"identity":"NonExistent-Capability-1234567890"}]}'
         $output = dsc resource get -r Microsoft.Windows/FeatureOnDemandList -i $inputJson | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $output.actualState.capabilities | Should -Not -BeNullOrEmpty
         $output.actualState.capabilities.Count | Should -Be 1
         $cap = $output.actualState.capabilities[0]
-        $cap.name | Should -BeExactly 'NonExistent-Capability-1234567890'
+        $cap.identity | Should -BeExactly 'NonExistent-Capability-1234567890'
         $cap._exist | Should -BeFalse
         $cap.state | Should -BeNullOrEmpty
         $cap.displayName | Should -BeNullOrEmpty
@@ -88,13 +88,13 @@ Describe 'Microsoft.Windows/FeatureOnDemandList - get operation' -Skip:(!$IsWind
     }
 
     It 'returns _exist false alongside valid capabilities' -Skip:(!$isElevated) {
-        $inputJson = '{"capabilities":[{"name":"' + $knownCapabilityNameOne + '"},{"name":"NonExistent-Capability-1234567890"}]}'
+        $inputJson = '{"capabilities":[{"identity":"' + $knownCapabilityNameOne + '"},{"identity":"NonExistent-Capability-1234567890"}]}'
         $output = dsc resource get -r Microsoft.Windows/FeatureOnDemandList -i $inputJson | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $output.actualState.capabilities.Count | Should -Be 2
-        $output.actualState.capabilities[0].name | Should -BeExactly $knownCapabilityNameOne
+        $output.actualState.capabilities[0].identity | Should -BeExactly $knownCapabilityNameOne
         $output.actualState.capabilities[0].PSObject.Properties.Name | Should -Not -Contain '_exist'
-        $output.actualState.capabilities[1].name | Should -BeExactly 'NonExistent-Capability-1234567890'
+        $output.actualState.capabilities[1].identity | Should -BeExactly 'NonExistent-Capability-1234567890'
         $output.actualState.capabilities[1]._exist | Should -BeFalse
     }
 }
