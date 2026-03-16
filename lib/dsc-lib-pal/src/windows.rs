@@ -2,8 +2,8 @@
 // Licensed under the MIT License.
 
 //#[link(name = "ext-ms-win-cng-rng-l1-1-0")]
-extern "C" {
-    fn ProcessPrng(data: *mut u8, len: usize) -> u32;
+unsafe extern "C" {
+   unsafe fn ProcessPrng(data: *mut u8, len: usize) -> u32;
 }
 
 /// # Safety
@@ -14,5 +14,7 @@ extern "C" {
 ///
 /// Will panic if the api returns 0
 pub unsafe fn getrandom(data: *mut u8, len: usize) {
+    unsafe {
     assert!((ProcessPrng(data, len) != 0), "ProcessPrng failed");
+    }
 }

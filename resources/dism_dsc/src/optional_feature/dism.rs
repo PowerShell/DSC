@@ -16,7 +16,7 @@ const DISMAPI_E_UNKNOWN_FEATURE: i32 = 0x800F080Cu32 as i32;
 const LOAD_LIBRARY_SEARCH_SYSTEM32: u32 = 0x0000_0800;
 
 #[link(name = "kernel32")]
-extern "system" {
+unsafe extern "system" {
     fn LoadLibraryExW(
         lpLibFileName: *const u16,
         hFile: *mut c_void,
@@ -77,7 +77,7 @@ type DismShutdownFn = unsafe extern "system" fn() -> i32;
 type DismDeleteFn = unsafe extern "system" fn(*const c_void) -> i32;
 
 // Kernel32 functions for dynamic loading
-extern "system" {
+unsafe extern "system" {
     fn GetProcAddress(h_module: *mut c_void, lp_proc_name: *const u8) -> *mut c_void;
     fn FreeLibrary(h_lib_module: *mut c_void) -> i32;
 }
@@ -93,18 +93,22 @@ unsafe fn from_wide_ptr(ptr: *const u16) -> String {
     if ptr.is_null() {
         return String::new();
     }
-    let len = (0..65536).take_while(|&i| *ptr.add(i) != 0).count();
-    let slice = std::slice::from_raw_parts(ptr, len);
-    String::from_utf16_lossy(slice)
+    unsafe {
+        let len = (0..65536).take_while(|&i| *ptr.add(i) != 0).count();
+        let slice = std::slice::from_raw_parts(ptr, len);
+        String::from_utf16_lossy(slice)
+    }
 }
 
 unsafe fn load_fn<T>(lib: *mut c_void, name: &[u8]) -> Result<T, String> {
-    let ptr = GetProcAddress(lib, name.as_ptr());
-    if ptr.is_null() {
-        let fn_name = std::str::from_utf8(&name[..name.len() - 1]).unwrap_or("?");
-        return Err(t!("dism.functionNotFound", name = fn_name).to_string());
+    unsafe {
+        let ptr = GetProcAddress(lib, name.as_ptr());
+        if ptr.is_null() {
+            let fn_name = std::str::from_utf8(&name[..name.len() - 1]).unwrap_or("?");
+            return Err(t!("dism.functionNotFound", name = fn_name).to_string());
+        }
+        Ok(std::mem::transmute_copy(&ptr))
     }
-    Ok(std::mem::transmute_copy(&ptr))
 }
 
 struct DismApi {
