@@ -622,7 +622,7 @@ pub fn get_schema(resource: &DscResource, target_resource: Option<&DscResource>)
     };
 
     match schema_kind {
-        SchemaKind::Command(ref command) => {
+        SchemaKind::Command(command) => {
             let resource_type = match target_resource {
                 Some(r) => r.type_name.clone(),
                 None => resource.type_name.clone(),
@@ -631,7 +631,7 @@ pub fn get_schema(resource: &DscResource, target_resource: Option<&DscResource>)
             let (_exit_code, stdout, _stderr) = invoke_command(&command.executable, args, None, Some(&resource.directory), None, manifest.exit_codes.as_ref())?;
             Ok(stdout)
         },
-        SchemaKind::Embedded(ref schema) => {
+        SchemaKind::Embedded(schema) => {
             let json = serde_json::to_string(schema)?;
             Ok(json)
         },

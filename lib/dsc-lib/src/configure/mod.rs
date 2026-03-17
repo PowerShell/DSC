@@ -337,7 +337,9 @@ fn get_metadata_from_result(mut context: Option<&mut Context>, properties: &mut 
                         }
                         // set the current process env vars to the new values
                         for (key, value) in env_vars {
-                            std::env::set_var(&key.to_string(), &value);
+                            unsafe {
+                                std::env::set_var(&key.to_string(), &value);
+                            }
                         }
                     }
                 }
@@ -507,7 +509,7 @@ impl Configurator {
             };
 
             match &mut get_result {
-                GetResult::Resource(ref mut resource_result) => {
+                GetResult::Resource(resource_result) => {
                     self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), serde_json::to_value(&resource_result.actual_state)?);
                     get_metadata_from_result(Some(&mut self.context), &mut resource_result.actual_state, &mut metadata, &mut execution_information)?;
                 },

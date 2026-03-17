@@ -171,7 +171,9 @@ impl CommandDiscovery {
             // when using custom path, intent is to isolate the search of manifests and executables to the custom path
             // so we replace the PATH with the custom path
             if let Ok(new_path) = env::join_paths(paths.clone()) {
-                env::set_var("PATH", new_path);
+                unsafe {
+                    env::set_var("PATH", new_path);
+                }
             } else {
                 return Err(DscError::Operation(t!("discovery.commandDiscovery.failedJoinEnvPath").to_string()));
             }
@@ -186,7 +188,9 @@ impl CommandDiscovery {
                     paths.push(exe_home_pb);
 
                     if let Ok(new_path) = env::join_paths(paths.clone()) {
-                        env::set_var("PATH", new_path);
+                        unsafe {
+                            env::set_var("PATH", new_path);
+                        }
                     }
                 }
             }
@@ -302,7 +306,7 @@ impl ResourceDiscovery for CommandDiscovery {
                                         },
                                         ImportedManifest::Resource(resource) => {
                                             if regex.is_match(&resource.type_name) {
-                                                if let Some(ref manifest) = &resource.manifest {
+                                                if let Some(manifest) = &resource.manifest {
                                                     if manifest.kind == Some(Kind::Adapter) {
                                                         trace!("{}", t!("discovery.commandDiscovery.adapterFound", adapter = resource.type_name, version = resource.version));
                                                         insert_resource(&mut adapters, &resource);
@@ -803,7 +807,7 @@ fn load_adapted_resource_manifest(path: &Path, manifest: &AdaptedDscResourceMani
     resource.path = resource_path;
     resource.directory = directory.to_path_buf();
     resource.manifest = None;
-    resource.schema = Some(manifest.schema.clone());    
+    resource.schema = Some(manifest.schema.clone());
 
     Ok(resource)
 }
