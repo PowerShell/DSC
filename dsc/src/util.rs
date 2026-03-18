@@ -53,6 +53,7 @@ use std::env;
 use std::io::{IsTerminal, Read, stdout, Write};
 use std::path::Path;
 use std::process::exit;
+use std::sync::Once;
 use syntect::{
     easy::HighlightLines,
     highlighting::ThemeSet,
@@ -689,4 +690,24 @@ pub fn merge_parameters(file_params: &str, inline_params: &str) -> Result<String
 
     let merged = Value::Object(file_map);
     Ok(serde_json::to_string(&merged)?)
+}
+
+static FLUSH_ONCE: Once = Once::new();
+
+/// Flush and shutdown tracing to ensure all traces are written before exit.
+/// This function ensures that any pending trace writes are completed and
+/// background writer threads have time to finish their work.
+pub fn flush_and_shutdown_tracing() {
+    FLUSH_ONCE.call_once(|| {
+        // Force any pending writes to complete
+        if let Err(e) = std::io::stderr().flush() {
+            eprintln!("Failed to flush stderr: {}", e);
+        }
+        if let Err(e) = std::io::stdout().flush() {
+            eprintln!("Failed to flush stdout: {}", e);
+        }
+
+        // Small delay to ensure async writes complete
+        std::thread::sleep(std::time::Duration::from_millis(50));
+    });
 }

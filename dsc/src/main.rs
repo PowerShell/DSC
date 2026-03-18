@@ -10,6 +10,7 @@ use rust_i18n::{i18n, t};
 use std::{io, process::exit};
 use sysinfo::{Process, RefreshKind, System, get_current_pid, ProcessRefreshKind};
 use tracing::{error, info, warn, debug};
+use util::flush_and_shutdown_tracing;
 
 use crate::util::{EXIT_INVALID_INPUT, get_input};
 
@@ -68,6 +69,7 @@ fn main() {
                         Ok(merged) => Some(merged),
                         Err(err) => {
                             error!("{}: {err}", t!("main.failedMergingParameters"));
+                            flush_and_shutdown_tracing();
                             exit(EXIT_INVALID_INPUT);
                         }
                     }
@@ -88,8 +90,10 @@ fn main() {
         SubCommand::Mcp => {
             if let Err(err) = start_mcp_server() {
                 error!("{}", t!("main.failedToStartMcpServer", error = err));
+                flush_and_shutdown_tracing();
                 exit(util::EXIT_MCP_FAILED);
             }
+            flush_and_shutdown_tracing();
             exit(util::EXIT_SUCCESS);
         }
         SubCommand::Resource { subcommand } => {
@@ -101,6 +105,7 @@ fn main() {
                 Ok(json) => json,
                 Err(err) => {
                     error!("JSON: {err}");
+                    flush_and_shutdown_tracing();
                     exit(util::EXIT_JSON_ERROR);
                 }
             };
@@ -108,6 +113,7 @@ fn main() {
         },
     }
 
+    flush_and_shutdown_tracing();
     exit(util::EXIT_SUCCESS);
 }
 
@@ -119,15 +125,18 @@ fn ctrlc_handler() {
     info!("{}: {}", t!("main.foundProcesses"), sys.processes().len());
     let Ok(current_pid) = get_current_pid() else {
         error!("{}", t!("main.failedToGetPid"));
+        flush_and_shutdown_tracing();
         exit(util::EXIT_CTRL_C);
     };
     info!("{}: {}", t!("main.currentPid"), current_pid);
     let Some(current_process) = sys.process(current_pid) else {
         error!("{}", t!("main.failedToGetProcess"));
+        flush_and_shutdown_tracing();
         exit(util::EXIT_CTRL_C);
     };
 
     terminate_subprocesses(&sys, current_process);
+    flush_and_shutdown_tracing();
     exit(util::EXIT_CTRL_C);
 }
 
@@ -192,6 +201,7 @@ fn check_store() {
         eprintln!("{}", t!("main.storeMessage"));
         // wait for keypress
         let _ = io::stdin().read(&mut [0u8]).unwrap();
+        flush_and_shutdown_tracing();
         exit(util::EXIT_INVALID_ARGS);
     }
 }
