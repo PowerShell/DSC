@@ -16,7 +16,7 @@ pub use resource_version_req::ResourceVersionReq;
 mod semantic_version;
 pub use semantic_version::{SemanticVersion, SemanticVersionError};
 mod semantic_version_req;
-pub use semantic_version_req::SemanticVersionReq;
+pub use semantic_version_req::{SemanticVersionReq, SemanticVersionReqError};
 mod tag;
 pub use tag::Tag;
 mod tag_list;

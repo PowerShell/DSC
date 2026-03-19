@@ -797,9 +797,6 @@ resourceVersionReqToSemverConversion = "Unable to convert arbitrary string resou
 schema = "Schema"
 schemaNotAvailable = "No Schema found and `validate` is not supported"
 securityContext = "Security context"
-semverReqWithBuildMetadataPrefix = "Invalid semantic version requirement: version"
-semverReqWithBuildMetadataInfix = "contains the build metadata segment"
-semverReqWithBuildMetadataSuffix = "DSC semantic version requirements must not include build metadata."
 utf8Conversion = "UTF-8 conversion"
 unknown = "Unknown"
 validation = "Validation"
@@ -840,3 +837,12 @@ failureText = "Error"
 
 [types.semantic_version]
 invalidSemanticVersion = "invalid semantic version '%{text}': %{err}"
+
+[types.semantic_version_req]
+unparseableReq = "unable to parse semantic version requirement: %{err}"
+invalidReq = "invalid semantic version requirement '%{requirement}': %{err}"
+invalidComparator = "invalid comparator '%{comparator}': %{err}"
+forbiddenBuildMetadata = "comparator '%{comparator}' is defined with forbidden build metadata segment '%{build}'"
+missingOperator = "comparator '%{comparator}' doesn't define an operator"
+invalidWildcards = "comparator '%{comparator}' has invalid wildcard characters - must define wildcards as asterisks (`*`), not `x` or `X`"
+wildcardMajorVersion = "comparator '%{comparator}' defines the major version segment as a wildcard `%{wildcard}` instead of a literal number"

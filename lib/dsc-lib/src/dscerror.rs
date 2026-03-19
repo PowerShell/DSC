@@ -158,13 +158,8 @@ pub enum DscError {
     #[error(transparent)]
     SemVer(#[from] crate::types::SemanticVersionError),
 
-    #[error(
-        "{t}: '{0}' {t2} '{1}' - {t3}",
-        t = t!("dscerror.semverReqWithBuildMetadataPrefix"),
-        t2 = t!("dscerror.semverReqWithBuildMetadataInfix"),
-        t3 = t!("dscerror.semverReqWithBuildMetadataSuffix")
-    )]
-    SemVerReqWithBuildMetadata(String, String),
+    #[error(transparent)]
+    SemverReq(#[from] crate::types::SemanticVersionReqError),
 
     #[error("{t}: {0}", t = t!("dscerror.utf16Conversion"))]
     Utf16Conversion(#[from] std::string::FromUtf16Error),

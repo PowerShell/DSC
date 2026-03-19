@@ -338,6 +338,22 @@ schemas:
             Rust technically supports specifying a wildcard-only version requirement (`*`). DSC forbids
             specifying this version requirement as it maps to the default version selection and is
             discouraged when specifying version requirements for production systems.
+          1. DSC semantic version requirements _must_ explicitly define an operator for every comparator.
+
+             DSC forbids defining a comparator without an operator, like `1.*` or `1.2.3, <1.5`, to
+             reduce ambiguity and unexpected behavior for version pinning. For example, in all other
+             cases, omitting version segments and specifying them as a wildcard has the same behavior
+             _except_ for the comparators `1.2` and `1.2.*`:
+
+             - `1`, `1.*`, and `1.*.*` all have an effective requirement of `>=1.0.0, <2.0.0`.
+             - `>1.2` and `>1.2.*` both have an effective requirement of `>1.2.0`.
+             - `1.2` has an effective requirement of `>=1.2.0, <2.0.0` but `1.2.*` has an effective
+               requirement of `>=1.2.0, <1.3.0`.
+
+             Similarly, it is not immediately obvious to a user who isn't familiar with Rust semantic
+             version requirements that `1.2.3` will match `1.5.7`. It's more common across version
+             requirements to expect an exactly specified version to be an exact match requirement, not
+             a semantically compatible requirement.
           1. DSC semantic version requirements only support the asterisk (`*`) character for wildcards,
             not `x` or `X`.
 
