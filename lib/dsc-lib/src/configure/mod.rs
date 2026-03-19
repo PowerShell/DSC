@@ -58,7 +58,7 @@ pub struct Configurator {
 /// # Errors
 ///
 /// This function will return an error if the underlying resource fails.
-pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf: &mut Configuration, input: &str) -> Result<ExportResult, DscError> {
+pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf: &mut Configuration, input: &str, execution_information: &ExecutionInformation) -> Result<ExportResult, DscError> {
 
     let export_result = resource.export(input)?;
 
@@ -105,7 +105,7 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf
             }
             r.properties = escape_property_values(&props)?;
             let mut properties = serde_json::to_value(&r.properties)?;
-            let mut execution_information = ExecutionInformation::new();
+            let mut execution_information = execution_information.clone();
             get_metadata_from_result(None, &mut properties, &mut metadata, &mut execution_information)?;
             r.properties = Some(properties.as_object().cloned().unwrap_or_default());
             r.metadata = if metadata.microsoft.is_some() || !metadata.other.is_empty() {
@@ -868,9 +868,12 @@ impl Configurator {
             };
             let properties = self.get_properties(resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
+            let start_datetime = chrono::Local::now();
             let input = add_metadata(&dsc_resource, properties, resource.metadata.clone())?;
+            let end_datetime = chrono::Local::now();
+            let execution_information = ExecutionInformation::new_with_duration(&start_datetime, &end_datetime);
             trace!("{}", t!("configure.mod.exportInput", input = input));
-            let export_result = match add_resource_export_results_to_configuration(&dsc_resource, &mut conf, input.as_str()) {
+            let export_result = match add_resource_export_results_to_configuration(&dsc_resource, &mut conf, input.as_str(), &execution_information) {
                 Ok(result) => result,
                 Err(e) => {
                     progress.set_failure(get_failure_from_error(&e));
@@ -894,6 +897,9 @@ impl Configurator {
             },
         }
 
+        let mut execution_information = ExecutionInformation::new();
+        self.get_execution_information(Operation::Export, &mut execution_information);
+        conf.execution_information = Some(execution_information);
         result.result = Some(conf);
         self.process_output()?;
         if !self.context.outputs.is_empty() {
