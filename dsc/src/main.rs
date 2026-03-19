@@ -169,6 +169,7 @@ fn check_debug() {
 #[cfg(windows)]
 fn check_store() {
     use std::io::Read;
+    use util::EXIT_INVALID_ARGS;
 
     let sys = System::new_with_specifics(RefreshKind::nothing().with_processes(ProcessRefreshKind::everything()));
     // get current process
