@@ -172,6 +172,8 @@ jsonschema = { version = "0.38", default-features = false }
 # dsc-lib
 linked-hash-map = { version = "0.5" }
 # dsc-lib
+miette = { version = "7.6.0" }
+# dsc-lib
 murmurhash64 = { version = "0.3" }
 # dsc-lib-security_context::not_windows
 nix = { version = "0.31" }

@@ -17,6 +17,7 @@ derive_builder = { workspace = true }
 indicatif = { workspace = true }
 jsonschema = { workspace = true }
 linked-hash-map = { workspace = true }
+miette = { workspace = true }
 murmurhash64 = { workspace = true }
 num-traits = { workspace = true }
 path-absolutize = { workspace = true }
