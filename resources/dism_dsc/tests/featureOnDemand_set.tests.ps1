@@ -30,7 +30,7 @@ Describe 'Microsoft.Windows/FeatureOnDemandList - set operation' -Skip:(!$IsWind
 
         $script:initialInstalledState = Get-CapabilityState -capabilityName $knownCapability
         if (-not $script:initialInstalledState) {
-            throw "Failed to parse capability state for $knownCapability during test setup. DISM output: $($dismOutput)"
+            throw "Failed to parse capability state for $knownCapability during test setup."
         }
     }
 
