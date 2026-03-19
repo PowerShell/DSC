@@ -837,3 +837,6 @@ invalidDate = "unable to parse '%{text}' as a date version - %{errors}"
 [types.exit_codes_map]
 successText = "Success"
 failureText = "Error"
+
+[types.semantic_version]
+invalidSemanticVersion = "invalid semantic version '%{text}': %{err}"

@@ -155,8 +155,8 @@ pub enum DscError {
     #[error("{t}: {0}", t = t!("dscerror.securityContext"))]
     SecurityContext(String),
 
-    #[error("semver: {0}")]
-    SemVer(#[from] semver::Error),
+    #[error(transparent)]
+    SemVer(#[from] crate::types::SemanticVersionError),
 
     #[error(
         "{t}: '{0}' {t2} '{1}' - {t3}",

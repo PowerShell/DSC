@@ -3,10 +3,13 @@
 
 use std::{fmt::Display, ops::Deref, str::FromStr};
 
-use crate::{dscerror::DscError, schemas::dsc_repo::DscRepoSchema};
+use miette::Diagnostic;
 use rust_i18n::t;
 use schemars::{json_schema, JsonSchema};
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
+
+use crate::schemas::dsc_repo::DscRepoSchema;
 
 /// Defines a semantic version for use with DSC.
 ///
@@ -30,8 +33,8 @@ use serde::{Deserialize, Serialize};
 /// define one or more identifiers.
 ///
 /// An identifier for prerelease and build metadata segments must be a string consisting of only
-/// ASCII alphanumeric characters underscores (regex `\w`). Identifiers in prerelease and build
-/// metadata segments must be separated by a single period (`.`), like `rc.1` or
+/// ASCII alphanumeric characters and hyphens (regex `[a-zA-Z0-9-]`). Identifiers in prerelease and
+/// build metadata segments must be separated by a single period (`.`), like `rc.1` or
 /// `dev.mac_os.sha123`.
 ///
 /// ### Syntax parsing examples
@@ -196,7 +199,7 @@ use serde::{Deserialize, Serialize};
 /// // Comparisons of stable versions work as expected
 /// assert!(v1_0_0 < v1_2_3);
 /// assert!(v2_0_0 > v1_2_3);
-/// // Stable versions is always greater than prerelease for same version
+/// // Stable versions are always greater than prerelease for same version
 /// assert!(v1_0_0 < v1_2_3_pre);
 /// assert!(v1_2_3 > v1_2_3_pre);
 /// // Version with build metadata is greater than same version
@@ -213,8 +216,8 @@ use serde::{Deserialize, Serialize};
 /// assert!(rc < rc_1);
 /// assert!(rc_1 < rc_1_2);
 ///
-/// // To correct sort prerelease and build versions, make sure to separate
-/// // the alpha segment like `rc` or `ci`from the numeric. Otherwise, the
+/// // To correctly sort prerelease and build versions, make sure to separate
+/// // the alpha segment like `rc` or `ci` from the numeric. Otherwise, the
 /// // ordering may be unexpected, like `rc11` < `rc2`
 /// let rc11:  SemanticVersion = "1.2.3-rc11".parse().unwrap();
 /// let rc2:   SemanticVersion = "1.2.3-rc2".parse().unwrap();
@@ -238,9 +241,9 @@ use serde::{Deserialize, Serialize};
 /// 
 /// DSC uses the default ordering for semantic versions where:
 /// 
-/// - A higher version supercedes a lower version, regardless of prerelease and build metadata.
-/// - A stable version supercedes the same version with a prerelease segment.
-/// - A stable version with build metadata supercedes the same version without build metadata.
+/// - A higher version supersedes a lower version, regardless of prerelease and build metadata.
+/// - A stable version supersedes the same version with a prerelease segment.
+/// - A stable version with build metadata supersedes the same version without build metadata.
 /// - Prerelease and build metadata segments are compared lexicographically.
 /// 
 /// Consider the following example:
@@ -293,6 +296,26 @@ use serde::{Deserialize, Serialize};
 #[dsc_repo_schema(base_name = "semver", folder_path = "definitions")]
 pub struct SemanticVersion(semver::Version);
 
+/// Defines errors that can occur when parsing or working with [`SemanticVersion`]s.
+#[derive(Debug, Error, Diagnostic)]
+#[non_exhaustive]
+pub enum SemanticVersionError {
+    /// Indicates an error that occurred while parsing a semantic version string.
+    #[error("{t}", t = t!(
+        "types.semantic_version.invalidSemanticVersion",
+        "err" => source,
+        "text" => text,
+    ))]
+    Parse {
+        /// The parsing error from the underlying [`semver`] crate.
+        #[source]
+        source: semver::Error,
+
+        /// The input string that failed to parse as a semantic version.
+        text: String,
+    },
+}
+
 impl SemanticVersion {
     /// Create an instance of [`SemanticVersion`] with empty prerelease and build segments.
     ///
@@ -323,14 +346,17 @@ impl SemanticVersion {
     ///   instead of `1.2.3`.
     /// - Specifying a non-digit character in a major, minor, or patch version segment, like
     ///   `1a.2.3`, `1.2b.3`, or `1.2.c3`.
-    /// - Specifying a hyphen after the version without a prelease segment, like `1.2.3-`.
+    /// - Specifying a hyphen after the version without a prerelease segment, like `1.2.3-`.
     /// - Specifying a plus sign after the version without a build metadata segment, like `1.2.3+`.
     /// - Invalid characters in prerelease or build metadata segments, which only allow the
-    ///   characters `a-z`, `a-Z`, `0-9`, `-`, and `.`, such as `1.2.3-rc_1` or `1.2.3+ci@sha`.
-    pub fn parse(value: &str) -> Result<Self, DscError> {
+    ///   characters `a-z`, `A-Z`, `0-9`, `-`, and `.`, such as `1.2.3-rc_1` or `1.2.3+ci@sha`.
+    pub fn parse(value: &str) -> Result<Self, SemanticVersionError> {
         match semver::Version::parse(value) {
             Ok(v) => Ok(Self(v)),
-            Err(e) => Err(DscError::SemVer(e)),
+            Err(e) => Err(SemanticVersionError::Parse {
+                source: e,
+                text: value.to_string(),
+            }),
         }
     }
 
@@ -401,7 +427,7 @@ impl SemanticVersion {
         SemanticVersion::PRERELEASE_SUBSEGMENT_PATTERN, // Start with a valid prerelease subsegment
         "(?:",                                          // Open a non-capturing group to avoid cluttering.
         r"\.",                                          // First character after prior subsegment must be a `.`,
-        SemanticVersion::PRERELEASE_SUBSEGMENT_PATTERN, // followed by another valid prerelease segment.
+        SemanticVersion::PRERELEASE_SUBSEGMENT_PATTERN, // followed by another valid prerelease subsegment.
         ")",                                            // Close the non-capturing group for extra subsegments.
         "*"                                             // Match additional subsegments zero or more times.
     );
@@ -488,26 +514,23 @@ impl From<SemanticVersion> for String {
 
 // Fallible conversions
 impl FromStr for SemanticVersion {
-    type Err = DscError;
+    type Err = SemanticVersionError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         SemanticVersion::parse(s)
     }
 }
 
 impl TryFrom<String> for SemanticVersion {
-    type Error = DscError;
+    type Error = SemanticVersionError;
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        match semver::Version::parse(value.as_str()) {
-            Ok(v) => Ok(Self(v)),
-            Err(e) => Err(DscError::SemVer(e)),
-        }
+        SemanticVersion::parse(value.as_str())
     }
 }
 
 impl TryFrom<&str> for SemanticVersion {
-    type Error = DscError;
+    type Error = SemanticVersionError;
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        SemanticVersion::from_str(value)
+        SemanticVersion::parse(value)
     }
 }
 
