@@ -50,6 +50,7 @@ pub struct Configurator {
 ///
 /// * `resource` - The resource to export.
 /// * `conf` - The configuration to add the results to.
+/// * `input` - The input to the export operation.
 ///
 /// # Panics
 ///
@@ -58,13 +59,17 @@ pub struct Configurator {
 /// # Errors
 ///
 /// This function will return an error if the underlying resource fails.
-pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf: &mut Configuration, input: &str, execution_information: &ExecutionInformation) -> Result<ExportResult, DscError> {
+pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf: &mut Configuration, input: &str) -> Result<ExportResult, DscError> {
 
+    let start_datetime = chrono::Local::now();
     let export_result = resource.export(input)?;
+    let end_datetime = chrono::Local::now();
 
     if resource.kind == Kind::Exporter {
         for instance in &export_result.actual_state {
-            let resource = serde_json::from_value::<Resource>(instance.clone())?;
+            let mut resource = serde_json::from_value::<Resource>(instance.clone())?;
+            let execution_information = ExecutionInformation::new_with_duration(&start_datetime, &end_datetime);
+            resource.execution_information = Some(execution_information);
             conf.resources.push(resource);
         }
     } else {
@@ -105,7 +110,7 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf
             }
             r.properties = escape_property_values(&props)?;
             let mut properties = serde_json::to_value(&r.properties)?;
-            let mut execution_information = execution_information.clone();
+            let mut execution_information = ExecutionInformation::new_with_duration(&start_datetime, &end_datetime);
             get_metadata_from_result(None, &mut properties, &mut metadata, &mut execution_information)?;
             r.properties = Some(properties.as_object().cloned().unwrap_or_default());
             r.metadata = if metadata.microsoft.is_some() || !metadata.other.is_empty() {
@@ -868,12 +873,9 @@ impl Configurator {
             };
             let properties = self.get_properties(resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
-            let start_datetime = chrono::Local::now();
             let input = add_metadata(&dsc_resource, properties, resource.metadata.clone())?;
-            let end_datetime = chrono::Local::now();
-            let execution_information = ExecutionInformation::new_with_duration(&start_datetime, &end_datetime);
             trace!("{}", t!("configure.mod.exportInput", input = input));
-            let export_result = match add_resource_export_results_to_configuration(&dsc_resource, &mut conf, input.as_str(), &execution_information) {
+            let export_result = match add_resource_export_results_to_configuration(&dsc_resource, &mut conf, input.as_str()) {
                 Ok(result) => result,
                 Err(e) => {
                     progress.set_failure(get_failure_from_error(&e));
