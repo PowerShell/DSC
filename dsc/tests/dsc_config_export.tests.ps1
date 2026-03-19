@@ -27,7 +27,7 @@ resources:
         $out.resources[0].executionInformation | Should -Not -BeNullOrEmpty
         $out.resources[0].executionInformation.duration | Should -Not -BeNullOrEmpty
         $out.resources[0].properties.family | Should -BeIn @('Windows', 'Linux', 'macOS')
-        $out.resources[0].properties.architecture | Should -BeIn @('x64', 'arm64')
+        $out.resources[0].properties.architecture | Should -BeIn @('x86_64', 'arm64')
         $out.resources[0].properties.version | Should -Not -BeNullOrEmpty
         $out.resources[0].properties.bitness | Should -BeIn @(32, 64)
     }
