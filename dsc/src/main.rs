@@ -7,11 +7,11 @@ use clap_complete::generate;
 use dsc_lib::progress::ProgressFormat;
 use mcp::start_mcp_server;
 use rust_i18n::{i18n, t};
-use std::{io, process::exit};
+use std::io;
 use sysinfo::{Process, RefreshKind, System, get_current_pid, ProcessRefreshKind};
 use tracing::{error, info, warn, debug};
 
-use crate::util::{EXIT_INVALID_INPUT, get_input};
+use crate::util::{enable_tracing, exit, EXIT_CTRL_C, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_MCP_FAILED, EXIT_SUCCESS, get_input, get_schema, merge_parameters, write_object};
 
 #[cfg(debug_assertions)]
 use crossterm::event;
@@ -41,7 +41,7 @@ fn main() {
 
     let args = Args::parse();
 
-    util::enable_tracing(args.trace_level.as_ref(), args.trace_format.as_ref());
+    enable_tracing(args.trace_level.as_ref(), args.trace_format.as_ref());
 
     debug!("{}: {}", t!("main.usingDscVersion"), env!("CARGO_PKG_VERSION"));
 
@@ -64,7 +64,7 @@ fn main() {
             let merged_parameters = match (file_params, parameters) {
                 (Some(file_content), Some(inline_content)) => {
                     info!("{}", t!("main.mergingParameters"));
-                    match util::merge_parameters(&file_content, &inline_content) {
+                    match merge_parameters(&file_content, &inline_content) {
                         Ok(merged) => Some(merged),
                         Err(err) => {
                             error!("{}: {err}", t!("main.failedMergingParameters"));
@@ -88,27 +88,27 @@ fn main() {
         SubCommand::Mcp => {
             if let Err(err) = start_mcp_server() {
                 error!("{}", t!("main.failedToStartMcpServer", error = err));
-                exit(util::EXIT_MCP_FAILED);
+                exit(EXIT_MCP_FAILED);
             }
-            exit(util::EXIT_SUCCESS);
+            exit(EXIT_SUCCESS);
         }
         SubCommand::Resource { subcommand } => {
             subcommand::resource(&subcommand, progress_format);
         },
         SubCommand::Schema { dsc_type , output_format } => {
-            let schema = util::get_schema(dsc_type);
+            let schema = get_schema(dsc_type);
             let json = match serde_json::to_string(&schema) {
                 Ok(json) => json,
                 Err(err) => {
                     error!("JSON: {err}");
-                    exit(util::EXIT_JSON_ERROR);
+                    exit(EXIT_JSON_ERROR);
                 }
             };
-            util::write_object(&json, output_format.as_ref(), false);
+            write_object(&json, output_format.as_ref(), false);
         },
     }
 
-    exit(util::EXIT_SUCCESS);
+    exit(EXIT_SUCCESS);
 }
 
 fn ctrlc_handler() {
@@ -119,16 +119,16 @@ fn ctrlc_handler() {
     info!("{}: {}", t!("main.foundProcesses"), sys.processes().len());
     let Ok(current_pid) = get_current_pid() else {
         error!("{}", t!("main.failedToGetPid"));
-        exit(util::EXIT_CTRL_C);
+        exit(EXIT_CTRL_C);
     };
     info!("{}: {}", t!("main.currentPid"), current_pid);
     let Some(current_process) = sys.process(current_pid) else {
         error!("{}", t!("main.failedToGetProcess"));
-        exit(util::EXIT_CTRL_C);
+        exit(EXIT_CTRL_C);
     };
 
     terminate_subprocesses(&sys, current_process);
-    exit(util::EXIT_CTRL_C);
+    exit(EXIT_CTRL_C);
 }
 
 fn terminate_subprocesses(sys: &System, process: &Process) {
@@ -169,6 +169,7 @@ fn check_debug() {
 #[cfg(windows)]
 fn check_store() {
     use std::io::Read;
+    use util::EXIT_INVALID_ARGS;
 
     let sys = System::new_with_specifics(RefreshKind::nothing().with_processes(ProcessRefreshKind::everything()));
     // get current process
@@ -192,6 +193,6 @@ fn check_store() {
         eprintln!("{}", t!("main.storeMessage"));
         // wait for keypress
         let _ = io::stdin().read(&mut [0u8]).unwrap();
-        exit(util::EXIT_INVALID_ARGS);
+        exit(EXIT_INVALID_ARGS);
     }
 }
