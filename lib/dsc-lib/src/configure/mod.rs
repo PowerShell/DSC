@@ -50,6 +50,7 @@ pub struct Configurator {
 ///
 /// * `resource` - The resource to export.
 /// * `conf` - The configuration to add the results to.
+/// * `input` - The input to the export operation.
 ///
 /// # Panics
 ///
@@ -60,11 +61,15 @@ pub struct Configurator {
 /// This function will return an error if the underlying resource fails.
 pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf: &mut Configuration, input: &str) -> Result<ExportResult, DscError> {
 
+    let start_datetime = chrono::Local::now();
     let export_result = resource.export(input)?;
+    let end_datetime = chrono::Local::now();
 
     if resource.kind == Kind::Exporter {
         for instance in &export_result.actual_state {
-            let resource = serde_json::from_value::<Resource>(instance.clone())?;
+            let mut resource = serde_json::from_value::<Resource>(instance.clone())?;
+            let execution_information = ExecutionInformation::new_with_duration(&start_datetime, &end_datetime);
+            resource.execution_information = Some(execution_information);
             conf.resources.push(resource);
         }
     } else {
@@ -105,7 +110,7 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf
             }
             r.properties = escape_property_values(&props)?;
             let mut properties = serde_json::to_value(&r.properties)?;
-            let mut execution_information = ExecutionInformation::new();
+            let mut execution_information = ExecutionInformation::new_with_duration(&start_datetime, &end_datetime);
             get_metadata_from_result(None, &mut properties, &mut metadata, &mut execution_information)?;
             r.properties = Some(properties.as_object().cloned().unwrap_or_default());
             r.metadata = if metadata.microsoft.is_some() || !metadata.other.is_empty() {
@@ -894,6 +899,9 @@ impl Configurator {
             },
         }
 
+        let mut execution_information = ExecutionInformation::new();
+        self.get_execution_information(Operation::Export, &mut execution_information);
+        conf.execution_information = Some(execution_information);
         result.result = Some(conf);
         self.process_output()?;
         if !self.context.outputs.is_empty() {
