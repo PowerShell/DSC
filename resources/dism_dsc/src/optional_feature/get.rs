@@ -3,7 +3,7 @@
 
 use rust_i18n::t;
 
-use crate::optional_feature::dism::DismSessionHandle;
+use crate::dism::DismSessionHandle;
 use crate::optional_feature::types::OptionalFeatureList;
 
 pub fn handle_get(input: &str) -> Result<String, String> {

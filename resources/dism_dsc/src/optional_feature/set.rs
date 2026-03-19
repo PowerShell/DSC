@@ -4,12 +4,9 @@
 use rust_i18n::t;
 use serde_json::{Map, Value};
 
-use crate::optional_feature::dism::DismSessionHandle;
+use crate::dism::DismSessionHandle;
 use crate::optional_feature::types::{FeatureState, OptionalFeatureList};
-
-fn get_computer_name() -> String {
-    std::env::var("COMPUTERNAME").unwrap_or_else(|_| "localhost".to_string())
-}
+use crate::util::get_computer_name;
 
 pub fn handle_set(input: &str) -> Result<String, String> {
     let feature_list: OptionalFeatureList = serde_json::from_str(input)
