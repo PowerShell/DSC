@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use miette::Diagnostic;
 use rust_i18n::t;
 use std::str::Utf8Error;
 
@@ -8,7 +9,7 @@ use indicatif::style::TemplateError;
 use thiserror::Error;
 use tree_sitter::LanguageError;
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Diagnostic)]
 pub enum DscError {
     #[error("{t}: {0}", t = t!("dscerror.adapterNotFound"))]
     AdapterNotFound(String),
@@ -52,8 +53,8 @@ pub enum DscError {
     #[error("{t} '{0}', {t2} {1}, {t3} {2}", t = t!("dscerror.invalidFunctionParameterCount"), t2 = t!("dscerror.expected"), t3 = t!("dscerror.got"))]
     InvalidFunctionParameterCount(String, usize, usize),
 
-    #[error("{0}")]
-    InvalidDateVersion(String),
+    #[error(transparent)]
+    DateVersion(#[from] crate::types::DateVersionError),
 
     #[error("{t} '{0}': {1}", t = t!("dscerror.invalidExitCode"))]
     InvalidExitCode(String, core::num::ParseIntError),

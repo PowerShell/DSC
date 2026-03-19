@@ -8,15 +8,14 @@ use std::{
 };
 
 use chrono::{Datelike, NaiveDate};
+use miette::Diagnostic;
 use regex::Regex;
 use rust_i18n::t;
 use schemars::{JsonSchema, json_schema};
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
-use crate::{
-    dscerror::{DscError, DscError::InvalidDateVersion},
-    schemas::dsc_repo::DscRepoSchema,
-};
+use crate::schemas::dsc_repo::DscRepoSchema;
 
 /// Defines a version as an ISO8601 formatted date string for compatibility scenarios.
 ///
@@ -40,10 +39,110 @@ use crate::{
 ///
 /// If the date version is for a prerelease, the prerelease segment must be a string of ASCII
 /// alphabetic characters (`[a-zA-Z]`).
-#[derive(Debug, Clone, Serialize, Deserialize, DscRepoSchema)]
+#[derive(Debug, Clone, Hash, Serialize, Deserialize, DscRepoSchema)]
 #[serde(try_from = "String", into = "String")]
 #[dsc_repo_schema(base_name = "dateVersion", folder_path = "definitions")]
 pub struct DateVersion(NaiveDate, Option<String>);
+
+/// Indicates an error with parsing or converting a [`DateVersion`].
+#[derive(Debug, Error, Diagnostic)]
+#[non_exhaustive]
+pub enum DateVersionError {
+    /// Indicates that the input string for a date version doesn't match the validating pattern for
+    /// date versions.
+    ///
+    /// The input string must match the regular expression defined by
+    /// [`DateVersion::VALIDATING_PATTERN`] to be parsed as a date version.
+    #[error("{t}", t = t!(
+        "types.date_version.notMatchPattern",
+        "text" => text,
+        "pattern" => DateVersion::VALIDATING_PATTERN,
+    ))]
+    NotMatchPattern {
+        /// The text input that failed to match the validating pattern.
+        text: String
+    },
+
+    /// Indicates that the input string for a date version matches the validating pattern for date
+    /// versions but defines an invalid date.
+    ///
+    /// The validating pattern isn't able to verify whether a given date is valid. For example, the
+    /// date string `2026-04-31` isn't valid because the maximum number of days in April is 30.
+    /// Similarly, `2028-02-29` defines a leap day in a valid leap year, but the date `2026-02-29`
+    /// is invalid because 2026 isn't a leap year.
+    #[error("{t}", t = t!(
+        "types.date_version.invalidDate",
+        "text" => text,
+        "errors" => errors.iter().map(|e| e.to_string()).collect::<Vec<String>>().join(", "),
+    ))]
+    InvalidDate {
+        /// The text input that defines an invalid date.
+        ///
+        /// This text is guaranteed to match the validating pattern for date versions, but it
+        /// defines an invalid date for one or more reasons. The `errors` field includes more
+        /// details about why the date is invalid.
+        text: String,
+        /// A list of specific errors that explain why the date defined by `text` is invalid.
+        #[related]
+        errors: Vec<DateVersionError>,
+    },
+
+    /// Indicates that the year segment of a date version defines an invalid year.
+    ///
+    /// This can occur for years greater than `9999` or less than `1000`.
+    #[error("{t}", t = t!(
+        "types.date_version.invalidYear",
+        "year" => year : {:04},
+    ))]
+    InvalidYear{
+        /// The invalid year defined in the input string.
+        year: i32
+    },
+
+    /// Indicates that the month segment of a date version defines an invalid month.
+    ///
+    /// This can occur for months less than `1` or greater than `12`.
+    #[error("{t}", t = t!(
+        "types.date_version.invalidMonth",
+        "month" => month : {:02},
+    ))]
+    InvalidMonth{
+        /// The invalid month defined in the input string.
+        month: u32
+    },
+
+    /// Indicates that the day segment of a date version defines an invalid leap day for February.
+    ///
+    /// This can occur when the month is defined as `02`, the day is defined as `29`, but the year
+    /// isn't a leap year. For example, `2026-02-29` defines an invalid leap day.
+    #[error("{t}", t = t!(
+        "types.date_version.invalidLeapDay",
+        "year" => year : {:04},
+    ))]
+    InvalidLeapDay {
+        /// The year defined in the input string.
+        year: i32
+    },
+
+    /// Indicates that the day segment of a date version defines an invalid day for the month.
+    ///
+    /// This can occur when the day is less than `1` or greater than the maximum number of days in
+    /// the month. For example, `2026-04-31` defines an invalid day because April has only 30 days.
+    #[error("{t}", t = t!(
+        "types.date_version.invalidDay",
+        "day" => day : {:02},
+        "month" => month : {:02},
+        "max_days" => max_days : {:02},
+    ))]
+    InvalidDay {
+        /// The invalid day defined in the input string.
+        day: u32,
+        /// The month defined in the input string.
+        month: u32,
+        /// The maximum number of days in the month defined by `month`.
+        max_days: u32,
+    }
+}
 
 /// This static lazily defines the validating regex for [`DateVersion`]. It enables the
 /// [`Regex`] instance to be constructed once, the first time it's used, and then reused on all
@@ -113,16 +212,10 @@ impl DateVersion {
     ///   February 29 isn't a valid date for a non-leap year.
     ///
     /// [`VALIDATING_PATTERN`]: DateVersion::VALIDATING_PATTERN
-    pub fn parse(text: &str) -> Result<Self, DscError> {
+    pub fn parse(text: &str) -> Result<Self, DateVersionError> {
         let pattern = VALIDATING_PATTERN_REGEX.get_or_init(Self::init_pattern);
         let Some(captures) = pattern.captures(text) else {
-            return Err(InvalidDateVersion(
-                t!(
-                    "types.date_version.notMatchPattern",
-                    "text" => text,
-                    "pattern" => DateVersion::VALIDATING_PATTERN,
-                ).to_string()
-            ));
+            return Err(DateVersionError::NotMatchPattern { text: text.to_string() });
         };
 
         let year: i32 = captures
@@ -251,7 +344,7 @@ impl DateVersion {
     /// 1. Forbids leading and trailing spacing characters.
     /// 1. Requires the first segment of the version to be a four-digit year, like `2026`. It
     ///    forbids the year from starting with a leading zero.
-    /// 1. Requires a hyphen before the second segment. The second segment but be a two-digit
+    /// 1. Requires a hyphen before the second segment. The second segment must be a two-digit
     ///    month, like `02` or `11`. The first nine months require a leading zero. Defining the
     ///    month as either zero or greater than twelve is invalid.
     /// 1. Requires a hyphen before the third segment. The third segment must be a two-digit day of
@@ -339,7 +432,7 @@ impl DateVersion {
     /// segments.
     ///
     /// [`VALIDATING_PATTERN`]: Self::VALIDATING_PATTERN
-    fn validate_date(year: i32, month: u32, day: u32, text: &str) -> Result<(), DscError> {
+    fn validate_date(year: i32, month: u32, day: u32, text: &str) -> Result<(), DateVersionError> {
         let max_days_in_month = match month {
             1 | 3 | 5 | 7 | 8 | 10 | 12 => 31u32,
             4 | 6 | 9 | 11 => 30u32,
@@ -353,46 +446,32 @@ impl DateVersion {
             },
             _ => unreachable!()
         };
+        let mut errors: Vec<DateVersionError> = vec![];
 
-        let details = if year > 9999 || year < 1000 {
-            Some(t!(
-                "types.date_version.invalidYear",
-                "year" => year
-            ).to_string())
-        } else if month > 12 {
-            Some(t!(
-                "types.date_version.invalidMonth",
-                "month" => month : {:02},
-            ).to_string())
-        } else if day > max_days_in_month {
+        if year > 9999 || year < 1000 {
+            errors.push(DateVersionError::InvalidYear { year });
+        }
+
+        if month > 12 {
+            errors.push(DateVersionError::InvalidMonth { month });
+        }
+
+        if day > max_days_in_month {
             if month == 2 && day == 29 {
-                Some(t!(
-                    "types.date_version.invalidLeapDay",
-                    "year" => year,
-                    "month" => month : {:02},
-                    "day" => day : {:02},
-                ).to_string())
+                errors.push(DateVersionError::InvalidLeapDay { year });
             } else {
-                Some(t!(
-                    "types.date_version.invalidDay",
-                    "day" => day : {:02},
-                    "month" => month : {:02},
-                    "max_days" => max_days_in_month,
-                ).to_string())
+                errors.push(DateVersionError::InvalidDay {
+                    day,
+                    month,
+                    max_days: max_days_in_month
+                });
             }
-        } else {
-            None
-        };
+        }
 
-        match details {
-            None => Ok(()),
-            Some(details) => Err(InvalidDateVersion(
-                t!(
-                    "types.date_version.parseError",
-                    "text" => text,
-                    "details" => details,
-                ).to_string()
-            )),
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(DateVersionError::InvalidDate { text: text.to_string(), errors })
         }
     }
 }
@@ -505,21 +584,21 @@ impl AsRef<NaiveDate> for DateVersion {
 }
 
 impl FromStr for DateVersion {
-    type Err = DscError;
+    type Err = DateVersionError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Self::parse(s)
     }
 }
 
 impl TryFrom<&str> for DateVersion {
-    type Error = DscError;
+    type Error = DateVersionError;
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         Self::parse(value)
     }
 }
 
 impl TryFrom<String> for DateVersion {
-    type Error = DscError;
+    type Error = DateVersionError;
     fn try_from(value: String) -> Result<Self, Self::Error> {
         Self::parse(value.as_str())
     }
@@ -532,7 +611,7 @@ impl From<DateVersion> for String {
 }
 
 impl TryFrom<NaiveDate> for DateVersion {
-    type Error = DscError;
+    type Error = DateVersionError;
     fn try_from(value: NaiveDate) -> Result<Self, Self::Error> {
         Self::validate_date(value.year(), value.month(), value.day(), value.to_string().as_str())?;
 
