@@ -299,7 +299,7 @@ pub struct Output {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
-#[serde(deny_unknown_fields)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 #[dsc_repo_schema(
     base_name = "document",
     folder_path = "config",
@@ -467,7 +467,7 @@ pub struct Sku {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
-#[serde(deny_unknown_fields)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 #[dsc_repo_schema(base_name = "document.resource", folder_path = "config")]
 pub struct Resource {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -475,7 +475,7 @@ pub struct Resource {
     /// The fully qualified name of the resource type
     #[serde(rename = "type")]
     pub resource_type: FullyQualifiedTypeName,
-    #[serde(skip_serializing_if = "Option::is_none", rename = "requireVersion", alias = "apiVersion")]
+    #[serde(skip_serializing_if = "Option::is_none", alias = "apiVersion")]
     pub require_version: Option<ResourceVersionReq>,
     /// A friendly name for the resource instance
     #[serde(default)]
@@ -488,7 +488,7 @@ pub struct Resource {
     pub execution_information: Option<ExecutionInformation>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub location: Option<String>,
-    #[serde(rename = "dependsOn", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[schemars(regex(pattern = r"^\[resourceId\(\s*'[a-zA-Z0-9\.]+/[a-zA-Z0-9]+'\s*,\s*'[a-zA-Z0-9 ]+'\s*\)]$"))]
     pub depends_on: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]

@@ -3,7 +3,7 @@
 
 use crate::args::{GetOutputFormat, OutputFormat};
 use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_JSON_ERROR, EXIT_DSC_RESOURCE_NOT_FOUND, write_object};
-use dsc_lib::configure::config_doc::{Configuration, ExecutionKind};
+use dsc_lib::configure::config_doc::{Configuration, ExecutionInformation, ExecutionKind};
 use dsc_lib::configure::add_resource_export_results_to_configuration;
 use dsc_lib::discovery::discovery_trait::DiscoveryFilter;
 use dsc_lib::dscresources::{resource_manifest::Kind, invoke_result::{DeleteResultKind, GetResult, ResourceGetResponse, ResourceSetResponse, SetResult}};
@@ -340,7 +340,8 @@ pub fn export(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, vers
     }
 
     let mut conf = Configuration::new();
-    if let Err(err) = add_resource_export_results_to_configuration(dsc_resource, &mut conf, input) {
+    let execution_information = ExecutionInformation::new();
+    if let Err(err) = add_resource_export_results_to_configuration(dsc_resource, &mut conf, input, &execution_information) {
         error!("{err}");
         exit(EXIT_DSC_ERROR);
     }
