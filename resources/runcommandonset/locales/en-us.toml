@@ -4,7 +4,7 @@ _version = 1
 emptyStdin = "Input from STDIN is empty"
 invalidTraceLevel = "Defaulting to Info, invalid trace level defined in DSC_TRACE_LEVEL env var"
 invalidUtf8 = "Invalid UTF-8 sequence"
-notIdempotent = "This resource is not idempotent"
+notIdempotent = "The 'runcommandonset' resource is not idempotent"
 readStdin = "Reading input from STDIN"
 
 [runcommand]

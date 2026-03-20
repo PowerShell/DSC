@@ -1,0 +1,13 @@
+{
+    "Name": "wmi",
+    "Kind": "Adapter",
+    "SupportedPlatformOS": "Windows",
+    "CopyFiles": {
+        "Windows": [
+            "wmi.resource.ps1",
+            "wmiAdapter.psd1",
+            "wmiAdapter.psm1",
+            "wmi.dsc.resource.json"
+        ]
+    }
+}

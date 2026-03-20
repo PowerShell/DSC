@@ -43,18 +43,41 @@ impl Function for Parameters {
                         let secure_string = SecureString {
                             secure_string: value.to_string(),
                         };
-                        Ok(serde_json::to_value(secure_string)?)
+                        return Ok(serde_json::to_value(secure_string)?);
                     },
                     DataType::SecureObject => {
                         let secure_object = SecureObject {
                             secure_object: value.clone(),
                         };
-                        Ok(serde_json::to_value(secure_object)?)
+                        return Ok(serde_json::to_value(secure_object)?);
                     },
-                    _ => {
-                        Ok(value.clone())
-                    }
+                    DataType::String => {
+                        let Some(_value) = value.as_str() else {
+                            return Err(DscError::Parser(t!("functions.parameters.keyNotString", key = key).to_string()));
+                        };
+                    },
+                    DataType::Int => {
+                        let Some(_value) = value.as_i64() else {
+                            return Err(DscError::Parser(t!("functions.parameters.keyNotInt", key = key).to_string()));
+                        };
+                    },
+                    DataType::Bool => {
+                        let Some(_value) = value.as_bool() else {
+                            return Err(DscError::Parser(t!("functions.parameters.keyNotBool", key = key).to_string()));
+                        };
+                    },
+                    DataType::Object => {
+                        let Some(_value) = value.as_object() else {
+                            return Err(DscError::Parser(t!("functions.parameters.keyNotObject", key = key).to_string()));
+                        };
+                    },
+                    DataType::Array => {
+                        let Some(_value) = value.as_array() else {
+                            return Err(DscError::Parser(t!("functions.parameters.keyNotArray", key = key).to_string()));
+                        };
+                    },
                 }
+                Ok(value.clone())
             }
             else {
                 Err(DscError::Parser(t!("functions.parameters.keyNotFound", key = key).to_string()))

@@ -43,7 +43,7 @@ To add this property to a resource's instance schema, define the property with t
 snippet:
 
 ```json
-"_inDesiredState": {
+"_purge": {
   "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/purge.json"
 }
 ```

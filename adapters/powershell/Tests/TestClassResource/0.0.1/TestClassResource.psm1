@@ -40,6 +40,9 @@ class TestClassResource : BaseTestClass
     [DscProperty()]
     [Ensure] $Ensure
 
+    [DscProperty()]
+    [SecureString] $SecureStringProp
+
     [string] $NonDscProperty # This property shouldn't be in results data
 
     hidden
@@ -148,6 +151,82 @@ class NoExport: BaseTestClass
 
     [NoExport] Get()
     {
+        return $this
+    }
+}
+
+[DscResource()]
+class FilteredExport : BaseTestClass
+{
+    [DscProperty(Key)]
+    [string] $Name
+
+    [DscProperty()]
+    [string] $Prop1
+
+    [void] Set()
+    {
+    }
+
+    [bool] Test()
+    {
+        return $true
+    }
+
+    [FilteredExport] Get()
+    {
+        return $this
+    }
+
+    static [FilteredExport[]] Export()
+    {
+        $resultList = [List[FilteredExport]]::new()
+        $obj = New-Object FilteredExport
+        $obj.Name = "DefaultObject"
+        $obj.Prop1 = "Default Property"
+        $resultList.Add($obj)
+
+        return $resultList.ToArray()
+    }
+
+    static [FilteredExport[]] Export([FilteredExport]$Name)
+    {
+        $resultList = [List[FilteredExport]]::new()
+        $obj = New-Object FilteredExport
+        $obj.Name = $Name
+        $obj.Prop1 = "Filtered Property for $Name"
+        $resultList.Add($obj)
+
+        return $resultList.ToArray()
+    }
+}
+
+[DscResource()]
+class StreamResource : BaseTestClass
+{
+    [DscProperty(Key)]
+    [string] $Name
+
+    [DscProperty()]
+    [string] $Prop1
+
+    [void] Set()
+    {
+        Write-Verbose -Verbose "This is a Verbose message"
+        Write-Debug -Debug "This is a Debug message"
+        Write-Error "This is an Error message"
+    }
+
+    [bool] Test()
+    {
+        Write-Host "This is a Host message"
+        Write-Information "This is an Information message"
+        return $true
+    }
+
+    [StreamResource] Get()
+    {
+        Write-Warning "This is a Warning message"
         return $this
     }
 }

@@ -26,8 +26,8 @@ Describe 'PowerShell adapter resource tests' {
 
   It 'Get works on config with class-based resources' {
 
-    $r = Get-Content -Raw $pwshConfigPath | dsc config get -f -
-    $LASTEXITCODE | Should -Be 0
+    $r = Get-Content -Raw $pwshConfigPath | dsc -l trace config get -f - 2> $TestDrive/tracing.txt
+    $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw -Path $TestDrive/tracing.txt)
     $res = $r | ConvertFrom-Json
     $res.results[0].result.actualState.result[0].properties.Prop1 | Should -BeExactly 'ValueForProp1'
     $res.results[0].result.actualState.result[0].properties.EnumProp | Should -BeExactly 'Expected'
@@ -99,10 +99,53 @@ Describe 'PowerShell adapter resource tests' {
                 - name: Class-resource Info
                   type: TestClassResource/NoExport
 '@
+    $null = $yaml | dsc -l trace config export -f - 2>$TestDrive/error.log
+    $logContent = Get-Content -Raw -Path $TestDrive/error.log
+    $LASTEXITCODE | Should -Be 2 -Because $logContent
+    $logContent | Should -BeLike "*ERROR*Export method not implemented by resource 'TestClassResource/NoExport'*"
+  }
+
+  It 'Export works with filtered export property' {
+    $yaml = @'
+            $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Working with class-based resources
+              type: Microsoft.DSC/PowerShell
+              properties:
+                resources:
+                - name: Class-resource Info
+                  type: TestClassResource/FilteredExport
+                  properties:
+                    Name: 'FilteredExport'
+'@
+    $out = $yaml | dsc -l trace config export -f - 2> "$TestDrive/export_trace.txt"
+    $LASTEXITCODE | Should -Be 0
+    $res = $out | ConvertFrom-Json
+    $res.'$schema' | Should -BeExactly 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+    $res.'resources' | Should -Not -BeNullOrEmpty
+    $res.resources[0].properties.result.count | Should -Be 1
+    $res.resources[0].properties.result[0].Name | Should -Be "FilteredExport"
+    $res.resources[0].properties.result[0].Prop1 | Should -Be "Filtered Property for FilteredExport"
+    "$TestDrive/export_trace.txt" | Should -FileContentMatch "Properties provided for filtered export" -Because (Get-Content -Raw -Path $TestDrive/export_trace.txt)
+  }
+
+  It 'Export fails when filtered export is requested but not implemented' {
+    $yaml = @'
+            $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Working with class-based resources
+              type: Microsoft.DSC/PowerShell
+              properties:
+                resources:
+                - name: Class-resource Info
+                  type: TestClassResource/NoExport
+                  properties:
+                    Name: 'SomeFilter'
+'@
     $out = $yaml | dsc config export -f - 2>&1 | Out-String
     $LASTEXITCODE | Should -Be 2
     $out | Should -Not -BeNullOrEmpty
-    $out | Should -BeLike "*ERROR*Export method not implemented by resource 'TestClassResource/NoExport'*"
+    $out | Should -BeLike "*ERROR*Export method with parameters not implemented by resource 'TestClassResource/NoExport'*"
   }
 
   It 'Custom psmodulepath in config works' {
@@ -204,58 +247,81 @@ Describe 'PowerShell adapter resource tests' {
     $out.results.result.actualState.result.properties.HashTableProp.Name | Should -BeExactly 'DSCv3'
   }
 
-  It 'Config calling PS Resource directly works for <operation>' -TestCases @(
-    @{ Operation = 'get' }
-    @{ Operation = 'set' }
-    @{ Operation = 'test' }
+  It 'Config calling PS Resource directly works for <operation> with metadata <metadata> and adapter <adapter>' -TestCases @(
+    @{ Operation = 'get'; directive = 'requireAdapter: '; adapter = 'Microsoft.DSC/PowerShell' }
+    @{ Operation = 'set'; directive = 'requireAdapter: '; adapter = 'Microsoft.DSC/PowerShell' }
+    @{ Operation = 'test'; directive = 'requireAdapter: '; adapter = 'Microsoft.DSC/PowerShell' }
+    @{ Operation = 'get'; directive = 'requireAdapter: '; adapter = 'Microsoft.Adapter/PowerShell' }
+    @{ Operation = 'set'; directive = 'requireAdapter: '; adapter = 'Microsoft.Adapter/PowerShell' }
+    @{ Operation = 'test'; directive = 'requireAdapter: '; adapter = 'Microsoft.Adapter/PowerShell' }
+    @{ Operation = 'get'; directive = '' }
+    @{ Operation = 'set'; directive = '' }
+    @{ Operation = 'test'; directive = '' }
   ) {
-    param($Operation)
+    param($Operation, $directive, $adapter)
 
     $yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: Class-resource Info
               type: TestClassResource/TestClassResource
+              directives:
+                $directive$adapter
               properties:
                 Name: 'TestClassResource1'
                 HashTableProp:
                   Name: 'DSCv3'
+                Prop1: foo
 "@
-
     $out = dsc -l trace config $operation -i $yaml 2> $TestDrive/tracing.txt
     $text = $out | Out-String
     $out = $out | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw -Path $TestDrive/tracing.txt)
     switch ($Operation) {
       'get' {
-        $out.results[0].result.actualState.Name | Should -BeExactly 'TestClassResource1' -Because $text
+        $out.results[0].result.actualState.Name | Should -BeExactly 'TestClassResource1' -Because ("$text`n" + (Get-Content -Raw -Path $TestDrive/tracing.txt))
       }
       'set' {
         $out.results[0].result.beforeState.Name | Should -BeExactly 'TestClassResource1' -Because $text
         $out.results[0].result.afterState.Name | Should -BeExactly 'TestClassResource1' -Because $text
       }
       'test' {
-        $out.results[0].result.actualState.InDesiredState | Should -BeFalse -Because $text
+        $out.results[0].result.inDesiredState | Should -BeFalse -Because $text
       }
+    }
+    if ($directive -eq 'requireAdapter: ') {
+      "$TestDrive/tracing.txt" | Should -FileContentMatch "Invoking $Operation for '$adapter'" -Because (Get-Content -Raw -Path $TestDrive/tracing.txt)
+    }
+    if ($adapter -eq 'Microsoft.DSC/PowerShell') {
+      (Get-Content -Raw -Path $TestDrive/tracing.txt) | Should -Match "Resource 'Microsoft.DSC/PowerShell' is deprecated" -Because (Get-Content -Raw -Path $TestDrive/tracing.txt)
     }
   }
 
   It 'Config works with credential object' {
     $yaml = @"
         `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+        parameters:
+          Credential:
+            type: secureObject
+            defaultValue:
+              username: User
+              password: Password
         resources:
-        - name: Class-resource Info
-          type: TestClassResource/TestClassResource
+        - name: Working with classic DSC resources
+          type: Microsoft.DSC/PowerShell
           properties:
-            Name: 'TestClassResource'
-            Credential:
-              UserName: 'User'
-              Password: 'Password'
+            resources:
+            - name: Class-resource Info
+              type: TestClassResource/TestClassResource
+              properties:
+                Name: TestClassResource1
+                Prop1: ValueForProp1
+                Credential: "[parameters('Credential')]"
 "@
     $out = dsc config get -i $yaml | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0
-    $out.results.result.actualstate.Credential.UserName | Should -Be 'User'
-    $out.results.result.actualState.result.Credential.Password.Length | Should -Not -BeNullOrEmpty
+    $out.results.result.actualstate.result.properties.Credential.UserName | Should -Be 'User'
+    $out.results.result.actualState.result.properties.Credential.Password.Length | Should -Not -BeNullOrEmpty
   }
 
   It 'Config does not work when credential properties are missing required fields' {

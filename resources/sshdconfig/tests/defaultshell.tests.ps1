@@ -116,7 +116,7 @@ Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows -or !$isElevated
                 escapeArguments = $false
             } | ConvertTo-Json
 
-            sshdconfig set --input $inputConfig 2>$null
+            sshdconfig set --input $inputConfig -s windows-global 2>$null
             $LASTEXITCODE | Should -Be 0
 
             $defaultShell = Get-ItemProperty -Path $RegistryPath -Name "DefaultShell" -ErrorAction SilentlyContinue
@@ -134,7 +134,7 @@ Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows -or !$isElevated
                 shell = "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
             } | ConvertTo-Json
 
-            sshdconfig set --input $inputConfig 2>$null
+            sshdconfig set --input $inputConfig -s windows-global 2>$null
             $LASTEXITCODE | Should -Be 0
 
             $defaultShell = Get-ItemProperty -Path $RegistryPath -Name "DefaultShell" -ErrorAction SilentlyContinue
@@ -144,16 +144,16 @@ Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows -or !$isElevated
         It 'Should handle invalid JSON input gracefully' {
             $invalidJson = "{ invalid json }"
 
-            sshdconfig set --input $invalidJson 2>$null
+            sshdconfig set --input $invalidJson -s windows-global 2>$null
             $LASTEXITCODE | Should -Not -Be 0
         }
 
-        It 'Should clear default shell when set to null' {
+        It 'Should clear default shell when set to empty string' {
             Set-ItemProperty -Path $RegistryPath -Name "DefaultShell" -Value "C:\Windows\System32\cmd.exe"
 
-            $inputConfig = @{ shell = $null } | ConvertTo-Json
+            $inputConfig = @{ shell = "" } | ConvertTo-Json
 
-            sshdconfig set --input $inputConfig 2>$null
+            sshdconfig set --input $inputConfig -s windows-global 2>$null
             $LASTEXITCODE | Should -Be 0
 
             $result = Get-ItemProperty -Path $RegistryPath -Name "DefaultShell" -ErrorAction SilentlyContinue
@@ -170,7 +170,7 @@ Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows -or !$isElevated
             }
             $inputJson = $originalConfig | ConvertTo-Json
 
-            sshdconfig set --input $inputJson 2>$null
+            sshdconfig set --input $inputJson -s windows-global 2>$null
             $LASTEXITCODE | Should -Be 0
 
             $getOutput = sshdconfig get -s windows-global 2>$null
@@ -191,7 +191,7 @@ Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows -or !$isElevated
 
             $inputConfig = @{ shell = $null } | ConvertTo-Json
 
-            sshdconfig set --input $inputConfig 2>$null
+            sshdconfig set --input $inputConfig -s windows-global 2>$null
             $LASTEXITCODE | Should -Be 0
 
             $result = Get-ItemProperty -Path $RegistryPath -Name "DefaultShell" -ErrorAction SilentlyContinue
@@ -204,7 +204,7 @@ Describe 'Default Shell Configuration Error Handling on Non-Windows Platforms' -
     It 'Should return error for set command' {
         $inputConfig = @{ shell = $null } | ConvertTo-Json
 
-        $out = sshdconfig set --input $inputConfig 2>&1
+        $out = sshdconfig set --input $inputConfig -s windows-global 2>&1
         $LASTEXITCODE | Should -Not -Be 0
         $result = $out | ConvertFrom-Json
         $found = $false

@@ -259,12 +259,21 @@ impl RegistryHelper {
     ///
     /// * `RegistryError` - The error that occurred.
     pub fn remove(&self) -> Result<Option<Registry>, RegistryError> {
-        let (reg_key, _subkey) = match self.open(Security::AllAccess) {
+        // For deleting a value, we need SetValue permission (KEY_SET_VALUE).
+        // Try to open with the minimal required permission.
+        // If that fails due to permission, try with AllAccess as a fallback.
+        let (reg_key, _subkey) = match self.open(Security::SetValue) {
             Ok(reg_key) => reg_key,
             // handle NotFound error
             Err(RegistryError::RegistryKeyNotFound(_)) => {
                 eprintln!("{}", t!("registry_helper.removeErrorKeyNotExist"));
                 return Ok(None);
+            },
+            Err(RegistryError::RegistryKey(key::Error::PermissionDenied(_, _))) => {
+                match self.open(Security::AllAccess) {
+                    Ok(reg_key) => reg_key,
+                    Err(e) => return self.handle_error_or_what_if(e),
+                }
             },
             Err(e) => return self.handle_error_or_what_if(e),
         };
@@ -289,10 +298,11 @@ impl RegistryHelper {
                 Err(e) => return self.handle_error_or_what_if(RegistryError::RegistryValue(e)),
             }
         } else {
-            // to delete the key, we need to open the parent key first
+            // to delete the key, we need to open the parent key with CreateSubKey permission
+            // which includes the ability to delete subkeys
             let parent_path = get_parent_key_path(&self.config.key_path);
             let (hive, parent_subkey) = get_hive_from_path(parent_path)?;
-            let parent_reg_key = match hive.open(parent_subkey, Security::AllAccess) {
+            let parent_reg_key = match hive.open(parent_subkey, Security::CreateSubKey) {
                 Ok(k) => k,
                 Err(e) => return self.handle_error_or_what_if(RegistryError::RegistryKey(e)),
             };

@@ -1,38 +1,46 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use crate::extensions::import::ImportMethod;
+use crate::schemas::{dsc_repo::DscRepoSchema, transforms::idiomaticize_string_enum};
+use crate::types::FullyQualifiedTypeName;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use schemars::JsonSchema;
 use std::fmt::Display;
+use std::path::PathBuf;
 
-#[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
+#[derive(Clone, Debug, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
+#[dsc_repo_schema(base_name = "list", folder_path = "outputs/extension")]
 pub struct DscExtension {
-    /// The namespaced name of the resource.
+    /// The namespaced name of the extension.
     #[serde(rename="type")]
-    pub type_name: String,
-    /// The version of the resource.
+    pub type_name: FullyQualifiedTypeName,
+    /// The version of the extension.
     pub version: String,
-    /// The capabilities of the resource.
+    /// The capabilities of the extension.
     pub capabilities: Vec<Capability>,
-    /// The extensions supported for importing.
-    #[serde(rename = "importFileExtensions")]
-    pub import_file_extensions: Option<Vec<String>>,
-    /// The file path to the resource.
-    pub path: String,
-    /// The description of the resource.
+    /// The import specifics.
+    pub import: Option<ImportMethod>,
+    /// The file path to the extension.
+    pub path: PathBuf,
+    /// An optional message indicating the extension is deprecated.  If provided, the message will be shown when the extension is used.
+    pub deprecation_message: Option<String>,
+    /// The description of the extension.
     pub description: Option<String>,
-    // The directory path to the resource.
-    pub directory: String,
-    /// The author of the resource.
+    // The directory path to the extension.
+    pub directory: PathBuf,
+    /// The author of the extension.
     pub author: Option<String>,
-    /// The manifest of the resource.
+    /// The manifest of the extension.
     pub manifest: Value,
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
+#[schemars(transform = idiomaticize_string_enum)]
+#[dsc_repo_schema(base_name = "extensionCapabilities", folder_path = "definitions")]
 pub enum Capability {
     /// The extension aids in discovering resources.
     Discover,
@@ -56,13 +64,14 @@ impl DscExtension {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            type_name: String::new(),
+            type_name: FullyQualifiedTypeName::default(),
             version: String::new(),
             capabilities: Vec::new(),
-            import_file_extensions: None,
+            import: None,
+            deprecation_message: None,
             description: None,
-            path: String::new(),
-            directory: String::new(),
+            path: PathBuf::new(),
+            directory: PathBuf::new(),
             author: None,
             manifest: Value::Null,
         }

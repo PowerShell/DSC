@@ -4,13 +4,15 @@
 use crate::dscerror::DscError;
 use rust_i18n::t;
 use serde_json::Value;
-use std::fs;
-use std::fs::File;
-use std::io::BufReader;
-use std::path::PathBuf;
-use std::path::Path;
-use std::env;
+use std::{
+    fs,
+    fs::{canonicalize, File},
+    io::BufReader,
+    path::{Path, PathBuf},
+    env,
+};
 use tracing::debug;
+use which::which;
 
 pub struct DscSettingValue {
     pub setting:  Value,
@@ -211,6 +213,49 @@ fn get_settings_policy_file_path() -> String
     // "/etc/dsc/dsc.settings.json"
     // This location is writable only by admins, but readable by all users
     Path::new("/etc").join("dsc").join("dsc.settings.json").display().to_string()
+}
+
+/// Generates a resource ID from the specified type and name.
+///
+/// # Arguments
+/// * `type_name` - The resource type in the format "namespace/type".
+/// * `name` - The resource name.
+///
+/// # Returns
+/// A string that holds the resource ID in the format "namespace/type:name".
+#[must_use]
+pub fn resource_id(type_name: &str, name: &str) -> String {
+    let mut result = String::new();
+    result.push_str(type_name);
+    result.push(':');
+    let encoded = urlencoding::encode(name);
+    result.push_str(&encoded);
+    result
+}
+
+pub fn canonicalize_which(executable: &str, cwd: Option<&Path>) -> Result<String, DscError> {
+    // Use PathBuf to handle path separators robustly
+    let mut executable_path = PathBuf::from(executable);
+    if cfg!(target_os = "windows") && executable_path.extension().is_none() {
+        executable_path.set_extension("exe");
+    }
+    if which(executable).is_err() {
+        if let Some(cwd_path) = cwd {
+            if let Ok(canonical_path) = canonicalize(cwd_path.join(&executable_path)) {
+                return Ok(canonical_path.to_string_lossy().to_string());
+            }
+            return Err(DscError::CommandOperation(t!("util.executableNotFoundInWorkingDirectory", executable = &executable, cwd = cwd_path.display()).to_string(), executable_path.to_string_lossy().to_string()));
+        }
+        return Err(DscError::CommandOperation(t!("util.executableNotFound", executable = &executable).to_string(), executable.to_string()));
+    }
+    Ok(executable.to_string())
+}
+
+#[macro_export]
+macro_rules! locked_clear {
+    ($lockable:expr) => {{
+        $lockable.write().unwrap().clear();
+    }};
 }
 
 #[macro_export]

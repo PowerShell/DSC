@@ -123,10 +123,11 @@ function BuildWmiQuery {
         [string]$ClassName,
         
         [Parameter(Mandatory = $true)]
-        [array]$Properties,
-        
-        [Parameter(Mandatory = $true)]
         [psobject]$DesiredStateProperties,
+
+        [Parameter()]
+        [AllowNull()]
+        [array]$Properties,
         
         [Parameter()]
         [switch]$KeyPropertiesOnly
@@ -205,6 +206,8 @@ function GetWmiInstance {
                     }
                 }
             }
+        } else {
+            $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -ClassName $wmi_classname -ErrorAction Ignore -ErrorVariable Err
         }
     } else {
         $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -ClassName $wmi_classname -ErrorAction Ignore -ErrorVariable Err

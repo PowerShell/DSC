@@ -36,6 +36,13 @@
                     "description": "Returns the unique ID for the OSInfo instance data type.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#id\n",
                     "markdownDescription": "Returns the unique ID for the OSInfo instance data type.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#id\n"
                 },
+                "_name": {
+                    "type": "string",
+                    "readOnly": true,
+                    "title": "Instance name",
+                    "description": "Returns the name of the OSInfo instance.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#name\n",
+                    "markdownDescription": "Returns the name of the OSInfo instance.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#name\n"
+                },
                 "architecture": {
                     "type": "string",
                     "title": "Processor architecture",

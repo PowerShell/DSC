@@ -1,43 +1,12 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-// keywords that can have multiple argments per line but cannot be repeated over multiple lines,
-// as subsequent entries are ignored, should be represented as arrays
-pub const MULTI_ARG_KEYWORDS: [&str; 16] = [
-    "authenticationmethods",
-    "authorizedkeysfile",
-    "casignaturealgorithms",
-    "channeltimeout",
-    "ciphers",
-    "hostbasedacceptedalgorithms",
-    "hostkeyalgorithms",
-    "ipqos",
-    "kexalgorithms",
-    "macs",
-    "permitlisten",
-    "permitopen",
-    "permituserenvironment",
-    "persourcepenalties",
-    "persourcepenaltyexemptlist",
-    "pubkeyacceptedalgorithms"
-];
-
-// keywords that can be repeated over multiple lines and should be represented as arrays.
-// note that some keywords can be both multi-arg and repeatable, in which case they only need to be listed here
-pub const REPEATABLE_KEYWORDS: [&str; 12] = [
-    "acceptenv",
-    "allowgroups",
-    "allowusers",
-    "denygroups",
-    "denyusers",
-    "hostkey",
-    "include",
-    "listenaddress",
-    "match",
-    "port",
-    "setenv",
-    "subsystem"
-];
+pub const SSHD_CONFIG_HEADER: &str = "# This file is managed by the Microsoft.OpenSSH.SSHD/sshd_config DSC Resource";
+pub const SSHD_CONFIG_HEADER_VERSION: &str = concat!("# The Microsoft.OpenSSH.SSHD/sshd_config DSC Resource version is ", env!("CARGO_PKG_VERSION"));
+pub const SSHD_CONFIG_HEADER_WARNING: &str = "# Please do not modify manually, as any changes may be overwritten";
+pub const SSHD_CONFIG_DEFAULT_PATH_UNIX: &str = "/etc/ssh/sshd_config";
+// For Windows, full path is constructed at runtime using ProgramData environment variable
+pub const SSHD_CONFIG_DEFAULT_PATH_WINDOWS: &str = "\\ssh\\sshd_config";
 
 #[cfg(windows)]
 pub mod windows {

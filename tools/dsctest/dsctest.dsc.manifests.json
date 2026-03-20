@@ -1,0 +1,1406 @@
+{
+  "adaptedResources": [
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/adaptedresource/manifest.json",
+      "type": "Adapted/Two",
+      "kind": "resource",
+      "version": "1.0.0",
+      "capabilities": [
+        "get",
+        "set",
+        "test",
+        "export"
+      ],
+      "description": "An adapted resource for testing.",
+      "author": "DSC Team",
+      "requireAdapter": "Test/Adapter",
+      "path": "adaptedTest.dsc.adaptedResource.json",
+      "schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "https://github.com/powershell/dsc",
+        "title": "AdaptedTwo",
+        "description": "Adapted test resource number two",
+        "type": "object",
+        "required": [],
+        "additionalProperties": false,
+        "properties": {
+          "two": {
+            "type": "string",
+            "title": "Property Two",
+            "description": "This is property two of the adapted resource."
+          },
+          "_name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the adapted resource instance."
+          }
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/adaptedresource/manifest.json",
+      "type": "Adapted/Four",
+      "kind": "resource",
+      "version": "1.0.0",
+      "capabilities": [
+        "get",
+        "set",
+        "test",
+        "export"
+      ],
+      "description": "An adapted resource for testing.",
+      "author": "DSC Team",
+      "requireAdapter": "Test/Adapter",
+      "path": "adaptedTest.dsc.adaptedResource.json",
+      "condition": "[false()]",
+      "schema": {
+        "embedded": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "$id": "https://github.com/powershell/dsc",
+          "title": "AdaptedFour",
+          "description": "An adapted resource for testing.",
+          "type": "object",
+          "required": [],
+          "additionalProperties": false,
+          "properties": {
+            "two": {
+              "type": "string",
+              "title": "Property Two",
+              "description": "This is property two of the adapted resource."
+            },
+            "name": {
+              "type": "string",
+              "title": "Name",
+              "description": "The name of the adapted resource instance."
+            }
+          }
+        }
+      }
+    }
+  ],
+  "resources": [
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/CopyResource",
+      "version": "0.1.0",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "copy-resource",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ]
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "copy-resource"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/Delete",
+      "version": "0.1.0",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "delete",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ]
+      },
+      "delete": {
+        "executable": "dsctest",
+        "args": [
+          "delete",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ]
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "delete"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/Exist",
+      "version": "0.1.0",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "exist",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ]
+      },
+      "set": {
+        "executable": "dsctest",
+        "args": [
+          "exist",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ],
+        "handlesExist": true,
+        "return": "state"
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "exist"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/ExitCode",
+      "version": "0.1.0",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "exit-code",
+          {
+            "jsonInputArg": "--input"
+          }
+        ]
+      },
+      "exitCodes": {
+        "0": "Success",
+        "8": "Placeholder from manifest for exit code 8"
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "exit-code"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/Export",
+      "version": "0.1.0",
+      "export": {
+        "executable": "dsctest",
+        "args": [
+          "export",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ]
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "export"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/Exporter",
+      "version": "0.1.0",
+      "kind": "exporter",
+      "export": {
+        "executable": "dsctest",
+        "args": [
+          "exporter",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ]
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "exporter"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/Get",
+      "version": "0.1.0",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "get",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ]
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "get"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/InDesiredState",
+      "version": "0.1.0",
+      "test": {
+        "executable": "dsctest",
+        "args": [
+          "in-desired-state",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ],
+        "return": "state"
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "in-desired-state"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/Operation",
+      "version": "0.1.0",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "operation",
+          "--operation",
+          "get",
+          {
+            "jsonInputArg": "--input"
+          }
+        ]
+      },
+      "set": {
+        "executable": "dsctest",
+        "args": [
+          "operation",
+          "--operation",
+          "set",
+          {
+            "jsonInputArg": "--input"
+          }
+        ]
+      },
+      "test": {
+        "executable": "dsctest",
+        "args": [
+          "operation",
+          "--operation",
+          "trace",
+          {
+            "jsonInputArg": "--input"
+          }
+        ]
+      },
+      "delete": {
+        "executable": "dsctest",
+        "args": [
+          "operation",
+          "--operation",
+          "delete",
+          {
+            "jsonInputArg": "--input"
+          }
+        ]
+      },
+      "export": {
+        "executable": "dsctest",
+        "args": [
+          "operation",
+          "--operation",
+          "export",
+          {
+            "jsonInputArg": "--input"
+          }
+        ]
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "operation"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/RefreshEnv",
+      "version": "0.1.0",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "refresh-env",
+          "--operation",
+          "get",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ]
+      },
+      "set": {
+        "executable": "dsctest",
+        "args": [
+          "refresh-env",
+          "--operation",
+          "set",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ],
+        "implementsPretest": true,
+        "return": "state"
+      },
+      "export": {
+        "executable": "dsctest",
+        "args": [
+          "refresh-env",
+          "--operation",
+          "get",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ]
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "refresh-env"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/RestartRequired",
+      "version": "0.1.0",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "restart-required",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ]
+      },
+      "set": {
+        "executable": "dsctest",
+        "args": [
+          "restart-required",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ],
+        "implementsPretest": true,
+        "return": "state"
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "restart-required"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/SecurityContextCurrent",
+      "version": "0.1.0",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "operation",
+          "--operation",
+          "get",
+          {
+            "jsonInputArg": "--input"
+          }
+        ],
+        "requireSecurityContext": "current"
+      },
+      "set": {
+        "executable": "dsctest",
+        "args": [
+          "operation",
+          "--operation",
+          "set",
+          {
+            "jsonInputArg": "--input"
+          }
+        ],
+        "requireSecurityContext": "current"
+      },
+      "test": {
+        "executable": "dsctest",
+        "args": [
+          "operation",
+          "--operation",
+          "trace",
+          {
+            "jsonInputArg": "--input"
+          }
+        ],
+        "requireSecurityContext": "current"
+      },
+      "delete": {
+        "executable": "dsctest",
+        "args": [
+          "operation",
+          "--operation",
+          "delete",
+          {
+            "jsonInputArg": "--input"
+          }
+        ],
+        "requireSecurityContext": "current"
+      },
+      "export": {
+        "executable": "dsctest",
+        "args": [
+          "operation",
+          "--operation",
+          "export",
+          {
+            "jsonInputArg": "--input"
+          }
+        ],
+        "requireSecurityContext": "current"
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "operation"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/SecurityContextElevated",
+      "version": "0.1.0",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "operation",
+          "--operation",
+          "get",
+          {
+            "jsonInputArg": "--input"
+          }
+        ],
+        "requireSecurityContext": "current"
+      },
+      "set": {
+        "executable": "dsctest",
+        "args": [
+          "operation",
+          "--operation",
+          "set",
+          {
+            "jsonInputArg": "--input"
+          }
+        ],
+        "requireSecurityContext": "elevated"
+      },
+      "test": {
+        "executable": "dsctest",
+        "args": [
+          "operation",
+          "--operation",
+          "trace",
+          {
+            "jsonInputArg": "--input"
+          }
+        ],
+        "requireSecurityContext": "elevated"
+      },
+      "delete": {
+        "executable": "dsctest",
+        "args": [
+          "operation",
+          "--operation",
+          "delete",
+          {
+            "jsonInputArg": "--input"
+          }
+        ],
+        "requireSecurityContext": "elevated"
+      },
+      "export": {
+        "executable": "dsctest",
+        "args": [
+          "operation",
+          "--operation",
+          "export",
+          {
+            "jsonInputArg": "--input"
+          }
+        ],
+        "requireSecurityContext": "elevated"
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "operation"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/SecurityContextElevatedGet",
+      "version": "0.1.0",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "operation",
+          "--operation",
+          "get",
+          {
+            "jsonInputArg": "--input"
+          }
+        ],
+        "requireSecurityContext": "elevated"
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "operation"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/SecurityContextRestricted",
+      "version": "0.1.0",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "operation",
+          "--operation",
+          "get",
+          {
+            "jsonInputArg": "--input"
+          }
+        ],
+        "requireSecurityContext": "current"
+      },
+      "set": {
+        "executable": "dsctest",
+        "args": [
+          "operation",
+          "--operation",
+          "set",
+          {
+            "jsonInputArg": "--input"
+          }
+        ],
+        "requireSecurityContext": "restricted"
+      },
+      "test": {
+        "executable": "dsctest",
+        "args": [
+          "operation",
+          "--operation",
+          "trace",
+          {
+            "jsonInputArg": "--input"
+          }
+        ],
+        "requireSecurityContext": "restricted"
+      },
+      "delete": {
+        "executable": "dsctest",
+        "args": [
+          "operation",
+          "--operation",
+          "delete",
+          {
+            "jsonInputArg": "--input"
+          }
+        ],
+        "requireSecurityContext": "restricted"
+      },
+      "export": {
+        "executable": "dsctest",
+        "args": [
+          "operation",
+          "--operation",
+          "export",
+          {
+            "jsonInputArg": "--input"
+          }
+        ],
+        "requireSecurityContext": "restricted"
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "operation"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/SecurityContextRestrictedGet",
+      "version": "0.1.0",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "operation",
+          "--operation",
+          "get",
+          {
+            "jsonInputArg": "--input"
+          }
+        ],
+        "requireSecurityContext": "restricted"
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "operation"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/Sleep",
+      "version": "0.1.0",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "sleep",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ]
+      },
+      "set": {
+        "executable": "dsctest",
+        "args": [
+          "sleep",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ]
+      },
+      "test": {
+        "executable": "dsctest",
+        "args": [
+          "sleep",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ]
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "sleep"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/Trace",
+      "version": "0.1.0",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "trace"
+        ]
+      },
+      "set": {
+        "executable": "dsctest",
+        "args": [
+          "trace"
+        ]
+      },
+      "test": {
+        "executable": "dsctest",
+        "args": [
+          "trace"
+        ]
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "trace"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/WhatIf",
+      "version": "0.1.0",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "whatif"
+        ]
+      },
+      "set": {
+        "executable": "dsctest",
+        "args": [
+          "whatif"
+        ],
+        "return": "state"
+      },
+      "whatIf": {
+        "executable": "dsctest",
+        "args": [
+          "whatif",
+          "-w"
+        ],
+        "return": "state"
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "what-if"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json",
+      "type": "Test/Metadata",
+      "version": "0.1.0",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "metadata",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ]
+      },
+      "set": {
+        "executable": "dsctest",
+        "args": [
+          "metadata",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ],
+        "return": "state"
+      },
+      "test": {
+        "executable": "dsctest",
+        "args": [
+          "metadata",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ]
+      },
+      "export": {
+        "executable": "dsctest",
+        "args": [
+          "metadata",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          },
+          "--export"
+        ]
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "metadata"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/Adapter",
+      "version": "0.1.0",
+      "kind": "adapter",
+      "adapter": {
+        "list": {
+          "executable": "dsctest",
+          "args": [
+            "adapter",
+            "--operation",
+            "list",
+            "--input",
+            "{}",
+            "--resource-type",
+            "none"
+          ]
+        },
+        "inputKind": "single"
+      },
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "adapter",
+          "--operation",
+          "get",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          },
+          {
+            "resourceTypeArg": "--resource-type"
+          },
+          {
+            "resourcePathArg": "--resource-path"
+          }
+        ]
+      },
+      "set": {
+        "executable": "dsctest",
+        "args": [
+          "adapter",
+          "--operation",
+          "set",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          },
+          {
+            "resourceTypeArg": "--resource-type"
+          }
+        ]
+      },
+      "test": {
+        "executable": "dsctest",
+        "args": [
+          "adapter",
+          "--operation",
+          "test",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          },
+          {
+            "resourceTypeArg": "--resource-type"
+          }
+        ]
+      },
+      "export": {
+        "executable": "dsctest",
+        "args": [
+          "adapter",
+          "--operation",
+          "export",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          },
+          {
+            "resourceTypeArg": "--resource-type"
+          }
+        ]
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "adapter",
+            "--operation",
+            "schema",
+            "--input",
+            "{}",
+            {
+              "resourceTypeArg": "--resource-type"
+            }
+          ]
+        }
+      },
+      "validate": {
+        "executable": "dsctest",
+        "args": [
+          "adapter",
+          "--operation",
+          "validate",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          },
+          {
+            "resourceTypeArg": "--resource-type"
+          }
+        ]
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/Version",
+      "version": "1.1.2",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "version",
+          "1.1.2"
+        ]
+      },
+      "set": {
+        "executable": "dsctest",
+        "args": [
+          "version",
+          "1.1.2"
+        ],
+        "return": "state"
+      },
+      "test": {
+        "executable": "dsctest",
+        "args": [
+          "version",
+          "1.1.2"
+        ],
+        "return": "state"
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "version"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/Version",
+      "version": "1.1.3",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "version",
+          "1.1.3"
+        ]
+      },
+      "set": {
+        "executable": "dsctest",
+        "args": [
+          "version",
+          "1.1.3"
+        ],
+        "return": "state"
+      },
+      "test": {
+        "executable": "dsctest",
+        "args": [
+          "version",
+          "1.1.3"
+        ],
+        "return": "state"
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "version"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/Version",
+      "version": "1.1.0",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "version",
+          "1.1.0"
+        ]
+      },
+      "set": {
+        "executable": "dsctest",
+        "args": [
+          "version",
+          "1.1.0"
+        ],
+        "return": "state"
+      },
+      "test": {
+        "executable": "dsctest",
+        "args": [
+          "version",
+          "1.1.0"
+        ],
+        "return": "state"
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "version"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/Version",
+      "version": "2.1.0-preview.1",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "version",
+          "2.1.0-preview.1"
+        ]
+      },
+      "set": {
+        "executable": "dsctest",
+        "args": [
+          "version",
+          "2.1.0-preview.1"
+        ],
+        "return": "state"
+      },
+      "test": {
+        "executable": "dsctest",
+        "args": [
+          "version",
+          "2.1.0-preview.1"
+        ],
+        "return": "state"
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "version"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/Version",
+      "version": "2.1.0-preview.2",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "version",
+          "2.1.0-preview.2"
+        ]
+      },
+      "set": {
+        "executable": "dsctest",
+        "args": [
+          "version",
+          "2.1.0-preview.2"
+        ],
+        "return": "state"
+      },
+      "test": {
+        "executable": "dsctest",
+        "args": [
+          "version",
+          "2.1.0-preview.2"
+        ],
+        "return": "state"
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "version"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/Version",
+      "version": "2.0.0",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "version",
+          "2.0.0"
+        ]
+      },
+      "set": {
+        "executable": "dsctest",
+        "args": [
+          "version",
+          "2.0.0"
+        ],
+        "return": "state"
+      },
+      "test": {
+        "executable": "dsctest",
+        "args": [
+          "version",
+          "2.0.0"
+        ],
+        "return": "state"
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "version"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/WhatIfArgKind",
+      "version": "0.1.0",
+      "description": "Test resource for validating native WhatIf functionality with whatIfArg",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "whatif"
+        ]
+      },
+      "set": {
+        "executable": "dsctest",
+        "args": [
+          "whatif",
+          {
+            "whatIfArg": "-w"
+          }
+        ],
+        "return": "state"
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "what-if"
+          ]
+        }
+      }
+    },
+        {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/WhatIfDelete",
+      "version": "0.1.0",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "whatif-delete"
+        ]
+      },
+      "delete": {
+        "executable": "dsctest",
+        "args": [
+          "whatif-delete",
+          {
+            "whatIfArg": "-w"
+          }
+        ]
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "what-if-delete"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/StateAndDiff",
+      "version": "0.1.0",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "state-and-diff",
+          "--state-only",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ]
+      },
+      "set": {
+        "executable": "dsctest",
+        "args": [
+          "state-and-diff",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ],
+        "return": "stateAndDiff"
+      },
+      "test": {
+        "executable": "dsctest",
+        "args": [
+          "state-and-diff",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ],
+        "return": "stateAndDiff"
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "state-and-diff"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/WhatIfReturnDiff",
+      "version": "0.1.0",
+      "description": "Test resource for validating whatIfReturn with stateAndDiff return type",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "whatif"
+        ]
+      },
+      "set": {
+        "executable": "dsctest",
+        "args": [
+          "whatif",
+          {
+            "whatIfArg": "-w"
+          },
+          "--state-and-diff"
+        ],
+        "return": "state",
+        "whatIfReturns": "stateAndDiff"
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "what-if"
+          ]
+        }
+      }
+    }
+  ]
+}

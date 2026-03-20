@@ -4,6 +4,8 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use crate::schemas::transforms::idiomaticize_string_enum;
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ConfigurationResourceStartedEvent {
@@ -13,6 +15,7 @@ pub struct ConfigurationResourceStartedEvent {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
+#[schemars(transform = idiomaticize_string_enum)]
 pub enum ConfigurationResourceCompletionStatus {
     Success,
     Failure,

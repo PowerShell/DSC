@@ -94,7 +94,6 @@ in the embedded schema, the schema _must_ define the property as a reference.
 - [_exist](#_exist)
 - [_inDesiredState](#_indesiredstate)
 - [_purge](#_purge)
-- [_rebootRequested](#_rebootrequested)
 
 #### _exist
 
@@ -145,24 +144,7 @@ If defined, this property must be a reference to the schema for the canonical pr
 
 For more information, see [DSC Resource _purge property schema][04].
 
-#### _rebootRequested
-
-The read-only `_rebootRequested` property indicates whether a resource instance requires a reboot
-after a set operation. To use DSC's built-in reboot notification processing, resources must define
-this property in their manifest.
-
-If defined, this property must be a reference to the schema for the canonical property:
-
-```json
-"_rebootRequested": {
-  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/resource/properties/rebootRequested.json"
-}
-```
-
-For more information, see [DSC Resource _rebootRequested property schema][05]
-
 [01]: ../../properties/ensure.md
 [02]: ../test.md
 [03]: ../../properties/inDesiredState.md
 [04]: ../../properties/purge.md
-[05]: ../../properties/rebootRequested.md

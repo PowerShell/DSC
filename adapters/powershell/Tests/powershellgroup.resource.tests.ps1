@@ -75,13 +75,7 @@ Describe 'PowerShell adapter resource tests' {
         $r = "{'Name':'TestClassResource1','Prop1':'ValueForProp1'}" | dsc resource test -r 'TestClassResource/TestClassResource' -f -
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.actualState.InDesiredState | Should -Be $True
-        $res.actualState.InDesiredState.GetType().Name | Should -Be "Boolean"
-
-        # verify that only properties with DscProperty attribute are returned
-        $propertiesNames = $res.actualState.InDesiredState | Get-Member -MemberType NoteProperty | % Name
-        $propertiesNames | Should -Not -Contain 'NonDscProperty'
-        $propertiesNames | Should -Not -Contain 'HiddenNonDscProperty'
+        $res.InDesiredState | Should -Be $True -Because $r
     }
 
     It 'Set works on class-based resource' {
@@ -124,7 +118,7 @@ Describe 'PowerShell adapter resource tests' {
         $null = dsc resource list '*' -a Microsoft.DSC/PowerShell
         # call the ClearCache operation
         $scriptPath = Join-Path $PSScriptRoot '..' 'psDscAdapter' 'powershell.resource.ps1'
-        $null = & $scriptPath -Operation ClearCache
+        $null = & $scriptPath -Operation ClearCache 2>$null
         # verify that PSAdapter does not find the cache
         dsc -l debug resource list '*' -a Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
         $LASTEXITCODE | Should -Be 0
@@ -315,6 +309,23 @@ Describe 'PowerShell adapter resource tests' {
         }
     }
 
+    It 'Verify validate operation shows reason on adapted resource' {
+        $oldPath = $env:PATH
+        try {
+            $adapterPath = Join-Path $PSScriptRoot 'TestAdapter'
+            $env:PATH += [System.IO.Path]::PathSeparator + $adapterPath
+
+            # Test with invalid TestCaseId that should trigger validation failure with reason
+            $r = '{"TestCaseId": 99}' | dsc resource get -r 'Test/TestCase' -f - 2>&1
+            $LASTEXITCODE | Should -Not -Be 0
+            $errorOutput = $r | Out-String
+            $errorOutput | Should -Match "TestCaseId 99 is not allowed for testing purposes"
+        }
+        finally {
+            $env:PATH = $oldPath
+        }
+    }
+
     It 'Dsc can process large resource output' -Pending {
         try {
             $env:TestClassResourceResultCount = 5000 # with sync resource invocations this was not possible
@@ -354,7 +365,7 @@ Describe 'PowerShell adapter resource tests' {
         # next executions following shortly after should Not rebuild the cache
         1..3 | ForEach-Object {
             dsc -l trace resource list -a Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
-            "$TestDrive/tracing.txt" | Should -Not -FileContentMatchExactly 'Constructing Get-DscResource cache'
+            "$TestDrive/tracing.txt" | Should -Not -FileContentMatchExactly 'Constructing Get-DscResource cache' -Because (Get-Content -Raw -Path "$TestDrive/tracing.txt")
         }
     }
 
@@ -374,6 +385,57 @@ Describe 'PowerShell adapter resource tests' {
     It 'Specifying a non-existent version returns an error' {
         $null = dsc resource get -r TestClassResource/TestClassResource --version 0.0.2 2> $TestDrive/error.log
         $LASTEXITCODE | Should -Be 7
-        Get-Content -Path $TestDrive/error.log | Should -Match 'Resource not found: TestClassResource/TestClassResource 0.0.2'
+        (Get-Content -Raw -Path $TestDrive/error.log) | Should -BeLike '*Resource not found: TestClassResource/TestClassResource 0.0.2*' -Because (Get-Content -Raw -Path $TestDrive/error.log)
+    }
+
+    It 'Can process SecureString property' {
+        $r = '{"Name":"TestClassResource1","SecureStringProp":"MySecretValue"}' | dsc resource get -r 'TestClassResource/TestClassResource' -f -
+        $LASTEXITCODE | Should -Be 0
+        $res = $r | ConvertFrom-Json
+        $res.actualState.SecureStringProp | Should -Not -BeNullOrEmpty
+    }
+
+    Context 'Tracing works' {
+        It 'Error messages come from Write-Error' {
+            $null = dsc -l error resource set -r TestClassResource/StreamResource -i '{"Name":"TestClassResource1"}' 2> $TestDrive/error.log
+            $logContent = Get-Content -Path $TestDrive/error.log -Raw
+            $LASTEXITCODE | Should -Be 2 -Because $logContent
+            $logContent | Should -Match 'ERROR .*? This is an Error message' -Because $logContent
+        }
+
+        It 'Warning messages come from Write-Warning' {
+            $null = "{'Name':'TestClassResource1','Prop1':'ValueForProp1'}" | dsc -l warn resource get -r 'TestClassResource/StreamResource' -f - 2> $TestDrive/warning.log
+            $logContent = Get-Content -Path $TestDrive/warning.log -Raw
+            $LASTEXITCODE | Should -Be 0 -Because $logContent
+            $logContent | Should -Match 'WARN .*? This is a Warning message' -Because $logContent
+        }
+
+        It 'Info messages come from Write-Host' {
+            $null = "{'Name':'TestClassResource1'}" | dsc -l info resource test -r 'TestClassResource/StreamResource' -f - 2> $TestDrive/verbose.log
+            $logContent = Get-Content -Path $TestDrive/verbose.log -Raw
+            $LASTEXITCODE | Should -Be 0 -Because $logContent
+            $logContent | Should -Match 'INFO .*? This is a Host message' -Because $logContent
+        }
+
+        It 'Debug messages come from Write-Verbose' {
+            $null = "{'Name':'TestClassResource1'}" | dsc -l debug resource set -r 'TestClassResource/StreamResource' -f - 2> $TestDrive/debug.log
+            $logContent = Get-Content -Path $TestDrive/debug.log -Raw
+            $LASTEXITCODE | Should -Be 2 -Because $logContent
+            $logContent | Should -Match 'DEBUG .*? This is a Verbose message' -Because $logContent
+        }
+
+        It 'Trace messages come from Write-Debug' {
+            $null = dsc -l trace resource set -r TestClassResource/StreamResource -i '{"Name":"TestClassResource1"}' 2> $TestDrive/trace.log
+            $logContent = Get-Content -Path $TestDrive/trace.log -Raw
+            $LASTEXITCODE | Should -Be 2 -Because $logContent
+            $logContent | Should -Match 'TRACE .*? This is a Debug message' -Because $logContent
+        }
+
+        It 'Trace messages come from Write-Information' {
+            $null = dsc -l trace resource test -r TestClassResource/StreamResource -i '{"Name":"TestClassResource1"}' 2> $TestDrive/trace_info.log
+            $logContent = Get-Content -Path $TestDrive/trace_info.log -Raw
+            $LASTEXITCODE | Should -Be 0 -Because $logContent
+            $logContent | Should -Match 'INFO .*? This is an Information message' -Because $logContent
+        }
     }
 }

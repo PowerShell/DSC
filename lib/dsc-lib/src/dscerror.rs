@@ -6,7 +6,6 @@ use std::str::Utf8Error;
 
 use indicatif::style::TemplateError;
 use thiserror::Error;
-use tracing::error;
 use tree_sitter::LanguageError;
 
 #[derive(Error, Debug)]
@@ -25,6 +24,9 @@ pub enum DscError {
 
     #[error("{t} '{0}' [{t2} {1}] {t3}: {2}", t = t!("dscerror.commandResource"), t2 = t!("dscerror.exitCode"), t3 = t!("dscerror.manifestDescription"))]
     CommandExitFromManifest(String, i32, String),
+
+    #[error("{0}")]
+    CommandNotFound(String),
 
     #[error("{t} {0} {t2} '{1}'", t = t!("dscerror.commandOperation"), t2 = t!("dscerror.forExecutable"))]
     CommandOperation(String, String),
@@ -50,8 +52,26 @@ pub enum DscError {
     #[error("{t} '{0}', {t2} {1}, {t3} {2}", t = t!("dscerror.invalidFunctionParameterCount"), t2 = t!("dscerror.expected"), t3 = t!("dscerror.got"))]
     InvalidFunctionParameterCount(String, usize, usize),
 
+    #[error("{0}")]
+    InvalidDateVersion(String),
+
+    #[error("{t} '{0}': {1}", t = t!("dscerror.invalidExitCode"))]
+    InvalidExitCode(String, core::num::ParseIntError),
+
+    #[error("{t} '{0}': {t2}", t = t!("dscerror.invalidExitCode"), t2 = t!("dscerror.invalidExitCodePlusPrefix"))]
+    InvalidExitCodePlusPrefix(String),
+
+    #[error("{0}")]
+    InvalidManifest(String),
+
     #[error("{t} '{0}': {1}", t = t!("dscerror.invalidRequiredVersion"))]
     InvalidRequiredVersion(String, String),
+
+    #[error("{t} '{0}' - {t2}: '{1}'", t = t!("dscerror.invalidTagPrefix"), t2 = t!("dscerror.invalidTagSuffix"))]
+    InvalidTag(String, String),
+
+    #[error("{t} '{0}' - {t2}: '{1}'", t = t!("dscerror.invalidTypeNamePrefix"), t2 = t!("dscerror.invalidTypeNameSuffix"))]
+    InvalidTypeName(String, String),
 
     #[error("IO: {0}")]
     Io(#[from] std::io::Error),
@@ -95,11 +115,35 @@ pub enum DscError {
     #[error("{t}: {0}", t = t!("dscerror.progress"))]
     Progress(#[from] TemplateError),
 
+    #[cfg(windows)]
+    #[error("{t}: {0}", t = t!("dscerror.registryHive"))]
+    RegistryHive(#[from] registry::Error),
+
+    #[cfg(windows)]
+    #[error("{t}: {0}", t = t!("dscerror.registryIterator"))]
+    RegistryIterator(#[from] registry::iter::values::Error),
+
+    #[cfg(windows)]
+    #[error("{t}: {0}", t = t!("dscerror.registryKey"))]
+    RegistryKey(#[from] registry::key::Error),
+
+    #[error("{t}: {0}", t = t!("dscerror.resourceMissingDirectory"))]
+    ResourceMissingDirectory(String),
+
+    #[error("{t}: {0}", t = t!("dscerror.resourceMissingPath"))]
+    ResourceMissingPath(String),
+
     #[error("{t}: {0} {1}", t = t!("dscerror.resourceNotFound"))]
     ResourceNotFound(String, String),
 
     #[error("{t}: {0}", t = t!("dscerror.resourceManifestNotFound"))]
     ResourceManifestNotFound(String),
+
+    #[error("{t}: '{0}'", t = t!("dscerror.resourceVersionToSemverConversion"))]
+    ResourceVersionToSemverConversion(String),
+
+    #[error("{t}: '{0}'", t = t!("dscerror.resourceVersionReqToSemverConversion"))]
+    ResourceVersionReqToSemverConversion(String),
 
     #[error("{t}: {0}", t = t!("dscerror.schema"))]
     Schema(String),
@@ -113,6 +157,17 @@ pub enum DscError {
     #[error("semver: {0}")]
     SemVer(#[from] semver::Error),
 
+    #[error(
+        "{t}: '{0}' {t2} '{1}' - {t3}",
+        t = t!("dscerror.semverReqWithBuildMetadataPrefix"),
+        t2 = t!("dscerror.semverReqWithBuildMetadataInfix"),
+        t3 = t!("dscerror.semverReqWithBuildMetadataSuffix")
+    )]
+    SemVerReqWithBuildMetadata(String, String),
+
+    #[error("{t}: {0}", t = t!("dscerror.utf16Conversion"))]
+    Utf16Conversion(#[from] std::string::FromUtf16Error),
+
     #[error("{t}: {0}", t = t!("dscerror.utf8Conversion"))]
     Utf8Conversion(#[from] Utf8Error),
 
@@ -122,8 +177,8 @@ pub enum DscError {
         message: String,
     },
 
-    #[error("{t}: {0}.  {t2}: {1:?}", t = t!("dscerror.unrecognizedSchemaUri"), t2 = t!("dscerror.validSchemaUrisAre"))]
-    UnrecognizedSchemaUri(String, Vec<String>),
+    #[error(transparent)]
+    UnrecognizedSchemaUri(#[from] crate::schemas::dsc_repo::UnrecognizedSchemaUri),
 
     #[error("{t} '{0}' {t2} '{1}'", t = t!("dscerror.extension"), t2 = t!("dscerror.unsupportedCapability"))]
     UnsupportedCapability(String, String),

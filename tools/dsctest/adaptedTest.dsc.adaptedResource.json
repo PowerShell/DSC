@@ -1,0 +1,39 @@
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/adaptedresource/manifest.json",
+    "type": "Adapted/Three",
+    "kind": "resource",
+    "version": "1.0.0",
+    "capabilities": [
+        "get",
+        "set",
+        "test",
+        "export"
+    ],
+    "description": "An adapted resource for testing.",
+    "author": "DSC Team",
+    "requireAdapter": "Test/Adapter",
+    "path": "adaptedTest.dsc.adaptedResource.json",
+    "schema": {
+        "embedded": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/resources/Adapted/Three/v0.1.0/schema.json",
+            "title": "Adapted/Three",
+            "description": "An adapted resource for testing.",
+            "type": "object",
+            "required": [],
+            "additionalProperties": false,
+            "properties": {
+                "one": {
+                    "type": "string",
+                    "title": "Property One",
+                    "description": "This is property one of the adapted resource."
+                },
+                "name": {
+                    "type": "string",
+                    "title": "Name",
+                    "description": "The name of the adapted resource instance."
+                }
+            }
+        }
+    }
+}

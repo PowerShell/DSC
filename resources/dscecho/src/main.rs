@@ -40,8 +40,9 @@ fn main() {
                     }
                 },
                 Output::Object(ref mut obj) => {
-                    *obj = redact(obj);
-                },
+                    obj.clone_from(redact(&Value::Object(obj.clone()))
+                        .as_object()
+                        .expect("Expected redact() to return a Value::Object"));                },
                 _ => {}
             }
         }

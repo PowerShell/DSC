@@ -64,6 +64,15 @@ switch ($Operation) {
         )} | ConvertTo-Json -Depth 10 -Compress
     }
     'Validate' {
-        @{ valid = $true } | ConvertTo-Json
+        # Test validation with reason field
+        if ($inputobj.resources[0].properties.TestCaseId -eq 99) {
+            @{ 
+                valid = $false
+                reason = "TestCaseId 99 is not allowed for testing purposes"
+            } | ConvertTo-Json
+        }
+        else {
+            @{ valid = $true } | ConvertTo-Json
+        }
     }
 }

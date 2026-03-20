@@ -1,7 +1,10 @@
 [package]
 name = "dsc-lib-osinfo"
 version = "1.0.0"
-edition = "2021"
+edition = "2024"
+
+[lib]
+doctest = false
 
 [dependencies]
 os_info = { workspace = true }

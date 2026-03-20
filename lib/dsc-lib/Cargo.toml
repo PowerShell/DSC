@@ -1,7 +1,10 @@
 [package]
 name = "dsc-lib"
 version = "3.2.0"
-edition = "2021"
+edition = "2024"
+
+[lib]
+doctest = false
 
 [dependencies]
 # external dependencies
@@ -9,6 +12,7 @@ base32 = { workspace = true }
 base64 = { workspace = true }
 chrono = { workspace = true, features = ["alloc"] }
 clap = { workspace = true }
+const-str = { workspace = true }
 derive_builder = { workspace = true }
 indicatif = { workspace = true }
 jsonschema = { workspace = true }
@@ -25,7 +29,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
 thiserror = { workspace = true }
-semver = { workspace = true }
+semver = { workspace = true, features = ["serde"] }
 tokio = { workspace = true, features = [
     "io-util",
     "macros",
@@ -35,16 +39,27 @@ tokio = { workspace = true, features = [
 tracing = { workspace = true }
 tracing-indicatif = { workspace = true }
 tree-sitter = { workspace = true }
-tree-sitter-rust = { workspace = true}
+tree-sitter-rust = { workspace = true }
 uuid = { workspace = true }
+url = { workspace = true }
+urlencoding = { workspace = true }
 which = { workspace = true }
+ipnetwork = { workspace = true }
 # workspace crate dependencies
 dsc-lib-osinfo = { workspace = true }
 dsc-lib-security_context = { workspace = true }
+dsc-lib-jsonschema = { workspace = true }
 tree-sitter-dscexpression = { workspace = true }
+
+[target.'cfg(windows)'.dependencies]
+registry = { workspace = true }
 
 [dev-dependencies]
 serde_yaml = { workspace = true }
+# Helps review complex comparisons, like schemas
+pretty_assertions = { workspace = true }
+# Enables parameterized test cases
+test-case = { workspace = true }
 
 [build-dependencies]
 cc = { workspace = true }

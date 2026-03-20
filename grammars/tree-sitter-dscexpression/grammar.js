@@ -6,7 +6,7 @@ const PREC = {
   STRINGLITERAL: -11,
 }
 
-module.exports = grammar({
+export default grammar({
   name: 'dscexpression',
 
   extras: $ => ['\n', ' '],
@@ -24,7 +24,7 @@ module.exports = grammar({
 
     function: $ => prec(PREC.FUNCTION, seq(field('name', $.functionName), '(', field('args', optional($.arguments)), ')')),
     functionName: $ => choice(
-      /[a-zA-Z][a-zA-Z0-9]*(\.[a-zA-Z0-9]+)?/,
+      /[_a-zA-Z][_a-zA-Z0-9]*(\.[a-zA-Z0-9]+)?/,
       $._booleanLiteral
     ),
     arguments: $ => seq($._argument, repeat(seq(',', $._argument))),
@@ -42,7 +42,8 @@ module.exports = grammar({
     memberAccess: $ => seq('.', field('name', $.memberName)),
     memberName: $ => /[a-zA-Z0-9_-]+/,
 
-    index: $ => seq('[', field('indexValue', choice($.expression, $.number)), ']'),
+    propertyName: $ => seq('\'', field('string', $.string), '\''),
+    index: $ => seq('[', field('indexValue', choice($.expression, $.number, $.propertyName)), ']'),
   }
 
 });

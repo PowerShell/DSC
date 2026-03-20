@@ -3,7 +3,7 @@
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{Map, Value};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(untagged)]
@@ -22,7 +22,9 @@ pub enum Output {
     String(String),
     // Object has to be last so it doesn't get matched first
     #[serde(rename = "object")]
-    Object(Value),
+    Object(Map<String,Value>),
+    #[serde(rename = "null")]
+    Null,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -36,7 +38,7 @@ pub struct SecureString {
 #[serde(deny_unknown_fields)]
 pub struct SecureObject {
     #[serde(rename = "secureObject")]
-    pub secure_object: Value,
+    pub secure_object: Map<String,Value>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]

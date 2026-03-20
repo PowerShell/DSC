@@ -1,0 +1,118 @@
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "description": "Manage Windows Optional Features using the DISM API.",
+    "tags": [
+        "windows",
+        "dism",
+        "optionalfeature",
+        "feature"
+    ],
+    "type": "Microsoft.Windows/OptionalFeatureList",
+    "version": "0.1.0",
+    "get": {
+        "executable": "dism_dsc",
+        "args": [
+            "get"
+        ],
+        "input": "stdin",
+        "requireSecurityContext": "elevated"
+    },
+    "set": {
+        "executable": "dism_dsc",
+        "args": [
+            "set"
+        ],
+        "input": "stdin",
+        "implementsPretest": false,
+        "return": "state",
+        "requireSecurityContext": "elevated"
+    },
+    "export": {
+        "executable": "dism_dsc",
+        "args": [
+            "export"
+        ],
+        "input": "stdin",
+        "requireSecurityContext": "elevated"
+    },
+    "schema": {
+        "embedded": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/resources/Microsoft.Windows/OptionalFeatureList/v0.1.0/schema.json",
+            "title": "Windows Optional Feature",
+            "description": "Manage Windows Optional Features using the DISM API. Supports get, set, and export operations.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/optionalfeaturelist/resource\n",
+            "markdownDescription": "The `Microsoft.Windows/OptionalFeatureList` resource enables you to manage Windows Optional Features using the DISM API. Supports enabling (`Installed`) and disabling (`NotPresent`, `Removed`) features.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/optionalfeaturelist/resource\n",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "features"
+            ],
+            "properties": {
+                "_restartRequired": {
+                    "type": "array",
+                    "title": "Restart required",
+                    "description": "Indicates that a system restart is required to complete the state change. Returned by the set operation when DISM reports that a reboot is needed.",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                    }
+                },
+                "features": {
+                    "type": "array",
+                    "title": "Features",
+                    "description": "An array of optional feature filters or feature information objects.",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "featureName": {
+                                "type": "string",
+                                "title": "Feature name",
+                                "description": "The name of the Windows optional feature. Required for get operation. For export operation, this is optional and wildcards (*) are supported for case-insensitive filtering."
+                            },
+                            "_exist": {
+                                "type": "boolean",
+                                "title": "Exists",
+                                "description": "Indicates whether the feature exists on the system. Set to false when the requested feature name is not recognized by DISM."
+                            },
+                            "state": {
+                                "type": "string",
+                                "enum": [
+                                    "NotPresent",
+                                    "UninstallPending",
+                                    "Staged",
+                                    "Removed",
+                                    "Installed",
+                                    "InstallPending",
+                                    "Superseded",
+                                    "PartiallyInstalled"
+                                ],
+                                "title": "Feature state",
+                                "description": "The current state of the optional feature. For set operations, only Installed, NotPresent, and Removed are accepted; other states are returned by get and export operations and are not valid inputs for set."},
+                            "displayName": {
+                                "type": "string",
+                                "title": "Display name",
+                                "description": "The display name of the optional feature. Returned by get and export operations. For export, wildcards (*) are supported for case-insensitive filtering."
+                            },
+                            "description": {
+                                "type": "string",
+                                "title": "Description",
+                                "description": "The description of the optional feature. Returned by get and export operations. For export, wildcards (*) are supported for case-insensitive filtering."
+                            },
+                            "restartRequired": {
+                                "type": "string",
+                                "enum": [
+                                    "No",
+                                    "Possible",
+                                    "Required"
+                                ],
+                                "title": "Restart required",
+                                "description": "Whether a restart is required after enabling or disabling the feature. This is a read-only property returned by get and export operations."
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

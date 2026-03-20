@@ -3,23 +3,41 @@
 
 use chrono::{DateTime, Local};
 use rust_i18n::t;
-use schemars::{JsonSchema, json_schema};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::{collections::HashMap, fmt::Display};
 
-use crate::{dscerror::DscError, schemas::DscRepoSchema};
+use crate::{schemas::{
+    dsc_repo::DscRepoSchema,
+    transforms::{idiomaticize_externally_tagged_enum, idiomaticize_string_enum}
+}, types::FullyQualifiedTypeName};
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
+#[schemars(transform = idiomaticize_string_enum)]
+#[dsc_repo_schema(base_name = "securityContext", folder_path = "executionInformation")]
 pub enum SecurityContextKind {
     Current,
     Elevated,
     Restricted,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+impl Display for SecurityContextKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let context_str = match self {
+            SecurityContextKind::Current => "current",
+            SecurityContextKind::Elevated => "elevated",
+            SecurityContextKind::Restricted => "restricted",
+        };
+        write!(f, "{context_str}")
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
+#[schemars(transform = idiomaticize_string_enum)]
+#[dsc_repo_schema(base_name = "operation", folder_path = "executionInformation")]
 pub enum Operation {
     Get,
     Set,
@@ -27,8 +45,22 @@ pub enum Operation {
     Export,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+impl Display for Operation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let operation_str = match self {
+            Operation::Get => "get",
+            Operation::Set => "set",
+            Operation::Test => "test",
+            Operation::Export => "export",
+        };
+        write!(f, "{operation_str}")
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
+#[schemars(transform = idiomaticize_string_enum)]
+#[dsc_repo_schema(base_name = "executionType", folder_path = "executionInformation")]
 pub enum ExecutionKind {
     Actual,
     WhatIf,
@@ -41,40 +73,64 @@ pub struct Process {
     pub id: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
+#[schemars(transform = idiomaticize_externally_tagged_enum)]
+#[dsc_repo_schema(base_name = "restartRequired", folder_path = "executionInformation")]
 pub enum RestartRequired {
     System(String),
     Service(String),
     Process(Process),
 }
 
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[serde(rename_all = "camelCase")]
+#[dsc_repo_schema(base_name = "resourceDiscovery", folder_path = "directive")]
+pub enum ResourceDiscoveryMode {
+    PreDeployment,
+    DuringDeployment,
+}
+
+impl Display for ResourceDiscoveryMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mode_str = match self {
+            ResourceDiscoveryMode::PreDeployment => "preDeployment",
+            ResourceDiscoveryMode::DuringDeployment => "duringDeployment",
+        };
+        write!(f, "{mode_str}")
+    }
+}
+
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct MicrosoftDscMetadata {
-    /// Version of DSC
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub version: Option<String>,
-    /// The operation being performed
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub operation: Option<Operation>,
-    /// The type of execution
-    #[serde(rename = "executionType", skip_serializing_if = "Option::is_none")]
-    pub execution_type: Option<ExecutionKind>,
-    /// The start time of the configuration operation
-    #[serde(rename = "startDatetime", skip_serializing_if = "Option::is_none")]
-    pub start_datetime: Option<String>,
-    /// The end time of the configuration operation
-    #[serde(rename = "endDatetime", skip_serializing_if = "Option::is_none")]
-    pub end_datetime: Option<String>,
     /// The duration of the configuration operation
     #[serde(skip_serializing_if = "Option::is_none")]
     pub duration: Option<String>,
-    /// The security context of the configuration operation, can be specified to be required
-    #[serde(rename = "securityContext", skip_serializing_if = "Option::is_none")]
-    pub security_context: Option<SecurityContextKind>,
+    /// The end time of the configuration operation
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub end_datetime: Option<String>,
+    /// The type of execution
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub execution_type: Option<ExecutionKind>,
+    /// The operation being performed
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub operation: Option<Operation>,
     /// Indicates what needs to be restarted after the configuration operation
-    #[serde(rename = "restartRequired", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub restart_required: Option<Vec<RestartRequired>>,
+    /// Copy loop context for resources expanded from copy loops
+    #[serde(rename = "copyLoops", skip_serializing_if = "Option::is_none")]
+    pub copy_loops: Option<Map<String, Value>>,
+    /// The security context of the configuration operation, can be specified to be required
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub security_context: Option<SecurityContextKind>,
+    /// The start time of the configuration operation
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub start_datetime: Option<String>,
+    /// Version of DSC
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
 }
 
 impl MicrosoftDscMetadata {
@@ -97,7 +153,96 @@ impl MicrosoftDscMetadata {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[serde(rename_all = "camelCase")]
+#[dsc_repo_schema(base_name = "executionInformation", folder_path = "config")]
+pub struct ExecutionInformation {
+    /// The duration of the configuration operation
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub duration: Option<String>,
+    /// The end time of the configuration operation
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub end_datetime: Option<String>,
+    /// The type of execution
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub execution_type: Option<ExecutionKind>,
+    /// The operation being performed
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub operation: Option<Operation>,
+    /// Indicates what needs to be restarted after the configuration operation
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub restart_required: Option<Vec<RestartRequired>>,
+    /// Copy loop context for resources expanded from copy loops
+    #[serde(rename = "copyLoops", skip_serializing_if = "Option::is_none")]
+    pub copy_loops: Option<Map<String, Value>>,
+    /// The security context used for the configuration operation
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub security_context: Option<SecurityContextKind>,
+    /// The start time of the configuration operation
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub start_datetime: Option<String>,
+    /// Version of DSC
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
+    /// Information about what-if operations performed during this execution, if any
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub what_if: Option<Value>,
+}
+
+impl ExecutionInformation {
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            duration: None,
+            end_datetime: None,
+            execution_type: None,
+            operation: None,
+            restart_required: None,
+            copy_loops: None,
+            security_context: None,
+            start_datetime: None,
+            version: None,
+            what_if: None,
+        }
+    }
+
+    pub fn new_with_duration(start: &DateTime<Local>, end: &DateTime<Local>) -> Self {
+        Self {
+            duration: Some(end.signed_duration_since(*start).to_string()),
+            ..Self::new()
+        }
+    }
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[serde(rename_all = "camelCase")]
+#[dsc_repo_schema(base_name = "directive", folder_path = "config")]
+pub struct ConfigDirective {
+    /// Indicates if resources are discovered pre-deployment or during deployment
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resource_discovery: Option<ResourceDiscoveryMode>,
+    /// The required security context of the configuration operation
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub security_context: Option<SecurityContextKind>,
+    /// Required version of DSC
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[serde(rename_all = "camelCase")]
+#[dsc_repo_schema(base_name = "directive", folder_path = "resource")]
+pub struct ResourceDirective {
+    /// Specify specific adapter type used for implicit operations
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub require_adapter: Option<String>,
+    /// The required security context of the configuration operation
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub security_context: Option<SecurityContextKind>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[dsc_repo_schema(base_name = "document.metadata", folder_path = "config")]
 pub struct Metadata {
     #[serde(rename = "Microsoft.DSC", skip_serializing_if = "Option::is_none")]
     pub microsoft: Option<MicrosoftDscMetadata>,
@@ -105,32 +250,63 @@ pub struct Metadata {
     pub other: Map<String, Value>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[dsc_repo_schema(base_name = "document.function", folder_path = "config")]
 pub struct UserFunction {
     pub namespace: String,
     pub members: HashMap<String, UserFunctionDefinition>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[dsc_repo_schema(base_name = "definition", folder_path = "definitions/functions/user")]
 pub struct UserFunctionDefinition {
     pub parameters: Option<Vec<UserFunctionParameter>>,
     pub output: UserFunctionOutput,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[dsc_repo_schema(base_name = "parameter", folder_path = "definitions/functions/user")]
 pub struct UserFunctionParameter {
     pub name: String,
     pub r#type: DataType,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[dsc_repo_schema(base_name = "output", folder_path = "definitions/functions/user")]
 pub struct UserFunctionOutput {
     pub r#type: DataType,
     pub value: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub enum ValueOrCopy {
+    Value(String),
+    Copy(Copy),
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
+#[dsc_repo_schema(base_name = "document.output", folder_path = "config")]
+pub struct Output {
+    pub condition: Option<String>,
+    pub r#type: DataType,
+    #[serde(flatten)]
+    pub value_or_copy: ValueOrCopy,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[serde(deny_unknown_fields)]
+#[dsc_repo_schema(
+    base_name = "document",
+    folder_path = "config",
+    should_bundle = true,
+    schema_field(
+        name = schema,
+        title = t!("configure.config_doc.configurationDocumentSchemaTitle"),
+        description = t!("configure.config_doc.configurationDocumentSchemaDescription"),
+    )
+)]
 pub struct Configuration {
     #[serde(rename = "$schema")]
     #[schemars(schema_with = "Configuration::recognized_schema_uris_subschema")]
@@ -138,17 +314,25 @@ pub struct Configuration {
     #[serde(rename = "contentVersion")]
     pub content_version: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub directives: Option<ConfigDirective>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub execution_information: Option<ExecutionInformation>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub functions: Option<Vec<UserFunction>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub parameters: Option<HashMap<String, Parameter>>,
+    pub metadata: Option<Metadata>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub variables: Option<Map<String, Value>>,
+    pub outputs: Option<HashMap<String, Output>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parameters: Option<HashMap<String, Parameter>>,
     pub resources: Vec<Resource>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub metadata: Option<Metadata>,
+    pub variables: Option<Map<String, Value>>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[serde(deny_unknown_fields)]
+#[dsc_repo_schema(base_name = "document.parameter", folder_path = "config")]
 pub struct Parameter {
     #[serde(rename = "type")]
     pub parameter_type: DataType,
@@ -170,7 +354,9 @@ pub struct Parameter {
     pub metadata: Option<Map<String, Value>>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[schemars(transform = idiomaticize_string_enum)]
+#[dsc_repo_schema(base_name = "dataTypes", folder_path = "definitions/parameters")]
 pub enum DataType {
     #[serde(rename = "string")]
     String,
@@ -204,6 +390,7 @@ impl Display for DataType {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[schemars(transform = idiomaticize_string_enum)]
 pub enum CopyMode {
     #[serde(rename = "serial")]
     Serial,
@@ -212,14 +399,30 @@ pub enum CopyMode {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(untagged)]
+pub enum IntOrExpression {
+    Int(i64),
+    Expression(String),
+}
+
+impl Display for IntOrExpression {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            IntOrExpression::Int(i) => write!(f, "{i}"),
+            IntOrExpression::Expression(s) => write!(f, "{s}"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Copy {
     pub name: String,
-    pub count: i64,
+    pub count: IntOrExpression,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mode: Option<CopyMode>,
     #[serde(skip_serializing_if = "Option::is_none", rename = "batchSize")]
-    pub batch_size: Option<i64>,
+    pub batch_size: Option<IntOrExpression>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -260,20 +463,26 @@ pub struct Sku {
     pub capacity: Option<i32>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
+#[dsc_repo_schema(base_name = "document.resource", folder_path = "config")]
 pub struct Resource {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub condition: Option<String>,
     /// The fully qualified name of the resource type
     #[serde(rename = "type")]
-    pub resource_type: String,
-    #[serde(skip_serializing_if = "Option::is_none", rename = "apiVersion")]
-    pub api_version: Option<String>,
+    pub resource_type: FullyQualifiedTypeName,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "requireVersion", alias = "apiVersion")]
+    pub require_version: Option<String>,
     /// A friendly name for the resource instance
+    #[serde(default)]
     pub name: String, // friendly unique instance name
     #[serde(skip_serializing_if = "Option::is_none")]
     pub comments: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub directives: Option<ResourceDirective>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub execution_information: Option<ExecutionInformation>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub location: Option<String>,
     #[serde(rename = "dependsOn", skip_serializing_if = "Option::is_none")]
@@ -307,41 +516,20 @@ impl Default for Configuration {
     }
 }
 
-impl DscRepoSchema for Configuration {
-    const SCHEMA_FILE_BASE_NAME: &'static str = "document";
-    const SCHEMA_FOLDER_PATH: &'static str = "config";
-    const SCHEMA_SHOULD_BUNDLE: bool = true;
-
-    fn schema_metadata() -> schemars::Schema {
-        json_schema!({
-            "title": t!("configure.config_doc.configurationDocumentSchemaTitle").to_string(),
-            "description": t!("configure.config_doc.configurationDocumentSchemaDescription").to_string(),
-        })
-    }
-
-    fn validate_schema_uri(&self) -> Result<(), DscError> {
-        if Self::is_recognized_schema_uri(&self.schema) {
-            Ok(())
-        } else {
-            Err(DscError::UnrecognizedSchemaUri(
-                self.schema.clone(),
-                Self::recognized_schema_uris(),
-            ))
-        }
-    }
-}
-
 impl Configuration {
     #[must_use]
     pub fn new() -> Self {
         Self {
             schema: Self::default_schema_id_uri(),
             content_version: Some("1.0.0".to_string()),
+            directives: None,
+            execution_information: None,
             metadata: None,
             parameters: None,
             resources: Vec::new(),
             functions: None,
             variables: None,
+            outputs: None,
         }
     }
 }
@@ -350,9 +538,11 @@ impl Resource {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            resource_type: String::new(),
+            resource_type: FullyQualifiedTypeName::default(),
             name: String::new(),
             depends_on: None,
+            directives: None,
+            execution_information: None,
             kind: None,
             properties: None,
             metadata: None,
@@ -366,7 +556,7 @@ impl Resource {
             comments: None,
             location: None,
             tags: None,
-            api_version: None,
+            require_version: None,
         }
     }
 }
@@ -379,11 +569,9 @@ impl Default for Resource {
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        configure::config_doc::Configuration,
-        dscerror::DscError,
-        schemas::DscRepoSchema
-    };
+    use crate::schemas::dsc_repo::{DscRepoSchema, UnrecognizedSchemaUri};
+
+    use crate::configure::config_doc::Configuration;
 
     #[test]
     fn test_validate_schema_uri_with_invalid_uri() {
@@ -399,13 +587,10 @@ mod test {
         assert!(result.as_ref().is_err());
 
         match result.as_ref().unwrap_err() {
-            DscError::UnrecognizedSchemaUri(actual, recognized) => {
+            UnrecognizedSchemaUri(actual, recognized) => {
                 assert_eq!(actual, &invalid_uri);
                 assert_eq!(recognized, &Configuration::recognized_schema_uris())
             },
-            _ => {
-                panic!("Expected validate_schema_uri() to error on unrecognized schema uri, but was {:?}", result.as_ref().unwrap_err())
-            }
         }
     }
 
@@ -420,4 +605,65 @@ mod test {
 
         assert!(result.is_ok());
     }
+
+    #[test]
+    fn test_invalid_resource_field_in_array() {
+        let config_json = r#"{
+            "resources": [
+                {
+                    "invalidField": "someValue"
+                }
+            ]
+        }"#;
+
+        let result: Result<Configuration, _> = serde_json::from_str(config_json);
+        assert!(result.is_err());
+        let err = result.unwrap_err().to_string();
+        assert!(err.starts_with("unknown field `invalidField`, expected one of `condition`, `type`,"));
+    }
+
+    #[test]
+    fn test_invalid_resource_type_in_array() {
+        let config_json = r#"{
+            "resources": [
+                "invalidType"
+            ]
+        }"#;
+
+        let result: Result<Configuration, _> = serde_json::from_str(config_json);
+        assert!(result.is_err());
+        let err = result.unwrap_err().to_string();
+        assert!(err.contains("expected struct Resource"));
+    }
+
+    #[test]
+    fn test_resources_as_array() {
+        let config_json = r#"{
+            "$schema": "https://aka.ms/dsc/schemas/v3/bundled/config/document.json",
+            "resources": [
+                {
+                    "type": "Microsoft.DSC.Debug/Echo",
+                    "name": "echoResource",
+                    "requireVersion": "1.0.0"
+                },
+                {
+                    "type": "Microsoft/Process",
+                    "name": "processResource",
+                    "requireVersion": "0.1.0"
+                }
+            ]
+        }"#;
+
+        let config: Configuration = serde_json::from_str(config_json).unwrap();
+
+        assert_eq!(config.resources.len(), 2);
+        assert_eq!(config.resources[0].name, "echoResource");
+        assert_eq!(config.resources[0].resource_type, "Microsoft.DSC.Debug/Echo");
+        assert_eq!(config.resources[0].require_version.as_deref(), Some("1.0.0"));
+
+        assert_eq!(config.resources[1].name, "processResource");
+        assert_eq!(config.resources[1].resource_type, "Microsoft/Process");
+        assert_eq!(config.resources[1].require_version.as_deref(), Some("0.1.0"));
+    }
+
 }

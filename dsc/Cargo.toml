@@ -1,7 +1,7 @@
 [package]
 name = "dsc"
-version = "3.2.0-preview.6"
-edition = "2021"
+version = "3.2.0-preview.13"
+edition = "2024"
 
 [dependencies]
 # external dependencies

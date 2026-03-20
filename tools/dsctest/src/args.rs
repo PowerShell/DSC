@@ -6,6 +6,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
 pub enum Schemas {
     Adapter,
+    CopyResource,
     Delete,
     Exist,
     ExitCode,
@@ -15,10 +16,14 @@ pub enum Schemas {
     InDesiredState,
     Metadata,
     Operation,
+    RefreshEnv,
+    RestartRequired,
     Sleep,
+    StateAndDiff,
     Trace,
     Version,
     WhatIf,
+    WhatIfDelete
 }
 
 #[derive(Debug, Parser)]
@@ -37,6 +42,13 @@ pub enum AdapterOperation {
     List,
     Export,
     Validate,
+    Schema,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
+pub enum RefreshEnvOperation {
+    Get,
+    Set,
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
@@ -45,10 +57,18 @@ pub enum SubCommand {
     Adapter {
         #[clap(name = "input", short, long, help = "The input to the adapter command as JSON")]
         input: String,
-        #[clap(name = "resource-type", short, long, help = "The resource type to adapt to")]
+        #[clap(name = "resource-type", long, help = "The resource type to adapt to")]
         resource_type: String,
+        #[clap(name = "resource-path", long, help = "The path to the adapted resource")]
+        resource_path: Option<String>,
         #[clap(name = "operation", short, long, help = "The operation to perform")]
         operation: AdapterOperation,
+    },
+
+    #[clap(name = "copy-resource", about = "Copy a resource")]
+    CopyResource {
+        #[clap(name = "input", short, long, help = "The input to the copy resource command as JSON")]
+        input: String,
     },
 
     #[clap(name = "delete", about = "delete operation")]
@@ -101,11 +121,28 @@ pub enum SubCommand {
         export: bool,
     },
 
+    #[clap(name = "no-op", about = "Perform no operation, just return success")]
+    NoOp,
+
     #[clap(name = "operation", about = "Perform an operation")]
     Operation {
         #[clap(name = "operation", short, long, help = "The name of the operation to perform")]
         operation: String,
         #[clap(name = "input", short, long, help = "The input to the operation command as JSON")]
+        input: String,
+    },
+
+    #[clap(name = "refresh-env", about = "Refresh an environment variable in the registry")]
+    RefreshEnv {
+        #[clap(name = "operation", short, long, help = "The operation to perform: get or set")]
+        operation: RefreshEnvOperation,
+        #[clap(name = "input", short, long, help = "The input to the refresh env command as JSON")]
+        input: String,
+    },
+
+    #[clap(name = "restart-required", about = "Check if a restart is required based on the input")]
+    RestartRequired {
+        #[clap(name = "input", short, long, help = "The input to the restart required command as JSON")]
         input: String,
     },
 
@@ -121,6 +158,14 @@ pub enum SubCommand {
         input: String,
     },
 
+    #[clap(name = "state-and-diff", about = "Return state and diff as separate JSON lines")]
+    StateAndDiff {
+        #[clap(name = "input", short, long, help = "The input to the state-and-diff command as JSON")]
+        input: String,
+        #[clap(name = "state-only", long, help = "Only output the state JSON (for get operations)")]
+        state_only: bool,
+    },
+
     #[clap(name = "trace", about = "The trace level")]
     Trace,
 
@@ -131,6 +176,14 @@ pub enum SubCommand {
 
     #[clap(name = "whatif", about = "Check if it is a whatif operation")]
     WhatIf {
+        #[clap(name = "whatif", short, long, help = "Run as a whatif executionType instead of actual executionType")]
+        what_if: bool,
+        #[clap(name = "state-and-diff", short, long, help = "Output stateAndDiff format (state on first line, diff array on second line)")]
+        state_and_diff: bool,
+    },
+
+    #[clap(name = "whatif-delete", about = "Check if it is a whatif delete operation")]
+    WhatIfDelete {
         #[clap(name = "whatif", short, long, help = "Run as a whatif executionType instead of actual executionType")]
         what_if: bool,
     }

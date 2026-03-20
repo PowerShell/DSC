@@ -1,0 +1,11 @@
+{
+    "Name": "resources/brew",
+    "Kind": "Resource",
+    "SupportedPlatformOS": "macOS",
+    "CopyFiles": {
+        "macOS": [
+            "brew.dsc.resource.sh",
+            "brew.dsc.resource.json"
+        ]
+    }
+}

@@ -206,3 +206,12 @@ String with un-escaped single-quote
           (arguments
             (string))
           (ERROR))))
+
+=====
+Object index without quotes
+=====
+[myObject[foo]]
+---
+
+    (ERROR
+      (functionName))
