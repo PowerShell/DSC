@@ -143,8 +143,8 @@ pub enum DscError {
     #[error(transparent)]
     ResourceVersion(#[from] crate::types::ResourceVersionError),
 
-    #[error("{t}: '{0}'", t = t!("dscerror.resourceVersionReqToSemverConversion"))]
-    ResourceVersionReqToSemverConversion(String),
+    #[error(transparent)]
+    ResourceVersionReq(#[from] crate::types::ResourceVersionReqError),
 
     #[error("{t}: {0}", t = t!("dscerror.schema"))]
     Schema(String),

@@ -12,7 +12,7 @@ pub use fully_qualified_type_name::FullyQualifiedTypeName;
 mod resource_version;
 pub use resource_version::{ResourceVersion, ResourceVersionError};
 mod resource_version_req;
-pub use resource_version_req::ResourceVersionReq;
+pub use resource_version_req::{ResourceVersionReq, ResourceVersionReqError};
 mod semantic_version;
 pub use semantic_version::{SemanticVersion, SemanticVersionError};
 mod semantic_version_req;
