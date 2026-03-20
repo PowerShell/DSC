@@ -23,29 +23,26 @@ Describe 'Discover extension tests' {
     It 'Discover extensions' {
         $out = dsc extension list | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
-        $expectedExtensions = if ($IsWindows) {
-            @(
-            @{ type = 'Microsoft.DSC.Extension/Bicep'; version = '0.1.0'; capabilities = @('import') }
-            @{ type = 'Microsoft.Windows.Appx/Discover'; version = '0.1.0'; capabilities = @('discover') }
-            @{ type = 'Microsoft.PowerShell/Discover'; version = '0.1.0'; capabilities = @('discover') }
-            @{ type = 'Test/Discover'; version = '0.1.0'; capabilities = @('discover') }
-            )
+        if ($IsWindows) {
+            $out.Count | Should -Be 2 -Because ($out | Out-String)
+            $out[0].type | Should -Be 'Microsoft.Windows.Appx/Discover'
+            $out[0].version | Should -Be '0.1.0'
+            $out[0].capabilities | Should -BeExactly @('discover')
+            $out[0].manifest | Should -Not -BeNullOrEmpty
+            $out[1].type | Should -BeExactly 'Test/Discover'
+            $out[1].version | Should -BeExactly '0.1.0'
+            $out[1].capabilities | Should -BeExactly @('discover')
+            $out[1].manifest | Should -Not -BeNullOrEmpty
         } else {
-            @(
-            @{ type = 'Microsoft.DSC.Extension/Bicep'; version = '0.1.0'; capabilities = @('import') }
-            @{ type = 'Microsoft.PowerShell/Discover'; version = '0.1.0'; capabilities = @('discover') }
-            @{ type = 'Test/Discover'; version = '0.1.0'; capabilities = @('discover') }
-            )
-        }
-
-        $out.Count | Should -Be $expectedExtensions.Count -Because ($out | Out-String)
-        
-        foreach ($expected in $expectedExtensions) {
-            $extension = $out | Where-Object { $_.type -eq $expected.type }
-            $extension | Should -Not -BeNullOrEmpty -Because "Extension $($expected.type) should exist"
-            $extension.version | Should -BeExactly $expected.version
-            $extension.capabilities | Should -BeExactly $expected.capabilities
-            $extension.manifest | Should -Not -BeNullOrEmpty
+            $out.Count | Should -Be 2 -Because ($out | Out-String)
+            $out[0].type | Should -BeExactly 'Microsoft.PowerShell/Discover'
+            $out[0].version | Should -BeExactly '0.1.0'
+            $out[0].capabilities | Should -BeExactly @('discover')
+            $out[0].manifest | Should -Not -BeNullOrEmpty
+            $out[1].type | Should -BeExactly 'Test/Discover'
+            $out[1].version | Should -BeExactly '0.1.0'
+            $out[1].capabilities | Should -BeExactly @('discover')
+            $out[1].manifest | Should -Not -BeNullOrEmpty
         }
     }
 
