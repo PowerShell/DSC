@@ -76,7 +76,7 @@ schemas:
           You can't use alternate formats for the exit code. For example, instead of the
           hexadecimal value `0x80070005` for "Access denied", specify the exit code as
           `-2147024891`.
-          
+
           If you're authoring your resource manifest in YAML, be sure to wrap the exit code in
           single quotes, like `'0': Success` instead of `0: Success` to ensure the YAML file can be
           parsed correctly.
@@ -130,26 +130,24 @@ schemas:
         en-us: |-
           Defines the version of a DSC resource.
 
-          DSC supports both semantic versioning and arbitrary versioning for resources. Semantic
+          DSC supports both semantic versioning and date versioning for resources. Semantic
           versioning is the preferred and recommended versioning strategy. DSC only supports
-          arbitrary versioning for compatibility scenarios.
+          date versioning for compatibility scenarios.
 
           When the version is defined as a valid [semantic version][01], DSC can correctly compare
           versions to determine the latest version or match a [semantic version requirement][02].
           Where possible, resource and extension authors should follow semantic versioning for the
           best user experience.
 
-          When the version is an arbitrary string, DSC compares the strings
-          [lexicographically][03]. Arbitrary string versions are only equivalent when they contain
-          exactly the same characters - the comparison is case-sensitive. If you're defining a
-          resource that doesn't follow semantic versioning, consider defining the version as an
-          [ISO 8601 date][04], like `2026-01-15`. When you do, DSC can correctly determine that a
-          later date should be treated as a newer version.
+          When the version is defined as a valid [date version][03], DSC compares the dates to see
+          which one is newer. Date versions are only equivalent when they define the same date and
+          optional prerelease segment. Both versions must define or omit the prerelease segment. If
+          the prerelease segment is defined, the segments must be identical - the comparison is
+          case sensitive.
 
           [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/semver
-          [02]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/semverReq
-          [03]: https://doc.rust-lang.org/std/cmp/trait.Ord.html#lexicographical-comparison
-          [04]: https://www.iso.org/iso-8601-date-and-time-format.html
+          [02]: https://learn.microsoft.com/en-us/powershell/dsc/concepts/defining-semver-reqs.md
+          [03]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/dateVersion
       semanticVariant:
         title:
           en-us: Semantic resource version
@@ -167,36 +165,31 @@ schemas:
 
             [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/semver
             [02]: https://semver.org
-      arbitraryVariant:
+      dateVariant:
         title:
-          en-us: Arbitrary string resource version
+          en-us: Date resource version
         description:
           en-us: >-
-            Defines the resource's version as an arbitrary string.
+            Defines the resource's version as a date version.
         deprecationMessage:
           en-us: >-
-            Defining a resource version as an arbitrary string is supported only for compatibility
+            Defining a resource version as a date version is supported only for compatibility
             purposes. If possible, define your resource version as a valid semantic version. For
             more information about defining a semantic version, see [semver.org](https://semver.org).
         markdownDescription:
           en-us: |-
-            Defines the resource's version as an arbitrary string.
+            Defines the resource's version as a date version.
 
-            DSC uses this variant for the version of any DSC resource that defines its version as a
-            string that can't be parsed as a semantic version. This variant remains supported for
-            compatibility purposes but is _not_ recommended for production usage.
+            This variant remains supported for compatibility purposes but is _not_ recommended for
+            production usage.
 
-            When a resource defines the version as an arbitrary string:
+            When a resource defines the version as a date version:
 
-            1. You can only use exact match version requirements for that resource.
-            1. When a resource defines the version as an arbitrary string, DSC uses Rust's
-               [lexicographic comparison][01] logic to determine the "latest" version of the
-               resource to use as the default version when no version requirement is specified.
+            1. The resource only matches a resource version requirement that is defined as a date
+               version when the date and optional prerelease segments are exactly the same. The
+               comparison is case-sensitive for the prerelease segment.
             1. When DSC discovers a multiple manifests for a resource, DSC always treats
-               semantically versioned resources as newer than resources with an arbitrary string
-               version.
-
-            [01]: https://doc.rust-lang.org/std/cmp/trait.Ord.html#lexicographical-comparison
+               semantically versioned resources as newer than resources with a date version.
 
     resourceVersionReq:
       title:
@@ -208,24 +201,23 @@ schemas:
         en-us: |-
           Defines one or more limitations for a [resource version][01] to enable version pinning.
 
-          DSC supports both semantic versioning and arbitrary versioning for resources. Semantic
+          DSC supports both semantic versioning and date versioning for resources. Semantic
           versioning is the preferred and recommended versioning strategy. DSC only supports
-          arbitrary versioning for compatibility scenarios.
+          date versioning for compatibility scenarios.
 
-          Because DSC supports arbitrary string versions for compatibility, version requirements
-          must also support arbitrary string versions.
+          Because DSC supports date versions for compatibility, version requirements
+          must also support date versions as a valid requirement.
 
           When a resource version requirement is semantic, it behaves like a
           [semantic version requirement][02] and only matches resource versions that are semantic
-          _and_ valid for the given requirement. Arbitrary string versions never match a semantic
+          _and_ valid for the given requirement. Date versions never match a semantic
           resource version requirement.
 
-          Similarly, when a resource version requirement is an arbitrary string, it can never match
-          a semantically versioned resource. Instead, it matches an arbitrary resource version when
-          the arbitrary string version is _exactly_ the same as the arbitrary resource version
-          requirement.
+          Similarly, when a resource version requirement is a date version, it can never match
+          a semantically versioned resource. Instead, it matches a date resource version when
+          the date version is _exactly_ the same as the date resource version requirement.
 
-          Arbitrary resource versions and resource version requirements are only defined for
+          Date resource versions and date resource version requirements are only defined for
           compatibility scenarios. You should use semantic versions for resources and resource
           version requirements.
 
@@ -247,33 +239,33 @@ schemas:
             [Defining semantic version requirements][01].
 
             [01]: https://learn.microsoft.com/en-us/powershell/dsc/concepts/defining-semver-reqs.md
-      arbitraryVariant:
+      dateVariant:
         title:
-          en-us: Arbitrary resource version requirement
+          en-us: Date resource version requirement
         description:
           en-us: >-
-            Defines the required version for the resource as an arbitrary string.
+            Defines the required version for the resource as a date version.
         deprecationMessage:
           en-us: >-
-            Defining a resource version requirement as an arbitrary string is supported only for
+            Defining a resource version requirement as a date version is supported only for
             compatibility purposes. If possible, define your version requirement as a valid
             semantic version requirement. For more information about defining semantic version
             requirements with DSC, see
             [Defining semantic version requirements](https://learn.microsoft.com/en-us/powershell/dsc/concepts/defining-semver-reqs.md)
         markdownDescription:
           en-us: |-
-            Defines the required version for the resource as an arbitrary string.
+            Defines the required version for the resource as a date version.
 
-            DSC considers any requirement that can't be parsed as a semantic version requirement as
-            an arbitrary resource version requirement. This kind of requirement remains supported
-            for compatibility purposes but is _not_ recommended for production usage.
+            Date version requirements are supported for compatibility purposes but are _not_
+            recommended for production usage.
 
-            When a resource version requirement is defined as an arbitrary string:
+            When a resource version requirement is defined as a date version:
 
             1. It can never match a semantically versioned resource.
-            1. It only matches a resource with an [arbitrary string version][01] when the resource
+            1. It only matches a resource with a [date resource version][01] when the resource
                version and this version requirement are exactly the same. The comparison is
-               case-sensitive.
+               case-sensitive when comparing the prerelease segments for date versions and the
+               date version requirement.
 
             [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/resourceVersion
 
@@ -338,6 +330,22 @@ schemas:
             Rust technically supports specifying a wildcard-only version requirement (`*`). DSC forbids
             specifying this version requirement as it maps to the default version selection and is
             discouraged when specifying version requirements for production systems.
+          1. DSC semantic version requirements _must_ explicitly define an operator for every comparator.
+
+             DSC forbids defining a comparator without an operator, like `1.*` or `1.2.3, <1.5`, to
+             reduce ambiguity and unexpected behavior for version pinning. For example, in all other
+             cases, omitting version segments and specifying them as a wildcard has the same behavior
+             _except_ for the comparators `1.2` and `1.2.*`:
+
+             - `1`, `1.*`, and `1.*.*` all have an effective requirement of `>=1.0.0, <2.0.0`.
+             - `>1.2` and `>1.2.*` both have an effective requirement of `>1.2.0`.
+             - `1.2` has an effective requirement of `>=1.2.0, <2.0.0` but `1.2.*` has an effective
+               requirement of `>=1.2.0, <1.3.0`.
+
+             Similarly, it is not immediately obvious to a user who isn't familiar with Rust semantic
+             version requirements that `1.2.3` will match `1.5.7`. It's more common across version
+             requirements to expect an exactly specified version to be an exact match requirement, not
+             a semantically compatible requirement.
           1. DSC semantic version requirements only support the asterisk (`*`) character for wildcards,
             not `x` or `X`.
 

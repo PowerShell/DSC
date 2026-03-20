@@ -792,14 +792,9 @@ parser = "Parser"
 progress = "Progress"
 resourceNotFound = "Resource not found"
 resourceManifestNotFound = "Resource manifest not found"
-resourceVersionToSemverConversion = "Unable to convert arbitrary string resource version to semantic version"
-resourceVersionReqToSemverConversion = "Unable to convert arbitrary string resource version requirement to semantic version requirement"
 schema = "Schema"
 schemaNotAvailable = "No Schema found and `validate` is not supported"
 securityContext = "Security context"
-semverReqWithBuildMetadataPrefix = "Invalid semantic version requirement: version"
-semverReqWithBuildMetadataInfix = "contains the build metadata segment"
-semverReqWithBuildMetadataSuffix = "DSC semantic version requirements must not include build metadata."
 utf8Conversion = "UTF-8 conversion"
 unknown = "Unknown"
 validation = "Validation"
@@ -827,13 +822,39 @@ executableNotFoundInWorkingDirectory = "Executable '%{executable}' not found wit
 executableNotFound = "Executable '%{executable}' not found"
 
 [types.date_version]
-invalidDay = "Day `%{day}` for month `%{month}` is invalid - the day for that month must be between `01` and `%{max_days}`."
-invalidLeapDay = "Invalid version date '%{year}-%{month}-%{day}' - the specified date is for a leap day in a year that doesn't have a leap day. Only leap years, like 2024 and 2028, have February 29th. %{year} is not a leap year."
-invalidMonth = "Month `%{month}` is invalid. Date version months must be between `01` and `12` inclusive."
-invalidYear = "Year `%{year}` is invalid. Date version years must be between `1000` and `9999` inclusive."
-notMatchPattern = "Input string '%{text}' didn't match the validating pattern '%{pattern}'"
-parseError = "Unable to parse '%{text}' as a date version: %{details}"
+invalidDay = "day `%{day}` for month `%{month}` is invalid - must be between `01` and `%{max_days}`"
+invalidLeapDay = "specified date '%{year}-02-29' is a leap day but %{year} isn't a leap year"
+invalidMonth = "month `%{month}` is invalid - must be between `01` and `12` inclusive"
+invalidYear = "year `%{year}` is invalid - must be between `1000` and `9999` inclusive"
+notMatchPattern = "input string '%{text}' didn't match the validating pattern '%{pattern}'"
+invalidDate = "unable to parse '%{text}' as a date version - %{errors}"
 
 [types.exit_codes_map]
 successText = "Success"
 failureText = "Error"
+
+[types.resource_version]
+unparseableVersion = "unable to parse '%{text}' as resource version - input doesn't seem to be a semantic or date version"
+invalidDateVersion = "invalid date resource version: %{err}"
+invalidSemanticVersion = "invalid semantic resource version: %{err}"
+invalidConversionToSemanticVersion = "unable to convert date resource version '%{version}' to semantic version"
+invalidConversionToDateVersion = "unable to convert semantic resource version '%{version}' to date version"
+
+[types.resource_version_req]
+invalidConversionToSemanticVersionReq = "unable to convert date resource version requirement to semantic version requirement"
+invalidConversionToDateVersion = "unable to convert semantic resource version requirement to date version requirement"
+invalidDateVersionRequirement = "invalid date resource version requirement: %{err}"
+invalidSemanticVersionRequirement = "invalid semantic resource version requirement: %{err}"
+unparseableRequirement = "unable to parse '%{text}' as a resource version requirement - input doesn't seem to be a semantic or date version requirement"
+
+[types.semantic_version]
+invalidSemanticVersion = "invalid semantic version '%{text}': %{err}"
+
+[types.semantic_version_req]
+unparseableReq = "unable to parse semantic version requirement: %{err}"
+invalidReq = "invalid semantic version requirement '%{requirement}': %{err}"
+invalidComparator = "invalid comparator '%{comparator}': %{err}"
+forbiddenBuildMetadata = "comparator '%{comparator}' is defined with forbidden build metadata segment '%{build}'"
+missingOperator = "comparator '%{comparator}' doesn't define an operator"
+invalidWildcards = "comparator '%{comparator}' has invalid wildcard characters - must define wildcards as asterisks (`*`), not `x` or `X`"
+wildcardMajorVersion = "comparator '%{comparator}' defines the major version segment as a wildcard `%{wildcard}` instead of a literal number"

@@ -22,7 +22,7 @@ Describe 'tests for metadata versioning' {
         $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             directives:
-              version: 999.0.0
+              version: '=999.0.0'
             resources:
             - name: Echo
               type: Microsoft.DSC.Debug/Echo
@@ -31,7 +31,7 @@ Describe 'tests for metadata versioning' {
 "@
         $null = $config_yaml | dsc config get -f - 2>$testdrive/error.log
         $errorLog = Get-Content -Path $testdrive/error.log -Raw
-        $errorLog | Should -BeLike "*Validation*Configuration requires DSC version '999.0.0', but the current version is '*"
+        $errorLog | Should -BeLike "*Validation*Configuration requires DSC version '=999.0.0', but the current version is '*"
         $LASTEXITCODE | Should -Be 2
     }
 
