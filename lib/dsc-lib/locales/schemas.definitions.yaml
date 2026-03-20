@@ -130,26 +130,24 @@ schemas:
         en-us: |-
           Defines the version of a DSC resource.
 
-          DSC supports both semantic versioning and arbitrary versioning for resources. Semantic
+          DSC supports both semantic versioning and date versioning for resources. Semantic
           versioning is the preferred and recommended versioning strategy. DSC only supports
-          arbitrary versioning for compatibility scenarios.
+          date versioning for compatibility scenarios.
 
           When the version is defined as a valid [semantic version][01], DSC can correctly compare
           versions to determine the latest version or match a [semantic version requirement][02].
           Where possible, resource and extension authors should follow semantic versioning for the
           best user experience.
 
-          When the version is an arbitrary string, DSC compares the strings
-          [lexicographically][03]. Arbitrary string versions are only equivalent when they contain
-          exactly the same characters - the comparison is case-sensitive. If you're defining a
-          resource that doesn't follow semantic versioning, consider defining the version as an
-          [ISO 8601 date][04], like `2026-01-15`. When you do, DSC can correctly determine that a
-          later date should be treated as a newer version.
+          When the version is defined as a valid [date version][03], DSC compares the dates to see
+          which one is newer. Date versions are only equivalent when they define the same date and
+          optional prerelease segment. Both versions must define or omit the prerelease segment. If
+          the prerelease segment is defined, the segments must be identical - the comparison is
+          case sensitive.
 
           [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/semver
-          [02]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/semverReq
-          [03]: https://doc.rust-lang.org/std/cmp/trait.Ord.html#lexicographical-comparison
-          [04]: https://www.iso.org/iso-8601-date-and-time-format.html
+          [02]: https://learn.microsoft.com/en-us/powershell/dsc/concepts/defining-semver-reqs.md
+          [03]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/dateVersion
       semanticVariant:
         title:
           en-us: Semantic resource version
@@ -167,36 +165,31 @@ schemas:
 
             [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/semver
             [02]: https://semver.org
-      arbitraryVariant:
+      dateVariant:
         title:
-          en-us: Arbitrary string resource version
+          en-us: Date resource version
         description:
           en-us: >-
-            Defines the resource's version as an arbitrary string.
+            Defines the resource's version as a date version.
         deprecationMessage:
           en-us: >-
-            Defining a resource version as an arbitrary string is supported only for compatibility
+            Defining a resource version as a date version is supported only for compatibility
             purposes. If possible, define your resource version as a valid semantic version. For
             more information about defining a semantic version, see [semver.org](https://semver.org).
         markdownDescription:
           en-us: |-
-            Defines the resource's version as an arbitrary string.
+            Defines the resource's version as a date version.
 
-            DSC uses this variant for the version of any DSC resource that defines its version as a
-            string that can't be parsed as a semantic version. This variant remains supported for
-            compatibility purposes but is _not_ recommended for production usage.
+            This variant remains supported for compatibility purposes but is _not_ recommended for
+            production usage.
 
-            When a resource defines the version as an arbitrary string:
+            When a resource defines the version as a date version:
 
-            1. You can only use exact match version requirements for that resource.
-            1. When a resource defines the version as an arbitrary string, DSC uses Rust's
-               [lexicographic comparison][01] logic to determine the "latest" version of the
-               resource to use as the default version when no version requirement is specified.
+            1. The resource only matches a resource version requirement that is defined as a date
+               version when the date and optional prerelease segments are exactly the same. The
+               comparison is case-sensitive for the prerelease segment.
             1. When DSC discovers a multiple manifests for a resource, DSC always treats
-               semantically versioned resources as newer than resources with an arbitrary string
-               version.
-
-            [01]: https://doc.rust-lang.org/std/cmp/trait.Ord.html#lexicographical-comparison
+               semantically versioned resources as newer than resources with a date version.
 
     resourceVersionReq:
       title:
