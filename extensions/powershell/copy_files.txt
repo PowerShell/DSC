@@ -1,0 +1,2 @@
+powershell.discover.ps1
+powershell.dsc.extension.json

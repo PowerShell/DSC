@@ -22,12 +22,15 @@ Type:          object
 
 ## Description
 
-Represents the actual state of a resource instance in DSCpath to a discovered DSC resource or
+Represents the actual state of a resource instance in DSC path to a discovered DSC resource or
 extension manifest on the system. DSC expects every JSON Line emitted to stdout for the
 **Discover** operation to adhere to this schema.
 
 The output must be a JSON object. The object must define the full path to the discovered manifest.
 If an extension returns JSON that is invalid against this schema, DSC raises an error.
+
+If the extension doesn't discover any manifests, it must return nothing to stdout. An empty output
+indicates no resources were found.
 
 ## Required Properties
 
@@ -42,6 +45,9 @@ The output for the `discover` operation must include these properties:
 The value for this property must be the absolute path to a manifest file on the system. The
 manifest can be for a DSC resource or extension. If the returned path doesn't exist, DSC raises an
 error.
+
+Each discovered manifest must be emitted as a separate JSON Line to stdout. If no manifests are
+discovered, the extension must not emit any output to stdout.
 
 ```yaml
 Type:     string

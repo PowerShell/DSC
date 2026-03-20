@@ -19,6 +19,8 @@
       "NOTICE.txt",
       "osinfo",
       "osinfo.dsc.resource.json",
+      "powershell.dsc.extension.json",
+      "powershell.discover.ps1",
       "powershell.dsc.resource.json",
       "psDscAdapter/",
       "psscript.ps1",
@@ -44,6 +46,8 @@
       "NOTICE.txt",
       "osinfo",
       "osinfo.dsc.resource.json",
+      "powershell.dsc.extension.json",
+      "powershell.discover.ps1",
       "powershell.dsc.resource.json",
       "psDscAdapter/",
       "psscript.ps1",
@@ -69,6 +73,8 @@
       "NOTICE.txt",
       "osinfo.exe",
       "osinfo.dsc.resource.json",
+      "powershell.dsc.extension.json",
+      "powershell.discover.ps1",
       "powershell.dsc.resource.json",
       "psDscAdapter/",
       "psscript.ps1",
@@ -188,6 +194,17 @@
         "Windows": [
           "appx-discover.ps1",
           "appx.dsc.extension.json"
+        ]
+      }
+    },
+    {
+      "Name": "extensions/powershell",
+      "Kind": "Extension",
+      "RelativePath": "extensions/powershell",
+      "CopyFiles": {
+        "All": [
+          "powershell.discover.ps1",
+          "powershell.dsc.extension.json"
         ]
       }
     },
