@@ -10,7 +10,7 @@ pub use exit_codes_map::ExitCodesMap;
 mod fully_qualified_type_name;
 pub use fully_qualified_type_name::FullyQualifiedTypeName;
 mod resource_version;
-pub use resource_version::ResourceVersion;
+pub use resource_version::{ResourceVersion, ResourceVersionError};
 mod resource_version_req;
 pub use resource_version_req::ResourceVersionReq;
 mod semantic_version;
