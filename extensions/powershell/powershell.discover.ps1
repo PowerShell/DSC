@@ -45,13 +45,7 @@ function Test-CacheValid {
         if ($null -ne $diff) {
             return $false
         }
-
-        foreach ($manifest in $cache.Manifests) {
-            if (-not (Test-Path -LiteralPath $manifest.manifestPath)) {
-                return $false
-            }
-        }
-
+        
         return $true
     } catch {
         return $false
@@ -89,11 +83,6 @@ function Invoke-DscResourceDiscovery {
             foreach ($path in $psPaths) {
                 if (Test-Path $path) {
                     $pathInfo[$path] = (Get-Item $path).LastWriteTimeUtc
-                    # Track each module subdirectory so that manifest changes inside an
-                    # already-known module are detected, even if the parent directory timestamp isn't updated.
-                    Get-ChildItem -LiteralPath $path -Directory -ErrorAction Ignore | ForEach-Object {
-                        $pathInfo[$_.FullName] = $_.LastWriteTimeUtc
-                    }
                 }
             }
             
@@ -112,11 +101,12 @@ function Invoke-DscResourceDiscovery {
         }
     }
     end {
-        if ($manifests.Count -gt 0) {
+        if ($null -eq $manifests -or [string]::IsNullOrEmpty($manifests)) {
+            # Return nothing
+        } else {
             $manifests | ForEach-Object { $_ | ConvertTo-Json -Compress }
         }
     }
 }
 
 Invoke-DscResourceDiscovery
-
