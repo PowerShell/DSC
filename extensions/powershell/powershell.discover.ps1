@@ -45,7 +45,13 @@ function Test-CacheValid {
         if ($null -ne $diff) {
             return $false
         }
-        
+
+        foreach ($manifest in $cache.Manifests) {
+            if (-not (Test-Path -LiteralPath $manifest.manifestPath)) {
+                return $false
+            }
+        }
+
         return $true
     } catch {
         return $false
@@ -69,7 +75,7 @@ function Invoke-DscResourceDiscovery {
         } else {
             $manifests = $psPaths | ForEach-Object -Parallel {
                 $searchPatterns = @('*.dsc.resource.json', '*.dsc.resource.yaml', '*.dsc.resource.yml')
-                $enumOptions = [System.IO.EnumerationOptions]@{ IgnoreInaccessible = $false; RecurseSubdirectories = $true }
+                $enumOptions = [System.IO.EnumerationOptions]@{ IgnoreInaccessible = $true; RecurseSubdirectories = $true }
                 foreach ($pattern in $searchPatterns) {
                     try {
                         [System.IO.Directory]::EnumerateFiles($_, $pattern, $enumOptions) | ForEach-Object {
@@ -81,8 +87,14 @@ function Invoke-DscResourceDiscovery {
             
             $pathInfo = @{}
             foreach ($path in $psPaths) {
-                if (Test-Path $path) {
-                    $pathInfo[$path] = (Get-Item $path).LastWriteTimeUtc
+                $item = Get-Item -LiteralPath $path -ErrorAction Ignore
+                if ($item) {
+                    $pathInfo[$path] = $item.LastWriteTimeUtc
+                    # Track each module subdirectory so that manifest changes inside an
+                    # already-known module are detected, even if the parent directory timestamp isn't updated.
+                    Get-ChildItem -LiteralPath $path -Directory -ErrorAction Ignore | ForEach-Object {
+                        $pathInfo[$_.FullName] = $_.LastWriteTimeUtc
+                    }
                 }
             }
             
@@ -101,9 +113,7 @@ function Invoke-DscResourceDiscovery {
         }
     }
     end {
-        if ($null -eq $manifests -or [string]::IsNullOrEmpty($manifests)) {
-            # Return nothing
-        } else {
+        if ($manifests.Count -gt 0) {
             $manifests | ForEach-Object { $_ | ConvertTo-Json -Compress }
         }
     }
