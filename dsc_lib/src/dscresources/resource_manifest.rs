@@ -35,6 +35,9 @@ pub struct ResourceManifest {
     pub kind: Option<Kind>,
     /// The version of the resource using semantic versioning.
     pub version: String,
+    /// The deprecation message of the resource, if the resource is deprecated.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub deprecation_message: Option<String>,
     /// The description of the resource.
     pub description: Option<String>,
     /// Tags for the resource.

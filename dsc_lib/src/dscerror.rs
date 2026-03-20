@@ -6,7 +6,6 @@ use std::str::Utf8Error;
 
 use indicatif::style::TemplateError;
 use thiserror::Error;
-use tracing::error;
 use tree_sitter::LanguageError;
 
 #[derive(Error, Debug)]
