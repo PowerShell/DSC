@@ -792,7 +792,6 @@ parser = "Parser"
 progress = "Progress"
 resourceNotFound = "Resource not found"
 resourceManifestNotFound = "Resource manifest not found"
-resourceVersionReqToSemverConversion = "Unable to convert arbitrary string resource version requirement to semantic version requirement"
 schema = "Schema"
 schemaNotAvailable = "No Schema found and `validate` is not supported"
 securityContext = "Security context"
@@ -840,6 +839,13 @@ invalidDateVersion = "invalid date resource version: %{err}"
 invalidSemanticVersion = "invalid semantic resource version: %{err}"
 invalidConversionToSemanticVersion = "unable to convert date resource version '%{version}' to semantic version"
 invalidConversionToDateVersion = "unable to convert semantic resource version '%{version}' to date version"
+
+[types.resource_version_req]
+invalidConversionToSemanticVersionReq = "unable to convert date resource version requirement to semantic version requirement"
+invalidConversionToDateVersion = "unable to convert semantic resource version requirement to date version requirement"
+invalidDateVersionRequirement = "invalid date resource version requirement: %{err}"
+invalidSemanticVersionRequirement = "invalid semantic resource version requirement: %{err}"
+unparseableRequirement = "unable to parse '%{text}' as a resource version requirement - input doesn't seem to be a semantic or date version requirement"
 
 [types.semantic_version]
 invalidSemanticVersion = "invalid semantic version '%{text}': %{err}"
