@@ -20,6 +20,7 @@ BeforeAll {
     
     $manifestPath = Join-Path $TestDrive "fake.dsc.resource.json"
     $fakeManifest | ConvertTo-Json -Depth 10 | Set-Content -Path $manifestPath
+    $script:OldPSModulePath = $env:PSModulePath
     $env:PSModulePath += [System.IO.Path]::PathSeparator + $TestDrive
     
     $script:discoverScript = Join-Path $PSScriptRoot "powershell.discover.ps1"
@@ -32,6 +33,10 @@ BeforeAll {
     $script:cacheFilePath = $cacheFilePath
 
     Remove-Item -Force -ErrorAction SilentlyContinue -Path $script:cacheFilePath
+}
+
+AfterAll {
+    $env:PSModulePath = $script:OldPSModulePath
 }
 
 Describe 'Tests for PowerShell resource discovery' {    
