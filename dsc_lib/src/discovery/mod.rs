@@ -9,7 +9,7 @@ use crate::extensions::dscextension::DscExtension;
 use crate::{dscresources::dscresource::DscResource, dscerror::DscError, progress::ProgressFormat};
 use std::collections::BTreeMap;
 use command_discovery::ImportedManifest;
-use tracing::error;
+use tracing::{error, warn};
 
 #[derive(Clone)]
 pub struct Discovery {
@@ -54,7 +54,7 @@ impl Discovery {
             let discovered_resources = match discovery_type.list_available(kind, type_name_filter, adapter_name_filter) {
                 Ok(value) => value,
                 Err(err) => {
-                    error!("{err}");
+                    warn!("{err}");
                     continue;
                 }
             };

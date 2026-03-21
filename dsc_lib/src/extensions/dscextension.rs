@@ -111,9 +111,17 @@ impl DscExtension {
                     }
                     let manifest_path = Path::new(&discover_result.manifest_path);
                     // Currently we don't support extensions discovering other extensions
-                    if let ImportedManifest::Resource(resource) = load_manifest(manifest_path)? {
-                        resources.push(resource);
-                    }
+                    let resource = match load_manifest(manifest_path) {
+                        Ok(ImportedManifest::Resource(resource)) => resource,
+                        Ok(_) => continue,
+                        Err(err) => {
+                            // For invalid manifest, we write an information and skip it
+                            info!("{}", t!("extensions.dscextension.failedImportManifest", resource = manifest_path.to_string_lossy(), err = err).to_string());
+                            continue;
+                        }
+                    };
+
+                    resources.push(resource);
                 }
             }
 

@@ -247,9 +247,9 @@ impl ResourceDiscovery for CommandDiscovery {
                                     Err(e) => {
                                         // At this point we can't determine whether or not the bad manifest contains
                                         // resource that is requested by resource/config operation
-                                        // if it is, then "ResouceNotFound" error will be issued later
-                                        // and here we just write as warning
-                                        warn!("{e}");
+                                        // if it is, then "ResourceNotFound" error will be issued later
+                                        // and here we just write as information
+                                        info!("{}", t!("discovery.commandDiscovery.failedLoadManifest", resource = path.to_string_lossy(), err = e).to_string());
                                         continue;
                                     },
                                 };
@@ -277,7 +277,13 @@ impl ResourceDiscovery for CommandDiscovery {
                                     ImportedManifest::Resource(resource) => {
                                         if regex.is_match(&resource.type_name) {
                                             if let Some(ref manifest) = resource.manifest {
-                                                let manifest = import_manifest(manifest.clone())?;
+                                                let manifest = match import_manifest(manifest.clone()) {
+                                                    Ok(manifest) => manifest,
+                                                    Err(err) => {
+                                                        info!("{}", t!("discovery.commandDiscovery.failedImportManifest", resource = resource.type_name, err = err).to_string());
+                                                        continue;
+                                                    }
+                                                };
                                                 if manifest.kind == Some(Kind::Adapter) {
                                                     trace!("{}", t!("discovery.commandDiscovery.adapterFound", adapter = resource.type_name));
                                                     insert_resource(&mut adapters, &resource, true);
