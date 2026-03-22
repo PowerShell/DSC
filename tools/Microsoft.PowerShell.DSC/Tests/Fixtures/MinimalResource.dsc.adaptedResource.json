@@ -1,0 +1,20 @@
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/adaptedresource/manifest.json",
+    "type": "TestModule/MinimalResource",
+    "version": "0.1.0",
+    "requireAdapter": "Microsoft.Adapter/PowerShell",
+    "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "TestModule/MinimalResource",
+        "type": "object",
+        "required": [],
+        "additionalProperties": false,
+        "properties": {
+            "Id": {
+                "type": "integer",
+                "title": "Id",
+                "description": "The Id property."
+            }
+        }
+    }
+}

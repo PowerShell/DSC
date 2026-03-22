@@ -1,0 +1,102 @@
+{
+    "adaptedResources": [
+        {
+            "$schema": "https://aka.ms/dsc/schemas/v3/bundled/adaptedresource/manifest.json",
+            "type": "TestModule/ResourceOne",
+            "kind": "resource",
+            "version": "1.0.0",
+            "capabilities": [
+                "get",
+                "set"
+            ],
+            "description": "First test resource.",
+            "author": "TestAuthor",
+            "requireAdapter": "Microsoft.Adapter/PowerShell",
+            "path": "TestModule/TestModule.psd1",
+            "schema": {
+                "embedded": {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "title": "TestModule/ResourceOne",
+                    "type": "object",
+                    "required": [
+                        "Name"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "Name": {
+                            "type": "string",
+                            "title": "Name",
+                            "description": "The Name property."
+                        }
+                    },
+                    "description": "First test resource."
+                }
+            }
+        },
+        {
+            "$schema": "https://aka.ms/dsc/schemas/v3/bundled/adaptedresource/manifest.json",
+            "type": "TestModule/ResourceTwo",
+            "kind": "resource",
+            "version": "1.0.0",
+            "capabilities": [
+                "get"
+            ],
+            "description": "Second test resource.",
+            "author": "TestAuthor",
+            "requireAdapter": "Microsoft.Adapter/PowerShell",
+            "path": "TestModule/TestModule.psd1",
+            "schema": {
+                "embedded": {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "title": "TestModule/ResourceTwo",
+                    "type": "object",
+                    "required": [],
+                    "additionalProperties": false,
+                    "properties": {
+                        "Value": {
+                            "type": "integer",
+                            "title": "Value",
+                            "description": "The Value property."
+                        }
+                    },
+                    "description": "Second test resource."
+                }
+            }
+        }
+    ],
+    "resources": [
+        {
+            "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+            "type": "Test/CommandResource",
+            "version": "0.1.0",
+            "get": {
+                "executable": "testcmd",
+                "args": [
+                    "get"
+                ]
+            },
+            "schema": {
+                "command": {
+                    "executable": "testcmd",
+                    "args": [
+                        "schema"
+                    ]
+                }
+            }
+        }
+    ],
+    "extensions": [
+        {
+            "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+            "type": "Test/Extension",
+            "version": "0.1.0",
+            "description": "A test extension.",
+            "discover": {
+                "executable": "testcmd",
+                "args": [
+                    "discover"
+                ]
+            }
+        }
+    ]
+}

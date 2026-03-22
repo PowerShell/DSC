@@ -65,10 +65,12 @@ class DscAdaptedResourceManifest {
 class DscResourceManifestList {
     [System.Collections.Generic.List[hashtable]] $AdaptedResources
     [System.Collections.Generic.List[hashtable]] $Resources
+    [System.Collections.Generic.List[hashtable]] $Extensions
 
     DscResourceManifestList() {
         $this.AdaptedResources = [System.Collections.Generic.List[hashtable]]::new()
         $this.Resources = [System.Collections.Generic.List[hashtable]]::new()
+        $this.Extensions = [System.Collections.Generic.List[hashtable]]::new()
     }
 
     [void] AddAdaptedResource([DscAdaptedResourceManifest]$Manifest) {
@@ -77,6 +79,10 @@ class DscResourceManifestList {
 
     [void] AddResource([hashtable]$Resource) {
         $this.Resources.Add($Resource)
+    }
+
+    [void] AddExtension([hashtable]$Extension) {
+        $this.Extensions.Add($Extension)
     }
 
     [string] ToJson() {
@@ -88,6 +94,10 @@ class DscResourceManifestList {
 
         if ($this.Resources.Count -gt 0) {
             $result['resources'] = @($this.Resources)
+        }
+
+        if ($this.Extensions.Count -gt 0) {
+            $result['extensions'] = @($this.Extensions)
         }
 
         return $result | ConvertTo-Json -Depth 15
@@ -405,6 +415,71 @@ function ResolveModuleInfo {
     }
 }
 
+function ConvertPSObjectToHashtable {
+    [CmdletBinding()]
+    [OutputType([hashtable])]
+    param(
+        [Parameter(Mandatory)]
+        [object]$InputObject
+    )
+
+    if ($InputObject -is [System.Collections.IDictionary]) {
+        $result = [ordered]@{}
+        foreach ($key in $InputObject.Keys) {
+            $result[$key] = ConvertPSObjectToHashtable -InputObject $InputObject[$key]
+        }
+        return $result
+    }
+
+    if ($InputObject -is [PSCustomObject]) {
+        $result = [ordered]@{}
+        foreach ($property in $InputObject.PSObject.Properties) {
+            $result[$property.Name] = ConvertPSObjectToHashtable -InputObject $property.Value
+        }
+        return $result
+    }
+
+    if ($InputObject -is [System.Collections.IList]) {
+        $items = [System.Collections.Generic.List[object]]::new()
+        foreach ($item in $InputObject) {
+            $items.Add((ConvertPSObjectToHashtable -InputObject $item))
+        }
+        return @($items)
+    }
+
+    return $InputObject
+}
+
+function ConvertToAdaptedResourceManifest {
+    [CmdletBinding()]
+    [OutputType([DscAdaptedResourceManifest])]
+    param(
+        [Parameter(Mandatory)]
+        [hashtable]$Hashtable
+    )
+
+    $manifest = [DscAdaptedResourceManifest]::new()
+    $manifest.Schema = $Hashtable['$schema']
+    $manifest.Type = $Hashtable['type']
+    $manifest.Kind = if ($Hashtable.Contains('kind')) { $Hashtable['kind'] } else { 'resource' }
+    $manifest.Version = $Hashtable['version']
+    $manifest.Capabilities = if ($Hashtable.Contains('capabilities') -and $null -ne $Hashtable['capabilities']) { @($Hashtable['capabilities']) } else { [string[]]::new(0) }
+    $manifest.Description = if ($Hashtable.Contains('description')) { [string]$Hashtable['description'] } else { '' }
+    $manifest.Author = if ($Hashtable.Contains('author')) { [string]$Hashtable['author'] } else { '' }
+    $manifest.RequireAdapter = $Hashtable['requireAdapter']
+    $manifest.Path = if ($Hashtable.Contains('path')) { [string]$Hashtable['path'] } else { '' }
+
+    $schemaData = $Hashtable['schema']
+    if ($schemaData) {
+        $embeddedSchema = if ($schemaData.Contains('embedded')) { $schemaData['embedded'] } else { $schemaData }
+        $manifest.ManifestSchema = [DscAdaptedResourceManifestSchema]@{
+            Embedded = $embeddedSchema
+        }
+    }
+
+    return $manifest
+}
+
 #endregion Private functions
 
 #region Public functions
@@ -609,6 +684,150 @@ function New-DscResourceManifest {
     }
 
     end {
+        Write-Output $manifestList
+    }
+}
+
+<#
+    .SYNOPSIS
+        Imports adapted resource manifest objects from `.dsc.adaptedResource.json` files.
+
+    .DESCRIPTION
+        Reads one or more `.dsc.adaptedResource.json` files and returns DscAdaptedResourceManifest
+        objects. This is the inverse of serializing a manifest with `.ToJson()` — it allows you
+        to load existing adapted resource manifests for inspection, modification, or inclusion
+        in a resource manifest list via New-DscResourceManifest.
+
+    .PARAMETER Path
+        The path to a `.dsc.adaptedResource.json` file. Accepts pipeline input.
+
+    .EXAMPLE
+        Import-DscAdaptedResourceManifest -Path ./MyResource.dsc.adaptedResource.json
+
+        Imports a single adapted resource manifest and returns a DscAdaptedResourceManifest object.
+
+    .EXAMPLE
+        Get-ChildItem -Filter *.dsc.adaptedResource.json | Import-DscAdaptedResourceManifest
+
+        Imports all adapted resource manifest files in the current directory.
+
+    .EXAMPLE
+        Import-DscAdaptedResourceManifest -Path ./MyResource.dsc.adaptedResource.json |
+            New-DscResourceManifest
+
+        Imports an adapted resource manifest and bundles it into a resource manifest list.
+
+    .OUTPUTS
+        Returns a DscAdaptedResourceManifest object for each file. The object has .ToJson()
+        and .ToHashtable() methods for serialization.
+#>
+function Import-DscAdaptedResourceManifest {
+    [CmdletBinding()]
+    [OutputType([DscAdaptedResourceManifest])]
+    param(
+        [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+        [ValidateScript({
+            if (-not (Test-Path -LiteralPath $_)) {
+                throw "Path '$_' does not exist."
+            }
+            return $true
+        })]
+        [Alias('FullName')]
+        [string]$Path
+    )
+
+    process {
+        $resolvedPath = Resolve-Path -LiteralPath $Path
+        Write-Verbose "Importing adapted resource manifest from '$resolvedPath'"
+
+        $jsonContent = Get-Content -LiteralPath $resolvedPath -Raw
+        $parsed = ConvertFrom-Json -InputObject $jsonContent
+        $hashtable = ConvertPSObjectToHashtable -InputObject $parsed
+
+        $manifest = ConvertToAdaptedResourceManifest -Hashtable $hashtable
+        Write-Output $manifest
+    }
+}
+
+<#
+    .SYNOPSIS
+        Imports a DSC resource manifest list from a `.dsc.manifests.json` file.
+
+    .DESCRIPTION
+        Reads a `.dsc.manifests.json` file and returns a DscResourceManifestList object
+        containing the adapted resources, command-based resources, and extensions defined
+        in the file. This is the inverse of serializing a manifest list with `.ToJson()`.
+
+        The adapted resources in the returned list are hydrated into DscAdaptedResourceManifest
+        objects and stored via AddAdaptedResource. Resources and extensions are stored as
+        hashtables.
+
+    .PARAMETER Path
+        The path to a `.dsc.manifests.json` file. Accepts pipeline input.
+
+    .EXAMPLE
+        Import-DscResourceManifest -Path ./MyModule.dsc.manifests.json
+
+        Imports a manifest list file and returns a DscResourceManifestList object.
+
+    .EXAMPLE
+        Get-ChildItem -Filter *.dsc.manifests.json | Import-DscResourceManifest
+
+        Imports all manifest list files in the current directory.
+
+    .EXAMPLE
+        $list = Import-DscResourceManifest -Path ./existing.dsc.manifests.json
+        $list.AdaptedResources.Count
+
+        Imports a manifest list and inspects the number of adapted resources.
+
+    .OUTPUTS
+        Returns a DscResourceManifestList object with .ToJson() for serialization.
+#>
+function Import-DscResourceManifest {
+    [CmdletBinding()]
+    [OutputType([DscResourceManifestList])]
+    param(
+        [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+        [ValidateScript({
+            if (-not (Test-Path -LiteralPath $_)) {
+                throw "Path '$_' does not exist."
+            }
+            return $true
+        })]
+        [Alias('FullName')]
+        [string]$Path
+    )
+
+    process {
+        $resolvedPath = Resolve-Path -LiteralPath $Path
+        Write-Verbose "Importing resource manifest list from '$resolvedPath'"
+
+        $jsonContent = Get-Content -LiteralPath $resolvedPath -Raw
+        $parsed = ConvertFrom-Json -InputObject $jsonContent
+        $hashtable = ConvertPSObjectToHashtable -InputObject $parsed
+
+        $manifestList = [DscResourceManifestList]::new()
+
+        if ($hashtable.Contains('adaptedResources')) {
+            foreach ($ar in $hashtable['adaptedResources']) {
+                $manifest = ConvertToAdaptedResourceManifest -Hashtable $ar
+                $manifestList.AddAdaptedResource($manifest)
+            }
+        }
+
+        if ($hashtable.Contains('resources')) {
+            foreach ($res in $hashtable['resources']) {
+                $manifestList.AddResource($res)
+            }
+        }
+
+        if ($hashtable.Contains('extensions')) {
+            foreach ($ext in $hashtable['extensions']) {
+                $manifestList.AddExtension($ext)
+            }
+        }
+
         Write-Output $manifestList
     }
 }
