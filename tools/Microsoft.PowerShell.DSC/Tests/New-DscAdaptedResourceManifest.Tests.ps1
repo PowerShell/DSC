@@ -50,7 +50,7 @@ Describe 'New-DscAdaptedResourceManifest' {
         }
 
         It 'Sets the require adapter to Microsoft.DSC/PowerShell' {
-            $result.RequireAdapter | Should -BeExactly 'Microsoft.DSC/PowerShell'
+            $result.RequireAdapter | Should -BeExactly 'Microsoft.Adapter/PowerShell'
         }
 
         It 'Sets the path to the psd1 relative path' {
@@ -222,6 +222,10 @@ Describe 'New-DscAdaptedResourceManifest' {
         It 'Defaults author to empty string when no psd1 exists' {
             $result.Author | Should -BeExactly ''
         }
+
+        It 'Sets path to the actual script file' {
+            $result.Path | Should -BeExactly 'StandaloneResource/StandaloneResource.ps1'
+        }
     }
 
     Context 'File with no DSC resources' {
@@ -265,7 +269,7 @@ Describe 'New-DscAdaptedResourceManifest' {
         }
 
         It 'Contains the requireAdapter key' {
-            $parsed.requireAdapter | Should -BeExactly 'Microsoft.DSC/PowerShell'
+            $parsed.requireAdapter | Should -BeExactly 'Microsoft.Adapter/PowerShell'
         }
 
         It 'Contains the schema.embedded object with properties' {

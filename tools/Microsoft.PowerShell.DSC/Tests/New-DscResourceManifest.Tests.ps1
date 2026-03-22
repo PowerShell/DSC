@@ -312,7 +312,7 @@ Describe 'New-DscResourceManifest' {
             $parsed = $json | ConvertFrom-Json
             $parsed.adaptedResources | Should -HaveCount 2
             $parsed.adaptedResources[0].type | Should -Not -BeNullOrEmpty
-            $parsed.adaptedResources[0].requireAdapter | Should -BeExactly 'Microsoft.DSC/PowerShell'
+            $parsed.adaptedResources[0].requireAdapter | Should -BeExactly 'Microsoft.Adapter/PowerShell'
             $parsed.adaptedResources[0].schema.embedded | Should -Not -BeNullOrEmpty
         }
     }

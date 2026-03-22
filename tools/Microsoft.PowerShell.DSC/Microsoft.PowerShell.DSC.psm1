@@ -354,7 +354,7 @@ function ResolveModuleInfo {
         [string]$Path
     )
 
-    $resolvedPath = Resolve-Path -Path $Path
+    $resolvedPath = Resolve-Path -LiteralPath $Path
     $extension = [System.IO.Path]::GetExtension($resolvedPath)
     $directory = [System.IO.Path]::GetDirectoryName($resolvedPath)
 
@@ -392,13 +392,15 @@ function ResolveModuleInfo {
         return ResolveModuleInfo -Path $psd1Path
     }
 
+    $fileName = [System.IO.Path]::GetFileName($resolvedPath)
+
     return @{
         ModuleName  = $moduleName
         Version     = '0.0.1'
         Author      = ''
         Description = ''
         ScriptPath  = [string]$resolvedPath
-        Psd1Path    = "$moduleName/$moduleName.psd1"
+        Psd1Path    = "$moduleName/$fileName"
         Directory   = $directory
     }
 }
