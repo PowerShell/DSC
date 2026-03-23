@@ -99,7 +99,14 @@ impl DscExtension {
                         return Err(DscError::Extension(t!("extensions.dscextension.discoverNotAbsolutePath", extension = self.type_name.clone(), path = discover_result.manifest_path.display()).to_string()));
                     }
                     // Currently we don't support extensions discovering other extensions
-                    for imported_manifest in load_manifest(&discover_result.manifest_path)? {
+                    let manifests = match load_manifest(&discover_result.manifest_path) {
+                        Ok(manifests) => manifests,
+                        Err(err) => {
+                            info!("{}", t!("extensions.dscextension.failedLoadManifest", path = discover_result.manifest_path.to_string_lossy(), err = err).to_string());
+                            continue;
+                        }
+                    };
+                    for imported_manifest in manifests {
                         if let ImportedManifest::Resource(resource) = imported_manifest {
                             resources.push(resource);
                         }

@@ -148,4 +148,61 @@ Describe 'Discover extension tests' {
             $env:DSC_RESOURCE_PATH = $null
         }
     }
+
+    It 'Invalid manifest from extension discovery should not fail overall discovery' {
+        $invalidManifest = @'
+        {
+            "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+            "type": "Test/InvalidManifest",
+            "version": "0.1.0",
+            "get": {
+                "executable": "dsctest",
+                "unexpectedField": "This field is not expected in the get section and should be ignored by the discovery process"
+            },
+            "newProperty": "This property is not expected in the manifest and should be ignored by the discovery process"
+        }
+'@
+        $resourceScript = @'
+        $resource = @{
+            manifestPath = "$env:TestDrive" + [System.IO.Path]::DirectorySeparatorChar + 'invalidManifest.dsc.json'
+        }
+        $resource | ConvertTo-Json -Compress
+'@
+        $extendionManifest = @'
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "type": "Test/DiscoverInvalid",
+    "version": "0.1.0",
+    "description": "Test discover resource, this is a really long description to test that the table can be rendered without truncating the description text from this extension.",
+    "discover": {
+        "executable": "pwsh",
+        "args": [
+            "-NoLogo",
+            "-NonInteractive",
+            "-NoProfile",
+            "-Command",
+            "./discover.ps1"
+            ]
+    }
+}
+'@
+
+        Set-Content -Path "$TestDrive/invalidManifest.dsc.json" -Value $invalidManifest
+        Set-Content -Path "$TestDrive/discover.ps1" -Value $resourceScript
+        Set-Content -Path "$TestDrive/extension.dsc.extension.json" -Value $extendionManifest
+        try {
+            $env:DSC_RESOURCE_PATH = $TestDrive + [System.IO.Path]::PathSeparator + $env:PATH
+            $env:TestDrive = $TestDrive
+            $out = dsc -l info resource list 2> $TestDrive/error.log | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            # The invalid manifest should be skipped and not included in the discovered resources
+            foreach ($resource in $out) {
+                $resource.type | Should -Not -Be 'Test/InvalidManifest'
+            }
+            (Get-Content -Path "$TestDrive/error.log" -Raw) | Should -BeLike "*Failed to load manifest '*invalidManifest.dsc.json':*" -Because (Get-Content -Path "$TestDrive/error.log" -Raw | Out-String)
+        } finally {
+            $env:DSC_RESOURCE_PATH = $null
+            $env:TestDrive = $null
+        }
+    }
 }

@@ -342,4 +342,31 @@ Describe 'tests for resource discovery' {
             $traceLog | Should -Match "Skipping resource discovery due to 'resourceDiscovery' mode set to 'DuringDeployment'"
         }
     }
+
+    It 'Invalid resource manifest will generate info message' {
+        $invalidManifest = @'
+        {
+            "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+            "type": "Test/InvalidManifest",
+            "version": "0.1.0",
+            "get": {
+                "executable": "dsctest",
+                "unexpectedField": "This field is not expected in the get section and should be ignored by the discovery process"
+            },
+            "newProperty": "This property is not expected in the manifest and should be ignored by the discovery process"
+        }
+'@
+        Set-Content -Path "$testdrive/test.dsc.resource.json" -Value $invalidManifest
+        try {
+            $env:DSC_RESOURCE_PATH = $testdrive + [System.IO.Path]::PathSeparator + $env:PATH
+
+            $out = dsc -l info resource list 'Test/InvalidManifest' 2> "$testdrive/error.txt" | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $out | Should -BeNullOrEmpty -Because (Get-Content -Raw -Path "$testdrive/error.txt")
+            $errorLog = Get-Content -Raw -Path "$testdrive/error.txt"
+            $errorLog | Should -Match "INFO Failed to load manifest '.*test.dsc.resource.json':" -Because $errorLog
+        } finally {
+            $env:DSC_RESOURCE_PATH = $null
+        }
+    }
 }
