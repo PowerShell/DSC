@@ -3,12 +3,10 @@
 
 $schema: https://aka.ms/dsc/schemas/v3.0.0/bundled/config/document.json
 resources:
-  - type: Microsoft.Windows/WindowsPowerShell
+  - type: ComputerManagementDsc/TimeZone
     name: Set Timezone
+    directives:
+      requireAdapter: Microsoft.Adapter/WindowsPowerShell
     properties:
-      resources:
-        - name: Set Timezone
-          type: ComputerManagementDsc/TimeZone
-          properties:
-            IsSingleInstance: Yes
-            TimeZone: New Zealand Standard Time
+      IsSingleInstance: Yes
+      TimeZone: New Zealand Standard Time
