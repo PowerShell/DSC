@@ -28,7 +28,8 @@
       "RunCommandOnSet.dsc.resource.json",
       "runcommandonset",
       "sshdconfig",
-      "sshd_config.dsc.resource.json"
+      "sshd_config.dsc.resource.json",
+      "y2j"
     ],
     "macOS": [
       "dsc",
@@ -54,7 +55,8 @@
       "RunCommandOnSet.dsc.resource.json",
       "runcommandonset",
       "sshdconfig",
-      "sshd_config.dsc.resource.json"
+      "sshd_config.dsc.resource.json",
+      "y2j"
     ],
     "Windows": [
       "appx.dsc.extension.json",
@@ -97,7 +99,8 @@
       "wmiAdapter.psd1",
       "wmiAdapter.psm1",
       "windows_baseline.dsc.yaml",
-      "windows_inventory.dsc.yaml"
+      "windows_inventory.dsc.yaml",
+      "y2j.exe"
     ]
   },
   "Projects": [
