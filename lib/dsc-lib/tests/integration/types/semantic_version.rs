@@ -3,7 +3,7 @@
 
 #[cfg(test)]
 mod methods {
-    use dsc_lib::{dscerror::DscError, types::SemanticVersion};
+    use dsc_lib::types::{SemanticVersion, SemanticVersionError};
     use test_case::test_case;
 
     #[test]
@@ -20,7 +20,7 @@ mod methods {
     #[test_case("1" => matches Err(_); "major version only is invalid")]
     #[test_case("1.0" => matches Err(_); "missing patch version is invalid")]
     #[test_case("1.2.c" => matches Err(_); "version segment as non-digit is invalid")]
-    fn parse(value: &str) -> Result<SemanticVersion, DscError> {
+    fn parse(value: &str) -> Result<SemanticVersion, SemanticVersionError> {
         SemanticVersion::parse(value)
     }
 }
@@ -51,7 +51,7 @@ mod schema {
         let schema = &*SCHEMA;
         let value = schema
             .get_keyword_as_str(keyword)
-            .expect(format!("expected keyword '{keyword}' to be defined").as_str());
+            .expect(&format!("expected keyword '{keyword}' to be defined"));
 
         assert!(
             !(&*KEYWORD_PATTERN).is_match(value),
@@ -174,7 +174,7 @@ mod traits {
     mod from_str {
         use std::str::FromStr;
 
-        use dsc_lib::{dscerror::DscError, types::SemanticVersion};
+        use dsc_lib::types::{SemanticVersion, SemanticVersionError};
         use test_case::test_case;
 
         #[test_case("1.0.0" => matches Ok(_); "valid stable semantic version")]
@@ -184,7 +184,7 @@ mod traits {
         #[test_case("1" => matches Err(_); "major version only string value is invalid")]
         #[test_case("1.0" => matches Err(_); "missing patch version string value is invalid")]
         #[test_case("1.2.c" => matches Err(_); "version segment as non-digit string value is invalid")]
-        fn from_str(text: &str) -> Result<SemanticVersion, DscError> {
+        fn from_str(text: &str) -> Result<SemanticVersion, SemanticVersionError> {
             SemanticVersion::from_str(text)
         }
 
@@ -195,14 +195,14 @@ mod traits {
         #[test_case("1" => matches Err(_); "major version only string value is invalid")]
         #[test_case("1.0" => matches Err(_); "missing patch version string value is invalid")]
         #[test_case("1.2.c" => matches Err(_); "version segment as non-digit string value is invalid")]
-        fn parse(text: &str) -> Result<SemanticVersion, DscError> {
+        fn parse(text: &str) -> Result<SemanticVersion, SemanticVersionError> {
             text.parse()
         }
     }
 
     #[cfg(test)]
     mod try_from {
-        use dsc_lib::{dscerror::DscError, types::SemanticVersion};
+        use dsc_lib::types::{SemanticVersion, SemanticVersionError};
         use test_case::test_case;
 
         #[test_case("1.0.0" => matches Ok(_); "valid stable semantic version")]
@@ -212,7 +212,7 @@ mod traits {
         #[test_case("1" => matches Err(_); "major version only string value is invalid")]
         #[test_case("1.0" => matches Err(_); "missing patch version string value is invalid")]
         #[test_case("1.2.c" => matches Err(_); "version segment as non-digit string value is invalid")]
-        fn string(text: &str) -> Result<SemanticVersion, DscError> {
+        fn string(text: &str) -> Result<SemanticVersion, SemanticVersionError> {
             SemanticVersion::try_from(text.to_string())
         }
 
@@ -223,7 +223,7 @@ mod traits {
         #[test_case("1" => matches Err(_); "major version only string value is invalid")]
         #[test_case("1.0" => matches Err(_); "missing patch version string value is invalid")]
         #[test_case("1.2.c" => matches Err(_); "version segment as non-digit string value is invalid")]
-        fn str(text: &str) -> Result<SemanticVersion, DscError> {
+        fn str(text: &str) -> Result<SemanticVersion, SemanticVersionError> {
             SemanticVersion::try_from(text)
         }
     }
@@ -504,6 +504,7 @@ mod traits {
         }
     }
 
+    #[cfg(test)]
     mod ord {
         use dsc_lib::types::SemanticVersion;
 
