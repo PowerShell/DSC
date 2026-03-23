@@ -194,7 +194,7 @@ Describe 'Discover extension tests' {
             $env:DSC_RESOURCE_PATH = $TestDrive + [System.IO.Path]::PathSeparator + $env:PATH
             $env:TestDrive = $TestDrive
             $out = dsc -l info resource list 2> $TestDrive/error.log | ConvertFrom-Json
-            $LASTEXITCODE | Should -Be 0
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path "$TestDrive/error.log" -Raw | Out-String)
             # The invalid manifest should be skipped and not included in the discovered resources
             foreach ($resource in $out) {
                 $resource.type | Should -Not -Be 'Test/InvalidManifest'

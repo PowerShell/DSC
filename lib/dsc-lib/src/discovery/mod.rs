@@ -13,7 +13,7 @@ use core::result::Result::Ok;
 use semver::{Version, VersionReq};
 use std::collections::BTreeMap;
 use command_discovery::{CommandDiscovery, ImportedManifest};
-use tracing::info;
+use tracing::error;
 
 #[derive(Clone)]
 pub struct Discovery {
@@ -61,7 +61,7 @@ impl Discovery {
             let discovered_resources = match discovery_type.list_available(kind, type_name_filter, adapter_name_filter) {
                 Ok(value) => value,
                 Err(err) => {
-                    info!("{err}");
+                    error!("{err}");
                     continue;
                 }
             };
