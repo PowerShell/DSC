@@ -3,7 +3,7 @@ RFC:          RFC0000
 Author:       @michaeltlombardi
 Sponsor:      @michaeltlombardi
 Status:       Draft
-SupercededBy: null
+SupersededBy: null
 Version:      1.0
 Area:         Process
 CommentsDue:  2025-07-06

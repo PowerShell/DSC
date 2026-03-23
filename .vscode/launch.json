@@ -20,6 +20,11 @@
             "type": "lldb",
             "request": "attach",
             "pid": "${command:pickMyProcess}",
+            "expressions": "simple",
+            "preRunCommands": [
+                // !! change this path if you placed the script somewhere else !!
+                "command script import ~/.vscode/rust_prettifier_for_lldb.py"
+            ],
         },
         {
             "name": "(Windows) Attach",

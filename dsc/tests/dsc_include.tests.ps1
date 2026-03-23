@@ -35,7 +35,7 @@ Describe 'Include tests' {
 "@
         $configPath = Join-Path $TestDrive 'config.dsc.yaml'
         $config | Set-Content -Path $configPath
-        dsc config get -f $configPath
+        dsc config get -f $configPath 2>$null
         $LASTEXITCODE | Should -Be 2
     }
 

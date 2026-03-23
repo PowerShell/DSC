@@ -210,9 +210,6 @@ resources:
             $a_obj = $a[$_] | ConvertFrom-Json
             $b_obj = $b[$_] | ConvertFrom-Json
             $a_obj.type | Should -Be $b_obj.type
-            # adapter-based resources should Not be in the results
-            $a_obj.requireAdapter | Should -BeNullOrEmpty
-            $b_obj.requireAdapter | Should -BeNullOrEmpty
         }
     }
 

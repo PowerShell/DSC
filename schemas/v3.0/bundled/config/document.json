@@ -351,8 +351,8 @@
           "properties": {
             "securityContext": {
               "$ref": "/PowerShell/DSC/main/schemas/v3.0/metadata/Microsoft.DSC/securityContext.json",
-              "default": "Current",
-              "description": "This property defines the security context a configuration requires. If you invoke a DSC operation against the configuration document in a security context that conflicts with this metadata, DSC raises an error when it validates the configuration document.\nThe default security context is `Current`."
+              "default": "current",
+              "description": "This property defines the security context a configuration requires. If you invoke a DSC operation against the configuration document in a security context that conflicts with this metadata, DSC raises an error when it validates the configuration document.\nThe default security context is `current`."
             }
           }
         }

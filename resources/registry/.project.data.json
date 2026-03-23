@@ -1,0 +1,14 @@
+{
+    "Name": "registry",
+    "Kind": "Resource",
+    "IsRust": true,
+    "SupportedPlatformOS": "Windows",
+    "Binaries": [
+        "registry"
+    ],
+    "CopyFiles": {
+        "Windows": [
+            "registry.dsc.resource.json"
+        ]
+    }
+}

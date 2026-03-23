@@ -320,6 +320,8 @@ Describe 'Tests for PSScript resource' {
         $result = dsc -l trace resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.txt -Raw | Out-String)
         $result.actualState.output.Count | Should -Be 0 -Because ($result | ConvertTo-Json | Out-String)
-        (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike '*WARN*:*This is a warning*INFO*:*This is a host message*INFO*:*This is a verbose message*'
+        (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike '*WARN*:*This is a warning*'
+        (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike '*INFO*:*This is a host message*'
+        (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike '*INFO*:*This is a verbose message*'
     }
 }

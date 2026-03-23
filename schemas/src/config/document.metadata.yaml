@@ -32,13 +32,13 @@ properties:
     properties:
       securityContext:
         $ref: /<PREFIX>/<VERSION>/metadata/Microsoft.DSC/securityContext.yaml
-        default: Current
+        default: current
         description: >-
           This property defines the security context a configuration requires. If you invoke a DSC
           operation against the configuration document in a security context that conflicts with
           this metadata, DSC raises an error when it validates the configuration document.
 
-          The default security context is `Current`.
+          The default security context is `current`.
         markdownDescription: |
           ***
           [_Online Documentation_][01]
@@ -48,11 +48,11 @@ properties:
           operation against the configuration document in a security context that conflicts with
           this metadata, DSC raises an error when it validates the configuration document.
 
-          The default security context is `Current`.
+          The default security context is `current`.
 
           [01]: <DOCS_BASE_URL>/reference/schemas/config/metadata?<DOCS_VERSION_PIN>#microsoft.dsc
         markdownEnumDescriptions:
-          - | # Current
+          - | # current
             <!-- force a line break -->
 
             > ### Current security context

@@ -1,0 +1,17 @@
+{
+    "Name": "dsc",
+    "Kind": "CLI",
+    "IsRust": true,
+    "Binaries": [
+        "dsc"
+    ],
+    "CopyFiles": {
+        "All": [
+            "dsc.settings.json",
+            "dsc_default.settings.json",
+            "assertion.dsc.resource.json",
+            "group.dsc.resource.json",
+            "include.dsc.resource.json"
+        ]
+    }
+}

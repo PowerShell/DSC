@@ -1,0 +1,13 @@
+{
+    "Name": "process",
+    "Kind": "Resource",
+    "IsRust": true,
+    "Binaries": [
+        "process"
+    ],
+    "CopyFiles": {
+        "All": [
+            "process.dsc.resource.json"
+        ]
+    }
+}

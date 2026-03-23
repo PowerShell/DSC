@@ -1,0 +1,14 @@
+{
+    "Name": "windowsupdate",
+    "Kind": "Resource",
+    "IsRust": true,
+    "SupportedPlatformOS": "Windows",
+    "Binaries": [
+        "wu_dsc"
+    ],
+    "CopyFiles": {
+        "Windows": [
+            "windowsupdate.dsc.resource.json"
+        ]
+    }
+}

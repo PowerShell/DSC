@@ -23,30 +23,22 @@ Describe 'Discover extension tests' {
     It 'Discover extensions' {
         $out = dsc extension list | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
-        $expectedExtensions = if ($IsWindows) {
-            @(
-            @{ type = 'Microsoft.DSC.Extension/Bicep'; version = '0.1.0'; capabilities = @('import') }
-            @{ type = 'Microsoft.DSC.Transitional/PSDesiredStateConfiguration'; version = '0.1.0'; capabilities = @('import') }
-            @{ type = 'Microsoft.Windows.Appx/Discover'; version = '0.1.0'; capabilities = @('discover') }
-            @{ type = 'Microsoft.PowerShell/SecretManagement'; version = '0.1.0'; capabilities = @('secret') }
-            @{ type = 'Test/Discover'; version = '0.1.0'; capabilities = @('discover') }
-            )
+        if ($IsWindows) {
+            $out.Count | Should -Be 2 -Because ($out | Out-String)
+            $out[0].type | Should -Be 'Microsoft.Windows.Appx/Discover'
+            $out[0].version | Should -Be '0.1.0'
+            $out[0].capabilities | Should -BeExactly @('discover')
+            $out[0].manifest | Should -Not -BeNullOrEmpty
+            $out[1].type | Should -BeExactly 'Test/Discover'
+            $out[1].version | Should -BeExactly '0.1.0'
+            $out[1].capabilities | Should -BeExactly @('discover')
+            $out[1].manifest | Should -Not -BeNullOrEmpty
         } else {
-            @(
-            @{ type = 'Microsoft.DSC.Extension/Bicep'; version = '0.1.0'; capabilities = @('import') }
-            @{ type = 'Microsoft.PowerShell/SecretManagement'; version = '0.1.0'; capabilities = @('secret') }
-            @{ type = 'Test/Discover'; version = '0.1.0'; capabilities = @('discover') }
-            )
-        }
-
-        $out.Count | Should -Be $expectedExtensions.Count -Because ($out | Out-String)
-        
-        foreach ($expected in $expectedExtensions) {
-            $extension = $out | Where-Object { $_.type -eq $expected.type }
-            $extension | Should -Not -BeNullOrEmpty -Because "Extension $($expected.type) should exist"
-            $extension.version | Should -BeExactly $expected.version
-            $extension.capabilities | Should -BeExactly $expected.capabilities
-            $extension.manifest | Should -Not -BeNullOrEmpty
+            $out.Count | Should -Be 1 -Because ($out | Out-String)
+            $out[0].type | Should -BeExactly 'Test/Discover'
+            $out[0].version | Should -BeExactly '0.1.0'
+            $out[0].capabilities | Should -BeExactly @('discover')
+            $out[0].manifest | Should -Not -BeNullOrEmpty
         }
     }
 
@@ -108,7 +100,6 @@ Describe 'Discover extension tests' {
             $out.Count | Should -Be 1 -Because ($out | Out-String)
             $out.type | Should -Be 'Test/DiscoverRelative'
             $out = dsc resource list 2> $TestDrive/error.log
-            write-verbose -verbose (Get-Content -Path "$TestDrive/error.log" -Raw)
             $LASTEXITCODE | Should -Be 0
             $out | Should -BeNullOrEmpty
             $errorMessage = Get-Content -Path "$TestDrive/error.log" -Raw
@@ -128,5 +119,33 @@ Describe 'Discover extension tests' {
             }
         }
         $foundWideLine | Should -BeTrue
+    }
+
+    It 'Failed extension discovery should not fail overall discovery' -Skip:(!$IsWindows) {
+        try {
+            # exclude finding powershell.exe
+            $oldPath = $env:PATH
+            $dscFolder = Split-Path (Get-Command dsc).Source -Parent
+            $env:PATH = "$env:PROGRAMFILES\PowerShell\7;$dscFolder"
+            $out = dsc -l warn resource list 2> $TestDrive/error.log | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $out.Count | Should -BeGreaterThan 0
+            (Get-Content -Path "$TestDrive/error.log" -Raw) | Should -BeLike "*WARN Extension 'Microsoft.Windows.Appx/Discover' failed to discover resources: Command: Operation Executable 'powershell' not found*" -Because (Get-Content -Path "$TestDrive/error.log" -Raw | Out-String)
+        } finally {
+            $env:PATH = $oldPath
+        }
+    }
+
+    It 'Deprecated extension shows message' {
+        try {
+            $dscHome = Split-Path (Get-Command dsc).Source -Parent
+            $env:DSC_RESOURCE_PATH = (Join-Path -Path $dscHome -ChildPath 'deprecated') + [System.IO.Path]::PathSeparator + $dscHome
+
+            $null = dsc resource list 2> $TestDrive/error.log
+            $LASTEXITCODE | Should -Be 0
+            (Get-Content -Path "$TestDrive/error.log" -Raw) | Should -Match "Extension 'Test/ExtensionDeprecated' is deprecated: This extension is deprecated" -Because (Get-Content -Path "$TestDrive/error.log" -Raw | Out-String)
+        } finally {
+            $env:DSC_RESOURCE_PATH = $null
+        }
     }
 }

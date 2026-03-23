@@ -1,0 +1,11 @@
+{
+    "Name": "configurations/windows",
+    "Kind": "Configuration",
+    "SupportedPlatformOS": "Windows",
+    "CopyFiles": {
+        "Windows": [
+            "windows_baseline.dsc.yaml",
+            "windows_inventory.dsc.yaml"
+        ]
+    }
+}

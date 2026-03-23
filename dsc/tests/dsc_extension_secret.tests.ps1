@@ -131,4 +131,64 @@ Describe 'Tests for the secret() function and extensions' {
         $errorMessage = Get-Content -Raw -Path $TestDrive/error.log
         $errorMessage | Should -Match "Extension 'Test/Secret2' returned multiple lines which is not supported for secrets"
     }
+
+    It 'Allows to pass in secret() through parameters' {
+      $configYaml = @'
+          $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+          parameters:
+            myString:
+              type: secureString
+              defaultValue: "[secret('MySecret')]"
+          resources:
+          - name: Database Connection
+            type: Microsoft.DSC.Debug/Echo
+            properties:
+              output: "[parameters('myString')]"
+              showSecrets: true
+'@
+      $out = dsc -l trace config get -i $configYaml 2> $TestDrive/error.log | ConvertFrom-Json
+      $LASTEXITCODE | Should -Be 0
+      $out.results.Count | Should -Be 1
+      $out.results[0].result.actualState.Output.secureString | Should -BeExactly 'Hello'
+    }
+
+    It 'Allows to pass in secret() through variables' {
+      $configYaml = @'
+          $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+          variables:
+            myString: "[secret('MySecret')]"
+          resources:
+          - name: Database Connection
+            type: Microsoft.DSC.Debug/Echo
+            properties:
+              output: "[variables('myString')]"
+'@
+      $out = dsc -l trace config get -i $configYaml 2> $TestDrive/error.log | ConvertFrom-Json
+      $LASTEXITCODE | Should -Be 0
+      $out.results.Count | Should -Be 1
+      $out.results[0].result.actualState.Output | Should -BeExactly 'Hello'
+    }
+
+    It 'Deprecated extension shows message' {
+      try {
+        $dscHome = Split-Path (Get-Command dsc).Source -Parent
+        $env:DSC_RESOURCE_PATH = (Join-Path -Path $dscHome -ChildPath 'deprecated') + [System.IO.Path]::PathSeparator + $dscHome
+
+        $configYaml = @'
+          $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+          variables:
+            myString: "[secret('nonExisting')]"
+          resources:
+          - name: Database Connection
+            type: Microsoft.DSC.Debug/Echo
+            properties:
+              output: "[variables('myString')]"
+'@
+        dsc -l trace config get -i $configYaml 2> $TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 4
+        (Get-Content -Raw -Path "$TestDrive/error.log") | Should -Match "Extension 'Test/ExtensionDeprecated' is deprecated: This extension is deprecated" -Because (Get-Content -Raw -Path "$TestDrive/error.log")
+      } finally {
+        $env:DSC_RESOURCE_PATH = $null
+      }
+    }
 }

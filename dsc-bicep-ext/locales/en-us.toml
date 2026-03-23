@@ -1,0 +1,7 @@
+_version = 1
+
+[bicep]
+functionCalled = "Bicep gRPC '%{function}' called for '%{resourceType}@%{version}': '%{properties}'"
+serverStarting = "Starting Bicep gRPC server on %{transport}: %{address}"
+serverError = "Bicep gRPC server error: %{error}"
+waitForDebugger = "Press any key to continue after attaching to PID: {pid}"

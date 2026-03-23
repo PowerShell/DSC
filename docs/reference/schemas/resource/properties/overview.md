@@ -38,17 +38,8 @@ DSC.
 
 For more information, see [DSC Resource _purge property schema][05].
 
-## _rebootRequested
-
-The read-only `_rebootRequested` property indicates whether a resource instance requires a reboot
-after a set operation. To use DSC's built-in reboot notification processing, resources must define
-this property in their manifest.
-
-For more information, see [DSC Resource _rebootRequested property schema][06].
-
 [01]: exist.md
 [02]: ../manifest/test.md
 [03]: ../manifest/root.md
 [04]: inDesiredState.md
 [05]: purge.md
-[06]: rebootRequested.md

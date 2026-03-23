@@ -79,70 +79,22 @@ Pattern:  ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z
 
 ### capabilities
 
-Defines the operations and behaviors the resource is implemented to support. This property is an
-array of capabilities. Resources always have the `Get` capability, but the other capabilities are
-optional and depend on the resource.
+DSC resources always have at least one capability. Resource capabilities define the operations you
+can invoke for a resource and how the resource behaves when invoked.
 
-The following list describes the available capabilities for a resource:
+DSC resources may have the following capabilities:
 
-- <a id="capability-get" ></a> `get` - The resource supports retrieving the current state of an
-  instance. All DSC Resources must have this capability. A resource has this capability when it
-  defines the mandatory [get][07] property in its resource manifest.
-- <a id="capability-set" ></a> `set` - The resource supports enforcing the desired state of an
-  instance. A resource has this capability when it defines the [set][08] property in its resource
-  manifest. Resources without this capability can't be used with the [dsc resource set][09] or
-  [dsc config set][10] commands unless they're in a Microsoft.DSC/Assertion group as a nested
-  instance.
-- <a id="capability-sethandlesexist" ></a> `setHandlesExist` - The resource supports the
-  [_exist property][11] directly. A resource has this capability when it defines the
-  [handlesExist][12] property as `true` in the definition of the [set][08] command property in its
-  resource manifest.
+- `get` - The resource can retrieve the current state of an instance.
+- `set` - The resource can enforce the desired state for an instance.
+- `setHandlesExist` - The resource handles deleting an instance during a **Set** operation.
+- `whatIf` - The resource can report how it would change state for an instance during a **Set** operation.
+- `test` - The resource implements the **Test** operation and doesn't rely on synthetic testing.
+- `delete` - The resource can remove an instance.
+- `export` - The resource can enumerate every instance.
+- `resolve` - The resource can resolve nested instances from an external source.
 
-  When a resource has this capability, the `_exist` property is part of the resource's instance
-  schema and the resource handles deleting instances of the resource in its `set` command.
-
-  When a resource doesn't have this capability, when DSC finds an instance of the resource with
-  `_exist` set to `false`, it handles calling the [delete][13] operation for the resource.
-
-  If the resource doesn't have this capability or the `delete` capability, DSC raises an error when
-  an instance defines `_exist` as `false`.
-- <a id="capability-whatif" ></a> `whatIf` - The resource supports returning explicit information
-  about how it will modify state when a user calls [dsc config set][10] with the [--what-if][14]
-  option. A resource has this capability when it defines the [What-if operation][15] in its
-  resource manifest.
-
-  When a resource has this capability, DSC calls the defined command with its arguments when a
-  user executes the `dsc config set` command with the `--what-if` option.
-
-  When a resource doesn't have this capability, DSC synthesizes how the resource will change and
-  instance by converting the `Test` result for the instance into a `Set` result. The synthetic
-  operation can't indicate potential issues or changes that can't be determined by comparing the
-  result of the `Test` operation against the resource's desired state. For example, the credentials
-  used to test a resource might be valid for that operation, but not have permissions to actually
-  modify the system state. Only a resource with this capability can fully report whether and how
-  the resource will change system state.
-- <a id="capability-test" ></a> `test` - The resource supports validating the desired state of an
-  instance against the current state of the instance. A resource has this capability when it
-  defines the [test][16] property in its resource manifest.
-
-  If a resource doesn't have the `test` capability, DSC uses a synthetic test for instances of the
-  resource. The synthetic test compares each property for the desired state of an instance against
-  the actual state. The synthetic test uses strict, case-sensitive equivalence. If the desired
-  state for a property and the actual state aren't the same, DSC marks the property as out of the
-  desired state.
-- <a id="capability-delete" ></a> `delete` - The resource supports removing an instance. A resource
-  has this capability when it defines the [delete][13] property in its resource manifest. This
-  capability isn't mutually exclusive with the `setHandlesExist` property. A resource can handle
-  the `_exist` property in set operations and be called directly with [dsc resource delete][17] to
-  remove an instance.
-- <a id="capability-export" ></a> `export` - The resource supports enumerating every instance of
-  the resource. A resource has this capability when it defines the [export][18] property in its
-  resource manifest. Only resources with this capability are usable with the
-  [dsc resource export][19] and [dsc config export][20] commands.
-- <a id="capability-resolve" ></a> `resolve` - The resource supports resolving nested resource
-  instances from an external source. A resource has this capability when it defines the
-  [resolve][21] property in its resource manifest. This functionality is primarily used by
-  [importer resources][22].
+For more information about resource capabilities, see [DSC resource capabilities][07]. For more
+information about the operations you can invoke for a resource, see [DSC resource operations][08].
 
 ```yaml
 Type:              array
@@ -239,7 +191,7 @@ Required: true
 
 Represents the values defined in the resource's manifest. This value is `null` for resources that
 aren't command-based. For more information on the value for this property, see
-[Command-based DSC Resource manifest schema reference][23].
+[Command-based DSC Resource manifest schema reference][09].
 
 ```yaml
 Type:     [object, 'null']
@@ -253,20 +205,6 @@ Required: true
 [04]: ../../definitions/resourceKind.md#group-resources
 [05]: ../../resource/manifest/root.md#kind
 [06]: ../../definitions/resourceKind.md
-[07]: ../../resource/manifest/get.md
-[08]: ../../resource/manifest/set.md
-[09]: ../../../cli/resource/set.md
-[10]: ../../../cli/config/set.md
-[11]: ../../resource/properties/exist.md
-[12]: ../../resource/manifest/set.md#handlesexist
-[13]: ../../resource/manifest/delete.md
-[14]: ../../../cli/config/set.md#-w---what-if
-[15]: ../../resource/manifest/whatif.md
-[16]: ../../resource/manifest/test.md
-[17]: ../../../cli/resource/delete.md
-[18]: ../../resource/manifest/export.md
-[19]: ../../../cli/resource/export.md
-[20]: ../../../cli/config/export.md
-[21]: ../../resource/manifest/resolve.md
-[22]: ../../definitions/resourceKind.md#importer-resources
-[23]: ../../resource/manifest/root.md
+[07]: ../../../../concepts/resources/capabilities.md
+[08]: ../../../../concepts/resources/operations.md
+[09]: ../../resource/manifest/root.md

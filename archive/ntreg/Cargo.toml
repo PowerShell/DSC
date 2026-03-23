@@ -29,6 +29,3 @@ thiserror = "1.0"
 
 [target.'cfg(onecore)'.dependencies]
 pal = { path = "../pal" }
-
-[build-dependencies]
-static_vcruntime = "2.0"

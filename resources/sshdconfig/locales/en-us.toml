@@ -1,0 +1,105 @@
+_version = 1
+
+[args]
+getInput = "input to get for sshd_config or default shell settings"
+exportCompare = "compare exported sshd_config setting to provided input"
+exportInput = "input to export from sshd_config"
+setInput = "input to set in sshd_config"
+
+[canonical_properties]
+inputMustBeBoolean = "value of '%{input}' must be true or false"
+
+[error]
+command = "Command"
+envVar = "Environment Variable"
+fileNotFound = "File not found: %{path}"
+invalidInput = "Invalid Input"
+fmt = "Format"
+io = "IO"
+json = "JSON"
+language = "Language"
+parser = "Parser"
+parseInt = "Parse Integer"
+persist = "Persist"
+registry = "Registry"
+stringUtf8 = "String UTF-8"
+
+[formatter]
+deserializeFailed = "Failed to deserialize match input: %{error}"
+invalidArrayItem = "Array item '%{item}' for key '%{key}' is not valid"
+invalidValue = "Key: '%{key}' cannot have empty value"
+matchBlockMissingCriteria = "Match block must contain 'criteria' field"
+
+[get]
+debugSetting = "Get setting:"
+defaultShellCmdOptionMustBeString = "cmdOption must be a string"
+defaultShellEscapeArgsMustBe0Or1 = "'%{input}' must be a 0 or 1"
+defaultShellEscapeArgsMustBeDWord = "escapeArguments must be a DWord"
+defaultShellMustBeString = "shell must be a string"
+includeWarning = "Include directive found in sshd_config. This resource uses 'sshd -T' to process the overall configuration state, which merges all included files but does not return the Include directive itself"
+invalidSetting = "Invalid setting: %{setting}"
+matchParsingError = "Error parsing match keyword: %{error}"
+traceInput = "Get input:"
+windowsOnly = "Microsoft.OpenSSH.SSHD/Windows is only applicable to Windows"
+
+[main]
+export = "Export command: %{input}"
+invalidTraceLevel = "Invalid trace level"
+schema = "Schema command:"
+set = "Set command: '%{input}'"
+
+[parser]
+failedToParse = "failed to parse: '%{input}'"
+failedToParseAsArray = "value is not an array"
+failedToParseNode = "failed to parse '%{input}'"
+failedToParseRoot = "failed to parse root: '%{input}'"
+invalidConfig = "invalid config: '%{input}'"
+invalidMultiArgNode = "multi-arg node '%{input}' is not valid"
+keyNotFound = "key '%{key}' not found"
+keyNotRepeatable = "key '%{key}' is not repeatable"
+missingCriteriaInMatch = "missing criteria field in match block: '%{input}'"
+missingKeyInChildNode = "missing key in child node: '%{input}'"
+missingKeyInCriteria = "missing key in criteria node: '%{input}'"
+missingValueInCriteria = "missing value in criteria node: '%{input}'"
+missingValueInChildNode = "missing value in child node: '%{input}'"
+noArgumentsFound = "no arguments found in node: '%{input}'"
+structuredKeywordCannotUseOperator = "structured keyword '%{keyword}' cannot use operator syntax"
+structuredKeywordRequiresMinArgs = "structured keyword '%{keyword}' requires at least a name and a value"
+valueDebug = "Parsed argument value:"
+unknownNode = "unknown node: '%{kind}'"
+unknownNodeType = "unknown node type: '%{node}'"
+
+[repeat_keyword]
+entryNameRequired = "Entry 'name' field is required and cannot be empty"
+entryValueRequired = "Entry '%{name}' requires a 'value' field"
+failedToParse = "failed to parse: '%{input}'"
+multipleKeywordsNotAllowed = "Multiple keywords not allowed in input (found %{count} keywords)"
+nameValueEntryRequiresValue = "Name-value keyword entry requires 'value' field when _exist is true"
+noKeywordFoundInInput = "No keyword found in input (expected one keyword like 'subsystem')"
+
+[set]
+backingUpConfig = "Backing up existing sshd_config file"
+backupCreated = "Backup created at: %{path}"
+cleanupFailed = "Failed to clean up temporary file %{path}: %{error}"
+configDoesNotExist = "sshd_config file does not exist, no backup created"
+defaultShellDebug = "default_shell: %{shell}"
+expectedArrayForKeyword = "Expected array for keyword '%{keyword}'"
+failedToParse = "failed to parse: '%{input}'"
+failedToParseDefaultShell = "failed to parse input for DefaultShell with error: '%{error}'"
+purgeFalseRequiresExistingFile = "_purge=false requires an existing sshd_config file. Use _purge=true to create a new configuration file."
+settingDefaultShell = "Setting default shell"
+settingSshdConfig = "Setting sshd_config"
+shellPathDoesNotExist = "shell path does not exist: '%{shell}'"
+shellPathMustNotBeRelative = "shell path must not be relative"
+sshdConfigReadFailed = "failed to read existing sshd_config file at path: '%{path}'"
+tempFileCreated = "temporary file created at: %{path}"
+validatingTempConfig = "Validating temporary sshd_config file"
+writingTempConfig = "Writing temporary sshd_config file"
+
+[util]
+cleanupFailed = "Failed to clean up temporary file %{path}: %{error}"
+getIgnoresInputFilters = "get command does not support filtering based on input settings, provided input will be ignored"
+sshdConfigReadFailed = "failed to read sshd_config at path: '%{path}'"
+sshdElevation = "elevated security context required"
+tempFileCreated = "temporary file created at: %{path}"
+tracingInitError = "Failed to initialize tracing"
