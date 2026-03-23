@@ -253,7 +253,7 @@ importNoResults = "Extension '%{extension}' returned no results for import"
 secretMultipleLinesReturned = "Extension '%{extension}' returned multiple lines which is not supported for secrets"
 importProcessingOutput = "Processing output from extension '%{extension}'"
 deprecationMessage = "Extension '%{extension}' is deprecated: %{message}"
-failedLoadManifest = "Failed to load manifest '%{path}': %{err}"
+failedLoadManifest = "Extension '%{extension}' failed to load manifest '%{path}': %{err}"
 
 [extensions.extension_manifest]
 extensionManifestSchemaTitle = "Extension manifest schema URI"

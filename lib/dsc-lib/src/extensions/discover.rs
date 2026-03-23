@@ -102,7 +102,7 @@ impl DscExtension {
                     let manifests = match load_manifest(&discover_result.manifest_path) {
                         Ok(manifests) => manifests,
                         Err(err) => {
-                            info!("{}", t!("extensions.dscextension.failedLoadManifest", path = discover_result.manifest_path.to_string_lossy(), err = err).to_string());
+                            info!("{}", t!("extensions.dscextension.failedLoadManifest", extension = self.type_name, path = discover_result.manifest_path.to_string_lossy(), err = err));
                             continue;
                         }
                     };

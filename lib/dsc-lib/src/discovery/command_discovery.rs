@@ -278,7 +278,7 @@ impl ResourceDiscovery for CommandDiscovery {
                                         // resource that is requested by resource/config operation
                                         // if it is, then "ResouceNotFound" error will be issued later
                                         // and here we just write as info
-                                        info!("{}", t!("discovery.commandDiscovery.failedLoadManifest", path = path.to_string_lossy(), err = e).to_string());
+                                        info!("{}", t!("discovery.commandDiscovery.failedLoadManifest", path = path.to_string_lossy(), err = e));
                                         continue;
                                     },
                                 };

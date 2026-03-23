@@ -164,11 +164,11 @@ Describe 'Discover extension tests' {
 '@
         $resourceScript = @'
         $resource = @{
-            manifestPath = "$env:TestDrive" + [System.IO.Path]::DirectorySeparatorChar + 'invalidManifest.dsc.json'
+            manifestPath = "$env:TestDrive" + [System.IO.Path]::DirectorySeparatorChar + 'invalidManifest.dsc.resource.json'
         }
         $resource | ConvertTo-Json -Compress
 '@
-        $extendionManifest = @'
+        $extensionManifest = @'
 {
     "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
     "type": "Test/DiscoverInvalid",
@@ -187,9 +187,9 @@ Describe 'Discover extension tests' {
 }
 '@
 
-        Set-Content -Path "$TestDrive/invalidManifest.dsc.json" -Value $invalidManifest
+        Set-Content -Path "$TestDrive/invalidManifest.dsc.resource.json" -Value $invalidManifest
         Set-Content -Path "$TestDrive/discover.ps1" -Value $resourceScript
-        Set-Content -Path "$TestDrive/extension.dsc.extension.json" -Value $extendionManifest
+        Set-Content -Path "$TestDrive/extension.dsc.extension.json" -Value $extensionManifest
         try {
             $env:DSC_RESOURCE_PATH = $TestDrive + [System.IO.Path]::PathSeparator + $env:PATH
             $env:TestDrive = $TestDrive
@@ -199,7 +199,7 @@ Describe 'Discover extension tests' {
             foreach ($resource in $out) {
                 $resource.type | Should -Not -Be 'Test/InvalidManifest'
             }
-            (Get-Content -Path "$TestDrive/error.log" -Raw) | Should -BeLike "*Failed to load manifest '*invalidManifest.dsc.json':*" -Because (Get-Content -Path "$TestDrive/error.log" -Raw | Out-String)
+            (Get-Content -Path "$TestDrive/error.log" -Raw) | Should -BeLike "*Extension 'Test/DiscoverInvalid' failed to load manifest '*invalidManifest.dsc.resource.json':*" -Because (Get-Content -Path "$TestDrive/error.log" -Raw | Out-String)
         } finally {
             $env:DSC_RESOURCE_PATH = $null
             $env:TestDrive = $null
