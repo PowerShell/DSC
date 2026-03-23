@@ -9,6 +9,8 @@ This document lists the available resources and links to the reference documenta
 - [Microsoft.DSC/Assertion](./microsoft/dsc/assertion/resource.md)
 - [Microsoft.DSC/Group](./microsoft/dsc/group/resource.md)
 - [Microsoft.DSC/Include](./microsoft/dsc/include/resource.md)
+- [Microsoft.Adapter/PowerShell](./microsoft/adapter/powershell/index.md)
+- [Microsoft.Adapter/WindowsPowerShell](./microsoft/adapter/windowspowershell/index.md)
 - [Microsoft.DSC/PowerShell](./microsoft/dsc/powershell/resource.md)
 - [Microsoft.DSC.Debug/Echo](./microsoft/dsc/debug/echo/resource.md)
 - [Microsoft.DSC.Transitional/RunCommandOnSet](./microsoft/dsc/transitional/runcomandonset/resource.md)
@@ -31,9 +33,16 @@ change the state of the machine directly:
 You can use the following built-in resources to leverage resources that don't define a DSC Resource
 Manifest:
 
-- [Microsoft.DSC/PowerShell](./microsoft/dsc/powershell/resource.md)
-- [Microsoft.Windows/WindowsPowerSHell](./microsoft/windows/windowspowershell/resource.md)
+- [Microsoft.Adapter/PowerShell](./microsoft/adapter/powershell/index.md)
+- [Microsoft.Adapter/WindowsPowerShell](./microsoft/adapter/windowspowershell/index.md)
+- [Microsoft.DSC/PowerShell](./microsoft/dsc/powershell/index.md)
+- [Microsoft.Windows/WindowsPowerShell](./microsoft/windows/windowspowershell/index.md)
 - [Microsoft.Windows/WMI](./microsoft/windows/wmi/resource.md)
+
+> [!WARNING]
+> `Microsoft.DSC/PowerShell` and `Microsoft.Windows/WindowsPowerShell` will be deprecated in a
+> future release. Use `Microsoft.Adapter/PowerShell` and `Microsoft.Adapter/WindowsPowerShell`
+> instead.
 
 ## Built-in configurable resources
 
