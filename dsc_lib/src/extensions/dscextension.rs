@@ -107,7 +107,7 @@ impl DscExtension {
                         }
                     };
                     if !Path::new(&discover_result.manifest_path).is_absolute() {
-                        return Err(DscError::Extension(t!("extensions.dscextension.discoverNotAbsolutePath", extension = self.type_name.clone()).to_string()));
+                        return Err(DscError::Extension(t!("extensions.dscextension.discoverNotAbsolutePath", extension = self.type_name.clone(), path = discover_result.manifest_path.clone()).to_string()));
                     }
                     let manifest_path = Path::new(&discover_result.manifest_path);
                     // Currently we don't support extensions discovering other extensions
