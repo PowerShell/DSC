@@ -349,7 +349,7 @@ if (!$SkipBuild) {
         "y2j"
     )
     $pedantic_unclean_projects = @()
-    $clippy_unclean_projects = @("grammars/tree-sitter-dscexpression", "grammars/tree-sitter-ssh-server-config")
+    $clippy_unclean_projects = @("tree-sitter-dscexpression", "tree-sitter-ssh-server-config")
     $skip_test_projects_on_windows = @("grammars/tree-sitter-dscexpression", "grammars/tree-sitter-ssh-server-config")
 
     if ($IsWindows) {
