@@ -116,7 +116,7 @@ impl DscExtension {
                         Ok(_) => continue,
                         Err(err) => {
                             // For invalid manifest, we write an information and skip it
-                            info!("{}", t!("extensions.dscextension.failedLoadManifest", extension = self.type_name, path = discover_result.manifest_path.to_string(), err = err));
+                            info!("{}", t!("extensions.dscextension.failedLoadManifest", extension = self.type_name, path = discover_result.manifest_path.clone(), err = err));
                             continue;
                         }
                     };
