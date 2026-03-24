@@ -1,0 +1,10 @@
+{
+    "Name": "extensions/powershell",
+    "Kind": "Extension",
+    "CopyFiles": {
+        "All": [
+            "powershell.discover.ps1",
+            "powershell.dsc.extension.json"
+        ]
+    }
+}
