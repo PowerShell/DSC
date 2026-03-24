@@ -199,7 +199,7 @@ Describe 'Discover extension tests' {
             foreach ($resource in $out) {
                 $resource.type | Should -Not -Be 'Test/InvalidManifest'
             }
-            (Get-Content -Path "$TestDrive/error.log" -Raw) | Should -BeLike "*Extension 'Test/DiscoverInvalid' failed to load manifest '*invalidManifest.dsc.resource.json':*" -Because (Get-Content -Path "$TestDrive/error.log" -Raw | Out-String)
+            (Get-Content -Path "$TestDrive/error.log" -Raw) | Should -BeLike "*INFO Extension 'Test/DiscoverInvalid' failed to load manifest: Invalid manifest for resource '*invalidManifest.dsc.resource.json'*" -Because (Get-Content -Path "$TestDrive/error.log" -Raw | Out-String)
         } finally {
             $env:DSC_RESOURCE_PATH = $null
             $env:TestDrive = $null

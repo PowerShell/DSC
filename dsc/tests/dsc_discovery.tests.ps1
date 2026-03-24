@@ -364,7 +364,7 @@ Describe 'tests for resource discovery' {
             $LASTEXITCODE | Should -Be 0
             $out | Should -BeNullOrEmpty -Because (Get-Content -Raw -Path "$testdrive/error.txt")
             $errorLog = Get-Content -Raw -Path "$testdrive/error.txt"
-            $errorLog | Should -Match "INFO Failed to load manifest '.*test.dsc.resource.json':" -Because $errorLog
+            $errorLog | Should -BeLike "*INFO Failed to load manifest: Invalid manifest for resource '*test.dsc.resource.json'*" -Because $errorLog
         } finally {
             $env:DSC_RESOURCE_PATH = $null
         }
