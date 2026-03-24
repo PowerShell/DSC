@@ -317,9 +317,16 @@ Describe 'tests for resource discovery' {
         }
 '@
         Set-Content -Path "$testdrive/test.dsc.resource.json" -Value $invalidManifest
-        $out = dsc -l info resource list 'Test/InvalidManifest' 2> "$testdrive/error.txt" | ConvertFrom-Json
-        $LASTEXITCODE | Should -Be 0
-        $out | Should -BeNullOrEmpty -Because (Get-Content -Raw -Path "$testdrive/error.txt")
-        Get-Content -Raw -Path "$testdrive/error.txt" | Should -Match "INFO Failed to load manifest for resource '.*test.dsc.resource.json':" -Because (Get-Content -Raw -Path "$testdrive/error.txt")
+        try {
+            $env:DSC_RESOURCE_PATH = $testdrive + [System.IO.Path]::PathSeparator + $env:PATH
+
+            $out = dsc -l info resource list 'Test/InvalidManifest' 2> "$testdrive/error.txt" | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $out | Should -BeNullOrEmpty -Because (Get-Content -Raw -Path "$testdrive/error.txt")
+            $errorLog = Get-Content -Raw -Path "$testdrive/error.txt"
+            $errorLog | Should -Match "INFO Failed to load manifest: Manifest: Invalid manifest for resource '.*test.dsc.resource.json'" -Because $errorLog
+        } finally {
+            $env:DSC_RESOURCE_PATH = $null
+        }
     }
 }

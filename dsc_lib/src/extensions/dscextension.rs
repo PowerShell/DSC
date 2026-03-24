@@ -107,7 +107,7 @@ impl DscExtension {
                         }
                     };
                     if !Path::new(&discover_result.manifest_path).is_absolute() {
-                        return Err(DscError::Extension(t!("extensions.dscextension.discoverNotAbsolutePath", extension = self.type_name.clone(), path = discover_result.manifest_path.clone()).to_string()));
+                        return Err(DscError::Extension(t!("extensions.dscextension.discoverNotAbsolutePath", extension = self.type_name.clone()).to_string()));
                     }
                     let manifest_path = Path::new(&discover_result.manifest_path);
                     // Currently we don't support extensions discovering other extensions
@@ -116,7 +116,7 @@ impl DscExtension {
                         Ok(_) => continue,
                         Err(err) => {
                             // For invalid manifest, we write an information and skip it
-                            info!("{}", t!("extensions.dscextension.failedImportManifest", resource = manifest_path.to_string_lossy(), err = err).to_string());
+                            info!("{}", t!("extensions.dscextension.failedLoadManifest", extension = self.type_name, path = discover_result.manifest_path.to_string(), err = err));
                             continue;
                         }
                     };

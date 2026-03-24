@@ -249,7 +249,7 @@ impl ResourceDiscovery for CommandDiscovery {
                                         // resource that is requested by resource/config operation
                                         // if it is, then "ResourceNotFound" error will be issued later
                                         // and here we just write as information
-                                        info!("{}", t!("discovery.commandDiscovery.failedLoadManifest", resource = path.to_string_lossy(), err = e).to_string());
+                                        info!("{}", t!("discovery.commandDiscovery.failedLoadManifest", err = e).to_string());
                                         continue;
                                     },
                                 };
@@ -280,7 +280,7 @@ impl ResourceDiscovery for CommandDiscovery {
                                                 let manifest = match import_manifest(manifest.clone()) {
                                                     Ok(manifest) => manifest,
                                                     Err(err) => {
-                                                        info!("{}", t!("discovery.commandDiscovery.failedImportManifest", resource = resource.type_name, err = err).to_string());
+                                                        info!("{}", t!("discovery.commandDiscovery.failedLoadManifest", err = err));
                                                         continue;
                                                     }
                                                 };
