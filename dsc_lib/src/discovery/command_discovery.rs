@@ -277,13 +277,7 @@ impl ResourceDiscovery for CommandDiscovery {
                                     ImportedManifest::Resource(resource) => {
                                         if regex.is_match(&resource.type_name) {
                                             if let Some(ref manifest) = resource.manifest {
-                                                let manifest = match import_manifest(manifest.clone()) {
-                                                    Ok(manifest) => manifest,
-                                                    Err(err) => {
-                                                        info!("{}", t!("discovery.commandDiscovery.failedLoadManifest", err = err));
-                                                        continue;
-                                                    }
-                                                };
+                                                let manifest = import_manifest(manifest.clone())?;
                                                 if manifest.kind == Some(Kind::Adapter) {
                                                     trace!("{}", t!("discovery.commandDiscovery.adapterFound", adapter = resource.type_name));
                                                     insert_resource(&mut adapters, &resource, true);
