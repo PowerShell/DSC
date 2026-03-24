@@ -74,7 +74,7 @@ Describe 'tests for resource discovery' {
         $resources.Count | Should -Be 0
     }
 
-    It 'warns on invalid semver' {
+    It 'info on invalid semver' {
         $manifest = @'
         {
             "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
@@ -94,9 +94,8 @@ Describe 'tests for resource discovery' {
         try {
             $env:DSC_RESOURCE_PATH = $testdrive
             Set-Content -Path "$testdrive/test.dsc.resource.json" -Value $manifest
-            $out = dsc resource list 2>&1
-            write-verbose -verbose ($out | Out-String)
-            $out | Should -Match 'WARN.*?Validation.*?invalid version' -Because ($out | Out-String)
+            $out = dsc -l info resource list 2>&1 | Out-String
+            $out | Should -BeLike '*INFO*Validation*invalid version*' -Because ($out | Out-String)
         }
         finally {
             $env:DSC_RESOURCE_PATH = $oldPath
