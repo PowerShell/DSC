@@ -868,3 +868,15 @@ forbiddenBuildMetadata = "comparator '%{comparator}' is defined with forbidden b
 missingOperator = "comparator '%{comparator}' doesn't define an operator"
 invalidWildcards = "comparator '%{comparator}' has invalid wildcard characters - must define wildcards as asterisks (`*`), not `x` or `X`"
 wildcardMajorVersion = "comparator '%{comparator}' defines the major version segment as a wildcard `%{wildcard}` instead of a literal number"
+
+[types.wildcard_type_name]
+emptyNamespaceSegment = "namespace segment %{index} is empty"
+emptyOwnerSegment = "owner segment is empty"
+emptyTypeName = "wildcard type name cannot be an empty string"
+invalidNameSegment = "name segment '%{name}' contains invalid characters"
+invalidNamespaceSegment = "namespace segment '%{namespace}' contains invalid characters"
+invalidOwnerSegment = "owner segment '%{owner}' contains invalid characters"
+invalidRegex = "wildcard type name '%{name}' could not be converted into a valid regex pattern: %{err}"
+invalidTypeName = "invalid wildcard type name '%{text}': %{err}"
+missingNameSegment = "missing name segment when no wildcard in the pattern can match a name segment"
+noWildcard = "wildcard type name '%{text}' doesn't contain any wildcard characters (`*`)"

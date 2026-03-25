@@ -182,6 +182,9 @@ pub enum DscError {
     #[error("{t}: {0}", t = t!("dscerror.validation"))]
     Validation(String),
 
+    #[error(transparent)]
+    WildcardTypeName(#[from] crate::types::WildcardTypeNameError),
+
     #[error("YAML: {0}")]
     Yaml(#[from] serde_yaml::Error),
 

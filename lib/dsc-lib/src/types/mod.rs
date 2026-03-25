@@ -21,3 +21,5 @@ mod tag;
 pub use tag::Tag;
 mod tag_list;
 pub use tag_list::TagList;
+mod wildcard_type_name;
+pub use wildcard_type_name::{WildcardTypeName, WildcardTypeNameError};

@@ -21,3 +21,5 @@ mod semantic_version_req;
 mod tag;
 #[cfg(test)]
 mod tag_list;
+#[cfg(test)]
+mod wildcard_type_name;
