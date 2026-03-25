@@ -15,10 +15,17 @@ use std::collections::BTreeMap;
 use command_discovery::{CommandDiscovery, ImportedManifest};
 use tracing::error;
 
+/// Defines the caching [`BTreeMap`] for discovered DSC extensions.
+type DiscoveryExtensionCache = BTreeMap<String, DscExtension>;
+/// Defines the caching [`BTreeMap`] for discovered DSC manifests of any type.
+type DiscoveryManifestCache = BTreeMap<String, Vec<ImportedManifest>>;
+/// Defines the caching [`BTreeMap`] for discovered DSC resources.
+type DiscoveryResourceCache = BTreeMap<String, Vec<DscResource>>;
+
 #[derive(Clone)]
 pub struct Discovery {
-    pub resources: BTreeMap<String, Vec<DscResource>>,
-    pub extensions: BTreeMap<String, DscExtension>,
+    pub resources: DiscoveryResourceCache,
+    pub extensions: DiscoveryExtensionCache,
     pub refresh_cache: bool,
 }
 
@@ -32,8 +39,8 @@ impl Discovery {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            resources: BTreeMap::new(),
-            extensions: BTreeMap::new(),
+            resources: DiscoveryResourceCache::new(),
+            extensions: DiscoveryExtensionCache::new(),
             refresh_cache: false,
         }
     }
@@ -49,7 +56,13 @@ impl Discovery {
     /// # Returns
     ///
     /// A vector of `DscResource` instances.
-    pub fn list_available(&mut self, kind: &DiscoveryKind, type_name_filter: &str, adapter_name_filter: &str, progress_format: ProgressFormat) -> Vec<ImportedManifest> {
+    pub fn list_available(
+        &mut self,
+        kind: &DiscoveryKind,
+        type_name_filter: &str,
+        adapter_name_filter: &str,
+        progress_format: ProgressFormat
+    ) -> Vec<ImportedManifest> {
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
             Box::new(command_discovery::CommandDiscovery::new(progress_format)),
         ];

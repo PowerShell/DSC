@@ -1,9 +1,8 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{configure::config_doc::ResourceDiscoveryMode, dscerror::DscError, dscresources::dscresource::DscResource, extensions::dscextension::DscExtension};
-use std::collections::BTreeMap;
-use super::{command_discovery::ImportedManifest, fix_semver};
+use crate::{configure::config_doc::ResourceDiscoveryMode, discovery::{DiscoveryExtensionCache, DiscoveryManifestCache, DiscoveryResourceCache}, dscerror::DscError};
+use super::fix_semver;
 
 #[derive(Debug, PartialEq)]
 pub enum DiscoveryKind {
@@ -93,7 +92,12 @@ pub trait ResourceDiscovery {
     /// # Errors
     ///
     /// This function will return an error if the underlying discovery fails.
-    fn list_available(&mut self, kind: &DiscoveryKind, type_name_filter: &str, adapter_name_filter: &str) -> Result<BTreeMap<String, Vec<ImportedManifest>>, DscError>;
+    fn list_available(
+        &mut self,
+        kind: &DiscoveryKind,
+        type_name_filter: &str,
+        adapter_name_filter: &str
+    ) -> Result<DiscoveryManifestCache, DscError>;
 
     /// Find resources based on the required resource types.
     /// This is not applicable for extensions.
@@ -109,7 +113,7 @@ pub trait ResourceDiscovery {
     /// # Errors
     ///
     /// This function will return an error if the underlying discovery fails.
-    fn find_resources(&mut self, required_resource_types: &[DiscoveryFilter]) -> Result<BTreeMap<String, Vec<DscResource>>, DscError>;
+    fn find_resources(&mut self, required_resource_types: &[DiscoveryFilter]) -> Result<DiscoveryResourceCache, DscError>;
 
     /// Get the available extensions.
     ///
@@ -120,7 +124,7 @@ pub trait ResourceDiscovery {
     /// # Errors
     ///
     /// This function will return an error if the underlying discovery fails.
-    fn get_extensions(&mut self) -> Result<BTreeMap<String, DscExtension>, DscError>;
+    fn get_extensions(&mut self) -> Result<DiscoveryExtensionCache, DscError>;
 
     /// Set the discovery mode.
     ///

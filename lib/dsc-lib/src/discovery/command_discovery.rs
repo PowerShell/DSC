@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{discovery::{discovery_trait::{DiscoveryFilter, DiscoveryKind, ResourceDiscovery}, matches_adapter_requirement}, dscresources::adapted_resource_manifest::AdaptedDscResourceManifest, parser::Statement};
+use crate::{discovery::{DiscoveryExtensionCache, DiscoveryManifestCache, DiscoveryResourceCache, discovery_trait::{DiscoveryFilter, DiscoveryKind, ResourceDiscovery}, matches_adapter_requirement}, dscresources::adapted_resource_manifest::AdaptedDscResourceManifest, parser::Statement};
 use crate::{locked_clear, locked_is_empty, locked_extend, locked_clone, locked_get};
 use crate::configure::{config_doc::ResourceDiscoveryMode, context::Context};
 use crate::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
@@ -18,7 +18,7 @@ use rust_i18n::t;
 use semver::{Version, VersionReq};
 use schemars::JsonSchema;
 use serde::Deserialize;
-use std::{collections::{BTreeMap, HashMap, HashSet}, sync::{LazyLock, RwLock}};
+use std::{collections::{HashMap, HashSet}, sync::{LazyLock, RwLock}};
 use std::env;
 use std::ffi::OsStr;
 use std::fs::{create_dir_all, read, read_to_string, write};
@@ -35,10 +35,10 @@ const DSC_MANIFEST_LIST_EXTENSIONS: [&str; 3] = [".dsc.manifests.json", ".dsc.ma
 const DSC_RESOURCE_EXTENSIONS: [&str; 3] = [".dsc.resource.json", ".dsc.resource.yaml", ".dsc.resource.yml"];
 
 // use BTreeMap so that the results are sorted by the typename, the Vec is sorted by version
-static ADAPTERS: LazyLock<RwLock<BTreeMap<String, Vec<DscResource>>>> = LazyLock::new(|| RwLock::new(BTreeMap::new()));
-static RESOURCES: LazyLock<RwLock<BTreeMap<String, Vec<DscResource>>>> = LazyLock::new(|| RwLock::new(BTreeMap::new()));
-static EXTENSIONS: LazyLock<RwLock<BTreeMap<String, DscExtension>>> = LazyLock::new(|| RwLock::new(BTreeMap::new()));
-static ADAPTED_RESOURCES: LazyLock<RwLock<BTreeMap<String, Vec<DscResource>>>> = LazyLock::new(|| RwLock::new(BTreeMap::new()));
+static ADAPTERS: LazyLock<RwLock<DiscoveryResourceCache>> = LazyLock::new(|| RwLock::new(DiscoveryResourceCache::new()));
+static RESOURCES: LazyLock<RwLock<DiscoveryResourceCache>> = LazyLock::new(|| RwLock::new(DiscoveryResourceCache::new()));
+static EXTENSIONS: LazyLock<RwLock<DiscoveryExtensionCache>> = LazyLock::new(|| RwLock::new(DiscoveryExtensionCache::new()));
+static ADAPTED_RESOURCES: LazyLock<RwLock<DiscoveryResourceCache>> = LazyLock::new(|| RwLock::new(DiscoveryResourceCache::new()));
 
 #[derive(Deserialize, JsonSchema)]
 pub struct ManifestList {
@@ -94,7 +94,7 @@ impl CommandDiscovery {
     }
 
     #[must_use]
-    pub fn get_extensions(&self) -> BTreeMap<String, DscExtension> { locked_clone!(EXTENSIONS) }
+    pub fn get_extensions(&self) -> DiscoveryExtensionCache { locked_clone!(EXTENSIONS) }
 
     fn get_resource_path_setting() -> Result<ResourcePathSetting, DscError>
     {
@@ -246,9 +246,9 @@ impl ResourceDiscovery for CommandDiscovery {
             }
         }
 
-        let mut adapters = BTreeMap::<String, Vec<DscResource>>::new();
-        let mut resources = BTreeMap::<String, Vec<DscResource>>::new();
-        let mut extensions = BTreeMap::<String, DscExtension>::new();
+        let mut adapters = DiscoveryResourceCache::new();
+        let mut resources = DiscoveryResourceCache::new();
+        let mut extensions = DiscoveryExtensionCache::new();
 
         if let Ok(paths) = CommandDiscovery::get_resource_paths() {
             for path in paths {
@@ -394,7 +394,7 @@ impl ResourceDiscovery for CommandDiscovery {
         let mut progress = ProgressBar::new(adapters.len() as u64, self.progress_format)?;
         progress.write_activity("Searching for adapted resources");
 
-        let mut adapted_resources = BTreeMap::<String, Vec<DscResource>>::new();
+        let mut adapted_resources = DiscoveryResourceCache::new();
 
         let mut found_adapter: bool = false;
         for (adapter_name, adapters) in &adapters {
@@ -464,8 +464,8 @@ impl ResourceDiscovery for CommandDiscovery {
         Ok(())
     }
 
-    fn list_available(&mut self, kind: &DiscoveryKind, type_name_filter: &str, adapter_name_filter: &str) -> Result<BTreeMap<String, Vec<ImportedManifest>>, DscError> {
-        let mut resources = BTreeMap::<String, Vec<ImportedManifest>>::new();
+    fn list_available(&mut self, kind: &DiscoveryKind, type_name_filter: &str, adapter_name_filter: &str) -> Result<DiscoveryManifestCache, DscError> {
+        let mut resources = DiscoveryManifestCache::new();
         if *kind == DiscoveryKind::Resource {
             if adapter_name_filter.is_empty() {
                 self.discover(kind, type_name_filter)?;
@@ -497,12 +497,12 @@ impl ResourceDiscovery for CommandDiscovery {
         Ok(resources)
     }
 
-    fn find_resources(&mut self, required_resource_types: &[DiscoveryFilter]) -> Result<BTreeMap<String, Vec<DscResource>>, DscError> {
+    fn find_resources(&mut self, required_resource_types: &[DiscoveryFilter]) -> Result<DiscoveryResourceCache, DscError> {
         debug!("{}", t!("discovery.commandDiscovery.searchingForResources", resources = required_resource_types : {:?}));
         if self.discovery_mode == ResourceDiscoveryMode::DuringDeployment || locked_is_empty!(RESOURCES) {
             self.discover(&DiscoveryKind::Resource, "*")?;
         }
-        let mut found_resources = BTreeMap::<String, Vec<DscResource>>::new();
+        let mut found_resources = DiscoveryResourceCache::new();
         let mut required_resources = HashMap::<DiscoveryFilter, bool>::new();
         for filter in required_resource_types {
             required_resources.insert(filter.clone(), false);
@@ -556,7 +556,7 @@ impl ResourceDiscovery for CommandDiscovery {
         Ok(found_resources)
     }
 
-    fn get_extensions(&mut self) -> Result<BTreeMap<String, DscExtension>, DscError> {
+    fn get_extensions(&mut self) -> Result<DiscoveryExtensionCache, DscError> {
         if locked_is_empty!(EXTENSIONS) {
             self.discover(&DiscoveryKind::Extension, "*")?;
         }
@@ -568,7 +568,7 @@ impl ResourceDiscovery for CommandDiscovery {
     }
 }
 
-fn filter_resources(found_resources: &mut BTreeMap<String, Vec<DscResource>>, required_resources: &mut HashMap<DiscoveryFilter, bool>, resources: &[DscResource], filter: &DiscoveryFilter) {
+fn filter_resources(found_resources: &mut DiscoveryResourceCache, required_resources: &mut HashMap<DiscoveryFilter, bool>, resources: &[DscResource], filter: &DiscoveryFilter) {
     for resource in resources {
         if let Some(required_version) = filter.version() {
             if let Ok(resource_version) = Version::parse(&resource.version) {
@@ -603,7 +603,7 @@ fn filter_resources(found_resources: &mut BTreeMap<String, Vec<DscResource>>, re
 }
 
 /// Inserts a resource into tree adding to vector if already exists
-fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource: &DscResource) {
+fn insert_resource(resources: &mut DiscoveryResourceCache, resource: &DscResource) {
     if let Some(resource_versions) = resources.get_mut(&resource.type_name.to_lowercase()) {
         // compare the resource versions and insert newest to oldest using semver
         let mut insert_index = resource_versions.len();
@@ -921,7 +921,7 @@ fn verify_executable(resource: &str, operation: &str, executable: &str, director
     }
 }
 
-fn add_resources_to_lookup_table(adapted_resources: &BTreeMap<String, Vec<DscResource>>)
+fn add_resources_to_lookup_table(adapted_resources: &DiscoveryResourceCache)
 {
     let mut lookup_table = load_adapted_resources_lookup_table();
 
