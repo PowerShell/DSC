@@ -116,7 +116,7 @@ impl Discovery {
                 let version = fix_semver(version);
                 if let Ok(version_req) = VersionReq::parse(&version) {
                     for resource in resources {
-                        if let Ok(resource_version) = Version::parse(&resource.version) {
+                        if let Some(resource_version) = resource.version.as_semver() {
                             if version_req.matches(&resource_version) && matches_adapter_requirement(resource, filter) {
                                 return Ok(Some(resource));
                             }
