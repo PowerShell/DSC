@@ -8,6 +8,7 @@ use crate::configure::config_doc::ResourceDiscoveryMode;
 use crate::discovery::discovery_trait::{DiscoveryKind, ResourceDiscovery, DiscoveryFilter};
 use crate::dscerror::DscError;
 use crate::extensions::dscextension::{Capability, DscExtension};
+use crate::types::FullyQualifiedTypeName;
 use crate::{dscresources::dscresource::DscResource, progress::ProgressFormat};
 use core::result::Result::Ok;
 use semver::{Version, VersionReq};
@@ -16,11 +17,11 @@ use command_discovery::{CommandDiscovery, ImportedManifest};
 use tracing::error;
 
 /// Defines the caching [`BTreeMap`] for discovered DSC extensions.
-type DiscoveryExtensionCache = BTreeMap<String, DscExtension>;
+type DiscoveryExtensionCache = BTreeMap<FullyQualifiedTypeName, DscExtension>;
 /// Defines the caching [`BTreeMap`] for discovered DSC manifests of any type.
-type DiscoveryManifestCache = BTreeMap<String, Vec<ImportedManifest>>;
+type DiscoveryManifestCache = BTreeMap<FullyQualifiedTypeName, Vec<ImportedManifest>>;
 /// Defines the caching [`BTreeMap`] for discovered DSC resources.
-type DiscoveryResourceCache = BTreeMap<String, Vec<DscResource>>;
+type DiscoveryResourceCache = BTreeMap<FullyQualifiedTypeName, Vec<DscResource>>;
 
 #[derive(Clone)]
 pub struct Discovery {
@@ -109,8 +110,8 @@ impl Discovery {
             self.find_resources(&[filter.clone()], ProgressFormat::None)?;
         }
 
-        let type_name = filter.resource_type().to_lowercase();
-        if let Some(resources) = self.resources.get(&type_name) {
+        let type_name = filter.resource_type();
+        if let Some(resources) = self.resources.get(type_name) {
             if let Some(version) = filter.version() {
                 let version = fix_semver(version);
                 if let Ok(version_req) = VersionReq::parse(&version) {

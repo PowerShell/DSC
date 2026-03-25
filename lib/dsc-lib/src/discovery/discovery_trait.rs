@@ -1,7 +1,12 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{configure::config_doc::ResourceDiscoveryMode, discovery::{DiscoveryExtensionCache, DiscoveryManifestCache, DiscoveryResourceCache}, dscerror::DscError};
+use crate::{
+    configure::config_doc::ResourceDiscoveryMode,
+    discovery::{DiscoveryExtensionCache, DiscoveryManifestCache, DiscoveryResourceCache},
+    dscerror::DscError,
+    types::FullyQualifiedTypeName
+};
 use super::fix_semver;
 
 #[derive(Debug, PartialEq)]
@@ -12,8 +17,8 @@ pub enum DiscoveryKind {
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub struct DiscoveryFilter {
-    require_adapter: Option<String>,
-    r#type: String,
+    require_adapter: Option<FullyQualifiedTypeName>,
+    r#type: FullyQualifiedTypeName,
     version: Option<String>,
 }
 
@@ -22,19 +27,19 @@ impl DiscoveryFilter {
     pub fn new(resource_type: &str, version: Option<&str>, adapter: Option<&str>) -> Self {
         let version = version.map(|v| fix_semver(&v));
         Self {
-            require_adapter: adapter.map(|a| a.to_lowercase()),
-            r#type: resource_type.to_lowercase(),
+            require_adapter: adapter.map(|a| a.parse().unwrap()),
+            r#type: resource_type.parse().unwrap(),
             version,
         }
     }
 
     #[must_use]
-    pub fn require_adapter(&self) -> Option<&String> {
+    pub fn require_adapter(&self) -> Option<&FullyQualifiedTypeName> {
         self.require_adapter.as_ref()
     }
 
     #[must_use]
-    pub fn resource_type(&self) -> &str {
+    pub fn resource_type(&self) -> &FullyQualifiedTypeName {
         &self.r#type
     }
 

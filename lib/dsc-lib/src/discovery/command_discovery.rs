@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{discovery::{DiscoveryExtensionCache, DiscoveryManifestCache, DiscoveryResourceCache, discovery_trait::{DiscoveryFilter, DiscoveryKind, ResourceDiscovery}, matches_adapter_requirement}, dscresources::adapted_resource_manifest::AdaptedDscResourceManifest, parser::Statement};
+use crate::{discovery::{DiscoveryExtensionCache, DiscoveryManifestCache, DiscoveryResourceCache, discovery_trait::{DiscoveryFilter, DiscoveryKind, ResourceDiscovery}, matches_adapter_requirement}, dscresources::adapted_resource_manifest::AdaptedDscResourceManifest, parser::Statement, types::FullyQualifiedTypeName};
 use crate::{locked_clear, locked_is_empty, locked_extend, locked_clone, locked_get};
 use crate::configure::{config_doc::ResourceDiscoveryMode, context::Context};
 use crate::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
@@ -289,7 +289,7 @@ impl ResourceDiscovery for CommandDiscovery {
                                             if regex.is_match(&extension.type_name) {
                                                 trace!("{}", t!("discovery.commandDiscovery.extensionFound", extension = extension.type_name, version = extension.version));
                                                 // we only keep newest version of the extension so compare the version and only keep the newest
-                                                if let Some(existing_extension) = extensions.get_mut(extension.type_name.as_ref()) {
+                                                if let Some(existing_extension) = extensions.get_mut(&extension.type_name) {
                                                     let Ok(existing_version) = Version::parse(&existing_extension.version) else {
                                                         return Err(DscError::Operation(t!("discovery.commandDiscovery.extensionInvalidVersion", extension = existing_extension.type_name, version = existing_extension.version).to_string()));
                                                     };
@@ -297,10 +297,10 @@ impl ResourceDiscovery for CommandDiscovery {
                                                         return Err(DscError::Operation(t!("discovery.commandDiscovery.extensionInvalidVersion", extension = extension.type_name, version = extension.version).to_string()));
                                                     };
                                                     if new_version > existing_version {
-                                                        extensions.insert(extension.type_name.to_string(), extension.clone());
+                                                        extensions.insert(extension.type_name.clone(), extension.clone());
                                                     }
                                                 } else {
-                                                    extensions.insert(extension.type_name.to_string(), extension.clone());
+                                                    extensions.insert(extension.type_name.clone(), extension.clone());
                                                 }
                                             }
                                         },
@@ -409,7 +409,7 @@ impl ResourceDiscovery for CommandDiscovery {
                 let mut adapter_progress = ProgressBar::new(1, self.progress_format)?;
                 adapter_progress.write_activity(format!("Enumerating resources for adapter '{adapter_name}'").as_str());
                 let Some(manifest) = &adapter.manifest else {
-                    return Err(DscError::MissingManifest(adapter_name.clone()));
+                    return Err(DscError::MissingManifest(adapter_name.to_string()));
                 };
 
                 let mut adapter_resources_count = 0;
@@ -435,7 +435,7 @@ impl ResourceDiscovery for CommandDiscovery {
                     match serde_json::from_str::<DscResource>(line){
                         Result::Ok(resource) => {
                             if resource.require_adapter.is_none() {
-                                warn!("{}", DscError::MissingRequires(adapter_name.clone(), resource.type_name.to_string()).to_string());
+                                warn!("{}", DscError::MissingRequires(adapter_name.to_string(), resource.type_name.to_string()).to_string());
                                 continue;
                             }
 
@@ -523,17 +523,17 @@ impl ResourceDiscovery for CommandDiscovery {
         }
 
         // store the keys of the ADAPTERS into a vec
-        let mut adapters: Vec<String> = locked_clone!(ADAPTERS).keys().cloned().collect();
+        let mut adapters: Vec<FullyQualifiedTypeName> = locked_clone!(ADAPTERS).keys().cloned().collect();
         // sort the adapters by ones specified in the required resources first
 
         for filter in required_resource_types {
             if let Some(required_adapter) = filter.require_adapter() {
-                if !adapters.contains(&required_adapter.to_string()) {
+                if !adapters.contains(&required_adapter) {
                     return Err(DscError::AdapterNotFound(required_adapter.to_string()));
                 }
                 // otherwise insert at the front of the list
                 adapters.retain(|a| a != required_adapter);
-                adapters.insert(0, required_adapter.to_string());
+                adapters.insert(0, required_adapter.clone());
             }
         }
 
@@ -574,7 +574,7 @@ fn filter_resources(found_resources: &mut DiscoveryResourceCache, required_resou
             if let Ok(resource_version) = Version::parse(&resource.version) {
                 if let Ok(version_req) = VersionReq::parse(required_version) {
                     if version_req.matches(&resource_version) && matches_adapter_requirement(resource, filter) {
-                        found_resources.entry(filter.resource_type().to_string()).or_default().push(resource.clone());
+                        found_resources.entry(filter.resource_type().clone()).or_default().push(resource.clone());
                         required_resources.insert(filter.clone(), true);
                         debug!("{}", t!("discovery.commandDiscovery.foundResourceWithVersion", resource = resource.type_name, version = resource.version));
                         break;
@@ -583,7 +583,7 @@ fn filter_resources(found_resources: &mut DiscoveryResourceCache, required_resou
             } else {
                 // if not semver, we do a string comparison
                 if resource.version == *required_version && matches_adapter_requirement(resource, filter) {
-                    found_resources.entry(filter.resource_type().to_string()).or_default().push(resource.clone());
+                    found_resources.entry(filter.resource_type().clone()).or_default().push(resource.clone());
                     required_resources.insert(filter.clone(), true);
                     debug!("{}", t!("discovery.commandDiscovery.foundResourceWithVersion", resource = resource.type_name, version = resource.version));
                     break;
@@ -591,7 +591,7 @@ fn filter_resources(found_resources: &mut DiscoveryResourceCache, required_resou
             }
         } else {
             if matches_adapter_requirement(resource, filter) {
-                found_resources.entry(filter.resource_type().to_string()).or_default().push(resource.clone());
+                found_resources.entry(filter.resource_type().clone()).or_default().push(resource.clone());
                 required_resources.insert(filter.clone(), true);
                 break;
             }
@@ -604,7 +604,7 @@ fn filter_resources(found_resources: &mut DiscoveryResourceCache, required_resou
 
 /// Inserts a resource into tree adding to vector if already exists
 fn insert_resource(resources: &mut DiscoveryResourceCache, resource: &DscResource) {
-    if let Some(resource_versions) = resources.get_mut(&resource.type_name.to_lowercase()) {
+    if let Some(resource_versions) = resources.get_mut(&resource.type_name) {
         // compare the resource versions and insert newest to oldest using semver
         let mut insert_index = resource_versions.len();
         for (index, resource_instance) in resource_versions.iter().enumerate() {
@@ -628,7 +628,7 @@ fn insert_resource(resources: &mut DiscoveryResourceCache, resource: &DscResourc
         }
         resource_versions.insert(insert_index, resource.clone());
     } else {
-        resources.insert(resource.type_name.to_lowercase(), vec![resource.clone()]);
+        resources.insert(resource.type_name.clone(), vec![resource.clone()]);
     }
 }
 
