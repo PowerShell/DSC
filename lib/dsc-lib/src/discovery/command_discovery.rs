@@ -15,7 +15,7 @@ use crate::util::convert_wildcard_to_regex;
 use crate::schemas::transforms::idiomaticize_externally_tagged_enum;
 use regex::RegexBuilder;
 use rust_i18n::t;
-use semver::{Version, VersionReq};
+use semver::VersionReq;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use std::{collections::{HashMap, HashSet}, sync::{LazyLock, RwLock}};
@@ -290,13 +290,7 @@ impl ResourceDiscovery for CommandDiscovery {
                                                 trace!("{}", t!("discovery.commandDiscovery.extensionFound", extension = extension.type_name, version = extension.version));
                                                 // we only keep newest version of the extension so compare the version and only keep the newest
                                                 if let Some(existing_extension) = extensions.get_mut(&extension.type_name) {
-                                                    let Ok(existing_version) = Version::parse(&existing_extension.version) else {
-                                                        return Err(DscError::Operation(t!("discovery.commandDiscovery.extensionInvalidVersion", extension = existing_extension.type_name, version = existing_extension.version).to_string()));
-                                                    };
-                                                    let Ok(new_version) = Version::parse(&extension.version) else {
-                                                        return Err(DscError::Operation(t!("discovery.commandDiscovery.extensionInvalidVersion", extension = extension.type_name, version = extension.version).to_string()));
-                                                    };
-                                                    if new_version > existing_version {
+                                                    if extension.version > existing_extension.version {
                                                         extensions.insert(extension.type_name.clone(), extension.clone());
                                                     }
                                                 } else {
@@ -873,7 +867,7 @@ fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<Ds
 }
 
 fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<DscExtension, DscError> {
-    if let Err(err) = validate_semver(&manifest.version) {
+    if let Err(err) = validate_semver(&manifest.version.to_string()) {
         warn!("{}", t!("discovery.commandDiscovery.invalidManifestVersion", path = path.to_string_lossy(), err = err).to_string());
     }
 

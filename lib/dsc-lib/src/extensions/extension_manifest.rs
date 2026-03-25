@@ -10,7 +10,7 @@ use serde_json::{Map, Value};
 use crate::dscerror::DscError;
 use crate::extensions::{discover::DiscoverMethod, import::ImportMethod, secret::SecretMethod};
 use crate::schemas::dsc_repo::DscRepoSchema;
-use crate::types::{ExitCodesMap, FullyQualifiedTypeName, TagList};
+use crate::types::{ExitCodesMap, FullyQualifiedTypeName, SemanticVersion, TagList};
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -33,7 +33,7 @@ pub struct ExtensionManifest {
     #[serde(rename = "type")]
     pub r#type: FullyQualifiedTypeName,
     /// The version of the extension using semantic versioning.
-    pub version: String,
+    pub version: SemanticVersion,
     /// An optional condition for the extension to be active.  If the condition evaluates to false, the extension is skipped.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub condition: Option<String>,
@@ -110,7 +110,7 @@ mod test {
         let manifest = ExtensionManifest{
             schema_version: invalid_uri.clone(),
             r#type: "Microsoft.Dsc.Test/InvalidSchemaUri".parse().unwrap(),
-            version: "0.1.0".to_string(),
+            version: "0.1.0".parse().unwrap(),
             ..Default::default()
         };
 
@@ -131,7 +131,7 @@ mod test {
         let manifest = ExtensionManifest{
             schema_version: ExtensionManifest::default_schema_id_uri(),
             r#type: "Microsoft.Dsc.Test/ValidSchemaUri".parse().unwrap(),
-            version: "0.1.0".to_string(),
+            version: "0.1.0".parse().unwrap(),
             ..Default::default()
         };
 
