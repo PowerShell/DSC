@@ -833,6 +833,16 @@ invalidDate = "unable to parse '%{text}' as a date version - %{errors}"
 successText = "Success"
 failureText = "Error"
 
+[types.fully_qualified_type_name]
+emptyNamespaceSegment = "namespace segment %{index} is empty"
+emptyOwnerSegment = "owner segment is empty"
+emptyTypeName = "fully qualified type name cannot be an empty string"
+invalidNameSegment = "name segment '%{name}' contains invalid characters"
+invalidNamespaceSegment = "namespace segment '%{namespace}' contains invalid characters"
+invalidOwnerSegment = "owner segment '%{owner}' contains invalid characters"
+invalidTypeName = "invalid fully qualified type name '%{name}': %{err}"
+missingNameSegment = "missing required name segment following forward slash (`/`) character"
+
 [types.resource_version]
 unparseableVersion = "unable to parse '%{text}' as resource version - input doesn't seem to be a semantic or date version"
 invalidDateVersion = "invalid date resource version: %{err}"

@@ -8,7 +8,7 @@ pub use exit_code::ExitCode;
 mod exit_codes_map;
 pub use exit_codes_map::ExitCodesMap;
 mod fully_qualified_type_name;
-pub use fully_qualified_type_name::FullyQualifiedTypeName;
+pub use fully_qualified_type_name::{FullyQualifiedTypeName, FullyQualifiedTypeNameError};
 mod resource_version;
 pub use resource_version::{ResourceVersion, ResourceVersionError};
 mod resource_version_req;
