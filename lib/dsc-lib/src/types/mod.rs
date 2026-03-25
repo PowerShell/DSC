@@ -21,5 +21,7 @@ mod tag;
 pub use tag::Tag;
 mod tag_list;
 pub use tag_list::TagList;
+mod type_name_filter;
+pub use type_name_filter::{TypeNameFilter, TypeNameFilterError};
 mod wildcard_type_name;
 pub use wildcard_type_name::{WildcardTypeName, WildcardTypeNameError};

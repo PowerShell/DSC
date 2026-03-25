@@ -161,6 +161,9 @@ pub enum DscError {
     #[error(transparent)]
     SemverReq(#[from] crate::types::SemanticVersionReqError),
 
+    #[error(transparent)]
+    TypeNameFilter(#[from] crate::types::TypeNameFilterError),
+
     #[error("{t}: {0}", t = t!("dscerror.utf16Conversion"))]
     Utf16Conversion(#[from] std::string::FromUtf16Error),
 

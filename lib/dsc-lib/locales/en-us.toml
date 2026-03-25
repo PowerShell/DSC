@@ -771,8 +771,6 @@ invalidTagPrefix = "Invalid tag"
 invalidTagSuffix = "valid tags must match the following pattern"
 invalidExitCode = "Invalid key in 'exitCodes' map"
 invalidExitCodePlusPrefix = "Exit codes must not begin with a plus sign (+)"
-invalidTypeNamePrefix = "Invalid type name"
-invalidTypeNameSuffix = "valid resource type names must match the following pattern"
 unsupportedManifestVersion = "Unsupported manifest version"
 mustBe = "Must be"
 invalidFunctionParameterCount = "Invalid function parameter count for"
@@ -868,6 +866,12 @@ forbiddenBuildMetadata = "comparator '%{comparator}' is defined with forbidden b
 missingOperator = "comparator '%{comparator}' doesn't define an operator"
 invalidWildcards = "comparator '%{comparator}' has invalid wildcard characters - must define wildcards as asterisks (`*`), not `x` or `X`"
 wildcardMajorVersion = "comparator '%{comparator}' defines the major version segment as a wildcard `%{wildcard}` instead of a literal number"
+
+[types.type_name_filter]
+invalidConversionToFullyQualifiedTypeName = "cannot convert wildcard type name filter '%{type_name}' to a fully qualified type name"
+invalidConversionToWildcardTypeName = "cannot convert literal type name filter '%{type_name}' to a wildcard type name"
+invalidLiteralTypeNameFilter = "invalid literal type name filter: %{err}"
+invalidWildcardTypeNameFilter = "invalid wildcard type name filter: %{err}"
 
 [types.wildcard_type_name]
 emptyNamespaceSegment = "namespace segment %{index} is empty"
