@@ -91,6 +91,7 @@ extensionResourceFound = "Extension found resource '%{resource}'"
 callingExtension = "Calling extension '%{extension}' to discover resources"
 extensionFoundResources = "Extension '%{extension}' found %{count} resources"
 invalidManifestVersion = "Manifest '%{path}' has invalid version: %{err}"
+failedLoadManifest = "Failed to load manifest: %{err}"
 
 [dscresources.commandResource]
 invokeGet = "Invoking get for '%{resource}'"
@@ -173,6 +174,7 @@ resourceManifestSchemaDescription = "Defines the JSON Schema the resource manife
 discoverNoResults = "No results returned for discovery extension '%{extension}'"
 discoverNotAbsolutePath = "Resource path from extension '%{extension}' is not an absolute path: %{path}"
 extensionReturned = "Extension '%{extension}' returned line: %{line}"
+failedLoadManifest = "Extension '%{extension}' failed: %{err}"
 
 [extensions.extension_manifest]
 extensionManifestSchemaTitle = "Extension manifest schema URI"

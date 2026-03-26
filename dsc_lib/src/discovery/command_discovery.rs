@@ -247,9 +247,9 @@ impl ResourceDiscovery for CommandDiscovery {
                                     Err(e) => {
                                         // At this point we can't determine whether or not the bad manifest contains
                                         // resource that is requested by resource/config operation
-                                        // if it is, then "ResouceNotFound" error will be issued later
-                                        // and here we just write as warning
-                                        warn!("{e}");
+                                        // if it is, then "ResourceNotFound" error will be issued later
+                                        // and here we just write as information
+                                        info!("{}", t!("discovery.commandDiscovery.failedLoadManifest", err = e));
                                         continue;
                                     },
                                 };

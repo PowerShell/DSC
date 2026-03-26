@@ -263,9 +263,9 @@ if ($null -ne $packageType) {
     if ($null -eq (Get-Command tree-sitter -ErrorAction Ignore)) {
         Write-Verbose -Verbose "tree-sitter not found, installing..."
         if ($UseCFS) {
-            cargo install tree-sitter-cli --config .cargo/config.toml
+            cargo install tree-sitter-cli --config .cargo/config.toml --version 0.25.10
         } else {
-            cargo install tree-sitter-cli
+            cargo install tree-sitter-cli --version 0.25.10
         }
         if ($LASTEXITCODE -ne 0) {
             throw "Failed to install tree-sitter-cli"
@@ -349,8 +349,8 @@ if (!$SkipBuild) {
         "y2j"
     )
     $pedantic_unclean_projects = @()
-    $clippy_unclean_projects = @("grammars/tree-sitter-dscexpression", "grammars/tree-sitter-ssh-server-config")
-    $skip_test_projects_on_windows = @("grammars/tree-sitter-dscexpression", "grammars/tree-sitter-ssh-server-config")
+    $clippy_unclean_projects = @("tree-sitter-dscexpression")
+    $skip_test_projects_on_windows = @("tree-sitter-dscexpression")
 
     if ($IsWindows) {
         $projects += $windows_projects
