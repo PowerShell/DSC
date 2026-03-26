@@ -9,7 +9,7 @@ This guide provides PowerShell-specific instructions for creating automated test
 
 ## File Naming and Structure
 
-- **File Convention:** Use `*.Tests.ps1` naming pattern
+- **File Convention:** Use `*.tests.ps1` naming pattern
 - **Placement:** Place test files next to tested code or in dedicated test directories
 - **Import Pattern:** Use `BeforeAll { . $PSScriptRoot/FunctionName.ps1 }` to import tested functions
 - **No Direct Code:** Put ALL code inside Pester blocks (`BeforeAll`, `Describe`, `Context`, `It`, etc.)

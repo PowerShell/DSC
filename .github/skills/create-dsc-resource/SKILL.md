@@ -231,7 +231,7 @@ someError = "Failed to do something: %{error}"
 #### Testing Instructions
 
 - Create a `tests` folder in the resource project directory
-- For each supported operation (get, set, test, export), create a separate test file (e.g., `<resource_name>_get.tests.ps1`, `<resource_name>_set.tests.ps1`, etc.)
+- For each operation supported by the resource (get, set, test, export as applicable), create a separate test file (e.g., `<resource_name>_get.tests.ps1`, `<resource_name>_set.tests.ps1`, etc.)
 - The resource should be tested using `dsc resource` command instead of calling the executable directly
 - Pipe JSON input via stdin using the `-f -` flag: `$json | dsc resource get -r $resourceType -f -`
 - Redirect stderr to a file for debugging: `2>$testdrive/error.log`
