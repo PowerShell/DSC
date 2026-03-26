@@ -102,7 +102,7 @@ Describe 'tests for resource discovery' {
 '@
             Set-Content -Path "$testdrive/test.dsc.resource.json" -Value $manifest
             $null = dsc resource list 2> "$testdrive/error.txt"
-            "$testdrive/error.txt" | Should -FileContentMatchExactly 'WARN.*?does not use semver' -Because (Get-Content -Raw "$testdrive/error.txt")
+            "$testdrive/error.txt" | Should -FileContentMatchExactly 'WARN.*?invalid semantic version' -Because (Get-Content -Raw "$testdrive/error.txt")
         }
     }
 
