@@ -1,6 +1,7 @@
 ---
-name: create-dsc-resource.md
-description: 'Prompt for generating a DSC resource in this repository'
+name: create-dsc-resource
+description: |
+    Create a complete, accurate DSC resource in this repository following the provided guidelines and design patterns.
 ---
 
 # Create high‑quality DSC resource
@@ -15,11 +16,11 @@ Management tasks or operations are specific to the resource type, but may includ
 
 ## Key Principles
 
-- **Programming language**: Resources written primarily in Rust
+- **Programming language**: Resources in this repository may be implemented in Rust or as scripts (for example, PowerShell). The guidance in this skill primarily applies to Rust-based resources.
 - **Resource manifest**: A JSON file that defines the resource type name, supported operations (including executable and arguments), and JSON schema for input parameters
 - **Dependency management**: All crates must be listed in Cargo.toml specifying to use workspace dependencies. The root level Cargo.toml should be updated to include the new crates or associated to the DSC resource project.
 - **Project files**: A `.project.data.json` file in the root of the project folder defines properties of the project and non-code files to include during build
-- **Localization**: All user-facing strings must use `rust-i18n` for internationalization
+- **Localization**: For Rust-based resources, all user-facing strings must use `rust-i18n` for internationalization. For script-based resources (such as PowerShell), follow the existing localization and string-handling patterns used by those scripts or any repository-specific localization guidance.
 - **Copyright headers**: Every source file must start with the copyright header:
   ```
   // Copyright (c) Microsoft Corporation.

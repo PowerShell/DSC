@@ -1,5 +1,5 @@
 ---
-applyTo: '**/*.Tests.ps1'
+applyTo: '**/*.tests.ps1'
 description: 'PowerShell Pester testing best practices based on Pester v5 conventions'
 ---
 
@@ -145,7 +145,7 @@ Context 'Integration tests' -Skip { }
 - **Elevated Privileges**: For tests requiring admin rights, use this example function with `-Skip` to conditionally skip if not elevated:
 
 ```powershell
-BeforeAll {
+BeforeDiscovery {
   $isElevated = if ($IsWindows) {
       ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
           [Security.Principal.WindowsBuiltInRole]::Administrator)
@@ -158,35 +158,53 @@ BeforeAll {
 ## Example Test Pattern
 
 ```powershell
-BeforeAll {
-    . $PSScriptRoot/Get-UserInfo.ps1
-}
-
-Describe 'Get-UserInfo' {
-    Context 'When user exists' {
-        BeforeAll {
-            Mock Get-ADUser { @{ Name = 'TestUser'; Enabled = $true } }
+Describe 'Windows Service set tests' -Skip:(!$IsWindows) {
+    BeforeDiscovery {
+        $isAdmin = if ($IsWindows) {
+            $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+            $principal = [Security.Principal.WindowsPrincipal]$identity
+            $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
         }
-
-        It 'Should return user object' {
-            $result = Get-UserInfo -Username 'TestUser'
-            $result | Should -Not -BeNullOrEmpty
-            $result.Name | Should -Be 'TestUser'
-        }
-
-        It 'Should call Get-ADUser once' {
-            Get-UserInfo -Username 'TestUser'
-            Should -Invoke Get-ADUser -Exactly 1
+        else {
+            $false
         }
     }
 
-    Context 'When user does not exist' {
+    BeforeAll {
+        $resourceType = 'Microsoft.Windows/Service'
+        # Use the Print Spooler service for set tests — it exists on all Windows
+        # machines and is safe to reconfigure briefly.
+        $testServiceName = 'Spooler'
+
+        function Get-ServiceState {
+            param([string]$Name)
+            $json = @{ name = $Name } | ConvertTo-Json -Compress
+            $out = $json | dsc resource get -r $resourceType -f - 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
+            return ($out | ConvertFrom-Json).actualState
+        }
+    }
+
+    Context 'Input validation' -Skip:(!$isAdmin) {
         BeforeAll {
-            Mock Get-ADUser { throw "User not found" }
+            $script:originalState = Get-ServiceState -Name $testServiceName
         }
 
-        It 'Should throw exception' {
-            { Get-UserInfo -Username 'NonExistent' } | Should -Throw "*not found*"
+        AfterAll {
+            # Restore original logon account
+            if ($script:originalState -and $script:originalState.logonAccount) {
+                $restoreJson = @{
+                    name         = $testServiceName
+                    logonAccount = $script:originalState.logonAccount
+                } | ConvertTo-Json -Compress
+                $restoreJson | dsc resource set -r $resourceType -f - 2>$testdrive/error.log
+            }
+        }
+
+        It 'Fails when name is not provided' {
+            $json = @{ startType = 'Manual' } | ConvertTo-Json -Compress
+            $out = $json | dsc resource set -r $resourceType -f - 2>&1
+            $LASTEXITCODE | Should -Not -Be 0
         }
     }
 }
