@@ -263,9 +263,9 @@ if ($null -ne $packageType) {
     if ($null -eq (Get-Command tree-sitter -ErrorAction Ignore)) {
         Write-Verbose -Verbose "tree-sitter not found, installing..."
         if ($UseCFS) {
-            cargo install tree-sitter-cli --config .cargo/config.toml
+            cargo install tree-sitter-cli --config .cargo/config.toml --version 0.25.10
         } else {
-            cargo install tree-sitter-cli
+            cargo install tree-sitter-cli --version 0.25.10
         }
         if ($LASTEXITCODE -ne 0) {
             throw "Failed to install tree-sitter-cli"
