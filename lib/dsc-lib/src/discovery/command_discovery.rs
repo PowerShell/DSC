@@ -15,7 +15,6 @@ use crate::util::convert_wildcard_to_regex;
 use crate::schemas::transforms::idiomaticize_externally_tagged_enum;
 use regex::RegexBuilder;
 use rust_i18n::t;
-use semver::VersionReq;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use std::{collections::{HashMap, HashSet}, sync::{LazyLock, RwLock}};
@@ -564,24 +563,12 @@ impl ResourceDiscovery for CommandDiscovery {
 
 fn filter_resources(found_resources: &mut DiscoveryResourceCache, required_resources: &mut HashMap<DiscoveryFilter, bool>, resources: &[DscResource], filter: &DiscoveryFilter) {
     for resource in resources {
-        if let Some(required_version) = filter.version() {
-            if let Some(resource_version) = resource.version.as_semver() {
-                if let Ok(version_req) = VersionReq::parse(required_version) {
-                    if version_req.matches(&resource_version) && matches_adapter_requirement(resource, filter) {
-                        found_resources.entry(filter.resource_type().clone()).or_default().push(resource.clone());
-                        required_resources.insert(filter.clone(), true);
-                        debug!("{}", t!("discovery.commandDiscovery.foundResourceWithVersion", resource = resource.type_name, version = resource.version));
-                        break;
-                    }
-                }
-            } else {
-                // if not semver, we do a string comparison
-                if resource.version == *required_version && matches_adapter_requirement(resource, filter) {
-                    found_resources.entry(filter.resource_type().clone()).or_default().push(resource.clone());
-                    required_resources.insert(filter.clone(), true);
-                    debug!("{}", t!("discovery.commandDiscovery.foundResourceWithVersion", resource = resource.type_name, version = resource.version));
-                    break;
-                }
+        if let Some(required_version) = filter.require_version() {
+            if required_version.matches(&resource.version) && matches_adapter_requirement(resource, filter) {
+                found_resources.entry(filter.resource_type().clone()).or_default().push(resource.clone());
+                required_resources.insert(filter.clone(), true);
+                debug!("{}", t!("discovery.commandDiscovery.foundResourceWithVersion", resource = resource.type_name, version = resource.version));
+                break;
             }
         } else {
             if matches_adapter_requirement(resource, filter) {
@@ -602,20 +589,7 @@ fn insert_resource(resources: &mut DiscoveryResourceCache, resource: &DscResourc
         // compare the resource versions and insert newest to oldest using semver
         let mut insert_index = resource_versions.len();
         for (index, resource_instance) in resource_versions.iter().enumerate() {
-            let resource_instance_version = match resource_instance.version.as_semver() {
-                Some(v) => v,
-                None => {
-                    continue;
-                },
-            };
-            let resource_version = match resource.version.as_semver() {
-                Some(v) => v,
-                None => {
-                    continue;
-                },
-            };
-
-            if resource_instance_version < resource_version {
+            if resource_instance.version < resource.version {
                 insert_index = index;
                 break;
             }

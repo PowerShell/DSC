@@ -5,9 +5,8 @@ use crate::{
     configure::config_doc::ResourceDiscoveryMode,
     discovery::{DiscoveryExtensionCache, DiscoveryManifestCache, DiscoveryResourceCache},
     dscerror::DscError,
-    types::FullyQualifiedTypeName
+    types::{FullyQualifiedTypeName, ResourceVersionReq, SemanticVersionReq}
 };
-use super::fix_semver;
 
 #[derive(Debug, PartialEq)]
 pub enum DiscoveryKind {
@@ -19,17 +18,69 @@ pub enum DiscoveryKind {
 pub struct DiscoveryFilter {
     require_adapter: Option<FullyQualifiedTypeName>,
     r#type: FullyQualifiedTypeName,
-    version: Option<String>,
+    require_version: Option<ResourceVersionReq>,
 }
 
 impl DiscoveryFilter {
     #[must_use]
     pub fn new(resource_type: &str, version: Option<&str>, adapter: Option<&str>) -> Self {
-        let version = version.map(|v| fix_semver(&v));
         Self {
             require_adapter: adapter.map(|a| a.parse().unwrap()),
             r#type: resource_type.parse().unwrap(),
-            version,
+            require_version: version.map(|v| v.parse().unwrap()),
+        }
+    }
+
+    /// Construct a [`DiscoveryFilter`] for a resource with the specified type name, optional
+    /// version requirement, and optional adapter requirement.
+    /// 
+    /// # Arguments
+    /// 
+    /// - `type_name` - The [`FullyQualifiedTypeName`] of the resource.
+    /// - `require_version` - An optional [`ResourceVersionReq`] specifying the version requirement
+    ///   for the resource. The version requirement can be semantic or date-based, depending on the
+    ///   resource's versioning scheme.
+    /// - `require_adapter` - An optional [`FullyQualifiedTypeName`] specifying the adapter that
+    ///   the resource is expected to require.
+    /// 
+    /// # Returns
+    /// 
+    /// A new instance of [`DiscoveryFilter`] initialized with the provided parameters.
+    pub fn new_for_resource(
+        type_name: &FullyQualifiedTypeName,
+        require_version: Option<ResourceVersionReq>,
+        require_adapter: Option<FullyQualifiedTypeName>
+    ) -> Self {
+        Self {
+            require_adapter,
+            r#type: type_name.clone(),
+            require_version,
+        }
+    }
+
+    /// Construct a [`DiscoveryFilter`] for an extension with the specified type name and optional
+    /// version requirement.
+    /// 
+    /// # Arguments
+    /// 
+    /// - `type_name` - The [`FullyQualifiedTypeName`] of the extension.
+    /// - `require_version` - An optional [`SemanticVersionReq`] specifying the semantic version
+    ///    requirement for the extension.
+    /// 
+    /// # Returns
+    ///
+    /// A new instance of [`DiscoveryFilter`] initialized with the provided parameters.
+    /// 
+    /// Note that extensions do not have an adapter requirement, so the `require_adapter` field is
+    /// always set to `None`.
+    pub fn new_for_extension(
+        type_name: &FullyQualifiedTypeName,
+        require_version: Option<SemanticVersionReq>,
+    ) -> Self {
+        Self {
+            require_adapter: None,
+            r#type: type_name.clone(),
+            require_version: require_version.map(|r| r.into()),
         }
     }
 
@@ -44,8 +95,8 @@ impl DiscoveryFilter {
     }
 
     #[must_use]
-    pub fn version(&self) -> Option<&String> {
-        self.version.as_ref()
+    pub fn require_version(&self) -> Option<&ResourceVersionReq> {
+        self.require_version.as_ref()
     }
 }
 

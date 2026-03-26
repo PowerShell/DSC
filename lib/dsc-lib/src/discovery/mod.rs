@@ -11,7 +11,7 @@ use crate::extensions::dscextension::{Capability, DscExtension};
 use crate::types::FullyQualifiedTypeName;
 use crate::{dscresources::dscresource::DscResource, progress::ProgressFormat};
 use core::result::Result::Ok;
-use semver::{Version, VersionReq};
+use semver::Version;
 use std::collections::BTreeMap;
 use command_discovery::{CommandDiscovery, ImportedManifest};
 use tracing::error;
@@ -112,25 +112,13 @@ impl Discovery {
 
         let type_name = filter.resource_type();
         if let Some(resources) = self.resources.get(type_name) {
-            if let Some(version) = filter.version() {
-                let version = fix_semver(version);
-                if let Ok(version_req) = VersionReq::parse(&version) {
-                    for resource in resources {
-                        if let Some(resource_version) = resource.version.as_semver() {
-                            if version_req.matches(&resource_version) && matches_adapter_requirement(resource, filter) {
-                                return Ok(Some(resource));
-                            }
-                        }
+            if let Some(version_req) = filter.require_version() {
+                for resource in resources {
+                    if version_req.matches(&resource.version) && matches_adapter_requirement(resource, filter) {
+                        return Ok(Some(resource));
                     }
-                    Ok(None)
-                } else {
-                    for resource in resources {
-                        if resource.version == version && matches_adapter_requirement(resource, filter) {
-                            return Ok(Some(resource));
-                        }
-                    }
-                    Ok(None)
                 }
+                Ok(None)
             } else {
                 for resource in resources {
                     if matches_adapter_requirement(resource, filter) {
@@ -190,7 +178,7 @@ impl Discovery {
 pub fn matches_adapter_requirement(resource: &DscResource, filter: &DiscoveryFilter) -> bool {
     if let Some(required_adapter) = filter.require_adapter() {
         if let Some(resource_adapter) = &resource.require_adapter {
-            required_adapter.to_lowercase() == resource_adapter.to_lowercase()
+            required_adapter == resource_adapter
         } else {
             false
         }
