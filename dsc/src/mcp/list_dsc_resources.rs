@@ -32,7 +32,7 @@ pub struct ResourceSummary {
 #[derive(Deserialize, JsonSchema)]
 pub struct ListResourcesRequest {
     #[schemars(description = "Filter adapted resources to only those requiring the specified adapter type.  If not specified, all non-adapted resources are returned.")]
-    pub adapter: Option<String>,
+    pub adapter: Option<FullyQualifiedTypeName>,
 }
 
 #[tool_router(router = list_dsc_resources_router, vis = "pub")]
@@ -52,7 +52,7 @@ impl McpServer {
             let mut dsc = DscManager::new();
             let adapter_filter = match adapter {
                 Some(adapter) => {
-                    if let Some(resource) = dsc.find_resource(&DiscoveryFilter::new(&adapter, None, None)).unwrap_or(None) {
+                    if let Some(resource) = dsc.find_resource(&DiscoveryFilter::new_for_resource(&adapter, None, None)).unwrap_or(None) {
                         if resource.kind != Kind::Adapter {
                             return Err(McpError::invalid_params(t!("mcp.list_dsc_resources.resourceNotAdapter", adapter = adapter), None));
                         }

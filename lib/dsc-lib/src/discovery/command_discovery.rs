@@ -5,7 +5,7 @@ use crate::{discovery::{DiscoveryExtensionCache, DiscoveryManifestCache, Discove
 use crate::{locked_clear, locked_is_empty, locked_extend, locked_clone, locked_get};
 use crate::configure::{config_doc::ResourceDiscoveryMode, context::Context};
 use crate::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
-use crate::dscresources::resource_manifest::{validate_semver, Kind, ResourceManifest, SchemaKind};
+use crate::dscresources::resource_manifest::{Kind, ResourceManifest, SchemaKind};
 use crate::dscresources::command_resource::invoke_command;
 use crate::dscerror::DscError;
 use crate::extensions::dscextension::{self, DscExtension, Capability as ExtensionCapability};
@@ -741,8 +741,12 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
 }
 
 fn load_adapted_resource_manifest(path: &Path, manifest: &AdaptedDscResourceManifest) -> Result<DscResource, DscError> {
-    if let Err(err) = validate_semver(&manifest.version.to_string()) {
-        warn!("{}", t!("discovery.commandDiscovery.invalidManifestVersion", path = path.to_string_lossy(), err = err).to_string());
+    if manifest.version.is_date_version() {
+        warn!("{}", t!(
+            "discovery.commandDiscovery.invalidManifestVersion",
+            path = path.to_string_lossy(),
+            version = manifest.version
+        ));
     }
 
     let directory = path.parent().unwrap();
@@ -769,8 +773,12 @@ fn load_adapted_resource_manifest(path: &Path, manifest: &AdaptedDscResourceMani
 }
 
 fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<DscResource, DscError> {
-    if let Err(err) = validate_semver(&manifest.version.to_string()) {
-        warn!("{}", t!("discovery.commandDiscovery.invalidManifestVersion", path = path.to_string_lossy(), err = err).to_string());
+    if manifest.version.is_date_version() {
+        warn!("{}", t!(
+            "discovery.commandDiscovery.invalidManifestVersion",
+            path = path.to_string_lossy(),
+            version = manifest.version
+        ));
     }
 
     let kind = if let Some(kind) = manifest.kind.clone() {
@@ -829,10 +837,6 @@ fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<Ds
 }
 
 fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<DscExtension, DscError> {
-    if let Err(err) = validate_semver(&manifest.version.to_string()) {
-        warn!("{}", t!("discovery.commandDiscovery.invalidManifestVersion", path = path.to_string_lossy(), err = err).to_string());
-    }
-
     let mut capabilities: Vec<dscextension::Capability> = vec![];
     if let Some(discover) = &manifest.discover {
         verify_executable(&manifest.r#type, "discover", &discover.executable, path.parent().unwrap());

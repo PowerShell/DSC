@@ -496,7 +496,12 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
         let Some(type_name) = resource_block["type"].as_str() else {
             return Err(DscError::Validation(t!("subcommand.resourceTypeNotSpecified").to_string()));
         };
-        resource_types.push(DiscoveryFilter::new(type_name, resource_block["requireVersion"].as_str(), None));
+        let type_name = &FullyQualifiedTypeName::parse(type_name)?;
+        let require_version = resource_block["requireVersion"]
+            .as_str()
+            .map(|r| ResourceVersionReq::parse(r))
+            .transpose()?;
+        resource_types.push(DiscoveryFilter::new_for_resource(type_name, require_version, None));
     }
     dsc.find_resources(&resource_types, progress_format)?;
 
