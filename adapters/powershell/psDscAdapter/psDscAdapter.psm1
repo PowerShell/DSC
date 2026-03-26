@@ -86,13 +86,26 @@ function Add-AstMembers {
     }
 }
 
+function ConvertTo-SemanticVersionString {
+    [cmdletbinding()]
+    param([version]$version)
+
+    $patch = if ($version.Build -ne -1) { $version.Build } else { 0 }
+
+    "{0}.{1}.{2}" -f @(
+        $version.Major,
+        $version.Minor,
+        $patch
+    )
+}
+
 function FindAndParseResourceDefinitions {
     [CmdletBinding(HelpUri = '')]
     param(
         [Parameter(Mandatory = $true)]
         [string]$filePath,
         [Parameter(Mandatory = $true)]
-        [string]$moduleVersion
+        [version]$moduleVersion
     )
 
     if (-not (Test-Path $filePath)) {
@@ -134,7 +147,7 @@ function FindAndParseResourceDefinitions {
                 #TODO: ModuleName, Version and ParentPath should be taken from psd1 contents
                 $DscResourceInfo.ModuleName = [System.IO.Path]::GetFileNameWithoutExtension($filePath)
                 $DscResourceInfo.ParentPath = [System.IO.Path]::GetDirectoryName($filePath)
-                $DscResourceInfo.Version = $moduleVersion
+                $DscResourceInfo.Version = ConvertTo-SemanticVersionString $moduleVersion
 
                 $DscResourceInfo.Properties = [System.Collections.Generic.List[DscResourcePropertyInfo]]::new()
                 $DscResourceInfo.Capabilities = GetClassBasedCapabilities $typeDefinitionAst.Members
@@ -206,7 +219,7 @@ function LoadPowerShellClassResourcesFromModule {
         $scriptPath = $moduleInfo.Path;
     }
 
-    $version = if ($moduleInfo.Version) { $moduleInfo.Version.ToString() } else { '0.0.0' }
+    $version = if ($moduleInfo.Version) { $moduleInfo.Version } else { [version]'0.0.0' }
     $Resources = FindAndParseResourceDefinitions $scriptPath $version
 
     if ($moduleInfo.NestedModules) {
