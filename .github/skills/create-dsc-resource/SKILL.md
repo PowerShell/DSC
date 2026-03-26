@@ -25,6 +25,7 @@ Management tasks or operations are specific to the resource type, but may includ
   ```
   // Copyright (c) Microsoft Corporation.
   // Licensed under the MIT License.
+
   ```
   For PowerShell test files, use `#` comment syntax instead of `//`.
 

@@ -17,12 +17,23 @@ This guide provides PowerShell-specific instructions for creating automated test
 ## Test Structure Hierarchy
 
 ```powershell
-BeforeAll { # Import tested functions }
-Describe 'FunctionName' {
+Describe 'FunctionName or FeatureName' {
+    BeforeDiscovery {
+        # Setup that runs before any tests are discovered
+    }
+    BeforeAll {
+        # Common helper functions or variables
+    }
     Context 'When condition' {
-        BeforeAll { # Setup for context }
-        It 'Should behavior' { # Individual test }
-        AfterAll { # Cleanup for context }
+        BeforeAll {
+            # Setup for context
+        }
+        It 'Should behavior' {
+            # Individual test
+        }
+        AfterAll {
+            # Cleanup for context
+        }
     }
 }
 ```
