@@ -1105,7 +1105,7 @@ fn get_command_input(input_kind: Option<&InputKind>, input: &str) -> Result<Comm
 }
 
 fn verify_json_from_manifest(resource: &DscResource, json: &str, target_resource: Option<&DscResource>) -> Result<(), DscError> {
-    debug!("{}", t!("dscresources.commandResource.verifyJson", resource = resource.type_name));
+    trace!("{}", t!("dscresources.commandResource.verifyJson", resource = resource.type_name, json = json));
     let Some(manifest) = &resource.manifest else {
         return Err(DscError::MissingManifest(resource.type_name.to_string()));
     };
