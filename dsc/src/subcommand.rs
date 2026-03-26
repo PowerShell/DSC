@@ -7,7 +7,7 @@ use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
 use crate::util::{get_input, get_schema, in_desired_state, set_dscconfigroot, write_object, DSC_CONFIG_ROOT, EXIT_DSC_ASSERTION_FAILED, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR};
 use dsc_lib::functions::FunctionArgKind;
-use dsc_lib::types::TypeNameFilter;
+use dsc_lib::types::{FullyQualifiedTypeName, ResourceVersionReq, TypeNameFilter};
 use dsc_lib::{
     configure::{
         config_doc::{
@@ -504,11 +504,16 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
         let Some(type_name) = resource_block["type"].as_str() else {
             return Err(DscError::Validation(t!("subcommand.resourceTypeNotSpecified").to_string()));
         };
+        let type_name = &FullyQualifiedTypeName::parse(type_name)?;
+        let require_version = resource_block["requireVersion"]
+            .as_str()
+            .map(|r| ResourceVersionReq::parse(r))
+            .transpose()?;
 
         trace!("{} '{}'", t!("subcommand.validatingResource"), resource_block["name"].as_str().unwrap_or_default());
 
         // get the actual resource
-        let Some(resource) = get_resource(&mut dsc, type_name, resource_block["requireVersion"].as_str()) else {
+        let Some(resource) = get_resource(&mut dsc, type_name, require_version.as_ref()) else {
             return Err(DscError::Validation(format!("{}: '{type_name}'", t!("subcommand.resourceNotFound"))));
         };
 
@@ -549,27 +554,27 @@ pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat
             list_resources(&mut dsc, resource_name, adapter_name.as_ref(), description.as_ref(), tags.as_ref(), output_format.as_ref(), progress_format);
         },
         ResourceSubCommand::Schema { resource , version, output_format } => {
-            if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new(resource, version.as_deref(), None)], progress_format) {
+            if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new_for_resource(resource, version.clone(), None)], progress_format) {
                 error!("{}: {err}", t!("subcommand.failedDiscoverResource"));
                 exit(EXIT_DSC_ERROR);
             }
-            resource_command::schema(&mut dsc, resource, version.as_deref(), output_format.as_ref());
+            resource_command::schema(&mut dsc, resource, version.as_ref(), output_format.as_ref());
         },
         ResourceSubCommand::Export { resource, version, input, file, output_format } => {
-            if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new(resource, version.as_deref(), None)], progress_format) {
+            if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new_for_resource(resource, version.clone(), None)], progress_format) {
                 error!("{}: {err}", t!("subcommand.failedDiscoverResource"));
                 exit(EXIT_DSC_ERROR);
             }
             let parsed_input = get_input(input.as_ref(), file.as_ref());
-            resource_command::export(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref());
+            resource_command::export(&mut dsc, resource, version.as_ref(), &parsed_input, output_format.as_ref());
         },
         ResourceSubCommand::Get { resource, version, input, file: path, all, output_format } => {
-            if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new(resource, version.as_deref(), None)], progress_format) {
+            if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new_for_resource(resource, version.clone(), None)], progress_format) {
                 error!("{}: {err}", t!("subcommand.failedDiscoverResource"));
                 exit(EXIT_DSC_ERROR);
             }
             if *all {
-                resource_command::get_all(&mut dsc, resource, version.as_deref(), output_format.as_ref());
+                resource_command::get_all(&mut dsc, resource, version.as_ref(), output_format.as_ref());
             }
             else {
                 if *output_format == Some(GetOutputFormat::JsonArray) {
@@ -577,32 +582,32 @@ pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat
                     exit(EXIT_INVALID_ARGS);
                 }
                 let parsed_input = get_input(input.as_ref(), path.as_ref());
-                resource_command::get(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref());
+                resource_command::get(&mut dsc, resource, version.as_ref(), &parsed_input, output_format.as_ref());
             }
         },
         ResourceSubCommand::Set { resource, version, input, file: path, output_format, what_if } => {
-            if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new(resource, version.as_deref(), None)], progress_format) {
+            if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new_for_resource(resource, version.clone(), None)], progress_format) {
                 error!("{}: {err}", t!("subcommand.failedDiscoverResource"));
                 exit(EXIT_DSC_ERROR);
             }
             let parsed_input = get_input(input.as_ref(), path.as_ref());
-            resource_command::set(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref(), *what_if);
+            resource_command::set(&mut dsc, resource, version.as_ref(), &parsed_input, output_format.as_ref(), *what_if);
         },
         ResourceSubCommand::Test { resource, version, input, file: path, output_format } => {
-            if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new(resource, version.as_deref(), None)], progress_format) {
+            if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new_for_resource(resource, version.clone(), None)], progress_format) {
                 error!("{}: {err}", t!("subcommand.failedDiscoverResource"));
                 exit(EXIT_DSC_ERROR);
             }
             let parsed_input = get_input(input.as_ref(), path.as_ref());
-            resource_command::test(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref());
+            resource_command::test(&mut dsc, resource, version.as_ref(), &parsed_input, output_format.as_ref());
         },
         ResourceSubCommand::Delete { resource, version, input, file: path, output_format, what_if } => {
-            if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new(resource, version.as_deref(), None)], progress_format) {
+            if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new_for_resource(resource, version.clone(), None)], progress_format) {
                 error!("{}: {err}", t!("subcommand.failedDiscoverResource"));
                 exit(EXIT_DSC_ERROR);
             }
             let parsed_input = get_input(input.as_ref(), path.as_ref());
-            resource_command::delete(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref(), *what_if);
+            resource_command::delete(&mut dsc, resource, version.as_ref(), &parsed_input, output_format.as_ref(), *what_if);
         },
     }
 }

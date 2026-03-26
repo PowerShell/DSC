@@ -5,7 +5,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
 use dsc_lib::dscresources::command_resource::TraceLevel;
 use dsc_lib::progress::ProgressFormat;
-use dsc_lib::types::TypeNameFilter;
+use dsc_lib::types::{FullyQualifiedTypeName, ResourceVersionReq, TypeNameFilter};
 use rust_i18n::t;
 use serde::Deserialize;
 
@@ -219,9 +219,9 @@ pub enum ResourceSubCommand {
         #[clap(short, long, help = t!("args.getAll").to_string())]
         all: bool,
         #[clap(short, long, help = t!("args.resource").to_string())]
-        resource: String,
+        resource: FullyQualifiedTypeName,
         #[clap(short, long, help = t!("args.version").to_string())]
-        version: Option<String>,
+        version: Option<ResourceVersionReq>,
         #[clap(short, long, help = t!("args.input").to_string(), conflicts_with = "file")]
         input: Option<String>,
         #[clap(short = 'f', long, help = t!("args.file").to_string(), conflicts_with = "input")]
@@ -232,9 +232,9 @@ pub enum ResourceSubCommand {
     #[clap(name = "set", about = "Invoke the set operation to a resource", arg_required_else_help = true)]
     Set {
         #[clap(short, long, help = t!("args.resource").to_string())]
-        resource: String,
+        resource: FullyQualifiedTypeName,
         #[clap(short, long, help = t!("args.version").to_string())]
-        version: Option<String>,
+        version: Option<ResourceVersionReq>,
         #[clap(short, long, help = t!("args.input").to_string(), conflicts_with = "file")]
         input: Option<String>,
         #[clap(short = 'f', long, help = t!("args.file").to_string(), conflicts_with = "input")]
@@ -247,9 +247,9 @@ pub enum ResourceSubCommand {
     #[clap(name = "test", about = "Invoke the test operation to a resource", arg_required_else_help = true)]
     Test {
         #[clap(short, long, help = t!("args.resource").to_string())]
-        resource: String,
+        resource: FullyQualifiedTypeName,
         #[clap(short, long, help = t!("args.version").to_string())]
-        version: Option<String>,
+        version: Option<ResourceVersionReq>,
         #[clap(short, long, help = t!("args.input").to_string(), conflicts_with = "file")]
         input: Option<String>,
         #[clap(short = 'f', long, help = t!("args.file").to_string(), conflicts_with = "input")]
@@ -260,9 +260,9 @@ pub enum ResourceSubCommand {
     #[clap(name = "delete", about = "Invoke the delete operation to a resource", arg_required_else_help = true)]
     Delete {
         #[clap(short, long, help = t!("args.resource").to_string())]
-        resource: String,
+        resource: FullyQualifiedTypeName,
         #[clap(short, long, help = t!("args.version").to_string())]
-        version: Option<String>,
+        version: Option<ResourceVersionReq>,
         #[clap(short, long, help = t!("args.input").to_string(), conflicts_with = "file")]
         input: Option<String>,
         #[clap(short = 'f', long, help = t!("args.file").to_string(), conflicts_with = "input")]
@@ -275,18 +275,18 @@ pub enum ResourceSubCommand {
     #[clap(name = "schema", about = "Get the JSON schema for a resource", arg_required_else_help = true)]
     Schema {
         #[clap(short, long, help = t!("args.resource").to_string())]
-        resource: String,
+        resource: FullyQualifiedTypeName,
         #[clap(short, long, help = t!("args.version").to_string())]
-        version: Option<String>,
+        version: Option<ResourceVersionReq>,
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
         output_format: Option<OutputFormat>,
     },
     #[clap(name = "export", about = "Retrieve all resource instances", arg_required_else_help = true)]
     Export {
         #[clap(short, long, help = t!("args.resource").to_string())]
-        resource: String,
+        resource: FullyQualifiedTypeName,
         #[clap(short, long, help = t!("args.version").to_string())]
-        version: Option<String>,
+        version: Option<ResourceVersionReq>,
         #[clap(short, long, help = t!("args.input").to_string(), conflicts_with = "file")]
         input: Option<String>,
         #[clap(short = 'f', long, help = t!("args.file").to_string(), conflicts_with = "input")]
