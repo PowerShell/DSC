@@ -8,7 +8,7 @@ use crate::configure::config_doc::ResourceDiscoveryMode;
 use crate::discovery::discovery_trait::{DiscoveryKind, ResourceDiscovery, DiscoveryFilter};
 use crate::dscerror::DscError;
 use crate::extensions::dscextension::{Capability, DscExtension};
-use crate::types::FullyQualifiedTypeName;
+use crate::types::{FullyQualifiedTypeName, TypeNameFilter};
 use crate::{dscresources::dscresource::DscResource, progress::ProgressFormat};
 use core::result::Result::Ok;
 use semver::Version;
@@ -60,8 +60,8 @@ impl Discovery {
     pub fn list_available(
         &mut self,
         kind: &DiscoveryKind,
-        type_name_filter: &str,
-        adapter_name_filter: &str,
+        type_name_filter: &TypeNameFilter,
+        adapter_name_filter: Option<&TypeNameFilter>,
         progress_format: ProgressFormat
     ) -> Vec<ImportedManifest> {
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
@@ -96,7 +96,7 @@ impl Discovery {
 
     pub fn get_extensions(&mut self, capability: &Capability) -> Vec<DscExtension> {
         if self.extensions.is_empty() {
-            self.list_available(&DiscoveryKind::Extension, "*", "", ProgressFormat::None);
+            self.list_available(&DiscoveryKind::Extension, &TypeNameFilter::default(), None, ProgressFormat::None);
         }
         self.extensions.values()
             .filter(|ext| ext.capabilities.contains(capability))

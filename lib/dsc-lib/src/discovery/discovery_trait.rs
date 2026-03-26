@@ -5,7 +5,7 @@ use crate::{
     configure::config_doc::ResourceDiscoveryMode,
     discovery::{DiscoveryExtensionCache, DiscoveryManifestCache, DiscoveryResourceCache},
     dscerror::DscError,
-    types::{FullyQualifiedTypeName, ResourceVersionReq, SemanticVersionReq}
+    types::{FullyQualifiedTypeName, ResourceVersionReq, SemanticVersionReq, TypeNameFilter}
 };
 
 #[derive(Debug, PartialEq)]
@@ -115,7 +115,7 @@ pub trait ResourceDiscovery {
     /// # Errors
     ///
     /// This function will return an error if the underlying discovery fails.
-    fn discover(&mut self, kind: &DiscoveryKind, filter: &str) -> Result<(), DscError>;
+    fn discover(&mut self, kind: &DiscoveryKind, filter: &TypeNameFilter) -> Result<(), DscError>;
 
     /// Discover adapted resources based on the provided filters.
     ///
@@ -131,15 +131,19 @@ pub trait ResourceDiscovery {
     /// # Errors
     ///
     /// This function will return an error if the underlying discovery fails.
-    fn discover_adapted_resources(&mut self, name_filter: &str, adapter_filter: &str) -> Result<(), DscError>;
+    fn discover_adapted_resources(
+        &mut self,
+        name_filter: &TypeNameFilter,
+        adapter_filter: &TypeNameFilter
+    ) -> Result<(), DscError>;
 
     /// List available resources based on the provided filters.
     ///
     /// # Arguments
     ///
-    /// * `kind` - The kind of discovery (e.g., Resource).
-    /// * `type_name_filter` - The filter for the resource type name.
-    /// * `adapter_name_filter` - The filter for the adapter name (only applies to resources).
+    /// - `kind` - The kind of discovery (e.g., Resource).
+    /// - `type_name_filter` - The filter for the resource type name.
+    /// - `adapter_name_filter` - The filter for the adapter name (only applies to resources).
     ///
     /// # Returns
     ///
@@ -151,8 +155,8 @@ pub trait ResourceDiscovery {
     fn list_available(
         &mut self,
         kind: &DiscoveryKind,
-        type_name_filter: &str,
-        adapter_name_filter: &str
+        type_name_filter: &TypeNameFilter,
+        adapter_name_filter: Option<&TypeNameFilter>
     ) -> Result<DiscoveryManifestCache, DscError>;
 
     /// Find resources based on the required resource types.
@@ -160,7 +164,8 @@ pub trait ResourceDiscovery {
     ///
     /// # Arguments
     ///
-    /// * `required_resource_types` - A slice of strings representing the required resource types.
+    /// - `required_resource_types` - A slice of `DiscoveryFilter` instances representing the
+    ///   required resource types.
     ///
     /// # Returns
     ///
@@ -186,6 +191,6 @@ pub trait ResourceDiscovery {
     ///
     /// # Arguments
     ///
-    /// * `mode` - The resource discovery mode to set.
+    /// - `mode` - The resource discovery mode to set.
     fn set_discovery_mode(&mut self, mode: &ResourceDiscoveryMode);
 }
