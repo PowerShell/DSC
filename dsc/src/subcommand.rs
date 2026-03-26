@@ -526,7 +526,7 @@ pub fn extension(subcommand: &ExtensionSubCommand, progress_format: ProgressForm
 
     match subcommand {
         ExtensionSubCommand::List{extension_name, output_format} => {
-            list_extensions(&mut dsc, extension_name.as_ref(), output_format.as_ref(), progress_format);
+            list_extensions(&mut dsc, extension_name, output_format.as_ref(), progress_format);
         },
     }
 }
@@ -546,7 +546,7 @@ pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat
 
     match subcommand {
         ResourceSubCommand::List { resource_name, adapter_name, description, tags, output_format } => {
-            list_resources(&mut dsc, resource_name.as_ref(), adapter_name.as_ref(), description.as_ref(), tags.as_ref(), output_format.as_ref(), progress_format);
+            list_resources(&mut dsc, resource_name, adapter_name.as_ref(), description.as_ref(), tags.as_ref(), output_format.as_ref(), progress_format);
         },
         ResourceSubCommand::Schema { resource , version, output_format } => {
             if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new(resource, version.as_deref(), None)], progress_format) {
@@ -607,7 +607,7 @@ pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat
     }
 }
 
-fn list_extensions(dsc: &mut DscManager, extension_name: Option<&String>, format: Option<&ListOutputFormat>, progress_format: ProgressFormat) {
+fn list_extensions(dsc: &mut DscManager, extension_name: &TypeNameFilter, format: Option<&ListOutputFormat>, progress_format: ProgressFormat) {
     let mut write_table = false;
     let mut table = Table::new(&[
         t!("subcommand.tableHeader_type").to_string().as_ref(),
@@ -620,17 +620,7 @@ fn list_extensions(dsc: &mut DscManager, extension_name: Option<&String>, format
         write_table = true;
     }
     let mut include_separator = false;
-    // Temporary workaround to convert input string into type name filter:
-    let ref extension_name = match extension_name {
-        Some(name_text) => match TypeNameFilter::parse(name_text) {
-            Ok(filter) => filter,
-            Err(err) => {
-                error!("{}: {err}", t!("subcommand.invalidResourceFilter"));
-                exit(EXIT_INVALID_ARGS);
-            }
-        },
-        None => TypeNameFilter::default(),
-    };
+
     for manifest_resource in dsc.list_available(&DiscoveryKind::Extension, extension_name, None, progress_format) {
         if let ImportedManifest::Extension(extension) = manifest_resource {
             let capability_types = [
@@ -777,8 +767,8 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
 
 pub fn list_resources(
     dsc: &mut DscManager,
-    resource_name: Option<&String>,
-    adapter_name: Option<&String>,
+    resource_name: &TypeNameFilter,
+    adapter_name: Option<&TypeNameFilter>,
     description: Option<&String>,
     tags: Option<&Vec<String>>,
     format: Option<&ListOutputFormat>,
@@ -798,29 +788,8 @@ pub fn list_resources(
         write_table = true;
     }
     let mut include_separator = false;
-    // Temporary workaround to convert input strings to type name filters:
-    let ref resource_name = match resource_name {
-        Some(name_text) => match TypeNameFilter::parse(name_text) {
-            Ok(filter) => filter,
-            Err(err) => {
-                error!("{}: {err}", t!("subcommand.invalidResourceFilter"));
-                exit(EXIT_INVALID_ARGS);
-            }
-        },
-        None => TypeNameFilter::default(),
-    };
-    let ref adapter_name = match adapter_name {
-        Some(name_text) => match TypeNameFilter::parse(name_text) {
-            Ok(filter) => Some(filter),
-            Err(err) => {
-                error!("{}: {err}", t!("subcommand.invalidAdapterFilter"));
-                exit(EXIT_INVALID_ARGS);
-            }
-        },
-        None => None,
-    };
 
-    for manifest_resource in dsc.list_available(&DiscoveryKind::Resource, resource_name, adapter_name.as_ref(), progress_format) {
+    for manifest_resource in dsc.list_available(&DiscoveryKind::Resource, resource_name, adapter_name, progress_format) {
         if let ImportedManifest::Resource(resource) = manifest_resource {
             let capability_types = [
                 (Capability::Get, "g"),

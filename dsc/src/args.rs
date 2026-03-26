@@ -5,6 +5,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
 use dsc_lib::dscresources::command_resource::TraceLevel;
 use dsc_lib::progress::ProgressFormat;
+use dsc_lib::types::TypeNameFilter;
 use rust_i18n::t;
 use serde::Deserialize;
 
@@ -178,7 +179,8 @@ pub enum ExtensionSubCommand {
     #[clap(name = "list", about = t!("args.listExtensionAbout").to_string())]
     List {
         /// Optional extension name to filter the list
-        extension_name: Option<String>,
+        #[clap(default_value_t)]
+        extension_name: TypeNameFilter,
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
         output_format: Option<ListOutputFormat>,
     },
@@ -200,10 +202,11 @@ pub enum ResourceSubCommand {
     #[clap(name = "list", about = t!("args.listAbout").to_string())]
     List {
         /// Optional resource name to filter the list
-        resource_name: Option<String>,
+        #[clap(default_value_t)]
+        resource_name: TypeNameFilter,
         /// Optional adapter filter to apply to the list of resources
         #[clap(short = 'a', long = "adapter", help = t!("args.adapter").to_string())]
-        adapter_name: Option<String>,
+        adapter_name: Option<TypeNameFilter>,
         #[clap(short, long, help = t!("args.description").to_string())]
         description: Option<String>,
         #[clap(short, long, help = t!("args.tags").to_string())]
