@@ -10,7 +10,7 @@ use serde_json::{Map, Value};
 use crate::{
     configure::config_doc::SecurityContextKind,
     schemas::{dsc_repo::DscRepoSchema, transforms::idiomaticize_string_enum},
-    types::{ExitCodesMap, FullyQualifiedTypeName, TagList},
+    types::{ExitCodesMap, FullyQualifiedTypeName, ResourceVersion, TagList},
 };
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
@@ -55,7 +55,7 @@ pub struct ResourceManifest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<Kind>,
     /// The version of the resource using semantic versioning.
-    pub version: String,
+    pub version: ResourceVersion,
     /// The description of the resource.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
@@ -383,7 +383,7 @@ mod test {
         let manifest = ResourceManifest{
             schema_version: invalid_uri.clone(),
             resource_type: "Microsoft.Dsc.Test/InvalidSchemaUri".parse().unwrap(),
-            version: "0.1.0".to_string(),
+            version: "0.1.0".parse().unwrap(),
             ..Default::default()
         };
 
@@ -404,7 +404,7 @@ mod test {
         let manifest = ResourceManifest{
             schema_version: ResourceManifest::default_schema_id_uri(),
             resource_type: "Microsoft.Dsc.Test/ValidSchemaUri".parse().unwrap(),
-            version: "0.1.0".to_string(),
+            version: "0.1.0".parse().unwrap(),
             ..Default::default()
         };
 

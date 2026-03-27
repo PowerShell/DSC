@@ -71,8 +71,8 @@ pub enum DscError {
     #[error("{t} '{0}' - {t2}: '{1}'", t = t!("dscerror.invalidTagPrefix"), t2 = t!("dscerror.invalidTagSuffix"))]
     InvalidTag(String, String),
 
-    #[error("{t} '{0}' - {t2}: '{1}'", t = t!("dscerror.invalidTypeNamePrefix"), t2 = t!("dscerror.invalidTypeNameSuffix"))]
-    InvalidTypeName(String, String),
+    #[error(transparent)]
+    FullyQualifiedTypeName(#[from] crate::types::FullyQualifiedTypeNameError),
 
     #[error("IO: {0}")]
     Io(#[from] std::io::Error),
@@ -161,6 +161,9 @@ pub enum DscError {
     #[error(transparent)]
     SemverReq(#[from] crate::types::SemanticVersionReqError),
 
+    #[error(transparent)]
+    TypeNameFilter(#[from] crate::types::TypeNameFilterError),
+
     #[error("{t}: {0}", t = t!("dscerror.utf16Conversion"))]
     Utf16Conversion(#[from] std::string::FromUtf16Error),
 
@@ -181,6 +184,9 @@ pub enum DscError {
 
     #[error("{t}: {0}", t = t!("dscerror.validation"))]
     Validation(String),
+
+    #[error(transparent)]
+    WildcardTypeName(#[from] crate::types::WildcardTypeNameError),
 
     #[error("YAML: {0}")]
     Yaml(#[from] serde_yaml::Error),

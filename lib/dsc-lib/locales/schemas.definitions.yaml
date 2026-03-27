@@ -88,37 +88,48 @@ schemas:
           signed integer, like `5` or `-2147024891`.
 
     resourceType:
-      title: Fully qualified type name
-      description: >-
-        Uniquely identifies a DSC resource or extension.
-      markdownDescription: |-
-        The fully qualified type name of a DSC resource or extension uniquely identifies a resource
-        or extension.
+      title:
+        en-us: Fully qualified type name
+      description:
+        en-us: >-
+          Uniquely identifies a DSC resource or extension.
+      markdownDescription:
+        en-us: |-
+          The fully qualified type name of a DSC resource or extension uniquely identifies a
+          resource or extension.
 
-        Fully qualified type names use the following syntax:
+          Fully qualified type names use the following syntax:
 
-        ```yaml
-        <owner>[.<namespace>...]/<name>
-        ```
+          ```yaml
+          <owner>[.<namespace>...]/<name>
+          ```
 
-        Where the type may have zero or more namespace segments for organizing the type. The
-        `owner`, `namespace`, and `name` segments must consist only of alphanumeric characters and
-        underscores.
+          Where:
 
-        Conventionally, the first character of each segment is capitalized. When a segment
-        contains a brand or proper name, use the correct casing for that word, like
-        `TailspinToys/Settings`, not `Tailspintoys/Settings`.
+          1. The `owner` segment is mandatory and indicates the party responsible for publishing
+             and maintaining the type.
+          1. The type may define any number of `namespace` segments for organizing the type.
+             Namespaces must be separated from the `owner` segment and other `namespace` segments
+             by a single dot (`.`).
+          1. The `name` segment is mandatory and indicates the specific name of the type. It must
+             be separated from the preceding segment by a forward slash (`/`).
+          1. Every segment must consist only of unicode alphanumeric characters and underscores.
 
-        Example fully qualified type names include:
+          Conventionally, the first character of each segment is capitalized. When a segment
+          contains a brand or proper name, use the correct casing for that word, like
+          `TailspinToys/Settings`, not `Tailspintoys/Settings`.
 
-        - `Microsoft/OSInfo`
-        - `Microsoft.SqlServer/Database`
-        - `Microsoft.Windows.IIS/WebApp`
-      patternErrorMessage: >-
-        Invalid type name. Valid resource type names always define an owner and a name separated by
-        a slash, like `Microsoft/OSInfo`. Type names may optionally include the group, area, and
-        subarea segments to namespace the resource under the owner, like
-        `Microsoft.Windows/Registry`.
+          Example fully qualified type names include:
+
+          - `Microsoft/OSInfo`
+          - `Microsoft.SqlServer/Database`
+          - `Microsoft.Windows.IIS/WebApp`
+      patternErrorMessage:
+        en-us: >-
+          Invalid type name. Valid resource type names always define an owner and a name separated by
+          a slash, like `Microsoft/OSInfo`. Type names may optionally include the group, area, and
+          subarea segments to namespace the resource under the owner, like
+          `Microsoft.Windows/Registry`.
 
     resourceVersion:
       title:

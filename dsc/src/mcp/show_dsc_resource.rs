@@ -8,7 +8,7 @@ use dsc_lib::{
     dscresources::{
         dscresource::{Capability, Invoke},
         resource_manifest::Kind
-    }, types::FullyQualifiedTypeName,
+    }, types::{FullyQualifiedTypeName, ResourceVersion},
 };
 use rmcp::{ErrorData as McpError, Json, tool, tool_router, handler::server::wrapper::Parameters};
 use rust_i18n::t;
@@ -25,7 +25,7 @@ pub struct DscResource {
     /// The kind of resource.
     pub kind: Kind,
     /// The version of the resource.
-    pub version: String,
+    pub version: ResourceVersion,
     /// The capabilities of the resource.
     pub capabilities: Vec<Capability>,
     /// The description of the resource.
@@ -41,7 +41,7 @@ pub struct DscResource {
 #[derive(Deserialize, JsonSchema)]
 pub struct ShowResourceRequest {
     #[schemars(description = "The type name of the resource to get detailed information.")]
-    pub r#type: String,
+    pub r#type: FullyQualifiedTypeName,
 }
 
 #[tool_router(router = show_dsc_resource_router, vis = "pub")]
@@ -59,7 +59,7 @@ impl McpServer {
     pub async fn show_dsc_resource(&self, Parameters(ShowResourceRequest { r#type }): Parameters<ShowResourceRequest>) -> Result<Json<DscResource>, McpError> {
         let result = task::spawn_blocking(move || {
             let mut dsc = DscManager::new();
-            let Some(resource) = dsc.find_resource(&DiscoveryFilter::new(&r#type, None, None)).unwrap_or(None) else {
+            let Some(resource) = dsc.find_resource(&DiscoveryFilter::new_for_resource(&r#type, None, None)).unwrap_or(None) else {
                 return Err(McpError::invalid_params(t!("mcp.show_dsc_resource.resourceNotFound", type_name = r#type), None))
             };
             let schema = match resource.schema() {

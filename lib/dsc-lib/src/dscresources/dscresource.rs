@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}, context::ProcessMode, parameters::{SECURE_VALUE_REDACTED, is_secure_value}}, dscresources::resource_manifest::{AdapterInputKind, Kind}, types::FullyQualifiedTypeName};
+use crate::{configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}, context::ProcessMode, parameters::{SECURE_VALUE_REDACTED, is_secure_value}}, dscresources::resource_manifest::{AdapterInputKind, Kind}, types::{FullyQualifiedTypeName, ResourceVersion}};
 use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse};
 use crate::schemas::transforms::idiomaticize_string_enum;
@@ -36,7 +36,7 @@ pub struct DscResource {
     /// The kind of resource.
     pub kind: Kind,
     /// The version of the resource.
-    pub version: String,
+    pub version: ResourceVersion,
     /// The capabilities of the resource.
     pub capabilities: Vec<Capability>,
     /// An optional message indicating the resource is deprecated.  If provided, the message will be shown when the resource is used.
@@ -101,7 +101,7 @@ impl DscResource {
         Self {
             type_name: FullyQualifiedTypeName::default(),
             kind: Kind::Resource,
-            version: String::new(),
+            version: ResourceVersion::default(),
             capabilities: Vec::new(),
             deprecation_message: None,
             description: None,
@@ -291,7 +291,7 @@ impl DscResource {
     }
 
     fn get_adapter_resource(configurator: &mut Configurator, adapter: &FullyQualifiedTypeName) -> Result<DscResource, DscError> {
-        if let Some(adapter_resource) = configurator.discovery().find_resource(&DiscoveryFilter::new(adapter, None, None))? {
+        if let Some(adapter_resource) = configurator.discovery().find_resource(&DiscoveryFilter::new_for_resource(adapter, None, None))? {
             return Ok(adapter_resource.clone());
         }
         Err(DscError::Operation(t!("dscresources.dscresource.adapterResourceNotFound", adapter = adapter).to_string()))

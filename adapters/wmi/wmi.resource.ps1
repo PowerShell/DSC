@@ -28,8 +28,8 @@ switch ($Operation) {
     'List' {
         $clases = Get-CimClass
 
-        foreach ($r in $clases) {
-            $version_string = ""
+        foreach ($r in $clases) {`
+            $version_string = "1.0.0" # WMI resources don't have a version, default to 1.0.0
             $author_string = ""
             $description = ""
 

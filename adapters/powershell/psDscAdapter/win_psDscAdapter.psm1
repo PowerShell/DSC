@@ -26,6 +26,19 @@ if ($PSVersionTable.PSVersion.Major -gt 5) {
     }
 }
 
+function ConvertTo-SemanticVersionString {
+    [cmdletbinding()]
+    param([version]$version)
+
+    $patch = if ($version.Build -ne -1) { $version.Build } else { 0 }
+
+    "{0}.{1}.{2}" -f @(
+        $version.Major,
+        $version.Minor,
+        $patch
+    )
+}
+
 <# public function Invoke-DscCacheRefresh
 .SYNOPSIS
     This function caches the results of the Get-DscResource call to optimize performance.
@@ -187,7 +200,12 @@ function Invoke-DscCacheRefresh {
             $DscResourceInfo = [DscResourceInfo]::new()
             $dscResource.PSObject.Properties | ForEach-Object -Process {
                 if ($null -ne $_.Value) {
-                    $DscResourceInfo.$($_.Name) = $_.Value
+                    # Handle version specially to munge as semantic version
+                    if ($_.Name -eq 'Version') {
+                        $DscResourceInfo.$($_.Name) = ConvertTo-SemanticVersionString $_.Value
+                    } else {
+                        $DscResourceInfo.$($_.Name) = $_.Value
+                    }
                 } else {
                     $DscResourceInfo.$($_.Name) = ''
                 }
@@ -212,7 +230,7 @@ function Invoke-DscCacheRefresh {
                 # workaround: populate module version from psmoduleinfo if available
                 if ($moduleInfo = $Modules | Where-Object { $_.Name -eq $moduleName }) {
                     $moduleInfo = $moduleInfo | Sort-Object -Property Version -Descending | Select-Object -First 1
-                    $DscResourceInfo.Version = $moduleInfo.Version.ToString()
+                    $DscResourceInfo.Version = ConvertTo-SemanticVersionString $moduleInfo.Version
                 }
             }
 

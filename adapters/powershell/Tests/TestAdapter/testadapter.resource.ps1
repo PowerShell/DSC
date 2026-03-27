@@ -37,7 +37,7 @@ switch ($Operation) {
             @{
                 type           = "Test/TestCase"
                 kind           = 'resource'
-                version        = '1'
+                version        = '1.0.0'
                 capabilities   = @('get', 'set', 'test', 'export')
                 path           = $PSScriptRoot
                 directory      = Split-Path $PSScriptRoot
