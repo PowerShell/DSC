@@ -1,0 +1,39 @@
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/adaptedresource/manifest.json",
+    "type": "SimpleResource/SimpleResource",
+    "kind": "resource",
+    "version": "1.0.0",
+    "capabilities": [
+        "get",
+        "set",
+        "test"
+    ],
+    "description": "A simple DSC resource for testing.",
+    "author": "Microsoft",
+    "requireAdapter": "Microsoft.Adapter/PowerShell",
+    "path": "SimpleResource/SimpleResource.psd1",
+    "schema": {
+        "embedded": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "title": "SimpleResource/SimpleResource",
+            "type": "object",
+            "required": [
+                "Name"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "Name": {
+                    "type": "string",
+                    "title": "Name",
+                    "description": "The Name property."
+                },
+                "Value": {
+                    "type": "string",
+                    "title": "Value",
+                    "description": "The Value property."
+                }
+            },
+            "description": "A simple DSC resource for testing."
+        }
+    }
+}
