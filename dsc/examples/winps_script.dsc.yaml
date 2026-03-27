@@ -3,23 +3,21 @@ metadata:
   Microsoft.DSC:
     securityContext: elevated
 resources:
-  - type: Microsoft.Windows/WindowsPowerShell
+  - type: PSDesiredStateConfiguration/Script
     name: Run WinPS script
-    properties: 
-      resources:
-        - name: Run script
-          type: PSDesiredStateConfiguration/Script
-          properties:
-            GetScript: |
-              $text = @"
-              get
-              "@
-              # Returning result must be this type of hashtable
-              @{Result=$text}
-            TestScript: |
-              # TestScript must return a boolean
-              $true
-            SetScript: |
-              $text = @"
-              set
-              "@
+    directives:
+      requireAdapter: Microsoft.Adapter/WindowsPowerShell
+    properties:
+      GetScript: |
+        $text = @"
+        get
+        "@
+        # Returning result must be this type of hashtable
+        @{Result=$text}
+      TestScript: |
+        # TestScript must return a boolean
+        $true
+      SetScript: |
+        $text = @"
+        set
+        "@
