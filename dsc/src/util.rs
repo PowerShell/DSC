@@ -52,7 +52,6 @@ use std::collections::HashMap;
 use std::env;
 use std::io::{IsTerminal, Read, stdout, Write};
 use std::path::Path;
-use std::process::exit;
 use syntect::{
     easy::HighlightLines,
     highlighting::ThemeSet,
@@ -689,4 +688,30 @@ pub fn merge_parameters(file_params: &str, inline_params: &str) -> Result<String
 
     let merged = Value::Object(file_map);
     Ok(serde_json::to_string(&merged)?)
+}
+
+/// Exit the process with the given code after flushing outputs
+///
+/// # Arguments
+///
+/// * `code` - The exit code to use when exiting the process
+pub fn exit(code: i32) -> ! {
+    // Small delay to ensure async writes complete
+    std::thread::sleep(std::time::Duration::from_millis(50));
+
+    // Force any pending writes to complete
+    if let Err(e) = std::io::stderr().flush() {
+        // Ignore BrokenPipe on stderr to avoid noisy exits in piped scenarios
+        if e.kind() != std::io::ErrorKind::BrokenPipe {
+            eprintln!("Failed to flush stderr: {}", e);
+        }
+    }
+    if let Err(e) = std::io::stdout().flush() {
+        // Ignore BrokenPipe on stdout to avoid noisy exits in piped scenarios
+        if e.kind() != std::io::ErrorKind::BrokenPipe {
+            eprintln!("Failed to flush stdout: {}", e);
+        }
+    }
+
+    std::process::exit(code);
 }
