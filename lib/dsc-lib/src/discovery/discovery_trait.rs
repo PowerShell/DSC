@@ -24,20 +24,20 @@ pub struct DiscoveryFilter {
 impl DiscoveryFilter {
     /// Construct a [`DiscoveryFilter`] for a resource with the specified type name, optional
     /// version requirement, and optional adapter requirement.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// - `type_name` - The [`FullyQualifiedTypeName`] of the resource.
     /// - `require_version` - An optional [`ResourceVersionReq`] specifying the version requirement
     ///   for the resource. The version requirement can be semantic or date-based, depending on the
     ///   resource's versioning scheme.
     /// - `require_adapter` - An optional [`FullyQualifiedTypeName`] specifying the adapter that
     ///   the resource is expected to require.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// A new instance of [`DiscoveryFilter`] initialized with the provided parameters.
-    pub fn new_for_resource(
+    pub fn new(
         type_name: &FullyQualifiedTypeName,
         require_version: Option<ResourceVersionReq>,
         require_adapter: Option<FullyQualifiedTypeName>
@@ -51,17 +51,17 @@ impl DiscoveryFilter {
 
     /// Construct a [`DiscoveryFilter`] for an extension with the specified type name and optional
     /// version requirement.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// - `type_name` - The [`FullyQualifiedTypeName`] of the extension.
     /// - `require_version` - An optional [`SemanticVersionReq`] specifying the semantic version
     ///    requirement for the extension.
-    /// 
+    ///
     /// # Returns
     ///
     /// A new instance of [`DiscoveryFilter`] initialized with the provided parameters.
-    /// 
+    ///
     /// Note that extensions do not have an adapter requirement, so the `require_adapter` field is
     /// always set to `None`.
     pub fn new_for_extension(

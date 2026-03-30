@@ -46,7 +46,7 @@ pub struct Configurator {
 
 /// Invokes the [`Discovery::find_resource`] method to retrieve a specific resource or raise a
 /// [`DscError::ResourceNotFound`] if the resource cannot be found.
-/// 
+///
 /// # Arguments
 ///
 /// * `variable` - The variable to bind the found resource to.
@@ -55,19 +55,19 @@ pub struct Configurator {
 /// * `adapter` - An optional adapter requirement to include in the discovery filter.
 ///
 /// # Examples
-/// 
+///
 /// The following snippet shows how the `find_resource_or_error!` macro can be used within a method
 /// of the `Configurator` struct to find a resource and return an error if it's not found:
-/// 
+///
 /// ```ignore
 /// find_resource_or_error!(dsc_resource, discovery, resource, adapter);
 /// ```
-/// 
+///
 /// Which expands to:
-/// 
+///
 /// ```ignore
 /// let Some(dsc_resource) = discovery.find_resource(
-///     &DiscoveryFilter::new_for_resource(
+///     &DiscoveryFilter::new(
 ///         &resource.resource_type,
 ///         resource.require_version.clone(),
 ///         adapter
@@ -82,7 +82,7 @@ pub struct Configurator {
 macro_rules! find_resource_or_error {
     ($variable:ident, $discovery: ident, $resource:ident, $adapter:ident) => {
         let Some($variable) = $discovery.find_resource(
-            &DiscoveryFilter::new_for_resource(
+            &DiscoveryFilter::new(
                 &$resource.resource_type,
                 $resource.require_version.clone(),
                 $adapter
@@ -1233,7 +1233,7 @@ impl Configurator {
             let config_copy = config.clone();
             for resource in config_copy.resources {
                 let adapter = get_require_adapter_from_directive(&resource.directives);
-                let filter = DiscoveryFilter::new_for_resource(
+                let filter = DiscoveryFilter::new(
                     &resource.resource_type,
                     resource.require_version.clone(),
                     adapter
@@ -1257,7 +1257,7 @@ impl Configurator {
             // now check that each resource in the config was found
             for resource in config.resources.iter() {
                 let adapter = get_require_adapter_from_directive(&resource.directives);
-                let Some(_dsc_resource) = self.discovery.find_resource(&DiscoveryFilter::new_for_resource(&resource.resource_type, resource.require_version.clone(), adapter))? else {
+                let Some(_dsc_resource) = self.discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.require_version.clone(), adapter))? else {
                     return Err(DscError::ResourceNotFound(
                         resource.resource_type.to_string(),
                         resource.require_version.as_ref().map(|r| r.to_string()).unwrap_or("".to_string())

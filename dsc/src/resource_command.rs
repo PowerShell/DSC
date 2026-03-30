@@ -358,5 +358,5 @@ pub fn export(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, vers
 #[must_use]
 pub fn get_resource<'a>(dsc: &'a mut DscManager, resource: &FullyQualifiedTypeName, version: Option<&ResourceVersionReq>) -> Option<&'a DscResource> {
     //TODO: add dynamically generated resource to dsc
-    dsc.find_resource(&DiscoveryFilter::new_for_resource(resource, version.cloned(), None)).unwrap_or(None)
+    dsc.find_resource(&DiscoveryFilter::new(resource, version.cloned(), None)).unwrap_or(None)
 }

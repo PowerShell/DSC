@@ -64,7 +64,7 @@ impl BicepExtension for BicepExtensionService {
 
         let mut dsc = DscManager::new();
         let Some(resource) = dsc
-            .find_resource(&DiscoveryFilter::new_for_resource(
+            .find_resource(&DiscoveryFilter::new(
                 &type_name,
                 version_req,
                 None,
@@ -126,7 +126,7 @@ impl BicepExtension for BicepExtensionService {
 
         let mut dsc = DscManager::new();
         let Some(resource) = dsc
-            .find_resource(&DiscoveryFilter::new_for_resource(
+            .find_resource(&DiscoveryFilter::new(
                 &type_name,
                 version_req,
                 None,
@@ -188,7 +188,7 @@ impl BicepExtension for BicepExtensionService {
 
         let mut dsc = DscManager::new();
         let Some(resource) = dsc
-            .find_resource(&DiscoveryFilter::new_for_resource(
+            .find_resource(&DiscoveryFilter::new(
                 &type_name,
                 version_req,
                 None,
@@ -250,7 +250,7 @@ impl BicepExtension for BicepExtensionService {
 
         let mut dsc = DscManager::new();
         let Some(resource) = dsc
-            .find_resource(&DiscoveryFilter::new_for_resource(
+            .find_resource(&DiscoveryFilter::new(
                 &type_name,
                 version_req,
                 None,
