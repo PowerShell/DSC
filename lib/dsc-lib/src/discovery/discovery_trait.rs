@@ -22,17 +22,6 @@ pub struct DiscoveryFilter {
 }
 
 impl DiscoveryFilter {
-    #[must_use]
-    pub fn new(resource_type: &str, version: Option<&str>, adapter: Option<&str>) -> Self {
-        // Keeping this implementation as parse-and-fail to avoid needing to update bicep;
-        // this should be addressed more fully in a follow-up change.
-        Self {
-            require_adapter: adapter.map(|a| a.parse().unwrap()),
-            r#type: resource_type.parse().unwrap(),
-            require_version: version.map(|v| v.parse().unwrap()),
-        }
-    }
-
     /// Construct a [`DiscoveryFilter`] for a resource with the specified type name, optional
     /// version requirement, and optional adapter requirement.
     /// 
