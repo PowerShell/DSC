@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'Microsoft.Windows/FirewallRuleList - export operation' -Skip:(!$IsWindows) {
+Describe 'Microsoft.Windows/FirewallRuleList - export operation' -Skip:(!$isElevated) {
     BeforeDiscovery {
         $isElevated = if ($IsWindows) {
             ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(

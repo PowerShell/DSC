@@ -263,17 +263,24 @@ fn apply_rule_properties(rule: &INetFwRule, desired: &FirewallRule, existing_pro
 
     if let Some(protocol) = desired.protocol {
         validate_protocol(protocol)?;
+    }
 
-        // Reject port specifications for protocols that don't support them (e.g. ICMP).
-        // On existing rules the ports are cleared automatically, but on new rules
-        // (existing_protocol == None) the conflicting SetLocalPorts/SetRemotePorts call
-        // would fail with a confusing COM error.
-        if !protocol_supports_ports(protocol) && existing_protocol.is_none()
+    // Determine the effective protocol: the desired value if provided, otherwise
+    // the existing rule's protocol (if updating an existing rule).
+    let effective_protocol = desired.protocol.or(existing_protocol);
+
+    // Reject port specifications for protocols that don't support them (e.g. ICMP).
+    // This must be checked regardless of whether the protocol itself was changed,
+    // because the caller may only be setting local_ports or remote_ports.
+    if let Some(protocol) = effective_protocol {
+        if !protocol_supports_ports(protocol)
             && (desired.local_ports.is_some() || desired.remote_ports.is_some())
         {
             return Err(t!("firewall.portsNotAllowed", name = name, protocol = protocol).to_string().into());
         }
+    }
 
+    if let Some(protocol) = desired.protocol {
         if let Some(current_protocol) = existing_protocol
             && current_protocol != protocol && !protocol_supports_ports(protocol) {
                 if desired.local_ports.is_none() {

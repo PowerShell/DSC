@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'Microsoft.Windows/FirewallRuleList - get operation' -Skip:(!$IsWindows) {
+Describe 'Microsoft.Windows/FirewallRuleList - get operation' -Skip:(!$isElevated) {
     BeforeDiscovery {
         $isElevated = if ($IsWindows) {
             ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
@@ -35,7 +35,7 @@ Describe 'Microsoft.Windows/FirewallRuleList - get operation' -Skip:(!$IsWindows
 
         $result = ($out | ConvertFrom-Json).actualState.rules[0]
         $result.name | Should -BeExactly $knownRuleName
-        $result.PSObject.Properties.Name | Should -Not -Contain '_exist'
+        $result.PSObject.Properties.Name | Should -Not -Contain '_exist' -Because ($result | ConvertTo-Json -Depth 10)
         $result.direction | Should -BeIn @('Inbound', 'Outbound')
         $result.action | Should -BeIn @('Allow', 'Block')
     }
@@ -46,7 +46,7 @@ Describe 'Microsoft.Windows/FirewallRuleList - get operation' -Skip:(!$IsWindows
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
 
         $result = ($out | ConvertFrom-Json).actualState.rules[0]
-        $result.PSObject.Properties.Name | Should -Not -Contain '_exist'
+        $result.PSObject.Properties.Name | Should -Not -Contain '_exist' -Because ($result | ConvertTo-Json -Depth 10)
         $result.name | Should -BeExactly $knownRuleName
     }
 
