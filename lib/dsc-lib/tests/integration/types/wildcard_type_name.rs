@@ -70,6 +70,16 @@ mod methods {
                 ]
             }; "empty namespace segment"
         )]
+        #[test_case("Owner.Empty.Last.Namespace./*" =>
+            WildcardTypeNameError::InvalidTypeName{
+                text: "Owner.Empty.Last.Namespace./*".to_string(),
+                errors: vec![
+                    WildcardTypeNameError::EmptyNamespaceSegment {
+                        index: 4
+                    }
+                ]
+            }; "empty namespace segment at end of namespaces"
+        )]
         #[test_case("Owner.*/Invalid&CharactersInName" =>
             WildcardTypeNameError::InvalidTypeName {
                 text: "Owner.*/Invalid&CharactersInName".to_string(),

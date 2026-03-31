@@ -402,17 +402,78 @@ impl FullyQualifiedTypeName {
     ///   );
     ///   ```
     pub fn parse(text: &str) -> Result<Self, FullyQualifiedTypeNameError> {
-        // If the input text is empty, return an error immediately to avoid unnecessary processing.
-        if text.is_empty() {
-            return Err(FullyQualifiedTypeNameError::EmptyTypeName);
+        let errors = &mut Vec::<FullyQualifiedTypeNameError>::new();
+        let validating_segment_regex = Self::init_validating_segment_regex();
+        let (_owner, _namespaces, name) = Self::parse_segments(
+            text,
+            &validating_segment_regex,
+            errors
+        );
+        if errors.len() == 1 && errors[0] == FullyQualifiedTypeNameError::EmptyTypeName {
+            // If the only error encountered was that the input text is empty, return that error directly
+            // rather than wrapping it in an InvalidTypeName error, since an empty string is a common
+            // and specific case that can be handled directly without needing to check the list of
+            // errors for that condition.
+            return Err(errors[0].clone())
         }
 
-        let errors = &mut Vec::<FullyQualifiedTypeNameError>::new();
+        if name.is_empty() {
+            errors.push(FullyQualifiedTypeNameError::MissingNameSegment);
+        } else if !validating_segment_regex.is_match(&name) {
+            errors.push(FullyQualifiedTypeNameError::InvalidNameSegment {
+                segment_text: name.clone()
+            });
+        }
+
+        if errors.is_empty() {
+            Ok(Self(text.to_string()))
+        } else {
+            Err(FullyQualifiedTypeNameError::InvalidTypeName {
+                text: text.to_string(),
+                errors: errors.clone(),
+            })
+        }
+    }
+
+    /// Private helper to parse the input into segments and collect validation errors for owner
+    /// and namespace segments.
+    /// 
+    /// This is used by the public `parse()` method to handle the common parsing and validation
+    /// logic that is shared by [`FullyQualifiedTypeName`] and [`WildcardTypeName`] since they
+    /// share the same overall structure.
+    /// 
+    /// # Arguments
+    /// 
+    /// - `text`: The input string to parse into type name segments.
+    /// - `validating_segment_regex`: The regex to use for validating each segment of the type name.
+    /// - `errors`: A mutable reference to a vector for collecting any validation errors encountered
+    ///   while parsing the segments. This allows the method to accumulate multiple errors for
+    ///   different segments of the type name.
+    /// 
+    /// # Returns
+    /// 
+    /// The method returns the parsed segments (`owner`, `namespaces`, and `name`) as a tuple. Any
+    /// validation errors encountered during parsing are added to the provided `errors` vector for
+    /// the caller to handle.
+    pub(crate) fn parse_segments(
+        text: &str,
+        validating_segment_regex: &Regex,
+        errors: &mut Vec<FullyQualifiedTypeNameError>
+    ) -> (String, Vec<String>, String) {
+        // If the input text is empty, return an error immediately to avoid unnecessary processing.
+        if text.is_empty() {
+            errors.push(FullyQualifiedTypeNameError::EmptyTypeName);
+            return (String::new(), Vec::new(), String::new());
+        }
+
+        // Initialize the variables to hold the parsed segments
         let owner: String;
         let namespaces: Vec<String>;
         let name: String;
-        let validating_segment_regex = Self::init_validating_segment_regex();
 
+        // Split the input text into segments based on the presence of the '/' character, which
+        // separates the name segment from the owner and namespace segments. Then split the owner
+        // and namespace portion based on '.' characters to separate the owner from the namespaces.
         if let Some((owner_and_namespaces, name_segment)) = text.rsplit_once('/') {
             name = name_segment.to_string();
             let mut segments = owner_and_namespaces
@@ -435,6 +496,7 @@ impl FullyQualifiedTypeName {
             name = String::new();
         }
 
+        // Validate the owner segment, which *must* be defined.
         if owner.is_empty() {
             errors.push(FullyQualifiedTypeNameError::EmptyOwnerSegment);
         } else if !validating_segment_regex.is_match(&owner) {
@@ -443,7 +505,8 @@ impl FullyQualifiedTypeName {
             });
         }
 
-        for (index, namespace) in namespaces.into_iter().enumerate() {
+        // Validate each namespace segment, if any are defined.
+        for (index, namespace) in namespaces.clone().into_iter().enumerate() {
             if namespace.is_empty() {
                 errors.push(FullyQualifiedTypeNameError::EmptyNamespaceSegment {
                     // Insert the index as 1-based for more user-friendly error messages
@@ -456,22 +519,7 @@ impl FullyQualifiedTypeName {
             }
         }
 
-        if name.is_empty() {
-            errors.push(FullyQualifiedTypeNameError::MissingNameSegment);
-        } else if !validating_segment_regex.is_match(&name) {
-            errors.push(FullyQualifiedTypeNameError::InvalidNameSegment {
-                segment_text: name.clone()
-            });
-        }
-
-        if errors.is_empty() {
-            Ok(Self(text.to_string()))
-        } else {
-            Err(FullyQualifiedTypeNameError::InvalidTypeName {
-                text: text.to_string(),
-                errors: errors.clone(),
-            })
-        }
+       (owner, namespaces, name)
     }
 
     /// Defines the regular expression for validating a string as a fully qualified type name.

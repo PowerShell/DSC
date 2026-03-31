@@ -12,7 +12,7 @@ use rust_i18n::t;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::types::FullyQualifiedTypeName;
+use crate::types::{FullyQualifiedTypeName, FullyQualifiedTypeNameError};
 use crate::util::convert_wildcard_to_regex;
 
 /// Defines the wildcard type name for filtering DSC resources or extensions by name.
@@ -224,6 +224,16 @@ pub enum WildcardTypeNameError {
         #[source]
         err: regex::Error,
     },
+    #[error("{t}", t = t!(
+        "types.wildcard_type_name.invalidErrorConversion",
+        "err" => err
+    ))]
+    InvalidErrorConversion {
+        /// The specific error that was encountered when attempting to convert the wildcard type
+        /// name into a regex pattern for matching, but which is not a regex::Error and thus
+        /// can't be included in the `InvalidRegex` error variant.
+        err: FullyQualifiedTypeNameError,
+    }
 }
 
 /// This static lazily defines the validating regex for [`WildcardTypeName`]. It enables the
@@ -409,73 +419,17 @@ impl WildcardTypeName {
             });
         }
 
-        // We need to validate each segment of the type name separately to provide better error
-        // messages about which specific segment(s) contain invalid characters. We also need to
-        // allow for the presence of wildcard characters in any segment, which means we can't rely
-        // on the same regex pattern used for fully qualified type names and instead need a simpler
-        // pattern that just checks for valid characters within each segment.
-        //
-        // We also want to collect all segment errors rather than failing on the first invalid
-        // segment, to provide more comprehensive feedback to the user.
         let errors = &mut Vec::<WildcardTypeNameError>::new();
-        let owner: String;
-        let namespaces: Vec<String>;
-        let require_name: bool;
-        let name: String;
-        let regex: Regex;
-        let validating_segment_regex = Self::init_validating_segment_regex();
-
-        // Split the input into owner/namespaces and name segments
-        if let Some((owner_and_namespaces, name_segment)) = text.rsplit_once('/') {
-            name = name_segment.to_string();
-            let mut segments = owner_and_namespaces
-                .split('.')
-                .map(|s| s.to_string())
-                .collect::<Vec<String>>();
-            owner = segments.remove(0);
-            namespaces = segments;
-        } else if text.contains('.') {
-            let mut segments = text
-                .split('.')
-                .map(|s| s.to_string())
-                .collect::<Vec<String>>();
-            owner = segments.remove(0);
-            namespaces = segments;
-            name = String::new();
-        } else {
-            owner = text.to_string();
-            namespaces = Vec::new();
-            name = String::new();
-        }
-
-        // Validate the owner segment, which _must_ be defined.
-        if owner.is_empty() {
-            errors.push(WildcardTypeNameError::EmptyOwnerSegment);
-        } else if !validating_segment_regex.is_match(&owner) {
-            errors.push(WildcardTypeNameError::InvalidOwnerSegment {
-                segment_text: owner.clone(),
-            });
-        }
-
-        // Validate every defined namespace segment
-        for (index, namespace) in (&namespaces).into_iter().enumerate() {
-            if namespace.is_empty() {
-                errors.push(WildcardTypeNameError::EmptyNamespaceSegment {
-                    // Insert the index as 1-based for more user-friendly error messages
-                    index: index + 1
-                });
-            } else if !validating_segment_regex.is_match(&namespace) {
-                errors.push(WildcardTypeNameError::InvalidNamespaceSegment {
-                    segment_text: namespace.clone(),
-                });
-            }
-        }
+        let (owner, namespaces, name) = Self::parse_segments(
+            text,
+            errors
+        );
 
         // The name segment is required if no wildcard is defined that can match the name
         // segment. For example, `Contoso.*.Example` would require a name segment because it
         // defines a wildcard in a prior namespace segment with a following literal namespace
         // segment.
-        require_name = if namespaces.is_empty() {
+        let require_name = if namespaces.is_empty() {
             !owner.contains('*')
         } else {
             !namespaces.last().unwrap().contains('*')
@@ -485,6 +439,7 @@ impl WildcardTypeName {
         }
 
         // Validate the name segment for invalid characters if it's defined.
+        let validating_segment_regex = Self::init_validating_segment_regex();
         if !name.is_empty() && !validating_segment_regex.is_match(&name) {
             errors.push(WildcardTypeNameError::InvalidNameSegment {
                 segment_text: name.clone(),
@@ -493,7 +448,7 @@ impl WildcardTypeName {
 
         // Construct the regular expression.
         let pattern = convert_wildcard_to_regex(text);
-        regex = match RegexBuilder::new(&pattern).case_insensitive(true).build() {
+        let regex = match RegexBuilder::new(&pattern).case_insensitive(true).build() {
             Ok(r) => r,
             Err(err) => {
                 errors.push(WildcardTypeNameError::InvalidRegex {
@@ -521,6 +476,49 @@ impl WildcardTypeName {
         }
     }
 
+    /// Private helper to parse the input into segments and collect validation errors for owner
+    /// and namespace segments.
+    /// 
+    /// This is used by the public `parse()` method to perform the initial parsing of the input
+    /// string into its constituent segments. It reuses the implementation from
+    /// [`FullyQualifiedTypeName::parse_segments()`], but converts the errors into the appropriate
+    /// [`WildcardTypeNameError`] variants and collects them in the provided `errors` vector for
+    /// bubbling up in the main error handling logic of the `parse()` method.
+    /// 
+    /// # Arguments
+    /// 
+    /// - `text` - The input string to parse into segments.
+    /// - `errors`: A mutable reference to a vector for collecting any validation errors encountered
+    ///   while parsing the segments. This allows the method to accumulate multiple errors for
+    ///   different segments of the type name.
+    /// 
+    /// # Returns
+    /// 
+    /// The method returns the parsed segments (`owner`, `namespaces`, and `name`) as a tuple. Any
+    /// validation errors encountered during parsing are added to the provided `errors` vector for
+    /// the caller to handle.
+    pub(crate) fn parse_segments(text: &str, errors: &mut Vec<WildcardTypeNameError>) -> (String, Vec<String>, String) {
+        // Reuse the segment parsing logic from FullyQualifiedTypeName since the overall structure
+        // is the same, but we need to provide a different validating regex that allows for
+        // wildcard characters and the name segment may be optional depending on the presence of
+        // wildcards in prior segments.
+        let fqtn_errors = &mut Vec::<FullyQualifiedTypeNameError>::new();
+        let validating_segment_regex = Self::init_validating_segment_regex();
+        let parsed = FullyQualifiedTypeName::parse_segments(
+            text,
+            validating_segment_regex,
+            fqtn_errors
+        );
+        // Convert the FQTN errors and add into the WCTN error collection
+        errors.extend(fqtn_errors.into_iter().map(|e| {
+            match TryInto::<WildcardTypeNameError>::try_into(e.clone()) {
+                Ok(wtne) => wtne,
+                Err(e) => e,
+            }
+        }));
+        // Return the parsed segments.
+        parsed
+    }
     /// Returns `true` if the wildcard type name has a length of zero and otherwise `false`.
     pub fn is_empty(&self) -> bool {
         self.text.is_empty()
@@ -712,5 +710,29 @@ impl AsRef<str> for WildcardTypeName {
 impl Hash for WildcardTypeName {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.text.to_lowercase().hash(state);
+    }
+}
+
+impl TryFrom<FullyQualifiedTypeNameError> for WildcardTypeNameError {
+    type Error = WildcardTypeNameError;
+    fn try_from(value: FullyQualifiedTypeNameError) -> Result<Self, Self::Error> {
+        match value {
+            FullyQualifiedTypeNameError::InvalidOwnerSegment {
+                segment_text
+            } => Ok(WildcardTypeNameError::InvalidOwnerSegment { segment_text }),
+            FullyQualifiedTypeNameError::InvalidNamespaceSegment {
+                segment_text
+            } => Ok(WildcardTypeNameError::InvalidNamespaceSegment { segment_text }),
+            FullyQualifiedTypeNameError::EmptyNamespaceSegment {
+                index
+            } => Ok(WildcardTypeNameError::EmptyNamespaceSegment { index }),
+            FullyQualifiedTypeNameError::InvalidNameSegment {
+                segment_text
+            } => Ok(WildcardTypeNameError::InvalidNameSegment { segment_text }),
+            FullyQualifiedTypeNameError::EmptyOwnerSegment => Ok(WildcardTypeNameError::EmptyOwnerSegment),
+            FullyQualifiedTypeNameError::MissingNameSegment => Ok(WildcardTypeNameError::MissingNameSegment),
+            // No other errors should be converted
+            _ => Err(WildcardTypeNameError::InvalidErrorConversion { err: value })
+        }
     }
 }

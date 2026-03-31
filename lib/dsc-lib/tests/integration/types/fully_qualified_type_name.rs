@@ -81,6 +81,16 @@ mod methods {
                 ]
             }; "empty namespace segment"
         )]
+        #[test_case("Owner.Empty.Last.Namespace./Name" =>
+            FullyQualifiedTypeNameError::InvalidTypeName{
+                text: "Owner.Empty.Last.Namespace./Name".to_string(),
+                errors: vec![
+                    FullyQualifiedTypeNameError::EmptyNamespaceSegment {
+                        index: 4
+                    }
+                ]
+            }; "empty namespace segment at end of namespaces"
+        )]
         #[test_case("Invalid&Owner/Name" =>
             FullyQualifiedTypeNameError::InvalidTypeName{
                 text: "Invalid&Owner/Name".to_string(),
