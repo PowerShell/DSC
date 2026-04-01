@@ -1,10 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::dscresources::{
-    resource_manifest::{Kind, ResourceManifest},
-    dscresource::Capability,
-};
+use crate::{dscresources::{
+    dscresource::Capability, resource_manifest::{Kind, ResourceManifest}
+}, types::ResourceVersion};
 use crate::{
     schemas::dsc_repo::DscRepoSchema,
     types::FullyQualifiedTypeName,
@@ -38,7 +37,7 @@ pub struct AdaptedDscResourceManifest {
     /// The kind of resource.
     pub kind: Kind,
     /// The version of the resource.
-    pub version: String,
+    pub version: ResourceVersion,
     /// The capabilities of the resource.
     pub capabilities: Vec<Capability>,
     /// An optional condition for the resource to be active.

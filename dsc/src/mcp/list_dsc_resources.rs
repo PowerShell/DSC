@@ -6,7 +6,7 @@ use dsc_lib::{
     DscManager, discovery::{
         command_discovery::ImportedManifest::Resource,
         discovery_trait::{DiscoveryFilter, DiscoveryKind},
-    }, dscresources::resource_manifest::Kind, progress::ProgressFormat, types::FullyQualifiedTypeName
+    }, dscresources::resource_manifest::Kind, progress::ProgressFormat, types::{FullyQualifiedTypeName, TypeNameFilter}
 };
 use rmcp::{ErrorData as McpError, Json, tool, tool_router, handler::server::wrapper::Parameters};
 use rust_i18n::t;
@@ -32,7 +32,7 @@ pub struct ResourceSummary {
 #[derive(Deserialize, JsonSchema)]
 pub struct ListResourcesRequest {
     #[schemars(description = "Filter adapted resources to only those requiring the specified adapter type.  If not specified, all non-adapted resources are returned.")]
-    pub adapter: Option<String>,
+    pub adapter: Option<FullyQualifiedTypeName>,
 }
 
 #[tool_router(router = list_dsc_resources_router, vis = "pub")]
@@ -56,15 +56,15 @@ impl McpServer {
                         if resource.kind != Kind::Adapter {
                             return Err(McpError::invalid_params(t!("mcp.list_dsc_resources.resourceNotAdapter", adapter = adapter), None));
                         }
-                        adapter
+                        Some(&TypeNameFilter::Literal(resource.type_name.clone()))
                     } else {
                         return Err(McpError::invalid_params(t!("mcp.list_dsc_resources.adapterNotFound", adapter = adapter), None));
                     }
                 },
-                None => String::new(),
+                None => None,
             };
-            let mut resources = BTreeMap::<String, ResourceSummary>::new();
-            for resource in dsc.list_available(&DiscoveryKind::Resource, "*", &adapter_filter, ProgressFormat::None) {
+            let mut resources = BTreeMap::<FullyQualifiedTypeName, ResourceSummary>::new();
+            for resource in dsc.list_available(&DiscoveryKind::Resource, &TypeNameFilter::default(), adapter_filter, ProgressFormat::None) {
                 if let Resource(resource) = resource {
                     let summary = ResourceSummary {
                         r#type: resource.type_name.clone(),
@@ -72,7 +72,7 @@ impl McpServer {
                         description: resource.description.clone(),
                         require_adapter: resource.require_adapter,
                     };
-                    resources.insert(resource.type_name.to_lowercase(), summary);
+                    resources.insert(resource.type_name.clone(), summary);
                 }
             }
             Ok(ResourceListResult { resources: resources.into_values().collect() })

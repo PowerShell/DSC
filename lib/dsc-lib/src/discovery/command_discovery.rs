@@ -1,24 +1,21 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{discovery::{discovery_trait::{DiscoveryFilter, DiscoveryKind, ResourceDiscovery}, matches_adapter_requirement}, dscresources::adapted_resource_manifest::AdaptedDscResourceManifest, parser::Statement};
+use crate::{discovery::{DiscoveryExtensionCache, DiscoveryManifestCache, DiscoveryResourceCache, discovery_trait::{DiscoveryFilter, DiscoveryKind, ResourceDiscovery}, matches_adapter_requirement}, dscresources::adapted_resource_manifest::AdaptedDscResourceManifest, parser::Statement, types::{FullyQualifiedTypeName, TypeNameFilter}};
 use crate::{locked_clear, locked_is_empty, locked_extend, locked_clone, locked_get};
 use crate::configure::{config_doc::ResourceDiscoveryMode, context::Context};
 use crate::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
-use crate::dscresources::resource_manifest::{validate_semver, Kind, ResourceManifest, SchemaKind};
+use crate::dscresources::resource_manifest::{Kind, ResourceManifest, SchemaKind};
 use crate::dscresources::command_resource::invoke_command;
 use crate::dscerror::DscError;
 use crate::extensions::dscextension::{self, DscExtension, Capability as ExtensionCapability};
 use crate::extensions::extension_manifest::ExtensionManifest;
 use crate::progress::{ProgressBar, ProgressFormat};
-use crate::util::convert_wildcard_to_regex;
 use crate::schemas::transforms::idiomaticize_externally_tagged_enum;
-use regex::RegexBuilder;
 use rust_i18n::t;
-use semver::{Version, VersionReq};
 use schemars::JsonSchema;
 use serde::Deserialize;
-use std::{collections::{BTreeMap, HashMap, HashSet}, sync::{LazyLock, RwLock}};
+use std::{collections::{HashMap, HashSet}, sync::{LazyLock, RwLock}};
 use std::env;
 use std::ffi::OsStr;
 use std::fs::{create_dir_all, read, read_to_string, write};
@@ -35,10 +32,10 @@ const DSC_MANIFEST_LIST_EXTENSIONS: [&str; 3] = [".dsc.manifests.json", ".dsc.ma
 const DSC_RESOURCE_EXTENSIONS: [&str; 3] = [".dsc.resource.json", ".dsc.resource.yaml", ".dsc.resource.yml"];
 
 // use BTreeMap so that the results are sorted by the typename, the Vec is sorted by version
-static ADAPTERS: LazyLock<RwLock<BTreeMap<String, Vec<DscResource>>>> = LazyLock::new(|| RwLock::new(BTreeMap::new()));
-static RESOURCES: LazyLock<RwLock<BTreeMap<String, Vec<DscResource>>>> = LazyLock::new(|| RwLock::new(BTreeMap::new()));
-static EXTENSIONS: LazyLock<RwLock<BTreeMap<String, DscExtension>>> = LazyLock::new(|| RwLock::new(BTreeMap::new()));
-static ADAPTED_RESOURCES: LazyLock<RwLock<BTreeMap<String, Vec<DscResource>>>> = LazyLock::new(|| RwLock::new(BTreeMap::new()));
+static ADAPTERS: LazyLock<RwLock<DiscoveryResourceCache>> = LazyLock::new(|| RwLock::new(DiscoveryResourceCache::new()));
+static RESOURCES: LazyLock<RwLock<DiscoveryResourceCache>> = LazyLock::new(|| RwLock::new(DiscoveryResourceCache::new()));
+static EXTENSIONS: LazyLock<RwLock<DiscoveryExtensionCache>> = LazyLock::new(|| RwLock::new(DiscoveryExtensionCache::new()));
+static ADAPTED_RESOURCES: LazyLock<RwLock<DiscoveryResourceCache>> = LazyLock::new(|| RwLock::new(DiscoveryResourceCache::new()));
 
 #[derive(Deserialize, JsonSchema)]
 pub struct ManifestList {
@@ -94,7 +91,7 @@ impl CommandDiscovery {
     }
 
     #[must_use]
-    pub fn get_extensions(&self) -> BTreeMap<String, DscExtension> { locked_clone!(EXTENSIONS) }
+    pub fn get_extensions(&self) -> DiscoveryExtensionCache { locked_clone!(EXTENSIONS) }
 
     fn get_resource_path_setting() -> Result<ResourcePathSetting, DscError>
     {
@@ -213,7 +210,7 @@ impl Default for CommandDiscovery {
 impl ResourceDiscovery for CommandDiscovery {
 
     #[allow(clippy::too_many_lines)]
-    fn discover(&mut self, kind: &DiscoveryKind, filter: &str) -> Result<(), DscError> {
+    fn discover(&mut self, kind: &DiscoveryKind, filter: &TypeNameFilter) -> Result<(), DscError> {
         if self.discovery_mode == ResourceDiscoveryMode::PreDeployment && !locked_is_empty!(RESOURCES) {
             return Ok(());
         } else if self.discovery_mode == ResourceDiscoveryMode::DuringDeployment {
@@ -223,19 +220,12 @@ impl ResourceDiscovery for CommandDiscovery {
 
         // if kind is DscResource, we need to discover extensions first
         if *kind == DiscoveryKind::Resource && (self.discovery_mode == ResourceDiscoveryMode::DuringDeployment || locked_is_empty!(EXTENSIONS)){
-            self.discover(&DiscoveryKind::Extension, "*")?;
+            self.discover(&DiscoveryKind::Extension, &TypeNameFilter::default())?;
         }
 
-        info!("{}", t!("discovery.commandDiscovery.discoverResources", kind = kind : {:?}, filter = filter));
+        info!("{}", t!("discovery.commandDiscovery.discoverResources", kind = kind : {:?}, filter = filter.to_string()));
 
-        let regex_str = convert_wildcard_to_regex(filter);
-        debug!("Using regex {regex_str} as filter for adapter name");
-        let mut regex_builder = RegexBuilder::new(&regex_str);
-        regex_builder.case_insensitive(true);
-        let Ok(regex) = regex_builder.build() else {
-            return Err(DscError::Operation(t!("discovery.commandDiscovery.invalidAdapterFilter").to_string()));
-        };
-
+        debug!("Using type name filter '{filter}' for adapter name");
         let mut progress = ProgressBar::new(1, self.progress_format)?;
         match kind {
             DiscoveryKind::Resource => {
@@ -246,9 +236,9 @@ impl ResourceDiscovery for CommandDiscovery {
             }
         }
 
-        let mut adapters = BTreeMap::<String, Vec<DscResource>>::new();
-        let mut resources = BTreeMap::<String, Vec<DscResource>>::new();
-        let mut extensions = BTreeMap::<String, DscExtension>::new();
+        let mut adapters = DiscoveryResourceCache::new();
+        let mut resources = DiscoveryResourceCache::new();
+        let mut extensions = DiscoveryExtensionCache::new();
 
         if let Ok(paths) = CommandDiscovery::get_resource_paths() {
             for path in paths {
@@ -286,26 +276,20 @@ impl ResourceDiscovery for CommandDiscovery {
                                 for imported_manifest in imported_manifests {
                                     match imported_manifest {
                                         ImportedManifest::Extension(extension) => {
-                                            if regex.is_match(&extension.type_name) {
+                                            if filter.is_match(&extension.type_name) {
                                                 trace!("{}", t!("discovery.commandDiscovery.extensionFound", extension = extension.type_name, version = extension.version));
                                                 // we only keep newest version of the extension so compare the version and only keep the newest
-                                                if let Some(existing_extension) = extensions.get_mut(extension.type_name.as_ref()) {
-                                                    let Ok(existing_version) = Version::parse(&existing_extension.version) else {
-                                                        return Err(DscError::Operation(t!("discovery.commandDiscovery.extensionInvalidVersion", extension = existing_extension.type_name, version = existing_extension.version).to_string()));
-                                                    };
-                                                    let Ok(new_version) = Version::parse(&extension.version) else {
-                                                        return Err(DscError::Operation(t!("discovery.commandDiscovery.extensionInvalidVersion", extension = extension.type_name, version = extension.version).to_string()));
-                                                    };
-                                                    if new_version > existing_version {
-                                                        extensions.insert(extension.type_name.to_string(), extension.clone());
+                                                if let Some(existing_extension) = extensions.get_mut(&extension.type_name) {
+                                                    if extension.version > existing_extension.version {
+                                                        extensions.insert(extension.type_name.clone(), extension.clone());
                                                     }
                                                 } else {
-                                                    extensions.insert(extension.type_name.to_string(), extension.clone());
+                                                    extensions.insert(extension.type_name.clone(), extension.clone());
                                                 }
                                             }
                                         },
                                         ImportedManifest::Resource(resource) => {
-                                            if regex.is_match(&resource.type_name) {
+                                            if filter.is_match(&resource.type_name) {
                                                 if let Some(manifest) = &resource.manifest {
                                                     if manifest.kind == Some(Kind::Adapter) {
                                                         trace!("{}", t!("discovery.commandDiscovery.adapterFound", adapter = resource.type_name, version = resource.version));
@@ -347,7 +331,7 @@ impl ResourceDiscovery for CommandDiscovery {
                         };
                         debug!("{}", t!("discovery.commandDiscovery.extensionFoundResources", extension = extension.type_name, count = discovered_resources.len()));
                         for resource in discovered_resources {
-                            if regex.is_match(&resource.type_name) {
+                            if filter.is_match(&resource.type_name) {
                                 trace!("{}", t!("discovery.commandDiscovery.extensionResourceFound", resource = resource.type_name));
                                 insert_resource(&mut resources, &resource);
                             }
@@ -365,9 +349,13 @@ impl ResourceDiscovery for CommandDiscovery {
         Ok(())
     }
 
-    fn discover_adapted_resources(&mut self, name_filter: &str, adapter_filter: &str) -> Result<(), DscError> {
+    fn discover_adapted_resources(
+        &mut self,
+        name_filter: &TypeNameFilter,
+        adapter_filter: &TypeNameFilter
+    ) -> Result<(), DscError> {
         if self.discovery_mode == ResourceDiscoveryMode::DuringDeployment || (locked_is_empty!(RESOURCES) && locked_is_empty!(ADAPTERS)) {
-            self.discover(&DiscoveryKind::Resource, "*")?;
+            self.discover(&DiscoveryKind::Resource, &TypeNameFilter::default())?;
         }
 
         if locked_is_empty!(ADAPTERS) {
@@ -375,33 +363,21 @@ impl ResourceDiscovery for CommandDiscovery {
         }
 
         let adapters = locked_clone!(ADAPTERS);
-        let regex_str = convert_wildcard_to_regex(adapter_filter);
-        debug!("Using regex {regex_str} as filter for adapter name");
-        let mut regex_builder = RegexBuilder::new(&regex_str);
-        regex_builder.case_insensitive(true);
-        let Ok(regex) = regex_builder.build() else {
-            return Err(DscError::Operation("Could not build Regex filter for adapter name".to_string()));
-        };
+        debug!("Using type name filter '{adapter_filter}' as filter for adapter name");
 
-        let name_regex_str = convert_wildcard_to_regex(name_filter);
-        debug!("Using regex {name_regex_str} as filter for resource name");
-        let mut name_regex_builder = RegexBuilder::new(&name_regex_str);
-        name_regex_builder.case_insensitive(true);
-        let Ok(name_regex) = name_regex_builder.build() else {
-            return Err(DscError::Operation("Could not build Regex filter for resource name".to_string()));
-        };
+        debug!("Using type name filter '{name_filter}' as filter for resource name");
 
         let mut progress = ProgressBar::new(adapters.len() as u64, self.progress_format)?;
         progress.write_activity("Searching for adapted resources");
 
-        let mut adapted_resources = BTreeMap::<String, Vec<DscResource>>::new();
+        let mut adapted_resources = DiscoveryResourceCache::new();
 
         let mut found_adapter: bool = false;
         for (adapter_name, adapters) in &adapters {
             for adapter in adapters {
                 progress.write_increment(1);
 
-                if !regex.is_match(adapter_name) {
+                if !adapter_filter.is_match(adapter_name) {
                     continue;
                 }
 
@@ -409,7 +385,7 @@ impl ResourceDiscovery for CommandDiscovery {
                 let mut adapter_progress = ProgressBar::new(1, self.progress_format)?;
                 adapter_progress.write_activity(format!("Enumerating resources for adapter '{adapter_name}'").as_str());
                 let Some(manifest) = &adapter.manifest else {
-                    return Err(DscError::MissingManifest(adapter_name.clone()));
+                    return Err(DscError::MissingManifest(adapter_name.to_string()));
                 };
 
                 let mut adapter_resources_count = 0;
@@ -435,11 +411,11 @@ impl ResourceDiscovery for CommandDiscovery {
                     match serde_json::from_str::<DscResource>(line){
                         Result::Ok(resource) => {
                             if resource.require_adapter.is_none() {
-                                warn!("{}", DscError::MissingRequires(adapter_name.clone(), resource.type_name.to_string()).to_string());
+                                warn!("{}", DscError::MissingRequires(adapter_name.to_string(), resource.type_name.to_string()).to_string());
                                 continue;
                             }
 
-                            if name_regex.is_match(&resource.type_name) {
+                            if name_filter.is_match(&resource.type_name) {
                                 insert_resource(&mut adapted_resources, &resource);
                                 adapter_resources_count += 1;
                             }
@@ -464,19 +440,16 @@ impl ResourceDiscovery for CommandDiscovery {
         Ok(())
     }
 
-    fn list_available(&mut self, kind: &DiscoveryKind, type_name_filter: &str, adapter_name_filter: &str) -> Result<BTreeMap<String, Vec<ImportedManifest>>, DscError> {
-        let mut resources = BTreeMap::<String, Vec<ImportedManifest>>::new();
+    fn list_available(
+        &mut self,
+        kind: &DiscoveryKind,
+        type_name_filter: &TypeNameFilter,
+        adapter_name_filter: Option<&TypeNameFilter>
+    ) -> Result<DiscoveryManifestCache, DscError> {
+        let mut resources = DiscoveryManifestCache::new();
         if *kind == DiscoveryKind::Resource {
-            if adapter_name_filter.is_empty() {
-                self.discover(kind, type_name_filter)?;
-                for (resource_name, resources_vec) in &locked_clone!(RESOURCES) {
-                    resources.insert(resource_name.clone(), resources_vec.iter().map(|r| ImportedManifest::Resource(r.clone())).collect());
-                }
-                for (adapter_name, adapter_vec) in &locked_clone!(ADAPTERS) {
-                    resources.insert(adapter_name.clone(), adapter_vec.iter().map(|r| ImportedManifest::Resource(r.clone())).collect());
-                }
-            } else {
-                self.discover(kind, "*")?;
+            if let Some(adapter_name_filter) = adapter_name_filter {
+                self.discover(kind, &TypeNameFilter::default())?;
                 self.discover_adapted_resources(type_name_filter, adapter_name_filter)?;
 
                 // add/update found adapted resources to the lookup_table
@@ -485,6 +458,14 @@ impl ResourceDiscovery for CommandDiscovery {
 
                 for (adapted_name, adapted_vec) in &adapted_resources {
                     resources.insert(adapted_name.clone(), adapted_vec.iter().map(|r| ImportedManifest::Resource(r.clone())).collect());
+                }
+            } else {
+                self.discover(kind, type_name_filter)?;
+                for (resource_name, resources_vec) in &locked_clone!(RESOURCES) {
+                    resources.insert(resource_name.clone(), resources_vec.iter().map(|r| ImportedManifest::Resource(r.clone())).collect());
+                }
+                for (adapter_name, adapter_vec) in &locked_clone!(ADAPTERS) {
+                    resources.insert(adapter_name.clone(), adapter_vec.iter().map(|r| ImportedManifest::Resource(r.clone())).collect());
                 }
             }
         } else {
@@ -497,12 +478,12 @@ impl ResourceDiscovery for CommandDiscovery {
         Ok(resources)
     }
 
-    fn find_resources(&mut self, required_resource_types: &[DiscoveryFilter]) -> Result<BTreeMap<String, Vec<DscResource>>, DscError> {
+    fn find_resources(&mut self, required_resource_types: &[DiscoveryFilter]) -> Result<DiscoveryResourceCache, DscError> {
         debug!("{}", t!("discovery.commandDiscovery.searchingForResources", resources = required_resource_types : {:?}));
         if self.discovery_mode == ResourceDiscoveryMode::DuringDeployment || locked_is_empty!(RESOURCES) {
-            self.discover(&DiscoveryKind::Resource, "*")?;
+            self.discover(&DiscoveryKind::Resource, &TypeNameFilter::default())?;
         }
-        let mut found_resources = BTreeMap::<String, Vec<DscResource>>::new();
+        let mut found_resources = DiscoveryResourceCache::new();
         let mut required_resources = HashMap::<DiscoveryFilter, bool>::new();
         for filter in required_resource_types {
             required_resources.insert(filter.clone(), false);
@@ -523,22 +504,22 @@ impl ResourceDiscovery for CommandDiscovery {
         }
 
         // store the keys of the ADAPTERS into a vec
-        let mut adapters: Vec<String> = locked_clone!(ADAPTERS).keys().cloned().collect();
+        let mut adapters: Vec<FullyQualifiedTypeName> = locked_clone!(ADAPTERS).keys().cloned().collect();
         // sort the adapters by ones specified in the required resources first
 
         for filter in required_resource_types {
             if let Some(required_adapter) = filter.require_adapter() {
-                if !adapters.contains(&required_adapter.to_string()) {
+                if !adapters.contains(&required_adapter) {
                     return Err(DscError::AdapterNotFound(required_adapter.to_string()));
                 }
                 // otherwise insert at the front of the list
                 adapters.retain(|a| a != required_adapter);
-                adapters.insert(0, required_adapter.to_string());
+                adapters.insert(0, required_adapter.clone());
             }
         }
 
         for adapter_name in &adapters {
-            self.discover_adapted_resources("*", adapter_name)?;
+            self.discover_adapted_resources(&TypeNameFilter::default(), &adapter_name.clone().into())?;
             add_resources_to_lookup_table(&locked_clone!(ADAPTED_RESOURCES));
             for filter in required_resource_types {
                 if let Some(adapted_resources) = locked_get!(ADAPTED_RESOURCES, filter.resource_type()) {
@@ -556,9 +537,9 @@ impl ResourceDiscovery for CommandDiscovery {
         Ok(found_resources)
     }
 
-    fn get_extensions(&mut self) -> Result<BTreeMap<String, DscExtension>, DscError> {
+    fn get_extensions(&mut self) -> Result<DiscoveryExtensionCache, DscError> {
         if locked_is_empty!(EXTENSIONS) {
-            self.discover(&DiscoveryKind::Extension, "*")?;
+            self.discover(&DiscoveryKind::Extension, &TypeNameFilter::default())?;
         }
         Ok(locked_clone!(EXTENSIONS))
     }
@@ -568,30 +549,18 @@ impl ResourceDiscovery for CommandDiscovery {
     }
 }
 
-fn filter_resources(found_resources: &mut BTreeMap<String, Vec<DscResource>>, required_resources: &mut HashMap<DiscoveryFilter, bool>, resources: &[DscResource], filter: &DiscoveryFilter) {
+fn filter_resources(found_resources: &mut DiscoveryResourceCache, required_resources: &mut HashMap<DiscoveryFilter, bool>, resources: &[DscResource], filter: &DiscoveryFilter) {
     for resource in resources {
-        if let Some(required_version) = filter.version() {
-            if let Ok(resource_version) = Version::parse(&resource.version) {
-                if let Ok(version_req) = VersionReq::parse(required_version) {
-                    if version_req.matches(&resource_version) && matches_adapter_requirement(resource, filter) {
-                        found_resources.entry(filter.resource_type().to_string()).or_default().push(resource.clone());
-                        required_resources.insert(filter.clone(), true);
-                        debug!("{}", t!("discovery.commandDiscovery.foundResourceWithVersion", resource = resource.type_name, version = resource.version));
-                        break;
-                    }
-                }
-            } else {
-                // if not semver, we do a string comparison
-                if resource.version == *required_version && matches_adapter_requirement(resource, filter) {
-                    found_resources.entry(filter.resource_type().to_string()).or_default().push(resource.clone());
-                    required_resources.insert(filter.clone(), true);
-                    debug!("{}", t!("discovery.commandDiscovery.foundResourceWithVersion", resource = resource.type_name, version = resource.version));
-                    break;
-                }
+        if let Some(required_version) = filter.require_version() {
+            if required_version.matches(&resource.version) && matches_adapter_requirement(resource, filter) {
+                found_resources.entry(filter.resource_type().clone()).or_default().push(resource.clone());
+                required_resources.insert(filter.clone(), true);
+                debug!("{}", t!("discovery.commandDiscovery.foundResourceWithVersion", resource = resource.type_name, version = resource.version));
+                break;
             }
         } else {
             if matches_adapter_requirement(resource, filter) {
-                found_resources.entry(filter.resource_type().to_string()).or_default().push(resource.clone());
+                found_resources.entry(filter.resource_type().clone()).or_default().push(resource.clone());
                 required_resources.insert(filter.clone(), true);
                 break;
             }
@@ -603,32 +572,19 @@ fn filter_resources(found_resources: &mut BTreeMap<String, Vec<DscResource>>, re
 }
 
 /// Inserts a resource into tree adding to vector if already exists
-fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource: &DscResource) {
-    if let Some(resource_versions) = resources.get_mut(&resource.type_name.to_lowercase()) {
+fn insert_resource(resources: &mut DiscoveryResourceCache, resource: &DscResource) {
+    if let Some(resource_versions) = resources.get_mut(&resource.type_name) {
         // compare the resource versions and insert newest to oldest using semver
         let mut insert_index = resource_versions.len();
         for (index, resource_instance) in resource_versions.iter().enumerate() {
-            let resource_instance_version = match Version::parse(&resource_instance.version) {
-                Ok(v) => v,
-                Err(_err) => {
-                    continue;
-                },
-            };
-            let resource_version = match Version::parse(&resource.version) {
-                Ok(v) => v,
-                Err(_err) => {
-                    continue;
-                },
-            };
-
-            if resource_instance_version < resource_version {
+            if resource_instance.version < resource.version {
                 insert_index = index;
                 break;
             }
         }
         resource_versions.insert(insert_index, resource.clone());
     } else {
-        resources.insert(resource.type_name.to_lowercase(), vec![resource.clone()]);
+        resources.insert(resource.type_name.clone(), vec![resource.clone()]);
     }
 }
 
@@ -785,8 +741,12 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
 }
 
 fn load_adapted_resource_manifest(path: &Path, manifest: &AdaptedDscResourceManifest) -> Result<DscResource, DscError> {
-    if let Err(err) = validate_semver(&manifest.version) {
-        warn!("{}", t!("discovery.commandDiscovery.invalidManifestVersion", path = path.to_string_lossy(), err = err).to_string());
+    if manifest.version.is_date_version() {
+        warn!("{}", t!(
+            "discovery.commandDiscovery.invalidManifestVersion",
+            path = path.to_string_lossy(),
+            version = manifest.version
+        ));
     }
 
     let directory = path.parent().unwrap();
@@ -813,8 +773,12 @@ fn load_adapted_resource_manifest(path: &Path, manifest: &AdaptedDscResourceMani
 }
 
 fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<DscResource, DscError> {
-    if let Err(err) = validate_semver(&manifest.version) {
-        warn!("{}", t!("discovery.commandDiscovery.invalidManifestVersion", path = path.to_string_lossy(), err = err).to_string());
+    if manifest.version.is_date_version() {
+        warn!("{}", t!(
+            "discovery.commandDiscovery.invalidManifestVersion",
+            path = path.to_string_lossy(),
+            version = manifest.version
+        ));
     }
 
     let kind = if let Some(kind) = manifest.kind.clone() {
@@ -873,10 +837,6 @@ fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<Ds
 }
 
 fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<DscExtension, DscError> {
-    if let Err(err) = validate_semver(&manifest.version) {
-        warn!("{}", t!("discovery.commandDiscovery.invalidManifestVersion", path = path.to_string_lossy(), err = err).to_string());
-    }
-
     let mut capabilities: Vec<dscextension::Capability> = vec![];
     if let Some(discover) = &manifest.discover {
         verify_executable(&manifest.r#type, "discover", &discover.executable, path.parent().unwrap());
@@ -921,7 +881,7 @@ fn verify_executable(resource: &str, operation: &str, executable: &str, director
     }
 }
 
-fn add_resources_to_lookup_table(adapted_resources: &BTreeMap<String, Vec<DscResource>>)
+fn add_resources_to_lookup_table(adapted_resources: &DiscoveryResourceCache)
 {
     let mut lookup_table = load_adapted_resources_lookup_table();
 

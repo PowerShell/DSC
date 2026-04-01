@@ -72,7 +72,7 @@ Describe 'resource get tests' {
     }
 
     It 'version works' {
-        $out = dsc resource get -r Test/Version --version 1.1.2 | ConvertFrom-Json
+        $out = dsc resource get -r Test/Version --version '=1.1.2' | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.actualState.version | Should -BeExactly '1.1.2'
     }
