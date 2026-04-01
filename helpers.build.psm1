@@ -435,6 +435,8 @@ function Update-Rust {
 
         Write-Verbose -Verbose "Rust found, updating..."
         $rustup, $channel = Get-RustUp
+        & $rustup toolchain install $channel
+        & $rustup default $channel
         & $rustup update
     }
 }
@@ -581,17 +583,27 @@ function Install-Clippy {
         $Architecture = 'current'
     )
 
+    begin {
+    }
+
     process {
         Write-Verbose -Verbose "Installing clippy..."
         if ($UseCFS) {
             cargo install clippy --config .cargo/config.toml
         } else {
+            $rustup, $channel = Get-RustUp
+
+            if ($rustup -eq 'msrustup') {
+                Write-Verbose -Verbose "Clippy is already included with msrustup"
+                return
+            }
+
             if ($Architecture -ne 'current') {
                 write-verbose -verbose "Installing clippy for $Architecture"
-                rustup component add clippy --target $Architecture
+                & $rustup component add clippy --target $Architecture
             } else {
                 write-verbose -verbose "Installing clippy for current architecture"
-                rustup component add clippy
+                & $rustup component add clippy
             }
         }
         if ($LASTEXITCODE -ne 0) {
@@ -793,24 +805,6 @@ function Install-PowerShellTestPrerequisite {
 #endregion Install tools functions
 
 #region    Environment setup utility functions
-function Set-RustChannel {
-    <#
-        .SYNOPSIS
-        Sets the rust default toolchain to the stable channel.
-    #>
-
-    [CmdletBinding()]
-    param()
-
-    begin {
-        $rustup, $channel = Get-RustUp
-    }
-
-    process {
-        & $rustup default stable
-    }
-}
-
 function Set-CargoEnvironment {
     <#
         .SYNOPSIS
