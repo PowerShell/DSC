@@ -46,6 +46,9 @@ BeforeAll {
 
     $adaptedManifestPath = Join-Path $TestDrive "fake.dsc.adaptedresource.json"
     $fakeAdaptedManifest | ConvertTo-Json -Depth 10 | Set-Content -Path $adaptedManifestPath
+
+    $fakePsd1Path = Join-Path $TestDrive "FakeAdapted.psd1"
+    Set-Content -Path $fakePsd1Path -Value "@{ ModuleVersion = '0.1.0' }"
     $script:OldPSModulePath = $env:PSModulePath
     $env:PSModulePath += [System.IO.Path]::PathSeparator + $TestDrive
     
