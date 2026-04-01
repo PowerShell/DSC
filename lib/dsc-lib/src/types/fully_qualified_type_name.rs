@@ -1,6 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+// TODO: Remove when updating to rustc 1.94; false positive from thiserror + rust-i18n t!() macro
+#![allow(unused_assignments)]
+
 use std::fmt::{Display, Formatter};
 use std::hash::Hash;
 use std::ops::Deref;
@@ -223,7 +226,7 @@ pub enum FullyQualifiedTypeNameError {
     ///
     /// If the fully qualified type name contains any empty namespace segments, validation raises
     /// this error in the `errors` field of the main [`InvalidTypeName`] error.
-    /// 
+    ///
     /// [`InvalidTypeName`]: Self::InvalidTypeName
     #[error("{t}", t = t!(
         "types.fully_qualified_type_name.emptyNamespaceSegment",
@@ -384,7 +387,7 @@ impl FullyQualifiedTypeName {
     ///      }
     ///   );
     ///   ```
-    /// 
+    ///
     /// - An empty namespace segment is not valid.
     ///
     ///   ```rust
@@ -437,21 +440,21 @@ impl FullyQualifiedTypeName {
 
     /// Private helper to parse the input into segments and collect validation errors for owner
     /// and namespace segments.
-    /// 
+    ///
     /// This is used by the public `parse()` method to handle the common parsing and validation
     /// logic that is shared by [`FullyQualifiedTypeName`] and [`WildcardTypeName`] since they
     /// share the same overall structure.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// - `text`: The input string to parse into type name segments.
     /// - `validating_segment_regex`: The regex to use for validating each segment of the type name.
     /// - `errors`: A mutable reference to a vector for collecting any validation errors encountered
     ///   while parsing the segments. This allows the method to accumulate multiple errors for
     ///   different segments of the type name.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// The method returns the parsed segments (`owner`, `namespaces`, and `name`) as a tuple. Any
     /// validation errors encountered during parsing are added to the provided `errors` vector for
     /// the caller to handle.
@@ -535,7 +538,7 @@ impl FullyQualifiedTypeName {
     /// number of `namespace` segments, which must be separated from the previous segment by a
     /// single period (`.`). Finally, the string must include a forward slash (`/`) followed by one
     /// or more unicode alphanumeric characters and underscores to define the `name` segment.
-    /// 
+    ///
     /// [`VALIDATING_SEGMENT_PATTERN`]: Self::VALIDATING_SEGMENT_PATTERN
     pub const VALIDATING_PATTERN: &str = r"^\w+(\.\w+)*\/\w+$";
 

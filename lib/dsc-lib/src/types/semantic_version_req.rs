@@ -1,6 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+// TODO: Remove when updating to rustc 1.94; false positive from thiserror + rust-i18n t!() macro
+#![allow(unused_assignments)]
+
 use std::{fmt::Display, ops::Deref, str::FromStr, sync::OnceLock};
 
 use miette::Diagnostic;
@@ -688,28 +691,28 @@ impl SemanticVersionReq {
     /// // 2.0.0 isn't compatible with the requirement.
     /// assert!(!requirement.matches(&SemanticVersion::new(2, 0, 0)));
     /// ```
-    /// 
+    ///
     /// The following example shows how the `matches` function treats prerelease versions as not
     /// matching a requirement unless the requirement explicitly defines a prerelease segment.
-    /// 
+    ///
     /// ```rust
     /// # use dsc_lib::types::{SemanticVersion, SemanticVersionReq};
     /// let v_stable = &SemanticVersion::parse("1.2.3").unwrap();
     /// let v_rc1 = &SemanticVersion::parse("1.2.3-rc.1").unwrap();
     /// let v_rc2 = &SemanticVersion::parse("1.2.3-rc.2").unwrap();
-    /// 
-    /// // Only the stable version matches the stable requirement 
+    ///
+    /// // Only the stable version matches the stable requirement
     /// let stable_req = SemanticVersionReq::parse("^1.2.3").unwrap();
     /// assert!(!stable_req.matches(v_rc1));
     /// assert!(!stable_req.matches(v_rc2));
     /// assert!(stable_req.matches(v_stable));
-    /// 
+    ///
     /// // All three versions match the requirement that explicitly defines the prerelease segment
     /// let prerelease_req = SemanticVersionReq::parse("^1.2.3-rc.1").unwrap();
     /// assert!(prerelease_req.matches(v_stable));
     /// assert!(prerelease_req.matches(v_rc1));
     /// assert!(prerelease_req.matches(v_rc2));
-    /// 
+    ///
     /// ```
     pub fn matches(&self, version: &SemanticVersion) -> bool {
         self.0.matches(version.as_ref())
