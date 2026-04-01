@@ -62,6 +62,20 @@ class DscAdaptedResourceManifest {
     }
 }
 
+class DscPropertyOverride {
+    [string] $Name
+    [string] $Description
+    [string] $Title
+    [hashtable] $JsonSchema
+    [string[]] $RemoveKeys
+    [object] $Required
+
+    DscPropertyOverride() {
+        $this.JsonSchema = @{}
+        $this.RemoveKeys = @()
+    }
+}
+
 class DscResourceManifestList {
     [System.Collections.Generic.List[hashtable]] $AdaptedResources
     [System.Collections.Generic.List[hashtable]] $Resources
@@ -138,9 +152,9 @@ function GetDscResourceTypeDefinition {
         foreach ($attribute in $typeDefinition.Attributes) {
             if ($attribute.TypeName.Name -eq 'DscResource') {
                 $results.Add(@{
-                    TypeDefinitionAst  = $typeDefinition
-                    AllTypeDefinitions = $allTypeDefinitions
-                })
+                        TypeDefinitionAst  = $typeDefinition
+                        AllTypeDefinitions = $allTypeDefinitions
+                    })
                 break
             }
         }
@@ -256,12 +270,12 @@ function CollectAstProperty {
         }
 
         $Properties.Add(@{
-            Name        = $propertyAst.Name
-            TypeName    = $typeName
-            IsKey       = $isKey
-            IsMandatory = $isMandatory -or $isKey
-            EnumValues  = $enumValues
-        })
+                Name        = $propertyAst.Name
+                TypeName    = $typeName
+                IsKey       = $isKey
+                IsMandatory = $isMandatory -or $isKey
+                EnumValues  = $enumValues
+            })
     }
 }
 
@@ -274,18 +288,18 @@ function ConvertToJsonSchemaType {
     )
 
     switch ($TypeName) {
-        'string'   { return @{ type = 'string' } }
-        'int'      { return @{ type = 'integer' } }
-        'int32'    { return @{ type = 'integer' } }
-        'int64'    { return @{ type = 'integer' } }
-        'long'     { return @{ type = 'integer' } }
-        'double'   { return @{ type = 'number' } }
-        'float'    { return @{ type = 'number' } }
-        'single'   { return @{ type = 'number' } }
-        'decimal'  { return @{ type = 'number' } }
-        'bool'     { return @{ type = 'boolean' } }
-        'boolean'  { return @{ type = 'boolean' } }
-        'switch'   { return @{ type = 'boolean' } }
+        'string' { return @{ type = 'string' } }
+        'int' { return @{ type = 'integer' } }
+        'int32' { return @{ type = 'integer' } }
+        'int64' { return @{ type = 'integer' } }
+        'long' { return @{ type = 'integer' } }
+        'double' { return @{ type = 'number' } }
+        'float' { return @{ type = 'number' } }
+        'single' { return @{ type = 'number' } }
+        'decimal' { return @{ type = 'number' } }
+        'bool' { return @{ type = 'boolean' } }
+        'boolean' { return @{ type = 'boolean' } }
+        'switch' { return @{ type = 'boolean' } }
         'hashtable' { return @{ type = 'object' } }
         'datetime' { return @{ type = 'string'; format = 'date-time' } }
         default {
@@ -531,15 +545,15 @@ function New-DscAdaptedResourceManifest {
     param(
         [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [ValidateScript({
-            if (-not (Test-Path -LiteralPath $_)) {
-                throw "Path '$_' does not exist."
-            }
-            $ext = [System.IO.Path]::GetExtension($_)
-            if ($ext -notin '.ps1', '.psm1', '.psd1') {
-                throw "Path '$_' must be a .ps1, .psm1, or .psd1 file."
-            }
-            return $true
-        })]
+                if (-not (Test-Path -LiteralPath $_)) {
+                    throw "Path '$_' does not exist."
+                }
+                $ext = [System.IO.Path]::GetExtension($_)
+                if ($ext -notin '.ps1', '.psm1', '.psd1') {
+                    throw "Path '$_' must be a .ps1, .psm1, or .psd1 file."
+                }
+                return $true
+            })]
         [string]$Path
     )
 
@@ -727,11 +741,11 @@ function Import-DscAdaptedResourceManifest {
     param(
         [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [ValidateScript({
-            if (-not (Test-Path -LiteralPath $_)) {
-                throw "Path '$_' does not exist."
-            }
-            return $true
-        })]
+                if (-not (Test-Path -LiteralPath $_)) {
+                    throw "Path '$_' does not exist."
+                }
+                return $true
+            })]
         [Alias('FullName')]
         [string]$Path
     )
@@ -790,11 +804,11 @@ function Import-DscResourceManifest {
     param(
         [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [ValidateScript({
-            if (-not (Test-Path -LiteralPath $_)) {
-                throw "Path '$_' does not exist."
-            }
-            return $true
-        })]
+                if (-not (Test-Path -LiteralPath $_)) {
+                    throw "Path '$_' does not exist."
+                }
+                return $true
+            })]
         [Alias('FullName')]
         [string]$Path
     )
@@ -829,6 +843,284 @@ function Import-DscResourceManifest {
         }
 
         Write-Output $manifestList
+    }
+}
+
+<#
+    .SYNOPSIS
+        Creates a DscPropertyOverride object for use with Update-DscAdaptedResourceManifest.
+
+    .DESCRIPTION
+        Constructs a DscPropertyOverride object that specifies how to modify a single property
+        in the embedded JSON schema of an adapted resource manifest.
+
+    .PARAMETER Name
+        The name of the property in the embedded JSON schema to override.
+
+    .PARAMETER Description
+        Override the property description text.
+
+    .PARAMETER Title
+        Override the property title text.
+
+    .PARAMETER JsonSchema
+        A hashtable of JSON schema keywords to merge into the property definition
+        (e.g., anyOf, oneOf, default, minimum, maximum, pattern, format).
+
+    .PARAMETER RemoveKeys
+        An array of JSON schema key names to remove from the property before merging
+        JsonSchema (e.g., 'type', 'enum' when replacing with anyOf).
+
+    .PARAMETER Required
+        Set to $true to add the property to the required list, $false to remove it,
+        or omit to leave unchanged.
+
+    .EXAMPLE
+        New-DscPropertyOverride -Name 'Enabled' -Description 'Whether this resource is active.'
+
+        Creates an override that sets a custom description for the Enabled property.
+
+    .EXAMPLE
+        New-DscPropertyOverride -Name 'Status' -RemoveKeys 'type','enum' -JsonSchema @{
+            anyOf = @(
+                @{ type = 'string'; enum = @('Active', 'Inactive') }
+                @{ type = 'integer'; minimum = 0 }
+            )
+        }
+
+        Creates an override that replaces the type/enum with an anyOf schema.
+
+    .EXAMPLE
+        $overrides = @(
+            New-DscPropertyOverride -Name 'Name' -Description 'The unique identifier.'
+            New-DscPropertyOverride -Name 'Count' -JsonSchema @{ minimum = 0; maximum = 100 }
+        )
+        $manifest | Update-DscAdaptedResourceManifest -PropertyOverride $overrides
+
+        Creates multiple overrides and pipes them to Update-DscAdaptedResourceManifest.
+
+    .OUTPUTS
+        Returns a DscPropertyOverride object.
+#>
+function New-DscPropertyOverride {
+    [CmdletBinding()]
+    [OutputType([DscPropertyOverride])]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Name,
+
+        [Parameter()]
+        [string]$Description,
+
+        [Parameter()]
+        [string]$Title,
+
+        [Parameter()]
+        [hashtable]$JsonSchema,
+
+        [Parameter()]
+        [string[]]$RemoveKeys,
+
+        [Parameter()]
+        [nullable[bool]]$Required
+    )
+
+    $override = [DscPropertyOverride]::new()
+    $override.Name = $Name
+
+    if ($PSBoundParameters.ContainsKey('Description')) {
+        $override.Description = $Description
+    }
+
+    if ($PSBoundParameters.ContainsKey('Title')) {
+        $override.Title = $Title
+    }
+
+    if ($PSBoundParameters.ContainsKey('JsonSchema')) {
+        $override.JsonSchema = $JsonSchema
+    }
+
+    if ($PSBoundParameters.ContainsKey('RemoveKeys')) {
+        $override.RemoveKeys = $RemoveKeys
+    }
+
+    if ($PSBoundParameters.ContainsKey('Required')) {
+        $override.Required = $Required
+    }
+
+    Write-Output $override
+}
+
+<#
+    .SYNOPSIS
+        Applies post-processing overrides to adapted resource manifest objects.
+
+    .DESCRIPTION
+        Modifies the embedded JSON schema of a DscAdaptedResourceManifest object by applying
+        property-level overrides. This enables customization that AST extraction alone cannot
+        provide, such as meaningful property descriptions, JSON schema keywords like anyOf or
+        oneOf for complex type unions, default values, numeric ranges, and string patterns.
+
+        Property overrides are specified via DscPropertyOverride objects that target individual
+        properties by name. Each override can change the description, title, required status,
+        remove existing JSON schema keys, and merge in new JSON schema keywords.
+
+    .PARAMETER InputObject
+        A DscAdaptedResourceManifest object to update. Typically produced by
+        New-DscAdaptedResourceManifest. Accepts pipeline input.
+
+    .PARAMETER PropertyOverride
+        One or more DscPropertyOverride objects specifying modifications to individual
+        properties in the embedded JSON schema. Each override targets a property by Name.
+
+        DscPropertyOverride supports the following fields:
+        - Name:        (Required) The property name to modify.
+        - Description: Override the property description.
+        - Title:       Override the property title.
+        - JsonSchema:  A hashtable of JSON schema keywords to merge into the property
+                       (e.g., anyOf, oneOf, default, minimum, maximum, pattern, format).
+        - RemoveKeys:  An array of JSON schema key names to remove before merging
+                       (e.g., 'type', 'enum' when replacing with anyOf).
+        - Required:    Set to $true to mark as required, $false to remove from required,
+                       or leave $null to keep unchanged.
+
+    .PARAMETER Description
+        Override the resource-level description on both the manifest object and the embedded
+        JSON schema.
+
+    .EXAMPLE
+        New-DscAdaptedResourceManifest -Path ./MyModule/MyModule.psd1 |
+            Update-DscAdaptedResourceManifest -PropertyOverride @(
+                [DscPropertyOverride]@{
+                    Name        = 'Name'
+                    Description = 'The unique name identifying this resource instance.'
+                }
+            )
+
+        Overrides the auto-generated description for the Name property.
+
+    .EXAMPLE
+        $overrides = @(
+            [DscPropertyOverride]@{
+                Name        = 'Status'
+                Description = 'The desired status, as a label or numeric code.'
+                RemoveKeys  = @('type', 'enum')
+                JsonSchema  = @{
+                    anyOf = @(
+                        @{ type = 'string'; enum = @('Active', 'Inactive') }
+                        @{ type = 'integer'; minimum = 0 }
+                    )
+                }
+            }
+        )
+        New-DscAdaptedResourceManifest -Path ./MyModule.psd1 |
+            Update-DscAdaptedResourceManifest -PropertyOverride $overrides
+
+        Replaces a simple enum property with an anyOf schema allowing either a string
+        enum or an integer value.
+
+    .EXAMPLE
+        $override = [DscPropertyOverride]@{
+            Name       = 'Count'
+            JsonSchema = @{ minimum = 0; maximum = 100; default = 1 }
+        }
+        $manifest | Update-DscAdaptedResourceManifest -PropertyOverride $override
+
+        Adds numeric constraints and a default value to an existing integer property.
+
+    .EXAMPLE
+        $override = [DscPropertyOverride]@{
+            Name     = 'Tags'
+            Required = $false
+        }
+        $manifest | Update-DscAdaptedResourceManifest -PropertyOverride $override
+
+        Removes a property from the required list.
+
+    .OUTPUTS
+        Returns the modified DscAdaptedResourceManifest object.
+#>
+function Update-DscAdaptedResourceManifest {
+    [CmdletBinding()]
+    [OutputType([DscAdaptedResourceManifest])]
+    param(
+        [Parameter(Mandatory, ValueFromPipeline)]
+        [DscAdaptedResourceManifest]$InputObject,
+
+        [Parameter()]
+        [DscPropertyOverride[]]$PropertyOverride,
+
+        [Parameter()]
+        [string]$Description
+    )
+
+    process {
+        $schema = $InputObject.ManifestSchema.Embedded
+
+        if (-not [string]::IsNullOrEmpty($Description)) {
+            $InputObject.Description = $Description
+            if ($schema.Contains('description')) {
+                $schema['description'] = $Description
+            }
+        }
+
+        if ($PropertyOverride) {
+            $properties = $schema['properties']
+            $requiredList = [System.Collections.Generic.List[string]]::new()
+            if ($schema.Contains('required') -and $null -ne $schema['required']) {
+                foreach ($r in $schema['required']) {
+                    $requiredList.Add($r)
+                }
+            }
+
+            foreach ($override in $PropertyOverride) {
+                if (-not $properties.Contains($override.Name)) {
+                    Write-Warning "Property '$($override.Name)' not found in schema for '$($InputObject.Type)'. Skipping."
+                    continue
+                }
+
+                $prop = $properties[$override.Name]
+
+                # Remove specified keys first
+                if ($override.RemoveKeys) {
+                    foreach ($key in $override.RemoveKeys) {
+                        if ($prop.Contains($key)) {
+                            $prop.Remove($key)
+                        }
+                    }
+                }
+
+                # Apply description override
+                if (-not [string]::IsNullOrEmpty($override.Description)) {
+                    $prop['description'] = $override.Description
+                }
+
+                # Apply title override
+                if (-not [string]::IsNullOrEmpty($override.Title)) {
+                    $prop['title'] = $override.Title
+                }
+
+                # Merge JSON schema keywords
+                if ($override.JsonSchema -and $override.JsonSchema.Count -gt 0) {
+                    foreach ($key in $override.JsonSchema.Keys) {
+                        $prop[$key] = $override.JsonSchema[$key]
+                    }
+                }
+
+                # Handle required override
+                if ($null -ne $override.Required) {
+                    if ([bool]$override.Required -and $override.Name -notin $requiredList) {
+                        $requiredList.Add($override.Name)
+                    } elseif (-not [bool]$override.Required) {
+                        $requiredList.Remove($override.Name) | Out-Null
+                    }
+                }
+            }
+
+            $schema['required'] = @($requiredList)
+        }
+
+        Write-Output $InputObject
     }
 }
 
