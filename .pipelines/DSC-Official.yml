@@ -88,7 +88,7 @@ extends:
           ob_sdl_codeql_compiled_enabled: false
         steps:
         - pwsh: |
-            $packageVersion = ./packaging.ps1 -GetPackageVersion
+            $packageVersion = ./build.ps1 -GetPackageVersion
             $vstsCommandString = "vso[task.setvariable variable=Version;isoutput=true]$packageVersion"
             Write-Host ("sending " + $vstsCommandString)
             Write-Host "##$vstsCommandString"
@@ -295,9 +295,9 @@ extends:
             apt update
             apt -y install musl-tools rpm dpkg build-essential protobuf-compiler
             ./build.ps1 -Release -Architecture x86_64-unknown-linux-musl
-            ./packaging.ps1 -PackageType tgz -Architecture x86_64-unknown-linux-musl -Release
-            ./packaging.ps1 -PackageType rpm -Architecture x86_64-unknown-linux-musl -Release
-            ./packaging.ps1 -PackageType deb -Architecture x86_64-unknown-linux-musl -Release
+            ./build.ps1 -PackageType tgz -Architecture x86_64-unknown-linux-musl -Release
+            ./build.ps1 -PackageType rpm -Architecture x86_64-unknown-linux-musl -Release
+            ./build.ps1 -PackageType deb -Architecture x86_64-unknown-linux-musl -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
             Copy-Item ./bin/*.rpm "$(ob_outputDirectory)"
             Copy-Item ./bin/*.deb "$(ob_outputDirectory)"
@@ -346,9 +346,9 @@ extends:
               $env:OPENSSL_LIB_DIR = $matches['dir']
             }
             ./build.ps1 -Release -Architecture aarch64-unknown-linux-musl
-            ./packaging.ps1 -PackageType tgz -Architecture aarch64-unknown-linux-musl -Release
-            ./packaging.ps1 -PackageType rpm -Architecture aarch64-unknown-linux-musl -Release
-            ./packaging.ps1 -PackageType deb -Architecture aarch64-unknown-linux-musl -Release
+            ./build.ps1 -PackageType tgz -Architecture aarch64-unknown-linux-musl -Release
+            ./build.ps1 -PackageType rpm -Architecture aarch64-unknown-linux-musl -Release
+            ./build.ps1 -PackageType deb -Architecture aarch64-unknown-linux-musl -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
             Copy-Item ./bin/*.rpm "$(ob_outputDirectory)"
             Copy-Item ./bin/*.deb "$(ob_outputDirectory)"
@@ -386,7 +386,7 @@ extends:
         - pwsh: |
             Write-Verbose -Verbose "Building for $(buildName)"
             ./build.ps1 -Release -Architecture $(buildName)
-            ./packaging.ps1 -PackageType tgz -Architecture $(buildName) -Release
+            ./build.ps1 -PackageType tgz -Architecture $(buildName) -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
             Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(ob_outputDirectory)/DSC-$(PackageVersion)-$(buildName).tar.gz"
           displayName: 'Build $(buildName)'

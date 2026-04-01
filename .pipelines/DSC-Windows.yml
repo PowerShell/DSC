@@ -68,7 +68,7 @@ steps:
     TargetFolder: ./bin/${{ parameters.buildName }}/${{ parameters.BuildConfiguration }}
     OverWrite: true
 - pwsh: |
-    ./packaging.ps1 -PackageType zip -Architecture ${{ parameters.buildName }} -Release
+    ./build.ps1 -PackageType zip -Architecture ${{ parameters.buildName }} -Release
     Copy-Item ./bin/*.zip "$(Build.ArtifactStagingDirectory)" -Verbose
   displayName: 'Zip ${{ parameters.buildName }}'
 - pwsh: |

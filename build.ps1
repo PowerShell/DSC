@@ -110,6 +110,11 @@ begin {
         $ProgressPreference = 'SilentlyContinue'
     }
 
+    $progressParams = @{
+        Activity = "Executing build script"
+        Quiet    = $Quiet
+    }
+
     Import-Module ./helpers.build.psm1 -Force -Verbose:$false
     $usingADO = ($null -ne $env:TF_BUILD)
     if ($usingADO) {
@@ -163,10 +168,6 @@ process {
 
     if ($GetPackageVersion) {
         return Get-DscCliVersion @VerboseParam
-    }
-    $progressParams = @{
-        Activity = "Executing build script"
-        Quiet    = $Quiet
     }
     Write-BuildProgress @progressParams
 
