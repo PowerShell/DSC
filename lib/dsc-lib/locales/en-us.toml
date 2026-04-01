@@ -138,6 +138,7 @@ conditionNotBoolean = "Condition '%{condition}' did not evaluate to a boolean"
 conditionNotMet = "Condition '%{condition}' not met, skipping manifest at '%{path}' for resource '%{resource}'"
 adaptedResourcePathNotFound = "Adapted resource '%{resource}' path not found: %{path}"
 invalidManifestFileName = "Invalid manifest file name '%{path}'"
+failedLoadManifest = "Failed to load manifest: %{err}"
 
 [dscresources.commandResource]
 invokeGet = "Invoking get for '%{resource}'"
@@ -250,6 +251,7 @@ importNoResults = "Extension '%{extension}' returned no results for import"
 secretMultipleLinesReturned = "Extension '%{extension}' returned multiple lines which is not supported for secrets"
 importProcessingOutput = "Processing output from extension '%{extension}'"
 deprecationMessage = "Extension '%{extension}' is deprecated: %{message}"
+failedLoadManifest = "Extension '%{extension}' failed to load manifest: %{err}"
 
 [extensions.extension_manifest]
 extensionManifestSchemaTitle = "Extension manifest schema URI"
