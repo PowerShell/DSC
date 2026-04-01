@@ -1,0 +1,186 @@
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "type": "Microsoft.Windows/FirewallRuleList",
+    "description": "Manage Windows Firewall rules using the netfw.h APIs.",
+    "tags": [
+        "Windows",
+        "Firewall"
+    ],
+    "version": "0.1.0",
+    "get": {
+        "executable": "windows_firewall",
+        "args": [
+            "get",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ]
+    },
+    "set": {
+        "executable": "windows_firewall",
+        "args": [
+            "set",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ],
+        "implementsPretest": false,
+        "return": "state",
+        "requireSecurityContext": "elevated"
+    },
+    "export": {
+        "executable": "windows_firewall",
+        "args": [
+            "export",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": false
+            }
+        ],
+        "requireSecurityContext": "elevated"
+    },
+    "exitCodes": {
+        "0": "Success",
+        "1": "Invalid arguments",
+        "2": "Invalid input",
+        "3": "Firewall error"
+    },
+    "schema": {
+        "embedded": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Windows Firewall Rule List",
+            "description": "Manage Windows Firewall rules using the netfw.h APIs. The input is a single object that contains a rules array. For export, each object in the array is a filter where properties are ANDed together and the array entries are ORed together.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "rules"
+            ],
+            "properties": {
+                "rules": {
+                    "type": "array",
+                    "title": "Rules",
+                    "description": "An array of firewall rule objects.",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "title": "Rule name",
+                                "description": "The Windows Firewall rule name. Required for get and set."
+                            },
+                            "_exist": {
+                                "type": "boolean",
+                                "title": "Exists",
+                                "description": "Indicates whether the firewall rule exists. Set this to false in a set operation to remove an existing rule."
+                            },
+                            "description": {
+                                "type": "string",
+                                "title": "Description",
+                                "description": "A description for the firewall rule."
+                            },
+                            "applicationName": {
+                                "type": "string",
+                                "title": "Application name",
+                                "description": "The application path associated with the firewall rule."
+                            },
+                            "serviceName": {
+                                "type": "string",
+                                "title": "Service name",
+                                "description": "The Windows service name associated with the firewall rule."
+                            },
+                            "protocol": {
+                                "type": "integer",
+                                "title": "Protocol",
+                                "description": "The IP protocol number for the rule. Common values are 256 (Any), 6 (TCP), 17 (UDP), 1 (ICMPv4), and 58 (ICMPv6)."
+                            },
+                            "localPorts": {
+                                "type": "string",
+                                "title": "Local ports",
+                                "description": "A comma-separated local port list for the rule."
+                            },
+                            "remotePorts": {
+                                "type": "string",
+                                "title": "Remote ports",
+                                "description": "A comma-separated remote port list for the rule."
+                            },
+                            "localAddresses": {
+                                "type": "string",
+                                "title": "Local addresses",
+                                "description": "A comma-separated local address list for the rule."
+                            },
+                            "remoteAddresses": {
+                                "type": "string",
+                                "title": "Remote addresses",
+                                "description": "A comma-separated remote address list for the rule."
+                            },
+                            "direction": {
+                                "type": "string",
+                                "title": "Direction",
+                                "description": "The traffic direction for the rule.",
+                                "enum": [
+                                    "Inbound",
+                                    "Outbound"
+                                ]
+                            },
+                            "action": {
+                                "type": "string",
+                                "title": "Action",
+                                "description": "The action taken by the rule.",
+                                "enum": [
+                                    "Allow",
+                                    "Block"
+                                ]
+                            },
+                            "enabled": {
+                                "type": "boolean",
+                                "title": "Enabled",
+                                "description": "Indicates whether the rule is enabled."
+                            },
+                            "profiles": {
+                                "type": "array",
+                                "title": "Profiles",
+                                "description": "The firewall profiles for which the rule applies.",
+                                "items": {
+                                    "type": "string",
+                                    "enum": [
+                                        "Domain",
+                                        "Private",
+                                        "Public",
+                                        "All"
+                                    ]
+                                }
+                            },
+                            "grouping": {
+                                "type": "string",
+                                "title": "Grouping",
+                                "description": "The grouping string associated with the rule."
+                            },
+                            "interfaceTypes": {
+                                "type": "array",
+                                "title": "Interface types",
+                                "description": "The interface types associated with the rule.",
+                                "items": {
+                                    "type": "string",
+                                    "enum": [
+                                        "RemoteAccess",
+                                        "Wireless",
+                                        "Lan",
+                                        "All"
+                                    ]
+                                }
+                            },
+                            "edgeTraversal": {
+                                "type": "boolean",
+                                "title": "Edge traversal",
+                                "description": "Indicates whether edge traversal is enabled for the rule."
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

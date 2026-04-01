@@ -1,0 +1,32 @@
+_version = 1
+
+[main]
+missingOperation = "Missing operation. Usage: windows_firewall get --input <json> | set --input <json> | export [--input <json>]"
+unknownOperation = "Unknown operation: '%{operation}'. Expected: get, set, or export"
+missingInput = "Missing --input argument"
+missingInputValue = "Missing value for --input argument"
+invalidJson = "Invalid JSON input: %{error}"
+windowsOnly = "This resource is only supported on Windows"
+
+[get]
+rulesArrayEmpty = "The rules array cannot be empty for get operations"
+selectorRequired = "Each firewall rule in a get request must include a name"
+
+[set]
+rulesArrayEmpty = "The rules array cannot be empty for set operations"
+selectorRequired = "Each firewall rule in a set request must include a name"
+
+[firewall]
+comInitFailed = "Failed to initialize COM for Windows Firewall access: %{error}"
+policyOpenFailed = "Failed to open the Windows Firewall policy: %{error}"
+ruleEnumerationFailed = "Failed to enumerate Windows Firewall rules: %{error}"
+ruleLookupFailed = "Failed to look up firewall rule '%{name}': %{error}"
+ruleCreateFailed = "Failed to create a firewall rule object: %{error}"
+ruleAddFailed = "Failed to add firewall rule '%{name}': %{error}"
+ruleRemoveFailed = "Failed to remove firewall rule '%{name}': %{error}"
+ruleUpdateFailed = "Failed to update firewall rule '%{name}': %{error}"
+ruleReadFailed = "Failed to read firewall rule '%{name}': %{error}"
+portsNotAllowed = "Ports cannot be specified for firewall rule '%{name}' because protocol %{protocol} does not support ports"
+invalidProfiles = "Invalid profiles value '%{value}'. Valid values are Domain, Private, Public, or All"
+invalidInterfaceType = "Invalid interface type '%{value}'. Valid values are RemoteAccess, Wireless, Lan, or All"
+invalidProtocol = "Invalid protocol number '%{value}'. Must be between 0 and 256"

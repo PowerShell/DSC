@@ -11,7 +11,7 @@ BeforeDiscovery {
 
 Describe 'Tests for listing resources' {
     It 'dsc resource list' {
-        $resources = dsc resource list | ConvertFrom-Json -Depth 10
+        $resources = dsc resource list | ConvertFrom-Json -Depth 15
         $LASTEXITCODE | Should -Be 0
         $resources | Should -Not -BeNullOrEmpty
         $resources.Count | Should -BeGreaterThan 0
