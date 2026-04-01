@@ -224,7 +224,7 @@ Describe 'New-DscAdaptedResourceManifest' {
         }
 
         It 'Sets path to the actual script file' {
-            $result.Path | Should -BeExactly 'StandaloneResource/StandaloneResource.ps1'
+            $result.Path | Should -BeExactly 'StandaloneResource.ps1'
         }
     }
 

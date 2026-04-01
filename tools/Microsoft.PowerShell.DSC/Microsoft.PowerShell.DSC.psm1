@@ -394,7 +394,7 @@ function ResolveModuleInfo {
             $rootModule = "$moduleName.psm1"
         }
         $scriptPath = Join-Path $directory $rootModule
-        $psd1RelativePath = "$moduleName/$([System.IO.Path]::GetFileName($resolvedPath))"
+        $psd1RelativePath = [System.IO.Path]::GetFileName($resolvedPath)
 
         return @{
             ModuleName  = $moduleName
@@ -424,7 +424,7 @@ function ResolveModuleInfo {
         Author      = ''
         Description = ''
         ScriptPath  = [string]$resolvedPath
-        Psd1Path    = "$moduleName/$fileName"
+        Psd1Path    = $fileName
         Directory   = $directory
     }
 }
