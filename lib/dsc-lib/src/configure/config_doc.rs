@@ -314,7 +314,6 @@ pub struct Configuration {
     #[serde(rename = "$schema")]
     #[schemars(schema_with = "Configuration::recognized_schema_uris_subschema")]
     pub schema: String,
-    #[serde(rename = "contentVersion")]
     pub content_version: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub directives: Option<ConfigDirective>,
