@@ -190,12 +190,6 @@ process {
             Update-Rust @VerboseParam
         }
 
-        if (!$usingADO) {
-            Write-BuildProgress @progressParams -Status 'Setting RustUp to default channel'
-            $rustup, $channel = Get-RustUp @VerboseParam
-            & $rustup default stable
-        }
-
         if ($Clippy) {
             Write-BuildProgress @progressParams -Status 'Ensuring Clippy is available and updated'
             Install-Clippy -UseCFS:$UseCFS -Architecture $Architecture @VerboseParam
