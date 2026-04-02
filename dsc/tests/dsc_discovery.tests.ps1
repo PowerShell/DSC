@@ -84,7 +84,7 @@ Describe 'tests for resource discovery' {
             $resources.Count | Should -Be 0
         }
 
-        It 'warns on invalid semver' {
+        It 'info on invalid semver' {
             $manifest = @'
             {
                 "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
@@ -101,8 +101,10 @@ Describe 'tests for resource discovery' {
             }
 '@
             Set-Content -Path "$testdrive/test.dsc.resource.json" -Value $manifest
-            $null = dsc resource list 2> "$testdrive/error.txt"
-            "$testdrive/error.txt" | Should -FileContentMatchExactly 'WARN.*?invalid semantic version' -Because (Get-Content -Raw "$testdrive/error.txt")
+            $null = dsc -l info resource list 2> "$testdrive/error.txt"
+            $LASTEXITCODE | Should -Be 0
+            $errorTxt = Get-Content -Raw "$testdrive/error.txt"
+            $errorTxt | Should -Match 'INFO.*?invalid semantic version' -Because $errorTxt
         }
     }
 
