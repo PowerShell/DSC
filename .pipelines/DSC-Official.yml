@@ -4,8 +4,8 @@ trigger: none
 pr:
   branches:
     include:
-    - onebranch
     - release/v*
+    - test/*
 
 parameters:
   - name: OfficialBuild

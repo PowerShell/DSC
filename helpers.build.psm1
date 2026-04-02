@@ -1804,6 +1804,7 @@ function Build-DscDebPackage{
     )
 
     begin {
+        Write-Verbose -Verbose "Starting DEB package creation for architecture '$Architecture'"
         if (!$IsLinux) {
             throw "DEB package creation is only supported on Linux"
         }
@@ -1811,22 +1812,6 @@ function Build-DscDebPackage{
         # Check if dpkg-deb is available
         if ($null -eq (Get-Command dpkg-deb -ErrorAction Ignore)) {
             throw "dpkg-deb not found. Please install dpkg package (e.g., 'sudo apt install dpkg' or 'sudo dnf install dpkg')"
-        }
-    }
-
-    process {
-        $debTarget = Join-Path $PSScriptRoot 'bin' $architecture 'deb'
-        if (Test-Path $debTarget) {
-            Remove-Item $debTarget -Recurse -ErrorAction Stop -Force
-        }
-
-        New-Item -ItemType Directory $debTarget > $null
-
-        # Create DEB package structure
-        $debBuildRoot = Join-Path $debTarget 'dsc'
-        $debDirs = @('DEBIAN', 'opt/dsc', 'usr/bin')
-        foreach ($dir in $debDirs) {
-            New-Item -ItemType Directory -Path (Join-Path $debBuildRoot $dir) -Force > $null
         }
 
         if ($null -eq $BuildData) {
@@ -1836,24 +1821,10 @@ function Build-DscDebPackage{
         if ($null -eq $ArtifactDirectory) {
             $artifactDirectory   = Get-ArtifactDirectoryPath -Architecture $Architecture -Release:$Release
         }
-        $target = $artifactDirectory.DebTarget
-        $stagingDir = Join-Path $debBuildRoot 'opt' 'dsc'
 
-        foreach ($file in $filesForPackage) {
-            if ((Get-Item "$target\$file") -is [System.IO.DirectoryInfo]) {
-                Copy-Item "$target\$file" "$stagingDir\$file" -Recurse -ErrorAction Stop
-            } else {
-                Copy-Item "$target\$file" $stagingDir -ErrorAction Stop
-            }
-        }
-
-        # Create symlinks in usr/bin
-        $symlinkPath = Join-Path $debBuildRoot 'usr' 'bin' 'dsc'
-        New-Item -ItemType SymbolicLink -Path $symlinkPath -Target '/opt/dsc/dsc' -Force > $null
-
-        $symlinkPath = Join-Path $debBuildRoot 'usr' 'bin' 'dsc-bicep-ext'
-        New-Item -ItemType SymbolicLink -Path $symlinkPath -Target '/opt/dsc/dsc-bicep-ext' -Force > $null
-
+        $debTarget = $artifactDirectory.DebTarget
+        $bin = $artifactDirectory.Bin
+        $productVersion = Get-DscCliVersion
         # Determine DEB architecture
         $debArch = if ($architecture -eq 'current') {
             # Detect current system architecture
@@ -1873,15 +1844,47 @@ function Build-DscDebPackage{
             throw "Unsupported architecture for DEB: $architecture"
         }
 
+        Write-Verbose -Verbose "Building DEB package"
+        $debPackageName = "dsc_$productVersion-1_$debArch.deb"
+        $finalDebPath = Join-Path $artifactDirectory.BinRoot $debPackageName
+    }
+
+    process {
+        if (Test-Path $debTarget) {
+            Remove-Item $debTarget -Recurse -ErrorAction Stop -Force
+        }
+
+        New-Item -ItemType Directory $debTarget > $null
+
+        # Create DEB package structure
+        $debBuildRoot = Join-Path $debTarget 'dsc'
+        $debDirs = @('DEBIAN', 'opt/dsc', 'usr/bin')
+        foreach ($dir in $debDirs) {
+            New-Item -ItemType Directory -Path (Join-Path $debBuildRoot $dir) -Force > $null
+        }
+
+        $stagingDir = Join-Path $debBuildRoot 'opt' 'dsc'
+
+        foreach ($file in $filesForPackage) {
+            if ((Get-Item "$bin\$file") -is [System.IO.DirectoryInfo]) {
+                Copy-Item "$bin\$file" "$stagingDir\$file" -Recurse -ErrorAction Stop
+            } else {
+                Copy-Item "$bin\$file" $stagingDir -ErrorAction Stop
+            }
+        }
+
+        # Create symlinks in usr/bin
+        $symlinkPath = Join-Path $debBuildRoot 'usr' 'bin' 'dsc'
+        New-Item -ItemType SymbolicLink -Path $symlinkPath -Target '/opt/dsc/dsc' -Force > $null
+
+        $symlinkPath = Join-Path $debBuildRoot 'usr' 'bin' 'dsc-bicep-ext'
+        New-Item -ItemType SymbolicLink -Path $symlinkPath -Target '/opt/dsc/dsc-bicep-ext' -Force > $null
+
         # Read the control template and replace placeholders
         $controlTemplate = Get-Content "$PSScriptRoot/packaging/deb/control" -Raw
-        $productVersion = Get-DscCliVersion
         $controlContent = $controlTemplate.Replace('VERSION_PLACEHOLDER', $productVersion).Replace('ARCH_PLACEHOLDER', $debArch)
         $controlFile = Join-Path $debBuildRoot 'DEBIAN' 'control'
         Set-Content -Path $controlFile -Value $controlContent
-
-        Write-Verbose -Verbose "Building DEB package"
-        $debPackageName = "dsc_$productVersion-1_$debArch.deb"
 
         # Build the DEB
         dpkg-deb --build $debBuildRoot 2>&1 > $debTarget/debbuild.log
@@ -1897,9 +1900,7 @@ function Build-DscDebPackage{
             throw "DEB package was not created"
         }
 
-        $finalDebPath = Join-Path $PSScriptRoot 'bin' $debPackageName
         Move-Item $builtDeb $finalDebPath -Force
-
         Write-Host -ForegroundColor Green "`nDEB package is created at $finalDebPath"
     }
 }
@@ -2126,6 +2127,7 @@ function Build-DscRpmPackage {
     )
 
     begin {
+        Write-Verbose -Verbose "Starting RPM package creation for architecture '$Architecture'"
         if (!$IsLinux) {
             throw "RPM package creation is only supported on Linux"
         }
