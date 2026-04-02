@@ -1933,6 +1933,7 @@ function Build-DscMsixPackage {
     )
 
     begin {
+        Write-Verbose -Verbose "Starting MSIX package creation for architecture '$Architecture' and package type '$packageType'"
         if (!$IsWindows) {
             throw "MSIX packaging is only supported on Windows"
         }
@@ -2136,26 +2137,6 @@ function Build-DscRpmPackage {
         if ($null -eq (Get-Command rpmbuild -ErrorAction Ignore)) {
             throw "rpmbuild not found. Please install rpm-build package (e.g., 'sudo apt install rpm build-essential' or 'sudo dnf install rpm-build')"
         }
-    }
-
-    process {
-        $rpmTarget = Join-Path $PSScriptRoot 'bin' $architecture 'rpm'
-        if (Test-Path $rpmTarget) {
-            Remove-Item $rpmTarget -Recurse -ErrorAction Stop -Force
-        }
-
-        New-Item -ItemType Directory $rpmTarget > $null
-
-        # Create RPM build directories
-        $rpmBuildRoot = Join-Path $rpmTarget 'rpmbuild'
-        $rpmDirs = @('BUILD', 'RPMS', 'SOURCES', 'SPECS', 'SRPMS')
-        foreach ($dir in $rpmDirs) {
-            New-Item -ItemType Directory -Path (Join-Path $rpmBuildRoot $dir) -Force > $null
-        }
-
-        # Create a staging directory for the files
-        $stagingDir = Join-Path $rpmBuildRoot 'SOURCES' 'dsc_files'
-        New-Item -ItemType Directory $stagingDir > $null
 
         if ($null -eq $BuildData) {
             $BuildData = Import-DscBuildData
@@ -2164,16 +2145,10 @@ function Build-DscRpmPackage {
         if ($null -eq $ArtifactDirectory) {
             $artifactDirectory   = Get-ArtifactDirectoryPath -Architecture $Architecture -Release:$Release
         }
-        $target = $artifactDirectory.RootTarget
 
-        foreach ($file in $filesForPackage) {
-            if ((Get-Item "$target\$file") -is [System.IO.DirectoryInfo]) {
-                Copy-Item "$target\$file" "$stagingDir\$file" -Recurse -ErrorAction Stop
-            } else {
-                Copy-Item "$target\$file" $stagingDir -ErrorAction Stop
-            }
-        }
-
+        $rpmTarget = $artifactDirectory.RpmTarget
+        $bin = $artifactDirectory.Bin
+        $productVersion = Get-DscCliVersion
         # Determine RPM architecture
         $rpmArch = if ($architecture -eq 'current') {
             # Detect current system architecture
@@ -2193,9 +2168,39 @@ function Build-DscRpmPackage {
             throw "Unsupported architecture for RPM: $architecture"
         }
 
+        Write-Verbose -Verbose "Building RPM package"
+        $rpmPackageName = "dsc_$productVersion-1_$rpmArch.rpm"
+        $finalRpmPath = Join-Path $artifactDirectory.BinRoot $rpmPackageName
+    }
+
+    process {
+        if (Test-Path $rpmTarget) {
+            Remove-Item $rpmTarget -Recurse -ErrorAction Stop -Force
+        }
+
+        New-Item -ItemType Directory $rpmTarget > $null
+
+        # Create RPM build directories
+        $rpmBuildRoot = Join-Path $rpmTarget 'rpmbuild'
+        $rpmDirs = @('BUILD', 'RPMS', 'SOURCES', 'SPECS', 'SRPMS')
+        foreach ($dir in $rpmDirs) {
+            New-Item -ItemType Directory -Path (Join-Path $rpmBuildRoot $dir) -Force > $null
+        }
+
+        # Create a staging directory for the files
+        $stagingDir = Join-Path $rpmBuildRoot 'SOURCES' 'dsc_files'
+        New-Item -ItemType Directory $stagingDir > $null
+
+        foreach ($file in $filesForPackage) {
+            if ((Get-Item "$bin\$file") -is [System.IO.DirectoryInfo]) {
+                Copy-Item "$bin\$file" "$stagingDir\$file" -Recurse -ErrorAction Stop
+            } else {
+                Copy-Item "$bin\$file" $stagingDir -ErrorAction Stop
+            }
+        }
+
         # Read the spec template and replace placeholders
         $specTemplate = Get-Content "$PSScriptRoot/packaging/rpm/dsc.spec" -Raw
-        $productVersion = Get-DscCliVersion
         $specContent = $specTemplate.Replace('VERSION_PLACEHOLDER', $productVersion.Replace('-','~')).Replace('ARCH_PLACEHOLDER', $rpmArch)
         $specFile = Join-Path $rpmBuildRoot 'SPECS' 'dsc.spec'
         Set-Content -Path $specFile -Value $specContent
@@ -2243,6 +2248,7 @@ function Build-DscZipPackage {
     )
 
     begin {
+        Write-Verbose -Verbose "Starting ZIP package creation for architecture '$Architecture'"
         if ($Architecture -eq 'current') {
             throw 'Building a zip package requires a specific architecture targeting Windows'
         }
@@ -2306,6 +2312,7 @@ function Build-DscTgzPackage {
     )
 
     begin {
+        Write-Verbose -Verbose "Starting tgz package creation for architecture '$Architecture'"
         if ($Architecture -eq 'current') {
             throw 'Building a tgz package requires a specific architecture targeting Linux or macOS'
         }
