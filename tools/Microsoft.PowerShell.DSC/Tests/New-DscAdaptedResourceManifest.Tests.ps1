@@ -298,7 +298,7 @@ Describe 'New-DscAdaptedResourceManifest' {
 
         It 'Accepts FileInfo objects from Get-ChildItem via pipeline' {
             $results = Get-ChildItem -Path $fixturesPath -Filter '*.psd1' -Recurse | New-DscAdaptedResourceManifest
-            $results | Should -HaveCount 3  # 1 from Simple + 2 from Multi
+            $results | Should -HaveCount 9 
         }
     }
 

@@ -279,6 +279,131 @@ function CollectAstProperty {
     }
 }
 
+function ParseCommentBasedHelp {
+    [CmdletBinding()]
+    [OutputType([hashtable])]
+    param(
+        [Parameter(Mandatory)]
+        [string]$CommentText
+    )
+
+    # Strip the <# and #> delimiters
+    $text = $CommentText -replace '^\s*<#', '' -replace '#>\s*$', ''
+
+    $result = @{
+        Synopsis    = ''
+        Description = ''
+        Parameters  = @{}
+    }
+
+    $keywordPattern = '(?mi)^\s*\.(?<keyword>SYNOPSIS|DESCRIPTION|PARAMETER|EXAMPLE|NOTES|OUTPUTS|INPUTS|LINK|COMPONENT|ROLE|FUNCTIONALITY)[^\S\r\n]*(?<arg>.*)$'
+
+    $keywordMatches = [regex]::Matches($text, $keywordPattern)
+
+    if ($keywordMatches.Count -eq 0) {
+        return $result
+    }
+
+    for ($i = 0; $i -lt $keywordMatches.Count; $i++) {
+        $keyword = $keywordMatches[$i].Groups['keyword'].Value.ToUpper()
+        $arg = $keywordMatches[$i].Groups['arg'].Value.Trim()
+
+        $startIndex = $keywordMatches[$i].Index + $keywordMatches[$i].Length
+        $endIndex = if ($i + 1 -lt $keywordMatches.Count) { $keywordMatches[$i + 1].Index } else { $text.Length }
+        $content = $text.Substring($startIndex, $endIndex - $startIndex).Trim()
+
+        switch ($keyword) {
+            'SYNOPSIS' {
+                $result.Synopsis = $content
+            }
+            'DESCRIPTION' {
+                $result.Description = $content
+            }
+            'PARAMETER' {
+                if (-not [string]::IsNullOrWhiteSpace($arg)) {
+                    $result.Parameters[$arg] = $content
+                }
+            }
+        }
+    }
+
+    return $result
+}
+
+function GetClassCommentBasedHelp {
+    [CmdletBinding()]
+    [OutputType([hashtable])]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Path
+    )
+
+    [System.Management.Automation.Language.Token[]] $tokens = $null
+    [System.Management.Automation.Language.ParseError[]] $errors = $null
+    $null = [System.Management.Automation.Language.Parser]::ParseFile($Path, [ref]$tokens, [ref]$errors)
+
+    $blockCommentTokens = @($tokens | Where-Object {
+            $_.Kind -eq [System.Management.Automation.Language.TokenKind]::Comment -and
+            $_.Text.StartsWith('<#')
+        })
+
+    $classDefinitions = $tokens | Where-Object {
+        $_.Kind -eq [System.Management.Automation.Language.TokenKind]::Class
+    }
+
+    $result = @{}
+
+    foreach ($classToken in $classDefinitions) {
+        $classLine = $classToken.Extent.StartLineNumber
+
+        # Walk backward from the class keyword to find the nearest block comment,
+        # allowing for attributes and blank lines between the comment and class.
+        $nearestComment = $null
+        foreach ($commentToken in $blockCommentTokens) {
+            $gap = $classLine - $commentToken.Extent.EndLineNumber
+            if ($gap -ge 1 -and $gap -le 10) {
+                # Verify no other class keyword exists between this comment and the current class
+                $isValid = $true
+                foreach ($otherClass in $classDefinitions) {
+                    if ($otherClass -ne $classToken -and
+                        $otherClass.Extent.StartLineNumber -gt $commentToken.Extent.EndLineNumber -and
+                        $otherClass.Extent.StartLineNumber -lt $classLine) {
+                        $isValid = $false
+                        break
+                    }
+                }
+                if ($isValid -and ($null -eq $nearestComment -or
+                        $commentToken.Extent.EndLineNumber -gt $nearestComment.Extent.EndLineNumber)) {
+                    $nearestComment = $commentToken
+                }
+            }
+        }
+
+        if ($null -eq $nearestComment) {
+            continue
+        }
+
+        $parsed = ParseCommentBasedHelp -CommentText $nearestComment.Text
+
+        if ($parsed.Synopsis -or $parsed.Description -or $parsed.Parameters.Count -gt 0) {
+            # Determine the class name from the token following 'class'
+            $classIndex = [array]::IndexOf($tokens, $classToken)
+            $className = $null
+            for ($i = $classIndex + 1; $i -lt $tokens.Count; $i++) {
+                if ($tokens[$i].Kind -eq [System.Management.Automation.Language.TokenKind]::Identifier) {
+                    $className = $tokens[$i].Text
+                    break
+                }
+            }
+            if ($className) {
+                $result[$className] = $parsed
+            }
+        }
+    }
+
+    return $result
+}
+
 function ConvertToJsonSchemaType {
     [CmdletBinding()]
     [OutputType([hashtable])]
@@ -326,7 +451,10 @@ function BuildEmbeddedJsonSchema {
         [System.Collections.Generic.List[hashtable]]$Properties,
 
         [Parameter()]
-        [string]$Description
+        [string]$Description,
+
+        [Parameter()]
+        [hashtable]$ClassHelp
     )
 
     $schemaProperties = [ordered]@{}
@@ -346,7 +474,13 @@ function BuildEmbeddedJsonSchema {
         }
 
         $schemaProp['title'] = $prop.Name
-        $schemaProp['description'] = "The $($prop.Name) property."
+
+        if ($ClassHelp -and $ClassHelp.Parameters.ContainsKey($prop.Name)) {
+            $schemaProp['description'] = $ClassHelp.Parameters[$prop.Name]
+        } else {
+            $schemaProp['description'] = "The $($prop.Name) property."
+        }
+
         $schemaProperties[$prop.Name] = $schemaProp
 
         if ($prop.IsMandatory) {
@@ -572,6 +706,8 @@ function New-DscAdaptedResourceManifest {
             return
         }
 
+        $classHelpMap = GetClassCommentBasedHelp -Path $moduleInfo.ScriptPath
+
         foreach ($entry in $dscTypes) {
             $typeDefinitionAst = $entry.TypeDefinitionAst
             $allTypeDefinitions = $entry.AllTypeDefinitions
@@ -582,7 +718,34 @@ function New-DscAdaptedResourceManifest {
 
             $capabilities = GetDscResourceCapability -MemberAst $typeDefinitionAst.Members
             $properties = GetDscResourceProperty -AllTypeDefinitions $allTypeDefinitions -TypeDefinitionAst $typeDefinitionAst
-            $embeddedSchema = BuildEmbeddedJsonSchema -ResourceName $resourceType -Properties $properties -Description $moduleInfo.Description
+
+            $classHelp = $null
+            $resourceDescription = $moduleInfo.Description
+
+            if ($classHelpMap.ContainsKey($resourceName)) {
+                $classHelp = $classHelpMap[$resourceName]
+
+                if (-not [string]::IsNullOrWhiteSpace($classHelp.Synopsis)) {
+                    $resourceDescription = $classHelp.Synopsis
+                } elseif (-not [string]::IsNullOrWhiteSpace($classHelp.Description)) {
+                    $resourceDescription = $classHelp.Description
+                }
+
+                $missingParams = @()
+                foreach ($prop in $properties) {
+                    if (-not $classHelp.Parameters.ContainsKey($prop.Name)) {
+                        $missingParams += $prop.Name
+                    }
+                }
+
+                if ($missingParams.Count -gt 0) {
+                    Write-Warning "Class '$resourceName' comment-based help is missing .PARAMETER documentation for: $($missingParams -join ', ')"
+                }
+            } else {
+                Write-Warning "No comment-based help found above class '$resourceName'. Using default descriptions."
+            }
+
+            $embeddedSchema = BuildEmbeddedJsonSchema -ResourceName $resourceType -Properties $properties -Description $resourceDescription -ClassHelp $classHelp
 
             $manifest = [DscAdaptedResourceManifest]::new()
             $manifest.Schema = $script:AdaptedResourceSchemaUri
@@ -590,7 +753,7 @@ function New-DscAdaptedResourceManifest {
             $manifest.Kind = 'resource'
             $manifest.Version = $moduleInfo.Version
             $manifest.Capabilities = @($capabilities)
-            $manifest.Description = $moduleInfo.Description
+            $manifest.Description = $resourceDescription
             $manifest.Author = $moduleInfo.Author
             $manifest.RequireAdapter = $script:DefaultAdapter
             $manifest.Path = $moduleInfo.Psd1Path
