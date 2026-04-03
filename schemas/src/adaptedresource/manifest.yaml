@@ -16,7 +16,7 @@ markdownDescription: | # VS Code only
   adapted resource manifest on a system, the manifest file must:
 
   1. Be discoverable in the `PATH` environment variable.
-  1. Follow the naming convention `<name>.dsc.adaptedResource.json`.
+  1. Follow the naming convention `<name>.dsc.adaptedresource.json`.
   1. Be valid for this schema.
 
   [01]: <DOCS_BASE_URL>/reference/schemas/adaptedresource/manifest/root?<DOCS_VERSION_PIN>
@@ -52,8 +52,11 @@ type: object
 required:
   - $schema
   - type
+  - kind
   - version
+  - capabilities
   - requireAdapter
+  - path
   - schema
 properties:
   $schema:
