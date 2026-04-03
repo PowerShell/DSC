@@ -55,6 +55,8 @@ using module ./helpers.build.psm1
     - `msix-private` - MSIX private package, requires a specific architecture.
     - `msixbundle` - MSIX bundle package, builds for both Windows targets.
     - `tgz` - Packages the project as a `.tar.gz` file, only for Linux/macOS.
+    - `deb` - Packages the project as a `.deb` file, only for Linux.
+    - `rpm` - Packages the project as a `.rpm` file, only for Linux.
     - `zip` - Packages the project as a `.zip` file, only for Windows.
 #>
 [CmdletBinding()]
@@ -75,9 +77,11 @@ param(
     [switch]$Clippy,
     [switch]$SkipBuild,
     [ValidateSet(
+        'deb',
         'msix',
         'msix-private',
         'msixbundle',
+        'rpm',
         'tgz',
         'zip'
     )]
@@ -108,6 +112,11 @@ begin {
     } else {
         $InformationPreference = 'Continue'
         $ProgressPreference = 'SilentlyContinue'
+    }
+
+    $progressParams = @{
+        Activity = "Executing build script"
+        Quiet    = $Quiet
     }
 
     Import-Module ./helpers.build.psm1 -Force -Verbose:$false
@@ -163,10 +172,6 @@ process {
 
     if ($GetPackageVersion) {
         return Get-DscCliVersion @VerboseParam
-    }
-    $progressParams = @{
-        Activity = "Executing build script"
-        Quiet    = $Quiet
     }
     Write-BuildProgress @progressParams
 
