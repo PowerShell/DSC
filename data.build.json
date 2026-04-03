@@ -164,6 +164,16 @@
       }
     },
     {
+        "Name": "dism_dsc",
+        "Kind": "Resource",
+        "IsRust": true,
+        "SupportedPlatformOS": "Windows",
+        "Binaries": ["dism_dsc"],
+        "CopyFiles": {
+            "Windows": ["optionalfeature.dsc.resource.json", "featureondemand.dsc.resource.json"]
+        }
+    },
+    {
       "Name": "dsc",
       "Kind": "CLI",
       "RelativePath": "dsc",
@@ -428,6 +438,20 @@
           "windowsupdate.dsc.resource.json"
         ]
       }
+    },
+    {
+        "Name": "windows_firewall",
+        "Kind": "Resource",
+        "IsRust": true,
+        "SupportedPlatformOS": "Windows",
+        "Binaries": [
+            "windows_firewall"
+        ],
+        "CopyFiles": {
+            "Windows": [
+                "windows_firewall.dsc.resource.json"
+            ]
+        }
     },
     {
       "Name": "windows_service",
