@@ -85,7 +85,7 @@ You can directly call the adapter script to clear the cache with the **Operation
 set to `ClearCache`:
 
 ```powershell
-$adapterScript = dsc resource list -a Microsoft.Adapter/PowerShell |
+$adapterScript = dsc resource list Microsoft.Adapter/PowerShell |
     ConvertFrom-Json |
     Select-Object -ExpandProperty directory |
     Join-Path -ChildPath 'psDscAdapter' -AdditionalChildPath 'powershell.resource.ps1'
