@@ -126,7 +126,8 @@ Describe 'PowerShell adapter resource tests' {
     $res.resources[0].properties.result.count | Should -Be 1
     $res.resources[0].properties.result[0].Name | Should -Be "FilteredExport"
     $res.resources[0].properties.result[0].Prop1 | Should -Be "Filtered Property for FilteredExport"
-    "$TestDrive/export_trace.txt" | Should -FileContentMatch "Properties provided for filtered export" -Because (Get-Content -Raw -Path $TestDrive/export_trace.txt)
+    $traceLog = Get-Content -Raw -Path "$TestDrive/export_trace.txt"
+    $traceLog | Should -BeLike "*Properties provided for filtered export*" -Because $traceLog
   }
 
   It 'Export fails when filtered export is requested but not implemented' {
