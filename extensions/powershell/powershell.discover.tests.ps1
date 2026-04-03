@@ -20,6 +20,35 @@ BeforeAll {
     
     $manifestPath = Join-Path $TestDrive "fake.dsc.resource.json"
     $fakeManifest | ConvertTo-Json -Depth 10 | Set-Content -Path $manifestPath
+
+    $fakeAdaptedManifest = @{
+        '$schema'      = "https://aka.ms/dsc/schemas/v3/bundled/adaptedresource/manifest.json"
+        type           = "Test/FakeAdaptedResource"
+        kind           = "resource"
+        version        = "0.1.0"
+        capabilities   = @("get", "set", "test")
+        description    = "A fake adapted resource for regression testing."
+        requireAdapter = "Microsoft.Adapter/PowerShell"
+        path           = "FakeAdapted.psd1"
+        schema         = @{
+            embedded = @{
+                '$schema'            = "https://json-schema.org/draft/2020-12/schema"
+                title                = "Test/FakeAdaptedResource"
+                type                 = "object"
+                required             = @("Name")
+                additionalProperties = $false
+                properties           = @{
+                    Name = @{ type = "string"; title = "Name"; description = "The name." }
+                }
+            }
+        }
+    }
+
+    $adaptedManifestPath = Join-Path $TestDrive "fake.dsc.adaptedresource.json"
+    $fakeAdaptedManifest | ConvertTo-Json -Depth 10 | Set-Content -Path $adaptedManifestPath
+
+    $fakePsd1Path = Join-Path $TestDrive "FakeAdapted.psd1"
+    Set-Content -Path $fakePsd1Path -Value "@{ ModuleVersion = '0.1.0' }"
     $script:OldPSModulePath = $env:PSModulePath
     $env:PSModulePath += [System.IO.Path]::PathSeparator + $TestDrive
     
@@ -126,5 +155,11 @@ Describe 'Tests for PowerShell resource discovery' {
     It 'Should include test manifest in discovery results' {
         $out = & $script:discoverScript | ConvertFrom-Json
         $out.manifestPath | Should -Contain $manifestPath
+    }
+
+    It 'Should discover adapted resource manifest files' {
+        Remove-Item -Force -ErrorAction SilentlyContinue -Path $script:cacheFilePath
+        $out = & $script:discoverScript | ConvertFrom-Json
+        $out.manifestPath | Should -Contain $adaptedManifestPath
     }
 }
