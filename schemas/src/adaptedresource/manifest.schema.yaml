@@ -1,0 +1,99 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: <HOST>/<PREFIX>/<VERSION>/adaptedresource/manifest.schema.yaml
+
+title: Instance Schema
+description: >-
+  Defines the JSON Schema for validating a JSON blob representing an instance of the adapted DSC
+  resource.
+
+type: object
+required:
+  - embedded
+properties:
+  embedded:
+    title: Embedded Instance Schema
+    description: >-
+      Defines the JSON Schema DSC must use to validate a JSON blob representing an instance of the
+      adapted DSC resource.
+    markdownDescription: | # VS Code only
+      ***
+      [_Online Documentation_][01]
+      ***
+
+      Defines the JSON Schema DSC must use to validate a JSON blob representing an instance of the
+      adapted DSC resource.
+
+      [01]: <DOCS_BASE_URL>/reference/schemas/adaptedresource/manifest/schema/embedded?<DOCS_VERSION_PIN>
+    type: object
+    required:
+      - $schema
+      - type
+      - properties
+    properties:
+      type:
+        title: Instance Type
+        description: >-
+          Defines the JSON type for an instance of the adapted DSC resource. DSC resource instances
+          always have the `object` type.
+        const: object
+        markdownDescription: | # VS Code only
+          Defines the JSON type for an instance of the adapted DSC resource. DSC resource instances
+          always have the `object` type.
+      $schema:
+        title: Instance Schema Dialect
+        description: >-
+          Defines which dialect of JSON Schema the embedded schema uses.
+        type: string
+        enum:
+          - https://json-schema.org/draft/2020-12/schema
+          - https://json-schema.org/draft/2019-09/schema
+          - http://json-schema.org/draft-07/schema#
+      $id:
+        title: Instance Schema ID
+        description: >-
+          Defines the unique ID for the embedded schema. If defined, DSC can cache the schema for
+          faster validation.
+        type: string
+        format: uri
+      title:
+        title: Instance Schema Title
+        description: >-
+          Defines the title for the embedded schema.
+        type: string
+      description:
+        title: Instance Schema Description
+        description: >-
+          Defines the description for the embedded schema.
+        type: string
+      required:
+        title: Required Properties
+        description: >-
+          Defines the list of required properties for an instance of the adapted DSC resource.
+        type: array
+        items:
+          type: string
+      additionalProperties:
+        title: Additional Properties
+        description: >-
+          Defines whether the embedded schema allows additional properties.
+        type: boolean
+      properties:
+        title: Instance Properties
+        description: >-
+          Defines the properties of an instance of the adapted DSC resource.
+        type: object
+        additionalProperties:
+          type: object
+
+# VS Code only
+markdownDescription: |
+  ***
+  [_Online Documentation_][01]
+  ***
+
+  Defines the JSON Schema for validating a JSON blob representing an instance of the adapted
+  DSC resource. For adapted resources, only embedded schemas are supported. The adapter is
+  responsible for providing the schema during resource discovery.
+
+  [01]: <DOCS_BASE_URL>/reference/schemas/adaptedresource/manifest/schema?<DOCS_VERSION_PIN>
