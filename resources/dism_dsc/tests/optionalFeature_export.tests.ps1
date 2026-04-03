@@ -48,9 +48,10 @@ Describe 'Microsoft.Windows/OptionalFeatureList - export operation' -Skip:(!$IsW
         $features.Count | Should -Be 1
         $feature = $features[0]
         $feature.featureName | Should -BeExactly $knownFeatureNameOne
-        $feature.displayName | Should -Not -BeNullOrEmpty
-        $feature.description | Should -Not -BeNullOrEmpty
-        $feature.restartRequired | Should -BeIn @('No', 'Possible', 'Required')
+        $feature.state | Should -BeIn @(
+            'NotPresent', 'UninstallPending', 'Staged', 'Removed',
+            'Installed', 'InstallPending', 'Superseded', 'PartiallyInstalled'
+        )
     }
 
     It 'exports features filtered by wildcard featureName' -Skip:(!$isElevated) {
@@ -116,8 +117,8 @@ Describe 'Microsoft.Windows/OptionalFeatureList - export operation' -Skip:(!$IsW
         $features.Count | Should -Be 0
     }
 
-    It 'returns complete feature properties in export results' -Skip:(!$isElevated) {
-        $inputJson = '{"features":[{"featureName":"' + $knownFeatureNameOne + '"}]}'
+    It 'returns complete feature properties when full-info filter is used' -Skip:(!$isElevated) {
+        $inputJson = '{"features":[{"featureName":"' + $knownFeatureNameOne + '","displayName":"*"}]}'
         $output = dsc resource export -r Microsoft.Windows/OptionalFeatureList -i $inputJson | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $features = $output.resources[0].properties.features

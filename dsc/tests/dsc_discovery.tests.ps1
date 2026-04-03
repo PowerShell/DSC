@@ -84,7 +84,7 @@ Describe 'tests for resource discovery' {
             $resources.Count | Should -Be 0
         }
 
-        It 'warns on invalid semver' {
+        It 'info on invalid semver' {
             $manifest = @'
             {
                 "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
@@ -101,8 +101,10 @@ Describe 'tests for resource discovery' {
             }
 '@
             Set-Content -Path "$testdrive/test.dsc.resource.json" -Value $manifest
-            $null = dsc resource list 2> "$testdrive/error.txt"
-            "$testdrive/error.txt" | Should -FileContentMatchExactly 'WARN.*?does not use semver' -Because (Get-Content -Raw "$testdrive/error.txt")
+            $null = dsc -l info resource list 2> "$testdrive/error.txt"
+            $LASTEXITCODE | Should -Be 0
+            $errorTxt = Get-Content -Raw "$testdrive/error.txt"
+            $errorTxt | Should -Match 'INFO.*?invalid semantic version' -Because $errorTxt
         }
     }
 
@@ -340,6 +342,33 @@ Describe 'tests for resource discovery' {
             $output.results[1].result.actualState.output | Should -BeExactly 'Hello World' -Because $out
             $traceLog | Should -Match "Invoking get for 'Test/$guid'"
             $traceLog | Should -Match "Skipping resource discovery due to 'resourceDiscovery' mode set to 'DuringDeployment'"
+        }
+    }
+
+    It 'Invalid resource manifest will generate info message' {
+        $invalidManifest = @'
+        {
+            "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+            "type": "Test/InvalidManifest",
+            "version": "0.1.0",
+            "get": {
+                "executable": "dsctest",
+                "unexpectedField": "This field is not expected in the get section and should be ignored by the discovery process"
+            },
+            "newProperty": "This property is not expected in the manifest and should be ignored by the discovery process"
+        }
+'@
+        Set-Content -Path "$testdrive/test.dsc.resource.json" -Value $invalidManifest
+        try {
+            $env:DSC_RESOURCE_PATH = $testdrive + [System.IO.Path]::PathSeparator + $env:PATH
+
+            $out = dsc -l info resource list 'Test/InvalidManifest' 2> "$testdrive/error.txt" | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $out | Should -BeNullOrEmpty -Because (Get-Content -Raw -Path "$testdrive/error.txt")
+            $errorLog = Get-Content -Raw -Path "$testdrive/error.txt"
+            $errorLog | Should -BeLike "*INFO Failed to load manifest: Invalid manifest for resource '*test.dsc.resource.json'*" -Because $errorLog
+        } finally {
+            $env:DSC_RESOURCE_PATH = $null
         }
     }
 }

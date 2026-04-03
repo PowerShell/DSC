@@ -8,17 +8,25 @@ use crate::configure::config_doc::ResourceDiscoveryMode;
 use crate::discovery::discovery_trait::{DiscoveryKind, ResourceDiscovery, DiscoveryFilter};
 use crate::dscerror::DscError;
 use crate::extensions::dscextension::{Capability, DscExtension};
+use crate::types::{FullyQualifiedTypeName, TypeNameFilter};
 use crate::{dscresources::dscresource::DscResource, progress::ProgressFormat};
 use core::result::Result::Ok;
-use semver::{Version, VersionReq};
+use semver::Version;
 use std::collections::BTreeMap;
 use command_discovery::{CommandDiscovery, ImportedManifest};
 use tracing::error;
 
+/// Defines the caching [`BTreeMap`] for discovered DSC extensions.
+type DiscoveryExtensionCache = BTreeMap<FullyQualifiedTypeName, DscExtension>;
+/// Defines the caching [`BTreeMap`] for discovered DSC manifests of any type.
+type DiscoveryManifestCache = BTreeMap<FullyQualifiedTypeName, Vec<ImportedManifest>>;
+/// Defines the caching [`BTreeMap`] for discovered DSC resources.
+type DiscoveryResourceCache = BTreeMap<FullyQualifiedTypeName, Vec<DscResource>>;
+
 #[derive(Clone)]
 pub struct Discovery {
-    pub resources: BTreeMap<String, Vec<DscResource>>,
-    pub extensions: BTreeMap<String, DscExtension>,
+    pub resources: DiscoveryResourceCache,
+    pub extensions: DiscoveryExtensionCache,
     pub refresh_cache: bool,
 }
 
@@ -32,8 +40,8 @@ impl Discovery {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            resources: BTreeMap::new(),
-            extensions: BTreeMap::new(),
+            resources: DiscoveryResourceCache::new(),
+            extensions: DiscoveryExtensionCache::new(),
             refresh_cache: false,
         }
     }
@@ -49,7 +57,13 @@ impl Discovery {
     /// # Returns
     ///
     /// A vector of `DscResource` instances.
-    pub fn list_available(&mut self, kind: &DiscoveryKind, type_name_filter: &str, adapter_name_filter: &str, progress_format: ProgressFormat) -> Vec<ImportedManifest> {
+    pub fn list_available(
+        &mut self,
+        kind: &DiscoveryKind,
+        type_name_filter: &TypeNameFilter,
+        adapter_name_filter: Option<&TypeNameFilter>,
+        progress_format: ProgressFormat
+    ) -> Vec<ImportedManifest> {
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
             Box::new(command_discovery::CommandDiscovery::new(progress_format)),
         ];
@@ -82,7 +96,7 @@ impl Discovery {
 
     pub fn get_extensions(&mut self, capability: &Capability) -> Vec<DscExtension> {
         if self.extensions.is_empty() {
-            self.list_available(&DiscoveryKind::Extension, "*", "", ProgressFormat::None);
+            self.list_available(&DiscoveryKind::Extension, &TypeNameFilter::default(), None, ProgressFormat::None);
         }
         self.extensions.values()
             .filter(|ext| ext.capabilities.contains(capability))
@@ -96,27 +110,15 @@ impl Discovery {
             self.find_resources(&[filter.clone()], ProgressFormat::None)?;
         }
 
-        let type_name = filter.resource_type().to_lowercase();
-        if let Some(resources) = self.resources.get(&type_name) {
-            if let Some(version) = filter.version() {
-                let version = fix_semver(version);
-                if let Ok(version_req) = VersionReq::parse(&version) {
-                    for resource in resources {
-                        if let Ok(resource_version) = Version::parse(&resource.version) {
-                            if version_req.matches(&resource_version) && matches_adapter_requirement(resource, filter) {
-                                return Ok(Some(resource));
-                            }
-                        }
+        let type_name = filter.resource_type();
+        if let Some(resources) = self.resources.get(type_name) {
+            if let Some(version_req) = filter.require_version() {
+                for resource in resources {
+                    if version_req.matches(&resource.version) && matches_adapter_requirement(resource, filter) {
+                        return Ok(Some(resource));
                     }
-                    Ok(None)
-                } else {
-                    for resource in resources {
-                        if resource.version == version && matches_adapter_requirement(resource, filter) {
-                            return Ok(Some(resource));
-                        }
-                    }
-                    Ok(None)
                 }
+                Ok(None)
             } else {
                 for resource in resources {
                     if matches_adapter_requirement(resource, filter) {
@@ -176,7 +178,7 @@ impl Discovery {
 pub fn matches_adapter_requirement(resource: &DscResource, filter: &DiscoveryFilter) -> bool {
     if let Some(required_adapter) = filter.require_adapter() {
         if let Some(resource_adapter) = &resource.require_adapter {
-            required_adapter.to_lowercase() == resource_adapter.to_lowercase()
+            required_adapter == resource_adapter
         } else {
             false
         }

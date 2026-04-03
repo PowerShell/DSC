@@ -1,0 +1,224 @@
+---
+applyTo: '**/*.tests.ps1'
+description: 'PowerShell Pester testing best practices based on Pester v5 conventions'
+---
+
+# PowerShell Pester v5 Testing Guidelines
+
+This guide provides PowerShell-specific instructions for creating automated tests using PowerShell Pester v5 module. Follow PowerShell cmdlet development guidelines in [powershell.instructions.md](./powershell.instructions.md) for general PowerShell scripting best practices.
+
+## File Naming and Structure
+
+- **File Convention:** Use `*.tests.ps1` naming pattern
+- **Placement:** Place test files next to tested code or in dedicated test directories
+- **No Direct Code:** Put ALL code inside Pester blocks (`BeforeAll`, `Describe`, `Context`, `It`, etc.)
+- **Skipping Tests:** For tests that require specific conditions (e.g., OS, elevated privileges), create a helper function within `BeforeDiscovery` block to check conditions and set a variable (e.g., `$isElevated`) that can be used with `-Skip` on test blocks.
+
+## Test Structure Hierarchy
+
+```powershell
+Describe 'FunctionName or FeatureName' {
+    BeforeDiscovery {
+        # Setup that runs before any tests are discovered
+    }
+    BeforeAll {
+        # Common helper functions or variables
+    }
+    Context 'When condition' {
+        BeforeAll {
+            # Setup for context
+        }
+        It 'Should behavior' {
+            # Individual test
+        }
+        AfterAll {
+            # Cleanup for context
+        }
+    }
+}
+```
+
+## Core Keywords
+
+- **`Describe`**: Top-level grouping, typically named after function being tested
+- **`Context`**: Sub-grouping within Describe for specific scenarios
+- **`It`**: Individual test cases, use descriptive names
+- **`Should`**: Assertion keyword for test validation
+- **`BeforeAll/AfterAll`**: Setup/teardown once per block
+- **`BeforeEach/AfterEach`**: Setup/teardown before/after each test
+
+## Setup and Teardown
+
+- **`BeforeAll`**: Runs once at start of containing block, use for expensive operations
+- **`BeforeEach`**: Runs before every `It` in block, use for test-specific setup
+- **`AfterEach`**: Runs after every `It`, guaranteed even if test fails
+- **`AfterAll`**: Runs once at end of block, use for cleanup
+- **Variable Scoping**: `BeforeAll` variables available to child blocks (read-only), `BeforeEach/It/AfterEach` share same scope
+
+## Assertions (Should)
+
+- **Basic Comparisons**: `-Be`, `-BeExactly`, `-Not -Be`
+- **Collections**: `-Contain`, `-BeIn`, `-HaveCount`
+- **Numeric**: `-BeGreaterThan`, `-BeLessThan`, `-BeGreaterOrEqual`
+- **Strings**: `-Match`, `-Like`, `-BeNullOrEmpty`
+- **Types**: `-BeOfType`, `-BeTrue`, `-BeFalse`
+- **Files**: `-Exist`, `-FileContentMatch`
+- **Exceptions**: `-Throw`, `-Not -Throw`
+
+## Mocking
+
+- **`Mock CommandName { ScriptBlock }`**: Replace command behavior
+- **`-ParameterFilter`**: Mock only when parameters match condition
+- **`-Verifiable`**: Mark mock as requiring verification
+- **`Should -Invoke`**: Verify mock was called specific number of times
+- **`Should -InvokeVerifiable`**: Verify all verifiable mocks were called
+- **Scope**: Mocks default to containing block scope
+
+```powershell
+Mock Get-Service { @{ Status = 'Running' } } -ParameterFilter { $Name -eq 'TestService' }
+Should -Invoke Get-Service -Exactly 1 -ParameterFilter { $Name -eq 'TestService' }
+```
+
+## Test Cases (Data-Driven Tests)
+
+Use `-TestCases` or `-ForEach` for parameterized tests:
+
+```powershell
+It 'Should return <Expected> for <Input>' -TestCases @(
+    @{ Input = 'value1'; Expected = 'result1' }
+    @{ Input = 'value2'; Expected = 'result2' }
+) {
+    Get-Function $Input | Should -Be $Expected
+}
+```
+
+## Data-Driven Tests
+
+- **`-ForEach`**: Available on `Describe`, `Context`, and `It` for generating multiple tests from data
+- **`-TestCases`**: Alias for `-ForEach` on `It` blocks (backwards compatibility)
+- **Hashtable Data**: Each item defines variables available in test (e.g., `@{ Name = 'value'; Expected = 'result' }`)
+- **Array Data**: Uses `$_` variable for current item
+- **Templates**: Use `<variablename>` in test names for dynamic expansion
+
+```powershell
+# Hashtable approach
+It 'Returns <Expected> for <Name>' -ForEach @(
+    @{ Name = 'test1'; Expected = 'result1' }
+    @{ Name = 'test2'; Expected = 'result2' }
+) { Get-Function $Name | Should -Be $Expected }
+
+# Array approach
+It 'Contains <_>' -ForEach 'item1', 'item2' { Get-Collection | Should -Contain $_ }
+```
+
+## Tags
+
+- **Available on**: `Describe`, `Context`, and `It` blocks
+- **Filtering**: Use `-TagFilter` and `-ExcludeTagFilter` with `Invoke-Pester`
+- **Wildcards**: Tags support `-like` wildcards for flexible filtering
+
+```powershell
+Describe 'Function' -Tag 'Unit' {
+    It 'Should work' -Tag 'Fast', 'Stable' { }
+    It 'Should be slow' -Tag 'Slow', 'Integration' { }
+}
+
+# Run only fast unit tests
+Invoke-Pester -TagFilter 'Unit' -ExcludeTagFilter 'Slow'
+```
+
+## Skip
+
+- **`-Skip`**: Available on `Describe`, `Context`, and `It` to skip tests
+- **Conditional**: Use `-Skip:$condition` for dynamic skipping
+- **Runtime Skip**: Use `Set-ItResult -Skipped` during test execution (setup/teardown still run)
+
+```powershell
+It 'Should work on Windows' -Skip:(-not $IsWindows) { }
+Context 'Integration tests' -Skip { }
+```
+
+## Error Handling
+
+- **Continue on Failure**: Use `Should.ErrorAction = 'Continue'` to collect multiple failures
+- **Stop on Critical**: Use `-ErrorAction Stop` for pre-conditions
+- **Test Exceptions**: Use `{ Code } | Should -Throw` for exception testing
+
+## Best Practices
+
+- **Descriptive Names**: Use clear test descriptions that explain behavior
+- **AAA Pattern**: Arrange (setup), Act (execute), Assert (verify)
+- **Isolated Tests**: Each test should be independent
+- **Avoid Aliases**: Use full cmdlet names (`Where-Object` not `?`)
+- **Single Responsibility**: One assertion per test when possible
+- **Test File Organization**: Group related tests in Context blocks. Context blocks can be nested.
+- **Operating System Specific Tests**: Use `-Skip` with conditions to skip tests on unsupported platforms (e.g., `-Skip:(-not $IsWindows)` for Windows-only tests).
+- **Elevated Privileges**: For tests requiring admin rights, use this example function with `-Skip` to conditionally skip if not elevated:
+
+```powershell
+BeforeDiscovery {
+  $isElevated = if ($IsWindows) {
+      ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
+          [Security.Principal.WindowsBuiltInRole]::Administrator)
+  } else {
+      $false
+  }
+}
+```
+
+## Example Test Pattern
+
+```powershell
+Describe 'Windows Service set tests' -Skip:(!$IsWindows) {
+    BeforeDiscovery {
+        $isAdmin = if ($IsWindows) {
+            $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+            $principal = [Security.Principal.WindowsPrincipal]$identity
+            $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+        }
+        else {
+            $false
+        }
+    }
+
+    BeforeAll {
+        $resourceType = 'Microsoft.Windows/Service'
+        # Use the Print Spooler service for set tests — it exists on all Windows
+        # machines and is safe to reconfigure briefly.
+        $testServiceName = 'Spooler'
+
+        function Get-ServiceState {
+            param([string]$Name)
+            $json = @{ name = $Name } | ConvertTo-Json -Compress
+            $out = $json | dsc resource get -r $resourceType -f - 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
+            return ($out | ConvertFrom-Json).actualState
+        }
+    }
+
+    Context 'Input validation' -Skip:(!$isAdmin) {
+        BeforeAll {
+            $script:originalState = Get-ServiceState -Name $testServiceName
+        }
+
+        AfterAll {
+            # Restore original logon account
+            if ($script:originalState -and $script:originalState.logonAccount) {
+                $restoreJson = @{
+                    name         = $testServiceName
+                    logonAccount = $script:originalState.logonAccount
+                } | ConvertTo-Json -Compress
+                $restoreJson | dsc resource set -r $resourceType -f - 2>$testdrive/error.log
+            }
+        }
+
+        It 'Fails when name is not provided' {
+            $json = @{ startType = 'Manual' } | ConvertTo-Json -Compress
+            $out = $json | dsc resource set -r $resourceType -f - 2>&1
+            $LASTEXITCODE | Should -Not -Be 0
+        }
+    }
+}
+```
+
+**Key Sections**: Run (Path, Exit), Filter (Tag, ExcludeTag), Output (Verbosity), TestResult (Enabled, OutputFormat), CodeCoverage (Enabled, Path), Should (ErrorAction), Debug

@@ -5,6 +5,6 @@
     "SupportedPlatformOS": "Windows",
     "Binaries": ["dism_dsc"],
     "CopyFiles": {
-        "Windows": ["optionalfeature.dsc.resource.json"]
+        "Windows": ["optionalfeature.dsc.resource.json", "featureondemand.dsc.resource.json"]
     }
 }

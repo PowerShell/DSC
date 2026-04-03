@@ -1,8 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-mod types;
-mod dism;
+pub(crate) mod types;
 mod get;
 mod export;
 mod set;

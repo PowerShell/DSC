@@ -195,9 +195,9 @@ Describe 'PowerShell adapter resource tests' {
         $srcPath = Join-Path $PSScriptRoot 'TestClassResource'
         $pathRoot1 = Join-Path $TestDrive 'A'
         $pathRoot2 = Join-Path $TestDrive 'B'
-        $path1 = Join-Path $pathRoot1 'TestClassResource' '1.0'
-        $path2 = Join-Path $pathRoot1 'TestClassResource' '1.1'
-        $path3 = Join-Path $pathRoot2 'TestClassResource' '2.0'
+        $path1 = Join-Path $pathRoot1 'TestClassResource' '1.0.0'
+        $path2 = Join-Path $pathRoot1 'TestClassResource' '1.1.0'
+        $path3 = Join-Path $pathRoot2 'TestClassResource' '2.0.0'
         $path4 = Join-Path $pathRoot2 'TestClassResource' '2.0.1'
 
         New-Item -ItemType Directory -Force -Path $path1 | Out-Null
@@ -212,11 +212,11 @@ Describe 'PowerShell adapter resource tests' {
         $files | Copy-Item -Destination $path4
 
         $filePath = Join-Path $path1 'TestClassResource.psd1'
-        (Get-Content -Raw $filePath).Replace("ModuleVersion = `'0.0.1`'", "ModuleVersion = `'1.0`'") | Set-Content $filePath
+        (Get-Content -Raw $filePath).Replace("ModuleVersion = `'0.0.1`'", "ModuleVersion = `'1.0.0`'") | Set-Content $filePath
         $filePath = Join-Path $path2 'TestClassResource.psd1'
-        (Get-Content -Raw $filePath).Replace("ModuleVersion = `'0.0.1`'", "ModuleVersion = `'1.1`'") | Set-Content $filePath
+        (Get-Content -Raw $filePath).Replace("ModuleVersion = `'0.0.1`'", "ModuleVersion = `'1.1.0`'") | Set-Content $filePath
         $filePath = Join-Path $path3 'TestClassResource.psd1'
-        (Get-Content -Raw $filePath).Replace("ModuleVersion = `'0.0.1`'", "ModuleVersion = `'2.0`'") | Set-Content $filePath
+        (Get-Content -Raw $filePath).Replace("ModuleVersion = `'0.0.1`'", "ModuleVersion = `'2.0.0`'") | Set-Content $filePath
         $filePath = Join-Path $path4 'TestClassResource.psd1'
         (Get-Content -Raw $filePath).Replace("ModuleVersion = `'0.0.1`'", "ModuleVersion = `'2.0.1`'") | Set-Content $filePath
 
@@ -377,15 +377,15 @@ Describe 'PowerShell adapter resource tests' {
     }
 
     It 'Specifying version works' {
-        $out = dsc resource get -r TestClassResource/TestClassResource --version 0.0.1 | ConvertFrom-Json
+        $out = dsc resource get -r TestClassResource/TestClassResource --version '=0.0.1' | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.actualState.Ensure | Should -BeExactly 'Present'
     }
 
     It 'Specifying a non-existent version returns an error' {
-        $null = dsc resource get -r TestClassResource/TestClassResource --version 0.0.2 2> $TestDrive/error.log
+        $null = dsc resource get -r TestClassResource/TestClassResource --version '=0.0.2' 2> $TestDrive/error.log
         $LASTEXITCODE | Should -Be 7
-        (Get-Content -Raw -Path $TestDrive/error.log) | Should -BeLike '*Resource not found: TestClassResource/TestClassResource 0.0.2*' -Because (Get-Content -Raw -Path $TestDrive/error.log)
+        (Get-Content -Raw -Path $TestDrive/error.log) | Should -BeLike '*Resource not found: TestClassResource/TestClassResource =0.0.2*' -Because (Get-Content -Raw -Path $TestDrive/error.log)
     }
 
     It 'Can process SecureString property' {

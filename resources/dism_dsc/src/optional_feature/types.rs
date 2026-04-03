@@ -3,7 +3,10 @@
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
-use std::fmt;
+
+use crate::util::{DismState, WildcardFilterable, matches_optional_wildcard, matches_optional_exact};
+
+pub type FeatureState = DismState;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -31,53 +34,10 @@ pub struct OptionalFeatureInfo {
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub enum FeatureState {
-    NotPresent,
-    UninstallPending,
-    Staged,
-    Removed,
-    Installed,
-    InstallPending,
-    Superseded,
-    PartiallyInstalled,
-}
-
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum RestartType {
     No,
     Possible,
     Required,
-}
-
-impl fmt::Display for FeatureState {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            FeatureState::NotPresent => write!(f, "NotPresent"),
-            FeatureState::UninstallPending => write!(f, "UninstallPending"),
-            FeatureState::Staged => write!(f, "Staged"),
-            FeatureState::Removed => write!(f, "Removed"),
-            FeatureState::Installed => write!(f, "Installed"),
-            FeatureState::InstallPending => write!(f, "InstallPending"),
-            FeatureState::Superseded => write!(f, "Superseded"),
-            FeatureState::PartiallyInstalled => write!(f, "PartiallyInstalled"),
-        }
-    }
-}
-
-impl FeatureState {
-    pub fn from_dism(state: i32) -> Option<Self> {
-        match state {
-            0 => Some(FeatureState::NotPresent),
-            1 => Some(FeatureState::UninstallPending),
-            2 => Some(FeatureState::Staged),
-            3 => Some(FeatureState::Removed),
-            4 => Some(FeatureState::Installed),
-            5 => Some(FeatureState::InstallPending),
-            6 => Some(FeatureState::Superseded),
-            7 => Some(FeatureState::PartiallyInstalled),
-            _ => None,
-        }
-    }
 }
 
 impl RestartType {
@@ -88,5 +48,14 @@ impl RestartType {
             2 => Some(RestartType::Required),
             _ => None,
         }
+    }
+}
+
+impl WildcardFilterable for OptionalFeatureInfo {
+    fn matches_filter(&self, filter: &Self) -> bool {
+        matches_optional_wildcard(&self.feature_name, &filter.feature_name)
+            && matches_optional_exact(&self.state, &filter.state)
+            && matches_optional_wildcard(&self.display_name, &filter.display_name)
+            && matches_optional_wildcard(&self.description, &filter.description)
     }
 }

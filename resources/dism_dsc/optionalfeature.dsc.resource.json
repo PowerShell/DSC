@@ -12,7 +12,8 @@
     "get": {
         "executable": "dism_dsc",
         "args": [
-            "get"
+            "get",
+            "optional-feature"
         ],
         "input": "stdin",
         "requireSecurityContext": "elevated"
@@ -20,7 +21,8 @@
     "set": {
         "executable": "dism_dsc",
         "args": [
-            "set"
+            "set",
+            "optional-feature"
         ],
         "input": "stdin",
         "implementsPretest": false,
@@ -30,7 +32,8 @@
     "export": {
         "executable": "dism_dsc",
         "args": [
-            "export"
+            "export",
+            "optional-feature"
         ],
         "input": "stdin",
         "requireSecurityContext": "elevated"

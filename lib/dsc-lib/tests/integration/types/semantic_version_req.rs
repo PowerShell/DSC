@@ -5,37 +5,42 @@
 mod methods {
     #[cfg(test)]
     mod parse {
-        use dsc_lib::{dscerror::DscError, types::SemanticVersionReq};
+        use dsc_lib::types::{SemanticVersionReq, SemanticVersionReqError};
         use test_case::test_case;
 
-        #[test_case("1" => matches Ok(_); "major is valid")]
-        #[test_case("1.2" => matches Ok(_); "major.minor is valid")]
-        #[test_case("1.2.3" => matches Ok(_); "major.minor.patch is valid")]
-        #[test_case("1.2.3-pre" => matches Ok(_); "major.minor.patch-pre is valid")]
-        #[test_case("1-pre" => matches Err(_); "major-pre is invalid")]
-        #[test_case("1.2-pre" => matches Err(_); "major.minor-pre is invalid")]
-        #[test_case("1.2.3+build" => matches Err(_); "major.minor.patch+build is invalid")]
-        #[test_case("1.2.3-pre+build" => matches Err(_); "major.minor.patch-pre+build is invalid")]
-        #[test_case("a" => matches Err(_); "invalid_char is invalid")]
-        #[test_case("1.b" => matches Err(_); "major.invalid_char is invalid")]
-        #[test_case("1.2.c" => matches Err(_); "major.minor.invalid_char is invalid")]
-        fn literal_version(requirement_string: &str) -> Result<SemanticVersionReq, DscError> {
+        #[test_case("^1" => matches Ok(_); "major is valid")]
+        #[test_case("^1.2" => matches Ok(_); "major.minor is valid")]
+        #[test_case("^1.2.3" => matches Ok(_); "major.minor.patch is valid")]
+        #[test_case("^1.2.3-pre" => matches Ok(_); "major.minor.patch-pre is valid")]
+        #[test_case("^1-pre" => matches Err(_); "major-pre is invalid")]
+        #[test_case("^1.2-pre" => matches Err(_); "major.minor-pre is invalid")]
+        #[test_case("^1.2.3+build" => matches Err(_); "major.minor.patch+build is invalid")]
+        #[test_case("^1.2.3-pre+build" => matches Err(_); "major.minor.patch-pre+build is invalid")]
+        #[test_case("^a" => matches Err(_); "invalid_char is invalid")]
+        #[test_case("^1.b" => matches Err(_); "major.invalid_char is invalid")]
+        #[test_case("^1.2.c" => matches Err(_); "major.minor.invalid_char is invalid")]
+        fn literal_version(requirement_string: &str) -> Result<SemanticVersionReq, SemanticVersionReqError> {
             SemanticVersionReq::parse(requirement_string)
         }
 
-        #[test_case("1.*" => matches Ok(_); "major.wildcard is valid")]
-        #[test_case("1.*.*" => matches Ok(_); "major.wildcard.wildcard is valid")]
-        #[test_case("1.2.*" => matches Ok(_); "major.minor.wildcard is valid")]
-        #[test_case("1.*.3" => matches Err(_); "major.wildcard.patch is invalid")]
-        #[test_case("1.2.*-pre" => matches Err(_); "major.minor.wildcard-pre is invalid")]
-        #[test_case("1.*.*-pre" => matches Err(_); "major.wildcard.wildcard-pre is invalid")]
-        #[test_case("1.2.3-*" => matches Err(_); "major.minor.patch-wildcard is invalid")]
-        #[test_case("1.2.3-pre.*" => matches Err(_); "major.minor.patch-pre.wildcard is invalid")]
-        fn wildcard_version(requirement_string: &str) -> Result<SemanticVersionReq, DscError> {
+        #[test_case("^*" => matches Err(_); "wildcard alone is invalid")]
+        #[test_case("^*.*" => matches Err(_); "wildcard.wildcard is invalid")]
+        #[test_case("^*.*.*" => matches Err(_); "wildcard.wildcard.wildcard is invalid")]
+        #[test_case("^1.*" => matches Ok(_); "major.wildcard is valid")]
+        #[test_case("^1.*.*" => matches Ok(_); "major.wildcard.wildcard is valid")]
+        #[test_case("^1.2.*" => matches Ok(_); "major.minor.wildcard is valid")]
+        #[test_case("^1.*.3" => matches Err(_); "major.wildcard.patch is invalid")]
+        #[test_case("^1.2.*-pre" => matches Err(_); "major.minor.wildcard-pre is invalid")]
+        #[test_case("^1.*.*-pre" => matches Err(_); "major.wildcard.wildcard-pre is invalid")]
+        #[test_case("^1.2.3-*" => matches Err(_); "major.minor.patch-wildcard is invalid")]
+        #[test_case("^1.2.3-pre.*" => matches Err(_); "major.minor.patch-pre.wildcard is invalid")]
+        #[test_case("^1.x" => matches Err(_); "lowercase x wildcard is invalid")]
+        #[test_case("^1.X" => matches Err(_); "uppercase X wildcard is invalid")]
+        fn wildcard_version(requirement_string: &str) -> Result<SemanticVersionReq, SemanticVersionReqError> {
             SemanticVersionReq::parse(requirement_string)
         }
 
-        #[test_case("1.2.3" => matches Ok(_); "implicit operator is valid")]
+        #[test_case("1.2.3" => matches Err(_); "implicit operator is invalid")]
         #[test_case("^ 1.2.3" => matches Ok(_); "caret operator is valid")]
         #[test_case("~ 1.2.3" => matches Ok(_); "tilde operator is valid")]
         #[test_case("= 1.2.3" => matches Ok(_); "exact operator is valid")]
@@ -43,19 +48,19 @@ mod methods {
         #[test_case(">= 1.2.3" => matches Ok(_); "greater than or equal to operator is valid")]
         #[test_case("< 1.2.3" => matches Ok(_); "less than operator is valid")]
         #[test_case("<= 1.2.3" => matches Ok(_); "less than or equal to operator is valid")]
-        #[test_case("== 1.2.3" => matches Err(_); "invalid operator is invalid")]
-        fn operators(requirement_string: &str) -> Result<SemanticVersionReq, DscError> {
+        #[test_case("== 1.2.3" => matches Err(_); "unknown operator is invalid")]
+        fn operators(requirement_string: &str) -> Result<SemanticVersionReq, SemanticVersionReqError> {
             SemanticVersionReq::parse(requirement_string)
         }
 
-        #[test_case("1.2.3, < 1.5" => matches Ok(_); "pair with separating comma is valid")]
-        #[test_case("1, 1.2, 1.2.3" => matches Ok(_); "triple with separating comma is valid")]
+        #[test_case("^1.2.3, < 1.5" => matches Ok(_); "pair with separating comma is valid")]
+        #[test_case("^1, ^1.2, ^1.2.3" => matches Ok(_); "triple with separating comma is valid")]
         #[test_case("<= 1, >= 2" => matches Ok(_); "incompatible pair is valid")]
-        #[test_case(", 1, 1.2" => matches Err(_); "leading comma is invalid")]
-        #[test_case("1, 1.2," => matches Err(_); "trailing comma is invalid")]
-        #[test_case("1 1.2" => matches Err(_); "omitted separating comma is invalid")]
-        #[test_case("1.*, < 1.3.*" => matches Ok(_); "multiple comparators with wildcard is valid")]
-        fn multiple_comparators(requirement_string: &str) -> Result<SemanticVersionReq, DscError> {
+        #[test_case(", ^1, ^1.2" => matches Err(_); "leading comma is invalid")]
+        #[test_case("^1, ^1.2," => matches Err(_); "trailing comma is invalid")]
+        #[test_case("^1 ^1.2" => matches Err(_); "omitted separating comma is invalid")]
+        #[test_case("^1.*, < 1.3.*" => matches Ok(_); "multiple comparators with wildcard is valid")]
+        fn multiple_comparators(requirement_string: &str) -> Result<SemanticVersionReq, SemanticVersionReqError> {
             SemanticVersionReq::parse(requirement_string)
         }
 
@@ -65,7 +70,7 @@ mod methods {
         #[test_case("^ 1.2  " => matches Ok(_); "trailing space is valid")]
         #[test_case("^1.2,<1.5" => matches Ok(_); "pair of comparators without spacing is valid")]
         #[test_case("  ^  1.2  ,  <  1.5  " => matches Ok(_); "pair of comparators with extra spacing is valid")]
-        fn spacing(requirement_string: &str) -> Result<SemanticVersionReq, DscError> {
+        fn spacing(requirement_string: &str) -> Result<SemanticVersionReq, SemanticVersionReqError> {
             SemanticVersionReq::parse(requirement_string)
         }
     }
@@ -85,18 +90,6 @@ mod methods {
                     "expected version '{version}' to {expected} requirement '{requirement}'"
                 );
             }
-        }
-
-        #[test_case("1", vec!["1.0.0", "1.2.0", "1.3.0"], true; "matching major")]
-        #[test_case("1", vec!["0.1.0", "2.0.0", "1.2.3-rc.1"], false; "not matching major")]
-        #[test_case("1.2", vec!["1.2.0", "1.2.3", "1.3.0"], true; "matching major.minor")]
-        #[test_case("1.2", vec!["1.0.0", "2.0.0", "1.2.3-rc.1"], false; "not matching major.minor")]
-        #[test_case("1.2.3", vec!["1.2.3", "1.2.4", "1.3.0"], true; "matching major.minor.patch")]
-        #[test_case("1.2.3", vec!["1.2.0", "2.0.0", "1.2.3-rc.1"], false; "not matching major.minor.patch")]
-        #[test_case("1.2.3-rc.2", vec!["1.2.3", "1.3.0", "1.2.3-rc.2", "1.2.3-rc.3"], true; "matching major.minor.patch-pre")]
-        #[test_case("1.2.3-rc.2", vec!["1.2.0", "2.0.0", "1.2.3-rc.1", "1.3.0-rc.2"], false; "not matching major.minor.patch-pre")]
-        fn implicit(requirement: &str, versions: Vec<&str>, should_match: bool) {
-            check(requirement, versions, should_match);
         }
 
         #[test_case("^1", vec!["1.0.0", "1.2.0", "1.3.0"], true; "matching major")]
@@ -199,7 +192,7 @@ mod methods {
         #[test_case(">1.2.*", vec!["1.0.0", "1.2.3", "2.0.0-rc.2"], false; "not matching major.minor.wildcard")]
         #[test_case(">1.2.3", vec!["1.2.4", "2.0.0"], true; "matching major.minor.patch")]
         #[test_case(">1.2.3", vec!["1.2.3", "2.0.0-rc.2"], false; "not matching major.minor.patch")]
-        #[test_case(">1.2.3-rc.2", vec!["1.2.3","2.0.0", "1.2.3-rc.3"], true; "matching major.minor.patch-pre")]
+        #[test_case(">1.2.3-rc.2", vec!["1.2.3", "2.0.0", "1.2.3-rc.3"], true; "matching major.minor.patch-pre")]
         #[test_case(">1.2.3-rc.2", vec!["1.2.0", "1.2.3-rc.1", "2.0.0-rc.2"], false; "not matching major.minor.patch-pre")]
         fn greater_than(requirement: &str, versions: Vec<&str>, should_match: bool) {
             check(requirement, versions, should_match);
@@ -235,16 +228,6 @@ mod methods {
             check(requirement, versions, should_match);
         }
 
-        #[test_case("1.*", vec!["1.0.0", "1.2.3"], true; "matches major.wildcard")]
-        #[test_case("1.*", vec!["0.1.0", "2.0.0", "1.2.3-rc.1"], false; "not matches major.wildcard")]
-        #[test_case("1.*.*", vec!["1.0.0", "1.2.3"], true; "matches major.wildcard.wildcard")]
-        #[test_case("1.*.*", vec!["0.1.0", "2.0.0", "1.2.3-rc.1"], false; "not matches major.wildcard.wildcard")]
-        #[test_case("1.2.*", vec!["1.2.0", "1.2.3"], true; "matches major.minor.wildcard")]
-        #[test_case("1.2.*", vec!["1.1.1", "1.3.0", "1.2.3-rc.1"], false; "not matches major.minor.wildcard")]
-        fn wildcard(requirement: &str, versions: Vec<&str>, should_match: bool) {
-            check(requirement, versions, should_match);
-        }
-
         #[test_case(">=1.2, <1.4.0", vec!["1.2.0", "1.2.3", "1.3.0"], true; "matching multiple compatible requirements")]
         #[test_case(">=1.2, <1.4.0", vec!["1.1.0", "1.4.0", "1.3.0-rc.1"], false; "not matching multiple compatible requirements")]
         #[test_case("<=1.2, >1.4.0", vec!["1.0.0", "1.2.3", "1.3.0", "1.4.0", "2.0.0", "2.3.4-rc.1"], false; "never matching multiple incompatible requirements")]
@@ -269,12 +252,12 @@ mod patterns {
         regex::Regex::new(pattern).unwrap();
     }
 
-    #[test_case("1"; "major")]
-    #[test_case("1.2"; "major.minor")]
-    #[test_case("1.2.3"; "major.minor.patch")]
-    #[test_case("1.*"; "major.wildcard_asterisk")]
-    #[test_case("1.2.*"; "major.minor.wildcard_asterisk")]
-    #[test_case("1.2.3-alpha"; "major.minor.patch-prerelease")]
+    #[test_case("^1"; "major")]
+    #[test_case("^1.2"; "major.minor")]
+    #[test_case("^1.2.3"; "major.minor.patch")]
+    #[test_case("^1.*"; "major.wildcard_asterisk")]
+    #[test_case("^1.2.*"; "major.minor.wildcard_asterisk")]
+    #[test_case("^1.2.3-alpha"; "major.minor.patch-prerelease")]
     #[test_case("^1"; "caret operator")]
     #[test_case("~1"; "tilde operator")]
     #[test_case("=1"; "equals operator")]
@@ -282,8 +265,8 @@ mod patterns {
     #[test_case("<1"; "less than operator")]
     #[test_case(">=1"; "greater than or equal to operator")]
     #[test_case("<=1"; "less than or equal to operator")]
-    #[test_case("~1,1.2.3,<2"; "multiple comparators without spacing")]
-    #[test_case("~ 1 , 1.2.3 , < 2"; "multiple comparators with extra spacing")]
+    #[test_case("~1,^1.2.3,<2"; "multiple comparators without spacing")]
+    #[test_case("~ 1 , ^1.2.3 , < 2"; "multiple comparators with extra spacing")]
     fn validating_pattern(requirement: &str) {
         let pattern = SemanticVersionReq::VALIDATING_PATTERN;
         let r = regex::Regex::new(pattern).unwrap();
@@ -333,30 +316,30 @@ mod schema {
         );
     }
 
-    #[test_case(&json!("1") => true; "major is valid")]
-    #[test_case(&json!("1.2") => true; "major.minor is valid")]
-    #[test_case(&json!("1.2.3") => true; "major.minor.patch is valid")]
-    #[test_case(&json!("1.2.3-pre") => true; "major.minor.patch-pre is valid")]
-    #[test_case(&json!("1.*") => true; "major.wildcard is valid")]
-    #[test_case(&json!("1.2.*") => true; "major.minor.wildcard is valid")]
-    #[test_case(&json!("^1") => true; "caret operator is valid")]
+    #[test_case(&json!("^1") => true; "major is valid")]
+    #[test_case(&json!("^1.2") => true; "major.minor is valid")]
+    #[test_case(&json!("^1.2.3") => true; "major.minor.patch is valid")]
+    #[test_case(&json!("^1.2.3-pre") => true; "major.minor.patch-pre is valid")]
+    #[test_case(&json!("^1.*") => true; "major.wildcard is valid")]
+    #[test_case(&json!("^1.2.*") => true; "major.minor.wildcard is valid")]
+    #[test_case(&json!("1") => false; "implicit operator is invalid")]
     #[test_case(&json!("~1") => true; "tilde operator is valid")]
     #[test_case(&json!("=1") => true; "equals operator is valid")]
     #[test_case(&json!(">1") => true; "greater than operator is valid")]
     #[test_case(&json!("<1") => true; "less than operator is valid")]
     #[test_case(&json!(">=1") => true; "greater than or equal to operator is valid")]
     #[test_case(&json!("<=1") => true; "less than or equal to operator is valid")]
-    #[test_case(&json!("~1,1.2.3,<2") => true; "multiple comparators without spacing is valid")]
-    #[test_case(&json!("~ 1 , 1.2.3 , < 2") => true; "multiple comparators with extra spacing is valid")]
+    #[test_case(&json!("~1,^1.2.3,<2") => true; "multiple comparators without spacing is valid")]
+    #[test_case(&json!("~ 1 , ^ 1.2.3 , < 2") => true; "multiple comparators with extra spacing is valid")]
     #[test_case(&json!("1.2.3+build") => false; "major.minor.patch+build is invalid")]
     #[test_case(&json!("1.2.3-pre+build") => false; "major.minor.patch-pre+build is invalid")]
     #[test_case(&json!("!3.0.0") => false; "unknown operator is invalid")]
-    #[test_case(&json!("3.0.0.0") => false; "non-semantic version is invalid")]
-    #[test_case(&json!("1.a") => false; "version with alphabetic segment is invalid")]
-    #[test_case(&json!("*.2") => false; "wildcard.major is invalid")]
-    #[test_case(&json!("1.*.3") => false; "major.wildcard.patch is invalid")]
-    #[test_case(&json!("1.2.3-*") => false; "major.minor.patch-wildcard is invalid")]
-    #[test_case(&json!("1.2.3-pre.*") => false; "major.minor.patch-pre.wildcard is invalid")]
+    #[test_case(&json!("^3.0.0.0") => false; "non-semantic version is invalid")]
+    #[test_case(&json!("^1.a") => false; "version with alphabetic segment is invalid")]
+    #[test_case(&json!("^*.2") => false; "wildcard.major is invalid")]
+    #[test_case(&json!("^1.*.3") => false; "major.wildcard.patch is invalid")]
+    #[test_case(&json!("^1.2.3-*") => false; "major.minor.patch-wildcard is invalid")]
+    #[test_case(&json!("^1.2.3-pre.*") => false; "major.minor.patch-pre.wildcard is invalid")]
     #[test_case(&json!(">=1.2,") => false; "comma without following comparator is invalid")]
     #[test_case(&json!(">=1.2 < 1.4") => false; "multiple comparators without separating comma is invalid")]
     #[test_case(&json!(true) => false; "boolean value is invalid")]
@@ -388,32 +371,25 @@ mod serde {
         pretty_assertions::assert_eq!(actual, expected);
     }
 
-    #[test_case(json!("1.2.3") => matches Ok(_); "valid req string value succeeds")]
+    #[test_case(json!("^1.2.3") => matches Ok(_); "valid req string value succeeds")]
     #[test_case(json!("a.b") => matches Err(_); "invalid req string value fails")]
-    #[test_case(json!(true) => matches Err(_); "boolean value is invalid")]
-    #[test_case(json!(1) => matches Err(_); "integer value is invalid")]
-    #[test_case(json!(1.2) => matches Err(_); "float value is invalid")]
-    #[test_case(json!({"req": "1.2.3"}) => matches Err(_); "object value is invalid")]
-    #[test_case(json!(["1.2.3"]) => matches Err(_); "array value is invalid")]
-    #[test_case(serde_json::Value::Null => matches Err(_); "null value is invalid")]
+    #[test_case(json!(true) => matches Err(_); "boolean value fails")]
+    #[test_case(json!(1) => matches Err(_); "integer value fails")]
+    #[test_case(json!(1.2) => matches Err(_); "float value fails")]
+    #[test_case(json!({"req": "1.2.3"}) => matches Err(_); "object value fails")]
+    #[test_case(json!(["1.2.3"]) => matches Err(_); "array value fails")]
+    #[test_case(serde_json::Value::Null => matches Err(_); "null value fails")]
     fn deserializing(value: Value) -> Result<SemanticVersionReq, serde_json::Error> {
         serde_json::from_value::<SemanticVersionReq>(value)
     }
 
     #[test_case("^1", true; "major with explicit operator round trips")]
-    #[test_case("1", false; "major with implicit operator does not round trip")]
     #[test_case("^1.2", true; "major.minor with explicit operator round trips")]
-    #[test_case("1.2", false; "major.minor with implicit operator does not round trip")]
     #[test_case("^1.2.3", true; "major.minor.patch with explicit operator round trips")]
-    #[test_case("1.2.3", false; "major.minor.patch with implicit operator does not round trip")]
     #[test_case("^1.2.3-pre", true; "major.minor.patch-pre with explicit operator round trips")]
-    #[test_case("1.2.3-pre", false; "major.minor.patch-pre with implicit operator does not round trip")]
     #[test_case("^1.*", false; "major.wildcard with explicit operator does not round trip")]
-    #[test_case("1.*", true; "major.wildcard with implicit operator round trips")]
     #[test_case("^1.*.*", false; "major.wildcard.wildcard with explicit operator does not round trip")]
-    #[test_case("1.*.*", false; "major.wildcard.wildcard with implicit operator does not round trip")]
-    #[test_case("^1.2.*", false; "major.minor.wildcard version with explicit operator round trips")]
-    #[test_case("1.2.*", true; "major.minor.wildcard version with implicit operator round trips")]
+    #[test_case("^1.2.*", false; "major.minor.wildcard version with explicit operator does not round trip")]
     #[test_case("  ^1.2.3", false; "requirement with leading spaces does not round trip")]
     #[test_case("^1.2.3  ", false; "requirement with trailing spaces does not round trip")]
     #[test_case("^1.2.3, <1.5", true; "multi-comparators with single space after comma round trips")]
@@ -422,7 +398,6 @@ mod serde {
     #[test_case("^1.2.3,  <1.5", false; "multi-comparators with multiple spaces after comma does not round trip")]
     fn round_tripping(requirement: &str, should_round_trip: bool) {
         let json_value = json!(requirement);
-        // let json_string = json_value.clone().to_string();
         let serialized: SemanticVersionReq = serde_json::from_value(json_value.clone()).unwrap();
         let deserialized = serde_json::to_value(&serialized).unwrap();
 
@@ -462,9 +437,9 @@ mod traits {
         use dsc_lib::types::SemanticVersionReq;
         use test_case::test_case;
 
-        #[test_case("1.2", "^1.2"; "valid req with single comparator")]
-        #[test_case("1.2, < 1.4", "^1.2, <1.4"; "valid req with multiple comparators")]
-        #[test_case("1.*", "1.*"; "valid req with a wildcard")]
+        #[test_case("^1.2", "^1.2"; "req with single comparator")]
+        #[test_case("^1.2, < 1.4", "^1.2, <1.4"; "req with multiple comparators")]
+        #[test_case("=1.*", "=1"; "req with a wildcard")]
         fn format(requirement: &str, expected: &str) {
             pretty_assertions::assert_eq!(
                 format!("req: '{}'", SemanticVersionReq::parse(requirement).unwrap()),
@@ -472,9 +447,9 @@ mod traits {
             )
         }
 
-        #[test_case("1.2", "^1.2"; "valid req with single comparator")]
-        #[test_case("1.2, < 1.4", "^1.2, <1.4"; "valid req with multiple comparators")]
-        #[test_case("1.*", "1.*"; "valid req with a wildcard")]
+        #[test_case("^1.2", "^1.2"; "valid req with single comparator")]
+        #[test_case("^1.2, < 1.4", "^1.2, <1.4"; "valid req with multiple comparators")]
+        #[test_case("=1.*", "=1"; "valid req with a wildcard")]
         fn to_string(requirement: &str, expected: &str) {
             pretty_assertions::assert_eq!(
                 SemanticVersionReq::parse(requirement).unwrap().to_string(),
@@ -496,33 +471,33 @@ mod traits {
 
     #[cfg(test)]
     mod from_str {
-        use dsc_lib::{dscerror::DscError, types::SemanticVersionReq};
+        use dsc_lib::types::{SemanticVersionReq, SemanticVersionReqError};
         use test_case::test_case;
 
         // Minimal test suite, since full parsing tests are on the associated `parse` function.
-        #[test_case("1.2.3" => matches Ok(_); "valid requirement returns ok")]
+        #[test_case("^1.2.3" => matches Ok(_); "valid requirement returns ok")]
         #[test_case("!1.2.3" => matches Err(_); "invalid requirement returns err")]
-        fn parse(input: &str) -> Result<SemanticVersionReq, DscError> {
+        fn parse(input: &str) -> Result<SemanticVersionReq, SemanticVersionReqError> {
             input.parse()
         }
     }
 
     #[cfg(test)]
     mod try_from {
-        use dsc_lib::{dscerror::DscError, types::SemanticVersionReq};
+        use dsc_lib::types::{SemanticVersionReq, SemanticVersionReqError};
         use test_case::test_case;
 
         // Minimal test suite, since full parsing tests are on the associated `parse` function.
-        #[test_case("1.2.3" => matches Ok(_); "valid requirement returns ok")]
+        #[test_case("^1.2.3" => matches Ok(_); "valid requirement returns ok")]
         #[test_case("!1.2.3" => matches Err(_); "invalid requirement returns err")]
-        fn string(input: &str) -> Result<SemanticVersionReq, DscError> {
+        fn string(input: &str) -> Result<SemanticVersionReq, SemanticVersionReqError> {
             SemanticVersionReq::try_from(input.to_string())
         }
 
         // Minimal test suite, since full parsing tests are on the associated `parse` function.
-        #[test_case("1.2.3" => matches Ok(_); "valid requirement returns ok")]
+        #[test_case("^1.2.3" => matches Ok(_); "valid requirement returns ok")]
         #[test_case("!1.2.3" => matches Err(_); "invalid requirement returns err")]
-        fn string_slice(input: &str) -> Result<SemanticVersionReq, DscError> {
+        fn string_slice(input: &str) -> Result<SemanticVersionReq, SemanticVersionReqError> {
             SemanticVersionReq::try_from(input)
         }
     }
@@ -537,12 +512,12 @@ mod traits {
 
         #[test]
         fn semver_version_req() {
-            let _: semver::VersionReq = SemanticVersionReq::parse("1.2").unwrap().into();
+            let _: semver::VersionReq = SemanticVersionReq::parse("^1.2").unwrap().into();
         }
 
         #[test]
         fn string() {
-            let _: String = SemanticVersionReq::parse("1.2").unwrap().into();
+            let _: String = SemanticVersionReq::parse("^1.2").unwrap().into();
         }
     }
 
@@ -551,11 +526,11 @@ mod traits {
         use dsc_lib::types::SemanticVersionReq;
         use test_case::test_case;
 
-        #[test_case("1.2", "1.2", true; "identical requirements")]
-        #[test_case("1.2", "^ 1.2", true; "equivalent requirements")]
+        #[test_case("^1.2", "^1.2", true; "identical requirements")]
+        #[test_case("^1.2", "^ 1.2.*", true; "equivalent requirements")]
         #[test_case("^1.2", "~1.2", false; "differing operator requirements")]
-        #[test_case("1.2", "3.4", false; "differing version requirements")]
-        #[test_case("1.2", "1.2, <3.4", false; "single and multi version requirements")]
+        #[test_case("^1.2", "^3.4", false; "differing version requirements")]
+        #[test_case("^1.2", "^1.2, <3.4", false; "single and multi version requirements")]
         fn semantic_version_req(lhs: &str, rhs: &str, should_be_equal: bool) {
             if should_be_equal {
                 pretty_assertions::assert_eq!(
@@ -570,11 +545,11 @@ mod traits {
             }
         }
 
-        #[test_case("1.2", "1.2", true; "identical requirements")]
-        #[test_case("1.2", "^ 1.2", true; "equivalent requirements")]
+        #[test_case("^1.2", "^1.2", true; "identical requirements")]
+        #[test_case("^1.2", "^ 1.2.*", true; "equivalent requirements")]
         #[test_case("^1.2", "~1.2", false; "differing operator requirements")]
-        #[test_case("1.2", "3.4", false; "differing version requirements")]
-        #[test_case("1.2", "1.2, <3.4", false; "single and multi version requirements")]
+        #[test_case("^1.2", "^3.4", false; "differing version requirements")]
+        #[test_case("^1.2", "^1.2, <3.4", false; "single and multi version requirements")]
         fn semver_version_req(
             semantic_version_req_string: &str,
             semver_version_req_string: &str,
@@ -597,12 +572,12 @@ mod traits {
             );
         }
 
-        #[test_case("1.2", "1.2", true; "identical requirements")]
-        #[test_case("1.2", "^ 1.2", true; "equivalent requirements")]
+        #[test_case("^1.2", "^1.2", true; "identical requirements")]
+        #[test_case("^1.2", "^ 1.2.*", true; "equivalent requirements")]
         #[test_case("^1.2", "~1.2", false; "differing operator requirements")]
-        #[test_case("1.2", "3.4", false; "differing version requirements")]
-        #[test_case("1.2", "1.2, <3.4", false; "single and multi version requirements")]
-        #[test_case("1.2", "invalid", false; "requirement and arbitrary string")]
+        #[test_case("^1.2", "^3.4", false; "differing version requirements")]
+        #[test_case("^1.2", "^1.2, <3.4", false; "single and multi version requirements")]
+        #[test_case("^1.2", "invalid", false; "requirement and arbitrary string")]
         fn string(semantic_version_req_string: &str, string_slice: &str, should_be_equal: bool) {
             let semantic_version_req =
                 SemanticVersionReq::parse(semantic_version_req_string).unwrap();
@@ -621,12 +596,12 @@ mod traits {
             );
         }
 
-        #[test_case("1.2", "1.2", true; "identical requirements")]
-        #[test_case("1.2", "^ 1.2", true; "equivalent requirements")]
+        #[test_case("^1.2", "^1.2", true; "identical requirements")]
+        #[test_case("^1.2", "^ 1.2.*", true; "equivalent requirements")]
         #[test_case("^1.2", "~1.2", false; "differing operator requirements")]
-        #[test_case("1.2", "3.4", false; "differing version requirements")]
-        #[test_case("1.2", "1.2, <3.4", false; "single and multi version requirements")]
-        #[test_case("1.2", "invalid", false; "requirement and arbitrary string")]
+        #[test_case("^1.2", "^3.4", false; "differing version requirements")]
+        #[test_case("^1.2", "^1.2, <3.4", false; "single and multi version requirements")]
+        #[test_case("^1.2", "invalid", false; "requirement and arbitrary string")]
         fn str(semantic_version_req_string: &str, string_slice: &str, should_be_equal: bool) {
             let semantic_version_req =
                 SemanticVersionReq::parse(semantic_version_req_string).unwrap();

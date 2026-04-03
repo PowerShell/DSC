@@ -19,7 +19,7 @@ Describe 'Tests for resource versioning' {
             resources:
             - name: Test Version
               type: Test/Version
-              requireVersion: $version
+              requireVersion: '=$version'
               properties:
                 version: $version
 "@
@@ -34,13 +34,12 @@ Describe 'Tests for resource versioning' {
         @{ req = '<1.3' ; expected = '1.1.3' }
         @{ req = '>1,<=2.0.0' ; expected = '2.0.0' }
         @{ req = '>1.0.0,<2.0.0' ; expected = '1.1.3' }
-        @{ req = '1'; expected = '1.1.3' }
-        @{ req = '1.1' ; expected = '1.1.3' }
+        @{ req = '=1'; expected = '1.1.3' }
+        @{ req = '=1.1' ; expected = '1.1.3' }
         @{ req = '^1.0' ; expected = '1.1.3' }
         @{ req = '~1.1' ; expected = '1.1.3' }
-        @{ req = '*' ; expected = '2.0.0' }
-        @{ req = '1.*' ; expected = '1.1.3' }
-        @{ req = '2.1.0-preview.2' ; expected = '2.1.0-preview.2' }
+        @{ req = '=1.*' ; expected = '1.1.3' }
+        @{ req = '=2.1.0-preview.2' ; expected = '2.1.0-preview.2' }
     ) {
         param($req, $expected)
         $config_yaml = @"
@@ -63,13 +62,13 @@ Describe 'Tests for resource versioning' {
             resources:
             - name: Test Version 1
               type: Test/Version
-              requireVersion: '1.1.2'
+              requireVersion: '=1.1.2'
             - name: Test Version 2
               type: Test/Version
-              requireVersion: '1.1.0'
+              requireVersion: '=1.1.0'
             - name: Test Version 3
               type: Test/Version
-              requireVersion: '2'
+              requireVersion: '=2'
 "@
         $out = dsc -l trace config get -i $config_yaml 2> $TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
@@ -84,9 +83,9 @@ Describe 'Tests for resource versioning' {
             resources:
             - name: Test Version
               type: Test/Version
-              apiVersion: '1.1.2'
+              apiVersion: '=1.1.2'
               properties:
-                version: '1.1.2'
+                version: '=1.1.2'
 "@
         $out = dsc -l trace config get -i $config_yaml 2> $TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)

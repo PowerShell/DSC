@@ -4,7 +4,7 @@
 #[cfg(test)]
 mod methods {
     use chrono::NaiveDate;
-    use dsc_lib::{dscerror::DscError, types::DateVersion};
+    use dsc_lib::types::{DateVersion, DateVersionError};
     use test_case::test_case;
 
     #[test_case("2026-02-28" => matches Ok(_); "ISO8601 date is valid")]
@@ -15,8 +15,6 @@ mod methods {
     #[test_case("1234-2-03" => matches Err(_); "month with less than two digits is invalid")]
     #[test_case("1234-02-3" => matches Err(_); "day with less than two digits is invalid")]
     #[test_case("0123-02-03" => matches Err(_); "year with leading zero is invalid")]
-    #[test_case("1234-2-03" => matches Err(_); "month without leading zero is invalid")]
-    #[test_case("1234-02-3" => matches Err(_); "day without leading zero is invalid")]
     #[test_case("1234-00-03" => matches Err(_); "zero month is invalid")]
     #[test_case("1234-02-00" => matches Err(_); "zero day is invalid")]
     #[test_case("1234-14-21" => matches Err(_); "impossible month is invalid")]
@@ -33,7 +31,7 @@ mod methods {
     #[test_case("1234-11-31" => matches Err(_); "impossible november date is invalid")]
     #[test_case("1234-12-32" => matches Err(_); "impossible december date is invalid")]
     #[test_case("2026-02-28-rc.1" => matches Err(_); "prerelease with non-ASCII alphabetic characters is invalid")]
-    fn parse(text: &str) -> Result<DateVersion, DscError> {
+    fn parse(text: &str) -> Result<DateVersion, DateVersionError> {
         DateVersion::parse(text)
     }
 
@@ -53,7 +51,7 @@ mod methods {
     }
 
     #[test_case("2026-02-03", None; "version without prerelease segment")]
-    #[test_case("2026-02-03-rc", Some(&"rc".to_string()); "version with prerelease segment")]
+    #[test_case("2026-02-03-rc", Some(&String::from("rc")); "version with prerelease segment")]
     fn prerelease_segment(text: &str, expected: Option<&String>) {
         pretty_assertions::assert_eq!(
             DateVersion::parse(text).unwrap().prerelease(),
@@ -88,7 +86,7 @@ mod schema {
         let schema = &*SCHEMA;
         let value = schema
             .get_keyword_as_str(keyword)
-            .expect(format!("expected keyword '{keyword}' to be defined").as_str());
+            .expect(&format!("expected keyword '{keyword}' to be defined"));
 
         assert!(
             !(&*KEYWORD_PATTERN).is_match(value),
@@ -320,7 +318,7 @@ mod traits {
     mod from_str {
         use std::str::FromStr;
 
-        use dsc_lib::{dscerror::DscError, types::DateVersion};
+        use dsc_lib::types::{DateVersion, DateVersionError};
         use test_case::test_case;
 
         #[test_case("2026-02-28" => matches Ok(_); "ISO8601 date is valid")]
@@ -349,7 +347,7 @@ mod traits {
         #[test_case("1234-11-31" => matches Err(_); "impossible november date is invalid")]
         #[test_case("1234-12-32" => matches Err(_); "impossible december date is invalid")]
         #[test_case("2026-02-28-rc.1" => matches Err(_); "prerelease with non-ASCII alphabetic characters is invalid")]
-        fn from_str(text: &str) -> Result<DateVersion, DscError> {
+        fn from_str(text: &str) -> Result<DateVersion, DateVersionError> {
             DateVersion::from_str(text)
         }
 
@@ -379,7 +377,7 @@ mod traits {
         #[test_case("1234-11-31" => matches Err(_); "impossible november date is invalid")]
         #[test_case("1234-12-32" => matches Err(_); "impossible december date is invalid")]
         #[test_case("2026-02-28-rc.1" => matches Err(_); "prerelease with non-ASCII alphabetic characters is invalid")]
-        fn parse(text: &str) -> Result<DateVersion, DscError> {
+        fn parse(text: &str) -> Result<DateVersion, DateVersionError> {
             text.parse()
         }
     }
@@ -387,12 +385,12 @@ mod traits {
     #[cfg(test)]
     mod try_from {
         use chrono::NaiveDate;
-        use dsc_lib::{dscerror::DscError, types::DateVersion};
+        use dsc_lib::types::{DateVersion, DateVersionError};
         use test_case::test_case;
 
         #[test_case("2026-02-03".parse().unwrap() => matches Ok(_); "date with year greater than 999 is valid")]
         #[test_case("0999-02-03".parse().unwrap() => matches Err(_); "date with year less than 1000 is invalid")]
-        fn naive_date(date: NaiveDate) -> Result<DateVersion, DscError> {
+        fn naive_date(date: NaiveDate) -> Result<DateVersion, DateVersionError> {
             DateVersion::try_from(date)
         }
 
@@ -422,7 +420,7 @@ mod traits {
         #[test_case("1234-11-31" => matches Err(_); "impossible november date is invalid")]
         #[test_case("1234-12-32" => matches Err(_); "impossible december date is invalid")]
         #[test_case("2026-02-28-rc.1" => matches Err(_); "prerelease with non-ASCII alphabetic characters is invalid")]
-        fn string(text: &str) -> Result<DateVersion, DscError> {
+        fn string(text: &str) -> Result<DateVersion, DateVersionError> {
             DateVersion::try_from(text.to_string())
         }
 
@@ -452,7 +450,7 @@ mod traits {
         #[test_case("1234-11-31" => matches Err(_); "impossible november date is invalid")]
         #[test_case("1234-12-32" => matches Err(_); "impossible december date is invalid")]
         #[test_case("2026-02-28-rc.1" => matches Err(_); "prerelease with non-ASCII alphabetic characters is invalid")]
-        fn str(text: &str) -> Result<DateVersion, DscError> {
+        fn str(text: &str) -> Result<DateVersion, DateVersionError> {
             DateVersion::try_from(text)
         }
     }

@@ -8,10 +8,13 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::{collections::HashMap, fmt::Display};
 
-use crate::{schemas::{
-    dsc_repo::DscRepoSchema,
-    transforms::{idiomaticize_externally_tagged_enum, idiomaticize_string_enum}
-}, types::FullyQualifiedTypeName};
+use crate::{
+    schemas::{
+        dsc_repo::DscRepoSchema,
+        transforms::{idiomaticize_externally_tagged_enum, idiomaticize_string_enum}
+    },
+    types::{FullyQualifiedTypeName, ResourceVersionReq, SemanticVersionReq}
+};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
@@ -226,7 +229,7 @@ pub struct ConfigDirective {
     pub security_context: Option<SecurityContextKind>,
     /// Required version of DSC
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub version: Option<String>,
+    pub version: Option<SemanticVersionReq>,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
@@ -235,7 +238,7 @@ pub struct ConfigDirective {
 pub struct ResourceDirective {
     /// Specify specific adapter type used for implicit operations
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub require_adapter: Option<String>,
+    pub require_adapter: Option<FullyQualifiedTypeName>,
     /// The required security context of the configuration operation
     #[serde(skip_serializing_if = "Option::is_none")]
     pub security_context: Option<SecurityContextKind>,
@@ -296,7 +299,7 @@ pub struct Output {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
-#[serde(deny_unknown_fields)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 #[dsc_repo_schema(
     base_name = "document",
     folder_path = "config",
@@ -311,7 +314,6 @@ pub struct Configuration {
     #[serde(rename = "$schema")]
     #[schemars(schema_with = "Configuration::recognized_schema_uris_subschema")]
     pub schema: String,
-    #[serde(rename = "contentVersion")]
     pub content_version: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub directives: Option<ConfigDirective>,
@@ -464,7 +466,7 @@ pub struct Sku {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
-#[serde(deny_unknown_fields)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 #[dsc_repo_schema(base_name = "document.resource", folder_path = "config")]
 pub struct Resource {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -472,8 +474,8 @@ pub struct Resource {
     /// The fully qualified name of the resource type
     #[serde(rename = "type")]
     pub resource_type: FullyQualifiedTypeName,
-    #[serde(skip_serializing_if = "Option::is_none", rename = "requireVersion", alias = "apiVersion")]
-    pub require_version: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none", alias = "apiVersion")]
+    pub require_version: Option<ResourceVersionReq>,
     /// A friendly name for the resource instance
     #[serde(default)]
     pub name: String, // friendly unique instance name
@@ -485,7 +487,7 @@ pub struct Resource {
     pub execution_information: Option<ExecutionInformation>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub location: Option<String>,
-    #[serde(rename = "dependsOn", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[schemars(regex(pattern = r"^\[resourceId\(\s*'[a-zA-Z0-9\.]+/[a-zA-Z0-9]+'\s*,\s*'[a-zA-Z0-9 ]+'\s*\)]$"))]
     pub depends_on: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -644,12 +646,12 @@ mod test {
                 {
                     "type": "Microsoft.DSC.Debug/Echo",
                     "name": "echoResource",
-                    "requireVersion": "1.0.0"
+                    "requireVersion": "=1.0.0"
                 },
                 {
                     "type": "Microsoft/Process",
                     "name": "processResource",
-                    "requireVersion": "0.1.0"
+                    "requireVersion": "=0.1.0"
                 }
             ]
         }"#;
@@ -659,11 +661,11 @@ mod test {
         assert_eq!(config.resources.len(), 2);
         assert_eq!(config.resources[0].name, "echoResource");
         assert_eq!(config.resources[0].resource_type, "Microsoft.DSC.Debug/Echo");
-        assert_eq!(config.resources[0].require_version.as_deref(), Some("1.0.0"));
+        assert_eq!(config.resources[0].require_version.as_ref().map(|r| r.to_string()), Some("=1.0.0".to_string()));
 
         assert_eq!(config.resources[1].name, "processResource");
         assert_eq!(config.resources[1].resource_type, "Microsoft/Process");
-        assert_eq!(config.resources[1].require_version.as_deref(), Some("0.1.0"));
+        assert_eq!(config.resources[1].require_version.as_ref().map(|r| r.to_string()), Some("=0.1.0".to_string()));
     }
 
 }

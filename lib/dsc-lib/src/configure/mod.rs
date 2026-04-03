@@ -16,7 +16,7 @@ use crate::DscResource;
 use crate::discovery::Discovery;
 use crate::parser::Statement;
 use crate::progress::{Failure, ProgressBar, ProgressFormat};
-use crate::types::{SemanticVersion, SemanticVersionReq};
+use crate::types::{FullyQualifiedTypeName, SemanticVersion};
 use crate::util::resource_id;
 use self::config_doc::{Configuration, DataType, MicrosoftDscMetadata, Operation, SecurityContextKind};
 use self::depends_on::get_resource_invocation_order;
@@ -44,12 +44,65 @@ pub struct Configurator {
     progress_format: ProgressFormat,
 }
 
+/// Invokes the [`Discovery::find_resource`] method to retrieve a specific resource or raise a
+/// [`DscError::ResourceNotFound`] if the resource cannot be found.
+///
+/// # Arguments
+///
+/// * `variable` - The variable to bind the found resource to.
+/// * `discovery` - The discovery instance to use for finding the resource.
+/// * `resource` - The resource for which to construct the discovery filter.
+/// * `adapter` - An optional adapter requirement to include in the discovery filter.
+///
+/// # Examples
+///
+/// The following snippet shows how the `find_resource_or_error!` macro can be used within a method
+/// of the `Configurator` struct to find a resource and return an error if it's not found:
+///
+/// ```ignore
+/// find_resource_or_error!(dsc_resource, discovery, resource, adapter);
+/// ```
+///
+/// Which expands to:
+///
+/// ```ignore
+/// let Some(dsc_resource) = discovery.find_resource(
+///     &DiscoveryFilter::new(
+///         &resource.resource_type,
+///         resource.require_version.clone(),
+///         adapter
+///     )
+/// )? else {
+///     return Err(DscError::ResourceNotFound(
+///         resource.resource_type.to_string(),
+///         resource.require_version.as_ref().map(|r| r.to_string()).unwrap_or("".to_string())
+///     ));
+/// };
+/// ```
+macro_rules! find_resource_or_error {
+    ($variable:ident, $discovery: ident, $resource:ident, $adapter:ident) => {
+        let Some($variable) = $discovery.find_resource(
+            &DiscoveryFilter::new(
+                &$resource.resource_type,
+                $resource.require_version.clone(),
+                $adapter
+            )
+        )? else {
+            return Err(DscError::ResourceNotFound(
+                $resource.resource_type.to_string(),
+                $resource.require_version.as_ref().map(|r| r.to_string()).unwrap_or("".to_string())
+            ));
+        };
+    };
+}
+
 /// Add the results of an export operation to a configuration.
 ///
 /// # Arguments
 ///
 /// * `resource` - The resource to export.
 /// * `conf` - The configuration to add the results to.
+/// * `input` - The input to the export operation.
 ///
 /// # Panics
 ///
@@ -60,11 +113,15 @@ pub struct Configurator {
 /// This function will return an error if the underlying resource fails.
 pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf: &mut Configuration, input: &str) -> Result<ExportResult, DscError> {
 
+    let start_datetime = chrono::Local::now();
     let export_result = resource.export(input)?;
+    let end_datetime = chrono::Local::now();
 
     if resource.kind == Kind::Exporter {
         for instance in &export_result.actual_state {
-            let resource = serde_json::from_value::<Resource>(instance.clone())?;
+            let mut resource = serde_json::from_value::<Resource>(instance.clone())?;
+            let execution_information = ExecutionInformation::new_with_duration(&start_datetime, &end_datetime);
+            resource.execution_information = Some(execution_information);
             conf.resources.push(resource);
         }
     } else {
@@ -105,7 +162,7 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf
             }
             r.properties = escape_property_values(&props)?;
             let mut properties = serde_json::to_value(&r.properties)?;
-            let mut execution_information = ExecutionInformation::new();
+            let mut execution_information = ExecutionInformation::new_with_duration(&start_datetime, &end_datetime);
             get_metadata_from_result(None, &mut properties, &mut metadata, &mut execution_information)?;
             r.properties = Some(properties.as_object().cloned().unwrap_or_default());
             r.metadata = if metadata.microsoft.is_some() || !metadata.other.is_empty() {
@@ -226,7 +283,7 @@ fn add_metadata(dsc_resource: &DscResource, mut properties: Option<Map<String, V
     }
 }
 
-fn get_require_adapter_from_directive(resource_directives: &Option<ResourceDirective>) -> Option<String> {
+fn get_require_adapter_from_directive(resource_directives: &Option<ResourceDirective>) -> Option<FullyQualifiedTypeName> {
     if let Some(directives) = resource_directives {
         if let Some(require_adapter) = &directives.require_adapter {
             return Some(require_adapter.clone());
@@ -485,9 +542,7 @@ impl Configurator {
             let directive_security_context = resource.directives.as_ref().and_then(|d| d.security_context.as_ref());
             check_security_context(resource.metadata.as_ref(), directive_security_context)?;
             let adapter = get_require_adapter_from_directive(&resource.directives);
-            let Some(dsc_resource) = discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.require_version.as_deref(), adapter.as_deref()))? else {
-                return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.require_version.as_deref().unwrap_or("").to_string()));
-            };
+            find_resource_or_error!(dsc_resource, discovery, resource, adapter);
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             let filter = add_metadata(&dsc_resource, properties, resource.metadata.clone())?;
             let start_datetime = chrono::Local::now();
@@ -578,9 +633,7 @@ impl Configurator {
             let directive_security_context = resource.directives.as_ref().and_then(|d| d.security_context.as_ref());
             check_security_context(resource.metadata.as_ref(), directive_security_context)?;
             let adapter = get_require_adapter_from_directive(&resource.directives);
-            let Some(dsc_resource) = discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.require_version.as_deref(), adapter.as_deref()))? else {
-                return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.require_version.as_deref().unwrap_or("").to_string()));
-            };
+            find_resource_or_error!(dsc_resource, discovery, resource, adapter);
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
             // see if the properties contains `_exist` and is false
@@ -771,9 +824,7 @@ impl Configurator {
             let directive_security_context = resource.directives.as_ref().and_then(|d| d.security_context.as_ref());
             check_security_context(resource.metadata.as_ref(), directive_security_context)?;
             let adapter = get_require_adapter_from_directive(&resource.directives);
-            let Some(dsc_resource) = discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.require_version.as_deref(), adapter.as_deref()))? else {
-                return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.require_version.as_deref().unwrap_or("").to_string()));
-            };
+            find_resource_or_error!(dsc_resource, discovery, resource, adapter);
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
             let expected = add_metadata(&dsc_resource, properties, resource.metadata.clone())?;
@@ -863,9 +914,7 @@ impl Configurator {
             let directive_security_context = resource.directives.as_ref().and_then(|d| d.security_context.as_ref());
             check_security_context(resource.metadata.as_ref(), directive_security_context)?;
             let adapter = get_require_adapter_from_directive(&resource.directives);
-            let Some(dsc_resource) = discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.require_version.as_deref(), adapter.as_deref()))? else {
-                return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.require_version.as_deref().unwrap_or("").to_string()));
-            };
+            find_resource_or_error!(dsc_resource, discovery, resource, adapter);
             let properties = self.get_properties(resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
             let input = add_metadata(&dsc_resource, properties, resource.metadata.clone())?;
@@ -894,6 +943,9 @@ impl Configurator {
             },
         }
 
+        let mut execution_information = ExecutionInformation::new();
+        self.get_execution_information(Operation::Export, &mut execution_information);
+        conf.execution_information = Some(execution_information);
         result.result = Some(conf);
         self.process_output()?;
         if !self.context.outputs.is_empty() {
@@ -1164,11 +1216,10 @@ impl Configurator {
         check_security_context(config.metadata.as_ref(), config_security_context.as_ref())?;
 
         if let Some(directives) = &config.directives {
-            if let Some(version) = &directives.version {
+            if let Some(version_req) = &directives.version {
                 let dsc_version = SemanticVersion::parse(env!("CARGO_PKG_VERSION"))?;
-                let version_req = SemanticVersionReq::parse(&version)?;
                 if !version_req.matches(&dsc_version) {
-                    return Err(DscError::Validation(t!("configure.mod.versionNotSatisfied", required_version = version, current_version = env!("CARGO_PKG_VERSION")).to_string()));
+                    return Err(DscError::Validation(t!("configure.mod.versionNotSatisfied", required_version = version_req, current_version = env!("CARGO_PKG_VERSION")).to_string()));
                 }
             }
         }
@@ -1190,7 +1241,11 @@ impl Configurator {
             let config_copy = config.clone();
             for resource in config_copy.resources {
                 let adapter = get_require_adapter_from_directive(&resource.directives);
-                let filter = DiscoveryFilter::new(&resource.resource_type, resource.require_version.as_deref(), adapter.as_deref());
+                let filter = DiscoveryFilter::new(
+                    &resource.resource_type,
+                    resource.require_version.clone(),
+                    adapter
+                );
                 if !discovery_filter.contains(&filter) {
                     discovery_filter.push(filter);
                 }
@@ -1210,8 +1265,11 @@ impl Configurator {
             // now check that each resource in the config was found
             for resource in config.resources.iter() {
                 let adapter = get_require_adapter_from_directive(&resource.directives);
-                let Some(_dsc_resource) = self.discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.require_version.as_deref(), adapter.as_deref()))? else {
-                    return Err(DscError::ResourceNotFound(resource.resource_type.to_string(), resource.require_version.as_deref().unwrap_or("").to_string()));
+                let Some(_dsc_resource) = self.discovery.find_resource(&DiscoveryFilter::new(&resource.resource_type, resource.require_version.clone(), adapter))? else {
+                    return Err(DscError::ResourceNotFound(
+                        resource.resource_type.to_string(),
+                        resource.require_version.as_ref().map(|r| r.to_string()).unwrap_or("".to_string())
+                    ));
                 };
             }
         }

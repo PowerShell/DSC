@@ -1,14 +1,19 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+// TODO: Remove when updating to rustc 1.94; false positive from thiserror + rust-i18n t!() macro
+#![allow(unused_assignments)]
+
 use std::{fmt::Display, ops::Deref, str::FromStr, sync::OnceLock};
 
+use miette::Diagnostic;
 use regex::Regex;
 use rust_i18n::t;
 use schemars::{json_schema, JsonSchema};
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
-use crate::{dscerror::DscError, schemas::dsc_repo::DscRepoSchema, types::SemanticVersion};
+use crate::{schemas::dsc_repo::DscRepoSchema, types::SemanticVersion};
 
 /// Defines one or more limitations for a semantic version to enable version pinning.
 ///
@@ -27,6 +32,22 @@ use crate::{dscerror::DscError, schemas::dsc_repo::DscRepoSchema, types::Semanti
 ///    Rust technically supports specifying a wildcard-only version requirement (`*`). DSC forbids
 ///    specifying this version requirement as it maps to the default version selection and is
 ///    discouraged when specifying version requirements for production systems.
+/// 1. DSC semantic version requirements _must_ explicitly define an operator for every comparator.
+///
+///    DSC forbids defining a comparator without an operator, like `1.*` or `1.2.3, <1.5`, to
+///    reduce ambiguity and unexpected behavior for version pinning. For example, in all other
+///    cases, omitting version segments and specifying them as a wildcard has the same behavior
+///    _except_ for the comparators `1.2` and `1.2.*`:
+///
+///    - `1`, `1.*`, and `1.*.*` all have an effective requirement of `>=1.0.0, <2.0.0`.
+///    - `>1.2` and `>1.2.*` both have an effective requirement of `>1.2.0`.
+///    - `1.2` has an effective requirement of `>=1.2.0, <2.0.0` but `1.2.*` has an effective
+///      requirement of `>=1.2.0, <1.3.0`.
+///
+///    Similarly, it is not immediately obvious to a user who isn't familiar with Rust semantic
+///    version requirements that `1.2.3` will match `1.5.7`. It's more common across version
+///    requirements to expect an exactly specified version to be an exact match requirement, not
+///    a semantically compatible requirement.
 /// 1. DSC semantic version requirements only support the asterisk (`*`) character for wildcards,
 ///    not `x` or `X`.
 ///
@@ -108,8 +129,8 @@ use crate::{dscerror::DscError, schemas::dsc_repo::DscRepoSchema, types::Semanti
 /// ### Omitting version segments
 ///
 /// When defining a version for a comparator, you must define the major version segment. You can
-/// omit either or both the minor and version segments. The following comparators define valid
-/// versions:
+/// omit either or both the minor and patch version segments. The following comparators define
+/// valid versions:
 ///
 /// - `>=1` - Matches all versions greater than or equal to `1.0.0`.
 /// - `>=1.2` - Matches all versions greater than or equal to `1.2.0`.
@@ -120,45 +141,24 @@ use crate::{dscerror::DscError, schemas::dsc_repo::DscRepoSchema, types::Semanti
 /// character, indicating that it should match any version for that segment. If the minor version
 /// segment is a wildcard, the patch version segment must either be a wildcard or omitted.
 ///
-/// When specifying an explicit operator, specifying the version for a comparator with wildcards is
-/// equivalent to omitting those version segments. When you define a comparator without an explicit
-/// operator and with a version that defines one or more wildcard segments, the implicit operator
-/// for that comparator is the _wildcard operator_ instead of the _caret operator_. For more
-/// information about the behavior of comparators without an explicit operator, see
-/// [Specifying comparators with implicit operators](#specifying-comparators-with-implicit-operators).
+/// For DSC semantic version requirements, specifying the version for a comparator with wildcards
+/// is equivalent to omitting those version segments.
 ///
-/// The following table shows how comparators behave depending on whether they specify an operator,
-/// omit version segments, and use wildcards. Each row defines a literal comparator, the effective
-/// requirement for that comparator, and a set of equivalent comparators.
+/// The following table shows a how specifying wildcards for a version segment affects the effective
+/// requirement for a comparator:
 ///
-/// | Comparator | Effective requirement | Equivalent comparators                                         |
-/// |:----------:|:---------------------:|:---------------------------------------------------------------|
-/// | `1`        | `>=1.0.0, <2.0.0`     | `1.*`, `1.*.*`, `^1`, `^1.*`, `^1.*.*`, `=1`, `=1.*`, `=1.*.*` |
-/// | `1.2`      | `>=1.2.0, <2.0.0`     | `^1.2`, `^1.2.*`                                               |
-/// | `1.*`      | `>=1.0.0, <2.0.0`     | `1`, `1.*.*`, `^1`, `^1.*`, `^1.*.*`, `=1`, `=1.*`, `=1.*.*`   |
-/// | `1.*.*`    | `>=1.0.0, <2.0.0`     | `1`, `1.*`, `^1`, `^1.*`, `^1.*.*`, `=1`, `=1.*`, `=1.*.*`     |
-/// | `1.2.*`    | `>=1.2.0, <1.3.0`     | `=1.2`, `=1.2.*`                                               |
-/// | `^1`       | `>=1.0.0, <2.0.0`     | `1`, `1.*`, `1.*.*`, `^1.*`, `^1.*.*`, `=1`, `=1.*`, `=1.*.*`  |
-/// | `^1.*`     | `>=1.0.0, <2.0.0`     | `1`, `1.*`, `1.*.*`, `^1`, `^1.*.*`, `=1`, `=1.*`, `=1.*.*`    |
-/// | `^1.*.*`   | `>=1.0.0, <2.0.0`     | `1`, `1.*`, `1.*.*`, `^1`, `^1.*`, `=1`, `=1.*`, `=1.*.*`      |
-/// | `^1.2`     | `>=1.2.0, <2.0.0`     | `1.2`, `^1.2.*`                                                |
-/// | `^1.2.*`   | `>=1.2.0, <2.0.0`     | `1.2`                                                          |
-/// | `=1`       | `>=1.0.0, <2.0.0`     | `1`, `1.*`, `1.*.*`, `^1`, `^1.*`, `^1.*.*`, `=1.*`, `=1.*.*`  |
-/// | `=1.*`     | `>=1.0.0, <2.0.0`     | `1`, `1.*`, `1.*.*`, `^1`, `^1.*`, `^1.*.*`, `=1`, `=1.*.*`    |
-/// | `=1.*.*`   | `>=1.0.0, <2.0.0`     | `1`, `1.*`, `1.*.*`, `^1`, `^1.*`, `^1.*.*`, `=1`, `=1.*`      |
-/// | `=1.2`     | `>=1.2.0, <1.3.0`     | `1.2.*`, `=1.2.*`                                              |
-/// | `=1.2.*`   | `>=1.2.0, <1.3.0`     | `1.2.*`, `=1.2`                                                |
-///
-/// Effectively, not specifying the minor or patch version segments is equivalent to specifying
-/// the missing segments as wildcards in most cases. That means that the comparators `1`, `1.*`,
-/// and `1.*.*` are equivalent.
-///
-/// The exception to this rule is when the comparator defines a version with literal major and minor
-/// version segments, a wildcard for the patch version segment, and no explicit operator, like
-/// `1.2.*`. In that case, because the implicit operator is the wildcard operator, the effective
-/// requirement becomes `>=1.2.0, <1.3.0` instead of `>=1.2.0, <2.0.0`.
-///
-/// To reduce ambiguity and unexpected version matching, _always_ specify an explicit operator.
+/// | Comparator | Effective requirement |
+/// |:----------:|:---------------------:|
+/// | `^1`       | `>=1.0.0, <2.0.0`     |
+/// | `^1.*`     | `>=1.0.0, <2.0.0`     |
+/// | `^1.*.*`   | `>=1.0.0, <2.0.0`     |
+/// | `^1.2`     | `>=1.2.0, <2.0.0`     |
+/// | `^1.2.*`   | `>=1.2.0, <2.0.0`     |
+/// | `=1`       | `>=1.0.0, <2.0.0`     |
+/// | `=1.*`     | `>=1.0.0, <2.0.0`     |
+/// | `=1.*.*`   | `>=1.0.0, <2.0.0`     |
+/// | `=1.2`     | `>=1.2.0, <1.3.0`     |
+/// | `=1.2.*`   | `>=1.2.0, <1.3.0`     |
 ///
 /// ### Prerelease version segments
 ///
@@ -193,7 +193,7 @@ use crate::{dscerror::DscError, schemas::dsc_repo::DscRepoSchema, types::Semanti
 ///
 /// To prevent users from assuming that a version requirement might operate on the build metadata,
 /// DSC forbids its inclusion in a version requirement string and raises the
-/// [`SemVerReqWithBuildMetadata`] error during parsing if one is specified.
+/// [`ComparatorIncludesForbiddenBuildMetadata`] error during parsing if one is specified.
 ///
 /// ### Examples of invalid comparator versions
 ///
@@ -216,9 +216,7 @@ use crate::{dscerror::DscError, schemas::dsc_repo::DscRepoSchema, types::Semanti
 /// ## Specifying comparator operators
 ///
 /// An operator defines how to compare a given [`SemanticVersion`] against the version component
-/// of the comparator. The operator for a comparator is optional. For more information about how
-/// comparators behave without an explicit operator, see
-/// [Specifying comparators with implicit operators](#specifying-comparators-with-implicit-operators).
+/// of the comparator. The operator for a comparator is required.
 ///
 /// The following list enumerates the available operators. Each definition includes a table of
 /// examples demonstrating how the operator behaves.
@@ -241,10 +239,12 @@ use crate::{dscerror::DscError, schemas::dsc_repo::DscRepoSchema, types::Semanti
 ///   greater than or equal to the version for this comparator. The upper bound of matching
 ///   versions depends on how many components the version of the comparator defines:
 ///
-///   - If the comparator defines only the major version segment, like `~ 1`, the comparator
-///     matches any version less than the next major version.
-///   - If the comparator defines the major and minor version segments, like `~ 1.2` or `~ 1.2.3`,
-///     the comparator matches any version less than the next minor version.
+///   - If the comparator defines only the major version segment, like `~1`, the comparator
+///     matches any version greater than or equal to the given major version and less than the next
+///     major version.
+///   - If the comparator defines the major and minor version segments, like `~1.2` or `~1.2.3`,
+///     the comparator matches any greater than or equal to the given version and less than the
+///     next minor version.
 ///
 ///   The patch and prerelease segments of the version for the comparator only affect the minimum
 ///   version bound for the requirement. They don't affect the upper bound.
@@ -318,7 +318,7 @@ use crate::{dscerror::DscError, schemas::dsc_repo::DscRepoSchema, types::Semanti
 ///   | `>1.2.3`           | `>=1.2.4`             | `1.2.4`, `2.0.0`              | `1.2.3`, `2.0.0-rc.2`               |
 ///   | `>1.2.3-rc.1`      | `>=1.2.3-rc.2`        | `1.2.3`,`2.0.0`, `1.2.3-rc.3` | `1.2.0`, `1.2.3-rc.1`, `2.0.0-rc.2` |
 ///
-/// - <a id="operator-greater-than-or-equal-to"></a>Greater than or equal to (>=) - Indicates that
+/// - <a id="operator-greater-than-or-equal-to"></a>Greater than or equal to (`>=`) - Indicates that
 ///   the [`SemanticVersion`] must be the same as the version for this comparator or newer.
 ///   Versions less than the comparator version don't match the comparator.
 ///
@@ -330,73 +330,24 @@ use crate::{dscerror::DscError, schemas::dsc_repo::DscRepoSchema, types::Semanti
 ///   | `>=1.2`            | `>=1.2.0`             | `1.2.0`, `1.2.3`                             | `1.1.1`, `1.2.3-rc.2`               |
 ///   | `>=1.2.*`          | `>=1.2.0`             | `1.2.0`, `1.2.3`                             | `1.1.1`, `1.2.3-rc.2`               |
 ///   | `>=1.2.3`          | `>=1.2.3`             | `1.2.3`, `1.3.0`                             | `1.2.2`, `1.2.3-rc.2`, `2.0.0-rc.2` |
-///   | `>=1.2.3-rc.1`     | `>=1.2.3-rc.2`        | `1.2.3`, `2.0.0`, `1.2.3-rc.2`, `1.2.3-rc.3` | `1.2.0`, `1.2.3-rc.1`, `2.0.0-rc.2` |
-///
-/// - <a id="operator-wildcard"></a>Wildcard - The wildcard operator is a purely implicit operator.
-///   A comparator uses the wildcard operator when it defines a version that includes at least one
-///   wildcard without an explicit operator.
-///
-///   The wildcard operator is equivalent to the [exact operator (`=`)](#operator-exact).
-///
-///   Because a comparator with a wildcard operator _always_ defines a version with one or more
-///   wildcard segments, these comparators can _never_ match a prerelease version.
-///
-///   | Literal comparator | Effective requirement | Valid versions   | Invalid versions               |
-///   |:------------------:|:---------------------:|:-----------------|:-------------------------------|
-///   | `1.*`              | `>=1.0.0, <2.0.0`     | `1.0.0`, `1.2.3` | `0.1.0`, `2.0.0`, `1.2.3-rc.1` |
-///   | `1.*.*`            | `>=1.0.0, <2.0.0`     | `1.0.0`, `1.2.3` | `0.1.0`, `2.0.0`, `1.2.3-rc.1` |
-///   | `1.2.*`            | `>=1.2.0, <1.3.0`     | `1.2.0`, `1.2.3` | `1.1.1`, `1.3.0`, `1.2.3-rc.1` |
-///
-/// ### Specifying comparators with implicit operators
-///
-/// When you don't specify an explicit operator, the version requirement implicitly defaults to one
-/// of two operators:
-///
-/// 1. If the version doesn't define any wildcards, the implicit operator for the comparator is
-///    the caret operator. The following sets of comparators are parsed identically:
-///
-///    - `1` and `^1`
-///    - `1.2` and `^1.2`
-///    - `1.2.3` and `^1.2.3`
-///    - `1.2.3-rc.1` and `^1.2.3-rc.1`
-///
-/// 1. If the version defines one or more wildcards, the implicit operator for the comparator is
-///    the wildcard operator, which behaves like the exact operator (`=`). The following pairs of
-///    comparators are equivalent:
-///
-///    - `1.*` and `=1.*`
-///    - `1.*.*` and `=1.*.*`
-///    - `1.2.*` and `=1.2.*`
-///
-/// A potentially confusing and ambiguous effect of the underlying implementation is that, except
-/// for one case, omitting a version segment and specifying it as a wildcard have identical
-/// behaviors. The exception is for defining a version with an implicit operator. The comparators
-/// `1.2` and `1.2.*` are _not_ equivalent.
-///
-/// The comparator `1.2` effectively expands to the comparator pair `>=1.2.0, <2.0.0` while the
-/// comparator `1.2.*` effectively expands to `>=1.2.0, <1.3.0`.
-///
-/// To avoid this ambiguity and potentially unexpected matching (or _not_ matching) of versions,
-/// always explicitly define an operator for your comparators.
+///   | `>=1.2.3-rc.1`     | `>=1.2.3-rc.1`        | `1.2.3`, `2.0.0`, `1.2.3-rc.1`, `1.2.3-rc.2` | `1.2.0`, `1.2.3-rc.0`, `2.0.0-rc.2` |
 ///
 /// # Serialization
 ///
 /// Note that during serialization instances of [`SemanticVersionReq`]:
 ///
-/// 1. If the originally parsed requirement uses an implicit operator and a version without any
-///    wildcards, like `1.2.3`, it serializes with the caret operator as `^1.2.3`.
-/// 1. If the originally parsed requirement defines an explicit operator and a version with any
-///    wildcards, it serializes with the wildcard segments omitted. For example, consider the
-///    following table showing how different comparators serialize:
+/// 1. If the originally parsed requirement defines a version with any wildcards, it serializes
+///    with the wildcard segments omitted. For example, consider the following table showing how
+///    different comparators serialize:
 ///
 ///    | Originally parsed comparator | Serialized comparator |
 ///    |:----------------------------:|:---------------------:|
-///    | `^1.*`                       | `~1`                  |
-///    | `^1.*.*`                     | `~1`                  |
-///    | `^1.2.*`                     | `~1.2`                |
+///    | `^1.*`                       | `^1`                  |
+///    | `^1.*.*`                     | `^1`                  |
+///    | `^1.2.*`                     | `^1.2`                |
 ///
 /// 1. If the originally parsed requirement has any separating spaces between an operator and
-///    version, like `>= 1.2` or `>=  1.2`, it serializes without any spaces as `>= 1.2`.
+///    version, like `>= 1.2` or `>=  1.2`, it serializes without any spaces as `>=1.2`.
 /// 1. If the originally parsed requirement defines a pair of comparators, it always serializes the
 ///    pair separated by a comma followed by a single space. For example, all of the originally
 ///    parsed requirements in the following list serialize as `>=1.2, <1.5`:
@@ -409,7 +360,6 @@ use crate::{dscerror::DscError, schemas::dsc_repo::DscRepoSchema, types::Semanti
 /// This can make it difficult to effectively round-trip a requirement when deserializing and
 /// reserializing. To define a version requirement that will round-trip without any changes:
 ///
-/// 1. Always define an operator for each comparator.
 /// 1. Always omit version segments rather than specifying a wildcard.
 /// 1. Never separate operators and versions in a comparator with any spaces.
 /// 1. When defining a requirement with multiple comparators, always follow the preceding
@@ -420,23 +370,15 @@ use crate::{dscerror::DscError, schemas::dsc_repo::DscRepoSchema, types::Semanti
 ///
 /// | Non-round-tripping requirement | Round-tripping requirement |
 /// |:------------------------------:|:--------------------------:|
-/// | `1`                            | `^1`                       |
-/// | `1.2`                          | `^1.2`                     |
-/// | `1.2.3`                        | `^1.2.3`                   |
 /// | `^1.2.*`                       | `^1.2`                     |
-/// | `> 1.2 , <= 1.5.*`             | `>1.2, <=1.5`              |
+/// | `> 1`                          | `>1`                       |
+/// | `>1.2 , <=1.5`                 | `>1.2, <=1.5`              |
 ///
 /// # Best practices for defining version requirements
 ///
 /// When defining a comparator for a version requirement, always:
 ///
-/// 1. Define an explicit operator for every comparator, like `^1` or `^1.2` instead of `1` or
-///    `1.2`.
-///
-///    This reduces ambiguity in the behavior for the comparators and reduces the likelihood of
-///    changing the requirement string when round-tripping through serialization and
-///    deserialization.
-/// 1. Immediately follow the explicit operator with the version, like `>1.2` instead of `> 1.2`.
+/// 1. Immediately follow the operator with the version, like `>1.2` instead of `> 1.2`.
 ///
 ///    This reduces the likelihood of changing the requirement string when round-tripping through
 ///    serialization and deserialization.
@@ -457,30 +399,185 @@ use crate::{dscerror::DscError, schemas::dsc_repo::DscRepoSchema, types::Semanti
 ///    serialization and deserialization.
 ///
 /// [01]: https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#version-requirement-syntax
-/// [`SemVerReqWithBuildMetadata`]: DscError::SemVerReqWithBuildMetadata
+/// [`ComparatorIncludesForbiddenBuildMetadata`]: SemanticVersionReqError::ComparatorIncludesForbiddenBuildMetadata
 #[derive(Debug, Clone, Hash, Eq, Serialize, Deserialize, DscRepoSchema)]
 #[dsc_repo_schema(base_name = "semverRequirement", folder_path = "definitions")]
 pub struct SemanticVersionReq(semver::VersionReq);
 
-/// This static lazily defines the validating regex for [`SemanticVersionReq`]. It enables the
-/// [`Regex`] instance to be constructed once, the first time it's used, and then reused on all
-/// subsequent validation calls. It's kept private, since the API usage is to invoke the
-/// [`SemanticVersionReq::parse()`] method to validate and parse a string into a version requirement.
+/// Defines the parsing errors and diagnostics for invalid string representations of a
+/// [`SemanticVersionReq`].
 ///
-/// This pattern is used to forbid the inclusion of build metadata in a version requirement for DSC,
-/// since Rust allows but ignores that segment of a semantic version.
-static FORBIDDING_BUILD_METADATA_REGEX: OnceLock<Regex> = OnceLock::new();
+/// This error type is surfaced through the [`DscError::SemverReq`] error. This error type primarily
+/// distinguishes between two kinds of errors returned by [`SemanticVersionReq::parse()`]:
+///
+/// 1. When the input string is unparseable as a [`semver::VersionReq`], the function raises the
+///    [`UnparseableRequirement`] error, which passes the underlying parsing error through to the
+///    user.
+/// 1. When the input string is parseable as a [`semver::VersionReq`] but fails the more
+///    restrictive syntax validation DSC requires, the function raises the [`InvalidRequirement`]
+///    error, which collects the diagnostic errors for every mistake in the input string.
+///
+///    This enables the function to return the full set of invalid components for a requirement
+///    together, instead of requiring a user to iteratively discover their mistakes when each
+///    error is raised separately and immediately halts execution.
+///
+/// The remaining variants serve to collect validation errors for each comparator and to
+/// distinguish between the different validation failures for a comparator.
+///
+/// [`DscError::SemverReq`]: crate::dscerror::DscError::SemverReq
+/// [`UnparseableRequirement`]: Self::UnparseableRequirement
+/// [`InvalidRequirement`]: Self::InvalidRequirement
+#[derive(Debug, Diagnostic, Error)]
+#[non_exhaustive]
+pub enum SemanticVersionReqError {
+    /// Indicates that the input string was unparseable by the underlying [`semver`] crate, which
+    /// allows a more relaxed syntax. Any string that fails to parse as a [`semver::VersionReq`]
+    /// can't parse as a [`SemanticVersionReq`].
+    #[error("{t}", t = t!(
+        "types.semantic_version_req.unparseableReq",
+        "err" => source,
+    ))]
+    UnparseableRequirement{
+        /// The underlying parsing error from the [`semver`] crate, which provides details about
+        /// why the input string couldn't be parsed as a valid semantic version requirement.
+        #[from] source: semver::Error,
+    },
+
+    /// Indicates that the input string was invalid for the syntax that DSC supports.
+    ///
+    /// When DSC raises this error, the input string was valid for the Rust syntax that [`semver`]
+    /// supports but had one or more errors specific to DSC's more restrictive syntax. The `errors`
+    /// field contains a collection of one or more errors that show more fully how the input
+    /// string failed validation during parsing.
+    #[error("{t}", t = t!(
+        "types.semantic_version_req.invalidReq",
+        "requirement" => requirement,
+        "err" => errors.iter().map(|e| e.to_string()).collect::<Vec<_>>().join(", ")
+    ))]
+    InvalidRequirement{
+        /// The input string for the requirement that failed validation during parsing.
+        requirement: String,
+
+        /// Collected errors for every invalid comparator in the requirement.
+        #[related]
+        errors: Vec<SemanticVersionReqError>
+    },
+
+    /// Indicates that a specific comparator in the requirement was invalid for DSC.
+    ///
+    /// When DSC raises this error, the comparator  was valid for the Rust syntax that [`semver`]
+    /// supports but had one or more errors specific to DSC's more restrictive syntax. The `errors`
+    /// field contains a collection of one or more errors that show more fully how the specific
+    /// comparator failed validation during parsing.
+    ///
+    /// [`InvalidRequirement`]: Self::InvalidRequirement
+    #[error("{t}", t = t!(
+        "types.semantic_version_req.invalidComparator",
+        "comparator" => comparator,
+        "err" => errors.iter().map(|e| e.to_string()).collect::<Vec<_>>().join(", ")
+    ))]
+    InvalidComparator {
+        /// The input string for the comparator that failed validation during parsing.
+        comparator: String,
+
+        /// Collected errors for every invalid syntax problem with the comparator.
+        #[related]
+        errors: Vec<SemanticVersionReqError>,
+    },
+
+    /// Indicates that a comparator included the build metadata segment for a version, which DSC
+    /// forbids for clarity.
+    ///
+    /// While [`semver`] allows users to define build metadata for the version of a comparator, it
+    /// also ignores that segment entirely for the purposes of matching versions. DSC forbids the
+    /// build metadata segment in comparators to reduce the ambiguity and false expectations that
+    /// it will be used for version matching.
+    #[error("{t}", t = t!(
+        "types.semantic_version_req.forbiddenBuildMetadata",
+        "comparator" => comparator,
+        "build" =>  build_metadata,
+    ))]
+    ComparatorIncludesForbiddenBuildMetadata{
+        /// The input string for the comparator that failed validation during parsing.
+        comparator: String,
+        /// The text of the forbidden build metadata segment
+        build_metadata: String
+    },
+
+    /// Indicates that a comparator was defined without an explicit operator, which DSC requires
+    /// for clarity and predictability.
+    ///
+    /// [`semver`] supports defining a comparator without an explicit operator, interpreting the
+    /// operator as the semantically compatible operator (`^`) unless the version specifies one
+    /// or more wildcards, in which case it interprets the comparator as a wildcard operator.
+    ///
+    /// DSC _requires_ an explicit operator to limit confusion when specifying version pinning in
+    /// a configuration document.
+    #[error("{t}", t = t!(
+        "types.semantic_version_req.missingOperator",
+        "comparator" => comparator
+    ))]
+    ComparatorMissingOperator{
+        /// The input string for the comparator that failed validation during parsing.
+        comparator: String
+    },
+
+    /// Indicates that a comparator was defined with an invalid wildcard character (`x` or `X`).
+    ///
+    /// [`semver`] supports defining wildcards as asterisks (`*`), `x`, and `X`. DSC forbids using
+    /// letters as wildcards to reduce ambiguity and confusion when specifying wildcards and
+    /// prerelease version segments.
+    #[error("{t}", t = t!(
+        "types.semantic_version_req.invalidWildcards",
+        "comparator" => comparator
+    ))]
+    ComparatorWithInvalidWildcards{
+        /// The input string for the comparator that failed validation during parsing.
+        comparator: String
+    },
+
+    /// Indicates that a comparator was defined with a wildcard for the major version segment,
+    /// which DSC forbids.
+    ///
+    /// [`semver`] supports defining the version for a comparator with the major version segment
+    /// as a wildcard. DSC forbids this construction, since it maps to "match any version," which
+    /// is the default behavior when no version requirement is defined.
+    #[error("{t}", t = t!(
+        "types.semantic_version_req.wildcardMajorVersion",
+        "comparator" => comparator,
+        "wildcard" => wildcard
+    ))]
+    ComparatorWithWildcardMajorVersion{
+        /// The input string for the comparator that failed validation during parsing.
+        comparator: String,
+        /// The wildcard used for the major version segment.
+        wildcard: String,
+    },
+}
+
+/// This static lazily defines the regex for [`SemanticVersionReq`] that finds instances of the
+/// forbidden build metadata segment in the version for any comparator. It enables the [`Regex`]
+/// instance to be constructed once, the first time it's used, and then reused on all subsequent
+/// validation calls. It's kept private, since the API usage is to invoke the
+/// [`SemanticVersionReq::parse()`] method to validate and parse a string into a version
+/// requirement.
+static COMPARATOR_HAS_BUILD_METADATA_REGEX: OnceLock<Regex> = OnceLock::new();
+
+/// This static lazily defines the regex for [`SemanticVersionReq`] that finds comparators that
+/// are defined without the mandatory operator before a version. It enables the [`Regex`] instance
+/// to be constructed once, the first time it's used, and then reused on all subsequent validation
+/// calls. It's kept private, since the API usage is to invoke the [`SemanticVersionReq::parse()`]
+/// method to validate and parse a string into a version requirement.
+static COMPARATOR_STARTS_WITH_OPERATOR_REGEX: OnceLock<Regex> = OnceLock::new();
+
+/// This static lazily defines the regex for [`SemanticVersionReq`] that finds invalid wildcards
+/// (`x` or `X`) that are defined for any comparator version. It enables the [`Regex`] instance
+/// to be constructed once, the first time it's used, and then reused on all subsequent validation
+/// calls. It's kept private, since the API usage is to invoke the [`SemanticVersionReq::parse()`]
+/// method to validate and parse a string into a version requirement.
+static COMPARATOR_HAS_INVALID_WILDCARD_REGEX: OnceLock<Regex> = OnceLock::new();
 
 impl SemanticVersionReq {
-    /// Returns the [`Regex`] for [`FORBIDDING_BUILD_METADATA_PATTERN`].
-    ///
-    /// This private method is used to initialize the [`FORBIDDING_BUILD_METADATA_REGEX`] private
-    /// static to reduce the number of times the regular expression is compiled from the pattern
-    /// string.
-    fn init_pattern() -> Regex {
-        Regex::new(Self::FORBIDDING_BUILD_METADATA_PATTERN).expect("pattern is valid")
-    }
-
     /// Parses a given string into a semantic version requirement.
     ///
     /// # Errors
@@ -498,23 +595,85 @@ impl SemanticVersionReq {
     /// - Specifying an invalid character for a version segment, like `>a.b`.
     /// - Not specifying an additional comparator after a comma, like `>=1.*,`,
     /// - Not specifying a comma between comparators, like `>=1.2 <1.9`.
-    pub fn parse(text: &str) -> Result<Self, DscError> {
-        // Check first for build metadata and error if discovered
-        let pattern = FORBIDDING_BUILD_METADATA_REGEX.get_or_init(Self::init_pattern);
-        if let Some(captures) = pattern.captures(text) {
-            let version = captures.get_match().as_str().to_string();
-            let build = captures
-                .name("buildmetadata")
-                .map_or("", |m| m.as_str())
-                .to_string();
+    pub fn parse(text: &str) -> Result<Self, SemanticVersionReqError> {
+        // First verify whether the input can parse as a semantic version requirement at all;
+        // If not, error early.
+        let requirement = semver::VersionReq::parse(text)?;
+        // Next, collect parse errors to provide full feedback to user for invalid comparator
+        // definitions:
+        let mut errors: Vec<SemanticVersionReqError> = vec![];
+        let comparators: Vec<&str> = text.split(',').map(|c| c.trim()).collect();
+        let starts_with_operator = COMPARATOR_STARTS_WITH_OPERATOR_REGEX.get_or_init(
+            Self::init_operator_pattern
+        );
+        let invalid_wildcard = COMPARATOR_HAS_INVALID_WILDCARD_REGEX.get_or_init(
+            Self::init_wildcard_pattern
+        );
+        let has_build_metadata = COMPARATOR_HAS_BUILD_METADATA_REGEX.get_or_init(
+            Self::init_build_metadata_pattern
+        );
 
-            return Err(DscError::SemVerReqWithBuildMetadata(version, build));
+        for comparator in comparators {
+            let mut comparator_errors: Vec<SemanticVersionReqError> = vec![];
+            // Check for missing operators:
+            if !starts_with_operator.is_match(comparator) {
+                comparator_errors.push(
+                    SemanticVersionReqError::ComparatorMissingOperator{
+                        comparator: comparator.into()
+                    }
+                );
+            }
+            // Check for invalid wildcards:
+            if let Some(captures) = invalid_wildcard.captures(comparator) {
+                if let Some(wildcard_major) = captures.name("wildcard_major") {
+                    comparator_errors.push(
+                        SemanticVersionReqError::ComparatorWithWildcardMajorVersion{
+                            comparator: comparator.into(),
+                            wildcard: wildcard_major.as_str().to_string()
+                        }
+                    );
+                }
+                if captures.name("invalid_minor_wildcard").is_some() || captures.name("invalid_patch_wildcard").is_some() {
+                    comparator_errors.push(
+                        SemanticVersionReqError::ComparatorWithInvalidWildcards{
+                            comparator: comparator.into()
+                        }
+                    );
+                }
+            }
+            // Check for forbidden build metadata
+            if let Some(captures) = has_build_metadata.captures(comparator) {
+                let build_metadata = captures
+                    .name("buildmetadata")
+                    .expect("capture requires this group, should always exist")
+                    .as_str()
+                    .to_string();
+
+                comparator_errors.push(
+                    SemanticVersionReqError::ComparatorIncludesForbiddenBuildMetadata{
+                        comparator: comparator.into(),
+                        build_metadata,
+                    }
+                );
+            }
+
+            if !comparator_errors.is_empty() {
+                errors.push(
+                    SemanticVersionReqError::InvalidComparator {
+                        comparator: comparator.into(),
+                        errors: comparator_errors
+                    }
+                );
+            }
         }
 
-        // Parse as underlying type and raise wrapped error if invalid
-        match semver::VersionReq::parse(text) {
-            Ok(requirement) => Ok(Self(requirement)),
-            Err(e) => Err(DscError::SemVer(e)),
+        if errors.is_empty() {
+            Ok(Self(requirement))
+        } else {
+            Err(SemanticVersionReqError::InvalidRequirement {
+                requirement: text.to_string(),
+                errors
+            })
         }
     }
 
@@ -531,6 +690,29 @@ impl SemanticVersionReq {
     /// assert!(requirement.matches(&SemanticVersion::new(1, 3, 0)));
     /// // 2.0.0 isn't compatible with the requirement.
     /// assert!(!requirement.matches(&SemanticVersion::new(2, 0, 0)));
+    /// ```
+    ///
+    /// The following example shows how the `matches` function treats prerelease versions as not
+    /// matching a requirement unless the requirement explicitly defines a prerelease segment.
+    ///
+    /// ```rust
+    /// # use dsc_lib::types::{SemanticVersion, SemanticVersionReq};
+    /// let v_stable = &SemanticVersion::parse("1.2.3").unwrap();
+    /// let v_rc1 = &SemanticVersion::parse("1.2.3-rc.1").unwrap();
+    /// let v_rc2 = &SemanticVersion::parse("1.2.3-rc.2").unwrap();
+    ///
+    /// // Only the stable version matches the stable requirement
+    /// let stable_req = SemanticVersionReq::parse("^1.2.3").unwrap();
+    /// assert!(!stable_req.matches(v_rc1));
+    /// assert!(!stable_req.matches(v_rc2));
+    /// assert!(stable_req.matches(v_stable));
+    ///
+    /// // All three versions match the requirement that explicitly defines the prerelease segment
+    /// let prerelease_req = SemanticVersionReq::parse("^1.2.3-rc.1").unwrap();
+    /// assert!(prerelease_req.matches(v_stable));
+    /// assert!(prerelease_req.matches(v_rc1));
+    /// assert!(prerelease_req.matches(v_rc2));
+    ///
     /// ```
     pub fn matches(&self, version: &SemanticVersion) -> bool {
         self.0.matches(version.as_ref())
@@ -559,6 +741,42 @@ impl SemanticVersionReq {
         "$",                                    // Anchor to end of string
     );
 
+    /// Returns the [`Regex`] for [`FORBIDDING_BUILD_METADATA_PATTERN`].
+    ///
+    /// This private method is used to initialize the [`COMPARATOR_HAS_BUILD_METADATA_REGEX`]
+    /// private static to reduce the number of times the regular expression is compiled from the
+    /// pattern string.
+    ///
+    /// [`FORBIDDING_BUILD_METADATA_PATTERN`]: SemanticVersionReq::FORBIDDING_BUILD_METADATA_PATTERN
+    fn init_build_metadata_pattern() -> Regex {
+        Regex::new(Self::FORBIDDING_BUILD_METADATA_PATTERN).expect("pattern is valid")
+    }
+
+    /// Returns the [`Regex`] for [`REQUIRE_OPERATOR_PATTERN`].
+    ///
+    /// This private method is used to initialize the [`COMPARATOR_STARTS_WITH_OPERATOR_REGEX`]
+    /// private static to reduce the number of times the regular expression is compiled from the
+    /// pattern string.
+    ///
+    /// [`REQUIRE_OPERATOR_PATTERN`]: SemanticVersionReq::REQUIRE_OPERATOR_PATTERN
+    fn init_operator_pattern() -> Regex {
+        let pattern = SemanticVersionReq::REQUIRE_OPERATOR_PATTERN;
+        Regex::new(pattern).expect("pattern is valid")
+    }
+
+    /// Returns the [`Regex`] for [`VALIDATING_WILDCARDS_PATTERN`].
+    ///
+    /// This private method is used to initialize the [`COMPARATOR_HAS_INVALID_WILDCARD_REGEX`]
+    /// private static to reduce the number of times the regular expression is compiled from the
+    /// pattern string.
+    ///
+    /// [`VALIDATING_WILDCARDS_PATTERN`]: SemanticVersionReq::VALIDATING_WILDCARDS_PATTERN
+    fn init_wildcard_pattern() -> Regex {
+        let pattern = SemanticVersionReq::VALIDATING_WILDCARDS_PATTERN;
+        Regex::new(pattern).expect("pattern is valid")
+    }
+
+
     /// Defines the regular expression for matching a literal version with build metadata.
     ///
     /// DSC forbids the inclusion of build metadata in a version requirement. To provide better
@@ -571,6 +789,55 @@ impl SemanticVersionReq {
         SemanticVersion::CAPTURING_BUILD_METADATA_PATTERN,  // Capture the build metadata
         ")",                                                // Close non-capturing group for build metadata and prefix
     );
+
+    /// Defines the regular expression for matching an operator at the beginning of any comparator.
+    ///
+    /// DSC requires every comparator to define an explicit operator instead of allowing the
+    /// implicit operator behavior that [`semver::VersionReq`] supports. To provide better error
+    /// messaging, DSC uses this pattern to verify each comparator during parsing and reports any
+    /// comparators that are missing their required operator to the user.
+    pub const REQUIRE_OPERATOR_PATTERN: &str = const_str::concat!(
+        "^",                                    // Anchor to the start of the string
+        SemanticVersionReq::OPERATOR_PATTERN    // Match any valid operator
+    );
+
+    /// Defines the regular expression for validating wildcards in a comparator.
+    ///
+    /// DSC forbids defining the major version segment as any wildcard character. DSC also forbids
+    /// defining any wildcards as `x` or `X` instead of `*`. To provide better error messaging, DSC
+    /// uses this pattern to discover the inclusion of invalid wildcards during parsing and report
+    /// it to the user.
+    pub const VALIDATING_WILDCARDS_PATTERN: &str = const_str::concat!(
+            "^",                                    // Anchor to the start of the string
+            SemanticVersionReq::OPERATOR_PATTERN,   // Match any valid operator
+            "?",                                    // Make the operator optional
+            r"\s*",                                 // Allow any whitespace after operator
+            "(?:",                                  // Start non-capturing group for version.
+            r"(?<wildcard_major>[\*xX])",           // Match any wildcard for major version
+            "|",                                    // or
+            r"\d+",                                 // Match literal major version
+            "(?:",                                  // Start non-capturing group for optional segments
+            r"\.",                                  // Require period after major and before minor
+            "(?:",                                  // Start non-capture group for minor version
+            r"(?<invalid_minor_wildcard>[xX])",     // Capture invalid wildcard
+            "|",                                    // or
+            r"\d+",                                 // Match literal version
+            "|",                                    // or
+            r"\*",                                  // Match valid wildcard
+            ")",                                    // Close non-capture group for minor version
+            "(?:",                                  // Open non-capture group for optional patch segment
+            r"\.",                                  // Require period after minor and before patch
+            "(?:",                                  // Open non-capture group for patch version
+            r"(?<invalid_patch_wildcard>[xX])",     // Capture invalid wildcard
+            "|",                                    // or
+            r"\d+",                                 // match literal version
+            "|",                                    // or
+            r"\*",                                  // match valid wildcard
+            ")",                                    // close non-capture group for patch version
+            ")?",                                   // close non-capture group for optional patch segment
+            ")?",                                   // close non-capture group for optional segments
+            ")"                                     // Close non-capturing group for version
+        );
 
     /// Defines the regular expression for matching a wildcard instead of a version segment.
     ///
@@ -607,11 +874,10 @@ impl SemanticVersionReq {
         "|",   // or
         "~",   // minimal-version (tilde)
         ")",   // Close the non-capturing group
-        "?",   // Mark the operator as optional
     );
 
-    /// Defines the regular expression for matching a comparator with optional leading operator
-    /// followed by a literal or wildcard version.
+    /// Defines the regular expression for matching a comparator with a leading operator followed
+    /// by a literal or wildcard version.
     pub const COMPARATOR_PATTERN: &str = const_str::concat!(
         SemanticVersionReq::OPERATOR_PATTERN,           // Match the operator, if any
         r"\s*",                                         // allow any number of spaces after operator
@@ -636,7 +902,7 @@ impl SemanticVersionReq {
         r"\.",                                      // Minor version must be followed by a period if patch is specified.
         SemanticVersion::VERSION_SEGMENT_PATTERN,   // Match the patch version.
         SemanticVersionReq::PRERELEASE_PATTERN,     // Match prerelease, if any - only valid with patch
-        ")?",                                       // Open non-capturing group for optional patch segment
+        ")?",                                       // Close non-capturing group for optional patch segment
         ")?",                                       // Close non-capturing group for optional minor and patch segments
         ")",                                        // Close non-capturing group for literal version
     );
@@ -708,7 +974,7 @@ impl JsonSchema for SemanticVersionReq {
             "pattern": SemanticVersionReq::VALIDATING_PATTERN,
             "patternErrorMessage": t!("schemas.definitions.semverReq.patternErrorMessage"),
             "examples": [
-                "1.2.3",
+                "=1.2.3",
                 ">=1.2.3, <2.0.0",
                 "^1.2",
                 "~2.3",
@@ -762,21 +1028,21 @@ impl From<SemanticVersionReq> for String {
 
 // Fallible conversions
 impl FromStr for SemanticVersionReq {
-    type Err = DscError;
+    type Err = SemanticVersionReqError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Self::parse(s)
     }
 }
 
 impl TryFrom<String> for SemanticVersionReq {
-    type Error = DscError;
+    type Error = SemanticVersionReqError;
     fn try_from(value: String) -> Result<Self, Self::Error> {
         Self::parse(value.as_str())
     }
 }
 
 impl TryFrom<&str> for SemanticVersionReq {
-    type Error = DscError;
+    type Error = SemanticVersionReqError;
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         SemanticVersionReq::from_str(value)
     }
