@@ -27,7 +27,7 @@ rustflags = [
     "-Dwarnings"
 ]
 
-[target.aarch64-windows-msvc]
+[target.aarch64-pc-windows-msvc]
 rustflags = [
     "-Ccontrol-flow-guard",
     "-Ctarget-feature=+crt-static",
