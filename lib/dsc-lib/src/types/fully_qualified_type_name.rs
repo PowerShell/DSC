@@ -1,9 +1,6 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-// TODO: Remove when updating to rustc 1.94; false positive from thiserror + rust-i18n t!() macro
-#![allow(unused_assignments)]
-
 use std::fmt::{Display, Formatter};
 use std::hash::Hash;
 use std::ops::Deref;

@@ -69,6 +69,8 @@ impl FirewallStore {
                 .cast()
                 .map_err(|error| t!("firewall.ruleEnumerationFailed", error = error.to_string()).to_string())?;
             results.push(rule);
+
+            unsafe { windows::Win32::System::Variant::VariantClear(&mut variant[0]) };
         }
 
         Ok(results)
@@ -169,6 +171,10 @@ fn profiles_from_mask(mask: i32) -> Vec<String> {
 }
 
 fn profiles_to_mask(values: &[String]) -> Result<i32, FirewallError> {
+    if values.is_empty() {
+        return Ok(NET_FW_PROFILE2_ALL.0);
+    }
+
     let mut mask = 0;
     for value in values {
         match value.to_ascii_lowercase().as_str() {
@@ -197,6 +203,10 @@ fn join_csv(value: &[String]) -> String {
 }
 
 fn interface_types_to_string(values: &[String]) -> Result<String, FirewallError> {
+    if values.is_empty() {
+        return Ok("All".to_string());
+    }
+
     let mut normalized = Vec::new();
     for value in values {
         match value.to_ascii_lowercase().as_str() {
@@ -268,6 +278,12 @@ fn apply_rule_properties(rule: &INetFwRule, desired: &FirewallRule, existing_pro
     // Determine the effective protocol: the desired value if provided, otherwise
     // the existing rule's protocol (if updating an existing rule).
     let effective_protocol = desired.protocol.or(existing_protocol);
+
+    // If effective_protocol is None, read the current protocol from the rule.
+    let effective_protocol = match effective_protocol {
+        Some(protocol) => Some(protocol),
+        None => Some(unsafe { rule.Protocol() }.map_err(&err)?),
+    };
 
     // Reject port specifications for protocols that don't support them (e.g. ICMP).
     // This must be checked regardless of whether the protocol itself was changed,
