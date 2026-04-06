@@ -23,7 +23,7 @@ pub fn copy_the_resource(source_file: &str, type_name: &str) -> Result<(), Strin
     } else {
         return Err("Source file not a resource manifest".to_string());
     }
-    let name_part = type_name.split('/').last().unwrap_or(type_name);
+    let name_part = type_name.split('/').next_back().unwrap_or(type_name);
     let output_file = format!("{name_part}.dsc.resource.json");
     let output_content = serde_json::to_string_pretty(&resource_json)
         .map_err(|e| format!("Failed to serialize JSON: {e}"))?;
