@@ -20,10 +20,10 @@ fn get_computer_name() -> String {
 pub fn handle_set(input: &str) -> Result<String> {
     // Parse input as UpdateList
     let update_list: UpdateList = serde_json::from_str(input)
-        .map_err(|e| Error::new(E_INVALIDARG.into(), t!("set.failedParseInput", err = e.to_string()).to_string()))?;
+        .map_err(|e| Error::new(E_INVALIDARG, t!("set.failedParseInput", err = e.to_string())))?;
 
     if update_list.updates.is_empty() {
-        return Err(Error::new(E_INVALIDARG.into(), t!("set.updatesArrayEmpty").to_string()));
+        return Err(Error::new(E_INVALIDARG, t!("set.updatesArrayEmpty")));
     }
 
     // Initialize COM
@@ -60,7 +60,7 @@ pub fn handle_set(input: &str) -> Result<String> {
                 && update_input.is_installed.is_none()
                 && update_input.update_type.is_none()
                 && update_input.msrc_severity.is_none() {
-                return Err(Error::new(E_INVALIDARG.into(), t!("set.atLeastOneCriterionRequired").to_string()));
+                return Err(Error::new(E_INVALIDARG, t!("set.atLeastOneCriterionRequired")));
             }
 
             // Find the update matching ALL provided criteria (logical AND)
@@ -167,7 +167,7 @@ pub fn handle_set(input: &str) -> Result<String> {
                     t!("set.criteriaMatchedMultipleUpdates", count = matching_updates.len()).to_string()
                 };
                 eprintln!("{{\"error\":\"{}\"}}", error_msg);
-                return Err(Error::new(E_INVALIDARG.into(), error_msg));
+                return Err(Error::new(E_INVALIDARG, error_msg));
             }
 
             // Get the first (and should be only) match
@@ -205,7 +205,7 @@ pub fn handle_set(input: &str) -> Result<String> {
                 // Emit JSON error to stderr
                 eprintln!("{{\"error\":\"{}\"}}", error_msg);
 
-                return Err(Error::new(E_FAIL.into(), error_msg));
+                return Err(Error::new(E_FAIL, error_msg));
             }
         }
 
@@ -238,7 +238,7 @@ pub fn handle_set(input: &str) -> Result<String> {
                     // Check if download was successful (orcSucceeded = 2)
                     if result_code != OperationResultCode(2) {
                         let hresult = download_result.HResult()?;
-                        return Err(Error::new(HRESULT(hresult).into(), t!("set.failedDownloadUpdate", code = result_code.0).to_string()));
+                        return Err(Error::new(HRESULT(hresult), t!("set.failedDownloadUpdate", code = result_code.0)));
                     }
                 }
 
@@ -252,17 +252,15 @@ pub fn handle_set(input: &str) -> Result<String> {
                 // Check if installation was successful (orcSucceeded = 2)
                 if result_code != OperationResultCode(2) {
                     let hresult = install_result.HResult()?;
-                    return Err(Error::new(HRESULT(hresult).into(), t!("set.failedInstallUpdate", code = result_code.0).to_string()));
+                    return Err(Error::new(HRESULT(hresult), t!("set.failedInstallUpdate", code = result_code.0)));
                 }
 
                 // Check if installation result indicates a reboot is required
-                if !reboot_required {
-                    if let Ok(reboot_req) = install_result.RebootRequired() {
-                        if reboot_req.as_bool() {
-                            reboot_required = true;
-                        }
+                if !reboot_required
+                    && let Ok(reboot_req) = install_result.RebootRequired()
+                    && reboot_req.as_bool() {
+                        reboot_required = true;
                     }
-                }
 
                 // Get full details now that it's installed
                 extract_update_info(&update)?
@@ -298,7 +296,7 @@ pub fn handle_set(input: &str) -> Result<String> {
                 updates
             };
             serde_json::to_string(&results)
-                .map_err(|e| Error::new(E_FAIL.into(), t!("set.failedSerializeOutput", err = e.to_string()).to_string()))
+                .map_err(|e| Error::new(E_FAIL, t!("set.failedSerializeOutput", err = e.to_string())))
         }
         Err(e) => Err(e),
     }
