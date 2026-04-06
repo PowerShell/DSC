@@ -33,7 +33,7 @@ pub fn handle_export(input: &str) -> Result<String> {
         }
     } else {
         serde_json::from_str(input)
-            .map_err(|e| Error::new(E_INVALIDARG.into(), t!("export.failedParseInput", err = e.to_string()).to_string()))?
+            .map_err(|e| Error::new(E_INVALIDARG, t!("export.failedParseInput", err = e.to_string())))?
     };
     
     let filters = &update_list.updates;
@@ -120,16 +120,14 @@ pub fn handle_export(input: &str) -> Result<String> {
                 }
 
                 // Filter by KB article IDs (match if any KB ID in the filter is present)
-                if let Some(kb_filter) = &filter.kb_article_ids {
-                    if !kb_filter.is_empty() {
-                        if let Some(ref kb_article_ids) = update_info.kb_article_ids {
-                            let kb_matches = kb_filter.iter().any(|filter_kb| {
-                                kb_article_ids.iter().any(|update_kb| update_kb.eq_ignore_ascii_case(filter_kb))
-                            });
-                            matches = matches && kb_matches;
-                        } else {
-                            matches = false;
-                        }
+                if let Some(kb_filter) = &filter.kb_article_ids && !kb_filter.is_empty() {
+                    if let Some(ref kb_article_ids) = update_info.kb_article_ids {
+                        let kb_matches = kb_filter.iter().any(|filter_kb| {
+                            kb_article_ids.iter().any(|update_kb| update_kb.eq_ignore_ascii_case(filter_kb))
+                        });
+                        matches = matches && kb_matches;
+                    } else {
+                        matches = false;
                     }
                 }
 
@@ -148,8 +146,8 @@ pub fn handle_export(input: &str) -> Result<String> {
                 }
 
                 // Filter by security bulletin IDs (match if any bulletin ID in the filter is present)
-                if let Some(bulletin_filter) = &filter.security_bulletin_ids {
-                    if !bulletin_filter.is_empty() {
+                if let Some(bulletin_filter) = &filter.security_bulletin_ids
+                    && !bulletin_filter.is_empty() {
                         if let Some(ref security_bulletin_ids) = update_info.security_bulletin_ids {
                             let bulletin_matches = bulletin_filter.iter().any(|filter_bulletin| {
                                 security_bulletin_ids.iter().any(|update_bulletin| update_bulletin.eq_ignore_ascii_case(filter_bulletin))
@@ -159,7 +157,6 @@ pub fn handle_export(input: &str) -> Result<String> {
                             matches = false;
                         }
                     }
-                }
 
                 // Filter by update type
                 if let Some(type_filter) = &filter.update_type {
@@ -230,7 +227,7 @@ pub fn handle_export(input: &str) -> Result<String> {
                     // Emit JSON error to stderr
                     eprintln!("{{\"error\":\"{}\"}}", error_msg);
                     
-                    return Err(Error::new(E_FAIL.into(), error_msg));
+                    return Err(Error::new(E_FAIL, error_msg));
                 }
             }
         }
@@ -252,7 +249,7 @@ pub fn handle_export(input: &str) -> Result<String> {
                 updates
             };
             serde_json::to_string(&result)
-                .map_err(|e| Error::new(E_FAIL.into(), t!("export.failedSerializeOutput", err = e.to_string()).to_string()))
+                .map_err(|e| Error::new(E_FAIL, t!("export.failedSerializeOutput", err = e.to_string())))
         }
         Err(e) => Err(e),
     }
@@ -303,15 +300,13 @@ fn matches_wildcard(text: &str, pattern: &str) -> bool {
             }
         }
     }
-    
+
     // For the last part, check if it should be at the end
-    if !ends_with_wildcard && !parts.is_empty() {
-        if let Some(last_part) = parts.last() {
-            if !last_part.is_empty() && !text_lower.ends_with(last_part) {
-                return false;
-            }
+    if !ends_with_wildcard && !parts.is_empty()
+        && let Some(last_part) = parts.last()
+        && !last_part.is_empty() && !text_lower.ends_with(last_part) {
+            return false;
         }
-    }
-    
+
     true
 }
