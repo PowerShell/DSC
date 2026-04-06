@@ -2,6 +2,7 @@
     "Name": "sshdconfig",
     "Kind": "Resource",
     "IsRust": true,
+    "RustPackageName": "dsc-resource-sshdconfig",
     "Binaries": [
         "sshdconfig"
     ],

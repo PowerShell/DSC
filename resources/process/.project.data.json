@@ -2,6 +2,7 @@
     "Name": "process",
     "Kind": "Resource",
     "IsRust": true,
+    "RustPackageName": "dsc-resource-process",
     "Binaries": [
         "process"
     ],
