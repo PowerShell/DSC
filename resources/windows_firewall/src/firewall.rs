@@ -314,13 +314,11 @@ fn apply_rule_properties(rule: &INetFwRule, desired: &FirewallRule, existing_pro
     // Reject port specifications for protocols that don't support them (e.g. ICMP).
     // This must be checked regardless of whether the protocol itself was changed,
     // because the caller may only be setting local_ports or remote_ports.
-    if let Some(protocol) = effective_protocol {
-        if !protocol_supports_ports(protocol)
-            && (desired.local_ports.is_some() || desired.remote_ports.is_some())
-        {
+    if let Some(protocol) = effective_protocol
+        && !protocol_supports_ports(protocol)
+        && (desired.local_ports.is_some() || desired.remote_ports.is_some()) {
             return Err(t!("firewall.portsNotAllowed", name = name, protocol = protocol).to_string().into());
         }
-    }
 
     if let Some(protocol) = desired.protocol {
         if let Some(current_protocol) = existing_protocol
