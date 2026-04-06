@@ -6,6 +6,7 @@
 
 use std::{
     fmt::Display,
+    hash::Hash,
     str::FromStr,
     sync::OnceLock,
 };
@@ -42,7 +43,7 @@ use crate::schemas::dsc_repo::DscRepoSchema;
 ///
 /// If the date version is for a prerelease, the prerelease segment must be a string of ASCII
 /// alphabetic characters (`[a-zA-Z]`).
-#[derive(Debug, Clone, Hash, Serialize, Deserialize, DscRepoSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, DscRepoSchema)]
 #[serde(try_from = "String", into = "String")]
 #[dsc_repo_schema(base_name = "dateVersion", folder_path = "definitions")]
 pub struct DateVersion(NaiveDate, Option<String>);
@@ -451,7 +452,7 @@ impl DateVersion {
         };
         let mut errors: Vec<DateVersionError> = vec![];
 
-        if year > 9999 || year < 1000 {
+        if !(1000..=9999).contains(&year) {
             errors.push(DateVersionError::InvalidYear { year });
         }
 
@@ -526,46 +527,39 @@ impl Datelike for DateVersion {
         self.as_ref().iso_week()
     }
     fn with_year(&self, year: i32) -> Option<Self> {
-        match self.as_ref().with_year(year) {
-            None => None,
-            Some(new_date) => Some(Self(new_date, self.1.clone()))
-        }
+        self.as_ref()
+            .with_year(year)
+            .map(|new_date| Self(new_date, self.1.clone()))
     }
     fn with_month(&self, month: u32) -> Option<Self> {
-        match self.as_ref().with_month(month) {
-            None => None,
-            Some(new_date) => Some(Self(new_date, self.1.clone()))
-        }
+        self.as_ref()
+            .with_month(month)
+            .map(|new_date| Self(new_date, self.1.clone()))
     }
     fn with_month0(&self, month0: u32) -> Option<Self> {
-        match self.as_ref().with_month0(month0) {
-            None => None,
-            Some(new_date) => Some(Self(new_date, self.1.clone()))
-        }
+        self.as_ref()
+            .with_month0(month0)
+            .map(|new_date| Self(new_date, self.1.clone()))
     }
     fn with_day(&self, day: u32) -> Option<Self> {
-        match self.as_ref().with_day(day) {
-            None => None,
-            Some(new_date) => Some(Self(new_date, self.1.clone()))
-        }
+        self.as_ref()
+            .with_day(day)
+            .map(|new_date| Self(new_date, self.1.clone()))
     }
     fn with_day0(&self, day0: u32) -> Option<Self> {
-        match self.as_ref().with_day0(day0) {
-            None => None,
-            Some(new_date) => Some(Self(new_date, self.1.clone()))
-        }
+        self.as_ref()
+            .with_day0(day0)
+            .map(|new_date| Self(new_date, self.1.clone()))
     }
     fn with_ordinal(&self, ordinal: u32) -> Option<Self> {
-        match self.as_ref().with_ordinal(ordinal) {
-            None => None,
-            Some(new_date) => Some(Self(new_date, self.1.clone()))
-        }
+        self.as_ref()
+            .with_ordinal(ordinal)
+            .map(|new_date| Self(new_date, self.1.clone()))
     }
     fn with_ordinal0(&self, ordinal0: u32) -> Option<Self> {
-        match self.as_ref().with_ordinal0(ordinal0) {
-            None => None,
-            Some(new_date) => Some(Self(new_date, self.1.clone()))
-        }
+        self.as_ref()
+            .with_ordinal0(ordinal0)
+            .map(|new_date| Self(new_date, self.1.clone()))
     }
 }
 
@@ -625,6 +619,13 @@ impl TryFrom<NaiveDate> for DateVersion {
 impl From<DateVersion> for NaiveDate {
     fn from(value: DateVersion) -> Self {
         value.0
+    }
+}
+
+impl Hash for DateVersion {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.0.hash(state);
+        self.1.hash(state);
     }
 }
 
@@ -697,7 +698,7 @@ impl PartialEq<DateVersion> for str {
 
 impl PartialEq<&str> for DateVersion {
     fn eq(&self, other: &&str) -> bool {
-        match Self::parse(*other) {
+        match Self::parse(other) {
             Ok(other_version) => self.eq(&other_version),
             Err(_) => false,
         }
@@ -706,7 +707,7 @@ impl PartialEq<&str> for DateVersion {
 
 impl PartialEq<DateVersion> for &str {
     fn eq(&self, other: &DateVersion) -> bool {
-        match DateVersion::parse(*self) {
+        match DateVersion::parse(self) {
             Ok(version) => version.eq(other),
             Err(_) => false
         }

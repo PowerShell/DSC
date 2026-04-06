@@ -117,6 +117,7 @@ use crate::schemas::dsc_repo::DscRepoSchema;
 #[derive(
     Clone,
     Debug,
+    Default,
     Eq,
     Serialize,
     Deserialize,
@@ -409,7 +410,7 @@ impl FullyQualifiedTypeName {
         let validating_segment_regex = Self::init_validating_segment_regex();
         let (_owner, _namespaces, name) = Self::parse_segments(
             text,
-            &validating_segment_regex,
+            validating_segment_regex,
             errors
         );
         if errors.len() == 1 && errors[0] == FullyQualifiedTypeNameError::EmptyTypeName {
@@ -565,14 +566,6 @@ impl FullyQualifiedTypeName {
     /// once and then reusing it for subsequent validations.
     fn init_validating_segment_regex() -> &'static Regex {
         VALIDATING_SEGMENT_REGEX.get_or_init(|| Regex::new(Self::VALIDATING_SEGMENT_PATTERN).unwrap())
-    }
-}
-
-// While it's technically never valid for a _defined_ FQTN to be empty, we need the default
-// implementation for creating empty instances of various structs to then populate/modify.
-impl Default for FullyQualifiedTypeName {
-    fn default() -> Self {
-        Self(String::new())
     }
 }
 

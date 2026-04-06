@@ -472,10 +472,10 @@ impl WildcardTypeName {
         if errors.is_empty() {
             Ok(Self { text: text.to_string(), regex })
         } else {
-            return Err(WildcardTypeNameError::InvalidTypeName {
+            Err(WildcardTypeNameError::InvalidTypeName {
                 text: text.to_string(),
                 errors: errors.clone(),
-            });
+            })
         }
     }
 
@@ -513,7 +513,7 @@ impl WildcardTypeName {
             fqtn_errors
         );
         // Convert the FQTN errors and add into the WCTN error collection
-        errors.extend(fqtn_errors.into_iter().map(|e| {
+        errors.extend(fqtn_errors.iter_mut().map(|e| {
             match TryInto::<WildcardTypeNameError>::try_into(e.clone()) {
                 Ok(wtne) => wtne,
                 Err(e) => e,

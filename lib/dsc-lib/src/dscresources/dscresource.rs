@@ -287,7 +287,10 @@ impl DscResource {
             return adapter.schema();
         }
 
-        return Err(DscError::NotSupported(t!("dscresources.dscresource.invokeSchemaNotSupported", resource = self.type_name).to_string()));
+        Err(DscError::NotSupported(t!(
+            "dscresources.dscresource.invokeSchemaNotSupported",
+            resource = self.type_name
+        ).to_string()))
     }
 
     fn get_adapter_resource(configurator: &mut Configurator, adapter: &FullyQualifiedTypeName) -> Result<DscResource, DscError> {
@@ -399,12 +402,12 @@ impl Invoke for DscResource {
             warn!("{}", t!("dscresources.dscresource.deprecationMessage", resource = self.type_name, message = deprecation_message));
         }
         if let Some(adapter) = &self.require_adapter {
-            return self.invoke_get_with_adapter(adapter, &self, filter);
+            return self.invoke_get_with_adapter(adapter, self, filter);
         }
 
         match &self.implemented_as {
             Some(ImplementedAs::Command) => {
-                command_resource::invoke_get(&self, filter, self.target_resource.as_deref())
+                command_resource::invoke_get(self, filter, self.target_resource.as_deref())
             },
             _ => {
                 Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
@@ -418,12 +421,12 @@ impl Invoke for DscResource {
             warn!("{}", t!("dscresources.dscresource.deprecationMessage", resource = self.type_name, message = deprecation_message));
         }
         if let Some(adapter) = &self.require_adapter {
-            return self.invoke_set_with_adapter(adapter, &self, desired, skip_test, execution_type);
+            return self.invoke_set_with_adapter(adapter, self, desired, skip_test, execution_type);
         }
 
         match &self.implemented_as {
             Some(ImplementedAs::Command) => {
-                command_resource::invoke_set(&self, desired, skip_test, execution_type, self.target_resource.as_deref())
+                command_resource::invoke_set(self, desired, skip_test, execution_type, self.target_resource.as_deref())
             },
             _ => {
                 Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
@@ -437,7 +440,7 @@ impl Invoke for DscResource {
             warn!("{}", t!("dscresources.dscresource.deprecationMessage", resource = self.type_name, message = deprecation_message));
         }
         if let Some(adapter) = &self.require_adapter {
-            return self.invoke_test_with_adapter(adapter, &self, expected);
+            return self.invoke_test_with_adapter(adapter, self, expected);
         }
 
         match &self.implemented_as {
@@ -473,7 +476,7 @@ impl Invoke for DscResource {
                     Ok(test_result)
                 }
                 else {
-                    command_resource::invoke_test(&self, expected, self.target_resource.as_deref())
+                    command_resource::invoke_test(self, expected, self.target_resource.as_deref())
                 }
             },
             _ => {
@@ -488,12 +491,12 @@ impl Invoke for DscResource {
             warn!("{}", t!("dscresources.dscresource.deprecationMessage", resource = self.type_name, message = deprecation_message));
         }
         if let Some(adapter) = &self.require_adapter {
-            return self.invoke_delete_with_adapter(adapter, &self, filter, execution_type);
+            return self.invoke_delete_with_adapter(adapter, self, filter, execution_type);
         }
 
         match &self.implemented_as {
             Some(ImplementedAs::Command) => {
-                command_resource::invoke_delete(&self, filter, self.target_resource.as_deref(), execution_type)
+                command_resource::invoke_delete(self, filter, self.target_resource.as_deref(), execution_type)
             },
             _ => {
                 Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
@@ -512,7 +515,7 @@ impl Invoke for DscResource {
 
         match &self.implemented_as {
             Some(ImplementedAs::Command) => {
-                command_resource::invoke_validate(&self, config, self.target_resource.as_deref())
+                command_resource::invoke_validate(self, config, self.target_resource.as_deref())
             },
             _ => {
                 Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
@@ -529,12 +532,12 @@ impl Invoke for DscResource {
             return Ok(serde_json::to_string(schema)?);
         }
         if let Some(adapter) = &self.require_adapter {
-            return self.invoke_schema_with_adapter(adapter, &self);
+            return self.invoke_schema_with_adapter(adapter, self);
         }
 
         match &self.implemented_as {
             Some(ImplementedAs::Command) => {
-                command_resource::get_schema(&self, self.target_resource.as_deref())
+                command_resource::get_schema(self, self.target_resource.as_deref())
             },
             _ => {
                 Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
@@ -548,10 +551,10 @@ impl Invoke for DscResource {
             warn!("{}", t!("dscresources.dscresource.deprecationMessage", resource = self.type_name, message = deprecation_message));
         }
         if let Some(adapter) = &self.require_adapter {
-            return self.invoke_export_with_adapter(adapter, &self, input);
+            return self.invoke_export_with_adapter(adapter, self, input);
         }
 
-        command_resource::invoke_export(&self, Some(input), self.target_resource.as_deref())
+        command_resource::invoke_export(self, Some(input), self.target_resource.as_deref())
     }
 
     fn resolve(&self, input: &str) -> Result<ResolveResult, DscError> {
@@ -563,7 +566,7 @@ impl Invoke for DscResource {
             return Err(DscError::NotSupported(t!("dscresources.dscresource.invokeResolveNotSupported", resource = self.type_name).to_string()));
         }
 
-        command_resource::invoke_resolve(&self, input)
+        command_resource::invoke_resolve(self, input)
     }
 }
 
@@ -615,10 +618,8 @@ pub fn redact(value: &Value) -> Value {
 /// # Errors
 /// * `DscError` - The adapter manifest is not found or invalid
 pub fn get_adapter_input_kind(adapter: &DscResource) -> Result<AdapterInputKind, DscError> {
-    if let Some(manifest) = &adapter.manifest {
-        if let Some(adapter_operation) = &manifest.adapter {
-            return Ok(adapter_operation.input_kind.clone());
-        }
+    if let Some(manifest) = &adapter.manifest && let Some(adapter_operation) = &manifest.adapter {
+        return Ok(adapter_operation.input_kind.clone());
     }
     Err(DscError::Operation(t!("dscresources.dscresource.adapterManifestNotFound", adapter = adapter.type_name).to_string()))
 }

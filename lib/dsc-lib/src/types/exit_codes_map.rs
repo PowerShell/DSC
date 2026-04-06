@@ -25,7 +25,7 @@ pub struct ExitCodesMap(HashMap<ExitCode, String>);
 /// Defines the default map as a private static to use with the `get_code_or_default` method,
 /// minimizing the performance hit compared to reconstructing the default map on every method
 /// invocation.
-static DEFAULT_MAP: LazyLock<ExitCodesMap> = LazyLock::new(|| ExitCodesMap::default());
+static DEFAULT_MAP: LazyLock<ExitCodesMap> = LazyLock::new(ExitCodesMap::default);
 
 impl ExitCodesMap {
     /// Defines the regular expression for validating a string as an exit code.
@@ -65,15 +65,15 @@ impl ExitCodesMap {
         match self.0.get(&ExitCode::new(code)) {
             Some(description) => description.clone(),
             None => match code {
-                0 => (&*DEFAULT_MAP).get_code(0).expect("default always defines exit code 0").clone(),
-                _ => (&*DEFAULT_MAP).get_code(1).expect("default always defines exit code 1").clone(),
+                0 => DEFAULT_MAP.get_code(0).expect("default always defines exit code 0").clone(),
+                _ => DEFAULT_MAP.get_code(1).expect("default always defines exit code 1").clone(),
             }
         }
     }
 
     /// Indicates whether the [`ExitCodesMap`] is identical to the default map.
     pub fn is_default(&self) -> bool {
-        self == &*DEFAULT_MAP
+        *self == *DEFAULT_MAP
     }
 
     /// Indicates whether the [`ExitCodesMap`] is empty or identical to the default map.
@@ -132,7 +132,7 @@ impl JsonSchema for ExitCodesMap {
 
 impl AsRef<ExitCodesMap> for ExitCodesMap {
     fn as_ref(&self) -> &ExitCodesMap {
-        &self
+        self
     }
 }
 

@@ -37,8 +37,8 @@ pub fn get_resource_invocation_order(config: &Configuration, parser: &mut Statem
         let mut dependency_already_in_order = true;
         // Skip dependency validation for copy loop resources here - it will be handled in unroll_and_push
         // where the copy context is properly set up for copyIndex() expressions in dependsOn
-        if resource.copy.is_none() {
-            if let Some(depends_on) = resource.depends_on.clone() {
+        if resource.copy.is_none()
+            && let Some(depends_on) = resource.depends_on.clone() {
                 for dependency in depends_on {
                     let statement = parser.parse_and_execute(&dependency, context)?;
                     let Some(string_result) = statement.as_str() else {
@@ -62,7 +62,6 @@ pub fn get_resource_invocation_order(config: &Configuration, parser: &mut Statem
                     dependency_already_in_order = false;
                 }
             }
-        }
 
         if order.iter().any(|r| r.name == resource.name && r.resource_type == resource.resource_type) {
             // if dependencies were already in the order, then this might be a circular dependency
