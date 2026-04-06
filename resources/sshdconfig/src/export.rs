@@ -19,8 +19,8 @@ pub fn invoke_export(input: Option<&String>, compare: bool) -> Result<Map<String
         let mut exist = false;
 
         for (keyword, input_value) in &cmd_info.input {
-            if !CanonicalProperties::is_canonical(keyword) {
-                if let Some(actual_value) = result.get(keyword) {
+            if !CanonicalProperties::is_canonical(keyword)
+                && let Some(actual_value) = result.get(keyword) {
                     if let Value::Array(entries) = actual_value {
                         // As more keywords are supported, different structured formats may be needed.
                         if let Ok(entry) = serde_json::from_value::<NameValueEntry>(input_value.clone()) {
@@ -36,7 +36,6 @@ pub fn invoke_export(input: Option<&String>, compare: bool) -> Result<Map<String
                         }
                     }
                 }
-            }
             // The only result should be the input to match the expected output for DSC
             result.insert(keyword.clone(), input_value.clone());
         }
