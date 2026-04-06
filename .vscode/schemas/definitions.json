@@ -23,6 +23,7 @@
                             "Kind":                  { "$ref": "#/$defs/ProjectKind" },
                             "SupportedPlatformOS":   { "$ref": "#/$defs/ProjectSupportedPlatformOS" },
                             "IsRust":                { "$ref": "#/$defs/ProjectIsRust" },
+                            "RustPackageName":       { "$ref": "#/$defs/ProjectRustPackageName" },
                             "TestOnly":              { "$ref": "#/$defs/ProjectTestOnly" },
                             "SkipTest":              { "$ref": "#/$defs/ProjectSkipTest" },
                             "ClippyUnclean":         { "$ref": "#/$defs/ProjectClippyUnclean" },
@@ -70,6 +71,7 @@
                 "Kind":                  { "$ref": "#/$defs/ProjectKind" },
                 "SupportedPlatformOS":   { "$ref": "#/$defs/ProjectSupportedPlatformOS" },
                 "IsRust":                { "$ref": "#/$defs/ProjectIsRust" },
+                "RustPackageName":       { "$ref": "#/$defs/ProjectRustPackageName" },
                 "TestOnly":              { "$ref": "#/$defs/ProjectTestOnly" },
                 "SkipTest":              { "$ref": "#/$defs/ProjectSkipTest" },
                 "ClippyUnclean":         { "$ref": "#/$defs/ProjectClippyUnclean" },
@@ -189,6 +191,11 @@
             "default": false,
             "title": "Is Rust Crate",
             "markdownDescription": "Indicates whether the project is a Rust crate."
+        },
+        "ProjectRustPackageName": {
+            "type": "string",
+            "title": "Rust package name",
+            "markdownDescription": "Defines the name of the rust project for the `-p` option on cargo commands."
         },
         "ProjectTestOnly": {
             "type": "boolean",

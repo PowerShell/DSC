@@ -28,6 +28,7 @@ class DscProjectDefinition {
     [string] $RelativePath
     [string] $Kind
     [bool]   $IsRust
+    [string] $RustPackageName
     [bool]   $ClippyUnclean
     [bool]   $ClippyPedanticUnclean
     [bool]   $SkipTestProject
@@ -37,6 +38,17 @@ class DscProjectDefinition {
     [string[]] $Binaries
     [DscProjectCopyFiles] $CopyFiles
     [DscProjectSkipTest] $SkipTest
+
+    [string[]] ToPackageFlags() {
+        if (-not $this.IsRust) {
+            return $null
+        }
+
+        return @(
+            '-p'
+            $this.RustPackageName ?? $this.Name
+        )
+    }
 
     [string] ToJson([bool]$forBuild) {
         $json = $this.ToData($forBuild) | ConvertTo-Json -Depth 5 -EnumsAsStrings
@@ -68,6 +80,9 @@ class DscProjectDefinition {
         }
         if ($this.IsRust) {
             $data.IsRust = $true
+            if (-not [string]::IsNullOrEmpty($this.RustPackageName)) {
+                $data.RustPackageName = $this.RustPackageName
+            }
             if ($this.ClippyPedanticUnclean) {
                 $data.ClippyPedanticUnclean = $true
             }
@@ -1416,6 +1431,113 @@ function Export-GrammarBinding {
         }
     }
 }
+
+function Test-Clippy {
+    [CmdletBinding()]
+    param(
+        [DscProjectDefinition[]]$Project,
+        [ValidateSet('current','aarch64-pc-windows-msvc','x86_64-pc-windows-msvc','aarch64-apple-darwin','x86_64-apple-darwin','aarch64-unknown-linux-gnu','aarch64-unknown-linux-musl','x86_64-unknown-linux-gnu','x86_64-unknown-linux-musl')]
+        $Architecture = 'current',
+        [switch]$Release,
+        [switch]$NoModifyWorkspace
+    )
+
+    begin {
+        $flags = @($Release ? '-r' : $null)
+        if ($Architecture -ne 'current') {
+            $flags += '--target'
+            $flags += $Architecture
+            $memberGroup = if ($Architecture -match 'linux') {
+                'Linux'
+            } elseif ($Architecture -match 'darwin') {
+                'macOS'
+            } elseif ($Architecture -match 'windows') {
+                'Windows'
+            } else {
+                throw "Unsupported architecture '$Architecture'"
+            }
+        } else {
+            $memberGroup = if ($IsLinux) {
+                'Linux'
+            } elseif ($IsMacOS) {
+                'macOS'
+            } elseif ($IsWindows) {
+                'Windows'
+            }
+        }
+        $workspaceParams = @{
+            MemberGroup = $memberGroup
+        }
+        if ($VerbosePreference -eq 'Continue') {
+            $workspaceParams.Verbose = $true
+        }
+        if (-not $NoModifyWorkspace) {
+            Set-DefaultWorkspaceMemberGroup @workspaceParams
+        }
+    }
+    
+    process {
+        $clippyFlags = @(
+            '--%'
+            '--'
+            '-Dwarnings' # Treat warnings as errors
+            '--no-deps'  # Only lint DSC projects, not dependencies
+        )
+        # Collect projects to lint into two groups:
+        # - Normal projects get linting without pedantic checks
+        # - Pedantic projects get stricter linting
+        [DscProjectDefinition[]]$normalProjects = @()
+        [DscProjectDefinition[]]$pedanticProjects = @()
+        foreach ($p in $Project) {
+            if (
+                -not $p.IsRust -or
+                $p.ClippyUnclean -or
+                (Test-ShouldSkipProject -Project $p -Architecture $Architecture)
+            ) {
+                continue
+            }
+
+            if ($p.ClippyPedanticUnclean) {
+                $pedanticProjects += $p
+            } else {
+                $normalProjects += $p
+            }
+        }
+        $normalProjectsExitCode   = 0
+        $pedanticProjectsExitCode = 0
+        if ($normalProjects.count -gt 0) {
+            [string[]]$projectFlags = $normalProjects.ToPackageFlags()
+            Write-Verbose "Linting rust projects with clippy: $($normalProjects.Name | ConvertTo-Json)"
+            Write-Verbose "Invoking clippy: cargo clippy $flags $projectFlags $clippyFlags"
+            cargo clippy @flags @projectFlags @clippyFlags
+
+            if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
+                $normalProjectsExitCode = $LASTEXITCODE
+            }
+        }
+        if ($pedanticProjects.count -gt 0) {
+            [string[]]$projectFlags = $pedanticProjects.ToPackageFlags()
+            $clippyFlags += '-Dclippy::pedantic'
+            Write-Verbose "Linting rust projects with clippy (pedantic): $($pedanticProjects.Name | ConvertTo-Json)"
+            Write-Verbose "Invoking clippy: cargo clippy $flags $projectFlags $clippyFlags"
+            cargo clippy @flags @projectFlags @clippyFlags
+
+            if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
+                $pedanticProjectsExitCode = $LASTEXITCODE
+            }
+        }
+        if ($normalProjectsExitCode -or $pedanticProjectsExitCode) {
+            throw "Clippy failed for at least one project"
+        }
+    }
+
+    clean {
+        if (-not $NoModifyWorkspace) {
+            Reset-DefaultWorkspaceMemberGroup
+        }
+    }
+}
+
 function Build-RustProject {
     [CmdletBinding()]
     param(
@@ -1475,18 +1597,16 @@ function Build-RustProject {
             cargo clean
         }
 
-        if ($Clippy -and !$Project.ClippyUnclean) {
-            $clippyFlags = @()
-            if (!$Project.ClippyPedanticUnclean) {
-                cargo clippy @clippyFlags --% -- -Dclippy::pedantic --no-deps -Dwarnings
-            } else {
-                cargo clippy @clippyFlags --% -- -Dwarnings --no-deps
+        if ($Clippy) {
+            $clippyParams = @{
+                Project = $Project
+                Architecture = $Architecture
+                Release = $Release
+                NoModifyWorkspace = $true
             }
-
-            if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
-                throw "Last exit code is $LASTEXITCODE, clippy failed for at least one project"
-            }
+            Test-Clippy @clippyParams
         }
+
         $members = Get-DefaultWorkspaceMemberGroup
         Write-Verbose -Verbose "Building rust projects: [$members]"
         Write-Verbose "Invoking cargo:`n`tcargo build $flags"

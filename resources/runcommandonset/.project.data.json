@@ -2,6 +2,7 @@
     "Name": "runcommandonset",
     "Kind": "Resource",
     "IsRust": true,
+    "RustPackageName": "dsc-resource-run_command_on_set",
     "Binaries": [
         "runcommandonset"
     ],

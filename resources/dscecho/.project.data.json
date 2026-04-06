@@ -2,6 +2,7 @@
     "Name": "dscecho",
     "Kind": "Resource",
     "IsRust": true,
+    "RustPackageName": "dsc-resource-echo",
     "Binaries": [
         "dscecho"
     ],
