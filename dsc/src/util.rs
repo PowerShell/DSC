@@ -350,18 +350,16 @@ pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Op
     }
 
     // override with DSC_TRACE_LEVEL env var if permitted
-    if tracing_setting.allow_override {
-        if let Ok(level) = env::var(DSC_TRACE_LEVEL) {
-            tracing_setting.level = match level.to_ascii_uppercase().as_str() {
-                "ERROR" => TraceLevel::Error,
-                "WARN" => TraceLevel::Warn,
-                "INFO" => TraceLevel::Info,
-                "DEBUG" => TraceLevel::Debug,
-                "TRACE" => TraceLevel::Trace,
-                _ => {
-                    warn!("{}: '{level}'", t!("util.invalidTraceLevel"));
-                    TraceLevel::Warn
-                }
+    if tracing_setting.allow_override && let Ok(level) = env::var(DSC_TRACE_LEVEL) {
+        tracing_setting.level = match level.to_ascii_uppercase().as_str() {
+            "ERROR" => TraceLevel::Error,
+            "WARN" => TraceLevel::Warn,
+            "INFO" => TraceLevel::Info,
+            "DEBUG" => TraceLevel::Debug,
+            "TRACE" => TraceLevel::Trace,
+            _ => {
+                warn!("{}: '{level}'", t!("util.invalidTraceLevel"));
+                TraceLevel::Warn
             }
         }
     }
