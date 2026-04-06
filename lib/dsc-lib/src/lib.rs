@@ -51,7 +51,6 @@ impl DscManager {
     ///
     /// * `name` - The name of the resource to find, can have wildcards.
     ///
-    #[must_use]
     pub fn find_resource(&mut self, filter: &DiscoveryFilter) -> Result<Option<&DscResource>, DscError> {
         self.discovery.find_resource(filter)
     }

@@ -55,18 +55,14 @@ pub fn invoke_get(resource: &DscResource, filter: &str, target_resource: Option<
         None => resource.type_name.clone(),
     };
     validate_security_context(&get.require_security_context, &resource_type, "get")?;
-    let path = if let Some(target_resource) = target_resource {
-        Some(target_resource.path.clone())
-    } else {
-        None
-    };
+    let path = target_resource.map(|target_resource| target_resource.path.clone());
     let command_resource_info = CommandResourceInfo {
         type_name: resource_type.clone(),
         path,
     };
     let args = process_get_args(get.args.as_ref(), filter, &command_resource_info);
     if !filter.is_empty() {
-        verify_json_from_manifest(&resource, filter, target_resource)?;
+        verify_json_from_manifest(resource, filter, target_resource)?;
         command_input = get_command_input(get.input.as_ref(), filter)?;
     }
 
@@ -74,7 +70,7 @@ pub fn invoke_get(resource: &DscResource, filter: &str, target_resource: Option<
     let (_exit_code, stdout, stderr) = invoke_command(&get.executable, args, command_input.stdin.as_deref(), Some(&resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
     if resource.kind == Kind::Resource {
         debug!("{}", t!("dscresources.commandResource.verifyOutputUsing", resource = &resource.type_name, executable = &get.executable));
-        verify_json_from_manifest(&resource, &stdout, target_resource)?;
+        verify_json_from_manifest(resource, &stdout, target_resource)?;
     }
 
     let result: GetResult = if let Ok(group_response) = serde_json::from_str::<Vec<ResourceGetResult>>(&stdout) {
@@ -118,11 +114,7 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, execut
         Some(r) => r.type_name.clone(),
         None => resource.type_name.clone(),
     };
-    let path = if let Some(target_resource) = target_resource {
-        Some(target_resource.path.clone())
-    } else {
-        None
-    };
+    let path = target_resource.map(|target_resource| target_resource.path.clone());
     let command_resource_info = CommandResourceInfo {
         type_name: resource_type.clone(),
         path,
@@ -136,22 +128,24 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, execut
         ExecutionKind::WhatIf => {
             operation_type = "whatif".to_string();
             // Check if set supports native what-if
-            let has_native_whatif = manifest.set.as_ref()
-                .map_or(false, |set| {
-                    let (_, supports_whatif) = process_set_delete_args(set.args.as_ref(), "", &command_resource_info, execution_type);
-                    supports_whatif
-                });
+            let has_native_whatif = manifest.set.as_ref().is_some_and(|set| {
+                let (_, supports_whatif) = process_set_delete_args(
+                    set.args.as_ref(),
+                    "",
+                    &command_resource_info,
+                    execution_type
+                );
+                supports_whatif
+            });
 
             if has_native_whatif {
                 &manifest.set
+            } else if manifest.what_if.is_some() {
+                warn!("{}", t!("dscresources.commandResource.whatIfWarning", resource = &resource_type));
+                &manifest.what_if
             } else {
-                if manifest.what_if.is_some() {
-                    warn!("{}", t!("dscresources.commandResource.whatIfWarning", resource = &resource_type));
-                    &manifest.what_if
-                } else {
-                    is_synthetic_what_if = true;
-                    &manifest.set
-                }
+                is_synthetic_what_if = true;
+                &manifest.set
             }
         }
     };
@@ -159,7 +153,7 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, execut
         return Err(DscError::NotImplemented("set".to_string()));
     };
     validate_security_context(&set.require_security_context, &resource_type, "set")?;
-    verify_json_from_manifest(&resource, desired, target_resource)?;
+    verify_json_from_manifest(resource, desired, target_resource)?;
 
     // if resource doesn't implement a pre-test, we execute test first to see if a set is needed
     if !skip_test && set.pre_test != Some(true) {
@@ -199,16 +193,12 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, execut
     let Some(get) = &manifest.get else {
         return Err(DscError::NotImplemented("get".to_string()));
     };
-    let resource_type = match target_resource.clone() {
+    let resource_type = match target_resource {
         Some(r) => r.type_name.clone(),
         None => resource.type_name.clone(),
     };
     validate_security_context(&get.require_security_context, &resource_type, "get")?;
-    let path = if let Some(target_resource) = target_resource {
-        Some(target_resource.path.clone())
-    } else {
-        None
-    };
+    let path = target_resource.map(|target_resource| target_resource.path.clone());
     let command_resource_info = CommandResourceInfo {
         type_name: resource_type.clone(),
         path,
@@ -221,7 +211,7 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, execut
 
     if resource.kind == Kind::Resource {
         debug!("{}", t!("dscresources.commandResource.setVerifyGet", resource = &resource.type_name, executable = &get.executable));
-        verify_json_from_manifest(&resource, &stdout, target_resource)?;
+        verify_json_from_manifest(resource, &stdout, target_resource)?;
     }
 
     let pre_state_value: Value = if exit_code == 0 {
@@ -271,7 +261,7 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, execut
 
             if resource.kind == Kind::Resource {
                 debug!("{}", t!("dscresources.commandResource.setVerifyOutput", operation = operation_type, resource = &resource.type_name, executable = &set.executable));
-                verify_json_from_manifest(&resource, &stdout, target_resource)?;
+                verify_json_from_manifest(resource, &stdout, target_resource)?;
             }
 
             let actual_value: Value = match serde_json::from_str(&stdout){
@@ -299,7 +289,7 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, execut
 
             if resource.kind == Kind::Resource {
                 debug!("{}", t!("dscresources.commandResource.setVerifyOutput", operation = operation_type, resource = &resource.type_name, executable = &set.executable));
-                verify_json_from_manifest(&resource, actual_line, target_resource)?;
+                verify_json_from_manifest(resource, actual_line, target_resource)?;
             }
 
             let actual_value: Value = serde_json::from_str(actual_line)?;
@@ -361,18 +351,14 @@ pub fn invoke_test(resource: &DscResource, expected: &str, target_resource: Opti
         return invoke_synthetic_test(resource, expected, target_resource);
     };
 
-    verify_json_from_manifest(&resource, expected, target_resource)?;
+    verify_json_from_manifest(resource, expected, target_resource)?;
 
-    let resource_type = match target_resource.clone() {
+    let resource_type = match target_resource {
         Some(r) => r.type_name.clone(),
         None => resource.type_name.clone(),
     };
     validate_security_context(&test.require_security_context, &resource_type, "test")?;
-    let path = if let Some(target_resource) = target_resource {
-        Some(target_resource.path.clone())
-    } else {
-        None
-    };
+    let path = target_resource.map(|target_resource| target_resource.path.clone());
     let command_resource_info = CommandResourceInfo {
         type_name: resource_type.clone(),
         path,
@@ -394,7 +380,7 @@ pub fn invoke_test(resource: &DscResource, expected: &str, target_resource: Opti
         Some(ReturnKind::State) => {
             if resource.kind == Kind::Resource {
                 debug!("{}", t!("dscresources.commandResource.testVerifyOutput", resource = &resource.type_name, executable = &test.executable));
-                verify_json_from_manifest(&resource, &stdout, target_resource)?;
+                verify_json_from_manifest(resource, &stdout, target_resource)?;
             }
 
             let actual_value: Value = match serde_json::from_str(&stdout){
@@ -422,7 +408,7 @@ pub fn invoke_test(resource: &DscResource, expected: &str, target_resource: Opti
 
             if resource.kind == Kind::Resource {
                 debug!("{}", t!("dscresources.commandResource.testVerifyOutput", resource = &resource.type_name, executable = &test.executable));
-                verify_json_from_manifest(&resource, actual_value, target_resource)?;
+                verify_json_from_manifest(resource, actual_value, target_resource)?;
             }
 
             let actual_value: Value = serde_json::from_str(actual_value)?;
@@ -522,18 +508,14 @@ pub fn invoke_delete(resource: &DscResource, filter: &str, target_resource: Opti
         return Err(DscError::NotImplemented("delete".to_string()));
     };
 
-    verify_json_from_manifest(&resource, filter, target_resource)?;
+    verify_json_from_manifest(resource, filter, target_resource)?;
 
     let resource_type = match target_resource {
         Some(r) => r.type_name.clone(),
         None => resource.type_name.clone(),
     };
     validate_security_context(&delete.require_security_context, &resource_type, "delete")?;
-    let path = if let Some(target_resource) = target_resource {
-        Some(target_resource.path.clone())
-    } else {
-        None
-    };
+    let path = target_resource.map(|target_resource| target_resource.path.clone());
     let command_resource_info = CommandResourceInfo {
         type_name: resource_type.clone(),
         path,
@@ -541,7 +523,7 @@ pub fn invoke_delete(resource: &DscResource, filter: &str, target_resource: Opti
     let (args, supports_whatif) = process_set_delete_args(delete.args.as_ref(), filter, &command_resource_info, execution_type);
     if execution_type == &ExecutionKind::WhatIf && !supports_whatif {
         // perform a synthetic what-if by calling test and wrapping the TestResult in DeleteResultKind::SyntheticWhatIf
-        let test_result = invoke_test(resource, filter, target_resource.clone())?;
+        let test_result = invoke_test(resource, filter, target_resource)?;
         return Ok(DeleteResultKind::SyntheticWhatIf(test_result));
     }
     let command_input = get_command_input(delete.input.as_ref(), filter)?;
@@ -586,11 +568,7 @@ pub fn invoke_validate(resource: &DscResource, config: &str, target_resource: Op
         Some(r) => r.type_name.clone(),
         None => resource.type_name.clone(),
     };
-    let path = if let Some(target_resource) = target_resource {
-        Some(target_resource.path.clone())
-    } else {
-        None
-    };
+    let path = target_resource.map(|target_resource| target_resource.path.clone());
     let command_resource_info = CommandResourceInfo {
         type_name: resource_type.clone(),
         path,
@@ -688,18 +666,14 @@ pub fn invoke_export(resource: &DscResource, input: Option<&str>, target_resourc
         None => resource.type_name.clone(),
     };
     validate_security_context(&export.require_security_context, &resource_type, "export")?;
-    let path = if let Some(target_resource) = target_resource {
-        Some(target_resource.path.clone())
-    } else {
-        None
-    };
+    let path = target_resource.map(|target_resource| target_resource.path.clone());
     let command_resource_info = CommandResourceInfo {
         type_name: resource_type.clone(),
         path,
     };
     if let Some(input) = input {
         if !input.is_empty() {
-            verify_json_from_manifest(&resource, input, target_resource)?;
+            verify_json_from_manifest(resource, input, target_resource)?;
 
             command_input = get_command_input(export.input.as_ref(), input)?;
         }
@@ -721,7 +695,7 @@ pub fn invoke_export(resource: &DscResource, input: Option<&str>, target_resourc
         };
         if resource.kind == Kind::Resource {
             debug!("{}", t!("dscresources.commandResource.exportVerifyOutput", resource = &resource.type_name, executable = &export.executable));
-            verify_json_from_manifest(&resource, line, target_resource)?;
+            verify_json_from_manifest(resource, line, target_resource)?;
         }
         instances.push(instance);
     }
@@ -876,15 +850,14 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
         if code != 0 {
             // Only use manifest-provided exit code mappings when the map is not empty/default,
             // so that default mappings do not suppress stderr-based diagnostics.
-            if !exit_codes.is_empty_or_default() {
-                if let Some(error_message) = exit_codes.get_code(code) {
+            if !exit_codes.is_empty_or_default()
+                && let Some(error_message) = exit_codes.get_code(code) {
                     return Err(DscError::CommandExitFromManifest(
                         executable.to_string(),
                         code,
                         error_message.clone()
                     ));
                 }
-            }
             return Err(DscError::Command(executable.to_string(), code, stderr_result));
         }
 

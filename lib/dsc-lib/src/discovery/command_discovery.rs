@@ -45,6 +45,7 @@ pub struct ManifestList {
     pub extensions: Option<Vec<ExtensionManifest>>,
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone, Deserialize, JsonSchema)]
 #[schemars(transform = idiomaticize_externally_tagged_enum)]
 pub enum ImportedManifest {
@@ -509,7 +510,7 @@ impl ResourceDiscovery for CommandDiscovery {
 
         for filter in required_resource_types {
             if let Some(required_adapter) = filter.require_adapter() {
-                if !adapters.contains(&required_adapter) {
+                if !adapters.contains(required_adapter) {
                     return Err(DscError::AdapterNotFound(required_adapter.to_string()));
                 }
                 // otherwise insert at the front of the list
@@ -558,12 +559,10 @@ fn filter_resources(found_resources: &mut DiscoveryResourceCache, required_resou
                 debug!("{}", t!("discovery.commandDiscovery.foundResourceWithVersion", resource = resource.type_name, version = resource.version));
                 break;
             }
-        } else {
-            if matches_adapter_requirement(resource, filter) {
-                found_resources.entry(filter.resource_type().clone()).or_default().push(resource.clone());
-                required_resources.insert(filter.clone(), true);
-                break;
-            }
+        } else if matches_adapter_requirement(resource, filter) {
+            found_resources.entry(filter.resource_type().clone()).or_default().push(resource.clone());
+            required_resources.insert(filter.clone(), true);
+            break;
         }
         if required_resources.values().all(|&v| v) {
             return;
@@ -639,7 +638,7 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
             debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = path.to_string_lossy(), condition = resource.condition.unwrap_or_default(), resource = resource.type_name));
             return Ok(vec![]);
         }
-        let resource = load_adapted_resource_manifest(&path, &resource)?;
+        let resource = load_adapted_resource_manifest(path, &resource)?;
         return Ok(vec![ImportedManifest::Resource(resource)]);
     }
     if DSC_RESOURCE_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)) {
@@ -711,7 +710,7 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
                     debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = path.to_string_lossy(), condition = resource.condition.as_ref() : {:?}, resource = resource.type_name));
                     continue;
                 }
-                let resource = load_adapted_resource_manifest(&path, resource)?;
+                let resource = load_adapted_resource_manifest(path, resource)?;
                 resources.push(ImportedManifest::Resource(resource));
             }
         }

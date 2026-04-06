@@ -44,19 +44,15 @@ impl Function for Contains {
         if let Some(array) = args[0].as_array() {
             for item in array {
                 if let Some(item_str) = item.as_str() {
-                    if let Some(string) = &string_to_find {
-                        if item_str == string {
-                            found = true;
-                            break;
-                        }
+                    if let Some(string) = &string_to_find && item_str == string {
+                        found = true;
+                        break;
                     }
-                } else if let Some(item_num) = item.as_i64() {
-                    if let Some(number) = number_to_find {
-                        if item_num == number {
-                            found = true;
-                            break;
-                        }
-                    }
+                } else if let Some(item_num) = item.as_i64()
+                    && let Some(number) = number_to_find
+                    && item_num == number {
+                        found = true;
+                        break;
                 }
             }
             return Ok(Value::Bool(found));
@@ -71,11 +67,9 @@ impl Function for Contains {
                         found = true;
                         break;
                     }
-                } else if let Some(number) = number_to_find {
-                    if key == &number.to_string() {
-                        found = true;
-                        break;
-                    }
+                } else if let Some(number) = number_to_find && key == &number.to_string() {
+                    found = true;
+                    break;
                 }
             }
             return Ok(Value::Bool(found));

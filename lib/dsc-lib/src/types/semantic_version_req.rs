@@ -400,7 +400,7 @@ use crate::{schemas::dsc_repo::DscRepoSchema, types::SemanticVersion};
 ///
 /// [01]: https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#version-requirement-syntax
 /// [`ComparatorIncludesForbiddenBuildMetadata`]: SemanticVersionReqError::ComparatorIncludesForbiddenBuildMetadata
-#[derive(Debug, Clone, Hash, Eq, Serialize, Deserialize, DscRepoSchema)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Default, Serialize, Deserialize, DscRepoSchema)]
 #[dsc_repo_schema(base_name = "semverRequirement", folder_path = "definitions")]
 pub struct SemanticVersionReq(semver::VersionReq);
 
@@ -983,12 +983,6 @@ impl JsonSchema for SemanticVersionReq {
     }
 }
 
-impl Default for SemanticVersionReq {
-    fn default() -> Self {
-        Self(semver::VersionReq::default())
-    }
-}
-
 impl Display for SemanticVersionReq {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
@@ -1063,11 +1057,11 @@ impl Deref for SemanticVersionReq {
 }
 
 // Comparison traits
-impl PartialEq for SemanticVersionReq {
-    fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0
-    }
-}
+// impl PartialEq for SemanticVersionReq {
+//     fn eq(&self, other: &Self) -> bool {
+//         self.0 == other.0
+//     }
+// }
 
 impl PartialEq<semver::VersionReq> for SemanticVersionReq {
     fn eq(&self, other: &semver::VersionReq) -> bool {
@@ -1137,7 +1131,7 @@ impl PartialEq<SemanticVersionReq> for str {
 
 impl PartialEq<&str> for SemanticVersionReq {
     fn eq(&self, other: &&str) -> bool {
-        match Self::parse(*other) {
+        match Self::parse(other) {
             Ok(o) => self == &o,
             Err(_) => false
         }
@@ -1146,7 +1140,7 @@ impl PartialEq<&str> for SemanticVersionReq {
 
 impl PartialEq<SemanticVersionReq> for &str {
     fn eq(&self, other: &SemanticVersionReq) -> bool {
-        match SemanticVersionReq::parse(*self) {
+        match SemanticVersionReq::parse(self) {
             Ok(s) => &s == other,
             Err(_) => false
         }

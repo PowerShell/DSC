@@ -61,11 +61,12 @@ impl Display for SecureObject {
 /// `true` if the value is a secure value, `false` otherwise.
 #[must_use]
 pub fn is_secure_value(value: &Value) -> bool {
-    if let Some(obj) = value.as_object() {
-        if obj.len() == 1 && (obj.contains_key("secureString") || obj.contains_key("secureObject")) {
+    if let Some(obj) = value.as_object()
+        && obj.len() == 1
+        && (obj.contains_key("secureString") || obj.contains_key("secureObject")) {
             return true;
         }
-    }
+
     false
 }
 
@@ -89,7 +90,7 @@ pub fn import_parameters(parameters: &Value) -> Result<HashMap<String, Value>, D
             result
         },
         Err(_) => {
-            let simple_input = match serde_json::from_value::<SimpleInput>(parameters.clone()) {
+            match serde_json::from_value::<SimpleInput>(parameters.clone()) {
                 Ok(simple_input) => {
                     trace!("{}", t!("configure.parameters.importingParametersFromInput"));
                     simple_input.parameters
@@ -97,8 +98,7 @@ pub fn import_parameters(parameters: &Value) -> Result<HashMap<String, Value>, D
                 Err(e) => {
                     return Err(DscError::Parser(t!("configure.parameters.invalidParamsFormat", error = e).to_string()));
                 }
-            };
-            simple_input
+            }
         }
     };
     Ok(parameters)

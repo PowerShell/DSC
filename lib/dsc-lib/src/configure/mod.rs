@@ -241,11 +241,11 @@ fn add_metadata(dsc_resource: &DscResource, mut properties: Option<Map<String, V
     if dsc_resource.kind == Kind::Adapter && get_adapter_input_kind(dsc_resource)? == AdapterInputKind::Full {
         // add metadata to the properties so the adapter knows this is a config
         let mut metadata: Map<String, Value> = Map::new();
-        if let Some(resource_metadata) = resource_metadata {
-            if !resource_metadata.other.is_empty() {
+        if let Some(resource_metadata) = resource_metadata
+            && !resource_metadata.other.is_empty() {
                 metadata.extend(resource_metadata.other);
             }
-        }
+
         let mut dsc_value = Map::new();
         dsc_value.insert("context".to_string(), Value::String("configuration".to_string()));
         metadata.insert("Microsoft.DSC".to_string(), Value::Object(dsc_value));
@@ -284,11 +284,11 @@ fn add_metadata(dsc_resource: &DscResource, mut properties: Option<Map<String, V
 }
 
 fn get_require_adapter_from_directive(resource_directives: &Option<ResourceDirective>) -> Option<FullyQualifiedTypeName> {
-    if let Some(directives) = resource_directives {
-        if let Some(require_adapter) = &directives.require_adapter {
+    if let Some(directives) = resource_directives
+        && let Some(require_adapter) = &directives.require_adapter {
             return Some(require_adapter.clone());
         }
-    }
+
     None
 }
 
@@ -298,19 +298,22 @@ fn check_security_context(metadata: Option<&Metadata>, directive_security_contex
     }
 
     let mut security_context_required: Option<&SecurityContextKind> = None;
-    if let Some(metadata) = &metadata {
-        if let Some(microsoft_dsc) = &metadata.microsoft {
-            if let Some(required_security_context) = &microsoft_dsc.security_context {
-                warn!("{}", t!("configure.mod.securityContextInMetadataDeprecated"));
-                security_context_required = Some(required_security_context);
-            }
+    if let Some(metadata) = &metadata
+        && let Some(microsoft_dsc) = &metadata.microsoft 
+        && let Some(required_security_context) = &microsoft_dsc.security_context {
+            warn!("{}", t!("configure.mod.securityContextInMetadataDeprecated"));
+            security_context_required = Some(required_security_context);
         }
-    }
 
-    if let Some(directive_security_context) = &directive_security_context {
-        if security_context_required.is_some() && security_context_required != Some(directive_security_context) {
-            return Err(DscError::SecurityContext(t!("configure.mod.conflictingSecurityContext", metadata = security_context_required.unwrap(), directive = directive_security_context).to_string()));
-        }
+    if let Some(directive_security_context) = directive_security_context {
+        if let Some(security_context_required) = security_context_required
+            && security_context_required != directive_security_context {
+                return Err(DscError::SecurityContext(t!(
+                    "configure.mod.conflictingSecurityContext",
+                    metadata = security_context_required,
+                    directive = directive_security_context
+                ).to_string()));
+            }
         security_context_required = Some(directive_security_context);
     }
 
@@ -395,7 +398,7 @@ fn get_metadata_from_result(mut context: Option<&mut Context>, properties: &mut 
                         // set the current process env vars to the new values
                         for (key, value) in env_vars {
                             unsafe {
-                                std::env::set_var(&key.to_string(), &value);
+                                std::env::set_var(&key, &value);
                             }
                         }
                     }
@@ -485,18 +488,16 @@ impl Configurator {
 
     fn get_properties(&mut self, resource: &Resource, resource_kind: &Kind) -> Result<Option<Map<String, Value>>, DscError> {
         // Restore copy loop context from resource metadata under Microsoft.DSC/copyLoops if present
-        if let Some(metadata) = &resource.metadata {
-            if let Some(microsoft) = &metadata.microsoft {
-                if let Some(copy_loops) = &microsoft.copy_loops {
-                    for (loop_name, value) in copy_loops {
-                        if let Some(index) = value.as_i64() {
-                            self.context.copy.insert(loop_name.to_string(), index);
-                            self.context.copy_current_loop_name.clone_from(loop_name);
-                        }
+        if let Some(metadata) = &resource.metadata
+            && let Some(microsoft) = &metadata.microsoft
+            && let Some(copy_loops) = &microsoft.copy_loops {
+                for (loop_name, value) in copy_loops {
+                    if let Some(index) = value.as_i64() {
+                        self.context.copy.insert(loop_name.to_string(), index);
+                        self.context.copy_current_loop_name.clone_from(loop_name);
                     }
                 }
             }
-        }
 
         let result = match resource_kind {
             Kind::Group => {
@@ -544,7 +545,7 @@ impl Configurator {
             let adapter = get_require_adapter_from_directive(&resource.directives);
             find_resource_or_error!(dsc_resource, discovery, resource, adapter);
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
-            let filter = add_metadata(&dsc_resource, properties, resource.metadata.clone())?;
+            let filter = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
             let start_datetime = chrono::Local::now();
             let mut get_result = match dsc_resource.get(&filter) {
                 Ok(result) => result,
@@ -650,7 +651,7 @@ impl Configurator {
                 }
             };
 
-            let desired = add_metadata(&dsc_resource, properties, resource.metadata.clone())?;
+            let desired = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
             trace!("{}", t!("configure.mod.desired", state = desired));
 
             let start_datetime;
@@ -742,16 +743,13 @@ impl Configurator {
             // Process metadata - only add whatIf if we have ResourceWhatIf variant
             let mut execution_information = ExecutionInformation::new_with_duration(&start_datetime, &end_datetime);
             let mut other_metadata = Map::new();
-            if self.context.execution_type == ExecutionKind::WhatIf {
-                if let Some(delete_res) = delete_what_if_metadata {
-                    if let Some(metadata) = delete_res.metadata {
-                        if let Some(what_if) = metadata.what_if {
-                            execution_information.what_if = Some(what_if.clone());
-                            other_metadata.insert("whatIf".to_string(), what_if);
-                        }
-                    }
+            if self.context.execution_type == ExecutionKind::WhatIf
+                && let Some(delete_res) = delete_what_if_metadata
+                && let Some(metadata) = delete_res.metadata
+                && let Some(what_if) = metadata.what_if {
+                    execution_information.what_if = Some(what_if.clone());
+                    other_metadata.insert("whatIf".to_string(), what_if);
                 }
-            }
 
             let mut metadata = Metadata {
                 microsoft: Some(
@@ -827,7 +825,7 @@ impl Configurator {
             find_resource_or_error!(dsc_resource, discovery, resource, adapter);
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
-            let expected = add_metadata(&dsc_resource, properties, resource.metadata.clone())?;
+            let expected = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
             trace!("{}", t!("configure.mod.expectedState", state = expected));
             let start_datetime = chrono::Local::now();
             let mut test_result = match dsc_resource.test(&expected) {
@@ -917,9 +915,9 @@ impl Configurator {
             find_resource_or_error!(dsc_resource, discovery, resource, adapter);
             let properties = self.get_properties(resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
-            let input = add_metadata(&dsc_resource, properties, resource.metadata.clone())?;
+            let input = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
             trace!("{}", t!("configure.mod.exportInput", input = input));
-            let export_result = match add_resource_export_results_to_configuration(&dsc_resource, &mut conf, input.as_str()) {
+            let export_result = match add_resource_export_results_to_configuration(dsc_resource, &mut conf, input.as_str()) {
                 Ok(result) => result,
                 Err(e) => {
                     progress.set_failure(get_failure_from_error(&e));
@@ -1064,11 +1062,10 @@ impl Configurator {
                     }
 
                     self.context.parameters.insert(name.clone(), (value.clone(), constraint.parameter_type.clone()));
-                    if let Some(parameters) = &mut self.config.parameters {
-                        if let Some(parameter) = parameters.get_mut(&name) {
+                    if let Some(parameters) = &mut self.config.parameters
+                        && let Some(parameter) = parameters.get_mut(&name) {
                             parameter.default_value = Some(value);
                         }
-                    }
                 }
                 else {
                     return Err(DscError::Validation(t!("configure.mod.parameterNotDefined", name = name).to_string()));
@@ -1205,31 +1202,25 @@ impl Configurator {
     fn validate_config(&mut self) -> Result<(), DscError> {
         let config: Configuration = serde_json::from_str(self.json.as_str())?;
         let config_security_context = if let Some(directives) = &config.directives {
-            if let Some(security_context) = &directives.security_context {
-                Some(security_context.clone())
-            } else {
-                None
-            }
+            directives.security_context.clone()
         } else {
             None
         };
         check_security_context(config.metadata.as_ref(), config_security_context.as_ref())?;
 
-        if let Some(directives) = &config.directives {
-            if let Some(version_req) = &directives.version {
+        if let Some(directives) = &config.directives
+            && let Some(version_req) = &directives.version {
                 let dsc_version = SemanticVersion::parse(env!("CARGO_PKG_VERSION"))?;
                 if !version_req.matches(&dsc_version) {
                     return Err(DscError::Validation(t!("configure.mod.versionNotSatisfied", required_version = version_req, current_version = env!("CARGO_PKG_VERSION")).to_string()));
                 }
             }
-        }
 
         let mut resource_discovery_mode = ResourceDiscoveryMode::PreDeployment;
-        if let Some(directives) = &config.directives {
-            if let Some(resource_discovery_directive) = &directives.resource_discovery {
+        if let Some(directives) = &config.directives
+            && let Some(resource_discovery_directive) = &directives.resource_discovery {
                 resource_discovery_mode = resource_discovery_directive.clone();
             }
-        }
 
         if resource_discovery_mode == ResourceDiscoveryMode::DuringDeployment {
             debug!("{}", t!("configure.mod.skippingResourceDiscovery"));
