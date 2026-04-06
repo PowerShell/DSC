@@ -19,7 +19,7 @@ const EXIT_INVALID_ARGS: i32 = 1;
 const EXIT_INVALID_INPUT: i32 = 2;
 const EXIT_FIREWALL_ERROR: i32 = 3;
 
-fn write_error(message: &str) {
+pub(crate) fn write_error(message: &str) {
     eprintln!("{}", serde_json::json!({ "error": message }));
 }
 

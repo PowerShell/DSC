@@ -32,9 +32,8 @@ impl SafeVariant {
 
 impl Drop for SafeVariant {
     fn drop(&mut self) {
-        let hr = unsafe { VariantClear(&mut self.0) };
-        if hr.is_err() {
-            eprintln!("Warning: VariantClear failed with HRESULT: {:08x}", hr.0);
+        if let Err(e) = unsafe { VariantClear(&mut self.0) } {
+            crate::write_error(&format!("Warning: VariantClear failed with HRESULT: {:#010x}", e.code().0));
         }
     }
 }
