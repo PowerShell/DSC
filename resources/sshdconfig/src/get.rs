@@ -144,10 +144,8 @@ pub fn get_sshd_settings(cmd_info: &CommandInfo, is_get: bool) -> Result<Map<Str
         // Update inherited_defaults with any keys that are not explicitly set
         // check result for any keys that are in defaults
         for (key, value) in &result {
-            if let Some(default) = defaults.get(key) {
-                if default == value {
-                    inherited_defaults.push(key.clone());
-                }
+            if let Some(default) = defaults.get(key) && default == value {
+                inherited_defaults.push(key.clone());
             }
         }
     } else {

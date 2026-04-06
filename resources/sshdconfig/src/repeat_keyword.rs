@@ -244,8 +244,8 @@ pub fn parse_and_validate_entries(entries_array: &[Value]) -> Result<Vec<NameVal
 /// or `None` if no matching entry exists.
 pub fn find_name_value_entry_index(keyword_array: &[Value], entry_name: &str, match_value: Option<&str>) -> Option<usize> {
     keyword_array.iter().position(|item| {
-        if let Value::Object(obj) = item {
-            if let Some(Value::String(name)) = obj.get("name") {
+        if let Value::Object(obj) = item
+            && let Some(Value::String(name)) = obj.get("name") {
                 if name != entry_name {
                     return false;
                 }
@@ -260,7 +260,7 @@ pub fn find_name_value_entry_index(keyword_array: &[Value], entry_name: &str, ma
 
                 return true;
             }
-        }
+
         false
     })
 }
@@ -324,9 +324,8 @@ pub fn add_or_update_entry(config: &mut Map<String, Value>, keyword: &str, entry
 /// * `keyword` - The keyword name (e.g., "subsystem")
 /// * `entry_name` - The name of the entry to remove
 pub fn remove_entry(config: &mut Map<String, Value>, keyword: &str, entry_name: &str) {
-    if let Some(Value::Array(arr)) = config.get_mut(keyword) {
-        if let Some(index) = find_name_value_entry_index(arr, entry_name, None) {
+    if let Some(Value::Array(arr)) = config.get_mut(keyword)
+        && let Some(index) = find_name_value_entry_index(arr, entry_name, None) {
             arr.remove(index);
         }
-    }
 }

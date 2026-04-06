@@ -180,23 +180,19 @@ impl SshdConfigParser {
         }
 
         // Validate that structured keywords cannot use operators
-        if let Some(ref info) = keyword_info {
-            if !info.allows_operator() && operator.is_some() {
-                return Err(SshdConfigError::ParserError(
-                    t!("parser.structuredKeywordCannotUseOperator", keyword = &info.name).to_string()
-                ));
-            }
+        if let Some(ref info) = keyword_info && !info.allows_operator() && operator.is_some() {
+            return Err(SshdConfigError::ParserError(
+                t!("parser.structuredKeywordCannotUseOperator", keyword = &info.name).to_string()
+            ));
         }
 
         for node in keyword_node.named_children(&mut cursor) {
             if node.is_error() {
                 return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
             }
-            if node.kind() == "arguments" {
-                if let Some(ref info) = keyword_info {
-                    value = parse_arguments_node(node, input, input_bytes, info)?;
-                    debug!("{}: {:?}", t!("parser.valueDebug").to_string(), value);
-                }
+            if node.kind() == "arguments" && let Some(ref info) = keyword_info {
+                value = parse_arguments_node(node, input, input_bytes, info)?;
+                debug!("{}: {:?}", t!("parser.valueDebug").to_string(), value);
             }
         }
 
