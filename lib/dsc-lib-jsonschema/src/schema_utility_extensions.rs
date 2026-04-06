@@ -1153,8 +1153,8 @@ pub trait SchemaUtilityExtensions {
     /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
     /// use schemars::json_schema;
     ///
-    /// let foo_id = &"https://contoso.com/schemas/properties/foo.json".to_string();
-    /// let bar_id = &"https://contoso.com/schemas/properties/bar.json".to_string();
+    /// let foo_id = "https://contoso.com/schemas/properties/foo.json";
+    /// let bar_id = "https://contoso.com/schemas/properties/bar.json";
     /// let schema = json_schema!({
     ///     "$id": "https://contoso.com/schemas/example.json",
     ///     "properties": {
@@ -1177,7 +1177,7 @@ pub trait SchemaUtilityExtensions {
     ///     None
     /// );
     /// ```
-    fn get_bundled_schema_resource_defs_key(&self, id: &String) -> Option<&String>;
+    fn get_bundled_schema_resource_defs_key(&self, id: &str) -> Option<&String>;
     /// Inserts a subschema entry into the `$defs` keyword for the [`Schema`]. If an entry for the
     /// given key already exists, this function returns the old value as a map.
     ///
@@ -1925,21 +1925,18 @@ impl SchemaUtilityExtensions for Schema {
 
         None
     }
-    fn get_bundled_schema_resource_defs_key(&self, id: &String) -> Option<&String> {
-        let Some(defs) = self.get_defs() else {
-            return None;
-        };
+    fn get_bundled_schema_resource_defs_key(&self, id: &str) -> Option<&String> {
+        let defs = self.get_defs()?;
 
         for (def_key, def_value) in defs {
             let Ok(def_subschema) = Schema::try_from(def_value.clone()) else {
                 continue;
             };
 
-            if let Some(def_id) = def_subschema.get_id() {
-                if def_id == id.as_str() {
+            if let Some(def_id) = def_subschema.get_id()
+                && def_id == id {
                     return Some(def_key);
                 }
-            }
         }
 
         None
@@ -1973,7 +1970,7 @@ impl SchemaUtilityExtensions for Schema {
 
         for bundled_id in lookup_schema.get_bundled_schema_resource_ids(true) {
             let Some(bundled_key) = lookup_schema.get_bundled_schema_resource_defs_key(
-                &bundled_id.to_string()
+                bundled_id
             ) else {
                 continue;
             };
@@ -2148,7 +2145,7 @@ impl SchemaUtilityExtensions for Schema {
         references
     }
     fn get_references_to_bundled_schema_resource(&self, resource_id: &str) -> HashSet<&str> {
-        let Some(def_key) = self.get_bundled_schema_resource_defs_key(&resource_id.to_string()) else {
+        let Some(def_key) = self.get_bundled_schema_resource_defs_key(resource_id) else {
             return HashSet::new();
         };
         
@@ -2167,7 +2164,7 @@ impl SchemaUtilityExtensions for Schema {
 
         self.get_references()
             .into_iter()
-            .filter(|reference| matching_references.contains(&&reference.to_string()))
+            .filter(|reference| matching_references.contains(&reference.to_string()))
             .collect()
     }
     fn replace_references(&mut self, find_value: &str, new_value: &str) {
@@ -2244,7 +2241,7 @@ impl SchemaUtilityExtensions for Schema {
         let lookup_schema = self.clone();
         let bundled_ids = lookup_schema.get_bundled_schema_resource_ids(true);
         for bundled_id in bundled_ids {
-            let Some(defs_key) = lookup_schema.get_bundled_schema_resource_defs_key(&bundled_id.to_string()) else {
+            let Some(defs_key) = lookup_schema.get_bundled_schema_resource_defs_key(bundled_id) else {
                 continue;
             };
             let reference_lookup = format!("#/$defs/{defs_key}");

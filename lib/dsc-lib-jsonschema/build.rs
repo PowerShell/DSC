@@ -519,9 +519,7 @@ fn main() {
     let version_data = read_to_string(data_path)
         .expect("Failed to read .versions.json file");
     let version_info: VersionInfo = serde_json::from_str(&version_data)
-        .expect(format!(
-            "Failed to parse version data from .versions.json:\n---FILE TEXT START---\n{version_data}\n---FILE TEXT END---\n"
-        ).as_str());
+        .unwrap_or_else(|_| panic!("Failed to parse version data from .versions.json:\n---FILE TEXT START---\n{version_data}\n---FILE TEXT END---\n"));
     let contents = format_file_content(&version_info);
 
     fs::write(
