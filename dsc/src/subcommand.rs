@@ -322,10 +322,8 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
 
     configurator.context.dsc_version = Some(env!("CARGO_PKG_VERSION").to_string());
 
-    if let ConfigSubCommand::Set { what_if , .. } = subcommand {
-        if *what_if {
-            configurator.context.execution_type = ExecutionKind::WhatIf;
-        }
+    if let ConfigSubCommand::Set { what_if , .. } = subcommand && *what_if {
+        configurator.context.execution_type = ExecutionKind::WhatIf;
     }
 
     let parameters: Option<serde_json::Value> = match if new_parameters.is_some() {
@@ -499,7 +497,7 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
         let type_name = &FullyQualifiedTypeName::parse(type_name)?;
         let require_version = resource_block["requireVersion"]
             .as_str()
-            .map(|r| ResourceVersionReq::parse(r))
+            .map(ResourceVersionReq::parse)
             .transpose()?;
         resource_types.push(DiscoveryFilter::new(type_name, require_version, None));
     }
@@ -512,7 +510,7 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
         let type_name = &FullyQualifiedTypeName::parse(type_name)?;
         let require_version = resource_block["requireVersion"]
             .as_str()
-            .map(|r| ResourceVersionReq::parse(r))
+            .map(ResourceVersionReq::parse)
             .transpose()?;
 
         trace!("{} '{}'", t!("subcommand.validatingResource"), resource_block["name"].as_str().unwrap_or_default());
