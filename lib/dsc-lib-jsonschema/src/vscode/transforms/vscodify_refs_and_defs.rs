@@ -94,7 +94,7 @@ pub fn vscodify_refs_and_defs(schema: &mut Schema) {
     let lookup_schema = schema.clone();
     for bundled_resource_id in lookup_schema.get_bundled_schema_resource_ids(true) {
         let Some(def_key) = lookup_schema
-            .get_bundled_schema_resource_defs_key(&bundled_resource_id.to_string()) else {
+            .get_bundled_schema_resource_defs_key(bundled_resource_id) else {
             continue;
         };
 

@@ -79,6 +79,7 @@ pub trait DscRepoSchema : JsonSchema {
     /// function overrides this default when exporting schemas for various versions and forms.
     ///
     /// [`generate_exportable_schema()`]: DscRepoSchema::generate_exportable_schema
+    #[must_use] 
     fn default_export_schema_id_uri() -> String {
         Self::get_schema_id_uri(
             RecognizedSchemaVersion::VNext,
@@ -91,12 +92,14 @@ pub trait DscRepoSchema : JsonSchema {
     ///
     /// Use this to define the `$schema` keyword when deriving or manually implementing the
     /// [`schemars::JsonSchema`] trait.
+    #[must_use] 
     fn default_export_meta_schema_uri() -> String {
         "https://json-schema.org/draft/2020-12/schema".to_string()
     }
 
     /// Generates the JSON schema for a given version and form. This function is
     /// useful for exporting the JSON Schema to disk.
+    #[must_use] 
     fn generate_exportable_schema(
         schema_version: RecognizedSchemaVersion,
         schema_form: SchemaForm
@@ -105,6 +108,7 @@ pub trait DscRepoSchema : JsonSchema {
     }
 
     /// Generates the JSON Schema for a given version, form, and URI prefix.
+    #[must_use] 
     fn generate_schema(
         schema_version: RecognizedSchemaVersion,
         schema_form: SchemaForm,
@@ -167,6 +171,7 @@ pub trait DscRepoSchema : JsonSchema {
     }
 
     /// Returns the path for a schema relative to the `schemas` folder.
+    #[must_use] 
     fn get_schema_relative_path(
         schema_version: RecognizedSchemaVersion,
         schema_form: SchemaForm
@@ -176,12 +181,12 @@ pub trait DscRepoSchema : JsonSchema {
         path.push(schema_version.to_string());
 
         let form_folder = schema_form.to_folder_prefix();
-        let form_folder = form_folder.trim_end_matches("/");
+        let form_folder = form_folder.trim_end_matches('/');
         if !form_folder.is_empty() {
             path.push(form_folder);
         }
 
-        for segment in Self::SCHEMA_FOLDER_PATH.split("/") {
+        for segment in Self::SCHEMA_FOLDER_PATH.split('/') {
             path.push(segment);
         }
 
@@ -218,7 +223,7 @@ pub trait DscRepoSchema : JsonSchema {
     fn set_enhanced_schema_id_uri(schema: &mut Schema, schema_version: RecognizedSchemaVersion) {
         if let Some(id_uri) = Self::get_enhanced_schema_id_uri(schema_version) {
             schema.set_id(&id_uri);
-        };
+        }
     }
 
     /// Returns the URI for the canonical (non-bundled) form of the schema with the default
@@ -262,7 +267,7 @@ pub trait DscRepoSchema : JsonSchema {
     fn set_bundled_schema_id_uri(schema: &mut Schema, schema_version: RecognizedSchemaVersion) {
         if let Some(id_uri) = Self::get_bundled_schema_id_uri(schema_version) {
             schema.set_id(&id_uri);
-        };
+        }
     }
 
     /// Returns the list of recognized schema URIs for the struct or enum.
@@ -328,6 +333,7 @@ pub trait DscRepoSchema : JsonSchema {
     ///
     /// - If the value is `true`, all schema forms are valid for the type.
     /// - If the value is `false`, only [`SchemaForm::Canonical`] is valid for the type.
+    #[must_use] 
     fn get_valid_schema_forms() -> Vec<SchemaForm> {
         if Self::SCHEMA_SHOULD_BUNDLE {
             vec![SchemaForm::VSCode, SchemaForm::Bundled, SchemaForm::Canonical]
