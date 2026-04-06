@@ -8,10 +8,36 @@ use windows::Win32::Foundation::{S_FALSE, VARIANT_BOOL};
 use windows::Win32::NetworkManagement::WindowsFirewall::*;
 use windows::Win32::System::Com::{CLSCTX_INPROC_SERVER, CoCreateInstance, CoInitializeEx, CoUninitialize, IDispatch, COINIT_APARTMENTTHREADED};
 use windows::Win32::System::Ole::IEnumVARIANT;
-use windows::Win32::System::Variant::VARIANT;
+use windows::Win32::System::Variant::{VARIANT, VariantClear};
 
 use crate::types::{FirewallError, FirewallRule, FirewallRuleList, RuleAction, RuleDirection};
 use crate::util::matches_any_filter;
+
+/// RAII wrapper for VARIANT that automatically calls VariantClear on drop
+struct SafeVariant(VARIANT);
+
+impl SafeVariant {
+    fn new() -> Self {
+        Self(VARIANT::default())
+    }
+
+    fn as_mut_ptr(&mut self) -> *mut VARIANT {
+        &mut self.0
+    }
+
+    fn as_ref(&self) -> &VARIANT {
+        &self.0
+    }
+}
+
+impl Drop for SafeVariant {
+    fn drop(&mut self) {
+        let hr = unsafe { VariantClear(&mut self.0) };
+        if hr.is_err() {
+            eprintln!("Warning: VariantClear failed with HRESULT: {:08x}", hr.0);
+        }
+    }
+}
 
 struct ComGuard;
 
@@ -55,22 +81,23 @@ impl FirewallStore {
         let mut results = Vec::new();
         loop {
             let mut fetched = 0u32;
-            let mut variant = [VARIANT::default()];
-            let hr = unsafe { enum_variant.Next(&mut variant, &mut fetched) };
+            let mut safe_variant = SafeVariant::new();
+            let variant_slice = unsafe { std::slice::from_raw_parts_mut(safe_variant.as_mut_ptr(), 1) };
+            let hr = unsafe { enum_variant.Next(variant_slice, &mut fetched) };
             if hr == S_FALSE || fetched == 0 {
                 break;
             }
             hr.ok()
                 .map_err(|error| t!("firewall.ruleEnumerationFailed", error = error.to_string()).to_string())?;
 
-            let dispatch = IDispatch::try_from(&variant[0])
+            let dispatch = IDispatch::try_from(safe_variant.as_ref())
                 .map_err(|error: windows::core::Error| t!("firewall.ruleEnumerationFailed", error = error.to_string()).to_string())?;
             let rule: INetFwRule = dispatch
                 .cast()
                 .map_err(|error| t!("firewall.ruleEnumerationFailed", error = error.to_string()).to_string())?;
             results.push(rule);
 
-            unsafe { windows::Win32::System::Variant::VariantClear(&mut variant[0]) };
+            // SafeVariant will automatically call VariantClear when it goes out of scope
         }
 
         Ok(results)
