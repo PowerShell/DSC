@@ -55,11 +55,11 @@ mod tests {
     #[test]
     fn exe_exists() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[tryWhich('dsc')]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[tryWhich('cargo')]", &Context::new()).unwrap();
         #[cfg(windows)]
-        assert!(result.as_str().unwrap().to_lowercase().ends_with("\\dsc.exe"));
+        assert!(result.as_str().unwrap().to_lowercase().ends_with("\\cargo.exe"));
         #[cfg(not(windows))]
-        assert!(result.as_str().unwrap().ends_with("/dsc"));
+        assert!(result.as_str().unwrap().ends_with("/cargo"));
     }
 
     #[test]
