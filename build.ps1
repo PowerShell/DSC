@@ -200,6 +200,11 @@ process {
             Install-Clippy -UseCFS:$UseCFS -Architecture $Architecture @VerboseParam
         }
 
+        if (!$SkipBuild -and !$SkipLinkCheck -and $IsWindows) {
+            Write-BuildProgress @progressParams -Status "Ensuring Windows C++ build tools are available"
+            Install-WindowsCPlusPlusBuildTools @VerboseParam
+        }
+
         if (-not ($SkipBuild -and $Test -and $ExcludeRustTests)) {
             Write-BuildProgress @progressParams -Status 'Ensuring Protobuf is available'
             Install-Protobuf @VerboseParam
@@ -212,10 +217,6 @@ process {
         }
     }
 
-    if (!$SkipBuild -and !$SkipLinkCheck -and $IsWindows) {
-        Write-BuildProgress @progressParams -Status "Ensuring Windows C++ build tools are available"
-        Install-WindowsCPlusPlusBuildTools @VerboseParam
-    }
     #endregion Setup
 
     if (!$SkipBuild) {
