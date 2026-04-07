@@ -81,17 +81,24 @@ impl Discovery {
             };
 
             for (_resource_name, found_resources) in discovered_resources {
-                for manifest in found_resources {
+                'manifests: for manifest in found_resources {
                     match manifest {
                         ImportedManifest::Resource(ref resource) => {
                             let key = format!("{}@{}", resource.type_name, resource.version);
                             if resources.contains_key(&key) {
-                                continue; // if we already have this resource, we can skip it
+                                continue 'manifests; // if we already have this resource, we can skip it
                             } else {
                                 resources.insert(key, manifest.clone());
                             }
                         },
-                        _ => {} // we only need to cache resources
+                        ImportedManifest::Extension(ref extension) => {
+                            let key = format!("{}@{}", extension.type_name, extension.version);
+                            if resources.contains_key(&key) {
+                                continue 'manifests; // if we already have this extension, we can skip it
+                            } else {
+                                resources.insert(key, manifest.clone());
+                            }
+                        }
                     }
                 }
             };
