@@ -25,13 +25,13 @@ unsafe extern "system" {
     ) -> *mut c_void;
 }
 
-#[repr(C, packed(4))]
+#[repr(C, packed)]
 struct DismFeature {
     feature_name: *const u16,
     state: i32,
 }
 
-#[repr(C, packed(4))]
+#[repr(C, packed)]
 struct DismFeatureInfo {
     feature_name: *const u16,
     state: i32,
@@ -42,13 +42,13 @@ struct DismFeatureInfo {
     custom_property_count: u32,
 }
 
-#[repr(C, packed(4))]
+#[repr(C, packed)]
 struct DismCapability {
     name: *const u16,
     state: i32,
 }
 
-#[repr(C, packed(4))]
+#[repr(C, packed)]
 struct DismCapabilityDetail {
     name: *const u16,
     state: i32,
