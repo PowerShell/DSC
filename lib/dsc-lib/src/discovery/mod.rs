@@ -68,7 +68,7 @@ impl Discovery {
             Box::new(command_discovery::CommandDiscovery::new(progress_format)),
         ];
 
-        let mut resources: Vec<ImportedManifest> = Vec::new();
+        let mut resources: BTreeMap<String, ImportedManifest> = BTreeMap::new();
 
         for mut discovery_type in discovery_types {
 
@@ -81,8 +81,18 @@ impl Discovery {
             };
 
             for (_resource_name, found_resources) in discovered_resources {
-                for resource in found_resources {
-                    resources.push(resource.clone());
+                for manifest in found_resources {
+                    match manifest {
+                        ImportedManifest::Resource(ref resource) => {
+                            let key = format!("{}@{}", resource.type_name, resource.version);
+                            if resources.contains_key(&key) {
+                                continue; // if we already have this resource, we can skip it
+                            } else {
+                                resources.insert(key, manifest.clone());
+                            }
+                        },
+                        _ => {} // we only need to cache resources
+                    }
                 }
             };
 
@@ -91,7 +101,7 @@ impl Discovery {
             }
         }
 
-        resources
+        resources.into_iter().map(|(_key, value)| value).collect::<Vec<ImportedManifest>>()
     }
 
     pub fn get_extensions(&mut self, capability: &Capability) -> Vec<DscExtension> {

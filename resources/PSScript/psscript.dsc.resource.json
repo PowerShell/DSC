@@ -3,6 +3,7 @@
     "type": "Microsoft.DSC.Transitional/PowerShellScript",
     "description": "Enable running PowerShell 7 scripts inline",
     "version": "0.1.0",
+    "condition": "[not(equals(tryWhich('pwsh'), null()))]",
     "get": {
         "executable": "pwsh",
         "args": [

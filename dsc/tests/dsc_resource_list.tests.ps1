@@ -38,20 +38,27 @@ Describe 'Tests for listing resources' {
     ) {
         param($tags, $description, $expectedCount, $expectedType)
 
-        if ($tags -and $description) {
-            $resources = dsc resource list --tags $tags --description $description | ConvertFrom-Json
-        }
-        elseif ($tags) {
-            $resources = dsc resource list --tags $tags | ConvertFrom-Json
-        }
-        else {
-            $resources = dsc resource list --description $description | ConvertFrom-Json
-        }
+        try {
+            # Need to restrict the search as more resources are being added like from PS7
+            $env:DSC_RESOURCE_PATH = Split-Path (Get-Command dsc).Source -Parent
 
-        $LASTEXITCODE | Should -Be 0
-        $resources.Count | Should -Be $expectedCount
-        if ($expectedCount -gt 0) {
-            $resources.type | Should -BeExactly $expectedType
+            if ($tags -and $description) {
+                $resources = dsc resource list --tags $tags --description $description | ConvertFrom-Json
+            }
+            elseif ($tags) {
+                $resources = dsc resource list --tags $tags | ConvertFrom-Json
+            }
+            else {
+                $resources = dsc resource list --description $description | ConvertFrom-Json
+            }
+
+            $LASTEXITCODE | Should -Be 0
+            $resources.Count | Should -Be $expectedCount
+            if ($expectedCount -gt 0) {
+                $resources.type | Should -BeExactly $expectedType
+            }
+        } finally {
+            $env:DSC_RESOURCE_PATH = $null
         }
     }
 
@@ -110,5 +117,46 @@ Describe 'Tests for listing resources' {
             }
         }
         $foundWideLine | Should -BeTrue
+    }
+
+    It 'No duplicates based on type name and version are returned' {
+        $resource_manifest = @'
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "type": "Microsoft.DSC.Debug/EchoDupe",
+    "version": "1.2.3",
+    "description": "A duplicate resource for testing",
+    "get": {
+        "executable": "dscecho",
+        "args": [
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ]
+    },
+    "schema": {
+        "command": {
+            "executable": "dscecho"
+        }
+    }
+}
+'@
+        $manifestPath = Join-Path $TestDrive "echoDupeManifest.json"
+        $manifestDupePath = Join-Path $TestDrive "echoDupeManifestDuplicate.json"
+        Set-Content -Path $manifestPath -Value $resource_manifest
+        Set-Content -Path $manifestDupePath -Value $resource_manifest
+
+        try {
+            $env:DSC_RESOURCE_PATH = $TestDrive + [System.IO.Path]::PathSeparator + $env:PATH
+            $resources = dsc resource list | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $resourceGroups = $resources | Group-Object -Property type, version
+            foreach ($group in $resourceGroups) {
+                $group.Count | Should -Be 1 -Because ($resources | ConvertTo-Json -Depth 20)
+            }
+        } finally {
+            $env:DSC_RESOURCE_PATH = $null
+        }
     }
 }
