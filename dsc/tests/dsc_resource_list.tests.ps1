@@ -38,6 +38,7 @@ Describe 'Tests for listing resources' {
     ) {
         param($tags, $description, $expectedCount, $expectedType)
 
+        $oldPath = $env:DSC_RESOURCE_PATH
         try {
             # Need to restrict the search as more resources are being added like from PS7
             $env:DSC_RESOURCE_PATH = Split-Path (Get-Command dsc).Source -Parent
@@ -58,7 +59,7 @@ Describe 'Tests for listing resources' {
                 $resources.type | Should -BeExactly $expectedType
             }
         } finally {
-            $env:DSC_RESOURCE_PATH = $null
+            $env:DSC_RESOURCE_PATH = $oldPath
         }
     }
 
@@ -142,8 +143,8 @@ Describe 'Tests for listing resources' {
     }
 }
 '@
-        $manifestPath = Join-Path $TestDrive "echoDupeManifest.json"
-        $manifestDupePath = Join-Path $TestDrive "echoDupeManifestDuplicate.json"
+        $manifestPath = Join-Path $TestDrive "echoDupeManifest.dsc.resource.json"
+        $manifestDupePath = Join-Path $TestDrive "echoDupeManifestDuplicate.dsc.resource.json"
         Set-Content -Path $manifestPath -Value $resource_manifest
         Set-Content -Path $manifestDupePath -Value $resource_manifest
 
