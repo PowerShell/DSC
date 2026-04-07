@@ -92,10 +92,8 @@ unsafe fn read_service_state(
     let sizing_result = unsafe {
         QueryServiceConfigW(service_handle, None, 0, &mut bytes_needed)
     };
-    if let Err(e) = sizing_result {
-        if e.code() != ERROR_INSUFFICIENT_BUFFER.to_hresult() {
-            return Err(t!("get.queryConfigFailed", error = e.to_string()).to_string().into());
-        }
+    if let Err(e) = sizing_result && e.code() != ERROR_INSUFFICIENT_BUFFER.to_hresult() {
+        return Err(t!("get.queryConfigFailed", error = e.to_string()).to_string().into());
     }
     if bytes_needed == 0 {
         return Err(t!("get.queryConfigFailed", error = "buffer size is 0").to_string().into());
@@ -223,8 +221,8 @@ pub fn get_service(input: &WindowsService) -> Result<WindowsService, ServiceErro
     let svc = unsafe { read_service_state(service_handle.0, &service_key_name) }?;
 
     // If both name and display_name were provided, verify they match
-    if input.name.is_some() && input.display_name.is_some() {
-        let expected_dn = input.display_name.as_ref().unwrap();
+    if input.name.is_some() && let Some(expected_dn) = input.display_name.as_ref() {
+        // let expected_dn = input.display_name.as_ref().unwrap();
         let actual_dn = svc.display_name.as_deref().unwrap_or("");
         if !actual_dn.eq_ignore_ascii_case(expected_dn) {
             return Err(
@@ -412,10 +410,8 @@ pub fn export_services(filter: Option<&WindowsService>) -> Result<Vec<WindowsSer
 
     for (service_name, current_state) in &services {
         // Quick reject based on status before opening the service handle
-        if let Some(expected_state) = status_filter_dw {
-            if *current_state != expected_state {
-                continue;
-            }
+        if let Some(expected_state) = status_filter_dw && *current_state != expected_state {
+            continue;
         }
 
         let svc = match unsafe { get_service_details(scm.0, service_name) } {
@@ -423,10 +419,8 @@ pub fn export_services(filter: Option<&WindowsService>) -> Result<Vec<WindowsSer
             Err(_) => continue, // skip services we can't query
         };
 
-        if let Some(f) = filter {
-            if !matches_filter(&svc, f) {
-                continue;
-            }
+        if let Some(f) = filter && !matches_filter(&svc, f) {
+            continue;
         }
 
         results.push(svc);
@@ -457,13 +451,11 @@ unsafe fn enumerate_services(scm: SC_HANDLE) -> Result<Vec<(String, SERVICE_STAT
             None,
         );
 
-        if let Err(e) = sizing_result {
-            if e.code() != ERROR_MORE_DATA.to_hresult()
-                && e.code() != ERROR_INSUFFICIENT_BUFFER.to_hresult()
-            {
+        if let Err(e) = sizing_result
+            && e.code() != ERROR_MORE_DATA.to_hresult()
+            && e.code() != ERROR_INSUFFICIENT_BUFFER.to_hresult() {
                 return Err(t!("export.enumServicesFailed", error = e.to_string()).to_string().into());
             }
-        }
 
         if bytes_needed == 0 {
             return Ok(Vec::new());
@@ -571,13 +563,12 @@ fn matches_wildcard(text: &str, pattern: &str) -> bool {
         }
     }
 
-    if !ends_with_wildcard {
-        if let Some(last) = parts.last() {
-            if !last.is_empty() && !text_lower.ends_with(last) {
-                return false;
-            }
+    if !ends_with_wildcard
+        && let Some(last) = parts.last()
+        && !last.is_empty()
+        && !text_lower.ends_with(last) {
+            return false;
         }
-    }
 
     true
 }
@@ -616,12 +607,10 @@ pub fn set_service(input: &WindowsService) -> Result<WindowsService, ServiceErro
     let name = input.name.as_deref()
         .ok_or_else(|| t!("set.nameRequired").to_string())?;
 
-    if let Some(ref account) = input.logon_account {
-        if !is_builtin_service_account(account) {
-            return Err(ServiceError::from(
-                t!("set.unsupportedLogonAccount", account = account).to_string(),
-            ));
-        }
+    if let Some(ref account) = input.logon_account && !is_builtin_service_account(account) {
+        return Err(ServiceError::from(
+            t!("set.unsupportedLogonAccount", account = account).to_string(),
+        ));
     }
 
     unsafe {

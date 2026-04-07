@@ -45,12 +45,11 @@ pub fn handle_export(input: &str) -> Result<String, String> {
             let mut should_get_full = !filters_without_name.is_empty();
             if !should_get_full {
                 for f in &filters_with_name {
-                    if let Some(ref filter_name) = f.feature_name {
-                        if matches_wildcard(name, filter_name) {
+                    if let Some(ref filter_name) = f.feature_name
+                        && matches_wildcard(name, filter_name) {
                             should_get_full = true;
                             break;
                         }
-                    }
                 }
             }
             if !should_get_full {

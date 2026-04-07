@@ -34,8 +34,8 @@ pub fn get(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, version
 
     match resource.get(input) {
         Ok(result) => {
-            if let GetResult::Resource(response) = &result {
-                if format == Some(&GetOutputFormat::PassThrough) {
+            if let GetResult::Resource(response) = &result
+                && format == Some(&GetOutputFormat::PassThrough) {
                     let json = match serde_json::to_string(&response.actual_state) {
                         Ok(json) => json,
                         Err(err) => {
@@ -46,7 +46,6 @@ pub fn get(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, version
                     write_object(&json, Some(&OutputFormat::Json), false);
                     return;
                 }
-            }
 
             // convert to json
             let json = match serde_json::to_string(&result) {

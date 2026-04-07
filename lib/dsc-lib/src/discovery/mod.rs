@@ -104,10 +104,9 @@ impl Discovery {
             .collect()
     }
 
-    #[must_use]
     pub fn find_resource(&mut self, filter: &DiscoveryFilter) -> Result<Option<&DscResource>, DscError> {
         if self.refresh_cache || self.resources.is_empty() {
-            self.find_resources(&[filter.clone()], ProgressFormat::None)?;
+            self.find_resources(std::slice::from_ref(filter), ProgressFormat::None)?;
         }
 
         let type_name = filter.resource_type();

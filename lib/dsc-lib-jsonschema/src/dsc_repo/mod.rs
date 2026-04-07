@@ -193,18 +193,16 @@ pub(crate) fn get_default_schema_form(should_bundle: bool) -> SchemaForm {
 
 /// Retrieves the version segment from the `$id` keyword of a DSC repo schema.
 pub(crate) fn get_schema_id_version(schema: &Schema) -> Option<String> {
-    let Some(root_id) = schema.get_id() else {
-        return None;
-    };
+    let root_id = schema.get_id()?;
 
     // Remove the URI prefix and leading slash to get the URI relative to the `schemas` folder
     let schema_folder_relative_id = root_id
         .trim_start_matches(&SchemaUriPrefix::AkaDotMs.to_string())
         .trim_start_matches(&SchemaUriPrefix::Github.to_string())
-        .trim_start_matches("/");
+        .trim_start_matches('/');
     // The version segment is the first segment of the relative URI
     schema_folder_relative_id
-        .split("/")
+        .split('/')
         .collect::<Vec<&str>>()
         .first()
         .map(std::string::ToString::to_string)

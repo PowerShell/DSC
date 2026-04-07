@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use std::{fmt::Display, str::FromStr, sync::OnceLock};
+use std::{fmt::Display, hash::Hash, str::FromStr, sync::OnceLock};
 
 use miette::Diagnostic;
 use regex::Regex;
@@ -156,7 +156,7 @@ use crate::{
 ///
 /// [01]: https://doc.rust-lang.org/std/cmp/trait.Ord.html#lexicographical-comparison
 /// [02]: https://www.iso.org/iso-8601-date-and-time-format.html
-#[derive(Debug, Clone, Hash, Eq, Serialize, Deserialize, JsonSchema, DscRepoSchema)]
+#[derive(Debug, Clone, Eq, Serialize, Deserialize, JsonSchema, DscRepoSchema)]
 #[dsc_repo_schema(base_name = "resourceVersion", folder_path = "definitions")]
 #[serde(untagged, try_from = "String", into = "String")]
 #[schemars(!try_from, !into)]
@@ -366,10 +366,7 @@ impl ResourceVersion {
     /// assert_eq!(date.is_semver(), false);
     /// ```
     pub fn is_semver(&self) -> bool {
-        match self {
-            Self::Semantic(_) => true,
-            _ => false,
-        }
+        matches!(self, Self::Semantic(_))
     }
 
     /// Indicates whether the resource version is a date version.
@@ -386,10 +383,7 @@ impl ResourceVersion {
     /// assert_eq!(date.is_date_version(), true);
     /// ```
     pub fn is_date_version(&self) -> bool {
-        match self {
-            Self::Date(_) => true,
-            _ => false,
-        }
+        matches!(self, Self::Date(_))
     }
 
     /// Returns the version as a reference to the underlying [`SemanticVersion`] if possible.
@@ -679,6 +673,15 @@ impl TryFrom<ResourceVersion> for DateVersion {
     }
 }
 
+impl Hash for ResourceVersion {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            Self::Semantic(v) => v.hash(state),
+            Self::Date(v) => v.hash(state),
+        }
+    }
+}
+
 // Implement traits for comparing `ResourceVersion` to strings, semantic versions, and date
 // versions bi-directionally.
 impl PartialEq for ResourceVersion {
@@ -734,7 +737,7 @@ impl PartialEq<ResourceVersion> for DateVersion {
 
 impl PartialEq<&str> for ResourceVersion {
     fn eq(&self, other: &&str) -> bool {
-        if let Ok(other_version) = Self::parse(*other) {
+        if let Ok(other_version) = Self::parse(other) {
             self == &other_version
         } else {
             false
@@ -744,7 +747,7 @@ impl PartialEq<&str> for ResourceVersion {
 
 impl PartialEq<ResourceVersion> for &str {
     fn eq(&self, other: &ResourceVersion) -> bool {
-        if let Ok(version) = ResourceVersion::parse(*self) {
+        if let Ok(version) = ResourceVersion::parse(self) {
             &version == other
         } else {
             false
@@ -869,7 +872,7 @@ impl PartialOrd<ResourceVersion> for String {
 
 impl PartialOrd<&str> for ResourceVersion {
     fn partial_cmp(&self, other: &&str) -> Option<std::cmp::Ordering> {
-        match ResourceVersion::parse(*other) {
+        match ResourceVersion::parse(other) {
             Ok(other_version) => self.partial_cmp(&other_version),
             Err(_) => None,
         }
@@ -887,7 +890,7 @@ impl PartialOrd<str> for ResourceVersion {
 
 impl PartialOrd<ResourceVersion> for &str {
     fn partial_cmp(&self, other: &ResourceVersion) -> Option<std::cmp::Ordering> {
-        match ResourceVersion::parse(*self) {
+        match ResourceVersion::parse(self) {
             Ok(version) => version.partial_cmp(other),
             Err(_) => None,
          }

@@ -56,7 +56,7 @@ impl DiscoveryFilter {
     ///
     /// - `type_name` - The [`FullyQualifiedTypeName`] of the extension.
     /// - `require_version` - An optional [`SemanticVersionReq`] specifying the semantic version
-    ///    requirement for the extension.
+    ///   requirement for the extension.
     ///
     /// # Returns
     ///

@@ -2,6 +2,7 @@
     "Name": "registry",
     "Kind": "Resource",
     "IsRust": true,
+    "RustPackageName": "dsc-resource-registry",
     "SupportedPlatformOS": "Windows",
     "Binaries": [
         "registry"
