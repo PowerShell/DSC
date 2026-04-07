@@ -3,7 +3,6 @@
     "type": "Microsoft.Windows.Appx/Discover",
     "version": "0.1.0",
     "description": "Discovers DSC resources packaged as Appx packages.",
-    "condition": "[not(equals(tryWhich('pwsh'), null()))]",
     "discover": {
         "executable": "powershell",
         "args": [
