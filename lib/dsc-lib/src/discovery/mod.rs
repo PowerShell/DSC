@@ -99,7 +99,7 @@ impl Discovery {
             }
         }
 
-        resources.into_iter().map(|(_key, value)| value).collect::<Vec<ImportedManifest>>()
+        resources.into_values().collect::<Vec<ImportedManifest>>()
     }
 
     pub fn get_extensions(&mut self, capability: &Capability) -> Vec<DscExtension> {
