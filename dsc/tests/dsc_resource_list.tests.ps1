@@ -148,6 +148,7 @@ Describe 'Tests for listing resources' {
         Set-Content -Path $manifestPath -Value $resource_manifest
         Set-Content -Path $manifestDupePath -Value $resource_manifest
 
+        $oldPath = $env:DSC_RESOURCE_PATH
         try {
             $env:DSC_RESOURCE_PATH = $TestDrive + [System.IO.Path]::PathSeparator + $env:PATH
             $resources = dsc resource list | ConvertFrom-Json
@@ -157,7 +158,7 @@ Describe 'Tests for listing resources' {
                 $group.Count | Should -Be 1 -Because ($resources | ConvertTo-Json -Depth 20)
             }
         } finally {
-            $env:DSC_RESOURCE_PATH = $null
+            $env:DSC_RESOURCE_PATH = $oldPath
         }
     }
 }
