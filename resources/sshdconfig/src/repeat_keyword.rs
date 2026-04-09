@@ -78,11 +78,13 @@ pub struct NameValueEntry {
     pub value: Option<String>,
 }
 
+fn default_true() -> bool { true }
+
 /// Input for name-value keyword single-entry operations (e.g., subsystem).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct RepeatInput {
     /// Whether the entry should exist (true) or be removed (false)
-    #[serde(rename = "_exist", default)]
+    #[serde(rename = "_exist", default = "default_true")]
     pub exist: bool,
     /// Metadata for the operation
     #[serde(rename = "_metadata", skip_serializing_if = "Option::is_none")]
