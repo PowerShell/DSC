@@ -212,5 +212,23 @@ PasswordAuthentication yes
 
             Remove-Item -Path $stderrFile -Force -ErrorAction SilentlyContinue
         }
+
+        It 'Should default to _exist=true when not specified explicitly' {
+            $inputConfig = @{
+                _metadata = @{
+                    filepath = $TestConfigPath
+                }
+                subsystem = @{
+                    name = "testExistDefault"
+                    value = "/path/to/subsystem"
+                }
+            } | ConvertTo-Json
+
+            $output = sshdconfig set --input $inputConfig -s sshd-config-repeat 2>$null
+            $LASTEXITCODE | Should -Be 0
+            # verify subsystem was added (defaulting to _exist=true)
+            $subsystems = Get-Content $TestConfigPath | Where-Object { $_ -match '^\s*subsystem\s+' }
+            $subsystems | Should -Contain "subsystem testExistDefault /path/to/subsystem"
+        }
     }
 }
