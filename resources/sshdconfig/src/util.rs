@@ -131,8 +131,8 @@ pub fn ensure_sshd_config_exists(input: Option<PathBuf>) -> Result<PathBuf, Sshd
     }
 
     if !cfg!(windows) {
-        return Err(SshdConfigError::InvalidInput(
-            t!("util.sshdConfigDefaultNotFound", paths = "Windows seeding is only supported on Windows hosts").to_string()
+        return Err(SshdConfigError::FileNotFound(
+            t!("util.sshdConfigNotFoundNonWindows").to_string()
         ));
     }
 
@@ -171,7 +171,7 @@ pub fn invoke_sshd_config_validation(args: Option<SshdCommandArgs>) -> Result<St
 
     if let Some(args) = args {
         if let Some(filepath) = args.filepath {
-            let filepath = get_default_sshd_config_path(Some(filepath))?;            if !filepath.exists() {
+            if !filepath.exists() {
                 return Err(SshdConfigError::FileNotFound(filepath.display().to_string()));
             }
             command.arg("-f").arg(&filepath);
