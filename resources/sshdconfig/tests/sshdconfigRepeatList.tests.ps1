@@ -33,6 +33,9 @@ Describe 'sshd-config-repeat-list Set Tests' -Skip:($skipTest) {
             $script:DefaultSftpPath = "/usr/lib/openssh/sftp-server"
             $script:AlternatePath = "/usr/libexec/sftp-server"
         }
+
+        $script:DefaultSourceExists = $IsWindows -and
+            (Test-Path -Path "$env:SystemDrive\Windows\System32\OpenSSH\sshd_config_default" -PathType Leaf -ErrorAction SilentlyContinue)
     }
 
     AfterEach {
@@ -319,6 +322,38 @@ PasswordAuthentication yes
             # Verify all subsystems were removed
             $subsystems = Get-Content $TestConfigPath | Where-Object { $_ -match '^\s*subsystem\s+' }
             $subsystems.Count | Should -Be 0
+        }
+
+        It 'Should seed missing file from default source when available on Windows, or fail otherwise' {
+            $nonExistentPath = Join-Path $TestDrive "nonexistent_sshd_config"
+
+            $inputConfig = @{
+                _metadata = @{
+                    filepath = $nonExistentPath
+                }
+                _purge = $false
+                subsystem = @(
+                    @{
+                        name = "powershell"
+                        value = "/usr/bin/pwsh -sshs"
+                    }
+                )
+            } | ConvertTo-Json -Depth 10
+
+            $stderrFile = Join-Path $TestDrive "stderr_missing_default_repeat_list.txt"
+            sshdconfig set --input $inputConfig -s sshd-config-repeat-list 2>$stderrFile
+
+            if ($IsWindows -and $script:DefaultSourceExists) {
+                $LASTEXITCODE | Should -Be 0
+                Test-Path $nonExistentPath | Should -Be $true
+            } else {
+                $LASTEXITCODE | Should -Not -Be 0
+                $stderr = Get-Content -Path $stderrFile -Raw -ErrorAction SilentlyContinue
+                $stderr | Should -Match "no default source could be found"
+            }
+
+            Remove-Item -Path $stderrFile -Force -ErrorAction SilentlyContinue
+            Remove-Item -Path $nonExistentPath -Force -ErrorAction SilentlyContinue
         }
     }
 }

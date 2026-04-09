@@ -33,6 +33,9 @@ Describe 'sshd-config-repeat Set Tests' -Skip:($skipTest) {
             $script:DefaultSftpPath = "/usr/lib/openssh/sftp-server"
             $script:AlternatePath = "/usr/libexec/sftp-server"
         }
+
+        $script:DefaultSourceExists = $IsWindows -and
+            (Test-Path -Path "$env:SystemDrive\Windows\System32\OpenSSH\sshd_config_default" -PathType Leaf -ErrorAction SilentlyContinue)
     }
 
     AfterEach {
@@ -211,6 +214,36 @@ PasswordAuthentication yes
             $LASTEXITCODE | Should -Not -Be 0
 
             Remove-Item -Path $stderrFile -Force -ErrorAction SilentlyContinue
+        }
+
+        It 'Should seed missing file from default source when available on Windows, or fail otherwise' {
+            $nonExistentPath = Join-Path $TestDrive "nonexistent_sshd_config"
+
+            $inputConfig = @{
+                _metadata = @{
+                    filepath = $nonExistentPath
+                }
+                _exist = $true
+                subsystem = @{
+                    name = "powershell"
+                    value = "/usr/bin/pwsh -sshs"
+                }
+            } | ConvertTo-Json
+
+            $stderrFile = Join-Path $TestDrive "stderr_missing_default_repeat.txt"
+            sshdconfig set --input $inputConfig -s sshd-config-repeat 2>$stderrFile
+
+            if ($IsWindows -and $script:DefaultSourceExists) {
+                $LASTEXITCODE | Should -Be 0
+                Test-Path $nonExistentPath | Should -Be $true
+            } else {
+                $LASTEXITCODE | Should -Not -Be 0
+                $stderr = Get-Content -Path $stderrFile -Raw -ErrorAction SilentlyContinue
+                $stderr | Should -Match "no default source could be found"
+            }
+
+            Remove-Item -Path $stderrFile -Force -ErrorAction SilentlyContinue
+            Remove-Item -Path $nonExistentPath -Force -ErrorAction SilentlyContinue
         }
     }
 }

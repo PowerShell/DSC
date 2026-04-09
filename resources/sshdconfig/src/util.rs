@@ -107,6 +107,59 @@ pub fn get_default_sshd_config_path(input: Option<PathBuf>) -> Result<PathBuf, S
     }
 }
 
+fn get_sshd_config_default_source_candidates() -> Vec<PathBuf> {
+    let mut candidates: Vec<PathBuf> = Vec::new();
+
+    if cfg!(windows) {
+        if let Ok(system_drive) = std::env::var("SystemDrive") {
+            candidates.push(PathBuf::from(format!("{system_drive}\\Windows\\System32\\OpenSSH\\sshd_config_default")));
+        }
+    }
+
+    candidates
+}
+
+/// Ensure the target `sshd_config` exists by seeding it from a platform default source.
+///
+/// # Errors
+///
+/// This function returns an error if the target cannot be created or no source default config is available.
+pub fn ensure_sshd_config_exists(input: Option<PathBuf>) -> Result<PathBuf, SshdConfigError> {
+    let target_path = get_default_sshd_config_path(input)?;
+    if target_path.exists() {
+        return Ok(target_path);
+    }
+
+    if !cfg!(windows) {
+        return Err(SshdConfigError::InvalidInput(
+            t!("util.sshdConfigDefaultNotFound", paths = "Windows seeding is only supported on Windows hosts").to_string()
+        ));
+    }
+
+    let candidates = get_sshd_config_default_source_candidates();
+    let source_path = candidates
+        .iter()
+        .find(|candidate| candidate.is_file())
+        .cloned()
+        .ok_or_else(|| {
+            let paths = candidates
+                .iter()
+                .map(|path| path.display().to_string())
+                .collect::<Vec<String>>()
+                .join(", ");
+            SshdConfigError::InvalidInput(t!("util.sshdConfigDefaultNotFound", paths = paths).to_string())
+        })?;
+
+    if let Some(parent) = target_path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+
+    std::fs::copy(&source_path, &target_path)?;
+    debug!("{}", t!("util.seededConfigFromDefault", source = source_path.display(), target = target_path.display()));
+
+    Ok(target_path)
+}
+
 /// Invoke sshd -T.
 ///
 /// # Errors
@@ -118,7 +171,7 @@ pub fn invoke_sshd_config_validation(args: Option<SshdCommandArgs>) -> Result<St
 
     if let Some(args) = args {
         if let Some(filepath) = args.filepath {
-            if !filepath.exists() {
+            let filepath = get_default_sshd_config_path(Some(filepath))?;            if !filepath.exists() {
                 return Err(SshdConfigError::FileNotFound(filepath.display().to_string()));
             }
             command.arg("-f").arg(&filepath);
@@ -244,5 +297,3 @@ pub fn read_sshd_config(input: Option<PathBuf>) -> Result<String, SshdConfigErro
         Err(SshdConfigError::FileNotFound(filepath.display().to_string()))
     }
 }
-
-

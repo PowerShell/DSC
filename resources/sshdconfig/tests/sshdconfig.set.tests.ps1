@@ -21,6 +21,9 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
         $TestDir = Join-Path $TestDrive "sshd_test"
         New-Item -Path $TestDir -ItemType Directory -Force | Out-Null
         $TestConfigPath = Join-Path $TestDir "sshd_config"
+
+        $script:DefaultSourceExists = $IsWindows -and
+            (Test-Path -Path "$env:SystemDrive\Windows\System32\OpenSSH\sshd_config_default" -PathType Leaf -ErrorAction SilentlyContinue)
     }
 
     AfterEach {
@@ -180,7 +183,7 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
             sshdconfig set --input $validConfig -s sshd-config
         }
 
-        It 'Should fail with purge=false when file does not exist' {
+        It 'Should seed missing file from default source when available on Windows, or fail otherwise' {
             $nonExistentPath = Join-Path $TestDrive "nonexistent_sshd_config"
 
             $inputConfig = @{
@@ -193,12 +196,26 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
 
             $stderrFile = Join-Path $TestDrive "stderr_purgefalse_nofile.txt"
             sshdconfig set --input $inputConfig -s sshd-config 2>$stderrFile
-            $LASTEXITCODE | Should -Not -Be 0
 
-            $stderr = Get-Content -Path $stderrFile -Raw -ErrorAction SilentlyContinue
-            $stderr | Should -Match "_purge=false requires an existing sshd_config file"
-            $stderr | Should -Match "Use _purge=true to create a new configuration file"
+            if ($IsWindows -and $script:DefaultSourceExists) {
+                $LASTEXITCODE | Should -Be 0
+                Test-Path $nonExistentPath | Should -Be $true
+
+                $getInput = @{
+                    _metadata = @{
+                        filepath = $nonExistentPath
+                    }
+                } | ConvertTo-Json
+                $result = sshdconfig get --input $getInput -s sshd-config 2>$null | ConvertFrom-Json
+                $result.Port | Should -Be "8888"
+            } else {
+                $LASTEXITCODE | Should -Not -Be 0
+                $stderr = Get-Content -Path $stderrFile -Raw -ErrorAction SilentlyContinue
+                $stderr | Should -Match "no default source could be found"
+            }
+
             Remove-Item -Path $stderrFile -Force -ErrorAction SilentlyContinue
+            Remove-Item -Path $nonExistentPath -Force -ErrorAction SilentlyContinue
         }
 
         It 'Should fail with invalid keyword and not modify file' {

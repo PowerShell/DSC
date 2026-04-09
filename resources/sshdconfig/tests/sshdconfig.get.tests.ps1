@@ -148,7 +148,7 @@ PasswordAuthentication no
         Remove-Item -Path $stderrFile -Force -ErrorAction SilentlyContinue
     }
 
-    It 'Should fail when config file does not exist' {
+    It 'Should fail without creating target config when file does not exist' {
         $nonExistentPath = Join-Path $TestDrive 'nonexistent_sshd_config'
 
         $inputData = @{
@@ -158,6 +158,27 @@ PasswordAuthentication no
         } | ConvertTo-Json
 
         $stderrFile = Join-Path $TestDrive "stderr_filenotfound.txt"
+        sshdconfig get --input $inputData -s sshd-config 2>$stderrFile
+        $LASTEXITCODE | Should -Not -Be 0
+
+        Test-Path $nonExistentPath | Should -Be $false
+
+        $stderr = Get-Content -Path $stderrFile -Raw -ErrorAction SilentlyContinue
+        $stderr | Should -Match "File not found"
+
+        Remove-Item -Path $stderrFile -Force -ErrorAction SilentlyContinue
+    }
+
+    It 'Should fail when config file does not exist even when default source is missing' {
+        $nonExistentPath = Join-Path $TestDrive 'nonexistent_sshd_config'
+
+        $inputData = @{
+            _metadata = @{
+                filepath = $nonExistentPath
+            }
+        } | ConvertTo-Json
+
+        $stderrFile = Join-Path $TestDrive "stderr_missing_default_source.txt"
         sshdconfig get --input $inputData -s sshd-config 2>$stderrFile
         $LASTEXITCODE | Should -Not -Be 0
 
