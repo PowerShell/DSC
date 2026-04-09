@@ -110,10 +110,8 @@ pub fn get_default_sshd_config_path(input: Option<PathBuf>) -> Result<PathBuf, S
 fn get_sshd_config_default_source_candidates() -> Vec<PathBuf> {
     let mut candidates: Vec<PathBuf> = Vec::new();
 
-    if cfg!(windows) {
-        if let Ok(system_drive) = std::env::var("SystemDrive") {
-            candidates.push(PathBuf::from(format!("{system_drive}\\Windows\\System32\\OpenSSH\\sshd_config_default")));
-        }
+    if cfg!(windows) && let Ok(system_drive) = std::env::var("SystemDrive") {
+        candidates.push(PathBuf::from(format!("{system_drive}\\Windows\\System32\\OpenSSH\\sshd_config_default")));
     }
 
     candidates
