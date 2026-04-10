@@ -25,10 +25,6 @@ impl SafeVariant {
         &mut self.0
     }
 
-    fn as_mut_ptr(&mut self) -> *mut VARIANT {
-        &mut self.0
-    }
-
     fn as_ref(&self) -> &VARIANT {
         &self.0
     }
