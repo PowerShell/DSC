@@ -3,6 +3,7 @@
   "type": "Microsoft.PowerShell/Discover",
   "version": "0.1.0",
   "description": "Discovers DSC resources packaged in PowerShell 7 modules.",
+  "condition": "[not(equals(tryWhich('pwsh'), null()))]",
   "discover": {
     "executable": "pwsh",
     "args": [

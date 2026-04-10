@@ -104,8 +104,8 @@ Describe 'Tests for MCP server' {
 
         $response = Send-McpRequest -request $mcpRequest
         $response.id | Should -BeGreaterOrEqual 3
-        $resources = dsc resource list | ConvertFrom-Json -Depth 20 | Select-Object type, kind, description -Unique
-        $response.result.structuredContent.resources.Count | Should -Be $resources.Count
+        $resources = dsc resource list | ConvertFrom-Json -Depth 20 | Select-Object type, kind, description
+        $response.result.structuredContent.resources.Count | Should -Be $resources.Count -Because "MCP:`n$($response.result.structuredContent.resources | Format-Table | Out-String)`nDSC:`n$($resources | Format-Table | Out-String)"
         for ($i = 0; $i -lt $resources.Count; $i++) {
             ($response.result.structuredContent.resources[$i].psobject.properties | Measure-Object).Count | Should -BeGreaterOrEqual 3
             $response.result.structuredContent.resources[$i].type | Should -BeExactly $resources[$i].type -Because ($response.result.structuredContent | ConvertTo-Json -Depth 20 | Out-String)
