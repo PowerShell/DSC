@@ -2,6 +2,7 @@
     "Name": "windowsupdate",
     "Kind": "Resource",
     "IsRust": true,
+    "RustPackageName": "dsc-resource-windows-update",
     "SupportedPlatformOS": "Windows",
     "Binaries": [
         "wu_dsc"

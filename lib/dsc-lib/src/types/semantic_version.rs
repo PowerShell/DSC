@@ -292,7 +292,7 @@ use crate::schemas::dsc_repo::DscRepoSchema;
 /// 
 /// [01]: https://semver.org
 /// [`SemanticVersionReq`]: crate::types::SemanticVersionReq
-#[derive(Debug, Clone, Hash, Eq, Serialize, Deserialize, DscRepoSchema)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, DscRepoSchema)]
 #[dsc_repo_schema(base_name = "semver", folder_path = "definitions")]
 pub struct SemanticVersion(semver::Version);
 
@@ -549,11 +549,11 @@ impl Deref for SemanticVersion {
 }
 
 // Comparison traits
-impl PartialEq for SemanticVersion {
-    fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0
-    }
-}
+// impl PartialEq for SemanticVersion {
+//     fn eq(&self, other: &Self) -> bool {
+//         self.0 == other.0
+//     }
+// }
 
 impl PartialEq<semver::Version> for SemanticVersion {
     fn eq(&self, other: &semver::Version) -> bool {
@@ -605,7 +605,7 @@ impl PartialEq<SemanticVersion> for str {
 
 impl PartialEq<&str> for SemanticVersion {
     fn eq(&self, other: &&str) -> bool {
-        match Self::parse(*other) {
+        match Self::parse(other) {
             Ok(other_version) => self.eq(&other_version),
             Err(_) => false,
         }
@@ -614,7 +614,7 @@ impl PartialEq<&str> for SemanticVersion {
 
 impl PartialEq<SemanticVersion> for &str {
     fn eq(&self, other: &SemanticVersion) -> bool {
-        match SemanticVersion::parse(*self) {
+        match SemanticVersion::parse(self) {
             Ok(version) => version.eq(other),
             Err(_) => false,
         }
@@ -623,7 +623,7 @@ impl PartialEq<SemanticVersion> for &str {
 
 impl PartialOrd for SemanticVersion {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.0.partial_cmp(&other.0)
+        Some(self.cmp(other))
     }
 }
 

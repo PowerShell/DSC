@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use std::{fmt::Display, str::FromStr, sync::OnceLock};
+use std::{fmt::Display, hash::Hash, str::FromStr, sync::OnceLock};
 
 use miette::Diagnostic;
 use regex::Regex;
@@ -78,7 +78,7 @@ use crate::{
 /// ```
 ///
 /// [01]: SemanticVersionReq
-#[derive(Debug, Clone, Hash, Eq, Serialize, Deserialize, JsonSchema, DscRepoSchema)]
+#[derive(Debug, Clone, Eq, Serialize, Deserialize, JsonSchema, DscRepoSchema)]
 #[dsc_repo_schema(base_name = "resourceVersionReq", folder_path = "definitions")]
 #[serde(untagged, try_from = "String", into = "String")]
 #[schemars(!try_from, !into)]
@@ -297,10 +297,7 @@ impl ResourceVersionReq {
     /// assert_eq!(date.is_semver(), false);
     /// ```
     pub fn is_semver(&self) -> bool {
-        match self {
-            Self::Semantic(_) => true,
-            _ => false,
-        }
+        matches!(self, Self::Semantic(_))
     }
 
     /// Indicates whether the resource version requirement is for a specific [`DateVersion`].
@@ -317,10 +314,7 @@ impl ResourceVersionReq {
     /// assert_eq!(semantic.is_date_version(), false);
     /// ```
     pub fn is_date_version(&self) -> bool {
-        match self {
-            Self::Date(_) => true,
-            _ => false,
-        }
+        matches!(self, Self::Date(_))
     }
 
     /// Returns the requirement as a reference to the underlying [`SemanticVersionReq`] if possible.
@@ -583,6 +577,15 @@ impl TryFrom<ResourceVersionReq> for DateVersion {
     }
 }
 
+impl Hash for ResourceVersionReq {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            Self::Semantic(req) => req.hash(state),
+            Self::Date(req) => req.hash(state),
+        }
+    }
+}
+
 // Implement traits for comparing `ResourceVersionReq` to strings and semantic version requirements
 // bi-directionally.
 impl PartialEq for ResourceVersionReq {
@@ -638,7 +641,7 @@ impl PartialEq<ResourceVersionReq> for DateVersion {
 
 impl PartialEq<&str> for ResourceVersionReq {
     fn eq(&self, other: &&str) -> bool {
-        match Self::parse(*other) {
+        match Self::parse(other) {
             Ok(other_req) => self == &other_req,
             Err(_) => false,
         }
@@ -647,7 +650,7 @@ impl PartialEq<&str> for ResourceVersionReq {
 
 impl PartialEq<ResourceVersionReq> for &str {
     fn eq(&self, other: &ResourceVersionReq) -> bool {
-        match ResourceVersionReq::parse(*self) {
+        match ResourceVersionReq::parse(self) {
             Ok(req) => &req == other,
             Err(_) => false,
         }

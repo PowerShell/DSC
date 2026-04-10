@@ -75,14 +75,14 @@ impl Function for DataUriToString {
         for part in &parts[1..] {
             if *part == "base64" {
                 has_base64 = true;
-            } else if part.starts_with("charset=") {
+            } else if let Some(charset_from_part) = part.strip_prefix("charset=") {
                 if charset.is_some() {
                     return Err(DscError::FunctionArg(
                         "dataUriToString".to_string(),
                         t!("functions.dataUriToString.invalidDataUri").to_string(),
                     ));
                 }
-                charset = Some(&part[8..]);
+                charset = Some(charset_from_part);
             } else {
                 return Err(DscError::FunctionArg(
                     "dataUriToString".to_string(),

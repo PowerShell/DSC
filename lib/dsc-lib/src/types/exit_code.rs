@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use std::{borrow::Borrow, fmt::Display, ops::Deref, str::FromStr};
+use std::{borrow::Borrow, fmt::Display, hash::Hash, ops::Deref, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 
@@ -12,7 +12,7 @@ use crate::dscerror::DscError;
 /// DSC uses exit codes to determine whether invoked commands, including resource and extension
 /// operations, are successful. DSC treats exit code `0` as successful and all other exit codes
 /// as indicating a failure.
-#[derive(Debug, Copy, Clone, Hash, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
 pub struct ExitCode(i32);
 
@@ -119,7 +119,11 @@ impl From<ExitCode> for i32 {
         value.0
     }
 }
-
+impl Hash for ExitCode {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.0.hash(state);
+    }
+}
 impl PartialEq for ExitCode {
     fn eq(&self, other: &Self) -> bool {
         self.0.eq(&other.0)

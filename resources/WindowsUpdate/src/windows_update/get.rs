@@ -14,10 +14,10 @@ use crate::windows_update::types::{UpdateList, extract_update_info};
 pub fn handle_get(input: &str) -> Result<String> {
     // Parse input as UpdateList
     let update_list: UpdateList = serde_json::from_str(input)
-        .map_err(|e| Error::new(E_INVALIDARG.into(), t!("get.failedParseInput", err = e.to_string()).to_string()))?;
+        .map_err(|e| Error::new(E_INVALIDARG, t!("get.failedParseInput", err = e.to_string())))?;
     
     if update_list.updates.is_empty() {
-        return Err(Error::new(E_INVALIDARG.into(), t!("get.updatesArrayEmpty").to_string()));
+        return Err(Error::new(E_INVALIDARG, t!("get.updatesArrayEmpty")));
     }
     
     // Initialize COM
@@ -54,7 +54,7 @@ pub fn handle_get(input: &str) -> Result<String> {
                 && update_input.is_installed.is_none() 
                 && update_input.update_type.is_none() 
                 && update_input.msrc_severity.is_none() {
-                return Err(Error::new(E_INVALIDARG.into(), t!("get.atLeastOneCriterionRequired").to_string()));
+                return Err(Error::new(E_INVALIDARG, t!("get.atLeastOneCriterionRequired")));
             }
 
             // Find the update matching ALL provided criteria (logical AND)
@@ -168,7 +168,7 @@ pub fn handle_get(input: &str) -> Result<String> {
                 };
 
                 eprintln!("{{\"error\":\"{}\"}}", error_msg);
-                return Err(Error::new(E_INVALIDARG.into(), error_msg));
+                return Err(Error::new(E_INVALIDARG, error_msg));
             }
 
             // Get the first (and should be only) match
@@ -206,7 +206,7 @@ pub fn handle_get(input: &str) -> Result<String> {
                 // Emit JSON error to stderr
                 eprintln!("{{\"error\":\"{}\"}}", error_msg);
                 
-                return Err(Error::new(E_FAIL.into(), error_msg));
+                return Err(Error::new(E_FAIL, error_msg));
             }
         }
 
@@ -227,7 +227,7 @@ pub fn handle_get(input: &str) -> Result<String> {
                 updates
             };
             serde_json::to_string(&result)
-                .map_err(|e| Error::new(E_FAIL.into(), t!("get.failedSerializeOutput", err = e.to_string()).to_string()))
+                .map_err(|e| Error::new(E_FAIL, t!("get.failedSerializeOutput", err = e.to_string())))
         }
         Err(e) => Err(e),
     }

@@ -57,11 +57,12 @@ fn main() {
 }
 
 fn is_secure_value(value: &Value) -> bool {
-    if let Some(obj) = value.as_object() {
-        if obj.len() == 1 && (obj.contains_key("secureString") || obj.contains_key("secureObject")) {
+    if let Some(obj) = value.as_object()
+        && obj.len() == 1
+        && (obj.contains_key("secureString") || obj.contains_key("secureObject")) {
             return true;
         }
-    }
+
     false
 }
 

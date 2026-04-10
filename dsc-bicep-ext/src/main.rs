@@ -213,7 +213,7 @@ impl BicepExtension for BicepExtensionService {
             resource: Some(proto::Resource {
                 r#type: resource_type,
                 api_version: version,
-                identifiers: identifiers,
+                identifiers,
                 properties: result.actual_state.to_string(),
                 status: None,
             }),
@@ -270,7 +270,7 @@ impl BicepExtension for BicepExtensionService {
             resource: Some(proto::Resource {
                 r#type: resource_type,
                 api_version: version,
-                identifiers: identifiers,
+                identifiers,
                 properties: "{}".to_string(),
                 status: None,
             }),
@@ -367,9 +367,7 @@ async fn run_server(
         impl Connected for NamedPipeConnection {
             type ConnectInfo = ();
 
-            fn connect_info(&self) -> Self::ConnectInfo {
-                ()
-            }
+            fn connect_info(&self) -> Self::ConnectInfo {}
         }
 
         impl AsyncRead for NamedPipeConnection {

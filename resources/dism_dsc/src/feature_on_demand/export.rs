@@ -41,12 +41,11 @@ pub fn handle_export(input: &str) -> Result<String, String> {
             let mut should_get_full = !filters_without_identity.is_empty();
             if !should_get_full {
                 for f in &filters_with_identity {
-                    if let Some(ref filter_identity) = f.identity {
-                        if matches_wildcard(name, filter_identity) {
+                    if let Some(ref filter_identity) = f.identity 
+                        && matches_wildcard(name, filter_identity) {
                             should_get_full = true;
                             break;
                         }
-                    }
                 }
             }
             if !should_get_full {

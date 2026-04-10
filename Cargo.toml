@@ -223,7 +223,7 @@ tempfile = { version = "3.27" }
 # dsc, dsc-lib, registry, dsc-lib-registry, sshdconfig
 thiserror = { version = "2.0" }
 # dsc, dsc-lib, dsc-bicep-ext
-tokio = { version = "1.50" }
+tokio = { version = "1.51" }
 # dsc-bicep-ext
 tokio-stream = { version = "0.1" }
 # dsc

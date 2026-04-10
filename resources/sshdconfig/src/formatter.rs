@@ -41,12 +41,10 @@ impl<'a> SshdConfigValue<'a> {
             ));
         }
 
-        if let Value::Array(arr) = value {
-            if arr.is_empty() {
-                return Err(SshdConfigError::ParserError(
-                    t!("formatter.invalidValue", key = key).to_string()
-                ));
-            }
+        if let Value::Array(arr) = value && arr.is_empty() {
+            return Err(SshdConfigError::ParserError(
+                t!("formatter.invalidValue", key = key).to_string()
+            ));
         }
 
         let mut keyword_info = KeywordInfo::from_keyword(key);

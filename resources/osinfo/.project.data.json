@@ -2,6 +2,7 @@
     "Name": "osinfo",
     "Kind": "Resource",
     "IsRust": true,
+    "RustPackageName": "dsc-resource-osinfo",
     "Binaries": [
         "osinfo"
     ],

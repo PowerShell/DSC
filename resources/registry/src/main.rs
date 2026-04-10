@@ -78,24 +78,23 @@ fn main() {
                     if what_if { reg_helper.enable_what_if(); }
 
                     // In what-if, if the desired state is _exist: false, route to delete
-                    if what_if {
-                        if let Ok(desired) = serde_json::from_str::<Registry>(&input) {
-                            if matches!(desired.exist, Some(false)) {
-                                match reg_helper.remove() {
-                                    Ok(Some(reg_config)) => {
-                                        let json = serde_json::to_string(&reg_config).unwrap();
-                                        println!("{json}");
-                                    },
-                                    Ok(None) => {},
-                                    Err(err) => {
-                                        error!("{err}");
-                                        exit(EXIT_REGISTRY_ERROR);
-                                    }
+                    if what_if
+                        && let Ok(desired) = serde_json::from_str::<Registry>(&input)
+                        && matches!(desired.exist, Some(false)) {
+                            match reg_helper.remove() {
+                                Ok(Some(reg_config)) => {
+                                    let json = serde_json::to_string(&reg_config).unwrap();
+                                    println!("{json}");
+                                },
+                                Ok(None) => {},
+                                Err(err) => {
+                                    error!("{err}");
+                                    exit(EXIT_REGISTRY_ERROR);
                                 }
-                                return;
                             }
+                            return;
                         }
-                    }
+
                     match reg_helper.set() {
                         Ok(reg_config) => {
                             if let Some(config) = reg_config {
