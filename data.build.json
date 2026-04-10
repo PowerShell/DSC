@@ -29,6 +29,8 @@
       "runcommandonset",
       "sshdconfig",
       "sshd_config.dsc.resource.json",
+      "sshd-subsystem.dsc.resource.json",
+      "sshd-subsystemList.dsc.resource.json",
       "y2j"
     ],
     "macOS": [
@@ -56,6 +58,8 @@
       "runcommandonset",
       "sshdconfig",
       "sshd_config.dsc.resource.json",
+      "sshd-subsystem.dsc.resource.json",
+      "sshd-subsystemList.dsc.resource.json",
       "y2j"
     ],
     "Windows": [
@@ -92,6 +96,8 @@
       "sshdconfig.exe",
       "sshd-windows.dsc.resource.json",
       "sshd_config.dsc.resource.json",
+      "sshd-subsystem.dsc.resource.json",
+      "sshd-subsystemList.dsc.resource.json",
       "windowspowershell.dsc.resource.json",
       "windowsupdate.dsc.resource.json",
       "wu_dsc.exe",

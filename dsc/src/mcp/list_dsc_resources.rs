@@ -12,7 +12,6 @@ use rmcp::{ErrorData as McpError, Json, tool, tool_router, handler::server::wrap
 use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
 use tokio::task;
 
 #[derive(Serialize, JsonSchema)]
@@ -63,7 +62,7 @@ impl McpServer {
                 },
                 None => None,
             };
-            let mut resources = BTreeMap::<FullyQualifiedTypeName, ResourceSummary>::new();
+            let mut resources = Vec::<ResourceSummary>::new();
             for resource in dsc.list_available(&DiscoveryKind::Resource, &TypeNameFilter::default(), adapter_filter, ProgressFormat::None) {
                 if let Resource(resource) = resource {
                     let summary = ResourceSummary {
@@ -72,10 +71,10 @@ impl McpServer {
                         description: resource.description.clone(),
                         require_adapter: resource.require_adapter,
                     };
-                    resources.insert(resource.type_name.clone(), summary);
+                    resources.push(summary);
                 }
             }
-            Ok(ResourceListResult { resources: resources.into_values().collect() })
+            Ok(ResourceListResult { resources })
         }).await.map_err(|e| McpError::internal_error(e.to_string(), None))??;
 
         Ok(Json(result))
