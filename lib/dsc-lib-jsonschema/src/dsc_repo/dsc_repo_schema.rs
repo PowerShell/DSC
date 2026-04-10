@@ -46,6 +46,11 @@ pub trait DscRepoSchema : JsonSchema {
     /// aren't published with the VS Code form.
     const SCHEMA_SHOULD_BUNDLE: bool;
 
+    /// Defines the translation root key to use when resolving translations for JSON Schema keywords.
+    /// 
+    /// All bundled schemas must include documentation keywords like `title` and `description`.
+    const SCHEMA_I18N_ROOT_KEY: &'static str;
+
     /// Defines the metadata for the `$schema` property of a struct that takes multiple schema
     /// versions.
     ///
@@ -341,6 +346,22 @@ pub trait DscRepoSchema : JsonSchema {
             vec![SchemaForm::Canonical]
         }
     }
+
+    /// Retrieves a translation string using a dot-path relative to the [`SCHEMA_I18N_ROOT_KEY`].
+    /// 
+    /// # Arguments
+    /// 
+    /// - `suffix` - The string to append to the root key, like `items.description`.
+    /// 
+    /// # Errors
+    /// 
+    /// Returns a [`DscRepoSchemaMissingTranslation`] error if the translation key doesn't exist.
+    /// 
+    /// # Example
+    /// 
+    /// ```ignore
+    /// ```
+    fn schema_i18n(suffix: &str) -> Result<String, DscRepoSchemaMissingTranslation>;
 }
 
 /// Defines the error when a user-defined JSON Schema references an unrecognized schema URI.
@@ -351,3 +372,12 @@ pub trait DscRepoSchema : JsonSchema {
     t2 = t!("dsc_repo.dsc_repo_schema.validSchemaUrisAre")
 )]
 pub struct UnrecognizedSchemaUri(pub String, pub Vec<String>);
+
+#[derive(Error, Debug, Clone, PartialEq)]
+#[error("{t}", t = t!(
+    "dsc_repo.dsc_repo_schema.missingTranslation",
+    "key" => i18n_key
+))]
+pub struct DscRepoSchemaMissingTranslation {
+    pub i18n_key: String
+}

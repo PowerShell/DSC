@@ -21,6 +21,10 @@ struct DscRepoSchemaReceiver {
     /// other schemas may not be.
     #[darling(default)]
     pub should_bundle: bool,
+    /// Defines the root dotpath for the JSON Schema keyword value translations used by `rust_i18n`
+    /// crate. Must be a literal string like `"schemas.definitions.tag"`.
+    #[darling(default)]
+    pub i18n_root_key: Option<String>,
     /// Defines the field for the struct that is used as the `$schema` property. Typically only
     /// defined for root schemas.
     #[darling(default)]
@@ -62,6 +66,12 @@ pub(crate) fn dsc_repo_schema_impl(input: TokenStream) -> TokenStream {
         }
     };
 
+    let i18n_root_key = args.i18n_root_key.unwrap_or(format!(
+        "schemas.{}.{}",
+        args.folder_path.replace('/', "."),
+        args.base_name
+    ));
+
     let mut output = quote!();
 
     if let Some(schema_field) = args.schema_field {
@@ -70,6 +80,7 @@ pub(crate) fn dsc_repo_schema_impl(input: TokenStream) -> TokenStream {
             args.base_name,
             args.folder_path,
             args.should_bundle,
+            i18n_root_key,
             schema_field
         ));
     } else {
@@ -77,7 +88,8 @@ pub(crate) fn dsc_repo_schema_impl(input: TokenStream) -> TokenStream {
             ident,
             args.base_name,
             args.folder_path,
-            args.should_bundle
+            args.should_bundle,
+            i18n_root_key
         ));
     }
 
@@ -91,14 +103,19 @@ fn generate_without_schema_field(
     ident: Ident,
     base_name: String,
     folder_path: String,
-    should_bundle: bool
+    should_bundle: bool,
+    i18n_root_key: String,
 ) -> proc_macro2::TokenStream {
+    let translation_fn = generate_schema_i18n_fn();
     quote!(
         #[automatically_derived]
         impl DscRepoSchema for #ident {
             const SCHEMA_FILE_BASE_NAME: &'static str = #base_name;
             const SCHEMA_FOLDER_PATH: &'static str = #folder_path;
             const SCHEMA_SHOULD_BUNDLE: bool = #should_bundle;
+            const SCHEMA_I18N_ROOT_KEY: &'static str = #i18n_root_key;
+
+            #translation_fn
 
             fn schema_property_metadata() -> schemars::Schema {
                 schemars::json_schema!({})
@@ -118,9 +135,11 @@ fn generate_with_schema_field(
     base_name: String,
     folder_path: String,
     should_bundle: bool,
+    i18n_root_key: String,
     schema_field: DscRepoSchemaField
 ) -> proc_macro2::TokenStream {
     let schema_property_metadata = generate_schema_property_metadata_fn(&schema_field);
+    let translation_fn = generate_schema_i18n_fn();
     let field = schema_field.name;
     quote!(
         #[automatically_derived]
@@ -128,6 +147,9 @@ fn generate_with_schema_field(
             const SCHEMA_FILE_BASE_NAME: &'static str = #base_name;
             const SCHEMA_FOLDER_PATH: &'static str = #folder_path;
             const SCHEMA_SHOULD_BUNDLE: bool = #should_bundle;
+            const SCHEMA_I18N_ROOT_KEY: &'static str = #i18n_root_key;
+
+            #translation_fn
 
             #schema_property_metadata
 
@@ -166,6 +188,21 @@ fn generate_schema_property_metadata_fn(schema_field: &DscRepoSchemaField) -> pr
             schemars::json_schema!({
                 #schema_body
             })
+        }
+    }
+}
+
+/// Generates a crate-local implementation for the `lookup_translation()` trait function. This is
+/// required to ensure that the translations use the correct locale definitions.
+fn generate_schema_i18n_fn() -> proc_macro2::TokenStream {
+    quote! {
+        fn schema_i18n(suffix: &str) -> Result<String, dsc_lib_jsonschema::dsc_repo::DscRepoSchemaMissingTranslation> {
+            let i18n_key = format!("{}.{}", Self::SCHEMA_I18N_ROOT_KEY, suffix);
+            if let Some(translated) = crate::_rust_i18n_try_translate(&rust_i18n::locale(), &i18n_key) {
+                Ok(translated.into())
+            } else {
+                Err(dsc_lib_jsonschema::dsc_repo::DscRepoSchemaMissingTranslation { i18n_key })
+            }
         }
     }
 }
