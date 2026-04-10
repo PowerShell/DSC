@@ -3,6 +3,7 @@
     "type": "Microsoft.OpenSSH.SSHD/Subsystem",
     "description": "Manage SSH Server Subsystem keyword (single entry)",
     "version": "0.1.0",
+    "condition": "[not(equals(tryWhich('sshd'), null()))]",
     "get": {
         "executable": "sshdconfig",
         "args": [
