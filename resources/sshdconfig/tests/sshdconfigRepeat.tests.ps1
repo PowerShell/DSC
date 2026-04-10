@@ -236,10 +236,16 @@ PasswordAuthentication yes
             if ($IsWindows -and $script:DefaultSourceExists) {
                 $LASTEXITCODE | Should -Be 0
                 Test-Path $nonExistentPath | Should -Be $true
-            } else {
+            }
+            elseif ($IsWindows) {
                 $LASTEXITCODE | Should -Not -Be 0
                 $stderr = Get-Content -Path $stderrFile -Raw -ErrorAction SilentlyContinue
                 $stderr | Should -Match "no default source could be found"
+            }
+            else {
+                $LASTEXITCODE | Should -Not -Be 0
+                $stderr = Get-Content -Path $stderrFile -Raw -ErrorAction SilentlyContinue
+                $stderr | Should -Match "does not exist"
             }
 
             Remove-Item -Path $stderrFile -Force -ErrorAction SilentlyContinue

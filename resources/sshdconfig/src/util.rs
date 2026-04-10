@@ -110,8 +110,13 @@ pub fn get_default_sshd_config_path(input: Option<PathBuf>) -> Result<PathBuf, S
 fn get_sshd_config_default_source_candidates() -> Vec<PathBuf> {
     let mut candidates: Vec<PathBuf> = Vec::new();
 
-    if cfg!(windows) && let Ok(system_drive) = std::env::var("SystemDrive") {
-        candidates.push(PathBuf::from(format!("{system_drive}\\Windows\\System32\\OpenSSH\\sshd_config_default")));
+    if cfg!(windows) && let Ok(win_dir) = std::env::var("windir") {
+        candidates.push(
+            PathBuf::from(win_dir)
+                .join("System32")
+                .join("OpenSSH")
+                .join("sshd_config_default"),
+        );
     }
 
     candidates
@@ -129,8 +134,8 @@ pub fn ensure_sshd_config_exists(input: Option<PathBuf>) -> Result<PathBuf, Sshd
     }
 
     if !cfg!(windows) {
-        return Err(SshdConfigError::FileNotFound(
-            t!("util.sshdConfigNotFoundNonWindows").to_string()
+        return Err(SshdConfigError::ConfigInitRequired(
+            t!("util.sshdConfigNotFoundNonWindows", path = target_path.display()).to_string(),
         ));
     }
 
@@ -145,7 +150,14 @@ pub fn ensure_sshd_config_exists(input: Option<PathBuf>) -> Result<PathBuf, Sshd
                 .map(|path| path.display().to_string())
                 .collect::<Vec<String>>()
                 .join(", ");
-            SshdConfigError::InvalidInput(t!("util.sshdConfigDefaultNotFound", paths = paths).to_string())
+            SshdConfigError::ConfigInitRequired(
+                t!(
+                    "util.sshdConfigDefaultNotFound",
+                    path = target_path.display(),
+                    paths = paths
+                )
+                .to_string(),
+            )
         })?;
 
     if let Some(parent) = target_path.parent() {

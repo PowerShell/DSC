@@ -208,10 +208,16 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
                 } | ConvertTo-Json
                 $result = sshdconfig get --input $getInput -s sshd-config 2>$null | ConvertFrom-Json
                 $result.Port | Should -Be "8888"
-            } else {
+            }
+            elseif ($IsWindows) {
                 $LASTEXITCODE | Should -Not -Be 0
                 $stderr = Get-Content -Path $stderrFile -Raw -ErrorAction SilentlyContinue
                 $stderr | Should -Match "no default source could be found"
+            }
+            else {
+                $LASTEXITCODE | Should -Not -Be 0
+                $stderr = Get-Content -Path $stderrFile -Raw -ErrorAction SilentlyContinue
+                $stderr | Should -Match "does not exist"
             }
 
             Remove-Item -Path $stderrFile -Force -ErrorAction SilentlyContinue
