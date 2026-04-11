@@ -14,6 +14,7 @@ const DISM_PACKAGE_NONE: i32 = 0;
 const ERROR_SUCCESS_REBOOT_REQUIRED: i32 = 3010;
 const DISMAPI_E_UNKNOWN_FEATURE: i32 = 0x800F080Cu32 as i32;
 const DISMAPI_E_CAPABILITY_NOT_APPLICABLE: i32 = 0x800F0825u32 as i32;
+const REGDB_E_CLASSNOTREG: i32 = 0x80040154u32 as i32;
 const LOAD_LIBRARY_SEARCH_SYSTEM32: u32 = 0x0000_0800;
 
 #[link(name = "kernel32")]
@@ -243,6 +244,9 @@ impl DismSessionHandle {
 
         unsafe {
             let hr = dism_initialize(DISM_LOG_ERRORS, std::ptr::null(), std::ptr::null());
+            if hr == REGDB_E_CLASSNOTREG {
+                return Err(t!("dism.notSupportedAppx").to_string());
+            }
             if hr < 0 {
                 return Err(t!("dism.initializeFailed", hr = format!("0x{:08X}", hr as u32)).to_string());
             }
@@ -255,6 +259,10 @@ impl DismSessionHandle {
                 std::ptr::null(),
                 &mut session,
             );
+            if hr == REGDB_E_CLASSNOTREG {
+                (api.shutdown)();
+                return Err(t!("dism.notSupportedAppx").to_string());
+            }
             if hr < 0 {
                 (api.shutdown)();
                 return Err(t!("dism.openSessionFailed", hr = format!("0x{:08X}", hr as u32)).to_string());
