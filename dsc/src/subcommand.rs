@@ -819,7 +819,7 @@ pub fn list_resources(
             // if description, tags, or write_table is specified, pull resource manifest if it exists
             if let Some(ref manifest) = resource.manifest {
                 // if description is specified, skip if resource description does not contain it
-                if description.is_some() && (manifest.description.is_none() | !manifest.description.clone().unwrap_or_default().to_lowercase().contains(&description.unwrap_or(&String::new()).to_lowercase())) {
+                if description.is_some() && (manifest.description.is_none() | !manifest.description.as_ref().unwrap_or(&String::new()).to_lowercase().contains(&description.unwrap_or(&String::new()).to_lowercase())) {
                     continue;
                 }
 

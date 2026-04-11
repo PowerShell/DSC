@@ -680,26 +680,26 @@ pub trait SchemaUtilityExtensions {
 
     //************************ $id keyword functions *************************//
     /// Retrieves the `$id` values for any entries in the `$defs` keyword.
-    /// 
+    ///
     /// A compound schema resource document, also called a "bundled schema", includes referenced
     /// schema resources in the `$defs` keyword. A schema resource always defines the `$id` keyword.
-    /// 
+    ///
     /// This method retrieves those IDs and returns a hashset containing the unique values.
-    /// 
+    ///
     /// Optionally, you can recursively search for schema resource IDs to handle cases where the
     /// a bundled schema resource may itself have bundled resources.
-    /// 
+    ///
     /// If the schema doesn't have any bundled schema resources, this method returns an empty
     /// hashset.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// This example demonstrates the difference between invoking the method for the top-level
     /// only and recursively returning nested bundled schema resources.
-    /// 
+    ///
     /// ```rust
     /// use std::collections::HashSet;
-    /// 
+    ///
     /// use schemars::json_schema;
     /// use serde_json::json;
     /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
@@ -725,7 +725,7 @@ pub trait SchemaUtilityExtensions {
     ///         }
     ///     }
     /// });
-    /// 
+    ///
     /// let non_recursive_result: HashSet<&str> = [
     ///     "https://contoso.com/schemas/example/string.json",
     ///     "https://contoso.com/schemas/example/object.json"
@@ -734,7 +734,7 @@ pub trait SchemaUtilityExtensions {
     ///     schema.get_bundled_schema_resource_ids(false),
     ///     non_recursive_result
     /// );
-    /// 
+    ///
     /// let recursive_result: HashSet<&str> = [
     ///     "https://contoso.com/schemas/example/string.json",
     ///     "https://contoso.com/schemas/example/object.json",
@@ -1474,20 +1474,20 @@ pub trait SchemaUtilityExtensions {
     //************************ $ref keyword functions ************************//
     /// Retrieves the value for every `$ref` keyword from the [`Schema`] as a [`HashSet`] of
     /// unique values.
-    /// 
-    /// 
+    ///
+    ///
     /// This method recurses through a given schema for the `$ref` keyword and inserts the value
     /// into a hashset to return. If the schema doesn't define any references, this method returns
     /// an empty hashset.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// This example shows how the method returns a unique set of references by recursively
     /// searching the schema for the `$ref` keyword.
-    /// 
+    ///
     /// ```rust
     /// use std::collections::HashSet;
-    /// 
+    ///
     /// use schemars::json_schema;
     /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
     ///
@@ -1499,12 +1499,12 @@ pub trait SchemaUtilityExtensions {
     ///         "age": { "$ref": "/schemas/example/properties/age.json" },
     ///     },
     /// });
-    /// 
+    ///
     /// let references: HashSet<&str> = [
     ///     "/schemas/example/properties/name.json",
     ///     "/schemas/example/properties/age.json"
     /// ].into();
-    /// 
+    ///
     /// assert_eq!(
     ///     schema.get_references(),
     ///     references
@@ -1559,7 +1559,7 @@ pub trait SchemaUtilityExtensions {
     ///                 "nestedBar": { "$ref": "#/$defs/bar" },
     ///             },
     ///         },
-    /// 
+    ///
     ///     },
     /// });
     ///
@@ -1576,17 +1576,17 @@ pub trait SchemaUtilityExtensions {
     fn get_references_to_bundled_schema_resource(&self, resource_id: &str) -> HashSet<&str>;
     /// Searches the schema for instances of the `$ref` keyword defined as a
     /// given value and replaces each instance with a new value.
-    /// 
+    ///
     /// This method simplifies replacing references programmatically, especially
     /// for converting references to use the canonical ID of a bundled schema
     /// resource.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// This example replaces the reference to `#/$defs/name.json` with the
     /// canonical ID URI for the referenced schema resource, which is bundled
     /// in the schema.
-    /// 
+    ///
     /// ```rust
     /// use schemars::json_schema;
     /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
@@ -1604,12 +1604,12 @@ pub trait SchemaUtilityExtensions {
     ///         }
     ///     }
     /// });
-    /// 
+    ///
     /// schema.replace_references(
     ///     "#/$defs/name",
     ///     "https://contoso.com/schemas/example/properties/name.json"
     /// );
-    /// 
+    ///
     /// assert_eq!(
     ///     schema.get_references().into_iter().nth(0).unwrap(),
     ///     "https://contoso.com/schemas/example/properties/name.json"
@@ -1617,11 +1617,11 @@ pub trait SchemaUtilityExtensions {
     /// ```
     fn replace_references(&mut self, find_value: &str, new_value: &str);
     /// Checks whether a given reference maps to a bundled schema resource.
-    /// 
+    ///
     /// This method takes the value of a `$ref` keyword and searches for a matching entry in the
     /// `$defs` keyword. The method returns `true` if the reference resolves to an entry in
     /// `$defs` and otherwise false.
-    /// 
+    ///
     /// The reference can be any of the following:
     ///
     /// - A URI identifier fragment, like `#/$defs/foo`
@@ -1629,9 +1629,9 @@ pub trait SchemaUtilityExtensions {
     /// - A site-relative URL for the referenced schema, like `/schemas/example.json`. The function
     ///   can only resolve site-relative URLs when the schema itself defines `$id` with an absolute
     ///   URL, because it uses the current schema's `$id` as the base URL.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```rust
     /// use schemars::json_schema;
     /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
@@ -1645,7 +1645,7 @@ pub trait SchemaUtilityExtensions {
     ///         }
     ///     }
     /// });
-    /// 
+    ///
     /// // Resolving reference as pointer
     /// assert_eq!(schema.reference_is_for_bundled_resource("#/$defs/name"), true);
     /// // Resolving reference as site-relative URI
@@ -1991,7 +1991,7 @@ impl SchemaUtilityExtensions for Schema {
             if k.as_str() == old_key {
                 (new_key.to_string(), v.clone())
             } else {
-                (k.clone(), v.clone())
+                (std::mem::take(k), v.clone())
             }
         }).collect();
     }
@@ -2148,7 +2148,7 @@ impl SchemaUtilityExtensions for Schema {
         let Some(def_key) = self.get_bundled_schema_resource_defs_key(resource_id) else {
             return HashSet::new();
         };
-        
+
         let matching_references = &mut vec![
             format!("#/$defs/{def_key}"),
             resource_id.to_string(),

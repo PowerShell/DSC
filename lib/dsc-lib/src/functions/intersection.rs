@@ -30,13 +30,13 @@ impl Function for Intersection {
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.intersection.invoked"));
-        
+
         if let Some(first_array) = args[0].as_array() {
             let mut result = Vec::new();
-            
+
             for item in first_array {
                 let mut found_in_all = true;
-                
+
                 for arg in &args[1..] {
                     if let Some(array) = arg.as_array() {
                         if !array.contains(item) {
@@ -47,21 +47,21 @@ impl Function for Intersection {
                         return Err(DscError::Parser(t!("functions.intersection.invalidArgType").to_string()));
                     }
                 }
-                
+
                 if found_in_all && !result.contains(item) {
                     result.push(item.clone());
                 }
             }
-            
+
             return Ok(Value::Array(result));
         }
 
         if let Some(first_object) = args[0].as_object() {
             let mut result = Map::new();
-            
+
             for (key, value) in first_object {
                 let mut found_in_all = true;
-                
+
                 for arg in &args[1..] {
                     if let Some(object) = arg.as_object() {
                         if let Some(other_value) = object.get(key) {
@@ -77,12 +77,12 @@ impl Function for Intersection {
                         return Err(DscError::Parser(t!("functions.intersection.invalidArgType").to_string()));
                     }
                 }
-                
+
                 if found_in_all {
-                    result.insert(key.clone(), value.clone());
+                    result.insert(key.to_string(), value.clone());
                 }
             }
-            
+
             return Ok(Value::Object(result));
         }
 

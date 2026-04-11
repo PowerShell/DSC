@@ -30,13 +30,15 @@ impl RegistryHelper {
     ///
     /// * `RegistryError` - The error that occurred.
     pub fn new_from_json(config: &str) -> Result<Self, RegistryError> {
-        let registry: Registry = match serde_json::from_str(config) {
+        let mut registry: Registry = match serde_json::from_str(config) {
             Ok(config) => config,
             Err(e) => return Err(RegistryError::Json(e)),
         };
-        let key_path = registry.key_path.clone();
+        let key_path = std::mem::take(&mut registry.key_path);
         let (hive, subkey) = get_hive_from_path(&key_path)?;
 
+        // Restore the key_path since we moved it out
+        registry.key_path = key_path;
         Ok(
             Self {
                 config: registry,

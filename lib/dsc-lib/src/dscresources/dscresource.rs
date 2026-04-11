@@ -117,7 +117,7 @@ impl DscResource {
         }
     }
 
-    fn create_config_for_adapter(self, adapter: &FullyQualifiedTypeName, input: &str) -> Result<Configurator, DscError> {
+    fn create_config_for_adapter(&self, adapter: &FullyQualifiedTypeName, input: &str) -> Result<Configurator, DscError> {
         // create new configuration with adapter and use this as the resource
         let mut configuration = Configuration::new();
         let mut property_map = Map::new();
@@ -144,7 +144,7 @@ impl DscResource {
     }
 
     fn invoke_get_with_adapter(&self, adapter: &FullyQualifiedTypeName, target_resource: &DscResource, filter: &str) -> Result<GetResult, DscError> {
-        let mut configurator = self.clone().create_config_for_adapter(adapter, filter)?;
+        let mut configurator = self.create_config_for_adapter(adapter, filter)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
             adapter.target_resource = Some(Box::new(target_resource.clone()));
@@ -168,7 +168,7 @@ impl DscResource {
     }
 
     fn invoke_set_with_adapter(&self, adapter: &FullyQualifiedTypeName, target_resource: &DscResource, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
-        let mut configurator = self.clone().create_config_for_adapter(adapter, desired)?;
+        let mut configurator = self.create_config_for_adapter(adapter, desired)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
             adapter.target_resource = Some(Box::new(target_resource.clone()));
@@ -201,7 +201,7 @@ impl DscResource {
     }
 
     fn invoke_test_with_adapter(&self, adapter: &FullyQualifiedTypeName, target_resource: &DscResource, expected: &str) -> Result<TestResult, DscError> {
-        let mut configurator = self.clone().create_config_for_adapter(adapter, expected)?;
+        let mut configurator = self.create_config_for_adapter(adapter, expected)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
             adapter.target_resource = Some(Box::new(target_resource.clone()));
@@ -235,7 +235,7 @@ impl DscResource {
     }
 
     fn invoke_delete_with_adapter(&self, adapter: &FullyQualifiedTypeName, target_resource: &DscResource, filter: &str, execution_type: &ExecutionKind) -> Result<DeleteResultKind, DscError> {
-        let mut configurator = self.clone().create_config_for_adapter(adapter, filter)?;
+        let mut configurator = self.create_config_for_adapter(adapter, filter)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
             if adapter.capabilities.contains(&Capability::Delete) {
@@ -250,7 +250,7 @@ impl DscResource {
     }
 
     fn invoke_export_with_adapter(&self, adapter: &FullyQualifiedTypeName, target_resource: &DscResource,input: &str) -> Result<ExportResult, DscError> {
-        let mut configurator = self.clone().create_config_for_adapter(adapter, input)?;
+        let mut configurator = self.create_config_for_adapter(adapter, input)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
             adapter.target_resource = Some(Box::new(target_resource.clone()));
@@ -280,7 +280,7 @@ impl DscResource {
     }
 
     fn invoke_schema_with_adapter(&self, adapter: &FullyQualifiedTypeName, target_resource: &DscResource) -> Result<String, DscError> {
-        let mut configurator = self.clone().create_config_for_adapter(adapter, "")?;
+        let mut configurator = self.create_config_for_adapter(adapter, "")?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
             adapter.target_resource = Some(Box::new(target_resource.clone()));

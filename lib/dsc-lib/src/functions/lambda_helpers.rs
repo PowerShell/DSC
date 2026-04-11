@@ -36,16 +36,16 @@ pub fn get_lambda<'a>(
     func_name: &str,
 ) -> Result<Ref<'a, std::collections::HashMap<String, Lambda>>, DscError> {
     let lambdas = context.lambdas.borrow();
-    
+
     if !lambdas.contains_key(lambda_id) {
         return Err(DscError::Parser(t!("functions.lambdaNotFound", name = func_name, id = lambda_id).to_string()));
     }
-    
+
     let lambda = lambdas.get(lambda_id).unwrap();
     if lambda.parameters.is_empty() || lambda.parameters.len() > 2 {
         return Err(DscError::Parser(t!("functions.lambdaTooManyParams", name = func_name).to_string()));
     }
-    
+
     Ok(lambdas)
 }
 
@@ -78,21 +78,21 @@ where
 
     for (index, element) in array.iter().enumerate() {
         let mut lambda_context = context.clone();
-        
+
         lambda_context.lambda_variables.insert(
-            lambda.parameters[0].clone(),
+            lambda.parameters[0].to_string(),
             element.clone()
         );
 
         if lambda.parameters.len() == 2 {
             lambda_context.lambda_variables.insert(
-                lambda.parameters[1].clone(),
+                lambda.parameters[1].to_string(),
                 Value::Number(serde_json::Number::from(index))
             );
         }
 
         let result = lambda.body.invoke(&dispatcher, &lambda_context)?;
-        
+
         if let Some(value) = apply(result, element)? {
             results.push(value);
         }

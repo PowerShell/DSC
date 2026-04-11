@@ -24,17 +24,36 @@ use serde_json::Value;
 pub fn invoke_user_function(name: &str, args: &[Value], context: &Context) -> Result<Value, DscError> {
     if let Some(function_definition) = context.user_functions.get(name) {
         validate_parameters(name, function_definition, args)?;
-        let mut user_context = context.clone();
-        user_context.process_mode = ProcessMode::UserFunction;
-        // can only use its own parameters and not the global ones
-        user_context.parameters.clear();
-        // cannot call other user functions
-        user_context.user_functions.clear();
+        let mut user_context = Context {
+            process_mode: ProcessMode::UserFunction,
+            parameters: HashMap::new(),
+            user_functions: HashMap::new(),
+            // Copy other necessary fields by reference or shallow copy
+            copy: context.copy.clone(),
+            copy_current_loop_name: context.copy_current_loop_name.clone(),
+            dsc_version: context.dsc_version.clone(),
+            execution_type: context.execution_type,
+            extensions: context.extensions.clone(),
+            lambda_raw_args: std::cell::RefCell::new(None),
+            lambda_variables: HashMap::new(),
+            lambdas: std::cell::RefCell::new(HashMap::new()),
+            operation: context.operation,
+            outputs: context.outputs.clone(),
+            processing_parameter_defaults: context.processing_parameter_defaults,
+            process_expressions: context.process_expressions,
+            references: context.references.clone(),
+            restart_required: context.restart_required.clone(),
+            security_context: context.security_context.clone(),
+            start_datetime: context.start_datetime,
+            stdout: context.stdout.clone(),
+            system_root: context.system_root.clone(),
+            variables: context.variables.clone(),
+        };
         for (i, arg) in args.iter().enumerate() {
             let Some(params) = &function_definition.parameters else {
                 return Err(DscError::Parser(t!("functions.userFunction.expectedNoParameters", name = name).to_string()));
             };
-            user_context.parameters.insert(params[i].name.clone(), (arg.clone(), params[i].r#type.clone()));
+            user_context.parameters.insert(params[i].name.to_string(), (arg.clone(), params[i].r#type.clone()));
         }
         let mut parser = Statement::new()?;
         let result = parser.parse_and_execute(&function_definition.output.value, &user_context)?;

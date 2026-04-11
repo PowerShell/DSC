@@ -367,10 +367,10 @@ pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Op
     // command-line args override setting value, but not policy
     if !policy_is_used {
         if let Some(v) = trace_level_arg {
-            tracing_setting.level = v.clone();
+            tracing_setting.level = *v;
         }
         if let Some(v) = trace_format_arg {
-            tracing_setting.format = v.clone();
+            tracing_setting.format = *v;
         }
     }
 
@@ -443,7 +443,7 @@ pub fn get_input(input: Option<&String>, file: Option<&String>) -> String {
             error!("{}", t!("util.inputIsFile"));
             exit(EXIT_INVALID_INPUT);
         }
-        input.clone()
+        input.to_owned()
     } else if let Some(path) = file {
         debug!("{} {path}", t!("util.readingInputFromFile"));
         // check if need to read from STDIN

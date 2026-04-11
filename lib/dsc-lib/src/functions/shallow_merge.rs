@@ -36,10 +36,10 @@ impl Function for ShallowMerge {
                     value = item
                 ).to_string())
             })?;
-            
+
             for (key, value) in obj {
                 // Shallow merge: replace the entire value, even if it's a nested object
-                result.insert(key.clone(), value.clone());
+                result.insert(key.to_string(), value.clone());
             }
         }
 
