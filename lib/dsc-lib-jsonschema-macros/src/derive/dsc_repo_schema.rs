@@ -192,7 +192,7 @@ fn generate_schema_property_metadata_fn(schema_field: &DscRepoSchemaField) -> pr
     }
 }
 
-/// Generates a crate-local implementation for the `lookup_translation()` trait function. This is
+/// Generates a crate-local implementation for the `schema_i18n()` trait function. This is
 /// required to ensure that the translations use the correct locale definitions.
 fn generate_schema_i18n_fn() -> proc_macro2::TokenStream {
     quote! {

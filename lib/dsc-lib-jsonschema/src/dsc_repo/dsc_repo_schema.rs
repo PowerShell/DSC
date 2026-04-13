@@ -356,11 +356,6 @@ pub trait DscRepoSchema : JsonSchema {
     /// # Errors
     /// 
     /// Returns a [`DscRepoSchemaMissingTranslation`] error if the translation key doesn't exist.
-    /// 
-    /// # Example
-    /// 
-    /// ```ignore
-    /// ```
     fn schema_i18n(suffix: &str) -> Result<String, DscRepoSchemaMissingTranslation>;
 }
 

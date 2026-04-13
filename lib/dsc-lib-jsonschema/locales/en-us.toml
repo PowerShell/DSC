@@ -205,12 +205,12 @@ Each item defines a snippet for users that VS Code will surface as part of Intel
 
 Every snippet must define either the `body` or `bodyText` property, which VS Code uses
 to insert the snippet into the data file. If you specify both `body` and `bodyText`, the
-value for `body` supercedes the value for `bodyText`.
+value for `body` supersedes the value for `bodyText`.
 
 The `description`, and `markdownDescription` properties provide documentation for the
 snippet and are displayed in the hover text when a user selects the snippet. If you
 specify both `description` and `markdownDescription`, the text for
-`markdownDescription` supercedes the text for `description`.
+`markdownDescription` supersedes the text for `description`.
 
 The `label` property defines a short name for the snippet. If the snippet doesn't define
 the `label` property, VS Code shows a stringified representation of the snippet instead.
@@ -430,7 +430,7 @@ keywords and fails those validations.
 - When the data includes a property that isn't evaluated by any keywords and the schema
 defines `unevaluatedProperties` as `false`.
 
-The value for the `errorMessage` keyword supercedes all default messages for the schema
+The value for the `errorMessage` keyword supersedes all default messages for the schema
 or subschema where you define the keyword. You can provide per-validation failure
 messages by defining the validating keywords in separate entries of the `allOf` keyword
 and defining the `errorMessage` keyword for each entry.
@@ -449,7 +449,7 @@ without converting any apparent markup.
 
 You can define the `markdownDescription` keyword to provide descriptive text as markdown,
 including links and code blocks. When a schema or subschema defines the
-`markdownDescription` keyword, that value supercedes any defined text in the `description`
+`markdownDescription` keyword, that value supersedes any defined text in the `description`
 keyword.
 
 You can also use the `markdownEnumDescriptions` keyword to document the values defined
@@ -475,7 +475,7 @@ the `enum` keyword, VS Code displays the text from the `description` or
 `markdownEnumDescriptions` keyword to define documentation for each enum value.
 
 When a schema or subschema defines the `markdownEnumDescriptions` keyword, that value
-supercedes any defined text in the `description`, `markdownDescription`, or
+supersedes any defined text in the `description`, `markdownDescription`, or
 `enumDescriptions` keywords.
 
 The keyword expects an array of strings. VS Code correlates the items in the
