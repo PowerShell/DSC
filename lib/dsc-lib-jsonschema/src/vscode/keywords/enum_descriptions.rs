@@ -79,9 +79,9 @@ impl JsonSchema for EnumDescriptionsKeyword {
         json_schema!({
             "$schema": Self::META_SCHEMA,
             "$id": Self::KEYWORD_ID,
-            "title": t!("vscode.keywords.enumDescriptions.title"),
-            "description": t!("vscode.keywords.enumDescriptions.description"),
-            "markdownDescription": t!("vscode.keywords.enumDescriptions.markdownDescription"),
+            "title": t!("vscode.keywords.enum_descriptions.title"),
+            "description": t!("vscode.keywords.enum_descriptions.description"),
+            "markdownDescription": t!("vscode.keywords.enum_descriptions.markdownDescription"),
             "type": "array",
             "items": {
                 "type": "string"

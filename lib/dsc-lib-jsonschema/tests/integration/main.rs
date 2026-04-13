@@ -21,4 +21,4 @@ use rust_i18n::i18n;
 #[cfg(test)] mod dsc_repo;
 
 // Enable localization for emitted strings, needed for testing DscRepoSchema
-i18n!("./tests/locales", fallback = "en-US");
+i18n!("./tests/integration_locales", fallback = "en-US");
