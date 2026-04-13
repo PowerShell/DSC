@@ -697,6 +697,7 @@ pub fn merge_parameters(file_params: &str, inline_params: &str) -> Result<String
 /// * `code` - The exit code to use when exiting the process
 pub fn exit(code: i32) -> ! {
     // Small delay to ensure async writes complete
+    // Due to use of indicatif for progress bars, we can't use the tracing crate guard until indicatif adds its own guard
     std::thread::sleep(std::time::Duration::from_millis(50));
 
     // Force any pending writes to complete
