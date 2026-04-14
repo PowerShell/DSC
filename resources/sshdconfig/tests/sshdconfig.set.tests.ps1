@@ -180,25 +180,104 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
             sshdconfig set --input $validConfig -s sshd-config
         }
 
-        It 'Should fail with purge=false when file does not exist' {
-            $nonExistentPath = Join-Path $TestDrive "nonexistent_sshd_config"
+        Context 'Missing target with _purge=false on non-Windows' -Skip:($IsWindows) {
+            It 'Should fail when the target file does not exist' {
+                $nonExistentPath = Join-Path $TestDrive "nonexistent_sshd_config_nonwindows"
+                $stderrFile = Join-Path $TestDrive "stderr_purgefalse_nofile_nonwindows.txt"
+                $inputConfig = @{
+                    _metadata = @{
+                        filepath = $nonExistentPath
+                    }
+                    _purge = $false
+                    Port = "8888"
+                } | ConvertTo-Json
 
-            $inputConfig = @{
-                _metadata = @{
-                    filepath = $nonExistentPath
+                sshdconfig set --input $inputConfig -s sshd-config 2>$stderrFile
+
+                $LASTEXITCODE | Should -Not -Be 0
+                Test-Path $nonExistentPath | Should -Be $false
+                (Get-Content -Path $stderrFile -Raw -ErrorAction SilentlyContinue) | Should -Match "does not exist"
+
+                Remove-Item -Path $stderrFile -Force -ErrorAction SilentlyContinue
+                Remove-Item -Path $nonExistentPath -Force -ErrorAction SilentlyContinue
+            }
+        }
+
+        Context 'Missing target with _purge=false on Windows' -Skip:(-not $IsWindows) {
+            BeforeAll {
+                $script:MockWinDir = Join-Path $TestDrive "mock_windir"
+                New-Item -Path $script:MockWinDir -ItemType Directory -Force | Out-Null
+                $script:WindowsDefaultSourcePath = Join-Path $script:MockWinDir "System32\OpenSSH\sshd_config_default"
+            }
+
+            AfterEach {
+                Remove-Item -Path $script:CurrentWindowsStderrFile -Force -ErrorAction SilentlyContinue
+                Remove-Item -Path $script:CurrentWindowsTargetPath -Force -ErrorAction SilentlyContinue
+            }
+
+            It 'Should create the target file from the default source' {
+                $script:CurrentWindowsTargetPath = Join-Path $TestDrive "nonexistent_sshd_config_windows_success"
+                $script:CurrentWindowsStderrFile = Join-Path $TestDrive "stderr_purgefalse_nofile_windows_success.txt"
+
+                $defaultSourceDirectory = Split-Path -Path $script:WindowsDefaultSourcePath -Parent
+                New-Item -Path $defaultSourceDirectory -ItemType Directory -Force | Out-Null
+                Set-Content -Path $script:WindowsDefaultSourcePath -Value @(
+                    "Port 22",
+                    "PasswordAuthentication yes"
+                ) -Encoding ascii
+
+                $inputConfig = @{
+                    _metadata = @{
+                        filepath = $script:CurrentWindowsTargetPath
+                    }
+                    _purge = $false
+                    Port = "8888"
+                } | ConvertTo-Json
+
+                $origWinDir = $env:windir
+                try {
+                    $env:windir = $script:MockWinDir
+                    sshdconfig set --input $inputConfig -s sshd-config 2>$script:CurrentWindowsStderrFile
                 }
-                _purge = $false
-                Port = "8888"
-            } | ConvertTo-Json
+                finally {
+                    $env:windir = $origWinDir
+                }
 
-            $stderrFile = Join-Path $TestDrive "stderr_purgefalse_nofile.txt"
-            sshdconfig set --input $inputConfig -s sshd-config 2>$stderrFile
-            $LASTEXITCODE | Should -Not -Be 0
+                $LASTEXITCODE | Should -Be 0
+                Test-Path $script:CurrentWindowsTargetPath | Should -Be $true
+                $result = sshdconfig get --input $inputConfig -s sshd-config 2>$null | ConvertFrom-Json
+                $result.Port | Should -Be "8888"
 
-            $stderr = Get-Content -Path $stderrFile -Raw -ErrorAction SilentlyContinue
-            $stderr | Should -Match "_purge=false requires an existing sshd_config file"
-            $stderr | Should -Match "Use _purge=true to create a new configuration file"
-            Remove-Item -Path $stderrFile -Force -ErrorAction SilentlyContinue
+                Remove-Item -Path $script:WindowsDefaultSourcePath -Force -ErrorAction SilentlyContinue
+            }
+
+            It 'Should fail and leave the target file absent when the default source is unavailable' {
+                $script:CurrentWindowsTargetPath = Join-Path $TestDrive "nonexistent_sshd_config_windows_missing_default"
+                $script:CurrentWindowsStderrFile = Join-Path $TestDrive "stderr_purgefalse_nofile_windows_missing_default.txt"
+
+                Test-Path -Path $script:WindowsDefaultSourcePath -PathType Leaf -ErrorAction SilentlyContinue | Should -Be $false
+
+                $inputConfig = @{
+                    _metadata = @{
+                        filepath = $script:CurrentWindowsTargetPath
+                    }
+                    _purge = $false
+                    Port = "8888"
+                } | ConvertTo-Json
+
+                $origWinDir = $env:windir
+                try {
+                    $env:windir = $script:MockWinDir
+                    sshdconfig set --input $inputConfig -s sshd-config 2>$script:CurrentWindowsStderrFile
+                }
+                finally {
+                    $env:windir = $origWinDir
+                }
+
+                $LASTEXITCODE | Should -Not -Be 0
+                Test-Path $script:CurrentWindowsTargetPath | Should -Be $false
+                (Get-Content -Path $script:CurrentWindowsStderrFile -Raw -ErrorAction SilentlyContinue) | Should -Match "no default source could be found"
+            }
         }
 
         It 'Should fail with invalid keyword and not modify file' {

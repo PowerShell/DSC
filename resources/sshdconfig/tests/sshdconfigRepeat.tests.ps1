@@ -33,6 +33,7 @@ Describe 'sshd-config-repeat Set Tests' -Skip:($skipTest) {
             $script:DefaultSftpPath = "/usr/lib/openssh/sftp-server"
             $script:AlternatePath = "/usr/libexec/sftp-server"
         }
+
     }
 
     AfterEach {
@@ -229,6 +230,121 @@ PasswordAuthentication yes
             # verify subsystem was added (defaulting to _exist=true)
             $subsystems = Get-Content $TestConfigPath | Where-Object { $_ -match '^\s*subsystem\s+' }
             $subsystems | Should -Contain "subsystem testExistDefault /path/to/subsystem"
+        }
+    }
+
+    Context 'Missing target file on non-Windows' -Skip:($IsWindows) {
+        It 'Should fail when the target file does not exist' {
+            $nonExistentPath = Join-Path $TestDrive "nonexistent_sshd_config_repeat_nonwindows"
+            $stderrFile = Join-Path $TestDrive "stderr_nofile_repeat_nonwindows.txt"
+            $inputConfig = @{
+                _metadata = @{
+                    filepath = $nonExistentPath
+                }
+                _exist = $true
+                subsystem = @{
+                    name = "powershell"
+                    value = "/usr/bin/pwsh -sshs"
+                }
+            } | ConvertTo-Json
+
+            sshdconfig set --input $inputConfig -s sshd-config-repeat 2>$stderrFile
+
+            $LASTEXITCODE | Should -Not -Be 0
+            Test-Path $nonExistentPath | Should -Be $false
+            (Get-Content -Path $stderrFile -Raw -ErrorAction SilentlyContinue) | Should -Match "does not exist"
+
+            Remove-Item -Path $stderrFile -Force -ErrorAction SilentlyContinue
+            Remove-Item -Path $nonExistentPath -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    Context 'Missing target file on Windows' -Skip:(-not $IsWindows) {
+        BeforeAll {
+            $script:MockWinDir = Join-Path $TestDrive "mock_windir_repeat"
+            New-Item -Path $script:MockWinDir -ItemType Directory -Force | Out-Null
+            $script:WindowsDefaultSourcePath = Join-Path $script:MockWinDir "System32\OpenSSH\sshd_config_default"
+        }
+
+        AfterEach {
+            Remove-Item -Path $script:CurrentWindowsStderrFile -Force -ErrorAction SilentlyContinue
+            Remove-Item -Path $script:CurrentWindowsTargetPath -Force -ErrorAction SilentlyContinue
+        }
+
+        It 'Should create the target file from the default source' {
+            $script:CurrentWindowsTargetPath = Join-Path $TestDrive "nonexistent_sshd_config_repeat_windows_success"
+            $script:CurrentWindowsStderrFile = Join-Path $TestDrive "stderr_nofile_repeat_windows_success.txt"
+
+            $defaultSourceDirectory = Split-Path -Path $script:WindowsDefaultSourcePath -Parent
+            New-Item -Path $defaultSourceDirectory -ItemType Directory -Force | Out-Null
+            Set-Content -Path $script:WindowsDefaultSourcePath -Value @(
+                "Port 22",
+                "PasswordAuthentication yes"
+            ) -Encoding ascii
+
+            $inputConfig = @{
+                _metadata = @{
+                    filepath = $script:CurrentWindowsTargetPath
+                }
+                _exist = $true
+                subsystem = @{
+                    name = "powershell"
+                    value = "$env:ProgramFiles\PowerShell\7\pwsh.exe -sshs -NoLogo -NoProfile"
+                }
+            } | ConvertTo-Json
+
+            $origWinDir = $env:windir
+            try {
+                $env:windir = $script:MockWinDir
+                sshdconfig set --input $inputConfig -s sshd-config-repeat 2>$script:CurrentWindowsStderrFile
+            }
+            finally {
+                $env:windir = $origWinDir
+            }
+
+            $LASTEXITCODE | Should -Be 0
+            Test-Path $script:CurrentWindowsTargetPath | Should -Be $true
+            $getInput = @{
+                _metadata = @{
+                    filepath = $script:CurrentWindowsTargetPath
+                }
+            } | ConvertTo-Json
+            $result = sshdconfig get --input $getInput -s sshd-config 2>$null | ConvertFrom-Json
+            $result.subsystem.name | Should -Be "powershell"
+            $result.subsystem.value | Should -Be "$env:ProgramFiles\PowerShell\7\pwsh.exe -sshs -NoLogo -NoProfile"
+
+            Remove-Item -Path $script:WindowsDefaultSourcePath -Force -ErrorAction SilentlyContinue
+        }
+
+        It 'Should fail and leave the target file absent when the default source is unavailable' {
+            $script:CurrentWindowsTargetPath = Join-Path $TestDrive "nonexistent_sshd_config_repeat_windows_missing_default"
+            $script:CurrentWindowsStderrFile = Join-Path $TestDrive "stderr_nofile_repeat_windows_missing_default.txt"
+
+            Test-Path -Path $script:WindowsDefaultSourcePath -PathType Leaf -ErrorAction SilentlyContinue | Should -Be $false
+
+            $inputConfig = @{
+                _metadata = @{
+                    filepath = $script:CurrentWindowsTargetPath
+                }
+                _exist = $true
+                subsystem = @{
+                    name = "powershell"
+                    value = "$env:ProgramFiles\PowerShell\7\pwsh.exe -sshs -NoLogo -NoProfile"
+                }
+            } | ConvertTo-Json
+
+            $origWinDir = $env:windir
+            try {
+                $env:windir = $script:MockWinDir
+                sshdconfig set --input $inputConfig -s sshd-config-repeat 2>$script:CurrentWindowsStderrFile
+            }
+            finally {
+                $env:windir = $origWinDir
+            }
+
+            $LASTEXITCODE | Should -Not -Be 0
+            Test-Path $script:CurrentWindowsTargetPath | Should -Be $false
+            (Get-Content -Path $script:CurrentWindowsStderrFile -Raw -ErrorAction SilentlyContinue) | Should -Match "no default source could be found"
         }
     }
 }

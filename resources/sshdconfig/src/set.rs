@@ -24,7 +24,7 @@ use crate::repeat_keyword::{
     RepeatInput, RepeatListInput, NameValueEntry,
     add_or_update_entry, extract_single_keyword, remove_entry, parse_and_validate_entries
 };
-use crate::util::{build_command_info, get_default_sshd_config_path, invoke_sshd_config_validation};
+use crate::util::{build_command_info, ensure_sshd_config_exists, get_default_sshd_config_path, invoke_sshd_config_validation};
 
 /// Invoke the set command.
 ///
@@ -189,16 +189,9 @@ fn set_sshd_config(cmd_info: &mut CommandInfo) -> Result<(), SshdConfigError> {
         let mut get_cmd_info = cmd_info.clone();
         get_cmd_info.include_defaults = false;
         get_cmd_info.input = Map::new();
+        ensure_sshd_config_exists(get_cmd_info.metadata.filepath.clone())?;
 
-        let mut existing_config = match get_sshd_settings(&get_cmd_info, true) {
-            Ok(config) => config,
-            Err(SshdConfigError::FileNotFound(_)) => {
-                return Err(SshdConfigError::InvalidInput(
-                    t!("set.purgeFalseRequiresExistingFile").to_string()
-                ));
-            }
-            Err(e) => return Err(e),
-        };
+        let mut existing_config = get_sshd_settings(&get_cmd_info, true)?;
         for (key, value) in &cmd_info.input {
             if value.is_null() {
                 existing_config.remove(key);
@@ -281,12 +274,6 @@ fn get_existing_config(cmd_info: &CommandInfo) -> Result<Map<String, Value>, Ssh
     let mut get_cmd_info = cmd_info.clone();
     get_cmd_info.include_defaults = false;
     get_cmd_info.input = Map::new();
-    match get_sshd_settings(&get_cmd_info, false) {
-        Ok(config) => Ok(config),
-        Err(SshdConfigError::FileNotFound(_)) => {
-            // If file doesn't exist, create empty config
-            Ok(Map::new())
-        }
-        Err(e) => Err(e),
-    }
+    ensure_sshd_config_exists(get_cmd_info.metadata.filepath.clone())?;
+    get_sshd_settings(&get_cmd_info, false)
 }

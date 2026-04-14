@@ -107,6 +107,69 @@ pub fn get_default_sshd_config_path(input: Option<PathBuf>) -> Result<PathBuf, S
     }
 }
 
+fn get_sshd_config_default_source_candidates() -> Vec<PathBuf> {
+    let mut candidates: Vec<PathBuf> = Vec::new();
+
+    if cfg!(windows) && let Ok(win_dir) = std::env::var("windir") {
+        candidates.push(
+            PathBuf::from(win_dir)
+                .join("System32")
+                .join("OpenSSH")
+                .join("sshd_config_default"),
+        );
+    }
+
+    candidates
+}
+
+/// Ensure the target `sshd_config` exists by seeding it from a platform default source.
+///
+/// # Errors
+///
+/// This function returns an error if the target cannot be created or no source default config is available.
+pub fn ensure_sshd_config_exists(input: Option<PathBuf>) -> Result<PathBuf, SshdConfigError> {
+    let target_path = get_default_sshd_config_path(input)?;
+    if target_path.exists() {
+        return Ok(target_path);
+    }
+
+    if !cfg!(windows) {
+        return Err(SshdConfigError::ConfigInitRequired(
+            t!("util.sshdConfigNotFoundNonWindows", path = target_path.display()).to_string(),
+        ));
+    }
+
+    let candidates = get_sshd_config_default_source_candidates();
+    let source_path = candidates
+        .iter()
+        .find(|candidate| candidate.is_file())
+        .cloned()
+        .ok_or_else(|| {
+            let paths = candidates
+                .iter()
+                .map(|path| path.display().to_string())
+                .collect::<Vec<String>>()
+                .join(", ");
+            SshdConfigError::ConfigInitRequired(
+                t!(
+                    "util.sshdConfigDefaultNotFound",
+                    path = target_path.display(),
+                    paths = paths
+                )
+                .to_string(),
+            )
+        })?;
+
+    if let Some(parent) = target_path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+
+    std::fs::copy(&source_path, &target_path)?;
+    debug!("{}", t!("util.seededConfigFromDefault", source = source_path.display(), target = target_path.display()));
+
+    Ok(target_path)
+}
+
 /// Invoke sshd -T.
 ///
 /// # Errors
@@ -244,5 +307,3 @@ pub fn read_sshd_config(input: Option<PathBuf>) -> Result<String, SshdConfigErro
         Err(SshdConfigError::FileNotFound(filepath.display().to_string()))
     }
 }
-
-
