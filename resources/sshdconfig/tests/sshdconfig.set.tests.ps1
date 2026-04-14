@@ -205,23 +205,9 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
 
         Context 'Missing target with _purge=false on Windows' -Skip:(-not $IsWindows) {
             BeforeAll {
-                $script:OriginalWinDir = $env:windir
                 $script:MockWinDir = Join-Path $TestDrive "mock_windir"
                 New-Item -Path $script:MockWinDir -ItemType Directory -Force | Out-Null
-                $env:windir = $script:MockWinDir
-
                 $script:WindowsDefaultSourcePath = Join-Path $script:MockWinDir "System32\OpenSSH\sshd_config_default"
-            }
-
-            AfterAll {
-                if ($null -ne $script:OriginalWinDir) {
-                    $env:windir = $script:OriginalWinDir
-                }
-                else {
-                    Remove-Item -Path env:windir -ErrorAction SilentlyContinue
-                }
-
-                Remove-Item -Path $script:MockWinDir -Recurse -Force -ErrorAction SilentlyContinue
             }
 
             AfterEach {
@@ -259,18 +245,13 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
 
                 $LASTEXITCODE | Should -Be 0
                 Test-Path $script:CurrentWindowsTargetPath | Should -Be $true
-                $getInput = @{
-                    _metadata = @{
-                        filepath = $script:CurrentWindowsTargetPath
-                    }
-                } | ConvertTo-Json
-                $result = sshdconfig get --input $getInput -s sshd-config 2>$null | ConvertFrom-Json
+                $result = sshdconfig get --input $inputConfig -s sshd-config 2>$null | ConvertFrom-Json
                 $result.Port | Should -Be "8888"
 
                 Remove-Item -Path $script:WindowsDefaultSourcePath -Force -ErrorAction SilentlyContinue
             }
 
-            It 'Should fail and leave the target file absent when the default source is temporarily unavailable' {
+            It 'Should fail and leave the target file absent when the default source is unavailable' {
                 $script:CurrentWindowsTargetPath = Join-Path $TestDrive "nonexistent_sshd_config_windows_missing_default"
                 $script:CurrentWindowsStderrFile = Join-Path $TestDrive "stderr_purgefalse_nofile_windows_missing_default.txt"
 
