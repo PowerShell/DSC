@@ -205,43 +205,23 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
 
         Context 'Missing target with _purge=false on Windows' -Skip:(-not $IsWindows) {
             BeforeAll {
-                $script:WindowsDefaultSourcePath = Join-Path $env:windir "System32\OpenSSH\sshd_config_default"
+                $script:OriginalWinDir = $env:windir
+                $script:MockWinDir = Join-Path $TestDrive "mock_windir"
+                New-Item -Path $script:MockWinDir -ItemType Directory -Force | Out-Null
+                $env:windir = $script:MockWinDir
 
-                function Ensure-WindowsDefaultSourceExists {
-                    $script:CreatedWindowsDefaultSourceDirectories = @()
+                $script:WindowsDefaultSourcePath = Join-Path $script:MockWinDir "System32\OpenSSH\sshd_config_default"
+            }
 
-                    if (Test-Path -Path $script:WindowsDefaultSourcePath -PathType Leaf -ErrorAction SilentlyContinue) {
-                        return $false
-                    }
-
-                    $defaultSourceDirectory = Split-Path -Path $script:WindowsDefaultSourcePath -Parent
-                    $directoriesToCreate = @()
-                    $pathToCheck = $defaultSourceDirectory
-
-                    while (-not (Test-Path -Path $pathToCheck -PathType Container -ErrorAction SilentlyContinue)) {
-                        $directoriesToCreate += $pathToCheck
-                        $parentPath = Split-Path -Path $pathToCheck -Parent
-
-                        if ([string]::IsNullOrEmpty($parentPath) -or ($parentPath -eq $pathToCheck)) {
-                            break
-                        }
-
-                        $pathToCheck = $parentPath
-                    }
-
-                    if (-not (Test-Path -Path $defaultSourceDirectory -PathType Container -ErrorAction SilentlyContinue)) {
-                        New-Item -Path $defaultSourceDirectory -ItemType Directory -Force | Out-Null
-                    }
-
-                    $script:CreatedWindowsDefaultSourceDirectories = $directoriesToCreate
-
-                    Set-Content -Path $script:WindowsDefaultSourcePath -Value @(
-                        "Port 22",
-                        "PasswordAuthentication yes"
-                    ) -Encoding ascii
-
-                    return $true
+            AfterAll {
+                if ($null -ne $script:OriginalWinDir) {
+                    $env:windir = $script:OriginalWinDir
                 }
+                else {
+                    Remove-Item -Path env:windir -ErrorAction SilentlyContinue
+                }
+
+                Remove-Item -Path $script:MockWinDir -Recurse -Force -ErrorAction SilentlyContinue
             }
 
             AfterEach {
@@ -252,7 +232,14 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
             It 'Should create the target file from the default source' {
                 $script:CurrentWindowsTargetPath = Join-Path $TestDrive "nonexistent_sshd_config_windows_success"
                 $script:CurrentWindowsStderrFile = Join-Path $TestDrive "stderr_purgefalse_nofile_windows_success.txt"
-                $createdWindowsDefaultSourceForTest = Ensure-WindowsDefaultSourceExists
+
+                $defaultSourceDirectory = Split-Path -Path $script:WindowsDefaultSourcePath -Parent
+                New-Item -Path $defaultSourceDirectory -ItemType Directory -Force | Out-Null
+                Set-Content -Path $script:WindowsDefaultSourcePath -Value @(
+                    "Port 22",
+                    "PasswordAuthentication yes"
+                ) -Encoding ascii
+
                 $inputConfig = @{
                     _metadata = @{
                         filepath = $script:CurrentWindowsTargetPath
@@ -261,7 +248,14 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
                     Port = "8888"
                 } | ConvertTo-Json
 
-                sshdconfig set --input $inputConfig -s sshd-config 2>$script:CurrentWindowsStderrFile
+                $origWinDir = $env:windir
+                try {
+                    $env:windir = $script:MockWinDir
+                    sshdconfig set --input $inputConfig -s sshd-config 2>$script:CurrentWindowsStderrFile
+                }
+                finally {
+                    $env:windir = $origWinDir
+                }
 
                 $LASTEXITCODE | Should -Be 0
                 Test-Path $script:CurrentWindowsTargetPath | Should -Be $true
@@ -273,54 +267,35 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
                 $result = sshdconfig get --input $getInput -s sshd-config 2>$null | ConvertFrom-Json
                 $result.Port | Should -Be "8888"
 
-                if ($createdWindowsDefaultSourceForTest) {
-                    Remove-Item -Path $script:WindowsDefaultSourcePath -Force -ErrorAction SilentlyContinue
-
-                    foreach ($createdDirectory in $script:CreatedWindowsDefaultSourceDirectories) {
-                        if (Test-Path -Path $createdDirectory -PathType Container -ErrorAction SilentlyContinue) {
-                            $directoryItems = Get-ChildItem -Path $createdDirectory -Force -ErrorAction SilentlyContinue
-                            if (($null -eq $directoryItems) -or ($directoryItems.Count -eq 0)) {
-                                Remove-Item -Path $createdDirectory -Force -ErrorAction SilentlyContinue
-                            }
-                        }
-                    }
-                }
+                Remove-Item -Path $script:WindowsDefaultSourcePath -Force -ErrorAction SilentlyContinue
             }
 
             It 'Should fail and leave the target file absent when the default source is temporarily unavailable' {
                 $script:CurrentWindowsTargetPath = Join-Path $TestDrive "nonexistent_sshd_config_windows_missing_default"
                 $script:CurrentWindowsStderrFile = Join-Path $TestDrive "stderr_purgefalse_nofile_windows_missing_default.txt"
-                $windowsDefaultSourceBackupPath = Join-Path (Split-Path -Path $script:WindowsDefaultSourcePath -Parent) (
-                    "sshd_config_default.dsc-test-backup.{0}" -f ([guid]::NewGuid().ToString('N'))
-                )
-                $windowsDefaultSourceWasPresent = Test-Path -Path $script:WindowsDefaultSourcePath -PathType Leaf -ErrorAction SilentlyContinue
 
-                if ($windowsDefaultSourceWasPresent) {
-                    Move-Item -Path $script:WindowsDefaultSourcePath -Destination $windowsDefaultSourceBackupPath -Force
-                }
+                Test-Path -Path $script:WindowsDefaultSourcePath -PathType Leaf -ErrorAction SilentlyContinue | Should -Be $false
 
+                $inputConfig = @{
+                    _metadata = @{
+                        filepath = $script:CurrentWindowsTargetPath
+                    }
+                    _purge = $false
+                    Port = "8888"
+                } | ConvertTo-Json
+
+                $origWinDir = $env:windir
                 try {
-                    Test-Path -Path $script:WindowsDefaultSourcePath -PathType Leaf -ErrorAction SilentlyContinue | Should -Be $false
-
-                    $inputConfig = @{
-                        _metadata = @{
-                            filepath = $script:CurrentWindowsTargetPath
-                        }
-                        _purge = $false
-                        Port = "8888"
-                    } | ConvertTo-Json
-
+                    $env:windir = $script:MockWinDir
                     sshdconfig set --input $inputConfig -s sshd-config 2>$script:CurrentWindowsStderrFile
-
-                    $LASTEXITCODE | Should -Not -Be 0
-                    Test-Path $script:CurrentWindowsTargetPath | Should -Be $false
-                    (Get-Content -Path $script:CurrentWindowsStderrFile -Raw -ErrorAction SilentlyContinue) | Should -Match "no default source could be found"
                 }
                 finally {
-                    if (Test-Path -Path $windowsDefaultSourceBackupPath -PathType Leaf -ErrorAction SilentlyContinue) {
-                        Move-Item -Path $windowsDefaultSourceBackupPath -Destination $script:WindowsDefaultSourcePath -Force
-                    }
+                    $env:windir = $origWinDir
                 }
+
+                $LASTEXITCODE | Should -Not -Be 0
+                Test-Path $script:CurrentWindowsTargetPath | Should -Be $false
+                (Get-Content -Path $script:CurrentWindowsStderrFile -Raw -ErrorAction SilentlyContinue) | Should -Match "no default source could be found"
             }
         }
 
