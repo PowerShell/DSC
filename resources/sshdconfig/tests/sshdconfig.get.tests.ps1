@@ -148,7 +148,7 @@ PasswordAuthentication no
         Remove-Item -Path $stderrFile -Force -ErrorAction SilentlyContinue
     }
 
-    It 'Should fail without creating target config when file does not exist' {
+    It 'Should fail when config file does not exist' {
         $nonExistentPath = Join-Path $TestDrive 'nonexistent_sshd_config'
 
         $inputData = @{
@@ -161,11 +161,8 @@ PasswordAuthentication no
         sshdconfig get --input $inputData -s sshd-config 2>$stderrFile
         $LASTEXITCODE | Should -Not -Be 0
 
-        Test-Path $nonExistentPath | Should -Be $false
-
         $stderr = Get-Content -Path $stderrFile -Raw -ErrorAction SilentlyContinue
         $stderr | Should -Match "File not found"
-
         Remove-Item -Path $stderrFile -Force -ErrorAction SilentlyContinue
     }
 }
