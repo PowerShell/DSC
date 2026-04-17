@@ -21,7 +21,7 @@ impl SafeVariant {
         Self(VARIANT::default())
     }
 
-    fn as_mut_ptr(&mut self) -> *mut VARIANT {
+    fn as_mut(&mut self) -> &mut VARIANT {
         &mut self.0
     }
 
@@ -33,7 +33,7 @@ impl SafeVariant {
 impl Drop for SafeVariant {
     fn drop(&mut self) {
         if let Err(e) = unsafe { VariantClear(&mut self.0) } {
-            crate::write_error(&format!("Warning: VariantClear failed with HRESULT: {:#010x}", e.code().0));
+            crate::write_error(&format!("Warning: VariantClear failed with HRESULT: {:#010x}", e.code().0 as u32));
         }
     }
 }
@@ -81,8 +81,7 @@ impl FirewallStore {
         loop {
             let mut fetched = 0u32;
             let mut safe_variant = SafeVariant::new();
-            let variant_slice = unsafe { std::slice::from_raw_parts_mut(safe_variant.as_mut_ptr(), 1) };
-            let hr = unsafe { enum_variant.Next(variant_slice, &mut fetched) };
+            let hr = unsafe { enum_variant.Next(std::slice::from_mut(safe_variant.as_mut()), &mut fetched) };
             if hr == S_FALSE || fetched == 0 {
                 break;
             }
