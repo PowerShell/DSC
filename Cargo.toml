@@ -148,6 +148,8 @@ strip = "symbols"           # See split-debuginfo - allows us to drop the size b
 base32 = { version = "0.5" }
 # dsc-lib
 base64 = { version = "0.22" }
+# used by other crates
+bytes = { version = "1.11.1" }
 # dsc-lib, sshdconfig
 chrono = { version = "0.4.44" }
 # dsc, dsc-lib, dsc-bicep-ext, dscecho, registry, runcommandonset, sshdconfig, dsctest, test_group_resource
@@ -192,6 +194,8 @@ prost = { version = "0.14.3" }
 proc-macro2 = { version = "1.0" }
 # dsc-lib-jsonschema-macros
 quote = { version = "1.0" }
+# used by other crates
+rand = { version = "0.10.1" }
 # dsc, dsc-lib
 regex = { version = "1.12.3" }
 # registry, dsc-lib, dsc-lib-registry, dsctest
@@ -222,6 +226,8 @@ sysinfo = { version = "0.38.4" }
 tempfile = { version = "3.27" }
 # dsc, dsc-lib, registry, dsc-lib-registry, sshdconfig
 thiserror = { version = "2.0.18" }
+# used by other crates
+time = { version = "0.3.47" }
 # dsc, dsc-lib, dsc-bicep-ext
 tokio = { version = "1.52.1" }
 # dsc-bicep-ext
