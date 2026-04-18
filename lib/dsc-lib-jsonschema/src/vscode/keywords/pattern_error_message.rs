@@ -52,9 +52,9 @@ impl JsonSchema for PatternErrorMessageKeyword {
         json_schema!({
             "$schema": Self::META_SCHEMA,
             "$id": Self::KEYWORD_ID,
-            "title": t!("vscode.keywords.patternErrorMessage.title"),
-            "description": t!("vscode.keywords.patternErrorMessage.description"),
-            "markdownDescription": t!("vscode.keywords.patternErrorMessage.markdownDescription"),
+            "title": t!("vscode.keywords.pattern_error_message.title"),
+            "description": t!("vscode.keywords.pattern_error_message.description"),
+            "markdownDescription": t!("vscode.keywords.pattern_error_message.markdownDescription"),
             "type": "string",
         })
     }

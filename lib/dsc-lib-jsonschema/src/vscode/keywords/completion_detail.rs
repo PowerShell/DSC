@@ -55,9 +55,9 @@ impl JsonSchema for CompletionDetailKeyword {
         json_schema!({
             "$schema": Self::META_SCHEMA,
             "$id": Self::KEYWORD_ID,
-            "title": t!("vscode.keywords.completionDetail.title"),
-            "description": t!("vscode.keywords.completionDetail.description"),
-            "markdownDescription": t!("vscode.keywords.completionDetail.markdownDescription"),
+            "title": t!("vscode.keywords.completion_detail.title"),
+            "description": t!("vscode.keywords.completion_detail.description"),
+            "markdownDescription": t!("vscode.keywords.completion_detail.markdownDescription"),
             "type": "string",
         })
     }
