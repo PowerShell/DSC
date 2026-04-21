@@ -38,7 +38,7 @@ When the feature is disabled, DSC returns output similar to the following:
 actualState:
   features:
   - featureName: TelnetClient
-    state: Disabled
+    state: NotPresent
     displayName: Telnet Client
     description: Includes Telnet Client
     restartRequired: No
@@ -78,12 +78,12 @@ DSC returns the state of all requested features in a single response:
 actualState:
   features:
   - featureName: TelnetClient
-    state: Disabled
+    state: NotPresent
     displayName: Telnet Client
     description: Includes Telnet Client
     restartRequired: No
   - featureName: TFTP
-    state: Disabled
+    state: NotPresent
     displayName: TFTP Client
     description: Includes TFTP Client
     restartRequired: No

@@ -41,7 +41,7 @@ When the resource enables the feature, DSC returns the updated state:
 beforeState:
   features:
   - featureName: TelnetClient
-    state: Disabled
+    state: NotPresent
     displayName: Telnet Client
     description: Includes Telnet Client
     restartRequired: No
@@ -100,7 +100,7 @@ beforeState:
 afterState:
   features:
   - featureName: TelnetClient
-    state: Disabled
+    state: NotPresent
     displayName: Telnet Client
     description: Includes Telnet Client
     restartRequired: No

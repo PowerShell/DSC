@@ -121,7 +121,7 @@ Demand). For the **Get** operation, each entry must specify [`identity`](#identi
 operation, each entry must specify both [`identity`](#identity) and [`state`](#state). For the
 **Export** operation, the array is optional and each entry can filter results using
 [`identity`](#identity), [`state`](#state), [`displayName`](#displayname), or
-[`description`](#description) with wildcard support.
+[`description`](#description) Wildcards are supported for [`identity`](#identity).
 
 Each entry in `capabilities` has the following properties:
 
