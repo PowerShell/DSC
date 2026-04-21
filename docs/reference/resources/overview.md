@@ -12,6 +12,8 @@ This document lists the available resources and links to the reference documenta
 - [Microsoft.DSC/PowerShell](./microsoft/dsc/powershell/resource.md)
 - [Microsoft.DSC.Debug/Echo](./microsoft/dsc/debug/echo/resource.md)
 - [Microsoft.DSC.Transitional/RunCommandOnSet](./microsoft/dsc/transitional/runcomandonset/resource.md)
+- [Microsoft.Windows/FeatureOnDemandList](./Microsoft/Windows/FeatureOnDemandList/index.md)
+- [Microsoft.Windows/OptionalFeatureList](./Microsoft/Windows/OptionalFeatureList/index.md)
 - [Microsoft.Windows/RebootPending](./microsoft/windows/rebootpending/resource.md)
 - [Microsoft.Windows/Registry](./microsoft/windows/registry/resource.md)
 - [Microsoft.Windows/WindowsPowerShell](./microsoft/windows/windowspowershell/resource.md)
@@ -40,6 +42,8 @@ Manifest:
 The following built-in resources to change the state of a machine directly:
 
 - [Microsoft.DSC.Transitional/RunCommandOnSet](./microsoft/dsc/transitional/runcomandonset/resource.md)
+- [Microsoft.Windows/FeatureOnDemandList](./Microsoft/Windows/FeatureOnDemandList/index.md)
+- [Microsoft.Windows/OptionalFeatureList](./Microsoft/Windows/OptionalFeatureList/index.md)
 - [Microsoft.Windows/Registry](./microsoft/windows/registry/resource.md)
 
 ## Built-in debugging resources
