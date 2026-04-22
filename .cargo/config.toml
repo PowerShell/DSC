@@ -12,7 +12,7 @@ global-credential-providers = ["cargo:token"]
 [target.x86_64-pc-windows-msvc]
 rustflags = ["-Ccontrol-flow-guard", "-Ctarget-feature=+crt-static", "-Clink-args=/DYNAMICBASE /CETCOMPAT"]
 
-[target.aarch64-windows-msvc]
+[target.aarch64-pc-windows-msvc]
 rustflags = ["-Ccontrol-flow-guard", "-Ctarget-feature=+crt-static", "-Clink-args=/DYNAMICBASE"]
 
 # The following is only needed for release builds
