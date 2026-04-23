@@ -59,9 +59,9 @@ impl JsonSchema for MarkdownDescriptionKeyword {
         json_schema!({
             "$schema": Self::META_SCHEMA,
             "$id": Self::KEYWORD_ID,
-            "title": t!("vscode.keywords.markdownDescription.title"),
-            "description": t!("vscode.keywords.markdownDescription.description"),
-            "markdownDescription": t!("vscode.keywords.markdownDescription.markdownDescription"),
+            "title": t!("vscode.keywords.markdown_description.title"),
+            "description": t!("vscode.keywords.markdown_description.description"),
+            "markdownDescription": t!("vscode.keywords.markdown_description.markdownDescription"),
             "type": "string",
         })
     }

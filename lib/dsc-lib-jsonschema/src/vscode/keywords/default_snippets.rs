@@ -166,45 +166,45 @@ impl JsonSchema for DefaultSnippetsKeyword {
         json_schema!({
             "$schema": Self::META_SCHEMA,
             "$id": Self::KEYWORD_ID,
-            "title": t!("vscode.keywords.defaultSnippets.title"),
-            "description": t!("vscode.keywords.defaultSnippets.description"),
-            "markdownDescription": t!("vscode.keywords.defaultSnippets.markdownDescription"),
+            "title": t!("vscode.keywords.default_snippets.title"),
+            "description": t!("vscode.keywords.default_snippets.description"),
+            "markdownDescription": t!("vscode.keywords.default_snippets.markdownDescription"),
             "unevaluatedItems": false,
             "type": "array",
             "items": {
-                "title": t!("vscode.keywords.defaultSnippets.items.title"),
-                "description": t!("vscode.keywords.defaultSnippets.items.description"),
-                "markdownDescription": t!("vscode.keywords.defaultSnippets.items.markdownDescription"),
+                "title": t!("vscode.keywords.default_snippets.items.title"),
+                "description": t!("vscode.keywords.default_snippets.items.description"),
+                "markdownDescription": t!("vscode.keywords.default_snippets.items.markdownDescription"),
                 "type": "object",
                 "unevaluatedProperties": false,
                 "properties": {
                     "label": {
-                        "title": t!("vscode.keywords.defaultSnippets.items.properties.label.title"),
-                        "description": t!("vscode.keywords.defaultSnippets.items.properties.label.description"),
-                        "markdownDescription": t!("vscode.keywords.defaultSnippets.items.properties.label.markdownDescription"),
+                        "title": t!("vscode.keywords.default_snippets.items.properties.label.title"),
+                        "description": t!("vscode.keywords.default_snippets.items.properties.label.description"),
+                        "markdownDescription": t!("vscode.keywords.default_snippets.items.properties.label.markdownDescription"),
                         "type": "string"
                     },
                     "description": {
-                        "title": t!("vscode.keywords.defaultSnippets.items.properties.description.title"),
-                        "description": t!("vscode.keywords.defaultSnippets.items.properties.description.description"),
-                        "markdownDescription": t!("vscode.keywords.defaultSnippets.items.properties.description.markdownDescription"),
+                        "title": t!("vscode.keywords.default_snippets.items.properties.description.title"),
+                        "description": t!("vscode.keywords.default_snippets.items.properties.description.description"),
+                        "markdownDescription": t!("vscode.keywords.default_snippets.items.properties.description.markdownDescription"),
                         "type": "string"
                     },
                     "markdownDescription": {
-                        "title": t!("vscode.keywords.defaultSnippets.items.properties.markdownDescription.title"),
-                        "description": t!("vscode.keywords.defaultSnippets.items.properties.markdownDescription.description"),
-                        "markdownDescription": t!("vscode.keywords.defaultSnippets.items.properties.markdownDescription.markdownDescription"),
+                        "title": t!("vscode.keywords.default_snippets.items.properties.markdownDescription.title"),
+                        "description": t!("vscode.keywords.default_snippets.items.properties.markdownDescription.description"),
+                        "markdownDescription": t!("vscode.keywords.default_snippets.items.properties.markdownDescription.markdownDescription"),
                         "type": "string"
                     },
                     "body": {
-                        "title": t!("vscode.keywords.defaultSnippets.items.properties.body.title"),
-                        "description": t!("vscode.keywords.defaultSnippets.items.properties.body.description"),
-                        "markdownDescription": t!("vscode.keywords.defaultSnippets.items.properties.body.markdownDescription"),
+                        "title": t!("vscode.keywords.default_snippets.items.properties.body.title"),
+                        "description": t!("vscode.keywords.default_snippets.items.properties.body.description"),
+                        "markdownDescription": t!("vscode.keywords.default_snippets.items.properties.body.markdownDescription"),
                     },
                     "bodyText": {
-                        "title": t!("vscode.keywords.defaultSnippets.items.properties.bodyText.title"),
-                        "description": t!("vscode.keywords.defaultSnippets.items.properties.bodyText.description"),
-                        "markdownDescription": t!("vscode.keywords.defaultSnippets.items.properties.bodyText.markdownDescription"),
+                        "title": t!("vscode.keywords.default_snippets.items.properties.bodyText.title"),
+                        "description": t!("vscode.keywords.default_snippets.items.properties.bodyText.description"),
+                        "markdownDescription": t!("vscode.keywords.default_snippets.items.properties.bodyText.markdownDescription"),
                         "type": "string"
                     },
                 },

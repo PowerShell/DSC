@@ -49,9 +49,9 @@ impl JsonSchema for DeprecationMessageKeyword {
         json_schema!({
             "$schema": Self::META_SCHEMA,
             "$id": Self::KEYWORD_ID,
-            "title": t!("vscode.keywords.deprecationMessage.title"),
-            "description": t!("vscode.keywords.deprecationMessage.description"),
-            "markdownDescription": t!("vscode.keywords.deprecationMessage.markdownDescription"),
+            "title": t!("vscode.keywords.deprecation_message.title"),
+            "description": t!("vscode.keywords.deprecation_message.description"),
+            "markdownDescription": t!("vscode.keywords.deprecation_message.markdownDescription"),
             "type": "string",
         })
     }

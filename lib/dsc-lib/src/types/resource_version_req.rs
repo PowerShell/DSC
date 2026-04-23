@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::{
-    schemas::dsc_repo::DscRepoSchema,
+    schemas::dsc_repo::{DscRepoSchema, schema_i18n},
     types::{DateVersion, DateVersionError, ResourceVersion, SemanticVersionReq, SemanticVersionReqError}
 };
 
@@ -83,10 +83,10 @@ use crate::{
 #[serde(untagged, try_from = "String", into = "String")]
 #[schemars(!try_from, !into)]
 #[schemars(
-    title = t!("schemas.definitions.resourceVersionReq.title"),
-    description = t!("schemas.definitions.resourceVersionReq.description"),
+    title = schema_i18n!("title"),
+    description = schema_i18n!("description"),
     extend(
-        "markdownDescription" = t!("schemas.definitions.resourceVersionReq.markdownDescription")
+        "markdownDescription" = schema_i18n!("markdownDescription")
     )
 )]
 pub enum ResourceVersionReq {
@@ -100,10 +100,10 @@ pub enum ResourceVersionReq {
     ///
     /// [01]: https://semver.org
     #[schemars(
-        title = t!("schemas.definitions.resourceVersionReq.semanticVariant.title"),
-        description = t!("schemas.definitions.resourceVersionReq.semanticVariant.description"),
+        title = schema_i18n!("semanticVariant.title"),
+        description = schema_i18n!("semanticVariant.description"),
         extend(
-            "markdownDescription" = t!("schemas.definitions.resourceVersionReq.semanticVariant.markdownDescription")
+            "markdownDescription" = schema_i18n!("semanticVariant.markdownDescription")
         )
     )]
     Semantic(SemanticVersionReq),
@@ -119,12 +119,12 @@ pub enum ResourceVersionReq {
     ///    resource version and this version requirement are exactly the same. The comparison is
     ///    case-sensitive for the prerelease segment, if present.
     #[schemars(
-        title = t!("schemas.definitions.resourceVersionReq.dateVariant.title"),
-        description = t!("schemas.definitions.resourceVersionReq.dateVariant.description"),
+        title = schema_i18n!("dateVariant.title"),
+        description = schema_i18n!("dateVariant.description"),
         extend(
             "deprecated" = true,
-            "deprecationMessage" = t!("schemas.definitions.resourceVersionReq.dateVariant.deprecationMessage"),
-            "markdownDescription" = t!("schemas.definitions.resourceVersionReq.dateVariant.markdownDescription"),
+            "deprecationMessage" = schema_i18n!("dateVariant.deprecationMessage"),
+            "markdownDescription" = schema_i18n!("dateVariant.markdownDescription"),
             "examples" = [
                 "2026-02-03",
                 "2026-11-27-preview"

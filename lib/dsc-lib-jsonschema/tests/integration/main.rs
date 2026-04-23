@@ -15,5 +15,10 @@
 //! higher in the `tests` folder, Rust would generate numerous binaries to
 //! execute our tests.
 
+use rust_i18n::i18n;
+
 #[cfg(test)] mod transforms;
 #[cfg(test)] mod dsc_repo;
+
+// Enable localization for emitted strings, needed for testing DscRepoSchema
+i18n!("./tests/integration_locales", fallback = "en-US");
