@@ -1,0 +1,27 @@
+_version = 1
+
+[main]
+missingOperation = "Missing operation. Usage: secret_store <get|set|test|export> <vault-config|secret> [--input <json>]"
+unknownOperation = "Unknown operation: '%{operation}'. Expected: get, set, test, or export"
+unknownResourceType = "Unknown resource type: '%{resource_type}'. Expected: vault-config or secret"
+missingArguments = "Missing required arguments. Expected: secret_store <operation> <resource-type>"
+missingInput = "Missing --input argument"
+missingInputValue = "Missing value for --input argument"
+invalidJson = "Invalid JSON input: %{error}"
+windowsOnly = "This resource is only supported on Windows"
+stdinReadError = "Failed to read from stdin: %{error}"
+
+[vault_config]
+pwshNotFound = "PowerShell (pwsh) not found. Ensure PowerShell 7+ is installed and on the PATH."
+moduleNotInstalled = "Required PowerShell module '%{module}' is not installed. Install it with: Install-Module -Name %{module} -Force"
+getConfigFailed = "Failed to get SecretStore configuration: %{error}"
+setConfigFailed = "Failed to set SecretStore configuration: %{error}"
+unlockFailed = "Failed to unlock SecretStore: %{error}"
+registerVaultFailed = "Failed to register SecretStore vault: %{error}"
+
+[secret]
+nameRequired = "'name' is required"
+getFailed = "Failed to get secret '%{name}': %{error}"
+setFailed = "Failed to set secret '%{name}': %{error}"
+removeFailed = "Failed to remove secret '%{name}': %{error}"
+exportFailed = "Failed to export secrets: %{error}"
