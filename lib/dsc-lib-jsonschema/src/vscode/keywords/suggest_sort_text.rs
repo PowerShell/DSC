@@ -64,9 +64,9 @@ impl JsonSchema for SuggestSortTextKeyword {
         json_schema!({
             "$schema": Self::META_SCHEMA,
             "$id": Self::KEYWORD_ID,
-            "title": t!("vscode.keywords.suggestSortText.title"),
-            "description": t!("vscode.keywords.suggestSortText.description"),
-            "markdownDescription": t!("vscode.keywords.suggestSortText.markdownDescription"),
+            "title": t!("vscode.keywords.suggest_sort_text.title"),
+            "description": t!("vscode.keywords.suggest_sort_text.description"),
+            "markdownDescription": t!("vscode.keywords.suggest_sort_text.markdownDescription"),
             "type": "string",
         })
     }

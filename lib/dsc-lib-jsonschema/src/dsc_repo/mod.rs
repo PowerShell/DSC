@@ -6,6 +6,11 @@ use schemars::{Schema, json_schema};
 mod dsc_repo_schema;
 pub use dsc_repo_schema::DscRepoSchema;
 pub use dsc_repo_schema::UnrecognizedSchemaUri;
+pub use dsc_repo_schema::DscRepoSchemaMissingTranslation;
+
+#[macro_use]
+mod macros;
+pub use crate::schema_i18n;
 
 mod recognized_schema_version;
 pub use recognized_schema_version::RecognizedSchemaVersion;

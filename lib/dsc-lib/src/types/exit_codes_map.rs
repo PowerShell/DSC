@@ -7,8 +7,7 @@ use rust_i18n::t;
 use schemars::{JsonSchema, json_schema};
 use serde::{Deserialize, Serialize};
 
-use crate::{schemas::dsc_repo::DscRepoSchema, types::ExitCode};
-
+use crate::{schemas::dsc_repo::{DscRepoSchema, schema_i18n}, types::ExitCode};
 /// Defines a map of exit codes to their semantic meaning for operation commands.
 ///
 /// DSC resources and extensions may define any number of operation commands like `get` or
@@ -103,14 +102,14 @@ impl JsonSchema for ExitCodesMap {
     fn json_schema(_: &mut schemars::SchemaGenerator) -> schemars::Schema {
         json_schema!({
             "$schema": "https://json-schema.org/draft/2020-12/schema",
-            "title": t!("schemas.definitions.exitCodes.title"),
-            "description": t!("schemas.definitions.exitCodes.description"),
-            "markdownDescription": t!("schemas.definitions.exitCodes.markdownDescription"),
+            "title": schema_i18n!("title"),
+            "description": schema_i18n!("description"),
+            "markdownDescription": schema_i18n!("markdownDescription"),
             "type": "object",
             "minProperties": 1,
             "propertyNames": {
                 "pattern": Self::KEY_VALIDATING_PATTERN,
-                "patternErrorMessage": t!("schemas.definitions.exitCodes.invalidKeyErrorMessage")
+                "patternErrorMessage": schema_i18n!("invalidKeyErrorMessage")
             },
             "patternProperties": {
                 Self::KEY_VALIDATING_PATTERN: {

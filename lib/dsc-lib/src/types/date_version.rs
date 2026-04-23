@@ -19,7 +19,7 @@ use schemars::{JsonSchema, json_schema};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::schemas::dsc_repo::DscRepoSchema;
+use crate::schemas::dsc_repo::{DscRepoSchema, schema_i18n};
 
 /// Defines a version as an ISO8601 formatted date string for compatibility scenarios.
 ///
@@ -44,8 +44,8 @@ use crate::schemas::dsc_repo::DscRepoSchema;
 /// If the date version is for a prerelease, the prerelease segment must be a string of ASCII
 /// alphabetic characters (`[a-zA-Z]`).
 #[derive(Debug, Clone, Serialize, Deserialize, DscRepoSchema)]
-#[serde(try_from = "String", into = "String")]
 #[dsc_repo_schema(base_name = "dateVersion", folder_path = "definitions")]
+#[serde(try_from = "String", into = "String")]
 pub struct DateVersion(NaiveDate, Option<String>);
 
 /// Indicates an error with parsing or converting a [`DateVersion`].
@@ -488,12 +488,12 @@ impl JsonSchema for DateVersion {
         json_schema!({
             "$schema": "https://json-schema.org/draft/2020-12/schema",
             "$id": Self::default_schema_id_uri(),
-            "title": t!("schemas.definitions.dateVersion.title"),
-            "description": t!("schemas.definitions.dateVersion.description"),
-            "markdownDescription": t!("schemas.definitions.dateVersion.markdownDescription"),
+            "title": schema_i18n!("title"),
+            "description": schema_i18n!("description"),
+            "markdownDescription": schema_i18n!("markdownDescription"),
             "type": "string",
             "pattern": Self::VALIDATING_PATTERN,
-            "patternErrorMessage": t!("schemas.definitions.dateVersion.patternErrorMessage"),
+            "patternErrorMessage": schema_i18n!("patternErrorMessage"),
         })
     }
 }

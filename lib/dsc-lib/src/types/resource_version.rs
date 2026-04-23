@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::{
-    schemas::dsc_repo::DscRepoSchema,
+    schemas::dsc_repo::{DscRepoSchema, schema_i18n},
     types::{
         DateVersion,
         DateVersionError,
@@ -161,10 +161,10 @@ use crate::{
 #[serde(untagged, try_from = "String", into = "String")]
 #[schemars(!try_from, !into)]
 #[schemars(
-    title = t!("schemas.definitions.resourceVersion.title"),
-    description = t!("schemas.definitions.resourceVersion.description"),
+    title = schema_i18n!("title"),
+    description = schema_i18n!("description"),
     extend(
-        "markdownDescription" = t!("schemas.definitions.resourceVersion.markdownDescription")
+        "markdownDescription" = schema_i18n!("markdownDescription")
     )
 )]
 pub enum ResourceVersion {
@@ -176,10 +176,10 @@ pub enum ResourceVersion {
     ///
     /// [01]: https://semver.org
     #[schemars(
-        title = t!("schemas.definitions.resourceVersion.semanticVariant.title"),
-        description = t!("schemas.definitions.resourceVersion.semanticVariant.description"),
+        title = schema_i18n!("semanticVariant.title"),
+        description = schema_i18n!("semanticVariant.description"),
         extend(
-            "markdownDescription" = t!("schemas.definitions.resourceVersion.semanticVariant.markdownDescription")
+            "markdownDescription" = schema_i18n!("semanticVariant.markdownDescription")
         )
     )]
     Semantic(SemanticVersion),
@@ -202,12 +202,12 @@ pub enum ResourceVersion {
     /// [`ResourceVersionReq`]: crate::types::ResourceVersionReq
     /// [01]: https://doc.rust-lang.org/std/cmp/trait.Ord.html#lexicographical-comparison
     #[schemars(
-        title = t!("schemas.definitions.resourceVersion.dateVariant.title"),
-        description = t!("schemas.definitions.resourceVersion.dateVariant.description"),
+        title = schema_i18n!("dateVariant.title"),
+        description = schema_i18n!("dateVariant.description"),
         extend(
             "deprecated" = true,
-            "deprecationMessage" = t!("schemas.definitions.resourceVersion.dateVariant.deprecationMessage"),
-            "markdownDescription" = t!("schemas.definitions.resourceVersion.dateVariant.markdownDescription"),
+            "deprecationMessage" = schema_i18n!("dateVariant.deprecationMessage"),
+            "markdownDescription" = schema_i18n!("dateVariant.markdownDescription"),
         )
     )]
     Date(DateVersion),
