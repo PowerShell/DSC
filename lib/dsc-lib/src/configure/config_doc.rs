@@ -480,30 +480,14 @@ pub struct Resource {
     #[serde(default)]
     pub name: String, // friendly unique instance name
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub comments: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub directives: Option<ResourceDirective>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub execution_information: Option<ExecutionInformation>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub location: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[schemars(regex(pattern = r"^\[resourceId\(\s*'[a-zA-Z0-9\.]+/[a-zA-Z0-9]+'\s*,\s*'[a-zA-Z0-9 ]+'\s*\)]$"))]
     pub depends_on: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub tags: Option<Map<String, Value>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub identity: Option<Identity>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub sku: Option<Sku>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub kind: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub scope: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub copy: Option<Copy>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub plan: Option<Plan>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub properties: Option<Map<String, Value>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -545,19 +529,11 @@ impl Resource {
             depends_on: None,
             directives: None,
             execution_information: None,
-            kind: None,
             properties: None,
             metadata: None,
             condition: None,
-            identity: None,
-            sku: None,
-            scope: None,
             copy: None,
-            plan: None,
             resources: None,
-            comments: None,
-            location: None,
-            tags: None,
             require_version: None,
         }
     }
