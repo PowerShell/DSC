@@ -129,12 +129,6 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf
             let mut r: Resource = config_doc::Resource::new();
             r.resource_type.clone_from(&resource.type_name);
             let mut props: Map<String, Value> = serde_json::from_value(instance.clone())?;
-            if let Some(kind) = props.remove("_kind") {
-                if !kind.is_string() {
-                    return Err(DscError::Parser(t!("configure.mod.propertyNotString", name = "_kind", value = kind).to_string()));
-                }
-                r.kind = kind.as_str().map(std::string::ToString::to_string);
-            }
             r.name = if let Some(name) = props.remove("_name") {
                 name.as_str()
                     .map(std::string::ToString::to_string)
@@ -299,7 +293,7 @@ fn check_security_context(metadata: Option<&Metadata>, directive_security_contex
 
     let mut security_context_required: Option<&SecurityContextKind> = None;
     if let Some(metadata) = &metadata
-        && let Some(microsoft_dsc) = &metadata.microsoft 
+        && let Some(microsoft_dsc) = &metadata.microsoft
         && let Some(required_security_context) = &microsoft_dsc.security_context {
             warn!("{}", t!("configure.mod.securityContextInMetadataDeprecated"));
             security_context_required = Some(required_security_context);
