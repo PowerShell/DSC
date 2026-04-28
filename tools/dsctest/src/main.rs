@@ -125,7 +125,6 @@ fn main() {
             for i in 0..export.count {
                 let instance = Export {
                     count: i,
-                    _kind: Some("TestKind".to_string()),
                     _name: Some("TestName".to_string()),
                     _security_context: Some("elevated".to_string()),
                 };

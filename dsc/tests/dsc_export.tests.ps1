@@ -163,7 +163,7 @@ resources:
       $out.resources[1].properties.hello | Should -BeExactly 'world'
     }
 
-    It 'Export can surface _kind, _securityContext, and _name from a resource' {
+    It 'Export can surface _securityContext and _name from a resource' {
       $yaml = @'
 $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
 resources:
@@ -176,9 +176,7 @@ resources:
         $LASTEXITCODE | Should -Be 0
         $out.resources.count | Should -Be 1
         $out.resources[0].name | Should -BeExactly 'TestName'
-        $out.resources[0].kind | Should -BeExactly 'TestKind'
         $out.resources[0].metadata.'Microsoft.DSC'.securityContext | Should -BeExactly 'elevated'
-        $out.resources[0].properties.psobject.properties.name | Should -Not -Contain '_kind'
         $out.resources[0].properties.psobject.properties.name | Should -Not -Contain '_securityContext'
         $out.resources[0].properties.psobject.properties.name | Should -Not -Contain '_name'
     }
