@@ -1,4 +1,4 @@
-# The `Microsoft.Winget.DSC` resources needs to be installed: install-psresource Microsoft.Winget.DSC -Prerelease
+# The `Microsoft.Winget.DSC` resources needs to be installed: Install-PSResource Microsoft.Winget.DSC
 
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 parameters:
@@ -9,16 +9,16 @@ parameters:
       - Present
       - Absent
 resources:
-- name: Use class PowerShell resources
-  type: Microsoft.DSC/PowerShell
+- name: PowerShell 7 Preview
+  type: Microsoft.WinGet.DSC/WinGetPackage
+  directives:
+    requireAdapter: Microsoft.Adapter/PowerShell
   properties:
-    resources:
-    - name: PowerShell 7 Preview
-      type: Microsoft.WinGet.DSC/WinGetPackage
-      properties:
-        Id: Microsoft.PowerShell.Preview
-    - name: Calc from Windows Store
-      type: Microsoft.WinGet.DSC/WinGetPackage
-      properties:
-        Id: "9WZDNCRFHVN5"
-        Ensure: "[parameters('ensureCalc')]"
+    Id: Microsoft.PowerShell.Preview
+- name: Calc from Windows Store
+  type: Microsoft.WinGet.DSC/WinGetPackage
+  directives:
+    requireAdapter: Microsoft.Adapter/PowerShell
+  properties:
+    Id: "9WZDNCRFHVN5"
+    Ensure: "[parameters('ensureCalc')]"
