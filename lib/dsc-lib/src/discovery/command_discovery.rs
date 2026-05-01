@@ -799,10 +799,8 @@ fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<Ds
         if set.handles_exist == Some(true) {
             capabilities.insert(Capability::SetHandlesExist);
         }
-        if let Some(args) = &set.args {
-            if args.iter().any(|arg| matches!(arg, SetDeleteArgKind::WhatIf{ what_if_arg: _ })) {
-                capabilities.insert(Capability::WhatIf);
-            }
+        if let Some(args) = &set.args && args.iter().any(|arg| matches!(arg, SetDeleteArgKind::WhatIf{ what_if_arg: _ })) {
+            capabilities.insert(Capability::WhatIf);
         }
     }
     if let Some(test) = &manifest.test {
@@ -812,10 +810,8 @@ fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<Ds
     if let Some(delete) = &manifest.delete {
         verify_executable(&manifest.resource_type, "delete", &delete.executable, path.parent().unwrap());
         capabilities.insert(Capability::Delete);
-        if let Some(args) = &delete.args {
-            if args.iter().any(|arg| matches!(arg, SetDeleteArgKind::WhatIf{ what_if_arg: _ })) {
-                capabilities.insert(Capability::WhatIf);
-            }
+        if let Some(args) = &delete.args && args.iter().any(|arg| matches!(arg, SetDeleteArgKind::WhatIf{ what_if_arg: _ })) {
+            capabilities.insert(Capability::WhatIf);
         }
     }
     if let Some(export) = &manifest.export {
