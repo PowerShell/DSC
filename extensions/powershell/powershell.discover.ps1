@@ -81,6 +81,9 @@ function Invoke-DscResourceDiscovery {
                     '*.dsc.adaptedresource.json'
                     '*.dsc.adaptedresource.yaml'
                     '*.dsc.adaptedresource.yml'
+                    '*.dsc.manifests.json'
+                    '*.dsc.manifests.yaml'
+                    '*.dsc.manifests.yml'
                 )
                 $enumOptions = [System.IO.EnumerationOptions]@{ IgnoreInaccessible = $true; RecurseSubdirectories = $true }
                 foreach ($pattern in $searchPatterns) {
