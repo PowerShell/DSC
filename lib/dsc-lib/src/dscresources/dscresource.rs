@@ -63,7 +63,7 @@ pub struct DscResource {
     pub manifest: Option<ResourceManifest>,
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
 #[schemars(transform = idiomaticize_string_enum)]
 #[dsc_repo_schema(base_name = "resourceCapabilities", folder_path = "definitions")]

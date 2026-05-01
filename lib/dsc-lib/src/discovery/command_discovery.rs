@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{discovery::{DiscoveryExtensionCache, DiscoveryManifestCache, DiscoveryResourceCache, discovery_trait::{DiscoveryFilter, DiscoveryKind, ResourceDiscovery}, matches_adapter_requirement}, dscresources::adapted_resource_manifest::AdaptedDscResourceManifest, parser::Statement, types::{FullyQualifiedTypeName, TypeNameFilter}};
+use crate::{discovery::{DiscoveryExtensionCache, DiscoveryManifestCache, DiscoveryResourceCache, discovery_trait::{DiscoveryFilter, DiscoveryKind, ResourceDiscovery}, matches_adapter_requirement}, dscresources::{adapted_resource_manifest::AdaptedDscResourceManifest, resource_manifest::SetDeleteArgKind}, parser::Statement, types::{FullyQualifiedTypeName, TypeNameFilter}};
 use crate::{locked_clear, locked_is_empty, locked_extend, locked_clone, locked_get};
 use crate::configure::{config_doc::ResourceDiscoveryMode, context::Context};
 use crate::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
@@ -788,36 +788,50 @@ fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<Ds
         Kind::Resource
     };
 
-    let mut capabilities: Vec<Capability> = vec![];
+    let mut capabilities: HashSet<Capability> = HashSet::new();
     if let Some(get) = &manifest.get {
         verify_executable(&manifest.resource_type, "get", &get.executable, path.parent().unwrap());
-        capabilities.push(Capability::Get);
+        capabilities.insert(Capability::Get);
     }
     if let Some(set) = &manifest.set {
         verify_executable(&manifest.resource_type, "set", &set.executable, path.parent().unwrap());
-        capabilities.push(Capability::Set);
+        capabilities.insert(Capability::Set);
         if set.handles_exist == Some(true) {
-            capabilities.push(Capability::SetHandlesExist);
+            capabilities.insert(Capability::SetHandlesExist);
+        }
+        if let Some(args) = &set.args {
+            if args.iter().any(|arg| matches!(arg, SetDeleteArgKind::WhatIf{ what_if_arg: _ })) {
+                capabilities.insert(Capability::WhatIf);
+            }
         }
     }
     if let Some(test) = &manifest.test {
         verify_executable(&manifest.resource_type, "test", &test.executable, path.parent().unwrap());
-        capabilities.push(Capability::Test);
+        capabilities.insert(Capability::Test);
     }
     if let Some(delete) = &manifest.delete {
         verify_executable(&manifest.resource_type, "delete", &delete.executable, path.parent().unwrap());
-        capabilities.push(Capability::Delete);
+        capabilities.insert(Capability::Delete);
+        if let Some(args) = &delete.args {
+            if args.iter().any(|arg| matches!(arg, SetDeleteArgKind::WhatIf{ what_if_arg: _ })) {
+                capabilities.insert(Capability::WhatIf);
+            }
+        }
     }
     if let Some(export) = &manifest.export {
         verify_executable(&manifest.resource_type, "export", &export.executable, path.parent().unwrap());
-        capabilities.push(Capability::Export);
+        capabilities.insert(Capability::Export);
     }
     if let Some(resolve) = &manifest.resolve {
         verify_executable(&manifest.resource_type, "resolve", &resolve.executable, path.parent().unwrap());
-        capabilities.push(Capability::Resolve);
+        capabilities.insert(Capability::Resolve);
     }
     if let Some(SchemaKind::Command(command)) = &manifest.schema {
         verify_executable(&manifest.resource_type, "schema", &command.executable, path.parent().unwrap());
+    }
+    if let Some(what_if) = &manifest.what_if {
+        verify_executable(&manifest.resource_type, "what-if", &what_if.executable, path.parent().unwrap());
+        capabilities.insert(Capability::WhatIf);
     }
 
     let mut resource = DscResource::new();
@@ -827,7 +841,7 @@ fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<Ds
     resource.deprecation_message = manifest.deprecation_message.clone();
     resource.description = manifest.description.clone();
     resource.version = manifest.version.clone();
-    resource.capabilities = capabilities;
+    resource.capabilities = capabilities.into_iter().collect();
     resource.path = path.to_path_buf();
     resource.directory = path.parent().unwrap().to_path_buf();
     resource.manifest = Some(manifest.clone());
