@@ -259,4 +259,57 @@ Describe 'registry config set tests' {
         $getOut.registryKeys[0]._exist | Should -Be $false
         $getOut.registryKeys[1]._exist | Should -Be $false
     }
+
+    It 'set with registryKeys array produces no stdout when not what-if' -Skip:(!$IsWindows) {
+        $json = @'
+        {
+            "registryKeys": [
+                {
+                    "keyPath": "HKCU\\DSCArrayTest\\Quiet",
+                    "valueName": "V",
+                    "valueData": { "String": "v" }
+                }
+            ]
+        }
+'@
+        $out = registry config set --input $json 2>$null
+        $LASTEXITCODE | Should -Be 0
+        $out | Should -BeNullOrEmpty
+    }
+
+    It 'delete with registryKeys array produces no stdout when not what-if' -Skip:(!$IsWindows) {
+        $setJson = @'
+        {
+            "registryKeys": [
+                {
+                    "keyPath": "HKCU\\DSCArrayTest\\Quiet",
+                    "valueName": "V",
+                    "valueData": { "String": "v" }
+                }
+            ]
+        }
+'@
+        registry config set --input $setJson 2>$null | Out-Null
+
+        $delJson = @'
+        {
+            "registryKeys": [
+                { "keyPath": "HKCU\\DSCArrayTest\\Quiet", "valueName": "V" }
+            ]
+        }
+'@
+        $out = registry config delete --input $delJson 2>$null
+        $LASTEXITCODE | Should -Be 0
+        $out | Should -BeNullOrEmpty
+    }
+
+    It 'Empty registryKeys array is rejected as invalid input' -Skip:(!$IsWindows) {
+        $json = '{ "registryKeys": [] }'
+        registry config get --input $json 2>$null
+        $LASTEXITCODE | Should -Be 2
+        registry config set --input $json 2>$null
+        $LASTEXITCODE | Should -Be 2
+        registry config delete --input $json 2>$null
+        $LASTEXITCODE | Should -Be 2
+    }
 }

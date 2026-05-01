@@ -18,24 +18,38 @@ use tracing_subscriber::{filter::LevelFilter, prelude::__tracing_subscriber_Subs
 fn parse_input(input: &str) -> Result<(Vec<RegistryKey>, bool), String> {
     match serde_json::from_str::<Registry>(input) {
         Ok(Registry::Single(rk)) => Ok((vec![rk], true)),
-        Ok(Registry::List(rl)) => Ok((rl.registry_keys, false)),
+        Ok(Registry::List(rl)) => {
+            if rl.registry_keys.is_empty() {
+                Err(t!("main.emptyRegistryKeysArray").to_string())
+            } else {
+                Ok((rl.registry_keys, false))
+            }
+        },
         Err(e) => Err(e.to_string()),
+    }
+}
+
+fn emit_json<T: serde::Serialize>(value: &T) {
+    match serde_json::to_string(value) {
+        Ok(json) => println!("{json}"),
+        Err(err) => {
+            error!("{}", t!("main.jsonSerializationError", err = err));
+            exit(EXIT_JSON_SERIALIZATION);
+        }
     }
 }
 
 fn emit_results(results: Vec<RegistryKey>, was_single: bool) {
     if was_single {
         if let Some(rk) = results.into_iter().next() {
-            let json = serde_json::to_string(&rk).unwrap();
-            println!("{json}");
+            emit_json(&rk);
         }
     } else {
         let list = RegistryList {
             registry_keys: results,
             metadata: None,
         };
-        let json = serde_json::to_string(&list).unwrap();
-        println!("{json}");
+        emit_json(&list);
     }
 }
 
@@ -58,6 +72,7 @@ rust_i18n::i18n!("locales", fallback = "en-us");
 const EXIT_SUCCESS: i32 = 0;
 const EXIT_INVALID_INPUT: i32 = 2;
 const EXIT_REGISTRY_ERROR: i32 = 3;
+const EXIT_JSON_SERIALIZATION: i32 = 4;
 
 #[allow(clippy::too_many_lines)]
 fn main() {
@@ -122,10 +137,9 @@ fn main() {
                     }
                     if was_single {
                         if let Some(rk) = results.into_iter().next() {
-                            let json = serde_json::to_string(&rk).unwrap();
-                            println!("{json}");
+                            emit_json(&rk);
                         }
-                    } else {
+                    } else if !results.is_empty() {
                         emit_results(results, false);
                     }
                 },
@@ -146,10 +160,9 @@ fn main() {
                     }
                     if was_single {
                         if let Some(rk) = results.into_iter().next() {
-                            let json = serde_json::to_string(&rk).unwrap();
-                            println!("{json}");
+                            emit_json(&rk);
                         }
-                    } else {
+                    } else if !results.is_empty() {
                         emit_results(results, false);
                     }
                 },
@@ -157,8 +170,7 @@ fn main() {
         },
         args::SubCommand::Schema => {
             let schema = schema_for!(Registry);
-            let json =serde_json::to_string(&schema).unwrap();
-            println!("{json}");
+            emit_json(&schema);
         },
     }
 
