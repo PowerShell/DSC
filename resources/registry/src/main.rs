@@ -8,12 +8,48 @@ use std::env;
 
 use args::Arguments;
 use clap::Parser;
-use dsc_lib_registry::{config::Registry, RegistryHelper};
+use dsc_lib_registry::{config::{Registry, RegistryKey, RegistryList}, RegistryHelper};
 use rust_i18n::t;
 use schemars::schema_for;
 use std::process::exit;
 use tracing::{debug, error};
 use tracing_subscriber::{filter::LevelFilter, prelude::__tracing_subscriber_SubscriberExt, EnvFilter, Layer};
+
+fn parse_input(input: &str) -> Result<(Vec<RegistryKey>, bool), String> {
+    match serde_json::from_str::<Registry>(input) {
+        Ok(Registry::Single(rk)) => Ok((vec![rk], true)),
+        Ok(Registry::List(rl)) => Ok((rl.registry_keys, false)),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+fn emit_results(results: Vec<RegistryKey>, was_single: bool) {
+    if was_single {
+        if let Some(rk) = results.into_iter().next() {
+            let json = serde_json::to_string(&rk).unwrap();
+            println!("{json}");
+        }
+    } else {
+        let list = RegistryList {
+            registry_keys: results,
+            metadata: None,
+        };
+        let json = serde_json::to_string(&list).unwrap();
+        println!("{json}");
+    }
+}
+
+fn make_helper(rk: RegistryKey, what_if: bool) -> RegistryHelper {
+    let mut helper = match RegistryHelper::new_from_key(rk) {
+        Ok(h) => h,
+        Err(err) => {
+            error!("{err}");
+            exit(EXIT_INVALID_INPUT);
+        }
+    };
+    if what_if { helper.enable_what_if(); }
+    helper
+}
 
 mod args;
 
@@ -48,86 +84,73 @@ fn main() {
             match subcommand {
                 args::ConfigSubCommand::Get{input} => {
                     debug!("Get input: {input}");
-                    let reg_helper = match RegistryHelper::new_from_json(&input) {
-                        Ok(reg_helper) => reg_helper,
-                        Err(err) => {
-                            error!("{err}");
-                            exit(EXIT_INVALID_INPUT);
-                        }
+                    let (items, was_single) = match parse_input(&input) {
+                        Ok(v) => v,
+                        Err(err) => { error!("{err}"); exit(EXIT_INVALID_INPUT); }
                     };
-                    match reg_helper.get() {
-                        Ok(reg_config) => {
-                            let json = serde_json::to_string(&reg_config).unwrap();
-                            println!("{json}");
-                        },
-                        Err(err) => {
-                            error!("{err}");
-                            exit(EXIT_REGISTRY_ERROR);
+                    let mut results: Vec<RegistryKey> = Vec::with_capacity(items.len());
+                    for rk in items {
+                        let reg_helper = make_helper(rk, false);
+                        match reg_helper.get() {
+                            Ok(out) => results.push(out),
+                            Err(err) => { error!("{err}"); exit(EXIT_REGISTRY_ERROR); }
                         }
                     }
+                    emit_results(results, was_single);
                 },
                 args::ConfigSubCommand::Set{input, what_if} => {
                     debug!("Set input: {input}, what_if: {what_if}");
-                    let mut reg_helper = match RegistryHelper::new_from_json(&input) {
-                        Ok(reg_helper) => reg_helper,
-                        Err(err) => {
-                            error!("{err}");
-                            exit(EXIT_INVALID_INPUT);
-                        }
+                    let (items, was_single) = match parse_input(&input) {
+                        Ok(v) => v,
+                        Err(err) => { error!("{err}"); exit(EXIT_INVALID_INPUT); }
                     };
-                    if what_if { reg_helper.enable_what_if(); }
-
-                    // In what-if, if the desired state is _exist: false, route to delete
-                    if what_if
-                        && let Ok(desired) = serde_json::from_str::<Registry>(&input)
-                        && matches!(desired.exist, Some(false)) {
-                            match reg_helper.remove() {
-                                Ok(Some(reg_config)) => {
-                                    let json = serde_json::to_string(&reg_config).unwrap();
-                                    println!("{json}");
-                                },
-                                Ok(None) => {},
-                                Err(err) => {
-                                    error!("{err}");
-                                    exit(EXIT_REGISTRY_ERROR);
-                                }
-                            }
-                            return;
+                    let mut results: Vec<RegistryKey> = Vec::new();
+                    for rk in items {
+                        // In what-if, if the desired state is _exist: false, route to delete
+                        let route_to_delete = what_if && matches!(rk.exist, Some(false));
+                        let reg_helper = make_helper(rk, what_if);
+                        let outcome = if route_to_delete {
+                            reg_helper.remove()
+                        } else {
+                            reg_helper.set()
+                        };
+                        match outcome {
+                            Ok(Some(out)) => results.push(out),
+                            Ok(None) => {},
+                            Err(err) => { error!("{err}"); exit(EXIT_REGISTRY_ERROR); }
                         }
-
-                    match reg_helper.set() {
-                        Ok(reg_config) => {
-                            if let Some(config) = reg_config {
-                                let json = serde_json::to_string(&config).unwrap();
-                                println!("{json}");
-                            }
-                        },
-                        Err(err) => {
-                            error!("{err}");
-                            exit(EXIT_REGISTRY_ERROR);
+                    }
+                    if was_single {
+                        if let Some(rk) = results.into_iter().next() {
+                            let json = serde_json::to_string(&rk).unwrap();
+                            println!("{json}");
                         }
+                    } else {
+                        emit_results(results, false);
                     }
                 },
                 args::ConfigSubCommand::Delete{input, what_if} => {
                     debug!("Delete input: {input}, what_if: {what_if}");
-                    let mut reg_helper = match RegistryHelper::new_from_json(&input) {
-                        Ok(reg_helper) => reg_helper,
-                        Err(err) => {
-                            error!("{err}");
-                            exit(EXIT_INVALID_INPUT);
-                        }
+                    let (items, was_single) = match parse_input(&input) {
+                        Ok(v) => v,
+                        Err(err) => { error!("{err}"); exit(EXIT_INVALID_INPUT); }
                     };
-                    if what_if { reg_helper.enable_what_if(); }
-                    match reg_helper.remove() {
-                        Ok(Some(reg_config)) => {
-                            let json = serde_json::to_string(&reg_config).unwrap();
-                            println!("{json}");
-                        },
-                        Ok(None) => {},
-                        Err(err) => {
-                            error!("{err}");
-                            exit(EXIT_REGISTRY_ERROR);
+                    let mut results: Vec<RegistryKey> = Vec::new();
+                    for rk in items {
+                        let reg_helper = make_helper(rk, what_if);
+                        match reg_helper.remove() {
+                            Ok(Some(out)) => results.push(out),
+                            Ok(None) => {},
+                            Err(err) => { error!("{err}"); exit(EXIT_REGISTRY_ERROR); }
                         }
+                    }
+                    if was_single {
+                        if let Some(rk) = results.into_iter().next() {
+                            let json = serde_json::to_string(&rk).unwrap();
+                            println!("{json}");
+                        }
+                    } else {
+                        emit_results(results, false);
                     }
                 },
             }
