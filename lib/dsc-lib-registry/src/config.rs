@@ -16,8 +16,8 @@ pub enum RegistryValueData {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
-#[serde(rename = "Registry", deny_unknown_fields)]
-pub struct Registry {
+#[serde(rename = "RegistryKey", deny_unknown_fields)]
+pub struct RegistryKey {
     /// The path to the registry key.
     #[serde(rename = "keyPath")]
     pub key_path: String,
@@ -32,6 +32,30 @@ pub struct Registry {
     pub value_data: Option<RegistryValueData>,
     #[serde(rename = "_exist", skip_serializing_if = "Option::is_none")]
     pub exist: Option<bool>,
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
+#[serde(rename = "RegistryList", deny_unknown_fields)]
+pub struct RegistryList {
+    /// One or more registry keys/values to manage.
+    #[serde(rename = "registryKeys")]
+    pub registry_keys: Vec<RegistryKey>,
+    /// The information from a config set --what-if operation.
+    #[serde(rename = "_metadata", skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<Metadata>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(untagged)]
+pub enum Registry {
+    List(RegistryList),
+    Single(RegistryKey),
+}
+
+impl Default for Registry {
+    fn default() -> Self {
+        Registry::Single(RegistryKey::default())
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]

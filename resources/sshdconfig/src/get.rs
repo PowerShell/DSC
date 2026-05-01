@@ -3,7 +3,7 @@
 
 #[cfg(windows)]
 use {
-    dsc_lib_registry::{config::{Registry, RegistryValueData}, RegistryHelper},
+    dsc_lib_registry::{config::{RegistryKey, RegistryValueData}, RegistryHelper},
     crate::args::DefaultShell,
     crate::metadata::windows::{DEFAULT_SHELL, DEFAULT_SHELL_CMD_OPTION, DEFAULT_SHELL_ESCAPE_ARGS, REGISTRY_PATH},
 };
@@ -50,7 +50,7 @@ pub fn invoke_get(input: Option<&String>, setting: &Setting) -> Result<Map<Strin
 #[cfg(windows)]
 fn get_default_shell() -> Result<(), SshdConfigError> {
     let registry_helper = RegistryHelper::new(REGISTRY_PATH, Some(DEFAULT_SHELL.to_string()), None)?;
-    let default_shell: Registry = registry_helper.get()?;
+    let default_shell: RegistryKey = registry_helper.get()?;
     let mut shell = None;
     // default_shell is a single string consisting of the shell exe path
     if let Some(value) = default_shell.value_data {
@@ -63,7 +63,7 @@ fn get_default_shell() -> Result<(), SshdConfigError> {
     }
 
     let registry_helper = RegistryHelper::new(REGISTRY_PATH, Some(DEFAULT_SHELL_CMD_OPTION.to_string()), None)?;
-    let option: Registry = registry_helper.get()?;
+    let option: RegistryKey = registry_helper.get()?;
     let mut cmd_option = None;
     if let Some(value) = option.value_data {
         match value {
@@ -73,7 +73,7 @@ fn get_default_shell() -> Result<(), SshdConfigError> {
     }
 
     let registry_helper = RegistryHelper::new(REGISTRY_PATH, Some(DEFAULT_SHELL_ESCAPE_ARGS.to_string()), None)?;
-    let escape_args: Registry = registry_helper.get()?;
+    let escape_args: RegistryKey = registry_helper.get()?;
     let mut escape_arguments = None;
     if let Some(value) = escape_args.value_data {
         if let RegistryValueData::DWord(b) = value {

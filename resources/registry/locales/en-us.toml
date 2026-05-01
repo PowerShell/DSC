@@ -32,3 +32,5 @@ tracingInitError = "Unable to set global default tracing subscriber. Tracing is 
 debugAttach = "attach debugger to pid %{pid} and press any key to continue"
 debugEventReadError = "Error: Failed to read event: %{err}"
 debugEventUnexpectedError = "Unexpected event: %{e}"
+jsonSerializationError = "Failed to serialize result to JSON: %{err}"
+emptyRegistryKeysArray = "The 'registryKeys' array must contain at least one entry."

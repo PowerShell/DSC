@@ -200,4 +200,35 @@ Describe 'registry config whatif tests' {
         # For delete what-if, payload should only include keyPath (and optionally valueName when deleting a value)
         ($result.psobject.properties | Where-Object { $_.Name -ne '_metadata' } | Measure-Object).Count | Should -Be 1
     }
+
+    It 'Can whatif multiple keys in a registryKeys array' -Skip:(!$IsWindows) {
+        $json = @'
+        {
+            "registryKeys": [
+                {
+                    "keyPath": "HKCU\\1\\A",
+                    "valueName": "First",
+                    "valueData": { "String": "alpha" }
+                },
+                {
+                    "keyPath": "HKCU\\1\\B",
+                    "valueName": "Second",
+                    "valueData": { "DWord": 42 }
+                }
+            ]
+        }
+'@
+        $get_before = registry config get --input $json 2>$null
+        $result = registry config set -w --input $json 2>$null | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $result.registryKeys.Count | Should -Be 2
+        $result.registryKeys[0].keyPath | Should -Be 'HKCU\1\A'
+        $result.registryKeys[0].valueData.String | Should -Be 'alpha'
+        $result.registryKeys[0]._metadata.whatIf | Should -Not -BeNullOrEmpty
+        $result.registryKeys[1].keyPath | Should -Be 'HKCU\1\B'
+        $result.registryKeys[1].valueData.DWord  | Should -Be 42
+        $result.registryKeys[1]._metadata.whatIf | Should -Not -BeNullOrEmpty
+        $get_after = registry config get --input $json 2>$null
+        $get_before | Should -EQ $get_after
+    }
 }

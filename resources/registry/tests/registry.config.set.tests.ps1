@@ -5,6 +5,7 @@ Describe 'registry config set tests' {
     AfterEach {
         if ($IsWindows) {
             Remove-Item -Path 'HKCU:\1' -Recurse -ErrorAction Ignore
+            Remove-Item -Path 'HKCU:\DSCArrayTest' -Recurse -ErrorAction Ignore
         }
     }
 
@@ -195,5 +196,120 @@ Describe 'registry config set tests' {
         $result = registry config get --input $getJson 2>$null | ConvertFrom-Json
         $result._exist | Should -Be $false
         $result.valueData | Should -BeNullOrEmpty
+    }
+
+    It 'Can set multiple values in one invocation via the registryKeys array' -Skip:(!$IsWindows) {
+        $json = @'
+        {
+            "registryKeys": [
+                {
+                    "keyPath": "HKCU\\DSCArrayTest\\A",
+                    "valueName": "First",
+                    "valueData": { "String": "alpha" }
+                },
+                {
+                    "keyPath": "HKCU\\DSCArrayTest\\B",
+                    "valueName": "Second",
+                    "valueData": { "DWord": 42 }
+                }
+            ]
+        }
+'@
+        $out = registry config set --input $json 2>$null
+        $LASTEXITCODE | Should -Be 0
+
+        $getOut = registry config get --input $json 2>$null | ConvertFrom-Json
+        $getOut.registryKeys.Count | Should -Be 2
+        $getOut.registryKeys[0].valueData.String | Should -Be 'alpha'
+        $getOut.registryKeys[1].valueData.DWord  | Should -Be 42
+    }
+
+    It 'Can delete multiple values in one invocation via the registryKeys array' -Skip:(!$IsWindows) {
+        $setJson = @'
+        {
+            "registryKeys": [
+                {
+                    "keyPath": "HKCU\\DSCArrayTest\\Del",
+                    "valueName": "X",
+                    "valueData": { "String": "x" }
+                },
+                {
+                    "keyPath": "HKCU\\DSCArrayTest\\Del",
+                    "valueName": "Y",
+                    "valueData": { "String": "y" }
+                }
+            ]
+        }
+'@
+        registry config set --input $setJson 2>$null | Out-Null
+        $LASTEXITCODE | Should -Be 0
+
+        $delJson = @'
+        {
+            "registryKeys": [
+                { "keyPath": "HKCU\\DSCArrayTest\\Del", "valueName": "X" },
+                { "keyPath": "HKCU\\DSCArrayTest\\Del", "valueName": "Y" }
+            ]
+        }
+'@
+        $out = registry config delete --input $delJson 2>$null
+        $LASTEXITCODE | Should -Be 0
+
+        $getOut = registry config get --input $delJson 2>$null | ConvertFrom-Json
+        $getOut.registryKeys[0]._exist | Should -Be $false
+        $getOut.registryKeys[1]._exist | Should -Be $false
+    }
+
+    It 'set with registryKeys array produces no stdout when not what-if' -Skip:(!$IsWindows) {
+        $json = @'
+        {
+            "registryKeys": [
+                {
+                    "keyPath": "HKCU\\DSCArrayTest\\Quiet",
+                    "valueName": "V",
+                    "valueData": { "String": "v" }
+                }
+            ]
+        }
+'@
+        $out = registry config set --input $json 2>$null
+        $LASTEXITCODE | Should -Be 0
+        $out | Should -BeNullOrEmpty
+    }
+
+    It 'delete with registryKeys array produces no stdout when not what-if' -Skip:(!$IsWindows) {
+        $setJson = @'
+        {
+            "registryKeys": [
+                {
+                    "keyPath": "HKCU\\DSCArrayTest\\Quiet",
+                    "valueName": "V",
+                    "valueData": { "String": "v" }
+                }
+            ]
+        }
+'@
+        registry config set --input $setJson 2>$null | Out-Null
+
+        $delJson = @'
+        {
+            "registryKeys": [
+                { "keyPath": "HKCU\\DSCArrayTest\\Quiet", "valueName": "V" }
+            ]
+        }
+'@
+        $out = registry config delete --input $delJson 2>$null
+        $LASTEXITCODE | Should -Be 0
+        $out | Should -BeNullOrEmpty
+    }
+
+    It 'Empty registryKeys array is rejected as invalid input' -Skip:(!$IsWindows) {
+        $json = '{ "registryKeys": [] }'
+        registry config get --input $json 2>$null
+        $LASTEXITCODE | Should -Be 2
+        registry config set --input $json 2>$null
+        $LASTEXITCODE | Should -Be 2
+        registry config delete --input $json 2>$null
+        $LASTEXITCODE | Should -Be 2
     }
 }

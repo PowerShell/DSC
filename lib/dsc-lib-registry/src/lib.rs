@@ -4,7 +4,7 @@
 use registry::{Data, Hive, RegKey, Security, key, value};
 use rust_i18n::t;
 use utfx::{U16CString, UCString};
-use crate::config::{Metadata, Registry, RegistryValueData};
+use crate::config::{Metadata, RegistryKey, RegistryValueData};
 use crate::error::RegistryError;
 
 rust_i18n::i18n!("locales", fallback = "en-us");
@@ -13,27 +13,36 @@ pub mod error;
 pub mod config;
 
 pub struct RegistryHelper {
-    config: Registry,
+    config: RegistryKey,
     hive: Hive,
     subkey: String,
     what_if: bool,
 }
 
 impl RegistryHelper {
-    /// Create a new `RegistryHelper` from json.
+    /// Create a new `RegistryHelper` from json describing a single registry key.
     ///
     /// # Arguments
     ///
-    /// * `config` - The string with registry configuration information.
+    /// * `config` - JSON for a single `RegistryKey` instance.
     ///
     /// # Errors
     ///
     /// * `RegistryError` - The error that occurred.
     pub fn new_from_json(config: &str) -> Result<Self, RegistryError> {
-        let registry: Registry = match serde_json::from_str(config) {
+        let registry: RegistryKey = match serde_json::from_str(config) {
             Ok(config) => config,
             Err(e) => return Err(RegistryError::Json(e)),
         };
+        Self::new_from_key(registry)
+    }
+
+    /// Create a new `RegistryHelper` from an already-parsed `RegistryKey`.
+    ///
+    /// # Errors
+    ///
+    /// * `RegistryError` - The error that occurred.
+    pub fn new_from_key(registry: RegistryKey) -> Result<Self, RegistryError> {
         let key_path = registry.key_path.clone();
         let (hive, subkey) = get_hive_from_path(&key_path)?;
 
@@ -58,7 +67,7 @@ impl RegistryHelper {
     /// * `RegistryError` - The error that occurred.
     pub fn new(key_path: &str, value_name: Option<String>, value_data: Option<RegistryValueData>) -> Result<Self, RegistryError> {
         let (hive, subkey) = get_hive_from_path(key_path)?;
-        let config = Registry {
+        let config = RegistryKey {
             key_path: key_path.to_string(),
             value_name,
             value_data,
@@ -83,12 +92,12 @@ impl RegistryHelper {
     ///
     /// # Returns
     ///
-    /// * `Registry` - The registry struct.
+    /// * `RegistryKey` - The registry key state.
     ///
     /// # Errors
     ///
     /// * `RegistryError` - The error that occurred.
-    pub fn get(&self) -> Result<Registry, RegistryError> {
+    pub fn get(&self) -> Result<RegistryKey, RegistryError> {
         let exist: bool;
         let (reg_key, _subkey) = match self.open(Security::Read) {
             Ok((reg_key, subkey)) => {
@@ -96,7 +105,7 @@ impl RegistryHelper {
             },
             Err(RegistryError::RegistryKeyNotFound(_)) => {
                 exist = false;
-                return Ok(Registry {
+                return Ok(RegistryKey {
                     key_path: self.config.key_path.clone(),
                     exist: Some(exist),
                     ..Default::default()
@@ -110,7 +119,7 @@ impl RegistryHelper {
                 Ok(value) => value,
                 Err(value::Error::NotFound(_,_)) => {
                     exist = false;
-                    return Ok(Registry {
+                    return Ok(RegistryKey {
                         key_path: self.config.key_path.clone(),
                         value_name: Some(value_name.clone()),
                         exist: Some(exist),
@@ -120,14 +129,14 @@ impl RegistryHelper {
                 Err(e) => return Err(RegistryError::RegistryValue(e)),
             };
 
-            Ok(Registry {
+            Ok(RegistryKey {
                 key_path: self.config.key_path.clone(),
                 value_name: Some(value_name.clone()),
                 value_data: convert_reg_value(&value)?,
                 ..Default::default()
             })
         } else {
-            Ok(Registry {
+            Ok(RegistryKey {
                 key_path: self.config.key_path.clone(),
                 ..Default::default()
             })
@@ -138,12 +147,12 @@ impl RegistryHelper {
     ///
     /// # Returns
     ///
-    /// * `Registry` - The registry struct.
+    /// * `RegistryKey` - The registry key state when applicable.
     ///
     /// # Errors
     ///
     /// * `RegistryError` - The error that occurred.
-    pub fn set(&self) -> Result<Option<Registry>, RegistryError> {
+    pub fn set(&self) -> Result<Option<RegistryKey>, RegistryError> {
         let mut what_if_metadata: Vec<String> = Vec::new();
         let reg_key = match self.open(Security::Write) {
             Ok((reg_key, _subkey)) => Some(reg_key),
@@ -224,7 +233,7 @@ impl RegistryHelper {
             };
 
             if self.what_if {
-                return Ok(Some(Registry {
+                return Ok(Some(RegistryKey {
                     key_path: self.config.key_path.clone(),
                     value_data: convert_reg_value(&data)?,
                     value_name: self.config.value_name.clone(),
@@ -239,7 +248,7 @@ impl RegistryHelper {
         }
 
         if self.what_if {
-            return Ok(Some(Registry {
+            return Ok(Some(RegistryKey {
                 key_path: self.config.key_path.clone(),
                 metadata: if what_if_metadata.is_empty() { None } else { Some(Metadata { what_if: Some(what_if_metadata) })},
                 ..Default::default()
@@ -258,7 +267,7 @@ impl RegistryHelper {
     /// # Errors
     ///
     /// * `RegistryError` - The error that occurred.
-    pub fn remove(&self) -> Result<Option<Registry>, RegistryError> {
+    pub fn remove(&self) -> Result<Option<RegistryKey>, RegistryError> {
         // For deleting a value, we need SetValue permission (KEY_SET_VALUE).
         // Try to open with the minimal required permission.
         // If that fails due to permission, try with AllAccess as a fallback.
@@ -284,7 +293,7 @@ impl RegistryHelper {
         if let Some(value_name) = &self.config.value_name {
             if self.what_if {
                 what_if_metadata.push(t!("registry_helper.whatIfDeleteValue", value_name = value_name).to_string());
-                return Ok(Some(Registry {
+                return Ok(Some(RegistryKey {
                     key_path: self.config.key_path.clone(),
                     value_name: Some(value_name.clone()),
                     metadata: Some(Metadata { what_if: Some(what_if_metadata) }),
@@ -312,7 +321,7 @@ impl RegistryHelper {
 
             if self.what_if {
                 what_if_metadata.push(t!("registry_helper.whatIfDeleteSubkey", subkey_name = subkey_name).to_string());
-                return Ok(Some(Registry {
+                return Ok(Some(RegistryKey {
                     key_path: self.config.key_path.clone(),
                     metadata: Some(Metadata { what_if: Some(what_if_metadata) }),
                     ..Default::default()
@@ -378,9 +387,9 @@ impl RegistryHelper {
         Ok((parent_key, subkeys))
     }
 
-    fn handle_error_or_what_if(&self, error: RegistryError) -> Result<Option<Registry>, RegistryError> {
+    fn handle_error_or_what_if(&self, error: RegistryError) -> Result<Option<RegistryKey>, RegistryError> {
         if self.what_if {
-            return Ok(Some(Registry {
+            return Ok(Some(RegistryKey {
                 key_path: self.config.key_path.clone(),
                 metadata: Some(Metadata { what_if: Some(vec![error.to_string()]) }),
                 ..Default::default()
