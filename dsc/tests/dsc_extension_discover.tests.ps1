@@ -40,7 +40,7 @@ Describe 'Discover extension tests' {
         } else {
             $out.Count | Should -Be 2 -Because ($out | Out-String)
             $out[0].type | Should -BeExactly 'Microsoft.PowerShell/Discover'
-            $out[0].version | Should -BeExactly '0.1.0'
+            $out[0].version | Should -BeExactly '0.1.1'
             $out[0].capabilities | Should -BeExactly @('discover')
             $out[0].manifest | Should -Not -BeNullOrEmpty
             $out[1].type | Should -BeExactly 'Test/Discover'
