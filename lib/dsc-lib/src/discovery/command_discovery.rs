@@ -799,7 +799,7 @@ fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<Ds
         if set.handles_exist == Some(true) {
             capabilities.insert(Capability::SetHandlesExist);
         }
-        if let Some(args) = &set.args && args.iter().any(|arg| matches!(arg, SetDeleteArgKind::WhatIf{ what_if_arg: _ })) {
+        if let Some(args) = &set.args && args_contains_what_if(args) {
             capabilities.insert(Capability::WhatIf);
         }
     }
@@ -810,7 +810,7 @@ fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<Ds
     if let Some(delete) = &manifest.delete {
         verify_executable(&manifest.resource_type, "delete", &delete.executable, path.parent().unwrap());
         capabilities.insert(Capability::Delete);
-        if let Some(args) = &delete.args && args.iter().any(|arg| matches!(arg, SetDeleteArgKind::WhatIf{ what_if_arg: _ })) {
+        if let Some(args) = &delete.args && args_contains_what_if(args) {
             capabilities.insert(Capability::WhatIf);
         }
     }
@@ -831,18 +831,24 @@ fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<Ds
     }
 
     let mut resource = DscResource::new();
+    let mut capabilities: Vec<Capability> = capabilities.into_iter().collect();
+    capabilities.sort();
     resource.type_name = manifest.resource_type.clone();
     resource.kind = kind;
     resource.implemented_as = Some(ImplementedAs::Command);
     resource.deprecation_message = manifest.deprecation_message.clone();
     resource.description = manifest.description.clone();
     resource.version = manifest.version.clone();
-    resource.capabilities = capabilities.into_iter().collect();
+    resource.capabilities = capabilities;
     resource.path = path.to_path_buf();
     resource.directory = path.parent().unwrap().to_path_buf();
     resource.manifest = Some(manifest.clone());
 
     Ok(resource)
+}
+
+fn args_contains_what_if(args: &[SetDeleteArgKind]) -> bool {
+    args.iter().any(|arg| matches!(arg, SetDeleteArgKind::WhatIf{ what_if_arg: _ }))
 }
 
 fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<DscExtension, DscError> {
