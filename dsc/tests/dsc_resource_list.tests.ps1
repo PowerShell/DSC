@@ -161,4 +161,17 @@ Describe 'Tests for listing resources' {
             $env:DSC_RESOURCE_PATH = $oldPath
         }
     }
+
+    It 'What-if capability is added for resources supporting it' {
+        $out = dsc resource list 'Test/*' | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.Count | Should -BeGreaterThan 0
+        foreach ($resource in $out) {
+            if ($resource.type -like 'Test/WhatIf*') {
+                $resource.capabilities | Should -Contain 'whatIf'
+            } else {
+                $resource.capabilities | Should -Not -Contain 'whatIf'
+            }
+        }
+    }
 }
