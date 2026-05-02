@@ -153,6 +153,7 @@ unsafe fn read_service_state(
         logon_account,
         error_control,
         dependencies,
+        metadata: None,
     })
 }
 
@@ -603,7 +604,7 @@ fn is_builtin_service_account(account: &str) -> bool {
     )
 }
 
-pub fn set_service(input: &WindowsService) -> Result<WindowsService, ServiceError> {
+pub fn set_service(input: &WindowsService, what_if: bool) -> Result<WindowsService, ServiceError> {
     let name = input.name.as_deref()
         .ok_or_else(|| t!("set.nameRequired").to_string())?;
 
@@ -611,6 +612,10 @@ pub fn set_service(input: &WindowsService) -> Result<WindowsService, ServiceErro
         return Err(ServiceError::from(
             t!("set.unsupportedLogonAccount", account = account).to_string(),
         ));
+    }
+
+    if what_if {
+        return what_if_set(input, name);
     }
 
     unsafe {
@@ -954,4 +959,172 @@ fn matches_filter(service: &WindowsService, filter: &WindowsService) -> bool {
     }
 
     true
+}
+
+/// Compute the projected state of a service after applying `input`, without
+/// making any changes. Populates `_metadata.whatIf` with one entry per change
+/// that would be applied. If the service does not exist, returns the desired
+/// state with a single `whatIf` entry describing the failure to open it.
+fn what_if_set(input: &WindowsService, name: &str) -> Result<WindowsService, ServiceError> {
+    let current = match get_service(input) {
+        Ok(svc) => svc,
+        Err(e) => {
+            // Surface the error via metadata so what-if never errors out.
+            return Ok(WindowsService {
+                name: Some(name.to_string()),
+                exist: Some(false),
+                metadata: Some(Metadata {
+                    what_if: Some(vec![e.to_string()]),
+                }),
+                ..Default::default()
+            });
+        }
+    };
+
+    let mut messages: Vec<String> = Vec::new();
+    let exists = current.exist.unwrap_or(true);
+
+    if !exists {
+        messages.push(
+            t!("set.whatIfServiceNotFound", name = name).to_string(),
+        );
+        return Ok(WindowsService {
+            name: Some(name.to_string()),
+            display_name: input.display_name.clone(),
+            description: input.description.clone(),
+            status: input.status.clone(),
+            start_type: input.start_type.clone(),
+            executable_path: input.executable_path.clone(),
+            logon_account: input.logon_account.clone(),
+            error_control: input.error_control.clone(),
+            dependencies: input.dependencies.clone(),
+            exist: Some(false),
+            metadata: Some(Metadata { what_if: Some(messages) }),
+        });
+    }
+
+    // Compare each desired field to the current state and emit messages only
+    // when the value would actually change.
+    if let Some(ref desired) = input.display_name
+        && current.display_name.as_deref() != Some(desired.as_str()) {
+        messages.push(t!("set.whatIfChangeDisplayName",
+            current = current.display_name.clone().unwrap_or_default(),
+            desired = desired
+        ).to_string());
+    }
+    if let Some(ref desired) = input.description
+        && current.description.as_deref() != Some(desired.as_str()) {
+        messages.push(t!("set.whatIfChangeDescription",
+            current = current.description.clone().unwrap_or_default(),
+            desired = desired
+        ).to_string());
+    }
+    if let Some(ref desired) = input.start_type
+        && current.start_type.as_ref() != Some(desired) {
+        messages.push(t!("set.whatIfChangeStartType",
+            current = current.start_type.as_ref().map_or_else(String::new, ToString::to_string),
+            desired = desired.to_string()
+        ).to_string());
+    }
+    if let Some(ref desired) = input.executable_path
+        && current.executable_path.as_deref() != Some(desired.as_str()) {
+        messages.push(t!("set.whatIfChangeExecutablePath",
+            current = current.executable_path.clone().unwrap_or_default(),
+            desired = desired
+        ).to_string());
+    }
+    if let Some(ref desired) = input.logon_account
+        && current.logon_account.as_deref().is_none_or(|c| !c.eq_ignore_ascii_case(desired)) {
+        messages.push(t!("set.whatIfChangeLogonAccount",
+            current = current.logon_account.clone().unwrap_or_default(),
+            desired = desired
+        ).to_string());
+    }
+    if let Some(ref desired) = input.error_control
+        && current.error_control.as_ref() != Some(desired) {
+        messages.push(t!("set.whatIfChangeErrorControl",
+            current = current.error_control.as_ref().map_or_else(String::new, ToString::to_string),
+            desired = desired.to_string()
+        ).to_string());
+    }
+    if let Some(ref desired) = input.dependencies
+        && current.dependencies.as_deref() != Some(desired.as_slice()) {
+        messages.push(t!("set.whatIfChangeDependencies",
+            desired = desired.join(", ")
+        ).to_string());
+    }
+    if let Some(ref desired) = input.status
+        && current.status.as_ref() != Some(desired) {
+        messages.push(t!("set.whatIfChangeStatus",
+            current = current.status.as_ref().map_or_else(String::new, ToString::to_string),
+            desired = desired.to_string()
+        ).to_string());
+    }
+
+    // Project the desired state — fields explicitly provided in input override
+    // the corresponding values from the current state.
+    let projected = WindowsService {
+        name: Some(name.to_string()),
+        display_name: input.display_name.clone().or(current.display_name),
+        description: input.description.clone().or(current.description),
+        exist: Some(true),
+        status: input.status.clone().or(current.status),
+        start_type: input.start_type.clone().or(current.start_type),
+        executable_path: input.executable_path.clone().or(current.executable_path),
+        logon_account: input.logon_account.clone().or(current.logon_account),
+        error_control: input.error_control.clone().or(current.error_control),
+        dependencies: input.dependencies.clone().or(current.dependencies),
+        metadata: if messages.is_empty() {
+            None
+        } else {
+            Some(Metadata { what_if: Some(messages) })
+        },
+    };
+
+    Ok(projected)
+}
+
+/// Project the state for a service deletion without making any changes.
+pub fn what_if_delete_service(input: &WindowsService) -> Result<WindowsService, ServiceError> {
+    let name = input.name.as_deref()
+        .ok_or_else(|| t!("set.nameRequired").to_string())?;
+
+    unsafe {
+        let scm = OpenSCManagerW(None, None, SC_MANAGER_CONNECT)
+            .map_err(|e| t!("set.openScmFailed", error = e.to_string()).to_string())?;
+        let scm = ScHandle(scm);
+
+        let name_wide = to_wide(name);
+        let service_handle = match OpenServiceW(
+            scm.0,
+            PCWSTR(name_wide.as_ptr()),
+            SERVICE_QUERY_CONFIG | SERVICE_QUERY_STATUS,
+        ) {
+            Ok(h) => ScHandle(h),
+            Err(e) if e.code() == ERROR_SERVICE_DOES_NOT_EXIST.to_hresult() => {
+                return Ok(WindowsService {
+                    name: Some(name.to_string()),
+                    exist: Some(false),
+                    metadata: Some(Metadata {
+                        what_if: Some(vec![
+                            t!("set.whatIfServiceNotFound", name = name).to_string(),
+                        ]),
+                    }),
+                    ..Default::default()
+                });
+            }
+            Err(e) => {
+                return Err(t!("set.openServiceFailed", error = e.to_string()).to_string().into());
+            }
+        };
+
+        let mut current = read_service_state(service_handle.0, name)?;
+        current.exist = Some(false);
+        current.metadata = Some(Metadata {
+            what_if: Some(vec![
+                t!("set.whatIfDeleteService", name = name).to_string(),
+            ]),
+        });
+        Ok(current)
+    }
 }
