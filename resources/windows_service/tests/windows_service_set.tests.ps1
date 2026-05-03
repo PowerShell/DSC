@@ -268,4 +268,65 @@ Describe 'Windows Service set tests' -Skip:(!$IsWindows) {
             $result._exist | Should -BeTrue
         }
     }
+
+    Context 'What-if set' -Skip:(!$isAdmin) {
+        It 'Projects a startType change without modifying the service' {
+            $before = Get-ServiceState -Name $testServiceName
+            $desiredStartType = if ($before.startType -eq 'Disabled') { 'Manual' } else { 'Disabled' }
+            $json = @{ name = $testServiceName; startType = $desiredStartType } | ConvertTo-Json -Compress
+
+            $out = $json | dsc resource set --what-if -r $resourceType -f - 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
+            $result = $out | ConvertFrom-Json
+            $after = $result.afterState
+
+            $after.name | Should -BeExactly $testServiceName
+            $after.startType | Should -BeExactly $desiredStartType
+            $after._exist | Should -BeTrue
+            $after._metadata.whatIf | Should -Not -BeNullOrEmpty
+            $after._metadata.whatIf | Should -Contain "Would change startType from '$($before.startType)' to '$desiredStartType'"
+
+            $current = Get-ServiceState -Name $testServiceName
+            $current.startType | Should -BeExactly $before.startType
+        }
+
+        It 'Projects a displayName change without modifying the service' {
+            $before = Get-ServiceState -Name $testServiceName
+            $desiredDisplayName = "$($before.displayName) (whatif)"
+            $json = @{ name = $testServiceName; displayName = $desiredDisplayName } | ConvertTo-Json -Compress
+
+            $out = $json | dsc resource set --what-if -r $resourceType -f - 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
+            $result = $out | ConvertFrom-Json
+            $after = $result.afterState
+
+            $after.name | Should -BeExactly $testServiceName
+            $after.displayName | Should -BeExactly $desiredDisplayName
+            $after._exist | Should -BeTrue
+            $after._metadata.whatIf | Should -Not -BeNullOrEmpty
+            $after._metadata.whatIf | Should -Contain "Would change displayName from '$($before.displayName)' to '$desiredDisplayName'"
+
+            $current = Get-ServiceState -Name $testServiceName
+            $current.displayName | Should -BeExactly $before.displayName
+        }
+
+        It 'Projects deletion when _exist is false without modifying the service' {
+            $before = Get-ServiceState -Name $testServiceName
+            $json = @{ name = $testServiceName; _exist = $false } | ConvertTo-Json -Compress
+
+            $out = $json | dsc resource set --what-if -r $resourceType -f - 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
+            $result = $out | ConvertFrom-Json
+            $after = $result.afterState
+
+            $after.name | Should -BeExactly $testServiceName
+            $after._exist | Should -BeFalse
+            $after._metadata.whatIf | Should -Not -BeNullOrEmpty
+            $after._metadata.whatIf | Should -Contain "Would delete service '$testServiceName'"
+
+            $current = Get-ServiceState -Name $testServiceName
+            $current._exist | Should -BeTrue
+            $current.startType | Should -BeExactly $before.startType
+        }
+    }
 }

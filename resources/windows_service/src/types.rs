@@ -87,6 +87,20 @@ pub struct WindowsService {
     /// A list of service names that this service depends on.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dependencies: Option<Vec<String>>,
+
+    /// Metadata returned by what-if operations describing the changes that
+    /// would be applied if the operation ran for real.
+    #[serde(rename = "_metadata", skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<Metadata>,
+}
+
+/// Metadata returned by what-if operations.
+#[derive(Debug, Default, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct Metadata {
+    /// Human-readable descriptions of the changes that would be applied.
+    #[serde(rename = "whatIf", skip_serializing_if = "Option::is_none")]
+    pub what_if: Option<Vec<String>>,
 }
 
 impl WindowsService {
@@ -104,6 +118,7 @@ impl WindowsService {
             logon_account: None,
             error_control: None,
             dependencies: None,
+            metadata: None,
         }
     }
 }
