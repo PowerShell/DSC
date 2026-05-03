@@ -23,11 +23,15 @@
             {
                 "jsonInputArg": "--input",
                 "mandatory": true
+            },
+            {
+                "whatIfArg": "-w"
             }
         ],
         "implementsPretest": false,
         "return": "state",
-        "requireSecurityContext": "elevated"
+        "requireSecurityContext": "elevated",
+        "whatIfReturns": "state"
     },
     "export": {
         "executable": "windows_service",
@@ -107,6 +111,18 @@
                     "description": "A list of service names that this service depends on.",
                     "items": {
                         "type": "string"
+                    }
+                },
+                "_metadata": {
+                    "type": "object",
+                    "title": "Metadata",
+                    "description": "Metadata returned by what-if operations describing the changes that would be applied.",
+                    "readOnly": true,
+                    "properties": {
+                        "whatIf": {
+                            "type": "array",
+                            "items": { "type": "string" }
+                        }
                     }
                 }
             },

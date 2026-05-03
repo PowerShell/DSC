@@ -966,7 +966,16 @@ fn matches_filter(service: &WindowsService, filter: &WindowsService) -> bool {
 /// that would be applied. If the service does not exist, returns the desired
 /// state with a single `whatIf` entry describing the failure to open it.
 fn what_if_set(input: &WindowsService, name: &str) -> Result<WindowsService, ServiceError> {
-    let current = match get_service(input) {
+    // Look up the current state using only the service key name. Forwarding
+    // the entire `input` here would cause `get_service` to verify any desired
+    // `displayName` against the live service and surface a `displayNameMismatch`
+    // error — which would defeat what-if for any change that targets the
+    // display name.
+    let lookup = WindowsService {
+        name: Some(name.to_string()),
+        ..Default::default()
+    };
+    let current = match get_service(&lookup) {
         Ok(svc) => svc,
         Err(e) => {
             // Surface the error via metadata so what-if never errors out.
@@ -1107,7 +1116,7 @@ pub fn what_if_delete_service(input: &WindowsService) -> Result<WindowsService, 
                     exist: Some(false),
                     metadata: Some(Metadata {
                         what_if: Some(vec![
-                            t!("set.whatIfServiceNotFound", name = name).to_string(),
+                            t!("set.whatIfDeleteServiceNotFound", name = name).to_string(),
                         ]),
                     }),
                     ..Default::default()
