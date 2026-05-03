@@ -1,0 +1,10 @@
+{
+    "Name": "WindowsSecretStore",
+    "Kind": "Resource",
+    "CopyFiles": {
+        "Windows": [
+            "windows_secretstore.ps1",
+            "windows_secretstore.dsc.resource.json"
+        ]
+    }
+}
