@@ -45,3 +45,4 @@ whatIfChangeErrorControl = "Would change errorControl from '%{current}' to '%{de
 whatIfChangeDependencies = "Would set dependencies to '%{desired}'"
 whatIfChangeStatus = "Would change status from '%{current}' to '%{desired}'"
 whatIfDeleteService = "Would delete service '%{name}'"
+whatIfDeleteServiceNotFound = "Service '%{name}' does not exist; no delete needed"
