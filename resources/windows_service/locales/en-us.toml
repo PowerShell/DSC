@@ -15,7 +15,6 @@ queryConfigFailed = "Failed to query service configuration: %{error}"
 queryStatusFailed = "Failed to query service status: %{error}"
 openServiceFailed = "Failed to open service: %{error}"
 getKeyNameFailed = "Failed to resolve service name from display name: %{error}"
-displayNameMismatch = "Service display name mismatch: expected '%{expected}', got '%{actual}'"
 
 [export]
 enumServicesFailed = "Failed to enumerate services: %{error}"

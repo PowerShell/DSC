@@ -221,18 +221,6 @@ pub fn get_service(input: &WindowsService) -> Result<WindowsService, ServiceErro
 
     let svc = unsafe { read_service_state(service_handle.0, &service_key_name) }?;
 
-    // If both name and display_name were provided, verify they match
-    if input.name.is_some() && let Some(expected_dn) = input.display_name.as_ref() {
-        // let expected_dn = input.display_name.as_ref().unwrap();
-        let actual_dn = svc.display_name.as_deref().unwrap_or("");
-        if !actual_dn.eq_ignore_ascii_case(expected_dn) {
-            return Err(
-                t!("get.displayNameMismatch", expected = expected_dn, actual = actual_dn)
-                    .to_string()
-                    .into(),
-            );
-        }
-    }
 
     Ok(svc)
 }
@@ -966,11 +954,8 @@ fn matches_filter(service: &WindowsService, filter: &WindowsService) -> bool {
 /// that would be applied. If the service does not exist, returns the desired
 /// state with a single `whatIf` entry describing the failure to open it.
 fn what_if_set(input: &WindowsService, name: &str) -> Result<WindowsService, ServiceError> {
-    // Look up the current state using only the service key name. Forwarding
-    // the entire `input` here would cause `get_service` to verify any desired
-    // `displayName` against the live service and surface a `displayNameMismatch`
-    // error — which would defeat what-if for any change that targets the
-    // display name.
+    // Look up the current state using only the service key name; we want the
+    // live values to compare against, not a re-validation of the desired ones.
     let lookup = WindowsService {
         name: Some(name.to_string()),
         ..Default::default()
