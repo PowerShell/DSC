@@ -123,8 +123,16 @@ function Get-CurrentState {
             Unlock-SecretStore -Password $Password -ErrorAction Stop | Out-Null
         }
         catch {
-            Write-DscTrace -Level Error -Message "Failed to unlock SecretStore with the provided password: $_"
-            exit 1
+            # If the store is currently configured for None authentication, unlocking is not required.
+            # This happens when Test/Get is called with a password to verify a desired Password-auth state
+            # but the store hasn't been reconfigured yet (still in None mode).
+            if ($_.ToString() -match 'not configured to use a password') {
+                # No unlock needed; fall through to Get-SecretStoreConfiguration.
+            }
+            else {
+                Write-DscTrace -Level Error -Message "Failed to unlock SecretStore with the provided password: $_"
+                exit 1
+            }
         }
     }
 
@@ -273,8 +281,15 @@ switch ($Operation) {
                     Set-SecretStoreConfiguration @setParams -ErrorAction Stop
                 }
                 catch {
-                    if ($_.ToString() -match 'NonInteractive mode|require interactive input') {
-                        # If SecretStore requires prompts, reset it with the desired settings so DSC can proceed unattended.
+                    # Two known cases where Set-SecretStoreConfiguration cannot proceed and we fall back to Reset-SecretStore:
+                    #   1. The host is non-interactive so the module cannot prompt.
+                    #   2. We are transitioning to Password auth but the store is currently in None auth mode;
+                    #      the module tries to Unlock-SecretStore with the new password before reconfiguring,
+                    #      which fails because the store is not yet in Password mode.
+                    $isNonInteractive = $_.ToString() -match 'NonInteractive mode|require interactive input'
+                    $isAuthMismatch   = $_.ToString() -match 'not configured to use a password'
+
+                    if ($isNonInteractive -or $isAuthMismatch) {
                         $resetParams = @{
                             Force   = $true
                             Confirm = $false
@@ -286,8 +301,13 @@ switch ($Operation) {
                         if ($setParams.ContainsKey('Interaction'))     { $resetParams['Interaction']     = $setParams['Interaction'] }
                         if ($setParams.ContainsKey('Scope'))           { $resetParams['Scope']           = $setParams['Scope'] }
 
+                        $reason = if ($isAuthMismatch) {
+                            'Store is in None-auth mode; transitioning to Password auth requires a full reset.'
+                        } else {
+                            'SecretStore requires interactive input.'
+                        }
                         Write-DscTrace -Level Warn -Message (
-                            'SecretStore requires interactive input; attempting Reset-SecretStore with desired settings to enable unattended DSC execution.'
+                            "$reason Attempting Reset-SecretStore with desired settings to enable unattended DSC execution."
                         )
                         Reset-SecretStore @resetParams -ErrorAction Stop
                     }
@@ -298,7 +318,9 @@ switch ($Operation) {
                 Write-DscTrace -Level Info -Message 'SecretStore configuration updated successfully.'
             }
 
-            # Return the resulting state without surfacing interactive prompts in DSC's noninteractive host.
+            # Return the resulting state. Pass the password so Unlock-SecretStore can open the vault if
+            # the store was just transitioned to Password auth.  Get-CurrentState silently skips the unlock
+            # when the store is still in None-auth mode (see the 'not configured to use a password' guard).
             $suppressNonInteractiveError = Test-IsNonInteractiveSession
             Get-CurrentState -SuppressNonInteractiveError:$suppressNonInteractiveError -Password $password | ConvertTo-Json -Compress
         }

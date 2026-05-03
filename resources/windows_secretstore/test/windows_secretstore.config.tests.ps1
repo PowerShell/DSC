@@ -5,10 +5,6 @@ Describe 'Windows SecretStore config tests' -Skip:(!$IsWindows) {
     BeforeAll {
         Set-StrictMode -Version Latest
 
-        $script:resourceRoot = Split-Path -Parent $PSScriptRoot
-        $script:resourceScript = Join-Path $script:resourceRoot 'windows_secretstore.ps1'
-        $script:configRoot = 'C:\Users\mmach\OneDrive\Skrypty\DSC\3.0\DSC\config'
-
         function Install-TestModule {
             param(
                 [Parameter(Mandatory = $true)]
@@ -28,147 +24,116 @@ Describe 'Windows SecretStore config tests' -Skip:(!$IsWindows) {
 
         foreach ($moduleName in @(
             'Pester',
-            'powershell-yaml',
             'Microsoft.PowerShell.SecretManagement',
             'Microsoft.PowerShell.SecretStore'
         )) {
             Install-TestModule -Name $moduleName
         }
 
-        Import-Module powershell-yaml -Force -ErrorAction Stop
         Import-Module Microsoft.PowerShell.SecretManagement -Force -ErrorAction Stop
         Import-Module Microsoft.PowerShell.SecretStore -Force -ErrorAction Stop
-
-        function Read-ConfigFile {
-            param(
-                [Parameter(Mandatory = $true)]
-                [string]$Path
-            )
-
-            $yaml = ConvertFrom-Yaml -Yaml (Get-Content -Raw $Path -ErrorAction Stop)
-            return $yaml | ConvertTo-Json -Depth 20 | ConvertFrom-Json -AsHashtable
-        }
-
-        $script:configs = @{
-            none = Read-ConfigFile -Path (Join-Path $script:configRoot 'secret_store_none.yaml')
-            secure = Read-ConfigFile -Path (Join-Path $script:configRoot 'secret_store_secure.yaml')
-        }
-
-        function Convert-ConfigToDesiredState {
-            param(
-                [Parameter(Mandatory = $true)]
-                [object]$Config
-            )
-
-            $properties = [ordered]@{}
-            $resourceProperties = $Config['resources'][0]['properties']
-
-            foreach ($propertyName in $resourceProperties.Keys) {
-                $properties[$propertyName] = $resourceProperties[$propertyName]
-            }
-
-            $parameters = $Config['parameters']
-            if ($null -eq $parameters) {
-                return $properties
-            }
-
-            foreach ($parameterName in $parameters.Keys) {
-                $parameter = $parameters[$parameterName]
-                $parameterType = $parameter['type']
-                $defaultValue = $parameter['defaultValue']
-
-                if ($parameterType -eq 'secureString' -and $properties['password'] -eq "[parameters('$parameterName')]") {
-                    $properties['password'] = @{ secureString = [string]$defaultValue }
-                }
-            }
-
-            return $properties
-        }
-
-        function Invoke-SecretStoreOperation {
-            param(
-                [Parameter(Mandatory = $true)]
-                [ValidateSet('Get', 'Set', 'Test')]
-                [string]$Operation,
-
-                [Parameter(Mandatory = $true)]
-                [hashtable]$DesiredState
-            )
-
-            $jsonInput = $DesiredState | ConvertTo-Json -Depth 10 -Compress
-            Remove-Variable -Name LASTEXITCODE -Scope Global -ErrorAction SilentlyContinue
-            $output = & $script:resourceScript $Operation $jsonInput 2>$testdrive/windows_secretstore.stderr
-            $lastExitCode = Get-Variable -Name LASTEXITCODE -Scope Global -ErrorAction SilentlyContinue
-            $exitCode = if ($null -ne $lastExitCode) { [int]$lastExitCode.Value } else { 0 }
-            $errorText = if (Test-Path $testdrive/windows_secretstore.stderr) {
-                Get-Content -Raw $testdrive/windows_secretstore.stderr
-            }
-            else {
-                ''
-            }
-
-            [pscustomobject]@{
-                ExitCode = $exitCode
-                StdOut = $output
-                StdErr = $errorText
-                State = if ($output) { $output | ConvertFrom-Json -Depth 10 } else { $null }
-            }
-        }
 
         function Reset-SecretStoreForTest {
             Reset-SecretStore -Authentication None -Interaction None -PasswordTimeout -1 -Force -Confirm:$false -ErrorAction Stop | Out-Null
         }
+
+        # Inline DSC config: none-auth (unattended automation)
+        $script:configNone = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+  - name: Configure SecretStore for unattended automation
+    type: Microsoft.PowerShell/WindowsSecretStore
+    properties:
+      authentication: None
+      passwordTimeout: -1
+      interaction: None
+      scope: CurrentUser
+'@
+
+        # Inline DSC config: password-auth with secureString parameter
+        $script:configPassword = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+parameters:
+  SecretPassword:
+    type: secureString
+    defaultValue: TestSecretValue
+resources:
+  - name: Configure SecretStore for unattended automation
+    type: Microsoft.PowerShell/WindowsSecretStore
+    properties:
+      authentication: Password
+      passwordTimeout: -1
+      interaction: None
+      scope: CurrentUser
+      password: "[parameters('SecretPassword')]"
+'@
     }
 
     BeforeEach {
         Reset-SecretStoreForTest
     }
 
-    Context 'secret_store_none.yaml' {
-        It 'applies the none-auth configuration and reports desired state' {
-            $desiredState = Convert-ConfigToDesiredState -Config $script:configs.none
+    Context 'dsc config set then test (none-auth)' {
+        It 'applies the none-auth configuration via dsc config set' {
+            $null = dsc config set -i $script:configNone 2>"$TestDrive/set.stderr"
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw "$TestDrive/set.stderr")
+        }
 
-            $setResult = Invoke-SecretStoreOperation -Operation Set -DesiredState $desiredState
-            $setResult.ExitCode | Should -Be 0 -Because $setResult.StdErr
+        It 'reports desired state via dsc config test' {
+            $null = dsc config set -i $script:configNone 2>"$TestDrive/set.stderr"
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw "$TestDrive/set.stderr")
 
-            $testResult = Invoke-SecretStoreOperation -Operation Test -DesiredState $desiredState
-            $testResult.ExitCode | Should -Be 0 -Because $testResult.StdErr
-            $testResult.State.authentication | Should -BeExactly 'None'
-            $testResult.State.interaction | Should -BeExactly 'None'
-            $testResult.State.passwordTimeout | Should -Be -1
-            $testResult.State.scope | Should -BeExactly 'CurrentUser'
-            $testResult.State._inDesiredState | Should -BeTrue
+            $out = dsc config test -i $script:configNone 2>"$TestDrive/test.stderr" | ConvertFrom-Json -Depth 10
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw "$TestDrive/test.stderr")
+
+            $result = $out.results[0].result
+            $result.inDesiredState | Should -BeTrue
+        }
+
+        It 'returns current state via dsc config get' {
+            $null = dsc config set -i $script:configNone 2>"$TestDrive/set.stderr"
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw "$TestDrive/set.stderr")
+
+            $out = dsc config get -i $script:configNone 2>"$TestDrive/get.stderr" | ConvertFrom-Json -Depth 10
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw "$TestDrive/get.stderr")
+
+            $actualState = $out.results[0].result.actualState
+            $actualState.authentication | Should -BeExactly 'None'
+            $actualState.interaction   | Should -BeExactly 'None'
+            $actualState.passwordTimeout | Should -Be -1
+            $actualState.scope         | Should -BeExactly 'CurrentUser'
         }
     }
 
-    Context 'secret_store_secure.yaml' {
-        It 'accepts the secureString parameter shape and reports desired state' {
-            $desiredState = Convert-ConfigToDesiredState -Config $script:configs.secure
-
-            $setResult = Invoke-SecretStoreOperation -Operation Set -DesiredState $desiredState
-            $setResult.ExitCode | Should -Be 0 -Because $setResult.StdErr
-
-            $testResult = Invoke-SecretStoreOperation -Operation Test -DesiredState $desiredState
-            $testResult.ExitCode | Should -Be 0 -Because $testResult.StdErr
-            $testResult.State.authentication | Should -BeExactly 'Password'
-            $testResult.State.interaction | Should -BeExactly 'None'
-            $testResult.State.passwordTimeout | Should -Be -1
-            $testResult.State.scope | Should -BeExactly 'CurrentUser'
-            $testResult.State._inDesiredState | Should -BeTrue
+    Context 'dsc config set then test (password-auth)' {
+        It 'applies the password-auth configuration via dsc config set' {
+            $null = dsc config set -i $script:configPassword 2>"$TestDrive/set.stderr"
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw "$TestDrive/set.stderr")
         }
 
-        It 'returns the configured state when Get is called with the secureString password shape' {
-            $desiredState = Convert-ConfigToDesiredState -Config $script:configs.secure
+        It 'reports desired state via dsc config test' {
+            $null = dsc config set -i $script:configPassword 2>"$TestDrive/set.stderr"
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw "$TestDrive/set.stderr")
 
-            $setResult = Invoke-SecretStoreOperation -Operation Set -DesiredState $desiredState
-            $setResult.ExitCode | Should -Be 0 -Because $setResult.StdErr
+            $out = dsc config test -i $script:configPassword 2>"$TestDrive/test.stderr" | ConvertFrom-Json -Depth 10
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw "$TestDrive/test.stderr")
 
-            $getResult = Invoke-SecretStoreOperation -Operation Get -DesiredState $desiredState
-            $getResult.ExitCode | Should -Be 0 -Because $getResult.StdErr
-            $getResult.State.authentication | Should -BeExactly 'Password'
-            $getResult.State.interaction | Should -BeExactly 'None'
-            $getResult.State.passwordTimeout | Should -Be -1
-            $getResult.State.scope | Should -BeExactly 'CurrentUser'
+            $result = $out.results[0].result
+            $result.inDesiredState | Should -BeTrue
+        }
+
+        It 'returns current state via dsc config get' {
+            $null = dsc config set -i $script:configPassword 2>"$TestDrive/set.stderr"
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw "$TestDrive/set.stderr")
+
+            $out = dsc config get -i $script:configPassword 2>"$TestDrive/get.stderr" | ConvertFrom-Json -Depth 10
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw "$TestDrive/get.stderr")
+
+            $actualState = $out.results[0].result.actualState
+            $actualState.authentication  | Should -BeExactly 'Password'
+            $actualState.interaction     | Should -BeExactly 'None'
+            $actualState.passwordTimeout | Should -Be -1
+            $actualState.scope           | Should -BeExactly 'CurrentUser'
         }
     }
 }
