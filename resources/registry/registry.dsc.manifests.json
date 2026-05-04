@@ -117,6 +117,45 @@
                     ]
                 }
             }
+        },
+        {
+            "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+            "type": "Microsoft.Windows.Adapter/Registry",
+            "kind": "adapter",
+            "description": "Adapter for registry based resources",
+            "tags": [
+                "Windows"
+            ],
+            "version": "0.1.0",
+            "get": {
+                "executable": "registry",
+                "args": [
+                    "adapter",
+                    "get",
+                    {
+                        "jsonInputArg": "--input",
+                        "mandatory": true
+                    }
+                ]
+            },
+            "set": {
+                "executable": "registry",
+                "args": [
+                    "adapter",
+                    "set",
+                    {
+                        "jsonInputArg": "--input",
+                        "mandatory": true
+                    }
+                ]
+            },
+            "exitCodes": {
+                "0": "Success",
+                "1": "Invalid parameter",
+                "2": "Invalid input",
+                "3": "Registry error",
+                "4": "JSON serialization failed"
+            }
         }
     ]
 }

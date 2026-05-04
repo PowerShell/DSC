@@ -104,7 +104,11 @@ pub struct ResourceManifest {
 pub enum GetArgKind {
     /// The argument is a string.
     String(String),
-    /// The argument accepts the JSON input object.
+    AdaptedContent {
+        /// The argument that accepts the JSON content from the manifest.
+        #[serde(rename = "adaptedContentArg")]
+        adapted_content_arg: String,
+    },
     Json {
         /// The argument that accepts the JSON input object.
         #[serde(rename = "jsonInputArg")]
@@ -133,7 +137,11 @@ pub enum GetArgKind {
 pub enum SetDeleteArgKind {
     /// The argument is a string.
     String(String),
-    /// The argument accepts the JSON input object.
+    AdaptedContent {
+        /// The argument that accepts the JSON content from the manifest.
+        #[serde(rename = "adaptedContentArg")]
+        adapted_content_arg: String,
+    },
     Json {
         /// The argument that accepts the JSON input object.
         #[serde(rename = "jsonInputArg")]

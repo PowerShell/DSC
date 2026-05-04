@@ -5,11 +5,29 @@ use clap::{Parser, Subcommand};
 use rust_i18n::t;
 
 #[derive(Parser)]
-#[clap(name = "registry", version = "0.0.1", about = t!("args.about").to_string(), long_about = None)]
+#[clap(name = "registry", version = env!("CARGO_PKG_VERSION"), about = t!("args.about").to_string(), long_about = None)]
 pub struct Arguments {
 
     #[clap(subcommand)]
     pub subcommand: SubCommand,
+}
+
+#[derive(Debug, PartialEq, Eq, Subcommand)]
+pub enum AdapterSubCommand {
+    #[clap(name = "get", about = t!("args.adapterGetAbout").to_string())]
+    Get {
+        #[clap(short, long, required = true, help = t!("args.adapterArgsInputHelp").to_string())]
+        input: String,
+        #[clap(short, long, required = true, help = t!("args.adapterArgsAdaptedResourceHelp").to_string())]
+        adapted_resource: String,
+    },
+    #[clap(name = "set", about = t!("args.adapterSetAbout").to_string())]
+    Set {
+        #[clap(short, long, required = true, help = t!("args.adapterArgsInputHelp").to_string())]
+        input: String,
+        #[clap(short, long, required = true, help = t!("args.adapterArgsAdaptedResourceHelp").to_string())]
+        adapted_resource: String,
+    },
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
@@ -78,6 +96,11 @@ pub enum SubCommand {
         keys_only: bool,
         #[clap(long, help = t!("args.findArgsValuesOnlyHelp").to_string())]
         values_only: bool,
+    },
+    #[clap(name = "adapter", about = t!("args.adapterAbout").to_string(), arg_required_else_help = true)]
+    Adapter {
+        #[clap(subcommand)]
+        subcommand: AdapterSubCommand,
     },
     #[clap(name = "config", about = t!("args.configAbout").to_string(), arg_required_else_help = true)]
     Config {

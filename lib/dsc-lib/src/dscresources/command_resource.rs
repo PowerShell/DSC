@@ -7,8 +7,8 @@ use jsonschema::Validator;
 use rust_i18n::t;
 use serde::Deserialize;
 use serde_json::{Map, Value};
-use std::{collections::HashMap, env, path::{Path, PathBuf}, process::Stdio};
-use crate::{configure::{config_doc::{ExecutionKind, SecurityContextKind}, config_result::{ResourceGetResult, ResourceTestResult}}, dscresources::resource_manifest::SchemaArgKind, types::{ExitCodesMap, FullyQualifiedTypeName}, util::canonicalize_which};
+use std::{collections::HashMap, env, path::Path, process::Stdio};
+use crate::{configure::{config_doc::{ExecutionKind, SecurityContextKind}, config_result::{ResourceGetResult, ResourceTestResult}}, dscresources::{command_resource, resource_manifest::SchemaArgKind}, types::{ExitCodesMap, FullyQualifiedTypeName}, util::canonicalize_which};
 use crate::dscerror::DscError;
 use super::{
     dscresource::{get_diff, redact, DscResource},
@@ -25,11 +25,6 @@ use tracing::{error, warn, info, debug, trace};
 use tokio::{io::{AsyncBufReadExt, AsyncWriteExt, BufReader}, process::Command};
 
 pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
-
-pub struct CommandResourceInfo {
-    pub type_name: FullyQualifiedTypeName,
-    pub path: Option<PathBuf>,
-}
 
 /// Invoke the get operation on a resource
 ///
@@ -50,17 +45,12 @@ pub fn invoke_get(resource: &DscResource, filter: &str, target_resource: Option<
     let Some(get) = &manifest.get else {
         return Err(DscError::NotImplemented("get".to_string()));
     };
-    let resource_type = match target_resource {
-        Some(r) => r.type_name.clone(),
-        None => resource.type_name.clone(),
+    let command_resource = match target_resource {
+        Some(target) => target,
+        None => resource
     };
-    validate_security_context(&get.require_security_context, &resource_type, "get")?;
-    let path = target_resource.map(|target_resource| target_resource.path.clone());
-    let command_resource_info = CommandResourceInfo {
-        type_name: resource_type.clone(),
-        path,
-    };
-    let args = process_get_args(get.args.as_ref(), filter, &command_resource_info);
+    validate_security_context(&get.require_security_context, &command_resource.type_name, "get")?;
+    let args = process_get_args(get.args.as_ref(), filter, &command_resource);
     if !filter.is_empty() {
         verify_json_from_manifest(resource, filter, target_resource)?;
         command_input = get_command_input(get.input.as_ref(), filter)?;
@@ -110,16 +100,10 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, execut
     };
     let operation_type: String;
     let mut is_synthetic_what_if = false;
-    let resource_type = match target_resource {
-        Some(r) => r.type_name.clone(),
-        None => resource.type_name.clone(),
+    let command_resource = match target_resource {
+        Some(target) => target,
+        None => resource
     };
-    let path = target_resource.map(|target_resource| target_resource.path.clone());
-    let command_resource_info = CommandResourceInfo {
-        type_name: resource_type.clone(),
-        path,
-    };
-
     let set_method = match execution_type {
         ExecutionKind::Actual => {
             operation_type = "set".to_string();
@@ -132,7 +116,7 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, execut
                 let (_, supports_whatif) = process_set_delete_args(
                     set.args.as_ref(),
                     "",
-                    &command_resource_info,
+                    &command_resource,
                     execution_type
                 );
                 supports_whatif
@@ -564,20 +548,15 @@ pub fn invoke_validate(resource: &DscResource, config: &str, target_resource: Op
         return Err(DscError::NotImplemented("validate".to_string()));
     };
 
-    let resource_type = match target_resource {
-        Some(r) => r.type_name.clone(),
-        None => resource.type_name.clone(),
+    let command_resource = match target_resource {
+        Some(target) => target,
+        None => resource
     };
-    let path = target_resource.map(|target_resource| target_resource.path.clone());
-    let command_resource_info = CommandResourceInfo {
-        type_name: resource_type.clone(),
-        path,
-    };
-    let args = process_get_args(validate.args.as_ref(), config, &command_resource_info);
+    let args = process_get_args(validate.args.as_ref(), config, &command_resource);
     let command_input = get_command_input(validate.input.as_ref(), config)?;
 
-    info!("{}", t!("dscresources.commandResource.invokeValidateUsing", resource = resource_type, executable = &validate.executable));
-    let (_exit_code, stdout, _stderr) = invoke_command(&validate.executable, args, command_input.stdin.as_deref(), Some(&resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
+    info!("{}", t!("dscresources.commandResource.invokeValidateUsing", resource = &command_resource.type_name, executable = &validate.executable));
+    let (_exit_code, stdout, _stderr) = invoke_command(&validate.executable, args, command_input.stdin.as_deref(), Some(&command_resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
     let result: ValidateResult = serde_json::from_str(&stdout)?;
     Ok(result)
 }
@@ -939,7 +918,7 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
 /// # Returns
 ///
 /// A vector of strings representing the processed arguments
-pub fn process_get_args(args: Option<&Vec<GetArgKind>>, input: &str, command_resource_info: &CommandResourceInfo) -> Option<Vec<String>> {
+pub fn process_get_args(args: Option<&Vec<GetArgKind>>, input: &str, resource: &DscResource) -> Option<Vec<String>> {
     let Some(arg_values) = args else {
         debug!("{}", t!("dscresources.commandResource.noArgs"));
         return None;
@@ -951,6 +930,15 @@ pub fn process_get_args(args: Option<&Vec<GetArgKind>>, input: &str, command_res
             GetArgKind::String(s) => {
                 processed_args.push(s.clone());
             },
+            GetArgKind::AdaptedContent { adapted_content_arg } => {
+                // adapted content is the JSON content with secrets redacted and additional properties added by the adapter; it is only used for get operations and is meant to be used when the command needs to call other commands as part of its execution and wants to pass along the adapted content to avoid multiple rounds of redaction
+                processed_args.push(adapted_content_arg.clone());
+                if let Some(adapted_content) = &resource.adapted_content {
+                    processed_args.push(serde_json::to_string(&adapted_content).unwrap());
+                } else {
+                    debug!("{}", t!("dscresources.commandResource.noAdaptedContent", resource = &resource.type_name));
+                }
+            },
             GetArgKind::Json { json_input_arg, mandatory } => {
                 if input.is_empty() && *mandatory != Some(true) {
                     continue;
@@ -961,7 +949,7 @@ pub fn process_get_args(args: Option<&Vec<GetArgKind>>, input: &str, command_res
             },
             GetArgKind::ResourceType { resource_type_arg } => {
                 processed_args.push(resource_type_arg.clone());
-                processed_args.push(command_resource_info.type_name.to_string());
+                processed_args.push(resource.type_name.to_string());
             },
             GetArgKind::ResourcePath { resource_path_arg, include_quotes} => {
                 if let Some(path) = &command_resource_info.path {
@@ -1011,7 +999,7 @@ fn process_schema_args(args: Option<&Vec<SchemaArgKind>>, command_resource_info:
 /// # Returns
 ///
 /// A vector of strings representing the processed arguments
-fn process_set_delete_args(args: Option<&Vec<SetDeleteArgKind>>, input: &str, command_resource_info: &CommandResourceInfo, execution_type: &ExecutionKind) -> (Option<Vec<String>>, bool) {
+fn process_set_delete_args(args: Option<&Vec<SetDeleteArgKind>>, input: &str, resource: &DscResource, execution_type: &ExecutionKind) -> (Option<Vec<String>>, bool) {
     let Some(arg_values) = args else {
         debug!("{}", t!("dscresources.commandResource.noArgs"));
         return (None, false);
@@ -1023,6 +1011,15 @@ fn process_set_delete_args(args: Option<&Vec<SetDeleteArgKind>>, input: &str, co
         match arg {
             SetDeleteArgKind::String(s) => {
                 processed_args.push(s.clone());
+            },
+            SetDeleteArgKind::AdaptedContent { adapted_content_arg } => {
+                // adapted content is the JSON content with secrets redacted and additional properties added by the adapter; it is only used for get operations and is meant to be used when the command needs to call other commands as part of its execution and wants to pass along the adapted content to avoid multiple rounds of redaction
+                processed_args.push(adapted_content_arg.clone());
+                if let Some(adapted_content) = &resource.adapted_content {
+                    processed_args.push(serde_json::to_string(&adapted_content).unwrap());
+                } else {
+                    debug!("{}", t!("dscresources.commandResource.noAdaptedContent", resource = &resource.type_name));
+                }
             },
             SetDeleteArgKind::Json { json_input_arg, mandatory } => {
                 if input.is_empty() && *mandatory != Some(true) {
@@ -1042,16 +1039,6 @@ fn process_set_delete_args(args: Option<&Vec<SetDeleteArgKind>>, input: &str, co
                     }
                 }
             },
-            SetDeleteArgKind::ResourceType { resource_type_arg } => {
-                processed_args.push(resource_type_arg.clone());
-                processed_args.push(command_resource_info.type_name.to_string());
-            },
-            SetDeleteArgKind::WhatIf { what_if_arg } => {
-                supports_whatif = true;
-                if execution_type == &ExecutionKind::WhatIf {
-                    processed_args.push(what_if_arg.clone());
-                }
-            }
         }
     }
 

@@ -4,6 +4,7 @@
 use crate::{discovery::{DiscoveryExtensionCache, DiscoveryManifestCache, DiscoveryResourceCache, discovery_trait::{DiscoveryFilter, DiscoveryKind, ResourceDiscovery}, matches_adapter_requirement}, dscresources::{adapted_resource_manifest::AdaptedDscResourceManifest, resource_manifest::SetDeleteArgKind}, parser::Statement, types::{FullyQualifiedTypeName, TypeNameFilter}};
 use crate::{locked_clear, locked_is_empty, locked_extend, locked_clone, locked_get};
 use crate::configure::{config_doc::ResourceDiscoveryMode, context::Context};
+use crate::dscresources::adapted_resource_manifest::AdaptedPathOrContent;
 use crate::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
 use crate::dscresources::resource_manifest::{Kind, ResourceManifest, SchemaKind};
 use crate::dscresources::command_resource::invoke_command;
@@ -31,7 +32,6 @@ const DSC_EXTENSION_EXTENSIONS: [&str; 3] = [".dsc.extension.json", ".dsc.extens
 const DSC_MANIFEST_LIST_EXTENSIONS: [&str; 3] = [".dsc.manifests.json", ".dsc.manifests.yaml", ".dsc.manifests.yml"];
 const DSC_RESOURCE_EXTENSIONS: [&str; 3] = [".dsc.resource.json", ".dsc.resource.yaml", ".dsc.resource.yml"];
 
-// use BTreeMap so that the results are sorted by the typename, the Vec is sorted by version
 static ADAPTERS: LazyLock<RwLock<DiscoveryResourceCache>> = LazyLock::new(|| RwLock::new(DiscoveryResourceCache::new()));
 static RESOURCES: LazyLock<RwLock<DiscoveryResourceCache>> = LazyLock::new(|| RwLock::new(DiscoveryResourceCache::new()));
 static EXTENSIONS: LazyLock<RwLock<DiscoveryExtensionCache>> = LazyLock::new(|| RwLock::new(DiscoveryExtensionCache::new()));
@@ -748,13 +748,22 @@ fn load_adapted_resource_manifest(path: &Path, manifest: &AdaptedDscResourceMani
         ));
     }
 
+    let mut resource = DscResource::new();
     let directory = path.parent().unwrap();
-    let resource_path = directory.join(&manifest.path);
-    if !resource_path.exists() {
-        return Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.adaptedResourcePathNotFound", path = resource_path.to_string_lossy(), resource = manifest.type_name).to_string()));
+    match &manifest.path_or_content {
+        AdaptedPathOrContent::Path(resource_path) => {
+            let resource_path = directory.join(resource_path);
+            if !resource_path.exists() {
+                return Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.adaptedResourcePathNotFound", path = resource_path.to_string_lossy(), resource = manifest.type_name).to_string()));
+            }
+            resource.path = resource_path;
+        },
+        AdaptedPathOrContent::Content(content) => {
+            resource.path = path.to_path_buf();
+            resource.adapted_content = Some(content.clone());
+        }
     }
 
-    let mut resource = DscResource::new();
     resource.type_name = manifest.type_name.clone();
     resource.kind = Kind::Resource;
     resource.implemented_as = None;
@@ -763,7 +772,6 @@ fn load_adapted_resource_manifest(path: &Path, manifest: &AdaptedDscResourceMani
     resource.version = manifest.version.clone();
     resource.capabilities = manifest.capabilities.clone();
     resource.require_adapter = Some(manifest.require_adapter.clone());
-    resource.path = resource_path;
     resource.directory = directory.to_path_buf();
     resource.manifest = None;
     resource.schema = Some(manifest.schema.clone());

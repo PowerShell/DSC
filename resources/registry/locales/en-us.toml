@@ -2,6 +2,10 @@ _version = 1
 
 [args]
 about = "Manage state of Windows registry"
+adapterAbout = "Use adapted registry resources."
+adapterGetAbout = "Use 'get' operation with adapted registry resources."
+adapterSetAbout = "Use 'set' operation with adapted registry resources."
+adapterArgsAdaptedResourceHelp = "The content of the adapted resource to use."
 configAbout = "Manage registry configuration."
 configArgsInputHelp = "The registry JSON input."
 configArgsWhatIfHelp = "Run as a what-if operation instead of applying the registry configuration."

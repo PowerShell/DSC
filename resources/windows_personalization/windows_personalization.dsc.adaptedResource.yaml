@@ -1,0 +1,171 @@
+# Adapted Registry resource for personalization settings defined in:
+# https://learn.microsoft.com/en-us/windows/apps/develop/settings/settings-common#personalization---colors
+
+$schema: https://aka.ms/dsc/schemas/v3/bundled/adaptedresource/manifest.json
+type: Microsoft.Windows/Personalization
+kind: resource
+version: 1.0.0
+capabilities:
+- get
+- set
+description: Controls Windows personalization settings such as accent color, light/dark mode, and transparency effects.
+author: Microsoft Corporation
+requireAdapter: Microsoft.Windows.Adapter/Registry
+content:
+  appUsesLightTheme:
+    keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize
+    valueType: REG_DWORD
+    valueName: AppUseLightTheme
+    mapJsonToRegistry:
+      false: 0
+      true: 1
+  systemUsesLightTheme:
+    keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize
+    valueType: REG_DWORD
+    valueName: SystemUsesLightTheme
+    mapJsonToRegistry:
+      false: 0
+      true: 1
+  colorPrevalence:
+    keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize
+    valueType: REG_DWORD
+    valueName: ColorPrevalence
+    mapJsonToRegistry:
+      false: 0
+      true: 1
+  transparencyEffects:
+    keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize
+    valueType: REG_DWORD
+    valueName: EnableTransparency
+    mapJsonToRegistry:
+      false: 0
+      true: 1
+  startMenuVisiblePlaces:
+    keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Start
+    valueType: REG_BINARY
+    valueName: VisiblePlaces
+    mapJsonToRegistry:
+      # Documents: {2D34D5CE-FA5A-4543-82F2-22E6EAF7773C}
+      Documents: [0xCE, 0xD5, 0x34, 0x2D, 0x5A, 0xFA, 0x43, 0x45, 0x82, 0xF2, 0x22, 0xE6, 0xEA, 0xF7, 0x77, 0x3C]
+      # Downloads: {E367B32F-89DE-4355-BFCE-61F37B18A937}
+      Downloads: [0x2F, 0xB3, 0x67, 0xE3, 0xDE, 0x89, 0x55, 0x43, 0xBF, 0xCE, 0x61, 0xF3, 0x7B, 0x18, 0xA9, 0x37]
+      # Music: {B00B0620-7F51-4C32-AA1E-34CC547F7315}
+      Music: [0x20, 0x06, 0x0B, 0xB0, 0x51, 0x7F, 0x32, 0x4C, 0xAA, 0x1E, 0x34, 0xCC, 0x54, 0x7F, 0x73, 0x15]
+      # Pictures: {383F07A0-E80A-4C80-B05A-86DB845DBC4D}
+      Pictures: [0xA0, 0x07, 0x3F, 0x38, 0x0A, 0xE8, 0x80, 0x4C, 0xB0, 0x5A, 0x86, 0xDB, 0x84, 0x5D, 0xBC, 0x4D]
+      # Videos: {42B3A5C5-7D86-42F4-80A4-93FACA7A88B5}
+      Videos: [0xC5, 0xA5, 0xB3, 0x42, 0x86, 0x7D, 0xF4, 0x42, 0x80, 0xA4, 0x93, 0xFA, 0xCA, 0x7A, 0x88, 0xB5]
+      # Network: {FE758144-080D-42AE-8BDA-34ED97B66394}
+      Network: [0x44, 0x81, 0x75, 0xFE, 0x0D, 0x08, 0xAE, 0x42, 0x8B, 0xDA, 0x34, 0xED, 0x97, 0xB6, 0x63, 0x94]
+      # UserProfile: {74BDB04A-F94A-4F68-8BD6-4398071DA8BC}
+      UserProfile: [0x4A, 0xB0, 0xBD, 0x74, 0x4A, 0xF9, 0x68, 0x4F, 0x8B, 0xD6, 0x43, 0x98, 0x07, 0x1D, 0xA8, 0xBC]
+      # Explorer: {148A24BC-D60C-4289-A080-6ED9BBA24882}
+      Explorer: [0xBC, 0x24, 0x8A, 0x14, 0x0C, 0xD6, 0x89, 0x42, 0xA0, 0x80, 0x6E, 0xD9, 0xBB, 0xA2, 0x48, 0x82]
+      # Settings: {52730886-51AA-4243-9F7B-2776584659D4}
+      Settings: [0x86, 0x88, 0x73, 0x52, 0xAA, 0x51, 0x43, 0x42, 0x9F, 0x7B, 0x27, 0x76, 0x58, 0x46, 0x59, 0xD4]
+    startMenuShowRecentList:
+      keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Start
+      valueType: REG_BOOL
+      valueName: ShowRecentList
+      mapJsonToRegistry:
+        false: false
+        true: true
+    showRecommendedApps:
+      keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+      valueType: REG_BOOL
+      valueName: Start_TrackDocs
+      mapJsonToRegistry:
+        false: false
+        true: true
+    taskbarShowBadges:
+      keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarBadges
+      valueType: REG_SZ
+      valueName: SystemSettings_Taskbar_Badging
+      mapJsonToRegistry:
+        false: '0'
+        true: '1'
+    desktopTaskbarShowBadges:
+      keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarBadges
+      valueType: REG_SZ
+      valueName: SystemSettings_DesktopTaskbar_Badging
+      mapJsonToRegistry:
+        false: '0'
+        true: '1'
+    multimonitorTaskbarGroupingMode:
+      keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\MMTaskbarGlomLevel
+      valueType: REG_SZ
+      valueName: SystemSettings_DesktopTaskbar_GroupingMode
+      mapJsonToRegistry:
+        # Always combine, hide labels: 0
+        AlwaysCombineHideLabels: 0
+        # Combine when taskbar is full: 1
+        CombineWhenTaskbarIsFull: 1
+        # Never combine: 2
+        NeverCombine: 2
+schema:
+  embedded:
+    $schema: http://json-schema.org/draft-07/schema#
+    $id: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/resources/Adapted/Three/v0.1.0/schema.json
+    title: Microsoft.Windows/Personalization
+    description: Windows personalization settings such as accent color, light/dark mode, and transparency effects.
+    type: object
+    required: []
+    additionalProperties: false
+    properties:
+      appUsesLightTheme:
+        type: boolean
+        title: App Uses Light Theme
+        description: Indicates whether the app uses the light theme.
+      systemUsesLightTheme:
+        type: boolean
+        title: System Uses Light Theme
+        description: Indicates whether the system uses the light theme.
+      colorPrevalence:
+        type: boolean
+        title: Color Prevalence
+        description: Indicates whether the accent color is applied to Start, taskbar, and action center
+      transparencyEffects:
+        type: boolean
+        title: Transparency Effects
+        description: Indicates whether transparency effects are enabled.
+      startMenuVisiblePlaces:
+        type: array
+        title: Start Menu Visible Places
+        description: A list of places that are visible in the Start menu.
+        items:
+          type: string
+          enum:
+            - Documents
+            - Downloads
+            - Music
+            - Pictures
+            - Videos
+            - Network
+            - UserProfile
+            - Explorer
+            - Settings
+      startMenuShowRecentList:
+        type: boolean
+        title: Start Menu Show Recent List
+        description: Specifies whether apps that were recently installed in Start in various surfaces are shown on Start.
+      showRecommendedApps:
+        type: boolean
+        title: Show Recommended Apps
+        description: Specifies whether recommended files in Start, recent files in File Explorer, and items in Jump Lists are shown.
+      taskbarShowBadges:
+        type: boolean
+        title: Taskbar Show Badges
+        description: Specifies whether badges on taskbar buttons are shown.
+      desktopTaskbarShowBadges:
+        type: boolean
+        title: Desktop Taskbar Show Badges
+        description: Specifies whether badges on taskbar buttons are shown on the desktop.
+      multimonitorTaskbarGroupingMode:
+        type: string
+        title: Multimonitor Taskbar Grouping Mode
+        description: Specifies how taskbar buttons are grouped on multiple displays.
+        enum:
+          - AlwaysCombineHideLabels
+          - CombineWhenTaskbarIsFull
+          - NeverCombine
+      
