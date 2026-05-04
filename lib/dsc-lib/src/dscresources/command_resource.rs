@@ -767,6 +767,8 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
     let mut command = Command::new(executable);
     if input.is_some() {
         command.stdin(Stdio::piped());
+    } else {
+        command.stdin(Stdio::null());
     }
     command.stdout(Stdio::piped());
     command.stderr(Stdio::piped());

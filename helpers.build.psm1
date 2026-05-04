@@ -1798,7 +1798,8 @@ function Test-RustProject {
         [ValidateSet('current','aarch64-pc-windows-msvc','x86_64-pc-windows-msvc','aarch64-apple-darwin','x86_64-apple-darwin','aarch64-unknown-linux-gnu','aarch64-unknown-linux-musl','x86_64-unknown-linux-gnu','x86_64-unknown-linux-musl')]
         $Architecture = 'current',
         [switch]$Release,
-        [switch]$Docs
+        [switch]$Docs,
+        [string]$TestFilter
     )
 
     begin {
@@ -1828,7 +1829,11 @@ function Test-RustProject {
         } else {
             Write-Verbose -Verbose "Testing rust projects: [$members]"
         }
-        cargo test @flags
+        if (-not [string]::IsNullOrEmpty($TestFilter)) {
+            cargo test @flags -- $TestFilter
+        } else {
+            cargo test @flags
+        }
 
         if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
             Write-Error "Last exit code is $LASTEXITCODE, rust tests failed"
