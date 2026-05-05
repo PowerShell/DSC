@@ -24,15 +24,15 @@ mod invoke_command {
     fn no_input_does_not_block_on_stdin() {
         let exit_codes = ExitCodesMap::default();
 
-        // Use PowerShell's own async timeout so the child process always exits within ~5s,
+        // Use PowerShell's own async timeout so the child process always exits within ~2s,
         // regardless of fix status. We never leave a hanging thread:
         //   byte:-1  → ReadAsync got EOF immediately  → stdin was null  → PASS
-        //   byte:-2  → ReadAsync timed out (5 s)      → stdin was NOT null → FAIL
+        //   byte:-2  → ReadAsync timed out (2 s)      → stdin was NOT null → FAIL
         let ps_command = concat!(
             "$reader = [Console]::OpenStandardInput();",
             "$buf = [byte[]]::new(1);",
             "$task = $reader.ReadAsync($buf, 0, 1);",
-            "$completed = $task.Wait(5000);",
+            "$completed = $task.Wait(2000);",
             "$b = if ($completed) { if ($task.Result -eq 0) { -1 } else { $buf[0] } } else { -2 };",
             "Write-Output \"byte:$b\""
         );
@@ -54,7 +54,7 @@ mod invoke_command {
         let (exit_code, stdout, _stderr) = result;
         assert_eq!(exit_code, 0, "Command should exit 0");
         // -1 means ReadAsync got EOF immediately, confirming stdin was set to null.
-        // -2 means stdin was open (inherited) and the read timed out after 5s.
+        // -2 means stdin was open (inherited) and the read timed out after 2s.
         assert!(
             stdout.contains("byte:-1"),
             "Expected EOF (byte:-1) from null stdin, got: {stdout:?}\n\
