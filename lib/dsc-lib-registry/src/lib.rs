@@ -24,7 +24,7 @@ impl RegistryHelper {
     ///
     /// # Arguments
     ///
-    /// * `config` - The string with registry configuration information.
+    /// * `registry_entry` - The string with registry configuration information.
     ///
     /// # Errors
     ///
@@ -51,7 +51,7 @@ impl RegistryHelper {
     /// 
     /// # Arguments
     /// 
-    /// * `config` - The registry configuration struct.
+    /// * `registry_entry` - The registry configuration struct.
     /// 
     /// # Errors
     /// 
