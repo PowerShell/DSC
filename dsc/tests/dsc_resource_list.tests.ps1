@@ -161,4 +161,18 @@ Describe 'Tests for listing resources' {
             $env:DSC_RESOURCE_PATH = $oldPath
         }
     }
+
+    It 'What-if capability is added for resources supporting it for: <resource>' -TestCases @(
+        @{ resource = 'Test/WhatIf'; capability = 'SetWhatIf' }
+        @{ resource = 'Test/WhatIfArgKind'; capability = 'SetWhatIf' }
+        @{ resource = 'Test/WhatIfDelete'; capability = 'DeleteWhatIf' }
+        @{ resource = 'Test/WhatIfReturnDiff'; capability = 'SetWhatIf' }
+    ) {
+        param($resource, $capability)
+
+        $out = dsc resource list $resource | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.Count | Should -Be 1
+        $out.capabilities | Should -Contain $capability
+    }
 }
