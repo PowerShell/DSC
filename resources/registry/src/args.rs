@@ -18,11 +18,15 @@ pub enum ConfigSubCommand {
     Get {
         #[clap(short, long, required = true, help = t!("args.configArgsInputHelp").to_string())]
         input: String,
+        #[clap(short, long, hide = true)]
+        list: bool,
     },
     #[clap(name = "set", about = t!("args.configSetAbout").to_string())]
     Set {
         #[clap(short, long, required = true, help = t!("args.configArgsInputHelp").to_string())]
         input: String,
+        #[clap(short, long, hide = true)]
+        list: bool,
         #[clap(short = 'w', long, help = t!("args.configArgsWhatIfHelp").to_string())]
         what_if: bool,
     },
@@ -81,5 +85,8 @@ pub enum SubCommand {
         subcommand: ConfigSubCommand,
     },
     #[clap(name = "schema", about = t!("args.schemaAbout").to_string())]
-    Schema,
+    Schema {
+        #[clap(short, long, help = t!("args.schemaArgsListHelp").to_string())]
+        list: bool,
+    }
 }
