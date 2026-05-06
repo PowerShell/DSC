@@ -29,8 +29,8 @@ impl RegistryHelper {
     /// # Errors
     ///
     /// * `RegistryError` - The error that occurred.
-    pub fn new_from_json(config: &str) -> Result<Self, RegistryError> {
-        let registry: Registry = match serde_json::from_str(config) {
+    pub fn new_from_json(registry_entry: &str) -> Result<Self, RegistryError> {
+        let registry: Registry = match serde_json::from_str(registry_entry) {
             Ok(config) => config,
             Err(e) => return Err(RegistryError::Json(e)),
         };
@@ -40,6 +40,28 @@ impl RegistryHelper {
         Ok(
             Self {
                 config: registry,
+                hive,
+                subkey: subkey.to_string(),
+                what_if: false
+            }
+        )
+    }
+
+    /// Create a new `RegistryHelper` from registry configuration.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `config` - The registry configuration struct.
+    /// 
+    /// # Errors
+    /// 
+    /// * `RegistryError` - The error that occurred.
+    pub fn new_from_registry(registry_entry: &Registry) -> Result<Self, RegistryError> {
+        let (hive, subkey) = get_hive_from_path(&registry_entry.key_path)?;
+
+        Ok(
+            Self {
+                config: registry_entry.clone(),
                 hive,
                 subkey: subkey.to_string(),
                 what_if: false
@@ -266,7 +288,6 @@ impl RegistryHelper {
             Ok(reg_key) => reg_key,
             // handle NotFound error
             Err(RegistryError::RegistryKeyNotFound(_)) => {
-                eprintln!("{}", t!("registry_helper.removeErrorKeyNotExist"));
                 return Ok(None);
             },
             Err(RegistryError::RegistryKey(key::Error::PermissionDenied(_, _))) => {
@@ -318,7 +339,6 @@ impl RegistryHelper {
                     ..Default::default()
                 }));
             }
-            eprintln!("{}", t!("registry_helper.removeDeletingSubKey", name = subkey_name, parent = parent_reg_key));
             let Ok(subkey_name) = UCString::<u16>::from_str(subkey_name) else {
                 return self.handle_error_or_what_if(RegistryError::Utf16Conversion("subkey_name".to_string()));
             };

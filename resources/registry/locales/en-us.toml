@@ -26,6 +26,7 @@ findArgsRecurseHelp = "Recursively find."
 findArgsKeysOnlyHelp = "Only find keys."
 findArgsValuesOnlyHelp = "Only find values."
 schemaAbout = "Retrieve JSON schema."
+schemaArgsListHelp = "Retrieve JSON schema for RegistryList."
 
 [main]
 tracingInitError = "Unable to set global default tracing subscriber. Tracing is disabled."
