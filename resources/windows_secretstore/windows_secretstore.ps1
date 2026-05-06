@@ -306,8 +306,24 @@ switch ($Operation) {
                         } else {
                             'SecretStore requires interactive input.'
                         }
+
+                        $allowDestructiveReset = $false
+                         if ($null -ne $env:DSC_SECRETSTORE_ALLOW_RESET) {
+                             $allowDestructiveReset = $env:DSC_SECRETSTORE_ALLOW_RESET -match '^(?i:true|1|yes)$'
+                         }
+                         if (-not $allowDestructiveReset) {
+                             $errorMessage = (
+                                 "$reason Reset-SecretStore was blocked because it is destructive and can remove existing secrets. " +
+                                 "To allow this fallback intentionally, set the environment variable " +
+                                 "'DSC_SECRETSTORE_ALLOW_RESET' to 'true' before applying the configuration."
+                             )
+                             Write-DscTrace -Level Error -Message $errorMessage
+                             throw $errorMessage
+                        }
+
                         Write-DscTrace -Level Warn -Message (
-                            "$reason Attempting Reset-SecretStore with desired settings to enable unattended DSC execution."
+                            "$reason Proceeding with Reset-SecretStore because explicit opt-in was provided via " +
+                             "DSC_SECRETSTORE_ALLOW_RESET. This operation is destructive and may remove existing secrets."
                         )
                         Reset-SecretStore @resetParams -ErrorAction Stop
                     }

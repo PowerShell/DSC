@@ -15,11 +15,11 @@ Describe 'Windows SecretStore config tests' -Skip:(!$IsWindows) {
                 return
             }
 
-            if (-not (Get-PackageProvider -Name NuGet -ListAvailable -ErrorAction SilentlyContinue)) {
-                Install-PackageProvider -Name NuGet -MinimumVersion '2.8.5.201' -Force -Scope CurrentUser | Out-Null
-            }
-
-            Install-Module -Name $Name -Repository PSGallery -Scope CurrentUser -Force -AllowClobber -Confirm:$false -ErrorAction Stop
+            $installPsResourceCommand = Get-Command -Name Install-PSResource -ErrorAction SilentlyContinue
+             if (-not $installPsResourceCommand) {
+                 throw "Install-PSResource is required to install test dependency module '$Name'."
+                Install-PSResource -Name $Name -Scope CurrentUser -TrustRepository -Quiet -ErrorAction Stop
+             }
         }
 
         foreach ($moduleName in @(
