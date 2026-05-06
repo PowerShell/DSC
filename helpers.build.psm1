@@ -1475,7 +1475,7 @@ function Test-Clippy {
             Set-DefaultWorkspaceMemberGroup @workspaceParams
         }
     }
-    
+
     process {
         $clippyFlags = @(
             '--%'
@@ -2087,7 +2087,7 @@ function Build-DscMsixPackage {
             throw 'MSIX requires a specific architecture'
         }
 
-        $displayName = 'DesiredStateConfiguration'
+        $displayName = 'Desired State Configuration'
         $productName = 'DesiredStateConfiguration'
 
         if ($isPreview) {
@@ -2112,10 +2112,10 @@ function Build-DscMsixPackage {
             $productVersion = $productVersion -replace '(\d+)$', "$previewNumber.0"
 
             if ($isPrivate) {
-                $displayName += "-Private"
+                $displayName += " (Private)"
             }
             else {
-                $displayName += "-Preview"
+                $displayName += " (Preview)"
             }
         } else {
             # appx requires a version in the format of major.minor.build.revision with revision being 0
