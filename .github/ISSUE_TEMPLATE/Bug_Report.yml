@@ -53,10 +53,10 @@ body:
 - type: textarea
   attributes:
     label: Expected behavior
-    render: console
+    render: shell
     placeholder: |
       dsc config get --path ./repro.dsc.config.yaml
-      
+
       results:
       - name: repro
         type: Microsoft.DSC.Debug/Echo
@@ -70,11 +70,11 @@ body:
 - type: textarea
   attributes:
     label: Actual behavior
-    render: console
+    render: shell
     placeholder: |
       # Enable debug tracing, which shouldn't contain any private data
       dsc -l debug config get --path ./repro.dsc.config.yaml
-      
+
       results:
       - name: repro
         type: Microsoft.DSC.Debug/Echo
@@ -89,7 +89,7 @@ body:
   attributes:
     label: Error details
     description: Paste verbatim output from DSC if it returns an error
-    render: console
+    render: shell
 - type: textarea
   attributes:
     label: Environment data
