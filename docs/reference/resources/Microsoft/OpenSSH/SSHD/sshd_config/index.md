@@ -1,6 +1,6 @@
 ---
 description: Microsoft.OpenSSH.SSHD/sshd_config resource reference documentation
-ms.date: 07/15/2025
+ms.date: 05/07/2026
 ms.topic: reference
 title: Microsoft.OpenSSH.SSHD/sshd_config
 ---
@@ -16,7 +16,6 @@ Manage SSH Server Configuration.
 ```yaml
 Version    : 0.1.0
 Kind       : resource
-Tags       : [OpenSSH, Windows, Linux]
 Author     : Microsoft
 ```
 
@@ -27,16 +26,24 @@ resources:
   - name: <instance name>
     type: Microsoft.OpenSSH.SSHD/sshd_config
     properties:
-    # Required properties
-      map: object
+      # Any sshd_config directive as a key
+      <directive>: <value>
 ```
+
+## Condition
+
+The resource only applies on systems where the `sshd` executable is available in PATH. DSC
+evaluates this with the expression `[not(equals(tryWhich('sshd'), null()))]` and skips the
+resource if `sshd` is not found.
 
 ## Description
 
-The `Microsoft.OpenSSH.SSHD/sshd_config` resource allows you to export client
-and server configuration settings. The resource can:
+The `Microsoft.OpenSSH.SSHD/sshd_config` resource enables you to idempotently manage SSH server
+configuration settings stored in the `sshd_config` file. The resource can:
 
-- Export client and server configuration settings
+- Retrieve current SSH server configuration settings.
+- Apply desired SSH server configuration settings.
+- Export all current SSH server configuration settings as individual resource instances.
 
 > [!NOTE]
 > This resource is installed with DSC itself on systems.
@@ -46,70 +53,59 @@ and server configuration settings. The resource can:
 
 ## Requirements
 
-- The resource requires OpenSSH server and client to be installed on the Windows system.
-- The resource must run at least under a Windows Server 2019 or Windows 10 (build 1809)
-  operating system.
+- The resource requires OpenSSH server to be installed on the system.
+- The resource must run in a process context that has permissions to read and write the `sshd_config`
+  file.
+- On Windows, the default configuration file path is `%ProgramData%\ssh\sshd_config`.
+- On Linux, the default configuration file path is `/etc/ssh/sshd_config`.
 
 ## Capabilities
 
 The resource has the following capabilities:
 
-- `export` - You can use the resource to export the current SSH server configuration.
+- `get` - You can use the resource to retrieve the actual state of an instance.
+- `set` - You can use the resource to enforce the desired state for an instance.
+- `export` - You can use the resource to export all current SSH server configuration settings as
+  individual resource instances.
+
+This resource uses the synthetic test functionality of DSC to determine whether an instance is in
+the desired state. For more information about resource capabilities, see
+[DSC resource capabilities][00].
 
 ## Examples
 
-1. [Export OpenSSH configuration][00] - Shows how to export current OpenSSH configuration.
+1. [Export OpenSSH configuration][01] - Shows how to export current OpenSSH configuration.
+2. [Manage SSH server configuration settings][02] - Shows how to get and set specific sshd_config
+   directives.
 
 ## Properties
 
-The following list describes the properties for the resource.
+The `Microsoft.OpenSSH.SSHD/sshd_config` resource uses an open-object schema where each property
+corresponds to an `sshd_config` directive. There are no fixed required or key properties. Any
+valid `sshd_config` keyword can be used as a property name with its corresponding value.
 
-- **Required properties:** <a id="required-properties"></a> The following properties are always
-  required when defining an instance of the resource. An instance that doesn't define each of these
-  properties is invalid. For more information, see the "Required resource properties" section in
-  [DSC resource properties][01]
-
-  - [map](#map) - 
-
-- **Key properties:** <a id="key-properties"> The following properties uniquely identify an
-  instance. If two instances of a resource have the same values for their key properties, the
-  instances are conflicting. For more information about key properties, see the "Key resource
-  properties" section in [DSC resource properties][02].
-
-  - [map](#map) (required) - 
-
-### map
-
-<details><summary>Expand for <code>map</code> property metadata</summary>
+For example:
 
 ```yaml
-Type             : object
-IsRequired       : true
-IsKey            : false
-IsReadOnly       : false
-IsWriteOnly      : false
+PermitRootLogin: 'no'
+PasswordAuthentication: 'no'
+Port: 22
 ```
 
-</details>
+For the full list of supported directives and their values, see the
+[sshd_config man page][05] or the OpenSSH documentation.
 
 ## Instance validating schema
 
-The following snippet contains the JSON Schema that validates an instance of the resource. The
-validating schema only includes schema keywords that affect how the instance is validated. All
-non validating keywords are omitted.
+The resource uses an embedded open-object schema. Any `sshd_config` directive is a valid property.
 
 ```json
 {
-"type": "object",
-  "required": [
-    "map"
-  ],
-  "properties": {
-    "map": {
-      "type": "object",
-      "additionalProperties": true
-    }
-  }
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "sshdconfig",
+  "type": "object",
+  "properties": {},
+  "additionalProperties": true
 }
 ```
 
@@ -135,8 +131,9 @@ exit code, it also emits an error message with details about the invalid paramet
 - For more information about OpenSSH, see [OpenSSH Documentation][04]
 
 <!-- Link definitions -->
-[00]: examples/export-openssh-configuration.md
-[01]: ../../../../../concepts/resources/properties.md#required-resource-properties
-[02]: ../../../../../concepts/resources/properties.md#key-resource-properties
+[00]: ../../../../../concepts/resources/capabilities.md
+[01]: examples/export-openssh-configuration.md
+[02]: examples/manage-sshd-settings.md
 [03]: ../Windows/index.md
 [04]: /windowsserverdocs/WindowsServerDocs/administration/OpenSSH/openssh-overview
+[05]: https://man.openbsd.org/sshd_config

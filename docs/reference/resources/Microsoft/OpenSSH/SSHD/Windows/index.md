@@ -9,7 +9,7 @@ title:       Microsoft.OpenSSH.SSHD/Windows
 
 ## Synopsis
 
-Manage SSH client and server configuration.
+Manage SSH server global configuration settings on Windows.
 
 ## Metadata
 
@@ -33,12 +33,21 @@ resources:
       cmdOption:
 ```
 
+## Condition
+
+The resource only applies on systems where the `sshd` executable is available in PATH. DSC
+evaluates this with the expression `[not(equals(tryWhich('sshd'), null()))]` and skips the
+resource if `sshd` is not found.
+
 ## Description
 
-The `Microsoft.OpenSSH.SSHD/Windows` resource enables you to idempotently manage SSH server
-configuration. The resource can:
+The `Microsoft.OpenSSH.SSHD/Windows` resource enables you to idempotently manage the Windows
+OpenSSH server global settings. These settings are stored in the Windows registry under
+`HKLM\SOFTWARE\OpenSSH` and control the default shell behavior for SSH sessions:
 
-- Add and update SSH client and server configuration settings.
+- Set the default shell executable for SSH connections.
+- Specify command-line options to pass to the default shell.
+- Control whether shell arguments are escaped.
 
 > [!NOTE]
 > This resource is installed with DSC itself on systems.
@@ -95,7 +104,7 @@ IsWriteOnly      : false
 </details>
 
 Defines the path to the default shell executable to use for SSH sessions.
-This property is required and must specify a valid path to an executable on the system.
+When specified, the value must be a valid path to an executable on the system.
 
 ### cmdOption
 
@@ -127,14 +136,14 @@ IsWriteOnly      : false
 
 </details>
 
-Determines whether shell arguments should be escaped. When set to `true`, the arguments provided
-in `shell_arguments` will be properly escaped before being passed to the shell.
+Determines whether shell arguments should be escaped. When set to `true`, the arguments will be
+properly escaped before being passed to the shell.
 
 ## Instance validating schema
 
-The following snippet contains the JSON Schema that validates an instance of the resource. The
-validating schema only includes schema keywords that affect how the instance is validated. All
-non validating keywords are omitted.
+The resource generates its schema dynamically at runtime by running
+`sshdconfig schema -s windows-global`. The following snippet shows the effective schema that
+validates an instance of the resource.
 
 ```json
 {
