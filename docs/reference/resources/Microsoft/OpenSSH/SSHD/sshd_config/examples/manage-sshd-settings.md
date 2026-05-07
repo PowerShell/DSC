@@ -14,8 +14,8 @@ and enforce secure SSH server configuration settings, such as disabling password
 authentication.
 
 > [!NOTE]
-> You should run this example in an elevated context (as Administrator on Windows, or as root on
-> Linux) to ensure the SSH server configuration can be updated successfully.
+> You should run this example in an elevated context (as Administrator on Windows, or with `sudo`
+> on Linux) to ensure the SSH server configuration can be updated successfully.
 
 ## Get the current state of specific settings
 
