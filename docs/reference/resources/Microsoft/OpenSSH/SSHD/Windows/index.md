@@ -16,7 +16,7 @@ Manage SSH client and server configuration.
 ```yaml
 Version    : 0.1.0
 Kind       : resource
-Tags       : [Windows]
+Tags       : [OpenSSH, Windows]
 Author     : Microsoft
 ```
 
@@ -38,7 +38,7 @@ resources:
 The `Microsoft.OpenSSH.SSHD/Windows` resource enables you to idempotently manage SSH server
 configuration. The resource can:
 
-- Add, update, and remove SSH client and server configuration settings.
+- Add and update SSH client and server configuration settings.
 
 > [!NOTE]
 > This resource is installed with DSC itself on systems.
@@ -66,8 +66,6 @@ the desired state. For more information about resource capabilities, see
 [DSC resource capabilities][00].
 
 ## Examples
-
-<!-- Example definitions would need to be created as separate files -->
 
 1. [Configure default shell PowerShell][01] - Shows how to set the default shell to PowerShell.exe
 
