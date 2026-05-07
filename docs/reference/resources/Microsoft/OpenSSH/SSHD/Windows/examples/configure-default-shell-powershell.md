@@ -74,7 +74,15 @@ differingProperties: []
 
 ## Cleanup
 
-To restore your system to its original state, use the following command to delete the registry key:
+To restore your system to its original state, set `shell` to an empty string. The resource
+removes the `DefaultShell` registry value when the property is set to `""`:
+
+```powershell
+$cleanup = @{ shell = '' } | ConvertTo-Json
+dsc resource set --resource Microsoft.OpenSSH.SSHD/Windows --input $cleanup
+```
+
+Alternatively, you can remove the registry value directly:
 
 ```powershell
 $params = @{

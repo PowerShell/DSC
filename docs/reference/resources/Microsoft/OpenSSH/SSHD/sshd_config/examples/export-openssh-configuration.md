@@ -14,8 +14,8 @@ This example demonstrates how to use the `Microsoft.OpenSSH.SSHD/sshd_config` re
 DSC configuration document that you can save and re-apply later.
 
 > [!NOTE]
-> You should run this example in an elevated context (as Administrator on Windows, or as root on
-> Linux) to ensure the SSH server configuration can be read successfully.
+> You should run this example in an elevated context (as Administrator on Windows, or with `sudo`
+> on Linux) to ensure the SSH server configuration can be read successfully.
 
 ## Export the current SSH server configuration
 

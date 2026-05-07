@@ -61,7 +61,7 @@ OpenSSH server global settings. These settings are stored in the Windows registr
 - The resource must run in a process context that has permissions to manage the SSH server
   configuration settings.
 - The resource must run at least under a Windows Server 2019 or Windows 10 (build 1809)
-  operating system.
+  operating system or later.
 
 ## Capabilities
 
