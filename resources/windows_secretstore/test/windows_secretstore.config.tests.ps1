@@ -18,8 +18,9 @@ Describe 'Windows SecretStore config tests' -Skip:(!$IsWindows) {
             $installPsResourceCommand = Get-Command -Name Install-PSResource -ErrorAction SilentlyContinue
              if (-not $installPsResourceCommand) {
                  throw "Install-PSResource is required to install test dependency module '$Name'."
-                Install-PSResource -Name $Name -Scope CurrentUser -TrustRepository -Quiet -ErrorAction Stop
+                 Install-PSResource -Name $Name -Scope CurrentUser -TrustRepository -Quiet -ErrorAction Stop
              }
+             Install-PSResource -Name $Name -Scope CurrentUser -TrustRepository -Quiet -ErrorAction Stop
         }
 
         foreach ($moduleName in @(
