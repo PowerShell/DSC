@@ -28,9 +28,9 @@ resources:
     type: Microsoft.OpenSSH.SSHD/Windows
     properties:
       # Instance properties
-      shell: 
-      escapeArguments:
+      shell:
       cmdOption:
+      escapeArguments:
 ```
 
 ## Condition
