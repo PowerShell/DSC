@@ -36,11 +36,11 @@ resources:
   properties:
     features:
     - featureName: TFTP
-      state: Disabled
+      state: NotPresent
     - featureName: TelnetClient
-      state: Disabled
+      state: NotPresent
     - featureName: Containers-DisposableClientVM
-      state: Disabled
+      state: NotPresent
     # ... additional features
 ```
 
@@ -134,7 +134,7 @@ resources:
   properties:
     features:
     - featureName: TelnetClient
-      state: Disabled
+      state: NotPresent
       displayName: Telnet Client
       description: Includes Telnet Client
       restartRequired: No

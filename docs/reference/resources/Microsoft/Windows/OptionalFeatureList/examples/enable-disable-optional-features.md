@@ -100,7 +100,7 @@ beforeState:
 afterState:
   features:
   - featureName: TelnetClient
-    state: Disabled
+    state: NotPresent
     displayName: Telnet Client
     description: Includes Telnet Client
     restartRequired: No

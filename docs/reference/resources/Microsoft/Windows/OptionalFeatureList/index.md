@@ -119,7 +119,7 @@ For the **Get** operation, each entry must specify [`featureName`](#featurename)
 operation, each entry must specify both [`featureName`](#featurename) and [`state`](#state). For
 the **Export** operation, the array is optional and each entry can filter results using
 [`featureName`](#featurename), [`state`](#state), [`displayName`](#displayname), or
-[`description`](#description) with wildcard support.
+[`description`](#description) with wildcard support, or by exact [`state`](#state) value.
 
 Each entry in `features` has the following properties:
 
@@ -196,7 +196,7 @@ The following table describes all possible state values returned by **Get** and 
 
 | Value                | Description                                                         |
 |:---------------------|:--------------------------------------------------------------------|
-| `NotPresent`         | The feature is disabled with its payload removed or never staged.   |
+| `NotPresent`         | The feature is disabled but the payload remains on disk (staged).   |
 | `UninstallPending`   | A disable operation is pending, requiring a restart to complete.    |
 | `Staged`             | The feature payload is on disk but the feature is not enabled.      |
 | `Removed`            | The feature is disabled and its source payload has been removed.    |
