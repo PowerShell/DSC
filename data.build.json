@@ -92,7 +92,7 @@
       "winpsscript.dsc.resource.json",
       "reboot_pending.dsc.resource.json",
       "reboot_pending.resource.ps1",
-      "registry.dsc.resource.json",
+      "registry.dsc.manifests.json",
       "registry.exe",
       "RunCommandOnSet.dsc.resource.json",
       "RunCommandOnSet.exe",
@@ -399,7 +399,7 @@
       ],
       "CopyFiles": {
         "Windows": [
-          "registry.dsc.resource.json"
+          "registry.dsc.manifests.json"
         ]
       }
     },
