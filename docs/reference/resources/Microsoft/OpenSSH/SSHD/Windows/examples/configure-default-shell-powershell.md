@@ -78,8 +78,9 @@ To restore your system to its original state, use the following command to delet
 
 ```powershell
 $params = @{
-    Path = 'HKLM:\SOFTWARE\OpenSSH'
-    Name = 'DefaultShell'
+    Path        = 'HKLM:\SOFTWARE\OpenSSH'
+    Name        = 'DefaultShell'
+    ErrorAction = 'SilentlyContinue'
 }
 Remove-ItemProperty @params
 ```
