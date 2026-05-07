@@ -12,10 +12,12 @@ use dsc_lib_registry::{config::Registry, RegistryHelper};
 use rust_i18n::t;
 use schemars::schema_for;
 use std::process::exit;
-use tracing::{debug, error};
+use tracing::{error, trace};
 use tracing_subscriber::{filter::LevelFilter, prelude::__tracing_subscriber_SubscriberExt, EnvFilter, Layer};
+use types::RegistryList;
 
 mod args;
+mod types;
 
 rust_i18n::i18n!("locales", fallback = "en-us");
 
@@ -33,83 +35,114 @@ fn main() {
     let args = Arguments::parse();
     match args.subcommand {
         args::SubCommand::Query { key_path, value_name, recurse } => {
-            debug!("Get key_path: {key_path}, value_name: {value_name:?}, recurse: {recurse}");
+            trace!("Get key_path: {key_path}, value_name: {value_name:?}, recurse: {recurse}");
         },
         args::SubCommand::Set { key_path, value } => {
-            debug!("Set key_path: {key_path}, value: {value}");
+            trace!("Set key_path: {key_path}, value: {value}");
         },
         args::SubCommand::Remove { key_path, value_name, recurse } => {
-            debug!("Remove key_path: {key_path}, value_name: {value_name:?}, recurse: {recurse}");
+            trace!("Remove key_path: {key_path}, value_name: {value_name:?}, recurse: {recurse}");
         },
         args::SubCommand::Find { key_path, find, recurse, keys_only, values_only } => {
-            debug!("Find key_path: {key_path}, find: {find}, recurse: {recurse:?}, keys_only: {keys_only:?}, values_only: {values_only:?}");
+            trace!("Find key_path: {key_path}, find: {find}, recurse: {recurse:?}, keys_only: {keys_only:?}, values_only: {values_only:?}");
         },
         args::SubCommand::Config { subcommand } => {
             match subcommand {
-                args::ConfigSubCommand::Get{input} => {
-                    debug!("Get input: {input}");
-                    let reg_helper = match RegistryHelper::new_from_json(&input) {
-                        Ok(reg_helper) => reg_helper,
-                        Err(err) => {
-                            error!("{err}");
-                            exit(EXIT_INVALID_INPUT);
-                        }
-                    };
-                    match reg_helper.get() {
-                        Ok(reg_config) => {
-                            let json = serde_json::to_string(&reg_config).unwrap();
-                            println!("{json}");
-                        },
-                        Err(err) => {
-                            error!("{err}");
-                            exit(EXIT_REGISTRY_ERROR);
-                        }
-                    }
-                },
-                args::ConfigSubCommand::Set{input, what_if} => {
-                    debug!("Set input: {input}, what_if: {what_if}");
-                    let mut reg_helper = match RegistryHelper::new_from_json(&input) {
-                        Ok(reg_helper) => reg_helper,
-                        Err(err) => {
-                            error!("{err}");
-                            exit(EXIT_INVALID_INPUT);
-                        }
-                    };
-                    if what_if { reg_helper.enable_what_if(); }
-
-                    // In what-if, if the desired state is _exist: false, route to delete
-                    if what_if
-                        && let Ok(desired) = serde_json::from_str::<Registry>(&input)
-                        && matches!(desired.exist, Some(false)) {
-                            match reg_helper.remove() {
-                                Ok(Some(reg_config)) => {
+                args::ConfigSubCommand::Get{input, list} => {
+                    trace!("Get input: {input}");
+                    let mut output = RegistryList { registry_entries: vec![] };
+                    let reg_list = import_input(&input, list);
+                    for reg in reg_list.registry_entries {
+                        let reg_helper = match RegistryHelper::new_from_registry(&reg) {
+                            Ok(helper) => helper,
+                            Err(err) => {
+                                error!("{err}");
+                                exit(EXIT_INVALID_INPUT);
+                            }
+                        };
+                        match reg_helper.get() {
+                            Ok(reg_config) => {
+                                if list {
+                                    output.registry_entries.push(reg_config);
+                                } else {
                                     let json = serde_json::to_string(&reg_config).unwrap();
                                     println!("{json}");
-                                },
-                                Ok(None) => {},
-                                Err(err) => {
-                                    error!("{err}");
-                                    exit(EXIT_REGISTRY_ERROR);
+                                    exit(EXIT_SUCCESS);
                                 }
+                            },
+                            Err(err) => {
+                                error!("{err}");
+                                exit(EXIT_REGISTRY_ERROR);
                             }
-                            return;
-                        }
-
-                    match reg_helper.set() {
-                        Ok(reg_config) => {
-                            if let Some(config) = reg_config {
-                                let json = serde_json::to_string(&config).unwrap();
-                                println!("{json}");
-                            }
-                        },
-                        Err(err) => {
-                            error!("{err}");
-                            exit(EXIT_REGISTRY_ERROR);
                         }
                     }
+                    let json = serde_json::to_string(&output).unwrap();
+                    println!("{json}");
+                    exit(EXIT_SUCCESS);
+                },
+                args::ConfigSubCommand::Set{input, list, what_if} => {
+                    trace!("Set input: {input}, what_if: {what_if}");
+                    let mut output = RegistryList { registry_entries: vec![] };
+                    let reg_list = import_input(&input, list);
+                    for reg in reg_list.registry_entries {
+                        let mut reg_helper = match RegistryHelper::new_from_registry(&reg) {
+                            Ok(helper) => helper,
+                            Err(err) => {
+                                error!("{err}");
+                                exit(EXIT_INVALID_INPUT);
+                            }
+                        };
+                        if what_if { reg_helper.enable_what_if(); }
+                        if let Some(exist) = reg.exist && !exist {
+                                match reg_helper.remove() {
+                                    Ok(Some(reg_config)) => {
+                                        if what_if {
+                                            if list {
+                                                output.registry_entries.push(reg_config);
+                                            } else {
+                                                let json = serde_json::to_string(&reg_config).unwrap();
+                                                println!("{json}");
+                                                exit(EXIT_SUCCESS);
+                                            }
+                                        }
+                                    },
+                                    Ok(None) => {},
+                                    Err(err) => {
+                                        error!("{err}");
+                                        exit(EXIT_REGISTRY_ERROR);
+                                    }
+                                }
+                                continue;
+                            }
+                        match reg_helper.set() {
+                            Ok(reg_config) => {
+                                if what_if && let Some(config) = reg_config {
+                                    if list {
+                                        output.registry_entries.push(config);
+                                    } else {
+                                        let json = serde_json::to_string(&config).unwrap();
+                                        println!("{json}");
+                                        exit(EXIT_SUCCESS);
+                                    }
+                                }
+                                if !list {
+                                    exit(EXIT_SUCCESS);
+                                }
+                            },
+                            Err(err) => {
+                                error!("{err}");
+                                exit(EXIT_REGISTRY_ERROR);
+                            }
+                        }
+                    }
+                    if what_if {
+                        let json = serde_json::to_string(&output).unwrap();
+                        println!("{json}");
+                    }
+                    exit(EXIT_SUCCESS);
                 },
                 args::ConfigSubCommand::Delete{input, what_if} => {
-                    debug!("Delete input: {input}, what_if: {what_if}");
+                    trace!("Delete input: {input}, what_if: {what_if}");
                     let mut reg_helper = match RegistryHelper::new_from_json(&input) {
                         Ok(reg_helper) => reg_helper,
                         Err(err) => {
@@ -132,14 +165,38 @@ fn main() {
                 },
             }
         },
-        args::SubCommand::Schema => {
-            let schema = schema_for!(Registry);
+        args::SubCommand::Schema{list} => {
+            let schema = if list {
+                schema_for!(RegistryList)
+            } else {
+                schema_for!(Registry)
+            };
             let json =serde_json::to_string(&schema).unwrap();
             println!("{json}");
         },
     }
 
     exit(EXIT_SUCCESS);
+}
+
+fn import_input(input: &str, list: bool) -> RegistryList {
+    if list {
+        match serde_json::from_str::<RegistryList>(input) {
+            Ok(reg_list) => reg_list,
+            Err(err) => {
+                error!("{err}");
+                exit(EXIT_INVALID_INPUT);
+            }
+        }
+    } else {
+        match serde_json::from_str::<Registry>(input) {
+            Ok(reg) => RegistryList { registry_entries: vec![reg] },
+            Err(err) => {
+                error!("{err}");
+                exit(EXIT_INVALID_INPUT);
+            }
+        }
+    }
 }
 
 pub fn enable_tracing() {
