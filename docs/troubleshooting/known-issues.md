@@ -183,13 +183,13 @@ validates it. The difference is visible in DSC's `Verify JSON` debug output:
 **PowerShell 7 (correct):**
 
 ```json
-"localPorts": "8080"
+{ "localPorts": "8080" }
 ```
 
 **Windows PowerShell (incorrect):**
 
 ```json
-"localPorts": 8080
+{ "localPorts": 8080 }
 ```
 
 DSC validates `8080` (integer) against the schema property typed as `string` and fails.
