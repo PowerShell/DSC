@@ -1,0 +1,15 @@
+# yaml-language-server: $schema=https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+  - name: Ensure Windows Update is stopped and set to manual start
+    type: Microsoft.Windows/Service
+    properties:
+      name: wuauserv
+      status: Stopped
+      startType: Manual
+  - name: Ensure Windows Time service is running
+    type: Microsoft.Windows/Service
+    properties:
+      name: W32Time
+      status: Running
+      startType: Automatic
