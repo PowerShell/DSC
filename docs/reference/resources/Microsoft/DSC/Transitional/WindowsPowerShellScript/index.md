@@ -260,7 +260,7 @@ to the PowerShell scripts or when the input data is in an unexpected format.
 
 <!-- Link definitions -->
 [00]: ../../../../concepts/dsc/resource-capabilities.md
-[01]: ./examples/manage-windows-services-with-powershell.md
+[01]: ./examples/manage-windows-service-state-with-powershell.md
 [02]: ../PowerShellScript/index.md
 [03]: ../RunCommandOnSet/index.md
 [04]: ../../../../Microsoft/Windows/WindowsPowerShell/index.md
