@@ -21,7 +21,7 @@ document to enforce the desired configuration and runtime status of multiple Win
 The configuration document for this example defines two instances of the `Service` resource.
 
 The first instance ensures that the Windows Update service (`wuauserv`) is stopped and configured
-for manual start. The second instance ensures that the Windows Time service (`w32tm`) is running
+for manual start. The second instance ensures that the Windows Time service (`W32Time`) is running
 and configured to start automatically.
 
 :::code language="yaml" source="service.config.dsc.yaml":::
