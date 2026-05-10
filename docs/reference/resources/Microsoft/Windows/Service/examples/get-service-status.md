@@ -78,8 +78,9 @@ command without an input instance.
 dsc resource export --resource Microsoft.Windows/Service
 ```
 
-DSC emits one JSON object per service to stdout. You can pipe the output to a file or process it
-further with other tools.
+DSC writes a single JSON configuration document to stdout. That document contains a `resources`
+array with one entry per service, which you can pipe to a file or process further with other
+tools.
 
 <!-- Link definitions -->
 [01]: ../../../../../cli/resource/get.md
