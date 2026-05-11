@@ -1,16 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'Microsoft.Windows/FirewallRuleList - export operation' -Skip:(!$isElevated) {
-    BeforeDiscovery {
-        $isElevated = if ($IsWindows) {
-            ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
-                [Security.Principal.WindowsBuiltInRole]::Administrator)
-        } else {
-            $false
-        }
-    }
-
+Describe 'Microsoft.Windows/FirewallRuleList - export operation' -Skip:(!$IsWindows) {
     BeforeAll {
         $resourceType = 'Microsoft.Windows/FirewallRuleList'
 
@@ -42,7 +33,7 @@ Describe 'Microsoft.Windows/FirewallRuleList - export operation' -Skip:(!$isElev
         $secondRule = $sampleRules[1]
     }
 
-    It 'exports all rules with no input' -Skip:(!$isElevated) {
+    It 'exports all rules with no input' {
         $output = Invoke-DscExport
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
 
@@ -52,7 +43,7 @@ Describe 'Microsoft.Windows/FirewallRuleList - export operation' -Skip:(!$isElev
         $rules[0].name | Should -Not -BeNullOrEmpty
     }
 
-    It 'applies AND logic within a single filter object' -Skip:(!$isElevated) {
+    It 'applies AND logic within a single filter object' {
         $json = @{ rules = @(@{ name = $firstRule.name; direction = $firstRule.direction }) } | ConvertTo-Json -Compress -Depth 5
         $output = Invoke-DscExport -InputJson $json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
@@ -62,7 +53,7 @@ Describe 'Microsoft.Windows/FirewallRuleList - export operation' -Skip:(!$isElev
         $rules[0].name | Should -BeExactly $firstRule.name
     }
 
-    It 'applies OR logic across filter objects' -Skip:(!$isElevated) {
+    It 'applies OR logic across filter objects' {
         $json = @{ rules = @(@{ name = $firstRule.name }, @{ name = $secondRule.name }) } | ConvertTo-Json -Compress -Depth 5
         $output = Invoke-DscExport -InputJson $json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
@@ -73,7 +64,7 @@ Describe 'Microsoft.Windows/FirewallRuleList - export operation' -Skip:(!$isElev
         $names | Should -Contain $secondRule.name
     }
 
-    It 'supports wildcard name filtering' -Skip:(!$isElevated) {
+    It 'supports wildcard name filtering' {
         # Build a wildcard pattern from the first rule name: take the first word and append '*'
         $prefix = ($firstRule.name -split '[-_ ]')[0]
         $wildcardPattern = "${prefix}*"
@@ -87,7 +78,7 @@ Describe 'Microsoft.Windows/FirewallRuleList - export operation' -Skip:(!$isElev
         $rules | ForEach-Object { $_.name | Should -BeLike $wildcardPattern }
     }
 
-    It 'returns no rules when filter matches nothing' -Skip:(!$isElevated) {
+    It 'returns no rules when filter matches nothing' {
         $json = @{ rules = @(@{ name = 'DSC-NonExistent-Rule-Filter-12345' }) } | ConvertTo-Json -Compress -Depth 5
         $output = Invoke-DscExport -InputJson $json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
