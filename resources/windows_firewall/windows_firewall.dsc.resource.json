@@ -93,7 +93,9 @@
                             "protocol": {
                                 "type": "integer",
                                 "title": "Protocol",
-                                "description": "The IP protocol number for the rule. Common values are 256 (Any), 6 (TCP), 17 (UDP), 1 (ICMPv4), and 58 (ICMPv6)."
+                                "description": "The IP protocol number for the rule. Common values are 256 (Any), 6 (TCP), 17 (UDP), 1 (ICMPv4), and 58 (ICMPv6). The maximum value of 256 corresponds to NET_FW_IP_PROTOCOL_ANY in the Windows Firewall COM API. See https://learn.microsoft.com/windows/win32/api/icftypes/ne-icftypes-net_fw_ip_protocol",
+                                "minimum": 0,
+                                "maximum": 256
                             },
                             "localPorts": {
                                 "type": "string",
