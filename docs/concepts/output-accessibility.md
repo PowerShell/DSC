@@ -43,7 +43,7 @@ dsc resource list | ConvertFrom-Json | Out-GridView
 The following example shows how to display a list of DSC adapted resources in a GridView control.
 
 ```powershell
-dsc resource list -a Microsoft.Windows/WindowsPowerShell |
+dsc resource list -a Microsoft.Adapter/WindowsPowerShell |
     ConvertFrom-Json |
     Out-GridView
 ```
@@ -83,7 +83,7 @@ Each of the following commands improves the output in a different way:
   experience for screen readers.
 
 ```powershell
-dsc resource list -a Microsoft.Windows/WindowsPowerShell |
+dsc resource list -a Microsoft.Adapter/WindowsPowerShell |
     ConvertFrom-Json | 
     Where-Object {$_.type -like "*process*" } |
     Select-Object -Property Type, Kind, Version |
