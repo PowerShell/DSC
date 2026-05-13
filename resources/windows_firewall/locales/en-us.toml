@@ -30,3 +30,7 @@ portsNotAllowed = "Ports cannot be specified for firewall rule '%{name}' because
 invalidProfiles = "Invalid profiles value '%{value}'. Valid values are Domain, Private, Public, or All"
 invalidInterfaceType = "Invalid interface type '%{value}'. Valid values are RemoteAccess, Wireless, Lan, or All"
 invalidProtocol = "Invalid protocol number '%{value}'. Must be between 0 and 256"
+
+[firewall_helper]
+whatIfCreateRule = "Would create firewall rule '%{name}'"
+whatIfRemoveRule = "Would remove firewall rule '%{name}'"
