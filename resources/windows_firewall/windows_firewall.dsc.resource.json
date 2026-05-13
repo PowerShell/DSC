@@ -30,6 +30,7 @@
             }
         ],
         "implementsPretest": false,
+        "handlesExist": true,
         "return": "state",
         "whatIfReturns": "state",
         "requireSecurityContext": "elevated"
