@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'windows_firewall config whatif tests' {
+Describe 'windows_firewall config whatif tests' -Skip:(!$isElevated -or !$hasNetSecurity) {
     BeforeDiscovery {
         $isElevated = if ($IsWindows) {
             ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
@@ -9,6 +9,7 @@ Describe 'windows_firewall config whatif tests' {
         } else {
             $false
         }
+        $hasNetSecurity = $null -ne (Get-Command 'Get-NetFirewallRule' -ErrorAction SilentlyContinue)
     }
 
     BeforeAll {
@@ -32,7 +33,7 @@ Describe 'windows_firewall config whatif tests' {
         Remove-NetFirewallRule -Name 'DSC-WindowsFirewall-WhatIf-Create-Test' -ErrorAction SilentlyContinue
     }
 
-    It 'Can whatif create a new rule' -Skip:(!$isElevated) {
+    It 'Can whatif create a new rule' -Skip:(!$isElevated -or !$hasNetSecurity) {
         $createRuleName = 'DSC-WindowsFirewall-WhatIf-Create-Test'
         Remove-NetFirewallRule -Name $createRuleName -ErrorAction SilentlyContinue
 
@@ -60,7 +61,7 @@ Describe 'windows_firewall config whatif tests' {
         $existsBefore | Should -Be $existsAfter
     }
 
-    It 'Can whatif update an existing rule' -Skip:(!$isElevated) {
+    It 'Can whatif update an existing rule' -Skip:(!$isElevated -or !$hasNetSecurity) {
         Initialize-TestFirewallRule
 
         $json = @{
@@ -85,7 +86,7 @@ Describe 'windows_firewall config whatif tests' {
         $stateAfter.Enabled | Should -Be $stateBefore.Enabled
     }
 
-    It 'Can whatif remove an existing rule using _exist is false' -Skip:(!$isElevated) {
+    It 'Can whatif remove an existing rule using _exist is false' -Skip:(!$isElevated -or !$hasNetSecurity) {
         Initialize-TestFirewallRule
 
         $json = @{
@@ -105,7 +106,7 @@ Describe 'windows_firewall config whatif tests' {
         Get-RuleExists | Should -BeTrue
     }
 
-    It 'Can whatif multiple rules in a single request' -Skip:(!$isElevated) {
+    It 'Can whatif multiple rules in a single request' -Skip:(!$isElevated -or !$hasNetSecurity) {
         Initialize-TestFirewallRule
         $createRuleName = 'DSC-WindowsFirewall-WhatIf-Create-Test'
         Remove-NetFirewallRule -Name $createRuleName -ErrorAction SilentlyContinue

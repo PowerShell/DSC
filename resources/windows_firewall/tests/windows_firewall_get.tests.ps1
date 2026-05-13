@@ -1,16 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'Microsoft.Windows/FirewallRuleList - get operation' -Skip:(!$isElevated) {
-    BeforeDiscovery {
-        $isElevated = if ($IsWindows) {
-            ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
-                [Security.Principal.WindowsBuiltInRole]::Administrator)
-        } else {
-            $false
-        }
-    }
-
+Describe 'Microsoft.Windows/FirewallRuleList - get operation' -Skip:(!$IsWindows) {
     BeforeAll {
         $resourceType = 'Microsoft.Windows/FirewallRuleList'
 
@@ -28,7 +19,7 @@ Describe 'Microsoft.Windows/FirewallRuleList - get operation' -Skip:(!$isElevate
         }
     }
 
-    It 'returns an existing rule by name' -Skip:(!$isElevated) {
+    It 'returns an existing rule by name' {
         $json = @{ rules = @(@{ name = $knownRuleName }) } | ConvertTo-Json -Compress -Depth 5
         $out = $json | dsc resource get -r $resourceType -f - 2>$testdrive/error.log
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
@@ -40,7 +31,7 @@ Describe 'Microsoft.Windows/FirewallRuleList - get operation' -Skip:(!$isElevate
         $result.action | Should -BeIn @('Allow', 'Block')
     }
 
-    It 'returns an existing rule when name matches' -Skip:(!$isElevated) {
+    It 'returns an existing rule when name matches' {
         $json = @{ rules = @(@{ name = $knownRuleName }) } | ConvertTo-Json -Compress -Depth 5
         $out = $json | dsc resource get -r $resourceType -f - 2>$testdrive/error.log
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
@@ -50,7 +41,7 @@ Describe 'Microsoft.Windows/FirewallRuleList - get operation' -Skip:(!$isElevate
         $result.name | Should -BeExactly $knownRuleName
     }
 
-    It 'returns _exist false with only input properties when the rule is not found' -Skip:(!$isElevated) {
+    It 'returns _exist false with only input properties when the rule is not found' {
         $json = @{ rules = @(@{ name = 'DSC-Missing-FirewallRule'; description = 'input only' }) } | ConvertTo-Json -Compress -Depth 5
         $out = $json | dsc resource get -r $resourceType -f - 2>$testdrive/error.log
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
@@ -62,13 +53,13 @@ Describe 'Microsoft.Windows/FirewallRuleList - get operation' -Skip:(!$isElevate
         $result.PSObject.Properties.Name | Should -Not -Contain 'direction'
     }
 
-    It 'fails when rules array is empty' -Skip:(!$isElevated) {
+    It 'fails when rules array is empty' {
         $json = '{"rules":[]}'
         $out = $json | dsc resource get -r $resourceType -f - 2>&1
         $LASTEXITCODE | Should -Not -Be 0
     }
 
-    It 'handles multiple rules in a single request' -Skip:(!$isElevated) {
+    It 'handles multiple rules in a single request' {
         $json = @{ rules = @(@{ name = $knownRuleName }, @{ name = 'DSC-Missing-FirewallRule' }) } | ConvertTo-Json -Compress -Depth 5
         $out = $json | dsc resource get -r $resourceType -f - 2>$testdrive/error.log
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
