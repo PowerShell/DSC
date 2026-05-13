@@ -504,11 +504,43 @@ impl ResourceDiscovery for CommandDiscovery {
             return Ok(found_resources);
         }
 
+        // Determine which still-unsatisfied filters actually require adapter discovery.
+        //
+        // If a filter's resource type is already known to native discovery (present in
+        // RESOURCES or ADAPTERS) and the user did not pin an adapter via `requireAdapter`,
+        // then any unsatisfied state is necessarily a version-requirement mismatch
+        let adapter_filter_candidates: Vec<&DiscoveryFilter> = required_resource_types
+            .iter()
+            .filter(|filter| {
+                if required_resources.get(*filter).copied().unwrap_or(false) {
+                    return false;
+                }
+                if filter.require_adapter().is_some() {
+                    return true;
+                }
+                let type_known_natively = locked_get!(RESOURCES, filter.resource_type()).is_some()
+                    || locked_get!(ADAPTERS, filter.resource_type()).is_some();
+                if type_known_natively {
+                    debug!(
+                        "{}",
+                        t!("discovery.commandDiscovery.skipAdapterSearchForNativeType",
+                            resource = filter.resource_type())
+                    );
+                    return false;
+                }
+                true
+            })
+            .collect();
+
+        if adapter_filter_candidates.is_empty() {
+            return Ok(found_resources);
+        }
+
         // store the keys of the ADAPTERS into a vec
         let mut adapters: Vec<FullyQualifiedTypeName> = locked_clone!(ADAPTERS).keys().cloned().collect();
         // sort the adapters by ones specified in the required resources first
 
-        for filter in required_resource_types {
+        for filter in &adapter_filter_candidates {
             if let Some(required_adapter) = filter.require_adapter() {
                 if !adapters.contains(required_adapter) {
                     return Err(DscError::AdapterNotFound(required_adapter.to_string()));
@@ -522,7 +554,7 @@ impl ResourceDiscovery for CommandDiscovery {
         for adapter_name in &adapters {
             self.discover_adapted_resources(&TypeNameFilter::default(), &adapter_name.clone().into())?;
             add_resources_to_lookup_table(&locked_clone!(ADAPTED_RESOURCES));
-            for filter in required_resource_types {
+            for filter in &adapter_filter_candidates {
                 if let Some(adapted_resources) = locked_get!(ADAPTED_RESOURCES, filter.resource_type()) {
                     filter_resources(&mut found_resources, &mut required_resources, &adapted_resources, filter);
                 }
