@@ -446,12 +446,9 @@ pub fn set_rules(input: &FirewallRuleList, what_if: bool) -> Result<FirewallRule
 
                 if desired.exist == Some(false) {
                     if what_if {
-                        results.push(FirewallRule {
-                            name: Some(rule_name.clone()),
-                            exist: Some(false),
-                            metadata: Some(Metadata { what_if: Some(vec![t!("firewall_helper.whatIfRemoveRule", name = rule_name).to_string()]) }),
-                            ..FirewallRule::default()
-                        });
+                        let mut projected = desired.missing_from_input();
+                        projected.metadata = Some(Metadata { what_if: Some(vec![t!("firewall_helper.whatIfRemoveRule", name = rule_name).to_string()]) });
+                        results.push(projected);
                     } else {
                         store.remove_rule(&rule_name)?;
                         results.push(desired.missing_from_input());
