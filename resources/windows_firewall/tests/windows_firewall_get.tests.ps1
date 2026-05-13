@@ -13,10 +13,13 @@ Describe 'Microsoft.Windows/FirewallRuleList - get operation' -Skip:(!$IsWindows
         if (-not $exportedRules -or $exportedRules.Count -eq 0) {
             throw 'No firewall rules were found on the machine.'
         }
-        $knownRuleName = $exportedRules[0].name
-        if (-not $knownRuleName) {
-            throw 'The first exported firewall rule has a null or empty name.'
+        # Skip AppX/UWP rules whose names are ms-resource:// URIs - the COM Item() lookup
+        # cannot resolve them by name even though enumeration returns them.
+        $knownRule = $exportedRules | Where-Object { $_.name -and $_.name -notmatch 'ms-resource://' } | Select-Object -First 1
+        if (-not $knownRule) {
+            throw 'No resolvable firewall rule name found on the machine.'
         }
+        $knownRuleName = $knownRule.name
     }
 
     It 'returns an existing rule by name' {
