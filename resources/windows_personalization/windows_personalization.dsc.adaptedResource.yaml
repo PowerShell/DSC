@@ -63,45 +63,45 @@ content:
       Explorer: [0xBC, 0x24, 0x8A, 0x14, 0x0C, 0xD6, 0x89, 0x42, 0xA0, 0x80, 0x6E, 0xD9, 0xBB, 0xA2, 0x48, 0x82]
       # Settings: {52730886-51AA-4243-9F7B-2776584659D4}
       Settings: [0x86, 0x88, 0x73, 0x52, 0xAA, 0x51, 0x43, 0x42, 0x9F, 0x7B, 0x27, 0x76, 0x58, 0x46, 0x59, 0xD4]
-    startMenuShowRecentList:
-      keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Start
-      valueType: REG_BOOL
-      valueName: ShowRecentList
-      mapJsonToRegistry:
-        'false': false
-        'true': true
-    showRecommendedApps:
-      keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
-      valueType: REG_BOOL
-      valueName: Start_TrackDocs
-      mapJsonToRegistry:
-        'false': false
-        'true': true
-    taskbarShowBadges:
-      keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarBadges
-      valueType: REG_SZ
-      valueName: SystemSettings_Taskbar_Badging
-      mapJsonToRegistry:
-        'false': '0'
-        'true': '1'
-    desktopTaskbarShowBadges:
-      keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarBadges
-      valueType: REG_SZ
-      valueName: SystemSettings_DesktopTaskbar_Badging
-      mapJsonToRegistry:
-        'false': '0'
-        'true': '1'
-    multimonitorTaskbarGroupingMode:
-      keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\MMTaskbarGlomLevel
-      valueType: REG_SZ
-      valueName: SystemSettings_DesktopTaskbar_GroupingMode
-      mapJsonToRegistry:
-        # Always combine, hide labels: 0
-        AlwaysCombineHideLabels: 0
-        # Combine when taskbar is full: 1
-        CombineWhenTaskbarIsFull: 1
-        # Never combine: 2
-        NeverCombine: 2
+  startMenuShowRecentList:
+    keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Start
+    valueType: REG_BOOL
+    valueName: ShowRecentList
+    mapJsonToRegistry:
+      'false': false
+      'true': true
+  showRecommendedApps:
+    keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+    valueType: REG_BOOL
+    valueName: Start_TrackDocs
+    mapJsonToRegistry:
+      'false': false
+      'true': true
+  taskbarShowBadges:
+    keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarBadges
+    valueType: REG_SZ
+    valueName: SystemSettings_Taskbar_Badging
+    mapJsonToRegistry:
+      'false': '0'
+      'true': '1'
+  desktopTaskbarShowBadges:
+    keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarBadges
+    valueType: REG_SZ
+    valueName: SystemSettings_DesktopTaskbar_Badging
+    mapJsonToRegistry:
+      'false': '0'
+      'true': '1'
+  multimonitorTaskbarGroupingMode:
+    keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\MMTaskbarGlomLevel
+    valueType: REG_SZ
+    valueName: SystemSettings_DesktopTaskbar_GroupingMode
+    mapJsonToRegistry:
+      # Always combine, hide labels: 0
+      AlwaysCombineHideLabels: 0
+      # Combine when taskbar is full: 1
+      CombineWhenTaskbarIsFull: 1
+      # Never combine: 2
+      NeverCombine: 2
 schema:
   embedded:
     $schema: http://json-schema.org/draft-07/schema#
