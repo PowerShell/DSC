@@ -127,6 +127,9 @@
                 "Windows"
             ],
             "version": "0.1.0",
+            "adapter": {
+                "inputKind": "single"
+            },
             "get": {
                 "executable": "registry",
                 "args": [
@@ -135,6 +138,9 @@
                     {
                         "jsonInputArg": "--input",
                         "mandatory": true
+                    },
+                    {
+                        "adaptedContentArg": "--adapted-resource"
                     }
                 ]
             },
@@ -146,6 +152,9 @@
                     {
                         "jsonInputArg": "--input",
                         "mandatory": true
+                    },
+                    {
+                        "adaptedContentArg": "--adapted-resource"
                     }
                 ]
             },

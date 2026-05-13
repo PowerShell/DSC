@@ -38,15 +38,23 @@ fn main() {
     let args = Arguments::parse();
     match args.subcommand {
         SubCommand::Adapter { subcommand } => {
-            let json = match subcommand {
-                AdapterSubCommand::Get { input } => {
-                    adapter_get(&input)
+            let result = match subcommand {
+                AdapterSubCommand::Get { input, adapted_resource } => {
+                    adapter_get(&input, &adapted_resource)
                 },
-                AdapterSubCommand::Set { input } => {
-                    adapter_set(&input)
+                AdapterSubCommand::Set { input, adapted_resource } => {
+                    adapter_set(&input, &adapted_resource)
                 },
             };
-            println!("{json}");
+            match result {
+                Ok(output) => {
+                    println!("{output}");
+                },
+                Err(err) => {
+                    error!("{err}");
+                    exit(EXIT_INVALID_INPUT);
+                }
+            }
         },
         SubCommand::Query { key_path, value_name, recurse } => {
             trace!("Get key_path: {key_path}, value_name: {value_name:?}, recurse: {recurse}");

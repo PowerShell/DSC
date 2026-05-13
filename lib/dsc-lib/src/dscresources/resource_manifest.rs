@@ -338,7 +338,7 @@ pub struct ResolveMethod {
 #[dsc_repo_schema(base_name = "manifest.adapter", folder_path = "resource")]
 pub struct Adapter {
     /// The way to list adapter supported resources.
-    pub list: ListMethod,
+    pub list: Option<ListMethod>,
     /// Defines how the adapter supports accepting configuration.
     #[serde(alias = "config", rename = "inputKind")]
     pub input_kind: AdapterInputKind,

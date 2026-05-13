@@ -391,38 +391,39 @@ impl ResourceDiscovery for CommandDiscovery {
 
                 let mut adapter_resources_count = 0;
                 // invoke the list command
-                let list_command = &manifest.adapter.clone().unwrap().list;
-                let (exit_code, stdout, stderr) = match invoke_command(&list_command.executable, list_command.args.clone(), None, Some(&adapter.directory), None, manifest.exit_codes.as_ref())
-                {
-                    Ok((exit_code, stdout, stderr)) => (exit_code, stdout, stderr),
-                    Err(e) => {
-                        // In case of error, log and continue
-                        warn!("{e}");
-                        continue;
-                    },
-                };
-
-                if exit_code != 0 {
-                    // in case of failure, log and continue
-                    warn!("Adapter failed to list resources with exit code {exit_code}: {stderr}");
-                    continue;
-                }
-
-                for line in stdout.lines() {
-                    match serde_json::from_str::<DscResource>(line){
-                        Result::Ok(resource) => {
-                            if resource.require_adapter.is_none() {
-                                warn!("{}", DscError::MissingRequires(adapter_name.to_string(), resource.type_name.to_string()).to_string());
-                                continue;
-                            }
-
-                            if name_filter.is_match(&resource.type_name) {
-                                insert_resource(&mut adapted_resources, &resource);
-                                adapter_resources_count += 1;
-                            }
+                if let Some(list_command) = &manifest.adapter.clone().unwrap().list {
+                    let (exit_code, stdout, stderr) = match invoke_command(&list_command.executable, list_command.args.clone(), None, Some(&adapter.directory), None, manifest.exit_codes.as_ref())
+                    {
+                        Ok((exit_code, stdout, stderr)) => (exit_code, stdout, stderr),
+                        Err(e) => {
+                            // In case of error, log and continue
+                            warn!("{e}");
+                            continue;
                         },
-                        Result::Err(err) => {
-                            warn!("Failed to parse resource: {line} -> {err}");
+                    };
+
+                    if exit_code != 0 {
+                        // in case of failure, log and continue
+                        warn!("Adapter failed to list resources with exit code {exit_code}: {stderr}");
+                        continue;
+                    }
+
+                    for line in stdout.lines() {
+                        match serde_json::from_str::<DscResource>(line){
+                            Result::Ok(resource) => {
+                                if resource.require_adapter.is_none() {
+                                    warn!("{}", DscError::MissingRequires(adapter_name.to_string(), resource.type_name.to_string()).to_string());
+                                    continue;
+                                }
+
+                                if name_filter.is_match(&resource.type_name) {
+                                    insert_resource(&mut adapted_resources, &resource);
+                                    adapter_resources_count += 1;
+                                }
+                            },
+                            Result::Err(err) => {
+                                warn!("Failed to parse resource: {line} -> {err}");
+                            }
                         }
                     }
                 }

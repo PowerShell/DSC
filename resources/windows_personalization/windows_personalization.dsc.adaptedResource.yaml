@@ -17,29 +17,29 @@ content:
     valueType: REG_DWORD
     valueName: AppUseLightTheme
     mapJsonToRegistry:
-      false: 0
-      true: 1
+      'false': 0
+      'true': 1
   systemUsesLightTheme:
     keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize
     valueType: REG_DWORD
     valueName: SystemUsesLightTheme
     mapJsonToRegistry:
-      false: 0
-      true: 1
+      'false': 0
+      'true': 1
   colorPrevalence:
     keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize
     valueType: REG_DWORD
     valueName: ColorPrevalence
     mapJsonToRegistry:
-      false: 0
-      true: 1
+      'false': 0
+      'true': 1
   transparencyEffects:
     keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize
     valueType: REG_DWORD
     valueName: EnableTransparency
     mapJsonToRegistry:
-      false: 0
-      true: 1
+      'false': 0
+      'true': 1
   startMenuVisiblePlaces:
     keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Start
     valueType: REG_BINARY
@@ -68,29 +68,29 @@ content:
       valueType: REG_BOOL
       valueName: ShowRecentList
       mapJsonToRegistry:
-        false: false
-        true: true
+        'false': false
+        'true': true
     showRecommendedApps:
       keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
       valueType: REG_BOOL
       valueName: Start_TrackDocs
       mapJsonToRegistry:
-        false: false
-        true: true
+        'false': false
+        'true': true
     taskbarShowBadges:
       keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarBadges
       valueType: REG_SZ
       valueName: SystemSettings_Taskbar_Badging
       mapJsonToRegistry:
-        false: '0'
-        true: '1'
+        'false': '0'
+        'true': '1'
     desktopTaskbarShowBadges:
       keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarBadges
       valueType: REG_SZ
       valueName: SystemSettings_DesktopTaskbar_Badging
       mapJsonToRegistry:
-        false: '0'
-        true: '1'
+        'false': '0'
+        'true': '1'
     multimonitorTaskbarGroupingMode:
       keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\MMTaskbarGlomLevel
       valueType: REG_SZ

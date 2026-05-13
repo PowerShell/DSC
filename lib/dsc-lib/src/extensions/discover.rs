@@ -8,7 +8,7 @@ use crate::{
     dscerror::DscError,
     dscresources::{
         command_resource::{
-            invoke_command, process_get_args, CommandResourceInfo
+            invoke_command, process_get_args,
         },
         dscresource::DscResource,
         resource_manifest::GetArgKind,
@@ -68,11 +68,10 @@ impl DscExtension {
             let Some(discover) = extension.discover else {
                 return Err(DscError::UnsupportedCapability(self.type_name.to_string(), Capability::Discover.to_string()));
             };
-            let command_resource_info = CommandResourceInfo {
-                type_name: self.type_name.clone(),
-                path: None,
-            };
-            let args = process_get_args(discover.args.as_ref(), "", &command_resource_info);
+            let mut extension_resource = DscResource::new();
+            extension_resource.type_name = self.type_name.clone();
+            extension_resource.path = self.path.clone();
+            let args = process_get_args(discover.args.as_ref(), "", &extension_resource);
             if let Some(deprecation_message) = extension.deprecation_message.as_ref() {
                 warn!("{}", t!("extensions.dscextension.deprecationMessage", extension = self.type_name, message = deprecation_message));
             }

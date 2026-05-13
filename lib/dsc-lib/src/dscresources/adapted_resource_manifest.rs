@@ -53,7 +53,7 @@ pub struct AdaptedDscResourceManifest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub deprecation_message: Option<String>,
     /// The file path to the resource or the content of the resource itself.
-    #[schemars(flatten)]
+    #[serde(flatten)]
     pub path_or_content: AdaptedPathOrContent,
     /// The description of the resource.
     pub description: Option<String>,

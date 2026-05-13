@@ -1,0 +1,10 @@
+{
+    "Name": "windows_personalization",
+    "Kind": "Resource",
+    "SupportedPlatformOS": "Windows",
+    "CopyFiles": {
+        "Windows": [
+            "windows_personalization.dsc.adaptedresource.yaml"
+        ]
+    }
+}
