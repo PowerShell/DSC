@@ -116,6 +116,8 @@ pub enum GetArgKind {
         /// The argument that accepts the resource path.
         #[serde(rename = "resourcePathArg")]
         resource_path_arg: String,
+        #[serde(rename = "includeQuotes")]
+        include_quotes: Option<bool>,
     },
     ResourceType {
         /// The argument that accepts the resource type name.
@@ -142,6 +144,8 @@ pub enum SetDeleteArgKind {
         /// The argument that accepts the resource path.
         #[serde(rename = "resourcePathArg")]
         resource_path_arg: String,
+        #[serde(rename = "includeQuotes")]
+        include_quotes: Option<bool>,
     },
     ResourceType {
         /// The argument that accepts the resource type name.
