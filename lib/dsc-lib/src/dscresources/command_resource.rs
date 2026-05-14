@@ -964,7 +964,7 @@ pub fn process_get_args(args: Option<&Vec<GetArgKind>>, input: &str, command_res
             GetArgKind::ResourcePath { resource_path_arg, include_quotes} => {
                 if let Some(path) = &command_resource_info.path {
                     processed_args.push(resource_path_arg.clone());
-                    if include_quotes.unwrap_or(false) {
+                    if *include_quotes {
                         processed_args.push(format!("\"{}\"", path.to_string_lossy()));
                     } else {
                         processed_args.push(path.to_string_lossy().to_string());
@@ -1033,7 +1033,7 @@ fn process_set_delete_args(args: Option<&Vec<SetDeleteArgKind>>, input: &str, co
             SetDeleteArgKind::ResourcePath { resource_path_arg, include_quotes} => {
                 if let Some(path) = &command_resource_info.path {
                     processed_args.push(resource_path_arg.clone());
-                    if include_quotes.unwrap_or(false) {
+                    if *include_quotes {
                         processed_args.push(format!("\"{}\"", path.to_string_lossy()));
                     } else {
                         processed_args.push(path.to_string_lossy().to_string());
