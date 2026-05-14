@@ -179,6 +179,14 @@ Describe 'Tests for adapter support' {
             $out.schema | Should -Not -BeNullOrEmpty
         }
 
+        It 'Specifying includeQuotes should include quotes for path' {
+            $out = dsc -l trace resource set -r Adapted/Two -i '{"two":"2"}' 2>$TestDrive/error.log | ConvertFrom-Json -Depth 10
+            $errorLog = Get-Content $TestDrive/error.log -Raw
+            $LASTEXITCODE | Should -Be 0 -Because $errorLog
+            $errorLog | Should -BeLike '*Invoking command ''dsctest'' with args Some(`["adapter", "--operation", "set", "--input", "{\"two\":\"2\"}", "--resource-type", "Adapted/Two", "--resource-path", "\"*adaptedTest.dsc.adaptedResource.json\""`])*' -Because $errorLog
+            $out.afterState.two | Should -BeExactly 'value2' -Because $errorLog
+        }
+
         It 'Adapted resource with condition false should not be returned' {
             $out = dsc -l debug resource list 'Adapted/Four' 2>$TestDrive/error.log
             $errorLog = Get-Content $TestDrive/error.log -Raw

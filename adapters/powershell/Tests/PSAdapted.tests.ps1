@@ -19,4 +19,19 @@ Describe 'Tests for PS adapted manifests' {
         $out.actualState.Name | Should -BeExactly 'hello' -Because ($out | ConvertTo-Json)
         $out.actualState.Value | Should -Be 42
     }
+
+    It 'Get operation works if adapted resource is in a path with spaces' {
+        $resourcePath = Join-Path -Path $TestDrive -ChildPath 'Path with spaces'
+        New-Item -Path $resourcePath -ItemType Directory | Out-Null
+        Copy-Item -Path (Join-Path -Path $PSScriptRoot -ChildPath 'PSAdaptedTestClassResource*') -Destination $resourcePath
+        $oldPath = $env:PATH
+        try {
+            $env:PATH = $resourcePath + [System.IO.Path]::PathSeparator + $env:PATH
+            $out = dsc resource get -r 'PSAdaptedTestClassResource/PSAdaptedTestClass' -i '{"name":"hello"}' | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $out.actualState.Name | Should -BeExactly 'hello'
+        } finally {
+            $env:PATH = $oldPath
+        }
+    }
 }

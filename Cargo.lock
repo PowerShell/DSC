@@ -719,7 +719,7 @@ dependencies = [
 
 [[package]]
 name = "dsc"
-version = "3.2.0"
+version = "3.2.1"
 dependencies = [
  "clap",
  "clap_complete",
