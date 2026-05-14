@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::error::RegistryResourceError;
-use dsc_lib_registry::RegistryHelper;
+//use dsc_lib_registry::RegistryHelper;
 use serde::Deserialize;
 use serde_json::{Map, Value};
 use tracing::debug;
@@ -26,12 +26,14 @@ pub fn adapter_get(input: &str, adapted_resource: &str) -> Result<String, Regist
     debug!("Adapter Get with input: {input}");
     let adapted_resource: AdaptedRegistryResource = serde_json::from_str(adapted_resource)
         .map_err(|e| RegistryResourceError::AdaptedResourceDeserializationError(e.to_string()))?;
-    let mut result = Map::new();
+//    let mut result = Map::new();
 
     for (key, value) in adapted_resource.properties.iter() {
         let adapted_registry_value: AdaptedRegistryValue = serde_json::from_value(value.clone())
             .map_err(|e| RegistryResourceError::AdaptedResourceDeserializationError(e.to_string()))?;
-        let reg_helper = RegistryHelper::new()
+        debug!("Processing property: {key}");
+        debug!("Key path: {}, Value name: {}, Value type: {}, Map JSON to Registry: {}", adapted_registry_value.key_path, adapted_registry_value.value_name, adapted_registry_value.value_type, adapted_registry_value.map_json_to_registry);
+            //        let reg_helper = RegistryHelper::new();
     }
     Ok("{}".to_string())
 }
