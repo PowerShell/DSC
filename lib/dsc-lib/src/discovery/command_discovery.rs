@@ -521,10 +521,13 @@ impl ResourceDiscovery for CommandDiscovery {
                 let type_known_natively = locked_get!(RESOURCES, filter.resource_type()).is_some()
                     || locked_get!(ADAPTERS, filter.resource_type()).is_some();
                 if type_known_natively {
+                    let required_version = filter.require_version()
+                        .map_or_else(|| "*".to_string(), std::string::ToString::to_string);
                     debug!(
                         "{}",
                         t!("discovery.commandDiscovery.skipAdapterSearchForNativeType",
-                            resource = filter.resource_type())
+                            resource = filter.resource_type(),
+                            required_version = required_version)
                     );
                     return false;
                 }
@@ -558,11 +561,11 @@ impl ResourceDiscovery for CommandDiscovery {
                 if let Some(adapted_resources) = locked_get!(ADAPTED_RESOURCES, filter.resource_type()) {
                     filter_resources(&mut found_resources, &mut required_resources, &adapted_resources, filter);
                 }
-                if required_resources.values().all(|&v| v) {
+                if adapter_filter_candidates.iter().all(|f| required_resources.get(*f).copied().unwrap_or(false)) {
                     break;
                 }
             }
-            if required_resources.values().all(|&v| v) {
+            if adapter_filter_candidates.iter().all(|f| required_resources.get(*f).copied().unwrap_or(false)) {
                 break;
             }
         }
