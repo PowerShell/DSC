@@ -936,13 +936,11 @@ pub fn process_get_args(args: Option<&Vec<GetArgKind>>, input: &str, resource: &
                 processed_args.push(resource.type_name.to_string());
             },
             GetArgKind::ResourcePath { resource_path_arg, include_quotes} => {
-                if let Some(path) = &command_resource_info.path {
-                    processed_args.push(resource_path_arg.clone());
-                    if *include_quotes {
-                        processed_args.push(format!("\"{}\"", path.to_string_lossy()));
-                    } else {
-                        processed_args.push(path.to_string_lossy().to_string());
-                    }
+                processed_args.push(resource_path_arg.clone());
+                if *include_quotes {
+                    processed_args.push(format!("\"{}\"", resource.path.to_string_lossy()));
+                } else {
+                    processed_args.push(resource.path.to_string_lossy().to_string());
                 }
             },
         }
@@ -1014,15 +1012,23 @@ fn process_set_delete_args(args: Option<&Vec<SetDeleteArgKind>>, input: &str, re
                 processed_args.push(input.to_string());
             },
             SetDeleteArgKind::ResourcePath { resource_path_arg, include_quotes} => {
-                if let Some(path) = &command_resource_info.path {
-                    processed_args.push(resource_path_arg.clone());
-                    if *include_quotes {
-                        processed_args.push(format!("\"{}\"", path.to_string_lossy()));
-                    } else {
-                        processed_args.push(path.to_string_lossy().to_string());
-                    }
+                processed_args.push(resource_path_arg.clone());
+                if *include_quotes {
+                    processed_args.push(format!("\"{}\"", resource.path.to_string_lossy()));
+                } else {
+                    processed_args.push(resource.path.to_string_lossy().to_string());
                 }
             },
+            SetDeleteArgKind::ResourceType { resource_type_arg } => {
+                processed_args.push(resource_type_arg.clone());
+                processed_args.push(resource.type_name.to_string());
+            },
+            SetDeleteArgKind::WhatIf { what_if_arg } => {
+                supports_whatif = true;
+                if execution_type == &ExecutionKind::WhatIf {
+                    processed_args.push(what_if_arg.clone());
+                }
+            }
         }
     }
 
