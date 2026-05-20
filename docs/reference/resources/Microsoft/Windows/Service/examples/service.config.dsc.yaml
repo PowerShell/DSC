@@ -1,10 +1,10 @@
 # yaml-language-server: $schema=https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
-  - name: Ensure Windows Update is stopped and set to manual start
+  - name: Ensure Print Spooler is stopped and set to manual start
     type: Microsoft.Windows/Service
     properties:
-      name: wuauserv
+      name: Spooler
       status: Stopped
       startType: Manual
   - name: Ensure Windows Time service is running

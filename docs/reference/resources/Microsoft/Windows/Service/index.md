@@ -61,7 +61,8 @@ can:
 
 - The resource is only usable on a Windows system.
 - **Set** operations require an elevated (administrator) process context. Running `dsc` without
-  elevation when using the **Set** operation causes an access-denied error from the SCM.
+  elevation when using the **Set** operation causes DSC to return an access-denied error before
+  calling the SCM.
 
 ## Capabilities
 
