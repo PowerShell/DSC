@@ -1,7 +1,7 @@
 _version = 1
 
 [main]
-missingOperation = "Missing operation. Usage: windows_service get --input <json> | set [-w] --input <json> | export [--input <json>]"
+missingOperation = "Missing operation. Usage: windows_service get --input <json> | set [--what-if] --input <json> | export [--input <json>]"
 unknownOperation = "Unknown operation: '%{operation}'. Expected: get, set, or export"
 missingInput = "Missing --input argument"
 missingInputValue = "Missing value for --input argument"
