@@ -19,6 +19,7 @@ The following table lists known issues with Microsoft DSC v3:
 | [Unable to parse content from `<manifestUrl>`](#t01)                            | When authoring a resource manifest in VS Code, you may encounter parsing errors.        | Confirmed | [#917][#917] |
 | [Resource not found when using Windows PowerShell adapter](#t02)                | A resource can't be found when using the `Microsoft.Windows/WindowsPowerShell` adapter. | Confirmed | [#765][#765] |
 | [Validation errors when executing dsc.exe in Windows PowerShell sessions](#t03) | DSC raises input validation errors when invoked in Windows PowerShell                   | Confirmed | [#965][#965] |
+| [Numeric string values coerced to integers in Windows PowerShell](#t04)          | DSC raises schema errors for string-typed properties with numeric values in Windows PowerShell. | Confirmed | — |
 
 For the most up-to-date information on known issues, see the [DSC GitHub repository issues][01].
 
@@ -145,6 +146,75 @@ When executing `dsc.exe` commands in Windows PowerShell:
 - Recommend piping JSON over stdin with the --file - syntax.
 - Use `ConvertTo-Json` without the `-Compress` parameter.
 - Consider using PowerShell 7+ for improved JSON handling compatibility.
+
+## Numeric string values coerced to integers in Windows PowerShell
+
+<a id="t04"></a>
+
+When running DSC configuration commands in Windows PowerShell, YAML string values that look like
+numbers — such as port numbers explicitly quoted as `"8080"` — are coerced to integers before
+schema validation. DSC then fails to validate the integer value against the schema property typed
+as `string`, even though the YAML source file is correctly authored.
+
+This issue is closely related to [Validation errors when executing dsc.exe in Windows PowerShell
+sessions](#t03). Both issues share the same root cause: Windows PowerShell's handling of values
+differs from PowerShell 7.
+
+### Error message
+
+> ERROR Schema: 8080 is not of type "string"
+
+### Prerequisites
+
+- Windows PowerShell session
+- A DSC configuration document or resource input that defines string-typed properties with
+  values that look like integers. For example, port numbers such as `"8080"` or `"23"`
+
+### Problem details
+
+Some DSC resource schemas define properties as `string` even when their values are numeric.
+Port numbers are a common example. YAML allows you to preserve the string type by quoting the
+value explicitly (`localPorts: "8080"`). PowerShell 7 preserves that explicit type through to
+schema validation.
+
+In Windows PowerShell, the quoted numeric string is coerced to a JSON integer before DSC
+validates it. The difference is visible in DSC's `Verify JSON` debug output:
+
+**PowerShell 7 (correct):**
+
+```json
+{ "localPorts": "8080" }
+```
+
+**Windows PowerShell (incorrect):**
+
+```json
+{ "localPorts": 8080 }
+```
+
+DSC validates `8080` (integer) against the schema property typed as `string` and fails.
+
+### Resolution steps
+
+Run `dsc` commands from a PowerShell 7 or later session. PowerShell 7 preserves the string type
+of explicitly quoted numeric values in YAML, so schema validation succeeds.
+
+If Windows PowerShell is required, pipe the configuration file over stdin using the `--file -`
+syntax. This bypasses the coercion issue because DSC reads the YAML directly from the file stream
+rather than through PowerShell's value handling:
+
+```powershell
+Get-Content .\firewall.config.dsc.yaml | dsc config test --file -
+```
+
+### Possible causes
+
+- Windows PowerShell does not preserve the explicit string quoting for numeric-looking YAML
+  values, coercing them to integers before DSC can validate them.
+
+### Recommendation
+
+Run all `dsc` commands from a PowerShell 7 or later session to avoid this coercion behavior.
 
 ## See also
 

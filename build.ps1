@@ -89,6 +89,7 @@ param(
     [switch]$Test,
     [string[]]$Project,
     [switch]$ExcludeRustTests,
+    [string]$RustTestFilter,
     [switch]$ExcludePesterTests,
     [ValidateSet("dsc", "adapters", "extensions", "grammars", "resources")]
     [string[]]$PesterTestGroup,
@@ -265,6 +266,9 @@ process {
                 Project      = $BuildData.Projects
                 Architecture = $Architecture
                 Release      = $Release
+            }
+            if (-not [string]::IsNullOrEmpty($RustTestFilter)) {
+                $rustTestParams.TestFilter = $RustTestFilter
             }
             Write-BuildProgress @progressParams -Status "Testing Rust projects"
             Test-RustProject @rustTestParams @VerboseParam

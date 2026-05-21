@@ -1475,7 +1475,7 @@ function Test-Clippy {
             Set-DefaultWorkspaceMemberGroup @workspaceParams
         }
     }
-    
+
     process {
         $clippyFlags = @(
             '--%'
@@ -1798,7 +1798,8 @@ function Test-RustProject {
         [ValidateSet('current','aarch64-pc-windows-msvc','x86_64-pc-windows-msvc','aarch64-apple-darwin','x86_64-apple-darwin','aarch64-unknown-linux-gnu','aarch64-unknown-linux-musl','x86_64-unknown-linux-gnu','x86_64-unknown-linux-musl')]
         $Architecture = 'current',
         [switch]$Release,
-        [switch]$Docs
+        [switch]$Docs,
+        [string]$TestFilter
     )
 
     begin {
@@ -1828,7 +1829,11 @@ function Test-RustProject {
         } else {
             Write-Verbose -Verbose "Testing rust projects: [$members]"
         }
-        cargo test @flags
+        if (-not [string]::IsNullOrEmpty($TestFilter)) {
+            cargo test @flags -- $TestFilter
+        } else {
+            cargo test @flags
+        }
 
         if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
             Write-Error "Last exit code is $LASTEXITCODE, rust tests failed"
@@ -2087,7 +2092,7 @@ function Build-DscMsixPackage {
             throw 'MSIX requires a specific architecture'
         }
 
-        $displayName = 'DesiredStateConfiguration'
+        $displayName = 'Desired State Configuration'
         $productName = 'DesiredStateConfiguration'
 
         if ($isPreview) {
@@ -2112,10 +2117,10 @@ function Build-DscMsixPackage {
             $productVersion = $productVersion -replace '(\d+)$', "$previewNumber.0"
 
             if ($isPrivate) {
-                $displayName += "-Private"
+                $displayName += " (Private)"
             }
             else {
-                $displayName += "-Preview"
+                $displayName += " (Preview)"
             }
         } else {
             # appx requires a version in the format of major.minor.build.revision with revision being 0

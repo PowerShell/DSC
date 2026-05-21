@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+  - name: Cleanup application firewall rules
+    type: Microsoft.Windows/FirewallRuleList
+    properties:
+      rules:
+        - name: Remove 'DscDemo - Custom App (TCP-In)'
+          _exist: false
+        - name: Remove 'DscDemo - Block Telnet (TCP-Out)'
+          _exist: false
