@@ -16,7 +16,7 @@ pub struct Metadata {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct WindowsFeatureList {
     #[serde(rename = "_restartRequired", skip_serializing_if = "Option::is_none")]
     pub restart_required_meta: Option<Vec<Map<String, Value>>>,
@@ -24,7 +24,7 @@ pub struct WindowsFeatureList {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
-#[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct WindowsFeatureInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub feature_name: Option<String>,
