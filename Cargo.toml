@@ -21,6 +21,7 @@ members = [
     "resources/sshdconfig",
     "resources/WindowsUpdate",
     "resources/windows_service",
+    "resources/windows_feature",
     "resources/windows_firewall",
     "tools/dsctest",
     "tools/test_group_resource",
@@ -48,17 +49,18 @@ default-members = [
     "lib/dsc-lib-registry",
     "resources/runcommandonset",
     "lib/dsc-lib-security_context",
-    "resources/dism_dsc",
     "resources/sshdconfig",
     "resources/WindowsUpdate",
     "resources/windows_service",
+    "resources/windows_feature",
     "resources/windows_firewall",
     "tools/dsctest",
     "tools/test_group_resource",
     "grammars/tree-sitter-dscexpression",
     "grammars/tree-sitter-ssh-server-config",
     "y2j",
-    "xtask"
+    "xtask",
+    "resources/dism_dsc"
 ]
 
 [workspace.metadata.groups]
@@ -83,6 +85,7 @@ Windows = [
     "resources/sshdconfig",
     "resources/WindowsUpdate",
     "resources/windows_service",
+    "resources/windows_feature",
     "resources/windows_firewall",
     "tools/dsctest",
     "tools/test_group_resource",
