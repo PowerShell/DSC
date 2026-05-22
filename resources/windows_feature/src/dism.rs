@@ -25,13 +25,13 @@ unsafe extern "system" {
     ) -> *mut c_void;
 }
 
-#[repr(C, packed)]
+#[repr(C)]
 struct DismFeature {
     feature_name: *const u16,
     state: i32,
 }
 
-#[repr(C, packed)]
+#[repr(C)]
 struct DismFeatureInfo {
     feature_name: *const u16,
     state: i32,
@@ -259,6 +259,7 @@ impl DismSessionHandle {
                 enable_all: None,
                 source_paths: None,
                 limit_access: None,
+                ..Default::default()
             };
             (self.api.delete)(info_ptr as *const c_void);
             feature_info

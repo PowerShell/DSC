@@ -67,6 +67,7 @@ pub fn handle_export(filter: Option<&WindowsFeatureList>) -> Result<WindowsFeatu
                     enable_all: None,
                     source_paths: None,
                     limit_access: None,
+                    ..Default::default()
                 },
             };
 
