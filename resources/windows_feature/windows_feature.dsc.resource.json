@@ -25,10 +25,14 @@
             {
                 "jsonInputArg": "--input",
                 "mandatory": true
+            },
+            {
+                "whatIfArg": "--what-if"
             }
         ],
         "implementsPretest": false,
         "return": "state",
+        "whatIfReturns": "state",
         "requireSecurityContext": "elevated"
     },
     "export": {
@@ -137,6 +141,17 @@
                                 "type": "boolean",
                                 "title": "Limit access",
                                 "description": "When true, prevents DISM from contacting Windows Update to download feature payloads, even when sourcePaths is empty. Passed as LimitAccess to DismEnableFeature. Only applies to set with state Installed."
+                            },
+                            "_metadata": {
+                                "type": "object",
+                                "title": "Metadata",
+                                "description": "Metadata returned by what-if operations.",
+                                "properties": {
+                                    "whatIf": {
+                                        "type": "array",
+                                        "items": { "type": "string" }
+                                    }
+                                }
                             }
                         }
                     }
