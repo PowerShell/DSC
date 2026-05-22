@@ -9,22 +9,14 @@ invalidJson = "Invalid JSON input: %{error}"
 windowsOnly = "This resource is only supported on Windows"
 
 [get]
-failedParseInput = "Failed to parse input: %{err}"
 featuresArrayEmpty = "Features array cannot be empty for get operation"
 featureNameRequired = "featureName is required for get operation"
-failedSerializeOutput = "Failed to serialize output: %{err}"
-
-[export]
-failedParseInput = "Failed to parse input: %{err}"
-failedSerializeOutput = "Failed to serialize output: %{err}"
 
 [set]
-failedParseInput = "Failed to parse input: %{err}"
 featuresArrayEmpty = "Features array cannot be empty for set operation"
 featureNameRequired = "featureName is required for set operation"
 stateRequired = "state is required for set operation"
 unsupportedDesiredState = "Unsupported desired state '%{state}'. Supported states for set are: Installed, NotPresent, Removed"
-failedSerializeOutput = "Failed to serialize output: %{err}"
 
 [dism]
 failedLoadLibrary = "Failed to load dismapi.dll. Ensure DISM is available on this system."
