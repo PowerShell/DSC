@@ -8,6 +8,13 @@ use crate::util::{DismState, WildcardFilterable, matches_optional_exact, matches
 
 pub type FeatureState = DismState;
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct Metadata {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub what_if: Option<Vec<String>>,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct WindowsFeatureList {
@@ -43,6 +50,8 @@ pub struct WindowsFeatureInfo {
     /// Passed as the `LimitAccess` parameter to `DismEnableFeature`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit_access: Option<bool>,
+    #[serde(rename = "_metadata", skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<Metadata>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]

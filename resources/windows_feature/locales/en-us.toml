@@ -36,3 +36,8 @@ getFeatureInfoFailed = "DismGetFeatureInfo failed for '%{name}': HRESULT %{hr}"
 enableFeatureFailed = "DismEnableFeature failed for '%{name}': HRESULT %{hr}"
 disableFeatureFailed = "DismDisableFeature failed for '%{name}': HRESULT %{hr}"
 getFeaturesFailed = "DismGetFeatures failed: HRESULT %{hr}"
+
+[windows_feature_helper]
+whatIfEnable = "Would enable feature '%{name}'"
+whatIfDisable = "Would disable feature '%{name}' (remove payload: false)"
+whatIfRemove = "Would remove feature '%{name}' (remove payload: true)"
