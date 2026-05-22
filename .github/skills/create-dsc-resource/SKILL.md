@@ -298,7 +298,7 @@ In the resource's `*.dsc.resource.json`, add `whatIfArg` to the `set` (and `dele
 }
 ```
 
-- `whatIfArg` is the literal CLI flag DSC will append when the user runs `dsc config set --what-if`. Always use `"-w"` (short form) for consistency across resources.
+- `whatIfArg` is the literal CLI flag DSC will append when the user runs `dsc config set --what-if`. Always use `"--what-if"` (long form) for consistency across resources.
 - `whatIfReturns: "state"` tells DSC the executable prints the projected post-state JSON on stdout (same shape as `get`/`set` returns).
 - The `--list` (bulk) variant of a resource uses the same two manifest additions; do not invent new flag names.
 
