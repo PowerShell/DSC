@@ -56,7 +56,8 @@ impl Statement {
         };
         let root_node = tree.root_node();
         if root_node.is_error() {
-            return Err(DscError::Parser(t!("parser.failedToParseRoot", statement = statement).to_string()));
+            // if root node is error, treat as string literal
+            return Ok(Value::String(statement.to_string()));
         }
         if root_node.kind() != "statement" {
             return Err(DscError::Parser(t!("parser.invalidStatement", statement = statement).to_string()));

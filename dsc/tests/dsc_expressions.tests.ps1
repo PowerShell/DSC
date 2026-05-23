@@ -505,4 +505,18 @@ resources:
       $out.results[0].name | Should -Be 'SERVICE-api'
     }
   }
+
+  It 'Expression that cannot be parsed is treated as string literal' {
+    $yaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: test
+  type: Microsoft.DSC.Debug/Echo
+  properties:
+    output: ''
+'@
+    $out = dsc config get -i $yaml 2>$TestDrive/error.log | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw | Out-String)
+    $out.results[0].result.actualState.output | Should -BeNullOrEmpty
+  }
 }
