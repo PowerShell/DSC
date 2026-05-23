@@ -51,13 +51,17 @@ impl Statement {
             return Ok(Value::String(statement.to_string()));
         }
 
+        // if statement is empty or just whitespace, return as string without parsing
+        if statement.trim().is_empty() {
+            return Ok(Value::String(statement.to_string()));
+        }
+
         let Some(tree) = &mut self.parser.parse(statement, None) else {
             return Err(DscError::Parser(t!("parser.failedToParse", statement = statement).to_string()));
         };
         let root_node = tree.root_node();
         if root_node.is_error() {
-            // if root node is error, treat as string literal
-            return Ok(Value::String(statement.to_string()));
+            return Err(DscError::Parser(t!("parser.failedToParseRoot", statement = statement).to_string()));
         }
         if root_node.kind() != "statement" {
             return Err(DscError::Parser(t!("parser.invalidStatement", statement = statement).to_string()));
