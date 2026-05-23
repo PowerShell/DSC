@@ -25,13 +25,13 @@ unsafe extern "system" {
     ) -> *mut c_void;
 }
 
-#[repr(C)]
+#[repr(C, packed(4))]
 struct DismFeature {
     feature_name: *const u16,
     state: i32,
 }
 
-#[repr(C)]
+#[repr(C, packed(4))]
 struct DismFeatureInfo {
     feature_name: *const u16,
     state: i32,
@@ -248,14 +248,21 @@ impl DismSessionHandle {
         }
 
         let result = unsafe {
-            let info = &*info_ptr;
+            // Use addr_of! + read_unaligned because the struct is packed(4):
+            // pointer fields are only 4-byte aligned, so we cannot create
+            // Rust references to them (that would be UB on x64).
+            let feature_name  = std::ptr::addr_of!((*info_ptr).feature_name).read_unaligned();
+            let state         = std::ptr::addr_of!((*info_ptr).state).read_unaligned();
+            let display_name  = std::ptr::addr_of!((*info_ptr).display_name).read_unaligned();
+            let description   = std::ptr::addr_of!((*info_ptr).description).read_unaligned();
+            let restart       = std::ptr::addr_of!((*info_ptr).restart_required).read_unaligned();
             let feature_info = WindowsFeatureInfo {
-                feature_name: Some(from_wide_ptr(info.feature_name)),
+                feature_name: Some(from_wide_ptr(feature_name)),
                 exist: None,
-                state: FeatureState::from_dism(info.state),
-                display_name: Some(from_wide_ptr(info.display_name)),
-                description: Some(from_wide_ptr(info.description)),
-                restart_required: RestartType::from_dism(info.restart_required),
+                state: FeatureState::from_dism(state),
+                display_name: Some(from_wide_ptr(display_name)),
+                description: Some(from_wide_ptr(description)),
+                restart_required: RestartType::from_dism(restart),
                 enable_all: None,
                 source_paths: None,
                 limit_access: None,
@@ -377,9 +384,11 @@ impl DismSessionHandle {
         let mut result = Vec::new();
         unsafe {
             for i in 0..count as usize {
-                let feature = &*features_ptr.add(i);
-                let name = from_wide_ptr(feature.feature_name);
-                result.push((name, feature.state));
+                let fp = features_ptr.add(i);
+                let name_ptr = std::ptr::addr_of!((*fp).feature_name).read_unaligned();
+                let state    = std::ptr::addr_of!((*fp).state).read_unaligned();
+                let name = from_wide_ptr(name_ptr);
+                result.push((name, state));
             }
             (self.api.delete)(features_ptr as *const c_void);
         }
