@@ -506,17 +506,21 @@ resources:
     }
   }
 
-  It 'Expression that cannot be parsed is treated as string literal' {
-    $yaml = @'
-$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+  It "Expression that cannot be parsed is treated as string literal: '<expression>'" -TestCases @(
+    @{ expression = '' }
+    @{ expression = ' ' }
+  ) {
+    param($expression)
+    $yaml = @"
+`$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: test
   type: Microsoft.DSC.Debug/Echo
   properties:
-    output: ''
-'@
+    output: '$expression'
+"@
     $out = dsc config get -i $yaml 2>$TestDrive/error.log | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw | Out-String)
-    $out.results[0].result.actualState.output | Should -BeNullOrEmpty
+    $out.results[0].result.actualState.output | Should -BeExactly $expression
   }
 }
