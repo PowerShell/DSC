@@ -118,7 +118,7 @@ the synopsis:
 
 Use a YAML fenced code block aligned with spaces:
 
-```markdown
+````markdown
 ## Metadata
 
 ```yaml
@@ -127,7 +127,7 @@ Kind       : resource | adapter
 Tags       : [<tag1>, <tag2>]
 Author     : Microsoft
 ```
-```
+````
 
 For adapter resources, add additional fields:
 
@@ -150,7 +150,7 @@ which properties are required vs optional.
 
 **For standard resources:**
 
-```markdown
+````markdown
 ## Instance definition syntax
 
 ```yaml
@@ -163,11 +163,11 @@ resources:
       # Instance properties
       <optionalProp>:
 ```
-```
+````
 
 **For adapter resources**, use two subsections:
 
-```markdown
+````markdown
 ## Adapted resource instance definition syntax
 
 ### Implicitly required adapter syntax
@@ -189,7 +189,7 @@ resources:
   directives:
     requireAdapter: <TypeName>
 ```
-```
+````
 
 ---
 
@@ -328,7 +328,7 @@ Use these standard phrases when there are no properties in a category:
 
 For every property listed above, create a third-level heading and a collapsible metadata block:
 
-```markdown
+````markdown
 ### <propName>
 
 <details><summary>Expand for <code><propName></code> property metadata</summary>
@@ -344,7 +344,7 @@ IsWriteOnly      : false
 </details>
 
 <Description of the property. Include valid values, default value, and any constraints.>
-```
+````
 
 Add `DefaultValue`, `ValidValues`, `ConstantValue`, `RequiresProperties`, or range fields as
 applicable. For nested objects or array properties, add sub-subsections (`####`) for each
@@ -367,7 +367,7 @@ Omit the following metadata-only keywords: `title`, `description`, `$id`, `$sche
 `pattern`, `minimum`, `maximum`, `additionalProperties`, `dependentRequired`, `readOnly`,
 `default`, `items`, `minProperties`, `maxProperties`, `minItems`, `maxItems`.
 
-```markdown
+````markdown
 ## Instance validating schema
 
 The following snippet contains the JSON Schema that validates an instance of the resource.
@@ -378,7 +378,7 @@ The following snippet contains the JSON Schema that validates an instance of the
   ...
 }
 ```
-```
+````
 
 ---
 
