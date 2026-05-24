@@ -26,7 +26,7 @@
                 "mandatory": true
             },
             {
-                "whatIfArg": "-w"
+                "whatIfArg": "--what-if"
             }
         ],
         "implementsPretest": false,
