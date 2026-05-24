@@ -963,10 +963,14 @@ pub fn process_get_args(args: Option<&Vec<GetArgKind>>, input: &str, command_res
                 processed_args.push(resource_type_arg.clone());
                 processed_args.push(command_resource_info.type_name.to_string());
             },
-            GetArgKind::ResourcePath { resource_path_arg } => {
+            GetArgKind::ResourcePath { resource_path_arg, include_quotes} => {
                 if let Some(path) = &command_resource_info.path {
                     processed_args.push(resource_path_arg.clone());
-                    processed_args.push(path.to_string_lossy().to_string());
+                    if *include_quotes {
+                        processed_args.push(format!("\"{}\"", path.to_string_lossy()));
+                    } else {
+                        processed_args.push(path.to_string_lossy().to_string());
+                    }
                 }
             },
         }
@@ -1028,10 +1032,14 @@ fn process_set_delete_args(args: Option<&Vec<SetDeleteArgKind>>, input: &str, co
                 processed_args.push(json_input_arg.clone());
                 processed_args.push(input.to_string());
             },
-            SetDeleteArgKind::ResourcePath { resource_path_arg } => {
+            SetDeleteArgKind::ResourcePath { resource_path_arg, include_quotes} => {
                 if let Some(path) = &command_resource_info.path {
                     processed_args.push(resource_path_arg.clone());
-                    processed_args.push(path.to_string_lossy().to_string());
+                    if *include_quotes {
+                        processed_args.push(format!("\"{}\"", path.to_string_lossy()));
+                    } else {
+                        processed_args.push(path.to_string_lossy().to_string());
+                    }
                 }
             },
             SetDeleteArgKind::ResourceType { resource_type_arg } => {

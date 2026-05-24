@@ -112,14 +112,17 @@ pub enum GetArgKind {
         /// Indicates if argument is mandatory which will pass an empty string if no JSON input is provided.  Default is false.
         mandatory: Option<bool>,
     },
+    #[serde(rename_all = "camelCase")]
     ResourcePath {
         /// The argument that accepts the resource path.
-        #[serde(rename = "resourcePathArg")]
         resource_path_arg: String,
+        /// Indicates if the argument should be wrapped in quotes.  Default is false.
+        #[serde(default)]
+        include_quotes: bool,
     },
+    #[serde(rename_all = "camelCase")]
     ResourceType {
         /// The argument that accepts the resource type name.
-        #[serde(rename = "resourceTypeArg")]
         resource_type_arg: String,
     },
 }
@@ -138,20 +141,23 @@ pub enum SetDeleteArgKind {
         /// Indicates if argument is mandatory which will pass an empty string if no JSON input is provided.  Default is false.
         mandatory: Option<bool>,
     },
+    #[serde(rename_all = "camelCase")]
     ResourcePath {
         /// The argument that accepts the resource path.
-        #[serde(rename = "resourcePathArg")]
         resource_path_arg: String,
+        /// Indicates if the resource path should be passed with quotes.  Default is false.
+        #[serde(default)]
+        include_quotes: bool,
     },
+    #[serde(rename_all = "camelCase")]
     ResourceType {
         /// The argument that accepts the resource type name.
-        #[serde(rename = "resourceTypeArg")]
         resource_type_arg: String,
     },
     /// The argument is passed when the resource is invoked in what-if mode.
+    #[serde(rename_all = "camelCase")]
     WhatIf {
         /// The argument to pass when in what-if mode.
-        #[serde(rename = "whatIfArg")]
         what_if_arg: String,
     }
 }
