@@ -51,6 +51,11 @@ impl Statement {
             return Ok(Value::String(statement.to_string()));
         }
 
+        // if statement is empty or just whitespace, return as string without parsing
+        if statement.trim().is_empty() {
+            return Ok(Value::String(statement.to_string()));
+        }
+
         let Some(tree) = &mut self.parser.parse(statement, None) else {
             return Err(DscError::Parser(t!("parser.failedToParse", statement = statement).to_string()));
         };
