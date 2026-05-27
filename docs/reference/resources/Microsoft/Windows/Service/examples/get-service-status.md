@@ -18,7 +18,7 @@ The following snippet shows how to use the resource with the [dsc resource get][
 retrieve the current state of the `wuauserv` (Windows Update) service by its key name.
 
 ```powershell
-$instance = @{ name = 'wuauserv' } | ConvertTo-Json
+$instance = @{ name = 'wuauserv' } | ConvertTo-Json -Compress
 
 dsc resource get --resource Microsoft.Windows/Service --input $instance
 ```
@@ -45,7 +45,7 @@ actualState:
 You can also identify the service by its display name when you don't know the key name.
 
 ```powershell
-$instance = @{ displayName = 'Windows Update' } | ConvertTo-Json
+$instance = @{ displayName = 'Windows Update' } | ConvertTo-Json -Compress
 
 dsc resource get --resource Microsoft.Windows/Service --input $instance
 ```

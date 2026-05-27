@@ -966,6 +966,10 @@
           },
           {
             "resourceTypeArg": "--resource-type"
+          },
+          {
+            "resourcePathArg": "--resource-path",
+            "includeQuotes": true
           }
         ]
       },

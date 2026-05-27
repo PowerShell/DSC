@@ -53,13 +53,13 @@ DSC differs from PowerShell Desired State Configuration (PSDSC) in a few importa
 
 - DSC doesn't _depend_ on PowerShell, Windows PowerShell, or the [PSDesiredStateConfiguration][01]
   PowerShell module. DSC provides full compatibility with PSDSC resources through the
-  `Microsoft.DSC/PowerShell` and `Microsoft.Windows/WindowsPowerShell` _adapter resources_.
+  `Microsoft.Adapter/PowerShell` and `Microsoft.Adapter/WindowsPowerShell` _adapter resources_.
 
-  With the `Microsoft.DSC/PowerShell` adapter resource, you can use any PSDSC resource implemented
+  With the `Microsoft.Adapter/PowerShell` adapter resource, you can use any PSDSC resource implemented
   as a PowerShell class. The resource handles discovering, validating, and invoking PSDSC
   resources in PowerShell. The resource is included in the DSC install package for every platform.
 
-  With the `Microsoft.Windows/WindowsPowerShell` adapter resource, you can use any PSDSC resource
+  With the `Microsoft.Adapter/WindowsPowerShell` adapter resource, you can use any PSDSC resource
   compatible with Windows PowerShell. The resource handles discovering, validating, and invoking
   PSDSC resources in Windows PowerShell. The resource is included in the DSC install packages for
   Windows only.

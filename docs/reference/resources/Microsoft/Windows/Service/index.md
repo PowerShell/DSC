@@ -61,8 +61,7 @@ can:
 
 - The resource is only usable on a Windows system.
 - **Set** operations require an elevated (administrator) process context. Running `dsc` without
-  elevation when using the **Set** operation causes DSC to return an access-denied error before
-  calling the SCM.
+  elevation when using the **Set** operation causes an access-denied error from the SCM.
 
 ## Capabilities
 
@@ -78,9 +77,9 @@ the desired state. For more information about resource capabilities, see
 
 ## Examples
 
-1. [Get service status][03] - Shows how to retrieve the current state of a Windows service with the
+1. [Get service status][02] - Shows how to retrieve the current state of a Windows service with the
    `dsc resource` commands.
-1. [Configure a Windows service][04] - Shows how to enforce the desired configuration of a Windows
+1. [Configure a Windows service][03] - Shows how to enforce the desired configuration of a Windows
    service using a DSC configuration document.
 
 ## Properties
@@ -90,7 +89,7 @@ The following list describes the properties for the resource.
 - **Key properties:** <a id="key-properties"></a> The following properties uniquely identify an
   instance. If two instances of a resource have the same values for their key properties, the
   instances are conflicting. For more information about key properties, see the "Key resource
-  properties" section in [DSC resource properties][05].
+  properties" section in [DSC resource properties][04].
 
   - [name](#name) - The name of the service in the Service Control Manager.
 
@@ -108,7 +107,7 @@ The following list describes the properties for the resource.
 
 - **Read-only properties:** <a id="read-only-properties"></a> The resource returns the following
   properties, but they aren't configurable. For more information about read-only properties, see
-  the "Read-only resource properties" section in [DSC resource properties][06].
+  the "Read-only resource properties" section in [DSC resource properties][05].
 
   - [_exist](#_exist) - Indicates whether the service exists in the Service Control Manager.
 
@@ -148,7 +147,7 @@ IsWriteOnly : false
 </details>
 
 The friendly display name of the service shown in the Windows Services console — for example,
-`Windows Update`. You can supply `displayName` instead of (or alongside) `name` in a **Get**
+`Windows Update`. You can define `displayName` instead of (or alongside) `name` in a **Get**
 operation to locate a service when you don't know its key name. If both are provided, DSC verifies
 that they refer to the same service and returns an error if they don't match.
 
@@ -325,7 +324,7 @@ IsWriteOnly       : false
 </details>
 
 A list of service key names that this service depends on. The SCM will not start the service until
-all listed dependencies are running. Setting this property replaces the existing dependency list
+all listed dependencies are running. Setting this property _replaces_ the existing dependency list
 for the service.
 
 ## Instance validating schema
@@ -411,15 +410,15 @@ Manager API, or the result could not be serialized.
 
 ## See also
 
-- [Microsoft.Windows/Registry resource][07]
+- [Microsoft.Windows/Registry resource][06]
 - [DSC resource capabilities][01]
-- [DSC resource properties][02]
+- [DSC resource properties][07]
 
 <!-- Link definitions -->
 [01]: ../../../../../concepts/resources/capabilities.md
-[02]: ../../../../../concepts/resources/properties.md
-[03]: ./examples/get-service-status.md
-[04]: ./examples/configure-windows-service.md
-[05]: ../../../../../concepts/resources/properties.md#key-resource-properties
-[06]: ../../../../../concepts/resources/properties.md#read-only-resource-properties
-[07]: ../Registry/index.md
+[02]: ./examples/get-service-status.md
+[03]: ./examples/configure-windows-service.md
+[04]: ../../../../../concepts/resources/properties.md#key-resource-properties
+[05]: ../../../../../concepts/resources/properties.md#read-only-resource-properties
+[06]: ../Registry/index.md
+[07]: ../../../../../concepts/resources/properties.md

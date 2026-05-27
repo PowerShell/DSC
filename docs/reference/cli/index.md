@@ -89,7 +89,7 @@ The following list shows the valid message levels from highest to lowest level. 
 set to any value in the list, DSC emits messages at that level and above.
 
 - `error`
-- `warning` (default)
+- `warn` (default)
 - `info`
 - `debug`
 - `trace`
@@ -106,8 +106,8 @@ lower log level.
 ```yaml
 Type         : string
 Mandatory    : false
-DefaultValue : warning
-ValidValues  : [error, warning, info, debug, trace]
+DefaultValue : warn
+ValidValues  : [error, warn, info, debug, trace]
 LongSyntax   : --trace-level <TRACE_LEVEL>
 ShortSyntax  : -l <TRACE_LEVEL>
 ```
