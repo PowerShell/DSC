@@ -28,6 +28,13 @@ pub enum AdapterSubCommand {
         #[clap(short, long, required = true, help = t!("args.adapterArgsAdaptedResourceHelp").to_string())]
         adapted_resource: String,
     },
+    #[clap(name = "export", about = t!("args.adapterExportAbout").to_string())]
+    Export {
+        #[clap(short, long, required = true, help = t!("args.adapterArgsInputHelp").to_string())]
+        input: String,
+        #[clap(short, long, required = true, help = t!("args.adapterArgsAdaptedResourceHelp").to_string())]
+        adapted_resource: String,
+    },
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]

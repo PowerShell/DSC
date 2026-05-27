@@ -1,5 +1,15 @@
 _version = 1
 
+[adapter]
+getProcessingKey = "Processing key: %{key}"
+getNoAdaptedRegistryValueFound = "No adapted registry value found for key: %{key}"
+registryValueNotFound = "Registry value not found for key path: %{key_path} and value name: %{value_name}"
+couldNotConvertRegistryValue = "Could not convert registry value for key path: %{key_path} and value name: %{value_name} to JSON type: %{json_type}"
+unsupportedConversionToJsonType = "Unsupported conversion from %{registry_value_data} to JSON type: %{json_type}"
+mappingNotFound = "No mapping found for registry key path: %{key_path} and value name: %{value_name}"
+unsupportedValueType = "For value name %{value_name}, unsupported value type: %{value}"
+couldNotConvertDefaultValue = "Could not convert default value: %{default_value} to registry data type: %{reg_type}"
+
 [args]
 about = "Manage state of Windows registry"
 adapterAbout = "Use adapted registry resources."

@@ -6,7 +6,7 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum RegistryResourceError {
     #[error("Adapted resource deserialization error: {0}")]
-    AdaptedResourceDeserializationError(String),
+    AdaptedResource(String),
     #[error("Registry error: {0}")]
     RegistryError(#[from] dsc_lib_registry::error::RegistryError),
 }

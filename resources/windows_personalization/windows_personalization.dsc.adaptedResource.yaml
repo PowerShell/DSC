@@ -12,38 +12,57 @@ description: Controls Windows personalization settings such as accent color, lig
 author: Microsoft Corporation
 requireAdapter: Microsoft.Windows.Adapter/Registry
 content:
-  appUsesLightTheme:
-    keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize
+  appsUseLightTheme:
+    keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize
     valueType: REG_DWORD
-    valueName: AppUseLightTheme
+    valueName: AppsUseLightTheme
+    jsonType: boolean
+    defaultValueIfNotFound: 0
     mapJsonToRegistry:
       'false': 0
       'true': 1
   systemUsesLightTheme:
-    keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize
+    keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize
     valueType: REG_DWORD
     valueName: SystemUsesLightTheme
+    jsonType: boolean
+    defaultValueIfNotFound: 0
+    mapJsonToRegistry:
+      'false': 0
+      'true': 1
+  autoColorization:
+    keyPath: HKCU\Control Panel\Desktop
+    valueType: REG_DWORD
+    valueName: AutoColorization
+    jsonType: boolean
+    defaultValueIfNotFound: 0
     mapJsonToRegistry:
       'false': 0
       'true': 1
   colorPrevalence:
-    keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize
+    keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize
     valueType: REG_DWORD
     valueName: ColorPrevalence
+    jsonType: boolean
+    defaultValueIfNotFound: 0
     mapJsonToRegistry:
       'false': 0
       'true': 1
   transparencyEffects:
-    keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize
+    keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize
     valueType: REG_DWORD
     valueName: EnableTransparency
+    jsonType: boolean
+    defaultValueIfNotFound: 0
     mapJsonToRegistry:
       'false': 0
       'true': 1
   startMenuVisiblePlaces:
-    keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Start
+    keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Start
     valueType: REG_BINARY
     valueName: VisiblePlaces
+    jsonType: stringArray
+    defaultValueIfNotFound: []
     mapJsonToRegistry:
       # Documents: {2D34D5CE-FA5A-4543-82F2-22E6EAF7773C}
       Documents: [0xCE, 0xD5, 0x34, 0x2D, 0x5A, 0xFA, 0x43, 0x45, 0x82, 0xF2, 0x22, 0xE6, 0xEA, 0xF7, 0x77, 0x3C]
@@ -62,57 +81,102 @@ content:
       # Explorer: {148A24BC-D60C-4289-A080-6ED9BBA24882}
       Explorer: [0xBC, 0x24, 0x8A, 0x14, 0x0C, 0xD6, 0x89, 0x42, 0xA0, 0x80, 0x6E, 0xD9, 0xBB, 0xA2, 0x48, 0x82]
       # Settings: {52730886-51AA-4243-9F7B-2776584659D4}
-      Settings: [0x86, 0x88, 0x73, 0x52, 0xAA, 0x51, 0x43, 0x42, 0x9F, 0x7B, 0x27, 0x76, 0x58, 0x46, 0x59, 0xD4]
+      Settings: [0x86, 0x08, 0x73, 0x52, 0xAA, 0x51, 0x43, 0x42, 0x9F, 0x7B, 0x27, 0x76, 0x58, 0x46, 0x59, 0xD4]
   startMenuShowRecentList:
-    keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Start
-    valueType: REG_BOOL
+    keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Start
+    valueType: REG_DWORD
     valueName: ShowRecentList
+    jsonType: boolean
+    defaultValueIfNotFound: 0
     mapJsonToRegistry:
-      'false': false
-      'true': true
+      'false': 0
+      'true': 1
   showRecommendedApps:
-    keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
-    valueType: REG_BOOL
+    keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+    valueType: REG_DWORD
     valueName: Start_TrackDocs
+    jsonType: boolean
+    defaultValueIfNotFound: 0
     mapJsonToRegistry:
-      'false': false
-      'true': true
+      'false': 0
+      'true': 1
   taskbarShowBadges:
-    keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarBadges
+    keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarBadges
     valueType: REG_SZ
     valueName: SystemSettings_Taskbar_Badging
+    jsonType: boolean
+    defaultValueIfNotFound: '0'
     mapJsonToRegistry:
       'false': '0'
       'true': '1'
   desktopTaskbarShowBadges:
-    keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarBadges
+    keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarBadges
     valueType: REG_SZ
     valueName: SystemSettings_DesktopTaskbar_Badging
+    jsonType: boolean
+    defaultValueIfNotFound: '0'
     mapJsonToRegistry:
       'false': '0'
       'true': '1'
   multimonitorTaskbarGroupingMode:
-    keyPath: HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\MMTaskbarGlomLevel
+    keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\MMTaskbarGlomLevel
     valueType: REG_SZ
     valueName: SystemSettings_DesktopTaskbar_GroupingMode
+    jsonType: string
+    defaultValueIfNotFound: '0'
     mapJsonToRegistry:
-      # Always combine, hide labels: 0
       AlwaysCombineHideLabels: '0'
-      # Combine when taskbar is full: 1
       CombineWhenTaskbarIsFull: '1'
-      # Never combine: 2
       NeverCombine: '2'
+  multimonitorTarkbar:
+    keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\MMTaskbarEnabled
+    valueType: REG_SZ
+    valueName: SystemSettings_Taskbar_MultiMon
+    jsonType: boolean
+    defaultValueIfNotFound: '0'
+    mapJsonToRegistry:
+      'false': '0'
+      'true': '1'
+  multimonitorDesktopTaskbar:
+    keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\MMTaskbarEnabled
+    valueType: REG_SZ
+    valueName: SystemSettings_DesktopTaskbar_MultiMon
+    jsonType: boolean
+    defaultValueIfNotFound: '0'
+    mapJsonToRegistry:
+      'false': '0'
+      'true': '1'
+  multimonitorTaskbarMode:
+    keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\MMTaskbarMode
+    valueType: REG_SZ
+    valueName: SystemSettings_Taskbar_MultiMonTaskbarMode
+    jsonType: string
+    defaultValueIfNotFound: '0'
+    mapJsonToRegistry:
+      Duplicate: '0'
+      PrimaryAndMonitorWindowIsOn: '1'
+      MonitorWindowIsOn: '2'
+  multimonitorDesktopTaskbarMode:
+    keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\MMTaskbarMode
+    valueType: REG_SZ
+    valueName: SystemSettings_DesktopTaskbar_MultiMonTaskbarMode
+    jsonType: string
+    defaultValueIfNotFound: '0'
+    mapJsonToRegistry:
+      Duplicate: '0'
+      PrimaryAndMonitorWindowIsOn: '1'
+      MonitorWindowIsOn: '2'
 schema:
   embedded:
     $schema: http://json-schema.org/draft-07/schema#
     $id: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/resources/Adapted/Three/v0.1.0/schema.json
     title: Microsoft.Windows/Personalization
-    description: Windows personalization settings such as accent color, light/dark mode, and transparency effects.
+    description: Windows personalization settings such as accent color, light/dark mode, and transparency effects as described in https://learn.microsoft.com/windows/apps/develop/settings/settings-common
     type: object
     required: []
     additionalProperties: false
     properties:
-      appUsesLightTheme:
+      appsUseLightTheme:
         type: boolean
         title: App Uses Light Theme
         description: Indicates whether the app uses the light theme.
@@ -120,6 +184,10 @@ schema:
         type: boolean
         title: System Uses Light Theme
         description: Indicates whether the system uses the light theme.
+      autoColorization:
+        type: boolean
+        title: Auto Colorization
+        description: Signifies auto-apply accent color based on background or manually.
       colorPrevalence:
         type: boolean
         title: Color Prevalence
@@ -168,4 +236,27 @@ schema:
           - AlwaysCombineHideLabels
           - CombineWhenTaskbarIsFull
           - NeverCombine
-      
+      multimonitorTarkbar:
+        type: boolean
+        title: Multimonitor Taskbar
+        description: Enables showing the taskbar on multiple displays.
+      multimonitorDesktopTaskbar:
+        type: boolean
+        title: Multimonitor Desktop Taskbar
+        description: Enables showing the desktop taskbar on multiple displays.
+      multimonitorTaskbarMode:
+        type: string
+        title: Multimonitor Taskbar Mode
+        description: Specifies the mode of the taskbar on multiple displays.
+        enum:
+          - Duplicate
+          - PrimaryAndMonitorWindowIsOn
+          - MonitorWindowIsOn
+      multimonitorDesktopTaskbarMode:
+        type: string
+        title: Multimonitor Desktop Taskbar Mode
+        description: Specifies the mode of the desktop taskbar on multiple displays.
+        enum:
+          - Duplicate
+          - PrimaryAndMonitorWindowIsOn
+          - MonitorWindowIsOn

@@ -6,7 +6,7 @@ use crossterm::event;
 #[cfg(debug_assertions)]
 use std::env;
 
-use adapter::{adapter_get, adapter_set};
+use adapter::{adapter_export, adapter_get, adapter_set};
 use args::{AdapterSubCommand, Arguments, ConfigSubCommand, SubCommand};
 use clap::Parser;
 use dsc_lib_registry::{config::Registry, RegistryHelper};
@@ -44,6 +44,9 @@ fn main() {
                 },
                 AdapterSubCommand::Set { input, adapted_resource } => {
                     adapter_set(&input, &adapted_resource)
+                },
+                AdapterSubCommand::Export { input, adapted_resource } => {
+                    adapter_export(&input, &adapted_resource)
                 },
             };
             match result {

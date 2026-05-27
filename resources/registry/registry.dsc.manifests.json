@@ -158,6 +158,20 @@
                     }
                 ]
             },
+            "export": {
+                "executable": "registry",
+                "args": [
+                    "adapter",
+                    "export",
+                    {
+                        "jsonInputArg": "--input",
+                        "mandatory": true
+                    },
+                    {
+                        "adaptedContentArg": "--adapted-resource"
+                    }
+                ]
+            },
             "exitCodes": {
                 "0": "Success",
                 "1": "Invalid parameter",
