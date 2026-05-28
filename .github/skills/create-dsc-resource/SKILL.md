@@ -284,7 +284,7 @@ In the resource's `*.dsc.resource.json`, add `whatIfArg` to the `set` (and `dele
     "args": [
         "config", "set",
         { "jsonInputArg": "--input", "mandatory": true },
-        { "whatIfArg": "-w" }
+        { "whatIfArg": "--what-if" }
     ],
     "whatIfReturns": "state"
 },
@@ -293,7 +293,7 @@ In the resource's `*.dsc.resource.json`, add `whatIfArg` to the `set` (and `dele
     "args": [
         "config", "delete",
         { "jsonInputArg": "--input", "mandatory": true },
-        { "whatIfArg": "-w" }
+        { "whatIfArg": "--what-if" }
     ]
 }
 ```
@@ -535,7 +535,7 @@ Rules for what-if tests:
 | Clap field | `what_if: bool` |
 | Helper field | `what_if: bool` |
 | Helper enable method | `enable_what_if()` |
-| Manifest arg entry | `{ "whatIfArg": "-w" }` |
+| Manifest arg entry | `{ "whatIfArg": "--what-if" }` |
 | Manifest declaration | `"whatIfReturns": "state"` (on `set`) |
 | State field | `_metadata` (`metadata: Option<Metadata>` in Rust) |
 | Metadata field | `whatIf` (`what_if: Option<Vec<String>>` in Rust) |
