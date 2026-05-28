@@ -20,7 +20,7 @@ document to enforce the desired configuration and runtime status of multiple Win
 
 The configuration document for this example defines two instances of the `Service` resource.
 
-The first instance ensures that the Windows Update service (`wuauserv`) is stopped and configured
+The first instance ensures that the Print Spooler service (`Spooler`) is stopped and configured
 for manual start. The second instance ensures that the Windows Time service (`W32Time`) is running
 and configured to start automatically.
 
@@ -30,12 +30,12 @@ Copy the configuration document and save it as `service.config.dsc.yaml`.
 
 ## Setup
 
-The output in this example assumes that the system has the `wuauserv` service stopped with a manual
+The output in this example assumes that the system has the `Spooler` service stopped with a manual
 startup and the `W32Time` service stopped with an automatic startup. You can set the system to
 this starting state with the following commands:
 
 ```powershell
-Set-Service -Name wuauserv -StartupType Manual    -Status Stopped
+Set-Service -Name Spooler  -StartupType Manual    -Status Stopped
 Set-Service -Name W32Time  -StartupType Automatic -Status Stopped
 ```
 
@@ -58,25 +58,25 @@ results:
   metadata:
     Microsoft.DSC:
       duration: PT0.1113118S
-  name: Ensure Windows Update is stopped and set to manual start
+  name: Ensure Print Spooler is stopped and set to manual start
   type: Microsoft.Windows/Service
   result:
     desiredState:
-      name: wuauserv
+      name: Spooler
       status: Stopped
       startType: Manual
     actualState:
-      name: wuauserv
-      displayName: Windows Update
-      description: Enables the detection, download, and installation of updates for Windows and other programs. If this service is disabled, users of this computer will not be able to use Windows Update or its automatic updating feature, and programs will not be able to use the Windows Update Agent (WUA) API.
+      name: Spooler
+      displayName: Print Spooler
+      description: This service spools print jobs and handles interaction with the printer. If you turn off this service, you won't be able to print or see your printers.
       _exist: true
       status: Stopped
       startType: Manual
-      executablePath: C:\Windows\system32\svchost.exe -k netsvcs -p
+      executablePath: C:\Windows\System32\spoolsv.exe
       logonAccount: LocalSystem
       errorControl: Normal
       dependencies:
-      - rpcss
+      - RPCSS
     inDesiredState: true
     differingProperties: []
 - executionInformation:
@@ -108,7 +108,7 @@ messages: []
 hadErrors: false
 ```
 
-The `inDesiredState` field for the first instance is `true` because the Windows Update service is
+The `inDesiredState` field for the first instance is `true` because the Print Spooler service is
 already `Stopped` with `Manual` start, so no change is required. The second instance is `false`:
 the Windows Time service exists and already has `startType: Automatic`, but its `status` is
 `Stopped` while the desired state requires `Running`. Only `status` is listed in
@@ -133,25 +133,25 @@ results:
   metadata:
     Microsoft.DSC:
       duration: PT0.0924309S
-  name: Ensure Windows Update is stopped and set to manual start
+  name: Ensure Print Spooler is stopped and set to manual start
   type: Microsoft.Windows/Service
   result:
     beforeState:
-      name: wuauserv
+      name: Spooler
       status: Stopped
       startType: Manual
     afterState:
-      name: wuauserv
-      displayName: Windows Update
-      description: Enables the detection, download, and installation of updates for Windows and other programs. If this service is disabled, users of this computer will not be able to use Windows Update or its automatic updating feature, and programs will not be able to use the Windows Update Agent (WUA) API.
+      name: Spooler
+      displayName: Print Spooler
+      description: This service spools print jobs and handles interaction with the printer. If you turn off this service, you won't be able to print or see your printers.
       _exist: true
       status: Stopped
       startType: Manual
-      executablePath: C:\Windows\system32\svchost.exe -k netsvcs -p
+      executablePath: C:\Windows\System32\spoolsv.exe
       logonAccount: LocalSystem
       errorControl: Normal
       dependencies:
-      - rpcss
+      - RPCSS
     changedProperties: null
 - executionInformation:
     duration: PT0.3682548S
@@ -187,7 +187,7 @@ messages: []
 hadErrors: false
 ```
 
-The Windows Update instance shows `changedProperties: null` because it was already in the desired
+The Print Spooler instance shows `changedProperties: null` because it was already in the desired
 state and DSC made no changes to it. The Windows Time instance lists only `status` in
 `changedProperties` because DSC only needed to start the service. The `startType` was already
 `Automatic` and required no update.
