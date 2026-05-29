@@ -17,17 +17,19 @@ struct AdaptedRegistryResource {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 enum RegistryDataType {
-    RegBinary,
-    RegDword,
+    #[serde(rename = "REG_BINARY")]
+    Binary,
+    #[serde(rename = "REG_DWORD")]
+    Dword,
     #[serde(rename = "REG_EXPAND_SZ")]
-    RegExpandString,
+    ExpandString,
     #[serde(rename = "REG_MULTI_SZ")]
-    RegMultiString,
+    MultiString,
     #[serde(rename = "REG_SZ")]
-    RegString,
-    RegQword,
+    String,
+    #[serde(rename = "REG_QWORD")]
+    Qword,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -52,17 +54,21 @@ struct AdaptedRegistryValue {
     default_value_if_not_found: Value,
 }
 
-pub fn adapter_get(input: &str, adapted_resource: &str) -> Result<String, RegistryResourceError> {
-    let adapted_resource: AdaptedRegistryResource = serde_json::from_str(adapted_resource)
+fn build_resource_map(adapted_resource: &str) -> Result<HashMap<String, AdaptedRegistryValue>, RegistryResourceError> {
+    let adapted: AdaptedRegistryResource = serde_json::from_str(adapted_resource)
         .map_err(|e| RegistryResourceError::AdaptedResource(e.to_string()))?;
-    let mut result = Map::new();
-    let mut resource_map = HashMap::new();
+    adapted.properties.into_iter()
+        .map(|(k, v)| {
+            let arv: AdaptedRegistryValue = serde_json::from_value(v)
+                .map_err(|e| RegistryResourceError::AdaptedResource(e.to_string()))?;
+            Ok((k, arv))
+        })
+        .collect()
+}
 
-    for (key, value) in adapted_resource.properties.iter() {
-        let adapted_registry_value: AdaptedRegistryValue = serde_json::from_value(value.clone())
-            .map_err(|e| RegistryResourceError::AdaptedResource(e.to_string()))?;
-        resource_map.insert(key.clone(), adapted_registry_value);
-    }
+pub fn adapter_get(input: &str, adapted_resource: &str) -> Result<String, RegistryResourceError> {
+    let resource_map = build_resource_map(adapted_resource)?;
+    let mut result = Map::new();
 
     let input_map: Map<String, Value> = serde_json::from_str(input)
         .map_err(|e| RegistryResourceError::AdaptedResource(e.to_string()))?;
@@ -74,13 +80,11 @@ pub fn adapter_get(input: &str, adapted_resource: &str) -> Result<String, Regist
                 let registry_helper = RegistryHelper::new(&adapted_registry_value.key_path, Some(adapted_registry_value.value_name.clone()), Some(registry_data))?;
                 match registry_helper.get() {
                     Ok(registry) => {
-                        if let Some(exist) = registry.exist {
-                            if !exist {
-                                let default_registry_data = convert_default_value_to_registry_data(&adapted_registry_value.default_value_if_not_found, &adapted_registry_value.value_type)?;
-                                let json_value = convert_registry_value_data_to_mapped_json(&default_registry_data, &adapted_registry_value.json_type, json_map)?;
-                                result.insert(key.clone(), json_value);
-                                continue;
-                            }
+                        if let Some(exist) = registry.exist && !exist {
+                            let default_registry_data = convert_default_value_to_registry_data(&adapted_registry_value.default_value_if_not_found, &adapted_registry_value.value_type)?;
+                            let json_value = convert_registry_value_data_to_mapped_json(&default_registry_data, &adapted_registry_value.json_type, json_map)?;
+                            result.insert(key.clone(), json_value);
+                            continue;
                         }
                         if let Some(registry_value) = registry.value_data {
                             let json_value = convert_registry_value_data_to_mapped_json(&registry_value, &adapted_registry_value.json_type, json_map)?;
@@ -101,31 +105,33 @@ pub fn adapter_get(input: &str, adapted_resource: &str) -> Result<String, Regist
         }
     }
 
-    Ok(serde_json::to_string(&result).map_err(|e| RegistryResourceError::AdaptedResource(e.to_string()))?)
+    serde_json::to_string(&result).map_err(|e| RegistryResourceError::AdaptedResource(e.to_string()))
 }
 
 fn convert_default_value_to_registry_data(default_value: &Value, reg_type: &RegistryDataType) -> Result<RegistryValueData, RegistryResourceError> {
     match (default_value, reg_type) {
-        (Value::Bool(b), RegistryDataType::RegDword) => Ok(RegistryValueData::DWord(if *b { 1 } else { 0 })),
-        (Value::Number(n), RegistryDataType::RegDword) => {
+        (Value::Bool(b), RegistryDataType::Dword) => Ok(RegistryValueData::DWord(if *b { 1 } else { 0 })),
+        (Value::Number(n), RegistryDataType::Dword) => {
             if let Some(u) = n.as_u64() {
                 Ok(RegistryValueData::DWord(u as u32))
             } else {
                 Err(RegistryResourceError::AdaptedResource(t!("adapter.couldNotConvertDefaultValue", default_value = default_value.to_string(), reg_type = reg_type : {:?}).to_string()))
             }
         },
-        (Value::String(s), RegistryDataType::RegString) => Ok(RegistryValueData::String(s.clone())),
-        (Value::String(s), RegistryDataType::RegExpandString) => Ok(RegistryValueData::ExpandString(s.clone())),
-        (Value::Array(a), RegistryDataType::RegMultiString) => {
+        (Value::String(s), RegistryDataType::String) => Ok(RegistryValueData::String(s.clone())),
+        (Value::String(s), RegistryDataType::ExpandString) => Ok(RegistryValueData::ExpandString(s.clone())),
+        (Value::Array(a), RegistryDataType::MultiString) => {
             let mut result = Vec::new();
             for v in a {
                 if let Value::String(s) = v {
                     result.push(s.clone());
+                } else {
+                    return Err(RegistryResourceError::AdaptedResource(t!("adapter.nonStringInMultiStringDefault", value = v.to_string()).to_string()));
                 }
             }
             Ok(RegistryValueData::MultiString(result))
         },
-        (Value::Array(a), RegistryDataType::RegBinary) => {
+        (Value::Array(a), RegistryDataType::Binary) => {
             let mut result = Vec::new();
             for v in a {
                 if let Value::Number(s) = v {
@@ -151,27 +157,31 @@ fn convert_registry_value_data_to_mapped_json(value_data: &RegistryValueData, js
     // a reg_binary for json_type that is an array will be null delimited
     let json_value = match (value_data, json_type) {
         (RegistryValueData::Binary(byte_vec), JsonType::StringArray) => {
-            // use first value in map to get length of bytes to compare
-            let first_value = map.values().next();
-            let first_value_length = first_value.and_then(|v| v.as_array()).map(|a| a.len()).unwrap_or(0);
+            // Pre-build reverse lookup: deserialized bytes -> key name
+            let reverse_map: Vec<(String, Vec<u8>)> = map.iter().filter_map(|(k, v)| {
+                match serde_json::from_value::<Vec<u8>>(v.clone()) {
+                    Ok(bytes) => Some((k.clone(), bytes)),
+                    Err(_) => {
+                        warn!("Failed to convert value to Vec<u8>: {:?}", v);
+                        None
+                    }
+                }
+            }).collect();
+            let first_value_length = reverse_map.first().map(|(_, b)| b.len()).unwrap_or(0);
             let mut result = Vec::new();
             for slice in byte_vec.chunks(first_value_length) {
-                let matched_key = map.iter().find_map(|(k, v)| {
-                    if let Ok(mapped_bytes) = serde_json::from_value::<Vec<u8>>(v.clone()) {
-                        if mapped_bytes == slice {
-                            return Some(k.clone());
-                        }
+                let matched_key = reverse_map.iter().find_map(|(k, bytes)| {
+                    if bytes == slice {
+                        Some(k.clone())
                     } else {
-                        warn!("Failed to convert value to Vec<u8>: {:?}", v);
+                        None
                     }
-                    None
                 });
                 if let Some(key) = matched_key {
                     result.push(Value::String(key));
                 } else {
-                    // convert slice to string as hex bytes
                     let hex_string = slice.iter().map(|b| format!("{:02X}", b)).collect::<Vec<String>>().join(" ");
-                    warn!("No mapping found for byte slice {hex_string}, skipping");
+                    return Err(RegistryResourceError::AdaptedResource(t!("adapter.unmappedByteSlice", hex_string = hex_string).to_string()));
                 }
             }
             Value::Array(result)
@@ -185,7 +195,7 @@ fn convert_registry_value_data_to_mapped_json(value_data: &RegistryValueData, js
         },
         (RegistryValueData::DWord(dword), JsonType::String) => {
             let mapped_value = map.iter().find_map(|(k, v)| {
-                if v.as_u64().map_or(false, |num| num == *dword as u64) {
+                if v.as_u64() == Some(*dword as u64) {
                     Some(k.clone())
                 } else {
                     None
@@ -195,7 +205,7 @@ fn convert_registry_value_data_to_mapped_json(value_data: &RegistryValueData, js
         },
         (RegistryValueData::String(s), JsonType::String) => {
             let mapped_key = map.iter().find_map(|(k, v)| {
-                if v.as_str().map_or(false, |v_str| v_str == s) {
+                if v.as_str().is_some_and(|v_str| v_str == s) {
                     Some(k.clone())
                 } else {
                     None
@@ -205,7 +215,7 @@ fn convert_registry_value_data_to_mapped_json(value_data: &RegistryValueData, js
         },
         (RegistryValueData::String(s), JsonType::Boolean) => {
             let mapped_value = map.iter().find_map(|(k, v)| {
-                if v.as_str().map_or(false, |v_str| v_str == s) {
+                if v.as_str().is_some_and(|v_str| v_str == s) {
                     Some(k.clone())
                 } else {
                     None
@@ -223,10 +233,9 @@ fn convert_registry_value_data_to_mapped_json(value_data: &RegistryValueData, js
 }
 
 fn get_registry_value_data(value_name: &str, value: &Value, map: &Map<String, Value>, data_type: &RegistryDataType) -> Result<RegistryValueData, RegistryResourceError> {
-    let registry_value_data = if value.is_array() {
-        let value_array = value.as_array().unwrap();
+    let registry_value_data = if let Some(value_array) = value.as_array() {
         match data_type {
-            RegistryDataType::RegBinary => {
+            RegistryDataType::Binary => {
                 let mut byte_vec = Vec::new();
                 for item in value_array.iter() {
                     if let Some(s) = item.as_str() {
@@ -239,7 +248,7 @@ fn get_registry_value_data(value_name: &str, value: &Value, map: &Map<String, Va
                 }
                 RegistryValueData::Binary(byte_vec)
             },
-            RegistryDataType::RegMultiString => {
+            RegistryDataType::MultiString => {
                 let mut string_vec = Vec::new();
                 for item in value_array.iter() {
                     if let Some(s) = item.as_str() {
@@ -255,42 +264,42 @@ fn get_registry_value_data(value_name: &str, value: &Value, map: &Map<String, Va
             _ => return Err(RegistryResourceError::AdaptedResource(t!("adapter.unsupportedValueType", value_name = value_name, value = format!("{:?}", value)).to_string())),
         }
     } else {
-        let value_str = if value.is_string() {
-            value.as_str().unwrap().to_string()
+        let value_str = if let Some(s) = value.as_str() {
+            s.to_string()
         } else if value.is_number() || value.is_boolean() {
             value.to_string()
         } else {
             return Err(RegistryResourceError::AdaptedResource(t!("adapter.unsupportedValueType", value_name = value_name, value = format!("{:?}", value)).to_string()));
         };
         match data_type {
-            RegistryDataType::RegBinary => {
+            RegistryDataType::Binary => {
                 let mapped_value = map.get(&value_str).ok_or_else(|| RegistryResourceError::AdaptedResource(t!("adapter.valueMappingNotFound", value = value_str, reg_type = "RegBinary").to_string()))?;
                 let byte_vec = serde_json::from_value::<Vec<u8>>(mapped_value.clone()).map_err(|e| RegistryResourceError::AdaptedResource(e.to_string()))?;
                 RegistryValueData::Binary(byte_vec)
             },
-            RegistryDataType::RegDword => {
+            RegistryDataType::Dword => {
                 let mapped_value = map.get(&value_str).ok_or_else(|| RegistryResourceError::AdaptedResource(t!("adapter.valueMappingNotFound", value = value_str, reg_type = "RegDword").to_string()))?;
-                let dword = mapped_value.as_u64().ok_or_else(|| RegistryResourceError::AdaptedResource(format!("Mapped value for {} is not a u64", value_str)))? as u32;
+                let dword = mapped_value.as_u64().ok_or_else(|| RegistryResourceError::AdaptedResource(t!("adapter.mappedValueNotU64", value = value_str).to_string()))? as u32;
                 RegistryValueData::DWord(dword)
             },
-            RegistryDataType::RegExpandString => {
+            RegistryDataType::ExpandString => {
                 let mapped_value = map.get(&value_str).ok_or_else(|| RegistryResourceError::AdaptedResource(t!("adapter.valueMappingNotFound", value = value_str, reg_type = "RegExpandString").to_string()))?;
-                let expand_string = mapped_value.as_str().ok_or_else(|| RegistryResourceError::AdaptedResource(format!("Mapped value for {} is not a string", value_str)))?.to_string();
+                let expand_string = mapped_value.as_str().ok_or_else(|| RegistryResourceError::AdaptedResource(t!("adapter.mappedValueNotString", value = value_str).to_string()))?.to_string();
                 RegistryValueData::ExpandString(expand_string)
             },
-            RegistryDataType::RegMultiString => {
+            RegistryDataType::MultiString => {
                 let mapped_value = map.get(&value_str).ok_or_else(|| RegistryResourceError::AdaptedResource(t!("adapter.valueMappingNotFound", value = value_str, reg_type = "RegMultiString").to_string()))?;
                 let multi_string = serde_json::from_value::<Vec<String>>(mapped_value.clone()).map_err(|e| RegistryResourceError::AdaptedResource(e.to_string()))?;
                 RegistryValueData::MultiString(multi_string)
             },
-            RegistryDataType::RegQword => {
+            RegistryDataType::Qword => {
                 let mapped_value = map.get(&value_str).ok_or_else(|| RegistryResourceError::AdaptedResource(t!("adapter.valueMappingNotFound", value = value_str, reg_type = "RegQword").to_string()))?;
-                let qword = mapped_value.as_u64().ok_or_else(|| RegistryResourceError::AdaptedResource(format!("Mapped value for {} is not a u64", value_str)))?;
+                let qword = mapped_value.as_u64().ok_or_else(|| RegistryResourceError::AdaptedResource(t!("adapter.mappedValueNotU64", value = value_str).to_string()))?;
                 RegistryValueData::QWord(qword)
             },
-            RegistryDataType::RegString => {
+            RegistryDataType::String => {
                 let mapped_value = map.get(&value_str).ok_or_else(|| RegistryResourceError::AdaptedResource(t!("adapter.valueMappingNotFound", value = value_str, reg_type = "RegString").to_string()))?;
-                let string = mapped_value.as_str().ok_or_else(|| RegistryResourceError::AdaptedResource(format!("Mapped value for {} is not a string", value_str)))?.to_string();
+                let string = mapped_value.as_str().ok_or_else(|| RegistryResourceError::AdaptedResource(t!("adapter.mappedValueNotString", value = value_str).to_string()))?.to_string();
                 RegistryValueData::String(string)
             },
         }
@@ -299,15 +308,7 @@ fn get_registry_value_data(value_name: &str, value: &Value, map: &Map<String, Va
 }
 
 pub fn adapter_set(input: &str, adapted_resource: &str) -> Result<(), RegistryResourceError> {
-    let adapted_resource: AdaptedRegistryResource = serde_json::from_str(adapted_resource)
-        .map_err(|e| RegistryResourceError::AdaptedResource(e.to_string()))?;
-    let mut resource_map = HashMap::new();
-
-    for (key, value) in adapted_resource.properties.iter() {
-        let adapted_registry_value: AdaptedRegistryValue = serde_json::from_value(value.clone())
-            .map_err(|e| RegistryResourceError::AdaptedResource(e.to_string()))?;
-        resource_map.insert(key.clone(), adapted_registry_value);
-    }
+    let resource_map = build_resource_map(adapted_resource)?;
 
     let input_map: Map<String, Value> = serde_json::from_str(input)
         .map_err(|e| RegistryResourceError::AdaptedResource(e.to_string()))?;
@@ -337,12 +338,9 @@ pub fn adapter_export(input: &str, adapted_resource: &str) -> Result<String, Reg
     // if input is provided, use that to perform a `get` and return that result
     // if no input is provided, then create an input that contains all keys in the adapted resource with first values and perform a `get` to return the default values for all keys
     let input: String = if input.is_empty() {
-        let adapted_resource_map: AdaptedRegistryResource = serde_json::from_str(adapted_resource)
-            .map_err(|e| RegistryResourceError::AdaptedResource(e.to_string()))?;
+        let resource_map = build_resource_map(adapted_resource)?;
         let mut map = Map::new();
-        for key in adapted_resource_map.properties.keys() {
-            let adapted_registry_value: AdaptedRegistryValue = serde_json::from_value(adapted_resource_map.properties.get(key).cloned().unwrap_or_default())
-                .map_err(|e| RegistryResourceError::AdaptedResource(e.to_string()))?;
+        for (key, adapted_registry_value) in &resource_map {
             if let Some(json_map) = adapted_registry_value.map_json_to_registry.as_object() {
                 let first_key = json_map.keys().next().cloned().unwrap_or_default();
                 map.insert(key.clone(), Value::String(first_key));

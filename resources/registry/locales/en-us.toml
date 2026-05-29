@@ -12,6 +12,10 @@ mappingNotFound = "No mapping found for registry key path: %{key_path} and value
 unsupportedValueType = "For value name %{value_name}, unsupported value type: %{value}"
 couldNotConvertDefaultValue = "Could not convert default value '%{default_value}' to registry data type: %{reg_type}"
 valueMappingNotFound = "No mapping found for value '%{value}' of type %{reg_type}"
+mappedValueNotU64 = "Mapped value for '%{value}' is not a u64"
+mappedValueNotString = "Mapped value for '%{value}' is not a string"
+unmappedByteSlice = "No mapping found for byte slice: %{hex_string}"
+nonStringInMultiStringDefault = "Non-string value found in default value array for REG_MULTI_SZ: %{value}"
 
 [args]
 about = "Manage state of Windows registry"

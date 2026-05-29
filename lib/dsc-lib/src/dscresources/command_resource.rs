@@ -50,7 +50,7 @@ pub fn invoke_get(resource: &DscResource, filter: &str, target_resource: Option<
         None => resource
     };
     validate_security_context(&get.require_security_context, &command_resource.type_name, "get")?;
-    let args = process_get_args(get.args.as_ref(), filter, &command_resource);
+    let args = process_get_args(get.args.as_ref(), filter, command_resource);
     if !filter.is_empty() {
         verify_json_from_manifest(resource, filter, target_resource)?;
         command_input = get_command_input(get.input.as_ref(), filter)?;
@@ -116,7 +116,7 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, execut
                 let (_, supports_whatif) = process_set_delete_args(
                     set.args.as_ref(),
                     "",
-                    &command_resource,
+                    command_resource,
                     execution_type
                 );
                 supports_whatif
@@ -182,7 +182,7 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, execut
         None => resource,
     };
     validate_security_context(&get.require_security_context, &command_resource.type_name, "get")?;
-    let args = process_get_args(get.args.as_ref(), desired, &command_resource);
+    let args = process_get_args(get.args.as_ref(), desired, command_resource);
     let command_input = get_command_input(get.input.as_ref(), desired)?;
 
     info!("{}", t!("dscresources.commandResource.setGetCurrent", resource = &command_resource.type_name, executable = &get.executable));
@@ -214,7 +214,7 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, execut
 
     let mut env: Option<HashMap<String, String>> = None;
     let mut input_desired: Option<&str> = None;
-    let (args, _) = process_set_delete_args(set.args.as_ref(), desired, &command_resource, execution_type);
+    let (args, _) = process_set_delete_args(set.args.as_ref(), desired, command_resource, execution_type);
     match &set.input {
         Some(InputKind::Env) => {
             env = Some(json_to_hashmap(desired)?);
@@ -337,7 +337,7 @@ pub fn invoke_test(resource: &DscResource, expected: &str, target_resource: Opti
         None => resource,
     };
     validate_security_context(&test.require_security_context, &command_resource.type_name, "test")?;
-    let args = process_get_args(test.args.as_ref(), expected, &command_resource);
+    let args = process_get_args(test.args.as_ref(), expected, command_resource);
     let command_input = get_command_input(test.input.as_ref(), expected)?;
 
     info!("{}", t!("dscresources.commandResource.invokeTestUsing", resource = &command_resource.type_name, executable = &test.executable));
@@ -489,7 +489,7 @@ pub fn invoke_delete(resource: &DscResource, filter: &str, target_resource: Opti
         None => resource,
     };
     validate_security_context(&delete.require_security_context, &command_resource.type_name, "delete")?;
-    let (args, supports_whatif) = process_set_delete_args(delete.args.as_ref(), filter, &command_resource, execution_type);
+    let (args, supports_whatif) = process_set_delete_args(delete.args.as_ref(), filter, command_resource, execution_type);
     if execution_type == &ExecutionKind::WhatIf && !supports_whatif {
         // perform a synthetic what-if by calling test and wrapping the TestResult in DeleteResultKind::SyntheticWhatIf
         let test_result = invoke_test(resource, filter, target_resource)?;
@@ -537,7 +537,7 @@ pub fn invoke_validate(resource: &DscResource, config: &str, target_resource: Op
         Some(target) => target,
         None => resource
     };
-    let args = process_get_args(validate.args.as_ref(), config, &command_resource);
+    let args = process_get_args(validate.args.as_ref(), config, command_resource);
     let command_input = get_command_input(validate.input.as_ref(), config)?;
 
     info!("{}", t!("dscresources.commandResource.invokeValidateUsing", resource = &command_resource.type_name, executable = &validate.executable));
@@ -643,9 +643,9 @@ pub fn invoke_export(resource: &DscResource, input: Option<&str>, target_resourc
             command_input = get_command_input(export.input.as_ref(), input)?;
         }
 
-        args = process_get_args(export.args.as_ref(), input, &command_resource);
+        args = process_get_args(export.args.as_ref(), input, command_resource);
     } else {
-        args = process_get_args(export.args.as_ref(), "", &command_resource);
+        args = process_get_args(export.args.as_ref(), "", command_resource);
     }
 
     let (_exit_code, stdout, stderr) = invoke_command(&export.executable, args, command_input.stdin.as_deref(), Some(&resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
