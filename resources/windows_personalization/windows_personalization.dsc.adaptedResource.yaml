@@ -128,7 +128,7 @@ content:
       AlwaysCombineHideLabels: '0'
       CombineWhenTaskbarIsFull: '1'
       NeverCombine: '2'
-  multimonitorTarkbar:
+  multimonitorTaskbar:
     keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\MMTaskbarEnabled
     valueType: REG_SZ
     valueName: SystemSettings_Taskbar_MultiMon
