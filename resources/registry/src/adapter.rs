@@ -298,15 +298,37 @@ fn get_registry_value_data(value_name: &str, value: &Value, map: &Map<String, Va
     Ok(registry_value_data)
 }
 
-pub fn adapter_set(input: &str, adapted_resource: &str) -> Result<String, RegistryResourceError> {
-    trace!("Adapter Set with input: {input}");
+pub fn adapter_set(input: &str, adapted_resource: &str) -> Result<(), RegistryResourceError> {
     let adapted_resource: AdaptedRegistryResource = serde_json::from_str(adapted_resource)
         .map_err(|e| RegistryResourceError::AdaptedResource(e.to_string()))?;
-    
+    let mut resource_map = HashMap::new();
+
     for (key, value) in adapted_resource.properties.iter() {
-        trace!("Property: {key} = {value}");
+        let adapted_registry_value: AdaptedRegistryValue = serde_json::from_value(value.clone())
+            .map_err(|e| RegistryResourceError::AdaptedResource(e.to_string()))?;
+        resource_map.insert(key.clone(), adapted_registry_value);
     }
-    Ok("{}".to_string())
+
+    let input_map: Map<String, Value> = serde_json::from_str(input)
+        .map_err(|e| RegistryResourceError::AdaptedResource(e.to_string()))?;
+    for (key, value) in input_map.iter() {
+        if let Some(adapted_registry_value) = resource_map.get(key) {
+            debug!("{}", t!("adapter.setProcessingKey", key = key));
+            if let Some(json_map) = adapted_registry_value.map_json_to_registry.as_object() {
+                let registry_data = get_registry_value_data(&adapted_registry_value.value_name, value, json_map, &adapted_registry_value.value_type)?;
+                let registry_helper = RegistryHelper::new(&adapted_registry_value.key_path, Some(adapted_registry_value.value_name.clone()), Some(registry_data))?;
+                if let Err(e) = registry_helper.set() {
+                    return Err(RegistryResourceError::RegistryError(e));
+                }
+            } else {
+                warn!("No mapping found for key {}", key);
+            }
+        } else {
+            debug!("{}", t!("adapter.setNoAdaptedRegistryValueFound", key = key));
+        }
+    }
+
+    Ok(())
 }
 
 pub fn adapter_export(input: &str, adapted_resource: &str) -> Result<String, RegistryResourceError> {

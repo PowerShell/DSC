@@ -43,7 +43,11 @@ fn main() {
                     adapter_get(&input, &adapted_resource)
                 },
                 AdapterSubCommand::Set { input, adapted_resource } => {
-                    adapter_set(&input, &adapted_resource)
+                    if let Err(e) = adapter_set(&input, &adapted_resource) {
+                        error!("{e}");
+                        exit(EXIT_REGISTRY_ERROR);
+                    }
+                    exit(EXIT_SUCCESS);
                 },
                 AdapterSubCommand::Export { input, adapted_resource } => {
                     adapter_export(&input, &adapted_resource)

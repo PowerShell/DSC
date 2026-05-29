@@ -3,6 +3,8 @@ _version = 1
 [adapter]
 getProcessingKey = "Processing key: %{key}"
 getNoAdaptedRegistryValueFound = "No adapted registry value found for key: %{key}"
+setProcessingKey = "Setting key: %{key}"
+setNoAdaptedRegistryValueFound = "No adapted registry value found for key: %{key}"
 registryValueNotFound = "Registry value not found for key path: %{key_path} and value name: %{value_name}"
 couldNotConvertRegistryValue = "Could not convert registry value for key path '%{key_path}' and value name '%{value_name}' to JSON type: %{json_type}"
 unsupportedConversionToJsonType = "Unsupported conversion from %{registry_value_data} to JSON type: %{json_type}"
