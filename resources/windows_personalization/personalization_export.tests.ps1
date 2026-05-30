@@ -9,7 +9,8 @@ Describe 'Personalization resource export tests' -Skip:(!$IsWindows) {
             autoColorization = @($true, $false)
             colorPrevalence = @($true, $false)
             transparencyEffects = @($true, $false)
-            startMenuVisiblePlaces = @('Documents', 'Downloads','Music', 'Pictures', 'Videos', 'Network', 'UserProfile', 'Explorer', 'Settings')
+            # $null included as it's possible to have no visible places in start menu
+            startMenuVisiblePlaces = @($null, 'Documents', 'Downloads','Music', 'Pictures', 'Videos', 'Network', 'UserProfile', 'Explorer', 'Settings')
             startMenuShowRecentList = @($true, $false)
             showRecommendedApps = @($true, $false)
             taskbarShowBadges = @($true, $false)
