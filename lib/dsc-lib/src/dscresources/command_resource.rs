@@ -533,15 +533,15 @@ pub fn invoke_validate(resource: &DscResource, config: &str, target_resource: Op
         return Err(DscError::NotImplemented("validate".to_string()));
     };
 
-    let command_resource = match target_resource {
+    let target_resource = match target_resource {
         Some(target) => target,
         None => resource
     };
-    let args = process_get_args(validate.args.as_ref(), config, command_resource);
+    let args = process_get_args(validate.args.as_ref(), config, target_resource);
     let command_input = get_command_input(validate.input.as_ref(), config)?;
 
-    info!("{}", t!("dscresources.commandResource.invokeValidateUsing", resource = &command_resource.type_name, executable = &validate.executable));
-    let (_exit_code, stdout, _stderr) = invoke_command(&validate.executable, args, command_input.stdin.as_deref(), Some(&command_resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
+    info!("{}", t!("dscresources.commandResource.invokeValidateUsing", resource = &resource.type_name, executable = &validate.executable));
+    let (_exit_code, stdout, _stderr) = invoke_command(&validate.executable, args, command_input.stdin.as_deref(), Some(&resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
     let result: ValidateResult = serde_json::from_str(&stdout)?;
     Ok(result)
 }
