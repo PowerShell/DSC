@@ -186,7 +186,7 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, execut
     let command_input = get_command_input(get.input.as_ref(), desired)?;
 
     info!("{}", t!("dscresources.commandResource.setGetCurrent", resource = &command_resource.type_name, executable = &get.executable));
-    let (exit_code, stdout, stderr) = invoke_command(&get.executable, args, command_input.stdin.as_deref(), Some(&command_resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
+    let (exit_code, stdout, stderr) = invoke_command(&get.executable, args, command_input.stdin.as_deref(), Some(&resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
 
     if resource.kind == Kind::Resource {
         debug!("{}", t!("dscresources.commandResource.setVerifyGet", resource = &resource.type_name, executable = &get.executable));
@@ -227,7 +227,7 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, execut
         },
     }
 
-    let (exit_code, stdout, stderr) = invoke_command(&set.executable, args, input_desired, Some(&command_resource.directory), env, manifest.exit_codes.as_ref())?;
+    let (exit_code, stdout, stderr) = invoke_command(&set.executable, args, input_desired, Some(&resource.directory), env, manifest.exit_codes.as_ref())?;
 
     let return_kind = if execution_type == &ExecutionKind::WhatIf {
         set.what_if_returns.as_ref().or(set.returns.as_ref())
@@ -341,7 +341,7 @@ pub fn invoke_test(resource: &DscResource, expected: &str, target_resource: Opti
     let command_input = get_command_input(test.input.as_ref(), expected)?;
 
     info!("{}", t!("dscresources.commandResource.invokeTestUsing", resource = &command_resource.type_name, executable = &test.executable));
-    let (exit_code, stdout, stderr) = invoke_command(&test.executable, args, command_input.stdin.as_deref(), Some(&command_resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
+    let (exit_code, stdout, stderr) = invoke_command(&test.executable, args, command_input.stdin.as_deref(), Some(&resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
 
     if command_resource.kind == Kind::Importer {
         debug!("{}", t!("dscresources.commandResource.testGroupTestResponse"));
@@ -498,7 +498,7 @@ pub fn invoke_delete(resource: &DscResource, filter: &str, target_resource: Opti
     let command_input = get_command_input(delete.input.as_ref(), filter)?;
 
     info!("{}", t!("dscresources.commandResource.invokeDeleteUsing", resource = &command_resource.type_name, executable = &delete.executable));
-    let (_exit_code, stdout, _stderr) = invoke_command(&delete.executable, args, command_input.stdin.as_deref(), Some(&command_resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
+    let (_exit_code, stdout, _stderr) = invoke_command(&delete.executable, args, command_input.stdin.as_deref(), Some(&resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
     let result = if execution_type == &ExecutionKind::WhatIf {
         let delete_result: DeleteResult = serde_json::from_str(&stdout)?;
         DeleteResultKind::ResourceWhatIf(delete_result)
