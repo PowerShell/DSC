@@ -556,6 +556,10 @@ pub fn invoke_validate(resource: &DscResource, config: &str, target_resource: Op
 ///
 /// Error if schema is not available or if there is an error getting the schema
 pub fn get_schema(resource: &DscResource, target_resource: Option<&DscResource>) -> Result<String, DscError> {
+    let Some(manifest) = &resource.manifest else {
+        return Err(DscError::MissingManifest(resource.type_name.to_string()));
+    };
+
     let target_resource = match target_resource {
         Some(r) => r,
         None => resource,
@@ -565,10 +569,6 @@ pub fn get_schema(resource: &DscResource, target_resource: Option<&DscResource>)
         return Ok(serde_json::to_string(schema)?);
     }
 
-    let Some(manifest) = &target_resource.manifest else {
-        return Err(DscError::MissingManifest(target_resource.type_name.to_string()));
-    };
-
     let Some(schema_kind) = manifest.schema.as_ref() else {
         return Err(DscError::SchemaNotAvailable(target_resource.type_name.to_string()));
     };
@@ -576,7 +576,7 @@ pub fn get_schema(resource: &DscResource, target_resource: Option<&DscResource>)
     match schema_kind {
         SchemaKind::Command(command) => {
             let args = process_schema_args(command.args.as_ref(), target_resource);
-            let (_exit_code, stdout, _stderr) = invoke_command(&command.executable, args, None, Some(&target_resource.directory), None, manifest.exit_codes.as_ref())?;
+            let (_exit_code, stdout, _stderr) = invoke_command(&command.executable, args, None, Some(&resource.directory), None, manifest.exit_codes.as_ref())?;
             Ok(stdout)
         },
         SchemaKind::Embedded(schema) => {
