@@ -236,7 +236,7 @@ schema:
           - AlwaysCombineHideLabels
           - CombineWhenTaskbarIsFull
           - NeverCombine
-      multimonitorTarkbar:
+      multimonitorTaskbar:
         type: boolean
         title: Multimonitor Taskbar
         description: Enables showing the taskbar on multiple displays.

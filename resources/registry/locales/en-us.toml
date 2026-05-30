@@ -16,6 +16,8 @@ mappedValueNotU64 = "Mapped value for '%{value}' is not a u64"
 mappedValueNotString = "Mapped value for '%{value}' is not a string"
 unmappedByteSlice = "No mapping found for byte slice: %{hex_string}"
 nonStringInMultiStringDefault = "Non-string value found in default value array for REG_MULTI_SZ: %{value}"
+emptyReverseMap = "The reverse map is empty"
+mapJsonToRegistryNotFound = "No mapping found for key: %{key}"
 
 [args]
 about = "Manage state of Windows registry"

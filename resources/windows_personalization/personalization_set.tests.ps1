@@ -8,7 +8,7 @@ Describe 'Personalization resource set tests' -Skip:(!$IsWindows) {
     }
 
     AfterAll {
-        dsc resource set -r Microsoft.Windows/Personalization -i $currentSettings 2>$TestDrive/error.log
+        dsc config set -r Microsoft.Windows/Personalization -i $currentSettings 2>$TestDrive/error.log
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
     }
 

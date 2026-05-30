@@ -4,7 +4,7 @@
     "SupportedPlatformOS": "Windows",
     "CopyFiles": {
         "Windows": [
-            "windows_personalization.dsc.adaptedresource.yaml"
+            "windows_personalization.dsc.adaptedResource.yaml"
         ]
     }
 }

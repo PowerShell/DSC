@@ -108,6 +108,54 @@ pub fn adapter_get(input: &str, adapted_resource: &str) -> Result<String, Regist
     serde_json::to_string(&result).map_err(|e| RegistryResourceError::AdaptedResource(e.to_string()))
 }
 
+pub fn adapter_set(input: &str, adapted_resource: &str) -> Result<(), RegistryResourceError> {
+    let resource_map = build_resource_map(adapted_resource)?;
+
+    let input_map: Map<String, Value> = serde_json::from_str(input)
+        .map_err(|e| RegistryResourceError::AdaptedResource(e.to_string()))?;
+    for (key, value) in input_map.iter() {
+        if let Some(adapted_registry_value) = resource_map.get(key) {
+            debug!("{}", t!("adapter.setProcessingKey", key = key));
+            if let Some(json_map) = adapted_registry_value.map_json_to_registry.as_object() {
+                let registry_data = get_registry_value_data(&adapted_registry_value.value_name, value, json_map, &adapted_registry_value.value_type)?;
+                let registry_helper = RegistryHelper::new(&adapted_registry_value.key_path, Some(adapted_registry_value.value_name.clone()), Some(registry_data))?;
+                if let Err(e) = registry_helper.set() {
+                    return Err(RegistryResourceError::RegistryError(e));
+                }
+            } else {
+                warn!("No mapping found for key {}", key);
+            }
+        } else {
+            debug!("{}", t!("adapter.setNoAdaptedRegistryValueFound", key = key));
+        }
+    }
+
+    Ok(())
+}
+
+pub fn adapter_export(input: &str, adapted_resource: &str) -> Result<String, RegistryResourceError> {
+    trace!("Adapter Export with input: {input}");
+
+    // if input is provided, use that to perform a `get` and return that result
+    // if no input is provided, then create an input that contains all keys in the adapted resource with first values and perform a `get` to return the default values for all keys
+    let input: String = if input.is_empty() {
+        let resource_map = build_resource_map(adapted_resource)?;
+        let mut map = Map::new();
+        for (key, adapted_registry_value) in &resource_map {
+            if let Some(json_map) = adapted_registry_value.map_json_to_registry.as_object() {
+                let first_key = json_map.keys().next().cloned().unwrap_or_default();
+                map.insert(key.clone(), Value::String(first_key));
+            } else  {
+                return Err(RegistryResourceError::AdaptedResource(t!("adapter.mapJsonToRegistryNotFound", key = key).to_string()));
+            }
+        }
+        serde_json::to_string(&map).map_err(|e| RegistryResourceError::AdaptedResource(e.to_string()))?
+    } else {
+        input.to_string()
+    };
+    adapter_get(&input, adapted_resource)
+}
+
 fn convert_default_value_to_registry_data(default_value: &Value, reg_type: &RegistryDataType) -> Result<RegistryValueData, RegistryResourceError> {
     match (default_value, reg_type) {
         (Value::Bool(b), RegistryDataType::Dword) => Ok(RegistryValueData::DWord(if *b { 1 } else { 0 })),
@@ -167,6 +215,9 @@ fn convert_registry_value_data_to_mapped_json(value_data: &RegistryValueData, js
                     }
                 }
             }).collect();
+            if reverse_map.is_empty() {
+                return Err(RegistryResourceError::AdaptedResource(t!("adapter.emptyReverseMap").to_string()));
+            }
             let first_value_length = reverse_map.first().map(|(_, b)| b.len()).unwrap_or(0);
             let mut result = Vec::new();
             for slice in byte_vec.chunks(first_value_length) {
@@ -305,52 +356,4 @@ fn get_registry_value_data(value_name: &str, value: &Value, map: &Map<String, Va
         }
     };
     Ok(registry_value_data)
-}
-
-pub fn adapter_set(input: &str, adapted_resource: &str) -> Result<(), RegistryResourceError> {
-    let resource_map = build_resource_map(adapted_resource)?;
-
-    let input_map: Map<String, Value> = serde_json::from_str(input)
-        .map_err(|e| RegistryResourceError::AdaptedResource(e.to_string()))?;
-    for (key, value) in input_map.iter() {
-        if let Some(adapted_registry_value) = resource_map.get(key) {
-            debug!("{}", t!("adapter.setProcessingKey", key = key));
-            if let Some(json_map) = adapted_registry_value.map_json_to_registry.as_object() {
-                let registry_data = get_registry_value_data(&adapted_registry_value.value_name, value, json_map, &adapted_registry_value.value_type)?;
-                let registry_helper = RegistryHelper::new(&adapted_registry_value.key_path, Some(adapted_registry_value.value_name.clone()), Some(registry_data))?;
-                if let Err(e) = registry_helper.set() {
-                    return Err(RegistryResourceError::RegistryError(e));
-                }
-            } else {
-                warn!("No mapping found for key {}", key);
-            }
-        } else {
-            debug!("{}", t!("adapter.setNoAdaptedRegistryValueFound", key = key));
-        }
-    }
-
-    Ok(())
-}
-
-pub fn adapter_export(input: &str, adapted_resource: &str) -> Result<String, RegistryResourceError> {
-    trace!("Adapter Export with input: {input}");
-
-    // if input is provided, use that to perform a `get` and return that result
-    // if no input is provided, then create an input that contains all keys in the adapted resource with first values and perform a `get` to return the default values for all keys
-    let input: String = if input.is_empty() {
-        let resource_map = build_resource_map(adapted_resource)?;
-        let mut map = Map::new();
-        for (key, adapted_registry_value) in &resource_map {
-            if let Some(json_map) = adapted_registry_value.map_json_to_registry.as_object() {
-                let first_key = json_map.keys().next().cloned().unwrap_or_default();
-                map.insert(key.clone(), Value::String(first_key));
-            } else  {
-                return Err(RegistryResourceError::AdaptedResource(t!("adapter.valueMappingNotFound", value = key, reg_type = "unknown").to_string()));
-            }
-        }
-        serde_json::to_string(&map).map_err(|e| RegistryResourceError::AdaptedResource(e.to_string()))?
-    } else {
-        input.to_string()
-    };
-    adapter_get(&input, adapted_resource)
 }

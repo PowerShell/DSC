@@ -193,6 +193,7 @@ runProcessError = "Failed to run process '%{executable}': %{error}"
 whatIfWarning = "Resource '%{resource}' uses deprecated 'whatIf' operation. See https://github.com/PowerShell/DSC/issues/1361 for migration information."
 securityContextRequired = "Operation '%{operation}' for resource '%{resource}' requires security context '%{context}'"
 noAdaptedContent = "No adapted content available for resource '%{resource}'"
+invalidAdaptedContent = "Invalid adapted content for resource '%{resource}': %{error}"
 
 [dscresources.dscresource]
 invokeGet = "Invoking get for '%{resource}'"

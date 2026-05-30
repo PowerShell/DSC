@@ -915,10 +915,16 @@ pub fn process_get_args(args: Option<&Vec<GetArgKind>>, input: &str, resource: &
                 processed_args.push(s.clone());
             },
             GetArgKind::AdaptedContent { adapted_content_arg } => {
-                // adapted content is the JSON content with secrets redacted and additional properties added by the adapter; it is only used for get operations and is meant to be used when the command needs to call other commands as part of its execution and wants to pass along the adapted content to avoid multiple rounds of redaction
                 processed_args.push(adapted_content_arg.clone());
                 if let Some(adapted_content) = &resource.adapted_content {
-                    processed_args.push(serde_json::to_string(&adapted_content).unwrap());
+                    match serde_json::to_string(&adapted_content) {
+                        Err(e) => {
+                            warn!("{}", t!("dscresources.commandResource.invalidAdaptedContent", resource = &resource.type_name, error = e));
+                        }
+                        Ok(s) => {
+                            processed_args.push(s);
+                        }
+                    }
                 } else {
                     debug!("{}", t!("dscresources.commandResource.noAdaptedContent", resource = &resource.type_name));
                 }
@@ -995,7 +1001,6 @@ fn process_set_delete_args(args: Option<&Vec<SetDeleteArgKind>>, input: &str, re
                 processed_args.push(s.clone());
             },
             SetDeleteArgKind::AdaptedContent { adapted_content_arg } => {
-                // adapted content is the JSON content with secrets redacted and additional properties added by the adapter; it is only used for get operations and is meant to be used when the command needs to call other commands as part of its execution and wants to pass along the adapted content to avoid multiple rounds of redaction
                 processed_args.push(adapted_content_arg.clone());
                 if let Some(adapted_content) = &resource.adapted_content {
                     processed_args.push(serde_json::to_string(&adapted_content).unwrap());
