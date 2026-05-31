@@ -12,10 +12,14 @@ use dsc_lib::{
 };
 use rmcp::{ErrorData as McpError, Json, tool, tool_router, handler::server::wrapper::Parameters};
 use rust_i18n::t;
-use schemars::JsonSchema;
+use schemars::{JsonSchema, json_schema};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tokio::task;
+
+fn nullable_json_object_schema(_: &mut schemars::SchemaGenerator) -> schemars::Schema {
+    json_schema!({"oneOf": [{"type": "null"}, {"type": "object"}]})
+}
 
 #[derive(Serialize, JsonSchema)]
 pub struct DscResource {
@@ -35,6 +39,7 @@ pub struct DscResource {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub author: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[schemars(schema_with = "nullable_json_object_schema")]
     pub schema: Option<Value>,
 }
 
