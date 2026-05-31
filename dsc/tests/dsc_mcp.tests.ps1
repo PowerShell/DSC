@@ -76,6 +76,7 @@ Describe 'Tests for MCP server' {
             'list_dsc_functions'  = $false
             'list_dsc_resources'  = $false
             'show_dsc_resource'   = $false
+            'show_dsc_schema'     = $false
         }
 
         $response = Send-McpRequest -request $mcpRequest
@@ -610,5 +611,24 @@ greeting: Hello from YAML parameters
         $response.id | Should -Be 18
         $response.error.code | Should -Be -32600
         $response.error.message | Should -Match 'Invalid parameters'
+    }
+
+    It 'Calling show_dsc_schema works' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 19
+            method  = "tools/call"
+            params  = @{
+                name      = "show_dsc_schema"
+                arguments = @{
+                    type = "AdaptedDscResourceManifest"
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 19
+        $response.result.structuredContent | Should -Not -BeNullOrEmpty
+        $response.result.structuredContent.schema | Should -Not -BeNullOrEmpty
     }
 }

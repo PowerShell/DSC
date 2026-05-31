@@ -3,6 +3,8 @@
 
 use crate::args::{SchemaType, OutputFormat, TraceFormat};
 use crate::resolve::Include;
+use dsc_lib::configure::config_result::{ConfigurationExportResult, ResourceGetResult, ResourceSetResult};
+use dsc_lib::dscresources::adapted_resource_manifest::AdaptedDscResourceManifest;
 use dsc_lib::{
     configure::{
         config_doc::{
@@ -161,8 +163,14 @@ pub fn add_fields_to_json(json: &str, fields_to_add: &HashMap<String, String>) -
 #[must_use]
 pub fn get_schema(schema: SchemaType) -> Schema {
     match schema {
+        SchemaType::AdaptedDscResourceManifest => {
+            schema_for!(AdaptedDscResourceManifest)
+        },
         SchemaType::Configuration => {
             schema_for!(Configuration)
+        },
+        SchemaType::ConfigurationExportResult => {
+            schema_for!(ConfigurationExportResult)
         },
         SchemaType::ConfigurationGetResult => {
             schema_for!(ConfigurationGetResult)
@@ -199,6 +207,15 @@ pub fn get_schema(schema: SchemaType) -> Schema {
         },
         SchemaType::Resource => {
             schema_for!(Resource)
+        },
+        SchemaType::ResourceGetResult => {
+            schema_for!(ResourceGetResult)
+        },
+        SchemaType::ResourceSetResult => {
+            schema_for!(ResourceSetResult)
+        },
+        SchemaType::ResourceTestResult => {
+            schema_for!(ResourceTestResult)
         },
         SchemaType::ResourceManifest => {
             schema_for!(ResourceManifest)

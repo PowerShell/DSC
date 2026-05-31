@@ -15,6 +15,7 @@ pub mod list_dsc_functions;
 pub mod list_dsc_resources;
 pub mod mcp_server;
 pub mod show_dsc_resource;
+pub mod show_dsc_schema;
 
 /// This function initializes and starts the MCP server, handling any errors that may occur.
 ///
