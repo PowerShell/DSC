@@ -138,7 +138,7 @@ try {
     $asyncResult = $ps.BeginInvoke()
     while (-not $asyncResult.IsCompleted) {
         Write-TraceQueue
-    
+
         Start-Sleep -Milliseconds 100
     }
     $outputCollection = $ps.EndInvoke($asyncResult)
@@ -146,9 +146,8 @@ try {
 
 
     if ($ps.HadErrors) {
-        # If there are any errors, we will exit with an error code
-        Write-DscTrace -Now -Level Error -Message 'Errors occurred during script execution.'
-        exit 1
+        # Errors can be non-terminating, so we just write a warning and continue
+        Write-DscTrace -Now -Level Warn -Message 'Non-terminating errors occurred during script execution.'
     }
 
     foreach ($output in $outputCollection) {
