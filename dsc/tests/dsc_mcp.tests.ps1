@@ -630,5 +630,8 @@ greeting: Hello from YAML parameters
         $response.id | Should -Be 19
         $response.result.structuredContent | Should -Not -BeNullOrEmpty
         $response.result.structuredContent.schema | Should -Not -BeNullOrEmpty
+        $schema = dsc schema --type adapted-dsc-resource-manifest | ConvertFrom-Json -Depth 20
+        $response.result.structuredContent.schema.'$schema' | Should -Be $schema.'$schema' -Because ($response.result.structuredContent | ConvertTo-Json -Depth 20 | Out-String)
+        $response.result.structuredContent.schema.title | Should -BeExactly $schema.title -Because ($response.result.structuredContent | ConvertTo-Json -Depth 20 | Out-String)
     }
 }

@@ -14,7 +14,7 @@ fn json_object_schema(_: &mut schemars::SchemaGenerator) -> schemars::Schema {
 
 #[derive(Deserialize, JsonSchema)]
 pub struct ShowSchemaRequest {
-    #[schemars(description = "The type name of the resource to get detailed information.")]
+    #[schemars(description = "The schema type to retrieve the JSON schema for.")]
     pub r#type: SchemaType,
 }
 
