@@ -108,7 +108,8 @@ Describe 'Tests for PSScript resource' {
         $result = dsc resource test -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 2 -Because (Get-Content $TestDrive/error.txt -Raw | Out-String)
         $result | Should -BeNullOrEmpty -Because "Test operation should return an error"
-        (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike '*Test operation did not return a single boolean value.*'
+        $errorLog = Get-Content $TestDrive/error.txt -Raw
+        $errorLog | Should -BeLike '*ERROR*:*Test operation did not return a single boolean value.*' -Because $errorLog
     }
 
     It 'Test operation returns error for multiple boolean results for <resourceType>' -TestCases $testCases {
@@ -122,7 +123,8 @@ Describe 'Tests for PSScript resource' {
         $result = dsc resource test -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 2 -Because (Get-Content $TestDrive/error.txt -Raw | Out-String)
         $result | Should -BeNullOrEmpty -Because "Test operation should return an error"
-        (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike '*Test operation did not return a single boolean value.*'
+        $errorLog = Get-Content $TestDrive/error.txt -Raw
+        $errorLog | Should -BeLike '*ERROR*:*Test operation did not return a single boolean value.*' -Because $errorLog
     }
 
     It 'Empty SetScript is ignored for <resourceType>' -TestCases $testCases {
@@ -187,8 +189,9 @@ Describe 'Tests for PSScript resource' {
         $result = dsc resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.txt -Raw | Out-String)
         $result.actualState.output.Count | Should -Be 0 -Because ($result | ConvertTo-Json | Out-String)
-        (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike '*WARN*:*This is a warning*'
-        (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike '*WARN*:*This is second warning*'
+        $errorLog = Get-Content $TestDrive/error.txt -Raw
+        $errorLog | Should -BeLike '*WARN*:*This is a warning*' -Because $errorLog
+        $errorLog | Should -BeLike '*WARN*:*This is second warning*' -Because $errorLog
     }
 
     It 'Write-Error shows up as error traces for <resourceType>' -TestCases $testCases {
@@ -201,8 +204,9 @@ Describe 'Tests for PSScript resource' {
 
         $result = dsc resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 2 -Because (Get-Content $TestDrive/error.txt -Raw | Out-String)
+        $errorLog = Get-Content $TestDrive/error.txt -Raw
         $result.actualState.output.Count | Should -Be 0 -Because ($result | ConvertTo-Json | Out-String)
-        (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike '*ERROR*:*This is an error*'
+        $errorLog | Should -BeLike '*ERROR*:*This is an error*' -Because $errorLog
     }
 
     It 'Write-Verbose shows up as info traces for <resourceType>' -TestCases $testCases {
@@ -214,8 +218,9 @@ Describe 'Tests for PSScript resource' {
 '@
         $result = dsc -l info resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.txt -Raw | Out-String)
+        $errorLog = Get-Content $TestDrive/error.txt -Raw
         $result.actualState.output.Count | Should -Be 0 -Because ($result | ConvertTo-Json | Out-String)
-        (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike '*INFO*:*This is a verbose message*'
+        $errorLog | Should -BeLike '*INFO*:*This is a verbose message*' -Because $errorLog
     }
 
     It 'Write-Debug shows up as debug traces for <resourceType>' -TestCases $testCases {
@@ -227,8 +232,9 @@ Describe 'Tests for PSScript resource' {
 '@
         $result = dsc -l debug resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.txt -Raw | Out-String)
+        $errorLog = Get-Content $TestDrive/error.txt -Raw
         $result.actualState.output.Count | Should -Be 0 -Because ($result | ConvertTo-Json | Out-String)
-        (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike '*DEBUG*:*This is a debug message*'
+        $errorLog | Should -BeLike '*DEBUG*:*This is a debug message*' -Because $errorLog
     }
 
     It 'Write-Information shows up as trace traces for <resourceType>' -TestCases $testCases {
@@ -241,8 +247,9 @@ Describe 'Tests for PSScript resource' {
 '@
         $result = dsc -l trace resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.txt -Raw | Out-String)
+        $errorLog = Get-Content $TestDrive/error.txt -Raw
         $result.actualState.output.Count | Should -Be 0 -Because ($result | ConvertTo-Json | Out-String)
-        (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike '*TRACE*:*This is an information message*'
+        $errorLog | Should -BeLike '*TRACE*:*This is an information message*' -Because $errorLog
     }
 
     It 'A thrown exception results in an error for <resourceType>' -TestCases $testCases {
@@ -254,8 +261,9 @@ Describe 'Tests for PSScript resource' {
 '@
         $result = dsc resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 2 -Because (Get-Content $TestDrive/error.txt -Raw | Out-String)
+        $errorLog = Get-Content $TestDrive/error.txt -Raw
         $result.actualState.output.Count | Should -Be 0 -Because ($result | ConvertTo-Json | Out-String)
-        (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike '*ERROR*:*This is an exception*'
+        $errorLog | Should -BeLike '*ERROR*:*This is an exception*' -Because $errorLog
     }
 
     It 'Sample config works' {
@@ -291,8 +299,9 @@ Describe 'Tests for PSScript resource' {
         input: "This is a string"
 '@
         dsc resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
-        $LASTEXITCODE | Should -Be 2 -Because (Get-Content $TestDrive/error.txt -Raw | Out-String)
-        (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike '*ERROR*:*Input was provided but script does not have a parameter to accept input.*'
+        $errorLog = Get-Content $TestDrive/error.txt -Raw
+        $LASTEXITCODE | Should -Be 2 -Because $errorLog
+        $errorLog | Should -BeLike '*ERROR*:*Input was provided but script does not have a parameter to accept input.*' -Because $errorLog
     }
 
     It 'Param without input is an error for <resourceType>' -TestCases $testCases {
@@ -304,8 +313,9 @@ Describe 'Tests for PSScript resource' {
           "This should fail"
 '@
         dsc resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
-        $LASTEXITCODE | Should -Be 2 -Because (Get-Content $TestDrive/error.txt -Raw | Out-String)
-        (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike "*ERROR*:*Script has a parameter 'inputObj' but no input was provided.*"
+        $errorLog = Get-Content $TestDrive/error.txt -Raw
+        $LASTEXITCODE | Should -Be 2 -Because $errorLog
+        $errorLog | Should -BeLike "*ERROR*:*Script has a parameter 'inputObj' but no input was provided.*" -Because $errorLog
     }
 
     It 'Write-Host results in an info message for <resourceType>' -TestCases $testCases {
@@ -319,10 +329,11 @@ Describe 'Tests for PSScript resource' {
 '@
         $result = dsc -l trace resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.txt -Raw | Out-String)
+        $errorLog = Get-Content $TestDrive/error.txt -Raw
         $result.actualState.output.Count | Should -Be 0 -Because ($result | ConvertTo-Json | Out-String)
-        (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike '*WARN*:*This is a warning*'
-        (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike '*INFO*:*This is a host message*'
-        (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike '*INFO*:*This is a verbose message*'
+        $errorLog | Should -BeLike '*WARN*:*This is a warning*' -Because $errorLog
+        $errorLog | Should -BeLike '*INFO*:*This is a host message*' -Because $errorLog
+        $errorLog | Should -BeLike '*INFO*:*This is a verbose message*' -Because $errorLog
     }
 
     It 'Non-terminating errors do not cause script to fail' -TestCases $testCases {
