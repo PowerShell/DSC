@@ -330,8 +330,13 @@ struct FlushWriter<W>(W);
 impl<W: Write> Write for FlushWriter<W> {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         let n = self.0.write(buf)?;
-        let _ = self.0.flush();
+        self.0.flush()?;
         Ok(n)
+    }
+
+    fn write_all(&mut self, buf: &[u8]) -> std::io::Result<()> {
+        self.0.write_all(buf)?;
+        self.0.flush()
     }
 
     fn flush(&mut self) -> std::io::Result<()> {
