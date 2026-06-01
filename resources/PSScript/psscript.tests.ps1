@@ -340,4 +340,17 @@ Describe 'Tests for PSScript resource' {
         $result.actualState.output[0] | Should -BeExactly "This should still be output"
         (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike '*WARN*:*Non-terminating errors occurred during script execution.*'
     }
+
+    It 'Terminating errors result in an error for <resourceType>' -TestCases $testCases {
+        param($resourceType)
+
+        $yaml = @'
+        GetScript: |
+            Get-Item "ThisFileDoesNotExist.txt" -ErrorAction Stop
+'@
+        $result = dsc resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 2 -Because (Get-Content $TestDrive/error.txt -Raw | Out-String)
+        $result.actualState.output.Count | Should -Be 0 -Because ($result | ConvertTo-Json | Out-String)
+        (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike '*ERROR*:*Cannot find path*'
+    }
 }
