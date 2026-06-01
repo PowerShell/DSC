@@ -325,6 +325,33 @@ pub fn write_object(json: &str, format: Option<&OutputFormat>, include_separator
     }
 }
 
+struct FlushWriter<W>(W);
+
+impl<W: Write> Write for FlushWriter<W> {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        let n = self.0.write(buf)?;
+        let _ = self.0.flush();
+        Ok(n)
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        self.0.flush()
+    }
+}
+
+struct MakeFlushWriter<M>(M);
+
+impl<'a, M> tracing_subscriber::fmt::MakeWriter<'a> for MakeFlushWriter<M>
+where
+    M: tracing_subscriber::fmt::MakeWriter<'a>,
+{
+    type Writer = FlushWriter<M::Writer>;
+
+    fn make_writer(&'a self) -> Self::Writer {
+        FlushWriter(self.0.make_writer())
+    }
+}
+
 #[allow(clippy::too_many_lines)]
 pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Option<&TraceFormat>) {
 
@@ -336,7 +363,7 @@ pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Op
         .unwrap_or_default()
         .add_directive(Level::WARN.into());
     let default_indicatif_layer = IndicatifLayer::new();
-    let default_layer = tracing_subscriber::fmt::Layer::default().with_writer(default_indicatif_layer.get_stderr_writer());
+    let default_layer = tracing_subscriber::fmt::Layer::default().with_writer(MakeFlushWriter(default_indicatif_layer.get_stderr_writer()));
     let default_fmt = default_layer
                 .with_ansi(true)
                 .with_level(true)
@@ -406,7 +433,7 @@ pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Op
         .unwrap_or_default()
         .add_directive(tracing_level.into());
     let indicatif_layer = IndicatifLayer::new();
-    let layer = tracing_subscriber::fmt::Layer::default().with_writer(indicatif_layer.get_stderr_writer());
+    let layer = tracing_subscriber::fmt::Layer::default().with_writer(MakeFlushWriter(indicatif_layer.get_stderr_writer()));
     let with_source = tracing_level == Level::DEBUG || tracing_level == Level::TRACE;
     let fmt = match tracing_setting.format {
         TraceFormat::Default => {
