@@ -144,11 +144,15 @@ try {
 
     if ($ps.InvocationStateInfo.State -eq 'Failed') {
         $record  = $ps.InvocationStateInfo.Reason.ErrorRecord
-        $message = "Script failed with terminating error at line {0} for statement ``{1}`` - {2}" -f @(
-            $record.InvocationInfo.ScriptLineNumber,
-            $record.InvocationInfo.Statement.Trim(),
-            $record.Exception.ToString()
-        )
+        $message = if ($null -ne $record) {
+            "Script failed with terminating error at line {0} for statement ``{1}`` - {2}" -f @(
+                $record.InvocationInfo.ScriptLineNumber,
+                $record.InvocationInfo.Line,
+                $record.Exception.ToString()
+            )
+        } else {
+            "Script failed with terminating error: $($ps.InvocationStateInfo.Reason)"
+        }
         Write-DscTrace -Now -Level Error -Message $message
         exit 1
     }
@@ -167,7 +171,7 @@ try {
     }
 }
 catch {
-    Write-DscTrace -Now -Level Error -Message $_
+    Write-DscTrace -Now -Level Error -Message ($_ | Format-List -Force * | Out-String)
     exit 1
 }
 finally {
