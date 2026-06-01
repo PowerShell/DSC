@@ -411,18 +411,29 @@ $outputObjects = [System.Collections.Generic.List[Object]]::new()
 
 try {
     $asyncResult = $ps.BeginInvoke()
-    # This while loop with sleep must remain so that registered object events 
-    # can take over the pipeline thread.
     while (-not $asyncResult.IsCompleted) {
         Write-TraceQueue
-
         Start-Sleep -Milliseconds 100
     }
     $outputCollection = $ps.EndInvoke($asyncResult)
+
+    # Flush: fire a sentinel engine event and pump the event loop until it fires.
+    # PowerShell dispatches events in FIFO order, so once the sentinel action runs,
+    # every prior DataAdding action has already enqueued its trace.
+    $flushSourceId = 'DscAdapter.TraceFlush'
+    $flushDone = [System.Threading.ManualResetEventSlim]::new($false)
+    $null = Register-EngineEvent -SourceIdentifier $flushSourceId -Action {
+        $Event.MessageData.Set()
+    } -MessageData $flushDone
+    $null = New-Event -SourceIdentifier $flushSourceId
+    while (-not $flushDone.IsSet) {
+        Start-Sleep -Milliseconds 10
+    }
+    Unregister-Event -SourceIdentifier $flushSourceId
+
     Write-TraceQueue
 
     if ($ps.HadErrors) {
-        # Anything written to stderr sets this flag, so we'll write a debug trace, but not treat as error
         Write-DscTrace -Now -Operation Debug -Message 'HadErrors set during script execution.'
     }
 
@@ -435,15 +446,12 @@ catch {
     exit 1
 }
 finally {
+    Get-EventSubscriber | Unregister-Event  # unregister before dispose
     $ps.Dispose()
-    Get-EventSubscriber | Unregister-Event
 }
 
-# Allow any remaining event handlers time to enqueue to $traceQueue and $hadErrors
-Start-Sleep -Milliseconds 200
 if ($hadErrors.Count -gt 0) {
-    Write-DscTrace -Now -Operation Error -Message 'Errors were captured during script execution. Check previous error traces for details.'
-    exit 1
+    Write-DscTrace -Now -Operation Debug -Message 'Errors were captured during script execution. Check previous error traces for details.'
 }
 
 foreach ($obj in $outputObjects) {
