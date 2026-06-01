@@ -330,15 +330,15 @@ Describe 'Tests for PSScript resource' {
 
         $yaml = @'
         getScript: |
-          $ErrorActionPreference = 'Continue'
-          Write-Error "This is an error"
+          Get-Item "ThisFileDoesNotExist.txt" -ErrorAction SilentlyContinue
           "This should still be output"
 '@
-        $result = dsc resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
+        $result = dsc -l debug resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.txt -Raw | Out-String)
-        $result.actualState.output.Count | Should -Be 1 -Because ($result | ConvertTo-Json | Out-String)
+        $result.actualState.output.Count | Should -Be 1 -Because ($result | ConvertTo-Json -Depth 10 | Out-String)
         $result.actualState.output[0] | Should -BeExactly "This should still be output"
-        (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike '*WARN*:*Non-terminating errors occurred during script execution.*'
+        $errorLog = Get-Content $TestDrive/error.txt -Raw
+        $errorLog | Should -BeLike '*DEBUG*:*Non-terminating errors occurred during script execution.*' -Because $errorLog
     }
 
     It 'Terminating errors result in an error for <resourceType>' -TestCases $testCases {
