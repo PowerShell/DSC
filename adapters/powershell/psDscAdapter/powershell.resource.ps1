@@ -106,11 +106,6 @@ $ps = [PowerShell]::Create().AddScript({
         return
     }
 
-    # Adding some debug info to STDERR
-    Write-Debug -Debug ('PSVersion=' + $PSVersionTable.PSVersion.ToString())
-    Write-Debug -Debug ('PSHome=' + $PSHome)
-    Write-Debug -Debug ('PSModulePath=' + $env:PSModulePath)
-
     if ($PSVersionTable.PSVersion.Major -le 5) {
         # For Windows PowerShell, we want to remove any PowerShell 7 paths from PSModulePath
         if ($pwshPath = Get-Command 'pwsh' -ErrorAction Ignore | Select-Object -ExpandProperty Source) {
@@ -369,40 +364,50 @@ $traceLevel = if ($env:DSC_TRACE_LEVEL) {
     [DscTraceLevel]::Warn
 }
 
-$null = Register-ObjectEvent -InputObject $ps.Streams.Error -EventName DataAdding -MessageData @{traceQueue=$traceQueue; hadErrors=$hadErrors} -Action {
+$errorCount = [System.Collections.Concurrent.ConcurrentQueue[bool]]::new()
+$null = Register-ObjectEvent -InputObject $ps.Streams.Error -EventName DataAdding -MessageData @{traceQueue=$traceQueue; hadErrors=$hadErrors; errorCount=$errorCount} -Action {
     $traceQueue = $Event.MessageData.traceQueue
+    $Event.MessageData.errorCount.Enqueue($true)
     # convert error to string since it's an ErrorRecord
     $traceQueue.Enqueue(@{ error = [string]$EventArgs.ItemAdded })
     $Event.MessageData.hadErrors.Enqueue($true)
 }
 
+$warningCount = [System.Collections.Concurrent.ConcurrentQueue[bool]]::new()
 if ($traceLevel -ge [DscTraceLevel]::Warn) {
-    $null = Register-ObjectEvent -InputObject $ps.Streams.Warning -EventName DataAdding -MessageData $traceQueue -Action {
-        $traceQueue = $Event.MessageData
+    $null = Register-ObjectEvent -InputObject $ps.Streams.Warning -EventName DataAdding -MessageData @{traceQueue=$traceQueue; warningCount=$warningCount} -Action {
+        $traceQueue = $Event.MessageData.traceQueue
+        $Event.MessageData.warningCount.Enqueue($true)
         $traceQueue.Enqueue(@{ warn = $EventArgs.ItemAdded.Message })
     }
 }
 
+$informationCount = [System.Collections.Concurrent.ConcurrentQueue[bool]]::new()
 if ($traceLevel -ge [DscTraceLevel]::Info) {
-    $null = Register-ObjectEvent -InputObject $ps.Streams.Information -EventName DataAdding -MessageData $traceQueue -Action {
-        $traceQueue = $Event.MessageData
+    $null = Register-ObjectEvent -InputObject $ps.Streams.Information -EventName DataAdding -MessageData @{traceQueue=$traceQueue; informationCount=$informationCount} -Action {
+        $traceQueue = $Event.MessageData.traceQueue
+        $Event.MessageData.informationCount.Enqueue($true)
         if ($null -ne $EventArgs.ItemAdded.MessageData) {
             $traceQueue.Enqueue(@{ info = [string]$EventArgs.ItemAdded.MessageData })
         }
     }
 }
 
+$verboseCount = [System.Collections.Concurrent.ConcurrentQueue[bool]]::new()
 if ($traceLevel -ge [DscTraceLevel]::Debug) {
-    $null = Register-ObjectEvent -InputObject $ps.Streams.Verbose -EventName DataAdding -MessageData $traceQueue -Action {
-        $traceQueue = $Event.MessageData
+    $null = Register-ObjectEvent -InputObject $ps.Streams.Verbose -EventName DataAdding -MessageData @{traceQueue=$traceQueue; verboseCount=$verboseCount} -Action {
+        $traceQueue = $Event.MessageData.traceQueue
+        $Event.MessageData.verboseCount.Enqueue($true)
         # Verbose messages tend to be in large quantity and more useful to developers, so log as Debug
         $traceQueue.Enqueue(@{ debug = $EventArgs.ItemAdded.Message })
     }
 }
 
+$debugCount = [System.Collections.Concurrent.ConcurrentQueue[bool]]::new()
 if ($traceLevel -ge [DscTraceLevel]::Trace) {
-    $null = Register-ObjectEvent -InputObject $ps.Streams.Debug -EventName DataAdding -MessageData $traceQueue -Action {
-        $traceQueue = $Event.MessageData
+    $null = Register-ObjectEvent -InputObject $ps.Streams.Debug -EventName DataAdding -MessageData @{traceQueue=$traceQueue; debugCount=$debugCount} -Action {
+        $traceQueue = $Event.MessageData.traceQueue
+        $Event.MessageData.debugCount.Enqueue($true)
         # Debug messages may contain raw info, so log as Trace
         $traceQueue.Enqueue(@{ trace = $EventArgs.ItemAdded.Message })
     }
@@ -415,23 +420,23 @@ try {
         Write-TraceQueue
         Start-Sleep -Milliseconds 100
     }
-    $outputCollection = $ps.EndInvoke($asyncResult)
 
-    # Flush: fire a sentinel engine event and pump the event loop until it fires.
-    # PowerShell dispatches events in FIFO order, so once the sentinel action runs,
-    # every prior DataAdding action has already enqueued its trace.
-    $flushSourceId = 'DscAdapter.TraceFlush'
-    $flushDone = [System.Threading.ManualResetEventSlim]::new($false)
-    $null = Register-EngineEvent -SourceIdentifier $flushSourceId -Action {
-        $Event.MessageData.Set()
-    } -MessageData $flushDone
-    $null = New-Event -SourceIdentifier $flushSourceId
-    while (-not $flushDone.IsSet) {
-        Start-Sleep -Milliseconds 10
+    while ($errorCount.Count -lt $ps.Streams.Error.Count -or
+           $warningCount.Count -lt $ps.Streams.Warning.Count -or
+           $informationCount.Count -lt $ps.Streams.Information.Count -or
+           $verboseCount.Count -lt $ps.Streams.Verbose.Count -or
+           $debugCount.Count -lt $ps.Streams.Debug.Count) {
+        Write-DscTrace -Now -Operation Warn -Message "ErrorCount=$($errorCount.Count)/$($ps.Streams.Error.Count), WarningCount=$($warningCount.Count)/$($ps.Streams.Warning.Count), InformationCount=$($informationCount.Count)/$($ps.Streams.Information.Count), VerboseCount=$($verboseCount.Count)/$($ps.Streams.Verbose.Count), DebugCount=$($debugCount.Count)/$($ps.Streams.Debug.Count)"
+        if ($ps.Streams.Debug.Count -gt 0) {
+            foreach ($debug in $ps.Streams.Debug) {
+                Write-DscTrace -Now -Operation Error -Message ("Debug stream message: " + $debug.Message)
+            }
+        }
+        Start-Sleep -Milliseconds 100
     }
-    Unregister-Event -SourceIdentifier $flushSourceId
 
     Write-TraceQueue
+    $outputCollection = $ps.EndInvoke($asyncResult)
 
     if ($ps.HadErrors) {
         Write-DscTrace -Now -Operation Debug -Message 'HadErrors set during script execution.'

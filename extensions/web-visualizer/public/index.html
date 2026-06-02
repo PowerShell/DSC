@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DSC Visualizer</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- vis-network for dependency graph visualization -->
+  <script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
+  <!-- js-yaml for YAML parsing/serialization -->
+  <script src="https://unpkg.com/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+</head>
+<body>
+  <div id="app">
+
+    <!-- ── Title Bar ── -->
+    <header id="title-bar" role="banner">
+      <div id="title-left">
+        <span id="app-icon" aria-hidden="true">⬡</span>
+        <h1 id="app-title">DSC Visualizer</h1>
+        <span id="vis-version" aria-label="Visualizer version"></span>
+      </div>
+      <div id="title-right">
+        <span id="dsc-version" aria-label="DSC version">Connecting…</span>
+        <button id="btn-theme" class="icon-btn" aria-label="Toggle dark mode" title="Toggle dark/light mode">🌙</button>
+      </div>
+    </header>
+
+    <!-- ── Toolbar ── -->
+    <div id="toolbar" role="toolbar" aria-label="Main actions">
+      <div class="toolbar-group">
+        <button id="btn-load" class="toolbar-btn" aria-label="Load configuration file" title="Load configuration (Ctrl+O)">
+          <span aria-hidden="true">📂</span> Load
+        </button>
+        <button id="btn-save" class="toolbar-btn" disabled aria-label="Save configuration file" title="Save configuration (Ctrl+S)">
+          <span aria-hidden="true">💾</span> Save
+        </button>
+      </div>
+      <div class="toolbar-separator" role="separator"></div>
+      <div class="toolbar-group">
+        <select id="exec-operation" aria-label="Select operation" title="Operation to execute">
+          <option value="get">Get</option>
+          <option value="set">Set</option>
+          <option value="test">Test</option>
+          <option value="export">Export</option>
+        </select>
+        <button id="btn-execute" class="toolbar-btn" disabled aria-label="Execute configuration" title="Execute configuration (Ctrl+Enter)">
+          <span aria-hidden="true">▶</span> Execute
+        </button>
+      </div>
+      <div class="toolbar-separator" role="separator"></div>
+      <div class="toolbar-group">
+        <button id="btn-toggle-tree" class="toolbar-btn toggle-btn active" aria-pressed="true" aria-label="Toggle tree view" title="Toggle tree view">
+          <span aria-hidden="true">🌲</span> Tree
+        </button>
+        <button id="btn-toggle-props" class="toolbar-btn toggle-btn active" aria-pressed="true" aria-label="Toggle property editor" title="Toggle property editor">
+          <span aria-hidden="true">✏️</span> Properties
+        </button>
+        <button id="btn-toggle-console" class="toolbar-btn toggle-btn active" aria-pressed="true" aria-label="Toggle console output" title="Toggle console output">
+          <span aria-hidden="true">💬</span> Console
+        </button>
+      </div>
+      <div class="toolbar-separator" role="separator"></div>
+      <div class="toolbar-group">
+        <button id="btn-fit" class="toolbar-btn" aria-label="Fit graph to window" title="Fit graph to window">
+          <span aria-hidden="true">⊡</span> Fit
+        </button>
+        <button id="btn-restart" class="toolbar-btn" aria-label="Restart DSC connection" title="Restart DSC connection">
+          <span aria-hidden="true">↺</span> Restart
+        </button>
+      </div>
+      <!-- Hidden file input -->
+      <input type="file" id="file-input" accept=".json,.yaml,.yml" aria-hidden="true" tabindex="-1" />
+    </div>
+
+    <!-- ── Main Area (3-column) ── -->
+    <div id="main-area">
+
+      <!-- Tree Panel -->
+      <aside id="tree-panel" class="side-panel" aria-label="Configuration tree">
+        <div class="panel-header">
+          <span>Configuration</span>
+          <button class="panel-close-btn" data-target="tree-panel" aria-label="Close tree panel">✕</button>
+        </div>
+        <div id="tree-view" role="tree" aria-label="Configuration resources">
+          <div class="empty-state">Load a configuration file to begin.</div>
+        </div>
+      </aside>
+
+      <!-- Resize Handle: tree ↔ viz -->
+      <div class="h-divider" id="divider-left" role="separator" aria-orientation="vertical"
+           aria-label="Resize tree panel" tabindex="0" title="Drag to resize"></div>
+
+      <!-- Visualization Panel -->
+      <main id="viz-panel" aria-label="Resource dependency graph">
+        <div id="visualization" aria-label="Dependency graph canvas"></div>
+        <div id="viz-empty" class="empty-state-overlay">
+          <div>
+            <p>Load a configuration file to visualize its resources.</p>
+            <button id="btn-load-splash" class="toolbar-btn">📂 Load Configuration</button>
+          </div>
+        </div>
+      </main>
+
+      <!-- Resize Handle: viz ↔ props -->
+      <div class="h-divider" id="divider-right" role="separator" aria-orientation="vertical"
+           aria-label="Resize property panel" tabindex="0" title="Drag to resize"></div>
+
+      <!-- Properties Panel -->
+      <aside id="props-panel" class="side-panel" aria-label="Property editor">
+        <div class="panel-header">
+          <span>Properties</span>
+          <button class="panel-close-btn" data-target="props-panel" aria-label="Close property panel">✕</button>
+        </div>
+        <div id="property-editor">
+          <div class="empty-state">Select a resource to edit its properties.</div>
+        </div>
+      </aside>
+
+    </div>
+
+    <!-- Resize Handle: main ↔ console -->
+    <div class="v-divider" id="divider-console" role="separator" aria-orientation="horizontal"
+         aria-label="Resize console panel" tabindex="0" title="Drag to resize"></div>
+
+    <!-- ── Console Output ── -->
+    <section id="console-panel" aria-label="Console output">
+      <div class="panel-header">
+        <div id="console-tabs" role="tablist" aria-label="Console output tabs">
+          <button role="tab" class="console-tab active" id="tab-btn-stdout" aria-selected="true"
+                  aria-controls="tab-stdout" data-tab="stdout">Output</button>
+          <button role="tab" class="console-tab" id="tab-btn-trace" aria-selected="false"
+                  aria-controls="tab-trace" data-tab="trace">Trace</button>
+          <button role="tab" class="console-tab" id="tab-btn-errors" aria-selected="false"
+                  aria-controls="tab-errors" data-tab="errors">Errors</button>
+        </div>
+        <div class="panel-header-actions">
+          <button id="btn-clear-console" class="icon-btn" aria-label="Clear console" title="Clear console">🗑</button>
+          <button class="panel-close-btn" data-target="console-panel" aria-label="Close console">✕</button>
+        </div>
+      </div>
+      <div id="console-body">
+        <div id="tab-stdout" role="tabpanel" aria-labelledby="tab-btn-stdout" class="console-content active"></div>
+        <div id="tab-trace"  role="tabpanel" aria-labelledby="tab-btn-trace"  class="console-content" hidden></div>
+        <div id="tab-errors" role="tabpanel" aria-labelledby="tab-btn-errors" class="console-content" hidden></div>
+      </div>
+    </section>
+
+    <!-- ── Status Bar ── -->
+    <footer id="status-bar" role="status" aria-live="polite">
+      <span id="status-icon" aria-hidden="true">⚪</span>
+      <span id="status-text">Connecting to DSC…</span>
+      <span id="status-sep" aria-hidden="true" class="status-sep">|</span>
+      <span id="file-name" aria-label="Current file"></span>
+    </footer>
+
+  </div><!-- #app -->
+
+  <script src="app.js"></script>
+</body>
+</html>
