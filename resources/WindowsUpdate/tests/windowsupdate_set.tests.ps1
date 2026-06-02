@@ -17,7 +17,7 @@ Describe 'Windows Update Set operation tests' {
     Context 'Set operation' -Skip:(!$isAdmin -or !$IsWindows) {
         It 'should match when both title and id are correct' {
             # Get an actual installed update with both title and id
-            $exportOut = '{"updates": [{"isInstalled": true}]}' | dsc resource export -r $resourceType 2>&1
+            $exportOut = '{"updates": [{"isInstalled": true}]}' | dsc resource export -r $resourceType -f - 2>&1
             
             if ($LASTEXITCODE -eq 0) {
                 $result = $exportOut | ConvertFrom-Json
@@ -32,7 +32,7 @@ Describe 'Windows Update Set operation tests' {
                         )
                     } | ConvertTo-Json -Depth 10 -Compress
                     # Try to set (should detect already installed)
-                    $out = $json | dsc resource set -r $resourceType 2>&1
+                    $out = $json | dsc resource set -r $resourceType -f - 2>&1
                     
                     if ($LASTEXITCODE -eq 0) {
                         $result = $out | ConvertFrom-Json
@@ -50,7 +50,7 @@ Describe 'Windows Update Set operation tests' {
 
         It 'should fail when title matches but id does not' {
             # Get an actual update
-            $exportOut = '{"updates": []}' | dsc resource export -r $resourceType 2>&1
+            $exportOut = '{"updates": []}' | dsc resource export -r $resourceType -f - 2>&1
             
             if ($LASTEXITCODE -eq 0) {
                 $result = $exportOut | ConvertFrom-Json
@@ -64,7 +64,7 @@ Describe 'Windows Update Set operation tests' {
                             }
                         )
                     } | ConvertTo-Json -Depth 10 -Compress
-                    $out = $json | dsc resource set -r $resourceType 2>&1
+                    $out = $json | dsc resource set -r $resourceType -f - 2>&1
                     
                     # Should fail because id doesn't match
                     $LASTEXITCODE | Should -Not -Be 0
@@ -78,7 +78,7 @@ Describe 'Windows Update Set operation tests' {
 
         It 'should fail when id matches but title does not' {
             # Get an actual update
-            $exportOut = '{"updates": []}' | dsc resource export -r $resourceType 2>&1
+            $exportOut = '{"updates": []}' | dsc resource export -r $resourceType -f - 2>&1
             
             if ($LASTEXITCODE -eq 0) {
                 $result = $exportOut | ConvertFrom-Json
@@ -92,7 +92,7 @@ Describe 'Windows Update Set operation tests' {
                             }
                         )
                     } | ConvertTo-Json -Depth 10 -Compress
-                    $out = $json | dsc resource set -r $resourceType 2>&1
+                    $out = $json | dsc resource set -r $resourceType -f - 2>&1
                     
                     # Should fail because title doesn't match
                     $LASTEXITCODE | Should -Not -Be 0
@@ -106,7 +106,7 @@ Describe 'Windows Update Set operation tests' {
 
         It 'should verify all inputs have matches before installing' {
             # Get an actual update
-            $exportOut = '{"updates": []}' | dsc resource export -r $resourceType 2>&1
+            $exportOut = '{"updates": []}' | dsc resource export -r $resourceType -f - 2>&1
             
             if ($LASTEXITCODE -eq 0) {
                 $result = $exportOut | ConvertFrom-Json
@@ -124,7 +124,7 @@ Describe 'Windows Update Set operation tests' {
                             }
                         )
                     } | ConvertTo-Json -Depth 10 -Compress
-                    $stderr = $json | dsc resource set -r $resourceType 2>&1
+                    $stderr = $json | dsc resource set -r $resourceType -f - 2>&1
                     
                     # Should fail before attempting any installation
                     $LASTEXITCODE | Should -Not -Be 0
@@ -142,7 +142,7 @@ Describe 'Windows Update Set operation tests' {
 
         It 'should process multiple valid input objects' {
             # Get an actual update
-            $exportOut = '{"updates": [{"isInstalled": true}]}' | dsc resource export -r $resourceType 2>&1
+            $exportOut = '{"updates": [{"isInstalled": true}]}' | dsc resource export -r $resourceType -f - 2>&1
             
             if ($LASTEXITCODE -eq 0) {
                 $result = $exportOut | ConvertFrom-Json
@@ -160,7 +160,7 @@ Describe 'Windows Update Set operation tests' {
                             }
                         )
                     } | ConvertTo-Json -Depth 10 -Compress
-                    $out = $json | dsc resource set -r $resourceType 2>&1
+                    $out = $json | dsc resource set -r $resourceType -f - 2>&1
                     
                     if ($LASTEXITCODE -eq 0) {
                         $setResult = $out | ConvertFrom-Json
@@ -175,7 +175,7 @@ Describe 'Windows Update Set operation tests' {
 
         It 'should apply logical AND for all criteria in each input' {
             # Get an actual update
-            $exportOut = '{"updates": [{"isInstalled": true}]}' | dsc resource export -r $resourceType 2>&1
+            $exportOut = '{"updates": [{"isInstalled": true}]}' | dsc resource export -r $resourceType -f - 2>&1
             
             if ($LASTEXITCODE -eq 0) {
                 $result = $exportOut | ConvertFrom-Json
@@ -192,7 +192,7 @@ Describe 'Windows Update Set operation tests' {
                             }
                         )
                     } | ConvertTo-Json -Depth 10 -Compress
-                    $out = $json | dsc resource set -r $resourceType 2>&1
+                    $out = $json | dsc resource set -r $resourceType -f - 2>&1
                     
                     if ($LASTEXITCODE -eq 0) {
                         $setResult = $out | ConvertFrom-Json
