@@ -106,6 +106,11 @@ $ps = [PowerShell]::Create().AddScript({
         return
     }
 
+    # Adding some debug info to STDERR
+    Write-Debug -Debug ('PSVersion=' + $PSVersionTable.PSVersion.ToString())
+    Write-Debug -Debug ('PSHome=' + $PSHome)
+    Write-Debug -Debug ('PSModulePath=' + $env:PSModulePath)
+
     if ($PSVersionTable.PSVersion.Major -le 5) {
         # For Windows PowerShell, we want to remove any PowerShell 7 paths from PSModulePath
         if ($pwshPath = Get-Command 'pwsh' -ErrorAction Ignore | Select-Object -ExpandProperty Source) {
