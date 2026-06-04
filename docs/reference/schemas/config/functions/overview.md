@@ -247,7 +247,7 @@ messages: []
 hadErrors: false
 ```
 
-### Example 4 - Access object properties and array items
+### Example 4 - Access object properties and array elements
 
 The following configuration documents show how you can access the properties of objects and items
 in arrays. The example uses a shared parameter definition file to make it easier to reference a

@@ -49,7 +49,7 @@ registry schema
 <a id="example-2"></a>
 
 With the `--pretty` flag, the output includes whitespace between key-value pairs, newlines after
-each key-value pair and array item, and indentation to make the schema easier to read.
+each key-value pair and array element, and indentation to make the schema easier to read.
 
 ```powershell
 registry schema --pretty
@@ -62,7 +62,7 @@ registry schema --pretty
 <a id="-p"></a>
 <a id="--pretty"></a>
 
-Returns the schema with indentation and newlines between key-value pairs and array items. By
+Returns the schema with indentation and newlines between key-value pairs and array elements. By
 default, the command returns the schema compressed on a single line without any unquoted
 whitespace.
 

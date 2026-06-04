@@ -173,7 +173,7 @@ Type: array
 ## Related functions
 
 - [`createArray()`][00] - Creates a homogeneous array (all elements same type)
-- [`createObject()`][01] - Builds an object from key/value pairs
+- [`createObject()`][01] - Builds an object from key-value pairs
 - [`first()`][02] - Gets the first element from an array
 - [`indexOf()`][03] - Finds the index of an item in an array
 

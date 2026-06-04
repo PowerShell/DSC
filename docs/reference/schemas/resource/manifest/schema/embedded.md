@@ -25,8 +25,8 @@ The `embedded` subproperty defines a full JSON schema for a DSC Resource's insta
 JSON schema to validate every instance of the resource before calling the resource's commands and
 after receiving an instance as output from the resource.
 
-Embedded JSON schemas are also used by integrating and authoring tools like VS Code to validate
-resource instances and provide IntelliSense.
+Embedded JSON schemas are also used by integrating and authoring tools like Visual Studio Code to 
+validate resource instances and provide IntelliSense.
 
 ## Required keywordds
 

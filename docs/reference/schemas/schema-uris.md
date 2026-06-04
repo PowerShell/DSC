@@ -155,18 +155,18 @@ the `$schema` keyword.
 ### Enhanced authoring schemas
 
 Every DSC Schema published in the canonically bundled form is also published in the enhanced
-authoring form. These schemas use the extended vocabulary that VS Code recognizes for JSON Schemas
-to provide improved IntelliSense, hover documentation, error messaging, and default snippets. These
-schemas make it easier to author, edit, and review your configuration documents, resource
-manifests, and DSC's output in VS Code.
+authoring form. These schemas use the extended vocabulary that Visual Studio Code recognizes for 
+JSON Schemas to provide improved IntelliSense, hover documentation, error messaging, and default
+snippets. These schemas make it easier to author, edit, and review your configuration documents,
+resource manifests, and DSC's output in Visual Studio Code.
 
 These schemas validate the data with the same vocabulary as the canonical forms of the schema. They
-only affect the experience for authoring, editing, and reviewing the data in VS Code.
+only affect the experience for authoring, editing, and reviewing the data in Visual Studio Code.
 
 These JSON Schemas are _not_ canonical. They use a vocabulary that most JSON Schema libraries and
 tools don't understand. In most cases, using these schemas with those tools shouldn't raise any
-errors. However, when you want to use the DSC schemas with tools other than VS Code, you should
-consider using the canonically bundled form of the schema instead.
+errors. However, when you want to use the DSC schemas with tools other than Visual Studio Code, 
+you should consider using the canonically bundled form of the schema instead.
 
 ## Bundled schema URIs list
 

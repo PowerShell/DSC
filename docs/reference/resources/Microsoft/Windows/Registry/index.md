@@ -431,7 +431,7 @@ The resource returns the following exit codes from operations:
 - [1](#exit-code-1) - Invalid parameter
 - [2](#exit-code-2) - Invalid input
 - [3](#exit-code-3) - Registry error
-- [4](#exit-code-4) - Json serialization failed
+- [4](#exit-code-4) - JSON serialization failed
 
 ### Exit code 0
 

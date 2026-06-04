@@ -9,7 +9,7 @@ title:       trim
 
 ## Synopsis
 
-Removes all leading and trailing white-space characters from the specified string.
+Removes all leading and trailing whitespace characters from the specified string.
 
 ## Syntax
 
@@ -19,8 +19,8 @@ trim(<stringToTrim>)
 
 ## Description
 
-The `trim()` function removes all leading and trailing white-space characters from
-the input string. White-space characters include spaces, tabs, newlines, carriage
+The `trim()` function removes all leading and trailing whitespace characters from
+the input string. whitespace characters include spaces, tabs, newlines, carriage
 returns, and other Unicode whitespace characters. The function preserves internal
 whitespace within the string. Use it for cleaning user input, normalizing
 configuration values, or preparing strings for comparison.
@@ -231,7 +231,7 @@ Position: 1
 ## Output
 
 The `trim()` function returns the input string with all leading and trailing
-white-space characters removed. Internal whitespace is preserved.
+whitespace characters removed. Internal whitespace is preserved.
 
 ```yaml
 Type: string

@@ -46,8 +46,9 @@ resources:
 
 ## Setup
 
-This example installs the WinGet software packages for the Windows Terminal and VS Code. The output
-in this example shows the behavior when these packages aren't already installed on the system.
+This example installs the WinGet software packages for the Windows Terminal and Visual Studio Code. 
+The output in this example shows the behavior when these packages aren't already installed on the 
+system.
 
 This example depends on the **Microsoft.WinGet.DSC** PowerShell module at version `1.12.440`. To
 install the module, open a PowerShell session and invoke the following command:
