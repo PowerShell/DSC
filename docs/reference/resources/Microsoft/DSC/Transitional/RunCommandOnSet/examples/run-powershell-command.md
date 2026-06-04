@@ -74,4 +74,4 @@ winget list --id Microsoft.PowerShell.Preview
 ```
 
 <!-- Link reference definitions -->
-[00]: ../../../../../cli/config/set.md
+[00]: ../../../../../../cli/resource/set.md

@@ -230,5 +230,5 @@ dsc config --parameters $params set --file dev-tools.dsc.yaml
 ```
 
 <!-- Link references -->
-[01]: ../../../../../../cli/config/test.md
-[02]: ../../../../../../cli/config/set.md
+[01]: ../../../../../cli/config/test.md
+[02]: ../../../../../cli/config/set.md

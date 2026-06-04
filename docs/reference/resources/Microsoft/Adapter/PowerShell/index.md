@@ -198,4 +198,4 @@ failure.
 [04]: /powershell/scripting/install/installing-powershell
 [05]: examples/invoke-a-resource.md
 [06]: examples/configure-a-machine.md
-[07]: ../../../../concepts/type-names.md
+[07]: ../../../../schemas/definitions/resourceType.md

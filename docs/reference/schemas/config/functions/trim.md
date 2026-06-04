@@ -245,8 +245,7 @@ Type: string
 - [`startsWith()`][03] - Checks if a string starts with a value
 - [`endsWith()`][04] - Checks if a string ends with a value
 - [`substring()`][05] - Extracts a portion of a string
-- [`replace()`][06] - Replaces text in a string
-- [`parameters()`][07] - Retrieves parameter values
+- [`parameters()`][06] - Retrieves parameter values
 
 <!-- Link reference definitions -->
 [00]: ./toLower.md
@@ -255,5 +254,4 @@ Type: string
 [03]: ./startsWith.md
 [04]: ./endsWith.md
 [05]: ./substring.md
-[06]: ./replace.md
-[07]: ./parameters.md
+[06]: ./parameters.md

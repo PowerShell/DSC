@@ -64,7 +64,7 @@ DSC differs from PowerShell Desired State Configuration (PSDSC) in a few importa
   PSDSC resources in Windows PowerShell. The resource is included in the DSC install packages for
   Windows only.
 - Because DSC doesn't depend on PowerShell, you can use DSC without PowerShell installed and manage
-  resources written in bash, Python, C#, Rust, or any other language.
+  resources written in Bash, Python, C#, Rust, or any other language.
 - DSC doesn't include a local configuration manager. DSC is invoked as a command. It doesn't
   run as a service.
 - New DSC resources define their schemas with JSON or YAML files, not MOF files. Self-contained

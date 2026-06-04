@@ -41,7 +41,7 @@ The `rebootPending` property indicates whether the system requires a reboot (`tr
 > operation against the resource and use it in the `Microsoft.Dsc/Assertion` group resource. This
 > resource relies on the synthetic testing provided by DSC. For more information about synthetic
 > testing with DSC, see
-> [DSC resource capabiltiies](../../../../../concepts/resources/capabilities.md#test).
+> [DSC resource capabiltiies](../../../../../../concepts/resources/capabilities.md#test).
 >
 > For an example using this resource in an assertion, see
 > [Use the RebootPending resource in a configuration](./use-rebootpending-in-configuration.md).

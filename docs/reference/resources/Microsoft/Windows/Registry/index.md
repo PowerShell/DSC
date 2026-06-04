@@ -471,6 +471,6 @@ Indicates the resource operation failed because the result couldn't be serialize
 [06]: ../../../../../concepts/resources/properties.md#required-resource-properties
 [07]: ../../../../../concepts/resources/properties.md#key-resource-properties
 [08]: ../../../../../concepts/resources/properties.md#read-only-resource-properties
-[09]: /en-us/windows/win32/sysinfo/registry-value-types
+[09]: /windows/win32/sysinfo/registry-value-types
 [10]: ../../osinfo/index.md
 [11]: /windows/win32/sysinfo/about-the-registry
