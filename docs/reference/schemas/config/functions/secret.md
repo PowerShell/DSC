@@ -1,4 +1,4 @@
---
+---
 description: Reference for the 'secret' DSC configuration document function
 ms.date:     06/04/2025
 ms.topic:    reference
