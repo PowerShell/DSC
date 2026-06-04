@@ -20,7 +20,7 @@ path(<path>, <child_path>, ...)
 ## Description
 
 The `path()` function takes a base path and any number of child items to combine
-into a single path, acounting for duplicate `/` characters. 
+into a single path, accounting for duplicate `/` characters. 
 
 ## Examples
 
@@ -33,9 +33,9 @@ This configuration constructs a simple absolute path of two elements.
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
     - name: Simple Path Construct
-        type: Microsoft.DSC.Debug/Echo
-        properties:
-        output: "[path('C:\\Program Files', 'WindowsPowerShell')]"
+      type: Microsoft.DSC.Debug/Echo
+      properties:
+      output: "[path('C:\\Program Files', 'WindowsPowerShell')]"
 ```
 
 ```bash
@@ -51,8 +51,6 @@ results:
       output: C:\Program Files\WindowsPowerShell
 messages: []
 hadErrors: false
-messages: []
-hadErrors: false
 ```
 
 ### Example 2 - Relative path with multiple elements
@@ -64,9 +62,9 @@ This configuration constructs a simple relative path of three elements.
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
     - name: Relative Path
-        type: Microsoft.DSC.Debug/Echo
-        properties:
-        output: "[path('.\\usr', 'bin', 'bash')]"
+      type: Microsoft.DSC.Debug/Echo
+      properties:
+      output: "[path('.\\usr', 'bin', 'bash')]"
 ```
 
 ```bash
@@ -82,8 +80,6 @@ results:
       output: .\usr\bin\bash
 messages: []
 hadErrors: false
-messages: []
-hadErrors: false
 ```
 
 ### Example 3 - Relative element in path
@@ -97,13 +93,13 @@ The path is returned as-is and is not resolved to an absolute path.
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
     - name: Double Dot Path
-        type: Microsoft.DSC.Debug/Echo
-        properties:
-        output: "[path('parent', '..', 'child')]"
+      type: Microsoft.DSC.Debug/Echo
+      properties:
+      output: "[path('parent', '..', 'child')]"
 ```
 
 ```bash
-dsc config get --file doubleDot.example.2.dsc.config.yaml
+dsc config get --file doubleDot.example.3.dsc.config.yaml
 ```
 
 ```yaml
@@ -115,8 +111,6 @@ results:
       output: parent\..\child
 messages: []
 hadErrors: false
-messages: []
-hadErrors: false
 ```
 
 ## Parameters
@@ -126,7 +120,8 @@ hadErrors: false
 The `path()` function expects at least two arguments, a base path and at 
 least one child. 
 
-The base path can be a absolute (e.g., `C:\Windows\Sytstem32`), relative (e.g., `./System32`) or Universal Naming Convention (UNC) (e.g., `\\server1\c$\Windows`).
+The base path can be an absolute (e.g., `C:\Windows\System32`, `\usr\bin`), relative (e.g., `./System32`) or 
+Universal Naming Convention (UNC) (e.g., `\\server1\c$\Windows`).
 
 ```yaml
 Type:         string
@@ -148,7 +143,7 @@ MaximumCount: 18446744073709551615
 
 Returns the concatenated path, made from the provided elements.
 
-There are slight differences in return value depending on the OS(e.g., path seperators, drive letters).
+There are slight differences in return value depending on the OS (e.g., path separators, drive letters).
 
 ```yaml
 Type: string

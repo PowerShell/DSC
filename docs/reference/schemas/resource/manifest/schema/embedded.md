@@ -28,7 +28,7 @@ after receiving an instance as output from the resource.
 Embedded JSON schemas are also used by integrating and authoring tools like Visual Studio Code to 
 validate resource instances and provide IntelliSense.
 
-## Required keywordds
+## Required keywords
 
 The `embedded` definition must include these keywords:
 

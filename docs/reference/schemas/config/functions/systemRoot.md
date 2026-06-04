@@ -54,8 +54,8 @@ hadErrors: false
 
 ### Example 2 - Construct and override the system root path
 
-The configuration uses the `path()`[02] function to construct a path pf the `systemRoot()`, which 
-is overriden using in the command line.
+The configuration uses the `path()`[02] function to construct a path from the `systemRoot()`, which 
+is overridden using in the command line.
 
 ```yaml
 # joinSystemRoot.example.2.dsc.config.yaml
@@ -68,7 +68,7 @@ resources:
 ```
 
 ```bash
-dsc config ---system-root / get --file joinSystemRoot.example.2.dsc.config.yaml
+dsc config --system-root / get --file joinSystemRoot.example.2.dsc.config.yaml
 ```
 
 ```yaml

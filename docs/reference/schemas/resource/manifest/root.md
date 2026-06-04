@@ -298,7 +298,7 @@ Required: false
 When specified, the `adapter` property defines the resource as a DSC Resource Adapter.
 
 The value of this property must be an object. The object's `list` and `config` properties are
-mandatory. The `list` property defines how to call the provider to return the resources that the
+mandatory. The `list` property defines how to call the adapter to return the resources that the
 adapter can manage. The `config` property defines how the adapter expects input. For more
 information, see the [DSC Resource manifest adapter property schema reference][13].
 

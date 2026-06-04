@@ -20,7 +20,7 @@ trim(<stringToTrim>)
 ## Description
 
 The `trim()` function removes all leading and trailing whitespace characters from
-the input string. whitespace characters include spaces, tabs, newlines, carriage
+the input string. Whitespace characters include spaces, tabs, newlines, carriage
 returns, and other Unicode whitespace characters. The function preserves internal
 whitespace within the string. Use it for cleaning user input, normalizing
 configuration values, or preparing strings for comparison.
