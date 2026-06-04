@@ -1,4 +1,4 @@
---
+---
 description: Reference for the 'systemRoot' DSC configuration document function
 ms.date:     06/04/2025
 ms.topic:    reference
@@ -90,7 +90,7 @@ using the `--system-root` command line flag[01].
 This is usually `C:\` on Windows system and `/` on Unix systems.
 
 ```yaml
-Type: [string, int, bool, object, array]
+Type: string
 ```
 
 <!-- Link reference definitions -->

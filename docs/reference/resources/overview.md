@@ -36,8 +36,8 @@ Manifest:
 - [Microsoft.Adapter/PowerShell](./Microsoft/Adapter/PowerShell/index.md)
 - [Microsoft.Adapter/WindowsPowerShell](./Microsoft/Adapter/WindowsPowerShell/index.md)
 - [Microsoft.DSC/PowerShell](./Microsoft/DSC/PowerShell/index.md)
-- [Microsoft.Windows/WindowsPowerShell](./Microsoft/windows/windowspowershell/index.md)
-- [Microsoft.Windows/WMI](./Microsoft/windows/wmi/index.md)
+- [Microsoft.Windows/WindowsPowerShell](./Microsoft/Windows/WindowsPowerShell/index.md)
+- [Microsoft.Windows/WMI](./Microsoft/Windows/WMI/index.md)
 
 > [!WARNING]
 > `Microsoft.DSC/PowerShell` and `Microsoft.Windows/WindowsPowerShell` will be deprecated in a

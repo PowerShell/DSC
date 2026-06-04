@@ -108,7 +108,7 @@ The data string must contain an object with the `parameters` key. The value of t
 must be an object where each key is the name of a defined parameter and each value is a valid value
 for that parameter.
 
-This option can be used with the `--parameters_file` option, where parameters specified with `--parameters` will take precedence over `--parameters-file`.
+This option can be used with the `--parameters-file` option, where parameters specified with `--parameters` will take precedence over `--parameters-file`.
 
 For more information about defining parameters in a configuration document, see
 [DSC Configuration document parameter schema][06]. For more information about using parameters in
