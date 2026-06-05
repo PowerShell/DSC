@@ -115,6 +115,52 @@ changedProperties:
 - capabilities
 ```
 
+## Install a feature on demand using an offline source
+
+To allow DISM to install capabilities that are not present on the machine in a offline environment, 
+add the offline Windows image file (WIM) path to the `sourcePaths` property.
+
+```powershell
+$instance = @{
+    sourcePaths = @('z:\sources\SxS')
+    capabilities = @(
+        @{
+            identity = 'NetFX3~~~~'
+            state    = 'Installed'
+        }
+    )
+} | ConvertTo-Json -Depth 3
+
+dsc resource set --resource Microsoft.Windows/FeatureOnDemandList --input $instance
+```
+
+When the resource installs the capability, DSC returns the updated state:
+
+```yaml
+beforeState:
+  sourcePath:
+  - z:\sources\SxS
+  capabilities:
+  - identitiy: NetFX3~~~~
+    state: NotPresent
+    displayName: NET Framework 3.5 (includes .NET 2.0 and 3.0)
+    description: .NET Framework 3.5 (includes .NET 2.0 and 3.0)
+    downloadSize: 0
+    installSize: 487706170
+afterState:
+  sourcePath:
+  - z:\sources\SxS
+  capabilities:
+  - identitiy: NetFX3~~~~
+    state: Installed
+    displayName: NET Framework 3.5 (includes .NET 2.0 and 3.0)
+    description: .NET Framework 3.5 (includes .NET 2.0 and 3.0)
+    downloadSize: 487706170
+    installSize: 487706170
+changedProperties:
+- capabilities
+```
+
 ## Manage multiple capabilities in a single operation
 
 You can install or remove multiple capabilities in a single **Set** call by specifying multiple

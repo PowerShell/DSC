@@ -96,6 +96,12 @@ The following list describes the properties for the resource.
 
   - [capabilities](#capabilities) - An array of capability entries.
 
+- **Instance properties:** <a id="instance-properties"></a> The following properties are optional.
+  They define the desired state for an instance of the resource.
+
+  - [sourcePaths](#sourcePaths) - The location of the source files to use for installation if 
+    necessary.
+
 - **Read-only properties:** <a id="read-only-properties"></a> The resource returns the following
   properties, but they aren't configurable. For more information about read-only properties, see
   the "Read-only resource properties" section in [DSC resource properties][05].
@@ -277,6 +283,28 @@ IsReadOnly : true
 The size in bytes that the capability occupies on disk after installation. This property is returned
 by **Get** and **Export** operations.
 
+### sourcePaths
+
+<details><summary>Expand for <code>sourcePaths</code> property metadata</summary>
+
+```yaml
+Type       : array
+IsRequired : false
+IsKey      : false
+IsReadOnly : false
+```
+
+</details>
+
+Supplied at the top level of the **Set** operation, indicates the location of the source files to 
+use for installation if necessary. The DISM API will search these paths if the feature files are
+not available in the local feature store.
+
+All paths supplied must be valid and existing local or network path to a Windows image file
+(WIM). See the [feature on demand repository documentation][08] for more.
+
+This property is optional and will be omitted from the response if empty.
+
 ### _restartRequired
 
 <details><summary>Expand for <code>_restartRequired</code> property metadata</summary>
@@ -312,6 +340,12 @@ The following snippet contains the JSON Schema that validates an instance of the
       "items": {
         "type": "object",
         "additionalProperties": true
+      }
+    },
+    "sourcePaths": {
+      "type": "array",
+      "items": {
+        "type": "string"
       }
     },
     "capabilities": {
@@ -364,6 +398,7 @@ Common causes include:
 - The requested capability `identity` is not recognized by DISM.
 - The DISM API returned an error while querying or modifying capability state.
 - The process is not running with elevated privileges.
+- An invalid path was supplied to `sourcePaths` in a **Set** operation.
 
 ## See also
 
@@ -378,3 +413,4 @@ Common causes include:
 [05]: ../../../../../concepts/resources/properties.md#read-only-resource-properties
 [06]: ../OptionalFeatureList/index.md
 [07]: /windows-hardware/manufacture/desktop/features-on-demand-v2--capabilities
+[08]: /windows-hardware/manufacture/desktop/features-on-demand-v2--capabilities?view=windows-11#fod-repositories
