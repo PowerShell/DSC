@@ -169,7 +169,7 @@ When the resource enables the feature, DSC returns the updated state:
 
 ```yaml
 beforeState:
-  sourcePath:
+  sourcePaths:
   - z:\sources\SxS
   features:
   - featureName: NetFx3
@@ -178,7 +178,7 @@ beforeState:
     description: .NET Framework 3.5 (includes .NET 2.0 and 3.0)
     restartRequired: No
 afterState:
-  sourcePath:
+  sourcePaths:
   - z:\sources\SxS
   features:
   - featureName: NetFx3

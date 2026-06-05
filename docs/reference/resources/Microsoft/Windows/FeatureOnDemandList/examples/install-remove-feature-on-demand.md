@@ -138,7 +138,7 @@ When the resource installs the capability, DSC returns the updated state:
 
 ```yaml
 beforeState:
-  sourcePath:
+  sourcePaths:
   - z:\sources\SxS
   capabilities:
   - identitiy: NetFX3~~~~
@@ -148,7 +148,7 @@ beforeState:
     downloadSize: 0
     installSize: 487706170
 afterState:
-  sourcePath:
+  sourcePaths:
   - z:\sources\SxS
   capabilities:
   - identitiy: NetFX3~~~~
