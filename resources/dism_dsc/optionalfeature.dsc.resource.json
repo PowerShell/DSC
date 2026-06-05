@@ -116,10 +116,10 @@
                         }
                     }
                 },
-                "sourcePath": {
-                    "type": "string",
-                    "title": "Source path",
-                    "description": "Specifies the path to feature files if the files are not available in the local feature store. This is an optional property for set operations and is ignored for get operations."
+                "sourcePaths": {
+                    "type": "array",
+                    "title": "Source paths",
+                    "description": "An array of paths to feature files if the files are not available in the local feature store. This is an optional property for set operations and is ignored for get operations."
                 }
             }
         }

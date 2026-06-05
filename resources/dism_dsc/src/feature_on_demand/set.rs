@@ -17,7 +17,7 @@ pub fn handle_set(input: &str) -> Result<String, String> {
     }
 
     // Validate source paths
-    if let Some(paths) = &capability_list.source_path {
+    if let Some(paths) = &capability_list.source_paths {
         for path in paths {
             if !std::fs::exists(path).unwrap_or(false) {
                 return Err(t!("set.sourcePathInvalid", path = path).to_string());
@@ -52,7 +52,7 @@ pub fn handle_set(input: &str) -> Result<String, String> {
             CapabilityState::Installed => {
                 match current_state {
                     Some(CapabilityState::Installed) => false,
-                    _ => session.add_capability(identity, &capability_list.source_path)?,
+                    _ => session.add_capability(identity, &capability_list.source_paths)?,
                 }
             }
             CapabilityState::NotPresent => {
@@ -95,7 +95,7 @@ pub fn handle_set(input: &str) -> Result<String, String> {
 
     let output = FeatureOnDemandList { 
         restart_required_meta, 
-        source_path: capability_list.source_path, 
+        source_paths: capability_list.source_paths, 
         capabilities: results 
     };
     serde_json::to_string(&output)
