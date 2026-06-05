@@ -13,6 +13,8 @@ pub type CapabilityState = DismState;
 pub struct FeatureOnDemandList {
     #[serde(rename = "_restartRequired", skip_serializing_if = "Option::is_none")]
     pub restart_required_meta: Option<Vec<Map<String, Value>>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_path: Option<Vec<String>>,
     pub capabilities: Vec<FeatureOnDemandInfo>,
 }
 

@@ -16,6 +16,15 @@ pub fn handle_set(input: &str) -> Result<String, String> {
         return Err(t!("fod_set.capabilitiesArrayEmpty").to_string());
     }
 
+    // Validate source paths
+    if let Some(paths) = &capability_list.source_path {
+        for path in paths {
+            if !std::fs::exists(path).unwrap_or(false) {
+                return Err(t!("set.sourcePathInvalid", path = path).to_string());
+            }
+        }
+    }
+
     let session = DismSessionHandle::open()?;
     let mut results = Vec::new();
     let mut reboot_required = false;
@@ -43,7 +52,7 @@ pub fn handle_set(input: &str) -> Result<String, String> {
             CapabilityState::Installed => {
                 match current_state {
                     Some(CapabilityState::Installed) => false,
-                    _ => session.add_capability(identity)?,
+                    _ => session.add_capability(identity, &capability_list.source_path)?,
                 }
             }
             CapabilityState::NotPresent => {
@@ -84,7 +93,11 @@ pub fn handle_set(input: &str) -> Result<String, String> {
         None
     };
 
-    let output = FeatureOnDemandList { restart_required_meta, capabilities: results };
+    let output = FeatureOnDemandList { 
+        restart_required_meta, 
+        source_path: capability_list.source_path, 
+        capabilities: results 
+    };
     serde_json::to_string(&output)
         .map_err(|e| t!("fod_set.failedSerializeOutput", err = e.to_string()).to_string())
 }

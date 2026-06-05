@@ -91,7 +91,7 @@ pub fn handle_export(input: &str) -> Result<String, String> {
         }
     }
 
-    let output = FeatureOnDemandList { restart_required_meta: None, capabilities: results };
+    let output = FeatureOnDemandList { restart_required_meta: None, source_path: None, capabilities: results };
     serde_json::to_string(&output)
         .map_err(|e| t!("fod_export.failedSerializeOutput", err = e.to_string()).to_string())
 }

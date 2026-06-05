@@ -465,18 +465,26 @@ impl DismSessionHandle {
     }
 
     /// Returns `Ok(true)` if DISM reports a reboot is required (HRESULT 3010).
-    pub fn add_capability(&self, name: &str) -> Result<bool, String> {
+    pub fn add_capability(&self, name: &str, source_paths: &Option<Vec<String>>) -> Result<bool, String> {
         let add_cap = self.api.add_capability
             .ok_or_else(|| t!("dism.capabilitiesNotSupported").to_string())?;
 
         let wide_name = to_wide_null(name);
+
+        let source_count: u32 = source_paths.as_ref().map_or(0, |paths| paths.len() as u32);
+        let wide_source_paths: Option<Vec<_>> = source_paths.as_ref().map(|paths| {
+            paths.into_iter().map(|p| to_wide_null(&p)).collect()
+        });
+        let sources = wide_source_paths.map(|paths| paths.iter().map(|p| p.as_ptr()).collect::<Vec<_>>());
+        let sources_ptr = sources.map_or(std::ptr::null(), |v| v.as_ptr());
+  
         let hr = unsafe {
             add_cap(
                 self.handle,
                 wide_name.as_ptr(),
                 0,                      // LimitAccess = FALSE
-                std::ptr::null(),       // SourcePaths
-                0,                      // SourcePathCount
+                sources_ptr,            // SourcePaths
+                source_count,           // SourcePathCount
                 std::ptr::null_mut(),   // CancelEvent
                 std::ptr::null_mut(),   // Progress
                 std::ptr::null_mut(),   // UserData
