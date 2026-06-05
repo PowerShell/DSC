@@ -143,8 +143,8 @@ beforeState:
   capabilities:
   - identitiy: NetFX3~~~~
     state: NotPresent
-    displayName: NET Framework 3.5 (includes .NET 2.0 and 3.0)
-    description: .NET Framework 3.5 (includes .NET 2.0 and 3.0)
+    displayName: ''
+    description: ''
     downloadSize: 0
     installSize: 487706170
 afterState:
@@ -153,9 +153,9 @@ afterState:
   capabilities:
   - identitiy: NetFX3~~~~
     state: Installed
-    displayName: NET Framework 3.5 (includes .NET 2.0 and 3.0)
-    description: .NET Framework 3.5 (includes .NET 2.0 and 3.0)
-    downloadSize: 487706170
+    displayName: ''
+    description: ''
+    downloadSize: 0
     installSize: 487706170
 changedProperties:
 - capabilities
