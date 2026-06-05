@@ -326,8 +326,8 @@ impl DismSessionHandle {
         let wide_source_paths: Option<Vec<_>> = source_paths.as_ref().map(|paths| {
             paths.into_iter().map(|p| to_wide_null(&p)).collect()
         });
-        let sources = wide_source_paths.map(|paths| paths.iter().map(|p| p.as_ptr()).collect::<Vec<_>>());
-        let sources_ptr = sources.map_or(std::ptr::null(), |v| v.as_ptr());
+        let sources = wide_source_paths.as_ref().map(|paths| paths.iter().map(|p| p.as_ptr()).collect::<Vec<_>>());
+        let sources_ptr = sources.as_ref().map_or(std::ptr::null(), |v| v.as_ptr());
   
         let hr = unsafe {
             (self.api.enable_feature)(
@@ -475,8 +475,8 @@ impl DismSessionHandle {
         let wide_source_paths: Option<Vec<_>> = source_paths.as_ref().map(|paths| {
             paths.into_iter().map(|p| to_wide_null(&p)).collect()
         });
-        let sources = wide_source_paths.map(|paths| paths.iter().map(|p| p.as_ptr()).collect::<Vec<_>>());
-        let sources_ptr = sources.map_or(std::ptr::null(), |v| v.as_ptr());
+        let sources = wide_source_paths.as_ref().map(|paths| paths.iter().map(|p| p.as_ptr()).collect::<Vec<_>>());
+        let sources_ptr = sources.as_ref().map_or(std::ptr::null(), |v| v.as_ptr());
   
         let hr = unsafe {
             add_cap(
