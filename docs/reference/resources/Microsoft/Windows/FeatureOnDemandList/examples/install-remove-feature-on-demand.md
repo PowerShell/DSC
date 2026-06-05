@@ -117,8 +117,8 @@ changedProperties:
 
 ## Install a feature on demand using an offline source
 
-To allow DISM to install capabilities that are not present on the machine in a offline environment, 
-add the offline Windows image file (WIM) path to the `sourcePaths` property.
+To allow DISM to install capabilities that are not present on the machine in an offline 
+environment, add the offline source path to the `sourcePaths` property.
 
 ```powershell
 $instance = @{
