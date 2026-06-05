@@ -296,12 +296,10 @@ IsReadOnly : false
 
 </details>
 
-Supplied at the top level of the **Set** operation, indicates the location of the source files to 
+Supplied at the top level of the **Set** operation, indicates the location of the source files to
 use for installation if necessary. The DISM API will search these paths if the feature files are
-not available in the local feature store.
-
-All paths supplied should be to a Windows image file (WIM). See the 
-[feature on demand repository documentation][08] for more information on valid sources.
+not available in the local feature store. See the [feature on demand repository documentation][08]
+for more information on valid sources.
 
 This property is optional and will be omitted from the response if empty.
 
