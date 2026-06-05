@@ -46,7 +46,7 @@ pub fn handle_get(input: &str) -> Result<String, String> {
 
     let output = FeatureOnDemandList { 
         restart_required_meta: None, 
-        source_paths: capability_list.source_paths, 
+        source_paths: None, 
         capabilities: results 
     };
     serde_json::to_string(&output)

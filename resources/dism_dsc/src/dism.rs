@@ -322,11 +322,16 @@ impl DismSessionHandle {
     pub fn enable_feature(&self, feature_name: &str, source_paths: &Option<Vec<String>>) -> Result<bool, String> {
         let wide_name = to_wide_null(feature_name);
         
-        let source_count: u32 = source_paths.as_ref().map_or(0, |paths| paths.len() as u32);
-        let wide_source_paths: Option<Vec<_>> = source_paths.as_ref().map(|paths| {
-            paths.into_iter().map(|p| to_wide_null(&p)).collect()
-        });
-        let sources = wide_source_paths.as_ref().map(|paths| paths.iter().map(|p| p.as_ptr()).collect::<Vec<_>>());
+        let wide_source_paths: Option<Vec<Vec<u16>>> = source_paths
+            .as_ref()
+            .filter(|paths| !paths.is_empty())
+            .map(|paths| paths.iter().map(|p| to_wide_null(p)).collect());
+
+        let sources: Option<Vec<*const u16>> = wide_source_paths
+            .as_ref()
+            .map(|paths| paths.iter().map(|p| p.as_ptr()).collect());
+
+        let source_count = sources.as_ref().map_or(0, |paths| paths.len() as u32);
         let sources_ptr = sources.as_ref().map_or(std::ptr::null(), |v| v.as_ptr());
   
         let hr = unsafe {
@@ -471,11 +476,16 @@ impl DismSessionHandle {
 
         let wide_name = to_wide_null(name);
 
-        let source_count: u32 = source_paths.as_ref().map_or(0, |paths| paths.len() as u32);
-        let wide_source_paths: Option<Vec<_>> = source_paths.as_ref().map(|paths| {
-            paths.into_iter().map(|p| to_wide_null(&p)).collect()
-        });
-        let sources = wide_source_paths.as_ref().map(|paths| paths.iter().map(|p| p.as_ptr()).collect::<Vec<_>>());
+        let wide_source_paths: Option<Vec<Vec<u16>>> = source_paths
+            .as_ref()
+            .filter(|paths| !paths.is_empty())
+            .map(|paths| paths.iter().map(|p| to_wide_null(p)).collect());
+
+        let sources: Option<Vec<*const u16>> = wide_source_paths
+            .as_ref()
+            .map(|paths| paths.iter().map(|p| p.as_ptr()).collect());
+
+        let source_count = sources.as_ref().map_or(0, |paths| paths.len() as u32);
         let sources_ptr = sources.as_ref().map_or(std::ptr::null(), |v| v.as_ptr());
   
         let hr = unsafe {
