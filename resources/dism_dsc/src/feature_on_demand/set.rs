@@ -20,7 +20,7 @@ pub fn handle_set(input: &str) -> Result<String, String> {
     if let Some(paths) = &capability_list.source_paths {
         for path in paths {
             if !std::fs::exists(path).unwrap_or(false) {
-                return Err(t!("set.sourcePathInvalid", path = path).to_string());
+                return Err(t!("fod_set.sourcePathInvalid", path = path).to_string());
             }
         }
     }

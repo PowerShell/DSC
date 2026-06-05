@@ -141,7 +141,7 @@ beforeState:
   sourcePaths:
   - z:\sources\SxS
   capabilities:
-  - identitiy: NetFX3~~~~
+  - identity: NetFX3~~~~
     state: NotPresent
     displayName: ''
     description: ''
@@ -151,7 +151,7 @@ afterState:
   sourcePaths:
   - z:\sources\SxS
   capabilities:
-  - identitiy: NetFX3~~~~
+  - identity: NetFX3~~~~
     state: Installed
     displayName: ''
     description: ''
