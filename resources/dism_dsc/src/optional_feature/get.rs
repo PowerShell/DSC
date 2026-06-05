@@ -28,9 +28,9 @@ pub fn handle_get(input: &str) -> Result<String, String> {
     }
 
     let output = OptionalFeatureList { 
-        restart_required_meta: None, 
-        source_paths: None, 
-        features: results 
+        restart_required_meta: None,
+        source_paths: None,
+        features: results
     };
     serde_json::to_string(&output)
         .map_err(|e| t!("get.failedSerializeOutput", err = e.to_string()).to_string())

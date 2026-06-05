@@ -301,7 +301,7 @@ use for installation if necessary. The DISM API will search these paths if the f
 not available in the local feature store. See the [feature on demand repository documentation][08]
 for more information on valid sources.
 
-This property is optional and will be omitted from the response if empty.
+This property is optional and will be omitted from the response if no value is provided.
 
 ### _restartRequired
 
