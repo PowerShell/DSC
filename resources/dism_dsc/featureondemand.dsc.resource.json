@@ -120,7 +120,10 @@
                 "sourcePaths": {
                     "type": "array",
                     "title": "Source paths",
-                    "description": "An array of paths to feature files if the files are not available in the local feature store. This is an optional property for set operations and is ignored for get operations."
+                    "description": "An array of paths to feature files if the files are not available in the local feature store. This is an optional property for set operations and is ignored for get operations.",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         }
