@@ -288,7 +288,8 @@ not available in the local feature store.
 All paths supplied should be to a Windows image file (WIM). See the 
 [DISM enable feature documentation][08] for more information on valid sources.
 
-This property is optional and will be omitted from the response if empty.
+This property is optional and will be omitted from the response if empty. If a value is supplied 
+to the **Get** operation, the value will be echoed to the response.
 
 ### _restartRequired
 
