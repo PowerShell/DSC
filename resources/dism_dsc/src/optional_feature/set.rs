@@ -16,6 +16,15 @@ pub fn handle_set(input: &str) -> Result<String, String> {
         return Err(t!("set.featuresArrayEmpty").to_string());
     }
 
+    // Validate source paths
+    if let Some(paths) = &feature_list.source_path {
+        for path in paths {
+            if !std::fs::exists(path).unwrap_or(false) {
+                return Err(t!("set.sourcePathInvalid", path = path).to_string());
+            }
+        }
+    }
+
     let session = DismSessionHandle::open()?;
     let mut results = Vec::new();
     let mut reboot_required = false;
@@ -32,15 +41,9 @@ pub fn handle_set(input: &str) -> Result<String, String> {
             .ok_or_else(|| t!("set.stateRequired").to_string())?;
 
         let needs_reboot = match desired_state {
-            FeatureState::Installed => {
-                session.enable_feature(feature_name)?
-            }
-            FeatureState::NotPresent => {
-                session.disable_feature(feature_name, false)?
-            }
-            FeatureState::Removed => {
-                session.disable_feature(feature_name, true)?
-            }
+            FeatureState::Installed => session.enable_feature(feature_name, &feature_list.source_path)?,
+            FeatureState::NotPresent => session.disable_feature(feature_name, false)?,
+            FeatureState::Removed => session.disable_feature(feature_name, true)?,
             _ => {
                 return Err(t!(
                     "set.unsupportedDesiredState",
@@ -64,7 +67,11 @@ pub fn handle_set(input: &str) -> Result<String, String> {
         None
     };
 
-    let output = OptionalFeatureList { restart_required_meta, features: results };
+    let output = OptionalFeatureList {
+        restart_required_meta,
+        features: results,
+        source_path: feature_list.source_path,
+    };
     serde_json::to_string(&output)
         .map_err(|e| t!("set.failedSerializeOutput", err = e.to_string()).to_string())
 }

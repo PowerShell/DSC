@@ -319,8 +319,16 @@ impl DismSessionHandle {
     }
 
     /// Returns `Ok(true)` if DISM reports a reboot is required (HRESULT 3010).
-    pub fn enable_feature(&self, feature_name: &str) -> Result<bool, String> {
+    pub fn enable_feature(&self, feature_name: &str, source_paths: &Option<Vec<String>>) -> Result<bool, String> {
         let wide_name = to_wide_null(feature_name);
+        
+        let source_count: u32 = source_paths.as_ref().map_or(0, |paths| paths.len() as u32);
+        let wide_source_paths: Option<Vec<_>> = source_paths.as_ref().map(|paths| {
+            paths.into_iter().map(|p| to_wide_null(&p)).collect()
+        });
+        let sources = wide_source_paths.map(|paths| paths.iter().map(|p| p.as_ptr()).collect::<Vec<_>>());
+        let sources_ptr = sources.map_or(std::ptr::null(), |v| v.as_ptr());
+  
         let hr = unsafe {
             (self.api.enable_feature)(
                 self.handle,
@@ -328,8 +336,8 @@ impl DismSessionHandle {
                 std::ptr::null(),       // Identifier
                 DISM_PACKAGE_NONE,      // PackageIdentifier
                 0,                      // LimitAccess = FALSE
-                std::ptr::null(),       // SourcePaths
-                0,                      // SourcePathCount
+                sources_ptr,            // SourcePaths
+                source_count,           // SourcePathCount
                 0,                      // EnableAll = FALSE
                 std::ptr::null_mut(),   // CancelEvent
                 std::ptr::null_mut(),   // Progress

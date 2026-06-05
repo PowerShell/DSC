@@ -91,7 +91,8 @@
                                     "PartiallyInstalled"
                                 ],
                                 "title": "Feature state",
-                                "description": "The current state of the optional feature. For set operations, only Installed, NotPresent, and Removed are accepted; other states are returned by get and export operations and are not valid inputs for set."},
+                                "description": "The current state of the optional feature. For set operations, only Installed, NotPresent, and Removed are accepted; other states are returned by get and export operations and are not valid inputs for set."
+                            },
                             "displayName": {
                                 "type": "string",
                                 "title": "Display name",
@@ -114,6 +115,11 @@
                             }
                         }
                     }
+                },
+                "sourcePath": {
+                    "type": "string",
+                    "title": "Source path",
+                    "description": "Specifies the path to feature files if the files are not available in the local feature store. This is an optional property for set operations and is ignored for get operations."
                 }
             }
         }
