@@ -285,8 +285,8 @@ Supplied at the top level of the **Set** operation, indicates the location of th
 use for installation if necessary. The DISM API will search these paths if the feature files are
 not available in the local feature store. 
 
-All paths supplied must be valid and existing local or network path to a Windows image file 
-(WIM). See the [DISM enable feature documentation][08] for more.
+All paths supplied should be to a Windows image file (WIM). See the 
+[DISM enable feature documentation][08] for more information on valid sources.
 
 This property is optional and will be omitted from the response if empty.
 

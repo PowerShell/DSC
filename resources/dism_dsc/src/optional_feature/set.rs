@@ -16,15 +16,6 @@ pub fn handle_set(input: &str) -> Result<String, String> {
         return Err(t!("set.featuresArrayEmpty").to_string());
     }
 
-    // Validate source paths
-    if let Some(paths) = &feature_list.source_paths {
-        for path in paths {
-            if !std::fs::exists(path).unwrap_or(false) {
-                return Err(t!("set.sourcePathInvalid", path = path).to_string());
-            }
-        }
-    }
-
     let session = DismSessionHandle::open()?;
     let mut results = Vec::new();
     let mut reboot_required = false;

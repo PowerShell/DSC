@@ -16,15 +16,6 @@ pub fn handle_set(input: &str) -> Result<String, String> {
         return Err(t!("fod_set.capabilitiesArrayEmpty").to_string());
     }
 
-    // Validate source paths
-    if let Some(paths) = &capability_list.source_paths {
-        for path in paths {
-            if !std::fs::exists(path).unwrap_or(false) {
-                return Err(t!("fod_set.sourcePathInvalid", path = path).to_string());
-            }
-        }
-    }
-
     let session = DismSessionHandle::open()?;
     let mut results = Vec::new();
     let mut reboot_required = false;
