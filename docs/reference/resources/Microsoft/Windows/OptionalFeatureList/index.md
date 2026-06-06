@@ -383,7 +383,6 @@ Common causes include:
   `Removed`).
 - The DISM API returned an error while querying or modifying feature state.
 - The process is not running with elevated privileges.
-- An invalid path was supplied to `sourcePaths` in a **Set** operation.
 
 ## See also
 
