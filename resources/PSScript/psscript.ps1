@@ -153,8 +153,8 @@ try {
         } else {
             "Script failed with terminating error: $($ps.InvocationStateInfo.Reason)"
         }
-        Write-DscTrace -Now -Level Error -Message $message
         Write-TraceQueue
+        Write-DscTrace -Now -Level Error -Message $message
         exit 1
     }
 
@@ -171,6 +171,7 @@ try {
     }
 }
 catch {
+    Write-TraceQueue
     Write-DscTrace -Now -Level Error -Message ($_ | Format-List -Force * | Out-String)
     exit 1
 }
