@@ -18,7 +18,7 @@ steps:
   displayName: 🛠️ Workaround for the LoadLibrary ACCESS_VIOLATION OneBranch issue
 - task: RustInstaller@1
   inputs:
-    rustVersion: ms-prod-1.93
+    rustVersion: ms-prod-1.95
     toolchainFeed: ${{ parameters.RustSDK }}
     additionalTargets: ${{ parameters.buildName }}
   displayName: Install Rust
