@@ -10,6 +10,8 @@ parameters:
     default: Release
   - name: RustSDK
     type: string
+  - name: RustVersion
+    type: string
 
 steps:
 - pwsh: |
@@ -18,7 +20,7 @@ steps:
   displayName: 🛠️ Workaround for the LoadLibrary ACCESS_VIOLATION OneBranch issue
 - task: RustInstaller@1
   inputs:
-    rustVersion: ms-prod-1.95
+    rustVersion: ${{ parameters.RustVersion }}
     toolchainFeed: ${{ parameters.RustSDK }}
     additionalTargets: ${{ parameters.buildName }}
   displayName: Install Rust
