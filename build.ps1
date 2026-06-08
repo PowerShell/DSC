@@ -191,10 +191,8 @@ process {
         Set-CargoEnvironment -UseCFS:$UseCFS @VerboseParam
 
         # Install or update rust
-        if (!$usingADO) {
-            Write-BuildProgress @progressParams -Status 'Ensuring Rust is up-to-date'
-            Update-Rust @VerboseParam
-        }
+        Write-BuildProgress @progressParams -Status 'Ensuring Rust is up-to-date'
+        Update-Rust @VerboseParam
 
         if ($Clippy) {
             Write-BuildProgress @progressParams -Status 'Ensuring Clippy is available and updated'
