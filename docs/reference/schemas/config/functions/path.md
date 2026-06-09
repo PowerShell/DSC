@@ -35,7 +35,7 @@ resources:
     - name: Simple Path Construct
       type: Microsoft.DSC.Debug/Echo
       properties:
-      output: "[path('C:\\Program Files', 'WindowsPowerShell')]"
+        output: "[path('C:\\Program Files', 'WindowsPowerShell')]"
 ```
 
 ```bash
