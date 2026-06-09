@@ -19,7 +19,7 @@ systemRoot()
 
 ## Description
 
-The `systemRoot()` function returns the value of the system root path[01].
+The `systemRoot()` function returns the value of the [system root path][01].
 
 ## Examples
 
@@ -54,8 +54,8 @@ hadErrors: false
 
 ### Example 2 - Construct and override the system root path
 
-The configuration uses the `path()`[02] function to construct a path from the `systemRoot()`, which 
-is overridden using in the command line.
+The configuration uses the [`path()`][02] function to construct a path from the `systemRoot()`,
+which is overridden using in the command line.
 
 ```yaml
 # joinSystemRoot.example.2.dsc.config.yaml
@@ -85,7 +85,7 @@ hadErrors: false
 ## Output
 
 The `systemRoot()` function returns the system root of the current host, or the value overriden
-using the `--system-root` command line flag[01].
+using the [`--system-root` command line flag][01].
 
 This is usually `C:\` on Windows system and `/` on Unix systems.
 
@@ -94,5 +94,5 @@ Type: string
 ```
 
 <!-- Link reference definitions -->
-[01]: ../../../cli/config/index.md#-r---system-root
+[01]: ../../../cli/config/index.md#--system-root
 [02]: ./path.md

@@ -22,8 +22,8 @@ secret(<secretName>, [vaultName])
 The `secret()` function searches secret extensions for a secret with the provided name. You must
 pass a name of a valid secret that exists in at least one extension. 
 
-If more than one secret exists with the name and a different value, an error will be raised. If
-all the duplicate secrets share a value, it will return that value.
+If more than one secret exists with the same name and a different value, the function raises an
+error. If every duplicate secret has the same value, the function returns that value.
 
 ## Examples
 
@@ -71,8 +71,10 @@ Position: 1
 
 ### vaultName
 
-The name of the vault to retrieve the secret from. The implementation of the is dependent on the
-secret extension and may not be required.
+The name of the vault to retrieve the secret from. When you don't specify a value for this
+parameter DSC requests the secret by name from every vault registered with every secret extension.
+When you specify this parameter DSC requests the secret from the given vault by name for every
+secret extension.
 
 ```yaml
 Type:     string
@@ -83,6 +85,14 @@ Position: 2
 ## Output
 
 The `secret()` function returns the value of the secret as a string.
+
+> [!IMPORTANT]
+> DSC returns the value as a `string` (`"<secret>"`) rather than wrapping the value as a
+> `secureString` (`{"secureString": "<secret>"}`) to simplify passing the value to resources.
+>
+> DSC doesn't emit this value into its trace messaging but cannot guarantee that the resource won't
+> emit a secret in messages or output. Always review resource behavior that relies on secret
+> values.
 
 ```yaml
 Type: string

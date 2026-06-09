@@ -64,7 +64,7 @@ resources:
     - name: Relative Path
       type: Microsoft.DSC.Debug/Echo
       properties:
-      output: "[path('.\\usr', 'bin', 'bash')]"
+        output: "[path('.\\usr', 'bin', 'bash')]"
 ```
 
 ```bash
@@ -95,7 +95,7 @@ resources:
     - name: Double Dot Path
       type: Microsoft.DSC.Debug/Echo
       properties:
-      output: "[path('parent', '..', 'child')]"
+        output: "[path('parent', '..', 'child')]"
 ```
 
 ```bash
@@ -117,11 +117,12 @@ hadErrors: false
 
 ### path
 
-The `path()` function expects at least two arguments, a base path and at 
-least one child. 
+Defines the base path that the function appends child path segments to. The base path must be a
+string value. It can be any of the following kinds of paths:
 
-The base path can be an absolute (e.g., `C:\Windows\System32`, `\usr\bin`), relative (e.g., `./System32`) or 
-Universal Naming Convention (UNC) (e.g., `\\server1\c$\Windows`).
+- Absolute, like `C:\Windows\System32` or `/usr/bin`
+- Relative, like `.\infrastructure` or `../compliance/pci`
+- Universal Naming Convention (UNC), such as `\\server1\c$\Windows`
 
 ```yaml
 Type:         string
@@ -130,7 +131,19 @@ Position:     1
 ```
 ### child
 
-The `path()` function expects at least one child path to be supplied.
+Defines the child path segments the function appends to the base path. The function expects at
+least one child path segment. Every child path segment must be a string value.
+
+The function appends each segment to the output path in the order that you specify them. The
+function inserts the operating system's path separator (`\` on Windows, `/` on Linux and macOS)
+between each defined segment unless the segment has a trailing forward slash (`/`).
+
+> [!NOTE]
+> On Windows systems, when you specify any absolute path as a child path segment, like `C:\dsc`,
+> the function _replaces_ the currently constructed path with that absolute path segment.
+>
+> For example, `[path('./a', 'b', 'C:\', 'd')]` resolves to `C:\d` on Windows and `./a/b/C:\/d`
+> on non-Windows systems.
 
 ```yaml
 Type:         string
@@ -143,7 +156,17 @@ MaximumCount: 18446744073709551615
 
 Returns the concatenated path, made from the provided elements.
 
-There are slight differences in return value depending on the OS (e.g., path separators, drive letters).
+The output path for the same input depends on the operating systems:
+
+- The function uses the operating system's defined path separator for appending child path segments
+  to the base path (`\` for Windows and `/` for Linux and macOS).
+  
+  For example, `[path('a', 'b', 'c')]` resolves to `a\b\c` on Windows and `a/b/c` on Linux and macOS.
+- On Windows, specifying a child path segment that begins with a drive letter _replaces_ the
+  constructed path instead of appending to it.
+  
+  For example, `[path('./a', 'b', 'C:\', 'd')]` resolves to `C:\d` on Windows and `./a/b/C:\/d`
+  on non-Windows systems.
 
 ```yaml
 Type: string
