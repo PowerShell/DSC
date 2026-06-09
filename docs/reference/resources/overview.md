@@ -5,39 +5,39 @@ This document lists the available resources and links to the reference documenta
 
 ## All built-in resources
 
-- [Microsoft/OSInfo](./microsoft/osinfo/resource.md)
-- [Microsoft.DSC/Assertion](./microsoft/dsc/assertion/resource.md)
-- [Microsoft.DSC/Group](./microsoft/dsc/group/resource.md)
-- [Microsoft.DSC/Include](./microsoft/dsc/include/resource.md)
-- [Microsoft.Adapter/PowerShell](./microsoft/adapter/powershell/index.md)
-- [Microsoft.Adapter/WindowsPowerShell](./microsoft/adapter/windowspowershell/index.md)
-- [Microsoft.DSC/PowerShell](./microsoft/dsc/powershell/resource.md)
-- [Microsoft.DSC.Debug/Echo](./microsoft/dsc/debug/echo/resource.md)
-- [Microsoft.DSC.Transitional/RunCommandOnSet](./microsoft/dsc/transitional/runcomandonset/resource.md)
-- [Microsoft.Windows/RebootPending](./microsoft/windows/rebootpending/resource.md)
-- [Microsoft.Windows/Registry](./microsoft/windows/registry/resource.md)
-- [Microsoft.Windows/WindowsPowerShell](./microsoft/windows/windowspowershell/resource.md)
-- [Microsoft.Windows/WMI](./microsoft/windows/wmi/resource.md)
+- [Microsoft/OSInfo](./Microsoft/OSInfo/index.md)
+- [Microsoft.DSC/Assertion](./Microsoft/DSC/Assertion/index.md)
+- [Microsoft.DSC/Group](./Microsoft/DSC/Group/index.md)
+- [Microsoft.DSC/Include](./Microsoft/DSC/Include/index.md)
+- [Microsoft.Adapter/PowerShell](./Microsoft/Adapter/PowerShell/index.md)
+- [Microsoft.Adapter/WindowsPowerShell](./Microsoft/Adapter/WindowsPowerShell/index.md)
+- [Microsoft.DSC/PowerShell](./Microsoft/DSC/PowerShell/index.md)
+- [Microsoft.DSC.Debug/Echo](./Microsoft/DSC/Debug/echo/index.md)
+- [Microsoft.DSC.Transitional/RunCommandOnSet](./Microsoft/DSC/Transitional/RunCommandOnSet/index.md)
+- [Microsoft.Windows/RebootPending](./Microsoft/Windows/RebootPending/index.md)
+- [Microsoft.Windows/Registry](./Microsoft/Windows/Registry/index.md)
+- [Microsoft.Windows/WindowsPowerShell](./Microsoft/Windows/WindowsPowerShell/index.md)
+- [Microsoft.Windows/WMI](./Microsoft/Windows/WMI/index.md)
 
 ## Built-in assertion resources
 
 You can use the following built-in resources to query the current state of a machine but not to
 change the state of the machine directly:
 
-- [Microsoft/OSInfo](./microsoft/osinfo/resource.md)
-- [Microsoft.DSC/Assertion](./microsoft/dsc/assertion/resource.md)
-- [Microsoft.Windows/RebootPending](./microsoft/windows/rebootpending/resource.md)
+- [Microsoft/OSInfo](./Microsoft/OSInfo/index.md)
+- [Microsoft.DSC/Assertion](./Microsoft/DSC/Assertion/index.md)
+- [Microsoft.Windows/RebootPending](./Microsoft/Windows/RebootPending/index.md)
 
 ## Built-in adapter resources
 
 You can use the following built-in resources to leverage resources that don't define a DSC Resource
 Manifest:
 
-- [Microsoft.Adapter/PowerShell](./microsoft/adapter/powershell/index.md)
-- [Microsoft.Adapter/WindowsPowerShell](./microsoft/adapter/windowspowershell/index.md)
-- [Microsoft.DSC/PowerShell](./microsoft/dsc/powershell/index.md)
-- [Microsoft.Windows/WindowsPowerShell](./microsoft/windows/windowspowershell/index.md)
-- [Microsoft.Windows/WMI](./microsoft/windows/wmi/resource.md)
+- [Microsoft.Adapter/PowerShell](./Microsoft/Adapter/PowerShell/index.md)
+- [Microsoft.Adapter/WindowsPowerShell](./Microsoft/Adapter/WindowsPowerShell/index.md)
+- [Microsoft.DSC/PowerShell](./Microsoft/DSC/PowerShell/index.md)
+- [Microsoft.Windows/WindowsPowerShell](./Microsoft/Windows/WindowsPowerShell/index.md)
+- [Microsoft.Windows/WMI](./Microsoft/Windows/WMI/index.md)
 
 > [!WARNING]
 > `Microsoft.DSC/PowerShell` and `Microsoft.Windows/WindowsPowerShell` will be deprecated in a
@@ -48,21 +48,21 @@ Manifest:
 
 The following built-in resources to change the state of a machine directly:
 
-- [Microsoft.DSC.Transitional/RunCommandOnSet](./microsoft/dsc/transitional/runcomandonset/resource.md)
-- [Microsoft.Windows/Registry](./microsoft/windows/registry/resource.md)
+- [Microsoft.DSC.Transitional/RunCommandOnSet](./Microsoft/DSC/Transitional/RunCommandOnSet/index.md)
+- [Microsoft.Windows/Registry](./Microsoft/Windows/Registry/index.md)
 
 ## Built-in debugging resources
 
 You can use the following built-in resources when debugging or exploring DSC. They don't affect
 the state of the machine.
 
-- [Microsoft.DSC.Debug/Echo](./microsoft/dsc/debug/echo/resource.md)
+- [Microsoft.DSC.Debug/Echo](./Microsoft/DSC/Debug/echo/index.md)
 
 ## Built-in group resources
 
 You can use the following built-in resources to change how DSC processes a group of nested resource
 instances:
 
-- [Microsoft.DSC/Assertion](./microsoft/dsc/assertion/resource.md)
-- [Microsoft.DSC/Group](./microsoft/dsc/group/resource.md)
-- [Microsoft.DSC/Include](./microsoft/dsc/include/resource.md)
+- [Microsoft.DSC/Assertion](./Microsoft/DSC/Assertion/index.md)
+- [Microsoft.DSC/Group](./Microsoft/DSC/Group/index.md)
+- [Microsoft.DSC/Include](./Microsoft/DSC/Include/index.md)

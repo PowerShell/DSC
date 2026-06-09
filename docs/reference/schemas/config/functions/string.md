@@ -246,7 +246,7 @@ Type: string
 - [`concat()`][00] - Concatenates strings together
 - [`int()`][01] - Converts a string to an integer
 - [`bool()`][02] - Converts a string to a boolean
-- [`base64()`][03] - Encodes a string to Base64 format
+- [`base64()`][03] - Encodes a string to base64 format
 - [`length()`][04] - Returns the length of a string
 
 <!-- Link reference definitions -->
