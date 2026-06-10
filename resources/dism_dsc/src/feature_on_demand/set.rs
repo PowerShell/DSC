@@ -43,7 +43,7 @@ pub fn handle_set(input: &str) -> Result<String, String> {
             CapabilityState::Installed => {
                 match current_state {
                     Some(CapabilityState::Installed) => false,
-                    _ => session.add_capability(identity)?,
+                    _ => session.add_capability(identity, &capability_list.source_paths)?,
                 }
             }
             CapabilityState::NotPresent => {
@@ -84,7 +84,11 @@ pub fn handle_set(input: &str) -> Result<String, String> {
         None
     };
 
-    let output = FeatureOnDemandList { restart_required_meta, capabilities: results };
+    let output = FeatureOnDemandList { 
+        restart_required_meta, 
+        source_paths: capability_list.source_paths, 
+        capabilities: results 
+    };
     serde_json::to_string(&output)
         .map_err(|e| t!("fod_set.failedSerializeOutput", err = e.to_string()).to_string())
 }

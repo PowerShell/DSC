@@ -44,7 +44,11 @@ pub fn handle_get(input: &str) -> Result<String, String> {
         results.push(info);
     }
 
-    let output = FeatureOnDemandList { restart_required_meta: None, capabilities: results };
+    let output = FeatureOnDemandList { 
+        restart_required_meta: None,
+        source_paths: None,
+        capabilities: results
+    };
     serde_json::to_string(&output)
         .map_err(|e| t!("fod_get.failedSerializeOutput", err = e.to_string()).to_string())
 }

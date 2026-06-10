@@ -115,6 +115,52 @@ changedProperties:
 - capabilities
 ```
 
+## Install a feature on demand using an offline source
+
+To allow DISM to install capabilities that are not present on the machine in an offline 
+environment, add the offline source path to the `sourcePaths` property.
+
+```powershell
+$instance = @{
+    sourcePaths = @('z:\sources\SxS')
+    capabilities = @(
+        @{
+            identity = 'NetFX3~~~~'
+            state    = 'Installed'
+        }
+    )
+} | ConvertTo-Json -Depth 3
+
+dsc resource set --resource Microsoft.Windows/FeatureOnDemandList --input $instance
+```
+
+When the resource installs the capability, DSC returns the updated state:
+
+```yaml
+beforeState:
+  sourcePaths:
+  - z:\sources\SxS
+  capabilities:
+  - identity: NetFX3~~~~
+    state: NotPresent
+    displayName: ''
+    description: ''
+    downloadSize: 0
+    installSize: 487706170
+afterState:
+  sourcePaths:
+  - z:\sources\SxS
+  capabilities:
+  - identity: NetFX3~~~~
+    state: Installed
+    displayName: ''
+    description: ''
+    downloadSize: 0
+    installSize: 487706170
+changedProperties:
+- capabilities
+```
+
 ## Manage multiple capabilities in a single operation
 
 You can install or remove multiple capabilities in a single **Set** call by specifying multiple

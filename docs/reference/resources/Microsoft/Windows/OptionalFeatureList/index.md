@@ -94,6 +94,12 @@ The following list describes the properties for the resource.
 
   - [features](#features) - An array of optional feature entries.
 
+- **Instance properties:** <a id="instance-properties"></a> The following properties are optional.
+  They define the desired state for an instance of the resource.
+
+  - [sourcePaths](#sourcePaths) - The location of the source files to use for installation if 
+    necessary.
+
 - **Read-only properties:** <a id="read-only-properties"></a> The resource returns the following
   properties, but they aren't configurable. For more information about read-only properties, see
   the "Read-only resource properties" section in [DSC resource properties][05].
@@ -262,6 +268,26 @@ property is returned by **Get** and **Export** operations and cannot be set.
 | `Possible` | A restart may be required depending on system conditions. |
 | `Required` | A restart is required to complete the state change.       |
 
+### sourcePaths
+
+<details><summary>Expand for <code>sourcePaths</code> property metadata</summary>
+
+```yaml
+Type       : array
+IsRequired : false
+IsKey      : false
+IsReadOnly : false
+```
+
+</details>
+
+Supplied at the top level of the **Set** operation, indicates the location of the source files to 
+use for installation if necessary. The DISM API will search these paths if the feature files are
+not available in the local feature store. See the [DISM enable feature documentation][08] for more
+information on valid sources.
+
+This property is optional and will be omitted from the response if no value is provided.
+
 ### _restartRequired
 
 <details><summary>Expand for <code>_restartRequired</code> property metadata</summary>
@@ -297,6 +323,12 @@ The following snippet contains the JSON Schema that validates an instance of the
       "items": {
         "type": "object",
         "additionalProperties": true
+      }
+    },    
+    "sourcePaths": {
+      "type": "array",
+      "items": {
+        "type": "string"
       }
     },
     "features": {
@@ -364,4 +396,5 @@ Common causes include:
 [04]: ./examples/export-optional-features.md
 [05]: ../../../../../concepts/resources/properties.md#read-only-resource-properties
 [06]: ../FeatureOnDemandList/index.md
-[07]: /windows-server/administration/windows-commands/dism/dism-operating-system-package-servicing-command-line-options
+[07]: /windows-hardware/manufacture/desktop/deployment-image-servicing-and-management--dism--command-line-options
+[08]: /windows-hardware/manufacture/desktop/dism-operating-system-package-servicing-command-line-options#enable-feature

@@ -32,15 +32,9 @@ pub fn handle_set(input: &str) -> Result<String, String> {
             .ok_or_else(|| t!("set.stateRequired").to_string())?;
 
         let needs_reboot = match desired_state {
-            FeatureState::Installed => {
-                session.enable_feature(feature_name)?
-            }
-            FeatureState::NotPresent => {
-                session.disable_feature(feature_name, false)?
-            }
-            FeatureState::Removed => {
-                session.disable_feature(feature_name, true)?
-            }
+            FeatureState::Installed => session.enable_feature(feature_name, &feature_list.source_paths)?,
+            FeatureState::NotPresent => session.disable_feature(feature_name, false)?,
+            FeatureState::Removed => session.disable_feature(feature_name, true)?,
             _ => {
                 return Err(t!(
                     "set.unsupportedDesiredState",
@@ -64,7 +58,11 @@ pub fn handle_set(input: &str) -> Result<String, String> {
         None
     };
 
-    let output = OptionalFeatureList { restart_required_meta, features: results };
+    let output = OptionalFeatureList {
+        restart_required_meta,
+        features: results,
+        source_paths: feature_list.source_paths,
+    };
     serde_json::to_string(&output)
         .map_err(|e| t!("set.failedSerializeOutput", err = e.to_string()).to_string())
 }

@@ -146,6 +146,50 @@ changedProperties:
 - features
 ```
 
+## Enable an optional feature using an offline source
+
+To allow DISM to install features that are not present on the machine in an offline environment,
+add the offline source path to the `sourcePaths` property.
+
+```powershell
+$instance = @{
+    sourcePaths = @('z:\sources\SxS')
+    features = @(
+        @{
+            featureName = 'NetFx3'
+            state       = 'Installed'
+        }
+    )
+} | ConvertTo-Json -Depth 3
+
+dsc resource set --resource Microsoft.Windows/OptionalFeatureList --input $instance
+```
+
+When the resource enables the feature, DSC returns the updated state:
+
+```yaml
+beforeState:
+  sourcePaths:
+  - z:\sources\SxS
+  features:
+  - featureName: NetFx3
+    state: NotPresent
+    displayName: NET Framework 3.5 (includes .NET 2.0 and 3.0)
+    description: .NET Framework 3.5 (includes .NET 2.0 and 3.0)
+    restartRequired: No
+afterState:
+  sourcePaths:
+  - z:\sources\SxS
+  features:
+  - featureName: NetFx3
+    state: Installed
+    displayName: NET Framework 3.5 (includes .NET 2.0 and 3.0)
+    description: .NET Framework 3.5 (includes .NET 2.0 and 3.0)
+    restartRequired: Possible
+changedProperties:
+- features
+```
+
 ## Manage multiple features in a single operation
 
 You can enable or disable multiple features in a single **Set** call by specifying multiple entries

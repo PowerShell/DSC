@@ -13,6 +13,8 @@ pub type FeatureState = DismState;
 pub struct OptionalFeatureList {
     #[serde(rename = "_restartRequired", skip_serializing_if = "Option::is_none")]
     pub restart_required_meta: Option<Vec<Map<String, Value>>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_paths: Option<Vec<String>>,
     pub features: Vec<OptionalFeatureInfo>,
 }
 

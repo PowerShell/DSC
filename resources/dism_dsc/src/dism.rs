@@ -319,8 +319,21 @@ impl DismSessionHandle {
     }
 
     /// Returns `Ok(true)` if DISM reports a reboot is required (HRESULT 3010).
-    pub fn enable_feature(&self, feature_name: &str) -> Result<bool, String> {
+    pub fn enable_feature(&self, feature_name: &str, source_paths: &Option<Vec<String>>) -> Result<bool, String> {
         let wide_name = to_wide_null(feature_name);
+        
+        let wide_source_paths: Option<Vec<Vec<u16>>> = source_paths
+            .as_ref()
+            .filter(|paths| !paths.is_empty())
+            .map(|paths| paths.iter().map(|p| to_wide_null(p)).collect());
+
+        let sources: Option<Vec<*const u16>> = wide_source_paths
+            .as_ref()
+            .map(|paths| paths.iter().map(|p| p.as_ptr()).collect());
+
+        let source_count = sources.as_ref().map_or(0, |paths| paths.len() as u32);
+        let sources_ptr = sources.as_ref().map_or(std::ptr::null(), |v| v.as_ptr());
+  
         let hr = unsafe {
             (self.api.enable_feature)(
                 self.handle,
@@ -328,8 +341,8 @@ impl DismSessionHandle {
                 std::ptr::null(),       // Identifier
                 DISM_PACKAGE_NONE,      // PackageIdentifier
                 0,                      // LimitAccess = FALSE
-                std::ptr::null(),       // SourcePaths
-                0,                      // SourcePathCount
+                sources_ptr,            // SourcePaths
+                source_count,           // SourcePathCount
                 0,                      // EnableAll = FALSE
                 std::ptr::null_mut(),   // CancelEvent
                 std::ptr::null_mut(),   // Progress
@@ -457,18 +470,31 @@ impl DismSessionHandle {
     }
 
     /// Returns `Ok(true)` if DISM reports a reboot is required (HRESULT 3010).
-    pub fn add_capability(&self, name: &str) -> Result<bool, String> {
+    pub fn add_capability(&self, name: &str, source_paths: &Option<Vec<String>>) -> Result<bool, String> {
         let add_cap = self.api.add_capability
             .ok_or_else(|| t!("dism.capabilitiesNotSupported").to_string())?;
 
         let wide_name = to_wide_null(name);
+
+        let wide_source_paths: Option<Vec<Vec<u16>>> = source_paths
+            .as_ref()
+            .filter(|paths| !paths.is_empty())
+            .map(|paths| paths.iter().map(|p| to_wide_null(p)).collect());
+
+        let sources: Option<Vec<*const u16>> = wide_source_paths
+            .as_ref()
+            .map(|paths| paths.iter().map(|p| p.as_ptr()).collect());
+
+        let source_count = sources.as_ref().map_or(0, |paths| paths.len() as u32);
+        let sources_ptr = sources.as_ref().map_or(std::ptr::null(), |v| v.as_ptr());
+  
         let hr = unsafe {
             add_cap(
                 self.handle,
                 wide_name.as_ptr(),
                 0,                      // LimitAccess = FALSE
-                std::ptr::null(),       // SourcePaths
-                0,                      // SourcePathCount
+                sources_ptr,            // SourcePaths
+                source_count,           // SourcePathCount
                 std::ptr::null_mut(),   // CancelEvent
                 std::ptr::null_mut(),   // Progress
                 std::ptr::null_mut(),   // UserData
