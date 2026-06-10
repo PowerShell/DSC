@@ -85,9 +85,9 @@ fn main() {
         SubCommand::Function { subcommand } => {
             subcommand::function(&subcommand);
         },
-        SubCommand::Mcp => {
+        SubCommand::Server => {
             if let Err(err) = start_mcp_server() {
-                error!("{}", t!("main.failedToStartMcpServer", error = err));
+                error!("{}", t!("main.failedToStartServer", error = err));
                 exit(util::EXIT_MCP_FAILED);
             }
             exit(util::EXIT_SUCCESS);

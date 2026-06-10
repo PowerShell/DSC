@@ -1,11 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'Tests for MCP server' {
+Describe 'Tests for DSC server' {
     BeforeAll {
         $processStartInfo = [System.Diagnostics.ProcessStartInfo]::new()
         $processStartInfo.FileName = "dsc"
-        $processStartInfo.Arguments = "--trace-format plaintext mcp"
+        $processStartInfo.Arguments = "--trace-format plaintext server"
         $processStartInfo.UseShellExecute = $false
         $processStartInfo.RedirectStandardError = $true
         $processStartInfo.RedirectStandardOutput = $true
