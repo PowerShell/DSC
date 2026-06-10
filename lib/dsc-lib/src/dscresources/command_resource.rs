@@ -586,7 +586,7 @@ pub fn get_schema(resource: &DscResource, target_resource: Option<&DscResource>)
     }
 }
 
-pub fn get_export_schema(resource: &DscResource, target_resource: Option<&DscResource>) -> Result<String, DscError> {
+fn get_export_schema(resource: &DscResource, target_resource: Option<&DscResource>) -> Result<String, DscError> {
     let Some(manifest) = &resource.manifest else {
         return Err(DscError::MissingManifest(resource.type_name.to_string()));
     };
