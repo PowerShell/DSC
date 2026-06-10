@@ -591,7 +591,11 @@ fn verify_with_export_schema(input: &str, resource: &DscResource, target_resourc
         return Err(DscError::MissingManifest(resource.type_name.to_string()));
     };
 
-    if manifest.validate.is_some() {
+    let Some(export) = manifest.export.as_ref() else {
+        return Err(DscError::SchemaNotAvailable(resource.type_name.to_string()));
+    };
+
+    if export.schema.is_none() && manifest.validate.is_some() {
         let result = invoke_validate(resource, input, target_resource)?;
         if result.valid {
             return Ok(());
@@ -604,10 +608,6 @@ fn verify_with_export_schema(input: &str, resource: &DscResource, target_resourc
             .unwrap_or_else(|| t!("dscresources.commandResource.resourceInvalidJson").to_string());
         return Err(DscError::Validation(reason));
     }
-
-    let Some(export) = manifest.export.as_ref() else {
-        return Err(DscError::SchemaNotAvailable(resource.type_name.to_string()));
-    };
 
     let schema = match export.schema {
         Some(ExportSchemaKind::Command(ref command)) => {
