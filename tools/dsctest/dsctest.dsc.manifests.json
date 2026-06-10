@@ -1462,13 +1462,17 @@
             "$id": "http://example.com/export-schema",
             "title": "Export Schema",
             "type": "object",
+            "additionalProperties": false,
             "properties": {
               "name": {
                 "type": "string",
                 "title": "Export Property",
                 "description": "Can contain wildcards for export filtering."
               }
-            }
+            },
+            "required": [
+              "name"
+            ]
           }
         }
       },
