@@ -1405,6 +1405,110 @@
           ]
         }
       }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/ExportSchemaCommand",
+      "version": "0.1.0",
+      "description": "Test resource for export specific schema",
+      "export": {
+        "executable": "dsctest",
+        "args": [
+          "export-schema",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ],
+        "schema": {
+          "command":{
+            "executable": "dsctest",
+            "args": [
+              "schema",
+              "-s",
+              "export-schema"
+            ]
+          }
+        }
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "export-get-schema"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/ExportSchemaEmbedded",
+      "version": "0.1.0",
+      "description": "Test resource for export specific schema",
+      "export": {
+        "executable": "dsctest",
+        "args": [
+          "export-schema",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ],
+        "schema": {
+          "embedded": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "$id": "http://example.com/export-schema",
+            "title": "Export Schema",
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "title": "Export Property",
+                "description": "Can contain wildcards for export filtering."
+              }
+            }
+          }
+        }
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "export-get-schema"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/ExportSchemaNoFiltering",
+      "version": "0.1.0",
+      "description": "Test resource for export specific schema",
+      "export": {
+        "executable": "dsctest",
+        "args": [
+          "export-schema",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ],
+        "schema": "noFiltering"
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "export-get-schema"
+          ]
+        }
+      }
     }
   ]
 }

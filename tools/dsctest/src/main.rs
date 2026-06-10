@@ -7,6 +7,7 @@ mod delete;
 mod exist;
 mod exit_code;
 mod export;
+mod export_schema;
 mod exporter;
 mod get;
 mod in_desired_state;
@@ -31,6 +32,7 @@ use crate::delete::Delete;
 use crate::exist::{Exist, State};
 use crate::exit_code::ExitCode;
 use crate::export::Export;
+use crate::export_schema::{ExportSchema, invoke_export_schema};
 use crate::exporter::{Exporter, Resource};
 use crate::get::Get;
 use crate::in_desired_state::InDesiredState;
@@ -131,6 +133,9 @@ fn main() {
                 println!("{}", serde_json::to_string(&instance).unwrap());
             }
             String::new()
+        },
+        SubCommand::ExportSchema { input } => {
+            invoke_export_schema(&input)
         },
         SubCommand::Exporter { input } => {
             let exporter = match serde_json::from_str::<Exporter>(&input) {
@@ -299,6 +304,12 @@ fn main() {
                 },
                 Schemas::Export => {
                     schema_for!(Export)
+                },
+                Schemas::ExportGetSchema => {
+                    schema_for!(export_schema::Schema)
+                },
+                Schemas::ExportSchema => {
+                    schema_for!(ExportSchema)
                 },
                 Schemas::Exporter => {
                     schema_for!(Exporter)

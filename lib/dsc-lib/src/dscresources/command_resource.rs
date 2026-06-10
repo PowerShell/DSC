@@ -7,8 +7,8 @@ use jsonschema::Validator;
 use rust_i18n::t;
 use serde::Deserialize;
 use serde_json::{Map, Value};
-use std::{collections::HashMap, env, path::Path, process::Stdio};
-use crate::{configure::{config_doc::{ExecutionKind, SecurityContextKind}, config_result::{ResourceGetResult, ResourceTestResult}}, dscresources::{resource_manifest::SchemaArgKind}, types::ExitCodesMap, util::canonicalize_which};
+use std::{collections::HashMap, env, path::{Path, PathBuf}, process::Stdio};
+use crate::{configure::{config_doc::{ExecutionKind, SecurityContextKind}, config_result::{ResourceGetResult, ResourceTestResult}}, dscresources::resource_manifest::{ExportSchemaKind, SchemaArgKind}, types::{ExitCodesMap, FullyQualifiedTypeName}, util::canonicalize_which};
 use crate::dscerror::DscError;
 use super::{
     dscresource::{get_diff, redact, DscResource},
@@ -586,6 +586,34 @@ pub fn get_schema(resource: &DscResource, target_resource: Option<&DscResource>)
     }
 }
 
+pub fn get_export_schema(resource: &DscResource, target_resource: Option<&DscResource>) -> Result<String, DscError> {
+    let Some(manifest) = &resource.manifest else {
+        return Err(DscError::MissingManifest(resource.type_name.to_string()));
+    };
+    let Some(export) = manifest.export.as_ref() else {
+        return Err(DscError::SchemaNotAvailable(resource.type_name.to_string()));
+    };
+
+    match export.schema {
+        Some(ExportSchemaKind::Command(ref command)) => {
+            let resource_type = match target_resource {
+                Some(r) => r.type_name.clone(),
+                None => resource.type_name.clone(),
+            };
+            let args = process_schema_args(command.args.as_ref(), &CommandResourceInfo { type_name: resource_type, path: None });
+            let (_exit_code, stdout, _stderr) = invoke_command(&command.executable, args, None, Some(&resource.directory), None, manifest.exit_codes.as_ref())?;
+            Ok(stdout)
+        },
+        Some(ExportSchemaKind::Embedded(ref schema)) => {
+            let json = serde_json::to_string(schema)?;
+            Ok(json)
+        },
+        _ => {
+            get_schema(resource, target_resource)
+        }
+    }
+}
+
 /// Invoke the export operation on a resource
 ///
 /// # Arguments
@@ -636,9 +664,26 @@ pub fn invoke_export(resource: &DscResource, input: Option<&str>, target_resourc
         None => resource,
     };
     validate_security_context(&export.require_security_context, &command_resource.type_name, "export")?;
+
     if let Some(input) = input {
+        let input = if export.schema == Some(ExportSchemaKind::NoFiltering) {
+            ""
+        } else {
+            input
+        };
         if !input.is_empty() {
-            verify_json_from_manifest(resource, input, target_resource)?;
+            let schema = serde_json::from_str(&get_export_schema(resource, target_resource)?)?;
+            let compiled_schema = match Validator::new(&schema) {
+                Ok(schema) => schema,
+                Err(e) => {
+                    return Err(DscError::Schema(e.to_string()));
+                },
+            };
+            let json: Value = serde_json::from_str(input)?;
+            if let Err(err) = compiled_schema.validate(&json) {
+                return Err(DscError::Schema(err.to_string()));
+            }
+
 
             command_input = get_command_input(export.input.as_ref(), input)?;
         }
