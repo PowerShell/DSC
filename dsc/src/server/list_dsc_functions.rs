@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::mcp::mcp_server::McpServer;
+use crate::server::mcp_server::McpServer;
 use dsc_lib::functions::{FunctionDispatcher, FunctionDefinition};
 use dsc_lib::util::convert_wildcard_to_regex;
 use rmcp::{ErrorData as McpError, Json, tool, tool_router, handler::server::wrapper::Parameters};
@@ -38,22 +38,22 @@ impl McpServer {
         let result = task::spawn_blocking(move || {
             let function_dispatcher = FunctionDispatcher::new();
             let mut functions = function_dispatcher.list();
-            
+
             // apply filtering if function_filter is provided
             if let Some(name_pattern) = function_filter {
                 let regex_str = convert_wildcard_to_regex(&name_pattern);
                 let mut regex_builder = RegexBuilder::new(&regex_str);
                 regex_builder.case_insensitive(true);
-                
+
                 let regex = regex_builder.build()
                     .map_err(|_| McpError::invalid_params(
-                        t!("mcp.list_dsc_functions.invalidNamePattern", pattern = name_pattern), 
+                        t!("mcp.list_dsc_functions.invalidNamePattern", pattern = name_pattern),
                         None
                     ))?;
-                
+
                 functions.retain(|func| regex.is_match(&func.name));
             }
-            
+
             Ok(FunctionListResult { functions })
         }).await.map_err(|e| McpError::internal_error(e.to_string(), None))??;
 

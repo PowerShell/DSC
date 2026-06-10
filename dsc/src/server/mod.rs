@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::mcp::mcp_server::McpServer;
+use crate::server::mcp_server::McpServer;
 use rmcp::{
     ErrorData as McpError,
     ServiceExt,
@@ -22,7 +22,7 @@ pub mod show_dsc_schema;
 /// # Errors
 ///
 /// This function will return an error if the MCP server fails to start.
-pub async fn start_mcp_server_async() -> Result<(), McpError> {
+pub async fn start_server_async() -> Result<(), McpError> {
     // Initialize the MCP server
     let server = McpServer::new();
 
@@ -43,11 +43,11 @@ pub async fn start_mcp_server_async() -> Result<(), McpError> {
 /// # Errors
 ///
 /// This function will return an error if the MCP server fails to start or if the tokio runtime cannot be created.
-pub fn start_mcp_server() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+pub fn start_server() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let rt = tokio::runtime::Runtime::new()
         .map_err(|e| McpError::internal_error(t!("mcp.mod.failedToCreateRuntime", error = e.to_string()), None))?;
 
-    rt.block_on(start_mcp_server_async())
+    rt.block_on(start_server_async())
         .map_err(|e| McpError::internal_error(t!("mcp.mod.failedToStart", error = e.to_string()), None))?;
     Ok(())
 }
