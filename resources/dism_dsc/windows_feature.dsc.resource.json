@@ -9,47 +9,39 @@
     "type": "Microsoft.Windows/WindowsFeatureList",
     "version": "0.1.0",
     "get": {
-        "executable": "windows_feature",
+        "executable": "dism_dsc",
         "args": [
             "get",
-            {
-                "jsonInputArg": "--input",
-                "mandatory": true
-            }
-        ]
+            "windows-feature"
+        ],
+        "input": "stdin"
     },
     "set": {
-        "executable": "windows_feature",
+        "executable": "dism_dsc",
         "args": [
             "set",
-            {
-                "jsonInputArg": "--input",
-                "mandatory": true
-            },
+            "windows-feature",
             {
                 "whatIfArg": "--what-if"
             }
         ],
+        "input": "stdin",
         "implementsPretest": false,
         "return": "state",
         "whatIfReturns": "state",
         "requireSecurityContext": "elevated"
     },
     "export": {
-        "executable": "windows_feature",
+        "executable": "dism_dsc",
         "args": [
             "export",
-            {
-                "jsonInputArg": "--input",
-                "mandatory": false
-            }
-        ]
+            "windows-feature"
+        ],
+        "input": "stdin"
     },
     "exitCodes": {
         "0": "Success",
-        "1": "Invalid arguments",
-        "2": "Invalid input",
-        "3": "Feature error"
+        "1": "Invalid arguments"
     },
     "schema": {
         "embedded": {

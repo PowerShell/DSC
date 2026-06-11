@@ -4,7 +4,9 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
-use crate::util::{DismState, WildcardFilterable, matches_optional_exact, matches_optional_wildcard};
+use crate::util::{
+    DismState, WildcardFilterable, matches_optional_exact, matches_optional_wildcard,
+};
 
 pub type FeatureState = DismState;
 
@@ -38,16 +40,10 @@ pub struct WindowsFeatureInfo {
     pub description: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub restart_required: Option<RestartType>,
-    /// Enable all features that the specified feature depends on, including child features.
-    /// Passed as the `EnableAll` parameter to `DismEnableFeature`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enable_all: Option<bool>,
-    /// Local source paths (e.g., a mounted Windows ISO or WIM) passed to `DismEnableFeature`
-    /// as `SourcePaths`. Required on systems that cannot reach Windows Update.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub source_paths: Option<Vec<String>>,
-    /// When `true`, prevents DISM from contacting Windows Update even when `sourcePaths` is empty.
-    /// Passed as the `LimitAccess` parameter to `DismEnableFeature`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit_access: Option<bool>,
     #[serde(rename = "_metadata", skip_serializing_if = "Option::is_none")]

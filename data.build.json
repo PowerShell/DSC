@@ -109,7 +109,6 @@
       "windows_firewall.exe",
       "windows_service.exe",
       "windows_service.dsc.resource.json",
-      "windows_feature.exe",
       "windows_feature.dsc.resource.json",
       "wmi.dsc.resource.json",
       "wmi.resource.ps1",
@@ -182,7 +181,7 @@
         "SupportedPlatformOS": "Windows",
         "Binaries": ["dism_dsc"],
         "CopyFiles": {
-            "Windows": ["optionalfeature.dsc.resource.json", "featureondemand.dsc.resource.json"]
+            "Windows": ["optionalfeature.dsc.resource.json", "featureondemand.dsc.resource.json", "windows_feature.dsc.resource.json"]
         }
     },
     {
@@ -477,21 +476,6 @@
       "CopyFiles": {
         "Windows": [
           "windows_service.dsc.resource.json"
-        ]
-      }
-    },
-    {
-      "Name": "windows_feature",
-      "Kind": "Resource",
-      "RelativePath": "resources/windows_feature",
-      "SupportedPlatformOS": "Windows",
-      "IsRust": true,
-      "Binaries": [
-        "windows_feature"
-      ],
-      "CopyFiles": {
-        "Windows": [
-          "windows_feature.dsc.resource.json"
         ]
       }
     },

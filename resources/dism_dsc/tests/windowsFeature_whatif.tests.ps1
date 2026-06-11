@@ -1,12 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'windows_feature list whatif tests' -Skip:(!$IsWindows) {
+Describe 'WindowsFeatureList what-if tests' -Skip:(!$IsWindows) {
     BeforeAll {
         $testFeature = 'TelnetClient'
     }
 
-    It 'Can whatif enable a feature without mutating state' {
+    It 'Can what-if enable a feature without mutating state' {
         $json = @"
 {
     "features": [
@@ -15,10 +15,10 @@ Describe 'windows_feature list whatif tests' -Skip:(!$IsWindows) {
 }
 "@
         # Capture pre-state
-        $before = windows_feature get --input $json 2>$null | ConvertFrom-Json
+        $before = $json | dism_dsc get windows-feature 2>$null | ConvertFrom-Json
 
         # Run what-if
-        $result = windows_feature set -w --input $json 2>$null | ConvertFrom-Json
+        $result = $json | dism_dsc set windows-feature -w 2>$null | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log -ErrorAction SilentlyContinue)
 
         # Projected state echoes back the requested feature name and state
@@ -29,11 +29,11 @@ Describe 'windows_feature list whatif tests' -Skip:(!$IsWindows) {
         $result.features[0]._metadata.whatIf[0] | Should -Match "Would enable feature '$testFeature'"
 
         # No mutation occurred
-        $after = windows_feature get --input $json 2>$null | ConvertFrom-Json
+        $after = $json | dism_dsc get windows-feature 2>$null | ConvertFrom-Json
         $before | ConvertTo-Json -Depth 10 | Should -Be ($after | ConvertTo-Json -Depth 10)
     }
 
-    It 'Can whatif disable a feature without mutating state' {
+    It 'Can what-if disable a feature without mutating state' {
         $json = @"
 {
     "features": [
@@ -42,10 +42,10 @@ Describe 'windows_feature list whatif tests' -Skip:(!$IsWindows) {
 }
 "@
         # Capture pre-state
-        $before = windows_feature get --input $json 2>$null | ConvertFrom-Json
+        $before = $json | dism_dsc get windows-feature 2>$null | ConvertFrom-Json
 
         # Run what-if
-        $result = windows_feature set -w --input $json 2>$null | ConvertFrom-Json
+        $result = $json | dism_dsc set windows-feature -w 2>$null | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
 
         $result.features[0].featureName | Should -Be $testFeature
@@ -53,11 +53,11 @@ Describe 'windows_feature list whatif tests' -Skip:(!$IsWindows) {
         $result.features[0]._metadata.whatIf[0] | Should -Match "Would disable feature '$testFeature'"
 
         # No mutation occurred
-        $after = windows_feature get --input $json 2>$null | ConvertFrom-Json
+        $after = $json | dism_dsc get windows-feature 2>$null | ConvertFrom-Json
         $before | ConvertTo-Json -Depth 10 | Should -Be ($after | ConvertTo-Json -Depth 10)
     }
 
-    It 'Can whatif remove a feature without mutating state' {
+    It 'Can what-if remove a feature without mutating state' {
         $json = @"
 {
     "features": [
@@ -66,10 +66,10 @@ Describe 'windows_feature list whatif tests' -Skip:(!$IsWindows) {
 }
 "@
         # Capture pre-state
-        $before = windows_feature get --input $json 2>$null | ConvertFrom-Json
+        $before = $json | dism_dsc get windows-feature 2>$null | ConvertFrom-Json
 
         # Run what-if
-        $result = windows_feature set -w --input $json 2>$null | ConvertFrom-Json
+        $result = $json | dism_dsc set windows-feature -w 2>$null | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
 
         $result.features[0].featureName | Should -Be $testFeature
@@ -77,11 +77,11 @@ Describe 'windows_feature list whatif tests' -Skip:(!$IsWindows) {
         $result.features[0]._metadata.whatIf[0] | Should -Match "Would remove feature '$testFeature'"
 
         # No mutation occurred
-        $after = windows_feature get --input $json 2>$null | ConvertFrom-Json
+        $after = $json | dism_dsc get windows-feature 2>$null | ConvertFrom-Json
         $before | ConvertTo-Json -Depth 10 | Should -Be ($after | ConvertTo-Json -Depth 10)
     }
 
-    It 'Can whatif enable a feature with enableAll and limitAccess without mutating state' {
+    It 'Can what-if enable a feature with enableAll and limitAccess without mutating state' {
         $json = @"
 {
     "features": [
@@ -89,9 +89,9 @@ Describe 'windows_feature list whatif tests' -Skip:(!$IsWindows) {
     ]
 }
 "@
-        $before = windows_feature get --input $json 2>$null | ConvertFrom-Json
+        $before = $json | dism_dsc get windows-feature 2>$null | ConvertFrom-Json
 
-        $result = windows_feature set -w --input $json 2>$null | ConvertFrom-Json
+        $result = $json | dism_dsc set windows-feature -w 2>$null | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
 
         $result.features[0].featureName | Should -Be $testFeature
@@ -100,11 +100,11 @@ Describe 'windows_feature list whatif tests' -Skip:(!$IsWindows) {
         $result.features[0].limitAccess | Should -BeTrue
         $result.features[0]._metadata.whatIf[0] | Should -Match "Would enable feature '$testFeature'"
 
-        $after = windows_feature get --input $json 2>$null | ConvertFrom-Json
+        $after = $json | dism_dsc get windows-feature 2>$null | ConvertFrom-Json
         $before | ConvertTo-Json -Depth 10 | Should -Be ($after | ConvertTo-Json -Depth 10)
     }
 
-    It 'Can whatif multiple features in one call without mutating state' {
+    It 'Can what-if multiple features in one call without mutating state' {
         $json = @"
 {
     "features": [
@@ -113,7 +113,7 @@ Describe 'windows_feature list whatif tests' -Skip:(!$IsWindows) {
     ]
 }
 "@
-        $result = windows_feature set -w --input $json 2>$null | ConvertFrom-Json
+        $result = $json | dism_dsc set windows-feature -w 2>$null | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
 
         $result.features | Should -HaveCount 2
