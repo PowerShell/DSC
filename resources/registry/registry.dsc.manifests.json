@@ -112,7 +112,8 @@
                 "command": {
                     "executable": "registry",
                     "args": [
-                        "schema"
+                        "schema",
+                        "--list"
                     ]
                 }
             }
