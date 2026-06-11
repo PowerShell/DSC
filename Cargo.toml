@@ -48,7 +48,6 @@ default-members = [
     "lib/dsc-lib-registry",
     "resources/runcommandonset",
     "lib/dsc-lib-security_context",
-    "resources/dism_dsc",
     "resources/sshdconfig",
     "resources/WindowsUpdate",
     "resources/windows_service",
@@ -58,7 +57,8 @@ default-members = [
     "grammars/tree-sitter-dscexpression",
     "grammars/tree-sitter-ssh-server-config",
     "y2j",
-    "xtask"
+    "xtask",
+    "resources/dism_dsc"
 ]
 
 [workspace.metadata.groups]
