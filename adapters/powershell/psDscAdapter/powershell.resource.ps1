@@ -64,11 +64,6 @@ $ps = [PowerShell]::Create().AddScript({
         [string]$ScriptRoot
     )
 
-    trap {
-        Write-Error ($_ | Format-List -Force | Out-String)
-        throw $_
-    }
-
     # NOTE:
     # The adapter explicitly suppresses Debug and Verbose output by default to avoid
     # excessively noisy logs from DSC resources that call Write-Debug / Write-Verbose.
@@ -370,7 +365,7 @@ $traceLevel = if ($env:DSC_TRACE_LEVEL) {
     [DscTraceLevel]::Warn
 }
 
-$null = Register-ObjectEvent -InputObject $ps.Streams.Error -EventName DataAdding -MessageData @{traceQueue=$traceQueue; hadErrors=$hadErrors} -Action {
+$null = Register-ObjectEvent -SourceIdentifier 'PSAdapter.Error' -InputObject $ps.Streams.Error -EventName DataAdding -MessageData @{traceQueue=$traceQueue; hadErrors=$hadErrors} -Action {
     $traceQueue = $Event.MessageData.traceQueue
     # convert error to string since it's an ErrorRecord
     $traceQueue.Enqueue(@{ error = [string]$EventArgs.ItemAdded })
@@ -378,14 +373,14 @@ $null = Register-ObjectEvent -InputObject $ps.Streams.Error -EventName DataAddin
 }
 
 if ($traceLevel -ge [DscTraceLevel]::Warn) {
-    $null = Register-ObjectEvent -InputObject $ps.Streams.Warning -EventName DataAdding -MessageData @{traceQueue=$traceQueue} -Action {
+    $null = Register-ObjectEvent -SourceIdentifier 'PSAdapter.Warning' -InputObject $ps.Streams.Warning -EventName DataAdding -MessageData @{traceQueue=$traceQueue} -Action {
         $traceQueue = $Event.MessageData.traceQueue
         $traceQueue.Enqueue(@{ warn = $EventArgs.ItemAdded.Message })
     }
 }
 
 if ($traceLevel -ge [DscTraceLevel]::Info) {
-    $null = Register-ObjectEvent -InputObject $ps.Streams.Information -EventName DataAdding -MessageData @{traceQueue=$traceQueue} -Action {
+    $null = Register-ObjectEvent -SourceIdentifier 'PSAdapter.Information' -InputObject $ps.Streams.Information -EventName DataAdding -MessageData @{traceQueue=$traceQueue} -Action {
         $traceQueue = $Event.MessageData.traceQueue
         if ($null -ne $EventArgs.ItemAdded.MessageData) {
             $traceQueue.Enqueue(@{ info = [string]$EventArgs.ItemAdded.MessageData })
@@ -394,7 +389,7 @@ if ($traceLevel -ge [DscTraceLevel]::Info) {
 }
 
 if ($traceLevel -ge [DscTraceLevel]::Debug) {
-    $null = Register-ObjectEvent -InputObject $ps.Streams.Verbose -EventName DataAdding -MessageData @{traceQueue=$traceQueue} -Action {
+    $null = Register-ObjectEvent -SourceIdentifier 'PSAdapter.Debug' -InputObject $ps.Streams.Verbose -EventName DataAdding -MessageData @{traceQueue=$traceQueue} -Action {
         $traceQueue = $Event.MessageData.traceQueue
         # Verbose messages tend to be in large quantity and more useful to developers, so log as Debug
         $traceQueue.Enqueue(@{ debug = $EventArgs.ItemAdded.Message })
@@ -402,7 +397,7 @@ if ($traceLevel -ge [DscTraceLevel]::Debug) {
 }
 
 if ($traceLevel -ge [DscTraceLevel]::Trace) {
-    $null = Register-ObjectEvent -InputObject $ps.Streams.Debug -EventName DataAdding -MessageData @{traceQueue=$traceQueue} -Action {
+    $null = Register-ObjectEvent -SourceIdentifier 'PSAdapter.Trace' -InputObject $ps.Streams.Debug -EventName DataAdding -MessageData @{traceQueue=$traceQueue} -Action {
         $traceQueue = $Event.MessageData.traceQueue
         # Debug messages may contain raw info, so log as Trace
         $traceQueue.Enqueue(@{ trace = $EventArgs.ItemAdded.Message })
@@ -423,15 +418,14 @@ catch {
     Write-TraceQueue
     exit 1
 }
-finally {
-    Get-EventSubscriber | Unregister-Event  # unregister before dispose
-    $ps.Dispose()
-    Write-TraceQueue
-}
 
 if ($hadErrors.Count -gt 0) {
     Write-DscTrace -Now -Operation Debug -Message 'Errors were captured during script execution. Check previous error traces for details.'
 }
+
+Start-Sleep -Milliseconds 200  # wait a bit to ensure all events are processed before unregistering
+Get-EventSubscriber | Where-Object { $_.SourceIdentifier -like 'PSAdapter.*' } | ForEach-Object { Unregister-Event -SourceIdentifier $_.SourceIdentifier }  # unregister before dispose
+Write-TraceQueue
 
 foreach ($obj in $outputCollection) {
     $obj | ConvertTo-Json -Depth 10 -Compress

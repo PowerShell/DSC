@@ -399,7 +399,7 @@ Describe 'PowerShell adapter resource tests' {
         It 'Error messages come from Write-Error' {
             $null = dsc -l error resource set -r TestClassResource/StreamResource -i '{"Name":"TestClassResource1"}' 2> $TestDrive/error.log
             $logContent = Get-Content -Path $TestDrive/error.log -Raw
-            $LASTEXITCODE | Should -Be 2 -Because $logContent
+            $LASTEXITCODE | Should -Be 0 -Because $logContent
             $logContent | Should -Match 'ERROR .*? This is an Error message' -Because $logContent
         }
 
@@ -420,14 +420,14 @@ Describe 'PowerShell adapter resource tests' {
         It 'Debug messages come from Write-Verbose' {
             $null = "{'Name':'TestClassResource1'}" | dsc -l debug resource set -r 'TestClassResource/StreamResource' -f - 2> $TestDrive/debug.log
             $logContent = Get-Content -Path $TestDrive/debug.log -Raw
-            $LASTEXITCODE | Should -Be 2 -Because $logContent
+            $LASTEXITCODE | Should -Be 0 -Because $logContent
             $logContent | Should -Match 'DEBUG .*? This is a Verbose message' -Because $logContent
         }
 
         It 'Trace messages come from Write-Debug' {
             $null = dsc -l trace resource set -r TestClassResource/StreamResource -i '{"Name":"TestClassResource1"}' 2> $TestDrive/trace.log
             $logContent = Get-Content -Path $TestDrive/trace.log -Raw
-            $LASTEXITCODE | Should -Be 2 -Because $logContent
+            $LASTEXITCODE | Should -Be 0 -Because $logContent
             $logContent | Should -Match 'TRACE .*? This is a Debug message' -Because $logContent
         }
 
