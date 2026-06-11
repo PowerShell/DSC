@@ -11,16 +11,18 @@ export default grammar({
 
   extras: $ => ['\n', ' '],
 
+  inline: $ => [$._booleanLiteral, $._argument, $._quotedString, $._expressionString],
+
   rules: {
     statement: $ => choice(
       $.escapedStringLiteral,
       $._expressionString,
       $.stringLiteral,
     ),
-    escapedStringLiteral: $ => token(prec(PREC.ESCAPEDSTRING, seq('[[', /.*?/))),
+    escapedStringLiteral: $ => token(prec(PREC.ESCAPEDSTRING, seq('[[', /.*/))),
     _expressionString: $ => prec(PREC.EXPRESSIONSTRING, seq('[', $.expression, ']')),
     expression: $ => seq(field('function', $.function), optional(field('accessor',$.accessor))),
-    stringLiteral: $ => token(prec(PREC.STRINGLITERAL, /[^\[](.|\n)*?/)),
+    stringLiteral: $ => token(prec(PREC.STRINGLITERAL, /[^\[][\s\S]*/)),
 
     function: $ => prec(PREC.FUNCTION, seq(field('name', $.functionName), '(', field('args', optional($.arguments)), ')')),
     functionName: $ => choice(
@@ -32,7 +34,7 @@ export default grammar({
 
     _quotedString: $ => seq('\'', $.string, '\''),
     // ARM strings are not allowed to contain single-quote characters unless escaped
-    string: $ => /([^']|''|\n)*/,
+    string: $ => /([^']|'')*/,
     number: $ => /-?\d+/,
     boolean: $ => prec(PREC.BOOLEAN, $._booleanLiteral),
     _booleanLiteral: $ => choice('true', 'false'),
