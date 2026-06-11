@@ -81,7 +81,7 @@ $ps = [PowerShell]::Create().AddScript({
     # an example of this pattern.
     $DebugPreference = 'SilentlyContinue'
     $VerbosePreference = 'SilentlyContinue'
-    $ErrorActionPreference = 'Continue'
+    $ErrorActionPreference = 'Stop'
     $InformationPreference = 'Continue'
     $ProgressPreference = 'SilentlyContinue'
 
