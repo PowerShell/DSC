@@ -66,6 +66,7 @@ $ps = [PowerShell]::Create().AddScript({
 
     trap {
         Write-Error ($_ | Format-List -Force | Out-String)
+        throw $_
     }
 
     # NOTE:
@@ -369,55 +370,44 @@ $traceLevel = if ($env:DSC_TRACE_LEVEL) {
     [DscTraceLevel]::Warn
 }
 
-$errorCount = [System.Collections.Concurrent.ConcurrentQueue[bool]]::new()
-$null = Register-ObjectEvent -InputObject $ps.Streams.Error -EventName DataAdding -MessageData @{traceQueue=$traceQueue; hadErrors=$hadErrors; errorCount=$errorCount} -Action {
+$null = Register-ObjectEvent -InputObject $ps.Streams.Error -EventName DataAdding -MessageData @{traceQueue=$traceQueue; hadErrors=$hadErrors} -Action {
     $traceQueue = $Event.MessageData.traceQueue
-    $Event.MessageData.errorCount.Enqueue($true)
     # convert error to string since it's an ErrorRecord
     $traceQueue.Enqueue(@{ error = [string]$EventArgs.ItemAdded })
     $Event.MessageData.hadErrors.Enqueue($true)
 }
 
-$warningCount = [System.Collections.Concurrent.ConcurrentQueue[bool]]::new()
 if ($traceLevel -ge [DscTraceLevel]::Warn) {
-    $null = Register-ObjectEvent -InputObject $ps.Streams.Warning -EventName DataAdding -MessageData @{traceQueue=$traceQueue; warningCount=$warningCount} -Action {
+    $null = Register-ObjectEvent -InputObject $ps.Streams.Warning -EventName DataAdding -MessageData @{traceQueue=$traceQueue} -Action {
         $traceQueue = $Event.MessageData.traceQueue
-        $Event.MessageData.warningCount.Enqueue($true)
         $traceQueue.Enqueue(@{ warn = $EventArgs.ItemAdded.Message })
     }
 }
 
-$informationCount = [System.Collections.Concurrent.ConcurrentQueue[bool]]::new()
 if ($traceLevel -ge [DscTraceLevel]::Info) {
-    $null = Register-ObjectEvent -InputObject $ps.Streams.Information -EventName DataAdding -MessageData @{traceQueue=$traceQueue; informationCount=$informationCount} -Action {
+    $null = Register-ObjectEvent -InputObject $ps.Streams.Information -EventName DataAdding -MessageData @{traceQueue=$traceQueue} -Action {
         $traceQueue = $Event.MessageData.traceQueue
-        $Event.MessageData.informationCount.Enqueue($true)
         if ($null -ne $EventArgs.ItemAdded.MessageData) {
             $traceQueue.Enqueue(@{ info = [string]$EventArgs.ItemAdded.MessageData })
         }
     }
 }
 
-$verboseCount = [System.Collections.Concurrent.ConcurrentQueue[bool]]::new()
 if ($traceLevel -ge [DscTraceLevel]::Debug) {
-    $null = Register-ObjectEvent -InputObject $ps.Streams.Verbose -EventName DataAdding -MessageData @{traceQueue=$traceQueue; verboseCount=$verboseCount} -Action {
+    $null = Register-ObjectEvent -InputObject $ps.Streams.Verbose -EventName DataAdding -MessageData @{traceQueue=$traceQueue} -Action {
         $traceQueue = $Event.MessageData.traceQueue
-        $Event.MessageData.verboseCount.Enqueue($true)
         # Verbose messages tend to be in large quantity and more useful to developers, so log as Debug
         $traceQueue.Enqueue(@{ debug = $EventArgs.ItemAdded.Message })
     }
 }
 
-$debugCount = [System.Collections.Concurrent.ConcurrentQueue[bool]]::new()
 if ($traceLevel -ge [DscTraceLevel]::Trace) {
-    $null = Register-ObjectEvent -InputObject $ps.Streams.Debug -EventName DataAdding -MessageData @{traceQueue=$traceQueue; debugCount=$debugCount} -Action {
+    $null = Register-ObjectEvent -InputObject $ps.Streams.Debug -EventName DataAdding -MessageData @{traceQueue=$traceQueue} -Action {
         $traceQueue = $Event.MessageData.traceQueue
-        $Event.MessageData.debugCount.Enqueue($true)
         # Debug messages may contain raw info, so log as Trace
         $traceQueue.Enqueue(@{ trace = $EventArgs.ItemAdded.Message })
     }
 }
-$outputObjects = [System.Collections.Generic.List[Object]]::new()
 
 try {
     $asyncResult = $ps.BeginInvoke()
@@ -426,44 +416,23 @@ try {
         Start-Sleep -Milliseconds 100
     }
 
-    while ($errorCount.Count -lt $ps.Streams.Error.Count -or
-           $warningCount.Count -lt $ps.Streams.Warning.Count -or
-           $informationCount.Count -lt $ps.Streams.Information.Count -or
-           $verboseCount.Count -lt $ps.Streams.Verbose.Count -or
-           $debugCount.Count -lt $ps.Streams.Debug.Count) {
-        Write-DscTrace -Now -Operation Warn -Message "ErrorCount=$($errorCount.Count)/$($ps.Streams.Error.Count), WarningCount=$($warningCount.Count)/$($ps.Streams.Warning.Count), InformationCount=$($informationCount.Count)/$($ps.Streams.Information.Count), VerboseCount=$($verboseCount.Count)/$($ps.Streams.Verbose.Count), DebugCount=$($debugCount.Count)/$($ps.Streams.Debug.Count)"
-        if ($ps.Streams.Debug.Count -gt 0) {
-            foreach ($debug in $ps.Streams.Debug) {
-                Write-DscTrace -Now -Operation Error -Message ("Debug stream message: " + $debug.Message)
-            }
-        }
-        Start-Sleep -Milliseconds 100
-    }
-
-    Write-TraceQueue
     $outputCollection = $ps.EndInvoke($asyncResult)
-
-    if ($ps.HadErrors) {
-        Write-DscTrace -Now -Operation Debug -Message 'HadErrors set during script execution.'
-    }
-
-    foreach ($output in $outputCollection) {
-        $outputObjects.Add($output)
-    }
 }
 catch {
     Write-DscTrace -Now -Operation Error -Message $_
+    Write-TraceQueue
     exit 1
 }
 finally {
     Get-EventSubscriber | Unregister-Event  # unregister before dispose
     $ps.Dispose()
+    Write-TraceQueue
 }
 
 if ($hadErrors.Count -gt 0) {
     Write-DscTrace -Now -Operation Debug -Message 'Errors were captured during script execution. Check previous error traces for details.'
 }
 
-foreach ($obj in $outputObjects) {
+foreach ($obj in $outputCollection) {
     $obj | ConvertTo-Json -Depth 10 -Compress
 }
