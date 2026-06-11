@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use crate::error::RegistryResourceError;
 use dsc_lib_registry::{RegistryHelper, config::RegistryValueData};
 use rust_i18n::t;
+use schemars::JsonSchema;
 use serde::Deserialize;
 use serde_json::{Map, Value};
 use tracing::{debug, trace, warn};
@@ -16,7 +17,7 @@ struct AdaptedRegistryResource {
     properties: Map<String, Value>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, JsonSchema)]
 enum RegistryDataType {
     #[serde(rename = "REG_BINARY")]
     Binary,
@@ -32,7 +33,7 @@ enum RegistryDataType {
     Qword,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 enum JsonType {
     Boolean,
@@ -43,9 +44,9 @@ enum JsonType {
     StringArray,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-struct AdaptedRegistryValue {
+pub struct AdaptedRegistryValue {
     key_path: String,
     value_name: String,
     value_type: RegistryDataType,

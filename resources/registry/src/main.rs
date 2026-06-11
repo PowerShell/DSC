@@ -6,7 +6,7 @@ use crossterm::event;
 #[cfg(debug_assertions)]
 use std::env;
 
-use adapter::{adapter_export, adapter_get, adapter_set};
+use adapter::{adapter_export, adapter_get, adapter_set, AdaptedRegistryValue};
 use args::{AdapterSubCommand, Arguments, ConfigSubCommand, SubCommand};
 use clap::Parser;
 use dsc_lib_registry::{config::Registry, RegistryHelper};
@@ -52,6 +52,11 @@ fn main() {
                 AdapterSubCommand::Export { input, adapted_resource } => {
                     adapter_export(&input, &adapted_resource)
                 },
+                AdapterSubCommand::Schema => {
+                    let schema = schema_for!(AdaptedRegistryValue);
+                    println!("{}", serde_json::to_string(&schema).unwrap());
+                    exit(EXIT_SUCCESS);
+                }
             };
             match result {
                 Ok(output) => {

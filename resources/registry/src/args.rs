@@ -35,6 +35,8 @@ pub enum AdapterSubCommand {
         #[clap(short, long, required = true, help = t!("args.adapterArgsAdaptedResourceHelp").to_string())]
         adapted_resource: String,
     },
+    #[clap(name = "schema", about = t!("args.adapterSchemaAbout").to_string())]
+    Schema
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
