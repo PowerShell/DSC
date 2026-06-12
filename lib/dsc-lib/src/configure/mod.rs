@@ -1048,6 +1048,29 @@ impl Configurator {
                     // TODO: additional array constraints
                     // TODO: object constraints
 
+                    let value = match &constraint.parameter_type {
+                        DataType::SecureString => {
+                            if let Some(string_value) = value.as_str() {
+                                let secure_string = SecureString {
+                                    secure_string: string_value.to_string(),
+                                };
+                                serde_json::to_value(secure_string)?
+                            } else {
+                                return Err(DscError::Validation(t!("configure.mod.secureStringMustBeString", name = name).to_string()));
+                            }
+                        },
+                        DataType::SecureObject => {
+                            if let Some(object_value) = value.as_object() {
+                                let secure_object = SecureObject {
+                                    secure_object: serde_json::to_value(object_value)?,
+                                };
+                                serde_json::to_value(secure_object)?
+                            } else {
+                                return Err(DscError::Validation(t!("configure.mod.secureObjectMustBeObject", name = name).to_string()));
+                            }
+                        },
+                        _ => value.clone(),
+                    };
                     validate_parameter_type(&name, &value, &constraint.parameter_type)?;
                     if constraint.parameter_type == DataType::SecureString || constraint.parameter_type == DataType::SecureObject {
                         info!("{}", t!("configure.mod.setSecureParameter", name = name));
@@ -1376,7 +1399,7 @@ pub fn invoke_property_expressions(parser: &mut Statement, context: &Context, pr
 pub fn validate_parameter_type(name: &str, value: &Value, parameter_type: &DataType) -> Result<(), DscError> {
     match parameter_type {
         DataType::SecureString => {
-            if !serde_json::from_value::<SecureString>(value.clone()).is_ok() {
+            if serde_json::from_value::<SecureString>(value.clone()).is_err() {
                 return Err(DscError::Validation(t!("configure.mod.parameterNotSecureString", name = name).to_string()));
             }
         }
@@ -1401,7 +1424,7 @@ pub fn validate_parameter_type(name: &str, value: &Value, parameter_type: &DataT
             }
         },
         DataType::SecureObject => {
-            if !serde_json::from_value::<SecureObject>(value.clone()).is_ok() {
+            if serde_json::from_value::<SecureObject>(value.clone()).is_err() {
                 return Err(DscError::Validation(t!("configure.mod.parameterNotSecureObject", name = name).to_string()));
             }
         },

@@ -7,7 +7,7 @@ use tracing::{debug, trace, warn};
 use tree_sitter::Node;
 
 use crate::configure::context::Context;
-use crate::configure::parameters::is_secure_value;
+use crate::configure::parameters::{SecureObject, SecureString, is_secure_value};
 use crate::dscerror::DscError;
 use crate::functions::FunctionDispatcher;
 use crate::parser::functions::Function;
@@ -241,21 +241,28 @@ impl Expression {
 ///
 /// The converted JSON value.
 fn convert_to_secure(value: &Value) -> Value {
+    if is_secure_value(value) {
+        return value.clone();
+    }
+
     if let Some(string) = value.as_str() {
-        let secure_string = crate::configure::parameters::SecureString {
+        trace!("Converting string value to secure string: {string}");
+        let secure_string = SecureString {
             secure_string: string.to_string(),
         };
         return serde_json::to_value(secure_string).unwrap_or(value.clone());
     }
 
-    if let Some(obj) = value.as_object() {
-        let secure_object = crate::configure::parameters::SecureObject {
-            secure_object: serde_json::Value::Object(obj.clone()),
+    if value.as_object().is_some() {
+        trace!("Converting object value to secure object: {value}");
+        let secure_object = SecureObject {
+            secure_object: value.clone(),
         };
         return serde_json::to_value(secure_object).unwrap_or(value.clone());
     }
 
     if let Some(array) = value.as_array() {
+        trace!("Converting array value to secure array: {value}");
         let new_array: Vec<Value> = array.iter().map(convert_to_secure).collect();
         return Value::Array(new_array);
     }

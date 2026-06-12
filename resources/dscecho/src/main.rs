@@ -37,22 +37,29 @@ fn main() {
                 if echo.show_secrets == Some(true) {
                     echo.output = Output::Object(o.secure_object);
                 } else {
-                    echo.output = Output::Object(Map::new());
+                    echo.output = Output::String(SECURE_VALUE_REDACTED.to_string());
                 }
             },
             Output::Array(ref mut arr) => {
                 for item in arr.iter_mut() {
                     if echo.show_secrets == Some(true) {
-                        *item = get_secure_contents(item).unwrap_or_else(|| redact(item));
+                        *item = get_secure_contents(item);
                     } else {
                         *item = redact(item);
                     }
                 }
             },
             Output::Object(ref mut obj) => {
-                obj.clone_from(redact(&Value::Object(obj.clone()))
+                if echo.show_secrets == Some(true) {
+                    obj.clone_from(get_secure_contents(&Value::Object(obj.clone()))
                     .as_object()
-                    .expect("Expected redact() to return a Value::Object"));                },
+                    .expect("Expected get_secure_contents() to return a Value::Object"));
+                } else {
+                    obj.clone_from(redact(&Value::Object(obj.clone()))
+                        .as_object()
+                        .expect("Expected redact() to return a Value::Object"));
+                }
+            },
             _ => {}
         }
         let json = serde_json::to_string(&echo).unwrap();
@@ -66,24 +73,17 @@ fn main() {
 }
 
 fn is_secure_value(value: &Value) -> bool {
-    if let Ok(_) = serde_json::from_value::<SecureString>(value.clone()) {
-        return true;
-    }
-    if let Ok(_) = serde_json::from_value::<SecureObject>(value.clone()) {
-        return true;
-    }
-
-    false
+    serde_json::from_value::<SecureString>(value.clone()).is_ok() || serde_json::from_value::<SecureObject>(value.clone()).is_ok()
 }
 
-fn get_secure_contents(value: &Value) -> Option<Value> {
+fn get_secure_contents(value: &Value) -> Value {
     if let Ok(secure_string) = serde_json::from_value::<SecureString>(value.clone()) {
-        return Some(Value::String(secure_string.secure_string));
+        return Value::String(secure_string.secure_string);
     } else if let Ok(secure_object) = serde_json::from_value::<SecureObject>(value.clone()) {
-        return Some(Value::Object(secure_object.secure_object));
+        return Value::Object(secure_object.secure_object);
     }
 
-    Some(value.clone())
+    value.clone()
 }
 
 fn redact(value: &Value) -> Value {

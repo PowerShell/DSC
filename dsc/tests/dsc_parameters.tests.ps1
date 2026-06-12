@@ -316,18 +316,18 @@ Describe 'Parameters tests' {
       $LASTEXITCODE | Should -Be 0
       if ($operation -eq 'export') {
         $out.resources.Count | Should -Be 4 -Because ($out | ConvertTo-Json -Dep 10 | Out-String)
-        $out.resources[0].properties.output.secureString | Should -BeExactly 'mySecret'
-        $out.resources[1].properties.output.secureString | Should -BeExactly 'mySecretProperty'
-        $out.resources[2].properties.output[0].secureString | Should -BeExactly 'item1'
-        $out.resources[2].properties.output[1].secureString | Should -BeExactly 'item2'
-        $out.resources[3].properties.output.secureObject.secureString | Should -BeExactly 'item2'
+        $out.resources[0].properties.output | Should -BeExactly 'mySecret'
+        $out.resources[1].properties.output | Should -BeExactly 'mySecretProperty'
+        $out.resources[2].properties.output[0] | Should -BeExactly 'item1'
+        $out.resources[2].properties.output[1] | Should -BeExactly 'item2'
+        $out.resources[3].properties.output | Should -BeExactly 'item2'
       } else {
         $out.results.Count | Should -Be 4
-        $out.results[0].result.$property.output.secureString | Should -BeExactly 'mySecret' -Because ($out | ConvertTo-Json -Dep 10 | Out-String)
-        $out.results[1].result.$property.output.secureString | Should -BeExactly 'mySecretProperty'
-        $out.results[2].result.$property.output[0].secureString | Should -BeExactly 'item1'
-        $out.results[2].result.$property.output[1].secureString | Should -BeExactly 'item2'
-        $out.results[3].result.$property.output.secureObject.secureString | Should -BeExactly 'item2'
+        $out.results[0].result.$property.output | Should -BeExactly 'mySecret' -Because ($out | ConvertTo-Json -Dep 10 | Out-String)
+        $out.results[1].result.$property.output | Should -BeExactly 'mySecretProperty'
+        $out.results[2].result.$property.output[0] | Should -BeExactly 'item1'
+        $out.results[2].result.$property.output[1] | Should -BeExactly 'item2'
+        $out.results[3].result.$property.output | Should -BeExactly 'item2'
       }
     }
 
