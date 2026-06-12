@@ -427,13 +427,13 @@ subject matter experts.
 
 ### `dsc`
 
-The DSC command line tool that invokes resources and manages configuration documents.
+The DSC command-line tool that invokes resources and manages configuration documents.
 
 #### Guidelines
 
-- Specify the term as DSC when discussing the command line tool in general.
+- Specify the term as DSC when discussing the command-line tool in general.
 - Use code formatting when discussing running the command, a specific subcommand, or to distinguish
-  the command line tool from the conceptual platform.
+  the command-line tool from the conceptual platform.
 
 #### Examples
 

@@ -9,7 +9,7 @@ title:       osinfo
 
 # DSC tools overview
 
-Microsoft's Desired State Configuration (DSC) platform includes commandline tools for early
+Microsoft's Desired State Configuration (DSC) platform includes command-line tools for early
 feedback and functionality.
 
 The following table describes the tools included in current releases of DSC and the platforms those

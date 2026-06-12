@@ -23,8 +23,7 @@ The `items()` function converts a dictionary object to an array of key-value pai
   property name) and `value` (the property value).
 
 This function is useful for iterating over object properties in DSC configurations,
-especially when used with loops. It's the companion function to [`toObject()`][03],
-which converts an array back to an object.
+especially when used with loops.
 
 ## Examples
 
@@ -197,10 +196,8 @@ Type: array
 
 - [`createObject()`][00] - Creates an object from key-value pairs
 - [`length()`][01] - Returns the number of elements in an array or object
-- [`toObject()`][03] - Converts an array of key-value pairs to an object
 
 <!-- Link reference definitions -->
 [00]: ./createObject.md
 [01]: ./length.md
 [02]: ./copyIndex.md
-[03]: ./toObject.md

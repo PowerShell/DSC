@@ -153,6 +153,7 @@ try {
         } else {
             "Script failed with terminating error: $($ps.InvocationStateInfo.Reason)"
         }
+        Write-TraceQueue
         Write-DscTrace -Now -Level Error -Message $message
         exit 1
     }
@@ -162,7 +163,6 @@ try {
 
 
     if ($ps.HadErrors) {
-        # Errors can be non-terminating, so we just write a warning and continue
         Write-DscTrace -Now -Level Debug -Message 'Non-terminating errors occurred during script execution.'
     }
 
@@ -171,6 +171,7 @@ try {
     }
 }
 catch {
+    Write-TraceQueue
     Write-DscTrace -Now -Level Error -Message ($_ | Format-List -Force * | Out-String)
     exit 1
 }

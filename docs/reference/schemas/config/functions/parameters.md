@@ -110,5 +110,5 @@ Type: [string, int, bool, object, array]
 
 <!-- Link reference definitions -->
 [01]: ../parameter.md
-[02]: ../../../cli/config/command.md#-p---parameters
-[03]: ../../../cli/config/command.md#-f---parameters_file
+[02]: ../../../cli/config/index.md#--parameters
+[03]: ../../../cli/config/index.md#--parameters-file

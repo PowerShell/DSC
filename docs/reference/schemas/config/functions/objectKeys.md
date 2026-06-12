@@ -296,5 +296,5 @@ The function will return an error in the following cases:
 [00]: ./items.md
 [01]: ./length.md
 [02]: ./contains.md
-[03]: ../document/copy.md
+[03]: ./copy.md
 [04]: ./createObject.md

@@ -48,7 +48,6 @@ default-members = [
     "lib/dsc-lib-registry",
     "resources/runcommandonset",
     "lib/dsc-lib-security_context",
-    "resources/dism_dsc",
     "resources/sshdconfig",
     "resources/WindowsUpdate",
     "resources/windows_service",
@@ -58,7 +57,8 @@ default-members = [
     "grammars/tree-sitter-dscexpression",
     "grammars/tree-sitter-ssh-server-config",
     "y2j",
-    "xtask"
+    "xtask",
+    "resources/dism_dsc"
 ]
 
 [workspace.metadata.groups]
@@ -155,7 +155,7 @@ chrono = { version = "0.4.44" }
 # dsc, dsc-lib, dsc-bicep-ext, dscecho, registry, runcommandonset, sshdconfig, dsctest, test_group_resource
 clap = { version = "4.6.1", features = ["derive"] }
 # dsc
-clap_complete = { version = "4.6.2" }
+clap_complete = { version = "4.6.5" }
 # dsc-lib
 const-str = {version = "1.1" }
 # dsc, registry, dsc-lib-registry, sshdconfig
@@ -181,11 +181,11 @@ miette = { version = "7.6.0" }
 # dsc-lib
 murmurhash64 = { version = "0.3" }
 # dsc-lib-security_context::not_windows
-nix = { version = "0.31" }
+nix = { version = "0.31.3" }
 # dsc-lib
 num-traits = { version = "0.2" }
 # dsc-lib-osinfo
-os_info = { version = "3.14" }
+os_info = { version = "3.15" }
 # dsc, dsc-lib
 path-absolutize = { version = "3.1" }
 # dsc-bicep-ext
@@ -205,7 +205,7 @@ rmcp = { version = "1.7.0" }
 # dsc_lib
 rt-format = { version = "0.3" }
 # dsc, dsc-lib, dsc-bicep-ext, dscecho, registry, dsc-lib-registry, runcommandonset, sshdconfig
-rust-i18n = { version = "4.0.0" }
+rust-i18n = { version = "4.1.0" }
 # dsc, dsc-lib, dscecho, registry, dsc-lib-registry, sshdconfig, dsctest, test_group_resource
 schemars = { version = "1.2.1", features = ["preserve_order"] }
 # dsc, dsc-lib
@@ -213,7 +213,7 @@ semver = { version = "1.0.28" }
 # dsc, dsc-lib, dscecho, dsc-lib-osinfo, process, registry, dsc-lib-registry, runcommandonset, sshdconfig, dsctest, test_group_resource
 serde = { version = "1.0", features = ["derive"] }
 # dsc, dsc-lib, dscecho, dsc-lib-osinfo, osinfo, process, registry, dsc-lib-registry, runcommandonset, sshdconfig, dsctest, test_group_resource, y2j
-serde_json = { version = "1.0.149", features = ["preserve_order"] }
+serde_json = { version = "1.0.150", features = ["preserve_order"] }
 # dsc, dsc-lib, y2j
 serde_yaml = { version = "0.9" }
 # dsc-lib-jsonschema-macros
@@ -221,7 +221,7 @@ syn = { version = "2.0" }
 # dsc, y2j
 syntect = { version = "5.3", features = ["default-fancy"], default-features = false }
 # dsc, process
-sysinfo = { version = "0.38.4" }
+sysinfo = { version = "0.39.3" }
 # sshdconfig
 tempfile = { version = "3.27" }
 # dsc, dsc-lib, registry, dsc-lib-registry, sshdconfig
@@ -229,17 +229,17 @@ thiserror = { version = "2.0.18" }
 # used by other crates
 time = { version = "0.3.47" }
 # dsc, dsc-lib, dsc-bicep-ext
-tokio = { version = "1.52.1" }
+tokio = { version = "1.52.3" }
 # dsc-bicep-ext
 tokio-stream = { version = "0.1.18" }
 # dsc
 tokio-util = { version = "0.7.18" }
 # dsc-bicep-ext
-tonic = { version = "0.14.5" }
+tonic = { version = "0.14.6" }
 # dsc-bicep-ext
-tonic-prost = { version = "0.14.5" }
+tonic-prost = { version = "0.14.6" }
 # dsc-bicep-ext
-tonic-reflection = { version = "0.14.5" }
+tonic-reflection = { version = "0.14.6" }
 # dsc, dsc-lib, dsc-bicep-ext, registry, dsc-lib-registry, runcommandonset, sshdconfig
 tracing = { version = "0.1.44" }
 # dsc, dsc-lib
@@ -247,7 +247,7 @@ tracing-indicatif = { version = "0.3.14" }
 # dsc, dsc-bicep-ext, registry, dsc-lib-registry, runcommandonset, sshdconfig
 tracing-subscriber = { version = "0.3.23", features = ["ansi", "env-filter", "json"] }
 # dsc-lib, sshdconfig, tree-sitter-dscexpression, tree-sitter-ssh-server-config
-tree-sitter = { version = "0.26.8" }
+tree-sitter = { version = "0.26.9" }
 # tree-sitter-dscexpression, tree-sitter-ssh-server-config
 tree-sitter-language = { version = "0.1.7" }
 # dsc-lib, sshdconfig, tree-sitter-dscexpression, tree-sitter-ssh-server-config
@@ -255,7 +255,7 @@ tree-sitter-rust = { version = "0.24.2" }
 # registry, dsc-lib-registry, dsctest
 utfx = { version = "0.1" }
 # dsc-lib
-uuid = { version = "1.23.1", features = ["v4"] }
+uuid = { version = "1.23.2", features = ["v4"] }
 # dsc-lib, dsc-lib-jsonschema
 url = { version = "2.5.8" }
 # dsc-lib, dsc-lib-jsonschema
@@ -277,9 +277,9 @@ windows = { version = "0.62", features = [
 
 # build-only dependencies
 # dsc-lib, dsc-lib-registry, sshdconfig, tree-sitter-dscexpression, tree-sitter-ssh-server-config
-cc = { version = "1.2.60" }
+cc = { version = "1.2.63" }
 # dsc
-tonic-prost-build = { version = "0.14.5" }
+tonic-prost-build = { version = "0.14.6" }
 
 # test-only dependencies
 # dsc-lib-jsonschema, dsc-lib

@@ -334,14 +334,10 @@ Type: string
 - [`concat()`][01] - Concatenates multiple strings together
 - [`format()`][02] - Creates a formatted string from a template
 - [`substring()`][03] - Extracts a portion of a string
-- [`replace()`][04] - Replaces text in a string
-- [`split()`][05] - Splits a string into an array
-- [`parameters()`][06] - Retrieves parameter values
+- [`parameters()`][04] - Retrieves parameter values
 
 <!-- Link reference definitions -->
 [01]: ./concat.md
 [02]: ./format.md
 [03]: ./substring.md
-[04]: ./replace.md
-[05]: ./split.md
-[06]: ./parameters.md
+[04]: ./parameters.md
