@@ -58,6 +58,8 @@ setParameter = "Set parameter '%{name}' to '%{value}'"
 parameterNotDefined = "Parameter '%{name}' is not defined in configuration"
 noVariables = "No variables defined in configuration"
 setVariable = "Set variable '%{name}' to '%{value}'"
+parameterNotSecureString = "Parameter '%{name}' is not a secure string"
+parameterNotSecureObject = "Parameter '%{name}' is not a secure object"
 parameterNotString = "Parameter '%{name}' is not a string"
 parameterNotInteger = "Parameter '%{name}' is not an integer"
 parameterNotBoolean = "Parameter '%{name}' is not a boolean"
@@ -531,6 +533,8 @@ keyNotInt = "Parameter '%{key}' is not an integer"
 keyNotBool = "Parameter '%{key}' is not a boolean"
 keyNotObject = "Parameter '%{key}' is not an object"
 keyNotArray = "Parameter '%{key}' is not an array"
+keyNotSecureString = "Parameter '%{key}' is not a secure string"
+keyNotSecureObject = "Parameter '%{key}' is not a secure object"
 keyNotFound = "Parameter '%{key}' not found in context"
 
 [functions.parseCidr]
@@ -591,6 +595,7 @@ multipleSecrets = "Multiple secrets with the same name '%{name}' and different v
 extensionReturnedError = "Extension '%{extension}': %{error}"
 noExtensions = "No extensions supporting secrets was found"
 secretNotFound = "Secret '%{name}' not found"
+invalidSecretFormat = "Invalid secret format returned for secret '%{name}'"
 
 [functions.shallowMerge]
 description = "Combines an array of objects where only the top-level objects are merged"

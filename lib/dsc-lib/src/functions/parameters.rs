@@ -37,19 +37,16 @@ impl Function for Parameters {
                 // if secureString or secureObject types, we keep it as JSON object
                 match data_type {
                     DataType::SecureString => {
-                        let Some(value) = value.as_str() else {
-                            return Err(DscError::Parser(t!("functions.parameters.keyNotString", key = key).to_string()));
+                        if serde_json::from_value::<SecureString>(value.clone()).is_err() {
+                            return Err(DscError::Parser(t!("functions.parameters.keyNotSecureString", key = key).to_string()));
                         };
-                        let secure_string = SecureString {
-                            secure_string: value.to_string(),
-                        };
-                        return Ok(serde_json::to_value(secure_string)?);
+                        return Ok(value.clone());
                     },
                     DataType::SecureObject => {
-                        let secure_object = SecureObject {
-                            secure_object: value.clone(),
+                        if serde_json::from_value::<SecureObject>(value.clone()).is_err() {
+                            return Err(DscError::Parser(t!("functions.parameters.keyNotSecureObject", key = key).to_string()));
                         };
-                        return Ok(serde_json::to_value(secure_object)?);
+                        return Ok(value.clone());
                     },
                     DataType::String => {
                         let Some(_value) = value.as_str() else {

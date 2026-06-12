@@ -3,7 +3,7 @@
 
 use crate::configure::config_doc::{ExecutionInformation, ResourceDirective};
 use crate::configure::context::{Context, ProcessMode};
-use crate::configure::parameters::import_parameters;
+use crate::configure::parameters::{SecureObject, SecureString, import_parameters};
 use crate::configure::{config_doc::{ExecutionKind, IntOrExpression, Metadata, Parameter, Resource, ResourceDiscoveryMode, RestartRequired, ValueOrCopy}};
 use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscerror::DscError;
@@ -1375,7 +1375,12 @@ pub fn invoke_property_expressions(parser: &mut Statement, context: &Context, pr
 ///
 pub fn validate_parameter_type(name: &str, value: &Value, parameter_type: &DataType) -> Result<(), DscError> {
     match parameter_type {
-        DataType::String | DataType::SecureString => {
+        DataType::SecureString => {
+            if !serde_json::from_value::<SecureString>(value.clone()).is_ok() {
+                return Err(DscError::Validation(t!("configure.mod.parameterNotSecureString", name = name).to_string()));
+            }
+        }
+        DataType::String => {
             if !value.is_string() {
                 return Err(DscError::Validation(t!("configure.mod.parameterNotString", name = name).to_string()));
             }
@@ -1395,7 +1400,12 @@ pub fn validate_parameter_type(name: &str, value: &Value, parameter_type: &DataT
                 return Err(DscError::Validation(t!("configure.mod.parameterNotArray", name = name).to_string()));
             }
         },
-        DataType::Object | DataType::SecureObject => {
+        DataType::SecureObject => {
+            if !serde_json::from_value::<SecureObject>(value.clone()).is_ok() {
+                return Err(DscError::Validation(t!("configure.mod.parameterNotSecureObject", name = name).to_string()));
+            }
+        },
+        DataType::Object => {
             if !value.is_object() {
                 return Err(DscError::Validation(t!("configure.mod.parameterNotObject", name = name).to_string()));
             }
