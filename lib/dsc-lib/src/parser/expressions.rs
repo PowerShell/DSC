@@ -246,7 +246,6 @@ fn convert_to_secure(value: &Value) -> Value {
     }
 
     if let Some(string) = value.as_str() {
-        trace!("Converting string value to secure string: {string}");
         let secure_string = SecureString {
             secure_string: string.to_string(),
         };
@@ -254,7 +253,6 @@ fn convert_to_secure(value: &Value) -> Value {
     }
 
     if value.as_object().is_some() {
-        trace!("Converting object value to secure object: {value}");
         let secure_object = SecureObject {
             secure_object: value.clone(),
         };
@@ -262,7 +260,6 @@ fn convert_to_secure(value: &Value) -> Value {
     }
 
     if let Some(array) = value.as_array() {
-        trace!("Converting array value to secure array: {value}");
         let new_array: Vec<Value> = array.iter().map(convert_to_secure).collect();
         return Value::Array(new_array);
     }
