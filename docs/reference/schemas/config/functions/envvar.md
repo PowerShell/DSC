@@ -82,4 +82,4 @@ The `envvar()` function returns the value of the environment variable specified 
 Type: string
 ```
 
-[01]: ../../../cli/config/command.md#environment-variables
+[01]: ../../../cli/config/index.md#environment-variables

@@ -20,7 +20,7 @@ Describe 'Windows Update Get operation tests' {
                     }
                 )
             } | ConvertTo-Json -Depth 10 -Compress
-            $out = $json | dsc resource get -r $resourceType 2>&1
+            $out = $json | dsc resource get -r $resourceType -f - 2>&1
             
             $LASTEXITCODE | Should -Be 0
             $getResult = $out | ConvertFrom-Json
@@ -45,7 +45,7 @@ Describe 'Windows Update Get operation tests' {
                     }
                 )
             } | ConvertTo-Json -Depth 10 -Compress
-            $outLower = $jsonLower | dsc resource get -r $resourceType 2>&1
+            $outLower = $jsonLower | dsc resource get -r $resourceType -f - 2>&1
             
             # Test with uppercase version
             $jsonUpper = @{
@@ -55,7 +55,7 @@ Describe 'Windows Update Get operation tests' {
                     }
                 )
             } | ConvertTo-Json -Depth 10 -Compress
-            $outUpper = $jsonUpper | dsc resource get -r $resourceType 2>&1
+            $outUpper = $jsonUpper | dsc resource get -r $resourceType -f - 2>&1
             
             # Both should succeed
             if ($outLower -and $outUpper) {
@@ -74,7 +74,7 @@ Describe 'Windows Update Get operation tests' {
                     }
                 )
             } | ConvertTo-Json -Depth 10 -Compress
-            $null = $json | dsc resource get -r $resourceType 2>&1
+            $null = $json | dsc resource get -r $resourceType -f - 2>&1
             # This will likely fail unless there's an update with exact title "Windows"
             # which is unlikely
             $LASTEXITCODE | Should -Not -Be 0
@@ -89,7 +89,7 @@ Describe 'Windows Update Get operation tests' {
                     }
                 )
             } | ConvertTo-Json -Depth 10 -Compress
-            $null = $json | dsc resource get -r $resourceType 2>&1
+            $null = $json | dsc resource get -r $resourceType -f - 2>&1
             $LASTEXITCODE | Should -Not -Be 0
         }
 
@@ -103,7 +103,7 @@ Describe 'Windows Update Get operation tests' {
                     }
                 )
             } | ConvertTo-Json -Depth 10 -Compress
-            $out = $json | dsc resource get -r $resourceType 2>&1
+            $out = $json | dsc resource get -r $resourceType -f - 2>&1
             
             $LASTEXITCODE | Should -Be 0
             $result = $out | ConvertFrom-Json
@@ -121,7 +121,7 @@ Describe 'Windows Update Get operation tests' {
                     }
                 )
             } | ConvertTo-Json -Depth 10 -Compress
-            $null = $json | dsc resource get -r $resourceType 2>&1
+            $null = $json | dsc resource get -r $resourceType -f - 2>&1
             
             # Should fail because id doesn't match
             $LASTEXITCODE | Should -Not -Be 0
@@ -137,7 +137,7 @@ Describe 'Windows Update Get operation tests' {
                     }
                 )
             } | ConvertTo-Json -Depth 10 -Compress
-            $null = $json | dsc resource get -r $resourceType 2>&1
+            $null = $json | dsc resource get -r $resourceType -f - 2>&1
             
             # Should fail because title doesn't match
             $LASTEXITCODE | Should -Not -Be 0
@@ -151,7 +151,7 @@ Describe 'Windows Update Get operation tests' {
                     }
                 )
             } | ConvertTo-Json -Depth 10 -Compress
-            $out = $json | dsc resource get -r $resourceType 2>&1
+            $out = $json | dsc resource get -r $resourceType -f - 2>&1
             $LASTEXITCODE | Should -Be 0            
             $result = $out | ConvertFrom-Json
             $result.actualState.updates[0].isInstalled | Should -BeOfType [bool]
@@ -165,7 +165,7 @@ Describe 'Windows Update Get operation tests' {
                     }
                 )
             } | ConvertTo-Json -Depth 10 -Compress
-            $out = $json | dsc resource get -r $resourceType 2>&1
+            $out = $json | dsc resource get -r $resourceType -f - 2>&1
             $LASTEXITCODE | Should -Be 0            
             $result = $out | ConvertFrom-Json
             $result.actualState.updates[0].recommendedHardDiskSpace | Should -BeGreaterOrEqual 0
@@ -179,7 +179,7 @@ Describe 'Windows Update Get operation tests' {
                     }
                 )
             } | ConvertTo-Json -Depth 10 -Compress
-            $out = $json | dsc resource get -r $resourceType 2>&1
+            $out = $json | dsc resource get -r $resourceType -f - 2>&1
             $LASTEXITCODE | Should -Be 0            
             $result = $out | ConvertFrom-Json
             $result.actualState.updates[0].kbArticleIds.GetType().BaseType.Name | Should -Be 'Array'
@@ -193,7 +193,7 @@ Describe 'Windows Update Get operation tests' {
                     }
                 )
             } | ConvertTo-Json -Depth 10 -Compress
-            $out = $json | dsc resource get -r $resourceType 2>&1
+            $out = $json | dsc resource get -r $resourceType -f - 2>&1
             $LASTEXITCODE | Should -Be 0            
             $result = $out | ConvertFrom-Json
             $result.actualState.updates[0].updateType | Should -BeIn @('Software', 'Driver')
@@ -210,7 +210,7 @@ Describe 'Windows Update Get operation tests' {
                         }
                     )
                 } | ConvertTo-Json -Depth 10 -Compress
-                $out = $json | dsc resource get -r $resourceType 2>&1
+                $out = $json | dsc resource get -r $resourceType -f - 2>&1
                 $LASTEXITCODE | Should -Be 0
                 $result = $out | ConvertFrom-Json
                 $result.actualState.updates[0].msrcSeverity | Should -BeExactly $updateWithSeverity.msrcSeverity
@@ -225,7 +225,7 @@ Describe 'Windows Update Get operation tests' {
                     }
                 )
             } | ConvertTo-Json -Depth 10 -Compress
-            $out = $json | dsc resource get -r $resourceType 2>&1
+            $out = $json | dsc resource get -r $resourceType -f - 2>&1
                     
             $LASTEXITCODE | Should -Be 0
             $result = $out | ConvertFrom-Json
@@ -242,7 +242,7 @@ Describe 'Windows Update Get operation tests' {
                     }
                 )
             } | ConvertTo-Json -Depth 10 -Compress
-            $out = $json | dsc resource get -r $resourceType 2>&1
+            $out = $json | dsc resource get -r $resourceType -f - 2>&1
                     
             $LASTEXITCODE | Should -Be 0
             $result = $out | ConvertFrom-Json
@@ -265,7 +265,7 @@ Describe 'Windows Update Get operation tests' {
                         }
                     )
                 } | ConvertTo-Json -Depth 10 -Compress
-                $out = $json | dsc resource get -r $resourceType 2>&1
+                $out = $json | dsc resource get -r $resourceType -f - 2>&1
                 
                 $LASTEXITCODE | Should -Be 0
                 $getResult = $out | ConvertFrom-Json
@@ -290,7 +290,7 @@ Describe 'Windows Update Get operation tests' {
                     }
                 )
             } | ConvertTo-Json -Depth 10 -Compress
-            $stderr = $json | dsc resource get -r $resourceType 2>&1
+            $stderr = $json | dsc resource get -r $resourceType -f - 2>&1
             
             # Should fail because second input has no match
             $LASTEXITCODE | Should -Not -Be 0
@@ -312,7 +312,7 @@ Describe 'Windows Update Get operation tests' {
                         }
                     )
                 } | ConvertTo-Json -Depth 10 -Compress
-                $out = $json | dsc resource get -r $resourceType 2>&1
+                $out = $json | dsc resource get -r $resourceType -f - 2>&1
                 
                 $LASTEXITCODE | Should -Be 0
                 $getResult = $out | ConvertFrom-Json
@@ -334,7 +334,7 @@ Describe 'Windows Update Get operation tests' {
                         }
                     )
                 } | ConvertTo-Json -Depth 10 -Compress
-                $out = $json | dsc resource get -r $resourceType 2>&1
+                $out = $json | dsc resource get -r $resourceType -f - 2>&1
                 
                 $LASTEXITCODE | Should -Be 0
                 $getResult = $out | ConvertFrom-Json
@@ -356,7 +356,7 @@ Describe 'Windows Update Get operation tests' {
                         }
                     )
                 } | ConvertTo-Json -Depth 10 -Compress
-                $out = $json | dsc resource get -r $resourceType 2>&1
+                $out = $json | dsc resource get -r $resourceType -f - 2>&1
                 
                 $LASTEXITCODE | Should -Be 0
                 $getResult = $out | ConvertFrom-Json
@@ -374,7 +374,7 @@ Describe 'Windows Update Get operation tests' {
                     }
                 )
             } | ConvertTo-Json -Depth 10 -Compress
-            $out = $json | dsc resource get -r $resourceType 2>&1
+            $out = $json | dsc resource get -r $resourceType -f - 2>&1
             
             $LASTEXITCODE | Should -Be 0
             $result = $out | ConvertFrom-Json
@@ -396,7 +396,7 @@ Describe 'Windows Update Get operation tests' {
                         }
                     )
                 } | ConvertTo-Json -Depth 10 -Compress
-                $out = $json | dsc resource get -r $resourceType 2>&1
+                $out = $json | dsc resource get -r $resourceType -f - 2>&1
                 
                 $LASTEXITCODE | Should -Be 0
                 $getResult = $out | ConvertFrom-Json
@@ -424,7 +424,7 @@ Describe 'Windows Update Get operation tests' {
                         }
                     )
                 } | ConvertTo-Json -Depth 10 -Compress
-                $stderr = $json | dsc resource get -r $resourceType 2>&1
+                $stderr = $json | dsc resource get -r $resourceType -f - 2>&1
                 
                 # If multiple updates match isInstalled=true, it should error
                 $installedCount = ($exportOut.updates | Where-Object { $_.isInstalled -eq $true }).Count
@@ -460,7 +460,7 @@ Describe 'Windows Update Get operation tests' {
                             }
                         )
                     } | ConvertTo-Json -Depth 10 -Compress
-                    $stderr = $json | dsc resource get -r $resourceType 2>&1
+                    $stderr = $json | dsc resource get -r $resourceType -f - 2>&1
                     
                     # This may or may not fail depending on uniqueness
                     if ($LASTEXITCODE -ne 0) {

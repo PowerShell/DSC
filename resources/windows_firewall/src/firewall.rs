@@ -10,7 +10,7 @@ use windows::Win32::System::Com::{CLSCTX_INPROC_SERVER, CoCreateInstance, CoInit
 use windows::Win32::System::Ole::IEnumVARIANT;
 use windows::Win32::System::Variant::{VARIANT, VariantClear};
 
-use crate::types::{FirewallError, FirewallRule, FirewallRuleList, RuleAction, RuleDirection};
+use crate::types::{FirewallError, FirewallRule, FirewallRuleList, Metadata, RuleAction, RuleDirection};
 use crate::util::matches_any_filter;
 
 /// RAII wrapper for VARIANT that automatically calls VariantClear on drop
@@ -274,6 +274,7 @@ fn rule_to_model(rule: &INetFwRule) -> Result<FirewallRule, FirewallError> {
     Ok(FirewallRule {
         name: Some(name.clone()),
         exist: None,
+        metadata: None,
         description: bstr_to_option(unsafe { rule.Description() }.map_err(&err)?)?,
         application_name: bstr_to_option(unsafe { rule.ApplicationName() }.map_err(&err)?)?,
         service_name: bstr_to_option(unsafe { rule.ServiceName() }.map_err(&err)?)?,
@@ -402,7 +403,30 @@ pub fn get_rules(input: &FirewallRuleList) -> Result<FirewallRuleList, FirewallE
     Ok(FirewallRuleList { rules: results })
 }
 
-pub fn set_rules(input: &FirewallRuleList) -> Result<FirewallRuleList, FirewallError> {
+fn project_rule(current: &FirewallRule, desired: &FirewallRule) -> FirewallRule {
+    FirewallRule {
+        name: current.name.clone(),
+        exist: None,
+        metadata: None,
+        description: desired.description.clone().or_else(|| current.description.clone()),
+        application_name: desired.application_name.clone().or_else(|| current.application_name.clone()),
+        service_name: desired.service_name.clone().or_else(|| current.service_name.clone()),
+        protocol: desired.protocol.or(current.protocol),
+        local_ports: desired.local_ports.clone().or_else(|| current.local_ports.clone()),
+        remote_ports: desired.remote_ports.clone().or_else(|| current.remote_ports.clone()),
+        local_addresses: desired.local_addresses.clone().or_else(|| current.local_addresses.clone()),
+        remote_addresses: desired.remote_addresses.clone().or_else(|| current.remote_addresses.clone()),
+        direction: desired.direction.clone().or_else(|| current.direction.clone()),
+        action: desired.action.clone().or_else(|| current.action.clone()),
+        enabled: desired.enabled.or(current.enabled),
+        profiles: desired.profiles.clone().or_else(|| current.profiles.clone()),
+        grouping: desired.grouping.clone().or_else(|| current.grouping.clone()),
+        interface_types: desired.interface_types.clone().or_else(|| current.interface_types.clone()),
+        edge_traversal: desired.edge_traversal.or(current.edge_traversal),
+    }
+}
+
+pub fn set_rules(input: &FirewallRuleList, what_if: bool) -> Result<FirewallRuleList, FirewallError> {
     if input.rules.is_empty() {
         return Err(t!("set.rulesArrayEmpty").to_string().into());
     }
@@ -421,13 +445,23 @@ pub fn set_rules(input: &FirewallRuleList) -> Result<FirewallRuleList, FirewallE
                 let rule_name = current.name.clone().unwrap_or_else(|| desired.selector_name().unwrap_or_default().to_string());
 
                 if desired.exist == Some(false) {
-                    store.remove_rule(&rule_name)?;
-                    results.push(desired.missing_from_input());
+                    if what_if {
+                        let mut projected = desired.missing_from_input();
+                        projected.metadata = Some(Metadata { what_if: Some(vec![t!("firewall_helper.whatIfRemoveRule", name = rule_name).to_string()]) });
+                        results.push(projected);
+                    } else {
+                        store.remove_rule(&rule_name)?;
+                        results.push(desired.missing_from_input());
+                    }
                     continue;
                 }
 
-                apply_rule_properties(&rule, desired, current.protocol)?;
-                results.push(rule_to_model(&rule)?);
+                if what_if {
+                    results.push(project_rule(&current, desired));
+                } else {
+                    apply_rule_properties(&rule, desired, current.protocol)?;
+                    results.push(rule_to_model(&rule)?);
+                }
             }
             None => {
                 if desired.exist == Some(false) {
@@ -437,21 +471,28 @@ pub fn set_rules(input: &FirewallRuleList) -> Result<FirewallRuleList, FirewallE
 
                 let rule_name = desired.name.clone()
                     .ok_or_else(|| t!("set.selectorRequired").to_string())?;
-                let rule = store.create_rule_object()?;
-                unsafe { rule.SetName(&BSTR::from(rule_name.as_str())) }
-                    .map_err(|error| t!("firewall.ruleAddFailed", name = rule_name.as_str(), error = error.to_string()).to_string())?;
 
-                apply_rule_properties(&rule, desired, None)?;
-                unsafe { store.rules.Add(&rule) }
-                    .map_err(|error| t!("firewall.ruleAddFailed", name = rule_name.as_str(), error = error.to_string()).to_string())?;
+                if what_if {
+                    let mut projected = desired.clone();
+                    projected.metadata = Some(Metadata { what_if: Some(vec![t!("firewall_helper.whatIfCreateRule", name = rule_name).to_string()]) });
+                    results.push(projected);
+                } else {
+                    let rule = store.create_rule_object()?;
+                    unsafe { rule.SetName(&BSTR::from(rule_name.as_str())) }
+                        .map_err(|error| t!("firewall.ruleAddFailed", name = rule_name.as_str(), error = error.to_string()).to_string())?;
 
-                let created = store
-                    .find_by_selector(&FirewallRule {
-                        name: Some(rule_name),
-                        ..FirewallRule::default()
-                    })?
-                    .ok_or_else(|| t!("firewall.ruleLookupFailed", name = desired.selector_name().unwrap_or("<unknown>"), error = "created rule not found").to_string())?;
-                results.push(rule_to_model(&created)?);
+                    apply_rule_properties(&rule, desired, None)?;
+                    unsafe { store.rules.Add(&rule) }
+                        .map_err(|error| t!("firewall.ruleAddFailed", name = rule_name.as_str(), error = error.to_string()).to_string())?;
+
+                    let created = store
+                        .find_by_selector(&FirewallRule {
+                            name: Some(rule_name),
+                            ..FirewallRule::default()
+                        })?
+                        .ok_or_else(|| t!("firewall.ruleLookupFailed", name = desired.selector_name().unwrap_or("<unknown>"), error = "created rule not found").to_string())?;
+                    results.push(rule_to_model(&created)?);
+                }
             }
         }
     }

@@ -145,7 +145,7 @@ ItemsPattern:      ^\[resourceId\(\s*'\w+(\.\w+){0,2}\/\w+'\s*,\s*'[a-zA-Z0-9 ]+
 
 [01]: ../definitions/resourceType.md
 [02]: functions/resourceId.md
-[03]: /powershell/dsc/glossary#nested-resource-instance
+[03]: ../../../glossary.md#nested-resource-instance
 [04]: functions/overview.md
 <!-- [aa]: ../../../resources/concepts/schemas.md -->
 <!-- [ab]: ../../../configurations/concepts/dependencies.md -->

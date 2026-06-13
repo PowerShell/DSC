@@ -83,8 +83,9 @@ fn main() {
             }
         }
         "set" => {
+            let what_if = parse_what_if_arg(&args);
             let input = require_input(input_json);
-            match firewall::set_rules(&input) {
+            match firewall::set_rules(&input, what_if) {
                 Ok(result) => {
                     print_json(&result);
                     exit(EXIT_SUCCESS);
@@ -138,4 +139,8 @@ fn parse_input_arg(args: &[String]) -> Option<String> {
         index += 1;
     }
     None
+}
+
+fn parse_what_if_arg(args: &[String]) -> bool {
+    args.iter().any(|arg| arg == "-w" || arg == "--what-if")
 }
