@@ -49,17 +49,6 @@ fn main() {
                     }
                 }
             },
-            Output::Object(ref mut obj) => {
-                if echo.show_secrets == Some(true) {
-                    obj.clone_from(get_secure_contents(&Value::Object(obj.clone()))
-                    .as_object()
-                    .expect("Expected get_secure_contents() to return a Value::Object"));
-                } else {
-                    obj.clone_from(redact(&Value::Object(obj.clone()))
-                        .as_object()
-                        .expect("Expected redact() to return a Value::Object"));
-                }
-            },
             _ => {}
         }
         let json = serde_json::to_string(&echo).unwrap();
@@ -73,7 +62,13 @@ fn main() {
 }
 
 fn is_secure_value(value: &Value) -> bool {
-    serde_json::from_value::<SecureString>(value.clone()).is_ok() || serde_json::from_value::<SecureObject>(value.clone()).is_ok()
+    if let Some(obj) = value.as_object()
+        && obj.len() == 1
+        && (obj.contains_key("secureString") || obj.contains_key("secureObject")) {
+            return true;
+        }
+
+    false
 }
 
 fn get_secure_contents(value: &Value) -> Value {
