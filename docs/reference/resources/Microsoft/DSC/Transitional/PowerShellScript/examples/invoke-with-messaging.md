@@ -19,6 +19,13 @@ By default, any errors raised during script execution cause the execution to emi
 and immediately halt script execution. The following example snippets show how you can provide
 error details for the user when a script fails.
 
+> [!IMPORTANT]
+> The `PowerShellScript` resource runs scripts with `$ErrorActionPreference = 'Stop'` by default.
+> Non-terminating errors from cmdlets are treated as terminating errors unless the script or cmdlet
+> overrides the error action. Native command failures don't automatically stop script execution;
+> script authors should check `$LASTEXITCODE` explicitly unless they enable
+> [`$PSNativeCommandUseErrorActionPreference`][12] in PowerShell 7.
+
 ### Emitting an error from a failed cmdlet
 
 In this example, the script depends on the `tstoy` command being available on the system. When the
@@ -516,3 +523,4 @@ actualState:
 [09]: https://learn.microsoft.com/powershell/module/microsoft.powershell.utility/write-debug
 [10]: https://learn.microsoft.com/powershell/module/microsoft.powershell.utility/write-information
 [11]: https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_commonparameters#-informationaction
+[12]: https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_preference_variables#psnativecommanduseerroractionpreference

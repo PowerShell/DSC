@@ -15,6 +15,11 @@ These examples show how you can pass input data to the
 [`Microsoft.DSC.Transitional/PowerShellScript` resource][01] and how to bind that data to your
 script with a [`param()` statement][02].
 
+> [!NOTE]
+> The script parameter can use any valid parameter name, but the script must define exactly one
+> parameter. Don't name the parameter `$input`, because `$input` is an automatic variable in
+> PowerShell.
+
 ## Input data types
 
 The following examples show how data input is bound to the parameters for a defined scriptblock
@@ -296,7 +301,8 @@ actualState:
 Passing input to a script has several requirements:
 
 1. The script property for the resource must use the `param()` statement to define exactly one
-   parameter.
+  parameter. The parameter can use any valid parameter name except `$input`, which is an automatic
+  variable in PowerShell.
 1. The `input` property for the resource must be defined with a non-null value.
 1. If the `param()` statement defines a type for the input data, the value for the `input` property
    of the instance must be convertible to that type.
