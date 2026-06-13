@@ -1104,27 +1104,37 @@ impl Configurator {
                 debug!("{}", t!("configure.mod.processingParameter", name = name));
                 if let Some(default_value) = &parameter.default_value {
                     debug!("{}", t!("configure.mod.setDefaultParameter", name = name));
-                    let value_result = if default_value.is_string() {
+                    let mut value = if default_value.is_string() {
                         if let Some(value) = default_value.as_str() {
                             self.context.process_mode = ProcessMode::ParametersDefault;
-                            let result = self.statement_parser.parse_and_execute(value, &self.context);
+                            let result = self.statement_parser.parse_and_execute(value, &self.context)?;
                             self.context.process_mode = ProcessMode::Normal;
                             result
                         } else {
                             return Err(DscError::Parser(t!("configure.mod.defaultStringNotDefined").to_string()));
                         }
                     } else {
-                        Ok(default_value.clone())
+                        default_value.clone()
                     };
 
-                    if let Ok(value) = value_result {
-                        check_length(name, &value, parameter)?;
-                        check_allowed_values(name, &value, parameter)?;
-                        check_number_limits(name, &value, parameter)?;
-                        validate_parameter_type(name, &value, &parameter.parameter_type)?;
-                        self.context.parameters.insert(name.to_string(), (value, parameter.parameter_type.clone()));
-                        resolved_in_this_pass.push(name.clone());
+                    if parameter.parameter_type == DataType::SecureString && value.is_string() {
+                        let secure_string = SecureString {
+                            secure_string: value.as_str().unwrap().to_string(),
+                        };
+                        value = serde_json::to_value(secure_string)?;
+                    } else if parameter.parameter_type == DataType::SecureObject && value.is_object() {
+                        let secure_object = SecureObject {
+                            secure_object: value.clone(),
+                        };
+                        value = serde_json::to_value(secure_object)?;
                     }
+
+                    check_length(name, &value, parameter)?;
+                    check_allowed_values(name, &value, parameter)?;
+                    check_number_limits(name, &value, parameter)?;
+                    validate_parameter_type(name, &value, &parameter.parameter_type)?;
+                    self.context.parameters.insert(name.to_string(), (value, parameter.parameter_type.clone()));
+                    resolved_in_this_pass.push(name.clone());
                 } else {
                     resolved_in_this_pass.push(name.clone());
                 }
