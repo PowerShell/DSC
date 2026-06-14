@@ -628,7 +628,13 @@ function GetTypeInstanceFromModule {
         [Parameter(Mandatory = $true)]
         [string] $classname
     )
-    $instance = & (Import-Module $modulename -PassThru) ([scriptblock]::Create("'$classname' -as 'type'"))
+    try {
+        $instance = & (Import-Module $modulename -PassThru) ([scriptblock]::Create("'$classname' -as 'type'"))
+    } catch {
+        if ($error.FullyQualifiedErrorId -eq "CommandNotFoundException") {
+            $instance = & (Import-Module $modulename -PassThru) ([scriptblock]::Create("'$classname' -as 'type'"))
+        }
+    }
     return $instance
 }
 
