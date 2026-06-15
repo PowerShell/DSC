@@ -1,0 +1,116 @@
+{
+  "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+  "type": "Microsoft.DSC.Adapters/Python",
+  "version": "0.1.0",
+  "kind": "adapter",
+  "description": "Provides a DSC adapter for Python resources",
+  "adapter": {
+    "list": {
+      "executable": "python3",
+      "args": [
+        "pyDscAdapter/__main__.py",
+        "adapter",
+        "--operation",
+        "list"
+      ]
+    },
+    "config": "single"
+  },
+  "get": {
+    "executable": "python3",
+    "args": [
+      "pyDscAdapter/__main__.py",
+      "adapter",
+      "--operation",  
+      "get",
+      { "resourceTypeArg": "--resource" },
+      {
+        "resourcePathArg": "--resource-path"
+      },
+      {
+        "jsonInputArg": "--input",
+        "mandatory": true
+      }
+    ],
+    "input": "stdin"
+  },
+  "set": {
+    "executable": "python3",
+    "args": [
+      "pyDscAdapter/__main__.py",
+      "adapter",
+      "--operation",
+      "set",
+      { "resourceTypeArg": "--resource" },
+      {
+        "resourcePathArg": "--resource-path"
+      },
+      {
+        "jsonInputArg": "--input",
+        "mandatory": true
+      }
+    ],
+    "input": "stdin",
+    "return": "stateAndDiff"
+  },
+  "test": {
+    "executable": "python3",
+    "args": [
+      "pyDscAdapter/__main__.py",
+      "adapter",
+      "--operation",
+      "test",
+      { "resourceTypeArg": "--resource" },
+      {
+        "resourcePathArg": "--resource-path"
+      },
+      {
+        "jsonInputArg": "--input",
+        "mandatory": true
+      }
+    ],
+    "input": "stdin",
+    "return": "stateAndDiff"
+  },
+  "export": {
+    "executable": "python3",
+    "args": [
+      "pyDscAdapter/__main__.py",
+      "adapter",
+      "--operation",
+      "export",
+      { "resourceTypeArg": "--resource" },
+      {
+        "resourcePathArg": "--resource-path"
+      },
+      {
+        "jsonInputArg": "--input",
+        "mandatory": true
+      }
+    ],
+    "input": "stdin"
+  },
+  "validate": {
+    "executable": "python3",
+    "args": [
+      "pyDscAdapter/__main__.py",
+      "adapter",
+      "--operation",
+      "validate",
+      { "resourceTypeArg": "--resource" },
+      {
+        "resourcePathArg": "--resource-path"
+      },
+      {
+        "jsonInputArg": "--input",
+        "mandatory": true
+      }
+    ],
+    "input": "stdin"
+  },
+  "exitCodes": {
+    "0": "Success",
+    "1": "Error",
+    "2": "Invalid input"
+  }
+}
