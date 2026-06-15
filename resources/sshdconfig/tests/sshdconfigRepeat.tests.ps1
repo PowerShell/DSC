@@ -59,9 +59,7 @@ PasswordAuthentication yes
 
         It 'Should add a new subsystem that does not already exist' {
             $inputConfig = @{
-                _metadata = @{
-                    filepath = $TestConfigPath
-                }
+                _filepath = $TestConfigPath
                 _exist = $true
                 subsystem = @{
                     name = "newsubsystem"
@@ -83,9 +81,7 @@ PasswordAuthentication yes
 
         It 'Should treat subsystem names as case-sensitive (SFTP is different from sftp)' {
             $inputConfig = @{
-                _metadata = @{
-                    filepath = $TestConfigPath
-                }
+                _filepath = $TestConfigPath
                 _exist = $true
                 subsystem = @{
                     name = "SFTP"  # Uppercase - should be treated as different from lowercase sftp
@@ -98,9 +94,7 @@ PasswordAuthentication yes
 
             # Verify SFTP was added as a new entry (not updating existing sftp) using get
             $getInput = @{
-                _metadata = @{
-                    filepath = $TestConfigPath
-                }
+                _filepath = $TestConfigPath
             } | ConvertTo-Json
             $result = sshdconfig get --input $getInput -s sshd-config 2>$null | ConvertFrom-Json
             $LASTEXITCODE | Should -Be 0
@@ -123,9 +117,7 @@ PasswordAuthentication yes
 
         It 'Should remove a subsystem when _exist is false' {
             $inputConfig = @{
-                _metadata = @{
-                    filepath = $TestConfigPath
-                }
+                _filepath = $TestConfigPath
                 _exist = $false
                 subsystem = @{
                     name = "sftp"
@@ -145,9 +137,7 @@ PasswordAuthentication yes
 
         It 'Should preserve case when adding subsystem with mixed case name' {
             $inputConfig = @{
-                _metadata = @{
-                    filepath = $TestConfigPath
-                }
+                _filepath = $TestConfigPath
                 _exist = $true
                 subsystem = @{
                     name = "MyCustomSubsystem"
@@ -165,9 +155,7 @@ PasswordAuthentication yes
 
         It 'Should handle paths with spaces correctly' {
             $inputConfig = @{
-                _metadata = @{
-                    filepath = $TestConfigPath
-                }
+                _filepath = $TestConfigPath
                 _exist = $true
                 subsystem = @{
                     name = "spacepath"
@@ -187,9 +175,7 @@ PasswordAuthentication yes
 
         It 'Should fail when subsystem name is missing' {
             $inputConfig = @{
-                _metadata = @{
-                    filepath = $TestConfigPath
-                }
+                _filepath = $TestConfigPath
                 _exist = $true
                 subsystem = @{
                     value = "/path/to/something"

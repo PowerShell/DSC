@@ -36,14 +36,9 @@
                     "description": "Whether to clear any existing subsystem entries not specified in the 'subsystem' array",
                     "default": false
                 },
-                "_metadata": {
-                    "type": "object",
-                    "properties": {
-                        "filepath": {
-                            "type": "string",
-                            "description": "Path to sshd_config file"
-                        }
-                    }
+                "_filepath": {
+                    "type": "string",
+                    "description": "Path to the sshd_config file to be processed. If not specified, the default path for the OS is used."
                 },
                 "subsystem": {
                     "type": "array",

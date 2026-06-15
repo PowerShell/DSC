@@ -13,12 +13,12 @@ use crate::error::SshdConfigError;
 pub enum CanonicalProperty {
     /// Boolean flag indicating if an entry should exist or be removed
     Exist,
+    /// Path to the sshd_config file to be processed
+    Filepath,
     /// Boolean flag to include default values in output
     IncludeDefaults,
     /// Contains SSH default values inherited from system
     InheritedDefaults,
-    /// Metadata object containing filepath and other configuration info
-    Metadata,
     /// Boolean flag indicating if non-specified entries should be removed
     Purge,
 }
@@ -28,9 +28,9 @@ impl CanonicalProperty {
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Exist => "_exist",
+            Self::Filepath => "_filepath",
             Self::IncludeDefaults => "_includeDefaults",
             Self::InheritedDefaults => "_inheritedDefaults",
-            Self::Metadata => "_metadata",
             Self::Purge => "_purge",
         }
     }
@@ -39,9 +39,9 @@ impl CanonicalProperty {
     pub fn from_str(s: &str) -> Option<Self> {
         match s {
             "_exist" => Some(Self::Exist),
+            "_filepath" => Some(Self::Filepath),
             "_includeDefaults" => Some(Self::IncludeDefaults),
             "_inheritedDefaults" => Some(Self::InheritedDefaults),
-            "_metadata" => Some(Self::Metadata),
             "_purge" => Some(Self::Purge),
             _ => None,
         }
@@ -51,9 +51,9 @@ impl CanonicalProperty {
     pub const fn all() -> &'static [CanonicalProperty] {
         &[
             Self::Exist,
+            Self::Filepath,
             Self::IncludeDefaults,
             Self::InheritedDefaults,
-            Self::Metadata,
             Self::Purge,
         ]
     }

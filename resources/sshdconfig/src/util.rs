@@ -10,7 +10,7 @@ use tracing_subscriber::{EnvFilter, Layer, prelude::__tracing_subscriber_Subscri
 use crate::args::{TraceFormat, TraceLevel};
 use crate::canonical_properties::{CanonicalProperty, CanonicalProperties};
 use crate::error::SshdConfigError;
-use crate::inputs::{CommandInfo, Metadata, SshdCommandArgs};
+use crate::inputs::{CommandInfo, SshdCommandArgs};
 use crate::metadata::{SSHD_CONFIG_DEFAULT_PATH_UNIX, SSHD_CONFIG_DEFAULT_PATH_WINDOWS};
 use crate::parser::parse_text_to_map;
 
@@ -183,14 +183,14 @@ pub fn extract_sshd_defaults() -> Result<Map<String, Value>, SshdConfigError> {
     Ok(sshd_config)
 }
 
-/// Extract _metadata field from the input string, if it can be parsed as JSON.
+/// Extract _filepath field from the input string, if it can be parsed as JSON.
 ///
 /// # Errors
 ///
-/// This function will return an error if it fails to parse the input string and if the _metadata field exists, extract it.
+/// This function will return an error if it fails to parse the input string and if the _filepath field exists, extract it.
 pub fn build_command_info(input: Option<&String>, is_get: bool) -> Result<CommandInfo, SshdConfigError> {
     let mut include_defaults = is_get;
-    let mut metadata: Metadata = Metadata::new();
+    let mut filepath: Option<std::path::PathBuf> = None;
     let mut purge = false;
     let mut sshd_args: Option<SshdCommandArgs> = None;
     let mut sshd_config: Map<String, Value> = Map::new();
@@ -199,14 +199,14 @@ pub fn build_command_info(input: Option<&String>, is_get: bool) -> Result<Comman
         sshd_config = serde_json::from_str(inputs.as_str())?;
         purge = CanonicalProperties::extract_bool(&mut sshd_config, CanonicalProperty::Purge, false)?;
         include_defaults = CanonicalProperties::extract_bool(&mut sshd_config, CanonicalProperty::IncludeDefaults, is_get)?;
-        metadata = if let Some(value) = sshd_config.remove(CanonicalProperty::Metadata.as_str()) {
+        filepath = if let Some(value) = sshd_config.remove(CanonicalProperty::Filepath.as_str()) {
             serde_json::from_value(value)?
         } else {
-            Metadata::new()
+            None
         };
-        sshd_args = metadata.filepath.clone().map(|filepath| {
+        sshd_args = filepath.clone().map(|fp| {
             SshdCommandArgs {
-                filepath: Some(filepath),
+                filepath: Some(fp),
                 additional_args: None,
             }
         });
@@ -216,7 +216,7 @@ pub fn build_command_info(input: Option<&String>, is_get: bool) -> Result<Comman
         }
     }
 
-    Ok(CommandInfo::new(include_defaults, sshd_config, metadata, purge, sshd_args))
+    Ok(CommandInfo::new(include_defaults, sshd_config, filepath, purge, sshd_args))
 }
 
 /// Reads `sshd_config` file.

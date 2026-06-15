@@ -89,7 +89,7 @@ fn set_sshd_config_repeat(input: &str, cmd_info: &CommandInfo) -> Result<Map<Str
         remove_entry(&mut existing_config, &keyword, &entry.name);
     }
 
-    write_and_validate_config(&mut existing_config, cmd_info.metadata.filepath.as_ref())?;
+    write_and_validate_config(&mut existing_config, cmd_info.filepath.as_ref())?;
     Ok(Map::new())
 }
 
@@ -120,7 +120,7 @@ fn set_sshd_config_repeat_list(input: &str, cmd_info: &CommandInfo) -> Result<Ma
             add_or_update_entry(&mut existing_config, &keyword, &entry)?;
         }
     }
-    write_and_validate_config(&mut existing_config, cmd_info.metadata.filepath.as_ref())?;
+    write_and_validate_config(&mut existing_config, cmd_info.filepath.as_ref())?;
     Ok(Map::new())
 }
 
@@ -209,7 +209,7 @@ fn set_sshd_config(cmd_info: &mut CommandInfo) -> Result<(), SshdConfigError> {
         existing_config
     };
 
-    write_and_validate_config(&mut config_to_write, cmd_info.metadata.filepath.as_ref())
+    write_and_validate_config(&mut config_to_write, cmd_info.filepath.as_ref())
 }
 
 /// Write configuration to file after validation.

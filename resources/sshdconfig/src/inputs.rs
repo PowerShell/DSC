@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::path::PathBuf;
@@ -13,8 +12,8 @@ pub struct CommandInfo {
     pub include_defaults: bool,
     /// input provided with the command
     pub input: Map<String, Value>,
-    /// metadata provided with the command
-    pub metadata: Metadata,
+    /// Filepath for the `sshd_config` file to be processed
+    pub filepath: Option<PathBuf>,
     #[serde(rename = "_purge")]
     pub purge: bool,
     /// additional arguments for the call to sshd -T
@@ -26,7 +25,7 @@ impl CommandInfo {
     pub fn new(
         include_defaults: bool,
         input: Map<String, Value>,
-        metadata: Metadata,
+        filepath: Option<PathBuf>,
         purge: bool,
         sshd_args: Option<SshdCommandArgs>
     ) -> Self {
@@ -38,25 +37,9 @@ impl CommandInfo {
         Self {
             include_defaults,
             input,
-            metadata,
+            filepath,
             purge,
             sshd_args
-        }
-    }
-}
-
-#[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
-pub struct Metadata {
-    /// Filepath for the `sshd_config` file to be processed
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub filepath: Option<PathBuf>
-}
-
-impl Metadata {
-    /// Create a new `Metadata` instance.
-    pub fn new() -> Self {
-        Self {
-            filepath: None
         }
     }
 }

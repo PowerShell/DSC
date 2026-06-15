@@ -118,7 +118,7 @@ pub fn get_sshd_settings(cmd_info: &CommandInfo, is_get: bool) -> Result<Map<Str
     let mut inherited_defaults: Vec<String> = Vec::new();
 
     // parse settings from sshd_config file
-    let sshd_config_file = read_sshd_config(cmd_info.metadata.filepath.clone())?;
+    let sshd_config_file = read_sshd_config(cmd_info.filepath.clone())?;
     let explicit_settings = parse_text_to_map(&sshd_config_file)?;
 
     // handle special cases for keywords
@@ -163,8 +163,8 @@ pub fn get_sshd_settings(cmd_info: &CommandInfo, is_get: bool) -> Result<Map<Str
         }
     }
 
-    if cmd_info.metadata.filepath.is_some() {
-        result.insert(CanonicalProperty::Metadata.to_string(), serde_json::to_value(cmd_info.metadata.clone())?);
+    if cmd_info.filepath.is_some() {
+        result.insert(CanonicalProperty::Filepath.to_string(), serde_json::to_value(cmd_info.filepath.clone())?);
     }
     if cmd_info.include_defaults && is_get {
         result.insert(CanonicalProperty::InheritedDefaults.to_string(), serde_json::to_value(inherited_defaults)?);
