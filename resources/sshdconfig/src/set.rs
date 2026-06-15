@@ -189,7 +189,7 @@ fn set_sshd_config(cmd_info: &mut CommandInfo) -> Result<(), SshdConfigError> {
         let mut get_cmd_info = cmd_info.clone();
         get_cmd_info.include_defaults = false;
         get_cmd_info.input = Map::new();
-        ensure_sshd_config_exists(get_cmd_info.metadata.filepath.clone())?;
+        ensure_sshd_config_exists(get_cmd_info.filepath.clone())?;
 
         let mut existing_config = get_sshd_settings(&get_cmd_info, true)?;
         for (key, value) in &cmd_info.input {
@@ -274,6 +274,6 @@ fn get_existing_config(cmd_info: &CommandInfo) -> Result<Map<String, Value>, Ssh
     let mut get_cmd_info = cmd_info.clone();
     get_cmd_info.include_defaults = false;
     get_cmd_info.input = Map::new();
-    ensure_sshd_config_exists(get_cmd_info.metadata.filepath.clone())?;
+    ensure_sshd_config_exists(get_cmd_info.filepath.clone())?;
     get_sshd_settings(&get_cmd_info, false)
 }
