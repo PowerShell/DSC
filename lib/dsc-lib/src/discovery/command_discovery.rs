@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{discovery::{DiscoveryExtensionCache, DiscoveryManifestCache, DiscoveryResourceCache, discovery_trait::{DiscoveryFilter, DiscoveryKind, ResourceDiscovery}, matches_adapter_requirement}, dscresources::adapted_resource_manifest::AdaptedDscResourceManifest, parser::Statement, types::{FullyQualifiedTypeName, TypeNameFilter}};
+use crate::{discovery::{DiscoveryExtensionCache, DiscoveryManifestCache, DiscoveryResourceCache, discovery_trait::{DiscoveryFilter, DiscoveryKind, ResourceDiscovery}, matches_adapter_requirement}, dscresources::{adapted_resource_manifest::AdaptedDscResourceManifest, resource_manifest::SetDeleteArgKind}, parser::Statement, types::{FullyQualifiedTypeName, TypeNameFilter}};
 use crate::{locked_clear, locked_is_empty, locked_extend, locked_clone, locked_get};
 use crate::configure::{config_doc::ResourceDiscoveryMode, context::Context};
 use crate::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
@@ -504,11 +504,46 @@ impl ResourceDiscovery for CommandDiscovery {
             return Ok(found_resources);
         }
 
+        // Determine which still-unsatisfied filters actually require adapter discovery.
+        //
+        // If a filter's resource type is already known to native discovery (present in
+        // RESOURCES or ADAPTERS) and the user did not pin an adapter via `requireAdapter`,
+        // then any unsatisfied state is necessarily a version-requirement mismatch
+        let adapter_filter_candidates: Vec<&DiscoveryFilter> = required_resource_types
+            .iter()
+            .filter(|filter| {
+                if required_resources.get(*filter).copied().unwrap_or(false) {
+                    return false;
+                }
+                if filter.require_adapter().is_some() {
+                    return true;
+                }
+                let type_known_natively = locked_get!(RESOURCES, filter.resource_type()).is_some()
+                    || locked_get!(ADAPTERS, filter.resource_type()).is_some();
+                if type_known_natively {
+                    let required_version = filter.require_version()
+                        .map_or_else(|| "*".to_string(), std::string::ToString::to_string);
+                    debug!(
+                        "{}",
+                        t!("discovery.commandDiscovery.skipAdapterSearchForNativeType",
+                            resource = filter.resource_type(),
+                            required_version = required_version)
+                    );
+                    return false;
+                }
+                true
+            })
+            .collect();
+
+        if adapter_filter_candidates.is_empty() {
+            return Ok(found_resources);
+        }
+
         // store the keys of the ADAPTERS into a vec
         let mut adapters: Vec<FullyQualifiedTypeName> = locked_clone!(ADAPTERS).keys().cloned().collect();
         // sort the adapters by ones specified in the required resources first
 
-        for filter in required_resource_types {
+        for filter in &adapter_filter_candidates {
             if let Some(required_adapter) = filter.require_adapter() {
                 if !adapters.contains(required_adapter) {
                     return Err(DscError::AdapterNotFound(required_adapter.to_string()));
@@ -522,15 +557,15 @@ impl ResourceDiscovery for CommandDiscovery {
         for adapter_name in &adapters {
             self.discover_adapted_resources(&TypeNameFilter::default(), &adapter_name.clone().into())?;
             add_resources_to_lookup_table(&locked_clone!(ADAPTED_RESOURCES));
-            for filter in required_resource_types {
+            for filter in &adapter_filter_candidates {
                 if let Some(adapted_resources) = locked_get!(ADAPTED_RESOURCES, filter.resource_type()) {
                     filter_resources(&mut found_resources, &mut required_resources, &adapted_resources, filter);
                 }
-                if required_resources.values().all(|&v| v) {
+                if adapter_filter_candidates.iter().all(|f| required_resources.get(*f).copied().unwrap_or(false)) {
                     break;
                 }
             }
-            if required_resources.values().all(|&v| v) {
+            if adapter_filter_candidates.iter().all(|f| required_resources.get(*f).copied().unwrap_or(false)) {
                 break;
             }
         }
@@ -788,39 +823,51 @@ fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<Ds
         Kind::Resource
     };
 
-    let mut capabilities: Vec<Capability> = vec![];
+    let mut capabilities: HashSet<Capability> = HashSet::new();
     if let Some(get) = &manifest.get {
         verify_executable(&manifest.resource_type, "get", &get.executable, path.parent().unwrap());
-        capabilities.push(Capability::Get);
+        capabilities.insert(Capability::Get);
     }
     if let Some(set) = &manifest.set {
         verify_executable(&manifest.resource_type, "set", &set.executable, path.parent().unwrap());
-        capabilities.push(Capability::Set);
+        capabilities.insert(Capability::Set);
         if set.handles_exist == Some(true) {
-            capabilities.push(Capability::SetHandlesExist);
+            capabilities.insert(Capability::SetHandlesExist);
+        }
+        if let Some(args) = &set.args && args_contains_what_if(args) {
+            capabilities.insert(Capability::SetWhatIf);
         }
     }
     if let Some(test) = &manifest.test {
         verify_executable(&manifest.resource_type, "test", &test.executable, path.parent().unwrap());
-        capabilities.push(Capability::Test);
+        capabilities.insert(Capability::Test);
     }
     if let Some(delete) = &manifest.delete {
         verify_executable(&manifest.resource_type, "delete", &delete.executable, path.parent().unwrap());
-        capabilities.push(Capability::Delete);
+        capabilities.insert(Capability::Delete);
+        if let Some(args) = &delete.args && args_contains_what_if(args) {
+            capabilities.insert(Capability::DeleteWhatIf);
+        }
     }
     if let Some(export) = &manifest.export {
         verify_executable(&manifest.resource_type, "export", &export.executable, path.parent().unwrap());
-        capabilities.push(Capability::Export);
+        capabilities.insert(Capability::Export);
     }
     if let Some(resolve) = &manifest.resolve {
         verify_executable(&manifest.resource_type, "resolve", &resolve.executable, path.parent().unwrap());
-        capabilities.push(Capability::Resolve);
+        capabilities.insert(Capability::Resolve);
     }
     if let Some(SchemaKind::Command(command)) = &manifest.schema {
         verify_executable(&manifest.resource_type, "schema", &command.executable, path.parent().unwrap());
     }
+    if let Some(what_if) = &manifest.what_if {
+        verify_executable(&manifest.resource_type, "what-if", &what_if.executable, path.parent().unwrap());
+        capabilities.insert(Capability::SetWhatIf);
+    }
 
     let mut resource = DscResource::new();
+    let mut capabilities: Vec<Capability> = capabilities.into_iter().collect();
+    capabilities.sort();
     resource.type_name = manifest.resource_type.clone();
     resource.kind = kind;
     resource.implemented_as = Some(ImplementedAs::Command);
@@ -833,6 +880,10 @@ fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<Ds
     resource.manifest = Some(manifest.clone());
 
     Ok(resource)
+}
+
+fn args_contains_what_if(args: &[SetDeleteArgKind]) -> bool {
+    args.iter().any(|arg| matches!(arg, SetDeleteArgKind::WhatIf{ what_if_arg: _ }))
 }
 
 fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<DscExtension, DscError> {

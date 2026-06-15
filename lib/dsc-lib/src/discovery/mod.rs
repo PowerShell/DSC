@@ -68,7 +68,7 @@ impl Discovery {
             Box::new(command_discovery::CommandDiscovery::new(progress_format)),
         ];
 
-        let mut resources: Vec<ImportedManifest> = Vec::new();
+        let mut resources: BTreeMap<String, ImportedManifest> = BTreeMap::new();
 
         for mut discovery_type in discovery_types {
 
@@ -81,8 +81,16 @@ impl Discovery {
             };
 
             for (_resource_name, found_resources) in discovered_resources {
-                for resource in found_resources {
-                    resources.push(resource.clone());
+                for manifest in found_resources {
+                    let key = match &manifest {
+                        ImportedManifest::Resource(resource) => {
+                            format!("{}@{}", resource.type_name.to_lowercase(), resource.version)
+                        },
+                        ImportedManifest::Extension(extension) => {
+                            format!("{}@{}", extension.type_name.to_lowercase(), extension.version)
+                        }
+                    };
+                    resources.insert(key, manifest);
                 }
             };
 
@@ -91,7 +99,7 @@ impl Discovery {
             }
         }
 
-        resources
+        resources.into_values().collect::<Vec<ImportedManifest>>()
     }
 
     pub fn get_extensions(&mut self, capability: &Capability) -> Vec<DscExtension> {

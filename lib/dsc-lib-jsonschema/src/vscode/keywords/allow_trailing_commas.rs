@@ -48,9 +48,9 @@ impl JsonSchema for AllowTrailingCommasKeyword {
         json_schema!({
             "$schema": Self::META_SCHEMA,
             "$id": Self::KEYWORD_ID,
-            "title": t!("vscode.keywords.allowTrailingCommas.title"),
-            "description": t!("vscode.keywords.allowTrailingCommas.description"),
-            "markdownDescription": t!("vscode.keywords.allowTrailingCommas.markdownDescription"),
+            "title": t!("vscode.keywords.allow_trailing_commas.title"),
+            "description": t!("vscode.keywords.allow_trailing_commas.description"),
+            "markdownDescription": t!("vscode.keywords.allow_trailing_commas.markdownDescription"),
             "type": "boolean",
             "default": false
         })

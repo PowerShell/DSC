@@ -3,11 +3,10 @@
 
 use std::{borrow::Borrow, collections::HashSet, ops::{Deref, DerefMut}};
 
-use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::{schemas::dsc_repo::DscRepoSchema, types::Tag};
+use crate::{schemas::dsc_repo::{DscRepoSchema, schema_i18n}, types::Tag};
 
 /// Wraps a [`HashSet`] of [`Tag`] instances to enable defining a reusable canonical JSON Schema for
 /// manifests, resources, and extensions.
@@ -16,18 +15,15 @@ use crate::{schemas::dsc_repo::DscRepoSchema, types::Tag};
 /// the underlying type. It implements the [`AsRef`], [`Borrow`], [`Deref`], and [`DerefMut`]
 /// traits to enable ergonomically using instances of [`TagList`] as the underlying hash set.
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema, DscRepoSchema)]
-#[serde(into = "Vec<Tag>")]
+#[dsc_repo_schema(base_name = "tags", folder_path = "definitions")]
 #[schemars(
-    title = t!("schemas.definitions.tags.title"),
-    description = t!("schemas.definitions.tags.description"),
+    title = schema_i18n!("title"),
+    description = schema_i18n!("description"),
     extend(
-        "markdownDescription" = t!("schemas.definitions.tags.markdownDescription"),
+        "markdownDescription" = schema_i18n!("markdownDescription"),
     )
 )]
-#[dsc_repo_schema(
-    base_name = "tags",
-    folder_path = "definitions",
-)]
+#[serde(into = "Vec<Tag>")]
 pub struct TagList(HashSet<Tag>);
 
 impl TagList {

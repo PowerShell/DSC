@@ -81,9 +81,9 @@ impl JsonSchema for EnumSortTextsKeyword {
         json_schema!({
             "$schema": Self::META_SCHEMA,
             "$id": Self::KEYWORD_ID,
-            "title": t!("vscode.keywords.enumSortTexts.title"),
-            "description": t!("vscode.keywords.enumSortTexts.description"),
-            "markdownDescription": t!("vscode.keywords.enumSortTexts.markdownDescription"),
+            "title": t!("vscode.keywords.enum_sort_texts.title"),
+            "description": t!("vscode.keywords.enum_sort_texts.description"),
+            "markdownDescription": t!("vscode.keywords.enum_sort_texts.markdownDescription"),
             "type": "array",
             "items": {
                 "type": "string"

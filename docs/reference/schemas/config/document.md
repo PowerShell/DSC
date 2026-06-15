@@ -71,7 +71,7 @@ semantic version, the latest schema for a minor version, or the latest schema fo
 of DSC. For more information about schema URIs and versioning, see
 [DSC JSON Schema URIs](../schema-uris.md).
 
-For every version of the schema, there are three valid urls:
+For every version of the schema, there are three valid URLs:
 
 - `.../config/document.json`
 
@@ -93,7 +93,7 @@ For every version of the schema, there are three valid urls:
   it includes additional definitions that provide contextual help and snippets that the others
   don't include.
 
-  This schema uses keywords that are only recognized by VS Code. While DSC can still validate the
+  This schema uses keywords that are only recognized by Visual Studio Code. While DSC can still validate the
   document when it uses this schema, other tools may error or behave in unexpected ways.
 
 ```yaml
@@ -164,7 +164,7 @@ defined as key-value pair. The key for each pair defines the name of the paramet
 each pair must be an object that defines the `type` keyword to indicate how DSC should process the
 parameter.
 
-Parameters may be overridden at run-time, enabling re-use of the same configuration document for
+Parameters may be overridden at runtime, enabling re-use of the same configuration document for
 different contexts.
 
 For more information about defining parameters in a configuration, see
@@ -187,7 +187,7 @@ the variable by name can access the variable's value.
 
 This can help reduce the amount of copied values and options for resources in the configuration,
 which makes the document easier to read and maintain. Unlike parameters, variables can only be
-defined in the configuration and can't be overridden at run-time.
+defined in the configuration and can't be overridden at runtime.
 
 <!-- For more information about using variables in a configuration, see
 [DSC Configuration variables][04]. -->

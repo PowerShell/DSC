@@ -10,8 +10,6 @@ pub struct Export {
     /// Number of instances to return
     pub count: u64,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub _kind: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub _name: Option<String>,
     #[serde(rename = "_securityContext", skip_serializing_if = "Option::is_none")]
     pub _security_context: Option<String>,

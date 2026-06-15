@@ -41,7 +41,7 @@ Describe 'Registry config get tests' {
         $out = registry config get --input $json 2>&1
         $LASTEXITCODE | Should -Be 0
         $result = $out | ConvertFrom-Json
-        $result[0].level | Should -BeExactly 'DEBUG'
+        $result[0].level | Should -BeExactly 'TRACE'
         $result[0].fields.message | Should -BeLike 'Get Input:*'
     }
 }

@@ -13,7 +13,7 @@ use schemars::{json_schema, JsonSchema};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::{schemas::dsc_repo::DscRepoSchema, types::SemanticVersion};
+use crate::{schemas::dsc_repo::{DscRepoSchema, schema_i18n}, types::SemanticVersion};
 
 /// Defines one or more limitations for a semantic version to enable version pinning.
 ///
@@ -401,7 +401,7 @@ use crate::{schemas::dsc_repo::DscRepoSchema, types::SemanticVersion};
 /// [01]: https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#version-requirement-syntax
 /// [`ComparatorIncludesForbiddenBuildMetadata`]: SemanticVersionReqError::ComparatorIncludesForbiddenBuildMetadata
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Default, Serialize, Deserialize, DscRepoSchema)]
-#[dsc_repo_schema(base_name = "semverRequirement", folder_path = "definitions")]
+#[dsc_repo_schema(base_name = "semverReq", folder_path = "definitions")]
 pub struct SemanticVersionReq(semver::VersionReq);
 
 /// Defines the parsing errors and diagnostics for invalid string representations of a
@@ -967,12 +967,12 @@ impl JsonSchema for SemanticVersionReq {
     }
     fn json_schema(_: &mut schemars::SchemaGenerator) -> schemars::Schema {
         json_schema!({
-            "title": t!("schemas.definitions.semverReq.title"),
-            "description": t!("schemas.definitions.semverReq.description"),
-            "markdownDescription": t!("schemas.definitions.semverReq.markdownDescription"),
+            "title": schema_i18n!("title"),
+            "description": schema_i18n!("description"),
+            "markdownDescription": schema_i18n!("markdownDescription"),
             "type": "string",
             "pattern": SemanticVersionReq::VALIDATING_PATTERN,
-            "patternErrorMessage": t!("schemas.definitions.semverReq.patternErrorMessage"),
+            "patternErrorMessage": schema_i18n!("patternErrorMessage"),
             "examples": [
                 "=1.2.3",
                 ">=1.2.3, <2.0.0",
@@ -1055,13 +1055,6 @@ impl Deref for SemanticVersionReq {
         &self.0
     }
 }
-
-// Comparison traits
-// impl PartialEq for SemanticVersionReq {
-//     fn eq(&self, other: &Self) -> bool {
-//         self.0 == other.0
-//     }
-// }
 
 impl PartialEq<semver::VersionReq> for SemanticVersionReq {
     fn eq(&self, other: &semver::VersionReq) -> bool {

@@ -9,6 +9,8 @@ use thiserror::Error;
 pub enum SshdConfigError {
     #[error("{t}: {0}", t = t!("error.command"))]
     CommandError(String),
+    #[error("{t}: {0}", t = t!("error.configInitRequired"))]
+    ConfigInitRequired(String),
     #[error("{t}: {0}", t = t!("error.envVar"))]
     EnvVarError(#[from] std::env::VarError),
     #[error("{t}", t = t!("error.fileNotFound", path = .0))]

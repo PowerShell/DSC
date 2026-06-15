@@ -13,5 +13,6 @@
 //! minimize compilation times. If we defined the tests one level higher in the `tests` folder,
 //! Rust would generate numerous binaries to execute our tests.
 
+#[cfg(test)] mod command_resource;
 #[cfg(test)] mod schemas;
 #[cfg(test)] mod types;

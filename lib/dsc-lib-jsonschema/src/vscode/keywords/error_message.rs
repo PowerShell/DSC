@@ -71,9 +71,9 @@ impl JsonSchema for ErrorMessageKeyword {
         json_schema!({
             "$schema": Self::META_SCHEMA,
             "$id": Self::KEYWORD_ID,
-            "title": t!("vscode.keywords.errorMessage.title"),
-            "description": t!("vscode.keywords.errorMessage.description"),
-            "markdownDescription": t!("vscode.keywords.errorMessage.markdownDescription"),
+            "title": t!("vscode.keywords.error_message.title"),
+            "description": t!("vscode.keywords.error_message.description"),
+            "markdownDescription": t!("vscode.keywords.error_message.markdownDescription"),
             "type": "string",
         })
     }

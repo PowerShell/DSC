@@ -35,7 +35,7 @@ resource = "The name of the resource to invoke"
 functionAbout = "Operations on DSC functions"
 listFunctionAbout = "List or find functions"
 version = "The version of the resource to invoke in semver format"
-mcpAbout = "Use DSC as a MCP server"
+serverAbout = "Use DSC as a server over JSON-RPC (useful as MCP server)"
 bicepAbout = "Use DSC as a Bicep server over gRPC"
 
 [main]
@@ -56,7 +56,7 @@ storeMessage = """DSC.exe is a command-line tool and cannot be run directly from
 Visit https://aka.ms/dscv3-docs for more information on how to use DSC.exe.
 
 Press any key to close this window"""
-failedToStartMcpServer = "Failed to start MCP server: %{error}"
+failedToStartServer = "Failed to start server: %{error}"
 
 [mcp.mod]
 failedToInitialize = "Failed to initialize MCP server: %{error}"

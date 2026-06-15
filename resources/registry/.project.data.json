@@ -9,7 +9,7 @@
     ],
     "CopyFiles": {
         "Windows": [
-            "registry.dsc.resource.json"
+            "registry.dsc.manifests.json"
         ]
     }
 }

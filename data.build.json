@@ -22,6 +22,7 @@
       "powershell.dsc.extension.json",
       "powershell.discover.ps1",
       "powershell.dsc.resource.json",
+      "PowerShell_adapter.dsc.resource.json",
       "psDscAdapter/",
       "psscript.ps1",
       "psscript.dsc.resource.json",
@@ -29,6 +30,8 @@
       "runcommandonset",
       "sshdconfig",
       "sshd_config.dsc.resource.json",
+      "sshd-subsystem.dsc.resource.json",
+      "sshd-subsystemList.dsc.resource.json",
       "y2j"
     ],
     "macOS": [
@@ -49,6 +52,7 @@
       "powershell.dsc.extension.json",
       "powershell.discover.ps1",
       "powershell.dsc.resource.json",
+      "PowerShell_adapter.dsc.resource.json",
       "psDscAdapter/",
       "psscript.ps1",
       "psscript.dsc.resource.json",
@@ -56,6 +60,8 @@
       "runcommandonset",
       "sshdconfig",
       "sshd_config.dsc.resource.json",
+      "sshd-subsystem.dsc.resource.json",
+      "sshd-subsystemList.dsc.resource.json",
       "y2j"
     ],
     "Windows": [
@@ -79,26 +85,31 @@
       "powershell.dsc.extension.json",
       "powershell.discover.ps1",
       "powershell.dsc.resource.json",
+      "PowerShell_adapter.dsc.resource.json",
       "psDscAdapter/",
       "psscript.ps1",
       "psscript.dsc.resource.json",
       "winpsscript.dsc.resource.json",
       "reboot_pending.dsc.resource.json",
       "reboot_pending.resource.ps1",
-      "registry.dsc.resource.json",
+      "registry.dsc.manifests.json",
       "registry.exe",
       "RunCommandOnSet.dsc.resource.json",
       "RunCommandOnSet.exe",
       "sshdconfig.exe",
       "sshd-windows.dsc.resource.json",
       "sshd_config.dsc.resource.json",
+      "sshd-subsystem.dsc.resource.json",
+      "sshd-subsystemList.dsc.resource.json",
       "windowspowershell.dsc.resource.json",
+      "WindowsPowerShell_adapter.dsc.resource.json",
       "windowsupdate.dsc.resource.json",
       "wu_dsc.exe",
       "windows_firewall.dsc.resource.json",
       "windows_firewall.exe",
       "windows_service.exe",
       "windows_service.dsc.resource.json",
+      "windows_feature.dsc.resource.json",
       "wmi.dsc.resource.json",
       "wmi.resource.ps1",
       "wmiAdapter.psd1",
@@ -170,7 +181,7 @@
         "SupportedPlatformOS": "Windows",
         "Binaries": ["dism_dsc"],
         "CopyFiles": {
-            "Windows": ["optionalfeature.dsc.resource.json", "featureondemand.dsc.resource.json"]
+            "Windows": ["optionalfeature.dsc.resource.json", "featureondemand.dsc.resource.json", "windows_feature.dsc.resource.json"]
         }
     },
     {
@@ -389,7 +400,7 @@
       ],
       "CopyFiles": {
         "Windows": [
-          "registry.dsc.resource.json"
+          "registry.dsc.manifests.json"
         ]
       }
     },

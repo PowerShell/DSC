@@ -4,11 +4,10 @@
 use std::{fmt::{Display, Formatter}, hash::Hash, ops::Deref, str::FromStr, sync::OnceLock};
 
 use regex::Regex;
-use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::dscerror::DscError;
+use crate::{dscerror::DscError, schemas::dsc_repo::{DscRepoSchema, schema_i18n}};
 
 /// Defines a short term that applies to a DSC resource or extension and can be used for filtering.
 ///
@@ -34,16 +33,18 @@ use crate::dscerror::DscError;
     Debug,
     Serialize,
     Deserialize,
-    JsonSchema
+    JsonSchema,
+    DscRepoSchema
 )]
+#[dsc_repo_schema(base_name = "tag", folder_path = "definitions")]
 #[serde(try_from = "String")]
 #[schemars(
-    title = t!("schemas.definitions.tag.title"),
-    description = t!("schemas.definitions.tag.description"),
+    title = schema_i18n!("title"),
+    description = schema_i18n!("description"),
     extend(
         "pattern" = Tag::VALIDATING_PATTERN,
-        "patternErrorMessage" = t!("schemas.definitions.tag.patternErrorMessage"),
-        "markdownDescription" = t!("schemas.definitions.tag.markdownDescription"),
+        "patternErrorMessage" = schema_i18n!("patternErrorMessage"),
+        "markdownDescription" = schema_i18n!("markdownDescription"),
     ),
     inline
 )]

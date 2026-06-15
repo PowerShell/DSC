@@ -63,7 +63,7 @@ pub struct DscResource {
     pub manifest: Option<ResourceManifest>,
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema, Ord, PartialOrd)]
 #[serde(rename_all = "camelCase")]
 #[schemars(transform = idiomaticize_string_enum)]
 #[dsc_repo_schema(base_name = "resourceCapabilities", folder_path = "definitions")]
@@ -74,12 +74,14 @@ pub enum Capability {
     Set,
     /// The resource supports the `_exist` property directly.
     SetHandlesExist,
-    /// The resource supports simulating configuration directly.
-    WhatIf,
+    /// The resource supports simulating configuration directly for `set`
+    SetWhatIf,
     /// The resource supports validating configuration.
     Test,
     /// The resource supports deleting configuration.
     Delete,
+    /// The resource supports simulating configuration directly for `delete`
+    DeleteWhatIf,
     /// The resource supports exporting configuration.
     Export,
     /// The resource supports resolving imported configuration.

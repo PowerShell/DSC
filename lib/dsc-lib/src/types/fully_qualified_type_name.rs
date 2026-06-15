@@ -17,7 +17,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::schemas::dsc_repo::DscRepoSchema;
+use crate::schemas::dsc_repo::{DscRepoSchema, schema_i18n};
 
 /// Defines the fully qualified type name for a DSC resource or extension. The fully qualified name
 /// uniquely identifies each resource and extension.
@@ -124,17 +124,17 @@ use crate::schemas::dsc_repo::DscRepoSchema;
     JsonSchema,
     DscRepoSchema,
 )]
-#[serde(try_from = "String", into = "String")]
+#[dsc_repo_schema(base_name = "resourceType", folder_path = "definitions")]
 #[schemars(
-    title = t!("schemas.definitions.resourceType.title"),
-    description = t!("schemas.definitions.resourceType.description"),
+    title = schema_i18n!("title"),
+    description = schema_i18n!("description"),
     extend(
         "pattern" = FullyQualifiedTypeName::VALIDATING_PATTERN,
-        "patternErrorMessage" = t!("schemas.definitions.resourceType.patternErrorMessage"),
-        "markdownDescription" = t!("schemas.definitions.resourceType.markdownDescription"),
+        "patternErrorMessage" = schema_i18n!("patternErrorMessage"),
+        "markdownDescription" = schema_i18n!("markdownDescription"),
     )
 )]
-#[dsc_repo_schema(base_name = "resourceType", folder_path = "definitions")]
+#[serde(try_from = "String", into = "String")]
 pub struct FullyQualifiedTypeName(String);
 
 /// Defines the various errors that can occur when parsing and working with instances of

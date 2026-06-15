@@ -130,10 +130,6 @@ BeforeDiscovery {
             if (Test-Path -Path $tomlFile) {
                 $this.LoadFile((Get-Item -Path $tomlFile))
             }
-            $yamlFiles = Get-ChildItem -Path $localesFolder | Where-Object Extension -match 'ya?ml'
-            foreach ($yamlFile in $yamlFiles) {
-                $this.LoadFile($yamlFile)
-            }
 
             $this.CheckTranslations($projectFolder)
         }

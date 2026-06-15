@@ -47,9 +47,6 @@ macro_rules! test_schema_for {
             test_schema_for!(dsc_lib::configure::config_doc::DataType);
             test_schema_for!(dsc_lib::configure::config_doc::CopyMode);
             test_schema_for!(dsc_lib::configure::config_doc::Copy);
-            test_schema_for!(dsc_lib::configure::config_doc::Plan);
-            test_schema_for!(dsc_lib::configure::config_doc::Identity);
-            test_schema_for!(dsc_lib::configure::config_doc::Sku);
             test_schema_for!(dsc_lib::configure::config_doc::Resource);
         }
         #[allow(unused_must_use)]

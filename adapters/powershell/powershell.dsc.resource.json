@@ -8,6 +8,7 @@
     "tags": [
       "PowerShell"
     ],
+    "condition": "[not(equals(tryWhich('pwsh'), null()))]",
     "adapter": {
       "list": {
         "executable": "pwsh",

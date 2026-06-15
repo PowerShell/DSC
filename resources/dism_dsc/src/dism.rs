@@ -7,6 +7,10 @@ use std::os::windows::ffi::OsStrExt;
 use rust_i18n::t;
 
 use crate::optional_feature::types::{FeatureState, OptionalFeatureInfo, RestartType};
+use crate::windows_feature::types::{
+    FeatureState as WindowsFeatureState, RestartType as WindowsFeatureRestartType,
+    WindowsFeatureInfo,
+};
 
 const DISM_ONLINE_IMAGE: &str = "DISM_{53BFAE52-B167-4E2F-A258-0A37B57FF845}";
 const DISM_LOG_ERRORS: i32 = 0;
@@ -14,15 +18,12 @@ const DISM_PACKAGE_NONE: i32 = 0;
 const ERROR_SUCCESS_REBOOT_REQUIRED: i32 = 3010;
 const DISMAPI_E_UNKNOWN_FEATURE: i32 = 0x800F080Cu32 as i32;
 const DISMAPI_E_CAPABILITY_NOT_APPLICABLE: i32 = 0x800F0825u32 as i32;
+const REGDB_E_CLASSNOTREG: i32 = 0x80040154u32 as i32;
 const LOAD_LIBRARY_SEARCH_SYSTEM32: u32 = 0x0000_0800;
 
 #[link(name = "kernel32")]
 unsafe extern "system" {
-    fn LoadLibraryExW(
-        lpLibFileName: *const u16,
-        hFile: *mut c_void,
-        dwFlags: u32,
-    ) -> *mut c_void;
+    fn LoadLibraryExW(lpLibFileName: *const u16, hFile: *mut c_void, dwFlags: u32) -> *mut c_void;
 }
 
 #[repr(C, packed)]
@@ -70,8 +71,7 @@ pub struct DismCapabilityResult {
 }
 
 // Function pointer types for the DISM API
-type DismInitializeFn =
-    unsafe extern "system" fn(i32, *const u16, *const u16) -> i32;
+type DismInitializeFn = unsafe extern "system" fn(i32, *const u16, *const u16) -> i32;
 type DismOpenSessionFn =
     unsafe extern "system" fn(*const u16, *const u16, *const u16, *mut u32) -> i32;
 type DismGetFeaturesFn =
@@ -79,47 +79,47 @@ type DismGetFeaturesFn =
 type DismGetFeatureInfoFn =
     unsafe extern "system" fn(u32, *const u16, *const u16, i32, *mut *mut DismFeatureInfo) -> i32;
 type DismEnableFeatureFn = unsafe extern "system" fn(
-    u32,              // Session
-    *const u16,       // FeatureName
-    *const u16,       // Identifier (NULL)
-    i32,              // PackageIdentifier (DismPackageNone)
-    i32,              // LimitAccess (BOOL)
-    *const *const u16,// SourcePaths (NULL)
-    u32,              // SourcePathCount
-    i32,              // EnableAll (BOOL)
-    *mut c_void,      // CancelEvent (NULL)
-    *mut c_void,      // Progress callback (NULL)
-    *mut c_void,      // UserData (NULL)
+    u32,               // Session
+    *const u16,        // FeatureName
+    *const u16,        // Identifier (NULL)
+    i32,               // PackageIdentifier (DismPackageNone)
+    i32,               // LimitAccess (BOOL)
+    *const *const u16, // SourcePaths (NULL)
+    u32,               // SourcePathCount
+    i32,               // EnableAll (BOOL)
+    *mut c_void,       // CancelEvent (NULL)
+    *mut c_void,       // Progress callback (NULL)
+    *mut c_void,       // UserData (NULL)
 ) -> i32;
 type DismDisableFeatureFn = unsafe extern "system" fn(
-    u32,              // Session
-    *const u16,       // FeatureName
-    *const u16,       // PackageName (NULL)
-    i32,              // RemovePayload (BOOL)
-    *mut c_void,      // CancelEvent (NULL)
-    *mut c_void,      // Progress callback (NULL)
-    *mut c_void,      // UserData (NULL)
+    u32,         // Session
+    *const u16,  // FeatureName
+    *const u16,  // PackageName (NULL)
+    i32,         // RemovePayload (BOOL)
+    *mut c_void, // CancelEvent (NULL)
+    *mut c_void, // Progress callback (NULL)
+    *mut c_void, // UserData (NULL)
 ) -> i32;
 type DismGetCapabilitiesFn =
     unsafe extern "system" fn(u32, *mut *mut DismCapability, *mut u32) -> i32;
 type DismGetCapabilityInfoFn =
     unsafe extern "system" fn(u32, *const u16, *mut *mut DismCapabilityDetail) -> i32;
 type DismAddCapabilityFn = unsafe extern "system" fn(
-    u32,              // Session
-    *const u16,       // Name
-    i32,              // LimitAccess (BOOL)
-    *const *const u16,// SourcePaths (NULL)
-    u32,              // SourcePathCount
-    *mut c_void,      // CancelEvent (NULL)
-    *mut c_void,      // Progress callback (NULL)
-    *mut c_void,      // UserData (NULL)
+    u32,               // Session
+    *const u16,        // Name
+    i32,               // LimitAccess (BOOL)
+    *const *const u16, // SourcePaths (NULL)
+    u32,               // SourcePathCount
+    *mut c_void,       // CancelEvent (NULL)
+    *mut c_void,       // Progress callback (NULL)
+    *mut c_void,       // UserData (NULL)
 ) -> i32;
 type DismRemoveCapabilityFn = unsafe extern "system" fn(
-    u32,              // Session
-    *const u16,       // Name
-    *mut c_void,      // CancelEvent (NULL)
-    *mut c_void,      // Progress callback (NULL)
-    *mut c_void,      // UserData (NULL)
+    u32,         // Session
+    *const u16,  // Name
+    *mut c_void, // CancelEvent (NULL)
+    *mut c_void, // Progress callback (NULL)
+    *mut c_void, // UserData (NULL)
 ) -> i32;
 type DismCloseSessionFn = unsafe extern "system" fn(u32) -> i32;
 type DismShutdownFn = unsafe extern "system" fn() -> i32;
@@ -236,15 +236,19 @@ impl DismSessionHandle {
         let api = DismApi::load()?;
 
         // Load DismInitialize and DismOpenSession (only needed during open)
-        let dism_initialize: DismInitializeFn =
-            unsafe { load_fn(api.lib, b"DismInitialize\0")? };
+        let dism_initialize: DismInitializeFn = unsafe { load_fn(api.lib, b"DismInitialize\0")? };
         let dism_open_session: DismOpenSessionFn =
             unsafe { load_fn(api.lib, b"DismOpenSession\0")? };
 
         unsafe {
             let hr = dism_initialize(DISM_LOG_ERRORS, std::ptr::null(), std::ptr::null());
+            if hr == REGDB_E_CLASSNOTREG {
+                return Err(t!("dism.notSupportedAppx").to_string());
+            }
             if hr < 0 {
-                return Err(t!("dism.initializeFailed", hr = format!("0x{:08X}", hr as u32)).to_string());
+                return Err(
+                    t!("dism.initializeFailed", hr = format!("0x{:08X}", hr as u32)).to_string(),
+                );
             }
 
             let image_path = to_wide_null(DISM_ONLINE_IMAGE);
@@ -255,9 +259,17 @@ impl DismSessionHandle {
                 std::ptr::null(),
                 &mut session,
             );
+            if hr == REGDB_E_CLASSNOTREG {
+                (api.shutdown)();
+                return Err(t!("dism.notSupportedAppx").to_string());
+            }
             if hr < 0 {
                 (api.shutdown)();
-                return Err(t!("dism.openSessionFailed", hr = format!("0x{:08X}", hr as u32)).to_string());
+                return Err(t!(
+                    "dism.openSessionFailed",
+                    hr = format!("0x{:08X}", hr as u32)
+                )
+                .to_string());
             }
 
             Ok(DismSessionHandle {
@@ -290,7 +302,12 @@ impl DismSessionHandle {
         }
 
         if hr < 0 {
-            return Err(t!("dism.getFeatureInfoFailed", name = feature_name, hr = format!("0x{:08X}", hr as u32)).to_string());
+            return Err(t!(
+                "dism.getFeatureInfoFailed",
+                name = feature_name,
+                hr = format!("0x{:08X}", hr as u32)
+            )
+            .to_string());
         }
 
         let result = unsafe {
@@ -310,46 +327,136 @@ impl DismSessionHandle {
         Ok(result)
     }
 
+    pub fn get_windows_feature_info(
+        &self,
+        feature_name: &str,
+    ) -> Result<WindowsFeatureInfo, String> {
+        let wide_name = to_wide_null(feature_name);
+        let mut info_ptr: *mut DismFeatureInfo = std::ptr::null_mut();
+
+        let hr = unsafe {
+            (self.api.get_feature_info)(
+                self.handle,
+                wide_name.as_ptr(),
+                std::ptr::null(),
+                DISM_PACKAGE_NONE,
+                &mut info_ptr,
+            )
+        };
+
+        if hr == DISMAPI_E_UNKNOWN_FEATURE {
+            return Ok(WindowsFeatureInfo {
+                feature_name: Some(feature_name.to_string()),
+                exist: Some(false),
+                ..WindowsFeatureInfo::default()
+            });
+        }
+
+        if hr < 0 {
+            return Err(t!(
+                "dism.getFeatureInfoFailed",
+                name = feature_name,
+                hr = format!("0x{:08X}", hr as u32)
+            )
+            .to_string());
+        }
+
+        let result = unsafe {
+            let info = &*info_ptr;
+            let feature_info = WindowsFeatureInfo {
+                feature_name: Some(from_wide_ptr(info.feature_name)),
+                exist: None,
+                state: WindowsFeatureState::from_dism(info.state),
+                display_name: Some(from_wide_ptr(info.display_name)),
+                description: Some(from_wide_ptr(info.description)),
+                restart_required: WindowsFeatureRestartType::from_dism(info.restart_required),
+                enable_all: None,
+                source_paths: None,
+                limit_access: None,
+                ..Default::default()
+            };
+            (self.api.delete)(info_ptr as *const c_void);
+            feature_info
+        };
+
+        Ok(result)
+    }
+
     /// Returns `Ok(true)` if DISM reports a reboot is required (HRESULT 3010).
     pub fn enable_feature(&self, feature_name: &str) -> Result<bool, String> {
+        self.enable_feature_with_options(feature_name, &[], false, false)
+    }
+
+    /// Returns `Ok(true)` if DISM reports a reboot is required (HRESULT 3010).
+    pub fn enable_feature_with_options(
+        &self,
+        feature_name: &str,
+        source_paths: &[String],
+        limit_access: bool,
+        enable_all: bool,
+    ) -> Result<bool, String> {
         let wide_name = to_wide_null(feature_name);
+
+        let wide_paths: Vec<Vec<u16>> =
+            source_paths.iter().map(|path| to_wide_null(path)).collect();
+        let wide_ptrs: Vec<*const u16> = wide_paths.iter().map(|path| path.as_ptr()).collect();
+        let (paths_ptr, paths_count) = if wide_ptrs.is_empty() {
+            (std::ptr::null(), 0u32)
+        } else {
+            (wide_ptrs.as_ptr(), wide_ptrs.len() as u32)
+        };
+
         let hr = unsafe {
             (self.api.enable_feature)(
                 self.handle,
                 wide_name.as_ptr(),
-                std::ptr::null(),       // Identifier
-                DISM_PACKAGE_NONE,      // PackageIdentifier
-                0,                      // LimitAccess = FALSE
-                std::ptr::null(),       // SourcePaths
-                0,                      // SourcePathCount
-                0,                      // EnableAll = FALSE
-                std::ptr::null_mut(),   // CancelEvent
-                std::ptr::null_mut(),   // Progress
-                std::ptr::null_mut(),   // UserData
+                std::ptr::null(),  // Identifier
+                DISM_PACKAGE_NONE, // PackageIdentifier
+                i32::from(limit_access),
+                paths_ptr,
+                paths_count,
+                i32::from(enable_all),
+                std::ptr::null_mut(), // CancelEvent
+                std::ptr::null_mut(), // Progress
+                std::ptr::null_mut(), // UserData
             )
         };
         if hr < 0 {
-            return Err(t!("dism.enableFeatureFailed", name = feature_name, hr = format!("0x{:08X}", hr as u32)).to_string());
+            return Err(t!(
+                "dism.enableFeatureFailed",
+                name = feature_name,
+                hr = format!("0x{:08X}", hr as u32)
+            )
+            .to_string());
         }
         Ok(hr == ERROR_SUCCESS_REBOOT_REQUIRED)
     }
 
     /// Returns `Ok(true)` if DISM reports a reboot is required (HRESULT 3010).
-    pub fn disable_feature(&self, feature_name: &str, remove_payload: bool) -> Result<bool, String> {
+    pub fn disable_feature(
+        &self,
+        feature_name: &str,
+        remove_payload: bool,
+    ) -> Result<bool, String> {
         let wide_name = to_wide_null(feature_name);
         let hr = unsafe {
             (self.api.disable_feature)(
                 self.handle,
                 wide_name.as_ptr(),
-                std::ptr::null(),       // PackageName
+                std::ptr::null(),          // PackageName
                 i32::from(remove_payload), // RemovePayload
-                std::ptr::null_mut(),   // CancelEvent
-                std::ptr::null_mut(),   // Progress
-                std::ptr::null_mut(),   // UserData
+                std::ptr::null_mut(),      // CancelEvent
+                std::ptr::null_mut(),      // Progress
+                std::ptr::null_mut(),      // UserData
             )
         };
         if hr < 0 {
-            return Err(t!("dism.disableFeatureFailed", name = feature_name, hr = format!("0x{:08X}", hr as u32)).to_string());
+            return Err(t!(
+                "dism.disableFeatureFailed",
+                name = feature_name,
+                hr = format!("0x{:08X}", hr as u32)
+            )
+            .to_string());
         }
         Ok(hr == ERROR_SUCCESS_REBOOT_REQUIRED)
     }
@@ -369,7 +476,11 @@ impl DismSessionHandle {
         };
 
         if hr < 0 {
-            return Err(t!("dism.getFeaturesFailed", hr = format!("0x{:08X}", hr as u32)).to_string());
+            return Err(t!(
+                "dism.getFeaturesFailed",
+                hr = format!("0x{:08X}", hr as u32)
+            )
+            .to_string());
         }
 
         let mut result = Vec::new();
@@ -386,19 +497,15 @@ impl DismSessionHandle {
     }
 
     pub fn get_capability_info(&self, name: &str) -> Result<DismCapabilityResult, String> {
-        let get_cap_info = self.api.get_capability_info
+        let get_cap_info = self
+            .api
+            .get_capability_info
             .ok_or_else(|| t!("dism.capabilitiesNotSupported").to_string())?;
 
         let wide_name = to_wide_null(name);
         let mut info_ptr: *mut DismCapabilityDetail = std::ptr::null_mut();
 
-        let hr = unsafe {
-            get_cap_info(
-                self.handle,
-                wide_name.as_ptr(),
-                &mut info_ptr,
-            )
-        };
+        let hr = unsafe { get_cap_info(self.handle, wide_name.as_ptr(), &mut info_ptr) };
 
         if hr == DISMAPI_E_UNKNOWN_FEATURE {
             return Ok(DismCapabilityResult {
@@ -413,7 +520,12 @@ impl DismSessionHandle {
         }
 
         if hr < 0 {
-            return Err(t!("dism.getCapabilityInfoFailed", name = name, hr = format!("0x{:08X}", hr as u32)).to_string());
+            return Err(t!(
+                "dism.getCapabilityInfoFailed",
+                name = name,
+                hr = format!("0x{:08X}", hr as u32)
+            )
+            .to_string());
         }
 
         let result = unsafe {
@@ -450,7 +562,9 @@ impl DismSessionHandle {
 
     /// Returns `Ok(true)` if DISM reports a reboot is required (HRESULT 3010).
     pub fn add_capability(&self, name: &str) -> Result<bool, String> {
-        let add_cap = self.api.add_capability
+        let add_cap = self
+            .api
+            .add_capability
             .ok_or_else(|| t!("dism.capabilitiesNotSupported").to_string())?;
 
         let wide_name = to_wide_null(name);
@@ -458,23 +572,30 @@ impl DismSessionHandle {
             add_cap(
                 self.handle,
                 wide_name.as_ptr(),
-                0,                      // LimitAccess = FALSE
-                std::ptr::null(),       // SourcePaths
-                0,                      // SourcePathCount
-                std::ptr::null_mut(),   // CancelEvent
-                std::ptr::null_mut(),   // Progress
-                std::ptr::null_mut(),   // UserData
+                0,                    // LimitAccess = FALSE
+                std::ptr::null(),     // SourcePaths
+                0,                    // SourcePathCount
+                std::ptr::null_mut(), // CancelEvent
+                std::ptr::null_mut(), // Progress
+                std::ptr::null_mut(), // UserData
             )
         };
         if hr < 0 {
-            return Err(t!("dism.addCapabilityFailed", name = name, hr = format!("0x{:08X}", hr as u32)).to_string());
+            return Err(t!(
+                "dism.addCapabilityFailed",
+                name = name,
+                hr = format!("0x{:08X}", hr as u32)
+            )
+            .to_string());
         }
         Ok(hr == ERROR_SUCCESS_REBOOT_REQUIRED)
     }
 
     /// Returns `Ok(true)` if DISM reports a reboot is required (HRESULT 3010).
     pub fn remove_capability(&self, name: &str) -> Result<bool, String> {
-        let remove_cap = self.api.remove_capability
+        let remove_cap = self
+            .api
+            .remove_capability
             .ok_or_else(|| t!("dism.capabilitiesNotSupported").to_string())?;
 
         let wide_name = to_wide_null(name);
@@ -482,37 +603,42 @@ impl DismSessionHandle {
             remove_cap(
                 self.handle,
                 wide_name.as_ptr(),
-                std::ptr::null_mut(),   // CancelEvent
-                std::ptr::null_mut(),   // Progress
-                std::ptr::null_mut(),   // UserData
+                std::ptr::null_mut(), // CancelEvent
+                std::ptr::null_mut(), // Progress
+                std::ptr::null_mut(), // UserData
             )
         };
         if hr == DISMAPI_E_CAPABILITY_NOT_APPLICABLE {
             return Ok(false); // Already not present — nothing to do
         }
         if hr < 0 {
-            return Err(t!("dism.removeCapabilityFailed", name = name, hr = format!("0x{:08X}", hr as u32)).to_string());
+            return Err(t!(
+                "dism.removeCapabilityFailed",
+                name = name,
+                hr = format!("0x{:08X}", hr as u32)
+            )
+            .to_string());
         }
         Ok(hr == ERROR_SUCCESS_REBOOT_REQUIRED)
     }
 
     pub fn get_all_capability_basics(&self) -> Result<Vec<(String, i32)>, String> {
-        let get_caps = self.api.get_capabilities
+        let get_caps = self
+            .api
+            .get_capabilities
             .ok_or_else(|| t!("dism.capabilitiesNotSupported").to_string())?;
 
         let mut caps_ptr: *mut DismCapability = std::ptr::null_mut();
         let mut count: u32 = 0;
 
-        let hr = unsafe {
-            get_caps(
-                self.handle,
-                &mut caps_ptr,
-                &mut count,
-            )
-        };
+        let hr = unsafe { get_caps(self.handle, &mut caps_ptr, &mut count) };
 
         if hr < 0 {
-            return Err(t!("dism.getCapabilitiesFailed", hr = format!("0x{:08X}", hr as u32)).to_string());
+            return Err(t!(
+                "dism.getCapabilitiesFailed",
+                hr = format!("0x{:08X}", hr as u32)
+            )
+            .to_string());
         }
 
         let mut result = Vec::new();

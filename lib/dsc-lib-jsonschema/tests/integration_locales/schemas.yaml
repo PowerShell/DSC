@@ -1,0 +1,69 @@
+_version: 2
+
+schemas:
+  example:
+    valid:
+      enum:
+        title:
+          en-US: Example valid enum
+        description:
+          en-US: >-
+            Defines an enum with the DscRepoSchema trait.
+        markdownDescription:
+          en-US: |-
+            Defines an enum with the `DscRepoSchema` trait.
+        stringVariant:
+          title:
+            en-US: Example string variant
+          description:
+            en-US: >-
+              Defines a string variant for the enum.
+          markdownDescription:
+            en-US: |-
+              Defines a `string` variant for the enum.
+        booleanVariant:
+          title:
+            en-US: Example boolean variant
+          description:
+            en-US: >-
+              Defines a boolean variant for the enum.
+          markdownDescription:
+            en-US: |-
+              Defines a `boolean` variant for the enum.
+
+      struct:
+        title:
+          en-US: Example valid struct
+        description:
+          en-US: >-
+            Defines a struct with the DscRepoSchema trait.
+        markdownDescription:
+          en-US: |-
+            Defines a struct with the `DscRepoSchema` trait.
+        foo:
+          title:
+            en-US: foo field
+          description:
+            en-US: >-
+              Defines the foo field.
+          markdownDescription:
+            en-US: |-
+              Defines the `foo` field.
+        bar:
+          title:
+            en-US: bar field
+          description:
+            en-US: >-
+              Defines the bar field.
+          markdownDescription:
+            en-US: |-
+              Defines the `bar` field.
+        baz:
+          title:
+            en-US: baz field
+          description:
+            en-US: >-
+              Defines the baz field.
+          markdownDescription:
+            en-US: |-
+              Defines the `baz` field.

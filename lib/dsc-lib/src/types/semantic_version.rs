@@ -9,7 +9,7 @@ use schemars::{json_schema, JsonSchema};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::schemas::dsc_repo::DscRepoSchema;
+use crate::schemas::dsc_repo::{DscRepoSchema, schema_i18n};
 
 /// Defines a semantic version for use with DSC.
 ///
@@ -459,12 +459,12 @@ impl JsonSchema for SemanticVersion {
     }
     fn json_schema(_: &mut schemars::SchemaGenerator) -> schemars::Schema {
         json_schema!({
-            "title": t!("schemas.definitions.semver.title"),
-            "description": t!("schemas.definitions.semver.description"),
-            "markdownDescription": t!("schemas.definitions.semver.markdownDescription"),
+            "title": schema_i18n!("title"),
+            "description": schema_i18n!("description"),
+            "markdownDescription": schema_i18n!("markdownDescription"),
             "type": "string",
             "pattern": Self::VALIDATING_PATTERN,
-            "patternErrorMessage": t!("schemas.definitions.semver.patternErrorMessage"),
+            "patternErrorMessage": schema_i18n!("patternErrorMessage"),
         })
     }
 }

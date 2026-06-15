@@ -7,6 +7,7 @@ use dsc_lib::dscresources::command_resource::TraceLevel;
 use dsc_lib::progress::ProgressFormat;
 use dsc_lib::types::{FullyQualifiedTypeName, ResourceVersionReq, TypeNameFilter};
 use rust_i18n::t;
+use schemars::JsonSchema;
 use serde::Deserialize;
 
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
@@ -92,8 +93,8 @@ pub enum SubCommand {
         #[clap(subcommand)]
         subcommand: FunctionSubCommand,
     },
-    #[clap(name = "mcp", about = t!("args.mcpAbout").to_string())]
-    Mcp,
+    #[clap(name = "server", alias = "mcp", about = t!("args.serverAbout").to_string())]
+    Server,
     #[clap(name = "resource", about = t!("args.resourceAbout").to_string())]
     Resource {
         #[clap(subcommand)]
@@ -296,9 +297,11 @@ pub enum ResourceSubCommand {
     },
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+#[derive(Debug, Deserialize, Clone, Copy, JsonSchema, PartialEq, Eq, ValueEnum)]
 pub enum SchemaType {
+    AdaptedDscResourceManifest,
     Configuration,
+    ConfigurationExportResult,
     ConfigurationGetResult,
     ConfigurationSetResult,
     ConfigurationTestResult,
@@ -311,6 +314,9 @@ pub enum SchemaType {
     ManifestList,
     ResolveResult,
     Resource,
+    ResourceGetResult,
+    ResourceSetResult,
+    ResourceTestResult,
     ResourceManifest,
     RestartRequired,
     SetResult,

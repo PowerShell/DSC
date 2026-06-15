@@ -48,9 +48,9 @@ impl JsonSchema for DoNotSuggestKeyword {
         json_schema!({
             "$schema": Self::META_SCHEMA,
             "$id": Self::KEYWORD_ID,
-            "title": t!("vscode.keywords.doNotSuggest.title"),
-            "description": t!("vscode.keywords.doNotSuggest.description"),
-            "markdownDescription": t!("vscode.keywords.doNotSuggest.markdownDescription"),
+            "title": t!("vscode.keywords.do_not_suggest.title"),
+            "description": t!("vscode.keywords.do_not_suggest.description"),
+            "markdownDescription": t!("vscode.keywords.do_not_suggest.markdownDescription"),
             "type": "boolean",
             "default": false
         })

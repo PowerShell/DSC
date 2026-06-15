@@ -37,19 +37,19 @@ The valid data types for a parameter are:
 Access parameters in a configuration using this syntax:
 
 ```yaml
-"[parameter('<parameter-name>')]"
+"[parameters('<parameter-name>')]"
 ```
 
 In YAML, the parameter syntax needs to be enclosed in double-quotes when used as an inline value.
 If the syntax isn't quoted, YAML interprets the syntax as an array.
 
 ```yaml
-valid:  "[parameter('example')]"
+valid:  "[parameters('example')]"
 # This unquoted syntax:
-invalid: [parameter('example')]
+invalid: [parameters('example')]
 # Evaluates to this YAML:
 invalid:
-  - parameter('example')
+  - parameters('example')
 ```
 
 ## Arrays
@@ -77,7 +77,7 @@ Access items in an array can by their index. The first item in an array is index
 syntax to access an index in an array parameter:
 
 ```yaml
-"[parameter('<parameter-name>')[<index>]]"
+"[parameters('<parameter-name>')[<index>]]"
 ```
 
 ```yaml
@@ -94,14 +94,14 @@ resources:
     type: Example.Security/Group
     properties:
       groupName: operators
-      members: "[parameter('members')]"
+      members: "[parameters('members')]"
   # Use a single item in the array as the value for a resource property
   - name: Admin Group
     type: Example.Security/Group
     properties:
       groupName: admins
       members:
-        - "[parameter('members')[0]]"
+        - "[parameters('members')[0]]"
 ```
 
 ## Booleans
@@ -170,11 +170,11 @@ resources:
   # Use the base object for the property definition
   - name: TSToy
     type: TSToy.Example/gotstoy
-    properties: "[parameter('tstoy')]"
+    properties: "[parameters('tstoy')]"
   # Use dot-notation for the property definition
   - name: Windows Product Name
     type: Microsoft.Windows/Registry
-    properties: "[parameter('registryKeys').productName]"
+    properties: "[parameters('registryKeys').productName]"
   # Use dot-notation for each value in the property definition
   - name: Windows System Root
     type: Microsoft.Windows/Registry

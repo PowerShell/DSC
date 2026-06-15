@@ -47,9 +47,9 @@ impl JsonSchema for AllowCommentsKeyword {
         json_schema!({
             "$schema": Self::META_SCHEMA,
             "$id": Self::KEYWORD_ID,
-            "title": t!("vscode.keywords.allowComments.title"),
-            "description": t!("vscode.keywords.allowComments.description"),
-            "markdownDescription": t!("vscode.keywords.allowComments.markdownDescription"),
+            "title": t!("vscode.keywords.allow_comments.title"),
+            "description": t!("vscode.keywords.allow_comments.description"),
+            "markdownDescription": t!("vscode.keywords.allow_comments.markdownDescription"),
             "type": "boolean",
             "default": false
         })

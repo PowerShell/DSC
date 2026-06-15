@@ -5,6 +5,7 @@
     "tags": [
         "Windows"
     ],
+    "condition": "[not(equals(tryWhich('sshd'), null()))]",
     "version": "0.1.0",
     "get": {
         "executable": "sshdconfig",

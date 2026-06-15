@@ -6,7 +6,7 @@
         "Windows",
         "Firewall"
     ],
-    "version": "0.1.0",
+    "version": "0.1.1",
     "get": {
         "executable": "windows_firewall",
         "args": [
@@ -24,10 +24,15 @@
             {
                 "jsonInputArg": "--input",
                 "mandatory": true
+            },
+            {
+                "whatIfArg": "--what-if"
             }
         ],
         "implementsPretest": false,
+        "handlesExist": true,
         "return": "state",
+        "whatIfReturns": "state",
         "requireSecurityContext": "elevated"
     },
     "export": {
@@ -38,8 +43,7 @@
                 "jsonInputArg": "--input",
                 "mandatory": false
             }
-        ],
-        "requireSecurityContext": "elevated"
+        ]
     },
     "exitCodes": {
         "0": "Success",
@@ -94,7 +98,9 @@
                             "protocol": {
                                 "type": "integer",
                                 "title": "Protocol",
-                                "description": "The IP protocol number for the rule. Common values are 256 (Any), 6 (TCP), 17 (UDP), 1 (ICMPv4), and 58 (ICMPv6)."
+                                "description": "The IP protocol number for the rule. Common values are 256 (Any), 6 (TCP), 17 (UDP), 1 (ICMPv4), and 58 (ICMPv6). The maximum value of 256 corresponds to NET_FW_IP_PROTOCOL_ANY in the Windows Firewall COM API. See https://learn.microsoft.com/windows/win32/api/icftypes/ne-icftypes-net_fw_ip_protocol",
+                                "minimum": 0,
+                                "maximum": 256
                             },
                             "localPorts": {
                                 "type": "string",
@@ -176,6 +182,20 @@
                                 "type": "boolean",
                                 "title": "Edge traversal",
                                 "description": "Indicates whether edge traversal is enabled for the rule."
+                            },
+                            "_metadata": {
+                                "type": "object",
+                                "title": "Metadata",
+                                "description": "Metadata populated during what-if operations.",
+                                "readOnly": true,
+                                "additionalProperties": false,
+                                "properties": {
+                                    "whatIf": {
+                                        "type": "array",
+                                        "description": "Messages describing what the set operation would do.",
+                                        "items": { "type": "string" }
+                                    }
+                                }
                             }
                         }
                     }
