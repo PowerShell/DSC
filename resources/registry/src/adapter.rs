@@ -11,12 +11,6 @@ use serde::Deserialize;
 use serde_json::{Map, Value};
 use tracing::{debug, trace, warn};
 
-#[derive(Deserialize)]
-struct AdaptedRegistryResource {
-    #[serde(flatten)]
-    properties: Map<String, Value>,
-}
-
 #[derive(Debug, Deserialize, JsonSchema)]
 enum RegistryDataType {
     #[serde(rename = "REG_BINARY")]
@@ -56,9 +50,11 @@ pub struct AdaptedRegistryValue {
 }
 
 fn build_resource_map(adapted_resource: &str) -> Result<HashMap<String, AdaptedRegistryValue>, RegistryResourceError> {
-    let adapted: AdaptedRegistryResource = serde_json::from_str(adapted_resource)
+    // convert adapted_resource to a Map of AdaptedRegistryValue
+    let adapted: Map<String, Value> = serde_json::from_str(adapted_resource)
         .map_err(|e| RegistryResourceError::AdaptedResource(e.to_string()))?;
-    adapted.properties.into_iter()
+
+    adapted.into_iter()
         .map(|(k, v)| {
             let arv: AdaptedRegistryValue = serde_json::from_value(v)
                 .map_err(|e| RegistryResourceError::AdaptedResource(e.to_string()))?;
@@ -102,7 +98,7 @@ pub fn adapter_get(input: &str, adapted_resource: &str) -> Result<String, Regist
                 warn!("No mapping found for key {}", key);
             }   
         } else {
-            debug!("{}", t!("adapter.getNoAdaptedRegistryValueFound", key = key));
+            debug!("{}", t!("adapter.noAdaptedRegistryValueFound", key = key));
         }
     }
 
@@ -127,7 +123,7 @@ pub fn adapter_set(input: &str, adapted_resource: &str) -> Result<(), RegistryRe
                 warn!("No mapping found for key {}", key);
             }
         } else {
-            debug!("{}", t!("adapter.setNoAdaptedRegistryValueFound", key = key));
+            debug!("{}", t!("adapter.noAdaptedRegistryValueFound", key = key));
         }
     }
 
