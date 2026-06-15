@@ -529,6 +529,7 @@ invoked = "or function"
 [functions.parameters]
 description = "Retrieves parameters from the configuration"
 invoked = "parameters function"
+unavailableInParameters = "The 'parameters()' function is not available within parameters defaults"
 traceKey = "parameters key: %{key}"
 keyNotString = "Parameter '%{key}' is not a string"
 keyNotInt = "Parameter '%{key}' is not an integer"

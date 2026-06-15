@@ -4,7 +4,7 @@
 use crate::configure::config_doc::DataType;
 use crate::configure::parameters::{SecureObject, SecureString};
 use crate::DscError;
-use crate::configure::context::Context;
+use crate::configure::context::{Context, ProcessMode};
 use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
 use rust_i18n::t;
 use serde_json::Value;
@@ -29,6 +29,10 @@ impl Function for Parameters {
 
     fn invoke(&self, args: &[Value], context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.parameters.invoked"));
+        if context.process_mode == ProcessMode::ParametersDefault {
+            return Err(DscError::Parser(t!("functions.parameters.unavailableInParameters").to_string()));
+        }
+
         if let Some(key) = args[0].as_str() {
             trace!("{}", t!("functions.parameters.traceKey", key = key));
             if context.parameters.contains_key(key) {

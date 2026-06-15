@@ -312,9 +312,9 @@ resources:
     configurationFile: "[concat('$echoConfigPathParent', '$directorySeparator', '$echoConfigPathLeaf')]"
 "@
 
-        $out = dsc -l trace config set -i $includeConfig 2>$TestDrive/error.log | ConvertFrom-Json
+        $out = dsc config set -i $includeConfig | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
-        $out.results[0].result.beforeState[0].name | Should -Be 'one' -Because (Get-Content -Path $TestDrive/error.log -Raw)
+        $out.results[0].result.beforeState[0].name | Should -Be 'one'
         $out.results[0].result.beforeState[0].type | Should -Be 'Microsoft.DSC.Debug/Echo'
         $out.results[0].result.afterState[0].result.afterState.output | Should -Be 'Hello World'
         $out.hadErrors | Should -Be $false

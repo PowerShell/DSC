@@ -22,8 +22,8 @@ use self::config_doc::{Configuration, DataType, MicrosoftDscMetadata, Operation,
 use self::depends_on::get_resource_invocation_order;
 use self::config_result::{ConfigurationExportResult, ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult};
 use self::constraints::{check_length, check_number_limits, check_allowed_values};
-use rust_i18n::t;
 use dsc_lib_security_context::{SecurityContext, get_security_context};
+use rust_i18n::t;
 use serde_json::{Map, Value};
 use std::path::PathBuf;
 use std::collections::HashMap;
