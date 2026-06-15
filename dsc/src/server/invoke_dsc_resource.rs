@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::mcp::mcp_server::McpServer;
+use crate::server::mcp_server::McpServer;
 use dsc_lib::{
     DscManager, configure::config_doc::ExecutionKind,
     discovery::discovery_trait::DiscoveryFilter,
