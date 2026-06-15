@@ -411,6 +411,22 @@ try {
         Start-Sleep -Milliseconds 100
     }
 
+    if ($ps.InvocationStateInfo.State -eq 'Failed') {
+        $record  = $ps.InvocationStateInfo.Reason.ErrorRecord
+        $message = if ($null -ne $record) {
+            "Script failed with terminating error at line {0} for statement ``{1}`` - {2}" -f @(
+                $record.InvocationInfo.ScriptLineNumber,
+                $record.InvocationInfo.Line,
+                $record.Exception.ToString()
+            )
+        } else {
+            "Script failed with terminating error: $($ps.InvocationStateInfo.Reason)"
+        }
+        Write-TraceQueue
+        Write-DscTrace -Now -Operation Error -Message $message
+        exit 1
+    }
+
     $outputCollection = $ps.EndInvoke($asyncResult)
 }
 catch {
