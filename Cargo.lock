@@ -914,7 +914,7 @@ dependencies = [
 
 [[package]]
 name = "dsc-resource-registry"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "clap",
  "crossterm",
@@ -4238,6 +4238,15 @@ name = "windows_aarch64_msvc"
 version = "0.52.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09ec2a7bb152e2252b53fa7803150007879548bc709c039df7627cabbd05d469"
+
+[[package]]
+name = "windows_feature"
+version = "0.1.0"
+dependencies = [
+ "rust-i18n",
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "windows_firewall"
