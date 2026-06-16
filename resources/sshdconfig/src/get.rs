@@ -107,7 +107,7 @@ fn get_default_shell() -> Result<(), SshdConfigError> {
 ///
 /// # Arguments
 ///
-/// * `cmd_info` - `CommandInfo` struct containing optional filters, metadata, and includeDefaults flag.
+/// * `cmd_info` - `CommandInfo` struct containing optional filters, filepath, and includeDefaults flag.
 ///
 /// # Errors
 ///

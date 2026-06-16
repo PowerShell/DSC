@@ -306,9 +306,7 @@ PasswordAuthentication yes
             $nonExistentPath = Join-Path $TestDrive "nonexistent_sshd_config_repeatlist_nonwindows"
             $stderrFile = Join-Path $TestDrive "stderr_nofile_repeatlist_nonwindows.txt"
             $inputConfig = @{
-                _metadata = @{
-                    filepath = $nonExistentPath
-                }
+                _filepath = $nonExistentPath
                 _purge = $false
                 subsystem = @(
                     @{
@@ -353,9 +351,7 @@ PasswordAuthentication yes
             ) -Encoding ascii
 
             $inputConfig = @{
-                _metadata = @{
-                    filepath = $script:CurrentWindowsTargetPath
-                }
+                _filepath = $script:CurrentWindowsTargetPath
                 _purge = $false
                 subsystem = @(
                     @{
@@ -377,9 +373,7 @@ PasswordAuthentication yes
             $LASTEXITCODE | Should -Be 0
             Test-Path $script:CurrentWindowsTargetPath | Should -Be $true
             $getInput = @{
-                _metadata = @{
-                    filepath = $script:CurrentWindowsTargetPath
-                }
+                _filepath = $script:CurrentWindowsTargetPath
             } | ConvertTo-Json
             $result = sshdconfig get --input $getInput -s sshd-config 2>$null | ConvertFrom-Json
             $psEntry = $result.subsystem | Where-Object { $_.name -eq "powershell" }
@@ -396,9 +390,7 @@ PasswordAuthentication yes
             Test-Path -Path $script:WindowsDefaultSourcePath -PathType Leaf -ErrorAction SilentlyContinue | Should -Be $false
 
             $inputConfig = @{
-                _metadata = @{
-                    filepath = $script:CurrentWindowsTargetPath
-                }
+                _filepath = $script:CurrentWindowsTargetPath
                 _purge = $false
                 subsystem = @(
                     @{
