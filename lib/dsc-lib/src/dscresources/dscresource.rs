@@ -61,6 +61,8 @@ pub struct DscResource {
     pub target_resource: Option<Box<DscResource>>,
     /// The manifest of the resource.
     pub manifest: Option<ResourceManifest>,
+    /// The content of the adapted resource, if available.
+    pub adapted_content: Option<Map<String, Value>>,
 }
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema, Ord, PartialOrd)]
@@ -116,6 +118,7 @@ impl DscResource {
             schema: None,
             target_resource: None,
             manifest: None,
+            adapted_content: None,
         }
     }
 
