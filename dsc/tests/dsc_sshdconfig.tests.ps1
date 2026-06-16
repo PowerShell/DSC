@@ -27,9 +27,8 @@ metadata:
 resources:
 - name: sshdconfig
   type: Microsoft.OpenSSH.SSHD/sshd_config
-  metadata:
-    filepath: $filepath
   properties:
+    _filepath: $filepath
 "@
     }
 
@@ -64,9 +63,8 @@ metadata:
 resources:
 - name: sshdconfig
   type: Microsoft.OpenSSH.SSHD/sshd_config
-  metadata:
-    filepath: $filepath
   properties:
+    _filepath: $filepath
     passwordauthentication: 'yes'
 "@
         $out = dsc config export -i "$export_yaml" | ConvertFrom-Json -Depth 10
@@ -90,9 +88,8 @@ metadata:
 resources:
 - name: sshdconfig
   type: Microsoft.OpenSSH.SSHD/sshd_config
-  metadata:
-    filepath: $filepath
   properties:
+    _filepath: $filepath
     _includeDefaults: $includeDefaults
 "@
         $out = dsc config $command -i "$input" | ConvertFrom-Json -Depth 10
@@ -148,9 +145,8 @@ metadata:
 resources:
 - name: sshdconfig
   type: Microsoft.OpenSSH.SSHD/sshd_config
-  metadata:
-    filepath: $filepath
   properties:
+    _filepath: $filepath
     _purge: true
     port: 1234
     allowUsers:
@@ -228,9 +224,8 @@ metadata:
 resources:
 - name: newsub
   type: Microsoft.OpenSSH.SSHD/Subsystem
-  metadata:
-    filepath: $script:TestConfigPath
   properties:
+    _filepath: $script:TestConfigPath
     _exist: true
     subsystem:
       name: newsubsystem
@@ -260,9 +255,8 @@ metadata:
 resources:
 - name: removesub
   type: Microsoft.OpenSSH.SSHD/Subsystem
-  metadata:
-    filepath: $script:TestConfigPath
   properties:
+    _filepath: $script:TestConfigPath
     _exist: false
     subsystem:
       name: sftp
@@ -286,9 +280,8 @@ metadata:
 resources:
 - name: multisubsystem
   type: Microsoft.OpenSSH.SSHD/SubsystemList
-  metadata:
-    filepath: $script:TestConfigPath
   properties:
+    _filepath: $script:TestConfigPath
     _purge: false
     subsystem:
     - name: newsub1
@@ -331,9 +324,8 @@ metadata:
 resources:
 - name: preservesubsystem
   type: Microsoft.OpenSSH.SSHD/SubsystemList
-  metadata:
-    filepath: $script:TestConfigPath
   properties:
+    _filepath: $script:TestConfigPath
     _purge: false
     subsystem:
     - name: addedSubsystem
@@ -367,9 +359,8 @@ metadata:
 resources:
 - name: purgesubsystem
   type: Microsoft.OpenSSH.SSHD/SubsystemList
-  metadata:
-    filepath: $script:TestConfigPath
   properties:
+    _filepath: $script:TestConfigPath
     _purge: true
     subsystem:
     - name: sftp
