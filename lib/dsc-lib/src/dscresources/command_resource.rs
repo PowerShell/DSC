@@ -7,8 +7,8 @@ use jsonschema::Validator;
 use rust_i18n::t;
 use serde::Deserialize;
 use serde_json::{Map, Value};
-use std::{collections::HashMap, env, path::{Path, PathBuf}, process::Stdio};
-use crate::{configure::{config_doc::{ExecutionKind, SecurityContextKind}, config_result::{ResourceGetResult, ResourceTestResult}}, dscresources::resource_manifest::{ExportSchemaKind, SchemaArgKind}, types::{ExitCodesMap, FullyQualifiedTypeName}, util::canonicalize_which};
+use std::{collections::HashMap, env, path::Path, process::Stdio};
+use crate::{configure::{config_doc::{ExecutionKind, SecurityContextKind}, config_result::{ResourceGetResult, ResourceTestResult}}, dscresources::resource_manifest::{ExportSchemaKind, SchemaArgKind}, types::{ExitCodesMap}, util::canonicalize_which};
 use crate::dscerror::DscError;
 use super::{
     dscresource::{get_diff, redact, DscResource},
@@ -595,34 +595,38 @@ fn verify_with_export_schema(input: &str, resource: &DscResource, target_resourc
         return Err(DscError::SchemaNotAvailable(resource.type_name.to_string()));
     };
 
-    if export.schema.is_none() && manifest.validate.is_some() {
-        let result = invoke_validate(resource, input, target_resource)?;
-        if result.valid {
-            return Ok(());
-        }
-
-        let reason = result
-            .reason
-            .map(|s| s.trim().to_string())
-            .filter(|s| !s.is_empty())
-            .unwrap_or_else(|| t!("dscresources.commandResource.resourceInvalidJson").to_string());
-        return Err(DscError::Validation(reason));
-    }
+    let command_resource = match target_resource {
+        Some(r) => r,
+        None => resource,
+    };
 
     let schema = match export.schema {
         Some(ExportSchemaKind::Command(ref command)) => {
-            let resource_type = match target_resource {
-                Some(r) => r.type_name.clone(),
-                None => resource.type_name.clone(),
-            };
-            let args = process_schema_args(command.args.as_ref(), &CommandResourceInfo { type_name: resource_type, path: None });
+            let args = process_schema_args(command.args.as_ref(), command_resource);
             let (_exit_code, stdout, _stderr) = invoke_command(&command.executable, args, None, Some(&resource.directory), None, manifest.exit_codes.as_ref())?;
             stdout
         },
         Some(ExportSchemaKind::Embedded(ref schema)) => {
             serde_json::to_string(schema)?
         },
-        _ => {
+        Some(ExportSchemaKind::NoFiltering) => {
+            return Ok(());
+        },
+        None => {
+            if manifest.validate.is_some() {
+                let result = invoke_validate(resource, input, target_resource)?;
+                if result.valid {
+                    return Ok(());
+                }
+
+                let reason = result
+                    .reason
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty())
+                    .unwrap_or_else(|| t!("dscresources.commandResource.resourceInvalidJson").to_string());
+                return Err(DscError::Validation(reason));
+            }
+
             get_schema(resource, target_resource)?
         }
     };
