@@ -87,7 +87,7 @@ in this release, see the [diff on GitHub][compare-v3.2.2].
 ### Fixed
 
 - Fixed several bugs with the `Microsoft.DSC.Transitional/PowerShellScript` and
-`Microsoft.DSC.Transitional/WindowsPowerShellScript` resources:
+  `Microsoft.DSC.Transitional/WindowsPowerShellScript` resources:
 
   - Scripts can now raise non-terminating errors and continue processing. In previous releases the
     resources considered a script that raised _any_ errors - even if the author specifically
@@ -130,7 +130,7 @@ in this release, see the [diff on GitHub][compare-v3.2.1].
   `Microsoft.Adapter/WindowsPowerShell` adapters to enable them to correctly invoke PSDSC resources
   installed in a path that contains spaces.
 
-   <details><summary>Related work items</summary>
+  <details><summary>Related work items</summary>
 
   - Issues: _None_.
   - PRs:
@@ -702,7 +702,7 @@ changes in this release, see the [diff on GitHub][compare-v3.2.0].
 
 - Added support for defining and discovering adapted resource manifests. Providing an adapted
   resource manifest:
-  
+
   - Improves the performance for discovering adapted resources because it doesn't rely on the adapter
     to find, parse, and surface resources to DSC.
   - Improves the validation for adapted resources because it enables the adapted resource author to
@@ -937,7 +937,7 @@ changes in this release, see the [diff on GitHub][compare-v3.2.0].
 
 - Added the canonical `_name` property to the `Microsoft/OSInfo` resource, so exporting that
   resource automatically defines the exported instance's `name` field as:
-  
+
   `<OS Family> <OS version> [<OS architecture>]`
 
   Where the final segment is only defined if the operating system architecture is discoverable.
@@ -1973,5 +1973,4 @@ Version `3.0.0` is the first generally available release of DSC.
 [#1557]: https://github.com/PowerShell/DSC/issues/1557
 [#1558]: https://github.com/PowerShell/DSC/issues/1558
 [#1562]: https://github.com/PowerShell/DSC/issues/1562
-
 
