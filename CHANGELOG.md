@@ -146,7 +146,7 @@ changes in this release, see the [diff on GitHub][compare-v3.2.0].
 
 <!-- Release links -->
 [release-v3.2.0]: https://github.com/PowerShell/DSC/releases/tag/v3.2.0 "Link to the DSC v3.2.0 release on GitHub"
-[compare-v3.2.0]: https://github.com/PowerShell/DSC/compare/v3.1.3..v3.2.0
+[compare-v3.2.0]: https://github.com/PowerShell/DSC/compare/v3.1.3...v3.2.0
 
 ### Added
 
@@ -285,7 +285,7 @@ changes in this release, see the [diff on GitHub][compare-v3.2.0].
 
   </details>
 
-- Added the `y2j` tool to the DSC package. This tool bidirectionaly converts JSON to YAML and YAML
+- Added the `y2j` tool to the DSC package. This tool bidirectionally converts JSON to YAML and YAML
   to JSON. It's included in the package for convenience and testing scenarios.
 
   <details><summary>Related work items</summary>
@@ -297,7 +297,7 @@ changes in this release, see the [diff on GitHub][compare-v3.2.0].
 
   </details>
 
-- Added support for defining extensions that can retrieve secrets and the [`secret()`][`secret()`]
+- Added support for defining extensions that can retrieve secrets and the `secret()`
   configuration function for retrieving secrets from an extension.
 
   <details><summary>Related work items</summary>
@@ -328,7 +328,7 @@ changes in this release, see the [diff on GitHub][compare-v3.2.0].
 
 - Added the experimental `Microsoft.PowerShell/Discover` extension to find DSC manifests packaged
   with PowerShell modules. This enables PowerShell developers to define and publish DSC extensions
-  and resources with their PowerShell modules. THe extension also discovers adapted resource
+  and resources with their PowerShell modules. The extension also discovers adapted resource
   manifests and manifest lists.
 
   <details><summary>Related work items</summary>
@@ -659,7 +659,7 @@ changes in this release, see the [diff on GitHub][compare-v3.2.0].
 - Added support for resources returning the `metadata._refreshEnv` field in the output for **Set**
   operations on Windows systems to indicate that DSC should update the environment variables before
   invoking the next resource. This enables resources that install software or modify environment
-  variables that other resource instances depend on to advertise that environment variables ned to
+  variables that other resource instances depend on to advertise that environment variables need to
   be refreshed. This is a common requirement when a configuration document both installs and invokes
   software in the same document.
 
