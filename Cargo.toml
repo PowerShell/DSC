@@ -197,7 +197,7 @@ quote = { version = "1.0" }
 # used by other crates
 rand = { version = "0.10.1" }
 # dsc, dsc-lib
-regex = { version = "1.12.3" }
+regex = { version = "1.12.4" }
 # registry, dsc-lib, dsc-lib-registry, dsctest
 registry = { version = "1.3" }
 # dsc
