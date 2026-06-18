@@ -235,7 +235,7 @@ function Invoke-DscCacheRefresh {
             }
 
             # workaround: Use GetTypeInstanceFromModule to get the type instance from the module and validate if it is a class-based resource
-            $classBased = GetTypeInstanceFromModule -modulename $moduleName -classname $dscResource.Name -ErrorAction Ignore
+            $classBased = GetTypeInstanceFromModule -modulename $moduleName -classname $dscResource.Name -ErrorAction SilentlyContinue
             if ($classBased -and ($classBased.CustomAttributes.AttributeType.Name -eq 'DscResourceAttribute')) {
                 Write-Debug -Debug ("Detected class-based resource: $($dscResource.Name) => Type: $($classBased.BaseType.FullName)")
                 $dscResourceInfo.ImplementationDetail = 'ClassBased'
@@ -476,14 +476,11 @@ function Invoke-DscOperation {
                                     $_.Value.Password
 
                                 if (-not $hasSecureCred -and -not $hasTextCred) {
-                                Write-Debug -Debug "Invalid credential object for property '$($_.Name)'"
                                     Write-Error ("Credential object '$($_.Name)' requires both 'username' and 'password' properties")
                                     exit 1
                                 }
 
                                 if ($hasSecureCred) {
-                                Write-Debug -Debug "Credential object '$($_.Name)' - SecureObject"
-
                                     $username = $_.Value.secureObject.Username
                                     $password = $_.Value.secureObject.Password |
                                         ConvertTo-SecureString -AsPlainText -Force
@@ -492,8 +489,6 @@ function Invoke-DscOperation {
                                         [System.Management.Automation.PSCredential]::new($username, $password)
                                 }
                                 elseif ($hasTextCred) {
-                                    Write-Debug -Debug "Credential object '$($_.Name)' - Text"
-
                                     $username = $_.Value.Username
                                     $password = $_.Value.Password |
                                         ConvertTo-SecureString -AsPlainText -Force
