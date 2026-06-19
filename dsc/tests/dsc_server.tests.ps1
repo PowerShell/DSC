@@ -72,6 +72,7 @@ Describe 'Tests for DSC server' {
 
         $tools = @{
             'invoke_dsc_config'   = $false
+            'invoke_dsc_function' = $false
             'invoke_dsc_resource' = $false
             'list_dsc_functions'  = $false
             'list_dsc_resources'  = $false
@@ -300,6 +301,47 @@ Describe 'Tests for DSC server' {
         $response.id | Should -Be 11
         $response.result.structuredContent.functions.Count | Should -Be 0
         $response.result.structuredContent.functions | Should -BeNullOrEmpty
+    }
+
+    It 'Calling invoke_dsc_function works' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 12
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_function"
+                arguments = @{
+                    function_name = "concat"
+                    arguments     = @("Hello", " ", "World")
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 12
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        ($response.result.structuredContent.psobject.properties | Measure-Object).Count | Should -Be 1 -Because $because
+        $response.result.structuredContent.result | Should -BeExactly "Hello World" -Because $because
+    }
+
+    It 'Calling invoke_dsc_function with unknown function returns error' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 12
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_function"
+                arguments = @{
+                    function_name = "doesNotExist"
+                    arguments     = @()
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 12
+        $response.error.code | Should -Be -32600
+        $response.error.message | Should -Not -BeNullOrEmpty
     }
 
     It 'Calling invoke_dsc_resource for operation: <operation>' -TestCases @(

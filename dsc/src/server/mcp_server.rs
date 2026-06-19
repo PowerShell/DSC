@@ -22,6 +22,7 @@ impl McpServer {
         Self {
             tool_router:
                 Self::invoke_dsc_config_router()
+                + Self::invoke_dsc_function_router()
                 + Self::invoke_dsc_resource_router()
                 + Self::list_dsc_functions_router()
                 + Self::list_dsc_resources_router()

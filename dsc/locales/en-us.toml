@@ -73,6 +73,9 @@ failedConvertJson = "Failed to convert to JSON"
 failedSerialize = "Failed to serialize configuration"
 failedSetParameters = "Failed to set parameters"
 
+[mcp.invoke_dsc_function]
+failedInvoke = "Failed to invoke DSC function '%{function}': %{error}"
+
 [mcp.invoke_dsc_resource]
 resourceNotFound = "Resource type '%{resource}' does not exist"
 
