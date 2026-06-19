@@ -3,14 +3,18 @@
 
 #[cfg(windows)]
 use {
-    std::path::Path,
-    dsc_lib_registry::{config::RegistryValueData, RegistryHelper},
-    crate::metadata::windows::{DEFAULT_SHELL, DEFAULT_SHELL_CMD_OPTION, DEFAULT_SHELL_ESCAPE_ARGS, REGISTRY_PATH},
+    crate::metadata::windows::{
+        DEFAULT_SHELL, DEFAULT_SHELL_CMD_OPTION, DEFAULT_SHELL_ESCAPE_ARGS, REGISTRY_PATH,
+    },
+    dsc_lib_registry::{RegistryHelper, config::RegistryValueData},
 };
 
 use rust_i18n::t;
 use serde_json::{Map, Value};
-use std::{path::PathBuf, string::String};
+use std::{
+    path::{Path, PathBuf},
+    string::String,
+};
 use tracing::{debug, info, warn};
 
 use crate::args::{DefaultShell, Setting};
@@ -21,57 +25,81 @@ use crate::get::get_sshd_settings;
 use crate::inputs::{CommandInfo, SshdCommandArgs};
 use crate::metadata::{SSHD_CONFIG_HEADER, SSHD_CONFIG_HEADER_VERSION, SSHD_CONFIG_HEADER_WARNING};
 use crate::repeat_keyword::{
-    RepeatInput, RepeatListInput, NameValueEntry,
-    add_or_update_entry, extract_single_keyword, remove_entry, parse_and_validate_entries
+    NameValueEntry, RepeatInput, RepeatListInput, add_or_update_entry, extract_single_keyword,
+    parse_and_validate_entries, remove_entry,
 };
-use crate::util::{build_command_info, ensure_sshd_config_exists, get_default_sshd_config_path, invoke_sshd_config_validation};
+use crate::util::{
+    build_command_info, ensure_sshd_config_exists, get_default_sshd_config_path,
+    invoke_sshd_config_validation,
+};
 
 /// Invoke the set command.
 ///
 /// # Errors
 ///
 /// This function will return an error if the desired settings cannot be applied.
-pub fn invoke_set(input: &str, setting: &Setting) -> Result<Map<String, Value>, SshdConfigError> {
+pub fn invoke_set(
+    input: &str,
+    setting: &Setting,
+    what_if: bool,
+) -> Result<Map<String, Value>, SshdConfigError> {
     match setting {
         Setting::SshdConfig => {
             debug!("{} {:?}", t!("set.settingSshdConfig").to_string(), setting);
             let mut cmd_info = build_command_info(Some(&input.to_string()), false)?;
-            match set_sshd_config(&mut cmd_info) {
-                Ok(()) => Ok(Map::new()),
-                Err(e) => Err(e),
-            }
-        },
+            let state = set_sshd_config(&mut cmd_info, what_if)?;
+            if what_if { Ok(state) } else { Ok(Map::new()) }
+        }
         Setting::SshdConfigRepeat => {
             debug!("{} {:?}", t!("set.settingSshdConfig").to_string(), setting);
             let cmd_info = build_command_info(Some(&input.to_string()), false)?;
-            set_sshd_config_repeat(input, &cmd_info)
-        },
+            set_sshd_config_repeat(input, &cmd_info, what_if)
+        }
         Setting::SshdConfigRepeatList => {
             debug!("{} {:?}", t!("set.settingSshdConfig").to_string(), setting);
             let cmd_info = build_command_info(Some(&input.to_string()), false)?;
-            set_sshd_config_repeat_list(input, &cmd_info)
-        },
+            set_sshd_config_repeat_list(input, &cmd_info, what_if)
+        }
         Setting::WindowsGlobal => {
-            debug!("{} {:?}", t!("set.settingDefaultShell").to_string(), setting);
+            debug!(
+                "{} {:?}",
+                t!("set.settingDefaultShell").to_string(),
+                setting
+            );
             match serde_json::from_str::<DefaultShell>(input) {
                 Ok(default_shell) => {
-                    debug!("{}", t!("set.defaultShellDebug", shell = format!("{:?}", default_shell)));
-                    // if default_shell.shell is Some, we should pass that into set default shell
-                    // otherwise pass in an empty string
-                    let shell: String = default_shell.shell.clone().unwrap_or_default();
-                    set_default_shell(shell, default_shell.cmd_option, default_shell.escape_arguments)?;
-                    Ok(Map::new())
-                },
-                Err(e) => Err(SshdConfigError::InvalidInput(t!("set.failedToParseDefaultShell", error = e).to_string())),
+                    debug!(
+                        "{}",
+                        t!(
+                            "set.defaultShellDebug",
+                            shell = format!("{:?}", default_shell)
+                        )
+                    );
+                    let desired_state = get_default_shell_desired_state(default_shell)?;
+                    if what_if {
+                        default_shell_to_map(&desired_state)
+                    } else {
+                        set_default_shell(&desired_state)?;
+                        Ok(Map::new())
+                    }
+                }
+                Err(e) => Err(SshdConfigError::InvalidInput(
+                    t!("set.failedToParseDefaultShell", error = e).to_string(),
+                )),
             }
         }
     }
 }
 
 /// Handle single name-value keyword entry operations (add or remove).
-fn set_sshd_config_repeat(input: &str, cmd_info: &CommandInfo) -> Result<Map<String, Value>, SshdConfigError> {
-    let keyword_input: RepeatInput = serde_json::from_str(input)
-        .map_err(|e| SshdConfigError::InvalidInput(t!("set.failedToParse", input = e.to_string()).to_string()))?;
+fn set_sshd_config_repeat(
+    input: &str,
+    cmd_info: &CommandInfo,
+    what_if: bool,
+) -> Result<Map<String, Value>, SshdConfigError> {
+    let keyword_input: RepeatInput = serde_json::from_str(input).map_err(|e| {
+        SshdConfigError::InvalidInput(t!("set.failedToParse", input = e.to_string()).to_string())
+    })?;
 
     let (keyword, entry_value) = extract_single_keyword(keyword_input.additional_properties)?;
 
@@ -80,8 +108,9 @@ fn set_sshd_config_repeat(input: &str, cmd_info: &CommandInfo) -> Result<Map<Str
     // parses entry for name-value keywords, like subsystem, for now
     // different keywords will likely need to be serialized into different structs
     // and likely need to have different add/update/remove functions
-    let entry: NameValueEntry = serde_json::from_value(entry_value)
-        .map_err(|e| SshdConfigError::InvalidInput(t!("set.failedToParse", input = e.to_string()).to_string()))?;
+    let entry: NameValueEntry = serde_json::from_value(entry_value).map_err(|e| {
+        SshdConfigError::InvalidInput(t!("set.failedToParse", input = e.to_string()).to_string())
+    })?;
 
     if keyword_input.exist {
         add_or_update_entry(&mut existing_config, &keyword, &entry)?;
@@ -89,21 +118,34 @@ fn set_sshd_config_repeat(input: &str, cmd_info: &CommandInfo) -> Result<Map<Str
         remove_entry(&mut existing_config, &keyword, &entry.name);
     }
 
-    write_and_validate_config(&mut existing_config, cmd_info.metadata.filepath.as_ref())?;
-    Ok(Map::new())
+    write_and_validate_config(
+        &mut existing_config,
+        cmd_info.metadata.filepath.as_ref(),
+        what_if,
+    )?;
+    if what_if {
+        Ok(existing_config)
+    } else {
+        Ok(Map::new())
+    }
 }
 
 /// Handle list name-value keyword operations with purge support.
-fn set_sshd_config_repeat_list(input: &str, cmd_info: &CommandInfo) -> Result<Map<String, Value>, SshdConfigError> {
-    let list_input: RepeatListInput = serde_json::from_str(input)
-        .map_err(|e| SshdConfigError::InvalidInput(t!("set.failedToParse", input = e.to_string()).to_string()))?;
+fn set_sshd_config_repeat_list(
+    input: &str,
+    cmd_info: &CommandInfo,
+    what_if: bool,
+) -> Result<Map<String, Value>, SshdConfigError> {
+    let list_input: RepeatListInput = serde_json::from_str(input).map_err(|e| {
+        SshdConfigError::InvalidInput(t!("set.failedToParse", input = e.to_string()).to_string())
+    })?;
 
     let (keyword, entries_value) = extract_single_keyword(list_input.additional_properties)?;
     let mut existing_config = get_existing_config(cmd_info)?;
     // Ensure it's an array
     let Value::Array(ref entries_array) = entries_value else {
         return Err(SshdConfigError::InvalidInput(
-            t!("set.expectedArrayForKeyword", keyword = keyword).to_string()
+            t!("set.expectedArrayForKeyword", keyword = keyword).to_string(),
         ));
     };
 
@@ -120,39 +162,85 @@ fn set_sshd_config_repeat_list(input: &str, cmd_info: &CommandInfo) -> Result<Ma
             add_or_update_entry(&mut existing_config, &keyword, &entry)?;
         }
     }
-    write_and_validate_config(&mut existing_config, cmd_info.metadata.filepath.as_ref())?;
-    Ok(Map::new())
+    write_and_validate_config(
+        &mut existing_config,
+        cmd_info.metadata.filepath.as_ref(),
+        what_if,
+    )?;
+    if what_if {
+        Ok(existing_config)
+    } else {
+        Ok(Map::new())
+    }
+}
+
+fn get_default_shell_desired_state(
+    default_shell: DefaultShell,
+) -> Result<DefaultShell, SshdConfigError> {
+    if let Some(shell) = default_shell.shell.as_deref()
+        && !shell.is_empty()
+    {
+        let shell_path = Path::new(shell);
+        if shell_path.is_relative()
+            && shell_path
+                .components()
+                .any(|c| c == std::path::Component::ParentDir)
+        {
+            return Err(SshdConfigError::InvalidInput(
+                t!("set.shellPathMustNotBeRelative").to_string(),
+            ));
+        }
+        if !shell_path.exists() {
+            return Err(SshdConfigError::InvalidInput(
+                t!("set.shellPathDoesNotExist", shell = shell).to_string(),
+            ));
+        }
+    }
+
+    Ok(DefaultShell {
+        shell: default_shell.shell.filter(|shell| !shell.is_empty()),
+        cmd_option: default_shell.cmd_option,
+        escape_arguments: default_shell.escape_arguments,
+    })
+}
+
+fn default_shell_to_map(
+    default_shell: &DefaultShell,
+) -> Result<Map<String, Value>, SshdConfigError> {
+    let value = serde_json::to_value(default_shell)?;
+    match value {
+        Value::Object(map) => Ok(map),
+        _ => Ok(Map::new()),
+    }
 }
 
 #[cfg(windows)]
-fn set_default_shell(shell: String, cmd_option: Option<String>, escape_arguments: Option<bool>) -> Result<(), SshdConfigError> {
+fn set_default_shell(default_shell: &DefaultShell) -> Result<(), SshdConfigError> {
     debug!("{}", t!("set.settingDefaultShell"));
-    if shell.is_empty() {
-        remove_registry(DEFAULT_SHELL)?;
+    if let Some(shell) = &default_shell.shell {
+        set_registry(DEFAULT_SHELL, RegistryValueData::String(shell.clone()))?;
     } else {
-        // TODO: if shell contains quotes, we need to remove them
-        let shell_path = Path::new(&shell);
-        if shell_path.is_relative() && shell_path.components().any(|c| c == std::path::Component::ParentDir) {
-            return Err(SshdConfigError::InvalidInput(t!("set.shellPathMustNotBeRelative").to_string()));
-        }
-        if !shell_path.exists() {
-            return Err(SshdConfigError::InvalidInput(t!("set.shellPathDoesNotExist", shell = shell).to_string()));
-        }
-        set_registry(DEFAULT_SHELL, RegistryValueData::String(shell))?;
+        remove_registry(DEFAULT_SHELL)?;
     }
 
-    if let Some(cmd_option) = cmd_option {
-        set_registry(DEFAULT_SHELL_CMD_OPTION, RegistryValueData::String(cmd_option.clone()))?;
+    if let Some(cmd_option) = &default_shell.cmd_option {
+        set_registry(
+            DEFAULT_SHELL_CMD_OPTION,
+            RegistryValueData::String(cmd_option.clone()),
+        )?;
     } else {
         remove_registry(DEFAULT_SHELL_CMD_OPTION)?;
     }
 
-    if let Some(escape_args) = escape_arguments {
+    if let Some(escape_args) = default_shell.escape_arguments {
         let mut escape_data = 0;
         if escape_args {
             escape_data = 1;
         }
-        set_registry(DEFAULT_SHELL_ESCAPE_ARGS, RegistryValueData::DWord(escape_data))?;
+        set_registry(
+            DEFAULT_SHELL_ESCAPE_ARGS,
+            RegistryValueData::DWord(escape_data),
+        )?;
     } else {
         remove_registry(DEFAULT_SHELL_ESCAPE_ARGS)?;
     }
@@ -161,8 +249,10 @@ fn set_default_shell(shell: String, cmd_option: Option<String>, escape_arguments
 }
 
 #[cfg(not(windows))]
-fn set_default_shell(_shell: String, _cmd_option: Option<String>, _escape_arguments: Option<bool>) -> Result<(), SshdConfigError> {
-    Err(SshdConfigError::InvalidInput(t!("get.windowsOnly").to_string()))
+fn set_default_shell(_default_shell: &DefaultShell) -> Result<(), SshdConfigError> {
+    Err(SshdConfigError::InvalidInput(
+        t!("get.windowsOnly").to_string(),
+    ))
 }
 
 #[cfg(windows)]
@@ -179,7 +269,10 @@ fn remove_registry(name: &str) -> Result<(), SshdConfigError> {
     Ok(())
 }
 
-fn set_sshd_config(cmd_info: &mut CommandInfo) -> Result<(), SshdConfigError> {
+fn set_sshd_config(
+    cmd_info: &mut CommandInfo,
+    what_if: bool,
+) -> Result<Map<String, Value>, SshdConfigError> {
     // this should be its own helper function that checks that the value makes sense for the key type
     // i.e. if the key can be repeated or have multiple values, etc.
     // or if the value is something besides a string (like an object to convert back into a comma-separated list)
@@ -202,14 +295,28 @@ fn set_sshd_config(cmd_info: &mut CommandInfo) -> Result<(), SshdConfigError> {
         existing_config
     };
 
-    write_and_validate_config(&mut config_to_write, cmd_info.metadata.filepath.as_ref())
+    write_and_validate_config(
+        &mut config_to_write,
+        cmd_info.metadata.filepath.as_ref(),
+        what_if,
+    )?;
+    Ok(config_to_write)
 }
 
 /// Write configuration to file after validation.
-fn write_and_validate_config(config: &mut Map<String, Value>, filepath: Option<&PathBuf>) -> Result<(), SshdConfigError> {
+fn write_and_validate_config(
+    config: &mut Map<String, Value>,
+    filepath: Option<&PathBuf>,
+    what_if: bool,
+) -> Result<(), SshdConfigError> {
     debug!("{}", t!("set.writingTempConfig"));
     CanonicalProperties::remove_all(config);
-    let mut config_text = SSHD_CONFIG_HEADER.to_string() + "\n" + SSHD_CONFIG_HEADER_VERSION + "\n" + SSHD_CONFIG_HEADER_WARNING + "\n";
+    let mut config_text = SSHD_CONFIG_HEADER.to_string()
+        + "\n"
+        + SSHD_CONFIG_HEADER_VERSION
+        + "\n"
+        + SSHD_CONFIG_HEADER_WARNING
+        + "\n";
     config_text.push_str(&write_config_map_to_text(config)?);
 
     // Write input to a temporary file and validate it with SSHD -T
@@ -224,32 +331,46 @@ fn write_and_validate_config(config: &mut Map<String, Value>, filepath: Option<&
         .map_err(|e| SshdConfigError::CommandError(e.to_string()))?;
     drop(file);
 
-    let args = Some(
-        SshdCommandArgs {
-            filepath: Some(temp_path),
-            additional_args: None,
-        }
-    );
+    let args = Some(SshdCommandArgs {
+        filepath: Some(temp_path),
+        additional_args: None,
+    });
 
     debug!("{}", t!("set.validatingTempConfig"));
     let result = invoke_sshd_config_validation(args);
     // Always cleanup temp file, regardless of result success or failure
     if let Err(e) = std::fs::remove_file(&path) {
-        warn!("{}", t!("set.cleanupFailed", path = path.display(), error = e));
+        warn!(
+            "{}",
+            t!("set.cleanupFailed", path = path.display(), error = e)
+        );
     }
     // Propagate failure, if any
     result?;
+
+    if what_if {
+        return Ok(());
+    }
 
     let sshd_config_path = get_default_sshd_config_path(filepath.cloned())?;
 
     if sshd_config_path.exists() {
         let mut sshd_config_content = String::new();
-        if let Ok(mut file) = std::fs::OpenOptions::new().read(true).open(&sshd_config_path) {
+        if let Ok(mut file) = std::fs::OpenOptions::new()
+            .read(true)
+            .open(&sshd_config_path)
+        {
             use std::io::Read;
             file.read_to_string(&mut sshd_config_content)
                 .map_err(|e| SshdConfigError::CommandError(e.to_string()))?;
         } else {
-            return Err(SshdConfigError::CommandError(t!("set.sshdConfigReadFailed", path = sshd_config_path.display()).to_string()));
+            return Err(SshdConfigError::CommandError(
+                t!(
+                    "set.sshdConfigReadFailed",
+                    path = sshd_config_path.display()
+                )
+                .to_string(),
+            ));
         }
         if !sshd_config_content.starts_with(SSHD_CONFIG_HEADER) {
             // If config file is not already managed by this resource, create a backup of the existing file
