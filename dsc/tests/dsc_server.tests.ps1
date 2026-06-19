@@ -642,7 +642,7 @@ greeting: Hello from YAML parameters
         @{ expression = "[add(2, 4)]"; expected = 6 }
         @{ expression = "[empty(createArray(1,2))]"; expected = $false }
         @{ expression = "[createArray(1,2,3)]"; expected = @(1,2,3) }
-        @{ expression = "[createObject('key1', 'value1', 'key2', 2)]"; expected = @{ key1 = 'value1'; key2 = 2 } }
+        @{ expression = "[createObject('key1', 'value1', 'key2', 2)]"; expected = [pscustomobject]@{ key1 = 'value1'; key2 = 2 } }
         @{ expression = "[createArray('hello', 'world')]"; expected = @('hello', 'world') }
         @{ expression = "[tryWhich('nonexistent')]"; expected = $null }
     ) {
@@ -662,7 +662,7 @@ greeting: Hello from YAML parameters
 
         $response = Send-McpRequest -request $mcpRequest
         $response.id | Should -Be 20
-        if ($expected -is [hashtable] -or $expected -is [array]) {
+        if ($expected -is [pscustomobject] -or $expected -is [array]) {
             $result = $response.result.structuredContent.result | ConvertTo-Json -Depth 10
             $expectedJson = $expected | ConvertTo-Json -Depth 10
             $result | Should -Be $expectedJson -Because ($response | ConvertTo-Json -Depth 20 | Out-String)
@@ -676,7 +676,7 @@ greeting: Hello from YAML parameters
         @{ function = "add"; parameters = @(2, 4); expected = 6 }
         @{ function = "empty"; parameters = @( "hello" ); expected = $false }
         @{ function = "createArray"; parameters = @(1,2,3); expected = @(1,2,3) }
-        @{ function = "createObject"; parameters = @('key1', 'value1', 'key2', 2); expected = @{ key1 = 'value1'; key2 = 2 } }
+        @{ function = "createObject"; parameters = @('key1', 'value1', 'key2', 2); expected = [pscustomobject]@{ key1 = 'value1'; key2 = 2 } }
         @{ function = "tryWhich"; parameters = @('nonexistent'); expected = $null }
     ) {
         param($function, $parameters, $expected)
@@ -695,7 +695,7 @@ greeting: Hello from YAML parameters
 
         $response = Send-McpRequest -request $mcpRequest
         $response.id | Should -Be 21
-        if ($expected -is [hashtable] -or $expected -is [array]) {
+        if ($expected -is [pscustomobject] -or $expected -is [array]) {
             $result = $response.result.structuredContent.result | ConvertTo-Json -Depth 10
             $expectedJson = $expected | ConvertTo-Json -Depth 10
             $result | Should -Be $expectedJson -Because ($response | ConvertTo-Json -Depth 20 | Out-String)
