@@ -107,7 +107,7 @@ Describe 'Discover extension tests' {
             $out = dsc extension list | ConvertFrom-Json
             $out.Count | Should -Be 1 -Because ($out | Out-String)
             $out.type | Should -Be 'Test/DiscoverRelative'
-            $out = dsc resource list 2> $TestDrive/error.log
+            $null = dsc resource list 2> $TestDrive/error.log
             $LASTEXITCODE | Should -Be 0
             $errorMessage = Get-Content -Path "$TestDrive/error.log" -Raw
             $errorMessage | Should -BeLike '*is not an absolute path*'
