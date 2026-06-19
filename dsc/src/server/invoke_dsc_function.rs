@@ -27,8 +27,8 @@ pub struct FunctionResponse {
 pub struct FunctionRequest {
     #[schemars(description = "The name of the DSC function to invoke")]
     pub function: String,
-    #[schemars(description = "The parameters to pass to the DSC function as JSON array.  Must match the function JSON schema from `list_dsc_function` tool.")]
-    pub parameters: FunctionValue,
+    #[schemars(description = "The parameters to pass to the DSC function as JSON array.  Must match the function JSON schema from `list_dsc_functions` tool.")]
+    pub parameters: Vec<Value>,
 }
 
 #[tool_router(router = invoke_dsc_function_router, vis = "pub")]
@@ -46,12 +46,8 @@ impl McpServer {
     pub async fn invoke_dsc_function(&self, Parameters(FunctionRequest { function, parameters }): Parameters<FunctionRequest>) -> Result<Json<FunctionResponse>, McpError> {
         let result = task::spawn_blocking(move || {
             // if parameters is not JSON array, return error
-            let parameters_array: Vec<Value> = match parameters {
-                FunctionValue::Value(Value::Array(arr)) => arr,
-                _ => return Err(McpError::invalid_request(t!("server.invoke_dsc_function.parametersNotArray"), None)),
-            };
             let function_dispatcher = FunctionDispatcher::new();
-            let result = function_dispatcher.invoke(&function, &parameters_array, &Context::new())
+            let result = function_dispatcher.invoke(&function, &parameters, &Context::new())
                 .map_err(|e| McpError::invalid_request(t!("server.invoke_dsc_function.functionInvocationFailed", function = function, error = e), None))?;
             Ok(FunctionResponse { result: FunctionValue::Value(result) })
         }).await.map_err(|e| McpError::internal_error(e.to_string(), None))??;

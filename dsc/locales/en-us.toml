@@ -101,12 +101,10 @@ failedSetParameters = "Failed to set parameters"
 [server.invoke_dsc_expression]
 parserInitializationFailed = "Failed to initialize parser: %{error}"
 expressionEvaluationFailed = "Failed to evaluate expression '%{expression}': %{error}"
-failedConvertResult = "Failed to convert expression result to string: %{error}"
 
 [server.invoke_dsc_function]
 parametersNotArray = "Parameters must be an array"
 functionInvocationFailed = "Function '%{function}' invocation failed: %{error}"
-failedConvertResult = "Failed to convert function result to string: %{error}"
 
 [server.invoke_dsc_resource]
 resourceNotFound = "Resource type '%{resource}' does not exist"

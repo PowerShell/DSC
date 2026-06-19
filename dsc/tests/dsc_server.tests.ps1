@@ -662,7 +662,7 @@ greeting: Hello from YAML parameters
 
         $response = Send-McpRequest -request $mcpRequest
         $response.id | Should -Be 20
-        if ($expected -is [hashtable]) {
+        if ($expected -is [hashtable] -or $expected -is [array]) {
             $result = $response.result.structuredContent.result | ConvertTo-Json -Depth 10
             $expectedJson = $expected | ConvertTo-Json -Depth 10
             $result | Should -Be $expectedJson -Because ($response | ConvertTo-Json -Depth 20 | Out-String)
@@ -695,7 +695,7 @@ greeting: Hello from YAML parameters
 
         $response = Send-McpRequest -request $mcpRequest
         $response.id | Should -Be 21
-        if ($expected -is [hashtable]) {
+        if ($expected -is [hashtable] -or $expected -is [array]) {
             $result = $response.result.structuredContent.result | ConvertTo-Json -Depth 10
             $expectedJson = $expected | ConvertTo-Json -Depth 10
             $result | Should -Be $expectedJson -Because ($response | ConvertTo-Json -Depth 20 | Out-String)
