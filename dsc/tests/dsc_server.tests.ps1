@@ -71,12 +71,14 @@ Describe 'Tests for DSC server' {
         }
 
         $tools = @{
-            'invoke_dsc_config'   = $false
-            'invoke_dsc_resource' = $false
-            'list_dsc_functions'  = $false
-            'list_dsc_resources'  = $false
-            'show_dsc_resource'   = $false
-            'show_dsc_schema'     = $false
+            'invoke_dsc_config'     = $false
+            'invoke_dsc_expression' = $false
+            'invoke_dsc_function'   = $false
+            'invoke_dsc_resource'   = $false
+            'list_dsc_functions'    = $false
+            'list_dsc_resources'    = $false
+            'show_dsc_resource'     = $false
+            'show_dsc_schema'       = $false
         }
 
         $response = Send-McpRequest -request $mcpRequest
@@ -633,5 +635,72 @@ greeting: Hello from YAML parameters
         $schema = dsc schema --type adapted-dsc-resource-manifest | ConvertFrom-Json -Depth 20
         $response.result.structuredContent.schema.'$schema' | Should -Be $schema.'$schema' -Because ($response.result.structuredContent | ConvertTo-Json -Depth 20 | Out-String)
         $response.result.structuredContent.schema.title | Should -BeExactly $schema.title -Because ($response.result.structuredContent | ConvertTo-Json -Depth 20 | Out-String)
+    }
+
+    It 'Calling invoke_dsc_expression works: <expression>' -TestCases @(
+        @{ expression = "[concat('Hello', ' ', 'World')]"; expected = "Hello World" }
+        @{ expression = "[add(2, 4)]"; expected = 6 }
+        @{ expression = "[empty(createArray(1,2))]"; expected = $false }
+        @{ expression = "[createArray(1,2,3)]"; expected = @(1,2,3) }
+        @{ expression = "[createObject('key1', 'value1', 'key2', 2)]"; expected = @{ key1 = 'value1'; key2 = 2 } }
+        @{ expression = "[createArray('hello', 'world')]"; expected = @('hello', 'world') }
+        @{ expression = "[tryWhich('nonexistent')]"; expected = $null }
+    ) {
+        param($expression, $expected)
+
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 20
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_expression"
+                arguments = @{
+                    expression = $expression
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 20
+        if ($expected -is [hashtable]) {
+            $result = $response.result.structuredContent.result | ConvertTo-Json -Depth 10
+            $expectedJson = $expected | ConvertTo-Json -Depth 10
+            $result | Should -Be $expectedJson -Because ($response | ConvertTo-Json -Depth 20 | Out-String)
+        } else {
+            $response.result.structuredContent.result | Should -Be $expected -Because ($response | ConvertTo-Json -Depth 20 | Out-String)
+        }
+    }
+
+    It 'Calling invoke_dsc_function works: <function>' -TestCases @(
+        @{ function = "concat"; parameters = @("Hello", " ", "World"); expected = "Hello World" }
+        @{ function = "add"; parameters = @(2, 4); expected = 6 }
+        @{ function = "empty"; parameters = @( "hello" ); expected = $false }
+        @{ function = "createArray"; parameters = @(1,2,3); expected = @(1,2,3) }
+        @{ function = "createObject"; parameters = @('key1', 'value1', 'key2', 2); expected = @{ key1 = 'value1'; key2 = 2 } }
+        @{ function = "tryWhich"; parameters = @('nonexistent'); expected = $null }
+    ) {
+        param($function, $parameters, $expected)
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 21
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_function"
+                arguments = @{
+                    function   = $function
+                    parameters = $parameters
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 21
+        if ($expected -is [hashtable]) {
+            $result = $response.result.structuredContent.result | ConvertTo-Json -Depth 10
+            $expectedJson = $expected | ConvertTo-Json -Depth 10
+            $result | Should -Be $expectedJson -Because ($response | ConvertTo-Json -Depth 20 | Out-String)
+        } else {
+            $response.result.structuredContent.result | Should -Be $expected -Because ($response | ConvertTo-Json -Depth 20 | Out-String)
+        }
     }
 }
