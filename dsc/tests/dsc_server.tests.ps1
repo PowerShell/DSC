@@ -340,7 +340,7 @@ Describe 'Tests for DSC server' {
 
         $response = Send-McpRequest -request $mcpRequest
         $response.id | Should -Be 12
-        $response.error.code | Should -Be -32600
+        $response.error.code | Should -Be -32602
         $response.error.message | Should -Not -BeNullOrEmpty
     }
 

@@ -50,7 +50,7 @@ impl McpServer {
             function_dispatcher
                 .invoke(&function_name, &arguments, &context)
                 .map_err(|e| {
-                    McpError::invalid_request(
+                    McpError::invalid_params(
                         t!(
                             "mcp.invoke_dsc_function.failedInvoke",
                             function = function_name,
