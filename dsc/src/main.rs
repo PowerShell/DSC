@@ -31,11 +31,22 @@ i18n!("locales", fallback = "en-us");
 fn main() {
     #[cfg(windows)]
     {
-        let mut builder = std::thread::Builder::new();
-        builder = builder.stack_size(2 * 1024 * 1024); // Default stack is too small on Windows causing overflow
-        builder.spawn(|| {
-            dsc_main();
-        }).unwrap().join().unwrap();
+        let handle = match std::thread::Builder::new()
+            .name("dsc-main".to_string())
+            .stack_size(2 * 1024 * 1024) // Default stack is too small on Windows causing overflow
+            .spawn(dsc_main)
+        {
+            Ok(handle) => handle,
+            Err(err) => {
+                error!("Failed to spawn dsc main thread: {err}");
+                exit(util::EXIT_DSC_ERROR);
+            }
+        };
+
+        if let Err(err) = handle.join() {
+            error!("dsc main thread panicked: {err:?}");
+            exit(util::EXIT_DSC_ERROR);
+        }
     }
     #[cfg(not(windows))]
     {
