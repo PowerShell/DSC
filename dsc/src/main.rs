@@ -29,6 +29,21 @@ pub mod util;
 i18n!("locales", fallback = "en-us");
 
 fn main() {
+    #[cfg(windows)]
+    {
+        let mut builder = std::thread::Builder::new();
+        builder = builder.stack_size(2 * 1024 * 1024); // Default stack is too small on Windows causing overflow
+        builder.spawn(|| {
+            dsc_main();
+        }).unwrap().join().unwrap();
+    }
+    #[cfg(not(windows))]
+    {
+        dsc_main();
+    }
+}
+
+fn dsc_main() {
     #[cfg(debug_assertions)]
     check_debug();
 
