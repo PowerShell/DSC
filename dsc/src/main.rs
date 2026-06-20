@@ -38,13 +38,13 @@ fn main() {
         {
             Ok(handle) => handle,
             Err(err) => {
-                error!("Failed to spawn dsc main thread: {err}");
+                error!("{}", t!("main.failedToSpawnMain", error = err));
                 exit(util::EXIT_DSC_ERROR);
             }
         };
 
         if let Err(err) = handle.join() {
-            error!("dsc main thread panicked: {err:?}");
+            error!("{}", t!("main.failedToJoinMain", error = err : {:?}));
             exit(util::EXIT_DSC_ERROR);
         }
     }
