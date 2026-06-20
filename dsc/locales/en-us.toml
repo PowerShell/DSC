@@ -39,6 +39,8 @@ serverAbout = "Use DSC as a server over JSON-RPC (useful as MCP server)"
 bicepAbout = "Use DSC as a Bicep server over gRPC"
 
 [main]
+failedToSpawnMain = "Failed to spawn dsc main thread: %{error}"
+failedToJoinMain = "Failed to join dsc main thread: %{error}"
 ctrlCReceived = "Ctrl-C received"
 failedCtrlCHandler = "Failed to set Ctrl-C handler"
 generatingCompleter = "Generating completion script for"
