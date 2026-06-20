@@ -99,6 +99,7 @@ pub mod try_which;
 
 /// The kind of argument that a function accepts.
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Serialize, JsonSchema, DscRepoSchema)]
+#[serde(rename_all = "camelCase")]
 #[dsc_repo_schema(base_name = "argKind", folder_path = "definitions/functions/builtin")]
 pub enum FunctionArgKind {
     Array,
@@ -382,7 +383,7 @@ pub struct FunctionDefinition {
 }
 
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Serialize, JsonSchema, DscRepoSchema)]
-#[serde(deny_unknown_fields)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 #[dsc_repo_schema(base_name = "category", folder_path = "definitions/functions/builtin")]
 pub enum FunctionCategory {
     Array,
