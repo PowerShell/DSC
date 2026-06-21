@@ -54,17 +54,22 @@ Describe 'config schema tests' {
         $LASTEXITCODE | Should -Be 0
 
         foreach ($property in $schema.properties.keys) {
-            if ($property -eq '$schema') {
-                continue
-            }
-
-            $property | Should -MatchExactly '^[a-z][a-zA-Z0-9]*$' -Because "Property '$property' does not follow camelCase convention."
+            $property | Should -MatchExactly '^[$_]?[a-z][a-zA-Z0-9]*$' -Because "Property '$property' does not follow camelCase convention."
         }
 
         foreach ($def in $schema.'$defs'.keys) {
             if ($null -ne $schema.'$defs'[$def].enum) {
                 foreach ($enumValue in $schema.'$defs'[$def].enum) {
                     $enumValue | Should -MatchExactly '^[a-z][a-zA-Z0-9]*$' -Because "Enum value '$enumValue' in definition '$def' does not follow camelCase convention."
+                }
+            }
+
+            if ($null -ne $schema.'$defs'[$def].properties) {
+                foreach ($property in $schema.'$defs'[$def].properties.keys) {
+                    if ($property -eq 'Microsoft.DSC') {
+                        continue
+                    }
+                    $property | Should -MatchExactly '^[$_]?[a-z][a-zA-Z0-9]*$' -Because "Property '$property' in definition '$def' does not follow camelCase convention."
                 }
             }
         }
