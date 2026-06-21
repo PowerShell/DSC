@@ -3,15 +3,12 @@
 
 Describe 'config schema tests' {
     BeforeDiscovery {
-        $out = dsc schema --type 2>&1
-        write-verbose -verbose "Output from 'dsc schema --type': $out"
-        $isMatch = ($out | Out-String) -match '\[possible values: (?<values>.*?)\]'
+        # redirecting stderr results in an ErrorRecord, so use Out-String to capture the raw output for regex parsing
+        $out = dsc schema --type 2>&1 | Out-String
+        $isMatch = $out -match '\[possible values: (?<values>.*?)\]'
         if (-not $isMatch) {
             throw "Failed to parse schema types from output: $out"
         }
-        write-verbose -Verbose "Regex match success: $isMatch"
-        write-verbose -verbose ($matches | Out-String)
-        write-verbose -Verbose "Matched schema types: $($matches['values'])"
         $schemaTypes = $matches['values'].Split(',').Trim()
         $schemaTestCases = $schemaTypes | ForEach-Object { @{ type = $_ } }
     }
