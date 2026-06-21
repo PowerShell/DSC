@@ -257,7 +257,7 @@ Describe 'Tests for DSC server' {
         $response.id | Should -Be 9
         $response.result.structuredContent.functions.Count | Should -Be 1
         $response.result.structuredContent.functions[0].name | Should -BeExactly "array"
-        $response.result.structuredContent.functions[0].category | Should -BeExactly "Array"
+        $response.result.structuredContent.functions[0].category | Should -BeExactly "array"
     }
 
     It 'Calling list_dsc_functions with wildcard pattern works' {
