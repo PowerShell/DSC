@@ -10,6 +10,7 @@ Describe 'config schema tests' {
             throw "Failed to parse schema types from output: $out"
         }
         write-verbose -Verbose "Regex match success: $isMatch"
+        write-verbose -verbose ($matches | Out-String)
         write-verbose -Verbose "Matched schema types: $($matches['values'])"
         $schemaTypes = $matches['values'].Split(',').Trim()
         $schemaTestCases = $schemaTypes | ForEach-Object { @{ type = $_ } }
