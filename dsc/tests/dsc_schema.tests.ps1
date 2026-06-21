@@ -2,6 +2,16 @@
 # Licensed under the MIT License.
 
 Describe 'config schema tests' {
+    BeforeDiscovery {
+        $out = dsc schema --type 2>&1
+        $isMatch = $out -match '\[possible values: (?<values>.*?)\]'
+        if (-not $isMatch) {
+            throw "Failed to parse schema types from output: $out"
+        }
+        $schemaTypes = $matches['values'].Split(',').Trim()
+        $schemaTestCases = $schemaTypes | ForEach-Object { @{ type = $_ } }
+    }
+
     It 'return resource schema' -Skip:(!$IsWindows) {
         $schema = dsc resource schema -r Microsoft.Windows/Registry
         $LASTEXITCODE | Should -Be 0
@@ -35,5 +45,28 @@ Describe 'config schema tests' {
         $schema | Should -Not -BeNullOrEmpty
         $schema = $schema | ConvertFrom-Json
         $schema.'$schema' | Should -BeExactly 'https://json-schema.org/draft/2020-12/schema'
+    }
+
+    It 'schema uses camelCase for <type>' -TestCases $schemaTestCases {
+        param($type)
+
+        $schema = dsc schema -t $type | ConvertFrom-Json -Depth 20 -AsHashtable
+        $LASTEXITCODE | Should -Be 0
+
+        foreach ($property in $schema.properties.keys) {
+            if ($property -eq '$schema') {
+                continue
+            }
+
+            $property | Should -MatchExactly '^[a-z][a-zA-Z0-9]*$' -Because "Property '$property' does not follow camelCase convention."
+        }
+
+        foreach ($def in $schema.'$defs'.keys) {
+            if ($null -ne $schema.'$defs'[$def].enum) {
+                foreach ($enumValue in $schema.'$defs'[$def].enum) {
+                    $enumValue | Should -MatchExactly '^[a-z][a-zA-Z0-9]*$' -Because "Enum value '$enumValue' in definition '$def' does not follow camelCase convention."
+                }
+            }
+        }
     }
 }
