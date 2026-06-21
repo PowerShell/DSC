@@ -4,6 +4,7 @@
 Describe 'config schema tests' {
     BeforeDiscovery {
         $out = dsc schema --type 2>&1
+        write-verbose -verbose "Output from 'dsc schema --type': $out"
         $isMatch = $out -match '\[possible values: (?<values>.*?)\]'
         if (-not $isMatch) {
             throw "Failed to parse schema types from output: $out"
