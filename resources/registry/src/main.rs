@@ -6,7 +6,8 @@ use crossterm::event;
 #[cfg(debug_assertions)]
 use std::env;
 
-use args::Arguments;
+use adapter::{adapter_export, adapter_get, adapter_set, AdaptedRegistryValue};
+use args::{AdapterSubCommand, Arguments, ConfigSubCommand, SubCommand};
 use clap::Parser;
 use dsc_lib_registry::{config::Registry, RegistryHelper};
 use rust_i18n::t;
@@ -16,7 +17,9 @@ use tracing::{error, trace};
 use tracing_subscriber::{filter::LevelFilter, prelude::__tracing_subscriber_SubscriberExt, EnvFilter, Layer};
 use types::RegistryList;
 
+mod adapter;
 mod args;
+mod error;
 mod types;
 
 rust_i18n::i18n!("locales", fallback = "en-us");
@@ -34,21 +37,52 @@ fn main() {
 
     let args = Arguments::parse();
     match args.subcommand {
-        args::SubCommand::Query { key_path, value_name, recurse } => {
+        SubCommand::Adapter { subcommand } => {
+            let result = match subcommand {
+                AdapterSubCommand::Get { input, adapted_resource } => {
+                    adapter_get(&input, &adapted_resource)
+                },
+                AdapterSubCommand::Set { input, adapted_resource } => {
+                    if let Err(e) = adapter_set(&input, &adapted_resource) {
+                        error!("{e}");
+                        exit(EXIT_REGISTRY_ERROR);
+                    }
+                    exit(EXIT_SUCCESS);
+                },
+                AdapterSubCommand::Export { input, adapted_resource } => {
+                    adapter_export(&input, &adapted_resource)
+                },
+                AdapterSubCommand::Schema => {
+                    let schema = schema_for!(AdaptedRegistryValue);
+                    println!("{}", serde_json::to_string(&schema).unwrap());
+                    exit(EXIT_SUCCESS);
+                }
+            };
+            match result {
+                Ok(output) => {
+                    println!("{output}");
+                },
+                Err(err) => {
+                    error!("{err}");
+                    exit(EXIT_INVALID_INPUT);
+                }
+            }
+        },
+        SubCommand::Query { key_path, value_name, recurse } => {
             trace!("Get key_path: {key_path}, value_name: {value_name:?}, recurse: {recurse}");
         },
-        args::SubCommand::Set { key_path, value } => {
+        SubCommand::Set { key_path, value } => {
             trace!("Set key_path: {key_path}, value: {value}");
         },
-        args::SubCommand::Remove { key_path, value_name, recurse } => {
+        SubCommand::Remove { key_path, value_name, recurse } => {
             trace!("Remove key_path: {key_path}, value_name: {value_name:?}, recurse: {recurse}");
         },
-        args::SubCommand::Find { key_path, find, recurse, keys_only, values_only } => {
+        SubCommand::Find { key_path, find, recurse, keys_only, values_only } => {
             trace!("Find key_path: {key_path}, find: {find}, recurse: {recurse:?}, keys_only: {keys_only:?}, values_only: {values_only:?}");
         },
-        args::SubCommand::Config { subcommand } => {
+        SubCommand::Config { subcommand } => {
             match subcommand {
-                args::ConfigSubCommand::Get{input, list} => {
+                ConfigSubCommand::Get{input, list} => {
                     trace!("Get input: {input}");
                     let mut output = RegistryList { registry_entries: vec![] };
                     let reg_list = import_input(&input, list);
@@ -80,7 +114,7 @@ fn main() {
                     println!("{json}");
                     exit(EXIT_SUCCESS);
                 },
-                args::ConfigSubCommand::Set{input, list, what_if} => {
+                ConfigSubCommand::Set{input, list, what_if} => {
                     trace!("Set input: {input}, what_if: {what_if}");
                     let mut output = RegistryList { registry_entries: vec![] };
                     let reg_list = import_input(&input, list);
@@ -141,7 +175,7 @@ fn main() {
                     }
                     exit(EXIT_SUCCESS);
                 },
-                args::ConfigSubCommand::Delete{input, what_if} => {
+                ConfigSubCommand::Delete{input, what_if} => {
                     trace!("Delete input: {input}, what_if: {what_if}");
                     let mut reg_helper = match RegistryHelper::new_from_json(&input) {
                         Ok(reg_helper) => reg_helper,

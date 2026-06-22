@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{args::SchemaType, mcp::mcp_server::McpServer, util};
+use crate::{args::SchemaType, server::mcp_server::McpServer, util};
 use rmcp::{ErrorData as McpError, Json, tool, tool_router, handler::server::wrapper::Parameters};
 use schemars::{JsonSchema, json_schema};
 use serde::{Deserialize, Serialize};
