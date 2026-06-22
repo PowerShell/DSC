@@ -29,6 +29,32 @@ pub mod util;
 i18n!("locales", fallback = "en-us");
 
 fn main() {
+    #[cfg(windows)]
+    {
+        let handle = match std::thread::Builder::new()
+            .name("dsc-main".to_string())
+            .stack_size(2 * 1024 * 1024) // Default stack is too small on Windows causing overflow
+            .spawn(dsc_main)
+        {
+            Ok(handle) => handle,
+            Err(err) => {
+                error!("{}", t!("main.failedToSpawnMain", error = err));
+                exit(util::EXIT_DSC_ERROR);
+            }
+        };
+
+        if let Err(err) = handle.join() {
+            error!("{}", t!("main.failedToJoinMain", error = err : {:?}));
+            exit(util::EXIT_DSC_ERROR);
+        }
+    }
+    #[cfg(not(windows))]
+    {
+        dsc_main();
+    }
+}
+
+fn dsc_main() {
     #[cfg(debug_assertions)]
     check_debug();
 

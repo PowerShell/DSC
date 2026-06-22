@@ -70,7 +70,7 @@ resources:
         $out = dsc config export -i "$export_yaml" | ConvertFrom-Json -Depth 10
         $LASTEXITCODE | Should -Be 0
         $out.resources.count | Should -Be 1
-        ($out.resources[0].properties.psobject.properties | Measure-Object).count | Should -Be 1
+        ($out.resources[0].properties.psobject.properties | Measure-Object).count | Should -Be 2
         $out.resources[0].properties.passwordAuthentication | Should -Be $false
     }
 
@@ -101,7 +101,7 @@ resources:
             $out.resources[0].properties._inheritedDefaults | Should -BeNullOrEmpty
         } else {
             $out.results.count | Should -Be 1
-            ($out.results.result.actualState.psobject.properties | Measure-Object).count | Should -Be 2
+            ($out.results.result.actualState.psobject.properties | Measure-Object).count | Should -Be 3
             $out.results.result.actualState.loglevel | Should -Be 'debug3'
             $out.results.result.actualState._inheritedDefaults | Should -BeNullOrEmpty
         }
