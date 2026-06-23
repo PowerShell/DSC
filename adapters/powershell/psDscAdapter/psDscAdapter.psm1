@@ -642,6 +642,9 @@ function GetTypeInstanceFromModule {
         # `Import-Module -Passthru` will return multiple objects if there are ScriptsToProcess, so we use `Get-Module` separately
         Import-Module -Name $modulename -Force -ErrorAction Stop
         $module = Get-Module -Name $modulename
+        if ($module.Count -gt 1) {
+            throw "Multiple modules imported for $modulename"
+        }
     }
     $instance = $module.Invoke([scriptblock]::Create("'$classname' -as 'type'"))
     return $instance
