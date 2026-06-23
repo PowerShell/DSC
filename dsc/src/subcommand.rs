@@ -615,18 +615,27 @@ pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat
     }
 }
 
+/// Indicates whether to emit a table based on the output format and whether stdout is a terminal.
+fn should_write_table(format: Option<&ListOutputFormat>) -> bool {
+    if matches!(format, Some(ListOutputFormat::TableNoTruncate)) {
+        // write as table if user specified the table format
+        true
+    } else {
+        // write as table if format is not specified and interactive
+        format.is_none() && io::stdout().is_terminal()
+    }
+}
+
 fn list_extensions(dsc: &mut DscManager, extension_name: &TypeNameFilter, format: Option<&ListOutputFormat>, progress_format: ProgressFormat) {
-    let mut write_table = false;
+    let write_table = should_write_table(format);
+
     let mut table = Table::new(&[
         t!("subcommand.tableHeader_type").to_string().as_ref(),
         t!("subcommand.tableHeader_version").to_string().as_ref(),
         t!("subcommand.tableHeader_capabilities").to_string().as_ref(),
         t!("subcommand.tableHeader_description").to_string().as_ref(),
     ]);
-    if format.is_none() && io::stdout().is_terminal() {
-        // write as table if format is not specified and interactive
-        write_table = true;
-    }
+
     let mut include_separator = false;
 
     for manifest_resource in dsc.list_available(&DiscoveryKind::Extension, extension_name, None, progress_format) {
@@ -682,7 +691,7 @@ fn list_extensions(dsc: &mut DscManager, extension_name: &TypeNameFilter, format
 }
 
 fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>, output_format: Option<&ListOutputFormat>) {
-    let mut write_table = false;
+    let write_table = should_write_table(output_format);
     let mut table = Table::new(&[
         t!("subcommand.tableHeader_functionCategory").to_string().as_ref(),
         t!("subcommand.tableHeader_functionName").to_string().as_ref(),
@@ -691,10 +700,7 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
         t!("subcommand.tableHeader_argTypes").to_string().as_ref(),
         t!("subcommand.tableHeader_description").to_string().as_ref(),
     ]);
-    if output_format.is_none() && io::stdout().is_terminal() {
-        // write as table if format is not specified and interactive
-        write_table = true;
-    }
+
     let mut include_separator = false;
     let returned_types= [
         (FunctionArgKind::Array, "a"),
