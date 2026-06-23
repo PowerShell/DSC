@@ -700,15 +700,6 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
     ]);
 
     let mut include_separator = false;
-    let returned_types= [
-        (FunctionArgKind::Array, "a"),
-        (FunctionArgKind::Boolean, "b"),
-        (FunctionArgKind::Lambda, "l"),
-        (FunctionArgKind::Number, "n"),
-        (FunctionArgKind::String, "s"),
-        (FunctionArgKind::Object, "o"),
-    ];
-
     let asterisks = String::from("*");
     let name = function_name.unwrap_or(&asterisks);
     let regex_str = convert_wildcard_to_regex(name);
@@ -727,14 +718,6 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
         }
 
         if write_table {
-            // construct arg_types from '-' times number of accepted_arg_types
-            let mut arg_types = "-".repeat(returned_types.len());
-            for (i, (arg_type, letter)) in returned_types.iter().enumerate() {
-                if function.return_types.contains(arg_type) {
-                    arg_types.replace_range(i..=i, letter);
-                }
-            }
-
             table.add_row(vec![
                 function.category.iter().map(std::string::ToString::to_string).collect::<Vec<String>>().join(", "),
                 function.name,
