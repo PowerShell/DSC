@@ -71,6 +71,7 @@ pub mod path;
 pub mod range;
 pub mod reference;
 pub mod resource_id;
+pub mod restart_required;
 pub mod secret;
 pub mod shallow_merge;
 pub mod skip;

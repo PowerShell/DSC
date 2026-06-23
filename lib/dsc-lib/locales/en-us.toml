@@ -657,6 +657,13 @@ description = "Constructs a resource ID from the given type and name"
 syntax = "resourceId( <type>, <name> )"
 incorrectTypeFormat = "Type argument must contain exactly one slash"
 
+[functions.restartRequired]
+description = "Determines if a restart is required.  The `name` argument is required for process and service, but not provided for system."
+syntax = "restartRequired( <process | service | system>, [name] )"
+invalidKind = "Invalid kind '%{kind}', must be one of: process, service, system"
+nameRequired = "The 'name' argument is required for kind '%{kind}'"
+nameNotAllowed = "The 'name' argument is not allowed for kind '%{kind}'"
+
 [functions.secret]
 description = "Retrieves a secret from a vault"
 syntax = "secret( <name>, [vault] )"
