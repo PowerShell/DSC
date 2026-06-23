@@ -235,7 +235,7 @@ function Invoke-DscCacheRefresh {
             }
 
             # workaround: Use GetTypeInstanceFromModule to get the type instance from the module and validate if it is a class-based resource
-            $classBased = GetTypeInstanceFromModule -modulename $moduleName -classname $dscResource.Name -ErrorAction SilentlyContinue
+            $classBased = GetTypeInstanceFromModule -modulename $moduleName -classname $dscResource.Name
             if ($classBased -and ($classBased.CustomAttributes.AttributeType.Name -eq 'DscResourceAttribute')) {
                 Write-Debug -Debug ("Detected class-based resource: $($dscResource.Name) => Type: $($classBased.BaseType.FullName)")
                 $dscResourceInfo.ImplementationDetail = 'ClassBased'
@@ -623,7 +623,13 @@ function GetTypeInstanceFromModule {
         [Parameter(Mandatory = $true)]
         [string] $classname
     )
-    $instance = & (Import-Module $modulename -PassThru) ([scriptblock]::Create("'$classname' -as 'type'"))
+    $module = Get-Module -Name $modulename
+    if ($null -eq $module) {
+        # `Import-Module -Passthru` will return multiple objects if there are ScriptsToProcess, so we use `Get-Module` separately
+        Import-Module -Name $modulename -Force -ErrorAction Stop
+        $module = Get-Module -Name $modulename
+    }
+    $instance = $module.Invoke([scriptblock]::Create("'$classname' -as 'type'"))
     return $instance
 }
 
