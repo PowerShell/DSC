@@ -221,6 +221,11 @@ process {
     #endregion Setup
 
     if (!$SkipBuild) {
+        if ($UpdateLockFile) {
+            $lockFile = Join-Path $PSScriptRoot "Cargo.lock"
+            Remove-Item $lockFile -Force
+        }
+
         $progressParams.Activity = 'Building the projects'
         Write-BuildProgress @progressParams
         Write-BuildProgress @progressParams -Status 'Generating grammar bindings'
