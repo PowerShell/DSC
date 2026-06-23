@@ -16,6 +16,8 @@ impl Function for Greater {
         FunctionMetadata {
             name: "greater".to_string(),
             description: t!("functions.greater.description").to_string(),
+            syntax: t!("functions.greater.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Comparison],
             min_args: 2,
             max_args: 2,

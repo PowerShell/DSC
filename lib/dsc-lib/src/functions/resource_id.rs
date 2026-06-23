@@ -16,6 +16,8 @@ impl Function for ResourceId {
         FunctionMetadata {
             name: "resourceId".to_string(),
             description: t!("functions.resourceId.description").to_string(),
+            syntax: t!("functions.resourceId.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Resource],
             min_args: 2,
             max_args: 2,

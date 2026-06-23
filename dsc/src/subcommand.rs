@@ -695,9 +695,7 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
     let mut table = Table::new(&[
         t!("subcommand.tableHeader_functionCategory").to_string().as_ref(),
         t!("subcommand.tableHeader_functionName").to_string().as_ref(),
-        t!("subcommand.tableHeader_minArgs").to_string().as_ref(),
-        t!("subcommand.tableHeader_maxArgs").to_string().as_ref(),
-        t!("subcommand.tableHeader_argTypes").to_string().as_ref(),
+        t!("subcommand.tableHeader_syntax").to_string().as_ref(),
         t!("subcommand.tableHeader_description").to_string().as_ref(),
     ]);
 
@@ -737,18 +735,10 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
                 }
             }
 
-            let max_args = if function.max_args == usize::MAX {
-                t!("subcommand.maxInt").to_string()
-            } else {
-                function.max_args.to_string()
-            };
-
             table.add_row(vec![
                 function.category.iter().map(std::string::ToString::to_string).collect::<Vec<String>>().join(", "),
                 function.name,
-                function.min_args.to_string(),
-                max_args,
-                arg_types,
+                function.syntax,
                 function.description
             ]);
         }

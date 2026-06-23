@@ -128,6 +128,8 @@ impl Display for FunctionArgKind {
 pub struct FunctionMetadata {
     pub name: String,
     pub description: String,
+    pub syntax: String,
+    pub constraints: Option<String>,
     pub category: Vec<FunctionCategory>,
     pub min_args: usize,
     pub max_args: usize,
@@ -347,6 +349,8 @@ impl FunctionDispatcher {
                 category: metadata.category.clone(),
                 name: name.clone(),
                 description: metadata.description,
+                syntax: metadata.syntax,
+                constraints: metadata.constraints.clone(),
                 min_args: metadata.min_args,
                 max_args: metadata.max_args,
                 accepted_arg_ordered_types: metadata.accepted_arg_ordered_types.clone(),
@@ -370,6 +374,8 @@ pub struct FunctionDefinition {
     pub category: Vec<FunctionCategory>,
     pub name: String,
     pub description: String,
+    pub syntax: String,
+    pub constraints: Option<String>,
     #[serde(rename = "minArgs")]
     pub min_args: usize,
     #[serde(rename = "maxArgs")]

@@ -16,6 +16,8 @@ impl Function for Empty {
         FunctionMetadata {
             name: "empty".to_string(),
             description: t!("functions.empty.description").to_string(),
+            syntax: t!("functions.empty.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Array, FunctionCategory::Object, FunctionCategory::String],
             min_args: 1,
             max_args: 1,

@@ -19,6 +19,8 @@ impl Function for DataUriToString {
         FunctionMetadata {
             name: "dataUriToString".to_string(),
             description: t!("functions.dataUriToString.description").to_string(),
+            syntax: t!("functions.dataUriToString.syntax").to_string(),
+            constraints: Some(t!("functions.dataUriToString.constraint").to_string()),
             category: vec![FunctionCategory::String],
             min_args: 1,
             max_args: 1,
@@ -52,7 +54,7 @@ impl Function for DataUriToString {
         let metadata = &data_uri[5..comma_pos]; // Skip "data:"
         let encoded_data = &data_uri[comma_pos + 1..];
         let parts: Vec<&str> = metadata.split(';').collect();
-        
+
         let mediatype = parts[0];
         if mediatype.contains('=') || mediatype.starts_with(':') {
             return Err(DscError::FunctionArg(

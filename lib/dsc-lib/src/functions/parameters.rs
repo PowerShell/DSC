@@ -18,6 +18,8 @@ impl Function for Parameters {
         FunctionMetadata {
             name: "parameters".to_string(),
             description: t!("functions.parameters.description").to_string(),
+            syntax: t!("functions.parameters.syntax").to_string(),
+            constraints: Some(t!("functions.parameters.constraints").to_string()),
             category: vec![FunctionCategory::Deployment],
             min_args: 1,
             max_args: 1,
