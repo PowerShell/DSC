@@ -209,26 +209,27 @@ class ResourceAdapter:
                         data = instance.get()
                     self.logger.debug(f"GET returned: {data}")
 
-                    try:
-                        resource_name = json.loads(json_input or "{}").get("name", "") or resolved_type
-                    except Exception:
-                        resource_name = resolved_type or ""
+                    return (0, data)
+                    # try:
+                    #     resource_name = json.loads(json_input or "{}").get("name", "") or resolved_type
+                    # except Exception:
+                    #     resource_name = resolved_type or ""
 
-                    full = {
-                            "metadata": {"Microsoft.DSC": {"operation": "Get"}},
-                            "name": resource_name, 
-                            "type": "Microsoft.DSC.Adapters/Python",
-                            "result": [
-                                {
-                                    "name": resource_name,
-                                    "type": resolved_type,
-                                    "result": {
-                                        "actualState": data
-                                    }
-                                }
-                            ]
-                        }
-                    return (0, full)
+                    # full = {
+                    #         "metadata": {"Microsoft.DSC": {"operation": "Get"}},
+                    #         "name": resource_name, 
+                    #         "type": "Microsoft.DSC.Adapters/Python",
+                    #         "result": [
+                    #             {
+                    #                 "name": resource_name,
+                    #                 "type": resolved_type,
+                    #                 "result": {
+                    #                     "actualState": data
+                    #                 }
+                    #             }
+                    #         ]
+                    #     }
+                    # return (0, full)
 
                 elif op == "set":
                     self.logger.info(f"Executing SET on '{resolved_type}'")

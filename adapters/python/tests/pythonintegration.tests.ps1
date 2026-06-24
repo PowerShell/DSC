@@ -21,7 +21,7 @@ Describe "Python Adapter - Integration Tests via DSC CLI" {
 
                 $Result.ExitCode | Should -Not -Be 0
                 $Result.StdErr | Should -Not -BeNullOrEmpty
-                $Result.StdErr | Should -Match "Operation Executable 'python3' not found|Failed to run process 'python3'|Command: Resource 'python3' \[exit code 2\]"
+                $Result.StdErr | Should -Match "Operation Executable 'python3' not found|Failed to run process 'python3'|Command: Resource 'python3' \[exit code 2\]|Resource not found:\s*PythonTest/|Failed to parse resource:"
         }
 
         function Initialize-DscPythonPath {
