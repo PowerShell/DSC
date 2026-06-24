@@ -645,6 +645,7 @@ greeting: Hello from YAML parameters
         @{ expression = "[createObject('key1', 'value1', 'key2', 2)]"; expected = [pscustomobject]@{ key1 = 'value1'; key2 = 2 } }
         @{ expression = "[createArray('hello', 'world')]"; expected = @('hello', 'world') }
         @{ expression = "[tryWhich('nonexistent')]"; expected = $null }
+        @{ expression = "bareWord"; expected = "bareWord" }
     ) {
         param($expression, $expected)
 
@@ -671,6 +672,25 @@ greeting: Hello from YAML parameters
         }
     }
 
+    It 'Calling invoke_dsc_expression with invalid expression returns error' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 21
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_expression"
+                arguments = @{
+                    expression = "[invalid expression]"
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 21
+        $response.error.code | Should -Be -32600
+        $response.error.message | Should -BeExactly "Failed to evaluate expression '[invalid expression]': Parser: Unable to parse statement root: [invalid expression]"
+    }
+
     It 'Calling invoke_dsc_function works: <function>' -TestCases @(
         @{ function = "concat"; parameters = @("Hello", " ", "World"); expected = "Hello World" }
         @{ function = "add"; parameters = @(2, 4); expected = 6 }
@@ -682,7 +702,7 @@ greeting: Hello from YAML parameters
         param($function, $parameters, $expected)
         $mcpRequest = @{
             jsonrpc = "2.0"
-            id      = 21
+            id      = 22
             method  = "tools/call"
             params  = @{
                 name      = "invoke_dsc_function"
@@ -694,7 +714,7 @@ greeting: Hello from YAML parameters
         }
 
         $response = Send-McpRequest -request $mcpRequest
-        $response.id | Should -Be 21
+        $response.id | Should -Be 22
         if ($expected -is [pscustomobject] -or $expected -is [array]) {
             $result = $response.result.structuredContent.result | ConvertTo-Json -Depth 10
             $expectedJson = $expected | ConvertTo-Json -Depth 10
@@ -702,5 +722,45 @@ greeting: Hello from YAML parameters
         } else {
             $response.result.structuredContent.result | Should -Be $expected -Because ($response | ConvertTo-Json -Depth 20 | Out-String)
         }
+    }
+
+    It 'Calling invoke_dsc_function with invalid function returns error' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 23
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_function"
+                arguments = @{
+                    function   = "nonexistentFunction"
+                    parameters = @()
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 23
+        $response.error.code | Should -Be -32600
+        $response.error.message | Should -BeExactly "Function 'nonexistentFunction' invocation failed: Parser: Unknown function 'nonexistentFunction'"
+    }
+
+    It 'Calling invoke_dsc_function with invalid function parameters returns error' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 24
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_function"
+                arguments = @{
+                    function   = "add"
+                    parameters = @("not a number", 4)
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 24
+        $response.error.code | Should -Be -32600
+        $response.error.message | Should -BeExactly "Function 'add' invocation failed: Parser: Function 'add' does not accept string arguments, accepted types are: Number"
     }
 }
