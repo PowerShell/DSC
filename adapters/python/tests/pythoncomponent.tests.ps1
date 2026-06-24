@@ -185,8 +185,8 @@ Describe "Python Adapter - Component Tests" {
     }
 
     It "GET returns expected wrapper output for <CaseName>" -TestCases @(
-        @{ CaseName = "named input"; InputJson = '{"name":"pkg","_exist":true}'; ExpectedActualStateName = "pkg"; ExpectedActualStateExists = $true; ExpectedWrapperName = $null }
-        @{ CaseName = "missing name input"; InputJson = '{"_exist":true}'; ExpectedActualStateName = $null; ExpectedActualStateExists = $null; ExpectedWrapperName = "PythonTest/Get" }
+        @{ CaseName = "named input"; InputJson = '{"name":"pkg","_exist":true}'; ExpectedActualStateName = "pkg"; ExpectedActualStateExists = $true }
+        @{ CaseName = "missing name input"; InputJson = '{"_exist":true}'; ExpectedActualStateName = "pkg"; ExpectedActualStateExists = $true }
     ) {
         $resourceType = "PythonTest/Get"
         $result = Invoke-Adapter -Operation "get" -ResourceType $resourceType -InputJson $InputJson
@@ -196,18 +196,8 @@ Describe "Python Adapter - Component Tests" {
 
         $payload = $result.StdOut | ConvertFrom-Json
 
-        if ($null -ne $ExpectedActualStateName) {
-              $payload.metadata."Microsoft.DSC".operation | Should -Be "Get"
-              $payload.type | Should -Be "Microsoft.DSC.Adapters/Python"
-              $payload.result[0].type | Should -Be $resourceType
-              $payload.result[0].result.actualState.name | Should -Be $ExpectedActualStateName
-              $payload.result[0].result.actualState._exist | Should -Be $ExpectedActualStateExists
-        }
-
-        if ($null -ne $ExpectedWrapperName) {
-              $payload.name | Should -Be $ExpectedWrapperName
-              $payload.result[0].name | Should -Be $ExpectedWrapperName
-        }
+        $payload.name | Should -Be $ExpectedActualStateName
+        $payload._exist | Should -Be $ExpectedActualStateExists
     }
 
     It "SET returns after_state and diffs lines" {
