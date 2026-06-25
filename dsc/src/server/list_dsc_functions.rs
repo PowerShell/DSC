@@ -47,7 +47,7 @@ impl McpServer {
 
                 let regex = regex_builder.build()
                     .map_err(|_| McpError::invalid_params(
-                        t!("mcp.list_dsc_functions.invalidNamePattern", pattern = name_pattern),
+                        t!("server.list_dsc_functions.invalidNamePattern", pattern = name_pattern),
                         None
                     ))?;
 
