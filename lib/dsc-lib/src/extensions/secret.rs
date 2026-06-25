@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::{
+    configure::parameters::SecureString,
     dscerror::DscError,
     dscresources::{
         command_resource::invoke_command,
@@ -100,7 +101,10 @@ impl DscExtension {
                     // remove any trailing newline characters
                     stdout.trim_end_matches('\n').to_string()
                 };
-                Ok(Some(secret))
+                let secure_string = SecureString {
+                    secure_string: secret.clone(),
+                };
+                Ok(Some(serde_json::to_string(&secure_string)?))
             }
         } else {
             Err(DscError::UnsupportedCapability(
