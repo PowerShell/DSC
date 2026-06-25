@@ -3,11 +3,12 @@
 
 use crate::{
     discovery::command_discovery::{
-        DSC_ADAPTED_RESOURCE_EXTENSIONS, DSC_EXTENSION_EXTENSIONS, DSC_MANIFEST_LIST_EXTENSIONS, DSC_RESOURCE_EXTENSIONS, ImportedManifest, load_adapted_resource_manifest, load_manifest
+        DSC_ADAPTED_RESOURCE_EXTENSIONS, DSC_EXTENSION_EXTENSIONS, DSC_MANIFEST_LIST_EXTENSIONS, DSC_RESOURCE_EXTENSIONS, ImportedManifest, load_manifest, load_manifest_content
     },
     dscerror::DscError,
     dscresources::{
-        adapted_resource_manifest, command_resource::invoke_command, dscresource::DscResource
+        command_resource::invoke_command,
+        dscresource::DscResource
     },
     extensions::{
         dscextension::{
@@ -112,29 +113,12 @@ impl DscExtension {
                     };
                     match discover_result.path_or_content {
                         ManifestKind::ManifestContent(manifest_value) => {
-                            let imported_manifest = match serde_json::from_value::<ImportedManifest>(manifest_value.clone()) {
-                                Ok(manifest) => manifest,
-                                Err(err) => {
-                                    // see if adapted resource manifest
-                                    let adapted_resource_manifest = match serde_json::from_value::<adapted_resource_manifest::AdaptedDscResourceManifest>(manifest_value.clone()) {
-                                        Ok(manifest) => manifest,
-                                        Err(err) => {
-                                            return Err(DscError::Json(err));
-                                        }
-                                    };
-                                    load_adapted_resource_manifest(self.path.as_path(), &adapted_resource_manifest).map_or_else(
-                                        |_| {
-                                            Err(DscError::Json(err))
-                                        },
-                                        |resource| {
-                                            Ok(ImportedManifest::Resource(resource))
-                                        }
-                                    )?
-                                }
-                            };
+                            let imported_manifests = load_manifest_content(&manifest_value)?;
                             info!("Manifest imported from extension {}", self.type_name);
-                            if let ImportedManifest::Resource(resource) = imported_manifest {
-                                resources.push(resource);
+                            for imported_manifest in imported_manifests {
+                                if let ImportedManifest::Resource(resource) = imported_manifest {
+                                    resources.push(resource);
+                                }
                             }
                         }
                         ManifestKind::ManifestPath(manifest_path) => {

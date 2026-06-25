@@ -124,6 +124,7 @@ invalidExtensionManifest = "Invalid manifest for extension '%{resource}': %{err}
 invalidAdaptedResourceManifest = "Invalid manifest for adapted resource '%{resource}': %{err}"
 invalidManifestList = "Invalid manifest list '%{resource}': %{err}"
 invalidManifestFile = "Invalid manifest file '%{resource}': %{err}"
+invalidManifestContent = "Manifest content did not match any known manifest types"
 extensionResourceFound = "Extension found resource '%{resource}'"
 callingExtension = "Calling extension '%{extension}' to discover resources"
 extensionFoundResources = "Extension '%{extension}' found %{count} resources"

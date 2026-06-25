@@ -16,6 +16,7 @@ use crate::schemas::transforms::idiomaticize_externally_tagged_enum;
 use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::Deserialize;
+use serde_json::Value;
 use std::{collections::{HashMap, HashSet}, sync::{LazyLock, RwLock}};
 use std::env;
 use std::ffi::OsStr;
@@ -634,6 +635,77 @@ fn evaluate_condition(condition: Option<&str>) -> Result<bool, DscError> {
         return Err(DscError::Validation(t!("discovery.commandDiscovery.conditionNotBoolean", condition = cond).to_string()));
     }
     Ok(true)
+}
+
+/// Loads a manifest from the given content and returns a vector of `ImportedManifest`.
+///
+/// # Arguments
+///
+/// * `content` - The content of the manifest file as a string.
+///
+/// # Returns
+///
+/// * `Vec<ImportedManifest>` if the manifest was loaded successfully.
+///
+/// # Errors
+/// * Returns a `DscError` if the manifest could not be loaded or parsed.
+pub fn load_manifest_content(content: &Value) -> Result<Vec<ImportedManifest>, DscError> {
+    if let Ok(resource) = serde_json::from_value::<AdaptedDscResourceManifest>(content.clone()) {
+        if !evaluate_condition(resource.condition.as_deref())? {
+            debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = "manifest content", condition = resource.condition.unwrap_or_default(), resource = resource.type_name));
+            return Ok(vec![]);
+        }
+        let resource = load_adapted_resource_manifest(Path::new("manifest content"), &resource)?;
+        return Ok(vec![ImportedManifest::Resource(resource)]);
+    } else if let Ok(resource) = serde_json::from_value::<ResourceManifest>(content.clone()) {
+        if !evaluate_condition(resource.condition.as_deref())? {
+            debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = "manifest content", condition = resource.condition.unwrap_or_default(), resource = resource.resource_type));
+            return Ok(vec![]);
+        }
+        let resource = load_resource_manifest(Path::new("manifest content"), &resource)?;
+        return Ok(vec![ImportedManifest::Resource(resource)]);
+    } else if let Ok(extension) = serde_json::from_value::<ExtensionManifest>(content.clone()) {
+        if !evaluate_condition(extension.condition.as_deref())? {
+            debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = "manifest content", condition = extension.condition.unwrap_or_default(), resource = extension.r#type));
+            return Ok(vec![]);
+        }
+        let extension = load_extension_manifest(Path::new("manifest content"), &extension)?;
+        return Ok(vec![ImportedManifest::Extension(extension)]);
+    } else if let Ok(manifest_list) = serde_json::from_value::<ManifestList>(content.clone()) {
+        let mut resources: Vec<ImportedManifest> = vec![];
+        if let Some(adapted_resources) = manifest_list.adapted_resources {
+            for adapted_resource in adapted_resources {
+                if !evaluate_condition(adapted_resource.condition.as_deref())? {
+                    debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = "manifest content", condition = adapted_resource.condition.unwrap_or_default(), resource = adapted_resource.type_name));
+                    continue;
+                }
+                let resource = load_adapted_resource_manifest(Path::new("manifest content"), &adapted_resource)?;
+                resources.push(ImportedManifest::Resource(resource));
+            }
+        }
+        if let Some(resource_manifests) = manifest_list.resources {
+            for resource_manifest in resource_manifests {
+                if !evaluate_condition(resource_manifest.condition.as_deref())? {
+                    debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = "manifest content", condition = resource_manifest.condition.unwrap_or_default(), resource = resource_manifest.resource_type));
+                    continue;
+                }
+                let resource = load_resource_manifest(Path::new("manifest content"), &resource_manifest)?;
+                resources.push(ImportedManifest::Resource(resource));
+            }
+        }
+        if let Some(extension_manifests) = manifest_list.extensions {
+            for extension_manifest in extension_manifests {
+                if !evaluate_condition(extension_manifest.condition.as_deref())? {
+                    debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = "manifest content", condition = extension_manifest.condition.unwrap_or_default(), resource = extension_manifest.r#type));
+                    continue;
+                }
+                let extension = load_extension_manifest(Path::new("manifest content"), &extension_manifest)?;
+                resources.push(ImportedManifest::Extension(extension));
+            }
+        }
+        return Ok(resources);
+    }
+    Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.invalidManifestContent").to_string()))
 }
 
 /// Loads a manifest from the given path and returns a vector of `ImportedManifest`.
