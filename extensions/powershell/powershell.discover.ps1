@@ -81,7 +81,7 @@ function Invoke-DscResourceDiscovery {
         } else {
             $manifests = $psPaths | ForEach-Object -Parallel {
                 $searchPatterns = [System.Collections.Generic.List[string]]::new()
-                foreach ($extension in $extensions.Split(',')) {
+                foreach ($extension in ($using:extensions).Split(',')) {
                     $searchPatterns.Add('*' + $extension)
                 }
                 $enumOptions = [System.IO.EnumerationOptions]@{ IgnoreInaccessible = $true; RecurseSubdirectories = $true }

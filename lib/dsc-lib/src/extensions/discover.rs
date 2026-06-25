@@ -55,9 +55,10 @@ pub struct DiscoverResult {
 pub enum DiscoverArgKind {
     String(String),
     Extensions {
-        /// The argument that accepts the file path.
+        /// The argument that accepts the extensions list.  The extensions list will be passed as a comma separated list of extensions.
         #[serde(rename = "extensionsArg")]
         extensions_arg: String,
+        /// Whether to include quotes around the extensions list.  If true, the extensions list will be passed as a quoted string.
         #[serde(rename = "includeQuotes", default)]
         include_quotes: bool,
     },
@@ -86,9 +87,6 @@ impl DscExtension {
             let Some(discover) = extension.discover else {
                 return Err(DscError::UnsupportedCapability(self.type_name.to_string(), Capability::Discover.to_string()));
             };
-            let mut extension_resource = DscResource::new();
-            extension_resource.type_name = self.type_name.clone();
-            extension_resource.path = self.path.clone();
             let args = process_discover_args(discover.args.as_ref())?;
             if let Some(deprecation_message) = extension.deprecation_message.as_ref() {
                 warn!("{}", t!("extensions.dscextension.deprecationMessage", extension = self.type_name, message = deprecation_message));

@@ -15,7 +15,7 @@
       "-Command",
       "./powershell.discover.ps1",
       {
-        "extensionsArg": "-Extensions",
+        "extensionsArg": "-extensions",
         "includeQuotes": true
       }
     ]
