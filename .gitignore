@@ -4,6 +4,7 @@ target/
 bin/
 .DS_Store
 *.msix
+.vs/
 
 # Generated files for tree-sitter
 grammars/**/bindings/
@@ -11,3 +12,8 @@ grammars/**/src/
 grammars/**/parser.*
 tree-sitter-ssh-server-config/
 tree-sitter-dscexpression/
+/adapters/__pycache__
+/adapters/python/__pycache__
+/adapters/python/pyDscAdapter/__pycache__
+/adapters/python/tests/__pycache__
+/adapters/python/tests/src/__pycache__
