@@ -87,7 +87,7 @@ pub struct RepeatInput {
     #[serde(rename = "_exist", default = "default_true")]
     pub exist: bool,
     /// Path to the sshd_config file to be processed
-    #[serde(rename = "_filepath", skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "sshd_config_filepath", skip_serializing_if = "Option::is_none")]
     pub filepath: Option<PathBuf>,
     /// The keyword and its entry (e.g., "subsystem": {"name": "sftp", "value": "/usr/bin/sftp"})
     #[serde(flatten)]
@@ -101,7 +101,7 @@ pub struct RepeatListInput {
     #[serde(rename = "_purge", default)]
     pub purge: bool,
     /// Path to the sshd_config file to be processed
-    #[serde(rename = "_filepath", skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "sshd_config_filepath", skip_serializing_if = "Option::is_none")]
     pub filepath: Option<PathBuf>,
     /// The keyword and its array of entries (e.g., "subsystem": [{"name": "sftp", "value": "..."}])
     #[serde(flatten)]

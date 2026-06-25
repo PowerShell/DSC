@@ -15,7 +15,7 @@ use tracing::{debug, trace, warn};
 use crate::args::Setting;
 use crate::canonical_properties::CanonicalProperty;
 use crate::error::SshdConfigError;
-use crate::inputs::CommandInfo;
+use crate::inputs::{CommandInfo, SSHD_CONFIG_FILEPATH};
 use crate::parser::parse_text_to_map;
 use crate::util::{
     build_command_info,
@@ -164,7 +164,7 @@ pub fn get_sshd_settings(cmd_info: &CommandInfo, is_get: bool) -> Result<Map<Str
     }
 
     if cmd_info.filepath.is_some() {
-        result.insert(CanonicalProperty::Filepath.to_string(), serde_json::to_value(cmd_info.filepath.clone())?);
+        result.insert(SSHD_CONFIG_FILEPATH.to_string(), serde_json::to_value(cmd_info.filepath.clone())?);
     }
     if cmd_info.include_defaults && is_get {
         result.insert(CanonicalProperty::InheritedDefaults.to_string(), serde_json::to_value(inherited_defaults)?);

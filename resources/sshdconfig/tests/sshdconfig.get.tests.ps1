@@ -68,7 +68,7 @@ PasswordAuthentication no
         param($Command, $Description)
 
         $inputData = @{
-            _filepath = $TestConfigPath
+            sshd_config_filepath = $TestConfigPath
             passwordAuthentication = $false
         } | ConvertTo-Json
 
@@ -98,7 +98,7 @@ PasswordAuthentication no
         param($Command)
 
         $inputData = @{
-            _filepath = $TestConfigPathWithMatch
+            sshd_config_filepath = $TestConfigPathWithMatch
         } | ConvertTo-Json
 
         if ($Command -eq 'get') {
@@ -126,7 +126,7 @@ PasswordAuthentication no
         param($Command)
 
         $inputData = @{
-            _filepath = $TestConfigPathWithInclude
+            sshd_config_filepath = $TestConfigPathWithInclude
         } | ConvertTo-Json
 
         $stderrFile = Join-Path $TestDrive "stderr_$Command.txt"
@@ -146,7 +146,7 @@ PasswordAuthentication no
         $nonExistentPath = Join-Path $TestDrive 'nonexistent_sshd_config'
 
         $inputData = @{
-            _filepath = $nonExistentPath
+            sshd_config_filepath = $nonExistentPath
         } | ConvertTo-Json
 
         $stderrFile = Join-Path $TestDrive "stderr_filenotfound.txt"

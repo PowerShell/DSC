@@ -44,7 +44,7 @@
         "title": "sshdconfig",
         "type": "object",
         "properties": {
-            "_filepath": {
+            "sshd_config_filepath": {
                 "type": "string",
                 "description": "Path to the sshd_config file to be processed. If not specified, the default path for the OS is used."
             }

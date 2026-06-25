@@ -60,7 +60,7 @@ PasswordAuthentication yes
 
         It 'Should add a new subsystem that does not already exist' {
             $inputConfig = @{
-                _filepath = $TestConfigPath
+                sshd_config_filepath = $TestConfigPath
                 _exist = $true
                 subsystem = @{
                     name = "newsubsystem"
@@ -82,7 +82,7 @@ PasswordAuthentication yes
 
         It 'Should treat subsystem names as case-sensitive (SFTP is different from sftp)' {
             $inputConfig = @{
-                _filepath = $TestConfigPath
+                sshd_config_filepath = $TestConfigPath
                 _exist = $true
                 subsystem = @{
                     name = "SFTP"  # Uppercase - should be treated as different from lowercase sftp
@@ -95,7 +95,7 @@ PasswordAuthentication yes
 
             # Verify SFTP was added as a new entry (not updating existing sftp) using get
             $getInput = @{
-                _filepath = $TestConfigPath
+                sshd_config_filepath = $TestConfigPath
             } | ConvertTo-Json
             $result = sshdconfig get --input $getInput -s sshd-config 2>$null | ConvertFrom-Json
             $LASTEXITCODE | Should -Be 0
@@ -118,7 +118,7 @@ PasswordAuthentication yes
 
         It 'Should remove a subsystem when _exist is false' {
             $inputConfig = @{
-                _filepath = $TestConfigPath
+                sshd_config_filepath = $TestConfigPath
                 _exist = $false
                 subsystem = @{
                     name = "sftp"
@@ -138,7 +138,7 @@ PasswordAuthentication yes
 
         It 'Should preserve case when adding subsystem with mixed case name' {
             $inputConfig = @{
-                _filepath = $TestConfigPath
+                sshd_config_filepath = $TestConfigPath
                 _exist = $true
                 subsystem = @{
                     name = "MyCustomSubsystem"
@@ -156,7 +156,7 @@ PasswordAuthentication yes
 
         It 'Should handle paths with spaces correctly' {
             $inputConfig = @{
-                _filepath = $TestConfigPath
+                sshd_config_filepath = $TestConfigPath
                 _exist = $true
                 subsystem = @{
                     name = "spacepath"
@@ -176,7 +176,7 @@ PasswordAuthentication yes
 
         It 'Should fail when subsystem name is missing' {
             $inputConfig = @{
-                _filepath = $TestConfigPath
+                sshd_config_filepath = $TestConfigPath
                 _exist = $true
                 subsystem = @{
                     value = "/path/to/something"
@@ -202,7 +202,7 @@ PasswordAuthentication yes
 
         It 'Should default to _exist=true when not specified explicitly' {
             $inputConfig = @{
-                _filepath = $TestConfigPath
+                sshd_config_filepath = $TestConfigPath
                 subsystem = @{
                     name = "testExistDefault"
                     value = "/path/to/subsystem"
@@ -222,7 +222,7 @@ PasswordAuthentication yes
             $nonExistentPath = Join-Path $TestDrive "nonexistent_sshd_config_repeat_nonwindows"
             $stderrFile = Join-Path $TestDrive "stderr_nofile_repeat_nonwindows.txt"
             $inputConfig = @{
-                _filepath = $nonExistentPath
+                sshd_config_filepath = $nonExistentPath
                 _exist = $true
                 subsystem = @{
                     name = "powershell"
@@ -265,7 +265,7 @@ PasswordAuthentication yes
             ) -Encoding ascii
 
             $inputConfig = @{
-                _filepath = $script:CurrentWindowsTargetPath
+                sshd_config_filepath = $script:CurrentWindowsTargetPath
                 _exist = $true
                 subsystem = @{
                     name = "powershell"
@@ -285,7 +285,7 @@ PasswordAuthentication yes
             $LASTEXITCODE | Should -Be 0
             Test-Path $script:CurrentWindowsTargetPath | Should -Be $true
             $getInput = @{
-                _filepath = $script:CurrentWindowsTargetPath
+                sshd_config_filepath = $script:CurrentWindowsTargetPath
             } | ConvertTo-Json
             $result = sshdconfig get --input $getInput -s sshd-config 2>$null | ConvertFrom-Json
             $result.subsystem.name | Should -Be "powershell"
@@ -301,7 +301,7 @@ PasswordAuthentication yes
             Test-Path -Path $script:WindowsDefaultSourcePath -PathType Leaf -ErrorAction SilentlyContinue | Should -Be $false
 
             $inputConfig = @{
-                _filepath = $script:CurrentWindowsTargetPath
+                sshd_config_filepath = $script:CurrentWindowsTargetPath
                 _exist = $true
                 subsystem = @{
                     name = "powershell"

@@ -28,7 +28,7 @@ resources:
 - name: sshdconfig
   type: Microsoft.OpenSSH.SSHD/sshd_config
   properties:
-    _filepath: $filepath
+    sshd_config_filepath: $filepath
 "@
     }
 
@@ -64,7 +64,7 @@ resources:
 - name: sshdconfig
   type: Microsoft.OpenSSH.SSHD/sshd_config
   properties:
-    _filepath: $filepath
+    sshd_config_filepath: $filepath
     passwordauthentication: 'yes'
 "@
         $out = dsc config export -i "$export_yaml" | ConvertFrom-Json -Depth 10
@@ -89,7 +89,7 @@ resources:
 - name: sshdconfig
   type: Microsoft.OpenSSH.SSHD/sshd_config
   properties:
-    _filepath: $filepath
+    sshd_config_filepath: $filepath
     _includeDefaults: $includeDefaults
 "@
         $out = dsc config $command -i "$input" | ConvertFrom-Json -Depth 10
@@ -146,7 +146,7 @@ resources:
 - name: sshdconfig
   type: Microsoft.OpenSSH.SSHD/sshd_config
   properties:
-    _filepath: $filepath
+    sshd_config_filepath: $filepath
     _purge: true
     port: 1234
     allowUsers:
@@ -225,7 +225,7 @@ resources:
 - name: newsub
   type: Microsoft.OpenSSH.SSHD/Subsystem
   properties:
-    _filepath: $script:TestConfigPath
+    sshd_config_filepath: $script:TestConfigPath
     _exist: true
     subsystem:
       name: newsubsystem
@@ -256,7 +256,7 @@ resources:
 - name: removesub
   type: Microsoft.OpenSSH.SSHD/Subsystem
   properties:
-    _filepath: $script:TestConfigPath
+    sshd_config_filepath: $script:TestConfigPath
     _exist: false
     subsystem:
       name: sftp
@@ -281,7 +281,7 @@ resources:
 - name: multisubsystem
   type: Microsoft.OpenSSH.SSHD/SubsystemList
   properties:
-    _filepath: $script:TestConfigPath
+    sshd_config_filepath: $script:TestConfigPath
     _purge: false
     subsystem:
     - name: newsub1
@@ -325,7 +325,7 @@ resources:
 - name: preservesubsystem
   type: Microsoft.OpenSSH.SSHD/SubsystemList
   properties:
-    _filepath: $script:TestConfigPath
+    sshd_config_filepath: $script:TestConfigPath
     _purge: false
     subsystem:
     - name: addedSubsystem
@@ -360,7 +360,7 @@ resources:
 - name: purgesubsystem
   type: Microsoft.OpenSSH.SSHD/SubsystemList
   properties:
-    _filepath: $script:TestConfigPath
+    sshd_config_filepath: $script:TestConfigPath
     _purge: true
     subsystem:
     - name: sftp

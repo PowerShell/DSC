@@ -18,7 +18,7 @@ use crate::canonical_properties::CanonicalProperties;
 use crate::error::SshdConfigError;
 use crate::formatter::write_config_map_to_text;
 use crate::get::get_sshd_settings;
-use crate::inputs::{CommandInfo, SshdCommandArgs};
+use crate::inputs::{CommandInfo, SshdCommandArgs, SSHD_CONFIG_FILEPATH};
 use crate::metadata::{SSHD_CONFIG_HEADER, SSHD_CONFIG_HEADER_VERSION, SSHD_CONFIG_HEADER_WARNING};
 use crate::repeat_keyword::{
     RepeatInput, RepeatListInput, NameValueEntry,
@@ -209,6 +209,7 @@ fn set_sshd_config(cmd_info: &mut CommandInfo) -> Result<(), SshdConfigError> {
 fn write_and_validate_config(config: &mut Map<String, Value>, filepath: Option<&PathBuf>) -> Result<(), SshdConfigError> {
     debug!("{}", t!("set.writingTempConfig"));
     CanonicalProperties::remove_all(config);
+    config.remove(SSHD_CONFIG_FILEPATH);
     let mut config_text = SSHD_CONFIG_HEADER.to_string() + "\n" + SSHD_CONFIG_HEADER_VERSION + "\n" + SSHD_CONFIG_HEADER_WARNING + "\n";
     config_text.push_str(&write_config_map_to_text(config)?);
 

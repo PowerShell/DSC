@@ -5,6 +5,12 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::path::PathBuf;
 
+/// Property key for the `sshd_config` file path.
+///
+/// This is a regular resource property (not a leading-underscore canonical
+/// property) used to specify the path to the `sshd_config` file to process.
+pub const SSHD_CONFIG_FILEPATH: &str = "sshd_config_filepath";
+
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct CommandInfo {
     /// Switch to include defaults in the output

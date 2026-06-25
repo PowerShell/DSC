@@ -36,7 +36,7 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
     Context 'Set with valid keyword and value' {
         It 'Should set a valid keyword with valid value' {
             $inputConfig = @{
-                _filepath = $TestConfigPath
+                sshd_config_filepath = $TestConfigPath
                 _purge = $true
                 Port = "1234"
                 passwordauthentication = $false
@@ -63,7 +63,7 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
 
         It 'Should set with valid match blocks' {
             $inputConfig = @{
-                _filepath = $TestConfigPath
+                sshd_config_filepath = $TestConfigPath
                 _purge = $true
                 match = @(
                     @{
@@ -96,7 +96,7 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
             "Port 22`nPermitRootLogin yes" | Set-Content $TestConfigPath
 
             $inputConfig = @{
-                _filepath = $TestConfigPath
+                sshd_config_filepath = $TestConfigPath
                 _purge = $true
                 Port = "5555"
             } | ConvertTo-Json
@@ -115,7 +115,7 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
 
             # Verify new content using get
             $getInput = @{
-                _filepath = $TestConfigPath
+                sshd_config_filepath = $TestConfigPath
             } | ConvertTo-Json
             $result = sshdconfig get --input $getInput -s sshd-config 2>$null | ConvertFrom-Json
             $result.Port | Should -Be "5555"
@@ -124,7 +124,7 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
         It 'Should not create backup when file is already managed by DSC' {
             # Create a DSC-managed file
             $initialConfig = @{
-                _filepath = $TestConfigPath
+                sshd_config_filepath = $TestConfigPath
                 _purge = $true
                 Port = "6789"
             } | ConvertTo-Json
@@ -133,7 +133,7 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
 
             # Update the file
             $newConfig = @{
-                _filepath = $TestConfigPath
+                sshd_config_filepath = $TestConfigPath
                 _purge = $true
                 Port = "7777"
             } | ConvertTo-Json
@@ -146,7 +146,7 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
 
             # Verify content using get
             $getInput = @{
-                _filepath = $TestConfigPath
+                sshd_config_filepath = $TestConfigPath
             } | ConvertTo-Json
             $result = sshdconfig get --input $getInput -s sshd-config 2>$null | ConvertFrom-Json
             $result.Port | Should -Be "7777"
@@ -157,7 +157,7 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
         BeforeEach {
             # Create initial file with valid config
             $validConfig = @{
-                _filepath = $TestConfigPath
+                sshd_config_filepath = $TestConfigPath
                 _purge = $true
                 Port = "9999"
             } | ConvertTo-Json
@@ -169,7 +169,7 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
                 $nonExistentPath = Join-Path $TestDrive "nonexistent_sshd_config_nonwindows"
                 $stderrFile = Join-Path $TestDrive "stderr_purgefalse_nofile_nonwindows.txt"
                 $inputConfig = @{
-                    _filepath = $nonExistentPath
+                    sshd_config_filepath = $nonExistentPath
                     _purge = $false
                     Port = "8888"
                 } | ConvertTo-Json
@@ -209,7 +209,7 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
                 ) -Encoding ascii
 
                 $inputConfig = @{
-                    _filepath = $script:CurrentWindowsTargetPath
+                    sshd_config_filepath = $script:CurrentWindowsTargetPath
                     _purge = $false
                     Port = "8888"
                 } | ConvertTo-Json
@@ -238,7 +238,7 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
                 Test-Path -Path $script:WindowsDefaultSourcePath -PathType Leaf -ErrorAction SilentlyContinue | Should -Be $false
 
                 $inputConfig = @{
-                    _filepath = $script:CurrentWindowsTargetPath
+                    sshd_config_filepath = $script:CurrentWindowsTargetPath
                     _purge = $false
                     Port = "8888"
                 } | ConvertTo-Json
@@ -261,13 +261,13 @@ Describe 'sshd_config Set Tests' -Skip:($skipTest) {
         It 'Should fail with invalid keyword and not modify file' {
             # Get original content
             $getInput = @{
-                _filepath = $TestConfigPath
+                sshd_config_filepath = $TestConfigPath
             } | ConvertTo-Json
             $originalResult = sshdconfig get --input $getInput -s sshd-config 2>$null | ConvertFrom-Json
 
             # Try to set with invalid keyword
             $invalidConfig = @{
-                _filepath = $TestConfigPath
+                sshd_config_filepath = $TestConfigPath
                 _purge = $true
                 FakeKeyword = "1234"
             } | ConvertTo-Json
@@ -367,7 +367,7 @@ Match Group administrators
             param($Title, $InputConfig, $ExpectedContains, $ExpectedNotContains, $VerifyOrder)
 
             $config = @{
-                _filepath = $TestConfigPath
+                sshd_config_filepath = $TestConfigPath
                 _purge = $false
             }
             foreach ($key in $InputConfig.Keys) {
@@ -411,7 +411,7 @@ Match Group administrators
 
         It 'Should overwrite all instances of a repeatable keyword' {
             $inputConfig = @{
-                _filepath = $TestConfigPath
+                sshd_config_filepath = $TestConfigPath
                 _purge = $false
                 Port = @(8888, 9999)
             } | ConvertTo-Json
