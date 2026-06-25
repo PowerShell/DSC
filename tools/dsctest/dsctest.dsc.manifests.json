@@ -1501,7 +1501,7 @@
             "mandatory": true
           }
         ],
-        "schema": "noFiltering"
+        "supportsFiltering": false
       },
       "schema": {
         "command": {

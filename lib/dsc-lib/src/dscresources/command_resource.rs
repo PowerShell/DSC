@@ -8,7 +8,7 @@ use rust_i18n::t;
 use serde::Deserialize;
 use serde_json::{Map, Value};
 use std::{collections::HashMap, env, path::Path, process::Stdio};
-use crate::{configure::{config_doc::{ExecutionKind, SecurityContextKind}, config_result::{ResourceGetResult, ResourceTestResult}}, dscresources::resource_manifest::{ExportSchemaKind, SchemaArgKind}, types::{ExitCodesMap}, util::canonicalize_which};
+use crate::{configure::{config_doc::{ExecutionKind, SecurityContextKind}, config_result::{ResourceGetResult, ResourceTestResult}}, dscresources::resource_manifest::{ExportSchemaKind, ExportSchemaOrFiltering, SchemaArgKind}, types::{ExitCodesMap}, util::canonicalize_which};
 use crate::dscerror::DscError;
 use super::{
     dscresource::{get_diff, redact, DscResource},
@@ -600,19 +600,19 @@ fn verify_with_export_schema(input: &str, resource: &DscResource, target_resourc
         None => resource,
     };
 
-    let schema = match export.schema {
-        Some(ExportSchemaKind::Command(ref command)) => {
+    let schema = match export.schema_or_filtering {
+        Some(ExportSchemaOrFiltering::Schema(ExportSchemaKind::Command(ref command))) => {
             let args = process_schema_args(command.args.as_ref(), command_resource);
             let (_exit_code, stdout, _stderr) = invoke_command(&command.executable, args, None, Some(&resource.directory), None, manifest.exit_codes.as_ref())?;
             stdout
         },
-        Some(ExportSchemaKind::Embedded(ref schema)) => {
+        Some(ExportSchemaOrFiltering::Schema(ExportSchemaKind::Embedded(ref schema))) => {
             serde_json::to_string(schema)?
         },
-        Some(ExportSchemaKind::NoFiltering) => {
-            return Ok(());
+        Some(ExportSchemaOrFiltering::SupportsFiltering(false)) => {
+            return Err(DscError::Operation(t!("dscresources.commandResource.exportFilteringNotSupported", resource = &resource.type_name).to_string()));
         },
-        None => {
+        Some(ExportSchemaOrFiltering::SupportsFiltering(true)) | None => {
             if manifest.validate.is_some() {
                 let result = invoke_validate(resource, input, target_resource)?;
                 if result.valid {
@@ -696,11 +696,10 @@ pub fn invoke_export(resource: &DscResource, input: Option<&str>, target_resourc
     validate_security_context(&export.require_security_context, &command_resource.type_name, "export")?;
 
     if let Some(input) = input {
-        let input = if export.schema == Some(ExportSchemaKind::NoFiltering) {
-            ""
-        } else {
-            input
-        };
+        if matches!(export.schema_or_filtering, Some(ExportSchemaOrFiltering::SupportsFiltering(false))) {
+            return Err(DscError::Operation(t!("dscresources.commandResource.exportFilteringNotSupported", resource = &resource.type_name).to_string()));
+        }
+
         if !input.is_empty() {
             verify_with_export_schema(input, resource, target_resource)?;
 
