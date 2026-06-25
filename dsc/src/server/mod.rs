@@ -10,6 +10,8 @@ use rmcp::{
 use rust_i18n::t;
 
 pub mod invoke_dsc_config;
+pub mod invoke_dsc_expression;
+pub mod invoke_dsc_function;
 pub mod invoke_dsc_resource;
 pub mod list_dsc_functions;
 pub mod list_dsc_resources;
@@ -28,13 +30,13 @@ pub async fn start_server_async() -> Result<(), McpError> {
 
     // Try to create the service with proper error handling
     let service = server.serve(stdio()).await
-        .map_err(|err|  McpError::internal_error(t!("mcp.mod.failedToInitialize", error = err.to_string()), None))?;
+        .map_err(|err|  McpError::internal_error(t!("server.mod.failedToInitialize", error = err.to_string()), None))?;
 
     // Wait for the service to complete with proper error handling
     service.waiting().await
-        .map_err(|err| McpError::internal_error(t!("mcp.mod.serverWaitFailed", error = err.to_string()), None))?;
+        .map_err(|err| McpError::internal_error(t!("server.mod.serverWaitFailed", error = err.to_string()), None))?;
 
-    tracing::info!("{}", t!("mcp.mod.serverStopped"));
+    tracing::info!("{}", t!("server.mod.serverStopped"));
     Ok(())
 }
 
@@ -45,9 +47,9 @@ pub async fn start_server_async() -> Result<(), McpError> {
 /// This function will return an error if the MCP server fails to start or if the tokio runtime cannot be created.
 pub fn start_server() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let rt = tokio::runtime::Runtime::new()
-        .map_err(|e| McpError::internal_error(t!("mcp.mod.failedToCreateRuntime", error = e.to_string()), None))?;
+        .map_err(|e| McpError::internal_error(t!("server.mod.failedToCreateRuntime", error = e.to_string()), None))?;
 
     rt.block_on(start_server_async())
-        .map_err(|e| McpError::internal_error(t!("mcp.mod.failedToStart", error = e.to_string()), None))?;
+        .map_err(|e| McpError::internal_error(t!("server.mod.failedToStart", error = e.to_string()), None))?;
     Ok(())
 }

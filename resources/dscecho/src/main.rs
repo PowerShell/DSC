@@ -9,7 +9,7 @@ use clap::Parser;
 use rust_i18n::{i18n, t};
 use schemars::schema_for;
 use serde_json::{Map, Value};
-use crate::echo::{Echo, Output};
+use crate::echo::{Echo, Output, SecureObject, SecureString};
 
 i18n!("locales", fallback = "en-us");
 
@@ -25,26 +25,31 @@ fn main() {
                 std::process::exit(1);
             }
         };
-        if echo.show_secrets != Some(true) {
-            match echo.output {
-                Output::SecureString(_) | Output::SecureObject(_) => {
+        match echo.output {
+            Output::SecureString(s) => {
+                if echo.show_secrets == Some(true) {
+                    echo.output = Output::String(s.secure_string);
+                } else {
                     echo.output = Output::String(SECURE_VALUE_REDACTED.to_string());
-                },
-                Output::Array(ref mut arr) => {
-                    for item in arr.iter_mut() {
-                        if is_secure_value(item) {
-                            *item = Value::String(SECURE_VALUE_REDACTED.to_string());
-                        } else {
-                            *item = redact(item);
-                        }
+                }
+            },
+            Output::SecureObject(o) => {
+                if echo.show_secrets == Some(true) {
+                    echo.output = Output::Object(o.secure_object);
+                } else {
+                    echo.output = Output::String(SECURE_VALUE_REDACTED.to_string());
+                }
+            },
+            Output::Array(ref mut arr) => {
+                for item in arr.iter_mut() {
+                    if echo.show_secrets == Some(true) {
+                        *item = get_secure_contents(item);
+                    } else {
+                        *item = redact(item);
                     }
-                },
-                Output::Object(ref mut obj) => {
-                    obj.clone_from(redact(&Value::Object(obj.clone()))
-                        .as_object()
-                        .expect("Expected redact() to return a Value::Object"));                },
-                _ => {}
-            }
+                }
+            },
+            _ => {}
         }
         let json = serde_json::to_string(&echo).unwrap();
         println!("{json}");
@@ -66,7 +71,17 @@ fn is_secure_value(value: &Value) -> bool {
     false
 }
 
-pub fn redact(value: &Value) -> Value {
+fn get_secure_contents(value: &Value) -> Value {
+    if let Ok(secure_string) = serde_json::from_value::<SecureString>(value.clone()) {
+        return Value::String(secure_string.secure_string);
+    } else if let Ok(secure_object) = serde_json::from_value::<SecureObject>(value.clone()) {
+        return Value::Object(secure_object.secure_object);
+    }
+
+    value.clone()
+}
+
+fn redact(value: &Value) -> Value {
     if is_secure_value(value) {
         return Value::String(SECURE_VALUE_REDACTED.to_string());
     }

@@ -1,6 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
+BeforeDiscovery {
+    try {
+        $windowWidth = [Console]::WindowWidth
+    } catch {
+        $consoleUnavailable = $true
+    }
+}
+
 Describe 'Tests for function list subcommand' {
     It 'Should list all available functions' {
         $out = dsc function list | ConvertFrom-Json
@@ -15,11 +23,23 @@ Describe 'Tests for function list subcommand' {
     It 'Should filter with wildcard' {
         $out = dsc function list 'resource*' | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
-        $out.category | Should -BeExactly 'Resource'
+        $out.category | Should -BeExactly 'resource'
         $out.name | Should -BeExactly 'resourceId'
         $out.minArgs | Should -Be 2
         $out.maxArgs | Should -Be 2
         $out.returnTypes | Should -Be @('String')
         $out.description | Should -Not -BeNullOrEmpty
+    }
+
+    It 'Table can be not truncated' -Skip:($consoleUnavailable) {
+        $output = dsc function list --output-format table-no-truncate
+        $LASTEXITCODE | Should -Be 0
+        $foundWideLine = $false
+        foreach ($line in $output) {
+            if ($line.Length -gt $windowWidth) {
+                $foundWideLine = $true
+            }
+        }
+        $foundWideLine | Should -BeTrue
     }
 }
