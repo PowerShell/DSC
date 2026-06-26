@@ -1984,7 +1984,7 @@ function Test-RustProject {
         }
 
         if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
-            Write-Error "Last exit code is $LASTEXITCODE, rust tests failed"
+            throw "Last exit code is $LASTEXITCODE, rust tests failed"
         }
     }
 
