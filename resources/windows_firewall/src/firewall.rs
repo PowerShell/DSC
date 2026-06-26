@@ -513,6 +513,11 @@ pub fn set_rules(input: &FirewallRuleList, what_if: bool) -> Result<FirewallRule
                     None => continue,
                 };
 
+                // Skip system rules which can't be located via the COM interface
+                if rule_name.starts_with("ms-resource://") {
+                    continue;
+                }
+                
                 if specified_names.contains(&rule_name.to_ascii_lowercase()) {
                     continue;
                 }

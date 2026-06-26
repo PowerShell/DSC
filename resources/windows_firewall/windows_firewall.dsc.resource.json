@@ -6,7 +6,7 @@
         "Windows",
         "Firewall"
     ],
-    "version": "0.1.1",
+    "version": "0.2.0",
     "get": {
         "executable": "windows_firewall",
         "args": [
@@ -66,6 +66,7 @@
                     "type": "string",
                     "title": "Unspecified rules action",
                     "description": "The action to take on firewall rules not explicitly listed in the rules array. 'ignore' (default) leaves them unchanged, 'disable' disables them, and 'remove' deletes them.",
+                    "default": "ignore",
                     "enum": [
                         "ignore",
                         "disable",
