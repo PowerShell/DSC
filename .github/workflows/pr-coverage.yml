@@ -12,6 +12,10 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+defaults:
+  run:
+    shell: pwsh
+
 jobs:
   coverage:
     runs-on: ubuntu-latest
@@ -31,94 +35,124 @@ jobs:
 
       - name: Get changed Rust files
         id: changed
-        run: |
-          BASE_SHA=${{ github.event.pull_request.base.sha }}
-          HEAD_SHA=${{ github.event.pull_request.head.sha }}
-          CHANGED_FILES=$(git diff --name-only --diff-filter=ACMR "$BASE_SHA"..."$HEAD_SHA" -- '*.rs' | tr '\n' ' ')
-          echo "files=$CHANGED_FILES" >> "$GITHUB_OUTPUT"
-          if [ -z "$CHANGED_FILES" ]; then
-            echo "has_rust_changes=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_rust_changes=true" >> "$GITHUB_OUTPUT"
-          fi
+        run: |-
+          $baseSha = '${{ github.event.pull_request.base.sha }}'
+          $headSha = '${{ github.event.pull_request.head.sha }}'
+          $changedFiles = git diff --name-only --diff-filter=ACMR "$baseSha...$headSha" -- '*.rs'
+          if ($changedFiles) {
+              $fileList = ($changedFiles | Where-Object { $_ }) -join ' '
+              "files=$fileList" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+              "has_rust_changes=true" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          } else {
+              "files=" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+              "has_rust_changes=false" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          }
 
       - name: Generate coverage report
         if: steps.changed.outputs.has_rust_changes == 'true'
-        run: |
+        run: |-
           cargo llvm-cov --lcov --output-path lcov.info
 
       - name: Analyze coverage on changed files
         if: steps.changed.outputs.has_rust_changes == 'true'
         id: coverage
-        run: |
-          BASE_SHA=${{ github.event.pull_request.base.sha }}
-          HEAD_SHA=${{ github.event.pull_request.head.sha }}
+        run: |-
+          $baseSha = '${{ github.event.pull_request.base.sha }}'
+          $headSha = '${{ github.event.pull_request.head.sha }}'
 
-          # Get changed lines per file
-          TOTAL_CHANGED_LINES=0
-          COVERED_LINES=0
+          $totalChangedLines = 0
+          $coveredLines = 0
 
-          for file in ${{ steps.changed.outputs.files }}; do
-            if [ ! -f "$file" ]; then
-              continue
-            fi
+          # Parse the LCOV file into a hashtable keyed by source file path
+          $lcovData = @{}
+          $currentFile = $null
+          foreach ($line in Get-Content -Path 'lcov.info') {
+              if ($line -match '^SF:(.+)$') {
+                  $currentFile = $Matches[1]
+                  $lcovData[$currentFile] = @{}
+              } elseif ($line -match '^DA:(\d+),(\d+)' -and $currentFile) {
+                  $lineNum = [int]$Matches[1]
+                  $hitCount = [int]$Matches[2]
+                  $lcovData[$currentFile][$lineNum] = $hitCount
+              } elseif ($line -eq 'end_of_record') {
+                  $currentFile = $null
+              }
+          }
 
-            # Get the added line numbers from the diff
-            ADDED_LINES=$(git diff "$BASE_SHA"..."$HEAD_SHA" -- "$file" | \
-              grep -E '^\+' | grep -v '^\+\+\+' | wc -l | tr -d ' ')
+          $changedFiles = '${{ steps.changed.outputs.files }}' -split '\s+'
+          foreach ($file in $changedFiles) {
+              if (-not $file -or -not (Test-Path $file)) {
+                  continue
+              }
 
-            # Get covered lines from lcov for this file
-            ABS_PATH=$(realpath "$file")
-            FILE_SECTION=$(sed -n "/^SF:.*$(basename "$file")$/,/^end_of_record$/p" lcov.info | \
-              grep "^SF:.*${file}" -A 99999 | sed '/^end_of_record$/q')
+              # Parse diff to get added line numbers in the new file
+              $diffOutput = git diff "$baseSha...$headSha" -- $file
+              $addedLineNumbers = @()
+              $currentLineNum = 0
 
-            if [ -n "$FILE_SECTION" ]; then
-              # Extract line coverage data (DA:line_number,execution_count)
-              # Get changed line numbers from diff
-              CHANGED_LINE_NUMS=$(git diff "$BASE_SHA"..."$HEAD_SHA" -- "$file" | \
-                awk '/^@@/{split($3,a,","); line=substr(a[1],2)} /^\+[^+]/{print line; line++} /^[^+-]/{line++}')
+              foreach ($diffLine in $diffOutput) {
+                  if ($diffLine -match '^@@\s+\-\d+(?:,\d+)?\s+\+(\d+)(?:,\d+)?\s+@@') {
+                      $currentLineNum = [int]$Matches[1]
+                  } elseif ($diffLine.StartsWith('+') -and -not $diffLine.StartsWith('+++')) {
+                      $addedLineNumbers += $currentLineNum
+                      $currentLineNum++
+                  } elseif ($diffLine.StartsWith('-') -and -not $diffLine.StartsWith('---')) {
+                      # Deleted lines don't advance the new file line counter
+                  } else {
+                      $currentLineNum++
+                  }
+              }
 
-              for line_num in $CHANGED_LINE_NUMS; do
-                TOTAL_CHANGED_LINES=$((TOTAL_CHANGED_LINES + 1))
-                # Check if this line is covered (execution_count > 0)
-                HIT=$(echo "$FILE_SECTION" | grep "^DA:${line_num}," | cut -d',' -f2)
-                if [ -n "$HIT" ] && [ "$HIT" -gt 0 ] 2>/dev/null; then
-                  COVERED_LINES=$((COVERED_LINES + 1))
-                fi
-              done
-            else
-              # File not in coverage report - count all changed lines as uncovered
-              TOTAL_CHANGED_LINES=$((TOTAL_CHANGED_LINES + ADDED_LINES))
-            fi
-          done
+              # Find matching LCOV entry for this file
+              $absPath = (Resolve-Path $file).Path
+              $fileCoverage = $null
+              foreach ($key in $lcovData.Keys) {
+                  if ($key -eq $absPath -or $key.EndsWith("/$file") -or $key.EndsWith("\$file")) {
+                      $fileCoverage = $lcovData[$key]
+                      break
+                  }
+              }
 
-          if [ "$TOTAL_CHANGED_LINES" -eq 0 ]; then
-            PERCENTAGE=100
-          else
-            PERCENTAGE=$((COVERED_LINES * 100 / TOTAL_CHANGED_LINES))
-          fi
+              if ($fileCoverage) {
+                  foreach ($lineNum in $addedLineNumbers) {
+                      $totalChangedLines++
+                      if ($fileCoverage.ContainsKey($lineNum) -and $fileCoverage[$lineNum] -gt 0) {
+                          $coveredLines++
+                      }
+                  }
+              } else {
+                  # File not in coverage report - count added lines as uncovered
+                  $totalChangedLines += $addedLineNumbers.Count
+              }
+          }
 
-          echo "percentage=$PERCENTAGE" >> "$GITHUB_OUTPUT"
-          echo "covered=$COVERED_LINES" >> "$GITHUB_OUTPUT"
-          echo "total=$TOTAL_CHANGED_LINES" >> "$GITHUB_OUTPUT"
+          if ($totalChangedLines -eq 0) {
+              $percentage = 100
+          } else {
+              $percentage = [math]::Floor($coveredLines * 100 / $totalChangedLines)
+          }
 
-          # Determine emoji
-          if [ "$PERCENTAGE" -eq 100 ]; then
-            echo "emoji=😲" >> "$GITHUB_OUTPUT"
-            echo "label=100% coverage" >> "$GITHUB_OUTPUT"
-          elif [ "$PERCENTAGE" -ge 90 ]; then
-            echo "emoji=😁" >> "$GITHUB_OUTPUT"
-            echo "label=90%+ coverage" >> "$GITHUB_OUTPUT"
-          elif [ "$PERCENTAGE" -ge 80 ]; then
-            echo "emoji=😊" >> "$GITHUB_OUTPUT"
-            echo "label=80%+ coverage" >> "$GITHUB_OUTPUT"
-          elif [ "$PERCENTAGE" -ge 70 ]; then
-            echo "emoji=😐" >> "$GITHUB_OUTPUT"
-            echo "label=70%+ coverage" >> "$GITHUB_OUTPUT"
-          else
-            echo "emoji=😢" >> "$GITHUB_OUTPUT"
-            echo "label=less than 70% coverage" >> "$GITHUB_OUTPUT"
-          fi
+          "percentage=$percentage" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          "covered=$coveredLines" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          "total=$totalChangedLines" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+
+          # Determine emoji and label
+          if ($percentage -eq 100) {
+              "emoji=😲" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+              "label=100% coverage" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          } elseif ($percentage -ge 90) {
+              "emoji=😁" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+              "label=90%+ coverage" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          } elseif ($percentage -ge 80) {
+              "emoji=😊" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+              "label=80%+ coverage" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          } elseif ($percentage -ge 70) {
+              "emoji=😐" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+              "label=70%+ coverage" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          } else {
+              "emoji=😢" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+              "label=less than 70% coverage" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          }
 
       - name: Post coverage comment
         if: steps.changed.outputs.has_rust_changes == 'true'
