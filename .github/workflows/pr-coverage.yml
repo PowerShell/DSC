@@ -32,6 +32,16 @@ jobs:
         run: |-
           $baseSha = '${{ github.event.pull_request.base.sha }}'
           $headSha = '${{ github.event.pull_request.head.sha }}'
+
+          # Determine if any Rust files changed from git diff
+          $changedFiles = git diff --name-only --diff-filter=ACMR "$baseSha...$headSha" -- '*.rs' | Where-Object { $_ }
+          if (-not $changedFiles) {
+              "has_rust_changes=false" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+              return
+          }
+          "has_rust_changes=true" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          "files=$($changedFiles -join ' ')" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+
           $testsFailed = $false
           try {
               ./build.ps1 -Test -CodeCoverage -CodeCoverageBaseSha $baseSha -CodeCoverageHeadSha $headSha -Verbose
@@ -42,13 +52,6 @@ jobs:
               $testsFailed = $true
           }
 
-          # Check if coverage was skipped (no lcov.info produced)
-          if (-not (Test-Path 'lcov.info')) {
-              "has_rust_changes=false" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
-              return
-          }
-          "has_rust_changes=true" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
-
           if ($testsFailed) {
               Write-Warning 'One or more tests failed. Producing coverage report from partial results.'
               "tests_failed=true" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
@@ -56,12 +59,16 @@ jobs:
               "tests_failed=false" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
           }
 
-          # Pass changed files list for coverage analysis
-          $changedFiles = (git diff --name-only --diff-filter=ACMR "$baseSha...$headSha" -- '*.rs' | Where-Object { $_ }) -join ' '
-          "files=$changedFiles" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          # Treat missing lcov.info as a failure when Rust changes exist
+          if (-not (Test-Path 'lcov.info')) {
+              Write-Error 'Coverage report (lcov.info) was not generated despite Rust file changes.'
+              "coverage_failed=true" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          } else {
+              "coverage_failed=false" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          }
 
       - name: Analyze coverage on changed files
-        if: steps.build-test.outputs.has_rust_changes == 'true'
+        if: steps.build-test.outputs.has_rust_changes == 'true' && steps.build-test.outputs.coverage_failed != 'true'
         id: coverage
         run: |-
           $baseSha = '${{ github.event.pull_request.base.sha }}'
@@ -167,6 +174,7 @@ jobs:
       - name: Post coverage comment
         if: >-
           steps.build-test.outputs.has_rust_changes == 'true'
+          && steps.build-test.outputs.coverage_failed != 'true'
           && steps.build-test.outputs.tests_failed == 'false'
           && github.event.pull_request.head.repo.full_name == github.repository
         uses: marocchino/sticky-pull-request-comment@v2
@@ -188,6 +196,7 @@ jobs:
       - name: Post coverage comment (tests failed)
         if: >-
           steps.build-test.outputs.has_rust_changes == 'true'
+          && steps.build-test.outputs.coverage_failed != 'true'
           && steps.build-test.outputs.tests_failed == 'true'
           && github.event.pull_request.head.repo.full_name == github.repository
         uses: marocchino/sticky-pull-request-comment@v2
@@ -207,6 +216,20 @@ jobs:
             | Coverage percentage | ${{ steps.coverage.outputs.percentage }}% |
 
             > Coverage is measured only on changed Rust code in this PR.
+
+      - name: Post coverage comment (report failed)
+        if: >-
+          steps.build-test.outputs.has_rust_changes == 'true'
+          && steps.build-test.outputs.coverage_failed == 'true'
+          && github.event.pull_request.head.repo.full_name == github.repository
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: coverage-report
+          message: |
+            ## :x: Code Coverage Report
+
+            **Coverage report could not be generated.** The build or test run failed before
+            producing coverage data. Check the workflow logs for details.
 
       - name: Post no-changes comment
         if: >-
