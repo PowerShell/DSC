@@ -27,38 +27,28 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Get changed Rust files
-        id: changed
+      - name: Build and test with coverage
+        id: build-test
         run: |-
           $baseSha = '${{ github.event.pull_request.base.sha }}'
           $headSha = '${{ github.event.pull_request.head.sha }}'
-          $changedFiles = git diff --name-only --diff-filter=ACMR "$baseSha...$headSha" -- '*.rs'
-          if ($changedFiles) {
-              $fileList = ($changedFiles | Where-Object { $_ }) -join ' '
-              "files=$fileList" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
-              "has_rust_changes=true" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
-          } else {
-              "files=" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
-              "has_rust_changes=false" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
-          }
-
-      - name: Install Rust toolchain
-        if: steps.changed.outputs.has_rust_changes == 'true'
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Build and test with coverage
-        if: steps.changed.outputs.has_rust_changes == 'true'
-        id: build-test
-        run: |-
           $testsFailed = $false
           try {
-              ./build.ps1 -Test -CodeCoverage -Verbose
+              ./build.ps1 -Test -CodeCoverage -CodeCoverageBaseSha $baseSha -CodeCoverageHeadSha $headSha -Verbose
               if ($LASTEXITCODE -ne 0) {
                   $testsFailed = $true
               }
           } catch {
               $testsFailed = $true
           }
+
+          # Check if coverage was skipped (no lcov.info produced)
+          if (-not (Test-Path 'lcov.info')) {
+              "has_rust_changes=false" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+              return
+          }
+          "has_rust_changes=true" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+
           if ($testsFailed) {
               Write-Warning 'One or more tests failed. Producing coverage report from partial results.'
               "tests_failed=true" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
@@ -66,8 +56,12 @@ jobs:
               "tests_failed=false" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
           }
 
+          # Pass changed files list for coverage analysis
+          $changedFiles = (git diff --name-only --diff-filter=ACMR "$baseSha...$headSha" -- '*.rs' | Where-Object { $_ }) -join ' '
+          "files=$changedFiles" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+
       - name: Analyze coverage on changed files
-        if: steps.changed.outputs.has_rust_changes == 'true'
+        if: steps.build-test.outputs.has_rust_changes == 'true'
         id: coverage
         run: |-
           $baseSha = '${{ github.event.pull_request.base.sha }}'
@@ -92,7 +86,7 @@ jobs:
               }
           }
 
-          $changedFiles = '${{ steps.changed.outputs.files }}' -split '\s+'
+          $changedFiles = '${{ steps.build-test.outputs.files }}' -split '\s+'
           foreach ($file in $changedFiles) {
               if (-not $file -or -not (Test-Path $file)) {
                   continue
@@ -168,7 +162,7 @@ jobs:
           }
 
       - name: Post coverage comment
-        if: steps.changed.outputs.has_rust_changes == 'true' && steps.build-test.outputs.tests_failed == 'false'
+        if: steps.build-test.outputs.has_rust_changes == 'true' && steps.build-test.outputs.tests_failed == 'false'
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: coverage-report
@@ -186,7 +180,7 @@ jobs:
             > Coverage is measured only on changed Rust code in this PR.
 
       - name: Post coverage comment (tests failed)
-        if: steps.changed.outputs.has_rust_changes == 'true' && steps.build-test.outputs.tests_failed == 'true'
+        if: steps.build-test.outputs.has_rust_changes == 'true' && steps.build-test.outputs.tests_failed == 'true'
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: coverage-report
@@ -206,7 +200,7 @@ jobs:
             > Coverage is measured only on changed Rust code in this PR.
 
       - name: Post no-changes comment
-        if: steps.changed.outputs.has_rust_changes == 'false'
+        if: steps.build-test.outputs.has_rust_changes == 'false'
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: coverage-report

@@ -45,14 +45,26 @@ using module ./helpers.build.psm1
     Determines whether to run Rust and Pester tests for the project.
 
     .PARAMETER CodeCoverage
-    Enables code coverage instrumentation using cargo-llvm-cov. Requires the `cargo-llvm-cov`
-    component to be installed. When specified, the build and tests run with coverage
-    instrumentation enabled and an LCOV report is generated at the path specified by
-    `-CodeCoverageOutputPath` (defaults to `lcov.info` in the repository root).
+    Enables code coverage instrumentation using cargo-llvm-cov. When specified, the build and
+    tests run with coverage instrumentation enabled and an LCOV report is generated at the path
+    specified by `-CodeCoverageOutputPath` (defaults to `lcov.info` in the repository root).
+    Installs cargo-llvm-cov and the llvm-tools rustup component automatically if not present.
+
+    When `-CodeCoverageBaseSha` and `-CodeCoverageHeadSha` are provided, the script first checks
+    whether any `.rs` files were changed between those commits. If no Rust files were changed,
+    coverage is skipped entirely and the script exits early.
 
     .PARAMETER CodeCoverageOutputPath
     Specifies the output path for the LCOV code coverage report. Only used when `-CodeCoverage`
     is specified. Defaults to `lcov.info` in the repository root.
+
+    .PARAMETER CodeCoverageBaseSha
+    The base commit SHA to compare against when detecting changed Rust files. When specified
+    along with `-CodeCoverageHeadSha`, coverage is skipped if no `.rs` files were modified.
+
+    .PARAMETER CodeCoverageHeadSha
+    The head commit SHA to compare when detecting changed Rust files. When specified along with
+    `-CodeCoverageBaseSha`, coverage is skipped if no `.rs` files were modified.
 
     .PARAMETER GetPackageVersion
     Short circuits the build to return the current version of the DSC CLI crate.
@@ -99,6 +111,8 @@ param(
     [switch]$Test,
     [switch]$CodeCoverage,
     [string]$CodeCoverageOutputPath = (Join-Path $PSScriptRoot 'lcov.info'),
+    [string]$CodeCoverageBaseSha,
+    [string]$CodeCoverageHeadSha,
     [string[]]$Project,
     [switch]$ExcludeRustTests,
     [string]$RustTestFilter,
@@ -236,6 +250,16 @@ process {
     if ($CodeCoverage) {
         $progressParams.Activity = 'Setting up code coverage'
         Write-BuildProgress @progressParams
+
+        if ($CodeCoverageBaseSha -and $CodeCoverageHeadSha) {
+            Write-BuildProgress @progressParams -Status 'Checking for changed Rust files'
+            $changedRustFiles = Get-ChangedRustFile -BaseSha $CodeCoverageBaseSha -HeadSha $CodeCoverageHeadSha @VerboseParam
+            if ($changedRustFiles.Count -eq 0) {
+                Write-Information 'No Rust files changed between the specified commits. Skipping code coverage.'
+                return
+            }
+        }
+
         Write-BuildProgress @progressParams -Status 'Configuring cargo-llvm-cov environment'
         Initialize-CodeCoverage @VerboseParam
     }

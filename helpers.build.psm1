@@ -1823,6 +1823,47 @@ function Export-RustDocs {
 #endregion Documenting project functions
 
 #region    Code coverage functions
+function Get-ChangedRustFile {
+    <#
+        .SYNOPSIS
+        Returns the list of Rust files changed between two commits.
+
+        .DESCRIPTION
+        Uses `git diff` to identify `.rs` files that were added, copied, modified, or renamed
+        between the specified base and head commits.
+
+        .PARAMETER BaseSha
+        The base commit SHA to compare from.
+
+        .PARAMETER HeadSha
+        The head commit SHA to compare to.
+
+        .OUTPUTS
+        System.String[]
+        An array of changed `.rs` file paths, or an empty array if none were changed.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$BaseSha,
+
+        [Parameter(Mandatory)]
+        [string]$HeadSha
+    )
+
+    process {
+        $changedFiles = git diff --name-only --diff-filter=ACMR "$BaseSha...$HeadSha" -- '*.rs'
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning "Failed to detect changed files between $BaseSha and $HeadSha"
+            return @()
+        }
+
+        $result = @($changedFiles | Where-Object { $_ })
+        Write-Verbose "Found $($result.Count) changed Rust file(s)"
+        return $result
+    }
+}
+
 function Initialize-CodeCoverage {
     <#
         .SYNOPSIS
