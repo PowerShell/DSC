@@ -490,8 +490,8 @@ function Install-CargoLlvmCov {
 
         .DESCRIPTION
         Checks whether `cargo-llvm-cov` is installed and installs it via `cargo install` if not
-        found. Also ensures the `llvm-tools` rustup component is installed, which is required by
-        cargo-llvm-cov for coverage instrumentation.
+        found. Also ensures the `llvm-tools-preview` rustup component is installed, which is
+        required by cargo-llvm-cov for coverage instrumentation.
     #>
     [CmdletBinding()]
     param(
