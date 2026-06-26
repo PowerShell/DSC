@@ -55,6 +55,7 @@ jobs:
 
       - name: Build and test with coverage
         if: steps.changed.outputs.has_rust_changes == 'true'
+        id: build-test
         run: |-
           # Set up coverage instrumentation environment
           cargo llvm-cov show-env --export-prefix | ForEach-Object {
@@ -65,7 +66,21 @@ jobs:
           # Clean previous coverage artifacts
           cargo llvm-cov clean --workspace
           # Build and run tests using the project's build script
-          ./build.ps1 -Test -Verbose
+          $testsFailed = $false
+          try {
+              ./build.ps1 -Test -Verbose
+              if ($LASTEXITCODE -ne 0) {
+                  $testsFailed = $true
+              }
+          } catch {
+              $testsFailed = $true
+          }
+          if ($testsFailed) {
+              Write-Warning 'One or more tests failed. Producing coverage report from partial results.'
+              "tests_failed=true" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          } else {
+              "tests_failed=false" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          }
           # Generate LCOV report from collected profile data
           cargo llvm-cov report --lcov --output-path lcov.info
 
@@ -171,12 +186,32 @@ jobs:
           }
 
       - name: Post coverage comment
-        if: steps.changed.outputs.has_rust_changes == 'true'
+        if: steps.changed.outputs.has_rust_changes == 'true' && steps.build-test.outputs.tests_failed == 'false'
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: coverage-report
           message: |
             ## ${{ steps.coverage.outputs.emoji }} Code Coverage Report
+
+            **Changed code coverage: ${{ steps.coverage.outputs.percentage }}%** (${{ steps.coverage.outputs.label }})
+
+            | Metric | Value |
+            |--------|-------|
+            | Changed lines analyzed | ${{ steps.coverage.outputs.total }} |
+            | Lines covered by tests | ${{ steps.coverage.outputs.covered }} |
+            | Coverage percentage | ${{ steps.coverage.outputs.percentage }}% |
+
+            > Coverage is measured only on changed Rust code in this PR.
+
+      - name: Post coverage comment (tests failed)
+        if: steps.changed.outputs.has_rust_changes == 'true' && steps.build-test.outputs.tests_failed == 'true'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: coverage-report
+          message: |
+            ## ${{ steps.coverage.outputs.emoji }} Code Coverage Report
+
+            > :warning: **One or more tests failed.** Coverage data below may be incomplete.
 
             **Changed code coverage: ${{ steps.coverage.outputs.percentage }}%** (${{ steps.coverage.outputs.label }})
 
