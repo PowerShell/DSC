@@ -483,6 +483,38 @@ function Install-CargoAudit {
     }
 }
 
+function Install-CargoLlvmCov {
+    <#
+        .SYNOPSIS
+        Installs `cargo-llvm-cov` if not already available.
+
+        .DESCRIPTION
+        Checks whether `cargo-llvm-cov` is installed and installs it via `cargo install` if not
+        found. Also ensures the `llvm-tools` rustup component is installed, which is required by
+        cargo-llvm-cov for coverage instrumentation.
+    #>
+    [CmdletBinding()]
+    param()
+
+    process {
+        if (Test-CommandAvailable -Name 'cargo-llvm-cov') {
+            Write-Verbose 'cargo-llvm-cov already installed.'
+        } else {
+            Write-Verbose 'Installing cargo-llvm-cov...'
+            cargo install cargo-llvm-cov
+            if ($LASTEXITCODE -ne 0) {
+                throw 'Failed to install cargo-llvm-cov'
+            }
+        }
+
+        Write-Verbose 'Ensuring llvm-tools rustup component is installed'
+        rustup component add llvm-tools
+        if ($LASTEXITCODE -ne 0) {
+            throw 'Failed to install llvm-tools rustup component'
+        }
+    }
+}
+
 function Install-TreeSitter {
     <#
         .SYNOPSIS
@@ -1805,6 +1837,8 @@ function Initialize-CodeCoverage {
     param()
 
     process {
+        Install-CargoLlvmCov @VerboseParam
+
         $showEnvOutput = cargo llvm-cov show-env --export-prefix
         if ($LASTEXITCODE -ne 0) {
             throw 'Failed to retrieve cargo-llvm-cov environment. Ensure cargo-llvm-cov is installed.'

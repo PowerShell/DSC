@@ -46,10 +46,6 @@ jobs:
         if: steps.changed.outputs.has_rust_changes == 'true'
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Install cargo-llvm-cov
-        if: steps.changed.outputs.has_rust_changes == 'true'
-        uses: taiki-e/install-action@cargo-llvm-cov
-
       - name: Build and test with coverage
         if: steps.changed.outputs.has_rust_changes == 'true'
         id: build-test
