@@ -27,12 +27,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@cargo-llvm-cov
-
       - name: Get changed Rust files
         id: changed
         run: |-
@@ -47,6 +41,14 @@ jobs:
               "files=" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
               "has_rust_changes=false" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
           }
+
+      - name: Install Rust toolchain
+        if: steps.changed.outputs.has_rust_changes == 'true'
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-llvm-cov
+        if: steps.changed.outputs.has_rust_changes == 'true'
+        uses: taiki-e/install-action@cargo-llvm-cov
 
       - name: Install prerequisites
         if: steps.changed.outputs.has_rust_changes == 'true'
