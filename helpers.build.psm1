@@ -494,14 +494,20 @@ function Install-CargoLlvmCov {
         cargo-llvm-cov for coverage instrumentation.
     #>
     [CmdletBinding()]
-    param()
+    param(
+        [switch]$UseCFS
+    )
 
     process {
         if (Test-CommandAvailable -Name 'cargo-llvm-cov') {
             Write-Verbose 'cargo-llvm-cov already installed.'
         } else {
             Write-Verbose 'Installing cargo-llvm-cov...'
-            cargo install cargo-llvm-cov
+            if ($UseCFS) {
+                cargo install cargo-llvm-cov --config .cargo/config.toml
+            } else {
+                cargo install cargo-llvm-cov
+            }
             if ($LASTEXITCODE -ne 0) {
                 throw 'Failed to install cargo-llvm-cov'
             }
@@ -1875,10 +1881,12 @@ function Initialize-CodeCoverage {
         coverage artifacts from the workspace.
     #>
     [CmdletBinding()]
-    param()
+    param(
+        [switch]$UseCFS
+    )
 
     process {
-        Install-CargoLlvmCov @VerboseParam
+        Install-CargoLlvmCov -UseCFS:$UseCFS @VerboseParam
 
         $showEnvOutput = cargo llvm-cov show-env --export-prefix
         if ($LASTEXITCODE -ne 0) {

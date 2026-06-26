@@ -261,7 +261,7 @@ process {
         }
 
         Write-BuildProgress @progressParams -Status 'Configuring cargo-llvm-cov environment'
-        Initialize-CodeCoverage @VerboseParam
+        Initialize-CodeCoverage -UseCFS:$UseCFS @VerboseParam
     }
     #endregion Code coverage instrumentation
 
