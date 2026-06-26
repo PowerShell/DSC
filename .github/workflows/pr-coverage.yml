@@ -162,7 +162,10 @@ jobs:
           }
 
       - name: Post coverage comment
-        if: steps.build-test.outputs.has_rust_changes == 'true' && steps.build-test.outputs.tests_failed == 'false'
+        if: >-
+          steps.build-test.outputs.has_rust_changes == 'true'
+          && steps.build-test.outputs.tests_failed == 'false'
+          && github.event.pull_request.head.repo.full_name == github.repository
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: coverage-report
@@ -180,7 +183,10 @@ jobs:
             > Coverage is measured only on changed Rust code in this PR.
 
       - name: Post coverage comment (tests failed)
-        if: steps.build-test.outputs.has_rust_changes == 'true' && steps.build-test.outputs.tests_failed == 'true'
+        if: >-
+          steps.build-test.outputs.has_rust_changes == 'true'
+          && steps.build-test.outputs.tests_failed == 'true'
+          && github.event.pull_request.head.repo.full_name == github.repository
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: coverage-report
@@ -200,7 +206,9 @@ jobs:
             > Coverage is measured only on changed Rust code in this PR.
 
       - name: Post no-changes comment
-        if: steps.build-test.outputs.has_rust_changes == 'false'
+        if: >-
+          steps.build-test.outputs.has_rust_changes == 'false'
+          && github.event.pull_request.head.repo.full_name == github.repository
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: coverage-report
