@@ -507,10 +507,10 @@ function Install-CargoLlvmCov {
             }
         }
 
-        Write-Verbose 'Ensuring llvm-tools rustup component is installed'
-        rustup component add llvm-tools
+        Write-Verbose 'Ensuring llvm-tools-preview rustup component is installed'
+        rustup component add llvm-tools-preview
         if ($LASTEXITCODE -ne 0) {
-            throw 'Failed to install llvm-tools rustup component'
+            throw 'Failed to install llvm-tools-preview rustup component'
         }
     }
 }
