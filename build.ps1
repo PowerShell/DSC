@@ -44,6 +44,16 @@ using module ./helpers.build.psm1
     .PARAMETER Test
     Determines whether to run Rust and Pester tests for the project.
 
+    .PARAMETER CodeCoverage
+    Enables code coverage instrumentation using cargo-llvm-cov. Requires the `cargo-llvm-cov`
+    component to be installed. When specified, the build and tests run with coverage
+    instrumentation enabled and an LCOV report is generated at the path specified by
+    `-CodeCoverageOutputPath` (defaults to `lcov.info` in the repository root).
+
+    .PARAMETER CodeCoverageOutputPath
+    Specifies the output path for the LCOV code coverage report. Only used when `-CodeCoverage`
+    is specified. Defaults to `lcov.info` in the repository root.
+
     .PARAMETER GetPackageVersion
     Short circuits the build to return the current version of the DSC CLI crate.
 
@@ -87,6 +97,8 @@ param(
     )]
     $PackageType,
     [switch]$Test,
+    [switch]$CodeCoverage,
+    [string]$CodeCoverageOutputPath = (Join-Path $PSScriptRoot 'lcov.info'),
     [string[]]$Project,
     [switch]$ExcludeRustTests,
     [string]$RustTestFilter,
@@ -220,6 +232,15 @@ process {
 
     #endregion Setup
 
+    #region    Code coverage instrumentation
+    if ($CodeCoverage) {
+        $progressParams.Activity = 'Setting up code coverage'
+        Write-BuildProgress @progressParams
+        Write-BuildProgress @progressParams -Status 'Configuring cargo-llvm-cov environment'
+        Initialize-CodeCoverage @VerboseParam
+    }
+    #endregion Code coverage instrumentation
+
     if (!$SkipBuild) {
         if ($UpdateLockFile) {
             $lockFile = Join-Path $PSScriptRoot "Cargo.lock"
@@ -304,6 +325,15 @@ process {
             Test-ProjectWithPester @pesterParams @VerboseParam
         }
     }
+
+    #region    Code coverage report
+    if ($CodeCoverage) {
+        $progressParams.Activity = 'Generating code coverage report'
+        Write-BuildProgress @progressParams
+        Write-BuildProgress @progressParams -Status "Writing LCOV report to $CodeCoverageOutputPath"
+        Export-CodeCoverageReport -OutputPath $CodeCoverageOutputPath @VerboseParam
+    }
+    #endregion Code coverage report
 
     if (-not [string]::IsNullOrEmpty($PackageType)) {
         $progressParams.Activity = "Packaging"

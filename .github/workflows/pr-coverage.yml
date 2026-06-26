@@ -50,27 +50,13 @@ jobs:
         if: steps.changed.outputs.has_rust_changes == 'true'
         uses: taiki-e/install-action@cargo-llvm-cov
 
-      - name: Install prerequisites
-        if: steps.changed.outputs.has_rust_changes == 'true'
-        run: |-
-          ./build.ps1 -SkipBuild -Verbose
-
       - name: Build and test with coverage
         if: steps.changed.outputs.has_rust_changes == 'true'
         id: build-test
         run: |-
-          # Set up coverage instrumentation environment
-          cargo llvm-cov show-env --export-prefix | ForEach-Object {
-              if ($_ -match '^export\s+(\w+)=(.*)$') {
-                  [System.Environment]::SetEnvironmentVariable($Matches[1], $Matches[2].Trim('"'))
-              }
-          }
-          # Clean previous coverage artifacts
-          cargo llvm-cov clean --workspace
-          # Build and run tests using the project's build script
           $testsFailed = $false
           try {
-              ./build.ps1 -Test -Verbose
+              ./build.ps1 -Test -CodeCoverage -Verbose
               if ($LASTEXITCODE -ne 0) {
                   $testsFailed = $true
               }
@@ -83,8 +69,6 @@ jobs:
           } else {
               "tests_failed=false" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
           }
-          # Generate LCOV report from collected profile data
-          cargo llvm-cov report --lcov --output-path lcov.info
 
       - name: Analyze coverage on changed files
         if: steps.changed.outputs.has_rust_changes == 'true'

@@ -1790,6 +1790,71 @@ function Export-RustDocs {
 }
 #endregion Documenting project functions
 
+#region    Code coverage functions
+function Initialize-CodeCoverage {
+    <#
+        .SYNOPSIS
+        Configures the environment for code coverage instrumentation using cargo-llvm-cov.
+
+        .DESCRIPTION
+        Runs `cargo llvm-cov show-env` to retrieve the required environment variables for
+        coverage instrumentation and sets them in the current process. Also cleans any prior
+        coverage artifacts from the workspace.
+    #>
+    [CmdletBinding()]
+    param()
+
+    process {
+        $showEnvOutput = cargo llvm-cov show-env --export-prefix
+        if ($LASTEXITCODE -ne 0) {
+            throw 'Failed to retrieve cargo-llvm-cov environment. Ensure cargo-llvm-cov is installed.'
+        }
+
+        foreach ($line in $showEnvOutput) {
+            if ($line -match '^export\s+(\w+)=(.*)$') {
+                $name = $Matches[1]
+                $value = $Matches[2].Trim('"').Trim("'")
+                [System.Environment]::SetEnvironmentVariable($name, $value)
+                Write-Verbose "Set coverage environment variable: $name"
+            }
+        }
+
+        Write-Verbose 'Cleaning previous coverage artifacts'
+        cargo llvm-cov clean --workspace
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning 'Failed to clean previous coverage artifacts, continuing anyway'
+        }
+    }
+}
+
+function Export-CodeCoverageReport {
+    <#
+        .SYNOPSIS
+        Generates an LCOV code coverage report from collected profile data.
+
+        .DESCRIPTION
+        Runs `cargo llvm-cov report` to produce an LCOV-formatted coverage report from the
+        profile data collected during an instrumented build and test run.
+
+        .PARAMETER OutputPath
+        The file path where the LCOV report will be written.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$OutputPath
+    )
+
+    process {
+        cargo llvm-cov report --lcov --output-path $OutputPath
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to generate code coverage report at '$OutputPath'"
+        }
+        Write-Verbose "Code coverage report written to: $OutputPath"
+    }
+}
+#endregion Code coverage functions
+
 #region    Test project functions
 function Test-RustProject {
     [CmdletBinding()]
