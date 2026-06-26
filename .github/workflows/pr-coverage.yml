@@ -122,9 +122,12 @@ jobs:
 
               if ($fileCoverage) {
                   foreach ($lineNum in $addedLineNumbers) {
-                      $totalChangedLines++
-                      if ($fileCoverage.ContainsKey($lineNum) -and $fileCoverage[$lineNum] -gt 0) {
-                          $coveredLines++
+                      # Only count lines that LCOV recognizes as executable (have a DA entry)
+                      if ($fileCoverage.ContainsKey($lineNum)) {
+                          $totalChangedLines++
+                          if ($fileCoverage[$lineNum] -gt 0) {
+                              $coveredLines++
+                          }
                       }
                   }
               } else {
