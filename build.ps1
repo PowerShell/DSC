@@ -48,7 +48,7 @@ using module ./helpers.build.psm1
     Enables code coverage instrumentation using cargo-llvm-cov. When specified, the build and
     tests run with coverage instrumentation enabled and an LCOV report is generated at the path
     specified by `-CodeCoverageOutputPath` (defaults to `lcov.info` in the repository root).
-    Installs cargo-llvm-cov and the llvm-tools rustup component automatically if not present.
+    Installs cargo-llvm-cov and the llvm-tools-preview rustup component automatically if not present.
 
     When `-CodeCoverageBaseSha` and `-CodeCoverageHeadSha` are provided, the script first checks
     whether any `.rs` files were changed between those commits. If no Rust files were changed,
