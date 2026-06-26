@@ -489,9 +489,10 @@ function Install-CargoLlvmCov {
         Installs `cargo-llvm-cov` if not already available.
 
         .DESCRIPTION
-        Checks whether `cargo-llvm-cov` is installed and installs it via `cargo install` if not
-        found. Also ensures the `llvm-tools-preview` rustup component is installed, which is
-        required by cargo-llvm-cov for coverage instrumentation.
+        Checks whether `cargo-llvm-cov` is installed and installs it if not found. Tries
+        `cargo binstall` first (downloads pre-built binary) for speed, then falls back to
+        `cargo install` (compiles from source). Also ensures the `llvm-tools-preview` rustup
+        component is installed, which is required by cargo-llvm-cov for coverage instrumentation.
     #>
     [CmdletBinding()]
     param(
@@ -500,20 +501,35 @@ function Install-CargoLlvmCov {
 
     process {
         if (Test-CommandAvailable -Name 'cargo-llvm-cov') {
-            Write-Verbose 'cargo-llvm-cov already installed.'
+            Write-Verbose -Verbose 'cargo-llvm-cov already installed.'
         } else {
-            Write-Verbose 'Installing cargo-llvm-cov...'
-            if ($UseCFS) {
-                cargo install cargo-llvm-cov --config .cargo/config.toml
-            } else {
-                cargo install cargo-llvm-cov
+            $installed = $false
+
+            # Try cargo-binstall first (downloads pre-built binary, much faster)
+            if (Test-CommandAvailable -Name 'cargo-binstall') {
+                Write-Verbose -Verbose 'Installing cargo-llvm-cov via cargo-binstall...'
+                cargo binstall --no-confirm cargo-llvm-cov
+                if ($LASTEXITCODE -eq 0) {
+                    $installed = $true
+                } else {
+                    Write-Verbose -Verbose 'cargo-binstall failed, falling back to cargo install'
+                }
             }
-            if ($LASTEXITCODE -ne 0) {
-                throw 'Failed to install cargo-llvm-cov'
+
+            if (-not $installed) {
+                Write-Verbose -Verbose 'Installing cargo-llvm-cov via cargo install (compiling from source)...'
+                if ($UseCFS) {
+                    cargo install cargo-llvm-cov --config .cargo/config.toml
+                } else {
+                    cargo install cargo-llvm-cov
+                }
+                if ($LASTEXITCODE -ne 0) {
+                    throw 'Failed to install cargo-llvm-cov'
+                }
             }
         }
 
-        Write-Verbose 'Ensuring llvm-tools-preview rustup component is installed'
+        Write-Verbose -Verbose 'Ensuring llvm-tools-preview rustup component is installed'
         rustup component add llvm-tools-preview
         if ($LASTEXITCODE -ne 0) {
             throw 'Failed to install llvm-tools-preview rustup component'
@@ -1886,8 +1902,14 @@ function Initialize-CodeCoverage {
     )
 
     process {
-        Install-CargoLlvmCov -UseCFS:$UseCFS @VerboseParam
+        $verboseFlag = @{}
+        if ($VerbosePreference -eq 'Continue') {
+            $verboseFlag.Verbose = $true
+        }
 
+        Install-CargoLlvmCov -UseCFS:$UseCFS @verboseFlag
+
+        Write-Verbose -Verbose 'Retrieving cargo-llvm-cov environment variables'
         $showEnvOutput = cargo llvm-cov show-env --export-prefix
         if ($LASTEXITCODE -ne 0) {
             throw 'Failed to retrieve cargo-llvm-cov environment. Ensure cargo-llvm-cov is installed.'
@@ -1898,11 +1920,11 @@ function Initialize-CodeCoverage {
                 $name = $Matches[1]
                 $value = $Matches[2].Trim('"').Trim("'")
                 [System.Environment]::SetEnvironmentVariable($name, $value)
-                Write-Verbose "Set coverage environment variable: $name"
+                Write-Verbose -Verbose "Set coverage environment variable: $name=$value"
             }
         }
 
-        Write-Verbose 'Cleaning previous coverage artifacts'
+        Write-Verbose -Verbose 'Cleaning previous coverage artifacts'
         cargo llvm-cov clean --workspace
         if ($LASTEXITCODE -ne 0) {
             Write-Warning 'Failed to clean previous coverage artifacts, continuing anyway'
@@ -1929,11 +1951,12 @@ function Export-CodeCoverageReport {
     )
 
     process {
+        Write-Verbose -Verbose "Generating LCOV report at: $OutputPath"
         cargo llvm-cov report --lcov --output-path $OutputPath
         if ($LASTEXITCODE -ne 0) {
             throw "Failed to generate code coverage report at '$OutputPath'"
         }
-        Write-Verbose "Code coverage report written to: $OutputPath"
+        Write-Verbose -Verbose "Code coverage report written to: $OutputPath"
     }
 }
 #endregion Code coverage functions
