@@ -1,0 +1,149 @@
+name: PR Code Coverage
+
+on:
+  pull_request:
+    branches: [ "main", "release/*" ]
+    paths-ignore:
+      - "docs/**"
+      - "*.md"
+      - ".vscode/*.json"
+      - ".github/ISSUE_TEMPLATE/**"
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Get changed Rust files
+        id: changed
+        run: |
+          BASE_SHA=${{ github.event.pull_request.base.sha }}
+          HEAD_SHA=${{ github.event.pull_request.head.sha }}
+          CHANGED_FILES=$(git diff --name-only --diff-filter=ACMR "$BASE_SHA"..."$HEAD_SHA" -- '*.rs' | tr '\n' ' ')
+          echo "files=$CHANGED_FILES" >> "$GITHUB_OUTPUT"
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "has_rust_changes=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_rust_changes=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate coverage report
+        if: steps.changed.outputs.has_rust_changes == 'true'
+        run: |
+          cargo llvm-cov --lcov --output-path lcov.info
+
+      - name: Analyze coverage on changed files
+        if: steps.changed.outputs.has_rust_changes == 'true'
+        id: coverage
+        run: |
+          BASE_SHA=${{ github.event.pull_request.base.sha }}
+          HEAD_SHA=${{ github.event.pull_request.head.sha }}
+
+          # Get changed lines per file
+          TOTAL_CHANGED_LINES=0
+          COVERED_LINES=0
+
+          for file in ${{ steps.changed.outputs.files }}; do
+            if [ ! -f "$file" ]; then
+              continue
+            fi
+
+            # Get the added line numbers from the diff
+            ADDED_LINES=$(git diff "$BASE_SHA"..."$HEAD_SHA" -- "$file" | \
+              grep -E '^\+' | grep -v '^\+\+\+' | wc -l | tr -d ' ')
+
+            # Get covered lines from lcov for this file
+            ABS_PATH=$(realpath "$file")
+            FILE_SECTION=$(sed -n "/^SF:.*$(basename "$file")$/,/^end_of_record$/p" lcov.info | \
+              grep "^SF:.*${file}" -A 99999 | sed '/^end_of_record$/q')
+
+            if [ -n "$FILE_SECTION" ]; then
+              # Extract line coverage data (DA:line_number,execution_count)
+              # Get changed line numbers from diff
+              CHANGED_LINE_NUMS=$(git diff "$BASE_SHA"..."$HEAD_SHA" -- "$file" | \
+                awk '/^@@/{split($3,a,","); line=substr(a[1],2)} /^\+[^+]/{print line; line++} /^[^+-]/{line++}')
+
+              for line_num in $CHANGED_LINE_NUMS; do
+                TOTAL_CHANGED_LINES=$((TOTAL_CHANGED_LINES + 1))
+                # Check if this line is covered (execution_count > 0)
+                HIT=$(echo "$FILE_SECTION" | grep "^DA:${line_num}," | cut -d',' -f2)
+                if [ -n "$HIT" ] && [ "$HIT" -gt 0 ] 2>/dev/null; then
+                  COVERED_LINES=$((COVERED_LINES + 1))
+                fi
+              done
+            else
+              # File not in coverage report - count all changed lines as uncovered
+              TOTAL_CHANGED_LINES=$((TOTAL_CHANGED_LINES + ADDED_LINES))
+            fi
+          done
+
+          if [ "$TOTAL_CHANGED_LINES" -eq 0 ]; then
+            PERCENTAGE=100
+          else
+            PERCENTAGE=$((COVERED_LINES * 100 / TOTAL_CHANGED_LINES))
+          fi
+
+          echo "percentage=$PERCENTAGE" >> "$GITHUB_OUTPUT"
+          echo "covered=$COVERED_LINES" >> "$GITHUB_OUTPUT"
+          echo "total=$TOTAL_CHANGED_LINES" >> "$GITHUB_OUTPUT"
+
+          # Determine emoji
+          if [ "$PERCENTAGE" -eq 100 ]; then
+            echo "emoji=😲" >> "$GITHUB_OUTPUT"
+            echo "label=100% coverage" >> "$GITHUB_OUTPUT"
+          elif [ "$PERCENTAGE" -ge 90 ]; then
+            echo "emoji=😁" >> "$GITHUB_OUTPUT"
+            echo "label=90%+ coverage" >> "$GITHUB_OUTPUT"
+          elif [ "$PERCENTAGE" -ge 80 ]; then
+            echo "emoji=😊" >> "$GITHUB_OUTPUT"
+            echo "label=80%+ coverage" >> "$GITHUB_OUTPUT"
+          elif [ "$PERCENTAGE" -ge 70 ]; then
+            echo "emoji=😐" >> "$GITHUB_OUTPUT"
+            echo "label=70%+ coverage" >> "$GITHUB_OUTPUT"
+          else
+            echo "emoji=😢" >> "$GITHUB_OUTPUT"
+            echo "label=less than 70% coverage" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Post coverage comment
+        if: steps.changed.outputs.has_rust_changes == 'true'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: coverage-report
+          message: |
+            ## ${{ steps.coverage.outputs.emoji }} Code Coverage Report
+
+            **Changed code coverage: ${{ steps.coverage.outputs.percentage }}%** (${{ steps.coverage.outputs.label }})
+
+            | Metric | Value |
+            |--------|-------|
+            | Changed lines analyzed | ${{ steps.coverage.outputs.total }} |
+            | Lines covered by tests | ${{ steps.coverage.outputs.covered }} |
+            | Coverage percentage | ${{ steps.coverage.outputs.percentage }}% |
+
+            > Coverage is measured only on changed Rust code in this PR.
+
+      - name: Post no-changes comment
+        if: steps.changed.outputs.has_rust_changes == 'false'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: coverage-report
+          message: |
+            ## Code Coverage Report
+
+            No Rust files were changed in this PR. Coverage analysis skipped.
