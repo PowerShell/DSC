@@ -4161,7 +4161,7 @@ checksum = "09ec2a7bb152e2252b53fa7803150007879548bc709c039df7627cabbd05d469"
 
 [[package]]
 name = "windows_firewall"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "rust-i18n",
  "serde",
