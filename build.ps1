@@ -248,6 +248,8 @@ process {
 
     #region    Code coverage instrumentation
     if ($CodeCoverage) {
+        # Code coverage requires tests to run
+        $Test = $true
         $progressParams.Activity = 'Setting up code coverage'
         Write-BuildProgress @progressParams
 
