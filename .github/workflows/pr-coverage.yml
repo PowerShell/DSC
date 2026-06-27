@@ -1,0 +1,155 @@
+name: PR Code Coverage
+
+on:
+  pull_request:
+    branches: [ "main", "release/*" ]
+    paths-ignore:
+      - "docs/**"
+      - "*.md"
+      - ".vscode/*.json"
+      - ".github/ISSUE_TEMPLATE/**"
+
+env:
+  CARGO_TERM_COLOR: always
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Build and test with coverage
+        id: build-test
+        run: |-
+          $baseSha = '${{ github.event.pull_request.base.sha }}'
+          $headSha = '${{ github.event.pull_request.head.sha }}'
+
+          # Determine if any Rust files changed from git diff
+          $changedFiles = git diff --name-only --diff-filter=ACMR "$baseSha...$headSha" -- '*.rs' | Where-Object { $_ }
+          if (-not $changedFiles) {
+              "has_rust_changes=false" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+              return
+          }
+          "has_rust_changes=true" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+
+          $testsFailed = $false
+          try {
+              ./build.ps1 -Test -CodeCoverage -CodeCoverageBaseSha $baseSha -CodeCoverageHeadSha $headSha -Verbose
+              if ($LASTEXITCODE -ne 0) {
+                  $testsFailed = $true
+              }
+          } catch {
+              $testsFailed = $true
+          }
+
+          if ($testsFailed) {
+              Write-Warning 'One or more tests failed. Producing coverage report from partial results.'
+              "tests_failed=true" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          } else {
+              "tests_failed=false" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          }
+
+          # Treat missing lcov.info as a failure when Rust changes exist
+          if (-not (Test-Path 'lcov.info')) {
+              Write-Error 'Coverage report (lcov.info) was not generated despite Rust file changes.'
+              "coverage_failed=true" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          } else {
+              "coverage_failed=false" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          }
+
+      - name: Analyze coverage on changed files
+        if: steps.build-test.outputs.has_rust_changes == 'true' && steps.build-test.outputs.coverage_failed != 'true'
+        id: coverage
+        run: |-
+          Import-Module ./helpers.build.psm1 -Force
+          $baseSha = '${{ github.event.pull_request.base.sha }}'
+          $headSha = '${{ github.event.pull_request.head.sha }}'
+
+          $report = Get-CodeCoverageReport -LcovPath 'lcov.info' -BaseSha $baseSha -HeadSha $headSha -Verbose
+
+          "percentage=$($report.Percentage)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          "covered=$($report.CoveredLines)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          "total=$($report.TotalLines)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          "emoji=$($report.Emoji)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          "label=$($report.Label)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+
+      - name: Post coverage comment
+        if: >-
+          steps.build-test.outputs.has_rust_changes == 'true'
+          && steps.build-test.outputs.coverage_failed != 'true'
+          && steps.build-test.outputs.tests_failed == 'false'
+          && github.event.pull_request.head.repo.full_name == github.repository
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: coverage-report
+          message: |
+            ## ${{ steps.coverage.outputs.emoji }} Code Coverage Report
+
+            **Changed code coverage: ${{ steps.coverage.outputs.percentage }}%** (${{ steps.coverage.outputs.label }})
+
+            | Metric | Value |
+            |--------|-------|
+            | Changed lines analyzed | ${{ steps.coverage.outputs.total }} |
+            | Lines covered by tests | ${{ steps.coverage.outputs.covered }} |
+            | Coverage percentage | ${{ steps.coverage.outputs.percentage }}% |
+
+            > Coverage is measured only on changed Rust code in this PR.
+
+      - name: Post coverage comment (tests failed)
+        if: >-
+          steps.build-test.outputs.has_rust_changes == 'true'
+          && steps.build-test.outputs.coverage_failed != 'true'
+          && steps.build-test.outputs.tests_failed == 'true'
+          && github.event.pull_request.head.repo.full_name == github.repository
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: coverage-report
+          message: |
+            ## ${{ steps.coverage.outputs.emoji }} Code Coverage Report
+
+            > :warning: **One or more tests failed.** Coverage data below may be incomplete.
+
+            **Changed code coverage: ${{ steps.coverage.outputs.percentage }}%** (${{ steps.coverage.outputs.label }})
+
+            | Metric | Value |
+            |--------|-------|
+            | Changed lines analyzed | ${{ steps.coverage.outputs.total }} |
+            | Lines covered by tests | ${{ steps.coverage.outputs.covered }} |
+            | Coverage percentage | ${{ steps.coverage.outputs.percentage }}% |
+
+            > Coverage is measured only on changed Rust code in this PR.
+
+      - name: Post coverage comment (report failed)
+        if: >-
+          steps.build-test.outputs.has_rust_changes == 'true'
+          && steps.build-test.outputs.coverage_failed == 'true'
+          && github.event.pull_request.head.repo.full_name == github.repository
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: coverage-report
+          message: |
+            ## :x: Code Coverage Report
+
+            **Coverage report could not be generated.** The build or test run failed before
+            producing coverage data. Check the workflow logs for details.
+
+      - name: Post no-changes comment
+        if: >-
+          steps.build-test.outputs.has_rust_changes == 'false'
+          && github.event.pull_request.head.repo.full_name == github.repository
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: coverage-report
+          message: |
+            ## Code Coverage Report
+
+            No Rust files were changed in this PR. Coverage analysis skipped.

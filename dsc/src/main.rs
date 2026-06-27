@@ -55,6 +55,9 @@ fn main() {
 }
 
 fn dsc_main() {
+    // Temporary: validate code coverage instrumentation
+    let _encoded = base64_encode("coverage-test");
+
     #[cfg(debug_assertions)]
     check_debug();
 
@@ -219,5 +222,65 @@ fn check_store() {
         // wait for keypress
         let _ = io::stdin().read(&mut [0u8]).unwrap();
         exit(util::EXIT_INVALID_ARGS);
+    }
+}
+
+/// Temporary function for validating code coverage instrumentation.
+/// Encodes a string as base64 without external crates.
+fn base64_encode(input: &str) -> String {
+    const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+    let bytes = input.as_bytes();
+    let mut output = String::with_capacity(bytes.len().div_ceil(3) * 4);
+
+    for chunk in bytes.chunks(3) {
+        let b0 = chunk[0] as u32;
+        let b1 = if chunk.len() > 1 { chunk[1] as u32 } else { 0 };
+        let b2 = if chunk.len() > 2 { chunk[2] as u32 } else { 0 };
+
+        let triple = (b0 << 16) | (b1 << 8) | b2;
+
+        output.push(ALPHABET[((triple >> 18) & 0x3F) as usize] as char);
+        output.push(ALPHABET[((triple >> 12) & 0x3F) as usize] as char);
+
+        if chunk.len() > 1 {
+            output.push(ALPHABET[((triple >> 6) & 0x3F) as usize] as char);
+        } else {
+            output.push('=');
+        }
+
+        if chunk.len() > 2 {
+            output.push(ALPHABET[(triple & 0x3F) as usize] as char);
+        } else {
+            output.push('=');
+        }
+    }
+
+    output
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_base64_encode_empty() {
+        assert_eq!(base64_encode(""), "");
+    }
+
+    #[test]
+    fn test_base64_encode_basic() {
+        assert_eq!(base64_encode("Hello"), "SGVsbG8=");
+    }
+
+    #[test]
+    fn test_base64_encode_padding() {
+        assert_eq!(base64_encode("Hi"), "SGk=");
+        assert_eq!(base64_encode("Hey"), "SGV5");
+    }
+
+    #[test]
+    fn test_base64_encode_coverage_string() {
+        assert_eq!(base64_encode("coverage-test"), "Y292ZXJhZ2UtdGVzdA==");
     }
 }
