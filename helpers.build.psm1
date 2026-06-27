@@ -1947,6 +1947,62 @@ function Export-CodeCoverageReport {
     }
 }
 
+function Show-CodeCoverageReport {
+    <#
+        .SYNOPSIS
+        Displays a colorized visualization of code coverage on changed lines.
+
+        .DESCRIPTION
+        Reads source files and displays changed executable lines with green for covered
+        and red with underline for uncovered, using $PSStyle for ANSI formatting.
+
+        .PARAMETER FileDetails
+        Array of objects with File (path) and LineCoverageMap (hashtable of line number to bool).
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [PSCustomObject[]]$FileDetails
+    )
+
+    process {
+        foreach ($detail in $FileDetails) {
+            $filePath = $detail.File
+            $lineCoverageMap = $detail.LineCoverageMap
+
+            if ($lineCoverageMap.Count -eq 0) {
+                continue
+            }
+
+            $fileContent = Get-Content -Path $filePath -ErrorAction SilentlyContinue
+            if (-not $fileContent) {
+                continue
+            }
+
+            Write-Host ""
+            Write-Host "$($PSStyle.Bold)$filePath$($PSStyle.BoldOff)" -ForegroundColor Cyan
+
+            $sortedLines = $lineCoverageMap.Keys | Sort-Object
+            $lineNumWidth = ($sortedLines[-1]).ToString().Length
+
+            foreach ($lineNum in $sortedLines) {
+                $lineIndex = $lineNum - 1
+                $lineText = if ($lineIndex -lt $fileContent.Count) { $fileContent[$lineIndex] } else { '' }
+                $prefix = $lineNum.ToString().PadLeft($lineNumWidth)
+
+                if ($lineCoverageMap[$lineNum]) {
+                    # Covered - green
+                    Write-Host "$($PSStyle.Foreground.Green)  $prefix | $lineText$($PSStyle.Reset)"
+                } else {
+                    # Uncovered - red with underline
+                    Write-Host "$($PSStyle.Foreground.Red)$($PSStyle.Underline)  $prefix | $lineText$($PSStyle.UnderlineOff)$($PSStyle.Reset)"
+                }
+            }
+        }
+        Write-Host ""
+    }
+}
+
 function Get-CodeCoverageReport {
     <#
         .SYNOPSIS
@@ -2008,6 +2064,8 @@ function Get-CodeCoverageReport {
 
         $totalChangedLines = 0
         $coveredLines = 0
+        # Collect per-file coverage detail for visualization
+        $fileDetails = @()
 
         foreach ($file in $changedFiles) {
             if (-not $file -or -not (Test-Path $file)) {
@@ -2042,19 +2100,32 @@ function Get-CodeCoverageReport {
                 }
             }
 
+            # Build per-line coverage map for this file (only added executable lines)
+            $lineCoverageMap = @{}
             if ($fileCoverage) {
                 foreach ($lineNum in $addedLineNumbers) {
-                    # Only count lines that LCOV recognizes as executable (have a DA entry)
                     if ($fileCoverage.ContainsKey($lineNum)) {
                         $totalChangedLines++
-                        if ($fileCoverage[$lineNum] -gt 0) {
+                        $isCovered = $fileCoverage[$lineNum] -gt 0
+                        if ($isCovered) {
                             $coveredLines++
                         }
+                        $lineCoverageMap[$lineNum] = $isCovered
                     }
                 }
             } else {
                 # File not in coverage report - count added lines as uncovered
                 $totalChangedLines += $addedLineNumbers.Count
+                foreach ($lineNum in $addedLineNumbers) {
+                    $lineCoverageMap[$lineNum] = $false
+                }
+            }
+
+            if ($lineCoverageMap.Count -gt 0) {
+                $fileDetails += [PSCustomObject]@{
+                    File            = $file
+                    LineCoverageMap = $lineCoverageMap
+                }
             }
         }
 
@@ -2078,6 +2149,9 @@ function Get-CodeCoverageReport {
         }
 
         Write-Verbose -Verbose "Coverage: $percentage% ($coveredLines/$totalChangedLines executable lines covered)"
+
+        # Show visual report
+        Show-CodeCoverageReport -FileDetails $fileDetails
 
         [PSCustomObject]@{
             Percentage   = $percentage
