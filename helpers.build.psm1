@@ -1959,6 +1959,146 @@ function Export-CodeCoverageReport {
         Write-Verbose -Verbose "Code coverage report written to: $OutputPath"
     }
 }
+
+function Get-CodeCoverageReport {
+    <#
+        .SYNOPSIS
+        Analyzes code coverage on changed files and returns a coverage report object.
+
+        .DESCRIPTION
+        Parses an LCOV file and cross-references it with git diff output to determine what
+        percentage of changed executable lines are covered by tests.
+
+        .PARAMETER LcovPath
+        Path to the LCOV coverage report file.
+
+        .PARAMETER BaseSha
+        The base commit SHA to compare from.
+
+        .PARAMETER HeadSha
+        The head commit SHA to compare to.
+
+        .OUTPUTS
+        PSCustomObject with properties: Percentage, CoveredLines, TotalLines, Emoji, Label
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$LcovPath,
+
+        [Parameter(Mandatory)]
+        [string]$BaseSha,
+
+        [Parameter(Mandatory)]
+        [string]$HeadSha
+    )
+
+    process {
+        if (-not (Test-Path $LcovPath)) {
+            throw "LCOV file not found at '$LcovPath'"
+        }
+
+        # Parse the LCOV file into a hashtable keyed by source file path
+        $lcovData = @{}
+        $currentFile = $null
+        foreach ($line in Get-Content -Path $LcovPath) {
+            if ($line -match '^SF:(.+)$') {
+                $currentFile = $Matches[1]
+                $lcovData[$currentFile] = @{}
+            } elseif ($line -match '^DA:(\d+),(\d+)' -and $currentFile) {
+                $lineNum = [int]$Matches[1]
+                $hitCount = [long]$Matches[2]
+                $lcovData[$currentFile][$lineNum] = $hitCount
+            } elseif ($line -eq 'end_of_record') {
+                $currentFile = $null
+            }
+        }
+
+        # Get changed Rust files
+        $changedFiles = Get-ChangedRustFile -BaseSha $BaseSha -HeadSha $HeadSha
+
+        $totalChangedLines = 0
+        $coveredLines = 0
+
+        foreach ($file in $changedFiles) {
+            if (-not $file -or -not (Test-Path $file)) {
+                continue
+            }
+
+            # Parse diff to get added line numbers in the new file
+            $diffOutput = git diff "$BaseSha...$HeadSha" -- $file
+            $addedLineNumbers = @()
+            $currentLineNum = 0
+
+            foreach ($diffLine in $diffOutput) {
+                if ($diffLine -match '^@@\s+\-\d+(?:,\d+)?\s+\+(\d+)(?:,\d+)?\s+@@') {
+                    $currentLineNum = [int]$Matches[1]
+                } elseif ($diffLine.StartsWith('+') -and -not $diffLine.StartsWith('+++')) {
+                    $addedLineNumbers += $currentLineNum
+                    $currentLineNum++
+                } elseif ($diffLine.StartsWith('-') -and -not $diffLine.StartsWith('---')) {
+                    # Deleted lines don't advance the new file line counter
+                } else {
+                    $currentLineNum++
+                }
+            }
+
+            # Find matching LCOV entry for this file
+            $absPath = (Resolve-Path $file).Path
+            $fileCoverage = $null
+            foreach ($key in $lcovData.Keys) {
+                if ($key -eq $absPath -or $key.EndsWith("/$file") -or $key.EndsWith("\$file")) {
+                    $fileCoverage = $lcovData[$key]
+                    break
+                }
+            }
+
+            if ($fileCoverage) {
+                foreach ($lineNum in $addedLineNumbers) {
+                    # Only count lines that LCOV recognizes as executable (have a DA entry)
+                    if ($fileCoverage.ContainsKey($lineNum)) {
+                        $totalChangedLines++
+                        if ($fileCoverage[$lineNum] -gt 0) {
+                            $coveredLines++
+                        }
+                    }
+                }
+            } else {
+                # File not in coverage report - count added lines as uncovered
+                $totalChangedLines += $addedLineNumbers.Count
+            }
+        }
+
+        if ($totalChangedLines -eq 0) {
+            $percentage = 100
+        } else {
+            $percentage = [int][math]::Floor($coveredLines * 100 / $totalChangedLines)
+        }
+
+        # Determine emoji and label
+        $emoji, $label = if ($percentage -eq 100) {
+            '😲', '100% coverage'
+        } elseif ($percentage -ge 90) {
+            '😁', '90%+ coverage'
+        } elseif ($percentage -ge 80) {
+            '😊', '80%+ coverage'
+        } elseif ($percentage -ge 70) {
+            '😐', '70%+ coverage'
+        } else {
+            '😢', 'less than 70% coverage'
+        }
+
+        Write-Verbose -Verbose "Coverage: $percentage% ($coveredLines/$totalChangedLines executable lines covered)"
+
+        [PSCustomObject]@{
+            Percentage   = $percentage
+            CoveredLines = $coveredLines
+            TotalLines   = $totalChangedLines
+            Emoji        = $emoji
+            Label        = $label
+        }
+    }
+}
 #endregion Code coverage functions
 
 #region    Test project functions

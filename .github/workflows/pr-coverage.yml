@@ -40,7 +40,6 @@ jobs:
               return
           }
           "has_rust_changes=true" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
-          "files=$($changedFiles -join ' ')" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
 
           $testsFailed = $false
           try {
@@ -71,105 +70,17 @@ jobs:
         if: steps.build-test.outputs.has_rust_changes == 'true' && steps.build-test.outputs.coverage_failed != 'true'
         id: coverage
         run: |-
+          Import-Module ./helpers.build.psm1 -Force
           $baseSha = '${{ github.event.pull_request.base.sha }}'
           $headSha = '${{ github.event.pull_request.head.sha }}'
 
-          $totalChangedLines = 0
-          $coveredLines = 0
+          $report = Get-CodeCoverageReport -LcovPath 'lcov.info' -BaseSha $baseSha -HeadSha $headSha -Verbose
 
-          # Parse the LCOV file into a hashtable keyed by source file path
-          $lcovData = @{}
-          $currentFile = $null
-          foreach ($line in Get-Content -Path 'lcov.info') {
-              if ($line -match '^SF:(.+)$') {
-                  $currentFile = $Matches[1]
-                  $lcovData[$currentFile] = @{}
-              } elseif ($line -match '^DA:(\d+),(\d+)' -and $currentFile) {
-                  $lineNum = [int]$Matches[1]
-                  $hitCount = [int]$Matches[2]
-                  $lcovData[$currentFile][$lineNum] = $hitCount
-              } elseif ($line -eq 'end_of_record') {
-                  $currentFile = $null
-              }
-          }
-
-          $changedFiles = '${{ steps.build-test.outputs.files }}' -split '\s+'
-          foreach ($file in $changedFiles) {
-              if (-not $file -or -not (Test-Path $file)) {
-                  continue
-              }
-
-              # Parse diff to get added line numbers in the new file
-              $diffOutput = git diff "$baseSha...$headSha" -- $file
-              $addedLineNumbers = @()
-              $currentLineNum = 0
-
-              foreach ($diffLine in $diffOutput) {
-                  if ($diffLine -match '^@@\s+\-\d+(?:,\d+)?\s+\+(\d+)(?:,\d+)?\s+@@') {
-                      $currentLineNum = [int]$Matches[1]
-                  } elseif ($diffLine.StartsWith('+') -and -not $diffLine.StartsWith('+++')) {
-                      $addedLineNumbers += $currentLineNum
-                      $currentLineNum++
-                  } elseif ($diffLine.StartsWith('-') -and -not $diffLine.StartsWith('---')) {
-                      # Deleted lines don't advance the new file line counter
-                  } else {
-                      $currentLineNum++
-                  }
-              }
-
-              # Find matching LCOV entry for this file
-              $absPath = (Resolve-Path $file).Path
-              $fileCoverage = $null
-              foreach ($key in $lcovData.Keys) {
-                  if ($key -eq $absPath -or $key.EndsWith("/$file") -or $key.EndsWith("\$file")) {
-                      $fileCoverage = $lcovData[$key]
-                      break
-                  }
-              }
-
-              if ($fileCoverage) {
-                  foreach ($lineNum in $addedLineNumbers) {
-                      # Only count lines that LCOV recognizes as executable (have a DA entry)
-                      if ($fileCoverage.ContainsKey($lineNum)) {
-                          $totalChangedLines++
-                          if ($fileCoverage[$lineNum] -gt 0) {
-                              $coveredLines++
-                          }
-                      }
-                  }
-              } else {
-                  # File not in coverage report - count added lines as uncovered
-                  $totalChangedLines += $addedLineNumbers.Count
-              }
-          }
-
-          if ($totalChangedLines -eq 0) {
-              $percentage = 100
-          } else {
-              $percentage = [math]::Floor($coveredLines * 100 / $totalChangedLines)
-          }
-
-          "percentage=$percentage" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
-          "covered=$coveredLines" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
-          "total=$totalChangedLines" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
-
-          # Determine emoji and label
-          if ($percentage -eq 100) {
-              "emoji=😲" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
-              "label=100% coverage" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
-          } elseif ($percentage -ge 90) {
-              "emoji=😁" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
-              "label=90%+ coverage" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
-          } elseif ($percentage -ge 80) {
-              "emoji=😊" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
-              "label=80%+ coverage" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
-          } elseif ($percentage -ge 70) {
-              "emoji=😐" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
-              "label=70%+ coverage" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
-          } else {
-              "emoji=😢" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
-              "label=less than 70% coverage" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
-          }
+          "percentage=$($report.Percentage)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          "covered=$($report.CoveredLines)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          "total=$($report.TotalLines)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          "emoji=$($report.Emoji)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          "label=$($report.Label)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
 
       - name: Post coverage comment
         if: >-
