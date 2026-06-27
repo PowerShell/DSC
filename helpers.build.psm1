@@ -1961,11 +1961,15 @@ function Show-CodeCoverageReport {
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory)]
-        [PSCustomObject[]]$FileDetails
+        [Parameter()]
+        [AllowEmptyCollection()]
+        [PSCustomObject[]]$FileDetails = @()
     )
 
     process {
+        if ($FileDetails.Count -eq 0) {
+            return
+        }
         foreach ($detail in $FileDetails) {
             $filePath = $detail.File
             $lineCoverageMap = $detail.LineCoverageMap
