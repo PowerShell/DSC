@@ -1994,7 +1994,9 @@ function Get-CodeCoverageReport {
                 $lcovData[$currentFile] = @{}
             } elseif ($line -match '^DA:(\d+),(\d+)' -and $currentFile) {
                 $lineNum = [int]$Matches[1]
-                $hitCount = [long]$Matches[2]
+                # LLVM emits sentinel values near UInt64.MaxValue for uninstrumented lines
+                $rawHit = [decimal]$Matches[2]
+                $hitCount = if ($rawHit -gt [long]::MaxValue) { 0 } else { [long]$rawHit }
                 $lcovData[$currentFile][$lineNum] = $hitCount
             } elseif ($line -eq 'end_of_record') {
                 $currentFile = $null
