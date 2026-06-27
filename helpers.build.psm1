@@ -1602,7 +1602,8 @@ function Build-RustProject {
         [switch]$Clean,
         [switch]$UpdateLockFile,
         [switch]$Audit,
-        [switch]$Clippy
+        [switch]$Clippy,
+        [switch]$CodeCoverage
     )
 
     begin {
@@ -1663,8 +1664,13 @@ function Build-RustProject {
 
         $members = Get-DefaultWorkspaceMemberGroup
         Write-Verbose -Verbose "Building rust projects: [$members]"
-        Write-Verbose "Invoking cargo:`n`tcargo build $flags"
-        cargo build @flags
+        if ($CodeCoverage) {
+            Write-Verbose "Invoking cargo:`n`tcargo llvm-cov build --no-report $flags"
+            cargo llvm-cov build --no-report @flags
+        } else {
+            Write-Verbose "Invoking cargo:`n`tcargo build $flags"
+            cargo build @flags
+        }
 
         if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
             throw "Last exit code is $LASTEXITCODE, build failed for at least one project"
@@ -1889,12 +1895,13 @@ function Get-ChangedRustFile {
 function Initialize-CodeCoverage {
     <#
         .SYNOPSIS
-        Configures the environment for code coverage instrumentation using cargo-llvm-cov.
+        Prepares the workspace for code coverage instrumentation using cargo-llvm-cov.
 
         .DESCRIPTION
-        Runs `cargo llvm-cov show-env` to retrieve the required environment variables for
-        coverage instrumentation and sets them in the current process. Also cleans any prior
-        coverage artifacts from the workspace.
+        Installs cargo-llvm-cov if needed and cleans any prior coverage artifacts from the
+        workspace. When coverage is enabled, Build-RustProject and Test-RustProject use
+        `cargo llvm-cov build` and `cargo llvm-cov test --no-report` respectively, which
+        handle all instrumentation and profraw management internally.
     #>
     [CmdletBinding()]
     param(
@@ -1908,21 +1915,6 @@ function Initialize-CodeCoverage {
         }
 
         Install-CargoLlvmCov -UseCFS:$UseCFS @verboseFlag
-
-        Write-Verbose -Verbose 'Retrieving cargo-llvm-cov environment variables'
-        $showEnvOutput = cargo llvm-cov show-env --export-prefix
-        if ($LASTEXITCODE -ne 0) {
-            throw 'Failed to retrieve cargo-llvm-cov environment. Ensure cargo-llvm-cov is installed.'
-        }
-
-        foreach ($line in $showEnvOutput) {
-            if ($line -match '^export\s+(\w+)=(.*)$') {
-                $name = $Matches[1]
-                $value = $Matches[2].Trim('"').Trim("'")
-                Set-Item -Path "env:$name" -Value $value
-                Write-Verbose -Verbose "Set coverage environment variable: $name=$value"
-            }
-        }
 
         Write-Verbose -Verbose 'Cleaning previous coverage artifacts'
         cargo llvm-cov clean --workspace
@@ -2110,7 +2102,8 @@ function Test-RustProject {
         $Architecture = 'current',
         [switch]$Release,
         [switch]$Docs,
-        [string]$TestFilter
+        [string]$TestFilter,
+        [switch]$CodeCoverage
     )
 
     begin {
@@ -2140,10 +2133,18 @@ function Test-RustProject {
         } else {
             Write-Verbose -Verbose "Testing rust projects: [$members]"
         }
-        if (-not [string]::IsNullOrEmpty($TestFilter)) {
-            cargo test @flags -- $TestFilter
+        if ($CodeCoverage) {
+            if (-not [string]::IsNullOrEmpty($TestFilter)) {
+                cargo llvm-cov test --no-report @flags -- $TestFilter
+            } else {
+                cargo llvm-cov test --no-report @flags
+            }
         } else {
-            cargo test @flags
+            if (-not [string]::IsNullOrEmpty($TestFilter)) {
+                cargo test @flags -- $TestFilter
+            } else {
+                cargo test @flags
+            }
         }
 
         if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {

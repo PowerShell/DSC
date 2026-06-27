@@ -294,7 +294,7 @@ process {
                 Clean        = $Clean
             }
             Write-BuildProgress @progressParams -Status 'Compiling Rust'
-            Build-RustProject @buildParams -Audit:$Audit -Clippy:$Clippy @VerboseParam
+            Build-RustProject @buildParams -Audit:$Audit -Clippy:$Clippy -CodeCoverage:$CodeCoverage @VerboseParam
             Write-BuildProgress @progressParams -Status "Copying build artifacts"
             Copy-BuildArtifact @buildParams -ExecutableFile $BuildData.PackageFiles.Executable @VerboseParam
         }
@@ -321,7 +321,7 @@ process {
                 $rustTestParams.TestFilter = $RustTestFilter
             }
             Write-BuildProgress @progressParams -Status "Testing Rust projects"
-            Test-RustProject @rustTestParams @VerboseParam
+            Test-RustProject @rustTestParams -CodeCoverage:$CodeCoverage @VerboseParam
         }
         if ($RustDocs) {
             $docTestParams = @{
