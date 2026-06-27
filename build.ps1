@@ -382,8 +382,8 @@ process {
             $progressParams.Activity = 'Analyzing code coverage'
             Write-BuildProgress @progressParams
             $report = Get-CodeCoverageReport -LcovPath $CodeCoverageOutputPath -BaseSha $baseSha -HeadSha $headSha @VerboseParam
-            Write-Information "$($report.Emoji) Changed code coverage: $($report.Percentage)% ($($report.Label))"
-            Write-Information "  Lines analyzed: $($report.TotalLines) | Lines covered: $($report.CoveredLines)"
+            Write-Host "$($report.Emoji) Changed code coverage: $($report.Percentage)% ($($report.Label))"
+            Write-Host "  Lines analyzed: $($report.TotalLines) | Lines covered: $($report.CoveredLines)"
         }
     }
     #endregion Code coverage report
