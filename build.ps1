@@ -179,13 +179,13 @@ begin {
                 $params.Remove('Quiet') > $null
                 Write-Progress @params
             } elseif ($Completed) {
-                Write-Information "Finished build script"
+                Write-Host "Finished build script" -ForegroundColor Green
             } else {
                 $message = "BUILD:   $Activity"
                 if (-not [string]::IsNullOrEmpty($Status)) {
                     $message += "::$Status"
                 }
-                Write-Information $message
+                Write-Host $message -ForegroundColor Cyan
             }
         }
     }
@@ -257,12 +257,13 @@ process {
             Write-BuildProgress @progressParams -Status 'Checking for changed Rust files'
             $changedRustFiles = Get-ChangedRustFile -BaseSha $CodeCoverageBaseSha -HeadSha $CodeCoverageHeadSha @VerboseParam
             if ($changedRustFiles.Count -eq 0) {
-                Write-Information 'No Rust files changed between the specified commits. Skipping code coverage.'
+                Write-Warning 'No Rust files changed between the specified commits. Skipping code coverage.'
                 return
             }
         }
 
         Write-BuildProgress @progressParams -Status 'Configuring cargo-llvm-cov environment'
+        Remove-Item $CodeCoverageOutputPath -Force -ErrorAction Ignore
         Initialize-CodeCoverage -UseCFS:$UseCFS @VerboseParam
     }
     #endregion Code coverage instrumentation

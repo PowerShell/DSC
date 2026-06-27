@@ -1664,13 +1664,8 @@ function Build-RustProject {
 
         $members = Get-DefaultWorkspaceMemberGroup
         Write-Verbose -Verbose "Building rust projects: [$members]"
-        if ($CodeCoverage) {
-            Write-Verbose "Invoking cargo:`n`tcargo llvm-cov build --no-report $flags"
-            cargo llvm-cov build --no-report @flags
-        } else {
-            Write-Verbose "Invoking cargo:`n`tcargo build $flags"
-            cargo build @flags
-        }
+        Write-Verbose "Invoking cargo:`n`tcargo build $flags"
+        cargo build @flags
 
         if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
             throw "Last exit code is $LASTEXITCODE, build failed for at least one project"
