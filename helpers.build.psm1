@@ -1919,7 +1919,7 @@ function Initialize-CodeCoverage {
             if ($line -match '^export\s+(\w+)=(.*)$') {
                 $name = $Matches[1]
                 $value = $Matches[2].Trim('"').Trim("'")
-                [System.Environment]::SetEnvironmentVariable($name, $value)
+                Set-Item -Path "env:$name" -Value $value
                 Write-Verbose -Verbose "Set coverage environment variable: $name=$value"
             }
         }
