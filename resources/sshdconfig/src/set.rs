@@ -77,6 +77,11 @@ pub fn invoke_set(
                     );
                     let desired_state = get_default_shell_desired_state(default_shell)?;
                     if what_if {
+                        if !cfg!(windows) {
+                            return Err(SshdConfigError::InvalidInput(
+                                t!("get.windowsOnly").to_string(),
+                            ));
+                        }
                         default_shell_to_map(&desired_state)
                     } else {
                         set_default_shell(&desired_state)?;
@@ -103,7 +108,7 @@ fn set_sshd_config_repeat(
 
     let (keyword, entry_value) = extract_single_keyword(keyword_input.additional_properties)?;
 
-    let mut existing_config = get_existing_config(cmd_info)?;
+    let mut existing_config = get_existing_config(cmd_info, what_if)?;
 
     // parses entry for name-value keywords, like subsystem, for now
     // different keywords will likely need to be serialized into different structs
@@ -141,7 +146,7 @@ fn set_sshd_config_repeat_list(
     })?;
 
     let (keyword, entries_value) = extract_single_keyword(list_input.additional_properties)?;
-    let mut existing_config = get_existing_config(cmd_info)?;
+    let mut existing_config = get_existing_config(cmd_info, what_if)?;
     // Ensure it's an array
     let Value::Array(ref entries_array) = entries_value else {
         return Err(SshdConfigError::InvalidInput(
@@ -279,12 +284,7 @@ fn set_sshd_config(
     let mut config_to_write = if cmd_info.purge {
         cmd_info.input.clone()
     } else {
-        let mut get_cmd_info = cmd_info.clone();
-        get_cmd_info.include_defaults = false;
-        get_cmd_info.input = Map::new();
-        ensure_sshd_config_exists(get_cmd_info.metadata.filepath.clone())?;
-
-        let mut existing_config = get_sshd_settings(&get_cmd_info, true)?;
+        let mut existing_config = get_existing_config(cmd_info, what_if)?;
         for (key, value) in &cmd_info.input {
             if value.is_null() {
                 existing_config.remove(key);
@@ -391,10 +391,23 @@ fn write_and_validate_config(
 }
 
 /// Get existing config from file or return empty map if file doesn't exist.
-fn get_existing_config(cmd_info: &CommandInfo) -> Result<Map<String, Value>, SshdConfigError> {
+fn get_existing_config(
+    cmd_info: &CommandInfo,
+    what_if: bool,
+) -> Result<Map<String, Value>, SshdConfigError> {
     let mut get_cmd_info = cmd_info.clone();
     get_cmd_info.include_defaults = false;
     get_cmd_info.input = Map::new();
-    ensure_sshd_config_exists(get_cmd_info.metadata.filepath.clone())?;
+    if what_if {
+        // In what-if (preview) mode, do not seed/copy a default sshd_config to
+        // disk. If the config file does not yet exist, treat the existing
+        // config as empty so no system mutation occurs.
+        let config_path = get_default_sshd_config_path(get_cmd_info.metadata.filepath.clone())?;
+        if !config_path.exists() {
+            return Ok(Map::new());
+        }
+    } else {
+        ensure_sshd_config_exists(get_cmd_info.metadata.filepath.clone())?;
+    }
     get_sshd_settings(&get_cmd_info, false)
 }
