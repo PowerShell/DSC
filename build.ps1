@@ -356,6 +356,35 @@ process {
         Write-BuildProgress @progressParams
         Write-BuildProgress @progressParams -Status "Writing LCOV report to $CodeCoverageOutputPath"
         Export-CodeCoverageReport -OutputPath $CodeCoverageOutputPath @VerboseParam
+
+        # Determine base and head SHAs for analysis
+        $baseSha = $CodeCoverageBaseSha
+        $headSha = $CodeCoverageHeadSha
+
+        if (-not $baseSha -or -not $headSha) {
+            # Try to discover from current branch vs its upstream/default
+            $currentBranch = git rev-parse --abbrev-ref HEAD 2>$null
+            $defaultBranch = git rev-parse --abbrev-ref origin/HEAD 2>$null
+            if (-not $defaultBranch) {
+                $defaultBranch = 'origin/main'
+            }
+            $discoveredBase = git merge-base $defaultBranch $currentBranch 2>$null
+            $discoveredHead = git rev-parse HEAD 2>$null
+
+            if ($discoveredBase -and $discoveredHead -and $discoveredBase -ne $discoveredHead) {
+                $baseSha = $discoveredBase
+                $headSha = $discoveredHead
+                Write-Verbose -Verbose "Discovered coverage comparison: $baseSha...$headSha"
+            }
+        }
+
+        if ($baseSha -and $headSha) {
+            $progressParams.Activity = 'Analyzing code coverage'
+            Write-BuildProgress @progressParams
+            $report = Get-CodeCoverageReport -LcovPath $CodeCoverageOutputPath -BaseSha $baseSha -HeadSha $headSha @VerboseParam
+            Write-Information "$($report.Emoji) Changed code coverage: $($report.Percentage)% ($($report.Label))"
+            Write-Information "  Lines analyzed: $($report.TotalLines) | Lines covered: $($report.CoveredLines)"
+        }
     }
     #endregion Code coverage report
 
