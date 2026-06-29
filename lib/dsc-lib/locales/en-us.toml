@@ -199,6 +199,7 @@ whatIfWarning = "Resource '%{resource}' uses deprecated 'whatIf' operation. See 
 securityContextRequired = "Operation '%{operation}' for resource '%{resource}' requires security context '%{context}'"
 noAdaptedContent = "No adapted content available for resource '%{resource}'"
 invalidAdaptedContent = "Invalid adapted content for resource '%{resource}': %{error}"
+exportFilteringNotSupported = "Resource '%{resource}' does not support export filtering"
 
 [dscresources.dscresource]
 invokeGet = "Invoking get for '%{resource}'"

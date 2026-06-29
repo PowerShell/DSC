@@ -976,6 +976,7 @@ name = "dsctest"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "regex",
  "registry",
  "schemars",
  "serde",
