@@ -12,6 +12,14 @@
     "get": {
         "executable": "osinfo"
     },
+    "test": {
+        "executable": "osinfo",
+        "args": [
+            "test"
+        ],
+        "input": "stdin",
+        "return": "state"
+    },
     "export": {
         "executable": "osinfo",
         "args": [
@@ -42,6 +50,12 @@
                     "title": "Instance name",
                     "description": "Returns the name of the OSInfo instance.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#name\n",
                     "markdownDescription": "Returns the name of the OSInfo instance.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#name\n"
+                },
+                "_inDesiredState": {
+                    "type": "boolean",
+                    "readOnly": true,
+                    "title": "In desired state",
+                    "description": "Indicates whether the resource instance is in the desired state. Only present in the output of the test operation.\n"
                 },
                 "architecture": {
                     "type": "string",
@@ -81,8 +95,8 @@
                 "version": {
                     "type": "string",
                     "title": "Operating system version",
-                    "description": "Defines the version of the operating system as a string.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#version\n",
-                    "markdownDescription": "Defines the version of the operating system as a string.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#version\n"
+                    "description": "Defines the version of the operating system as a string.\n\nWhen used with the test operation, the version string may include a comparison operator prefix to compare the actual version against a constraint. Supported operators are: `>`, `<`, `=`, `>=`, and `<=`. The operator and version may be separated by optional whitespace, for example `>= 10.0`. Without an operator, the comparison is an exact string match.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#version\n",
+                    "markdownDescription": "Defines the version of the operating system as a string.\n\nWhen used with the **test** operation, the version string may include a comparison operator prefix to compare the actual version against a constraint. Supported operators are: `>`, `<`, `=`, `>=`, and `<=`. The operator and version may be separated by optional whitespace, for example `>= 10.0`. Without an operator, the comparison is an exact string match.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#version\n"
                 }
             }
         }

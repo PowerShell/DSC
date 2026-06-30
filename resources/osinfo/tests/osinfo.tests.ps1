@@ -57,3 +57,43 @@ Describe 'osinfo resource tests' {
         $out.resources[0].name | Should -BeExactly "$($out.resources[0].properties.family) $($out.resources[0].properties.version) $($out.resources[0].properties.architecture)"
     }
 }
+
+Describe 'osinfo test subcommand version operator tests' {
+    BeforeDiscovery {
+        $osGetResult = dsc resource get -r Microsoft/OSInfo | ConvertFrom-Json
+        $currentVersion = $osGetResult.actualState.version
+
+        $versionTestCases = @(
+            @{ constraint = $currentVersion;          expectedState = $true;  description = 'exact version without operator' }
+            @{ constraint = "= $currentVersion";      expectedState = $true;  description = 'exact version with = operator' }
+            @{ constraint = ">= $currentVersion";     expectedState = $true;  description = '>= current version' }
+            @{ constraint = "<= $currentVersion";     expectedState = $true;  description = '<= current version' }
+            @{ constraint = "> $currentVersion";      expectedState = $false; description = '> current version' }
+            @{ constraint = "< $currentVersion";      expectedState = $false; description = '< current version' }
+        )
+
+        $invalidSyntaxCases = @(
+            @{ constraint = '?? 1.0';  description = 'unknown ?? operator treated as exact match' }
+            @{ constraint = '~= 1.0';  description = 'unsupported ~= operator treated as exact match' }
+            @{ constraint = '>> 1.0';  description = 'unsupported >> operator treated as exact match' }
+        )
+    }
+
+    Context 'valid version constraints' {
+        It 'version constraint "<constraint>" (<description>) should report inDesiredState = <expectedState>' -ForEach $versionTestCases {
+            $json = "{`"version`": `"$constraint`"}"
+            $out = $json | dsc resource test -r Microsoft/OSInfo -f - | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $out.inDesiredState | Should -Be $expectedState
+        }
+    }
+
+    Context 'unsupported version syntax' {
+        It 'version "<constraint>" (<description>) should not be in desired state' -ForEach $invalidSyntaxCases {
+            $json = "{`"version`": `"$constraint`"}"
+            $out = $json | dsc resource test -r Microsoft/OSInfo -f - | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $out.inDesiredState | Should -Be $false
+        }
+    }
+}
