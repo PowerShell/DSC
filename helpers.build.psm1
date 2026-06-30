@@ -1893,9 +1893,9 @@ function Initialize-CodeCoverage {
 
         .DESCRIPTION
         Installs cargo-llvm-cov if needed and cleans any prior coverage artifacts from the
-        workspace. When coverage is enabled, Build-RustProject and Test-RustProject use
-        `cargo llvm-cov build` and `cargo llvm-cov test --no-report` respectively, which
-        handle all instrumentation and profraw management internally.
+        workspace. After initialization, call Set-LlvmCovEnvironment to set the environment
+        variables that make normal `cargo build` and `cargo test` invocations produce
+        instrumented binaries and write profraw data.
     #>
     [CmdletBinding()]
     param(
@@ -2242,8 +2242,7 @@ function Test-RustProject {
         $Architecture = 'current',
         [switch]$Release,
         [switch]$Docs,
-        [string]$TestFilter,
-        [switch]$CodeCoverage
+        [string]$TestFilter
     )
 
     begin {
@@ -2273,18 +2272,10 @@ function Test-RustProject {
         } else {
             Write-Verbose -Verbose "Testing rust projects: [$members]"
         }
-        if ($CodeCoverage) {
-            if (-not [string]::IsNullOrEmpty($TestFilter)) {
-                cargo llvm-cov test --no-report @flags -- $TestFilter
-            } else {
-                cargo llvm-cov test --no-report @flags
-            }
+        if (-not [string]::IsNullOrEmpty($TestFilter)) {
+            cargo test @flags -- $TestFilter
         } else {
-            if (-not [string]::IsNullOrEmpty($TestFilter)) {
-                cargo test @flags -- $TestFilter
-            } else {
-                cargo test @flags
-            }
+            cargo test @flags
         }
 
         if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
