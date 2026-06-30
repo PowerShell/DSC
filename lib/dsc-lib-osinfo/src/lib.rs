@@ -23,6 +23,7 @@ pub struct OsInfo {
     /// Defines the processor architecture as reported by `uname -m` on the operating system.
     #[serde(skip_serializing_if = "Option::is_none")]
     architecture: Option<String>,
+    /// Support returning generated name for the OSInfo instance for export.
     #[serde(rename = "_name", skip_serializing_if = "Option::is_none")]
     name: Option<String>,
     /// Indicates whether the resource is in the desired state. Only emitted by the test operation.
@@ -191,6 +192,7 @@ pub fn perform_test(input_json: &str) -> Result<OsInfo, String> {
     let desired: OsTestInput = serde_json::from_str(input_json)
         .map_err(|e| format!("Failed to parse test input as JSON: {e}"))?;
 
+    // name is ignored for test since it's only generated for export and not a property of the actual OS state.
     let actual = OsInfo::new(false);
 
     let mut in_desired_state = true;

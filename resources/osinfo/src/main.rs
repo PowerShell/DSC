@@ -8,7 +8,10 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
     match args.get(1).map(String::as_str) {
         Some("export") => {
-            let json = serde_json::to_string(&OsInfo::new(true)).unwrap_or_default();
+            let json = serde_json::to_string(&OsInfo::new(true)).unwrap_or_else(|e| {
+                eprintln!("Failed to serialize OS info as JSON: {e}");
+                std::process::exit(1);
+            });
             println!("{json}");
         },
         Some("test") => {
@@ -19,7 +22,10 @@ fn main() {
             }
             match perform_test(&input) {
                 Ok(result) => {
-                    let json = serde_json::to_string(&result).unwrap_or_default();
+                    let json = serde_json::to_string(&result).unwrap_or_else(|e| {
+                        eprintln!("Failed to serialize test result as JSON: {e}");
+                        std::process::exit(1);
+                    });
                     println!("{json}");
                 },
                 Err(e) => {
@@ -29,7 +35,10 @@ fn main() {
             }
         },
         _ => {
-            let json = serde_json::to_string(&OsInfo::new(false)).unwrap_or_default();
+            let json = serde_json::to_string(&OsInfo::new(false)).unwrap_or_else(|e| {
+                eprintln!("Failed to serialize OS info as JSON: {e}");
+                std::process::exit(1);
+            });
             println!("{json}");
         },
     }
