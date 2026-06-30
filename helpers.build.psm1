@@ -1602,8 +1602,7 @@ function Build-RustProject {
         [switch]$Clean,
         [switch]$UpdateLockFile,
         [switch]$Audit,
-        [switch]$Clippy,
-        [switch]$CodeCoverage
+        [switch]$Clippy
     )
 
     begin {
@@ -1664,13 +1663,8 @@ function Build-RustProject {
 
         $members = Get-DefaultWorkspaceMemberGroup
         Write-Verbose -Verbose "Building rust projects: [$members]"
-        if ($CodeCoverage) {
-            Write-Verbose "Invoking cargo:`n`tcargo llvm-cov build --no-report $flags"
-            cargo llvm-cov build --no-report @flags
-        } else {
-            Write-Verbose "Invoking cargo:`n`tcargo build $flags"
-            cargo build @flags
-        }
+        Write-Verbose "Invoking cargo:`n`tcargo build $flags"
+        cargo build @flags
 
         if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
             throw "Last exit code is $LASTEXITCODE, build failed for at least one project"
@@ -1924,23 +1918,25 @@ function Initialize-CodeCoverage {
     }
 }
 
-function Get-LlvmProfileFilePattern {
+function Set-LlvmCovEnvironment {
     <#
         .SYNOPSIS
-        Returns the LLVM_PROFILE_FILE pattern used by cargo-llvm-cov.
+        Sets the environment variables required by cargo-llvm-cov for instrumented builds.
 
         .DESCRIPTION
-        Parses the output of `cargo llvm-cov show-env` to extract the LLVM_PROFILE_FILE
-        pattern. When this environment variable is set before running instrumented binaries
-        (such as during Pester tests), the profraw data is written to a location that
-        `cargo llvm-cov report` can discover, enabling code coverage collection from
-        integration tests that invoke compiled binaries externally.
+        Parses the output of `cargo llvm-cov show-env` and sets the corresponding
+        environment variables (LLVM_PROFILE_FILE, RUSTC_WRAPPER, CARGO_LLVM_COV, etc.)
+        in the current process. This enables a normal `cargo build` to produce
+        instrumented binaries, and allows externally invoked instrumented binaries
+        (such as during Pester tests) to write profraw data to a location that
+        `cargo llvm-cov report` can discover.
 
         .OUTPUTS
-        System.String — The LLVM_PROFILE_FILE pattern string.
+        System.Collections.Hashtable — Prior values of the modified environment variables
+        so they can be restored with Reset-LlvmCovEnvironment.
     #>
     [CmdletBinding()]
-    [OutputType([string])]
+    [OutputType([hashtable])]
     param()
 
     process {
@@ -1949,15 +1945,42 @@ function Get-LlvmProfileFilePattern {
             throw "Failed to retrieve cargo-llvm-cov environment: $showEnvOutput"
         }
 
-        $profileLine = $showEnvOutput | Where-Object { $_ -match '^LLVM_PROFILE_FILE=' }
-        if (-not $profileLine) {
-            throw 'Could not find LLVM_PROFILE_FILE in cargo llvm-cov show-env output'
+        $priorValues = @{}
+        foreach ($line in $showEnvOutput) {
+            if ($line -match '^([A-Z_][A-Z0-9_]+)=(.*)$') {
+                $name = $Matches[1]
+                # Strip optional surrounding single quotes from the value
+                $value = ($Matches[2] -replace "^'", '') -replace "'$", ''
+                $priorValues[$name] = [System.Environment]::GetEnvironmentVariable($name)
+                [System.Environment]::SetEnvironmentVariable($name, $value)
+                Write-Verbose "Set $name=$value"
+            }
         }
 
-        # Extract value, stripping optional surrounding quotes
-        $pattern = ($profileLine -replace "^LLVM_PROFILE_FILE='?", '') -replace "'?$", ''
-        Write-Verbose -Verbose "Using LLVM_PROFILE_FILE pattern: $pattern"
-        $pattern
+        Write-Verbose -Verbose "Set $($priorValues.Count) cargo-llvm-cov environment variables"
+        $priorValues
+    }
+}
+
+function Reset-LlvmCovEnvironment {
+    <#
+        .SYNOPSIS
+        Restores environment variables modified by Set-LlvmCovEnvironment.
+
+        .PARAMETER PriorValues
+        The hashtable returned by Set-LlvmCovEnvironment containing original values.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [hashtable]$PriorValues
+    )
+
+    process {
+        foreach ($entry in $PriorValues.GetEnumerator()) {
+            [System.Environment]::SetEnvironmentVariable($entry.Key, $entry.Value)
+        }
+        Write-Verbose -Verbose "Restored $($PriorValues.Count) environment variables"
     }
 }
 
