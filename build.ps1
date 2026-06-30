@@ -44,6 +44,28 @@ using module ./helpers.build.psm1
     .PARAMETER Test
     Determines whether to run Rust and Pester tests for the project.
 
+    .PARAMETER CodeCoverage
+    Enables code coverage instrumentation using cargo-llvm-cov. When specified, the build and
+    tests run with coverage instrumentation enabled and an LCOV report is generated at the path
+    specified by `-CodeCoverageOutputPath` (defaults to `lcov.info` in the repository root).
+    Installs cargo-llvm-cov and the llvm-tools-preview rustup component automatically if not present.
+
+    When `-CodeCoverageBaseSha` and `-CodeCoverageHeadSha` are provided, the script first checks
+    whether any `.rs` files were changed between those commits. If no Rust files were changed,
+    coverage is skipped entirely and the script exits early.
+
+    .PARAMETER CodeCoverageOutputPath
+    Specifies the output path for the LCOV code coverage report. Only used when `-CodeCoverage`
+    is specified. Defaults to `lcov.info` in the repository root.
+
+    .PARAMETER CodeCoverageBaseSha
+    The base commit SHA to compare against when detecting changed Rust files. When specified
+    along with `-CodeCoverageHeadSha`, coverage is skipped if no `.rs` files were modified.
+
+    .PARAMETER CodeCoverageHeadSha
+    The head commit SHA to compare when detecting changed Rust files. When specified along with
+    `-CodeCoverageBaseSha`, coverage is skipped if no `.rs` files were modified.
+
     .PARAMETER GetPackageVersion
     Short circuits the build to return the current version of the DSC CLI crate.
 
@@ -87,6 +109,10 @@ param(
     )]
     $PackageType,
     [switch]$Test,
+    [switch]$CodeCoverage,
+    [string]$CodeCoverageOutputPath = (Join-Path $PSScriptRoot 'lcov.info'),
+    [string]$CodeCoverageBaseSha,
+    [string]$CodeCoverageHeadSha,
     [string[]]$Project,
     [switch]$ExcludeRustTests,
     [string]$RustTestFilter,
@@ -153,13 +179,13 @@ begin {
                 $params.Remove('Quiet') > $null
                 Write-Progress @params
             } elseif ($Completed) {
-                Write-Information "Finished build script"
+                Write-Host "Finished build script" -ForegroundColor Green
             } else {
                 $message = "BUILD:   $Activity"
                 if (-not [string]::IsNullOrEmpty($Status)) {
                     $message += "::$Status"
                 }
-                Write-Information $message
+                Write-Host $message -ForegroundColor Cyan
             }
         }
     }
@@ -220,6 +246,28 @@ process {
 
     #endregion Setup
 
+    #region    Code coverage instrumentation
+    if ($CodeCoverage) {
+        # Code coverage requires tests to run
+        $Test = $true
+        $progressParams.Activity = 'Setting up code coverage'
+        Write-BuildProgress @progressParams
+
+        if ($CodeCoverageBaseSha -and $CodeCoverageHeadSha) {
+            Write-BuildProgress @progressParams -Status 'Checking for changed Rust files'
+            $changedRustFiles = Get-ChangedRustFile -BaseSha $CodeCoverageBaseSha -HeadSha $CodeCoverageHeadSha @VerboseParam
+            if ($changedRustFiles.Count -eq 0) {
+                Write-Warning 'No Rust files changed between the specified commits. Skipping code coverage.'
+                return
+            }
+        }
+
+        Write-BuildProgress @progressParams -Status 'Configuring cargo-llvm-cov environment'
+        Remove-Item $CodeCoverageOutputPath -Force -ErrorAction Ignore
+        Initialize-CodeCoverage -UseCFS:$UseCFS @VerboseParam
+    }
+    #endregion Code coverage instrumentation
+
     if (!$SkipBuild) {
         if ($UpdateLockFile) {
             $lockFile = Join-Path $PSScriptRoot "Cargo.lock"
@@ -249,7 +297,7 @@ process {
                 Clean        = $Clean
             }
             Write-BuildProgress @progressParams -Status 'Compiling Rust'
-            Build-RustProject @buildParams -Audit:$Audit -Clippy:$Clippy @VerboseParam
+            Build-RustProject @buildParams -Audit:$Audit -Clippy:$Clippy -CodeCoverage:$CodeCoverage @VerboseParam
             Write-BuildProgress @progressParams -Status "Copying build artifacts"
             Copy-BuildArtifact @buildParams -ExecutableFile $BuildData.PackageFiles.Executable @VerboseParam
         }
@@ -276,7 +324,7 @@ process {
                 $rustTestParams.TestFilter = $RustTestFilter
             }
             Write-BuildProgress @progressParams -Status "Testing Rust projects"
-            Test-RustProject @rustTestParams @VerboseParam
+            Test-RustProject @rustTestParams -CodeCoverage:$CodeCoverage @VerboseParam
         }
         if ($RustDocs) {
             $docTestParams = @{
@@ -304,6 +352,44 @@ process {
             Test-ProjectWithPester @pesterParams @VerboseParam
         }
     }
+
+    #region    Code coverage report
+    if ($CodeCoverage) {
+        $progressParams.Activity = 'Generating code coverage report'
+        Write-BuildProgress @progressParams
+        Write-BuildProgress @progressParams -Status "Writing LCOV report to $CodeCoverageOutputPath"
+        Export-CodeCoverageReport -OutputPath $CodeCoverageOutputPath @VerboseParam
+
+        # Determine base and head SHAs for analysis
+        $baseSha = $CodeCoverageBaseSha
+        $headSha = $CodeCoverageHeadSha
+
+        if (-not $baseSha -or -not $headSha) {
+            # Try to discover from current branch vs its upstream/default
+            $currentBranch = git rev-parse --abbrev-ref HEAD 2>$null
+            $defaultBranch = git rev-parse --abbrev-ref origin/HEAD 2>$null
+            if (-not $defaultBranch) {
+                $defaultBranch = 'origin/main'
+            }
+            $discoveredBase = git merge-base $defaultBranch $currentBranch 2>$null
+            $discoveredHead = git rev-parse HEAD 2>$null
+
+            if ($discoveredBase -and $discoveredHead -and $discoveredBase -ne $discoveredHead) {
+                $baseSha = $discoveredBase
+                $headSha = $discoveredHead
+                Write-Verbose -Verbose "Discovered coverage comparison: $baseSha...$headSha"
+            }
+        }
+
+        if ($baseSha -and $headSha) {
+            $progressParams.Activity = 'Analyzing code coverage'
+            Write-BuildProgress @progressParams
+            $report = Get-CodeCoverageReport -LcovPath $CodeCoverageOutputPath -BaseSha $baseSha -HeadSha $headSha @VerboseParam
+            Write-Host "$($report.Emoji) Changed code coverage: $($report.Percentage)% ($($report.Label))"
+            Write-Host "  Lines analyzed: $($report.TotalLines) | Lines covered: $($report.CoveredLines)"
+        }
+    }
+    #endregion Code coverage report
 
     if (-not [string]::IsNullOrEmpty($PackageType)) {
         $progressParams.Activity = "Packaging"

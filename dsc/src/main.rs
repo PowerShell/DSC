@@ -221,3 +221,4 @@ fn check_store() {
         exit(util::EXIT_INVALID_ARGS);
     }
 }
+

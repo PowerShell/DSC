@@ -48,19 +48,35 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
       - name: Install prerequisites
         run: ./build.ps1 -SkipBuild -Clippy  -Verbose
       - name: Build
         run: ./build.ps1 -Clippy -Verbose
-      - name: Run rust tests
-        run: ./build.ps1 -SkipBuild -Test -ExcludePesterTests -Verbose
+      - name: Run rust tests with code coverage
+        id: rust-tests
+        continue-on-error: true
+        run: ./build.ps1 -SkipBuild -Test -CodeCoverage -ExcludePesterTests -Verbose
+      - name: Upload coverage data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-coverage
+          path: lcov.info
+          if-no-files-found: ignore
       - name:  Prepare build artifact
+        if: always()
         run:   tar -cvf bin.tar bin/
       - name: Upload build artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: linux-bin
           path: bin.tar
+      - name: Fail if rust tests failed
+        if: steps.rust-tests.outcome == 'failure'
+        run: exit 1
   linux-pester:
     needs: linux-build
     strategy:
@@ -90,19 +106,35 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
       - name: Install prerequisites
         run: ./build.ps1 -SkipBuild -Clippy  -Verbose
       - name: Build
         run: ./build.ps1 -Clippy -Verbose
-      - name: Run rust tests
-        run: ./build.ps1 -SkipBuild -Test -ExcludePesterTests -Verbose
+      - name: Run rust tests with code coverage
+        id: rust-tests
+        continue-on-error: true
+        run: ./build.ps1 -SkipBuild -Test -CodeCoverage -ExcludePesterTests -Verbose
+      - name: Upload coverage data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-coverage
+          path: lcov.info
+          if-no-files-found: ignore
       - name:  Prepare build artifact
+        if: always()
         run:   tar -cvf bin.tar bin/
       - name: Upload build artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: macos-bin
           path: bin.tar
+      - name: Fail if rust tests failed
+        if: steps.rust-tests.outcome == 'failure'
+        run: exit 1
   macos-pester:
     needs: macos-build
     strategy:
@@ -136,21 +168,38 @@ jobs:
         run: |
           "$env:LOCALAPPDATA\\Microsoft\\WinGet\\Links" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_PATH
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
       - name: Install prerequisites
         run: ./build.ps1 -SkipBuild -Clippy  -Verbose
       - name: Build
         run: ./build.ps1 -Clippy -Verbose
-      - name: Run rust tests
-        run: ./build.ps1 -SkipBuild -Test -ExcludePesterTests -Verbose
+      - name: Run rust tests with code coverage
+        id: rust-tests
+        continue-on-error: true
+        run: ./build.ps1 -SkipBuild -Test -CodeCoverage -ExcludePesterTests -Verbose
+      - name: Upload coverage data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-coverage
+          path: lcov.info
+          if-no-files-found: ignore
       - name: List bin folder files
+        if: always()
         run:  Get-ChildItem bin
       - name:  Prepare build artifact
+        if: always()
         run:   tar -cvf bin.tar bin
       - name: Upload build artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: windows-bin
           path: bin.tar
+      - name: Fail if rust tests failed
+        if: steps.rust-tests.outcome == 'failure'
+        run: exit 1
   windows-pester:
     needs: windows-build
     strategy:
@@ -175,3 +224,101 @@ jobs:
             Verbose          = $true
           }
           ./build.ps1 @params -PesterTestGroup ${{matrix.group}}
+
+  coverage-report:
+    if: github.event_name == 'pull_request'
+    needs: [linux-build, macos-build, windows-build, linux-pester, macos-pester, windows-pester]
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Download coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*-coverage'
+          path: coverage-data
+
+      - name: Consolidate coverage data
+        id: coverage
+        run: |-
+          Import-Module ./helpers.build.psm1 -Force
+
+          $baseSha = '${{ github.event.pull_request.base.sha }}'
+          $headSha = '${{ github.event.pull_request.head.sha }}'
+
+          # Determine if any Rust files changed from git diff
+          $changedFiles = git diff --name-only --diff-filter=ACMR "$baseSha...$headSha" -- '*.rs' | Where-Object { $_ }
+          if (-not $changedFiles) {
+              "has_rust_changes=false" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+              return
+          }
+          "has_rust_changes=true" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+
+          # Find the first available lcov.info from the platform coverage artifacts
+          $lcovFile = Get-ChildItem -Path 'coverage-data' -Filter 'lcov.info' -Recurse | Select-Object -First 1
+          if (-not $lcovFile) {
+              Write-Warning 'No coverage data found from any platform.'
+              "coverage_failed=true" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+              return
+          }
+          "coverage_failed=false" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+
+          $report = Get-CodeCoverageReport -LcovPath $lcovFile.FullName -BaseSha $baseSha -HeadSha $headSha -Verbose
+
+          "percentage=$($report.Percentage)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          "covered=$($report.CoveredLines)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          "total=$($report.TotalLines)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          "emoji=$($report.Emoji)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          "label=$($report.Label)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+
+      - name: Post coverage comment
+        if: >-
+          steps.coverage.outputs.has_rust_changes == 'true'
+          && steps.coverage.outputs.coverage_failed != 'true'
+          && github.event.pull_request.head.repo.full_name == github.repository
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: coverage-report
+          message: |
+            ## ${{ steps.coverage.outputs.emoji }} Code Coverage Report
+
+            **Changed code coverage: ${{ steps.coverage.outputs.percentage }}%** (${{ steps.coverage.outputs.label }})
+
+            | Metric | Value |
+            |--------|-------|
+            | Changed lines analyzed | ${{ steps.coverage.outputs.total }} |
+            | Lines covered by tests | ${{ steps.coverage.outputs.covered }} |
+            | Coverage percentage | ${{ steps.coverage.outputs.percentage }}% |
+
+            > Coverage is measured only on changed Rust code in this PR.
+
+      - name: Post coverage comment (report failed)
+        if: >-
+          steps.coverage.outputs.has_rust_changes == 'true'
+          && steps.coverage.outputs.coverage_failed == 'true'
+          && github.event.pull_request.head.repo.full_name == github.repository
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: coverage-report
+          message: |
+            ## :x: Code Coverage Report
+
+            **Coverage report could not be generated.** The build or test run failed before
+            producing coverage data. Check the workflow logs for details.
+
+      - name: Post no-changes comment
+        if: >-
+          steps.coverage.outputs.has_rust_changes == 'false'
+          && github.event.pull_request.head.repo.full_name == github.repository
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: coverage-report
+          message: |
+            ## Code Coverage Report
+
+            No Rust files were changed in this PR. Coverage analysis skipped.

@@ -206,6 +206,16 @@ pub enum SchemaKind {
     Embedded(Value),
 }
 
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[dsc_repo_schema(base_name = "manifest.exportSchema", folder_path = "definitions")]
+#[serde(rename_all = "camelCase")]
+pub enum ExportSchemaKind {
+    /// The export schema is returned by running a command.
+    Command(SchemaCommand),
+    /// The export schema is embedded in the manifest.
+    Embedded(Value),
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub struct SchemaCommand {
     /// The command to run to get the schema.
@@ -309,6 +319,13 @@ pub struct ValidateMethod { // TODO: enable validation via schema or command
     pub input: Option<InputKind>,
 }
 
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub enum ExportSchemaOrFiltering {
+    Schema(ExportSchemaKind),
+    SupportsFiltering(bool),
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[dsc_repo_schema(base_name = "manifest.export", folder_path = "resource")]
 pub struct ExportMethod {
@@ -321,6 +338,8 @@ pub struct ExportMethod {
     /// The security context required to run the Export method.  Default if not specified is `current`.
     #[serde(rename = "requireSecurityContext", skip_serializing_if = "Option::is_none")]
     pub require_security_context: Option<SecurityContextKind>,
+    #[serde(flatten, skip_serializing_if = "Option::is_none")]
+    pub schema_or_filtering: Option<ExportSchemaOrFiltering>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
