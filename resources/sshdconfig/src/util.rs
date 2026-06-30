@@ -246,11 +246,17 @@ pub fn extract_sshd_defaults() -> Result<Map<String, Value>, SshdConfigError> {
     Ok(sshd_config)
 }
 
-/// Extract sshd_config_filepath field from the input string, if it can be parsed as JSON.
+/// Build a `CommandInfo` from the optional JSON input string.
+///
+/// Extracts the canonical properties (`_purge`, `_includeDefaults`) and the
+/// optional `sshd_config_filepath` property from the input, leaving any
+/// remaining keys as input filters.
 ///
 /// # Errors
 ///
-/// This function will return an error if it fails to parse the input string and if the sshd_config_filepath field exists, extract it.
+/// Returns an error if the input string cannot be parsed as JSON, if a
+/// canonical property has an unexpected type, or if `sshd_config_filepath`
+/// cannot be deserialized into a path.
 pub fn build_command_info(input: Option<&String>, is_get: bool) -> Result<CommandInfo, SshdConfigError> {
     let mut include_defaults = is_get;
     let mut filepath: Option<std::path::PathBuf> = None;
@@ -262,8 +268,13 @@ pub fn build_command_info(input: Option<&String>, is_get: bool) -> Result<Comman
         sshd_config = serde_json::from_str(inputs.as_str())?;
         purge = CanonicalProperties::extract_bool(&mut sshd_config, CanonicalProperty::Purge, false)?;
         include_defaults = CanonicalProperties::extract_bool(&mut sshd_config, CanonicalProperty::IncludeDefaults, is_get)?;
-        filepath = if let Some(value) = sshd_config.remove(SSHD_CONFIG_FILEPATH) {
-            serde_json::from_value(value)?
+        // Match the filepath property case-insensitively, since CommandInfo::new
+        // lowercases all remaining input keys for case-insensitive comparison.
+        filepath = if let Some(key) = sshd_config.keys().find(|k| k.eq_ignore_ascii_case(SSHD_CONFIG_FILEPATH)).cloned() {
+            match sshd_config.remove(&key) {
+                Some(value) => serde_json::from_value(value)?,
+                None => None,
+            }
         } else {
             None
         };
