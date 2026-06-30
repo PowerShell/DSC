@@ -11,6 +11,8 @@ pub enum Schemas {
     Exist,
     ExitCode,
     Export,
+    ExportGetSchema,
+    ExportSchema,
     Exporter,
     Get,
     InDesiredState,
@@ -92,6 +94,12 @@ pub enum SubCommand {
     #[clap(name = "export", about = "Export instances")]
     Export {
         #[clap(name = "input", short, long, help = "The input to the export command as JSON")]
+        input: String,
+    },
+
+    #[clap(name = "export-schema", about = "Test export specific schema")]
+    ExportSchema {
+        #[clap(name = "input", short, long, help = "The input to the export schema command as JSON")]
         input: String,
     },
 
