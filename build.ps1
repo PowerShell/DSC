@@ -327,7 +327,7 @@ process {
                 $rustTestParams.TestFilter = $RustTestFilter
             }
             Write-BuildProgress @progressParams -Status "Testing Rust projects"
-            Test-RustProject @rustTestParams -CodeCoverage:$CodeCoverage @VerboseParam
+            Test-RustProject @rustTestParams @VerboseParam
         }
         if ($RustDocs) {
             $docTestParams = @{
