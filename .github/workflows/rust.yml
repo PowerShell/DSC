@@ -316,3 +316,12 @@ jobs:
             ## Code Coverage Report
 
             No Rust files were changed in this PR. Coverage analysis skipped.
+
+      - name: Fail if coverage is below 70%
+        if: >-
+          steps.coverage.outputs.has_rust_changes == 'true'
+          && steps.coverage.outputs.coverage_failed != 'true'
+          && steps.coverage.outputs.percentage < 70
+        run: |
+          Write-Error "Code coverage is ${{ steps.coverage.outputs.percentage }}%, which is below the 70% minimum threshold."
+          exit 1
