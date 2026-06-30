@@ -58,6 +58,8 @@ setParameter = "Set parameter '%{name}' to '%{value}'"
 parameterNotDefined = "Parameter '%{name}' is not defined in configuration"
 noVariables = "No variables defined in configuration"
 setVariable = "Set variable '%{name}' to '%{value}'"
+parameterNotSecureString = "Parameter '%{name}' is not a secure string"
+parameterNotSecureObject = "Parameter '%{name}' is not a secure object"
 parameterNotString = "Parameter '%{name}' is not a string"
 parameterNotInteger = "Parameter '%{name}' is not an integer"
 parameterNotBoolean = "Parameter '%{name}' is not a boolean"
@@ -95,6 +97,8 @@ metadataRefreshEnvOnlyAffectsSet = "Resource returned '_refreshEnv' which indica
 metadataRefreshEnvNoOperationContext = "Resource returned '_refreshEnv' which indicates environment variable refresh is needed but no operation context is available"
 metadataRefreshEnvNoContext = "Resource returned '_refreshEnv' which indicates environment variable refresh is needed but no context is available"
 copyDeprecated = "Copy for loop '%{name}' is deprecated and will be removed in a future release. See https://github.com/PowerShell/DSC/issues/1429 for more details."
+secureStringMustBeString = "Secure string parameter '%{name}' must be a string"
+secureObjectMustBeObject = "Secure object parameter '%{name}' must be an object"
 
 [configure.parameters]
 importingParametersFromComplexInput = "Importing parameters from complex input"
@@ -195,6 +199,7 @@ whatIfWarning = "Resource '%{resource}' uses deprecated 'whatIf' operation. See 
 securityContextRequired = "Operation '%{operation}' for resource '%{resource}' requires security context '%{context}'"
 noAdaptedContent = "No adapted content available for resource '%{resource}'"
 invalidAdaptedContent = "Invalid adapted content for resource '%{resource}': %{error}"
+exportFilteringNotSupported = "Resource '%{resource}' does not support export filtering"
 
 [dscresources.dscresource]
 invokeGet = "Invoking get for '%{resource}'"
@@ -527,12 +532,15 @@ invoked = "or function"
 [functions.parameters]
 description = "Retrieves parameters from the configuration"
 invoked = "parameters function"
+unavailableInParameters = "The 'parameters()' function is not available within parameters defaults"
 traceKey = "parameters key: %{key}"
 keyNotString = "Parameter '%{key}' is not a string"
 keyNotInt = "Parameter '%{key}' is not an integer"
 keyNotBool = "Parameter '%{key}' is not a boolean"
 keyNotObject = "Parameter '%{key}' is not an object"
 keyNotArray = "Parameter '%{key}' is not an array"
+keyNotSecureString = "Parameter '%{key}' is not a secure string"
+keyNotSecureObject = "Parameter '%{key}' is not a secure object"
 keyNotFound = "Parameter '%{key}' not found in context"
 
 [functions.parseCidr]
@@ -593,6 +601,7 @@ multipleSecrets = "Multiple secrets with the same name '%{name}' and different v
 extensionReturnedError = "Extension '%{extension}': %{error}"
 noExtensions = "No extensions supporting secrets was found"
 secretNotFound = "Secret '%{name}' not found"
+invalidSecretFormat = "Invalid secret format returned for secret '%{name}'"
 
 [functions.shallowMerge]
 description = "Combines an array of objects where only the top-level objects are merged"

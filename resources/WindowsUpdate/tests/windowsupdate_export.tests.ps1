@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'Windows Update Export operation tests' {
+Describe 'Windows Update Export operation tests' -Skip:(!$IsWindows) {
     BeforeAll {
         $resourceType = 'Microsoft.Windows/UpdateList'
     }
@@ -9,7 +9,7 @@ Describe 'Windows Update Export operation tests' {
     Context 'Export operation' {
         It 'should return UpdateList with array of updates' -Skip:(!$IsWindows) {
             $out = '{"updates":[{}]}' | dsc resource export -r $resourceType -f - -o json 2>&1
-            
+
             $LASTEXITCODE | Should -Be 0
             $config = $out | ConvertFrom-Json
             $result = $config.resources[0].properties
@@ -19,7 +19,7 @@ Describe 'Windows Update Export operation tests' {
 
         It 'should work without input filter' -Skip:(!$IsWindows) {
             $out = dsc resource export -r $resourceType -o json 2>&1
-            
+
             $LASTEXITCODE | Should -Be 0
             $config = $out | ConvertFrom-Json
             $result = $config.resources[0].properties
@@ -29,7 +29,7 @@ Describe 'Windows Update Export operation tests' {
         It 'should filter by isInstalled=true' -Skip:(!$IsWindows) {
             $json = '{"updates":[{"isInstalled": true}]}'
             $out = $json | dsc resource export -r $resourceType -f - -o json 2>&1
-            
+
             $LASTEXITCODE | Should -Be 0
             $config = $out | ConvertFrom-Json
             $result = $config.resources[0].properties
@@ -43,7 +43,7 @@ Describe 'Windows Update Export operation tests' {
         It 'should filter by isInstalled=false' -Skip:(!$IsWindows) {
             $json = '{"updates":[{"isInstalled": false}]}'
             $out = $json | dsc resource export -r $resourceType -f - -o json 2>&1
-            
+
             $LASTEXITCODE | Should -Be 0
             $config = $out | ConvertFrom-Json
             $result = $config.resources[0].properties
@@ -57,7 +57,7 @@ Describe 'Windows Update Export operation tests' {
         It 'should filter by title with wildcard in middle' -Skip:(!$IsWindows) {
             $json = '{"updates":[{"title": "*Windows*"}]}'
             $out = $json | dsc resource export -r $resourceType -f - -o json 2>&1
-            
+
             if ($LASTEXITCODE -eq 0) {
                 $config = $out | ConvertFrom-Json
                 $result = $config.resources[0].properties
@@ -71,7 +71,7 @@ Describe 'Windows Update Export operation tests' {
 
         It 'should return proper structure for each update' -Skip:(!$IsWindows) {
             $out = '{"updates":[{}]}' | dsc resource export -r $resourceType -f - -o json 2>&1
-            
+
             $LASTEXITCODE | Should -Be 0
             $config = $out | ConvertFrom-Json
             $result = $config.resources[0].properties
@@ -93,10 +93,10 @@ Describe 'Windows Update Export operation tests' {
         It 'should fail when wildcard filter has no matches' -Skip:(!$IsWindows) {
             $json = '{"updates":[{"title": "ThisUpdateShouldNeverExist99999*"}]}'
             $stderr = $json | dsc resource export -r $resourceType -f - -o json 2>&1
-            
+
             # Should fail because the filter has criteria but no matches
             $LASTEXITCODE | Should -Not -Be 0
-            
+
             # Check for error message in stderr
             $errorText = $stderr | Out-String
             $errorText | Should -Match 'No matching update found'
@@ -112,10 +112,10 @@ Describe 'Windows Update Export operation tests' {
                 )
             } | ConvertTo-Json -Depth 10 -Compress
             $stderr = $json | dsc resource export -r $resourceType -f - 2>&1
-            
+
             # Should fail because the filter has criteria but no matches
             $LASTEXITCODE | Should -Not -Be 0
-            
+
             # Check for error message in stderr
             $errorText = $stderr | Out-String
             $errorText | Should -Match 'No matching update found'
@@ -129,7 +129,7 @@ Describe 'Windows Update Export operation tests' {
                 )
             } | ConvertTo-Json -Depth 10 -Compress
             $out = $json | dsc resource export -r $resourceType -f - -o json 2>&1
-            
+
             $LASTEXITCODE | Should -Be 0
             $config = $out | ConvertFrom-Json
             $result = $config.resources[0].properties
@@ -139,13 +139,13 @@ Describe 'Windows Update Export operation tests' {
         It 'should fail if any filter with criteria has no matches' -Skip:(!$IsWindows) {
             # Get an actual update
             $allOut = '{"updates":[{}]}' | dsc resource export -r $resourceType -f - -o json 2>&1
-            
+
             if ($LASTEXITCODE -eq 0) {
                 $allConfig = $allOut | ConvertFrom-Json
                 $allResult = $allConfig.resources[0].properties
                 if ($allResult.updates.Count -gt 0) {
                     $update1 = $allResult.updates[0]
-                    
+
                     # One valid filter, one invalid filter
                     $json = @{
                         updates = @(
@@ -158,10 +158,10 @@ Describe 'Windows Update Export operation tests' {
                         )
                     } | ConvertTo-Json -Depth 10 -Compress
                     $stderr = $json | dsc resource export -r $resourceType -f - 2>&1
-                    
+
                     # Should fail because second filter has no matches
                     $LASTEXITCODE | Should -Not -Be 0
-                    
+
                     # Check for error message in stderr
                     $errorText = $stderr | Out-String
                     $errorText | Should -Match 'No matching update found'
@@ -172,14 +172,14 @@ Describe 'Windows Update Export operation tests' {
         It 'should return results when all filters find matches' -Skip:(!$IsWindows) {
             # Get actual updates
             $allOut = '{"updates":[{}]}' | dsc resource export -r $resourceType -f - -o json 2>&1
-            
+
             if ($LASTEXITCODE -eq 0) {
                 $allConfig = $allOut | ConvertFrom-Json
                 $allResult = $allConfig.resources[0].properties
                 if ($allResult.updates.Count -ge 2) {
                     $update1 = $allResult.updates[0]
                     $update2 = $allResult.updates[1]
-                    
+
                     $json = @{
                         updates = @(
                             @{
@@ -191,7 +191,7 @@ Describe 'Windows Update Export operation tests' {
                         )
                     } | ConvertTo-Json -Depth 10 -Compress
                     $out = $json | dsc resource export -r $resourceType -f - -o json 2>&1
-                    
+
                     $LASTEXITCODE | Should -Be 0
                     $config = $out | ConvertFrom-Json
                     $result = $config.resources[0].properties
@@ -206,7 +206,7 @@ Describe 'Windows Update Export operation tests' {
         It 'should filter by msrcSeverity' -Skip:(!$IsWindows) {
             $json = '{"updates":[{"msrcSeverity": "Critical"}]}'
             $out = $json | dsc resource export -r $resourceType -f - -o json 2>&1
-            
+
             if ($LASTEXITCODE -eq 0) {
                 $config = $out | ConvertFrom-Json
                 $result = $config.resources[0].properties
@@ -221,7 +221,7 @@ Describe 'Windows Update Export operation tests' {
         It 'should filter by updateType Software' -Skip:(!$IsWindows) {
             $json = '{"updates":[{"updateType": "Software"}]}'
             $out = $json | dsc resource export -r $resourceType -f - -o json 2>&1
-            
+
             if ($LASTEXITCODE -eq 0) {
                 $config = $out | ConvertFrom-Json
                 $result = $config.resources[0].properties
@@ -236,7 +236,7 @@ Describe 'Windows Update Export operation tests' {
         It 'should support OR logic with multiple filters in array' -Skip:(!$IsWindows) {
             # Get some updates to use as filters
             $allOut = '{"updates":[{}]}' | dsc resource export -r $resourceType -f - -o json 2>&1
-            
+
             if ($LASTEXITCODE -eq 0) {
                 $allConfig = $allOut | ConvertFrom-Json
                 $allResult = $allConfig.resources[0].properties
@@ -246,11 +246,11 @@ Describe 'Windows Update Export operation tests' {
                     $id2 = $allResult.updates[1].id
                     $json = "{`"updates`":[{`"id`": `"$id1`"}, {`"id`": `"$id2`"}]}"
                     $out = $json | dsc resource export -r $resourceType -f - -o json 2>&1
-                    
+
                     $LASTEXITCODE | Should -Be 0
                     $config = $out | ConvertFrom-Json
                     $result = $config.resources[0].properties
-                    
+
                     # Should return both updates (OR logic)
                     $result.updates.Count | Should -BeGreaterOrEqual 2
                     $foundIds = $result.updates.id
@@ -268,7 +268,7 @@ Describe 'Windows Update Export operation tests' {
             # Multiple properties in one filter = AND logic
             $json = '{"updates":[{"isInstalled": true, "updateType": "Software"}]}'
             $out = $json | dsc resource export -r $resourceType -f - -o json 2>&1
-            
+
             if ($LASTEXITCODE -eq 0) {
                 $config = $out | ConvertFrom-Json
                 $result = $config.resources[0].properties
@@ -285,7 +285,7 @@ Describe 'Windows Update Export operation tests' {
         It 'should not return duplicates when multiple filters match same update' -Skip:(!$IsWindows) {
             # Get an update with known properties
             $allOut = '{"updates":[{}]}' | dsc resource export -r $resourceType -f - -o json 2>&1
-            
+
             if ($LASTEXITCODE -eq 0) {
                 $allConfig = $allOut | ConvertFrom-Json
                 $allResult = $allConfig.resources[0].properties
@@ -295,11 +295,11 @@ Describe 'Windows Update Export operation tests' {
                     # Even though technically both filters specify the same criteria
                     $json = "{`"updates`":[{`"id`": `"$($testUpdate.id)`"}, {`"id`": `"$($testUpdate.id)`"}]}"
                     $out = $json | dsc resource export -r $resourceType -f - -o json 2>&1
-                    
+
                     $LASTEXITCODE | Should -Be 0 -Because $out
                     $config = $out | ConvertFrom-Json
                     $result = $config.resources[0].properties
-                    
+
                     # Should return the update only once (no duplicates)
                     $matchingUpdates = $result.updates | Where-Object { $_.id -eq $testUpdate.id }
                     $matchingUpdates.Count | Should -Be 1
@@ -309,15 +309,15 @@ Describe 'Windows Update Export operation tests' {
 
         It 'should return installationBehavior property when present' -Skip:(!$IsWindows) {
             $out = '{"updates":[{}]}' | dsc resource export -r $resourceType -f - -o json 2>&1
-            
+
             $LASTEXITCODE | Should -Be 0
             $config = $out | ConvertFrom-Json
             $result = $config.resources[0].properties
-            
+
             if ($result.updates.Count -gt 0) {
                 # Check if any update has installationBehavior property
                 $updateWithBehavior = $result.updates | Where-Object { $null -ne $_.installationBehavior } | Select-Object -First 1
-                
+
                 if ($updateWithBehavior) {
                     # Verify the value is one of the valid enum values
                     $updateWithBehavior.installationBehavior | Should -BeIn @('NeverReboots', 'AlwaysRequiresReboot', 'CanRequestReboot')
@@ -327,11 +327,11 @@ Describe 'Windows Update Export operation tests' {
 
         It 'should return valid installationBehavior enum values for all updates' -Skip:(!$IsWindows) {
             $out = '{"updates":[{}]}' | dsc resource export -r $resourceType -f - -o json 2>&1
-            
+
             $LASTEXITCODE | Should -Be 0
             $config = $out | ConvertFrom-Json
             $result = $config.resources[0].properties
-            
+
             foreach ($update in $result.updates) {
                 if ($null -ne $update.installationBehavior) {
                     $update.installationBehavior | Should -BeIn @('NeverReboots', 'AlwaysRequiresReboot', 'CanRequestReboot') -Because "Update '$($update.title)' has invalid installationBehavior"

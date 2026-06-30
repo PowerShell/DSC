@@ -483,6 +483,60 @@ function Install-CargoAudit {
     }
 }
 
+function Install-CargoLlvmCov {
+    <#
+        .SYNOPSIS
+        Installs `cargo-llvm-cov` if not already available.
+
+        .DESCRIPTION
+        Checks whether `cargo-llvm-cov` is installed and installs it if not found. Tries
+        `cargo binstall` first (downloads pre-built binary) for speed, then falls back to
+        `cargo install` (compiles from source). Also ensures the `llvm-tools-preview` rustup
+        component is installed, which is required by cargo-llvm-cov for coverage instrumentation.
+    #>
+    [CmdletBinding()]
+    param(
+        [switch]$UseCFS
+    )
+
+    process {
+        if (Test-CommandAvailable -Name 'cargo-llvm-cov') {
+            Write-Verbose -Verbose 'cargo-llvm-cov already installed.'
+        } else {
+            $installed = $false
+
+            # Try cargo-binstall first (downloads pre-built binary, much faster)
+            if (Test-CommandAvailable -Name 'cargo-binstall') {
+                Write-Verbose -Verbose 'Installing cargo-llvm-cov via cargo-binstall...'
+                cargo binstall --no-confirm cargo-llvm-cov
+                if ($LASTEXITCODE -eq 0) {
+                    $installed = $true
+                } else {
+                    Write-Verbose -Verbose 'cargo-binstall failed, falling back to cargo install'
+                }
+            }
+
+            if (-not $installed) {
+                Write-Verbose -Verbose 'Installing cargo-llvm-cov via cargo install (compiling from source)...'
+                if ($UseCFS) {
+                    cargo install cargo-llvm-cov --config .cargo/config.toml
+                } else {
+                    cargo install cargo-llvm-cov
+                }
+                if ($LASTEXITCODE -ne 0) {
+                    throw 'Failed to install cargo-llvm-cov'
+                }
+            }
+        }
+
+        Write-Verbose -Verbose 'Ensuring llvm-tools-preview rustup component is installed'
+        rustup component add llvm-tools-preview
+        if ($LASTEXITCODE -ne 0) {
+            throw 'Failed to install llvm-tools-preview rustup component'
+        }
+    }
+}
+
 function Install-TreeSitter {
     <#
         .SYNOPSIS
@@ -1548,7 +1602,8 @@ function Build-RustProject {
         [switch]$Clean,
         [switch]$UpdateLockFile,
         [switch]$Audit,
-        [switch]$Clippy
+        [switch]$Clippy,
+        [switch]$CodeCoverage
     )
 
     begin {
@@ -1790,6 +1845,329 @@ function Export-RustDocs {
 }
 #endregion Documenting project functions
 
+#region    Code coverage functions
+function Get-ChangedRustFile {
+    <#
+        .SYNOPSIS
+        Returns the list of Rust files changed between two commits.
+
+        .DESCRIPTION
+        Uses `git diff` to identify `.rs` files that were added, copied, modified, or renamed
+        between the specified base and head commits.
+
+        .PARAMETER BaseSha
+        The base commit SHA to compare from.
+
+        .PARAMETER HeadSha
+        The head commit SHA to compare to.
+
+        .OUTPUTS
+        System.String[]
+        An array of changed `.rs` file paths, or an empty array if none were changed.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$BaseSha,
+
+        [Parameter(Mandatory)]
+        [string]$HeadSha
+    )
+
+    process {
+        $changedFiles = git diff --name-only --diff-filter=ACMR "$BaseSha...$HeadSha" -- '*.rs'
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning "Failed to detect changed files between $BaseSha and $HeadSha"
+            return @()
+        }
+
+        $result = @($changedFiles | Where-Object { $_ })
+        Write-Verbose "Found $($result.Count) changed Rust file(s)"
+        return $result
+    }
+}
+
+function Initialize-CodeCoverage {
+    <#
+        .SYNOPSIS
+        Prepares the workspace for code coverage instrumentation using cargo-llvm-cov.
+
+        .DESCRIPTION
+        Installs cargo-llvm-cov if needed and cleans any prior coverage artifacts from the
+        workspace. When coverage is enabled, Build-RustProject and Test-RustProject use
+        `cargo llvm-cov build` and `cargo llvm-cov test --no-report` respectively, which
+        handle all instrumentation and profraw management internally.
+    #>
+    [CmdletBinding()]
+    param(
+        [switch]$UseCFS
+    )
+
+    process {
+        $verboseFlag = @{}
+        if ($VerbosePreference -eq 'Continue') {
+            $verboseFlag.Verbose = $true
+        }
+
+        Install-CargoLlvmCov -UseCFS:$UseCFS @verboseFlag
+
+        Write-Verbose -Verbose 'Cleaning previous coverage artifacts'
+        cargo llvm-cov clean --workspace
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning 'Failed to clean previous coverage artifacts, continuing anyway'
+        }
+    }
+}
+
+function Export-CodeCoverageReport {
+    <#
+        .SYNOPSIS
+        Generates an LCOV code coverage report from collected profile data.
+
+        .DESCRIPTION
+        Runs `cargo llvm-cov report` to produce an LCOV-formatted coverage report from the
+        profile data collected during an instrumented build and test run.
+
+        .PARAMETER OutputPath
+        The file path where the LCOV report will be written.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$OutputPath
+    )
+
+    process {
+        Write-Verbose -Verbose "Generating LCOV report at: $OutputPath"
+        cargo llvm-cov report --lcov --output-path $OutputPath
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to generate code coverage report at '$OutputPath'"
+        }
+        Write-Verbose -Verbose "Code coverage report written to: $OutputPath"
+    }
+}
+
+function Show-CodeCoverageReport {
+    <#
+        .SYNOPSIS
+        Displays a colorized visualization of code coverage on changed lines.
+
+        .DESCRIPTION
+        Reads source files and displays changed executable lines with green for covered
+        and red with underline for uncovered, using $PSStyle for ANSI formatting.
+
+        .PARAMETER FileDetails
+        Array of objects with File (path) and LineCoverageMap (hashtable of line number to bool).
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter()]
+        [AllowEmptyCollection()]
+        [PSCustomObject[]]$FileDetails = @()
+    )
+
+    process {
+        if ($FileDetails.Count -eq 0) {
+            return
+        }
+        foreach ($detail in $FileDetails) {
+            $filePath = $detail.File
+            $lineCoverageMap = $detail.LineCoverageMap
+
+            if ($lineCoverageMap.Count -eq 0) {
+                continue
+            }
+
+            $fileContent = Get-Content -Path $filePath -ErrorAction SilentlyContinue
+            if (-not $fileContent) {
+                continue
+            }
+
+            Write-Host ""
+            Write-Host "$($PSStyle.Bold)$filePath$($PSStyle.BoldOff)" -ForegroundColor Cyan
+
+            $sortedLines = $lineCoverageMap.Keys | Sort-Object
+            $lineNumWidth = ($sortedLines[-1]).ToString().Length
+
+            foreach ($lineNum in $sortedLines) {
+                $lineIndex = $lineNum - 1
+                $lineText = if ($lineIndex -lt $fileContent.Count) { $fileContent[$lineIndex] } else { '' }
+                $prefix = $lineNum.ToString().PadLeft($lineNumWidth)
+
+                if ($lineCoverageMap[$lineNum]) {
+                    # Covered - green
+                    Write-Host "$($PSStyle.Foreground.Green)  $prefix | $lineText$($PSStyle.Reset)"
+                } else {
+                    # Uncovered - red with underline
+                    Write-Host "$($PSStyle.Foreground.Red)$($PSStyle.Underline)  $prefix | $lineText$($PSStyle.UnderlineOff)$($PSStyle.Reset)"
+                }
+            }
+        }
+        Write-Host ""
+    }
+}
+
+function Get-CodeCoverageReport {
+    <#
+        .SYNOPSIS
+        Analyzes code coverage on changed files and returns a coverage report object.
+
+        .DESCRIPTION
+        Parses an LCOV file and cross-references it with git diff output to determine what
+        percentage of changed executable lines are covered by tests.
+
+        .PARAMETER LcovPath
+        Path to the LCOV coverage report file.
+
+        .PARAMETER BaseSha
+        The base commit SHA to compare from.
+
+        .PARAMETER HeadSha
+        The head commit SHA to compare to.
+
+        .OUTPUTS
+        PSCustomObject with properties: Percentage, CoveredLines, TotalLines, Emoji, Label
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$LcovPath,
+
+        [Parameter(Mandatory)]
+        [string]$BaseSha,
+
+        [Parameter(Mandatory)]
+        [string]$HeadSha
+    )
+
+    process {
+        if (-not (Test-Path $LcovPath)) {
+            throw "LCOV file not found at '$LcovPath'"
+        }
+
+        # Parse the LCOV file into a hashtable keyed by source file path
+        $lcovData = @{}
+        $currentFile = $null
+        foreach ($line in Get-Content -Path $LcovPath) {
+            if ($line -match '^SF:(.+)$') {
+                $currentFile = $Matches[1]
+                $lcovData[$currentFile] = @{}
+            } elseif ($line -match '^DA:(\d+),(\d+)' -and $currentFile) {
+                $lineNum = [int]$Matches[1]
+                # LLVM emits sentinel values near UInt64.MaxValue for uninstrumented lines
+                $rawHit = [decimal]$Matches[2]
+                $hitCount = if ($rawHit -gt [long]::MaxValue) { 0 } else { [long]$rawHit }
+                $lcovData[$currentFile][$lineNum] = $hitCount
+            } elseif ($line -eq 'end_of_record') {
+                $currentFile = $null
+            }
+        }
+
+        # Get changed Rust files
+        $changedFiles = Get-ChangedRustFile -BaseSha $BaseSha -HeadSha $HeadSha
+
+        $totalChangedLines = 0
+        $coveredLines = 0
+        # Collect per-file coverage detail for visualization
+        $fileDetails = @()
+
+        foreach ($file in $changedFiles) {
+            if (-not $file -or -not (Test-Path $file)) {
+                continue
+            }
+
+            # Parse diff to get added line numbers in the new file
+            $diffOutput = git diff "$BaseSha...$HeadSha" -- $file
+            $addedLineNumbers = @()
+            $currentLineNum = 0
+
+            foreach ($diffLine in $diffOutput) {
+                if ($diffLine -match '^@@\s+\-\d+(?:,\d+)?\s+\+(\d+)(?:,\d+)?\s+@@') {
+                    $currentLineNum = [int]$Matches[1]
+                } elseif ($diffLine.StartsWith('+') -and -not $diffLine.StartsWith('+++')) {
+                    $addedLineNumbers += $currentLineNum
+                    $currentLineNum++
+                } elseif ($diffLine.StartsWith('-') -and -not $diffLine.StartsWith('---')) {
+                    # Deleted lines don't advance the new file line counter
+                } else {
+                    $currentLineNum++
+                }
+            }
+
+            # Find matching LCOV entry for this file
+            $absPath = (Resolve-Path $file).Path
+            $fileCoverage = $null
+            foreach ($key in $lcovData.Keys) {
+                if ($key -eq $absPath -or $key.EndsWith("/$file") -or $key.EndsWith("\$file")) {
+                    $fileCoverage = $lcovData[$key]
+                    break
+                }
+            }
+
+            # Build per-line coverage map for this file (only added executable lines)
+            $lineCoverageMap = @{}
+            if ($fileCoverage) {
+                foreach ($lineNum in $addedLineNumbers) {
+                    if ($fileCoverage.ContainsKey($lineNum)) {
+                        $totalChangedLines++
+                        $isCovered = $fileCoverage[$lineNum] -gt 0
+                        if ($isCovered) {
+                            $coveredLines++
+                        }
+                        $lineCoverageMap[$lineNum] = $isCovered
+                    }
+                }
+            } else {
+                # File not in coverage report - count added lines as uncovered
+                $totalChangedLines += $addedLineNumbers.Count
+                foreach ($lineNum in $addedLineNumbers) {
+                    $lineCoverageMap[$lineNum] = $false
+                }
+            }
+
+            if ($lineCoverageMap.Count -gt 0) {
+                $fileDetails += [PSCustomObject]@{
+                    File            = $file
+                    LineCoverageMap = $lineCoverageMap
+                }
+            }
+        }
+
+        if ($totalChangedLines -eq 0) {
+            $percentage = 100
+        } else {
+            $percentage = [int][math]::Floor($coveredLines * 100 / $totalChangedLines)
+        }
+
+        # Determine emoji and label
+        $emoji, $label = if ($percentage -eq 100) {
+            '😲', '100% coverage'
+        } elseif ($percentage -ge 90) {
+            '😁', '90%+ coverage'
+        } elseif ($percentage -ge 80) {
+            '😊', '80%+ coverage'
+        } elseif ($percentage -ge 70) {
+            '😐', '70%+ coverage'
+        } else {
+            '😢', 'less than 70% coverage'
+        }
+
+        Write-Verbose -Verbose "Coverage: $percentage% ($coveredLines/$totalChangedLines executable lines covered)"
+
+        # Show visual report
+        Show-CodeCoverageReport -FileDetails $fileDetails
+
+        [PSCustomObject]@{
+            Percentage   = $percentage
+            CoveredLines = $coveredLines
+            TotalLines   = $totalChangedLines
+            Emoji        = $emoji
+            Label        = $label
+        }
+    }
+}
+#endregion Code coverage functions
+
 #region    Test project functions
 function Test-RustProject {
     [CmdletBinding()]
@@ -1799,7 +2177,8 @@ function Test-RustProject {
         $Architecture = 'current',
         [switch]$Release,
         [switch]$Docs,
-        [string]$TestFilter
+        [string]$TestFilter,
+        [switch]$CodeCoverage
     )
 
     begin {
@@ -1829,14 +2208,22 @@ function Test-RustProject {
         } else {
             Write-Verbose -Verbose "Testing rust projects: [$members]"
         }
-        if (-not [string]::IsNullOrEmpty($TestFilter)) {
-            cargo test @flags -- $TestFilter
+        if ($CodeCoverage) {
+            if (-not [string]::IsNullOrEmpty($TestFilter)) {
+                cargo llvm-cov test --no-report @flags -- $TestFilter
+            } else {
+                cargo llvm-cov test --no-report @flags
+            }
         } else {
-            cargo test @flags
+            if (-not [string]::IsNullOrEmpty($TestFilter)) {
+                cargo test @flags -- $TestFilter
+            } else {
+                cargo test @flags
+            }
         }
 
         if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
-            Write-Error "Last exit code is $LASTEXITCODE, rust tests failed"
+            throw "Last exit code is $LASTEXITCODE, rust tests failed"
         }
     }
 

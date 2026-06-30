@@ -637,11 +637,16 @@ function GetTypeInstanceFromModule {
         [Parameter(Mandatory = $true)]
         [string] $classname
     )
-    $module = Get-Module -Name $modulename -ErrorAction Ignore
+    $module = Get-Module -Name $modulename
     if ($null -eq $module) {
-        $module = Import-Module -Name $modulename -ErrorAction Stop -PassThru
+        # `Import-Module -Passthru` will return multiple objects if there are ScriptsToProcess, so we use `Get-Module` separately
+        Import-Module -Name $modulename -Force -ErrorAction Stop
+        $module = Get-Module -Name $modulename
+        if ($module.Count -gt 1) {
+            throw "Multiple modules imported for $modulename"
+        }
     }
-    $instance = & ($module) ([scriptblock]::Create("'$classname' -as 'type'"))
+    $instance = $module.Invoke([scriptblock]::Create("'$classname' -as 'type'"))
     return $instance
 }
 

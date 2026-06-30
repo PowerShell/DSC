@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'Windows Update resource schema validation' {
+Describe 'Windows Update resource schema validation' -skip:(!$IsWindows) {
     BeforeAll {
         $resourceType = 'Microsoft.Windows/UpdateList'
         $manifestPath = Join-Path $PSScriptRoot "..\windowsupdate.dsc.resource.json"
@@ -72,7 +72,7 @@ Describe 'Windows Update resource schema validation' {
         It 'schema should define all expected properties in updates items' {
             $manifest = Get-Content $manifestPath | ConvertFrom-Json
             $itemProperties = $manifest.schema.embedded.properties.updates.items.properties
-            
+
             $expectedProperties = @(
                 'title',
                 'isInstalled',
@@ -86,7 +86,7 @@ Describe 'Windows Update resource schema validation' {
                 'updateType',
                 'installationBehavior'
             )
-            
+
             foreach ($prop in $expectedProperties) {
                 $itemProperties.$prop | Should -Not -BeNullOrEmpty -Because "Property '$prop' should be defined"
             }
@@ -177,7 +177,7 @@ Describe 'Windows Update resource schema validation' {
         It 'all properties should have descriptions' {
             $manifest = Get-Content $manifestPath | ConvertFrom-Json
             $properties = $manifest.schema.embedded.properties
-            
+
             foreach ($propName in $properties.PSObject.Properties.Name) {
                 $prop = $properties.$propName
                 $prop.description | Should -Not -BeNullOrEmpty -Because "Property '$propName' should have a description"
@@ -187,7 +187,7 @@ Describe 'Windows Update resource schema validation' {
         It 'all properties should have titles' {
             $manifest = Get-Content $manifestPath | ConvertFrom-Json
             $properties = $manifest.schema.embedded.properties
-            
+
             foreach ($propName in $properties.PSObject.Properties.Name) {
                 $prop = $properties.$propName
                 $prop.title | Should -Not -BeNullOrEmpty -Because "Property '$propName' should have a title"
