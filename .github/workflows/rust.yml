@@ -52,12 +52,10 @@ jobs:
           fetch-depth: 0
       - name: Install prerequisites
         run: ./build.ps1 -SkipBuild -Clippy  -Verbose
-      - name: Build
-        run: ./build.ps1 -Clippy -Verbose
-      - name: Run rust tests with code coverage
+      - name: Build and test with code coverage
         id: rust-tests
         continue-on-error: true
-        run: ./build.ps1 -SkipBuild -Test -CodeCoverage -ExcludePesterTests -Verbose
+        run: ./build.ps1 -Clippy -Test -CodeCoverage -ExcludePesterTests -Verbose
       - name: Upload coverage data
         if: always()
         uses: actions/upload-artifact@v4
@@ -110,12 +108,10 @@ jobs:
           fetch-depth: 0
       - name: Install prerequisites
         run: ./build.ps1 -SkipBuild -Clippy  -Verbose
-      - name: Build
-        run: ./build.ps1 -Clippy -Verbose
-      - name: Run rust tests with code coverage
+      - name: Build and test with code coverage
         id: rust-tests
         continue-on-error: true
-        run: ./build.ps1 -SkipBuild -Test -CodeCoverage -ExcludePesterTests -Verbose
+        run: ./build.ps1 -Clippy -Test -CodeCoverage -ExcludePesterTests -Verbose
       - name: Upload coverage data
         if: always()
         uses: actions/upload-artifact@v4
@@ -172,12 +168,10 @@ jobs:
           fetch-depth: 0
       - name: Install prerequisites
         run: ./build.ps1 -SkipBuild -Clippy  -Verbose
-      - name: Build
-        run: ./build.ps1 -Clippy -Verbose
-      - name: Run rust tests with code coverage
+      - name: Build and test with code coverage
         id: rust-tests
         continue-on-error: true
-        run: ./build.ps1 -SkipBuild -Test -CodeCoverage -ExcludePesterTests -Verbose
+        run: ./build.ps1 -Clippy -Test -CodeCoverage -ExcludePesterTests -Verbose
       - name: Upload coverage data
         if: always()
         uses: actions/upload-artifact@v4
