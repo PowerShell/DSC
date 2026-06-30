@@ -22,7 +22,7 @@ use crate::canonical_properties::CanonicalProperties;
 use crate::error::SshdConfigError;
 use crate::formatter::write_config_map_to_text;
 use crate::get::get_sshd_settings;
-use crate::inputs::{CommandInfo, SshdCommandArgs};
+use crate::inputs::{CommandInfo, SshdCommandArgs, SSHD_CONFIG_FILEPATH};
 use crate::metadata::{SSHD_CONFIG_HEADER, SSHD_CONFIG_HEADER_VERSION, SSHD_CONFIG_HEADER_WARNING};
 use crate::repeat_keyword::{
     NameValueEntry, RepeatInput, RepeatListInput, add_or_update_entry, extract_single_keyword,
@@ -125,7 +125,7 @@ fn set_sshd_config_repeat(
 
     write_and_validate_config(
         &mut existing_config,
-        cmd_info.metadata.filepath.as_ref(),
+        cmd_info.filepath.as_ref(),
         what_if,
     )?;
     if what_if {
@@ -169,7 +169,7 @@ fn set_sshd_config_repeat_list(
     }
     write_and_validate_config(
         &mut existing_config,
-        cmd_info.metadata.filepath.as_ref(),
+        cmd_info.filepath.as_ref(),
         what_if,
     )?;
     if what_if {
@@ -297,7 +297,7 @@ fn set_sshd_config(
 
     write_and_validate_config(
         &mut config_to_write,
-        cmd_info.metadata.filepath.as_ref(),
+        cmd_info.filepath.as_ref(),
         what_if,
     )?;
     Ok(config_to_write)
@@ -311,6 +311,7 @@ fn write_and_validate_config(
 ) -> Result<(), SshdConfigError> {
     debug!("{}", t!("set.writingTempConfig"));
     CanonicalProperties::remove_all(config);
+    config.remove(SSHD_CONFIG_FILEPATH);
     let mut config_text = SSHD_CONFIG_HEADER.to_string()
         + "\n"
         + SSHD_CONFIG_HEADER_VERSION
@@ -402,12 +403,12 @@ fn get_existing_config(
         // In what-if (preview) mode, do not seed/copy a default sshd_config to
         // disk. If the config file does not yet exist, treat the existing
         // config as empty so no system mutation occurs.
-        let config_path = get_default_sshd_config_path(get_cmd_info.metadata.filepath.clone())?;
+        let config_path = get_default_sshd_config_path(get_cmd_info.filepath.clone())?;
         if !config_path.exists() {
             return Ok(Map::new());
         }
     } else {
-        ensure_sshd_config_exists(get_cmd_info.metadata.filepath.clone())?;
+        ensure_sshd_config_exists(get_cmd_info.filepath.clone())?;
     }
     get_sshd_settings(&get_cmd_info, false)
 }

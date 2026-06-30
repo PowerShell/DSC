@@ -60,9 +60,7 @@ PasswordAuthentication yes
 
         It 'Should add multiple new subsystems' {
             $inputConfig = @{
-                _metadata = @{
-                    filepath = $TestConfigPath
-                }
+                sshd_config_filepath = $TestConfigPath
                 _purge = $false
                 subsystem = @(
                     @{
@@ -81,9 +79,7 @@ PasswordAuthentication yes
 
             # Verify all subsystems are present (old + new) using get
             $getInput = @{
-                _metadata = @{
-                    filepath = $TestConfigPath
-                }
+                sshd_config_filepath = $TestConfigPath
             } | ConvertTo-Json
             $result = sshdconfig get --input $getInput -s sshd-config 2>$null | ConvertFrom-Json
             $LASTEXITCODE | Should -Be 0
@@ -106,9 +102,7 @@ PasswordAuthentication yes
 
         It 'Should update existing subsystems and add new ones' {
             $inputConfig = @{
-                _metadata = @{
-                    filepath = $TestConfigPath
-                }
+                sshd_config_filepath = $TestConfigPath
                 _purge = $false
                 subsystem = @(
                     @{
@@ -144,9 +138,7 @@ PasswordAuthentication yes
 
         It 'Should preserve unlisted subsystems when _purge is false' {
             $inputConfig = @{
-                _metadata = @{
-                    filepath = $TestConfigPath
-                }
+                sshd_config_filepath = $TestConfigPath
                 _purge = $false
                 subsystem = @(
                     @{
@@ -161,9 +153,7 @@ PasswordAuthentication yes
 
             # Verify all existing subsystems are still present plus the new one using get
             $getInput = @{
-                _metadata = @{
-                    filepath = $TestConfigPath
-                }
+                sshd_config_filepath = $TestConfigPath
             } | ConvertTo-Json
             $result = sshdconfig get --input $getInput -s sshd-config 2>$null | ConvertFrom-Json
             $LASTEXITCODE | Should -Be 0
@@ -182,9 +172,7 @@ PasswordAuthentication yes
 
         It 'Should remove unlisted subsystems when _purge is true' {
             $inputConfig = @{
-                _metadata = @{
-                    filepath = $TestConfigPath
-                }
+                sshd_config_filepath = $TestConfigPath
                 _purge = $true
                 subsystem = @(
                     @{
@@ -203,9 +191,7 @@ PasswordAuthentication yes
 
             # Verify only specified subsystems remain using get
             $getInput = @{
-                _metadata = @{
-                    filepath = $TestConfigPath
-                }
+                sshd_config_filepath = $TestConfigPath
             } | ConvertTo-Json
             $result = sshdconfig get --input $getInput -s sshd-config 2>$null | ConvertFrom-Json
             $LASTEXITCODE | Should -Be 0
@@ -228,9 +214,7 @@ PasswordAuthentication yes
 
         It 'Should preserve case in subsystem names' {
             $inputConfig = @{
-                _metadata = @{
-                    filepath = $TestConfigPath
-                }
+                sshd_config_filepath = $TestConfigPath
                 _purge = $false
                 subsystem = @(
                     @{
@@ -255,9 +239,7 @@ PasswordAuthentication yes
 
         It 'Should handle paths with spaces in list' {
             $inputConfig = @{
-                _metadata = @{
-                    filepath = $TestConfigPath
-                }
+                sshd_config_filepath = $TestConfigPath
                 _purge = $false
                 subsystem = @(
                     @{
@@ -287,9 +269,7 @@ PasswordAuthentication yes
 
         It 'Should fail with missing required name property' {
             $inputConfig = @{
-                _metadata = @{
-                    filepath = $TestConfigPath
-                }
+                sshd_config_filepath = $TestConfigPath
                 _purge = $false
                 subsystem = @(
                     @{
@@ -307,9 +287,7 @@ PasswordAuthentication yes
 
         It 'Should handle empty subsystem array when _purge is true' {
             $inputConfig = @{
-                _metadata = @{
-                    filepath = $TestConfigPath
-                }
+                sshd_config_filepath = $TestConfigPath
                 _purge = $true
                 subsystem = @()
             } | ConvertTo-Json -Depth 10
@@ -328,9 +306,7 @@ PasswordAuthentication yes
             $nonExistentPath = Join-Path $TestDrive "nonexistent_sshd_config_repeatlist_nonwindows"
             $stderrFile = Join-Path $TestDrive "stderr_nofile_repeatlist_nonwindows.txt"
             $inputConfig = @{
-                _metadata = @{
-                    filepath = $nonExistentPath
-                }
+                sshd_config_filepath = $nonExistentPath
                 _purge = $false
                 subsystem = @(
                     @{
@@ -375,9 +351,7 @@ PasswordAuthentication yes
             ) -Encoding ascii
 
             $inputConfig = @{
-                _metadata = @{
-                    filepath = $script:CurrentWindowsTargetPath
-                }
+                sshd_config_filepath = $script:CurrentWindowsTargetPath
                 _purge = $false
                 subsystem = @(
                     @{
@@ -399,9 +373,7 @@ PasswordAuthentication yes
             $LASTEXITCODE | Should -Be 0
             Test-Path $script:CurrentWindowsTargetPath | Should -Be $true
             $getInput = @{
-                _metadata = @{
-                    filepath = $script:CurrentWindowsTargetPath
-                }
+                sshd_config_filepath = $script:CurrentWindowsTargetPath
             } | ConvertTo-Json
             $result = sshdconfig get --input $getInput -s sshd-config 2>$null | ConvertFrom-Json
             $psEntry = $result.subsystem | Where-Object { $_.name -eq "powershell" }
@@ -418,9 +390,7 @@ PasswordAuthentication yes
             Test-Path -Path $script:WindowsDefaultSourcePath -PathType Leaf -ErrorAction SilentlyContinue | Should -Be $false
 
             $inputConfig = @{
-                _metadata = @{
-                    filepath = $script:CurrentWindowsTargetPath
-                }
+                sshd_config_filepath = $script:CurrentWindowsTargetPath
                 _purge = $false
                 subsystem = @(
                     @{

@@ -2,7 +2,7 @@
     "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
     "type": "Microsoft.OpenSSH.SSHD/Subsystem",
     "description": "Manage SSH Server Subsystem keyword (single entry)",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "condition": "[not(equals(tryWhich('sshd'), null()))]",
     "get": {
         "executable": "sshdconfig",
@@ -43,14 +43,9 @@
                     "description": "Whether the specified subsystem entry should exist (true) or be removed (false)",
                     "default": true
                 },
-                "_metadata": {
-                    "type": "object",
-                    "properties": {
-                        "filepath": {
-                            "type": "string",
-                            "description": "Path to sshd_config file"
-                        }
-                    }
+                "sshd_config_filepath": {
+                    "type": "string",
+                    "description": "Path to the sshd_config file to be processed. If not specified, the default path for the OS is used."
                 },
                 "subsystem": {
                     "type": "object",

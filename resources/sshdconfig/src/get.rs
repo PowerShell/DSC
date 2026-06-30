@@ -15,7 +15,7 @@ use tracing::{debug, trace, warn};
 use crate::args::Setting;
 use crate::canonical_properties::CanonicalProperty;
 use crate::error::SshdConfigError;
-use crate::inputs::CommandInfo;
+use crate::inputs::{CommandInfo, SSHD_CONFIG_FILEPATH};
 use crate::parser::parse_text_to_map;
 use crate::util::{
     build_command_info,
@@ -107,7 +107,7 @@ fn get_default_shell() -> Result<(), SshdConfigError> {
 ///
 /// # Arguments
 ///
-/// * `cmd_info` - `CommandInfo` struct containing optional filters, metadata, and includeDefaults flag.
+/// * `cmd_info` - `CommandInfo` struct containing optional filters, filepath, and includeDefaults flag.
 ///
 /// # Errors
 ///
@@ -118,7 +118,7 @@ pub fn get_sshd_settings(cmd_info: &CommandInfo, is_get: bool) -> Result<Map<Str
     let mut inherited_defaults: Vec<String> = Vec::new();
 
     // parse settings from sshd_config file
-    let sshd_config_file = read_sshd_config(cmd_info.metadata.filepath.clone())?;
+    let sshd_config_file = read_sshd_config(cmd_info.filepath.clone())?;
     let explicit_settings = parse_text_to_map(&sshd_config_file)?;
 
     // handle special cases for keywords
@@ -163,8 +163,8 @@ pub fn get_sshd_settings(cmd_info: &CommandInfo, is_get: bool) -> Result<Map<Str
         }
     }
 
-    if cmd_info.metadata.filepath.is_some() {
-        result.insert(CanonicalProperty::Metadata.to_string(), serde_json::to_value(cmd_info.metadata.clone())?);
+    if cmd_info.filepath.is_some() {
+        result.insert(SSHD_CONFIG_FILEPATH.to_string(), serde_json::to_value(cmd_info.filepath.clone())?);
     }
     if cmd_info.include_defaults && is_get {
         result.insert(CanonicalProperty::InheritedDefaults.to_string(), serde_json::to_value(inherited_defaults)?);
