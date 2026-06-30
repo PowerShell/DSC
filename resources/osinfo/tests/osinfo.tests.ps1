@@ -97,3 +97,92 @@ Describe 'osinfo test subcommand version operator tests' {
         }
     }
 }
+
+Describe 'osinfo test subcommand property tests' {
+    BeforeAll {
+        $actual = (dsc resource get -r Microsoft/OSInfo | ConvertFrom-Json).actualState
+    }
+
+    Context 'edition property' -Skip:(-not $IsWindows) {
+        It 'should be in desired state when edition matches actual' {
+            $json = @{ edition = $actual.edition } | ConvertTo-Json -Compress
+            $out = $json | dsc resource test -r Microsoft/OSInfo -f - | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $out.inDesiredState | Should -BeTrue
+        }
+
+        It 'should not be in desired state when edition does not match' {
+            $json = @{ edition = 'NonExistentEdition' } | ConvertTo-Json -Compress
+            $out = $json | dsc resource test -r Microsoft/OSInfo -f - | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $out.inDesiredState | Should -BeFalse
+        }
+    }
+
+    Context 'codename property' -Skip:(-not $IsLinux) {
+        It 'should be in desired state when codename matches actual' {
+            $json = @{ codename = $actual.codename } | ConvertTo-Json -Compress
+            $out = $json | dsc resource test -r Microsoft/OSInfo -f - | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $out.inDesiredState | Should -BeTrue
+        }
+
+        It 'should not be in desired state when codename does not match' {
+            $json = @{ codename = 'nonexistentcodename' } | ConvertTo-Json -Compress
+            $out = $json | dsc resource test -r Microsoft/OSInfo -f - | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $out.inDesiredState | Should -BeFalse
+        }
+    }
+
+    Context 'bitness property' {
+        It 'should be in desired state when bitness matches actual' {
+            $json = @{ bitness = [int]$actual.bitness } | ConvertTo-Json -Compress
+            $out = $json | dsc resource test -r Microsoft/OSInfo -f - | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $out.inDesiredState | Should -BeTrue
+        }
+
+        It 'should not be in desired state when bitness does not match' {
+            $wrongBitness = if ([int]$actual.bitness -eq 64) { 32 } else { 64 }
+            $json = @{ bitness = $wrongBitness } | ConvertTo-Json -Compress
+            $out = $json | dsc resource test -r Microsoft/OSInfo -f - | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $out.inDesiredState | Should -BeFalse
+        }
+    }
+
+    Context 'architecture property' {
+        It 'should be in desired state when architecture matches actual' {
+            $json = @{ architecture = $actual.architecture } | ConvertTo-Json -Compress
+            $out = $json | dsc resource test -r Microsoft/OSInfo -f - | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $out.inDesiredState | Should -BeTrue
+        }
+
+        It 'should not be in desired state when architecture does not match' {
+            $json = @{ architecture = 'mips' } | ConvertTo-Json -Compress
+            $out = $json | dsc resource test -r Microsoft/OSInfo -f - | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $out.inDesiredState | Should -BeFalse
+        }
+    }
+
+    Context 'multiple properties combined' {
+        It 'should be in desired state when all specified properties match' {
+            $desiredState = @{ family = $actual.family; bitness = [int]$actual.bitness; architecture = $actual.architecture }
+            $json = $desiredState | ConvertTo-Json -Compress
+            $out = $json | dsc resource test -r Microsoft/OSInfo -f - | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $out.inDesiredState | Should -BeTrue
+        }
+
+        It 'should not be in desired state when one of multiple properties does not match' {
+            $desiredState = @{ family = $actual.family; bitness = [int]$actual.bitness; architecture = 'mips' }
+            $json = $desiredState | ConvertTo-Json -Compress
+            $out = $json | dsc resource test -r Microsoft/OSInfo -f - | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $out.inDesiredState | Should -BeFalse
+        }
+    }
+}
