@@ -57,9 +57,7 @@ Describe 'sshdconfig what-if set tests' -Skip:($skipSshdTest) {
 
     It 'Returns predicted sshd_config state without writing the target file' {
         $inputConfig = @{
-            _metadata = @{
-                filepath = $TestConfigPath
-            }
+            sshd_config_filepath = $TestConfigPath
             _purge = $true
             Port = '1234'
             PasswordAuthentication = $false
@@ -81,9 +79,7 @@ Subsystem sftp $script:DefaultSftpPath
 "@ | Set-Content -Path $TestConfigPath
 
         $inputConfig = @{
-            _metadata = @{
-                filepath = $TestConfigPath
-            }
+            sshd_config_filepath = $TestConfigPath
             _exist = $true
             subsystem = @{
                 name = 'newsubsystem'
@@ -108,9 +104,7 @@ Subsystem test2 /path/to/test2
 "@ | Set-Content -Path $TestConfigPath
 
         $inputConfig = @{
-            _metadata = @{
-                filepath = $TestConfigPath
-            }
+            sshd_config_filepath = $TestConfigPath
             _purge = $true
             subsystem = @(
                 @{
