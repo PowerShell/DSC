@@ -337,6 +337,11 @@ process {
             Test-RustProject @docTestParams @VerboseParam
         }
         if (-not $ExcludePesterTests) {
+            if ($CodeCoverage) {
+                # Set LLVM_PROFILE_FILE so instrumented binaries write profraw
+                # data that cargo llvm-cov report can discover.
+                $env:LLVM_PROFILE_FILE = Get-LlvmProfileFilePattern @VerboseParam
+            }
             $installParams = @{
                 UsingADO = $usingADO
             }
@@ -350,6 +355,9 @@ process {
             Install-PowerShellTestPrerequisite @installParams @VerboseParam
             Write-BuildProgress @progressParams -Status "Invoking pester"
             Test-ProjectWithPester @pesterParams @VerboseParam
+            if ($CodeCoverage) {
+                Remove-Item Env:\LLVM_PROFILE_FILE -ErrorAction Ignore
+            }
         }
     }
 

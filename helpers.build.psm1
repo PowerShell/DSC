@@ -1664,8 +1664,13 @@ function Build-RustProject {
 
         $members = Get-DefaultWorkspaceMemberGroup
         Write-Verbose -Verbose "Building rust projects: [$members]"
-        Write-Verbose "Invoking cargo:`n`tcargo build $flags"
-        cargo build @flags
+        if ($CodeCoverage) {
+            Write-Verbose "Invoking cargo:`n`tcargo llvm-cov build --no-report $flags"
+            cargo llvm-cov build --no-report @flags
+        } else {
+            Write-Verbose "Invoking cargo:`n`tcargo build $flags"
+            cargo build @flags
+        }
 
         if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
             throw "Last exit code is $LASTEXITCODE, build failed for at least one project"
@@ -1916,6 +1921,43 @@ function Initialize-CodeCoverage {
         if ($LASTEXITCODE -ne 0) {
             Write-Warning 'Failed to clean previous coverage artifacts, continuing anyway'
         }
+    }
+}
+
+function Get-LlvmProfileFilePattern {
+    <#
+        .SYNOPSIS
+        Returns the LLVM_PROFILE_FILE pattern used by cargo-llvm-cov.
+
+        .DESCRIPTION
+        Parses the output of `cargo llvm-cov show-env` to extract the LLVM_PROFILE_FILE
+        pattern. When this environment variable is set before running instrumented binaries
+        (such as during Pester tests), the profraw data is written to a location that
+        `cargo llvm-cov report` can discover, enabling code coverage collection from
+        integration tests that invoke compiled binaries externally.
+
+        .OUTPUTS
+        System.String — The LLVM_PROFILE_FILE pattern string.
+    #>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param()
+
+    process {
+        $showEnvOutput = cargo llvm-cov show-env 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to retrieve cargo-llvm-cov environment: $showEnvOutput"
+        }
+
+        $profileLine = $showEnvOutput | Where-Object { $_ -match '^LLVM_PROFILE_FILE=' }
+        if (-not $profileLine) {
+            throw 'Could not find LLVM_PROFILE_FILE in cargo llvm-cov show-env output'
+        }
+
+        # Extract value, stripping optional surrounding quotes
+        $pattern = ($profileLine -replace "^LLVM_PROFILE_FILE='?", '') -replace "'?$", ''
+        Write-Verbose -Verbose "Using LLVM_PROFILE_FILE pattern: $pattern"
+        $pattern
     }
 }
 
