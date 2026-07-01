@@ -1874,14 +1874,14 @@ function Get-ChangedRustFile {
     )
 
     process {
-        $changedFiles = git diff --name-only --diff-filter=ACMR "$BaseSha...$HeadSha" -- '*.rs'
+        $changedFiles = git diff --name-only --diff-filter=ACMR "$BaseSha..$HeadSha" -- '*.rs'
         if ($LASTEXITCODE -ne 0) {
             Write-Warning "Failed to detect changed files between $BaseSha and $HeadSha"
             return @()
         }
 
         $result = @($changedFiles | Where-Object { $_ })
-        Write-Verbose "Found $($result.Count) changed Rust file(s)"
+        Write-Verbose -Verbose "Found $($result.Count) changed Rust file(s)"
         return $result
     }
 }
@@ -2147,7 +2147,7 @@ function Get-CodeCoverageReport {
             }
 
             # Parse diff to get added line numbers in the new file
-            $diffOutput = git diff "$BaseSha...$HeadSha" -- $file
+            $diffOutput = git diff "$BaseSha..$HeadSha" -- $file
             $addedLineNumbers = @()
             $currentLineNum = 0
 
