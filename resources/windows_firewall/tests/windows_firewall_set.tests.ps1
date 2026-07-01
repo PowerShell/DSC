@@ -145,3 +145,165 @@ Describe 'Microsoft.Windows/FirewallRuleList - set operation' -Skip:(!$isElevate
         Remove-NetFirewallRule -Name $secondRuleName -ErrorAction SilentlyContinue
     }
 }
+
+Describe 'Microsoft.Windows/FirewallRuleList - unspecifiedRulesAction (what-if)' -Skip:(!$isElevated) {
+    BeforeDiscovery {
+        $isElevated = if ($IsWindows) {
+            ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
+                [Security.Principal.WindowsBuiltInRole]::Administrator)
+        } else {
+            $false
+        }
+    }
+
+    BeforeAll {
+        $testRuleName = 'DSC-WindowsFirewall-Unspecified-Test'
+
+        function Initialize-TestFirewallRule {
+            $existing = Get-NetFirewallRule -Name $testRuleName -ErrorAction SilentlyContinue
+            if (-not $existing) {
+                New-NetFirewallRule -Name $testRuleName -DisplayName $testRuleName -Direction Inbound -Action Allow -Protocol TCP -LocalPort 32789 -Enabled True | Out-Null
+            } else {
+                Set-NetFirewallRule -Name $testRuleName -Enabled True
+            }
+        }
+
+        Initialize-TestFirewallRule
+    }
+
+    AfterAll {
+        Remove-NetFirewallRule -Name $testRuleName -ErrorAction SilentlyContinue
+    }
+
+    It 'does not affect unspecified rules when unspecifiedRulesAction is ignore' -Skip:(!$isElevated) {
+        Initialize-TestFirewallRule
+
+        # Specify a different rule name so $testRuleName is "unspecified"
+        $json = @{
+            unspecifiedRulesAction = 'ignore'
+            rules = @(@{
+                name      = 'SomeOtherRuleThatMayNotExist'
+                direction = 'Inbound'
+                action    = 'Allow'
+                protocol  = 6
+                enabled   = $true
+            })
+        } | ConvertTo-Json -Compress -Depth 5
+
+        $result = windows_firewall set -w --input $json 2>$null | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+
+        # Only the specified rule should appear in results; no unspecified rules affected
+        $unspecifiedEntries = $result.rules | Where-Object { $_.name -eq $testRuleName }
+        $unspecifiedEntries | Should -BeNullOrEmpty
+    }
+
+    It 'does not affect unspecified rules when unspecifiedRulesAction is omitted' -Skip:(!$isElevated) {
+        Initialize-TestFirewallRule
+
+        $json = @{
+            rules = @(@{
+                name      = 'SomeOtherRuleThatMayNotExist'
+                direction = 'Inbound'
+                action    = 'Allow'
+                protocol  = 6
+                enabled   = $true
+            })
+        } | ConvertTo-Json -Compress -Depth 5
+
+        $result = windows_firewall set -w --input $json 2>$null | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+
+        # No unspecified rules in results
+        $unspecifiedEntries = $result.rules | Where-Object { $_.name -eq $testRuleName }
+        $unspecifiedEntries | Should -BeNullOrEmpty
+    }
+
+    It 'reports would disable unspecified rules when unspecifiedRulesAction is disable' -Skip:(!$isElevated) {
+        Initialize-TestFirewallRule
+
+        # Specify only testRuleName; all other rules are "unspecified" and should be disabled
+        $json = @{
+            unspecifiedRulesAction = 'disable'
+            rules = @(@{
+                name    = $testRuleName
+                enabled = $true
+            })
+        } | ConvertTo-Json -Compress -Depth 5
+
+        $result = windows_firewall set -w --input $json 2>$null | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+
+        # The specified rule should appear without disable metadata
+        $specifiedEntry = $result.rules | Where-Object { $_.name -eq $testRuleName -and $null -eq $_._metadata }
+        $specifiedEntry | Should -Not -BeNullOrEmpty
+
+        # At least one unspecified rule should have disable what-if metadata
+        $disabledEntries = $result.rules | Where-Object { $_._metadata.whatIf -match 'Would disable unspecified firewall rule' }
+        $disabledEntries.Count | Should -BeGreaterThan 0
+
+        # All disabled entries should have enabled = false
+        foreach ($entry in $disabledEntries) {
+            $entry.enabled | Should -BeFalse
+        }
+
+        # Verify no actual changes: the test rule is still enabled
+        $actual = Get-NetFirewallRule -Name $testRuleName -ErrorAction SilentlyContinue
+        $actual.Enabled | Should -Be 'True'
+    }
+
+    It 'skips already-disabled rules when unspecifiedRulesAction is disable' -Skip:(!$isElevated) {
+        Initialize-TestFirewallRule
+        # Disable the test rule so it is already disabled
+        Set-NetFirewallRule -Name $testRuleName -Enabled False
+
+        # Use a rule name that matches nothing, making testRuleName "unspecified"
+        $otherRuleName = 'DSC-WindowsFirewall-Unspecified-Other'
+        New-NetFirewallRule -Name $otherRuleName -DisplayName $otherRuleName -Direction Inbound -Action Allow -Protocol TCP -LocalPort 32790 -Enabled True -ErrorAction SilentlyContinue | Out-Null
+
+        $json = @{
+            unspecifiedRulesAction = 'disable'
+            rules = @(@{
+                name    = $otherRuleName
+                enabled = $true
+            })
+        } | ConvertTo-Json -Compress -Depth 5
+
+        $result = windows_firewall set -w --input $json 2>$null | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+
+        # The already-disabled test rule should NOT appear in results (skipped)
+        $testEntry = $result.rules | Where-Object { $_.name -eq $testRuleName -and $_._metadata.whatIf -match 'disable' }
+        $testEntry | Should -BeNullOrEmpty
+
+        Remove-NetFirewallRule -Name $otherRuleName -ErrorAction SilentlyContinue
+    }
+
+    It 'reports would remove unspecified rules when unspecifiedRulesAction is remove' -Skip:(!$isElevated) {
+        Initialize-TestFirewallRule
+
+        # Specify a different rule so testRuleName is "unspecified"
+        # Use a well-known Windows rule that will exist
+        $knownRule = (Get-NetFirewallRule | Select-Object -First 1).Name
+
+        $json = @{
+            unspecifiedRulesAction = 'remove'
+            rules = @(@{
+                name    = $knownRule
+                enabled = $true
+            })
+        } | ConvertTo-Json -Compress -Depth 5
+
+        $result = windows_firewall set -w --input $json 2>$null | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+
+        # The test rule should be among the removed entries
+        $removedEntry = $result.rules | Where-Object { $_.name -eq $testRuleName -and $_._metadata.whatIf -match 'Would remove unspecified firewall rule' }
+        $removedEntry | Should -Not -BeNullOrEmpty
+        $removedEntry._exist | Should -BeFalse
+
+        # Verify no actual removal: the rule still exists
+        $actual = Get-NetFirewallRule -Name $testRuleName -ErrorAction SilentlyContinue
+        $actual | Should -Not -BeNullOrEmpty
+    }
+}
