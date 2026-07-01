@@ -245,8 +245,18 @@ jobs:
           $baseSha = '${{ github.event.pull_request.base.sha }}'
           $headSha = '${{ github.event.pull_request.head.sha }}'
 
+          # Compute the merge-base to get an accurate diff of only PR changes.
+          # Using base.sha directly is unreliable after rebases or when the base
+          # branch has advanced, since it points to the tip of the base branch at
+          # event time rather than the common ancestor.
+          $mergeBase = git merge-base $baseSha $headSha 2>$null
+          if ($LASTEXITCODE -eq 0 -and $mergeBase) {
+              Write-Verbose -Verbose "Using merge-base $mergeBase (base=$baseSha, head=$headSha)"
+              $baseSha = $mergeBase
+          }
+
           # Determine if any Rust files changed from git diff
-          $changedFiles = git diff --name-only --diff-filter=ACMR "$baseSha...$headSha" -- '*.rs' | Where-Object { $_ }
+          $changedFiles = git diff --name-only --diff-filter=ACMR "$baseSha..$headSha" -- '*.rs' | Where-Object { $_ }
           if (-not $changedFiles) {
               "has_rust_changes=false" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
               return
