@@ -1949,6 +1949,11 @@ function Set-LlvmCovEnvironment {
         foreach ($line in $showEnvOutput) {
             if ($line -match '^([A-Z_][A-Z0-9_]+)=(.*)$') {
                 $name = $Matches[1]
+                # CARGO_LLVM_COV_SHOW_ENV is an output-only flag that tells
+                # cargo-llvm-cov to print env and exit; do not propagate it.
+                if ($name -eq 'CARGO_LLVM_COV_SHOW_ENV') {
+                    continue
+                }
                 # Strip optional surrounding single quotes from the value
                 $value = ($Matches[2] -replace "^'", '') -replace "'$", ''
                 $priorValues[$name] = [System.Environment]::GetEnvironmentVariable($name)
