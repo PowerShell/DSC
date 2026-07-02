@@ -2166,12 +2166,21 @@ function Get-CodeCoverageReport {
 
             # Find matching LCOV entry for this file
             $absPath = (Resolve-Path $file).Path
+            $normalizedFile = $file.Replace('\', '/')
             $fileCoverage = $null
             foreach ($key in $lcovData.Keys) {
-                if ($key -eq $absPath -or $key.EndsWith("/$file") -or $key.EndsWith("\$file")) {
+                $normalizedKey = $key.Replace('\', '/')
+                if ($normalizedKey -eq $absPath -or
+                    $normalizedKey -eq $normalizedFile -or
+                    $normalizedKey.EndsWith("/$normalizedFile") -or
+                    $normalizedKey.EndsWith("\$normalizedFile")) {
                     $fileCoverage = $lcovData[$key]
                     break
                 }
+            }
+
+            if (-not $fileCoverage) {
+                Write-Verbose -Verbose "No LCOV match for '$file' (absPath='$absPath'). LCOV keys: $($lcovData.Keys -join ', ')"
             }
 
             # Build per-line coverage map for this file (only added executable lines)
