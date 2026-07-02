@@ -17,6 +17,8 @@ impl Function for Envvar {
         FunctionMetadata {
             name: "envvar".to_string(),
             description: t!("functions.envvar.description").to_string(),
+            syntax: t!("functions.envvar.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::System],
             min_args: 1,
             max_args: 1,

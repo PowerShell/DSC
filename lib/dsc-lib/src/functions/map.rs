@@ -17,6 +17,8 @@ impl Function for Map {
         FunctionMetadata {
             name: "map".to_string(),
             description: t!("functions.map.description").to_string(),
+            syntax: t!("functions.map.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Array, FunctionCategory::Lambda],
             min_args: 2,
             max_args: 2,

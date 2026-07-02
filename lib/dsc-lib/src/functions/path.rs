@@ -20,6 +20,8 @@ impl Function for Path {
         FunctionMetadata {
             name: "path".to_string(),
             description: t!("functions.path.description").to_string(),
+            syntax: t!("functions.path.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::String],
             min_args: 2,
             max_args: usize::MAX,

@@ -16,6 +16,8 @@ impl Function for CopyIndex {
         FunctionMetadata {
             name: "copyIndex".to_string(),
             description: t!("functions.copyIndex.description").to_string(),
+            syntax: t!("functions.copyIndex.syntax").to_string(),
+            constraints: Some(t!("functions.copyIndex.cannotUseOutsideCopy").to_string()),
             category: vec![FunctionCategory::Numeric],
             min_args: 0,
             max_args: 2,

@@ -18,6 +18,8 @@ impl Function for Secret {
         FunctionMetadata {
             name: "secret".to_string(),
             description: t!("functions.secret.description").to_string(),
+            syntax: t!("functions.secret.syntax").to_string(),
+            constraints: Some(t!("functions.secret.constraints").to_string()),
             category: vec![FunctionCategory::Deployment],
             min_args: 1,
             max_args: 2,

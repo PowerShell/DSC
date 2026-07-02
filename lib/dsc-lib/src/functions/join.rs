@@ -27,6 +27,8 @@ impl Function for Join {
         FunctionMetadata {
             name: "join".to_string(),
             description: t!("functions.join.description").to_string(),
+            syntax: t!("functions.join.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::String],
             min_args: 2,
             max_args: 2,
@@ -113,14 +115,14 @@ mod tests {
     fn join_direct_test_with_mixed_array() {
         use serde_json::json;
         use crate::configure::context::Context;
-        
+
         let join_fn = Join::default();
         let args = vec![
             json!(["hello", {"key": "value"}]), // Array with string and object
             json!(",")
         ];
         let result = join_fn.invoke(&args, &Context::new());
-        
+
         assert!(result.is_err());
         let error_msg = result.unwrap_err().to_string();
         assert!(error_msg.contains("Array elements cannot be objects"));

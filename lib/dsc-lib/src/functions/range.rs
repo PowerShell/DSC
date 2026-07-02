@@ -16,6 +16,8 @@ impl Function for Range {
         FunctionMetadata {
             name: "range".to_string(),
             description: t!("functions.range.description").to_string(),
+            syntax: t!("functions.range.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Array],
             min_args: 2,
             max_args: 2,
@@ -33,7 +35,7 @@ impl Function for Range {
 
         let start_index = args[0].as_i64()
             .ok_or_else(|| DscError::FunctionArg("range".to_string(), t!("functions.range.startIndexNotInt").to_string()))?;
-        
+
         let count = args[1].as_i64()
             .ok_or_else(|| DscError::FunctionArg("range".to_string(), t!("functions.range.countNotInt").to_string()))?;
 

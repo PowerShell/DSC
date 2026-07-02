@@ -6,7 +6,6 @@ use crate::resolve::{get_contents, Include};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
 use crate::util::{get_input, get_schema, in_desired_state, set_dscconfigroot, write_object, DSC_CONFIG_ROOT, EXIT_DSC_ASSERTION_FAILED, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR};
-use dsc_lib::functions::FunctionArgKind;
 use dsc_lib::types::{FullyQualifiedTypeName, ResourceVersionReq, TypeNameFilter};
 use dsc_lib::{
     configure::{
@@ -695,22 +694,11 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
     let mut table = Table::new(&[
         t!("subcommand.tableHeader_functionCategory").to_string().as_ref(),
         t!("subcommand.tableHeader_functionName").to_string().as_ref(),
-        t!("subcommand.tableHeader_minArgs").to_string().as_ref(),
-        t!("subcommand.tableHeader_maxArgs").to_string().as_ref(),
-        t!("subcommand.tableHeader_argTypes").to_string().as_ref(),
+        t!("subcommand.tableHeader_syntax").to_string().as_ref(),
         t!("subcommand.tableHeader_description").to_string().as_ref(),
     ]);
 
     let mut include_separator = false;
-    let returned_types= [
-        (FunctionArgKind::Array, "a"),
-        (FunctionArgKind::Boolean, "b"),
-        (FunctionArgKind::Lambda, "l"),
-        (FunctionArgKind::Number, "n"),
-        (FunctionArgKind::String, "s"),
-        (FunctionArgKind::Object, "o"),
-    ];
-
     let asterisks = String::from("*");
     let name = function_name.unwrap_or(&asterisks);
     let regex_str = convert_wildcard_to_regex(name);
@@ -729,26 +717,10 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
         }
 
         if write_table {
-            // construct arg_types from '-' times number of accepted_arg_types
-            let mut arg_types = "-".repeat(returned_types.len());
-            for (i, (arg_type, letter)) in returned_types.iter().enumerate() {
-                if function.return_types.contains(arg_type) {
-                    arg_types.replace_range(i..=i, letter);
-                }
-            }
-
-            let max_args = if function.max_args == usize::MAX {
-                t!("subcommand.maxInt").to_string()
-            } else {
-                function.max_args.to_string()
-            };
-
             table.add_row(vec![
                 function.category.iter().map(std::string::ToString::to_string).collect::<Vec<String>>().join(", "),
                 function.name,
-                function.min_args.to_string(),
-                max_args,
-                arg_types,
+                function.syntax,
                 function.description
             ]);
         }

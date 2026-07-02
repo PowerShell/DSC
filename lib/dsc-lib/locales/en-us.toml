@@ -288,52 +288,87 @@ lambdaTooManyParams = "Function '%{name}' requires lambda with 1 or 2 parameters
 [functions.add]
 description = "Adds two or more numbers together"
 invoked = "add function"
+syntax = "add( <number>, <number> )"
 
 [functions.and]
 description = "Evaluates if all arguments are true"
 invoked = "and function"
+syntax = "and( <bool>, <bool>, ... )"
 
 [functions.array]
 description = "Convert the value to an array"
 invoked = "array function"
+syntax = "array( <string | number | object | array> )"
 
 [functions.base64]
 description = "Encodes a string to Base64 format"
+syntax = "base64( <string> )"
 
 [functions.base64ToString]
 description = "Converts a base64 representation to a string"
 invoked = "base64ToString function"
 invalidBase64 = "Invalid base64 encoding"
 invalidUtf8 = "Decoded bytes do not form valid UTF-8"
+syntax = "base64ToString( <base64> )"
 
 [functions.bool]
 description = "Converts a string or number to a boolean"
 invoked = "bool function"
+syntax = "bool( <string | number> )"
+
+[functions.cidrHost]
+description = "Calculates the usable IP address of the host with the specified index on the specified IP address range in CIDR notation"
+syntax = "cidrHost( <cidr>, <hostIndex> )"
+invoked = "cidrHost function"
+negativeHostIndex = "HostIndex cannot be negative"
+invalidCidr = "Invalid CIDR notation: '%{cidr}'. Expected format: IP/prefix (e.g., '192.168.1.0/24' or '2001:db8::/32')"
+noUsableHosts = "Network has no usable host addresses (single IP address)"
+hostIndexOutOfRange = "Host index %{index} is out of range. Maximum index is %{maxIndex}"
+hostCalculationFailed = "Failed to calculate host address"
+
+[functions.cidrSubnet]
+description = "Splits the specified IP address range in CIDR notation into subnets with a new CIDR value and returns the IP address range of the subnet with the specified index"
+syntax = "cidrSubnet( <cidr>, <newCidr>, <subnetIndex> )"
+invoked = "cidrSubnet function"
+negativeSubnetIndex = "SubnetIndex cannot be negative"
+invalidCidr = "Invalid CIDR notation: '%{cidr}'. Expected format: IP/prefix (e.g., '192.168.1.0/24' or '2001:db8::/32')"
+invalidPrefixV4 = "Invalid IPv4 prefix: %{prefix}. Must be between 0 and 32"
+invalidPrefixV6 = "Invalid IPv6 prefix: %{prefix}. Must be between 0 and 128"
+newCidrTooSmall = "New CIDR prefix (%{newCidr}) must be equal to or larger than the current CIDR prefix (%{currentCidr})"
+subnetIndexOutOfRange = "Subnet index %{index} is out of range. Maximum index is %{maxIndex}"
+tooManySubnets = "The difference between new and current CIDR is too large (>32 bits). This would create too many subnets"
+subnetCreationFailed = "Failed to create subnet"
 
 [functions.coalesce]
 description = "Returns the first non-null value from a list of arguments"
 invoked = "coalesce function"
+syntax = "coalesce( <value>, ... )"
 
 [functions.concat]
 description = "Concatenates two or more strings or arrays"
+syntax = "concat( <string | array>, <string | array>, ... )"
+constraints = "All arguments must be of the same type (all strings or all arrays)"
 invoked = "concat function"
 argsMustBeStrings = "Arguments must all be strings"
 argsMustBeArrays = "Arguments must all be arrays"
 onlyArraysOfStrings = "Arguments must all be arrays of strings"
 
 [functions.contains]
-description = "Checks if an array contains a specific item"
+description = "Checks if an array, object, or string contains a specific item"
 invoked = "contains function"
+syntax = "contains( <array | object | string>, <item> )"
 invalidItemToFind = "Invalid item to find, must be a string or number"
 invalidArgType = "Invalid argument type, first argument must be an array, object, or string"
 
 [functions.context]
 description = "Retrieves context information about the current execution environment"
 invoked = "context function"
+syntax = "context()"
 
 [functions.copyIndex]
 description = "Returns the current copy index"
 invoked = "copyIndex function"
+syntax = "copyIndex( [offset] ); copyIndex( <loopName>, [offset] )"
 cannotUseOutsideCopy = "The 'copyIndex()' function can only be used when processing a 'Copy' loop"
 loopNameNotFound = "The specified loop name '%{name}' was not found"
 noCurrentLoop = "There is no current loop to get the index from"
@@ -342,6 +377,8 @@ offsetNegative = "The offset cannot be negative"
 [functions.createArray]
 description = "Creates an array from the given elements"
 invoked = "createArray function"
+syntax = "createArray( [value], ... )"
+constraints = "All arguments must be of the same type"
 argsMustAllBeArrays = "Arguments must all be arrays"
 argsMustAllBeIntegers = "Arguments must all be integers"
 argsMustAllBeObjects = "Arguments must all be objects"
@@ -350,15 +387,19 @@ argsMustAllBeStrings = "Arguments must all be strings"
 [functions.createObject]
 description = "Creates an object from the given key-value pairs"
 invoked = "createObject function"
+syntax = "createObject( [key], [value], ... )"
 argsMustBePairs = "Arguments must be provided in key-value pairs"
 keyMustBeString = "Object keys must be strings"
 
 [functions.dataUri]
 description = "Converts a value to a data URI"
+syntax = "dataUri( <string> )"
 
 [functions.dataUriToString]
 description = "Converts a data URI formatted value to a string"
 invoked = "dataUriToString function"
+syntax = "dataUriToString( <dataUri> )"
+constraint = "Data URI must be in the format: data:[<mediatype>][;base64],<data>"
 invalidDataUri = "Invalid data URI format"
 invalidBase64 = "Invalid base64 encoding in data URI"
 invalidUtf8 = "Decoded bytes do not form valid UTF-8"
@@ -368,67 +409,81 @@ unsupportedCharset = "Unsupported charset: %{charset}. Only UTF-8 is supported."
 [functions.div]
 description = "Divides the first number by the second"
 invoked = "div function"
+syntax = "div( <number>, <number> )"
 divideByZero = "Cannot divide by zero"
 
 [functions.empty]
 description = "Checks if an array, object, or string is empty"
 invoked = "empty function"
+syntax = "empty( <array | object | string> )"
 invalidArgType = "Invalid argument type, argument must be an array, object, or string"
 
 [functions.endsWith]
 description = "Checks if a string ends with a specific suffix"
 invoked = "endsWith function"
+syntax = "endsWith( <string>, <suffix> )"
 
 [functions.envvar]
 description = "Retrieves the value of an environment variable"
 notFound = "Environment variable not found"
+syntax = "envvar( <string> )"
 
 [functions.equals]
 description = "Evaluates if the two values are the same"
+syntax = "equals( <value>, <value> )"
 
 [functions.false]
 description = "Returns the boolean value false"
 invoked = "false function"
+syntax = "false()"
 
 [functions.filter]
 description = "Filters an array with a custom filtering function"
 invoked = "filter function"
 lambdaMustReturnBool = "filter() lambda must return a boolean value"
+syntax = "filter( <array>, <lambda> )"
 
 [functions.first]
 description = "Returns the first element of an array or first character of a string"
 invoked = "first function"
+syntax = "first( <array | string> )"
 emptyArray = "Cannot get first element of empty array"
 emptyString = "Cannot get first character of empty string"
 invalidArgType = "Invalid argument type, argument must be an array or string"
 
-[functions.last]
-description = "Returns the last element of an array or last character of a string"
-invoked = "last function"
-invalidArgType = "Invalid argument type, argument must be an array or string"
-
-[functions.greater]
-description = "Evaluates if the first value is greater than the second value"
-invoked = "greater function"
-
-[functions.greaterOrEquals]
-description = "Evaluates if the first value is greater than or equal to the second value"
-invoked = "greaterOrEquals function"
-
 [functions.format]
 description = "Formats a string using the given arguments"
+syntax = "format( <string>, <value>, ... )"
 experimental = "`format()` function is experimental"
 formatInvalid = "First `format()` argument must be a string"
 numberTooLarge = "Number is too large"
 invalidArgType = "Unsupported argument type"
 invalidFormatString = "Invalid format string"
 
+[functions.greater]
+description = "Evaluates if the first value is greater than the second value"
+invoked = "greater function"
+syntax = "greater( <value>, <value> )"
+
+[functions.greaterOrEquals]
+description = "Evaluates if the first value is greater than or equal to the second value"
+invoked = "greaterOrEquals function"
+syntax = "greaterOrEquals( <value>, <value> )"
+
 [functions.if]
 description = "Evaluates a condition and returns second value if true, otherwise returns third value"
 conditionNotBoolean = "Condition is not a boolean"
+syntax = "if( <condition>, <value_if_true>, <value_if_false> )"
+
+[functions.indexOf]
+description = "Returns the index of the first occurrence of an item in an array"
+invoked = "indexOf function"
+syntax = "indexOf( <array>, <item> )"
+invalidArrayArg = "First argument must be an array"
 
 [functions.int]
 description = "Converts a string or number to an integer"
+syntax = "int( <string | number> )"
 invalidInput = "invalid input string"
 parseStringError = "unable to parse string to int"
 castError = "unable to cast to int"
@@ -437,20 +492,18 @@ parseNumError = "unable to parse number to int"
 [functions.intersection]
 description = "Returns a single array or object with the common elements from the parameters"
 invoked = "intersection function"
-invalidArgType = "All arguments must either be arrays or objects"
+syntax = "intersection( <array | object>, <array | object>, ... )"
+invalidArgType = "Arguments must either be all arrays or all objects"
 
 [functions.items]
 description = "Converts a dictionary object to an array of objects with key and value properties"
 notObject = "Argument must be an object"
-
-[functions.indexOf]
-description = "Returns the index of the first occurrence of an item in an array"
-invoked = "indexOf function"
-invalidArrayArg = "First argument must be an array"
+syntax = "items( <object> )"
 
 [functions.join]
 description = "Joins the elements of an array into a single string, separated using a delimiter."
 invoked = "join function"
+syntax = "join( <array>, <delimiter> )"
 invalidArrayArg = "First argument must be an array"
 invalidNullElement = "Array elements cannot be null"
 invalidArrayElement = "Array elements cannot be arrays"
@@ -459,10 +512,13 @@ invalidObjectElement = "Array elements cannot be objects"
 [functions.json]
 description = "Converts a valid JSON string into a JSON data type"
 invalidJson = "Invalid JSON string"
+syntax = "json( <string> )"
 
 [functions.lambda]
 description = "Creates a lambda function with parameters and a body expression"
 invoked = "lambda function"
+syntax = "lambda( <param1>, [param2], ..., <body> )"
+constraints = "Lambda function must have at least one parameter and a body expression"
 requiresParamAndBody = "lambda() requires at least one parameter name and a body expression"
 paramsMustBeStrings = "lambda() parameter names must be string literals"
 bodyMustBeExpression = "lambda() body must be an expression"
@@ -470,32 +526,45 @@ bodyMustBeExpression = "lambda() body must be an expression"
 [functions.lambdaVariables]
 description = "Retrieves the value of a lambda parameter"
 invoked = "lambdaVariables function"
+syntax = "lambdaVariables( <name> )"
 notFound = "Lambda parameter '%{name}' not found in current context"
+
+[functions.last]
+description = "Returns the last element of an array or last character of a string"
+invoked = "last function"
+syntax = "last( <array | string> )"
+invalidArgType = "Invalid argument type, argument must be an array or string"
 
 [functions.lastIndexOf]
 description = "Returns the index of the last occurrence of an item in an array"
 invoked = "lastIndexOf function"
+syntax = "lastIndexOf( <array>, <item> )"
 invalidArrayArg = "First argument must be an array"
-
-[functions.map]
-description = "Transforms an array by applying a lambda function to each element"
-invoked = "map function"
 
 [functions.length]
 description = "Returns the length of a string, array, or object"
 invoked = "length function"
+syntax = "length( <string | array | object> )"
 invalidArgType = "Invalid argument type, argument must be a string, array, or object"
 
 [functions.less]
 description = "Evaluates if the first value is less than the second value"
 invoked = "less function"
+syntax = "less( <value>, <value> )"
 
 [functions.lessOrEquals]
 description = "Evaluates if the first value is less than or equal to the second value"
 invoked = "lessOrEquals function"
+syntax = "lessOrEquals( <value>, <value> )"
+
+[functions.map]
+description = "Transforms an array by applying a lambda function to each element"
+invoked = "map function"
+syntax = "map( <array>, <lambda> )"
 
 [functions.max]
 description = "Returns the largest number from a list of numbers"
+syntax = "max( <number>, [number], ... )"
 emptyArray = "Array cannot be empty"
 integersOnly = "Array must contain only integers"
 noMax = "Unable to find max value"
@@ -503,37 +572,46 @@ noMax = "Unable to find max value"
 [functions.min]
 description = "Returns the smallest number from a list of numbers"
 invoked = "min function"
+syntax = "min( <number>, [number], ... )"
 emptyArray = "Array cannot be empty"
 integersOnly = "Input must only contain integers"
 noMin = "Unable to find min value"
 
 [functions.mod]
 description = "Divides the first number by the second and returns the remainder"
+syntax = "mod( <number>, <number> )"
 divideByZero = "Cannot divide by zero"
 
 [functions.mul]
 description = "Multiplies two or more numbers together"
 invoked = "mul function"
+syntax = "mul( <number>, <number>, ... )"
 
 [functions.not]
 description = "Negates a boolean value"
 invoked = "not function"
+syntax = "not( <bool> )"
 
 [functions.null]
 description = "Returns a null value"
 invoked = "null function"
+syntax = "null()"
 
 [functions.objectKeys]
 description = "Returns the keys from an object, where an object is a collection of key-value pairs"
+syntax = "objectKeys( <object> )"
 
 [functions.or]
 description = "Evaluates if any arguments are true"
 invoked = "or function"
+syntax = "or( <bool>, <bool>, ... )"
 
 [functions.parameters]
 description = "Retrieves parameters from the configuration"
 invoked = "parameters function"
 unavailableInParameters = "The 'parameters()' function is not available within parameters defaults"
+syntax = "parameters( <key> )"
+constraints = "This function cannot be called from within a parameters block"
 traceKey = "parameters key: %{key}"
 keyNotString = "Parameter '%{key}' is not a string"
 keyNotInt = "Parameter '%{key}' is not an integer"
@@ -547,37 +625,19 @@ keyNotFound = "Parameter '%{key}' not found in context"
 [functions.parseCidr]
 description = "Parses an IP address range in CIDR notation and returns network properties"
 invoked = "parseCidr function"
+syntax = "parseCidr( <cidr> )"
 invalidCidr = "Invalid CIDR notation: '%{cidr}'. Expected format: IP/prefix (e.g., '192.168.1.0/24' or '2001:db8::/32')"
-
-[functions.cidrHost]
-description = "Calculates the usable IP address of the host with the specified index on the specified IP address range in CIDR notation"
-invoked = "cidrHost function"
-negativeHostIndex = "HostIndex cannot be negative"
-invalidCidr = "Invalid CIDR notation: '%{cidr}'. Expected format: IP/prefix (e.g., '192.168.1.0/24' or '2001:db8::/32')"
-noUsableHosts = "Network has no usable host addresses (single IP address)"
-hostIndexOutOfRange = "Host index %{index} is out of range. Maximum index is %{maxIndex}"
-hostCalculationFailed = "Failed to calculate host address"
-
-[functions.cidrSubnet]
-description = "Splits the specified IP address range in CIDR notation into subnets with a new CIDR value and returns the IP address range of the subnet with the specified index"
-invoked = "cidrSubnet function"
-negativeSubnetIndex = "SubnetIndex cannot be negative"
-invalidCidr = "Invalid CIDR notation: '%{cidr}'. Expected format: IP/prefix (e.g., '192.168.1.0/24' or '2001:db8::/32')"
-invalidPrefixV4 = "Invalid IPv4 prefix: %{prefix}. Must be between 0 and 32"
-invalidPrefixV6 = "Invalid IPv6 prefix: %{prefix}. Must be between 0 and 128"
-newCidrTooSmall = "New CIDR prefix (%{newCidr}) must be equal to or larger than the current CIDR prefix (%{currentCidr})"
-subnetIndexOutOfRange = "Subnet index %{index} is out of range. Maximum index is %{maxIndex}"
-tooManySubnets = "The difference between new and current CIDR is too large (>32 bits). This would create too many subnets"
-subnetCreationFailed = "Failed to create subnet"
 
 [functions.path]
 description = "Concatenates multiple strings into a file path"
+syntax = "path( <string>, <string>, ... )"
 traceArgs = "Executing path function with args: %{args}"
 argsMustBeStrings = "Arguments must all be strings"
 
 [functions.range]
 description = "Creates an array of integers from a starting integer and containing a number of items"
 invoked = "range function"
+syntax = "range( <startIndex>, <count> )"
 startIndexNotInt = "Start index must be an integer"
 countNotInt = "Count must be an integer"
 countNegative = "Count must be non-negative"
@@ -588,15 +648,19 @@ sumOverflow = "Sum of startIndex and count causes overflow"
 [functions.reference]
 description = "Retrieves the output of a previously executed resource"
 invoked = "reference function"
+syntax = "reference( <resourceId> )"
 keyNotFound = "Invalid resourceId or resource has not executed yet: %{key}"
 unavailableInUserFunction = "The 'reference()' function is not available in user-defined functions"
 
 [functions.resourceId]
 description = "Constructs a resource ID from the given type and name"
+syntax = "resourceId( <type>, <name> )"
 incorrectTypeFormat = "Type argument must contain exactly one slash"
 
 [functions.secret]
 description = "Retrieves a secret from a vault"
+syntax = "secret( <name>, [vault] )"
+constraints = "If vault is not specified, the secret must be the same across all vaults"
 notString = "Parameter secret name is not a string"
 multipleSecrets = "Multiple secrets with the same name '%{name}' and different values was returned, try specifying a vault"
 extensionReturnedError = "Extension '%{extension}': %{error}"
@@ -606,28 +670,39 @@ invalidSecretFormat = "Invalid secret format returned for secret '%{name}'"
 
 [functions.shallowMerge]
 description = "Combines an array of objects where only the top-level objects are merged"
+syntax = "shallowMerge( <array_of_objects> )"
 requiresObjects = "shallowMerge requires all array elements to be objects, but found: %{value}"
-
-[functions.startsWith]
-description = "Checks if a string starts with a specific prefix"
-invoked = "startsWith function"
 
 [functions.skip]
 description = "Returns an array with all elements after the specified number, or a string with all characters after the specified number"
 invoked = "skip function"
+syntax = "skip( <array | string>, <number> )"
 invalidNumberToSkip = "Second argument must be an integer"
 invalidOriginalValue = "First argument must be an array or string"
 
+[functions.startsWith]
+description = "Checks if a string starts with a specific prefix"
+invoked = "startsWith function"
+syntax = "startsWith( <string>, <prefix> )"
+
 [functions.stdout]
-description = "Returns the standard output from the last executed resource.  Can only be used in output definitions."
+description = "Returns the standard output from the last executed resource."
+syntax = "stdout()"
 noStdoutAvailable = "No standard output is available from the last executed resource"
 
 [functions.string]
 description = "Converts a value to a string"
+syntax = "string( <value> )"
+
+[functions.sub]
+description = "Subtracts the second number from the first"
+invoked = "sub function"
+syntax = "sub( <number>, <number> )"
 
 [functions.substring]
 description = "Returns a substring that starts at the specified character position and contains the specified number of characters"
 invoked = "substring function"
+syntax = "substring( <string>, <startIndex>, [length] )"
 startIndexNegative = "Start index cannot be negative"
 startIndexTooLarge = "Start index is beyond the end of the string"
 startIndexValueTooLarge = "Start index value too large"
@@ -635,69 +710,79 @@ lengthNegative = "Length cannot be negative"
 lengthTooLarge = "Length extends beyond the end of the string"
 lengthValueTooLarge = "Length value too large"
 
-[functions.sub]
-description = "Subtracts the second number from the first"
-invoked = "sub function"
-
 [functions.systemRoot]
 description = "Returns the system root path"
 invoked = "systemRoot function"
+syntax = "systemRoot()"
 
 [functions.take]
 description = "Returns an array with the specified number of elements from the start, or a string with the specified number of characters from the start"
 invoked = "take function"
+syntax = "take( <array | string>, <number> )"
 invalidNumberToTake = "Second argument must be an integer"
 invalidOriginalValue = "First argument must be an array or string"
 
 [functions.toLower]
 description = "Converts the specified string to lower case"
+syntax = "toLower( <string> )"
 
 [functions.toUpper]
 description = "Converts the specified string to upper case"
+syntax = "toUpper( <string> )"
 
 [functions.trim]
 description = "Removes all leading and trailing white-space characters from the specified string"
+syntax = "trim( <string> )"
 
 [functions.true]
 description = "Returns the boolean value true"
 invoked = "true function"
+syntax = "true()"
 
 [functions.tryGet]
 description = "Attempts to retrieve a value from an array (by index) or object (by key).  Null is returned if the key or index does not exist."
 invoked = "tryGet function"
+syntax = "tryGet( <array | object>, <key | index> )"
 invalidKeyType = "Invalid key type, must be a string"
 invalidIndexType = "Invalid index type, must be an integer"
 
 [functions.tryIndexFromEnd]
 description = "Retrieves a value from an array by counting backward from the end. Returns null if the index is out of range."
 invoked = "tryIndexFromEnd function"
+syntax = "tryIndexFromEnd( <array>, <index> )"
 invalidSourceType = "Invalid source type, must be an array"
 invalidIndexType = "Invalid index type, must be an integer"
 
 [functions.tryWhich]
 description = "Attempts to locate an executable in the system PATH.  Null is returned if the executable is not found otherwise the full path to the executable is returned."
 invoked = "tryWhich function"
+syntax = "tryWhich( <string> )"
 
 [functions.union]
 description = "Returns a single array or object with all elements from the parameters"
 invoked = "union function"
+syntax = "union( <array | object>, <array | object>, ... )"
 invalidArgType = "All arguments must either be arrays or objects"
 
 [functions.uniqueString]
 description = "Returns a deterministic unique string from the given strings"
 invoked = "uniqueString function"
+syntax = "uniqueString( <string>, [string], ... )"
 
 [functions.uri]
 description = "Creates an absolute URI by combining the baseUri and the relativeUri string"
+syntax = "uri( <baseUri>, <relativeUri> )"
 emptyBaseUri = "The baseUri parameter cannot be empty. An absolute URI requires a valid base URI."
 notAbsoluteUri = "The baseUri must be an absolute URI (must include a scheme such as https:// or file://)."
 invalidRelativeUri = "Invalid URI: The relative URI contains an invalid sequence. Three or more consecutive slashes (///) are not allowed."
 
 [functions.uriComponent]
 description = "Encodes a URI component using percent-encoding"
+syntax = "uriComponent( <string> )"
 
 [functions.uriComponentToString]
 description = "Returns a string of a URI encoded value"
+syntax = "uriComponentToString( <string> )"
 invalidUtf8 = "Invalid UTF-8 in decoded string: %{error}"
 
 [functions.userFunction]
@@ -708,11 +793,13 @@ incorrectOutputType = "Output of user function '%{name}' did not return expected
 
 [functions.utcNow]
 description = "Returns the current UTC time"
+syntax = "utcNow( [format] )"
 invoked = "utcNow function"
 onlyUsedAsParameterDefault = "The 'utcNow()' function can only be used as a parameter default"
 
 [functions.variables]
 description = "Retrieves the value of a variable"
+syntax = "variables( <string> )"
 invoked = "variables function"
 keyNotFound = "Variable '%{key}' does not exist or has not been initialized yet"
 unavailableInUserFunction = "The 'variables()' function is not available in user-defined functions"

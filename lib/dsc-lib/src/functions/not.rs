@@ -16,6 +16,8 @@ impl Function for Not {
         FunctionMetadata {
             name: "not".to_string(),
             description: t!("functions.not.description").to_string(),
+            syntax: t!("functions.not.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Logical],
             min_args: 1,
             max_args: 1,

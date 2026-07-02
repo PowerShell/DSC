@@ -16,6 +16,8 @@ impl Function for Skip {
         FunctionMetadata {
             name: "skip".to_string(),
             description: t!("functions.skip.description").to_string(),
+            syntax: t!("functions.skip.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Array, FunctionCategory::String],
             min_args: 2,
             max_args: 2,
