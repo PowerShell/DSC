@@ -212,4 +212,63 @@ Describe 'Discover extension tests' {
             $env:TestDrive = $null
         }
     }
+
+    It 'ExtensionsArg is received correctly' {
+        $extension_json = @'
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "type": "Test/DiscoverExtensions",
+    "version": "0.1.0",
+    "description": "Test discover resource",
+    "discover": {
+        "executable": "pwsh",
+        "args": [
+            "-NoLogo",
+            "-NonInteractive",
+            "-NoProfile",
+            "-Command",
+            "./discover.ps1",
+            {
+                "extensionsArg": "-Extensions",
+                "includeQuotes": true
+            }
+        ]
+    }
+}
+'@
+
+        $extensions = @{
+            '.dsc.manifests.yml' = $false
+            '.dsc.manifests.yaml' = $false
+            '.dsc.manifests.json' = $false
+            '.dsc.extension.yml' = $false
+            '.dsc.extension.yaml' = $false
+            '.dsc.extension.json' = $false
+            '.dsc.adaptedresource.yml' = $false
+            '.dsc.adaptedresource.yaml' = $false
+            '.dsc.adaptedresource.json' = $false
+            '.dsc.resource.yml' = $false
+            '.dsc.resource.yaml' = $false
+            '.dsc.resource.json' = $false
+        }
+
+        Set-Content -Path "$TestDrive/test.dsc.extension.json" -Value $extension_json
+        Copy-Item -Path "$toolPath/discover.ps1" -Destination $TestDrive | Out-Null
+        $env:DSC_RESOURCE_PATH = "$TestDrive" + [System.IO.Path]::PathSeparator + (Split-Path (Get-Command pwsh).Source -Parent)
+        try {
+            $out = dsc resource list 2> $TestDrive/error.log | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            foreach ($resource in $out) {
+                if ($resource.type.startsWith('TestDiscover/')) {
+                    $extensions[$resource.adaptedContent.extension] = $true
+                }
+            }
+        } finally {
+            $env:DSC_RESOURCE_PATH = $null
+        }
+
+        foreach ($key in $extensions.Keys) {
+            $extensions[$key] | Should -BeTrue -Because "Extension $key was not found"
+        }
+    }
 }

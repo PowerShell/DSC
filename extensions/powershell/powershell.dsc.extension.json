@@ -13,7 +13,11 @@
       "Bypass",
       "-NoProfile",
       "-Command",
-      "./powershell.discover.ps1"
+      "./powershell.discover.ps1",
+      {
+        "extensionsArg": "-extensions",
+        "includeQuotes": true
+      }
     ]
   }
 }
