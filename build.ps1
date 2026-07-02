@@ -265,6 +265,9 @@ process {
         Write-BuildProgress @progressParams -Status 'Configuring cargo-llvm-cov environment'
         Remove-Item $CodeCoverageOutputPath -Force -ErrorAction Ignore
         Initialize-CodeCoverage -UseCFS:$UseCFS @VerboseParam
+
+        Write-BuildProgress @progressParams -Status 'Setting llvm-cov environment variables'
+        $priorLlvmCovEnv = Set-LlvmCovEnvironment @VerboseParam
     }
     #endregion Code coverage instrumentation
 
@@ -297,7 +300,7 @@ process {
                 Clean        = $Clean
             }
             Write-BuildProgress @progressParams -Status 'Compiling Rust'
-            Build-RustProject @buildParams -Audit:$Audit -Clippy:$Clippy -CodeCoverage:$CodeCoverage @VerboseParam
+            Build-RustProject @buildParams -Audit:$Audit -Clippy:$Clippy @VerboseParam
             Write-BuildProgress @progressParams -Status "Copying build artifacts"
             Copy-BuildArtifact @buildParams -ExecutableFile $BuildData.PackageFiles.Executable @VerboseParam
         }
@@ -324,7 +327,7 @@ process {
                 $rustTestParams.TestFilter = $RustTestFilter
             }
             Write-BuildProgress @progressParams -Status "Testing Rust projects"
-            Test-RustProject @rustTestParams -CodeCoverage:$CodeCoverage @VerboseParam
+            Test-RustProject @rustTestParams @VerboseParam
         }
         if ($RustDocs) {
             $docTestParams = @{
@@ -359,6 +362,9 @@ process {
         Write-BuildProgress @progressParams
         Write-BuildProgress @progressParams -Status "Writing LCOV report to $CodeCoverageOutputPath"
         Export-CodeCoverageReport -OutputPath $CodeCoverageOutputPath @VerboseParam
+
+        Write-BuildProgress @progressParams -Status 'Restoring environment variables'
+        Reset-LlvmCovEnvironment -PriorValues $priorLlvmCovEnv @VerboseParam
 
         # Determine base and head SHAs for analysis
         $baseSha = $CodeCoverageBaseSha

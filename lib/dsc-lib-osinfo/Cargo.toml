@@ -10,3 +10,4 @@ doctest = false
 os_info = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+version-compare = { workspace = true }
