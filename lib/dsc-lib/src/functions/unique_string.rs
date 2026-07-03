@@ -19,6 +19,8 @@ impl Function for UniqueString {
         FunctionMetadata {
             name: "uniqueString".to_string(),
             description: t!("functions.uniqueString.description").to_string(),
+            syntax: t!("functions.uniqueString.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::String],
             min_args: 1,
             max_args: usize::MAX,

@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::mcp::mcp_server::McpServer;
+use crate::server::mcp_server::McpServer;
 use dsc_lib::{
     DscManager, discovery::{
         command_discovery::ImportedManifest::Resource,
@@ -53,11 +53,11 @@ impl McpServer {
                 Some(adapter) => {
                     if let Some(resource) = dsc.find_resource(&DiscoveryFilter::new(&adapter, None, None)).unwrap_or(None) {
                         if resource.kind != Kind::Adapter {
-                            return Err(McpError::invalid_params(t!("mcp.list_dsc_resources.resourceNotAdapter", adapter = adapter), None));
+                            return Err(McpError::invalid_params(t!("server.list_dsc_resources.resourceNotAdapter", adapter = adapter), None));
                         }
                         Some(&TypeNameFilter::Literal(resource.type_name.clone()))
                     } else {
-                        return Err(McpError::invalid_params(t!("mcp.list_dsc_resources.adapterNotFound", adapter = adapter), None));
+                        return Err(McpError::invalid_params(t!("server.list_dsc_resources.adapterNotFound", adapter = adapter), None));
                     }
                 },
                 None => None,

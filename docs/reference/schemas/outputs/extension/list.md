@@ -51,7 +51,7 @@ Pattern:  ^\w+(\.\w+){0,2}\/\w+$
 
 ### version
 
-Represents the current version of the extension as a valid semantic version (semver) string.
+Represents the current version of the extension as a valid semantic version (SemVer) string.
 
 ```yaml
 Type:     string

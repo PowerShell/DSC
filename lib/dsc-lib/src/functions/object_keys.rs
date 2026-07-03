@@ -15,6 +15,8 @@ impl Function for ObjectKeys {
         FunctionMetadata {
             name: "objectKeys".to_string(),
             description: t!("functions.objectKeys.description").to_string(),
+            syntax: t!("functions.objectKeys.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Object],
             min_args: 1,
             max_args: 1,
@@ -48,14 +50,14 @@ mod tests {
     fn object_keys_basic() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[objectKeys(createObject('a', 1, 'b', 2, 'c', 3))]", &Context::new()).unwrap();
-        
+
         let arr = result.as_array().unwrap();
         assert_eq!(arr.len(), 3);
-        
+
         for key in arr {
             assert!(key.is_string());
         }
-        
+
         let keys: Vec<&str> = arr.iter().filter_map(Value::as_str).collect();
         assert!(keys.contains(&"a"));
         assert!(keys.contains(&"b"));
@@ -73,7 +75,7 @@ mod tests {
     fn object_keys_single_key() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[objectKeys(createObject('name', 'John'))]", &Context::new()).unwrap();
-        
+
         let arr = result.as_array().unwrap();
         assert_eq!(arr.len(), 1);
         assert_eq!(arr[0].as_str(), Some("name"));
@@ -83,7 +85,7 @@ mod tests {
     fn object_keys_nested_values() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[objectKeys(createObject('person', createObject('name', 'John', 'age', 30)))]", &Context::new()).unwrap();
-        
+
         let arr = result.as_array().unwrap();
         assert_eq!(arr.len(), 1);
         assert_eq!(arr[0].as_str(), Some("person"));
@@ -93,10 +95,10 @@ mod tests {
     fn object_keys_mixed_value_types() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[objectKeys(createObject('str', 'text', 'num', 42, 'bool', true(), 'arr', createArray(1,2,3)))]", &Context::new()).unwrap();
-        
+
         let arr = result.as_array().unwrap();
         assert_eq!(arr.len(), 4);
-        
+
         let keys: Vec<&str> = arr.iter().filter_map(Value::as_str).collect();
         assert!(keys.contains(&"str"));
         assert!(keys.contains(&"num"));

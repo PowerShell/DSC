@@ -16,6 +16,8 @@ impl Function for Div {
         FunctionMetadata {
             name: "div".to_string(),
             description: t!("functions.div.description").to_string(),
+            syntax: t!("functions.div.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Numeric],
             min_args: 2,
             max_args: 2,

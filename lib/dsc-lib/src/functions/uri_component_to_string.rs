@@ -16,6 +16,8 @@ impl Function for UriComponentToString {
         FunctionMetadata {
             name: "uriComponentToString".to_string(),
             description: t!("functions.uriComponentToString.description").to_string(),
+            syntax: t!("functions.uriComponentToString.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::String],
             min_args: 1,
             max_args: 1,

@@ -80,7 +80,7 @@ ValidValues: [resource, adapter, group, importer, exporter]
 ### version
 
 The `version` property represents the current version of the adapted resource as a valid semantic
-version (semver) string. The version applies to the adapted resource, not the software it manages.
+version (SemVer) string. The version applies to the adapted resource, not the software it manages.
 
 ```yaml
 Type:     string

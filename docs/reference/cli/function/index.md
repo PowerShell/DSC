@@ -65,15 +65,7 @@ Numeric     min          1        maxInt   a-n--     Returns the smallest number
 Numeric     mod          2        2        --n--     Divides the first number by the second and returns the remainder
 Numeric     mul          2        2        --n--     Multiplies two or more numbers together
 Numeric     sub          2        2        --n--     Subtracts the second number from the first
-Resource    reference    1        1        ---s-     Retrieves the output of a previously executed resource
-Resource    resourceId   2        2        ---s-     Constructs a resource ID from the given type and name
-String      base64       1        1        ---s-     Encodes a string to Base64 format
-String      concat       2        maxInt   a--s-     Concatenates two or more strings or arrays
-String      format       2        maxInt   -bns-     Formats a string using the given arguments
-System      envvar       1        1        ---s-     Retrieves the value of an environment variable
-System      path         2        maxInt   ---s-     Concatenates multiple strings into a file path
-System      secret       1        2        ---s-     Retrieves a secret from a vault
-System      systemRoot   0        0        ---s-     Returns the system root path
+# truncated
 ```
 
 ### Example 2 - List functions with JSON output
@@ -84,7 +76,7 @@ This command returns function information in pretty JSON format.
 dsc function list --output-format pretty-json
 ```
 
-```json
+```jsonc
 {
   "category": "Array",
   "name": "createArray",

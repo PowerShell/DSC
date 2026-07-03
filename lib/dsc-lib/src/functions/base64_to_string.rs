@@ -19,6 +19,8 @@ impl Function for Base64ToString {
         FunctionMetadata {
             name: "base64ToString".to_string(),
             description: t!("functions.base64ToString.description").to_string(),
+            syntax: t!("functions.base64ToString.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::String],
             min_args: 1,
             max_args: 1,
@@ -30,7 +32,7 @@ impl Function for Base64ToString {
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.base64ToString.invoked"));
-        
+
         let base64_value = args[0].as_str().unwrap();
 
         let decoded_bytes = general_purpose::STANDARD.decode(base64_value).map_err(|_| {

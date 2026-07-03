@@ -1,10 +1,12 @@
 {
   "latestMajor": "V3",
   "latestMinor": "V3_2",
-  "latestPatch": "V3_2_0",
+  "latestPatch": "V3_2_2",
   "all": [
     "V3",
     "V3_2",
+    "V3_2_2",
+    "V3_2_1",
     "V3_2_0",
     "V3_1",
     "V3_1_3",

@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::mcp::mcp_server::McpServer;
+use crate::server::mcp_server::McpServer;
 use dsc_lib::{
     DscManager,
     discovery::discovery_trait::DiscoveryFilter,
@@ -12,10 +12,14 @@ use dsc_lib::{
 };
 use rmcp::{ErrorData as McpError, Json, tool, tool_router, handler::server::wrapper::Parameters};
 use rust_i18n::t;
-use schemars::JsonSchema;
+use schemars::{JsonSchema, json_schema};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tokio::task;
+
+fn nullable_json_object_schema(_: &mut schemars::SchemaGenerator) -> schemars::Schema {
+    json_schema!({"oneOf": [{"type": "null"}, {"type": "object"}]})
+}
 
 #[derive(Serialize, JsonSchema)]
 pub struct DscResource {
@@ -35,6 +39,7 @@ pub struct DscResource {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub author: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[schemars(schema_with = "nullable_json_object_schema")]
     pub schema: Option<Value>,
 }
 
@@ -60,7 +65,7 @@ impl McpServer {
         let result = task::spawn_blocking(move || {
             let mut dsc = DscManager::new();
             let Some(resource) = dsc.find_resource(&DiscoveryFilter::new(&r#type, None, None)).unwrap_or(None) else {
-                return Err(McpError::invalid_params(t!("mcp.show_dsc_resource.resourceNotFound", type_name = r#type), None))
+                return Err(McpError::invalid_params(t!("server.show_dsc_resource.resourceNotFound", type_name = r#type), None))
             };
             let schema = match resource.schema() {
                 Ok(schema_str) => serde_json::from_str(&schema_str).ok(),

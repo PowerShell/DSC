@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::mcp::mcp_server::McpServer;
+use crate::server::mcp_server::McpServer;
 use dsc_lib::{
     configure::{
         config_doc::Configuration,
@@ -83,7 +83,7 @@ impl McpServer {
                             return Err(McpError::invalid_request(
                                 format!(
                                     "{}: {e}",
-                                    t!("mcp.invoke_dsc_config.invalidConfiguration")
+                                    t!("server.invoke_dsc_config.invalidConfiguration")
                                 ),
                                 None,
                             ))
@@ -93,7 +93,7 @@ impl McpServer {
                         return Err(McpError::invalid_request(
                             format!(
                                 "{}: {e}",
-                                t!("mcp.invoke_dsc_config.failedConvertJson")
+                                t!("server.invoke_dsc_config.failedConvertJson")
                             ),
                             None,
                         ))
@@ -103,7 +103,7 @@ impl McpServer {
                     return Err(McpError::invalid_request(
                         format!(
                             "{}: {e}",
-                            t!("mcp.invoke_dsc_config.invalidConfiguration")
+                            t!("server.invoke_dsc_config.invalidConfiguration")
                         ),
                         None,
                     ))
@@ -114,7 +114,7 @@ impl McpServer {
                 Ok(json) => json,
                 Err(e) => {
                     return Err(McpError::internal_error(
-                        format!("{}: {e}", t!("mcp.invoke_dsc_config.failedSerialize")),
+                        format!("{}: {e}", t!("server.invoke_dsc_config.failedSerialize")),
                         None,
                     ))
                 }
@@ -135,7 +135,7 @@ impl McpServer {
                             return Err(McpError::invalid_request(
                                 format!(
                                     "{}: {e}",
-                                    t!("mcp.invoke_dsc_config.failedConvertJson")
+                                    t!("server.invoke_dsc_config.failedConvertJson")
                                 ),
                                 None,
                             ))
@@ -145,7 +145,7 @@ impl McpServer {
                         return Err(McpError::invalid_request(
                             format!(
                                 "{}: {e}",
-                                t!("mcp.invoke_dsc_config.invalidParameters")
+                                t!("server.invoke_dsc_config.invalidParameters")
                             ),
                             None,
                         ))
@@ -162,7 +162,7 @@ impl McpServer {
 
             if let Err(e) = configurator.set_context(parameters_value.as_ref()) {
                 return Err(McpError::invalid_request(
-                    format!("{}: {e}", t!("mcp.invoke_dsc_config.failedSetParameters")),
+                    format!("{}: {e}", t!("server.invoke_dsc_config.failedSetParameters")),
                     None,
                 ));
             }

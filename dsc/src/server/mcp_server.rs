@@ -22,10 +22,13 @@ impl McpServer {
         Self {
             tool_router:
                 Self::invoke_dsc_config_router()
+                + Self::invoke_dsc_expression_router()
+                + Self::invoke_dsc_function_router()
                 + Self::invoke_dsc_resource_router()
                 + Self::list_dsc_functions_router()
                 + Self::list_dsc_resources_router()
                 + Self::show_dsc_resource_router()
+                + Self::show_dsc_schema_router()
         }
     }
 }
@@ -44,7 +47,7 @@ impl ServerHandler for McpServer {
                 .enable_tools()
                 .build()
         );
-        info.instructions = Some(t!("mcp.mod.instructions").to_string());
+        info.instructions = Some(t!("server.mod.instructions").to_string());
         info
     }
 

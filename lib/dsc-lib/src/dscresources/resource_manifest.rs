@@ -104,7 +104,11 @@ pub struct ResourceManifest {
 pub enum GetArgKind {
     /// The argument is a string.
     String(String),
-    /// The argument accepts the JSON input object.
+    AdaptedContent {
+        /// The argument that accepts the JSON content from the manifest.
+        #[serde(rename = "adaptedContentArg")]
+        adapted_content_arg: String,
+    },
     Json {
         /// The argument that accepts the JSON input object.
         #[serde(rename = "jsonInputArg")]
@@ -133,7 +137,11 @@ pub enum GetArgKind {
 pub enum SetDeleteArgKind {
     /// The argument is a string.
     String(String),
-    /// The argument accepts the JSON input object.
+    AdaptedContent {
+        /// The argument that accepts the JSON content from the manifest.
+        #[serde(rename = "adaptedContentArg")]
+        adapted_content_arg: String,
+    },
     Json {
         /// The argument that accepts the JSON input object.
         #[serde(rename = "jsonInputArg")]
@@ -195,6 +203,16 @@ pub enum SchemaKind {
     Command(SchemaCommand),
     /// The schema is embedded in the manifest.
     #[serde(rename = "embedded")]
+    Embedded(Value),
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[dsc_repo_schema(base_name = "manifest.exportSchema", folder_path = "definitions")]
+#[serde(rename_all = "camelCase")]
+pub enum ExportSchemaKind {
+    /// The export schema is returned by running a command.
+    Command(SchemaCommand),
+    /// The export schema is embedded in the manifest.
     Embedded(Value),
 }
 
@@ -301,6 +319,13 @@ pub struct ValidateMethod { // TODO: enable validation via schema or command
     pub input: Option<InputKind>,
 }
 
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub enum ExportSchemaOrFiltering {
+    Schema(ExportSchemaKind),
+    SupportsFiltering(bool),
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[dsc_repo_schema(base_name = "manifest.export", folder_path = "resource")]
 pub struct ExportMethod {
@@ -313,6 +338,8 @@ pub struct ExportMethod {
     /// The security context required to run the Export method.  Default if not specified is `current`.
     #[serde(rename = "requireSecurityContext", skip_serializing_if = "Option::is_none")]
     pub require_security_context: Option<SecurityContextKind>,
+    #[serde(flatten, skip_serializing_if = "Option::is_none")]
+    pub schema_or_filtering: Option<ExportSchemaOrFiltering>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
@@ -330,7 +357,7 @@ pub struct ResolveMethod {
 #[dsc_repo_schema(base_name = "manifest.adapter", folder_path = "resource")]
 pub struct Adapter {
     /// The way to list adapter supported resources.
-    pub list: ListMethod,
+    pub list: Option<ListMethod>,
     /// Defines how the adapter supports accepting configuration.
     #[serde(alias = "config", rename = "inputKind")]
     pub input_kind: AdapterInputKind,

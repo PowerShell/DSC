@@ -35,10 +35,12 @@ resource = "The name of the resource to invoke"
 functionAbout = "Operations on DSC functions"
 listFunctionAbout = "List or find functions"
 version = "The version of the resource to invoke in semver format"
-mcpAbout = "Use DSC as a MCP server"
+serverAbout = "Use DSC as a server over JSON-RPC (useful as MCP server)"
 bicepAbout = "Use DSC as a Bicep server over gRPC"
 
 [main]
+failedToSpawnMain = "Failed to spawn dsc main thread: %{error}"
+failedToJoinMain = "Failed to join dsc main thread: %{error}"
 ctrlCReceived = "Ctrl-C received"
 failedCtrlCHandler = "Failed to set Ctrl-C handler"
 generatingCompleter = "Generating completion script for"
@@ -56,35 +58,7 @@ storeMessage = """DSC.exe is a command-line tool and cannot be run directly from
 Visit https://aka.ms/dscv3-docs for more information on how to use DSC.exe.
 
 Press any key to close this window"""
-failedToStartMcpServer = "Failed to start MCP server: %{error}"
-
-[mcp.mod]
-failedToInitialize = "Failed to initialize MCP server: %{error}"
-failedToStart = "Failed to start MCP server: %{error}"
-instructions = "This server provides tools that work with DSC (DesiredStateConfiguration) which enables users to manage and configure their systems declaratively."
-serverStopped = "MCP server stopped"
-failedToCreateRuntime = "Failed to create async runtime: %{error}"
-serverWaitFailed = "Failed to wait for MCP server: %{error}"
-
-[mcp.invoke_dsc_config]
-invalidConfiguration = "Invalid configuration document"
-invalidParameters = "Invalid parameters"
-failedConvertJson = "Failed to convert to JSON"
-failedSerialize = "Failed to serialize configuration"
-failedSetParameters = "Failed to set parameters"
-
-[mcp.invoke_dsc_resource]
-resourceNotFound = "Resource type '%{resource}' does not exist"
-
-[mcp.list_dsc_functions]
-invalidNamePattern = "Invalid function name pattern '%{pattern}'"
-
-[mcp.list_dsc_resources]
-resourceNotAdapter = "The resource '%{adapter}' is not a valid adapter"
-adapterNotFound = "Adapter '%{adapter}' does not exist"
-
-[mcp.show_dsc_resource]
-resourceNotFound = "Resource type '%{type_name}' does not exist"
+failedToStartServer = "Failed to start server: %{error}"
 
 [resolve]
 processingInclude = "Processing Include input"
@@ -110,6 +84,42 @@ testInputEmpty = "Expected input is required"
 jsonError = "JSON: %{err}"
 routingToDelete = "Routing to delete operation because _exist is false"
 syntheticWhatIf = "Resource does not natively support what-if, engine will generate synthetic what-if"
+
+[server.mod]
+failedToInitialize = "Failed to initialize MCP server: %{error}"
+failedToStart = "Failed to start MCP server: %{error}"
+instructions = "This server provides tools that work with DSC (DesiredStateConfiguration) which enables users to manage and configure their systems declaratively."
+serverStopped = "MCP server stopped"
+failedToCreateRuntime = "Failed to create async runtime: %{error}"
+serverWaitFailed = "Failed to wait for MCP server: %{error}"
+
+[server.invoke_dsc_config]
+invalidConfiguration = "Invalid configuration document"
+invalidParameters = "Invalid parameters"
+failedConvertJson = "Failed to convert to JSON"
+failedSerialize = "Failed to serialize configuration"
+failedSetParameters = "Failed to set parameters"
+
+[server.invoke_dsc_expression]
+parserInitializationFailed = "Failed to initialize parser: %{error}"
+expressionEvaluationFailed = "Failed to evaluate expression '%{expression}': %{error}"
+
+[server.invoke_dsc_function]
+parametersNotArray = "Parameters must be an array"
+functionInvocationFailed = "Function '%{function}' invocation failed: %{error}"
+
+[server.invoke_dsc_resource]
+resourceNotFound = "Resource type '%{resource}' does not exist"
+
+[server.list_dsc_functions]
+invalidNamePattern = "Invalid function name pattern '%{pattern}'"
+
+[server.list_dsc_resources]
+resourceNotAdapter = "The resource '%{adapter}' is not a valid adapter"
+adapterNotFound = "Adapter '%{adapter}' does not exist"
+
+[server.show_dsc_resource]
+resourceNotFound = "Resource type '%{type_name}' does not exist"
 
 [subcommand]
 actualStateNotObject = "actual_state is not an object"
@@ -140,9 +150,7 @@ tableHeader_adapter = "RequireAdapter"
 tableHeader_description = "Description"
 tableHeader_functionName = "Function"
 tableHeader_functionCategory = "Category"
-tableHeader_minArgs = "MinArgs"
-tableHeader_maxArgs = "MaxArgs"
-tableHeader_argTypes = "ReturnTypes"
+tableHeader_syntax = "Syntax"
 invalidFunctionFilter = "Invalid function filter"
 maxInt = "maxInt"
 invalidManifest = "Error in manifest for"

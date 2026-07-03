@@ -5,9 +5,9 @@ use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
+use std::path::PathBuf;
 
 use crate::error::SshdConfigError;
-use crate::inputs::Metadata;
 // the multi-arg comma-separated and space-separated lists are mutually exclusive, but the repeatable list can overlap with either of them.
 // the multi-arg lists are maintained for formatting arrays into the correct format when writing back to the config file.
 
@@ -86,9 +86,9 @@ pub struct RepeatInput {
     /// Whether the entry should exist (true) or be removed (false)
     #[serde(rename = "_exist", default = "default_true")]
     pub exist: bool,
-    /// Metadata for the operation
-    #[serde(rename = "_metadata", skip_serializing_if = "Option::is_none")]
-    pub metadata: Option<Metadata>,
+    /// Path to the sshd_config file to be processed
+    #[serde(rename = "sshd_config_filepath", skip_serializing_if = "Option::is_none")]
+    pub filepath: Option<PathBuf>,
     /// The keyword and its entry (e.g., "subsystem": {"name": "sftp", "value": "/usr/bin/sftp"})
     #[serde(flatten)]
     pub additional_properties: Map<String, Value>,
@@ -100,9 +100,9 @@ pub struct RepeatListInput {
     /// Whether to remove entries not in the input list
     #[serde(rename = "_purge", default)]
     pub purge: bool,
-    /// Metadata for the operation
-    #[serde(rename = "_metadata", skip_serializing_if = "Option::is_none")]
-    pub metadata: Option<Metadata>,
+    /// Path to the sshd_config file to be processed
+    #[serde(rename = "sshd_config_filepath", skip_serializing_if = "Option::is_none")]
+    pub filepath: Option<PathBuf>,
     /// The keyword and its array of entries (e.g., "subsystem": [{"name": "sftp", "value": "..."}])
     #[serde(flatten)]
     pub additional_properties: Map<String, Value>,

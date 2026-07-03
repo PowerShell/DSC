@@ -16,6 +16,8 @@ impl Function for And {
         FunctionMetadata {
             name: "and".to_string(),
             description: t!("functions.and.description").to_string(),
+            syntax: t!("functions.and.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Logical],
             min_args: 2,
             max_args: usize::MAX,

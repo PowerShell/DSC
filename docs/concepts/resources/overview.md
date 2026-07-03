@@ -138,7 +138,7 @@ Every resource implements the **Get** operation, which retrieves the actual stat
 instance. Use the `dsc resource get` command to invoke the operation.
 
 For example, you can use the `Microsoft.Windows/Registry` resource to get the actual state for a
-registry key value:
+registry key-value:
 
 ```powershell
 dsc resource get --resource Microsoft.Windows/Registry --input '{

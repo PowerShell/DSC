@@ -16,6 +16,8 @@ impl Function for False {
         FunctionMetadata {
             name: "false".to_string(),
             description: t!("functions.false.description").to_string(),
+            syntax: t!("functions.false.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Logical],
             min_args: 0,
             max_args: 0,

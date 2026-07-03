@@ -17,6 +17,8 @@ impl Function for Uri {
         FunctionMetadata {
             name: "uri".to_string(),
             description: t!("functions.uri.description").to_string(),
+            syntax: t!("functions.uri.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::String],
             min_args: 2,
             max_args: 2,
@@ -36,10 +38,10 @@ impl Function for Uri {
         if base_uri.is_empty() {
             return Err(DscError::Parser(t!("functions.uri.emptyBaseUri").to_string()));
         }
-        
+
         let base = Url::parse(base_uri)
             .map_err(|_| DscError::Parser(t!("functions.uri.notAbsoluteUri").to_string()))?;
-        
+
         if relative_uri.is_empty() {
             return Ok(Value::String(base.to_string()));
         }
@@ -50,7 +52,7 @@ impl Function for Uri {
 
         let result = base.join(relative_uri)
             .map_err(|e| DscError::Parser(format!("{}: {}", t!("functions.uri.invalidRelativeUri"), e)))?;
-        
+
         Ok(Value::String(result.to_string()))
     }
 }

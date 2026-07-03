@@ -3,7 +3,7 @@
 
 use crate::configure::config_doc::{ExecutionInformation, ResourceDirective};
 use crate::configure::context::{Context, ProcessMode};
-use crate::configure::parameters::import_parameters;
+use crate::configure::parameters::{SecureObject, SecureString, import_parameters};
 use crate::configure::{config_doc::{ExecutionKind, IntOrExpression, Metadata, Parameter, Resource, ResourceDiscoveryMode, RestartRequired, ValueOrCopy}};
 use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscerror::DscError;
@@ -22,8 +22,8 @@ use self::config_doc::{Configuration, DataType, MicrosoftDscMetadata, Operation,
 use self::depends_on::get_resource_invocation_order;
 use self::config_result::{ConfigurationExportResult, ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult};
 use self::constraints::{check_length, check_number_limits, check_allowed_values};
-use rust_i18n::t;
 use dsc_lib_security_context::{SecurityContext, get_security_context};
+use rust_i18n::t;
 use serde_json::{Map, Value};
 use std::path::PathBuf;
 use std::collections::HashMap;
@@ -1048,6 +1048,29 @@ impl Configurator {
                     // TODO: additional array constraints
                     // TODO: object constraints
 
+                    let value = match &constraint.parameter_type {
+                        DataType::SecureString => {
+                            if let Some(string_value) = value.as_str() {
+                                let secure_string = SecureString {
+                                    secure_string: string_value.to_string(),
+                                };
+                                serde_json::to_value(secure_string)?
+                            } else {
+                                return Err(DscError::Validation(t!("configure.mod.secureStringMustBeString", name = name).to_string()));
+                            }
+                        },
+                        DataType::SecureObject => {
+                            if let Some(object_value) = value.as_object() {
+                                let secure_object = SecureObject {
+                                    secure_object: serde_json::to_value(object_value)?,
+                                };
+                                serde_json::to_value(secure_object)?
+                            } else {
+                                return Err(DscError::Validation(t!("configure.mod.secureObjectMustBeObject", name = name).to_string()));
+                            }
+                        },
+                        _ => value.clone(),
+                    };
                     validate_parameter_type(&name, &value, &constraint.parameter_type)?;
                     if constraint.parameter_type == DataType::SecureString || constraint.parameter_type == DataType::SecureObject {
                         info!("{}", t!("configure.mod.setSecureParameter", name = name));
@@ -1081,27 +1104,37 @@ impl Configurator {
                 debug!("{}", t!("configure.mod.processingParameter", name = name));
                 if let Some(default_value) = &parameter.default_value {
                     debug!("{}", t!("configure.mod.setDefaultParameter", name = name));
-                    let value_result = if default_value.is_string() {
+                    let mut value = if default_value.is_string() {
                         if let Some(value) = default_value.as_str() {
                             self.context.process_mode = ProcessMode::ParametersDefault;
-                            let result = self.statement_parser.parse_and_execute(value, &self.context);
+                            let result = self.statement_parser.parse_and_execute(value, &self.context)?;
                             self.context.process_mode = ProcessMode::Normal;
                             result
                         } else {
                             return Err(DscError::Parser(t!("configure.mod.defaultStringNotDefined").to_string()));
                         }
                     } else {
-                        Ok(default_value.clone())
+                        default_value.clone()
                     };
 
-                    if let Ok(value) = value_result {
-                        check_length(name, &value, parameter)?;
-                        check_allowed_values(name, &value, parameter)?;
-                        check_number_limits(name, &value, parameter)?;
-                        validate_parameter_type(name, &value, &parameter.parameter_type)?;
-                        self.context.parameters.insert(name.to_string(), (value, parameter.parameter_type.clone()));
-                        resolved_in_this_pass.push(name.clone());
+                    if parameter.parameter_type == DataType::SecureString && value.is_string() {
+                        let secure_string = SecureString {
+                            secure_string: value.as_str().unwrap().to_string(),
+                        };
+                        value = serde_json::to_value(secure_string)?;
+                    } else if parameter.parameter_type == DataType::SecureObject && value.is_object() {
+                        let secure_object = SecureObject {
+                            secure_object: value.clone(),
+                        };
+                        value = serde_json::to_value(secure_object)?;
                     }
+
+                    check_length(name, &value, parameter)?;
+                    check_allowed_values(name, &value, parameter)?;
+                    check_number_limits(name, &value, parameter)?;
+                    validate_parameter_type(name, &value, &parameter.parameter_type)?;
+                    self.context.parameters.insert(name.to_string(), (value, parameter.parameter_type.clone()));
+                    resolved_in_this_pass.push(name.clone());
                 } else {
                     resolved_in_this_pass.push(name.clone());
                 }
@@ -1375,7 +1408,12 @@ pub fn invoke_property_expressions(parser: &mut Statement, context: &Context, pr
 ///
 pub fn validate_parameter_type(name: &str, value: &Value, parameter_type: &DataType) -> Result<(), DscError> {
     match parameter_type {
-        DataType::String | DataType::SecureString => {
+        DataType::SecureString => {
+            if serde_json::from_value::<SecureString>(value.clone()).is_err() {
+                return Err(DscError::Validation(t!("configure.mod.parameterNotSecureString", name = name).to_string()));
+            }
+        }
+        DataType::String => {
             if !value.is_string() {
                 return Err(DscError::Validation(t!("configure.mod.parameterNotString", name = name).to_string()));
             }
@@ -1395,7 +1433,12 @@ pub fn validate_parameter_type(name: &str, value: &Value, parameter_type: &DataT
                 return Err(DscError::Validation(t!("configure.mod.parameterNotArray", name = name).to_string()));
             }
         },
-        DataType::Object | DataType::SecureObject => {
+        DataType::SecureObject => {
+            if serde_json::from_value::<SecureObject>(value.clone()).is_err() {
+                return Err(DscError::Validation(t!("configure.mod.parameterNotSecureObject", name = name).to_string()));
+            }
+        },
+        DataType::Object => {
             if !value.is_object() {
                 return Err(DscError::Validation(t!("configure.mod.parameterNotObject", name = name).to_string()));
             }

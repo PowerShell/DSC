@@ -15,6 +15,8 @@ impl Function for Json {
         FunctionMetadata {
             name: "json".to_string(),
             description: t!("functions.json.description").to_string(),
+            syntax: t!("functions.json.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Object],
             min_args: 1,
             max_args: 1,
@@ -46,7 +48,7 @@ mod tests {
     fn json_parse_object() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute(r#"[json('{"name":"John","age":30}')]"#, &Context::new()).unwrap();
-        
+
         assert!(result.is_object());
         let obj = result.as_object().unwrap();
         assert_eq!(obj.get("name").and_then(|v| v.as_str()), Some("John"));
@@ -57,7 +59,7 @@ mod tests {
     fn json_parse_array() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute(r#"[json('[1,2,3]')]"#, &Context::new()).unwrap();
-        
+
         assert_eq!(result, json!([1, 2, 3]));
     }
 
@@ -65,7 +67,7 @@ mod tests {
     fn json_parse_string() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute(r#"[json('"hello"')]"#, &Context::new()).unwrap();
-        
+
         assert_eq!(result, json!("hello"));
     }
 
@@ -73,7 +75,7 @@ mod tests {
     fn json_parse_number() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute(r#"[json('42')]"#, &Context::new()).unwrap();
-        
+
         assert_eq!(result, json!(42));
     }
 
@@ -81,7 +83,7 @@ mod tests {
     fn json_parse_boolean() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute(r#"[json('true')]"#, &Context::new()).unwrap();
-        
+
         assert_eq!(result, json!(true));
     }
 
@@ -89,7 +91,7 @@ mod tests {
     fn json_parse_null() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute(r#"[json('null')]"#, &Context::new()).unwrap();
-        
+
         assert_eq!(result, json!(null));
     }
 
@@ -97,12 +99,12 @@ mod tests {
     fn json_parse_nested_object() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute(r#"[json('{"user":{"name":"Jane","roles":["admin","user"]}}')]"#, &Context::new()).unwrap();
-        
+
         assert!(result.is_object());
         let obj = result.as_object().unwrap();
         let user = obj.get("user").unwrap().as_object().unwrap();
         assert_eq!(user.get("name").and_then(|v| v.as_str()), Some("Jane"));
-        
+
         let roles = user.get("roles").unwrap().as_array().unwrap();
         assert_eq!(roles.len(), 2);
         assert_eq!(roles[0].as_str(), Some("admin"));
@@ -112,7 +114,7 @@ mod tests {
     fn json_parse_with_whitespace() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute(r#"[json('  { "key" : "value" }  ')]"#, &Context::new()).unwrap();
-        
+
         assert!(result.is_object());
         let obj = result.as_object().unwrap();
         assert_eq!(obj.get("key").and_then(|v| v.as_str()), Some("value"));
@@ -122,7 +124,7 @@ mod tests {
     fn json_invalid_string_error() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute(r#"[json('not valid json')]"#, &Context::new());
-        
+
         assert!(result.is_err());
     }
 
@@ -130,7 +132,7 @@ mod tests {
     fn json_unclosed_brace_error() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute(r#"[json('{"key":"value"')]"#, &Context::new());
-        
+
         assert!(result.is_err());
     }
 
@@ -138,7 +140,7 @@ mod tests {
     fn json_empty_string_error() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute(r#"[json('')]"#, &Context::new());
-        
+
         assert!(result.is_err());
     }
 
@@ -146,7 +148,7 @@ mod tests {
     fn json_not_string_error() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute(r#"[json(123)]"#, &Context::new());
-        
+
         assert!(result.is_err());
     }
 }

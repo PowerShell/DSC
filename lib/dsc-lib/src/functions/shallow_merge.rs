@@ -15,6 +15,8 @@ impl Function for ShallowMerge {
         FunctionMetadata {
             name: "shallowMerge".to_string(),
             description: t!("functions.shallowMerge.description").to_string(),
+            syntax: t!("functions.shallowMerge.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Object],
             min_args: 1,
             max_args: 1,
@@ -36,7 +38,7 @@ impl Function for ShallowMerge {
                     value = item
                 ).to_string())
             })?;
-            
+
             for (key, value) in obj {
                 // Shallow merge: replace the entire value, even if it's a nested object
                 result.insert(key.clone(), value.clone());

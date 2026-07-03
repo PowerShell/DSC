@@ -235,7 +235,12 @@ function Invoke-DscCacheRefresh {
             }
 
             # workaround: Use GetTypeInstanceFromModule to get the type instance from the module and validate if it is a class-based resource
-            $classBased = GetTypeInstanceFromModule -modulename $moduleName -classname $dscResource.Name -ErrorAction Ignore
+            try {
+                $classBased = GetTypeInstanceFromModule -modulename $moduleName -classname $dscResource.Name
+            }
+            catch {
+                Write-Warning "Failed to get type instance from module '$moduleName': $_"
+            }
             if ($classBased -and ($classBased.CustomAttributes.AttributeType.Name -eq 'DscResourceAttribute')) {
                 Write-Debug -Debug ("Detected class-based resource: $($dscResource.Name) => Type: $($classBased.BaseType.FullName)")
                 $dscResourceInfo.ImplementationDetail = 'ClassBased'
@@ -476,14 +481,11 @@ function Invoke-DscOperation {
                                     $_.Value.Password
 
                                 if (-not $hasSecureCred -and -not $hasTextCred) {
-                                Write-Debug -Debug "Invalid credential object for property '$($_.Name)'"
                                     Write-Error ("Credential object '$($_.Name)' requires both 'username' and 'password' properties")
                                     exit 1
                                 }
 
                                 if ($hasSecureCred) {
-                                Write-Debug -Debug "Credential object '$($_.Name)' - SecureObject"
-
                                     $username = $_.Value.secureObject.Username
                                     $password = $_.Value.secureObject.Password |
                                         ConvertTo-SecureString -AsPlainText -Force
@@ -492,8 +494,6 @@ function Invoke-DscOperation {
                                         [System.Management.Automation.PSCredential]::new($username, $password)
                                 }
                                 elseif ($hasTextCred) {
-                                    Write-Debug -Debug "Credential object '$($_.Name)' - Text"
-
                                     $username = $_.Value.Username
                                     $password = $_.Value.Password |
                                         ConvertTo-SecureString -AsPlainText -Force
@@ -628,7 +628,16 @@ function GetTypeInstanceFromModule {
         [Parameter(Mandatory = $true)]
         [string] $classname
     )
-    $instance = & (Import-Module $modulename -PassThru) ([scriptblock]::Create("'$classname' -as 'type'"))
+    $module = Get-Module -Name $modulename
+    if ($null -eq $module) {
+        # `Import-Module -Passthru` will return multiple objects if there are ScriptsToProcess, so we use `Get-Module` separately
+        Import-Module -Name $modulename -Force -ErrorAction Stop
+        $module = Get-Module -Name $modulename
+        if ($module.Count -gt 1) {
+            throw "Multiple modules imported for $modulename"
+        }
+    }
+    $instance = $module.Invoke([scriptblock]::Create("'$classname' -as 'type'"))
     return $instance
 }
 
