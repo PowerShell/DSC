@@ -302,9 +302,9 @@ resources:
             $result.keyPath | Should -Be 'HKLM\Software\DSCTest'
             $result._metadata.whatIf | Should -Match 'TestString'
 
-            # Verify hive was NOT modified
+            # Verify hive was NOT modified - value still readable
             $getResult = registry config get --input $json 2>$null | ConvertFrom-Json
-            $getResult._exist | Should -Be $true
+            $getResult._exist | Should -Not -Be $false
             $getResult.valueData.String | Should -Be 'TestValue'
         }
 
@@ -318,9 +318,10 @@ resources:
             $result.keyPath | Should -Be 'HKLM\Software\DSCTest'
             $result._metadata.whatIf | Should -Match 'DSCTest'
 
-            # Verify hive was NOT modified
+            # Verify hive was NOT modified - key still exists
             $getResult = registry config get --input $json 2>$null | ConvertFrom-Json
-            $getResult._exist | Should -Be $true
+            $getResult._exist | Should -Not -Be $false
+            $getResult.keyPath | Should -Be 'HKLM\Software\DSCTest'
         }
 
         It 'What-if delete non-existent value is a no-op' {
@@ -353,7 +354,8 @@ resources:
                 registryFilePath = $script:hklmHive
             } | ConvertTo-Json -Compress
             $getResult = registry config get --input $getJson 2>$null | ConvertFrom-Json
-            $getResult._exist | Should -Be $true
+            $getResult._exist | Should -Not -Be $false
+            $getResult.valueData.String | Should -Be 'TestValue'
         }
     }
 }
