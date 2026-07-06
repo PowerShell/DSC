@@ -28,6 +28,5 @@ pub fn invoke_set(get: bool, input: Option<String>) -> String {
     } else {
         serde_json::from_str(&input.expect("Input is required")).expect("Failed to parse input JSON")
     };
-    let result = serde_json::to_string(&set).expect("Failed to serialize result");
-    result
+    serde_json::to_string(&set).expect("Failed to serialize result")
 }

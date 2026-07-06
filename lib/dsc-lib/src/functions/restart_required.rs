@@ -55,10 +55,8 @@ impl Function for RestartRequired {
             RestartKind::Process => {
                 if let Some(name) = &name {
                     for restart_required in context.restart_required.as_ref().unwrap_or(&vec![]) {
-                        if let RestartRequiredKind::Process(p) = restart_required {
-                            if p.name == *name {
-                                return Ok(Value::Bool(true));
-                            }
+                        if let RestartRequiredKind::Process(p) = restart_required && p.name == *name {
+                            return Ok(Value::Bool(true));
                         }
                     }
                     false
@@ -69,10 +67,8 @@ impl Function for RestartRequired {
             RestartKind::Service => {
                 if let Some(name) = &name {
                     for restart_required in context.restart_required.as_ref().unwrap_or(&vec![]) {
-                        if let RestartRequiredKind::Service(service_name) = restart_required {
-                            if service_name == name {
-                                return Ok(Value::Bool(true));
-                            }
+                        if let RestartRequiredKind::Service(service_name) = restart_required && service_name == name {
+                            return Ok(Value::Bool(true));
                         }
                     }
                     false
