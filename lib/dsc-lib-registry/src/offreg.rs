@@ -226,15 +226,14 @@ impl OfflineHive {
         let mut current_handle = self.handle;
         let mut owned_handles: Vec<OrHkey> = Vec::new();
 
-        for (i, _part) in parts.iter().enumerate() {
-            let partial_path: String = parts[..=i].join("\\");
-            let wide_subkey: Vec<u16> = OsStr::new(&partial_path).encode_wide().chain(std::iter::once(0)).collect();
+        for part in &parts {
+            let wide_segment: Vec<u16> = OsStr::new(part).encode_wide().chain(std::iter::once(0)).collect();
             let mut key_handle: OrHkey = ptr::null_mut();
             let mut disposition: Dword = 0;
             let result = unsafe {
                 (self.lib.or_create_key)(
-                    self.handle,
-                    wide_subkey.as_ptr(),
+                    current_handle,
+                    wide_segment.as_ptr(),
                     ptr::null(),
                     0,
                     ptr::null_mut(),
@@ -248,12 +247,8 @@ impl OfflineHive {
                     unsafe { (self.lib.or_close_key)(h); }
                 }
                 return Err(RegistryError::OfflineRegistry(
-                    t!("offreg.createKeyFailed", code = result, key = partial_path).to_string()
+                    t!("offreg.createKeyFailed", code = result, key = subkey).to_string()
                 ));
-            }
-            // Close previous intermediate handle (not the root)
-            if current_handle != self.handle {
-                // The intermediate handles are tracked for cleanup on error
             }
             current_handle = key_handle;
             owned_handles.push(key_handle);
