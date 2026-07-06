@@ -1,14 +1,14 @@
 {
   "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/rolloutSpecification.json",
   "contentVersion": "1.0.0.0",
-  "rolloutMetadata": {
-    "serviceModelPath": "ServiceModel.json",
+  "RolloutMetadata": {
+    "ServiceModelPath": "ServiceModel.json",
     "ScopeBindingsPath": "ScopeBindings.json",
-    "name": "DSC-Linux-PMC-Deployment",
-    "rolloutType": "Major",
-    "buildSource": {
-      "parameters": {
-        "versionFile": "buildver.txt"
+    "Name": "DSC-Linux-PMC-Deployment",
+    "RolloutType": "Major",
+    "BuildSource": {
+      "Parameters": {
+        "VersionFile": "buildver.txt"
       }
     },
     "Notification": {
@@ -17,12 +17,12 @@
       }
     }
   },
-  "orchestratedSteps": [
+  "OrchestratedSteps": [
     {
-      "name": "UploadLinuxPackages",
-      "targetType": "ServiceResource",
-      "targetName": "LinuxPackageUpload",
-      "actions": ["Shell/Run"]
+      "Name": "UploadLinuxPackages",
+      "TargetType": "ServiceResource",
+      "TargetName": "LinuxPackageUpload",
+      "Actions": ["Shell/Run"]
     }
   ]
 }
