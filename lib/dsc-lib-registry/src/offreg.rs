@@ -12,6 +12,8 @@ use std::os::windows::ffi::OsStrExt;
 use std::path::Path;
 use std::ptr;
 
+use rust_i18n::t;
+
 use crate::error::RegistryError;
 
 // Windows type aliases
@@ -75,7 +77,7 @@ impl OffRegLib {
         let dll_name: Vec<u16> = OsStr::new("offreg.dll").encode_wide().chain(std::iter::once(0)).collect();
         let module = unsafe { LoadLibraryW(dll_name.as_ptr()) };
         if module.is_null() {
-            return Err(RegistryError::OfflineRegistry("Failed to load offreg.dll".to_string()));
+            return Err(RegistryError::OfflineRegistry(t!("offreg.loadFailed").to_string()));
         }
 
         macro_rules! load_fn {
@@ -85,7 +87,7 @@ impl OffRegLib {
                 if ptr.is_null() {
                     unsafe { FreeLibrary($module); }
                     return Err(RegistryError::OfflineRegistry(
-                        format!("Failed to find {} in offreg.dll", $name)
+                        t!("offreg.procNotFound", name = $name).to_string()
                     ));
                 }
                 unsafe { std::mem::transmute::<PVOID, $ty>(ptr) }
@@ -129,7 +131,7 @@ impl OfflineHive {
         let result = unsafe { (lib.or_open_hive)(wide_path.as_ptr(), &mut handle) };
         if result != ERROR_SUCCESS {
             return Err(RegistryError::OfflineRegistry(
-                format!("OROpenHive failed with error code {result} for path: {}", path.display())
+                t!("offreg.openHiveFailed", code = result, path = path.display().to_string()).to_string()
             ));
         }
         Ok(Self { lib, handle, path: path.to_string_lossy().to_string() })
@@ -146,7 +148,7 @@ impl OfflineHive {
         let result = unsafe { (lib.or_create_hive)(&mut handle) };
         if result != ERROR_SUCCESS {
             return Err(RegistryError::OfflineRegistry(
-                format!("ORCreateHive failed with error code {result}")
+                t!("offreg.createHiveFailed", code = result).to_string()
             ));
         }
         Ok(Self { lib, handle, path: String::new() })
@@ -163,7 +165,7 @@ impl OfflineHive {
         if path.exists() {
             if let Err(e) = std::fs::remove_file(path) {
                 return Err(RegistryError::OfflineRegistry(
-                    format!("Failed to remove existing hive file before save: {e}")
+                    t!("offreg.saveHiveRemoveFailed", error = e.to_string()).to_string()
                 ));
             }
         }
@@ -172,7 +174,7 @@ impl OfflineHive {
         let result = unsafe { (self.lib.or_save_hive)(self.handle, wide_path.as_ptr(), 6, 2) };
         if result != ERROR_SUCCESS {
             return Err(RegistryError::OfflineRegistry(
-                format!("ORSaveHive failed with error code {result} for path: {}", path.display())
+                t!("offreg.saveHiveFailed", code = result, path = path.display().to_string()).to_string()
             ));
         }
         Ok(())
@@ -195,7 +197,7 @@ impl OfflineHive {
         }
         if result != ERROR_SUCCESS {
             return Err(RegistryError::OfflineRegistry(
-                format!("OROpenKey failed with error code {result} for key: {subkey}")
+                t!("offreg.openKeyFailed", code = result, key = subkey).to_string()
             ));
         }
         Ok(OfflineKey { handle: key_handle, owned: true })
@@ -239,7 +241,7 @@ impl OfflineHive {
                     unsafe { (self.lib.or_close_key)(h); }
                 }
                 return Err(RegistryError::OfflineRegistry(
-                    format!("ORCreateKey failed with error code {result} for key: {partial_path}")
+                    t!("offreg.createKeyFailed", code = result, key = partial_path).to_string()
                 ));
             }
             // Close previous intermediate handle (not the root)
@@ -290,7 +292,7 @@ impl OfflineHive {
         }
         if result != ERROR_SUCCESS && result != 234 /* ERROR_MORE_DATA */ {
             return Err(RegistryError::OfflineRegistry(
-                format!("ORGetValue (size query) failed with error code {result} for value: {value_name}")
+                t!("offreg.getValueSizeFailed", code = result, value = value_name).to_string()
             ));
         }
 
@@ -313,7 +315,7 @@ impl OfflineHive {
 
         if result != ERROR_SUCCESS {
             return Err(RegistryError::OfflineRegistry(
-                format!("ORGetValue failed with error code {result} for value: {value_name}")
+                t!("offreg.getValueFailed", code = result, value = value_name).to_string()
             ));
         }
 
@@ -339,7 +341,7 @@ impl OfflineHive {
         };
         if result != ERROR_SUCCESS {
             return Err(RegistryError::OfflineRegistry(
-                format!("ORSetValue failed with error code {result} for value: {value_name}")
+                t!("offreg.setValueFailed", code = result, value = value_name).to_string()
             ));
         }
         Ok(())
@@ -358,7 +360,7 @@ impl OfflineHive {
         }
         if result != ERROR_SUCCESS {
             return Err(RegistryError::OfflineRegistry(
-                format!("ORDeleteValue failed with error code {result} for value: {value_name}")
+                t!("offreg.deleteValueFailed", code = result, value = value_name).to_string()
             ));
         }
         Ok(())
@@ -377,7 +379,7 @@ impl OfflineHive {
         }
         if result != ERROR_SUCCESS {
             return Err(RegistryError::OfflineRegistry(
-                format!("ORDeleteKey failed with error code {result} for key: {subkey_name}")
+                t!("offreg.deleteKeyFailed", code = result, key = subkey_name).to_string()
             ));
         }
         Ok(())
