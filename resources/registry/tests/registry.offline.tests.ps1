@@ -2,13 +2,6 @@
 # Licensed under the MIT License.
 
 Describe 'Registry offline hive tests' -Skip:(!$IsWindows) {
-    BeforeDiscovery {
-        # The dsc config get test requires both dsc and registry to be built
-        # from the same source tree. Skip if dsc is not in target/debug.
-        $dscCmd = Get-Command 'dsc' -ErrorAction SilentlyContinue
-        $dscAvailable = $dscCmd -and ($dscCmd.Source -like '*target*debug*' -or $dscCmd.Source -like '*target*release*')
-    }
-
     BeforeAll {
         $testHivesSource = Join-Path $PSScriptRoot 'test_hives'
     }
@@ -136,7 +129,7 @@ Describe 'Registry offline hive tests' -Skip:(!$IsWindows) {
                 valueData = @{ DWord = 99 }
                 registryFilePath = $script:hklmHive
             } | ConvertTo-Json -Compress -Depth 3
-            $out = registry config set --input $json 2>$null
+            $null = registry config set --input $json 2>$null
             $LASTEXITCODE | Should -Be 0
 
             # Verify
@@ -162,7 +155,7 @@ Describe 'Registry offline hive tests' -Skip:(!$IsWindows) {
                 valueName = 'TestString'
                 registryFilePath = $script:hklmHive
             } | ConvertTo-Json -Compress
-            $out = registry config delete --input $json 2>$null
+            $null = registry config delete --input $json 2>$null
             $LASTEXITCODE | Should -Be 0
 
             # Verify value is gone
@@ -175,7 +168,7 @@ Describe 'Registry offline hive tests' -Skip:(!$IsWindows) {
                 keyPath = 'HKLM\Software\DSCTest'
                 registryFilePath = $script:hklmHive
             } | ConvertTo-Json -Compress
-            $out = registry config delete --input $json 2>$null
+            $null = registry config delete --input $json 2>$null
             $LASTEXITCODE | Should -Be 0
 
             # Verify key is gone
@@ -208,7 +201,7 @@ Describe 'Registry offline hive tests' -Skip:(!$IsWindows) {
             $result.registryEntries[2]._exist | Should -BeFalse
         }
 
-        It 'Can get multiple values from offline hive using dsc config get' -Skip:(!$dscAvailable) {
+        It 'Can get multiple values from offline hive using dsc config get' {
             $config_yaml = @"
 `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
