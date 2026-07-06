@@ -751,7 +751,7 @@ extends:
             $packagesFolder = Join-Path -Path $srcFilesFolder -ChildPath 'packages'
             New-Item -Path $packagesFolder -ItemType Directory
 
-            $packageFiles = Get-ChildItem -Path $downloadedPipelineFolder -File | Where-Object { $_.Extension -in '.deb', '.rpm' }
+            $packageFiles = Get-ChildItem -Path $downloadedPipelineFolder -Recurse -File | Where-Object { $_.Extension -in '.deb', '.rpm' }
             foreach ($file in $packageFiles) {
               Write-Verbose -Verbose "Copying file: $($file.FullName)"
               Copy-Item -Path $file.FullName -Destination $packagesFolder -Verbose
