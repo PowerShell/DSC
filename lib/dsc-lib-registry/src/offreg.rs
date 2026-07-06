@@ -50,6 +50,7 @@ type FnOrSetValue = unsafe extern "system" fn(OrHkey, Pcwstr, Dword, *const u8, 
 type FnOrDeleteValue = unsafe extern "system" fn(OrHkey, Pcwstr) -> Dword;
 type FnOrDeleteKey = unsafe extern "system" fn(OrHkey, Pcwstr) -> Dword;
 
+#[link(name = "kernel32")]
 unsafe extern "system" {
     fn LoadLibraryW(lpFileName: Pcwstr) -> Hmodule;
     fn GetProcAddress(Hmodule: Hmodule, lpProcName: *const u8) -> Pvoid;
