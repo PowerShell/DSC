@@ -799,7 +799,7 @@ extends:
             $content = Get-Content -Path $pathToJsonFile | ConvertFrom-Json
 
             $identityString = "/subscriptions/$(PmcSubscription)/resourcegroups/$(PmcResourceGroup)/providers/Microsoft.ManagedIdentity/userAssignedIdentities/$(PmcMIName)"
-            $content.shellExtensions.launch.identity.userAssignedIdentities[0] = $identityString
+            $content.shellExtensions[0].launch.identity.userAssignedIdentities[0] = $identityString
 
             Remove-Item -Path $pathToJsonFile
             $content | ConvertTo-Json -Depth 6 | Out-File $pathToJsonFile
