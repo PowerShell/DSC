@@ -112,6 +112,12 @@ impl OffRegLib {
     }
 }
 
+impl Drop for OffRegLib {
+    fn drop(&mut self) {
+        unsafe { FreeLibrary(self._module); }
+    }
+}
+
 /// Represents an open offline registry hive.
 pub struct OfflineHive {
     lib: OffRegLib,
