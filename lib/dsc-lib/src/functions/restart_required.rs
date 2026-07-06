@@ -2,10 +2,11 @@
 // Licensed under the MIT License.
 
 use crate::DscError;
+use crate::configure::config_doc::RestartRequired as RestartRequiredKind;
 use crate::configure::context::Context;
 use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
-use crate::util::resource_id;
 use rust_i18n::t;
+use serde::Deserialize;
 use serde_json::Value;
 
 #[derive(Debug, Default)]
@@ -25,6 +26,7 @@ impl Function for RestartRequired {
             name: "restartRequired".to_string(),
             description: t!("functions.restartRequired.description").to_string(),
             syntax: t!("functions.restartRequired.syntax").to_string(),
+            constraints: Some(t!("functions.restartRequired.constraints").to_string()),
             category: vec![FunctionCategory::System],
             min_args: 1,
             max_args: 2,
@@ -39,14 +41,11 @@ impl Function for RestartRequired {
 
     fn invoke(&self, args: &[Value], context: &Context) -> Result<Value, DscError> {
         let kind: RestartKind = serde_json::from_value(args[0].clone())
-            .map_err(|_| DscError::FunctionArgumentError {
-                function_name: self.get_metadata().name,
-                message: t!("functions.restartRequired.invalidKind", kind = args[0]).to_string(),
-            })?;
+            .map_err(|_| DscError::Parser(t!("functions.restartRequired.invalidKind", kind = args[0].as_str().unwrap_or("unknown")).to_string()))?;
 
         let name = if args.len() > 1 {
             Some(
-                args[1].as_str()?.to_string()
+                args[1].as_str().unwrap().to_string()
             )
         } else {
             None
@@ -54,43 +53,43 @@ impl Function for RestartRequired {
 
         let restart_required = match kind {
             RestartKind::Process => {
-                if name.is_none() {
-                    return Err(DscError::FunctionArgumentError {
-                        function_name: self.get_metadata().name,
-                        message: t!("functions.restartRequired.nameRequired").to_string(),
-                    });
+                if let Some(name) = &name {
+                    for restart_required in context.restart_required.as_ref().unwrap_or(&vec![]) {
+                        if let RestartRequiredKind::Process(p) = restart_required {
+                            if p.name == *name {
+                                return Ok(Value::Bool(true));
+                            }
+                        }
+                    }
+                    false
+                } else {
+                    return Err(DscError::Parser(t!("functions.restartRequired.nameRequired", kind = "process").to_string()));
                 }
-                context
-                .restart_required
-                .as_ref()
-                .map(|rr| rr.iter().any(|r| r.kind == "process" && r.name == name))
-                .unwrap_or(false)
             },
             RestartKind::Service => {
-                if name.is_none() {
-                    return Err(DscError::FunctionArgumentError {
-                        function_name: self.get_metadata().name,
-                        message: t!("functions.restartRequired.nameRequired").to_string(),
-                    });
+                if let Some(name) = &name {
+                    for restart_required in context.restart_required.as_ref().unwrap_or(&vec![]) {
+                        if let RestartRequiredKind::Service(service_name) = restart_required {
+                            if service_name == name {
+                                return Ok(Value::Bool(true));
+                            }
+                        }
+                    }
+                    false
+                } else {
+                    return Err(DscError::Parser(t!("functions.restartRequired.nameRequired", kind = "service").to_string()));
                 }
-                context
-                .restart_required
-                .as_ref()
-                .map(|rr| rr.iter().any(|r| r.kind == "service" && r.name == name))
-                .unwrap_or(false)
             },
             RestartKind::System => {
                 if name.is_some() {
-                    return Err(DscError::FunctionArgumentError {
-                        function_name: self.get_metadata().name,
-                        message: t!("functions.restartRequired.nameNotAllowed").to_string(),
-                    });
+                    return Err(DscError::Parser(t!("functions.restartRequired.nameNotAllowed", kind = "system").to_string()));
                 }
-                context
-                .restart_required
-                .as_ref()
-                .map(|rr| rr.iter().any(|r| r.kind == "system"))
-                .unwrap_or(false)
+                for restart_required in context.restart_required.as_ref().unwrap_or(&vec![]) {
+                    if let RestartRequiredKind::System(_) = restart_required {
+                        return Ok(Value::Bool(true));
+                    }
+                }
+                false
             },
         };
 

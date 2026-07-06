@@ -73,6 +73,25 @@ impl From<TestResult> for SetResult {
     }
 }
 
+impl SetResult {
+    #[must_use]
+    pub fn is_changed(&self) -> bool {
+        match self {
+            SetResult::Resource(resource_set_result) => {
+                resource_set_result.changed_properties.is_some()
+            },
+            SetResult::Group(group_set_result) => {
+                for result in group_set_result {
+                    if result.result.is_changed() {
+                        return true;
+                    }
+                }
+                false
+            }
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
 #[dsc_repo_schema(base_name = "set.simple", folder_path = "outputs/resource")]

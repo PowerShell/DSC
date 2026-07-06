@@ -76,6 +76,7 @@ pub mod secret;
 pub mod shallow_merge;
 pub mod skip;
 pub mod starts_with;
+pub mod state_changed;
 pub mod stdout;
 pub mod string;
 pub mod take;
@@ -222,10 +223,12 @@ impl FunctionDispatcher {
             Box::new(range::Range{}),
             Box::new(reference::Reference{}),
             Box::new(resource_id::ResourceId{}),
+            Box::new(restart_required::RestartRequired{}),
             Box::new(secret::Secret{}),
             Box::new(shallow_merge::ShallowMerge{}),
             Box::new(skip::Skip{}),
             Box::new(starts_with::StartsWith{}),
+            Box::new(state_changed::StateChanged{}),
             Box::new(stdout::Stdout{}),
             Box::new(string::StringFn{}),
             Box::new(sub::Sub{}),
