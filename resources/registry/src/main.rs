@@ -84,7 +84,7 @@ fn main() {
             match subcommand {
                 ConfigSubCommand::Get{input, list} => {
                     trace!("Get input: {input}");
-                    let mut output = RegistryList { registry_entries: vec![] };
+                    let mut output = RegistryList { registry_entries: vec![], registry_file_path: None };
                     let reg_list = import_input(&input, list);
                     for reg in reg_list.registry_entries {
                         let reg_helper = match RegistryHelper::new_from_registry(&reg) {
@@ -116,7 +116,7 @@ fn main() {
                 },
                 ConfigSubCommand::Set{input, list, what_if} => {
                     trace!("Set input: {input}, what_if: {what_if}");
-                    let mut output = RegistryList { registry_entries: vec![] };
+                    let mut output = RegistryList { registry_entries: vec![], registry_file_path: None };
                     let reg_list = import_input(&input, list);
                     for reg in reg_list.registry_entries {
                         let mut reg_helper = match RegistryHelper::new_from_registry(&reg) {
@@ -216,7 +216,17 @@ fn main() {
 fn import_input(input: &str, list: bool) -> RegistryList {
     if list {
         match serde_json::from_str::<RegistryList>(input) {
-            Ok(reg_list) => reg_list,
+            Ok(mut reg_list) => {
+                // Propagate registryFilePath from list level to entries that don't have their own
+                if let Some(ref file_path) = reg_list.registry_file_path {
+                    for entry in &mut reg_list.registry_entries {
+                        if entry.registry_file_path.is_none() {
+                            entry.registry_file_path = Some(file_path.clone());
+                        }
+                    }
+                }
+                reg_list
+            },
             Err(err) => {
                 error!("{err}");
                 exit(EXIT_INVALID_INPUT);
@@ -224,7 +234,7 @@ fn import_input(input: &str, list: bool) -> RegistryList {
         }
     } else {
         match serde_json::from_str::<Registry>(input) {
-            Ok(reg) => RegistryList { registry_entries: vec![reg] },
+            Ok(reg) => RegistryList { registry_entries: vec![reg], registry_file_path: None },
             Err(err) => {
                 error!("{err}");
                 exit(EXIT_INVALID_INPUT);
