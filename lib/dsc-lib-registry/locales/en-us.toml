@@ -6,6 +6,7 @@ _version = 1
 [error]
 invalidHive = "Invalid hive"
 json = "JSON"
+offlineRegistry = "Offline registry"
 registry = "Registry"
 registryKey = "Registry key"
 registryKeyNotFound = "Registry key not found"
