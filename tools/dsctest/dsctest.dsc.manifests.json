@@ -778,7 +778,8 @@
           ]
         }
       }
-    },    {
+    },
+    {
       "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
       "type": "Test/Sleep",
       "version": "0.1.0",
