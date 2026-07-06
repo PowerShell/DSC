@@ -519,8 +519,18 @@ impl RegistryHelper {
 
         if let Some(value_name) = &self.config.value_name {
             if self.what_if {
-                what_if_metadata.push(t!("registry_helper.whatIfDeleteValue", value_name = value_name).to_string());
+                // Check if the value actually exists before reporting what-if
+                let value_exists = hive.get_value(&self.subkey, value_name)?.is_some();
                 hive.close_key(key);
+                if !value_exists {
+                    return Ok(Some(Registry {
+                        key_path: self.config.key_path.clone(),
+                        value_name: Some(value_name.clone()),
+                        exist: Some(false),
+                        ..Default::default()
+                    }));
+                }
+                what_if_metadata.push(t!("registry_helper.whatIfDeleteValue", value_name = value_name).to_string());
                 return Ok(Some(Registry {
                     key_path: self.config.key_path.clone(),
                     value_name: Some(value_name.clone()),
