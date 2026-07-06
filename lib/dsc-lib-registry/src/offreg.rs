@@ -17,59 +17,59 @@ use rust_i18n::t;
 use crate::error::RegistryError;
 
 // Windows type aliases
-type DWORD = u32;
-type PVOID = *mut std::ffi::c_void;
-type ORHKEY = PVOID;
-type PORHKEY = *mut ORHKEY;
-type PCWSTR = *const u16;
-type PDWORD = *mut DWORD;
-type HMODULE = PVOID;
+type Dword = u32;
+type Pvoid = *mut std::ffi::c_void;
+type OrHkey = Pvoid;
+type POrHkey = *mut OrHkey;
+type Pcwstr = *const u16;
+type PDword = *mut Dword;
+type Hmodule = Pvoid;
 
-const ERROR_SUCCESS: DWORD = 0;
-const ERROR_FILE_NOT_FOUND: DWORD = 2;
+const ERROR_SUCCESS: Dword = 0;
+const ERROR_FILE_NOT_FOUND: Dword = 2;
 
 // Registry value types
-pub const REG_NONE: DWORD = 0;
-pub const REG_SZ: DWORD = 1;
-pub const REG_EXPAND_SZ: DWORD = 2;
-pub const REG_BINARY: DWORD = 3;
-pub const REG_DWORD: DWORD = 4;
-pub const REG_MULTI_SZ: DWORD = 7;
-pub const REG_QWORD: DWORD = 11;
+pub const REG_NONE: Dword = 0;
+pub const REG_SZ: Dword = 1;
+pub const REG_EXPAND_SZ: Dword = 2;
+pub const REG_BINARY: Dword = 3;
+pub const REG_DWORD: Dword = 4;
+pub const REG_MULTI_SZ: Dword = 7;
+pub const REG_QWORD: Dword = 11;
 
 // Function pointer types for offreg.dll exports
-type FnORCreateHive = unsafe extern "system" fn(PORHKEY) -> DWORD;
-type FnOROpenHive = unsafe extern "system" fn(PCWSTR, PORHKEY) -> DWORD;
-type FnORSaveHive = unsafe extern "system" fn(ORHKEY, PCWSTR, DWORD, DWORD) -> DWORD;
-type FnORCloseHive = unsafe extern "system" fn(ORHKEY) -> DWORD;
-type FnOROpenKey = unsafe extern "system" fn(ORHKEY, PCWSTR, PORHKEY) -> DWORD;
-type FnORCreateKey = unsafe extern "system" fn(ORHKEY, PCWSTR, PCWSTR, DWORD, PVOID, PORHKEY, PDWORD) -> DWORD;
-type FnORCloseKey = unsafe extern "system" fn(ORHKEY) -> DWORD;
-type FnORGetValue = unsafe extern "system" fn(ORHKEY, PCWSTR, PCWSTR, PDWORD, PVOID, PDWORD) -> DWORD;
-type FnORSetValue = unsafe extern "system" fn(ORHKEY, PCWSTR, DWORD, *const u8, DWORD) -> DWORD;
-type FnORDeleteValue = unsafe extern "system" fn(ORHKEY, PCWSTR) -> DWORD;
-type FnORDeleteKey = unsafe extern "system" fn(ORHKEY, PCWSTR) -> DWORD;
+type FnOrCreateHive = unsafe extern "system" fn(POrHkey) -> Dword;
+type FnOrOpenHive = unsafe extern "system" fn(Pcwstr, POrHkey) -> Dword;
+type FnOrSaveHive = unsafe extern "system" fn(OrHkey, Pcwstr, Dword, Dword) -> Dword;
+type FnOrCloseHive = unsafe extern "system" fn(OrHkey) -> Dword;
+type FnOrOpenKey = unsafe extern "system" fn(OrHkey, Pcwstr, POrHkey) -> Dword;
+type FnOrCreateKey = unsafe extern "system" fn(OrHkey, Pcwstr, Pcwstr, Dword, Pvoid, POrHkey, PDword) -> Dword;
+type FnOrCloseKey = unsafe extern "system" fn(OrHkey) -> Dword;
+type FnOrGetValue = unsafe extern "system" fn(OrHkey, Pcwstr, Pcwstr, PDword, Pvoid, PDword) -> Dword;
+type FnOrSetValue = unsafe extern "system" fn(OrHkey, Pcwstr, Dword, *const u8, Dword) -> Dword;
+type FnOrDeleteValue = unsafe extern "system" fn(OrHkey, Pcwstr) -> Dword;
+type FnOrDeleteKey = unsafe extern "system" fn(OrHkey, Pcwstr) -> Dword;
 
 unsafe extern "system" {
-    fn LoadLibraryW(lpFileName: PCWSTR) -> HMODULE;
-    fn GetProcAddress(hModule: HMODULE, lpProcName: *const u8) -> PVOID;
-    fn FreeLibrary(hModule: HMODULE) -> i32;
+    fn LoadLibraryW(lpFileName: Pcwstr) -> Hmodule;
+    fn GetProcAddress(Hmodule: Hmodule, lpProcName: *const u8) -> Pvoid;
+    fn FreeLibrary(Hmodule: Hmodule) -> i32;
 }
 
 /// Holds function pointers to offreg.dll exports.
 struct OffRegLib {
-    _module: HMODULE,
-    or_create_hive: FnORCreateHive,
-    or_open_hive: FnOROpenHive,
-    or_save_hive: FnORSaveHive,
-    or_close_hive: FnORCloseHive,
-    or_open_key: FnOROpenKey,
-    or_create_key: FnORCreateKey,
-    or_close_key: FnORCloseKey,
-    or_get_value: FnORGetValue,
-    or_set_value: FnORSetValue,
-    or_delete_value: FnORDeleteValue,
-    or_delete_key: FnORDeleteKey,
+    _module: Hmodule,
+    or_create_hive: FnOrCreateHive,
+    or_open_hive: FnOrOpenHive,
+    or_save_hive: FnOrSaveHive,
+    or_close_hive: FnOrCloseHive,
+    or_open_key: FnOrOpenKey,
+    or_create_key: FnOrCreateKey,
+    or_close_key: FnOrCloseKey,
+    or_get_value: FnOrGetValue,
+    or_set_value: FnOrSetValue,
+    or_delete_value: FnOrDeleteValue,
+    or_delete_key: FnOrDeleteKey,
 }
 
 impl OffRegLib {
@@ -90,23 +90,23 @@ impl OffRegLib {
                         t!("offreg.procNotFound", name = $name).to_string()
                     ));
                 }
-                unsafe { std::mem::transmute::<PVOID, $ty>(ptr) }
+                unsafe { std::mem::transmute::<Pvoid, $ty>(ptr) }
             }};
         }
 
         Ok(Self {
             _module: module,
-            or_create_hive: load_fn!(module, "ORCreateHive", FnORCreateHive),
-            or_open_hive: load_fn!(module, "OROpenHive", FnOROpenHive),
-            or_save_hive: load_fn!(module, "ORSaveHive", FnORSaveHive),
-            or_close_hive: load_fn!(module, "ORCloseHive", FnORCloseHive),
-            or_open_key: load_fn!(module, "OROpenKey", FnOROpenKey),
-            or_create_key: load_fn!(module, "ORCreateKey", FnORCreateKey),
-            or_close_key: load_fn!(module, "ORCloseKey", FnORCloseKey),
-            or_get_value: load_fn!(module, "ORGetValue", FnORGetValue),
-            or_set_value: load_fn!(module, "ORSetValue", FnORSetValue),
-            or_delete_value: load_fn!(module, "ORDeleteValue", FnORDeleteValue),
-            or_delete_key: load_fn!(module, "ORDeleteKey", FnORDeleteKey),
+            or_create_hive: load_fn!(module, "ORCreateHive", FnOrCreateHive),
+            or_open_hive: load_fn!(module, "OROpenHive", FnOrOpenHive),
+            or_save_hive: load_fn!(module, "ORSaveHive", FnOrSaveHive),
+            or_close_hive: load_fn!(module, "ORCloseHive", FnOrCloseHive),
+            or_open_key: load_fn!(module, "OROpenKey", FnOrOpenKey),
+            or_create_key: load_fn!(module, "ORCreateKey", FnOrCreateKey),
+            or_close_key: load_fn!(module, "ORCloseKey", FnOrCloseKey),
+            or_get_value: load_fn!(module, "ORGetValue", FnOrGetValue),
+            or_set_value: load_fn!(module, "ORSetValue", FnOrSetValue),
+            or_delete_value: load_fn!(module, "ORDeleteValue", FnOrDeleteValue),
+            or_delete_key: load_fn!(module, "ORDeleteKey", FnOrDeleteKey),
         })
     }
 }
@@ -114,7 +114,7 @@ impl OffRegLib {
 /// Represents an open offline registry hive.
 pub struct OfflineHive {
     lib: OffRegLib,
-    handle: ORHKEY,
+    handle: OrHkey,
     path: String,
 }
 
@@ -127,7 +127,7 @@ impl OfflineHive {
     pub fn open(path: &Path) -> Result<Self, RegistryError> {
         let lib = OffRegLib::load()?;
         let wide_path: Vec<u16> = path.as_os_str().encode_wide().chain(std::iter::once(0)).collect();
-        let mut handle: ORHKEY = ptr::null_mut();
+        let mut handle: OrHkey = ptr::null_mut();
         let result = unsafe { (lib.or_open_hive)(wide_path.as_ptr(), &mut handle) };
         if result != ERROR_SUCCESS {
             return Err(RegistryError::OfflineRegistry(
@@ -144,7 +144,7 @@ impl OfflineHive {
     /// Returns `RegistryError::OfflineRegistry` if the hive cannot be created.
     pub fn create() -> Result<Self, RegistryError> {
         let lib = OffRegLib::load()?;
-        let mut handle: ORHKEY = ptr::null_mut();
+        let mut handle: OrHkey = ptr::null_mut();
         let result = unsafe { (lib.or_create_hive)(&mut handle) };
         if result != ERROR_SUCCESS {
             return Err(RegistryError::OfflineRegistry(
@@ -162,12 +162,12 @@ impl OfflineHive {
     /// Returns `RegistryError::OfflineRegistry` if the hive cannot be saved.
     pub fn save(&self, path: &Path) -> Result<(), RegistryError> {
         // ORSaveHive cannot overwrite an existing file, so remove it first
-        if path.exists() {
-            if let Err(e) = std::fs::remove_file(path) {
-                return Err(RegistryError::OfflineRegistry(
-                    t!("offreg.saveHiveRemoveFailed", error = e.to_string()).to_string()
-                ));
-            }
+        if path.exists()
+            && let Err(e) = std::fs::remove_file(path)
+        {
+            return Err(RegistryError::OfflineRegistry(
+                t!("offreg.saveHiveRemoveFailed", error = e.to_string()).to_string()
+            ));
         }
         let wide_path: Vec<u16> = path.as_os_str().encode_wide().chain(std::iter::once(0)).collect();
         // Use OS version 6.2 (Windows 8/Server 2012) for broad compatibility
@@ -190,7 +190,7 @@ impl OfflineHive {
             return Ok(OfflineKey { handle: self.handle, owned: false });
         }
         let wide_subkey: Vec<u16> = OsStr::new(subkey).encode_wide().chain(std::iter::once(0)).collect();
-        let mut key_handle: ORHKEY = ptr::null_mut();
+        let mut key_handle: OrHkey = ptr::null_mut();
         let result = unsafe { (self.lib.or_open_key)(self.handle, wide_subkey.as_ptr(), &mut key_handle) };
         if result == ERROR_FILE_NOT_FOUND {
             return Err(RegistryError::RegistryKeyNotFound(subkey.to_string()));
@@ -217,13 +217,13 @@ impl OfflineHive {
         // so we create each level one at a time.
         let parts: Vec<&str> = subkey.split('\\').collect();
         let mut current_handle = self.handle;
-        let mut owned_handles: Vec<ORHKEY> = Vec::new();
+        let mut owned_handles: Vec<OrHkey> = Vec::new();
 
         for (i, _part) in parts.iter().enumerate() {
             let partial_path: String = parts[..=i].join("\\");
             let wide_subkey: Vec<u16> = OsStr::new(&partial_path).encode_wide().chain(std::iter::once(0)).collect();
-            let mut key_handle: ORHKEY = ptr::null_mut();
-            let mut disposition: DWORD = 0;
+            let mut key_handle: OrHkey = ptr::null_mut();
+            let mut disposition: Dword = 0;
             let result = unsafe {
                 (self.lib.or_create_key)(
                     self.handle,
@@ -265,7 +265,7 @@ impl OfflineHive {
     /// # Errors
     ///
     /// Returns error if the value cannot be read.
-    pub fn get_value(&self, subkey: &str, value_name: &str) -> Result<Option<(DWORD, Vec<u8>)>, RegistryError> {
+    pub fn get_value(&self, subkey: &str, value_name: &str) -> Result<Option<(u32, Vec<u8>)>, RegistryError> {
         let wide_subkey: Vec<u16> = if subkey.is_empty() {
             vec![0]
         } else {
@@ -274,8 +274,8 @@ impl OfflineHive {
         let wide_value: Vec<u16> = OsStr::new(value_name).encode_wide().chain(std::iter::once(0)).collect();
 
         // First call to get the size
-        let mut value_type: DWORD = 0;
-        let mut data_size: DWORD = 0;
+        let mut value_type: Dword = 0;
+        let mut data_size: Dword = 0;
         let result = unsafe {
             (self.lib.or_get_value)(
                 self.handle,
@@ -328,7 +328,7 @@ impl OfflineHive {
     /// # Errors
     ///
     /// Returns error if the value cannot be written.
-    pub fn set_value(&self, key: &OfflineKey, value_name: &str, value_type: DWORD, data: &[u8]) -> Result<(), RegistryError> {
+    pub fn set_value(&self, key: &OfflineKey, value_name: &str, value_type: u32, data: &[u8]) -> Result<(), RegistryError> {
         let wide_value: Vec<u16> = OsStr::new(value_name).encode_wide().chain(std::iter::once(0)).collect();
         let result = unsafe {
             (self.lib.or_set_value)(
@@ -336,7 +336,7 @@ impl OfflineHive {
                 wide_value.as_ptr(),
                 value_type,
                 data.as_ptr(),
-                data.len() as DWORD,
+                data.len() as Dword,
             )
         };
         if result != ERROR_SUCCESS {
@@ -409,7 +409,7 @@ impl Drop for OfflineHive {
 
 /// Represents an open key within an offline hive.
 pub struct OfflineKey {
-    handle: ORHKEY,
+    handle: OrHkey,
     owned: bool,
 }
 
