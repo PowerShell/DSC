@@ -7,18 +7,21 @@ use std::string::ToString;
 use version_compare::Cmp;
 
 /// Returns information about the operating system.
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct OsInfo {
-    family: Family,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    family: Option<Family>,
     /// Defines the version of the operating system as a string.
-    version: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    version: Option<String>,
     /// Defines the Windows operating system edition, like `Windows 11` or `Windows Server 2016`.
     #[serde(skip_serializing_if = "Option::is_none")]
     edition: Option<String>,
     /// Defines the codename for the operating system as returned from `lsb_release --codename`.
     #[serde(skip_serializing_if = "Option::is_none")]
     codename: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     bitness: Option<i32>,
     /// Defines the processor architecture as reported by `uname -m` on the operating system.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -29,20 +32,6 @@ pub struct OsInfo {
     /// Indicates whether the resource is in the desired state. Only emitted by the test operation.
     #[serde(rename = "_inDesiredState", skip_serializing_if = "Option::is_none")]
     in_desired_state: Option<bool>,
-}
-
-/// Desired state for the test operation. All fields are optional.
-/// The `version` field may include a comparison operator prefix: `>`, `<`, `=`, `>=`, or `<=`.
-#[derive(Debug, Default, Deserialize)]
-pub struct OsTestInput {
-    pub family: Option<Family>,
-    pub version: Option<String>,
-    pub edition: Option<String>,
-    pub codename: Option<String>,
-    pub bitness: Option<i32>,
-    pub architecture: Option<String>,
-    #[serde(rename = "_name")]
-    pub name: Option<String>,
 }
 
 /// Defines whether the operating system is Linux, macOS, or Windows.
@@ -92,8 +81,8 @@ impl OsInfo {
             None
         };
         Self {
-            family,
-            version,
+            family: Some(family),
+            version: Some(version),
             edition,
             codename,
             bitness: bits,
@@ -189,7 +178,7 @@ fn version_matches(constraint: &str, actual: &str) -> bool {
 ///
 /// Returns an error string when `input_json` cannot be parsed as valid JSON.
 pub fn perform_test(input_json: &str) -> Result<OsInfo, String> {
-    let desired: OsTestInput = serde_json::from_str(input_json)
+    let desired: OsInfo = serde_json::from_str(input_json)
         .map_err(|e| format!("Failed to parse test input as JSON: {e}"))?;
 
     // name is ignored for test since it's only generated for export and not a property of the actual OS state.
@@ -197,33 +186,39 @@ pub fn perform_test(input_json: &str) -> Result<OsInfo, String> {
 
     let mut in_desired_state = true;
 
-    if let Some(desired_family) = desired.family
-        && desired_family != actual.family {
+    if let Some(ref desired_family) = desired.family
+        && let Some(ref actual_family) = actual.family
+        && desired_family != actual_family {
             in_desired_state = false;
         }
 
     if let Some(ref desired_version) = desired.version
-        && !version_matches(desired_version, &actual.version) {
+        && let Some(ref actual_version) = actual.version
+        && !version_matches(desired_version, actual_version) {
             in_desired_state = false;
         }
 
     if let Some(ref desired_edition) = desired.edition
-        && actual.edition.as_deref() != Some(desired_edition.as_str()) {
+        && let Some(ref actual_edition) = actual.edition
+        && actual_edition != desired_edition {
             in_desired_state = false;
         }
 
     if let Some(ref desired_codename) = desired.codename
-        && actual.codename.as_deref() != Some(desired_codename.as_str()) {
+        && let Some(ref actual_codename) = actual.codename
+        && actual_codename != desired_codename {
             in_desired_state = false;
         }
 
     if let Some(desired_bitness) = desired.bitness
-        && actual.bitness != Some(desired_bitness) {
+        && let Some(actual_bitness) = actual.bitness
+        && actual_bitness != desired_bitness {
             in_desired_state = false;
         }
 
     if let Some(ref desired_architecture) = desired.architecture
-        && actual.architecture.as_deref() != Some(desired_architecture.as_str()) {
+        && let Some(ref actual_architecture) = actual.architecture
+        && actual_architecture != desired_architecture {
             in_desired_state = false;
         }
 
