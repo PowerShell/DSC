@@ -20,9 +20,8 @@ dsc extension list [Options] <EXTENSION_NAME>
 ## Description
 
 The `list` subcommand searches for available DSC extensions and returns their information. DSC
-discovers extensions by first searching the `PATH` or `DSC_RESOURCE_PATH` environment variable for
-`.dsc.extension.json`, `.dsc.extension.yml`, and `dsc.extension.yaml` files. For more information
-about the environment variables DSC uses, see [Environment variables][01]
+discovers extensions by first searching the `PATH` or [`DSC_RESOURCE_PATH`][01] environment
+variable for `.dsc.extension.json`, `.dsc.extension.yml`, and `dsc.extension.yaml` files.
 
 DSC returns the list of discovered extensions with their implementation information and metadata. If
 the command includes the `EXTENSION_NAME` argument, DSC filters the list of discovered extensions
@@ -40,8 +39,9 @@ dsc extension list
 
 ```Output
 Type                             Version  Capabilities  Description
-----------------------------------------------------------------------------------------------------------
-Microsoft.Windows.Appx/Discover  0.1.0    d             Discovers DSC resources packaged as Appx packages.
+-----------------------------------------------------------------------------------------------------------------
+Microsoft.PowerShell/Discover    0.1.0    d--           Discovers DSC resources packaged in PowerShell 7 modules.
+Microsoft.Windows.Appx/Discover  0.1.0    d--           Discovers DSC resources packaged as Appx packages.
 ```
 
 ### Example 2 - List a specific extension
@@ -54,9 +54,7 @@ dsc extension list Microsoft.Windows.Appx/Discover
 ```
 
 ```Output
-Type                             Version  Capabilities  Description
-----------------------------------------------------------------------------------------------------------
-Microsoft.Windows.Appx/Discover  0.1.0    d             Discovers DSC resources packaged as Appx packages.
+Microsoft.Windows.Appx/Discover  0.1.0    d--           Discovers DSC resources packaged as Appx packages.
 ```
 
 ### Example 3 - List extensions with a matching type name
@@ -70,8 +68,9 @@ dsc extension list Microsoft*
 
 ```Output
 Type                             Version  Capabilities  Description
-----------------------------------------------------------------------------------------------------------
-Microsoft.Windows.Appx/Discover  0.1.0    d             Discovers DSC resources packaged as Appx packages.
+-----------------------------------------------------------------------------------------------------------------
+Microsoft.PowerShell/Discover    0.1.0    d--           Discovers DSC resources packaged in PowerShell 7 modules.
+Microsoft.Windows.Appx/Discover  0.1.0    d--           Discovers DSC resources packaged as Appx packages.
 ```
 
 ## Arguments
@@ -87,6 +86,23 @@ extension type name matches the filter.
 For example, specifying the filter `Microsoft.*` returns only the extensions published by
 Microsoft. Specifying the filter `*Windows*` returns any extension with the string `Windows` in its
 name, regardless of the casing.
+
+The value for this argument must be either a valid [fully qualified type name][aa] or a valid
+wildcard type name. If the argument doesn't include any wildcards, DSC parses it as a fully
+qualified type name and raises descriptive parsing errors when the value isn't valid. If the
+argument includes any wildcards, DSC parses it to ensure that the given wildcard type name can
+actually match fully qualified type names.
+
+DSC raises a validation error for this argument when:
+
+- the argument is an empty string, like `""`.
+- any segment contains invalid characters (segments must contain only unicode alphanumeric
+  characters, underscores, or wildcard characters), like `Invalid&Characters.In/Owner"`.
+- the argument is missing the owner segment for the fully qualified type name, like
+  `.Empty.Owner/*`.
+- the argument contains an empty namespace segment, like `Owner.With.Empty..Namespace/*`.
+- the argument doesn't define the name segment or is defined with a wildcard that can't match a
+  name segment, like `Owner.*.NamespaceWithoutNameSegment` or `Owner/`.
 
 ```yaml
 Type      : string
@@ -108,6 +124,10 @@ available formats are:
 - `yaml` to emit the data as YAML.
 - `table-no-truncate` to emit the data as a summary table without truncating each line to the
   current console width.
+
+> [!NOTE]
+> In the current release of DSC, the `table-no-truncate` option has a bug that causes the data to
+> emit as a series of YAML documents instead. This bug will be fixed in a future version of DSC.
 
 The default output format depends on whether DSC detects that the output is being redirected or
 captured as a variable:
@@ -163,9 +183,11 @@ displayed in the listed order:
   displayed in the following order, using a `-` instead of the appropriate letter if the extension
   doesn't have a specific capability:
 
-  - `d` indicates that the extension has the [discover capability][05].
+  - `d` indicates that the extension has the [`discover` capability][05].
+  - `s` indicates that the extension has the [`secret` capability][06].
+  - `i` indicates that the extension has the [`import` capability][07].
 
-  For example, the `icrosoft.Windows.Appx/Discover` extension has the following capabilities: `d`,
+  For example, the `Microsoft.Windows.Appx/Discover` extension only has the `d` capability,
   indicating it has the `discover` capability.
 - **Description** - The short description of the extension's purpose and usage.
 
@@ -173,8 +195,11 @@ For more information about the formatting of the output data, see the
 [--output-format option](#--output-format).
 
 <!-- Link reference definitions -->
-[01]: ../index.md#environment-variables
+[01]: ../index.md#dsc_resource_path
+[aa]: ../../schemas/definitions/resourceType.md
 [02]: https://jsonlines.org/
 [03]: ../../schemas/outputs/extension/list.md
 [04]: ../../schemas/outputs/extension/list.md#capabilities
 [05]: ../../schemas/outputs/extension/list.md#capability-discover
+[06]: ../../schemas/outputs/extension/list.md#capability-secret
+[07]: ../../schemas/outputs/extension/list.md#capability-import

@@ -76,16 +76,20 @@ The data file must contain an object with the `parameters` key. The value of the
 must be an object where each key is the name of a defined parameter and each value is a valid value
 for that parameter.
 
-This option can be used with the `--parameters` option, where parameters specified with `--parameters` will take precedence over `--parameters-file`.
-
 Starting with DSC version 3.1.0, you can pass the parameters data to a subcommand over stdin. When
 you do, you must pass the configuration document as an input string or the path to a file on the
 system. You can't pass both the parameters file and the configuration document to a command from
 stdin.
 
+Starting with DSC version 3.2.0, you can use this option and the `--parameters` option together.
+When you use `--parameters-file` and `--parameters` together DSC merges the defined parameters. If
+a parameter is specified in both the parameters file and the inline parameters, the value for the
+inline parameter definition takes precedence over the value from the parameters file. In prior
+versions of DSC, this option is mutually exclusive with the `--parameters` option.
+
 For more information about defining parameters in a configuration document, see
 [DSC Configuration document parameter schema][06]. For more information about using parameters in
-configuration document, see the [parameters function reference][07].
+configuration document, see the [`parameters()` function reference][07].
 
 ```yaml
 Type        : string
@@ -108,11 +112,15 @@ The data string must contain an object with the `parameters` key. The value of t
 must be an object where each key is the name of a defined parameter and each value is a valid value
 for that parameter.
 
-This option can be used with the `--parameters-file` option, where parameters specified with `--parameters` will take precedence over `--parameters-file`.
+Starting with DSC version 3.2.0, you can use this option and the `--parameters-file` option
+together. When you use `--parameters` and `--parameters-file` together DSC merges the defined
+parameters. If a parameter is specified in both the parameters file and the inline parameters, the
+value for the inline parameter definition takes precedence over the value from the parameters file.
+In prior versions of DSC, this option is mutually exclusive with the `--parameters-file` option.
 
 For more information about defining parameters in a configuration document, see
 [DSC Configuration document parameter schema][06]. For more information about using parameters in
-configuration document, see the [parameters function reference][07].
+configuration document, see the [`parameters()` function reference][07].
 
 ```yaml
 Type        : string
@@ -127,7 +135,7 @@ ShortSyntax : -p <PARAMETERS>
 <a id="--system-root"></a>
 
 Use this option to specify the path to the operating system root when you aren't targeting the
-current running OS.
+current running operating system.
 
 ```yaml
 Type        : string
