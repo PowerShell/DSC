@@ -225,4 +225,135 @@ resources:
             $out.results.result[0].actualState.registryEntries[2]._exist | Should -BeFalse
         }
     }
+
+    Context 'What-if set in offline hive' {
+        BeforeEach {
+            $script:hklmHive = Join-Path $TestDrive 'HKLM_whatif.hiv'
+            Copy-Item (Join-Path $testHivesSource 'HKLM.hiv') -Destination $script:hklmHive
+        }
+
+        It 'What-if set reports keys to create without modifying hive' {
+            $json = @{
+                keyPath = 'HKLM\Software\NewKey\SubKey'
+                registryFilePath = $script:hklmHive
+            } | ConvertTo-Json -Compress
+            $result = registry config set -w --input $json 2>$null | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $result.keyPath | Should -Be 'HKLM\Software\NewKey\SubKey'
+            $result._metadata.whatIf | Should -Not -BeNullOrEmpty
+
+            # Verify hive was NOT modified
+            $getResult = registry config get --input $json 2>$null | ConvertFrom-Json
+            $getResult._exist | Should -Be $false
+        }
+
+        It 'What-if set reports value to create without modifying hive' {
+            $json = @{
+                keyPath = 'HKLM\Software\DSCTest'
+                valueName = 'WhatIfValue'
+                valueData = @{ String = 'ShouldNotExist' }
+                registryFilePath = $script:hklmHive
+            } | ConvertTo-Json -Compress -Depth 3
+            $result = registry config set -w --input $json 2>$null | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $result.valueName | Should -Be 'WhatIfValue'
+            $result.valueData.String | Should -Be 'ShouldNotExist'
+
+            # Verify hive was NOT modified
+            $getJson = @{
+                keyPath = 'HKLM\Software\DSCTest'
+                valueName = 'WhatIfValue'
+                registryFilePath = $script:hklmHive
+            } | ConvertTo-Json -Compress
+            $getResult = registry config get --input $getJson 2>$null | ConvertFrom-Json
+            $getResult._exist | Should -Be $false
+        }
+
+        It 'What-if set on existing value reports no changes' {
+            $json = @{
+                keyPath = 'HKLM\Software\DSCTest'
+                valueName = 'TestString'
+                valueData = @{ String = 'TestValue' }
+                registryFilePath = $script:hklmHive
+            } | ConvertTo-Json -Compress -Depth 3
+            $result = registry config set -w --input $json 2>$null | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $result.keyPath | Should -Be 'HKLM\Software\DSCTest'
+            $result.valueName | Should -Be 'TestString'
+            # No whatIf metadata means no changes needed
+            ($result.psobject.properties | Where-Object { $_.Name -eq '_metadata' } | Measure-Object).Count | Should -Be 0
+        }
+    }
+
+    Context 'What-if delete in offline hive' {
+        BeforeEach {
+            $script:hklmHive = Join-Path $TestDrive 'HKLM_whatif_del.hiv'
+            Copy-Item (Join-Path $testHivesSource 'HKLM.hiv') -Destination $script:hklmHive
+        }
+
+        It 'What-if delete value reports deletion without modifying hive' {
+            $json = @{
+                keyPath = 'HKLM\Software\DSCTest'
+                valueName = 'TestString'
+                registryFilePath = $script:hklmHive
+            } | ConvertTo-Json -Compress
+            $result = registry config delete -w --input $json 2>$null | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $result.keyPath | Should -Be 'HKLM\Software\DSCTest'
+            $result._metadata.whatIf | Should -Match 'TestString'
+
+            # Verify hive was NOT modified
+            $getResult = registry config get --input $json 2>$null | ConvertFrom-Json
+            $getResult._exist | Should -Be $true
+            $getResult.valueData.String | Should -Be 'TestValue'
+        }
+
+        It 'What-if delete key reports deletion without modifying hive' {
+            $json = @{
+                keyPath = 'HKLM\Software\DSCTest'
+                registryFilePath = $script:hklmHive
+            } | ConvertTo-Json -Compress
+            $result = registry config delete -w --input $json 2>$null | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $result.keyPath | Should -Be 'HKLM\Software\DSCTest'
+            $result._metadata.whatIf | Should -Match 'DSCTest'
+
+            # Verify hive was NOT modified
+            $getResult = registry config get --input $json 2>$null | ConvertFrom-Json
+            $getResult._exist | Should -Be $true
+        }
+
+        It 'What-if delete non-existent value is a no-op' {
+            $json = @{
+                keyPath = 'HKLM\Software\DSCTest'
+                valueName = 'DoesNotExist'
+                registryFilePath = $script:hklmHive
+            } | ConvertTo-Json -Compress
+            $result = registry config delete -w --input $json 2>$null | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $result._exist | Should -Be $false
+        }
+
+        It 'What-if set with _exist false reports value deletion without modifying hive' {
+            $json = @{
+                keyPath = 'HKLM\Software\DSCTest'
+                valueName = 'TestString'
+                _exist = $false
+                registryFilePath = $script:hklmHive
+            } | ConvertTo-Json -Compress
+            $result = registry config set -w --input $json 2>$null | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $result.keyPath | Should -Be 'HKLM\Software\DSCTest'
+            $result._metadata.whatIf | Should -Match 'TestString'
+
+            # Verify hive was NOT modified
+            $getJson = @{
+                keyPath = 'HKLM\Software\DSCTest'
+                valueName = 'TestString'
+                registryFilePath = $script:hklmHive
+            } | ConvertTo-Json -Compress
+            $getResult = registry config get --input $getJson 2>$null | ConvertFrom-Json
+            $getResult._exist | Should -Be $true
+        }
+    }
 }
