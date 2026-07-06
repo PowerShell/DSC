@@ -696,7 +696,7 @@ syntax = "startsWith( <string>, <prefix> )"
 [functions.stateChanged]
 description = "Returns true if the state of the resource has changed since the last execution"
 syntax = "stateChanged( <resourceId> )"
-noStateChangeInformation = "No state change information available for resourceId '%{name}' as it has not executed yet"
+noStateChangeInformation = "No state change information available for resourceId '%{name}' as it has not executed yet or does not exist"
 
 [functions.stdout]
 description = "Returns the standard output from the last executed resource."

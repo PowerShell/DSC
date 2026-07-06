@@ -78,7 +78,11 @@ impl SetResult {
     pub fn is_changed(&self) -> bool {
         match self {
             SetResult::Resource(resource_set_result) => {
-                resource_set_result.changed_properties.is_some()
+                if let Some(changed_properties) = &resource_set_result.changed_properties {
+                    !changed_properties.is_empty()
+                } else {
+                    false
+                }
             },
             SetResult::Group(group_set_result) => {
                 for result in group_set_result {

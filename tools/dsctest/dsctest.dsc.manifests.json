@@ -747,6 +747,39 @@
     },
     {
       "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/Set",
+      "version": "0.1.0",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "set",
+          "--get"
+        ]
+      },
+      "set": {
+        "executable": "dsctest",
+        "args": [
+          "set",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ],
+        "return": "state",
+        "implementsPretest": true
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "set"
+          ]
+        }
+      }
+    },    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
       "type": "Test/Sleep",
       "version": "0.1.0",
       "get": {
