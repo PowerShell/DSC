@@ -52,10 +52,13 @@ type FnOrDeleteKey = unsafe extern "system" fn(OrHkey, Pcwstr) -> Dword;
 
 #[link(name = "kernel32")]
 unsafe extern "system" {
+    fn LoadLibraryExW(lpLibFileName: Pcwstr, hFile: Hmodule, dwFlags: u32) -> Hmodule;
     fn LoadLibraryW(lpFileName: Pcwstr) -> Hmodule;
     fn GetProcAddress(Hmodule: Hmodule, lpProcName: *const u8) -> Pvoid;
     fn FreeLibrary(Hmodule: Hmodule) -> i32;
 }
+
+const LOAD_LIBRARY_SEARCH_SYSTEM32: u32 = 0x0000_0800;
 
 /// Holds function pointers to offreg.dll exports.
 struct OffRegLib {
@@ -76,7 +79,13 @@ struct OffRegLib {
 impl OffRegLib {
     fn load() -> Result<Self, RegistryError> {
         let dll_name: Vec<u16> = OsStr::new("offreg.dll").encode_wide().chain(std::iter::once(0)).collect();
-        let module = unsafe { LoadLibraryW(dll_name.as_ptr()) };
+        // Prefer loading from System32 to prevent DLL preloading/hijacking.
+        // Fall back to default search order if LOAD_LIBRARY_SEARCH_SYSTEM32 fails
+        // (e.g., on older Windows versions or non-standard installations).
+        let mut module = unsafe { LoadLibraryExW(dll_name.as_ptr(), ptr::null_mut(), LOAD_LIBRARY_SEARCH_SYSTEM32) };
+        if module.is_null() {
+            module = unsafe { LoadLibraryW(dll_name.as_ptr()) };
+        }
         if module.is_null() {
             return Err(RegistryError::OfflineRegistry(t!("offreg.loadFailed").to_string()));
         }
