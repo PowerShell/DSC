@@ -234,44 +234,31 @@ if ($null -eq $env:PMC_METADATA) {
 }
 
 try {
-    Write-Verbose "Downloading files" -Verbose
-    Invoke-WebRequest -Uri $env:MAPPING_FILE -OutFile mapping.json
-    Invoke-WebRequest -Uri $env:DSC_PACKAGES_TARGZIP -OutFile packages.tar.gz
-    Invoke-WebRequest -Uri $env:PMC_METADATA -OutFile pmcMetadata.json
+    $baseDir = '/package/unarchive'
+    $mappingFilePath = Join-Path $baseDir 'mapping.json'
+    $packagesTarPath = Join-Path $baseDir 'packages.tar.gz'
+    $metadataFilePath = Join-Path $baseDir 'pmcMetadata.json'
 
-    $mappingFilePath = Join-Path "/package/unarchive/" -ChildPath "mapping.json"
-    if (-not (Test-Path $mappingFilePath)) {
-        Write-Error "mapping.json not found at $mappingFilePath"
-        return 1
-    }
-
-    $packagesTarPath = Join-Path "/package/unarchive/" -ChildPath "packages.tar.gz"
-    if (-not (Test-Path $packagesTarPath)) {
-        Write-Error "packages.tar.gz not found at $packagesTarPath"
-        return 1
-    }
+    Write-Verbose "Downloading files to $baseDir" -Verbose
+    Invoke-WebRequest -Uri $env:MAPPING_FILE -OutFile $mappingFilePath -ErrorAction Stop
+    Invoke-WebRequest -Uri $env:DSC_PACKAGES_TARGZIP -OutFile $packagesTarPath -ErrorAction Stop
+    Invoke-WebRequest -Uri $env:PMC_METADATA -OutFile $metadataFilePath -ErrorAction Stop
 
     # Extract packages
     Write-Verbose "Extracting packages.tar.gz" -Verbose
-    $script:dscPackagesFolder = Join-Path "/package/unarchive/" -ChildPath "packages"
+    $script:dscPackagesFolder = Join-Path $baseDir 'packages'
     New-Item -Path $script:dscPackagesFolder -ItemType Directory
     tar -xzvf $packagesTarPath -C $script:dscPackagesFolder --force-local
     Get-ChildItem $script:dscPackagesFolder -Recurse
 
-    $metadataFilePath = Join-Path "/package/unarchive/" -ChildPath "pmcMetadata.json"
-    if (-not (Test-Path $metadataFilePath)) {
-        Write-Error "pmcMetadata.json not found at $metadataFilePath"
-        return 1
-    }
-
-    # pmc-cli config
-    $configPath = Join-Path '/package/unarchive/Run' -ChildPath 'settings.toml'
+    # pmc-cli config (shipped in the Run.tar archive)
+    $configPath = Join-Path "$baseDir/Run" 'settings.toml'
     if (-not (Test-Path $configPath)) {
         Write-Error "settings.toml not found at $configPath"
         return 1
     }
 
-    $pythonDlFolder = Join-Path '/package/unarchive/Run' -ChildPath 'python_dl'
+    $pythonDlFolder = Join-Path "$baseDir/Run" 'python_dl'
     if (-not (Test-Path $pythonDlFolder)) {
         Write-Error "python_dl not found at $pythonDlFolder"
         return 1
@@ -280,7 +267,7 @@ try {
     Write-Verbose "Installing pmc-cli" -Verbose
     pip install --upgrade pip
     pip --version --verbose
-    pip install /package/unarchive/Run/python_dl/*.whl
+    pip install $pythonDlFolder/*.whl
 
     # Read metadata
     $metadataContent = Get-Content -Path $metadataFilePath | ConvertFrom-Json
