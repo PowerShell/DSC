@@ -247,7 +247,7 @@ try {
     # Extract packages
     Write-Verbose "Extracting packages.tar.gz" -Verbose
     $script:dscPackagesFolder = Join-Path $baseDir 'packages'
-    New-Item -Path $script:dscPackagesFolder -ItemType Directory
+    New-Item -Path $script:dscPackagesFolder -ItemType Directory -Force > $null
     tar -xzvf $packagesTarPath -C $script:dscPackagesFolder --force-local
     Get-ChildItem $script:dscPackagesFolder -Recurse
 
