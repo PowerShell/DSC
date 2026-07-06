@@ -36,6 +36,13 @@
       "PackageFormat": "PACKAGE_NAME_RELEASE_VERSION-1_amd64.deb"
     },
     {
+      "url": "microsoft-debian-bullseye-prod",
+      "distribution": [
+        "bullseye"
+      ],
+      "PackageFormat": "PACKAGE_NAME_RELEASE_VERSION-1_arm64.deb"
+    },
+    {
       "url": "microsoft-debian-bookworm-prod",
       "distribution": [
         "bookworm"
