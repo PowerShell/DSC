@@ -739,6 +739,7 @@ extends:
             python3 -m pip install --upgrade pip
             pip --version --verbose
             $pythonDlFolderPath = Join-Path '$(ev2ServiceGroupRootFolder)/Shell/Run' -ChildPath "python_dl"
+            New-Item -Path $pythonDlFolderPath -ItemType Directory -Force > $null
             pip download -d $pythonDlFolderPath pmc-cli --platform=manylinux_2_17_x86_64 --only-binary=:all: --verbose
           displayName: 'Download pmc-cli package'
           env:
