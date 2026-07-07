@@ -15,6 +15,7 @@ parameters:
     type: boolean
     default: false
   - name: PublishToPMC
+    displayName: Only stage PMC packages (i.e skip publishing to public feed)
     type: boolean
     default: false
 
