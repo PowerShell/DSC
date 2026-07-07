@@ -43,7 +43,6 @@ cat <PARAMETERS_FILE> | dsc config --parameters-file - set [Options] --file <FIL
 cat <PARAMETERS_FILE> | dsc config --parameters-file - set [Options] --input <INPUT>
 ```
 
-
 ## Description
 
 The `set` subcommand enforces the desired state of the resource instances in a configuration
@@ -93,7 +92,7 @@ cat ./example.dsc.config.yaml | dsc config set --file -
 
 <a id="example-2"></a>
 
-The command uses the **file** option to enforce the configuration defined in the
+The command uses the `--file` option to enforce the configuration defined in the
 `example.dsc.config.yaml` file.
 
 ```sh
@@ -104,7 +103,7 @@ dsc config set --file ./example.dsc.config.yaml
 
 <a id="example-3"></a>
 
-The command uses the **input** option to enforce the configuration stored in the `$desired`
+The command uses the `--input` option to enforce the configuration stored in the `$desired`
 variable.
 
 ```sh
@@ -159,6 +158,8 @@ ShortSyntax : -f <FILE>
 
 <a id="-w"></a>
 <a id="--what-if"></a>
+<a id="--dry-run"></a>
+<a id="--noop"></a>
 
 When you specify this flag option, DSC doesn't actually change the system state with the `set`
 operation. Instead, it returns output indicating _how_ the operation will change system state when
@@ -172,6 +173,7 @@ Type        : boolean
 Mandatory   : false
 LongSyntax  : --what-if
 ShortSyntax : -w
+Aliases     : [--dry-run, --noop]
 ```
 
 ### -o, --output-format

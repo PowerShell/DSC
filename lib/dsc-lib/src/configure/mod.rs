@@ -767,11 +767,12 @@ impl Configurator {
             let resource_result = config_result::ResourceSetResult {
                 execution_information: Some(execution_information),
                 metadata: Some(metadata),
-                name: evaluated_name,
+                name: evaluated_name.clone(),
                 resource_type: resource.resource_type.clone(),
                 result: set_result.clone(),
             };
             result.results.push(resource_result);
+            self.context.state_changed.insert(resource_id(&resource.resource_type, &evaluated_name), set_result.is_changed());
             progress.set_result(&serde_json::to_value(set_result)?);
             progress.write_increment(1);
         }

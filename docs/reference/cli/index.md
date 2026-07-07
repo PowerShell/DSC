@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc' command
-ms.date:     03/25/2025
+ms.date:     05/05/2026
 ms.topic:    reference
 title:       dsc
 ---
@@ -42,6 +42,11 @@ The `function` command manages DSC functions. You can use it to:
 
 For more information, see [dsc function][03]
 
+### mcp
+
+The `mcp` command starts DSC as a Model Context Protocol (MCP) server. For more information, see
+[dsc mcp][04].
+
 ### resource
 
 The `resource` command manages a DSC Resource. You can use it to:
@@ -52,12 +57,12 @@ The `resource` command manages a DSC Resource. You can use it to:
 - Test whether a resource instance is in the desired state.
 - Set a resource instance to the desired state.
 
-For more information, see [dsc resource][04]
+For more information, see [dsc resource][05].
 
 ### schema
 
 The `schema` command returns the JSON schema for a specific DSC type. For more information, see
-[dsc schema][05].
+[dsc schema][06].
 
 ### help
 
@@ -102,6 +107,10 @@ set to any value in the list, DSC emits messages at that level and above.
 For example, when the log level is `debug`, DSC emits messages for every log level except `trace`.
 When the log level is `error`, DSC only emits error messages. DSC ignores every message with a
 lower log level.
+
+You can also set the trace level with the [`DSC_TRACE_LEVEL`](#dsc_trace_level) environment
+variable. When you specify this option and define the environment variable the option takes
+precedence over the level defined by the environment variable.
 
 ```yaml
 Type         : string
@@ -190,6 +199,8 @@ ShortSyntax : -h
 
 ## Environment Variables
 
+### DSC_RESOURCE_PATH
+
 By default, the `dsc` command searches for DSC resource manifests in the folders defined by the
 `PATH` environment variable. If the `DSC_RESOURCE_PATH` environment variable is defined, `dsc`
 searches the folders in `DSC_RESOURCE_PATH` instead of `PATH`.
@@ -197,6 +208,22 @@ searches the folders in `DSC_RESOURCE_PATH` instead of `PATH`.
 The `DSC_RESOURCE_PATH` environment must be an environment variable that follows the same
 conventions as the `PATH` environment variable for the operating system. Separate folder paths with
 a semicolon (`;`) on Windows and a colon (`:`) on other platforms.
+
+### DSC_TRACE_LEVEL
+
+By default, the `dsc` command uses the `warning` trace level. If the `DSC_TRACE_LEVEL` environment
+variable is defined, `dsc` uses the defined value as the default trace level instead. When you
+specify the [`--trace-level`](#--trace-level) option it _always_ overrides the default value and
+the environment variable.
+
+When defining the `DSC_TRACE_LEVEL` environment variable, always use the uppercase format for the
+trace level:
+
+- `ERROR`
+- `WARNING`
+- `INFO`
+- `DEBUG`
+- `TRACE`
 
 ## Exit Codes
 
@@ -218,8 +245,10 @@ execution of the command.
 DSC expects input strings to use UTF-8 encoding. When you pass input from stdin or the path to a
 file, ensure that the input is encoded as UTF-8.
 
+<!-- Link reference definitions -->
 [01]: completer/index.md
 [02]: config/index.md
 [03]: function/index.md
-[04]: resource/index.md
-[05]: schema/index.md
+[04]: server/index.md
+[05]: resource/index.md
+[06]: schema/index.md

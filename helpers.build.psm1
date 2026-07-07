@@ -1602,8 +1602,7 @@ function Build-RustProject {
         [switch]$Clean,
         [switch]$UpdateLockFile,
         [switch]$Audit,
-        [switch]$Clippy,
-        [switch]$CodeCoverage
+        [switch]$Clippy
     )
 
     begin {
@@ -1875,14 +1874,14 @@ function Get-ChangedRustFile {
     )
 
     process {
-        $changedFiles = git diff --name-only --diff-filter=ACMR "$BaseSha...$HeadSha" -- '*.rs'
+        $changedFiles = git diff --name-only --diff-filter=ACMR "$BaseSha..$HeadSha" -- '*.rs'
         if ($LASTEXITCODE -ne 0) {
             Write-Warning "Failed to detect changed files between $BaseSha and $HeadSha"
             return @()
         }
 
         $result = @($changedFiles | Where-Object { $_ })
-        Write-Verbose "Found $($result.Count) changed Rust file(s)"
+        Write-Verbose -Verbose "Found $($result.Count) changed Rust file(s)"
         return $result
     }
 }
@@ -1894,9 +1893,9 @@ function Initialize-CodeCoverage {
 
         .DESCRIPTION
         Installs cargo-llvm-cov if needed and cleans any prior coverage artifacts from the
-        workspace. When coverage is enabled, Build-RustProject and Test-RustProject use
-        `cargo llvm-cov build` and `cargo llvm-cov test --no-report` respectively, which
-        handle all instrumentation and profraw management internally.
+        workspace. After initialization, call Set-LlvmCovEnvironment to set the environment
+        variables that make normal `cargo build` and `cargo test` invocations produce
+        instrumented binaries and write profraw data.
     #>
     [CmdletBinding()]
     param(
@@ -1916,6 +1915,77 @@ function Initialize-CodeCoverage {
         if ($LASTEXITCODE -ne 0) {
             Write-Warning 'Failed to clean previous coverage artifacts, continuing anyway'
         }
+    }
+}
+
+function Set-LlvmCovEnvironment {
+    <#
+        .SYNOPSIS
+        Sets the environment variables required by cargo-llvm-cov for instrumented builds.
+
+        .DESCRIPTION
+        Parses the output of `cargo llvm-cov show-env` and sets the corresponding
+        environment variables (LLVM_PROFILE_FILE, RUSTC_WRAPPER, CARGO_LLVM_COV, etc.)
+        in the current process. This enables a normal `cargo build` to produce
+        instrumented binaries, and allows externally invoked instrumented binaries
+        (such as during Pester tests) to write profraw data to a location that
+        `cargo llvm-cov report` can discover.
+
+        .OUTPUTS
+        System.Collections.Hashtable — Prior values of the modified environment variables
+        so they can be restored with Reset-LlvmCovEnvironment.
+    #>
+    [CmdletBinding()]
+    [OutputType([hashtable])]
+    param()
+
+    process {
+        $showEnvOutput = cargo llvm-cov show-env 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to retrieve cargo-llvm-cov environment: $showEnvOutput"
+        }
+
+        $priorValues = @{}
+        foreach ($line in $showEnvOutput) {
+            if ($line -match '^([A-Z_][A-Z0-9_]+)=(.*)$') {
+                $name = $Matches[1]
+                # CARGO_LLVM_COV_SHOW_ENV is an output-only flag that tells
+                # cargo-llvm-cov to print env and exit; do not propagate it.
+                if ($name -eq 'CARGO_LLVM_COV_SHOW_ENV') {
+                    continue
+                }
+                # Strip optional surrounding single quotes from the value
+                $value = ($Matches[2] -replace "^'", '') -replace "'$", ''
+                $priorValues[$name] = [System.Environment]::GetEnvironmentVariable($name)
+                [System.Environment]::SetEnvironmentVariable($name, $value)
+                Write-Verbose "Set $name=$value"
+            }
+        }
+
+        Write-Verbose -Verbose "Set $($priorValues.Count) cargo-llvm-cov environment variables"
+        $priorValues
+    }
+}
+
+function Reset-LlvmCovEnvironment {
+    <#
+        .SYNOPSIS
+        Restores environment variables modified by Set-LlvmCovEnvironment.
+
+        .PARAMETER PriorValues
+        The hashtable returned by Set-LlvmCovEnvironment containing original values.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [hashtable]$PriorValues
+    )
+
+    process {
+        foreach ($entry in $PriorValues.GetEnumerator()) {
+            [System.Environment]::SetEnvironmentVariable($entry.Key, $entry.Value)
+        }
+        Write-Verbose -Verbose "Restored $($PriorValues.Count) environment variables"
     }
 }
 
@@ -2077,7 +2147,7 @@ function Get-CodeCoverageReport {
             }
 
             # Parse diff to get added line numbers in the new file
-            $diffOutput = git diff "$BaseSha...$HeadSha" -- $file
+            $diffOutput = git diff "$BaseSha..$HeadSha" -- $file
             $addedLineNumbers = @()
             $currentLineNum = 0
 
@@ -2096,12 +2166,21 @@ function Get-CodeCoverageReport {
 
             # Find matching LCOV entry for this file
             $absPath = (Resolve-Path $file).Path
+            $normalizedFile = $file.Replace('\', '/')
             $fileCoverage = $null
             foreach ($key in $lcovData.Keys) {
-                if ($key -eq $absPath -or $key.EndsWith("/$file") -or $key.EndsWith("\$file")) {
+                $normalizedKey = $key.Replace('\', '/')
+                if ($normalizedKey -eq $absPath -or
+                    $normalizedKey -eq $normalizedFile -or
+                    $normalizedKey.EndsWith("/$normalizedFile") -or
+                    $normalizedKey.EndsWith("\$normalizedFile")) {
                     $fileCoverage = $lcovData[$key]
                     break
                 }
+            }
+
+            if (-not $fileCoverage) {
+                Write-Verbose -Verbose "No LCOV match for '$file' (absPath='$absPath'). LCOV keys: $($lcovData.Keys -join ', ')"
             }
 
             # Build per-line coverage map for this file (only added executable lines)
@@ -2177,8 +2256,7 @@ function Test-RustProject {
         $Architecture = 'current',
         [switch]$Release,
         [switch]$Docs,
-        [string]$TestFilter,
-        [switch]$CodeCoverage
+        [string]$TestFilter
     )
 
     begin {
@@ -2208,18 +2286,10 @@ function Test-RustProject {
         } else {
             Write-Verbose -Verbose "Testing rust projects: [$members]"
         }
-        if ($CodeCoverage) {
-            if (-not [string]::IsNullOrEmpty($TestFilter)) {
-                cargo llvm-cov test --no-report @flags -- $TestFilter
-            } else {
-                cargo llvm-cov test --no-report @flags
-            }
+        if (-not [string]::IsNullOrEmpty($TestFilter)) {
+            cargo test @flags -- $TestFilter
         } else {
-            if (-not [string]::IsNullOrEmpty($TestFilter)) {
-                cargo test @flags -- $TestFilter
-            } else {
-                cargo test @flags
-            }
+            cargo test @flags
         }
 
         if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {

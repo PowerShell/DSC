@@ -20,6 +20,7 @@ pub enum Schemas {
     Operation,
     RefreshEnv,
     RestartRequired,
+    Set,
     Sleep,
     StateAndDiff,
     Trace,
@@ -158,6 +159,14 @@ pub enum SubCommand {
     Schema {
         #[clap(name = "subcommand", short, long, help = "The subcommand to get the schema for")]
         subcommand: Schemas,
+    },
+
+    #[clap(name = "set", about = "Set a resource")]
+    Set {
+        #[clap(name = "get", short, long, help = "Get the current state of the resource before setting it")]
+        get: bool,
+        #[clap(name = "input", short, long, help = "The input to the set command as JSON")]
+        input: Option<String>,
     },
 
     #[clap(name = "sleep", about = "Sleep for a specified number of seconds")]
