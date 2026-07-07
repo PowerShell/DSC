@@ -10,7 +10,7 @@ use windows::Win32::System::Com::{CLSCTX_INPROC_SERVER, CoCreateInstance, CoInit
 use windows::Win32::System::Ole::IEnumVARIANT;
 use windows::Win32::System::Variant::{VARIANT, VariantClear};
 
-use crate::types::{FirewallError, FirewallRule, FirewallRuleList, Metadata, RuleAction, RuleDirection};
+use crate::types::{FirewallError, FirewallRule, FirewallRuleList, Metadata, RuleAction, RuleDirection, UnspecifiedRulesAction};
 use crate::util::matches_any_filter;
 
 /// RAII wrapper for VARIANT that automatically calls VariantClear on drop
@@ -400,7 +400,7 @@ pub fn get_rules(input: &FirewallRuleList) -> Result<FirewallRuleList, FirewallE
         }
     }
 
-    Ok(FirewallRuleList { rules: results })
+    Ok(FirewallRuleList { rules: results, unspecified_rules_action: None })
 }
 
 fn project_rule(current: &FirewallRule, desired: &FirewallRule) -> FirewallRule {
@@ -497,7 +497,65 @@ pub fn set_rules(input: &FirewallRuleList, what_if: bool) -> Result<FirewallRule
         }
     }
 
-    Ok(FirewallRuleList { rules: results })
+    // Handle unspecified_rules_action: Disable or Remove rules not explicitly listed
+    match &input.unspecified_rules_action {
+        Some(UnspecifiedRulesAction::Disable) | Some(UnspecifiedRulesAction::Remove) => {
+            let is_remove = matches!(&input.unspecified_rules_action, Some(UnspecifiedRulesAction::Remove));
+            let specified_names: std::collections::HashSet<String> = input.rules.iter()
+                .filter_map(|r| r.selector_name().map(|n| n.to_ascii_lowercase()))
+                .collect();
+
+            let all_rules = store.enumerate_rules()?;
+            for rule in &all_rules {
+                let model = rule_to_model(rule)?;
+                let rule_name = match &model.name {
+                    Some(name) => name.clone(),
+                    None => continue,
+                };
+
+                // Skip system rules which can't be located via the COM interface
+                if rule_name.starts_with("ms-resource://") {
+                    continue;
+                }
+                
+                if specified_names.contains(&rule_name.to_ascii_lowercase()) {
+                    continue;
+                }
+
+                if is_remove {
+                    if what_if {
+                        let mut projected = model.missing_from_input();
+                        projected.metadata = Some(Metadata { what_if: Some(vec![t!("firewall_helper.whatIfRemoveUnspecifiedRule", name = rule_name).to_string()]) });
+                        results.push(projected);
+                    } else {
+                        store.remove_rule(&rule_name)?;
+                        let mut removed = FirewallRule { name: Some(rule_name), ..FirewallRule::default() };
+                        removed.exist = Some(false);
+                        results.push(removed);
+                    }
+                } else {
+                    // Disable
+                    if model.enabled == Some(false) {
+                        // Already disabled, no action needed
+                        continue;
+                    }
+                    if what_if {
+                        let mut projected = model.clone();
+                        projected.enabled = Some(false);
+                        projected.metadata = Some(Metadata { what_if: Some(vec![t!("firewall_helper.whatIfDisableUnspecifiedRule", name = rule_name).to_string()]) });
+                        results.push(projected);
+                    } else {
+                        unsafe { rule.SetEnabled(VARIANT_BOOL::from(false)) }
+                            .map_err(map_update_err(&rule_name))?;
+                        results.push(rule_to_model(rule)?);
+                    }
+                }
+            }
+        }
+        _ => {} // None or Ignore — no additional action
+    }
+
+    Ok(FirewallRuleList { rules: results, unspecified_rules_action: input.unspecified_rules_action.clone() })
 }
 
 pub fn export_rules(filters: Option<&FirewallRuleList>) -> Result<FirewallRuleList, FirewallError> {
@@ -517,5 +575,5 @@ pub fn export_rules(filters: Option<&FirewallRuleList>) -> Result<FirewallRuleLi
         }
     }
 
-    Ok(FirewallRuleList { rules: results })
+    Ok(FirewallRuleList { rules: results, unspecified_rules_action: None })
 }
