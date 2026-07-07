@@ -723,7 +723,7 @@ extends:
             value: $(Build.SourcesDirectory)/.config/suppress.json
           - name: ob_sdl_tsa_configFile
             value: $(Build.SourcesDirectory)/.config/tsaoptions.json
-          - group: 'packages.microsoft.com'
+          - group: 'DSC-packages.microsoft.com'
         steps:
         - checkout: self
           lfs: false
