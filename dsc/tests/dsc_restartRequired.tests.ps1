@@ -27,6 +27,16 @@ Describe '_restartRequired tests' {
                 - process:
                     name: anotherProcess
                     id: 5678
+        outputs:
+          system:
+            type: bool
+            value: "[restartRequired('system')]"
+          service:
+            type: bool
+            value: "[restartRequired('service', 'sshd')]"
+          process:
+            type: bool
+            value: "[restartRequired('process', 'myProcess')]"
 '@
         $out = dsc -l trace config get -i $configYaml 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
@@ -49,6 +59,9 @@ Describe '_restartRequired tests' {
         $out.executionInformation.restartRequired[3].process.id | Should -Be 1234
         $out.executionInformation.restartRequired[4].process.name | Should -BeExactly 'anotherProcess'
         $out.executionInformation.restartRequired[4].process.id | Should -Be 5678
+        $out.outputs.system | Should -Be $true -Because ($out | ConvertTo-Json -Depth 10)
+        $out.outputs.service | Should -Be $true -Because ($out | ConvertTo-Json -Depth 10)
+        $out.outputs.process | Should -Be $true -Because ($out | ConvertTo-Json -Depth 10)
     }
 
     It 'invalid item in _restartRequired metadata is a warning' {
@@ -66,5 +79,105 @@ Describe '_restartRequired tests' {
         (Get-Content $TestDrive/error.log) | Should -BeLike "*WARN*Resource returned property '_restartRequired' which contains invalid value: ``[{`"invalid`":`"item`"}]*" -Because (Get-Content $TestDrive/error.log -Raw)
         $out.results[0].executionInformation.restartRequired | Should -BeNullOrEmpty
         $out.executionInformation.restartRequired | Should -BeNullOrEmpty
+    }
+
+    It 'restartRequired function returns false for unknown resource: <type>' -TestCases @(
+      @{ type = 'system' }
+      @{ type = 'service'; name = ", 'unknown'" }
+      @{ type = 'process'; name = ", 'unknown'" }
+    ){
+        param($type, $name)
+
+        $configYaml = @"
+        `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+        resources:
+          - name: test
+            type: Test/RestartRequired
+            properties:
+              _restartRequired:
+                - service: myService
+                - process:
+                    name: myProcess
+                    id: 1234
+        outputs:
+          unknown:
+            type: bool
+            value: "[restartRequired('$type'$name)]"
+"@
+        $out = dsc config get -i $configYaml 2>$TestDrive/error.log | ConvertFrom-Json
+        $errorContent = Get-Content $TestDrive/error.log -Raw
+        $LASTEXITCODE | Should -Be 0 -Because $errorContent
+        $out.outputs.unknown | Should -Be $false -Because ($out | ConvertTo-Json -Depth 10)
+    }
+
+    It 'restartRequired function returns error if name not specified for: <type>' -TestCases @(
+      @{ type = 'service' }
+      @{ type = 'process' }
+    ){
+        param($type)
+
+        $configYaml = @"
+        `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+        resources:
+          - name: test
+            type: Test/RestartRequired
+            properties:
+              _restartRequired:
+                - service: myService
+                - process:
+                    name: myProcess
+                    id: 1234
+        outputs:
+          unknown:
+            type: bool
+            value: "[restartRequired('$type')]"
+"@
+        $null = dsc config get -i $configYaml 2>$TestDrive/error.log | ConvertFrom-Json
+        $errorContent = Get-Content $TestDrive/error.log -Raw
+        $LASTEXITCODE | Should -Be 2 -Because $errorContent
+        $errorContent | Should -BeLike "*ERROR*The 'name' argument is required for kind '$type'*" -Because $errorContent
+    }
+
+    It 'restartRequired function returns error if invalid kind specified' {
+        $configYaml = @"
+        `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+        resources:
+          - name: test
+            type: Test/RestartRequired
+            properties:
+              _restartRequired:
+                - service: myService
+                - process:
+                    name: myProcess
+                    id: 1234
+        outputs:
+          unknown:
+            type: bool
+            value: "[restartRequired('invalidKind')]"
+"@
+        $null = dsc config get -i $configYaml 2>$TestDrive/error.log | ConvertFrom-Json
+        $errorContent = Get-Content $TestDrive/error.log -Raw
+        $LASTEXITCODE | Should -Be 2 -Because $errorContent
+        $errorContent | Should -BeLike "*ERROR*Invalid kind 'invalidKind', must be one of: process, service, system*" -Because $errorContent
+    }
+
+    It 'restartRequired function returns an error if name used with system kind' {
+        $configYaml = @"
+        `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+        resources:
+          - name: test
+            type: Test/RestartRequired
+            properties:
+              _restartRequired:
+                - system: mySystem
+        outputs:
+          unknown:
+            type: bool
+            value: "[restartRequired('system', 'nameNotAllowed')]"
+"@
+        $null = dsc config get -i $configYaml 2>$TestDrive/error.log | ConvertFrom-Json
+        $errorContent = Get-Content $TestDrive/error.log -Raw
+        $LASTEXITCODE | Should -Be 2 -Because $errorContent
+        $errorContent | Should -BeLike "*ERROR*The 'name' argument is not allowed for kind 'system'*" -Because $errorContent
     }
 }

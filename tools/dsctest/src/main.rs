@@ -16,6 +16,7 @@ mod operation;
 mod adapter;
 mod refresh_env;
 mod restart_required;
+mod set;
 mod sleep;
 mod state_and_diff;
 mod trace;
@@ -40,6 +41,7 @@ use crate::metadata::Metadata;
 use crate::operation::Operation;
 use crate::refresh_env::RefreshEnv;
 use crate::restart_required::RestartRequired;
+use crate::set::{Set, invoke_set};
 use crate::sleep::Sleep;
 use crate::state_and_diff::StateAndDiff;
 use crate::trace::Trace;
@@ -332,6 +334,9 @@ fn main() {
                 Schemas::RestartRequired => {
                     schema_for!(RestartRequired)
                 },
+                Schemas::Set => {
+                    schema_for!(Set)
+                },
                 Schemas::Sleep => {
                     schema_for!(Sleep)
                 },
@@ -352,6 +357,9 @@ fn main() {
                 }
             };
             serde_json::to_string(&schema).unwrap()
+        },
+        SubCommand::Set { get, input } => {
+            invoke_set( get, input )
         },
         SubCommand::Sleep { input } => {
             let sleep = match serde_json::from_str::<Sleep>(&input) {

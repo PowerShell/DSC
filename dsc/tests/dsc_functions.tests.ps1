@@ -1801,4 +1801,65 @@ Describe 'tests for function expressions' {
     $errorContent = Get-Content $TestDrive/error.log -Raw
     $errorContent | Should -Match $expectedError
   }
+
+  It 'stateChanged function returns if resource state had changed: <testName>' -TestCases @(
+    @{ testName = 'state changed'; value = 'new'; object = @{ property = 'Original' }; expected = $true }
+    @{ testName = 'state unchanged'; value = 'Original'; object = @{ property = 'Original' }; expected = $false }
+    @{ testName = 'state changed with nested object'; value = 'Original'; object = @{ property = 'New' }; expected = $true }
+    @{ testName = 'state unchanged with nested object'; value = 'Original'; object = @{ property = 'Original' }; expected = $false }
+  ) {
+    param($value, $object, $expected)
+
+    $config = @{
+      '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+      resources = @(
+        @{
+          name = 'Test'
+          type = 'Test/Set'
+          properties = @{
+            value = $value
+            object = $object
+          }
+        }
+      )
+      outputs = @{
+        stateChanged = @{
+          type = 'bool'
+          value = "[stateChanged(resourceId('Test/Set','Test'))]"
+        }
+      }
+    }
+
+    $config = $config | ConvertTo-Json -Depth 10 -Compress
+    $out = dsc -l trace config set -i $config 2> $TestDrive/error.log | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+    $out.outputs.stateChanged | Should -Be $expected -Because ($out | ConvertTo-Json -Depth 10 | Out-String)
+  }
+
+  It 'stateChanged function returns false for non-existent resource' {
+    $config = @{
+      '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+      resources = @(
+        @{
+          name = 'Test'
+          type = 'Test/Set'
+          properties = @{
+            value = 'new'
+          }
+        }
+      )
+      outputs = @{
+        stateChanged = @{
+          type = 'bool'
+          value = "[stateChanged(resourceId('NonExistent/Resource','Test'))]"
+        }
+      }
+    }
+
+    $config = $config | ConvertTo-Json -Depth 10 -Compress
+    $null = dsc -l trace config set -i $config 2> $TestDrive/error.log
+    $errorLog = Get-Content $TestDrive/error.log -Raw
+    $LASTEXITCODE | Should -Be 2 -Because $errorLog
+    $errorLog | Should -BeLike "*Error* No state change information available for resourceId 'NonExistent/Resource:Test' as it has not executed yet or does not exist*"
+  }
 }
