@@ -858,7 +858,7 @@ dependencies = [
 
 [[package]]
 name = "dsc-lib-registry"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "cc",
  "crossterm",
@@ -911,7 +911,7 @@ dependencies = [
 
 [[package]]
 name = "dsc-resource-registry"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "clap",
  "crossterm",
