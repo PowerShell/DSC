@@ -131,6 +131,16 @@
       }
     },
     {
+      "Name": "root",
+      "Kind": "Root",
+      "RelativePath": ".",
+      "CopyFiles": {
+        "All": [
+          "NOTICE.txt"
+        ]
+      }
+    },
+    {
       "Name": "powershell-adapter",
       "Kind": "Adapter",
       "RelativePath": "adapters/powershell",
@@ -139,12 +149,27 @@
           "psDscAdapter/powershell.resource.ps1",
           "psDscAdapter/psDscAdapter.psd1",
           "psDscAdapter/psDscAdapter.psm1",
-          "powershell.dsc.resource.json"
+          "powershell.dsc.resource.json",
+          "PowerShell_adapter.dsc.resource.json"
         ],
         "Windows": [
           "psDscAdapter/win_psDscAdapter.psd1",
           "psDscAdapter/win_psDscAdapter.psm1",
-          "windowspowershell.dsc.resource.json"
+          "windowspowershell.dsc.resource.json",
+          "WindowsPowerShell_adapter.dsc.resource.json"
+        ]
+      }
+    },
+    {
+      "Name": "PSAdaptedTestClassResource",
+      "Kind": "Resource",
+      "RelativePath": "adapters/powershell/Tests",
+      "TestOnly": true,
+      "CopyFiles": {
+        "All": [
+          "PSAdaptedTestClassResource.psd1",
+          "PSAdaptedTestClassResource.psm1",
+          "PSAdaptedTestClassResource.dsc.adaptedResource.json"
         ]
       }
     },
@@ -173,16 +198,6 @@
           "windows_inventory.dsc.yaml"
         ]
       }
-    },
-    {
-        "Name": "dism_dsc",
-        "Kind": "Resource",
-        "IsRust": true,
-        "SupportedPlatformOS": "Windows",
-        "Binaries": ["dism_dsc"],
-        "CopyFiles": {
-            "Windows": ["optionalfeature.dsc.resource.json", "featureondemand.dsc.resource.json", "windows_feature.dsc.resource.json"]
-        }
     },
     {
       "Name": "dsc",
@@ -278,6 +293,12 @@
       "IsRust": true
     },
     {
+      "Name": "dsc-lib-otel",
+      "Kind": "Library",
+      "RelativePath": "lib/dsc-lib-otel",
+      "IsRust": true
+    },
+    {
       "Name": "dsc-lib-pal",
       "Kind": "Library",
       "RelativePath": "lib/dsc-lib-pal",
@@ -322,10 +343,28 @@
       }
     },
     {
+      "Name": "dism_dsc",
+      "Kind": "Resource",
+      "RelativePath": "resources/dism_dsc",
+      "SupportedPlatformOS": "Windows",
+      "IsRust": true,
+      "Binaries": [
+        "dism_dsc"
+      ],
+      "CopyFiles": {
+        "Windows": [
+          "optionalfeature.dsc.resource.json",
+          "featureondemand.dsc.resource.json",
+          "windows_feature.dsc.resource.json"
+        ]
+      }
+    },
+    {
       "Name": "dscecho",
       "Kind": "Resource",
       "RelativePath": "resources/dscecho",
       "IsRust": true,
+      "RustPackageName": "dsc-resource-echo",
       "Binaries": [
         "dscecho"
       ],
@@ -340,6 +379,7 @@
       "Kind": "Resource",
       "RelativePath": "resources/osinfo",
       "IsRust": true,
+      "RustPackageName": "dsc-resource-osinfo",
       "Binaries": [
         "osinfo"
       ],
@@ -354,6 +394,7 @@
       "Kind": "Resource",
       "RelativePath": "resources/process",
       "IsRust": true,
+      "RustPackageName": "dsc-resource-process",
       "Binaries": [
         "process"
       ],
@@ -395,6 +436,7 @@
       "RelativePath": "resources/registry",
       "SupportedPlatformOS": "Windows",
       "IsRust": true,
+      "RustPackageName": "dsc-resource-registry",
       "Binaries": [
         "registry"
       ],
@@ -409,6 +451,7 @@
       "Kind": "Resource",
       "RelativePath": "resources/runcommandonset",
       "IsRust": true,
+      "RustPackageName": "dsc-resource-run_command_on_set",
       "Binaries": [
         "runcommandonset"
       ],
@@ -423,12 +466,15 @@
       "Kind": "Resource",
       "RelativePath": "resources/sshdconfig",
       "IsRust": true,
+      "RustPackageName": "dsc-resource-sshdconfig",
       "Binaries": [
         "sshdconfig"
       ],
       "CopyFiles": {
         "All": [
-          "sshd_config.dsc.resource.json"
+          "sshd_config.dsc.resource.json",
+          "sshd-subsystem.dsc.resource.json",
+          "sshd-subsystemList.dsc.resource.json"
         ],
         "Windows": [
           "sshd-windows.dsc.resource.json"
@@ -441,6 +487,7 @@
       "RelativePath": "resources/WindowsUpdate",
       "SupportedPlatformOS": "Windows",
       "IsRust": true,
+      "RustPackageName": "dsc-resource-windows-update",
       "Binaries": [
         "wu_dsc"
       ],
@@ -451,18 +498,30 @@
       }
     },
     {
-        "Name": "windows_firewall",
-        "Kind": "Resource",
-        "IsRust": true,
-        "SupportedPlatformOS": "Windows",
-        "Binaries": [
-            "windows_firewall"
-        ],
-        "CopyFiles": {
-            "Windows": [
-                "windows_firewall.dsc.resource.json"
-            ]
-        }
+      "Name": "windows_firewall",
+      "Kind": "Resource",
+      "RelativePath": "resources/windows_firewall",
+      "SupportedPlatformOS": "Windows",
+      "IsRust": true,
+      "Binaries": [
+        "windows_firewall"
+      ],
+      "CopyFiles": {
+        "Windows": [
+          "windows_firewall.dsc.resource.json"
+        ]
+      }
+    },
+    {
+      "Name": "windows_personalization",
+      "Kind": "Resource",
+      "RelativePath": "resources/windows_personalization",
+      "SupportedPlatformOS": "Windows",
+      "CopyFiles": {
+        "Windows": [
+          "windows_personalization.dsc.adaptedResource.yaml"
+        ]
+      }
     },
     {
       "Name": "windows_service",
@@ -491,7 +550,8 @@
       "CopyFiles": {
         "All": [
           "adaptedTest.dsc.adaptedResource.json",
-          "dsctest.dsc.manifests.json"
+          "dsctest.dsc.manifests.json",
+          "deprecated/deprecated.dsc.manifests.json"
         ]
       }
     },
@@ -511,6 +571,13 @@
       }
     },
     {
+      "Name": "xtask",
+      "Kind": "CLI",
+      "RelativePath": "xtask",
+      "IsRust": true,
+      "TestOnly": true
+    },
+    {
       "Name": "y2j",
       "Kind": "CLI",
       "RelativePath": "y2j",
@@ -518,13 +585,6 @@
       "Binaries": [
         "y2j"
       ]
-    },
-    {
-      "Name": "xtask",
-      "Kind": "CLI",
-      "RelativePath": "xtask",
-      "IsRust": true,
-      "TestOnly": true
     }
   ]
 }

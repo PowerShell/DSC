@@ -909,6 +909,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "dsc-lib-telemetry"
+version = "0.0.0"
+
+[[package]]
 name = "dsc-resource-echo"
 version = "1.0.0"
 dependencies = [
