@@ -2527,6 +2527,205 @@ function Get-FullCodeCoverageReport {
     }
 }
 
+function Get-FullCodeCoverageDetail {
+    <#
+        .SYNOPSIS
+        Parses an LCOV file and returns per-file coverage details for the entire codebase.
+
+        .DESCRIPTION
+        Reads an LCOV coverage report and returns an array of objects, one per source file,
+        containing the file path, coverage percentage, line counts, and a map of uncovered
+        line numbers. This enables file-by-file and line-by-line coverage inspection.
+
+        .PARAMETER LcovPath
+        Path to the LCOV coverage report file.
+
+        .PARAMETER MinimumLines
+        Minimum number of executable lines a file must have to be included in output.
+        Defaults to 1 (include all files with any instrumented lines).
+
+        .OUTPUTS
+        Array of PSCustomObject with: File, Percentage, CoveredLines, TotalLines, UncoveredLines
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$LcovPath,
+
+        [Parameter()]
+        [int]$MinimumLines = 1
+    )
+
+    process {
+        if (-not (Test-Path $LcovPath)) {
+            throw "LCOV file not found at '$LcovPath'"
+        }
+
+        $fileData = @{}
+        $currentFile = $null
+
+        foreach ($line in Get-Content -Path $LcovPath) {
+            if ($line -match '^SF:(.+)$') {
+                $currentFile = $Matches[1]
+                $fileData[$currentFile] = @{ Lines = @{} }
+            } elseif ($line -match '^DA:(\d+),(\d+)' -and $currentFile) {
+                $lineNum = [int]$Matches[1]
+                $rawHit = [decimal]$Matches[2]
+                $hitCount = if ($rawHit -gt [long]::MaxValue) { [long]0 } else { [long]$rawHit }
+                $fileData[$currentFile].Lines[$lineNum] = $hitCount
+            } elseif ($line -eq 'end_of_record') {
+                $currentFile = $null
+            }
+        }
+
+        $results = foreach ($file in $fileData.Keys | Sort-Object) {
+            $lines = $fileData[$file].Lines
+            $total = $lines.Count
+            if ($total -lt $MinimumLines) {
+                continue
+            }
+            $covered = ($lines.Values | Where-Object { $_ -gt 0 }).Count
+            $uncovered = @($lines.GetEnumerator() | Where-Object { $_.Value -eq 0 } |
+                ForEach-Object { $_.Key } | Sort-Object)
+            $pct = if ($total -eq 0) { 0 } else { [int][math]::Floor($covered * 100 / $total) }
+
+            [PSCustomObject]@{
+                File           = $file
+                Percentage     = $pct
+                CoveredLines   = $covered
+                TotalLines     = $total
+                UncoveredLines = $uncovered
+            }
+        }
+
+        $results
+    }
+}
+
+function Show-FullCodeCoverageReport {
+    <#
+        .SYNOPSIS
+        Displays a colorized file-by-file coverage summary with optional line-level detail.
+
+        .DESCRIPTION
+        Shows a table of all source files with their coverage percentage, sorted by coverage
+        (lowest first). When ShowUncoveredLines is specified, also displays the uncovered
+        line numbers and source text for files below the threshold.
+
+        .PARAMETER LcovPath
+        Path to the LCOV coverage report file.
+
+        .PARAMETER ShowUncoveredLines
+        When specified, displays uncovered line numbers and source for files below the
+        coverage threshold specified by UncoveredThreshold.
+
+        .PARAMETER UncoveredThreshold
+        Files with coverage percentage at or below this value will have their uncovered lines
+        displayed when ShowUncoveredLines is set. Defaults to 80.
+
+        .PARAMETER Top
+        Maximum number of files to display in the summary. Defaults to showing all files.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$LcovPath,
+
+        [Parameter()]
+        [switch]$ShowUncoveredLines,
+
+        [Parameter()]
+        [int]$UncoveredThreshold = 80,
+
+        [Parameter()]
+        [int]$Top = 0
+    )
+
+    process {
+        $details = Get-FullCodeCoverageDetail -LcovPath $LcovPath
+
+        if (-not $details -or $details.Count -eq 0) {
+            Write-Host "No coverage data available."
+            return
+        }
+
+        # Sort by percentage ascending (worst coverage first)
+        $sorted = $details | Sort-Object Percentage
+
+        if ($Top -gt 0) {
+            $sorted = $sorted | Select-Object -First $Top
+        }
+
+        # Display summary table
+        Write-Host ""
+        Write-Host "$($PSStyle.Bold)File Coverage Summary (sorted by coverage, lowest first):$($PSStyle.BoldOff)"
+        Write-Host ""
+
+        $maxPathLen = ($sorted | ForEach-Object {
+            # Show relative path from repo root for readability
+            $_.File.Length
+        } | Measure-Object -Maximum).Maximum
+        $maxPathLen = [Math]::Min($maxPathLen, 80)
+
+        foreach ($entry in $sorted) {
+            $displayPath = $entry.File
+            if ($displayPath.Length -gt $maxPathLen) {
+                $displayPath = '...' + $displayPath.Substring($displayPath.Length - $maxPathLen + 3)
+            }
+
+            $color = if ($entry.Percentage -ge 80) {
+                $PSStyle.Foreground.Green
+            } elseif ($entry.Percentage -ge 60) {
+                $PSStyle.Foreground.Yellow
+            } else {
+                $PSStyle.Foreground.Red
+            }
+
+            $bar = $entry.Percentage.ToString().PadLeft(3)
+            Write-Host "${color}  ${bar}%$($PSStyle.Reset)  $($entry.CoveredLines.ToString().PadLeft(5))/$($entry.TotalLines.ToString().PadLeft(5))  $displayPath"
+        }
+
+        Write-Host ""
+        $totalFiles = $details.Count
+        $filesBelow = ($details | Where-Object { $_.Percentage -lt 70 }).Count
+        Write-Host "  $totalFiles files total | $filesBelow files below 70% coverage"
+
+        # Show uncovered lines for low-coverage files
+        if ($ShowUncoveredLines) {
+            $lowCovFiles = $sorted | Where-Object { $_.Percentage -le $UncoveredThreshold }
+            if ($lowCovFiles.Count -eq 0) {
+                Write-Host ""
+                Write-Host "All displayed files are above $UncoveredThreshold% coverage."
+                return
+            }
+
+            Write-Host ""
+            Write-Host "$($PSStyle.Bold)Uncovered lines (files at or below ${UncoveredThreshold}% coverage):$($PSStyle.BoldOff)"
+
+            foreach ($entry in $lowCovFiles) {
+                $filePath = $entry.File
+                $fileContent = Get-Content -Path $filePath -ErrorAction SilentlyContinue
+
+                Write-Host ""
+                Write-Host "$($PSStyle.Bold)$filePath$($PSStyle.BoldOff) ($($entry.Percentage)%)" -ForegroundColor Cyan
+
+                if (-not $fileContent -or $entry.UncoveredLines.Count -eq 0) {
+                    continue
+                }
+
+                $lineNumWidth = ($entry.UncoveredLines[-1]).ToString().Length
+                foreach ($lineNum in $entry.UncoveredLines) {
+                    $lineIndex = $lineNum - 1
+                    $lineText = if ($lineIndex -lt $fileContent.Count) { $fileContent[$lineIndex] } else { '' }
+                    $prefix = $lineNum.ToString().PadLeft($lineNumWidth)
+                    Write-Host "$($PSStyle.Foreground.Red)  $prefix | $lineText$($PSStyle.Reset)"
+                }
+            }
+            Write-Host ""
+        }
+    }
+}
+
 #endregion Code coverage functions
 
 #region    Test project functions
