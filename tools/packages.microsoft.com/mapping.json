@@ -1,0 +1,102 @@
+{
+  "Packages": [
+    {
+      "url": "microsoft-rhel8.0-prod",
+      "distribution": [
+        "stable"
+      ],
+      "PackageFormat": "PACKAGE_NAME_RELEASE_VERSION-1_x86_64.rpm"
+    },
+    {
+      "url": "microsoft-rhel9.0-prod",
+      "distribution": [
+        "stable"
+      ],
+      "PackageFormat": "PACKAGE_NAME_RELEASE_VERSION-1_x86_64.rpm"
+    },
+    {
+      "url": "microsoft-rhel8.0-prod",
+      "distribution": [
+        "stable"
+      ],
+      "PackageFormat": "PACKAGE_NAME_RELEASE_VERSION-1_aarch64.rpm"
+    },
+    {
+      "url": "microsoft-rhel9.0-prod",
+      "distribution": [
+        "stable"
+      ],
+      "PackageFormat": "PACKAGE_NAME_RELEASE_VERSION-1_aarch64.rpm"
+    },
+    {
+      "url": "microsoft-debian-bullseye-prod",
+      "distribution": [
+        "bullseye"
+      ],
+      "PackageFormat": "PACKAGE_NAME_RELEASE_VERSION-1_amd64.deb"
+    },
+    {
+      "url": "microsoft-debian-bullseye-prod",
+      "distribution": [
+        "bullseye"
+      ],
+      "PackageFormat": "PACKAGE_NAME_RELEASE_VERSION-1_arm64.deb"
+    },
+    {
+      "url": "microsoft-debian-bookworm-prod",
+      "distribution": [
+        "bookworm"
+      ],
+      "PackageFormat": "PACKAGE_NAME_RELEASE_VERSION-1_amd64.deb"
+    },
+    {
+      "url": "microsoft-debian-bookworm-prod",
+      "distribution": [
+        "bookworm"
+      ],
+      "PackageFormat": "PACKAGE_NAME_RELEASE_VERSION-1_arm64.deb"
+    },
+    {
+      "url": "microsoft-ubuntu-focal-prod",
+      "distribution": [
+        "focal"
+      ],
+      "PackageFormat": "PACKAGE_NAME_RELEASE_VERSION-1_amd64.deb"
+    },
+    {
+      "url": "microsoft-ubuntu-focal-prod",
+      "distribution": [
+        "focal"
+      ],
+      "PackageFormat": "PACKAGE_NAME_RELEASE_VERSION-1_arm64.deb"
+    },
+    {
+      "url": "microsoft-ubuntu-jammy-prod",
+      "distribution": [
+        "jammy"
+      ],
+      "PackageFormat": "PACKAGE_NAME_RELEASE_VERSION-1_amd64.deb"
+    },
+    {
+      "url": "microsoft-ubuntu-noble-prod",
+      "distribution": [
+        "noble"
+      ],
+      "PackageFormat": "PACKAGE_NAME_RELEASE_VERSION-1_amd64.deb"
+    },
+    {
+      "url": "microsoft-ubuntu-jammy-prod",
+      "distribution": [
+        "jammy"
+      ],
+      "PackageFormat": "PACKAGE_NAME_RELEASE_VERSION-1_arm64.deb"
+    },
+    {
+      "url": "microsoft-ubuntu-noble-prod",
+      "distribution": [
+        "noble"
+      ],
+      "PackageFormat": "PACKAGE_NAME_RELEASE_VERSION-1_arm64.deb"
+    }
+  ]
+}
