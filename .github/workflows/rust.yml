@@ -55,7 +55,7 @@ jobs:
       - name: Build and test with code coverage
         id: rust-tests
         continue-on-error: true
-        run: ./build.ps1 -Clippy -Test -CodeCoverage -Verbose -PesterTestGroup resources
+        run: ./build.ps1 -Clippy -Test -CodeCoverage -ExcludePesterTests -Verbose
       - name: Upload coverage data
         if: always()
         uses: actions/upload-artifact@v4
@@ -90,6 +90,16 @@ jobs:
           name: linux-bin
       - name:  Expand build artifact
         run:   tar -xvf bin.tar
+      - name: Install llvm-tools for coverage
+        run: rustup component add llvm-tools-preview
+      - name: Set coverage profile environment
+        id: coverage-env
+        run: |-
+          $profDir = Join-Path $PWD 'profraw-data'
+          New-Item -ItemType Directory -Path $profDir -Force | Out-Null
+          $profPattern = Join-Path $profDir '%m_%p.profraw'
+          "LLVM_PROFILE_FILE=$profPattern" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_ENV
+          "prof_dir=$profDir" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
       - name: Test ${{matrix.group}}
         run: |-
           $params = @{
@@ -99,6 +109,24 @@ jobs:
             Verbose          = $true
           }
           ./build.ps1 @params -PesterTestGroup ${{matrix.group}}
+      - name: Generate coverage report
+        if: always()
+        run: |-
+          Import-Module ./helpers.build.psm1 -Force
+          $exportParams = @{
+            BinDirectory     = Join-Path $PWD 'bin'
+            ProfileDirectory = '${{ steps.coverage-env.outputs.prof_dir }}'
+            OutputPath       = 'pester-lcov.info'
+            Verbose          = $true
+          }
+          Export-PesterCodeCoverageReport @exportParams
+      - name: Upload coverage data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-pester-${{matrix.group}}-coverage
+          path: pester-lcov.info
+          if-no-files-found: ignore
 
   macos-build:
     runs-on: macos-latest
@@ -111,7 +139,7 @@ jobs:
       - name: Build and test with code coverage
         id: rust-tests
         continue-on-error: true
-        run: ./build.ps1 -Clippy -Test -CodeCoverage -Verbose -PesterTestGroup resources
+        run: ./build.ps1 -Clippy -Test -CodeCoverage -ExcludePesterTests -Verbose
       - name: Upload coverage data
         if: always()
         uses: actions/upload-artifact@v4
@@ -146,6 +174,16 @@ jobs:
           name: macos-bin
       - name:  Expand build artifact
         run:   tar -xvf bin.tar
+      - name: Install llvm-tools for coverage
+        run: rustup component add llvm-tools-preview
+      - name: Set coverage profile environment
+        id: coverage-env
+        run: |-
+          $profDir = Join-Path $PWD 'profraw-data'
+          New-Item -ItemType Directory -Path $profDir -Force | Out-Null
+          $profPattern = Join-Path $profDir '%m_%p.profraw'
+          "LLVM_PROFILE_FILE=$profPattern" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_ENV
+          "prof_dir=$profDir" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
       - name: Test ${{matrix.group}}
         run: |-
           $params = @{
@@ -155,6 +193,24 @@ jobs:
             Verbose          = $true
           }
           ./build.ps1 @params -PesterTestGroup ${{matrix.group}}
+      - name: Generate coverage report
+        if: always()
+        run: |-
+          Import-Module ./helpers.build.psm1 -Force
+          $exportParams = @{
+            BinDirectory     = Join-Path $PWD 'bin'
+            ProfileDirectory = '${{ steps.coverage-env.outputs.prof_dir }}'
+            OutputPath       = 'pester-lcov.info'
+            Verbose          = $true
+          }
+          Export-PesterCodeCoverageReport @exportParams
+      - name: Upload coverage data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-pester-${{matrix.group}}-coverage
+          path: pester-lcov.info
+          if-no-files-found: ignore
 
   # Windows
   windows-build:
@@ -171,7 +227,7 @@ jobs:
       - name: Build and test with code coverage
         id: rust-tests
         continue-on-error: true
-        run: ./build.ps1 -Clippy -Test -CodeCoverage -Verbose -PesterTestGroup resources
+        run: ./build.ps1 -Clippy -Test -CodeCoverage -ExcludePesterTests -Verbose
       - name: Upload coverage data
         if: always()
         uses: actions/upload-artifact@v4
@@ -209,6 +265,16 @@ jobs:
           name: windows-bin
       - name:  Expand build artifact
         run:   tar -xvf bin.tar
+      - name: Install llvm-tools for coverage
+        run: rustup component add llvm-tools-preview
+      - name: Set coverage profile environment
+        id: coverage-env
+        run: |-
+          $profDir = Join-Path $PWD 'profraw-data'
+          New-Item -ItemType Directory -Path $profDir -Force | Out-Null
+          $profPattern = Join-Path $profDir '%m_%p.profraw'
+          "LLVM_PROFILE_FILE=$profPattern" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_ENV
+          "prof_dir=$profDir" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
       - name: Test ${{matrix.group}}
         run: |-
           $params = @{
@@ -218,6 +284,24 @@ jobs:
             Verbose          = $true
           }
           ./build.ps1 @params -PesterTestGroup ${{matrix.group}}
+      - name: Generate coverage report
+        if: always()
+        run: |-
+          Import-Module ./helpers.build.psm1 -Force
+          $exportParams = @{
+            BinDirectory     = Join-Path $PWD 'bin'
+            ProfileDirectory = '${{ steps.coverage-env.outputs.prof_dir }}'
+            OutputPath       = 'pester-lcov.info'
+            Verbose          = $true
+          }
+          Export-PesterCodeCoverageReport @exportParams
+      - name: Upload coverage data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-pester-${{matrix.group}}-coverage
+          path: pester-lcov.info
+          if-no-files-found: ignore
 
   coverage-report:
     if: github.event_name == 'pull_request'
@@ -263,16 +347,29 @@ jobs:
           }
           "has_rust_changes=true" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
 
-          # Find the first available lcov.info from the platform coverage artifacts
-          $lcovFile = Get-ChildItem -Path 'coverage-data' -Filter 'lcov.info' -Recurse | Select-Object -First 1
-          if (-not $lcovFile) {
+          # Find all available lcov.info files from coverage artifacts
+          $lcovFiles = Get-ChildItem -Path 'coverage-data' -Filter 'lcov.info' -Recurse
+          $pesterLcovFiles = Get-ChildItem -Path 'coverage-data' -Filter 'pester-lcov.info' -Recurse
+          $allLcovFiles = @($lcovFiles) + @($pesterLcovFiles) | Where-Object { $_ }
+
+          if ($allLcovFiles.Count -eq 0) {
               Write-Warning 'No coverage data found from any platform.'
               "coverage_failed=true" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
               return
           }
           "coverage_failed=false" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
 
-          $report = Get-CodeCoverageReport -LcovPath $lcovFile.FullName -BaseSha $baseSha -HeadSha $headSha -Verbose
+          Write-Verbose -Verbose "Found $($allLcovFiles.Count) LCOV file(s) to merge"
+
+          # Merge all LCOV files into a single consolidated report
+          $mergedLcovPath = Join-Path $PWD 'merged-lcov.info'
+          if ($allLcovFiles.Count -eq 1) {
+              Copy-Item -Path $allLcovFiles[0].FullName -Destination $mergedLcovPath
+          } else {
+              Merge-LcovFile -Path ($allLcovFiles | ForEach-Object { $_.FullName }) -OutputPath $mergedLcovPath -Verbose
+          }
+
+          $report = Get-CodeCoverageReport -LcovPath $mergedLcovPath -BaseSha $baseSha -HeadSha $headSha -Verbose
 
           "percentage=$($report.Percentage)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
           "covered=$($report.CoveredLines)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT

@@ -2017,6 +2017,216 @@ function Export-CodeCoverageReport {
     }
 }
 
+function Export-PesterCodeCoverageReport {
+    <#
+        .SYNOPSIS
+        Generates an LCOV code coverage report from profraw files produced by instrumented binaries.
+
+        .DESCRIPTION
+        Uses llvm-profdata and llvm-cov directly (from the rustup llvm-tools-preview component)
+        to merge raw profile data and export an LCOV report. This is used by Pester test jobs
+        that run instrumented binaries outside of the cargo build environment.
+
+        .PARAMETER BinDirectory
+        Path to the directory containing instrumented binaries (e.g., bin/).
+
+        .PARAMETER ProfileDirectory
+        Path to the directory containing .profraw files produced by instrumented binaries.
+
+        .PARAMETER OutputPath
+        The file path where the LCOV report will be written.
+
+        .PARAMETER SourceDirectory
+        Optional path to the source directory for source-level mapping. Defaults to the
+        repository root.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$BinDirectory,
+
+        [Parameter(Mandatory)]
+        [string]$ProfileDirectory,
+
+        [Parameter(Mandatory)]
+        [string]$OutputPath,
+
+        [Parameter()]
+        [string]$SourceDirectory = $PSScriptRoot
+    )
+
+    process {
+        # Find the llvm tools from rustup
+        $toolchainPath = & rustc --print sysroot 2>$null
+        if (-not $toolchainPath) {
+            throw 'Could not determine Rust toolchain sysroot. Ensure rustc is installed.'
+        }
+
+        $llvmBinDir = Join-Path $toolchainPath 'lib' 'rustlib' (& rustc -vV |
+            Select-String 'host: (.+)' | ForEach-Object { $_.Matches[0].Groups[1].Value }) 'bin'
+
+        $llvmProfdata = Join-Path $llvmBinDir 'llvm-profdata'
+        $llvmCov = Join-Path $llvmBinDir 'llvm-cov'
+
+        if ($IsWindows) {
+            $llvmProfdata += '.exe'
+            $llvmCov += '.exe'
+        }
+
+        if (-not (Test-Path $llvmProfdata)) {
+            throw "llvm-profdata not found at '$llvmProfdata'. Ensure llvm-tools-preview is installed via: rustup component add llvm-tools-preview"
+        }
+
+        # Find all profraw files
+        $profrawFiles = Get-ChildItem -Path $ProfileDirectory -Filter '*.profraw' -Recurse
+        if ($profrawFiles.Count -eq 0) {
+            Write-Warning "No .profraw files found in '$ProfileDirectory'. Coverage report will be empty."
+            return
+        }
+        Write-Verbose -Verbose "Found $($profrawFiles.Count) profraw file(s)"
+
+        # Merge profraw files into a single profdata file
+        $profdataPath = Join-Path $ProfileDirectory 'merged.profdata'
+        $mergeArgs = @('merge', '-sparse')
+        $mergeArgs += $profrawFiles.FullName
+        $mergeArgs += @('-o', $profdataPath)
+
+        Write-Verbose -Verbose "Merging profraw files into: $profdataPath"
+        & $llvmProfdata @mergeArgs
+        if ($LASTEXITCODE -ne 0) {
+            throw "llvm-profdata merge failed with exit code $LASTEXITCODE"
+        }
+
+        # Find all executable binaries in the bin directory
+        $binaries = if ($IsWindows) {
+            Get-ChildItem -Path $BinDirectory -Filter '*.exe' -File
+        } else {
+            Get-ChildItem -Path $BinDirectory -File | Where-Object {
+                # On Unix, check if file is executable
+                (& test -x $_.FullName) -and $_.Extension -notin @('.pdb', '.d', '.ps1', '.psm1', '.psd1', '.json', '.yaml', '.yml', '.txt', '.md')
+            }
+        }
+
+        if ($binaries.Count -eq 0) {
+            Write-Warning "No executable binaries found in '$BinDirectory'. Cannot generate coverage report."
+            return
+        }
+        Write-Verbose -Verbose "Using $($binaries.Count) binary file(s) for coverage export"
+
+        # Build llvm-cov export arguments
+        # First binary is the primary, additional are specified via -object
+        $covArgs = @(
+            'export'
+            '-format=lcov'
+            "-instr-profile=$profdataPath"
+            '--ignore-filename-regex=\.cargo|rustc'
+        )
+
+        $covArgs += $binaries[0].FullName
+        for ($i = 1; $i -lt $binaries.Count; $i++) {
+            $covArgs += @('-object', $binaries[$i].FullName)
+        }
+
+        Write-Verbose -Verbose "Exporting LCOV report to: $OutputPath"
+        & $llvmCov @covArgs > $OutputPath 2>$null
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning "llvm-cov export returned exit code $LASTEXITCODE. Report may be incomplete."
+        }
+
+        if (Test-Path $OutputPath) {
+            $fileSize = (Get-Item $OutputPath).Length
+            Write-Verbose -Verbose "Code coverage report written to: $OutputPath ($fileSize bytes)"
+        } else {
+            Write-Warning "Coverage report was not generated at: $OutputPath"
+        }
+    }
+}
+
+function Merge-LcovFile {
+    <#
+        .SYNOPSIS
+        Merges multiple LCOV files into a single consolidated report.
+
+        .DESCRIPTION
+        Reads multiple LCOV-format coverage files and merges them by combining line hit
+        counts for matching source files. When the same line appears in multiple reports,
+        the hit counts are summed.
+
+        .PARAMETER Path
+        Array of paths to LCOV files to merge.
+
+        .PARAMETER OutputPath
+        The file path where the merged LCOV report will be written.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string[]]$Path,
+
+        [Parameter(Mandatory)]
+        [string]$OutputPath
+    )
+
+    process {
+        # Structure: $coverage[sourceFile][lineNumber] = hitCount
+        $coverage = @{}
+        $functionData = @{}
+
+        foreach ($lcovPath in $Path) {
+            if (-not (Test-Path $lcovPath)) {
+                Write-Verbose "Skipping missing LCOV file: $lcovPath"
+                continue
+            }
+
+            $currentFile = $null
+            foreach ($line in Get-Content -Path $lcovPath) {
+                if ($line -match '^SF:(.+)$') {
+                    $currentFile = $Matches[1]
+                    if (-not $coverage.ContainsKey($currentFile)) {
+                        $coverage[$currentFile] = @{}
+                        $functionData[$currentFile] = [System.Collections.Generic.List[string]]::new()
+                    }
+                } elseif ($line -match '^DA:(\d+),(\d+)') {
+                    $lineNum = [int]$Matches[1]
+                    $hits = [int]$Matches[2]
+                    if ($currentFile -and $coverage.ContainsKey($currentFile)) {
+                        if ($coverage[$currentFile].ContainsKey($lineNum)) {
+                            $coverage[$currentFile][$lineNum] += $hits
+                        } else {
+                            $coverage[$currentFile][$lineNum] = $hits
+                        }
+                    }
+                } elseif ($line -match '^(FN|FNDA|FNF|FNH):' -and $currentFile) {
+                    $functionData[$currentFile].Add($line)
+                }
+            }
+        }
+
+        # Write merged output
+        $output = [System.Text.StringBuilder]::new()
+        foreach ($file in $coverage.Keys | Sort-Object) {
+            [void]$output.AppendLine("SF:$file")
+            foreach ($fn in $functionData[$file]) {
+                [void]$output.AppendLine($fn)
+            }
+            $lineCount = 0
+            $hitCount = 0
+            foreach ($lineNum in $coverage[$file].Keys | Sort-Object) {
+                $hits = $coverage[$file][$lineNum]
+                [void]$output.AppendLine("DA:$lineNum,$hits")
+                $lineCount++
+                if ($hits -gt 0) { $hitCount++ }
+            }
+            [void]$output.AppendLine("LF:$lineCount")
+            [void]$output.AppendLine("LH:$hitCount")
+            [void]$output.AppendLine('end_of_record')
+        }
+
+        Set-Content -Path $OutputPath -Value $output.ToString() -NoNewline
+        Write-Verbose -Verbose "Merged $($Path.Count) LCOV file(s) into: $OutputPath"
+    }
+}
+
 function Show-CodeCoverageReport {
     <#
         .SYNOPSIS
