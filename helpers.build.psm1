@@ -2035,10 +2035,6 @@ function Export-PesterCodeCoverageReport {
 
         .PARAMETER OutputPath
         The file path where the LCOV report will be written.
-
-        .PARAMETER SourceDirectory
-        Optional path to the source directory for source-level mapping. Defaults to the
-        repository root.
     #>
     [CmdletBinding()]
     param(
@@ -2049,10 +2045,7 @@ function Export-PesterCodeCoverageReport {
         [string]$ProfileDirectory,
 
         [Parameter(Mandatory)]
-        [string]$OutputPath,
-
-        [Parameter()]
-        [string]$SourceDirectory = $PSScriptRoot
+        [string]$OutputPath
     )
 
     process {
@@ -2062,8 +2055,13 @@ function Export-PesterCodeCoverageReport {
             throw 'Could not determine Rust toolchain sysroot. Ensure rustc is installed.'
         }
 
-        $llvmBinDir = Join-Path $toolchainPath 'lib' 'rustlib' (& rustc -vV |
-            Select-String 'host: (.+)' | ForEach-Object { $_.Matches[0].Groups[1].Value }) 'bin'
+        $hostTriple = & rustc -vV |
+            Select-String 'host: (.+)' | ForEach-Object { $_.Matches[0].Groups[1].Value }
+        if (-not $hostTriple) {
+            throw 'Could not determine Rust host triple from rustc -vV output.'
+        }
+
+        $llvmBinDir = [System.IO.Path]::Combine($toolchainPath, 'lib', 'rustlib', $hostTriple, 'bin')
 
         $llvmProfdata = Join-Path $llvmBinDir 'llvm-profdata'
         $llvmCov = Join-Path $llvmBinDir 'llvm-cov'
@@ -2076,9 +2074,12 @@ function Export-PesterCodeCoverageReport {
         if (-not (Test-Path $llvmProfdata)) {
             throw "llvm-profdata not found at '$llvmProfdata'. Ensure llvm-tools-preview is installed via: rustup component add llvm-tools-preview"
         }
+        if (-not (Test-Path $llvmCov)) {
+            throw "llvm-cov not found at '$llvmCov'. Ensure llvm-tools-preview is installed via: rustup component add llvm-tools-preview"
+        }
 
         # Find all profraw files
-        $profrawFiles = Get-ChildItem -Path $ProfileDirectory -Filter '*.profraw' -Recurse
+        $profrawFiles = @(Get-ChildItem -Path $ProfileDirectory -Filter '*.profraw' -Recurse -ErrorAction SilentlyContinue)
         if ($profrawFiles.Count -eq 0) {
             Write-Warning "No .profraw files found in '$ProfileDirectory'. Coverage report will be empty."
             return
@@ -2098,14 +2099,17 @@ function Export-PesterCodeCoverageReport {
         }
 
         # Find all executable binaries in the bin directory
-        $binaries = if ($IsWindows) {
-            Get-ChildItem -Path $BinDirectory -Filter '*.exe' -File
-        } else {
-            Get-ChildItem -Path $BinDirectory -File | Where-Object {
-                # On Unix, check if file is executable
-                (& test -x $_.FullName) -and $_.Extension -notin @('.pdb', '.d', '.ps1', '.psm1', '.psd1', '.json', '.yaml', '.yml', '.txt', '.md')
+        $nonBinaryExtensions = @('.pdb', '.d', '.ps1', '.psm1', '.psd1', '.json', '.yaml', '.yml', '.txt', '.md')
+        $binaries = @(
+            if ($IsWindows) {
+                Get-ChildItem -Path $BinDirectory -Filter '*.exe' -File
+            } else {
+                Get-ChildItem -Path $BinDirectory -File | Where-Object {
+                    $_.Extension -notin $nonBinaryExtensions -and
+                    ($_.UnixMode -and $_.UnixMode -match 'x')
+                }
             }
-        }
+        )
 
         if ($binaries.Count -eq 0) {
             Write-Warning "No executable binaries found in '$BinDirectory'. Cannot generate coverage report."
