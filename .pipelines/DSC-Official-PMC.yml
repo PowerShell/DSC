@@ -170,7 +170,7 @@ extends:
     - stage: PrepPackagesForEv2PMC
       displayName: Publish Linux Packages to packages.microsoft.com
       dependsOn: ['BuildAndSign']
-      condition: succeeded()
+      condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))
       variables:
         - name: PackageVersion
           value: $[ stageDependencies.BuildAndSign.SetPackageVersion.outputs['Package.Version'] ]
@@ -249,7 +249,6 @@ extends:
             $pathToPMCMetadataFile = Join-Path -Path '$(ev2ParametersFolder)' -ChildPath 'pmcMetadata.json'
 
             $packageVersion = '$(PackageVersion)'
-            $isPreRelease = $packageVersion -like '*-*'
             $metadataHash = @{
               ReleaseTag   = "v$packageVersion"
               ForProduction = $true
