@@ -65,8 +65,7 @@ extends:
       - job: SetPackageVersion
         displayName: Set PackageVersion
         pool:
-          type: windows
-          vmImage: windows-latest
+          type: linux
         variables:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           ob_sdl_sbom_enabled: false
