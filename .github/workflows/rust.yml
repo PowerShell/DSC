@@ -95,11 +95,10 @@ jobs:
       - name: Set coverage profile environment
         id: coverage-env
         run: |-
-          $profDir = Join-Path $PWD 'profraw-data'
-          New-Item -ItemType Directory -Path $profDir -Force | Out-Null
-          $profPattern = Join-Path $profDir '%m_%p.profraw'
+          $profDir = New-Item -ItemType Directory -Path (Join-Path ([System.IO.Path]::GetTempPath()) "dsc-pester-cov-$([System.Guid]::NewGuid().ToString('N'))") -Force
+          $profPattern = Join-Path $profDir.FullName '%m_%p.profraw'
           "LLVM_PROFILE_FILE=$profPattern" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_ENV
-          "prof_dir=$profDir" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          "prof_dir=$($profDir.FullName)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
       - name: Test ${{matrix.group}}
         run: |-
           $params = @{
@@ -120,6 +119,14 @@ jobs:
             Verbose          = $true
           }
           Export-PesterCodeCoverageReport @exportParams
+      - name: Clean up coverage temp data
+        if: always()
+        run: |-
+          $profDir = '${{ steps.coverage-env.outputs.prof_dir }}'
+          if (Test-Path $profDir) {
+            Remove-Item -Path $profDir -Recurse -Force
+            Write-Host "Cleaned up temp coverage data: $profDir"
+          }
       - name: Upload coverage data
         if: always()
         uses: actions/upload-artifact@v4
@@ -179,11 +186,10 @@ jobs:
       - name: Set coverage profile environment
         id: coverage-env
         run: |-
-          $profDir = Join-Path $PWD 'profraw-data'
-          New-Item -ItemType Directory -Path $profDir -Force | Out-Null
-          $profPattern = Join-Path $profDir '%m_%p.profraw'
+          $profDir = New-Item -ItemType Directory -Path (Join-Path ([System.IO.Path]::GetTempPath()) "dsc-pester-cov-$([System.Guid]::NewGuid().ToString('N'))") -Force
+          $profPattern = Join-Path $profDir.FullName '%m_%p.profraw'
           "LLVM_PROFILE_FILE=$profPattern" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_ENV
-          "prof_dir=$profDir" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          "prof_dir=$($profDir.FullName)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
       - name: Test ${{matrix.group}}
         run: |-
           $params = @{
@@ -204,6 +210,14 @@ jobs:
             Verbose          = $true
           }
           Export-PesterCodeCoverageReport @exportParams
+      - name: Clean up coverage temp data
+        if: always()
+        run: |-
+          $profDir = '${{ steps.coverage-env.outputs.prof_dir }}'
+          if (Test-Path $profDir) {
+            Remove-Item -Path $profDir -Recurse -Force
+            Write-Host "Cleaned up temp coverage data: $profDir"
+          }
       - name: Upload coverage data
         if: always()
         uses: actions/upload-artifact@v4
@@ -270,11 +284,10 @@ jobs:
       - name: Set coverage profile environment
         id: coverage-env
         run: |-
-          $profDir = Join-Path $PWD 'profraw-data'
-          New-Item -ItemType Directory -Path $profDir -Force | Out-Null
-          $profPattern = Join-Path $profDir '%m_%p.profraw'
+          $profDir = New-Item -ItemType Directory -Path (Join-Path ([System.IO.Path]::GetTempPath()) "dsc-pester-cov-$([System.Guid]::NewGuid().ToString('N'))") -Force
+          $profPattern = Join-Path $profDir.FullName '%m_%p.profraw'
           "LLVM_PROFILE_FILE=$profPattern" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_ENV
-          "prof_dir=$profDir" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          "prof_dir=$($profDir.FullName)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
       - name: Test ${{matrix.group}}
         run: |-
           $params = @{
@@ -295,6 +308,14 @@ jobs:
             Verbose          = $true
           }
           Export-PesterCodeCoverageReport @exportParams
+      - name: Clean up coverage temp data
+        if: always()
+        run: |-
+          $profDir = '${{ steps.coverage-env.outputs.prof_dir }}'
+          if (Test-Path $profDir) {
+            Remove-Item -Path $profDir -Recurse -Force
+            Write-Host "Cleaned up temp coverage data: $profDir"
+          }
       - name: Upload coverage data
         if: always()
         uses: actions/upload-artifact@v4
@@ -369,6 +390,7 @@ jobs:
               Merge-LcovFile -Path ($allLcovFiles | ForEach-Object { $_.FullName }) -OutputPath $mergedLcovPath -Verbose
           }
 
+          # Changed-code coverage report
           $report = Get-CodeCoverageReport -LcovPath $mergedLcovPath -BaseSha $baseSha -HeadSha $headSha -Verbose
 
           "percentage=$($report.Percentage)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
@@ -376,6 +398,15 @@ jobs:
           "total=$($report.TotalLines)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
           "emoji=$($report.Emoji)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
           "label=$($report.Label)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+
+          # Full codebase coverage report
+          $fullReport = Get-FullCodeCoverageReport -LcovPath $mergedLcovPath -Verbose
+
+          "full_percentage=$($fullReport.Percentage)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          "full_covered=$($fullReport.CoveredLines)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          "full_total=$($fullReport.TotalLines)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          "full_emoji=$($fullReport.Emoji)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          "full_label=$($fullReport.Label)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
 
       - name: Post coverage comment
         if: >-
@@ -388,7 +419,9 @@ jobs:
           message: |
             ## ${{ steps.coverage.outputs.emoji }} Code Coverage Report
 
-            **Changed code coverage: ${{ steps.coverage.outputs.percentage }}%** (${{ steps.coverage.outputs.label }})
+            ### Changed Code Coverage
+
+            **${{ steps.coverage.outputs.percentage }}%** (${{ steps.coverage.outputs.label }})
 
             | Metric | Value |
             |--------|-------|
@@ -396,7 +429,18 @@ jobs:
             | Lines covered by tests | ${{ steps.coverage.outputs.covered }} |
             | Coverage percentage | ${{ steps.coverage.outputs.percentage }}% |
 
-            > Coverage is measured only on changed Rust code in this PR.
+            ### ${{ steps.coverage.outputs.full_emoji }} Full Codebase Coverage
+
+            **${{ steps.coverage.outputs.full_percentage }}%** (${{ steps.coverage.outputs.full_label }})
+
+            | Metric | Value |
+            |--------|-------|
+            | Total executable lines | ${{ steps.coverage.outputs.full_total }} |
+            | Lines covered by tests | ${{ steps.coverage.outputs.full_covered }} |
+            | Coverage percentage | ${{ steps.coverage.outputs.full_percentage }}% |
+
+            > Changed code coverage measures only Rust lines added/modified in this PR.
+            > Full codebase coverage measures all instrumented Rust lines across the project.
 
       - name: Post coverage comment (report failed)
         if: >-

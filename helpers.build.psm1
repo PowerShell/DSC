@@ -2455,6 +2455,77 @@ function Get-CodeCoverageReport {
         }
     }
 }
+function Get-FullCodeCoverageReport {
+    <#
+        .SYNOPSIS
+        Computes overall code coverage statistics from an LCOV file across the entire codebase.
+
+        .DESCRIPTION
+        Parses an LCOV file and computes total line coverage across all source files,
+        providing a full-codebase coverage percentage regardless of what changed in a PR.
+
+        .PARAMETER LcovPath
+        Path to the LCOV coverage report file.
+
+        .OUTPUTS
+        PSCustomObject with properties: Percentage, CoveredLines, TotalLines, Emoji, Label
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$LcovPath
+    )
+
+    process {
+        if (-not (Test-Path $LcovPath)) {
+            throw "LCOV file not found at '$LcovPath'"
+        }
+
+        $totalLines = 0
+        $coveredLines = 0
+
+        foreach ($line in Get-Content -Path $LcovPath) {
+            if ($line -match '^DA:(\d+),(\d+)') {
+                $rawHit = [decimal]$Matches[2]
+                # LLVM emits sentinel values near UInt64.MaxValue for uninstrumented lines
+                $hitCount = if ($rawHit -gt [long]::MaxValue) { 0 } else { [long]$rawHit }
+                $totalLines++
+                if ($hitCount -gt 0) {
+                    $coveredLines++
+                }
+            }
+        }
+
+        if ($totalLines -eq 0) {
+            $percentage = 0
+        } else {
+            $percentage = [int][math]::Floor($coveredLines * 100 / $totalLines)
+        }
+
+        $emoji, $label = if ($percentage -ge 90) {
+            ':green_circle:', 'excellent'
+        } elseif ($percentage -ge 80) {
+            ':large_blue_circle:', 'good'
+        } elseif ($percentage -ge 70) {
+            ':yellow_circle:', 'acceptable'
+        } elseif ($percentage -ge 60) {
+            ':orange_circle:', 'needs improvement'
+        } else {
+            ':red_circle:', 'low'
+        }
+
+        Write-Verbose -Verbose "Full codebase coverage: $percentage% ($coveredLines/$totalLines lines)"
+
+        [PSCustomObject]@{
+            Percentage   = $percentage
+            CoveredLines = $coveredLines
+            TotalLines   = $totalLines
+            Emoji        = $emoji
+            Label        = $label
+        }
+    }
+}
+
 #endregion Code coverage functions
 
 #region    Test project functions
