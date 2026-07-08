@@ -2181,13 +2181,10 @@ function ConvertTo-NormalizedLcovSourcePath {
         # Strip common CI workspace prefixes:
         # GitHub Actions Linux/macOS: /home/runner/work/<repo>/<repo>/ or /Users/runner/work/<repo>/<repo>/
         # GitHub Actions Windows: D:/a/<repo>/<repo>/ (after backslash normalization)
-        # Also handle generic patterns with any drive letter or user path
         $patterns = @(
             '^/home/[^/]+/work/[^/]+/[^/]+/'     # Linux: /home/runner/work/DSC/DSC/
             '^/Users/[^/]+/work/[^/]+/[^/]+/'     # macOS: /Users/runner/work/DSC/DSC/
             '^[A-Za-z]:/a/[^/]+/[^/]+/'           # Windows: D:/a/DSC/DSC/
-            '^/home/[^/]+/[^/]+/[^/]+/'           # ADO Linux: /home/vsts/work/1/s/
-            '^[A-Za-z]:/[^/]+/[^/]+/[^/]+/[^/]+/' # ADO Windows: D:/Agent/_work/1/s/
         )
 
         foreach ($pattern in $patterns) {
@@ -2197,9 +2194,9 @@ function ConvertTo-NormalizedLcovSourcePath {
             }
         }
 
-        # If still absolute (starts with /), try to find a known source directory marker
-        # and make relative from there (e.g., from the crate root)
-        if ($normalized.StartsWith('/')) {
+        # If still absolute (starts with / or a drive letter), try to find a known source
+        # directory marker and make relative from there (e.g., from the crate root)
+        if ($normalized.StartsWith('/') -or $normalized -match '^[A-Za-z]:/') {
             # Look for common Rust project markers in the path
             $markers = @('/src/', '/tests/', '/benches/', '/examples/')
             foreach ($marker in $markers) {
