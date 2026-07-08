@@ -2088,12 +2088,13 @@ function Export-PesterCodeCoverageReport {
 
         # Merge profraw files into a single profdata file
         $profdataPath = Join-Path $ProfileDirectory 'merged.profdata'
-        $mergeArgs = @('merge', '-sparse')
-        $mergeArgs += $profrawFiles.FullName
-        $mergeArgs += @('-o', $profdataPath)
 
-        Write-Verbose -Verbose "Merging profraw files into: $profdataPath"
-        & $llvmProfdata @mergeArgs
+        # Write file list to a response file to avoid command-line length limits on Windows
+        $responseFile = Join-Path $ProfileDirectory 'profraw-files.txt'
+        $profrawFiles.FullName | Set-Content -Path $responseFile -Encoding utf8
+
+        Write-Verbose -Verbose "Merging profraw files into: $profdataPath (via response file)"
+        & $llvmProfdata merge -sparse "@$responseFile" -o $profdataPath
         if ($LASTEXITCODE -ne 0) {
             throw "llvm-profdata merge failed with exit code $LASTEXITCODE"
         }
