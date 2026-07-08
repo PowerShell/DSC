@@ -2106,7 +2106,7 @@ function Export-PesterCodeCoverageReport {
             } else {
                 Get-ChildItem -Path $BinDirectory -File | Where-Object {
                     $_.Extension -notin $nonBinaryExtensions -and
-                    ($_.UnixMode -and $_.UnixMode -match 'x')
+                    ($_.Mode -match 'x')
                 }
             }
         )
@@ -2174,7 +2174,6 @@ function Merge-LcovFile {
     process {
         # Structure: $coverage[sourceFile][lineNumber] = hitCount
         $coverage = @{}
-        $functionData = @{}
 
         foreach ($lcovPath in $Path) {
             if (-not (Test-Path $lcovPath)) {
@@ -2188,11 +2187,12 @@ function Merge-LcovFile {
                     $currentFile = $Matches[1]
                     if (-not $coverage.ContainsKey($currentFile)) {
                         $coverage[$currentFile] = @{}
-                        $functionData[$currentFile] = [System.Collections.Generic.List[string]]::new()
                     }
                 } elseif ($line -match '^DA:(\d+),(\d+)') {
                     $lineNum = [int]$Matches[1]
-                    $hits = [int]$Matches[2]
+                    # LLVM emits sentinel values near UInt64.MaxValue for uninstrumented lines
+                    $rawHit = [decimal]$Matches[2]
+                    $hits = if ($rawHit -gt [long]::MaxValue) { [long]0 } else { [long]$rawHit }
                     if ($currentFile -and $coverage.ContainsKey($currentFile)) {
                         if ($coverage[$currentFile].ContainsKey($lineNum)) {
                             $coverage[$currentFile][$lineNum] += $hits
@@ -2200,19 +2200,15 @@ function Merge-LcovFile {
                             $coverage[$currentFile][$lineNum] = $hits
                         }
                     }
-                } elseif ($line -match '^(FN|FNDA|FNF|FNH):' -and $currentFile) {
-                    $functionData[$currentFile].Add($line)
                 }
             }
         }
 
-        # Write merged output
+        # Write merged output (line-level data only; function records are omitted
+        # because merging them correctly requires aggregation logic beyond summing)
         $output = [System.Text.StringBuilder]::new()
         foreach ($file in $coverage.Keys | Sort-Object) {
             [void]$output.AppendLine("SF:$file")
-            foreach ($fn in $functionData[$file]) {
-                [void]$output.AppendLine($fn)
-            }
             $lineCount = 0
             $hitCount = 0
             foreach ($lineNum in $coverage[$file].Keys | Sort-Object) {
