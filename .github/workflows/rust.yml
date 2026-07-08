@@ -55,7 +55,7 @@ jobs:
       - name: Build and test with code coverage
         id: rust-tests
         continue-on-error: true
-        run: ./build.ps1 -Clippy -Test -CodeCoverage -Verbose -PesterTestGroup resources
+        run: ./build.ps1 -Clippy -Test -CodeCoverage -ExcludePesterTests -Verbose
       - name: Upload coverage data
         if: always()
         uses: actions/upload-artifact@v4
@@ -90,6 +90,15 @@ jobs:
           name: linux-bin
       - name:  Expand build artifact
         run:   tar -xvf bin.tar
+      - name: Install llvm-tools for coverage
+        run: rustup component add llvm-tools-preview
+      - name: Set coverage profile environment
+        id: coverage-env
+        run: |-
+          $profDir = New-Item -ItemType Directory -Path (Join-Path ([System.IO.Path]::GetTempPath()) "dsc-pester-cov-$([System.Guid]::NewGuid().ToString('N'))") -Force
+          $profPattern = Join-Path $profDir.FullName '%m_%p.profraw'
+          "LLVM_PROFILE_FILE=$profPattern" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_ENV
+          "prof_dir=$($profDir.FullName)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
       - name: Test ${{matrix.group}}
         run: |-
           $params = @{
@@ -99,6 +108,32 @@ jobs:
             Verbose          = $true
           }
           ./build.ps1 @params -PesterTestGroup ${{matrix.group}}
+      - name: Generate coverage report
+        if: always()
+        run: |-
+          Import-Module ./helpers.build.psm1 -Force
+          $exportParams = @{
+            BinDirectory     = Join-Path $PWD 'bin'
+            ProfileDirectory = '${{ steps.coverage-env.outputs.prof_dir }}'
+            OutputPath       = 'pester-lcov.info'
+            Verbose          = $true
+          }
+          Export-PesterCodeCoverageReport @exportParams
+      - name: Clean up coverage temp data
+        if: always()
+        run: |-
+          $profDir = '${{ steps.coverage-env.outputs.prof_dir }}'
+          if (Test-Path $profDir) {
+            Remove-Item -Path $profDir -Recurse -Force
+            Write-Host "Cleaned up temp coverage data: $profDir"
+          }
+      - name: Upload coverage data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-pester-${{matrix.group}}-coverage
+          path: pester-lcov.info
+          if-no-files-found: ignore
 
   macos-build:
     runs-on: macos-latest
@@ -111,7 +146,7 @@ jobs:
       - name: Build and test with code coverage
         id: rust-tests
         continue-on-error: true
-        run: ./build.ps1 -Clippy -Test -CodeCoverage -Verbose -PesterTestGroup resources
+        run: ./build.ps1 -Clippy -Test -CodeCoverage -ExcludePesterTests -Verbose
       - name: Upload coverage data
         if: always()
         uses: actions/upload-artifact@v4
@@ -146,6 +181,15 @@ jobs:
           name: macos-bin
       - name:  Expand build artifact
         run:   tar -xvf bin.tar
+      - name: Install llvm-tools for coverage
+        run: rustup component add llvm-tools-preview
+      - name: Set coverage profile environment
+        id: coverage-env
+        run: |-
+          $profDir = New-Item -ItemType Directory -Path (Join-Path ([System.IO.Path]::GetTempPath()) "dsc-pester-cov-$([System.Guid]::NewGuid().ToString('N'))") -Force
+          $profPattern = Join-Path $profDir.FullName '%m_%p.profraw'
+          "LLVM_PROFILE_FILE=$profPattern" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_ENV
+          "prof_dir=$($profDir.FullName)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
       - name: Test ${{matrix.group}}
         run: |-
           $params = @{
@@ -155,6 +199,32 @@ jobs:
             Verbose          = $true
           }
           ./build.ps1 @params -PesterTestGroup ${{matrix.group}}
+      - name: Generate coverage report
+        if: always()
+        run: |-
+          Import-Module ./helpers.build.psm1 -Force
+          $exportParams = @{
+            BinDirectory     = Join-Path $PWD 'bin'
+            ProfileDirectory = '${{ steps.coverage-env.outputs.prof_dir }}'
+            OutputPath       = 'pester-lcov.info'
+            Verbose          = $true
+          }
+          Export-PesterCodeCoverageReport @exportParams
+      - name: Clean up coverage temp data
+        if: always()
+        run: |-
+          $profDir = '${{ steps.coverage-env.outputs.prof_dir }}'
+          if (Test-Path $profDir) {
+            Remove-Item -Path $profDir -Recurse -Force
+            Write-Host "Cleaned up temp coverage data: $profDir"
+          }
+      - name: Upload coverage data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-pester-${{matrix.group}}-coverage
+          path: pester-lcov.info
+          if-no-files-found: ignore
 
   # Windows
   windows-build:
@@ -171,7 +241,7 @@ jobs:
       - name: Build and test with code coverage
         id: rust-tests
         continue-on-error: true
-        run: ./build.ps1 -Clippy -Test -CodeCoverage -Verbose -PesterTestGroup resources
+        run: ./build.ps1 -Clippy -Test -CodeCoverage -ExcludePesterTests -Verbose
       - name: Upload coverage data
         if: always()
         uses: actions/upload-artifact@v4
@@ -209,6 +279,15 @@ jobs:
           name: windows-bin
       - name:  Expand build artifact
         run:   tar -xvf bin.tar
+      - name: Install llvm-tools for coverage
+        run: rustup component add llvm-tools-preview
+      - name: Set coverage profile environment
+        id: coverage-env
+        run: |-
+          $profDir = New-Item -ItemType Directory -Path (Join-Path ([System.IO.Path]::GetTempPath()) "dsc-pester-cov-$([System.Guid]::NewGuid().ToString('N'))") -Force
+          $profPattern = Join-Path $profDir.FullName '%m_%p.profraw'
+          "LLVM_PROFILE_FILE=$profPattern" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_ENV
+          "prof_dir=$($profDir.FullName)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
       - name: Test ${{matrix.group}}
         run: |-
           $params = @{
@@ -218,6 +297,32 @@ jobs:
             Verbose          = $true
           }
           ./build.ps1 @params -PesterTestGroup ${{matrix.group}}
+      - name: Generate coverage report
+        if: always()
+        run: |-
+          Import-Module ./helpers.build.psm1 -Force
+          $exportParams = @{
+            BinDirectory     = Join-Path $PWD 'bin'
+            ProfileDirectory = '${{ steps.coverage-env.outputs.prof_dir }}'
+            OutputPath       = 'pester-lcov.info'
+            Verbose          = $true
+          }
+          Export-PesterCodeCoverageReport @exportParams
+      - name: Clean up coverage temp data
+        if: always()
+        run: |-
+          $profDir = '${{ steps.coverage-env.outputs.prof_dir }}'
+          if (Test-Path $profDir) {
+            Remove-Item -Path $profDir -Recurse -Force
+            Write-Host "Cleaned up temp coverage data: $profDir"
+          }
+      - name: Upload coverage data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-pester-${{matrix.group}}-coverage
+          path: pester-lcov.info
+          if-no-files-found: ignore
 
   coverage-report:
     if: github.event_name == 'pull_request'
@@ -246,16 +351,44 @@ jobs:
           $headSha = '${{ github.event.pull_request.head.sha }}'
 
           # Compute the merge-base to get an accurate diff of only PR changes.
-          # Using base.sha directly is unreliable after rebases or when the base
-          # branch has advanced, since it points to the tip of the base branch at
-          # event time rather than the common ancestor.
           $mergeBase = git merge-base $baseSha $headSha 2>$null
           if ($LASTEXITCODE -eq 0 -and $mergeBase) {
               Write-Verbose -Verbose "Using merge-base $mergeBase (base=$baseSha, head=$headSha)"
               $baseSha = $mergeBase
           }
 
-          # Determine if any Rust files changed from git diff
+          # Find all available lcov.info files from coverage artifacts
+          $lcovFiles = Get-ChildItem -Path 'coverage-data' -Filter 'lcov.info' -Recurse
+          $pesterLcovFiles = Get-ChildItem -Path 'coverage-data' -Filter 'pester-lcov.info' -Recurse
+          $allLcovFiles = @($lcovFiles) + @($pesterLcovFiles) | Where-Object { $_ }
+
+          if ($allLcovFiles.Count -eq 0) {
+              Write-Warning 'No coverage data found from any platform.'
+              "coverage_failed=true" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+              return
+          }
+          "coverage_failed=false" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+
+          Write-Verbose -Verbose "Found $($allLcovFiles.Count) LCOV file(s) to merge"
+
+          # Merge all LCOV files into a single consolidated report
+          $mergedLcovPath = Join-Path $PWD 'merged-lcov.info'
+          if ($allLcovFiles.Count -eq 1) {
+              Copy-Item -Path $allLcovFiles[0].FullName -Destination $mergedLcovPath
+          } else {
+              Merge-LcovFile -Path ($allLcovFiles | ForEach-Object { $_.FullName }) -OutputPath $mergedLcovPath -Verbose
+          }
+
+          # Full codebase coverage report (always computed)
+          $fullReport = Get-FullCodeCoverageReport -LcovPath $mergedLcovPath -Verbose
+
+          "full_percentage=$($fullReport.Percentage)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          "full_covered=$($fullReport.CoveredLines)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          "full_total=$($fullReport.TotalLines)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          "full_emoji=$($fullReport.Emoji)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+          "full_label=$($fullReport.Label)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+
+          # Changed-code coverage report (only when Rust files were modified)
           $changedFiles = git diff --name-only --diff-filter=ACMR "$baseSha..$headSha" -- '*.rs' | Where-Object { $_ }
           if (-not $changedFiles) {
               "has_rust_changes=false" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
@@ -263,16 +396,7 @@ jobs:
           }
           "has_rust_changes=true" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
 
-          # Find the first available lcov.info from the platform coverage artifacts
-          $lcovFile = Get-ChildItem -Path 'coverage-data' -Filter 'lcov.info' -Recurse | Select-Object -First 1
-          if (-not $lcovFile) {
-              Write-Warning 'No coverage data found from any platform.'
-              "coverage_failed=true" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
-              return
-          }
-          "coverage_failed=false" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
-
-          $report = Get-CodeCoverageReport -LcovPath $lcovFile.FullName -BaseSha $baseSha -HeadSha $headSha -Verbose
+          $report = Get-CodeCoverageReport -LcovPath $mergedLcovPath -BaseSha $baseSha -HeadSha $headSha -Verbose
 
           "percentage=$($report.Percentage)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
           "covered=$($report.CoveredLines)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
@@ -291,7 +415,9 @@ jobs:
           message: |
             ## ${{ steps.coverage.outputs.emoji }} Code Coverage Report
 
-            **Changed code coverage: ${{ steps.coverage.outputs.percentage }}%** (${{ steps.coverage.outputs.label }})
+            ### Changed Code Coverage
+
+            **${{ steps.coverage.outputs.percentage }}%** (${{ steps.coverage.outputs.label }})
 
             | Metric | Value |
             |--------|-------|
@@ -299,12 +425,22 @@ jobs:
             | Lines covered by tests | ${{ steps.coverage.outputs.covered }} |
             | Coverage percentage | ${{ steps.coverage.outputs.percentage }}% |
 
-            > Coverage is measured only on changed Rust code in this PR.
+            ### ${{ steps.coverage.outputs.full_emoji }} Full Codebase Coverage
+
+            **${{ steps.coverage.outputs.full_percentage }}%** (${{ steps.coverage.outputs.full_label }})
+
+            | Metric | Value |
+            |--------|-------|
+            | Total executable lines | ${{ steps.coverage.outputs.full_total }} |
+            | Lines covered by tests | ${{ steps.coverage.outputs.full_covered }} |
+            | Coverage percentage | ${{ steps.coverage.outputs.full_percentage }}% |
+
+            > Changed code coverage measures only Rust lines added/modified in this PR.
+            > Full codebase coverage measures all instrumented Rust lines across the project.
 
       - name: Post coverage comment (report failed)
         if: >-
-          steps.coverage.outputs.has_rust_changes == 'true'
-          && steps.coverage.outputs.coverage_failed == 'true'
+          steps.coverage.outputs.coverage_failed == 'true'
           && github.event.pull_request.head.repo.full_name == github.repository
         uses: marocchino/sticky-pull-request-comment@v2
         with:
@@ -318,6 +454,7 @@ jobs:
       - name: Post no-changes comment
         if: >-
           steps.coverage.outputs.has_rust_changes == 'false'
+          && steps.coverage.outputs.coverage_failed != 'true'
           && github.event.pull_request.head.repo.full_name == github.repository
         uses: marocchino/sticky-pull-request-comment@v2
         with:
@@ -325,7 +462,19 @@ jobs:
           message: |
             ## Code Coverage Report
 
-            No Rust files were changed in this PR. Coverage analysis skipped.
+            No Rust files were changed in this PR.
+
+            ### ${{ steps.coverage.outputs.full_emoji }} Full Codebase Coverage
+
+            **${{ steps.coverage.outputs.full_percentage }}%** (${{ steps.coverage.outputs.full_label }})
+
+            | Metric | Value |
+            |--------|-------|
+            | Total executable lines | ${{ steps.coverage.outputs.full_total }} |
+            | Lines covered by tests | ${{ steps.coverage.outputs.full_covered }} |
+            | Coverage percentage | ${{ steps.coverage.outputs.full_percentage }}% |
+
+            > Full codebase coverage measures all instrumented Rust lines across the project.
 
       - name: Fail if coverage is below 70%
         if: >-
