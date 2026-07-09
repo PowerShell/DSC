@@ -2099,15 +2099,19 @@ function Export-PesterCodeCoverageReport {
             throw "llvm-profdata merge failed with exit code $LASTEXITCODE"
         }
 
-        # Find all executable binaries in the bin directory
-        $nonBinaryExtensions = @('.pdb', '.d', '.ps1', '.psm1', '.psd1', '.json', '.yaml', '.yml', '.txt', '.md')
+        # Find all executable binaries in the bin directory.
+        # On Unix, Rust produces binaries with no file extension. We identify them by
+        # excluding known non-binary extensions. We cannot rely solely on the execute
+        # permission bit because artifact upload/download may not preserve it.
+        $nonBinaryExtensions = @('.pdb', '.d', '.ps1', '.psm1', '.psd1', '.json', '.yaml', '.yml', '.txt', '.md', '.sh')
         $binaries = @(
             if ($IsWindows) {
                 Get-ChildItem -Path $BinDirectory -Filter '*.exe' -File
             } else {
                 Get-ChildItem -Path $BinDirectory -File | Where-Object {
-                    $_.Extension -notin $nonBinaryExtensions -and
-                    ($_.Mode -match 'x')
+                    -not $_.Extension -or
+                    ($_.Extension -notin $nonBinaryExtensions -and
+                     $_.UnixMode -and $_.UnixMode -match 'x')
                 }
             }
         )
