@@ -206,7 +206,7 @@ extends:
 
         - task: PipAuthenticate@1
           inputs:
-            artifactFeeds: 'PowerShellCore/PowerShellCore_PublicPackages'
+            artifactFeeds: 'Compute-PMC@Release'
           displayName: 'Pip Authenticate'
           env:
             ob_restore_phase: true
