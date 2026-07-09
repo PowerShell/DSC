@@ -179,6 +179,8 @@ extends:
             - input: pipelineArtifact
               artifactName: drop_BuildAndSign_BuildLinuxArm64Musl
         variables:
+          - name: LinuxContainerImage
+            value: 'onebranch.azurecr.io/linux/ubuntu-2204:latest'
           - name: ob_outputDirectory
             value: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
           - name: ev2ServiceGroupRootFolder
@@ -326,6 +328,7 @@ extends:
             SourceFolder: '$(Build.SourcesDirectory)/.pipelines'
             Contents: 'EV2Specs/**'
             TargetFolder: $(ob_outputDirectory)
+
     - stage: Prod_PMCRelease
       displayName: 'Deploy packages to PMC with EV2'
       dependsOn:
