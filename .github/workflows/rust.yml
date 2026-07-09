@@ -329,7 +329,7 @@ jobs:
 
   coverage-report:
     if: github.event_name == 'pull_request'
-    needs: [linux-build, macos-build, windows-build, linux-pester, macos-pester, windows-pester]
+    needs: [linux-build, linux-pester]
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -342,7 +342,7 @@ jobs:
       - name: Download coverage artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: '*-coverage'
+          pattern: 'linux*coverage'
           path: coverage-data
 
       - name: Consolidate coverage data
