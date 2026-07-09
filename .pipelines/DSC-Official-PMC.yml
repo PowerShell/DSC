@@ -206,7 +206,7 @@ extends:
 
         - task: PipAuthenticate@1
           inputs:
-            artifactFeeds: 'DSC-Compute-PMC'
+            artifactFeeds: 'One/DSC-Compute-PMC'
           displayName: 'Pip Authenticate'
           env:
             ob_restore_phase: true
