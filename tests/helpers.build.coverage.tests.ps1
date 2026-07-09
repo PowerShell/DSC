@@ -120,19 +120,19 @@ end_of_record
 
         It 'Sums hit counts for matching lines' {
             # Line 1: 5 + 2 + 1 = 8
-            $script:mergedContent | Should -Match '(?m)^DA:1,8$'
+            $script:mergedContent | Should -Match '(?m)^DA:1,8\r?$'
             # Line 2: 3 + 0 + 0 = 3
-            $script:mergedContent | Should -Match '(?m)^DA:2,3$'
+            $script:mergedContent | Should -Match '(?m)^DA:2,3\r?$'
             # Line 3: 0 + 4 + 0 = 4
-            $script:mergedContent | Should -Match '(?m)^DA:3,4$'
+            $script:mergedContent | Should -Match '(?m)^DA:3,4\r?$'
         }
 
         It 'Reports all 3 lines covered (all have non-zero sum)' {
-            $script:mergedContent | Should -Match '(?m)^LH:3$'
+            $script:mergedContent | Should -Match '(?m)^LH:3\r?$'
         }
 
         It 'Reports 3 total lines' {
-            $script:mergedContent | Should -Match '(?m)^LF:3$'
+            $script:mergedContent | Should -Match '(?m)^LF:3\r?$'
         }
     }
 

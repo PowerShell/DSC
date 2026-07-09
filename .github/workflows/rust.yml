@@ -329,6 +329,10 @@ jobs:
 
   coverage-report:
     if: github.event_name == 'pull_request'
+    # Use Linux coverage only: merging all platforms inflates total line count
+    # because each platform has platform-specific source files (Windows adds ~4500
+    # lines from registry/service/DISM resources). Single-platform coverage matches
+    # local `build.ps1 -codecoverage` results and avoids misleadingly low percentages.
     needs: [linux-build, linux-pester]
     runs-on: ubuntu-latest
     permissions:
