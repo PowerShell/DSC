@@ -2099,15 +2099,19 @@ function Export-PesterCodeCoverageReport {
             throw "llvm-profdata merge failed with exit code $LASTEXITCODE"
         }
 
-        # Find all executable binaries in the bin directory
-        $nonBinaryExtensions = @('.pdb', '.d', '.ps1', '.psm1', '.psd1', '.json', '.yaml', '.yml', '.txt', '.md')
+        # Find all executable binaries in the bin directory.
+        # On Unix, Rust produces binaries with no file extension. We identify them by
+        # excluding known non-binary extensions. We cannot rely solely on the execute
+        # permission bit because artifact upload/download may not preserve it.
+        $nonBinaryExtensions = @('.pdb', '.d', '.ps1', '.psm1', '.psd1', '.json', '.yaml', '.yml', '.txt', '.md', '.sh')
         $binaries = @(
             if ($IsWindows) {
                 Get-ChildItem -Path $BinDirectory -Filter '*.exe' -File
             } else {
                 Get-ChildItem -Path $BinDirectory -File | Where-Object {
-                    $_.Extension -notin $nonBinaryExtensions -and
-                    ($_.Mode -match 'x')
+                    -not $_.Extension -or
+                    ($_.Extension -notin $nonBinaryExtensions -and
+                     $_.UnixMode -and $_.UnixMode -match 'x')
                 }
             }
         )
@@ -2147,6 +2151,76 @@ function Export-PesterCodeCoverageReport {
     }
 }
 
+function ConvertTo-NormalizedLcovSourcePath {
+    <#
+        .SYNOPSIS
+        Normalizes an LCOV SF: path to a relative, forward-slash path for consistent merging.
+
+        .DESCRIPTION
+        LCOV files generated on different platforms contain platform-specific absolute paths
+        (e.g., /home/runner/work/DSC/DSC/src/foo.rs on Linux, D:\a\DSC\DSC\src\foo.rs on
+        Windows). This function strips common CI workspace prefixes and normalizes path
+        separators so that the same source file is recognized across platforms when merging
+        coverage data.
+
+        .PARAMETER RawPath
+        The raw SF: path value from an LCOV file.
+
+        .OUTPUTS
+        A normalized relative path using forward slashes.
+    #>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory)]
+        [string]$RawPath
+    )
+
+    process {
+        $normalized = $RawPath
+
+        # Normalize backslashes to forward slashes
+        $normalized = $normalized.Replace('\', '/')
+
+        # Strip common CI workspace prefixes:
+        # GitHub Actions Linux/macOS: /home/runner/work/<repo>/<repo>/ or /Users/runner/work/<repo>/<repo>/
+        # GitHub Actions Windows: D:/a/<repo>/<repo>/ (after backslash normalization)
+        $patterns = @(
+            '^/home/[^/]+/work/[^/]+/[^/]+/'     # Linux: /home/runner/work/DSC/DSC/
+            '^/Users/[^/]+/work/[^/]+/[^/]+/'     # macOS: /Users/runner/work/DSC/DSC/
+            '^[A-Za-z]:/a/[^/]+/[^/]+/'           # Windows: D:/a/DSC/DSC/
+        )
+
+        foreach ($pattern in $patterns) {
+            if ($normalized -match $pattern) {
+                $normalized = $normalized -replace $pattern, ''
+                break
+            }
+        }
+
+        # If still absolute (starts with / or a drive letter), try to find a known source
+        # directory marker and make relative from there (e.g., from the crate root)
+        if ($normalized.StartsWith('/') -or $normalized -match '^[A-Za-z]:/') {
+            # Look for common Rust project markers in the path
+            $markers = @('/src/', '/tests/', '/benches/', '/examples/')
+            foreach ($marker in $markers) {
+                $markerIdx = $normalized.IndexOf($marker)
+                if ($markerIdx -gt 0) {
+                    # Find the crate directory (one level up from src/tests/etc.)
+                    $prefix = $normalized.Substring(0, $markerIdx)
+                    $lastSlash = $prefix.LastIndexOf('/')
+                    if ($lastSlash -ge 0) {
+                        $normalized = $normalized.Substring($lastSlash + 1)
+                        break
+                    }
+                }
+            }
+        }
+
+        return $normalized
+    }
+}
+
 function Merge-LcovFile {
     <#
         .SYNOPSIS
@@ -2156,6 +2230,10 @@ function Merge-LcovFile {
         Reads multiple LCOV-format coverage files and merges them by combining line hit
         counts for matching source files. When the same line appears in multiple reports,
         the hit counts are summed.
+
+        Source file paths are normalized to relative paths before merging so that LCOV
+        files generated on different platforms (with different absolute workspace paths
+        and path separators) are correctly recognized as covering the same source files.
 
         .PARAMETER Path
         Array of paths to LCOV files to merge.
@@ -2173,7 +2251,7 @@ function Merge-LcovFile {
     )
 
     process {
-        # Structure: $coverage[sourceFile][lineNumber] = hitCount
+        # Structure: $coverage[normalizedSourceFile][lineNumber] = hitCount
         $coverage = @{}
 
         foreach ($lcovPath in $Path) {
@@ -2185,7 +2263,7 @@ function Merge-LcovFile {
             $currentFile = $null
             foreach ($line in Get-Content -Path $lcovPath) {
                 if ($line -match '^SF:(.+)$') {
-                    $currentFile = $Matches[1]
+                    $currentFile = ConvertTo-NormalizedLcovSourcePath -RawPath $Matches[1]
                     if (-not $coverage.ContainsKey($currentFile)) {
                         $coverage[$currentFile] = @{}
                     }
