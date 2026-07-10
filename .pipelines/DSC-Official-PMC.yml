@@ -206,7 +206,7 @@ extends:
 
         - task: PipAuthenticate@1
           inputs:
-#            artifactFeeds: 'One/DSC-Compute-PMC'
+            # artifactFeeds: 'One/DSC-Compute-PMC'
             artifactFeeds: 'One/azsecpack-pmc-cli'
           displayName: 'Pip Authenticate'
           env:
@@ -248,7 +248,7 @@ extends:
             $metadataHash = @{
               ReleaseTag   = "v$packageVersion"
               ForProduction = $true
-              SkipPublish  = $(PublishToPMC) -eq 'false'
+              SkipPublish  = '$(PublishToPMC)'' -eq 'False'
             }
 
             $metadataHash | ConvertTo-Json | Out-File $pathToPMCMetadataFile
