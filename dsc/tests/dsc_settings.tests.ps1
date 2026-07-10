@@ -24,6 +24,8 @@ Describe 'tests for dsc settings' {
         $script:dscDefaultSettingsFilePath_backup = Join-Path $script:dscHome "dsc_default.settings.json.backup"
         Copy-Item -Force -Path $script:dscSettingsFilePath -Destination $script:dscSettingsFilePath_backup
         Copy-Item -Force -Path $script:dscDefaultSettingsFilePath -Destination $script:dscDefaultSettingsFilePath_backup
+
+        $script:originalXdgConfigHome = $env:XDG_CONFIG_HOME
     }
 
     AfterAll {
@@ -45,6 +47,7 @@ Describe 'tests for dsc settings' {
         if ($IsWindows) { #"Setting policy on Linux requires sudo"
             Remove-Item -Path $script:policyFilePath -ErrorAction SilentlyContinue
         }
+        $env:XDG_CONFIG_HOME = $script:originalXdgConfigHome
     }
 
     It 'ensure a new tracing value in settings has effect' {
@@ -105,5 +108,90 @@ Describe 'tests for dsc settings' {
         dsc resource list 2> $TestDrive/tracing.txt
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Trace-level is Trace"
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Using Resource Path: Defaultv1SettingsDir'
+    }
+
+    It 'ensure a user settings file via XDG_CONFIG_HOME has effect' {
+
+        $env:XDG_CONFIG_HOME = Join-Path $TestDrive 'xdg'
+        $userSettingsDir = Join-Path $env:XDG_CONFIG_HOME 'dsc'
+        New-Item -ItemType Directory -Path $userSettingsDir -Force | Out-Null
+
+        $script:dscDefaultv1Settings."resourcePath"."directories" = @("UserDir")
+        $script:dscDefaultv1Settings | ConvertTo-Json -Depth 90 | Set-Content -Force -Path (Join-Path $userSettingsDir 'dsc.settings.json')
+
+        dsc -l debug resource list 2> $TestDrive/tracing.txt
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Using Resource Path: UserDir'
+    }
+
+    It 'ensure a workspace settings file has effect' {
+
+        $workspaceDir = Join-Path $TestDrive 'workspace'
+        New-Item -ItemType Directory -Path $workspaceDir -Force | Out-Null
+
+        $script:dscDefaultv1Settings."resourcePath"."directories" = @("WorkspaceDir")
+        $script:dscDefaultv1Settings | ConvertTo-Json -Depth 90 | Set-Content -Force -Path (Join-Path $workspaceDir 'dsc.settings.json')
+
+        try {
+            Push-Location $workspaceDir
+            dsc -l debug resource list 2> $TestDrive/tracing.txt
+        } finally {
+            Pop-Location
+        }
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Using Resource Path: WorkspaceDir'
+    }
+
+    It 'ensure workspace settings override user and install settings' {
+
+        $script:dscDefaultv1Settings."resourcePath"."directories" = @("InstallDir")
+        $script:dscDefaultv1Settings | ConvertTo-Json -Depth 90 | Set-Content -Force -Path $script:dscSettingsFilePath
+
+        $env:XDG_CONFIG_HOME = Join-Path $TestDrive 'xdg'
+        $userSettingsDir = Join-Path $env:XDG_CONFIG_HOME 'dsc'
+        New-Item -ItemType Directory -Path $userSettingsDir -Force | Out-Null
+        $script:dscDefaultv1Settings."resourcePath"."directories" = @("UserDir")
+        $script:dscDefaultv1Settings | ConvertTo-Json -Depth 90 | Set-Content -Force -Path (Join-Path $userSettingsDir 'dsc.settings.json')
+
+        $workspaceDir = Join-Path $TestDrive 'workspace'
+        New-Item -ItemType Directory -Path $workspaceDir -Force | Out-Null
+        $script:dscDefaultv1Settings."resourcePath"."directories" = @("WorkspaceDir")
+        $script:dscDefaultv1Settings | ConvertTo-Json -Depth 90 | Set-Content -Force -Path (Join-Path $workspaceDir 'dsc.settings.json')
+
+        # user settings override install settings
+        dsc -l debug resource list 2> $TestDrive/tracing.txt
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Using Resource Path: UserDir'
+
+        # workspace settings override user settings
+        try {
+            Push-Location $workspaceDir
+            dsc -l debug resource list 2> $TestDrive/tracing.txt
+        } finally {
+            Pop-Location
+        }
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Using Resource Path: WorkspaceDir'
+    }
+
+    It 'ensure policy overrides workspace settings' {
+
+        if (! $IsWindows) {
+            Set-ItResult -Skip -Because "Setting policy requires sudo"
+            return
+        }
+
+        $script:dscDefaultv1Settings."resourcePath"."directories" = @("PolicyDir")
+        # only define resourcePath as policy so the tracing field stays overridable by '-l debug'
+        @{ resourcePath = $script:dscDefaultv1Settings."resourcePath" } | ConvertTo-Json -Depth 90 | Set-Content -Force -Path $script:policyFilePath
+
+        $workspaceDir = Join-Path $TestDrive 'workspace'
+        New-Item -ItemType Directory -Path $workspaceDir -Force | Out-Null
+        $script:dscDefaultv1Settings."resourcePath"."directories" = @("WorkspaceDir")
+        $script:dscDefaultv1Settings | ConvertTo-Json -Depth 90 | Set-Content -Force -Path (Join-Path $workspaceDir 'dsc.settings.json')
+
+        try {
+            Push-Location $workspaceDir
+            dsc -l debug resource list 2> $TestDrive/tracing.txt
+        } finally {
+            Pop-Location
+        }
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Using Resource Path: PolicyDir'
     }
 }

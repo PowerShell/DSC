@@ -19,6 +19,7 @@ pub mod extensions;
 pub mod functions;
 pub mod parser;
 pub mod progress;
+pub mod settings;
 pub mod types;
 pub mod util;
 
