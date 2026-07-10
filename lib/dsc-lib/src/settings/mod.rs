@@ -49,8 +49,7 @@ pub struct TracingSetting {
     pub level: TraceLevel,
     /// Trace format to use.
     pub format: TraceFormat,
-    /// Whether `level` can be overridden by the `DSC_TRACE_LEVEL` environment variable
-    /// or the `--trace-level` CLI option.
+    /// Whether `level` can be overridden by the `DSC_TRACE_LEVEL` environment variable.
     pub allow_override: bool,
 }
 
@@ -389,7 +388,7 @@ mod tests {
     }
 
     #[test]
-    fn lower_scope_setting_overrides_higher_scope() {
+    fn higher_scope_setting_overrides_lower_scope() {
         let install = DscSettings {
             tracing: Some(TracingSetting {
                 level: TraceLevel::Info,

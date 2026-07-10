@@ -76,13 +76,16 @@ impl CommandDiscovery {
 
     fn get_resource_paths() -> Result<Vec<PathBuf>, DscError>
     {
-        let resource_path_setting = get_settings().resource_path.value.clone();
+        let resolved_resource_path = get_settings().resource_path.clone();
+        // a policy-scoped resourcePath cannot be overridden by the environment variable
+        let allow_env_override = resolved_resource_path.value.allow_env_override && !resolved_resource_path.is_policy();
+        let resource_path_setting = resolved_resource_path.value;
 
         let mut using_custom_path = false;
         let mut paths: Vec<PathBuf> = vec![];
 
         let dsc_resource_path = env::var_os("DSC_RESOURCE_PATH");
-        if resource_path_setting.allow_env_override && dsc_resource_path.is_some() {
+        if allow_env_override && dsc_resource_path.is_some() {
             if let Some(value) = dsc_resource_path {
                 debug!("DSC_RESOURCE_PATH: {:?}", value.to_string_lossy());
                 using_custom_path = true;
