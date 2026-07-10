@@ -206,7 +206,7 @@ extends:
 
         - task: PipAuthenticate@1
           inputs:
-            artifactFeeds: 'One/Compute-PMC@Release'
+            artifactFeeds: 'One/DSC-Compute-PMC'
           displayName: 'Pip Authenticate'
           env:
             ob_restore_phase: true
@@ -216,7 +216,7 @@ extends:
             pip --version --verbose
             $pythonDlFolderPath = Join-Path '$(ev2ServiceGroupRootFolder)/Shell/Run' -ChildPath "python_dl"
             New-Item -Path $pythonDlFolderPath -ItemType Directory -Force > $null
-            pip download -d $pythonDlFolderPath pmc-cli --platform=manylinux_2_17_x86_64 --only-binary=:all: --verbose
+            pip download -d $pythonDlFolderPath pmc-cli --only-binary=:all: --verbose
           displayName: 'Download pmc-cli package'
           env:
             ob_restore_phase: true
