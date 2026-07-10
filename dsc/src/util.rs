@@ -322,8 +322,9 @@ pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Op
     let mut tracing_setting = resolved_settings.tracing.value.clone();
     let policy_is_used = resolved_settings.tracing.is_policy();
 
-    // override with DSC_TRACE_LEVEL env var if permitted
-    if tracing_setting.allow_override && let Ok(level) = env::var(DSC_TRACE_LEVEL) {
+    // override with DSC_TRACE_LEVEL env var if permitted; a policy-scoped tracing
+    // setting cannot be overridden by the environment variable
+    if !policy_is_used && tracing_setting.allow_override && let Ok(level) = env::var(DSC_TRACE_LEVEL) {
         tracing_setting.level = match level.to_ascii_uppercase().as_str() {
             "ERROR" => TraceLevel::Error,
             "WARN" => TraceLevel::Warn,
