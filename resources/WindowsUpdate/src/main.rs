@@ -108,5 +108,5 @@ fn main() {
 
 #[cfg(windows)]
 fn parse_what_if_arg(args: &[String]) -> bool {
-    args.iter().skip(2).any(|arg| arg == "-w" || arg == "--what-if")
+    args.iter().any(|arg| arg == "-w" || arg == "--what-if")
 }
