@@ -10,14 +10,14 @@ use windows::{
     Win32::System::UpdateAgent::*,
 };
 
-use crate::windows_update::types::{UpdateList, UpdateInfo, extract_update_info};
+use crate::windows_update::types::{UpdateList, UpdateInfo, Metadata, extract_update_info};
 
 /// Gets the computer name using the COMPUTERNAME environment variable
 fn get_computer_name() -> String {
     std::env::var("COMPUTERNAME").unwrap_or_else(|_| "localhost".to_string())
 }
 
-pub fn handle_set(input: &str) -> Result<String> {
+pub fn handle_set(input: &str, what_if: bool) -> Result<String> {
     // Parse input as UpdateList
     let update_list: UpdateList = serde_json::from_str(input)
         .map_err(|e| Error::new(E_INVALIDARG, t!("set.failedParseInput", err = e.to_string())))?;
@@ -217,6 +217,15 @@ pub fn handle_set(input: &str) -> Result<String> {
             let update_info = if is_installed {
                 // Already installed, just return current state
                 extract_update_info(&update)?
+            } else if what_if {
+                // What-if: project the state after installation without making changes
+                let mut projected = extract_update_info(&update)?;
+                let title = projected.title.clone().unwrap_or_default();
+                projected.is_installed = Some(true);
+                projected.metadata = Some(Metadata {
+                    what_if: Some(vec![t!("set.whatIfInstallUpdate", title = title).to_string()]),
+                });
+                projected
             } else {
                 // Not installed - proceed with installation
                 // Create update collection for download/install
