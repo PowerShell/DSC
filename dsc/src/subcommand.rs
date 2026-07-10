@@ -28,7 +28,7 @@ use dsc_lib::{
     },
     dscresources::dscresource::{Capability, ImplementedAs, validate_json, validate_properties},
     extensions::dscextension::Capability as ExtensionCapability,
-    functions::FunctionDispatcher,
+    functions::{FunctionCategory, FunctionDispatcher},
     progress::ProgressFormat,
     util::convert_wildcard_to_regex,
 };
@@ -541,8 +541,8 @@ pub fn extension(subcommand: &ExtensionSubCommand, progress_format: ProgressForm
 pub fn function(subcommand: &FunctionSubCommand) {
     let functions = FunctionDispatcher::new();
     match subcommand {
-        FunctionSubCommand::List { function_name, output_format } => {
-            list_functions(&functions, function_name.as_ref(), output_format.as_ref());
+        FunctionSubCommand::List { function_name, category, description, output_format } => {
+            list_functions(&functions, function_name.as_ref(), category, description.as_ref(), output_format.as_ref());
         },
     }
 }
@@ -689,7 +689,7 @@ fn list_extensions(dsc: &mut DscManager, extension_name: &TypeNameFilter, format
     }
 }
 
-fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>, output_format: Option<&ListOutputFormat>) {
+fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>, category: &[FunctionCategory], description: Option<&String>, output_format: Option<&ListOutputFormat>) {
     let write_table = should_write_table(output_format);
     let mut table = Table::new(&[
         t!("subcommand.tableHeader_functionCategory").to_string().as_ref(),
@@ -709,11 +709,35 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
         exit(EXIT_INVALID_ARGS);
     };
 
+    let description_regex = description.map(|description| {
+        let regex_str = convert_wildcard_to_regex(description);
+        // strip the `^` and `$` anchors so the filter searches within the description text
+        let regex_str = &regex_str[1..regex_str.len() - 1];
+        let mut regex_builder = RegexBuilder::new(regex_str);
+        regex_builder.case_insensitive(true);
+        let Ok(regex) = regex_builder.build() else {
+            error!("{}: {}", t!("subcommand.invalidFunctionDescriptionFilter"), regex_str);
+            exit(EXIT_INVALID_ARGS);
+        };
+        regex
+    });
+
     let mut functions_list = functions.list();
     functions_list.sort();
     for function in functions_list {
         if !regex.is_match(&function.name) {
             continue;
+        }
+
+        // all specified categories must be present on the function (AND filter)
+        if !category.iter().all(|c| function.category.contains(c)) {
+            continue;
+        }
+
+        if let Some(ref description_regex) = description_regex {
+            if !description_regex.is_match(&function.description) {
+                continue;
+            }
         }
 
         if write_table {

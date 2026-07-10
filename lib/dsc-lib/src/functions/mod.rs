@@ -428,3 +428,46 @@ impl Display for FunctionCategory {
         }
     }
 }
+
+impl FunctionCategory {
+    /// All defined function categories.
+    pub const ALL: [FunctionCategory; 12] = [
+        FunctionCategory::Array,
+        FunctionCategory::Cidr,
+        FunctionCategory::Comparison,
+        FunctionCategory::Date,
+        FunctionCategory::Deployment,
+        FunctionCategory::Lambda,
+        FunctionCategory::Logical,
+        FunctionCategory::Numeric,
+        FunctionCategory::Object,
+        FunctionCategory::Resource,
+        FunctionCategory::String,
+        FunctionCategory::System,
+    ];
+}
+
+impl std::str::FromStr for FunctionCategory {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "array" => Ok(FunctionCategory::Array),
+            "cidr" => Ok(FunctionCategory::Cidr),
+            "comparison" => Ok(FunctionCategory::Comparison),
+            "date" => Ok(FunctionCategory::Date),
+            "deployment" => Ok(FunctionCategory::Deployment),
+            "lambda" => Ok(FunctionCategory::Lambda),
+            "logical" => Ok(FunctionCategory::Logical),
+            "numeric" => Ok(FunctionCategory::Numeric),
+            "object" => Ok(FunctionCategory::Object),
+            "resource" => Ok(FunctionCategory::Resource),
+            "string" => Ok(FunctionCategory::String),
+            "system" => Ok(FunctionCategory::System),
+            _ => {
+                let valid = Self::ALL.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ");
+                Err(t!("functions.invalidCategory", category = s, valid_categories = valid).to_string())
+            },
+        }
+    }
+}

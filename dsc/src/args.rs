@@ -4,6 +4,7 @@
 use clap::{Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
 use dsc_lib::dscresources::command_resource::TraceLevel;
+use dsc_lib::functions::FunctionCategory;
 use dsc_lib::progress::ProgressFormat;
 use dsc_lib::types::{FullyQualifiedTypeName, ResourceVersionReq, TypeNameFilter};
 use rust_i18n::t;
@@ -193,6 +194,10 @@ pub enum FunctionSubCommand {
     List {
         /// Optional function name to filter the list
         function_name: Option<String>,
+        #[clap(short = 'c', long = "category", help = t!("args.functionCategory").to_string())]
+        category: Vec<FunctionCategory>,
+        #[clap(short, long, help = t!("args.functionDescription").to_string())]
+        description: Option<String>,
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
         output_format: Option<ListOutputFormat>,
     },
