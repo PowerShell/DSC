@@ -11,7 +11,7 @@
 			"description": "An adapted resource for testing Python Adapter.",
 			"author": "DSC Python Team",
 			"requireAdapter": "Microsoft.DSC.Adapters/Python",
-			"path": "src/get.py",
+			"path": "get.py",
 			"schema": {
 				"embedded": {
 					"$schema": "http://json-schema.org/draft-07/schema#",
@@ -66,7 +66,7 @@
 			"description": "An adapted resource for testing Python Adapter.",
 			"author": "DSC Python Team",
 			"requireAdapter": "Microsoft.DSC.Adapters/Python",
-			"path": "src/set.py",
+			"path": "set.py",
 			"schema": {
 				"embedded": {
 					"$schema": "http://json-schema.org/draft-07/schema#",
@@ -121,7 +121,7 @@
 			"description": "An adapted resource for testing Python Adapter.",
 			"author": "DSC Python Team",
 			"requireAdapter": "Microsoft.DSC.Adapters/Python",
-			"path": "src/test.py",
+			"path": "test.py",
 			"schema": {
 				"embedded": {
 					"$schema": "http://json-schema.org/draft-07/schema#",
@@ -176,7 +176,7 @@
 			"description": "An adapted resource for testing Python Adapter.",
 			"author": "DSC Python Team",
 			"requireAdapter": "Microsoft.DSC.Adapters/Python",
-			"path": "src/export.py",
+			"path": "export.py",
 			"schema": {
 				"embedded": {
 					"$schema": "http://json-schema.org/draft-07/schema#",

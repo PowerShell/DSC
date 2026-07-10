@@ -3,3 +3,4 @@ from cli import main  # TODO: Currently using absolute imports. Switch to relati
 
 if __name__ == "__main__":
     sys.exit(main())
+    

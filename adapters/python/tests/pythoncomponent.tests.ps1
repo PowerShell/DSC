@@ -219,8 +219,10 @@ Describe "Python Adapter - Component Tests" {
     }
 
     It "TEST returns expected drift output for <CaseName>" -TestCases @(
-        @{ CaseName = "drift"; InputJson = '{"name":"pkg","_exist":false,"desired_exist":true}'; ExpectedActualStateName = "pkg"; ExpectedActualStateExists = $false; ExpectedDiffCount = $null; ExpectedDiffValue = "_exist" }
-        @{ CaseName = "no drift"; InputJson = '{"name":"pkg","_exist":true,"desired_exist":true}'; ExpectedActualStateName = $null; ExpectedActualStateExists = $null; ExpectedDiffCount = 0; ExpectedDiffValue = $null }
+        @{ CaseName = "drift when simulated package is present"; InputJson = '{"name":"pkg","_exist":false}'; ExpectedActualStateName = "pkg"; ExpectedActualStateExists = $true; ExpectedDiffCount = $null; ExpectedDiffValue = "_exist" }
+        @{ CaseName = "no drift when simulated package is present"; InputJson = '{"name":"pkg","_exist":true}'; ExpectedActualStateName = $null; ExpectedActualStateExists = $null; ExpectedDiffCount = 0; ExpectedDiffValue = $null }
+        @{ CaseName = "drift when simulated package is absent"; InputJson = '{"name":"curl","_exist":true}'; ExpectedActualStateName = "curl"; ExpectedActualStateExists = $false; ExpectedDiffCount = $null; ExpectedDiffValue = "_exist" }
+        @{ CaseName = "no drift when simulated package is absent"; InputJson = '{"name":"curl","_exist":false}'; ExpectedActualStateName = $null; ExpectedActualStateExists = $null; ExpectedDiffCount = 0; ExpectedDiffValue = $null }
     ) {
         $result = Invoke-Adapter -Operation "test" -ResourceType "PythonTest/Test" -InputJson $InputJson
 
@@ -294,15 +296,12 @@ Describe "Python Adapter - Component Tests" {
     It "EXPORT with filter input still returns package collection" {
         $result = Invoke-Adapter -Operation "export" -ResourceType "PythonTest/Export" -InputJson '{"name":"alpha"}'
 
-        if ($result.ExitCode -eq 0) {
-            $payload = $result.StdOut | ConvertFrom-Json
-              $payload.packages.Count | Should -Be 2
-              $payload.packages[0].name | Should -Be "alpha"
-        }
-        else {
-              $result.ExitCode | Should -Be 1
-              ($result.StdOut + "`n" + $result.StdErr) | Should -Match 'takes no arguments'
-        }
+            $result.ExitCode | Should -Be 0 -Because $result.StdErr
+            $result.StdOut | Should -Match '^\{.*\}$' -Because $result.StdErr
+
+          $payload = $result.StdOut | ConvertFrom-Json
+            $payload.packages.Count | Should -Be 1
+            $payload.packages[0].name | Should -Be "alpha"
     }
 
     It "Unknown resource type returns exit code 2" {

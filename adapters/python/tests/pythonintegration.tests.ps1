@@ -21,7 +21,9 @@ Describe "Python Adapter - Integration Tests via DSC CLI" {
 
                 $Result.ExitCode | Should -Not -Be 0
                 $Result.StdErr | Should -Not -BeNullOrEmpty
-                $Result.StdErr | Should -Match "Operation Executable 'python3' not found|Failed to run process 'python3'|Command: Resource 'python3' \[exit code 2\]|Resource not found:\s*PythonTest/|Failed to parse resource:"
+                # Python adapter manifest now has a condition on python3 availability.
+                # If unavailable, resource discovery should fail cleanly rather than execution failing.
+                $Result.StdErr | Should -Match "Resource not found:\s*PythonTest/|Failed to parse resource:"
         }
 
         function Initialize-DscPythonPath {
@@ -201,23 +203,11 @@ Describe "Python Adapter - GET Operation via DSC" {
 
             $payload = $result.StdOut | ConvertFrom-Json
 
-            # DSC output shape can vary by adapter mode and engine version.
-            # Extract resource actualState from any known wrapper shape.
-            $actual = $null
+            $payload.actualState | Should -Not -BeNullOrEmpty -Because "GET output should include top-level actualState"
+            $payload.actualState.result | Should -BeNullOrEmpty -Because "actualState should be the resource state, not another DSC wrapper"
 
-            if ($null -ne $payload.actualState -and $null -ne $payload.actualState.result -and @($payload.actualState.result).Count -gt 0) {
-                $actual = $payload.actualState.result[0].result.actualState
-            }
-            elseif ($null -ne $payload.result -and @($payload.result).Count -gt 0) {
-                $actual = $payload.result[0].result.actualState
-            }
-            elseif ($null -ne $payload.actualState) {
-                $actual = $payload.actualState
-            }
-
-                $actual | Should -Not -BeNullOrEmpty -Because "GET output should include actualState"
-                $actual.name | Should -Be "pkg"
-                $actual._exist | Should -Be $true
+            $payload.actualState.name | Should -Be "pkg"
+            $payload.actualState._exist | Should -Be $true
         }
         else {
             Assert-KnownDscAdapterFailure -Result $result
@@ -255,10 +245,14 @@ Describe "Python Adapter - SET Operation via DSC" {
 }
 
 Describe "Python Adapter - TEST Operation via DSC" {
-    It "should compare actual vs desired and report diffs" {
+    It "should compare actual vs desired for <CaseName>" -TestCases @(
+        @{ CaseName = "drift when simulated package exists";     InputJson = '{"name":"pkg","_exist":false}';  ExpectedInDesiredState = $false; ExpectedDiffCount = 1 }
+        @{ CaseName = "no drift when simulated package exists";  InputJson = '{"name":"pkg","_exist":true}';   ExpectedInDesiredState = $true;  ExpectedDiffCount = 0 }
+        @{ CaseName = "drift when simulated package is absent";  InputJson = '{"name":"curl","_exist":true}';  ExpectedInDesiredState = $false; ExpectedDiffCount = 1 }
+        @{ CaseName = "no drift when simulated package is absent"; InputJson = '{"name":"curl","_exist":false}'; ExpectedInDesiredState = $true;  ExpectedDiffCount = 0 }
+    ) {
         $rt = "PythonTest/Test"
-        # Desired: _exist=true; TestOnlyResource.test() will simulate actual=false → drift
-        $json = '{"name":"pkg","desired_exist":true,"_exist":false}'
+        $json = $InputJson
 
         $result = Invoke-DscResourceTest -ResourceType $rt -InputJson $json -ErrorLog "$TestDrive/error.log"
 
@@ -270,8 +264,8 @@ Describe "Python Adapter - TEST Operation via DSC" {
             # DSC test returns actualState, desiredState, inDesiredState, differingProperties
                 $payload.actualState | Should -Not -BeNullOrEmpty
                 $payload.desiredState | Should -Not -BeNullOrEmpty
-                $payload.inDesiredState | Should -Be $false
-                $payload.differingProperties | Should -Contain "_exist"
+                $payload.inDesiredState | Should -Be $ExpectedInDesiredState
+                @($payload.differingProperties).Count | Should -Be $ExpectedDiffCount
         }
         else {
             Assert-KnownDscAdapterFailure -Result $result
