@@ -34,14 +34,7 @@ pub enum ListOutputFormat {
     TableNoTruncate,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ValueEnum, Deserialize)]
-pub enum TraceFormat {
-    Default,
-    Plaintext,
-    Json,
-    #[clap(hide = true)]
-    PassThrough,
-}
+pub use dsc_lib::settings::TraceFormat;
 
 #[derive(Debug, Parser)]
 #[clap(name = "dsc", version = env!("CARGO_PKG_VERSION"), about = t!("args.about").to_string(), long_about = None)]
