@@ -72,8 +72,15 @@ pub fn parse_input_to_json(value: &str) -> Result<String, DscError> {
 /// A string that holds the regex pattern.
 #[must_use]
 pub fn convert_wildcard_to_regex(wildcard: &str) -> String {
-    let mut regex = wildcard.to_string().replace('.', "\\.").replace('?', ".").replace('*', ".*?");
-    regex.insert(0, '^');
+    let mut regex = String::with_capacity(wildcard.len() + 2);
+    regex.push('^');
+    for c in wildcard.chars() {
+        match c {
+            '*' => regex.push_str(".*?"),
+            '?' => regex.push('.'),
+            _ => regex.push_str(&regex::escape(&c.to_string())),
+        }
+    }
     regex.push('$');
     regex
 }
@@ -95,6 +102,10 @@ mod tests {
         let wildcard = "r*";
         let regex = convert_wildcard_to_regex(wildcard);
         assert_eq!(regex, "^r.*?$");
+
+        let wildcard = "a+b(c)[d]^e$f|g\\h";
+        let regex = convert_wildcard_to_regex(wildcard);
+        assert_eq!(regex, r"^a\+b\(c\)\[d\]\^e\$f\|g\\h$");
     }
 }
 
