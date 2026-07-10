@@ -81,7 +81,7 @@ fn main() {
             }
 
             #[cfg(windows)]
-            match windows_update::handle_set(&buffer) {
+            match windows_update::handle_set(&buffer, parse_what_if_arg(&args)) {
                 Ok(output) => {
                     println!("{}", output);
                     std::process::exit(0);
@@ -104,4 +104,9 @@ fn main() {
             std::process::exit(1);
         }
     }
+}
+
+#[cfg(windows)]
+fn parse_what_if_arg(args: &[String]) -> bool {
+    args.iter().skip(2).any(|arg| arg == "-w" || arg == "--what-if")
 }

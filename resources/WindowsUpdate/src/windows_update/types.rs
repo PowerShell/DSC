@@ -13,8 +13,16 @@ pub struct UpdateList {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Metadata {
+    #[serde(rename = "whatIf", skip_serializing_if = "Option::is_none")]
+    pub what_if: Option<Vec<String>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateInfo {
+    #[serde(rename = "_metadata", skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<Metadata>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -175,6 +183,7 @@ pub fn extract_update_info(update: &IUpdate) -> Result<UpdateInfo> {
         };
 
         Ok(UpdateInfo {
+            metadata: None,
             title: Some(title),
             is_installed: Some(is_installed),
             description: Some(description),
