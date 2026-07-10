@@ -248,7 +248,7 @@ extends:
             $metadataHash = @{
               ReleaseTag   = "v$packageVersion"
               ForProduction = $true
-              SkipPublish  = '$(PublishToPMC)'' -eq 'False'
+              SkipPublish  = '$(PublishToPMC)' -eq 'False'
             }
 
             $metadataHash | ConvertTo-Json | Out-File $pathToPMCMetadataFile
