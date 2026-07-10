@@ -54,7 +54,7 @@ jobs:
         run: ./build.ps1 -SkipBuild -Clippy  -Verbose
       - name: Build and test with code coverage
         id: rust-tests
-        continue-on-error: true
+        continue-on-error: false
         run: ./build.ps1 -Clippy -Test -CodeCoverage -ExcludePesterTests -Verbose
       - name: Upload coverage data
         if: always()
@@ -146,7 +146,7 @@ jobs:
         run: ./build.ps1 -SkipBuild -Clippy  -Verbose
       - name: Build and test with code coverage
         id: rust-tests
-        continue-on-error: true
+        continue-on-error: false
         run: ./build.ps1 -Clippy -Test -CodeCoverage -ExcludePesterTests -Verbose
       - name: Upload coverage data
         if: always()
@@ -242,7 +242,7 @@ jobs:
         run: ./build.ps1 -SkipBuild -Clippy  -Verbose
       - name: Build and test with code coverage
         id: rust-tests
-        continue-on-error: true
+        continue-on-error: false
         run: ./build.ps1 -Clippy -Test -CodeCoverage -ExcludePesterTests -Verbose
       - name: Upload coverage data
         if: always()
