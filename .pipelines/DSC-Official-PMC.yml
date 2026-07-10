@@ -216,7 +216,7 @@ extends:
             pip --version --verbose
             $pythonDlFolderPath = Join-Path '$(ev2ServiceGroupRootFolder)/Shell/Run' -ChildPath "python_dl"
             New-Item -Path $pythonDlFolderPath -ItemType Directory -Force > $null
-            pip download -d $pythonDlFolderPath pmc-cli --only-binary=:all: --verbose
+            pip download -d $pythonDlFolderPath pmc-cli --only-binary=:all: -vvv
           displayName: 'Download pmc-cli package'
           env:
             ob_restore_phase: true
