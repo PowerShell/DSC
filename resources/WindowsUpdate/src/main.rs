@@ -110,3 +110,32 @@ fn main() {
 fn parse_what_if_arg(args: &[String]) -> bool {
     args.iter().any(|arg| arg == "-w" || arg == "--what-if")
 }
+
+#[cfg(all(test, windows))]
+mod tests {
+    use super::parse_what_if_arg;
+
+    fn to_args(args: &[&str]) -> Vec<String> {
+        args.iter().map(ToString::to_string).collect()
+    }
+
+    #[test]
+    fn detects_short_what_if_flag() {
+        assert!(parse_what_if_arg(&to_args(&["windows_update", "set", "-w"])));
+    }
+
+    #[test]
+    fn detects_long_what_if_flag() {
+        assert!(parse_what_if_arg(&to_args(&["windows_update", "set", "--what-if"])));
+    }
+
+    #[test]
+    fn returns_false_without_what_if_flag() {
+        assert!(!parse_what_if_arg(&to_args(&["windows_update", "set"])));
+    }
+
+    #[test]
+    fn does_not_match_similar_arguments() {
+        assert!(!parse_what_if_arg(&to_args(&["windows_update", "set", "-what-if", "--w", "what-if"])));
+    }
+}

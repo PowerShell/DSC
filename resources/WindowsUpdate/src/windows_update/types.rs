@@ -198,3 +198,85 @@ pub fn extract_update_info(update: &IUpdate) -> Result<UpdateInfo> {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{Metadata, UpdateInfo, UpdateList};
+
+    #[test]
+    fn metadata_serializes_with_what_if_field() {
+        let metadata = Metadata {
+            what_if: Some(vec!["Would install update 'Test'".to_string()]),
+        };
+
+        let json = serde_json::to_string(&metadata).expect("serialization should succeed");
+        assert_eq!(json, r#"{"whatIf":["Would install update 'Test'"]}"#);
+    }
+
+    #[test]
+    fn metadata_skips_empty_what_if_field() {
+        let metadata = Metadata { what_if: None };
+
+        let json = serde_json::to_string(&metadata).expect("serialization should succeed");
+        assert_eq!(json, "{}");
+    }
+
+    #[test]
+    fn update_info_serializes_metadata_as_underscore_metadata() {
+        let info = UpdateInfo {
+            metadata: Some(Metadata {
+                what_if: Some(vec!["Would install update 'Test'".to_string()]),
+            }),
+            description: None,
+            id: Some("some-id".to_string()),
+            installation_behavior: None,
+            is_installed: Some(true),
+            is_uninstallable: None,
+            kb_article_ids: None,
+            msrc_severity: None,
+            recommended_hard_disk_space: None,
+            security_bulletin_ids: None,
+            title: None,
+            update_type: None,
+        };
+
+        let value = serde_json::to_value(&info).expect("serialization should succeed");
+        assert_eq!(value["_metadata"]["whatIf"][0], "Would install update 'Test'");
+        assert_eq!(value["id"], "some-id");
+        assert_eq!(value["isInstalled"], true);
+    }
+
+    #[test]
+    fn update_info_skips_metadata_when_none() {
+        let info = UpdateInfo {
+            metadata: None,
+            description: None,
+            id: Some("some-id".to_string()),
+            installation_behavior: None,
+            is_installed: None,
+            is_uninstallable: None,
+            kb_article_ids: None,
+            msrc_severity: None,
+            recommended_hard_disk_space: None,
+            security_bulletin_ids: None,
+            title: None,
+            update_type: None,
+        };
+
+        let value = serde_json::to_value(&info).expect("serialization should succeed");
+        assert!(value.get("_metadata").is_none());
+    }
+
+    #[test]
+    fn update_list_round_trips_metadata() {
+        let json = r#"{"updates":[{"id":"some-id","_metadata":{"whatIf":["message"]}}]}"#;
+
+        let list: UpdateList = serde_json::from_str(json).expect("deserialization should succeed");
+        let metadata = list.updates[0].metadata.as_ref().expect("metadata should be present");
+        assert_eq!(metadata.what_if.as_deref(), Some(&["message".to_string()][..]));
+
+        let round_tripped = serde_json::to_string(&list).expect("serialization should succeed");
+        let reparsed: UpdateList = serde_json::from_str(&round_tripped).expect("round-trip should succeed");
+        assert_eq!(reparsed.updates[0].id.as_deref(), Some("some-id"));
+    }
+}
