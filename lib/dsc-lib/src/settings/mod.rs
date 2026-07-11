@@ -307,7 +307,7 @@ pub fn policy_settings_path() -> Option<PathBuf> {
     #[cfg(target_os = "windows")]
     {
         let program_data = env::var_os("ProgramData")?;
-        return Some(Path::new(&program_data).join("dsc").join(SETTINGS_FILE_NAME));
+        Some(Path::new(&program_data).join("dsc").join(SETTINGS_FILE_NAME))
     }
     #[cfg(target_os = "macos")]
     {
