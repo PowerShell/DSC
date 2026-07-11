@@ -1,21 +1,6 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-//! Engine-side post-filtering of exported resource instances.
-//!
-//! When a resource in a configuration document declares an `exportFilter` directive,
-//! the engine retrieves the full export results and applies the filter itself.
-//! This provides a consistent filtering experience even for resources that do not
-//! implement filtering natively.
-//!
-//! Filter semantics:
-//! * The directive is an array of filter objects; an instance is kept if it matches
-//!   **any** filter object (logical OR).
-//! * Properties within a filter object must **all** match (logical AND).
-//! * String values are compared case-insensitively and support the `*` wildcard.
-//! * Non-string values are compared for equality; nested objects match recursively
-//!   (partial match, so only the properties named in the filter are compared).
-
 use rust_i18n::t;
 use serde_json::{Map, Value};
 use tracing::debug;
