@@ -1,6 +1,6 @@
 ---
 description: Microsoft/OSInfo DSC resource reference documentation
-ms.date:     03/25/2025
+ms.date:     07/11/2026
 ms.topic:    reference
 title:       Microsoft/OSInfo
 ---
@@ -46,10 +46,9 @@ The `Microsoft/OSInfo` resource enables you to assert whether a machine meets cr
 the operating system. The resource is only capable of assertions. It doesn't implement the set
 operation and can't configure the operating system.
 
-The resource doesn't implement the [test operation][01]. It relies on the synthetic testing feature
-of DSC instead. The synthetic test uses a case-sensitive equivalency comparison between the actual
-state of the instance properties and the desired state. If any property value isn't an exact match,
-DSC considers the instance to be out of the desired state.
+The resource implements the [test operation][01]. The test operation compares every specified
+instance property to the actual operating system information. The `version` property supports
+version comparison constraints; all other properties use case-sensitive equality comparison.
 
 The instance properties returned by this resource depend on the operating system `family` as
 listed in the following table:
@@ -75,10 +74,8 @@ None.
 This resource has the following capabilities:
 
 - `get` - You can use the resource to retrieve the actual state of an instance.
+- `test` - You can use the resource to test whether an instance is in the desired state.
 - `export` - You can use the resource to retrieve the actual state of every instance.
-
-This resource uses the synthetic test functionality of DSC to determine whether an instance is
-in the desired state.
 
 This resource doesn't have the `set` capability. You can't use it to modify the state of a system.
 
@@ -89,6 +86,7 @@ For more information about resource capabilities, see
 
 1. [Validate operating system information with dsc resource][03]
 1. [Validate operating system information in a configuration][04]
+1. [Validate a minimum operating system version in a configuration][07]
 
 ## Properties
 
@@ -210,7 +208,16 @@ IsWriteOnly      : false
 
 </details>
 
-Defines the version of the operating system as a string.
+Defines the version of the operating system as a string. During the **Test** operation, this
+property accepts an exact version string or a version comparison constraint.
+
+The supported comparison operators are `>`, `<`, `=`, `>=`, and `<=`. Whitespace between the
+operator and version is optional. When you omit an operator, the resource performs an exact string
+comparison. For example, `10.0`, `=10.0`, and `= 10.0` require an exact match, while `>= 10.0`
+requires the operating system version to be at least `10.0`.
+
+The version value after an operator must begin with a digit. Unsupported operators, such as `~=`,
+are treated as literal exact-match values and won't match a normal operating system version.
 
 ### $id
 
@@ -256,3 +263,4 @@ operation failure.
 [04]: examples/validate-in-a-configuration.md
 [05]: ../../../../concepts/resources/properties.md#read-only-resource-properties
 [06]: ../../../tools/osinfo.md
+[07]: examples/validate-minimum-version.md
