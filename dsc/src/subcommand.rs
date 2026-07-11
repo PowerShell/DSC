@@ -734,10 +734,9 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
             continue;
         }
 
-        if let Some(ref description_regex) = description_regex {
-            if !description_regex.is_match(&function.description) {
-                continue;
-            }
+        if let Some(ref description_regex) = description_regex
+            && !description_regex.is_match(&function.description) {
+            continue;
         }
 
         if write_table {
