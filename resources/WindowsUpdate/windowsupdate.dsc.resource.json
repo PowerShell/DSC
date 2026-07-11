@@ -8,7 +8,7 @@
         "security"
     ],
     "type": "Microsoft.Windows/UpdateList",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "get": {
         "executable": "wu_dsc",
         "args": [
