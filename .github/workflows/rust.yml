@@ -53,28 +53,20 @@ jobs:
       - name: Install prerequisites
         run: ./build.ps1 -SkipBuild -Clippy  -Verbose
       - name: Build and test with code coverage
-        id: rust-tests
-        continue-on-error: true
         run: ./build.ps1 -Clippy -Test -CodeCoverage -ExcludePesterTests -Verbose
       - name: Upload coverage data
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: linux-coverage
           path: lcov.info
           if-no-files-found: ignore
       - name:  Prepare build artifact
-        if: always()
         run:   tar -cvf bin.tar bin/
       - name: Upload build artifact
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: linux-bin
           path: bin.tar
-      - name: Fail if rust tests failed
-        if: steps.rust-tests.outcome == 'failure'
-        run: exit 1
   linux-pester:
     needs: linux-build
     strategy:
@@ -145,28 +137,20 @@ jobs:
       - name: Install prerequisites
         run: ./build.ps1 -SkipBuild -Clippy  -Verbose
       - name: Build and test with code coverage
-        id: rust-tests
-        continue-on-error: true
         run: ./build.ps1 -Clippy -Test -CodeCoverage -ExcludePesterTests -Verbose
       - name: Upload coverage data
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: macos-coverage
           path: lcov.info
           if-no-files-found: ignore
       - name:  Prepare build artifact
-        if: always()
         run:   tar -cvf bin.tar bin/
       - name: Upload build artifact
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: macos-bin
           path: bin.tar
-      - name: Fail if rust tests failed
-        if: steps.rust-tests.outcome == 'failure'
-        run: exit 1
   macos-pester:
     needs: macos-build
     strategy:
@@ -241,31 +225,22 @@ jobs:
       - name: Install prerequisites
         run: ./build.ps1 -SkipBuild -Clippy  -Verbose
       - name: Build and test with code coverage
-        id: rust-tests
-        continue-on-error: true
         run: ./build.ps1 -Clippy -Test -CodeCoverage -ExcludePesterTests -Verbose
       - name: Upload coverage data
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: windows-coverage
           path: lcov.info
           if-no-files-found: ignore
       - name: List bin folder files
-        if: always()
         run:  Get-ChildItem bin
       - name:  Prepare build artifact
-        if: always()
         run:   tar -cvf bin.tar bin
       - name: Upload build artifact
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: windows-bin
           path: bin.tar
-      - name: Fail if rust tests failed
-        if: steps.rust-tests.outcome == 'failure'
-        run: exit 1
   windows-pester:
     needs: windows-build
     strategy:
