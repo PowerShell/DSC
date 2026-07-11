@@ -236,6 +236,10 @@ pub struct ConfigDirective {
 #[serde(rename_all = "camelCase")]
 #[dsc_repo_schema(base_name = "directive", folder_path = "resource")]
 pub struct ResourceDirective {
+    /// Filters applied by the engine to exported instances. Filters in the array are logically
+    /// OR'd while properties within a filter are logically AND'd. String values support the `*` wildcard.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub export_filter: Option<Vec<Map<String, Value>>>,
     /// Specify specific adapter type used for implicit operations
     #[serde(skip_serializing_if = "Option::is_none")]
     pub require_adapter: Option<FullyQualifiedTypeName>,
