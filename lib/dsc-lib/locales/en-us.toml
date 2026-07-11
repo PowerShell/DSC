@@ -35,6 +35,9 @@ dependencyNotInOrder = "Dependency not found in order"
 circularDependency = "Circular dependency detected for resource named '%{resource}'"
 invocationOrder = "Resource invocation order"
 
+[configure.export_filter]
+filteredInstances = "Export filter reduced %{original} instances to %{retained}"
+
 [configure.mod]
 nestedArraysNotSupported = "Nested arrays not supported"
 arrayElementCouldNotTransformAsString = "Array element could not be transformed as string"

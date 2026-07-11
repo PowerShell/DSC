@@ -213,3 +213,134 @@ resources:
       $out.resources[0].properties.id | Should -Be 1
     }
 }
+
+Describe 'export filter directive tests' {
+    It 'exportFilter applies equality filtering for non-string properties' {
+        $yaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: Test Export
+  type: Test/Export
+  directives:
+    exportFilter:
+    - count: 2
+  properties:
+    count: 5
+'@
+        $out = dsc config export -i $yaml 2>$TESTDRIVE/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content "$TESTDRIVE/error.log" -Raw)
+        @($out.resources).Count | Should -Be 1
+        $out.resources[0].properties.count | Should -Be 2
+    }
+
+    It 'exportFilter supports wildcards and is case-insensitive' {
+        $yaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: Test Export
+  type: Test/Export
+  directives:
+    exportFilter:
+    - name: '*STANCE3'
+  properties:
+    count: 5
+'@
+        $out = dsc config export -i $yaml 2>$TESTDRIVE/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content "$TESTDRIVE/error.log" -Raw)
+        @($out.resources).Count | Should -Be 1
+        $out.resources[0].properties.name | Should -BeExactly 'Instance3'
+    }
+
+    It 'exportFilter objects are a logical OR' {
+        $yaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: Test Export
+  type: Test/Export
+  directives:
+    exportFilter:
+    - count: 0
+    - name: '*stance2'
+  properties:
+    count: 5
+'@
+        $out = dsc config export -i $yaml 2>$TESTDRIVE/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content "$TESTDRIVE/error.log" -Raw)
+        @($out.resources).Count | Should -Be 2
+        $out.resources[0].properties.count | Should -Be 0
+        $out.resources[1].properties.name | Should -BeExactly 'Instance2'
+    }
+
+    It 'properties within an exportFilter object are a logical AND' {
+        $yaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: Test Export
+  type: Test/Export
+  directives:
+    exportFilter:
+    - count: 2
+      name: 'instance2'
+  properties:
+    count: 5
+'@
+        $out = dsc config export -i $yaml 2>$TESTDRIVE/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content "$TESTDRIVE/error.log" -Raw)
+        @($out.resources).Count | Should -Be 1
+        $out.resources[0].properties.count | Should -Be 2
+    }
+
+    It 'exportFilter with an AND mismatch returns no instances' {
+        $yaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: Test Export
+  type: Test/Export
+  directives:
+    exportFilter:
+    - count: 2
+      name: 'instance1'
+  properties:
+    count: 5
+'@
+        $out = dsc config export -i $yaml 2>$TESTDRIVE/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content "$TESTDRIVE/error.log" -Raw)
+        @($out.resources).Count | Should -Be 0
+    }
+
+    It 'exportFilter works for a resource that does not support filtering natively' {
+        $yaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: No Native Filtering
+  type: Test/ExportSchemaNoFiltering
+  directives:
+    exportFilter:
+    - name: '*e*'
+'@
+        $out = dsc config export -i $yaml 2>$TESTDRIVE/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content "$TESTDRIVE/error.log" -Raw)
+        @($out.resources).Count | Should -Be 2
+        $out.resources.properties.name | Should -Be @('Steve', 'Tess')
+    }
+
+    It 'exportFilter works with an exporter resource' {
+        $yaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: export this
+  type: Test/Exporter
+  directives:
+    exportFilter:
+    - type: '*Foo'
+  properties:
+    typeNames:
+    - Test/Foo
+    - Test/Bar
+'@
+        $out = dsc config export -i $yaml 2>$TESTDRIVE/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content "$TESTDRIVE/error.log" -Raw)
+        @($out.resources).Count | Should -Be 1
+        $out.resources[0].type | Should -BeExactly 'Test/Foo'
+    }
+}
