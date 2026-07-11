@@ -698,6 +698,10 @@ The following list of functions are for manipulating strings:
 The following list of functions provide system-level information:
 
 - [path()][path] - Construct a file system path from one or more path segments.
+- [restartRequired()][restartRequired] - Return whether a system, service, or process requires a
+  restart.
+- [stateChanged()][stateChanged] - Return whether a resource instance changed state during a
+  `set` operation.
 - [systemRoot()][systemRoot] - Return the system root directory path.
 - [utcNow()][utcNow] - Return the current UTC datetime in a specified format.
 
@@ -767,9 +771,11 @@ The following list of functions create or convert values of a given type:
 [range]:                ./range.md
 [reference]:            ./reference.md
 [resourceId]:           ./resourceId.md
+[restartRequired]:      ./restartRequired.md
 [secret]:               ./secret.md
 [skip]:                 ./skip.md
 [startsWith]:           ./startsWith.md
+[stateChanged]:         ./stateChanged.md
 [string]:               ./string.md
 [take]:                 ./take.md
 [sub]:                  ./sub.md
