@@ -56,7 +56,7 @@ listed in the following table:
 | `family`  |                Returned instance properties                |
 | :-------: | :--------------------------------------------------------- |
 |  `Linux`  | `architecture`, `bitness`, `codename`, `family`, `version` |
-|  `MacOS`  | `architecture`, `bitness`, `family`, `version`             |
+|  `macOS`  | `architecture`, `bitness`, `family`, `version`             |
 | `Windows` | `architecture`, `bitness`, `edition`, `family`, `version`  |
 
 > [!NOTE]
@@ -131,18 +131,17 @@ Defines the processor architecture reported by the operating system.
 <details><summary>Expand for <code>bitness</code> property metadata</summary>
 
 ```yaml
-Type             : string
+Type             : integer
 IsRequired       : false
 IsKey            : false
 IsReadOnly       : false
 IsWriteOnly      : false
-ValidValues      : ['32', '64', unknown]
+ValidValues      : [32, 64]
 ```
 
 </details>
 
-Defines whether the operating system is a 32-bit or 64-bit operating system. When the resource
-can't determine this information, it returns a value of `unknown`.
+Defines whether the operating system is a 32-bit or 64-bit operating system.
 
 ### codename
 

@@ -32,11 +32,10 @@ dsc resource get -r Microsoft/OSInfo
 
 ```yaml
 actualState:
-  $id: https://developer.microsoft.com/json-schemas/dsc/os_info/20230303/Microsoft.Dsc.OS_Info.schema.json
   family: Linux
   version: '20.04'
   codename: focal
-  bitness: '64'
+  bitness: 64
   architecture: x86_64
 ```
 
@@ -49,10 +48,9 @@ dsc resource get -r Microsoft/OSInfo
 
 ```yaml
 actualState:
-  $id: https://developer.microsoft.com/json-schemas/dsc/os_info/20230303/Microsoft.Dsc.OS_Info.schema.json
-  family: MacOS
+  family: macOS
   version: 13.5.0
-  bitness: '64'
+  bitness: 64
   architecture: arm64
 ```
 
@@ -64,11 +62,10 @@ dsc resource get --resource Microsoft/OSInfo
 
 ```yaml
 actualState:
-  $id: https://developer.microsoft.com/json-schemas/dsc/os_info/20230303/Microsoft.Dsc.OS_Info.schema.json
   family: Windows
   version: 10.0.22621
   edition: Windows 11 Enterprise
-  bitness: '64'
+  bitness: 64
   architecture: x86_64
 ```
 
