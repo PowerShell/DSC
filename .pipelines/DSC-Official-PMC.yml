@@ -21,6 +21,8 @@ variables:
     value: ${{ parameters.PublishToPMC }}
   - name: RustVersion
     value: ms-prod-1.95
+  - name: LinuxContainerImage
+    value: 'onebranch.azurecr.io/linux/ubuntu-2204:latest'
 
 resources:
   repositories:
@@ -179,8 +181,6 @@ extends:
             - input: pipelineArtifact
               artifactName: drop_BuildAndSign_BuildLinuxArm64Musl
         variables:
-          - name: LinuxContainerImage
-            value: 'onebranch.azurecr.io/linux/ubuntu-2204:latest'
           - name: ob_outputDirectory
             value: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
           - name: ev2ServiceGroupRootFolder
