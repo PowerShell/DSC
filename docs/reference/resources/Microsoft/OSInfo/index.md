@@ -57,7 +57,7 @@ listed in the following table:
 | :-------: | :--------------------------------------------------------- |
 |  `Linux`  | `architecture`, `bitness`, `codename`, `family`, `version` |
 |  `MacOS`  | `architecture`, `bitness`, `family`, `version`             |
-| `Windows` | `bitness`, `edition`, `family`, `version`                  |
+| `Windows` | `architecture`, `bitness`, `edition`, `family`, `version`  |
 
 > [!NOTE]
 > This resource is installed with DSC itself on all platforms.
@@ -98,7 +98,7 @@ The following list describes the properties for the resource.
 - **Instance properties:** <a id="instance-properties"></a> The following properties are optional.
   They define the desired state for an instance of the resource.
 
-  - [architecture](#architecture) - Defines the processor architecture on Linux and macOS systems.
+  - [architecture](#architecture) - Defines the processor architecture.
   - [bitness](#bitness) - Defines whether the operating system is 32-bit or 64-bit.
   - [codename](#codename) - Defines the codename for Linux systems.
   - [edition](#edition) - Defines the edition for Windows systems.
@@ -124,8 +124,7 @@ IsWriteOnly      : false
 
 </details>
 
-Defines the processor architecture as reported by `uname -m` on the operating system. The resource
-doesn't return this property for Windows machines.
+Defines the processor architecture reported by the operating system.
 
 ### bitness
 
