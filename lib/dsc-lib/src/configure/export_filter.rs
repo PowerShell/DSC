@@ -11,7 +11,7 @@ use tracing::debug;
 ///
 /// * `instances` - The exported instances to filter.
 /// * `filters` - The filter objects from the `exportFilter` directive.
-pub fn apply_export_filter(instances: &mut Vec<Value>, filters: &[Map<String, Value>]) {
+pub(super) fn apply_export_filter(instances: &mut Vec<Value>, filters: &[Map<String, Value>]) {
     if filters.is_empty() {
         // an empty filter list means no filtering is applied
         return;
@@ -24,7 +24,7 @@ pub fn apply_export_filter(instances: &mut Vec<Value>, filters: &[Map<String, Va
 
 /// Check if an instance matches any of the filter objects (logical OR).
 #[must_use]
-pub fn instance_matches_filters(instance: &Value, filters: &[Map<String, Value>]) -> bool {
+fn instance_matches_filters(instance: &Value, filters: &[Map<String, Value>]) -> bool {
     let Some(instance) = instance.as_object() else {
         // non-object instances can't be matched by property filters
         return false;
