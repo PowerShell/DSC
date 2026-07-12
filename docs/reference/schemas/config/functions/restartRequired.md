@@ -14,7 +14,9 @@ Returns whether a system, service, or process requires a restart.
 ## Syntax
 
 ```Syntax
-restartRequired('<process | service | system>', [name])
+restartRequired('system')
+restartRequired('service', '<serviceName>')
+restartRequired('process', '<processName>')
 ```
 
 ## Description
