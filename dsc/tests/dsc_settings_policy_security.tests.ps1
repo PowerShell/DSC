@@ -27,7 +27,7 @@ Describe 'tests for policy folder security validation' {
             @{ tracing = @{ level = "TRACE" } } | ConvertTo-Json -Depth 5 | Set-Content -Path $script:policyFilePath
 
             # Grant Everyone write access to make the folder insecure
-            icacls $script:policyDirPath /grant "Everyone:(OI)(CI)(W)" /T | Out-Null
+            icacls $script:policyDirPath /grant "Everyone:(OI)(CI)(W)" | Out-Null
         }
 
         AfterAll {
@@ -51,7 +51,7 @@ Describe 'tests for policy folder security validation' {
         }
     }
 
-    Context 'Linux policy folder with insecure permissions emits warning' -Skip:($IsWindows -or !$isElevated) {
+    Context 'Linux policy folder with insecure permissions emits warning' -Skip:(!$IsLinux -or !$isElevated) {
         BeforeAll {
             $script:policyDirPath = "/etc/dsc"
             $script:policyFilePath = Join-Path $script:policyDirPath "dsc.settings.json"

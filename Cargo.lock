@@ -786,6 +786,7 @@ dependencies = [
  "linked-hash-map",
  "miette",
  "murmurhash64",
+ "nix",
  "num-traits",
  "path-absolutize",
  "pretty_assertions",
