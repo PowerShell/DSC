@@ -129,7 +129,7 @@ function Write-TraceQueue() {
     $trace = $null
     if (!$traceQueue.IsEmpty) {
         while ($traceQueue.TryDequeue([ref] $trace)) {
-            $host.ui.WriteErrorLine($trace)
+            $host.ui.WriteErrorLine(($trace | ConvertTo-Json -Compress -Depth 10))
         }
     }
 }
