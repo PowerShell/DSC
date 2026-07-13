@@ -17,7 +17,9 @@ Describe 'tests for policy folder security validation' {
             $script:policyFilePath = Join-Path $script:policyDirPath "dsc.settings.json"
             $script:existedBefore = Test-Path $script:policyDirPath
 
-            if (-not $script:existedBefore) {
+            if ($script:existedBefore) {
+                $script:originalAcl = Get-Acl -Path $script:policyDirPath
+            } else {
                 New-Item -ItemType Directory -Path $script:policyDirPath -Force | Out-Null
             }
 
@@ -29,11 +31,11 @@ Describe 'tests for policy folder security validation' {
         }
 
         AfterAll {
-            # Remove the Everyone ACE to restore security
-            icacls $script:policyDirPath /remove "Everyone" /T | Out-Null
-
             Remove-Item -Path $script:policyFilePath -ErrorAction SilentlyContinue
-            if (-not $script:existedBefore) {
+
+            if ($script:existedBefore) {
+                Set-Acl -Path $script:policyDirPath -AclObject $script:originalAcl
+            } else {
                 Remove-Item -Recurse -Force -Path $script:policyDirPath -ErrorAction SilentlyContinue
             }
         }
@@ -55,7 +57,9 @@ Describe 'tests for policy folder security validation' {
             $script:policyFilePath = Join-Path $script:policyDirPath "dsc.settings.json"
             $script:existedBefore = Test-Path $script:policyDirPath
 
-            if (-not $script:existedBefore) {
+            if ($script:existedBefore) {
+                $script:originalMode = (stat -c '%a' $script:policyDirPath)
+            } else {
                 New-Item -ItemType Directory -Path $script:policyDirPath -Force | Out-Null
             }
 
@@ -67,7 +71,9 @@ Describe 'tests for policy folder security validation' {
         }
 
         AfterAll {
-            chmod 755 $script:policyDirPath
+            if ($script:existedBefore) {
+                chmod $script:originalMode $script:policyDirPath
+            }
 
             Remove-Item -Path $script:policyFilePath -ErrorAction SilentlyContinue
             if (-not $script:existedBefore) {
