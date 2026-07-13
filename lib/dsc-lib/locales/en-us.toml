@@ -818,7 +818,7 @@ settingNotFound = "Setting '%{name}' not found"
 failedToAbsolutizePath = "Failed to absolutize path '%{path}'"
 executableNotFoundInWorkingDirectory = "Executable '%{executable}' not found with working directory '%{cwd}'"
 executableNotFound = "Executable '%{executable}' not found"
-policyFolderNotSecure = "Policy folder '%{path}' is not secure. Required permissions: %{required}"
+policyFolderNotSecure = "Policy folder '%{path}' is not secure, settings file will not be used. Required permissions: %{required}"
 policyFolderNotSecureLinux = "Only root should have write access (no group/other write bits)"
 policyFolderNotSecureWindows = "Only SYSTEM and Administrators should have write access"
 
