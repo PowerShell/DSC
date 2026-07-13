@@ -54,6 +54,7 @@ tree-sitter-dscexpression = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
 registry = { workspace = true }
+windows = { workspace = true }
 
 [dev-dependencies]
 serde_yaml = { workspace = true }

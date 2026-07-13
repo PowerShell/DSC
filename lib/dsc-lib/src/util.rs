@@ -10,8 +10,9 @@ use std::{
     io::BufReader,
     path::{Path, PathBuf},
     env,
+    process,
 };
-use tracing::debug;
+use tracing::{debug, error};
 use which::which;
 
 pub struct DscSettingValue {
@@ -204,15 +205,140 @@ fn get_settings_policy_file_path() -> String
     // $env:ProgramData+"\dsc\dsc.settings.json"
     // This location is writable only by admins, but readable by all users
     let Ok(local_program_data_path) = std::env::var("ProgramData") else { return String::new(); };
-    Path::new(&local_program_data_path).join("dsc").join("dsc.settings.json").display().to_string()
+    let dsc_folder = Path::new(&local_program_data_path).join("dsc");
+    let settings_path = dsc_folder.join("dsc.settings.json").display().to_string();
+
+    if !dsc_folder.exists() {
+        return settings_path;
+    }
+
+    verify_windows_acl(&dsc_folder);
+
+    settings_path
+}
+
+#[cfg(target_os = "windows")]
+fn verify_windows_acl(dsc_folder: &Path) {
+    use windows::Win32::Security::{
+        Authorization::{GetNamedSecurityInfoW, SE_FILE_OBJECT},
+        IsWellKnownSid, GetAce,
+        WinBuiltinAdministratorsSid, WinLocalSystemSid,
+        ACL, ACCESS_ALLOWED_ACE, PSECURITY_DESCRIPTOR,
+    };
+    use windows::Win32::Foundation::{LocalFree, HLOCAL};
+    use windows::core::PCWSTR;
+    use std::ptr;
+
+    const FILE_WRITE_DATA: u32 = 0x0002;
+    const FILE_APPEND_DATA: u32 = 0x0004;
+    const WRITE_DAC: u32 = 0x0004_0000;
+    const WRITE_OWNER: u32 = 0x0008_0000;
+    const WRITE_MASK: u32 = FILE_WRITE_DATA | FILE_APPEND_DATA | WRITE_DAC | WRITE_OWNER;
+
+    let folder_wide: Vec<u16> = dsc_folder
+        .to_string_lossy()
+        .encode_utf16()
+        .chain(std::iter::once(0))
+        .collect();
+
+    let mut p_sd: PSECURITY_DESCRIPTOR = PSECURITY_DESCRIPTOR(ptr::null_mut());
+    let mut p_dacl: *mut ACL = ptr::null_mut();
+
+    let result = unsafe {
+        GetNamedSecurityInfoW(
+            PCWSTR(folder_wide.as_ptr()),
+            SE_FILE_OBJECT,
+            windows::Win32::Security::DACL_SECURITY_INFORMATION,
+            None,
+            None,
+            Some(&mut p_dacl),
+            None,
+            &mut p_sd,
+        )
+    };
+
+    if result.is_err() {
+        return;
+    }
+
+    if p_dacl.is_null() {
+        unsafe { let _ = LocalFree(Some(HLOCAL(p_sd.0.cast()))); }
+        return;
+    }
+
+    let ace_count = unsafe { (*p_dacl).AceCount };
+
+    for i in 0..ace_count {
+        let mut ace_ptr: *mut core::ffi::c_void = ptr::null_mut();
+        let ok = unsafe { GetAce(p_dacl, i as u32, &mut ace_ptr) };
+        if ok.is_err() {
+            continue;
+        }
+
+        let header = unsafe { &*(ace_ptr as *const windows::Win32::Security::ACE_HEADER) };
+        // Only check ACCESS_ALLOWED_ACE_TYPE (0)
+        if header.AceType != 0 {
+            continue;
+        }
+
+        let ace = unsafe { &*(ace_ptr as *const ACCESS_ALLOWED_ACE) };
+        if (ace.Mask & WRITE_MASK) == 0 {
+            continue;
+        }
+
+        // Get pointer to SID within the ACE (SidStart field)
+        let sid_ptr = &(*ace).SidStart as *const u32 as *const core::ffi::c_void;
+        let psid = windows::Win32::Security::PSID(sid_ptr as *mut core::ffi::c_void);
+
+        let is_system = unsafe { IsWellKnownSid(psid, WinLocalSystemSid).as_bool() };
+        let is_admin = unsafe { IsWellKnownSid(psid, WinBuiltinAdministratorsSid).as_bool() };
+
+        if !is_system && !is_admin {
+            let required = t!("util.policyFolderNotSecureWindows");
+            error!("{}", t!("util.policyFolderNotSecure", path = dsc_folder.display(), required = required));
+            eprintln!("{}", t!("util.policyFolderNotSecure", path = dsc_folder.display(), required = required));
+            unsafe { let _ = LocalFree(Some(HLOCAL(p_sd.0.cast()))); }
+            process::exit(1);
+        }
+    }
+
+    unsafe { let _ = LocalFree(Some(HLOCAL(p_sd.0.cast()))); }
 }
 
 #[cfg(not(target_os = "windows"))]
 fn get_settings_policy_file_path() -> String
 {
+    use std::os::unix::fs::MetadataExt;
+
     // "/etc/dsc/dsc.settings.json"
-    // This location is writable only by admins, but readable by all users
-    Path::new("/etc").join("dsc").join("dsc.settings.json").display().to_string()
+    // This location is writable only by root, but readable by all users
+    let dsc_folder = Path::new("/etc").join("dsc");
+    let settings_path = dsc_folder.join("dsc.settings.json").display().to_string();
+
+    if !dsc_folder.exists() {
+        return settings_path;
+    }
+
+    let Ok(metadata) = fs::metadata(&dsc_folder) else {
+        return settings_path;
+    };
+
+    let mode = metadata.mode();
+    let uid = metadata.uid();
+
+    // Verify owner is root
+    // Verify no group or other write bits are set
+    let group_write = mode & 0o020;
+    let other_write = mode & 0o002;
+
+    if uid != 0 || group_write != 0 || other_write != 0 {
+        let required = t!("util.policyFolderNotSecureLinux");
+        error!("{}", t!("util.policyFolderNotSecure", path = dsc_folder.display(), required = required));
+        eprintln!("{}", t!("util.policyFolderNotSecure", path = dsc_folder.display(), required = required));
+        process::exit(1);
+    }
+
+    settings_path
 }
 
 /// Generates a resource ID from the specified type and name.
