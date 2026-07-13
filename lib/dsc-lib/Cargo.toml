@@ -63,5 +63,8 @@ pretty_assertions = { workspace = true }
 # Enables parameterized test cases
 test-case = { workspace = true }
 
+[target.'cfg(not(target_os = "windows"))'.dev-dependencies]
+nix = { workspace = true, features = ["user"] }
+
 [build-dependencies]
 cc = { workspace = true }
