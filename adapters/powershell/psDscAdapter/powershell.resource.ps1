@@ -41,8 +41,10 @@ trap {
 
 function Write-TraceQueue() {
     $trace = $null
-    while ($traceQueue.TryDequeue([ref] $trace)) {
-        $host.ui.WriteErrorLine($trace)
+    if (!$traceQueue.IsEmpty) {
+        while ($traceQueue.TryDequeue([ref] $trace)) {
+            $host.ui.WriteErrorLine($trace)
+        }
     }
 }
 
