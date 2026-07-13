@@ -202,7 +202,6 @@ pub fn get_exe_path() -> Result<PathBuf, DscError> {
 fn get_settings_policy_file_path() -> String
 {
     // $env:ProgramData+"\dsc\dsc.settings.json"
-    // This location is writable only by admins, but readable by all users
     let Ok(local_program_data_path) = std::env::var("ProgramData") else { return String::new(); };
     let dsc_folder = Path::new(&local_program_data_path).join("dsc");
     let settings_path = dsc_folder.join("dsc.settings.json").display().to_string();
@@ -212,7 +211,7 @@ fn get_settings_policy_file_path() -> String
     }
 
     if !verify_windows_acl(&dsc_folder) {
-        let required = t!("util.policyFolderNotSecureWindows");
+        let required = t!("util.policyFolderNotSecureWindows", path = dsc_folder.display());
         warn!("{}", t!("util.policyFolderNotSecure", path = dsc_folder.display(), required = required));
         return String::new();
     }
