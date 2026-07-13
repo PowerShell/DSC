@@ -236,7 +236,11 @@ fn verify_windows_acl(dsc_folder: &Path) -> bool {
     const FILE_APPEND_DATA: u32 = 0x0004;
     const WRITE_DAC: u32 = 0x0004_0000;
     const WRITE_OWNER: u32 = 0x0008_0000;
-    const WRITE_MASK: u32 = FILE_WRITE_DATA | FILE_APPEND_DATA | WRITE_DAC | WRITE_OWNER;
+    const GENERIC_WRITE: u32 = 0x4000_0000;
+    const GENERIC_ALL: u32 = 0x1000_0000;
+    const WRITE_MASK: u32 = FILE_WRITE_DATA | FILE_APPEND_DATA | WRITE_DAC | WRITE_OWNER | GENERIC_WRITE | GENERIC_ALL;
+
+    const INHERIT_ONLY_ACE: u8 = 0x08;
 
     let folder_wide: Vec<u16> = dsc_folder
         .to_string_lossy()
@@ -260,13 +264,15 @@ fn verify_windows_acl(dsc_folder: &Path) -> bool {
         )
     };
 
+    // Fail closed: if we can't read the security descriptor, treat as insecure
     if result.is_err() {
-        return true;
+        return false;
     }
 
+    // A NULL DACL means full access to everyone
     if p_dacl.is_null() {
         unsafe { let _ = LocalFree(Some(HLOCAL(p_sd.0.cast()))); }
-        return true;
+        return false;
     }
 
     let ace_count = unsafe { (*p_dacl).AceCount };
@@ -275,12 +281,19 @@ fn verify_windows_acl(dsc_folder: &Path) -> bool {
         let mut ace_ptr: *mut core::ffi::c_void = ptr::null_mut();
         let ok = unsafe { GetAce(p_dacl, i as u32, &mut ace_ptr) };
         if ok.is_err() {
-            continue;
+            // Fail closed: if we can't read an ACE, treat as insecure
+            unsafe { let _ = LocalFree(Some(HLOCAL(p_sd.0.cast()))); }
+            return false;
         }
 
         let header = unsafe { &*(ace_ptr as *const windows::Win32::Security::ACE_HEADER) };
         // Only check ACCESS_ALLOWED_ACE_TYPE (0)
         if header.AceType != 0 {
+            continue;
+        }
+
+        // Skip inherit-only ACEs as they don't apply to this folder
+        if (header.AceFlags & INHERIT_ONLY_ACE) != 0 {
             continue;
         }
 
@@ -290,7 +303,7 @@ fn verify_windows_acl(dsc_folder: &Path) -> bool {
         }
 
         // Get pointer to SID within the ACE (SidStart field)
-        let sid_ptr = &(*ace).SidStart as *const u32 as *const core::ffi::c_void;
+        let sid_ptr = &ace.SidStart as *const u32 as *const core::ffi::c_void;
         let psid = windows::Win32::Security::PSID(sid_ptr as *mut core::ffi::c_void);
 
         let is_system = unsafe { IsWellKnownSid(psid, WinLocalSystemSid).as_bool() };
@@ -320,8 +333,10 @@ fn get_settings_policy_file_path() -> String
         return settings_path;
     }
 
+    // Fail closed: if we can't read metadata, treat as insecure
     let Ok(metadata) = fs::metadata(&dsc_folder) else {
-        return settings_path;
+        warn!("{}", t!("util.policyFolderNotSecure", path = dsc_folder.display(), required = t!("util.policyFolderNotSecureLinux")));
+        return String::new();
     };
 
     let mode = metadata.mode();
