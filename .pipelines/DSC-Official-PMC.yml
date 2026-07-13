@@ -23,6 +23,8 @@ variables:
     value: ms-prod-1.95
   - name: LinuxContainerImage
     value: 'onebranch.azurecr.io/linux/ubuntu-2204:latest'
+  - name: RepoRoot
+    value: '$(Build.SourcesDirectory)/DSC'
 
 resources:
   repositories:
@@ -184,13 +186,13 @@ extends:
           - name: ob_outputDirectory
             value: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
           - name: ev2ServiceGroupRootFolder
-            value: '$(Build.SourcesDirectory)/DSC/.pipelines/EV2Specs/ServiceGroupRoot'
+            value: '$(RepoRoot)/.pipelines/EV2Specs/ServiceGroupRoot'
           - name: ev2ParametersFolder
-            value: '$(Build.SourcesDirectory)/DSC/.pipelines/EV2Specs/ServiceGroupRoot/Parameters'
+            value: '$(RepoRoot)/.pipelines/EV2Specs/ServiceGroupRoot/Parameters'
           - name: ob_sdl_credscan_suppressionsFile
-            value: $(Build.SourcesDirectory)/DSC/.config/suppress.json
+            value: $(RepoRoot)/.config/suppress.json
           - name: ob_sdl_tsa_configFile
-            value: $(Build.SourcesDirectory)/DSC/.config/tsaoptions.json
+            value: $(RepoRoot)/.config/tsaoptions.json
           - group: 'DSC-packages.microsoft.com'
         steps:
         - checkout: self
@@ -271,7 +273,7 @@ extends:
 
             $metadataHash | ConvertTo-Json | Out-File $pathToPMCMetadataFile
 
-            $mappingFilePath = Join-Path -Path '$(Build.SourcesDirectory)/DSC/tools/packages.microsoft.com' -ChildPath 'mapping.json'
+            $mappingFilePath = Join-Path -Path '$(RepoRoot)/tools/packages.microsoft.com' -ChildPath 'mapping.json'
             $mappingFileEV2Path = Join-Path -Path '$(ev2ParametersFolder)' -ChildPath 'mapping.json'
             Write-Verbose -Verbose "Copying mapping.json from $mappingFilePath to $mappingFileEV2Path"
             Copy-Item -Path $mappingFilePath -Destination $mappingFileEV2Path
@@ -344,7 +346,7 @@ extends:
 
         - task: CopyFiles@2
           inputs:
-            SourceFolder: '$(Build.SourcesDirectory)/DSC/.pipelines'
+            SourceFolder: '$(RepoRoot)/.pipelines'
             Contents: 'EV2Specs/**'
             TargetFolder: $(ob_outputDirectory)
 
