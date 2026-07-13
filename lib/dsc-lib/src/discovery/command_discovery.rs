@@ -13,6 +13,7 @@ use crate::extensions::dscextension::{self, DscExtension, Capability as Extensio
 use crate::extensions::extension_manifest::ExtensionManifest;
 use crate::progress::{ProgressBar, ProgressFormat};
 use crate::schemas::transforms::idiomaticize_externally_tagged_enum;
+use crate::settings::get_settings;
 use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::Deserialize;
@@ -25,7 +26,6 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use tracing::{debug, info, trace, warn};
 
-use crate::util::get_setting;
 use crate::util::{canonicalize_which, get_exe_path};
 
 // NOTE: if new types of file extensions are added, ensure they are added to `process_discover_args` in `lib/dsc-lib/src/extensions/discover.rs`
@@ -62,28 +62,6 @@ pub struct CommandDiscovery {
     discovery_mode: ResourceDiscoveryMode,
 }
 
-#[derive(Deserialize)]
-pub struct ResourcePathSetting {
-    /// whether to allow overriding with the `DSC_RESOURCE_PATH` environment variable
-    #[serde(rename = "allowEnvOverride")]
-    allow_env_override: bool,
-    /// whether to append the PATH environment variable to the list of resource directories
-    #[serde(rename = "appendEnvPath")]
-    append_env_path: bool,
-    /// array of directories that DSC should search for non-built-in resources
-    directories: Vec<String>
-}
-
-impl Default for ResourcePathSetting {
-    fn default() -> ResourcePathSetting {
-        ResourcePathSetting {
-            allow_env_override: true,
-            append_env_path: true,
-            directories: vec![],
-        }
-    }
-}
-
 impl CommandDiscovery {
     #[must_use]
     pub fn new(progress_format: ProgressFormat) -> CommandDiscovery {
@@ -96,48 +74,18 @@ impl CommandDiscovery {
     #[must_use]
     pub fn get_extensions(&self) -> DiscoveryExtensionCache { locked_clone!(EXTENSIONS) }
 
-    fn get_resource_path_setting() -> Result<ResourcePathSetting, DscError>
-    {
-        if let Ok(v) = get_setting("resourcePath") {
-            // if there is a policy value defined - use it; otherwise use setting value
-            if v.policy != serde_json::Value::Null {
-                match serde_json::from_value::<ResourcePathSetting>(v.policy) {
-                    Ok(v) => {
-                        return Ok(v);
-                    },
-                    Err(e) => { return Err(DscError::Setting(format!("{e}"))); }
-                }
-            } else if v.setting != serde_json::Value::Null {
-                match serde_json::from_value::<ResourcePathSetting>(v.setting) {
-                    Ok(v) => {
-                        return Ok(v);
-                    },
-                    Err(e) => { return Err(DscError::Setting(format!("{e}"))); }
-                }
-            }
-        }
-
-        Err(DscError::Setting(t!("discovery.commandDiscovery.couldNotReadSetting").to_string()))
-    }
-
     fn get_resource_paths() -> Result<Vec<PathBuf>, DscError>
     {
-        let mut resource_path_setting = ResourcePathSetting::default();
-
-        match Self::get_resource_path_setting() {
-            Ok(v) => {
-                resource_path_setting = v;
-            },
-            Err(e) => {
-                debug!("{e}");
-            }
-        }
+        let resolved_resource_path = get_settings().resource_path.clone();
+        // a policy-scoped resourcePath cannot be overridden by the environment variable
+        let allow_env_override = resolved_resource_path.value.allow_env_override && !resolved_resource_path.is_policy();
+        let resource_path_setting = resolved_resource_path.value;
 
         let mut using_custom_path = false;
         let mut paths: Vec<PathBuf> = vec![];
 
         let dsc_resource_path = env::var_os("DSC_RESOURCE_PATH");
-        if resource_path_setting.allow_env_override && dsc_resource_path.is_some() {
+        if allow_env_override && dsc_resource_path.is_some() {
             if let Some(value) = dsc_resource_path {
                 debug!("DSC_RESOURCE_PATH: {:?}", value.to_string_lossy());
                 using_custom_path = true;

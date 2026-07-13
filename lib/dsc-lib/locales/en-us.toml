@@ -106,7 +106,6 @@ importingParametersFromInput = "Importing parameters from simple input"
 invalidParamsFormat = "Invalid parameters format: %{error}"
 
 [discovery.commandDiscovery]
-couldNotReadSetting = "Could not read 'resourcePath' setting"
 appendingEnvPath = "Appending PATH to resourcePath"
 originalPath = "Original PATH: %{path}"
 failedGetEnvPath = "Failed to get PATH environment variable"
@@ -923,11 +922,15 @@ utf16Conversion = "Failed to convert UTF-16 bytes to string"
 [progress]
 failedToSerialize = "Failed to serialize progress JSON: %{json}"
 
+[settings]
+failedToGetExePath = "Can't get 'dsc' executable path to locate settings files"
+notFoundSettingsFile = "Settings file not found: %{path}"
+loadedSettingsFile = "Loaded settings file: %{path}"
+invalidSettingsFile = "Invalid settings file '%{path}': %{error}"
+missingSettingsSchemaVersion = "Settings file '%{path}' is missing schema version key '%{version}'"
+
 [util]
-foundSetting = "Found setting '%{name}' in %{path}"
-notFoundSetting = "Setting '%{name}' not found in %{path}"
 failedToGetExePath = "Can't get 'dsc' executable path"
-settingNotFound = "Setting '%{name}' not found"
 failedToAbsolutizePath = "Failed to absolutize path '%{path}'"
 executableNotFoundInWorkingDirectory = "Executable '%{executable}' not found with working directory '%{cwd}'"
 executableNotFound = "Executable '%{executable}' not found"

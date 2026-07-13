@@ -158,7 +158,6 @@ jsonArrayNotSupported = "JSON array output format is only supported for `--all'"
 
 [util]
 failedToConvertJsonToString = "Failed to convert JSON to string"
-failedToReadTracingSetting = "Could not read 'tracing' setting"
 invalidTraceLevel = "Default to 'warn', invalid DSC_TRACE_LEVEL value"
 failedToSetTracing = "Unable to set global default tracing subscriber.  Tracing is disabled."
 readingInput = "Reading input from command line parameter"

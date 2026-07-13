@@ -41,15 +41,12 @@ use dsc_lib::{
         extension_manifest::ExtensionManifest,
     },
     functions::FunctionDefinition,
-    util::{
-        get_setting,
-        parse_input_to_json,
-    },
+    settings::get_settings,
+    util::parse_input_to_json,
 };
 use path_absolutize::Absolutize;
 use rust_i18n::t;
 use schemars::{Schema, schema_for};
-use serde::Deserialize;
 use std::collections::HashMap;
 use std::env;
 use std::io::{IsTerminal, Read, stdout, Write};
@@ -79,27 +76,6 @@ pub const EXIT_BICEP_FAILED: i32 = 10;
 
 pub const DSC_CONFIG_ROOT: &str = "DSC_CONFIG_ROOT";
 pub const DSC_TRACE_LEVEL: &str = "DSC_TRACE_LEVEL";
-
-#[derive(Deserialize)]
-pub struct TracingSetting {
-    /// Trace level to use - see pub enum `TraceLevel` in `dsc_lib\src\dscresources\command_resource.rs`
-    level:  TraceLevel,
-    /// Trace format to use - see pub enum `TraceFormat` in `dsc\src\args.rs`
-    format: TraceFormat,
-    /// Whether the 'level' can be overrridden by `DSC_TRACE_LEVEL` environment variable
-    #[serde(rename = "allowOverride")]
-    allow_override: bool
-}
-
-impl Default for TracingSetting {
-    fn default() -> TracingSetting {
-        TracingSetting {
-            level: TraceLevel::Warn,
-            format: TraceFormat::Default,
-            allow_override: true,
-        }
-    }
-}
 
 /// Get string representation of JSON value.
 ///
@@ -328,9 +304,6 @@ pub fn write_object(json: &str, format: Option<&OutputFormat>, include_separator
 #[allow(clippy::too_many_lines)]
 pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Option<&TraceFormat>) {
 
-    let mut policy_is_used = false;
-    let mut tracing_setting = TracingSetting::default();
-
     let default_filter = EnvFilter::try_from_default_env()
         .or_else(|_| EnvFilter::try_new("warn"))
         .unwrap_or_default()
@@ -344,30 +317,14 @@ pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Op
     let default_subscriber = tracing_subscriber::Registry::default().with(default_fmt).with(default_filter).with(default_indicatif_layer);
     let default_guard = tracing::subscriber::set_default(default_subscriber);
 
-    // read setting/policy from files
-    if let Ok(v) = get_setting("tracing") {
-        if v.policy != serde_json::Value::Null {
-            match serde_json::from_value::<TracingSetting>(v.policy) {
-                Ok(v) => {
-                    tracing_setting = v;
-                    policy_is_used = true;
-                },
-                Err(e) => { error!("{e}"); }
-            }
-        } else if v.setting != serde_json::Value::Null {
-            match serde_json::from_value::<TracingSetting>(v.setting) {
-                Ok(v) => {
-                    tracing_setting = v;
-                },
-                Err(e) => { error!("{e}"); }
-            }
-        }
-    } else {
-        error!("{}", t!("util.failedToReadTracingSetting"));
-    }
+    // read resolved settings/policy from files
+    let resolved_settings = get_settings();
+    let mut tracing_setting = resolved_settings.tracing.value.clone();
+    let policy_is_used = resolved_settings.tracing.is_policy();
 
-    // override with DSC_TRACE_LEVEL env var if permitted
-    if tracing_setting.allow_override && let Ok(level) = env::var(DSC_TRACE_LEVEL) {
+    // override with DSC_TRACE_LEVEL env var if permitted; a policy-scoped tracing
+    // setting cannot be overridden by the environment variable
+    if !policy_is_used && tracing_setting.allow_override && let Ok(level) = env::var(DSC_TRACE_LEVEL) {
         tracing_setting.level = match level.to_ascii_uppercase().as_str() {
             "ERROR" => TraceLevel::Error,
             "WARN" => TraceLevel::Warn,

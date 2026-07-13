@@ -5,7 +5,7 @@ use clap::ValueEnum;
 use dsc_lib_security_context::{SecurityContext, get_security_context};
 use jsonschema::Validator;
 use rust_i18n::t;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::{collections::HashMap, env, path::Path, process::Stdio};
 use crate::{configure::{config_doc::{ExecutionKind, SecurityContextKind}, config_result::{ResourceGetResult, ResourceTestResult}}, dscresources::resource_manifest::{ExportSchemaKind, ExportSchemaOrFiltering, SchemaArgKind}, types::{ExitCodesMap}, util::canonicalize_which};
@@ -1305,7 +1305,7 @@ fn validate_security_context(required_security_context: &Option<SecurityContextK
     Ok(())
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Deserialize, ValueEnum)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, ValueEnum)]
 pub enum TraceLevel {
     #[serde(rename = "ERROR")]
     Error,
