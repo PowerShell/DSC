@@ -26,10 +26,6 @@
       { "resourceTypeArg": "--resource" },
       {
         "resourcePathArg": "--resource-path"
-      },
-      {
-        "jsonInputArg": "--input",
-        "mandatory": true
       }
     ],
     "input": "stdin"
@@ -44,10 +40,6 @@
       { "resourceTypeArg": "--resource" },
       {
         "resourcePathArg": "--resource-path"
-      },
-      {
-        "jsonInputArg": "--input",
-        "mandatory": true
       }
     ],
     "input": "stdin",
@@ -63,10 +55,6 @@
       { "resourceTypeArg": "--resource" },
       {
         "resourcePathArg": "--resource-path"
-      },
-      {
-        "jsonInputArg": "--input",
-        "mandatory": true
       }
     ],
     "input": "stdin",
@@ -82,10 +70,6 @@
       { "resourceTypeArg": "--resource" },
       {
         "resourcePathArg": "--resource-path"
-      },
-      {
-        "jsonInputArg": "--input",
-        "mandatory": true
       }
     ],
     "input": "stdin"
@@ -100,10 +84,6 @@
       { "resourceTypeArg": "--resource" },
       {
         "resourcePathArg": "--resource-path"
-      },
-      {
-        "jsonInputArg": "--input",
-        "mandatory": true
       }
     ],
     "input": "stdin"

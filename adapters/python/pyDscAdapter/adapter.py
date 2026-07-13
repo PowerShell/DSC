@@ -192,8 +192,9 @@ class ResourceAdapter:
             # Resolve resource class
             try:
                 self.logger.debug(f"Resolving resource_type='{resource_type}', resource_path='{resource_path}'")
-                resolved_type = (resource_type or "").strip() or os.getenv("DSC_RESOURCE_TYPE", "").strip()
-                if resolved_type != resource_type:
+                trimmed_resource_type = (resource_type or "").strip()
+                resolved_type = trimmed_resource_type or os.getenv("DSC_RESOURCE_TYPE", "").strip()
+                if not trimmed_resource_type and resolved_type:
                     self.logger.debug(f"resource_type resolved from env to '{resolved_type}'")
                 cls = self._resolve_resource_class(resolved_type, resource_path)
                 self.logger.debug(f"Resolved class '{cls.__name__}' for '{resolved_type}'")
@@ -210,26 +211,6 @@ class ResourceAdapter:
                     self.logger.debug(f"GET returned: {data}")
 
                     return (0, data)
-                    # try:
-                    #     resource_name = json.loads(json_input or "{}").get("name", "") or resolved_type
-                    # except Exception:
-                    #     resource_name = resolved_type or ""
-
-                    # full = {
-                    #         "metadata": {"Microsoft.DSC": {"operation": "Get"}},
-                    #         "name": resource_name, 
-                    #         "type": "Microsoft.DSC.Adapters/Python",
-                    #         "result": [
-                    #             {
-                    #                 "name": resource_name,
-                    #                 "type": resolved_type,
-                    #                 "result": {
-                    #                     "actualState": data
-                    #                 }
-                    #             }
-                    #         ]
-                    #     }
-                    # return (0, full)
 
                 elif op == "set":
                     self.logger.info(f"Executing SET on '{resolved_type}'")

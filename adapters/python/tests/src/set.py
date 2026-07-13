@@ -3,7 +3,7 @@ import json
 from typing import Dict, Any, List, Tuple
 
 class SetOnlyResource:
-    """A resource class that only implements the set operation for testing purposes."""
+    """A resource class that implements get and set operations for testing purposes."""
     
     def __init__(self, name: str = "pkg", _exist: bool = True, **_):
         self.name = name

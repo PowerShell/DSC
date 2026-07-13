@@ -7,7 +7,7 @@ from the tests directory. It imports pyDscAdapter from the parent directory usin
 Which gives it access to: adapters/python/pyDscAdapter/
 
 These tests exercise adapter functions, classes, and error paths directly
-(complementing pythonunit.tests.ps1 which tests via subprocess invocation).
+(complementing pythoncomponent.tests.ps1 which tests via subprocess invocation).
 They focus on:
 - Adapter initialization and configuration
 - Manifest and resource class loading
@@ -29,32 +29,22 @@ import sys
 from pathlib import Path
 import io
 
-# Ensure both package-style and script-style adapter imports resolve.
+# Ensure package-style adapter imports resolve the same way they do in normal use.
 tests_dir = Path(__file__).resolve().parent
 adapter_root = tests_dir.parent
-adapter_pkg_dir = adapter_root / "pyDscAdapter"
-
-for path in (adapter_pkg_dir, adapter_root):
-    path_str = str(path)
-    if path_str not in sys.path:
-        sys.path.insert(0, path_str)
-
+adapter_root_str = str(adapter_root)
+if adapter_root_str not in sys.path:
+    sys.path.insert(0, adapter_root_str)
 try:
     from pyDscAdapter import adapter as adapter_module
     from pyDscAdapter.adapter import ResourceAdapter
     from pyDscAdapter.utils import parse_json
 except ImportError as e:
-    try:
-        import adapter as adapter_module
-        from adapter import ResourceAdapter
-        from utils import parse_json
-    except ImportError:
-        raise ImportError(
-            "Could not import adapter modules. "
-            "Ensure adapters/python and adapters/python/pyDscAdapter are on PYTHONPATH. "
-            f"Error: {e}"
-        ) from e
-
+    raise ImportError(
+         "Could not import adapter modules. "
+         "Ensure adapters/python is on PYTHONPATH. "
+         f"Error: {e}"
+    ) from e
 
 class TestResourceAdapterInit(unittest.TestCase):
     """Test ResourceAdapter initialization."""
