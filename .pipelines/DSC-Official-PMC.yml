@@ -184,13 +184,13 @@ extends:
           - name: ob_outputDirectory
             value: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
           - name: ev2ServiceGroupRootFolder
-            value: '$(Build.SourcesDirectory)/.pipelines/EV2Specs/ServiceGroupRoot'
+            value: '$(Build.SourcesDirectory)/DSC/.pipelines/EV2Specs/ServiceGroupRoot'
           - name: ev2ParametersFolder
-            value: '$(Build.SourcesDirectory)/.pipelines/EV2Specs/ServiceGroupRoot/Parameters'
+            value: '$(Build.SourcesDirectory)/DSC/.pipelines/EV2Specs/ServiceGroupRoot/Parameters'
           - name: ob_sdl_credscan_suppressionsFile
-            value: $(Build.SourcesDirectory)/.config/suppress.json
+            value: $(Build.SourcesDirectory)/DSC/.config/suppress.json
           - name: ob_sdl_tsa_configFile
-            value: $(Build.SourcesDirectory)/.config/tsaoptions.json
+            value: $(Build.SourcesDirectory)/DSC/.config/tsaoptions.json
           - group: 'DSC-packages.microsoft.com'
         steps:
         - checkout: self
@@ -201,6 +201,24 @@ extends:
         - pwsh: |
             New-Item -Path '$(ev2ParametersFolder)' -ItemType Directory -Force
           displayName: 'Create Parameters folder'
+          env:
+            ob_restore_phase: true
+
+        - pwsh: |
+            Get-ChildItem Env: | Out-String -Stream | write-Verbose -Verbose
+          displayName: 'Capture Environment Variables'
+          env:
+            ob_restore_phase: true
+
+        - pwsh: |
+            Get-ChildItem '$(Build.SourcesDirectory)'
+          displayName: 'Capture BuildDirectory'
+          env:
+            ob_restore_phase: true
+
+        - pwsh: |
+            Get-ChildItem '$(Pipeline.Workspace)' -Recurse | Out-String -Stream | write-Verbose -Verbose
+          displayName: 'Capture Workspace'
           env:
             ob_restore_phase: true
 
@@ -253,7 +271,7 @@ extends:
 
             $metadataHash | ConvertTo-Json | Out-File $pathToPMCMetadataFile
 
-            $mappingFilePath = Join-Path -Path '$(Build.SourcesDirectory)/tools/packages.microsoft.com' -ChildPath 'mapping.json'
+            $mappingFilePath = Join-Path -Path '$(Build.SourcesDirectory)/DSC/tools/packages.microsoft.com' -ChildPath 'mapping.json'
             $mappingFileEV2Path = Join-Path -Path '$(ev2ParametersFolder)' -ChildPath 'mapping.json'
             Write-Verbose -Verbose "Copying mapping.json from $mappingFilePath to $mappingFileEV2Path"
             Copy-Item -Path $mappingFilePath -Destination $mappingFileEV2Path
@@ -326,7 +344,7 @@ extends:
 
         - task: CopyFiles@2
           inputs:
-            SourceFolder: '$(Build.SourcesDirectory)/.pipelines'
+            SourceFolder: '$(Build.SourcesDirectory)/DSC/.pipelines'
             Contents: 'EV2Specs/**'
             TargetFolder: $(ob_outputDirectory)
 
@@ -337,8 +355,6 @@ extends:
       variables:
         - name: ob_release_environment
           value: Production
-        - name: repoRoot
-          value: $(Build.SourcesDirectory)
       jobs:
       - job: Prod_ReleaseJob
         displayName: Publish to PMC
