@@ -10,9 +10,8 @@ use std::{
     io::BufReader,
     path::{Path, PathBuf},
     env,
-    process,
 };
-use tracing::{debug, error};
+use tracing::{debug, warn};
 use which::which;
 
 pub struct DscSettingValue {
@@ -212,13 +211,18 @@ fn get_settings_policy_file_path() -> String
         return settings_path;
     }
 
-    verify_windows_acl(&dsc_folder);
+    if !verify_windows_acl(&dsc_folder) {
+        let required = t!("util.policyFolderNotSecureWindows");
+        warn!("{}", t!("util.policyFolderNotSecure", path = dsc_folder.display(), required = required));
+        return String::new();
+    }
 
     settings_path
 }
 
+/// Returns `true` if only SYSTEM and Administrators have write access; `false` otherwise.
 #[cfg(target_os = "windows")]
-fn verify_windows_acl(dsc_folder: &Path) {
+fn verify_windows_acl(dsc_folder: &Path) -> bool {
     use windows::Win32::Security::{
         Authorization::{GetNamedSecurityInfoW, SE_FILE_OBJECT},
         IsWellKnownSid, GetAce,
@@ -258,12 +262,12 @@ fn verify_windows_acl(dsc_folder: &Path) {
     };
 
     if result.is_err() {
-        return;
+        return true;
     }
 
     if p_dacl.is_null() {
         unsafe { let _ = LocalFree(Some(HLOCAL(p_sd.0.cast()))); }
-        return;
+        return true;
     }
 
     let ace_count = unsafe { (*p_dacl).AceCount };
@@ -294,15 +298,13 @@ fn verify_windows_acl(dsc_folder: &Path) {
         let is_admin = unsafe { IsWellKnownSid(psid, WinBuiltinAdministratorsSid).as_bool() };
 
         if !is_system && !is_admin {
-            let required = t!("util.policyFolderNotSecureWindows");
-            error!("{}", t!("util.policyFolderNotSecure", path = dsc_folder.display(), required = required));
-            eprintln!("{}", t!("util.policyFolderNotSecure", path = dsc_folder.display(), required = required));
             unsafe { let _ = LocalFree(Some(HLOCAL(p_sd.0.cast()))); }
-            process::exit(1);
+            return false;
         }
     }
 
     unsafe { let _ = LocalFree(Some(HLOCAL(p_sd.0.cast()))); }
+    true
 }
 
 #[cfg(not(target_os = "windows"))]
@@ -333,9 +335,8 @@ fn get_settings_policy_file_path() -> String
 
     if uid != 0 || group_write != 0 || other_write != 0 {
         let required = t!("util.policyFolderNotSecureLinux");
-        error!("{}", t!("util.policyFolderNotSecure", path = dsc_folder.display(), required = required));
-        eprintln!("{}", t!("util.policyFolderNotSecure", path = dsc_folder.display(), required = required));
-        process::exit(1);
+        warn!("{}", t!("util.policyFolderNotSecure", path = dsc_folder.display(), required = required));
+        return String::new();
     }
 
     settings_path
