@@ -127,13 +127,8 @@ $outputObjects = [System.Collections.Generic.List[Object]]::new()
 
 function Write-TraceQueue() {
     $trace = $null
-    while (!$traceQueue.IsEmpty) {
-        if ($traceQueue.TryDequeue([ref] $trace)) {
-            $host.ui.WriteErrorLine($trace)
-        } else {
-            # this should only fail if empty, so we just return
-            return
-        }
+    while ($traceQueue.TryDequeue([ref] $trace)) {
+        $host.ui.WriteErrorLine($trace)
     }
 }
 

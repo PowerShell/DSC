@@ -41,13 +41,8 @@ trap {
 
 function Write-TraceQueue() {
     $trace = $null
-    while (!$traceQueue.IsEmpty) {
-        if ($traceQueue.TryDequeue([ref] $trace)) {
-            $host.ui.WriteErrorLine(($trace | ConvertTo-Json -Compress -Depth 10))
-        } else {
-            # this should only fail if empty, so we just return
-            return
-        }
+    while ($traceQueue.TryDequeue([ref] $trace)) {
+        $host.ui.WriteErrorLine($trace)
     }
 }
 
