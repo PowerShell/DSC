@@ -17,6 +17,20 @@ Describe 'tests for dsc settings' {
         if ($IsWindows) { #"Setting policy on Linux requires sudo"
             $script:policyDirPath = $script:policyFilePath | Split-Path
             New-Item -ItemType Directory -Path $script:policyDirPath | Out-Null
+            # Set secure ACLs: only SYSTEM and Administrators have write access
+            $acl = Get-Acl -Path $script:policyDirPath
+            $acl.SetAccessRuleProtection($true, $false)
+            $acl.Access | ForEach-Object { $acl.RemoveAccessRule($_) } | Out-Null
+            $systemRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+                "NT AUTHORITY\SYSTEM", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
+            $adminsRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+                "BUILTIN\Administrators", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
+            $usersReadRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+                "BUILTIN\Users", "ReadAndExecute", "ContainerInherit,ObjectInherit", "None", "Allow")
+            $acl.AddAccessRule($systemRule)
+            $acl.AddAccessRule($adminsRule)
+            $acl.AddAccessRule($usersReadRule)
+            Set-Acl -Path $script:policyDirPath -AclObject $acl
         }
 
         #create backups of settings files
