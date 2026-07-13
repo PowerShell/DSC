@@ -144,12 +144,13 @@ pub fn get_setting(value_name: &str) -> Result<DscSettingValue, DscError> {
     }
 
     // Third, get setting from the policy
-    settings_file_path = PathBuf::from(get_settings_policy_file_path());
-    if let Ok(v) = load_value_from_json(&settings_file_path, value_name) {
-        result.policy = v;
-        debug!("{}", t!("util.foundSetting", name = value_name, path = settings_file_path.to_string_lossy()));
-    } else {
-        debug!("{}", t!("util.notFoundSetting", name = value_name, path = settings_file_path.to_string_lossy()));
+    if let Some(settings_file_path) = get_settings_policy_file_path() {
+        if let Ok(v) = load_value_from_json(&settings_file_path, value_name) {
+            result.policy = v;
+            debug!("{}", t!("util.foundSetting", name = value_name, path = settings_file_path.to_string_lossy()));
+        } else {
+            debug!("{}", t!("util.notFoundSetting", name = value_name, path = settings_file_path.to_string_lossy()));
+        }
     }
 
     if (result.setting == serde_json::Value::Null) && (result.policy == serde_json::Value::Null) {
@@ -199,24 +200,24 @@ pub fn get_exe_path() -> Result<PathBuf, DscError> {
 }
 
 #[cfg(target_os = "windows")]
-fn get_settings_policy_file_path() -> String
+fn get_settings_policy_file_path() -> Option<PathBuf>
 {
     // $env:ProgramData+"\dsc\dsc.settings.json"
-    let Ok(local_program_data_path) = std::env::var("ProgramData") else { return String::new(); };
+    let Ok(local_program_data_path) = std::env::var("ProgramData") else { return None; };
     let dsc_folder = Path::new(&local_program_data_path).join("dsc");
     let settings_path = dsc_folder.join("dsc.settings.json").display().to_string();
 
     if !dsc_folder.exists() {
-        return settings_path;
+        return Some(PathBuf::from(settings_path));
     }
 
     if !verify_windows_acl(&dsc_folder) {
         let required = t!("util.policyFolderNotSecureWindows", path = dsc_folder.display());
         warn!("{}", t!("util.policyFolderNotSecure", path = dsc_folder.display(), required = required));
-        return String::new();
+        return None;
     }
 
-    settings_path
+    Some(PathBuf::from(settings_path))
 }
 
 /// Returns `true` if only SYSTEM and Administrators have write access; `false` otherwise.
@@ -320,23 +321,23 @@ fn verify_windows_acl(dsc_folder: &Path) -> bool {
 }
 
 #[cfg(not(target_os = "windows"))]
-fn get_settings_policy_file_path() -> String
+fn get_settings_policy_file_path() -> Option<PathBuf>
 {
     use std::os::unix::fs::MetadataExt;
 
     // "/etc/dsc/dsc.settings.json"
     // This location is writable only by root, but readable by all users
     let dsc_folder = Path::new("/etc").join("dsc");
-    let settings_path = dsc_folder.join("dsc.settings.json").display().to_string();
+    let settings_path = dsc_folder.join("dsc.settings.json");
 
     if !dsc_folder.exists() {
-        return settings_path;
+        return Some(settings_path);
     }
 
     // Fail closed: if we can't read metadata, treat as insecure
     let Ok(metadata) = fs::metadata(&dsc_folder) else {
         warn!("{}", t!("util.policyFolderNotSecure", path = dsc_folder.display(), required = t!("util.policyFolderNotSecureLinux")));
-        return String::new();
+        return None;
     };
 
     let mode = metadata.mode();
@@ -350,10 +351,10 @@ fn get_settings_policy_file_path() -> String
     if uid != 0 || group_write != 0 || other_write != 0 {
         let required = t!("util.policyFolderNotSecureLinux");
         warn!("{}", t!("util.policyFolderNotSecure", path = dsc_folder.display(), required = required));
-        return String::new();
+        return None;
     }
 
-    settings_path
+    Some(settings_path)
 }
 
 /// Generates a resource ID from the specified type and name.
