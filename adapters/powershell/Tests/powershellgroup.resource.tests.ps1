@@ -87,7 +87,7 @@ Describe 'PowerShell adapter resource tests' {
         $res.changedProperties | Should -BeNullOrEmpty
     }
 
-    It 'Export works on PS class-based resource' -Pending {
+    It 'Export works on PS class-based resource' -Skip {
 
         $r = dsc resource export -r TestClassResource/TestClassResource
         $LASTEXITCODE | Should -Be 0
@@ -104,7 +104,7 @@ Describe 'PowerShell adapter resource tests' {
         }
     }
 
-    It 'Get --all works on PS class-based resource' -Pending {
+    It 'Get --all works on PS class-based resource' -Skip {
 
         $r = dsc resource get --all -r TestClassResource/TestClassResource 2>$null
         $LASTEXITCODE | Should -Be 0
@@ -326,7 +326,7 @@ Describe 'PowerShell adapter resource tests' {
         }
     }
 
-    It 'Dsc can process large resource output' -Pending {
+    It 'Dsc can process large resource output' -Skip {
         try {
             $env:TestClassResourceResultCount = 5000 # with sync resource invocations this was not possible
 
