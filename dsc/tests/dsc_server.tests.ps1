@@ -337,7 +337,7 @@ Describe 'Tests for DSC server' {
                 name      = "list_dsc_functions"
                 arguments = @{
                     function_filter    = "base64"
-                    category_filter    = @("String")
+                    category_filter    = @("string")
                     description_filter = "*base64*"
                 }
             }
