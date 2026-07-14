@@ -6,7 +6,6 @@ use clap::{CommandFactory, Parser};
 use clap_complete::generate;
 use mcp::start_mcp_server;
 use dsc_lib::{progress::ProgressFormat, util::DSC_IGNORE_SETTINGS_FILE};
-use server::start_server;
 use rust_i18n::{i18n, t};
 use std::{env::set_var, io, process::exit};
 use sysinfo::{Process, RefreshKind, System, get_current_pid, ProcessRefreshKind};
