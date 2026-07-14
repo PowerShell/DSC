@@ -115,6 +115,7 @@ resourceNotFound = "Resource type '%{resource}' does not exist"
 
 [server.list_dsc_functions]
 invalidNamePattern = "Invalid function name pattern '%{pattern}'"
+invalidDescriptionPattern = "Invalid function description pattern '%{pattern}'"
 
 [server.list_dsc_resources]
 resourceNotAdapter = "The resource '%{adapter}' is not a valid adapter"

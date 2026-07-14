@@ -9,7 +9,7 @@ use crate::functions::user_function::invoke_user_function;
 use crate::schemas::dsc_repo::DscRepoSchema;
 use rust_i18n::t;
 use schemars::JsonSchema;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fmt::Display;
 
@@ -392,7 +392,7 @@ pub struct FunctionDefinition {
     pub return_types: Vec<FunctionArgKind>,
 }
 
-#[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Serialize, JsonSchema, DscRepoSchema)]
+#[derive(Clone, Debug, Deserialize, Ord, PartialOrd, Eq, PartialEq, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 #[dsc_repo_schema(base_name = "category", folder_path = "definitions/functions/builtin")]
 pub enum FunctionCategory {
