@@ -786,6 +786,7 @@ dependencies = [
  "linked-hash-map",
  "miette",
  "murmurhash64",
+ "nix",
  "num-traits",
  "path-absolutize",
  "pretty_assertions",
@@ -810,6 +811,7 @@ dependencies = [
  "urlencoding",
  "uuid",
  "which",
+ "windows 0.62.2",
 ]
 
 [[package]]

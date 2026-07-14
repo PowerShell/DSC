@@ -266,11 +266,14 @@ urlencoding = { version = "2.1" }
 which = { version = "8.0.4" }
 # dsc-lib
 ipnetwork = { version = "0.21" }
-# WindowsUpdate, windows_service
+# WindowsUpdate, windows_service, dsc-lib (ACL checks)
 windows = { version = "0.62", features = [
     "Win32_Foundation",
     "Win32_NetworkManagement_WindowsFirewall",
+    "Win32_Security",
+    "Win32_Security_Authorization",
     "Win32_System_Com",
+    "Win32_System_Memory",
     "Win32_System_Ole",
     "Win32_System_Services",
     "Win32_System_Variant",
