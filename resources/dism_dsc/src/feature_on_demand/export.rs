@@ -5,7 +5,7 @@ use rust_i18n::t;
 
 use crate::dism::DismSessionHandle;
 use crate::feature_on_demand::types::{CapabilityState, FeatureOnDemandInfo, FeatureOnDemandList};
-use crate::util::{matches_wildcard, WildcardFilterable};
+use crate::util::Filterable;
 
 pub fn handle_export(input: &str) -> Result<String, String> {
     let filters: Vec<FeatureOnDemandInfo> = if input.trim().is_empty() {
@@ -42,7 +42,7 @@ pub fn handle_export(input: &str) -> Result<String, String> {
             if !should_get_full {
                 for f in &filters_with_identity {
                     if let Some(ref filter_identity) = f.identity 
-                        && matches_wildcard(name, filter_identity) {
+                        && name.eq_ignore_ascii_case(filter_identity) {
                             should_get_full = true;
                             break;
                         }

@@ -58,34 +58,11 @@ Describe 'Windows Service export tests' -Skip:(!$IsWindows) {
             $result.resources[0].properties.name | Should -BeExactly 'wuauserv'
         }
 
-        It 'Filters by name with leading wildcard' {
-            $json = @{ name = '*serv' } | ConvertTo-Json -Compress
+        It 'Treats wildcard characters as literal service name characters' {
+            $json = @{ name = 'wuauserv*' } | ConvertTo-Json -Compress
             $result = Invoke-DscExport -InputJson $json
             $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
-            $result.resources.Count | Should -BeGreaterThan 0
-            foreach ($resource in $result.resources) {
-                $resource.properties.name | Should -BeLike '*serv'
-            }
-        }
-
-        It 'Filters by name with trailing wildcard' {
-            $json = @{ name = 'w*' } | ConvertTo-Json -Compress
-            $result = Invoke-DscExport -InputJson $json
-            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
-            $result.resources.Count | Should -BeGreaterThan 0
-            foreach ($resource in $result.resources) {
-                $resource.properties.name | Should -BeLike 'w*'
-            }
-        }
-
-        It 'Filters by name with surrounding wildcards' {
-            $json = @{ name = '*update*' } | ConvertTo-Json -Compress
-            $result = Invoke-DscExport -InputJson $json
-            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
-            $result.resources.Count | Should -BeGreaterThan 0
-            foreach ($resource in $result.resources) {
-                $resource.properties.name | Should -BeLike '*update*'
-            }
+            $result.resources.Count | Should -Be 0
         }
 
         It 'Returns empty when name filter matches nothing' {
@@ -97,16 +74,6 @@ Describe 'Windows Service export tests' -Skip:(!$IsWindows) {
     }
 
     Context 'Export with displayName filter' {
-        It 'Filters by display name with wildcard' {
-            $json = @{ displayName = '*Update*' } | ConvertTo-Json -Compress
-            $result = Invoke-DscExport -InputJson $json
-            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
-            $result.resources.Count | Should -BeGreaterThan 0
-            foreach ($resource in $result.resources) {
-                $resource.properties.displayName | Should -BeLike '*Update*'
-            }
-        }
-
         It 'Filters by exact display name' {
             $service = Get-Service -Name 'wuauserv' -ErrorAction Stop
             $knownDisplayName = $service.DisplayName

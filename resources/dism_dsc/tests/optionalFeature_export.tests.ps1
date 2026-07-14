@@ -54,15 +54,11 @@ Describe 'Microsoft.Windows/OptionalFeatureList - export operation' -Skip:(!$IsW
         )
     }
 
-    It 'exports features filtered by wildcard featureName' -Skip:(!$isElevated) {
-        $inputJson = '{"features":[{"featureName":"Printing-*"}]}'
+    It 'treats wildcard characters as literal featureName characters' -Skip:(!$isElevated) {
+        $inputJson = '{"features":[{"featureName":"' + $knownFeatureNameOne + '*"}]}'
         $output = dsc resource export -r Microsoft.Windows/OptionalFeatureList -i $inputJson | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
-        $features = $output.resources[0].properties.features
-        $features | Should -Not -BeNullOrEmpty
-        foreach ($feature in $features) {
-            $feature.featureName | Should -BeLike 'Printing-*'
-        }
+        $output.resources[0].properties.features.Count | Should -Be 0
     }
 
     It 'exports features filtered by state' -Skip:(!$isElevated) {
@@ -73,28 +69,6 @@ Describe 'Microsoft.Windows/OptionalFeatureList - export operation' -Skip:(!$IsW
         $features | Should -Not -BeNullOrEmpty
         foreach ($feature in $features) {
             $feature.state | Should -BeExactly 'Installed'
-        }
-    }
-
-    It 'exports features with combined featureName and state filter' -Skip:(!$isElevated) {
-        $inputJson = '{"features":[{"featureName":"*","state":"Installed"}]}'
-        $output = dsc resource export -r Microsoft.Windows/OptionalFeatureList -i $inputJson | ConvertFrom-Json
-        $LASTEXITCODE | Should -Be 0
-        $features = $output.resources[0].properties.features
-        $features | Should -Not -BeNullOrEmpty
-        foreach ($feature in $features) {
-            $feature.state | Should -BeExactly 'Installed'
-        }
-    }
-
-    It 'exports features filtered by wildcard displayName' -Skip:(!$isElevated) {
-        $inputJson = '{"features":[{"displayName":"*Print*"}]}'
-        $output = dsc resource export -r Microsoft.Windows/OptionalFeatureList -i $inputJson | ConvertFrom-Json
-        $LASTEXITCODE | Should -Be 0
-        $features = $output.resources[0].properties.features
-        $features | Should -Not -BeNullOrEmpty
-        foreach ($feature in $features) {
-            $feature.displayName | Should -BeLike '*Print*'
         }
     }
 
@@ -109,16 +83,18 @@ Describe 'Microsoft.Windows/OptionalFeatureList - export operation' -Skip:(!$IsW
         $names | Should -Contain $knownFeatureNameTwo
     }
 
-    It 'returns empty results for non-matching wildcard filter' -Skip:(!$isElevated) {
-        $inputJson = '{"features":[{"featureName":"ZZZNonExistent*"}]}'
+    It 'returns empty results for a non-matching featureName filter' -Skip:(!$isElevated) {
+        $inputJson = '{"features":[{"featureName":"ZZZNonExistent"}]}'
         $output = dsc resource export -r Microsoft.Windows/OptionalFeatureList -i $inputJson | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $features = $output.resources[0].properties.features
         $features.Count | Should -Be 0
     }
 
-    It 'returns complete feature properties when full-info filter is used' -Skip:(!$isElevated) {
-        $inputJson = '{"features":[{"featureName":"' + $knownFeatureNameOne + '","displayName":"*"}]}'
+    It 'returns complete feature properties when an exact displayName filter is used' -Skip:(!$isElevated) {
+        $getInputJson = '{"features":[{"featureName":"' + $knownFeatureNameOne + '"}]}'
+        $knownDisplayName = (dsc resource get -r Microsoft.Windows/OptionalFeatureList -i $getInputJson | ConvertFrom-Json).actualState.features[0].displayName
+        $inputJson = '{"features":[{"featureName":"' + $knownFeatureNameOne + '","displayName":"' + $knownDisplayName + '"}]}'
         $output = dsc resource export -r Microsoft.Windows/OptionalFeatureList -i $inputJson | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $features = $output.resources[0].properties.features

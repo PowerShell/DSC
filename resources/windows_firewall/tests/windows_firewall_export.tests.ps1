@@ -64,18 +64,13 @@ Describe 'Microsoft.Windows/FirewallRuleList - export operation' -Skip:(!$IsWind
         $names | Should -Contain $secondRule.name
     }
 
-    It 'supports wildcard name filtering' {
-        # Build a wildcard pattern from the first rule name: take the first word and append '*'
-        $prefix = ($firstRule.name -split '[-_ ]')[0]
-        $wildcardPattern = "${prefix}*"
-
-        $json = @{ rules = @(@{ name = $wildcardPattern }) } | ConvertTo-Json -Compress -Depth 5
+    It 'treats wildcard characters as literal rule name characters' {
+        $json = @{ rules = @(@{ name = "$($firstRule.name)*" }) } | ConvertTo-Json -Compress -Depth 5
         $output = Invoke-DscExport -InputJson $json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
 
         $rules = $output.resources[0].properties.rules
-        $rules | Should -Not -BeNullOrEmpty
-        $rules | ForEach-Object { $_.name | Should -BeLike $wildcardPattern }
+        $rules.Count | Should -Be 0
     }
 
     It 'returns no rules when filter matches nothing' {

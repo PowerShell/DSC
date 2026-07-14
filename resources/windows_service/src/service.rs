@@ -513,55 +513,6 @@ unsafe fn get_service_details(scm: SC_HANDLE, service_name: &str) -> Result<Wind
     unsafe { read_service_state(service_handle.0, service_name) }
 }
 
-/// Match a string against a pattern supporting `*` wildcards.
-/// If no wildcard is present, performs an exact case-insensitive comparison.
-fn matches_wildcard(text: &str, pattern: &str) -> bool {
-    if pattern == "*" {
-        return true;
-    }
-
-    let text_lower = text.to_lowercase();
-    let pattern_lower = pattern.to_lowercase();
-
-    let parts: Vec<&str> = pattern_lower.split('*').collect();
-
-    // No wildcard → exact match
-    if parts.len() == 1 {
-        return text_lower == pattern_lower;
-    }
-
-    let starts_with_wildcard = pattern_lower.starts_with('*');
-    let ends_with_wildcard = pattern_lower.ends_with('*');
-
-    let mut pos = 0;
-
-    for (i, part) in parts.iter().enumerate() {
-        if part.is_empty() {
-            continue;
-        }
-
-        if i == 0 && !starts_with_wildcard {
-            if !text_lower.starts_with(part) {
-                return false;
-            }
-            pos = part.len();
-        } else if let Some(found) = text_lower[pos..].find(part) {
-            pos += found + part.len();
-        } else {
-            return false;
-        }
-    }
-
-    if !ends_with_wildcard
-        && let Some(last) = parts.last()
-        && !last.is_empty()
-        && !text_lower.ends_with(last) {
-            return false;
-        }
-
-    true
-}
-
 /// Build a double-null-terminated UTF-16 multi-string from a list of dependency names.
 fn deps_to_multi_string(deps: &[String]) -> Vec<u16> {
     let mut buf = Vec::new();
@@ -877,26 +828,26 @@ unsafe fn wait_for_status(
 
 /// Check whether `service` matches all non-`None` fields in `filter`.
 fn matches_filter(service: &WindowsService, filter: &WindowsService) -> bool {
-    // name — wildcard match
-    if let Some(ref pattern) = filter.name {
+    // name — case-insensitive exact match
+    if let Some(ref expected) = filter.name {
         let name = service.name.as_deref().unwrap_or("");
-        if !matches_wildcard(name, pattern) {
+        if !name.eq_ignore_ascii_case(expected) {
             return false;
         }
     }
 
-    // display_name — wildcard match
-    if let Some(ref pattern) = filter.display_name {
+    // display_name — case-insensitive exact match
+    if let Some(ref expected) = filter.display_name {
         let dn = service.display_name.as_deref().unwrap_or("");
-        if !matches_wildcard(dn, pattern) {
+        if !dn.eq_ignore_ascii_case(expected) {
             return false;
         }
     }
 
-    // description — wildcard match
-    if let Some(ref pattern) = filter.description {
+    // description — case-insensitive exact match
+    if let Some(ref expected) = filter.description {
         let desc = service.description.as_deref().unwrap_or("");
-        if !matches_wildcard(desc, pattern) {
+        if !desc.eq_ignore_ascii_case(expected) {
             return false;
         }
     }

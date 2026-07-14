@@ -40,6 +40,13 @@ Describe 'Microsoft.Windows/WindowsFeatureList - export operation' -Skip:(!$IsWi
         $features[0].featureName | Should -BeExactly $knownEnabledFeature
     }
 
+    It 'treats wildcard characters as literal featureName characters' {
+        $inputJson = '{"features":[{"featureName":"' + $knownEnabledFeature + '*"}]}'
+        $output = dsc resource export -r Microsoft.Windows/WindowsFeatureList -i $inputJson | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $output.resources[0].properties.features.Count | Should -Be 0
+    }
+
     It 'exports features filtered by state Installed' {
         $inputJson = '{"features":[{"state":"Installed"}]}'
         $output = dsc resource export -r Microsoft.Windows/WindowsFeatureList -i $inputJson | ConvertFrom-Json
@@ -55,20 +62,6 @@ Describe 'Microsoft.Windows/WindowsFeatureList - export operation' -Skip:(!$IsWi
         $LASTEXITCODE | Should -Be 0
         $features = $output.resources[0].properties.features
         $features | Should -BeNullOrEmpty
-    }
-
-    It 'exports with wildcard featureName filter' {
-        # Use the first 3 characters of a known feature name as a wildcard prefix
-        $prefix = $knownEnabledFeature.Substring(0, [Math]::Min(3, $knownEnabledFeature.Length))
-        $inputJson = '{"features":[{"featureName":"' + $prefix + '*"}]}'
-        $output = dsc resource export -r Microsoft.Windows/WindowsFeatureList -i $inputJson | ConvertFrom-Json
-        $LASTEXITCODE | Should -Be 0
-        $features = $output.resources[0].properties.features
-        # At minimum the known feature should be present if its name starts with $prefix
-        $features | Should -Not -BeNullOrEmpty
-        $features | ForEach-Object {
-            $_.featureName.ToLower() | Should -BeLike "$($prefix.ToLower())*"
-        }
     }
 
     It 'exports multiple feature filters (OR logic)' {

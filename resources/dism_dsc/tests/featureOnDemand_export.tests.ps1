@@ -25,16 +25,6 @@ Describe 'Microsoft.Windows/FeatureOnDemandList - export operation' -Skip:(!$IsW
         $knownCapabilityNameOne = $installedMatches[0].Matches[0].Groups[1].Value
         $knownCapabilityNameTwo = $notPresentMatches[0].Matches[0].Groups[1].Value
 
-        # Get the displayName for the known installed capability to use in wildcard displayName tests
-        $fullInfoJson = '{"capabilities":[{"identity":"' + $knownCapabilityNameOne + '","displayName":"*"}]}'
-        $fullInfoOutput = dsc resource export -r Microsoft.Windows/FeatureOnDemandList -i $fullInfoJson | ConvertFrom-Json
-        $knownDisplayName = $fullInfoOutput.resources[0].properties.capabilities[0].displayName
-        if (-not $knownDisplayName) {
-            throw "Failed to get displayName for $knownCapabilityNameOne"
-        }
-        # Extract a substring from the displayName for wildcard matching (use first word if multi-word)
-        $displayNameWords = $knownDisplayName -split '\s+'
-        $knownDisplayNameWord = $displayNameWords[0]
     }
 
     It 'exports all capabilities with no input' -Skip:(!$isElevated) {
@@ -65,15 +55,11 @@ Describe 'Microsoft.Windows/FeatureOnDemandList - export operation' -Skip:(!$IsW
         )
     }
 
-    It 'exports capabilities filtered by wildcard identity' -Skip:(!$isElevated) {
-        $inputJson = '{"capabilities":[{"identity":"Language.Basic*"}]}'
+    It 'treats wildcard characters as literal identity characters' -Skip:(!$isElevated) {
+        $inputJson = '{"capabilities":[{"identity":"' + $knownCapabilityNameOne + '*"}]}'
         $output = dsc resource export -r Microsoft.Windows/FeatureOnDemandList -i $inputJson | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
-        $capabilities = $output.resources[0].properties.capabilities
-        $capabilities | Should -Not -BeNullOrEmpty
-        foreach ($cap in $capabilities) {
-            $cap.identity | Should -BeLike 'Language.Basic*'
-        }
+        $output.resources[0].properties.capabilities.Count | Should -Be 0
     }
 
     It 'exports capabilities filtered by state' -Skip:(!$isElevated) {
@@ -84,28 +70,6 @@ Describe 'Microsoft.Windows/FeatureOnDemandList - export operation' -Skip:(!$IsW
         $capabilities | Should -Not -BeNullOrEmpty
         foreach ($cap in $capabilities) {
             $cap.state | Should -BeExactly 'Installed'
-        }
-    }
-
-    It 'exports capabilities with combined identity and state filter' -Skip:(!$isElevated) {
-        $inputJson = '{"capabilities":[{"identity":"*","state":"Installed"}]}'
-        $output = dsc resource export -r Microsoft.Windows/FeatureOnDemandList -i $inputJson | ConvertFrom-Json
-        $LASTEXITCODE | Should -Be 0
-        $capabilities = $output.resources[0].properties.capabilities
-        $capabilities | Should -Not -BeNullOrEmpty
-        foreach ($cap in $capabilities) {
-            $cap.state | Should -BeExactly 'Installed'
-        }
-    }
-
-    It 'exports capabilities filtered by wildcard displayName' -Skip:(!$isElevated) {
-        $inputJson = '{"capabilities":[{"displayName":"*' + $knownDisplayNameWord + '*"}]}'
-        $output = dsc resource export -r Microsoft.Windows/FeatureOnDemandList -i $inputJson | ConvertFrom-Json
-        $LASTEXITCODE | Should -Be 0
-        $capabilities = $output.resources[0].properties.capabilities
-        $capabilities | Should -Not -BeNullOrEmpty
-        foreach ($cap in $capabilities) {
-            $cap.displayName | Should -BeLike "*$knownDisplayNameWord*"
         }
     }
 
@@ -120,8 +84,8 @@ Describe 'Microsoft.Windows/FeatureOnDemandList - export operation' -Skip:(!$IsW
         $identities | Should -Contain $knownCapabilityNameTwo
     }
 
-    It 'returns empty results for non-matching wildcard filter' -Skip:(!$isElevated) {
-        $inputJson = '{"capabilities":[{"identity":"ZZZNonExistent*"}]}'
+    It 'returns empty results for a non-matching identity filter' -Skip:(!$isElevated) {
+        $inputJson = '{"capabilities":[{"identity":"ZZZNonExistent"}]}'
         $output = dsc resource export -r Microsoft.Windows/FeatureOnDemandList -i $inputJson | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $capabilities = $output.resources[0].properties.capabilities
@@ -136,8 +100,10 @@ Describe 'Microsoft.Windows/FeatureOnDemandList - export operation' -Skip:(!$IsW
         $capabilities.Count | Should -Be 0
     }
 
-    It 'returns complete capability properties when full-info filter is used' -Skip:(!$isElevated) {
-        $inputJson = '{"capabilities":[{"identity":"' + $knownCapabilityNameOne + '","displayName":"*"}]}'
+    It 'returns complete capability properties when an exact displayName filter is used' -Skip:(!$isElevated) {
+        $getInputJson = '{"capabilities":[{"identity":"' + $knownCapabilityNameOne + '"}]}'
+        $knownDisplayName = (dsc resource get -r Microsoft.Windows/FeatureOnDemandList -i $getInputJson | ConvertFrom-Json).actualState.capabilities[0].displayName
+        $inputJson = '{"capabilities":[{"identity":"' + $knownCapabilityNameOne + '","displayName":"' + $knownDisplayName + '"}]}'
         $output = dsc resource export -r Microsoft.Windows/FeatureOnDemandList -i $inputJson | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $capabilities = $output.resources[0].properties.capabilities

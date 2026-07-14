@@ -8,7 +8,7 @@
         "feature"
     ],
     "type": "Microsoft.Windows/OptionalFeatureList",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "get": {
         "executable": "dism_dsc",
         "args": [
@@ -71,7 +71,7 @@
                             "featureName": {
                                 "type": "string",
                                 "title": "Feature name",
-                                "description": "The name of the Windows optional feature. Required for get operation. For export operation, this is optional and wildcards (*) are supported for case-insensitive filtering."
+                                "description": "The name of the Windows optional feature. Required for get operation. For export operation, this is optional and supports case-insensitive exact filtering."
                             },
                             "_exist": {
                                 "type": "boolean",

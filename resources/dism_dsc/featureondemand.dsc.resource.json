@@ -9,7 +9,7 @@
         "fod"
     ],
     "type": "Microsoft.Windows/FeatureOnDemandList",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "get": {
         "executable": "dism_dsc",
         "args": [
@@ -72,7 +72,7 @@
                             "identity": {
                                 "type": "string",
                                 "title": "Capability identity",
-                                "description": "The identity of the Windows capability (Feature on Demand). Required for get and set operations. For export operation, this is optional and wildcards (*) are supported for case-insensitive filtering."
+                                "description": "The identity of the Windows capability (Feature on Demand). Required for get and set operations. For export operation, this is optional and supports case-insensitive exact filtering."
                             },
                             "_exist": {
                                 "type": "boolean",

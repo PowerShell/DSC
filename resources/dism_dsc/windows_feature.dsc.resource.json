@@ -7,7 +7,7 @@
         "feature"
     ],
     "type": "Microsoft.Windows/WindowsFeatureList",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "get": {
         "executable": "dism_dsc",
         "args": [
@@ -74,7 +74,7 @@
                             "featureName": {
                                 "type": "string",
                                 "title": "Feature name",
-                                "description": "The name of the Windows feature as reported by DISM. Required for get and set operations. For export, this is optional and wildcards (*) are supported for case-insensitive filtering."
+                                "description": "The name of the Windows feature as reported by DISM. Required for get and set operations. For export, this is optional and supports case-insensitive exact filtering."
                             },
                             "_exist": {
                                 "type": "boolean",

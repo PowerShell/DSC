@@ -4,7 +4,7 @@
 use rust_i18n::t;
 
 use crate::dism::DismSessionHandle;
-use crate::util::{WildcardFilterable, matches_wildcard};
+use crate::util::Filterable;
 use crate::windows_feature::types::{FeatureState, WindowsFeatureInfo, WindowsFeatureList};
 
 pub fn handle_export(input: &str) -> Result<String, String> {
@@ -48,7 +48,7 @@ pub fn handle_export(input: &str) -> Result<String, String> {
             if !should_get_full {
                 for filter in &filters_with_name {
                     if let Some(ref filter_name) = filter.feature_name
-                        && matches_wildcard(name, filter_name)
+                        && name.eq_ignore_ascii_case(filter_name)
                     {
                         should_get_full = true;
                         break;
