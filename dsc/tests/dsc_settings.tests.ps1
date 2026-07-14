@@ -120,4 +120,23 @@ Describe 'tests for dsc settings' {
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Trace-level is Trace"
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Using Resource Path: Defaultv1SettingsDir'
     }
+
+    It 'DSC_IGNORE_SETTINGS_FILE environment variable disables settings file' {
+        $oldEnv = $env:DSC_IGNORE_SETTINGS_FILE
+        try {
+            $env:DSC_IGNORE_SETTINGS_FILE = "1"
+            $null = dsc -l warn resource list 2> $TestDrive/tracing.txt
+            $errorLog = Get-Content "$TestDrive/tracing.txt" -Raw
+            $errorLog | Should -BeLike "*WARN*Ignoring settings file due to environment variable 'DSC_IGNORE_SETTINGS_FILE' being set or '--ignore-settings-file' flag being used*"
+        }
+        finally {
+            $env:DSC_IGNORE_SETTINGS_FILE = $oldEnv
+        }
+    }
+
+    It '--ignore-settings-file command-line argument disables settings file' {
+        $null = dsc --ignore-settings-file resource list 2> $TestDrive/tracing.txt
+        $errorLog = Get-Content "$TestDrive/tracing.txt" -Raw
+        $errorLog | Should -BeLike "*WARN*Ignoring settings file due to environment variable 'DSC_IGNORE_SETTINGS_FILE' being set or '--ignore-settings-file' flag being used*"
+    }
 }
