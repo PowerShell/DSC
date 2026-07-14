@@ -4,6 +4,7 @@
     "SupportedPlatformOS": "Windows",
     "CopyFiles": {
         "Windows": [
+            "enable_ps_ssh_remoting.dsc.yaml",
             "windows_baseline.dsc.yaml",
             "windows_inventory.dsc.yaml"
         ]

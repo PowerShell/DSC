@@ -74,6 +74,7 @@
       "dsc-bicep-ext.exe",
       "dscecho.exe",
       "echo.dsc.resource.json",
+      "enable_ps_ssh_remoting.dsc.yaml",
       "assertion.dsc.resource.json",
       "featureondemand.dsc.resource.json",
       "group.dsc.resource.json",
