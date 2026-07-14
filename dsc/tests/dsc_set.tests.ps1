@@ -78,7 +78,7 @@ Describe 'resource set tests' {
     }
 
     # test pending changes in engine to call delete if _exist is not handled directly
-    It 'can set and remove a registry value' -Pending {
+    It 'can set and remove a registry value' -Skip {
         $json = @'
         {
             "keyPath": "HKCU\\1\\2\\3",
