@@ -37,6 +37,7 @@ listFunctionAbout = "List or find functions"
 version = "The version of the resource to invoke in semver format"
 serverAbout = "Use DSC as a server over JSON-RPC (useful as MCP server)"
 bicepAbout = "Use DSC as a Bicep server over gRPC"
+ignoreSettingsFile = "Ignore the settings file when running the command"
 
 [main]
 failedToSpawnMain = "Failed to spawn dsc main thread: %{error}"
