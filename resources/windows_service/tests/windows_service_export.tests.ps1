@@ -58,11 +58,12 @@ Describe 'Windows Service export tests' -Skip:(!$IsWindows) {
             $result.resources[0].properties.name | Should -BeExactly 'wuauserv'
         }
 
-        It 'Treats wildcard characters as literal service name characters' {
-            $json = @{ name = 'wuauserv*' } | ConvertTo-Json -Compress
+        It 'Filters by service name wildcard' {
+            $json = @{ name = 'WUAUSERV*' } | ConvertTo-Json -Compress
             $result = Invoke-DscExport -InputJson $json
             $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
-            $result.resources.Count | Should -Be 0
+            $result.resources.Count | Should -Be 1
+            $result.resources[0].properties.name | Should -BeExactly 'wuauserv'
         }
 
         It 'Returns empty when name filter matches nothing' {

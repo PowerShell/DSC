@@ -1109,33 +1109,145 @@ pub fn what_if_delete_service(input: &WindowsService) -> Result<WindowsService, 
 mod tests {
     use super::*;
 
+    fn service_fixture() -> WindowsService {
+        WindowsService {
+            name: Some("sshd".to_string()),
+            display_name: Some("OpenSSH SSH Server".to_string()),
+            description: Some("Secure shell service".to_string()),
+            exist: Some(true),
+            status: Some(ServiceStatus::Running),
+            start_type: Some(StartType::Automatic),
+            executable_path: Some("C:\\Windows\\System32\\OpenSSH\\sshd.exe".to_string()),
+            logon_account: Some("LocalSystem".to_string()),
+            error_control: Some(ErrorControl::Normal),
+            dependencies: Some(vec!["Tcpip".to_string(), "RpcSs".to_string()]),
+            metadata: None,
+        }
+    }
+
     #[test]
-    fn wildcard_matching_is_case_insensitive() {
+    fn wildcard_matching_supports_exact_case_insensitive_and_star_patterns() {
+        assert!(matches_wildcard("sshd", "sshd"));
         assert!(matches_wildcard("*Ssh*", "OpenSSH Server"));
         assert!(matches_wildcard("ssh*", "sshd"));
+        assert!(matches_wildcard("*shd", "sshd"));
+        assert!(matches_wildcard("s*h*d", "sshd"));
+        assert!(matches_wildcard("**ssh**", "ssh"));
         assert!(matches_wildcard("*", "anything"));
+        assert!(matches_wildcard("*", ""));
+    }
+
+    #[test]
+    fn wildcard_matching_rejects_non_matching_patterns() {
+        assert!(!matches_wildcard("", "sshd"));
+        assert!(!matches_wildcard("sshd", ""));
+        assert!(!matches_wildcard("sshd", "sshd2"));
+        assert!(!matches_wildcard("sshd2", "sshd"));
         assert!(!matches_wildcard("ssh*", "OpenSSH Server"));
+        assert!(!matches_wildcard("*ssh", "OpenSSH Server"));
     }
 
     #[test]
     fn service_string_filters_support_wildcards() {
-        let service = WindowsService {
-            name: Some("sshd".to_string()),
-            display_name: Some("OpenSSH SSH Server".to_string()),
-            description: Some("Secure shell service".to_string()),
-            logon_account: Some("LocalSystem".to_string()),
-            dependencies: Some(vec!["Tcpip".to_string(), "RpcSs".to_string()]),
-            ..Default::default()
-        };
+        let service = service_fixture();
         let filter = WindowsService {
             name: Some("SSH*".to_string()),
             display_name: Some("*ssh server".to_string()),
             description: Some("secure*".to_string()),
+            exist: Some(true),
+            status: Some(ServiceStatus::Running),
+            start_type: Some(StartType::Automatic),
             logon_account: Some("local*".to_string()),
             dependencies: Some(vec!["tcp*".to_string()]),
             ..Default::default()
         };
 
         assert!(matches_filter(&service, &filter));
+    }
+
+    #[test]
+    fn service_filter_rejects_non_matching_string_fields() {
+        let service = service_fixture();
+
+        for filter in [
+            WindowsService {
+                name: Some("http*".to_string()),
+                ..Default::default()
+            },
+            WindowsService {
+                display_name: Some("HTTP*".to_string()),
+                ..Default::default()
+            },
+            WindowsService {
+                description: Some("Web*".to_string()),
+                ..Default::default()
+            },
+            WindowsService {
+                logon_account: Some("Network*".to_string()),
+                ..Default::default()
+            },
+        ] {
+            assert!(!matches_filter(&service, &filter));
+        }
+    }
+
+    #[test]
+    fn service_filter_rejects_non_matching_state_fields() {
+        let service = service_fixture();
+
+        assert!(!matches_filter(
+            &service,
+            &WindowsService {
+                exist: Some(false),
+                ..Default::default()
+            },
+        ));
+        assert!(!matches_filter(
+            &service,
+            &WindowsService {
+                status: Some(ServiceStatus::Stopped),
+                ..Default::default()
+            },
+        ));
+        assert!(!matches_filter(
+            &service,
+            &WindowsService {
+                start_type: Some(StartType::Manual),
+                ..Default::default()
+            },
+        ));
+
+        let service_without_state = WindowsService::default();
+        assert!(!matches_filter(
+            &service_without_state,
+            &WindowsService {
+                status: Some(ServiceStatus::Running),
+                ..Default::default()
+            },
+        ));
+        assert!(!matches_filter(
+            &service_without_state,
+            &WindowsService {
+                start_type: Some(StartType::Automatic),
+                ..Default::default()
+            },
+        ));
+    }
+
+    #[test]
+    fn service_filter_requires_every_dependency() {
+        let service = service_fixture();
+        let matching_filter = WindowsService {
+            dependencies: Some(vec!["tcp*".to_string(), "RPC*".to_string()]),
+            ..Default::default()
+        };
+        let missing_filter = WindowsService {
+            dependencies: Some(vec!["missing*".to_string()]),
+            ..Default::default()
+        };
+
+        assert!(matches_filter(&service, &matching_filter));
+        assert!(!matches_filter(&service, &missing_filter));
+        assert!(!matches_filter(&WindowsService::default(), &matching_filter));
     }
 }
