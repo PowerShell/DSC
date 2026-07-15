@@ -135,8 +135,15 @@ Describe 'tests for dsc settings' {
     }
 
     It '--ignore-settings-file command-line argument disables settings file' {
-        $null = dsc --ignore-settings-file resource list 2> $TestDrive/tracing.txt
-        $errorLog = Get-Content "$TestDrive/tracing.txt" -Raw
-        $errorLog | Should -BeLike "*WARN*Ignoring settings file due to environment variable 'DSC_IGNORE_SETTINGS_FILE' being set or '--ignore-settings-file' flag being used*"
+        $oldEnv = $env:DSC_IGNORE_SETTINGS_FILE
+        try {
+            $env:DSC_IGNORE_SETTINGS_FILE = $null
+            $null = dsc --ignore-settings-file -l warn resource list 2> $TestDrive/tracing.txt
+            $errorLog = Get-Content "$TestDrive/tracing.txt" -Raw
+            $errorLog | Should -BeLike "*WARN*Ignoring settings file due to environment variable 'DSC_IGNORE_SETTINGS_FILE' being set or '--ignore-settings-file' flag being used*"
+        }
+        finally {
+            $env:DSC_IGNORE_SETTINGS_FILE = $oldEnv
+        }
     }
 }
