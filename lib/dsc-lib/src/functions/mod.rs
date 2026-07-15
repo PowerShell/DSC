@@ -471,3 +471,31 @@ impl std::str::FromStr for FunctionCategory {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::FunctionCategory;
+    use std::str::FromStr;
+
+    #[test]
+    fn function_categories_round_trip_case_insensitively() {
+        for category in FunctionCategory::ALL {
+            let display_name = category.to_string();
+            assert_eq!(FunctionCategory::from_str(&display_name), Ok(category.clone()));
+            assert_eq!(
+                FunctionCategory::from_str(&display_name.to_uppercase()),
+                Ok(category),
+            );
+        }
+    }
+
+    #[test]
+    fn invalid_function_category_lists_valid_values() {
+        let error = FunctionCategory::from_str("invalid").expect_err("category should be invalid");
+
+        assert!(error.contains("invalid"));
+        for category in FunctionCategory::ALL {
+            assert!(error.contains(&category.to_string()));
+        }
+    }
+}
