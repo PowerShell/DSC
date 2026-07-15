@@ -74,3 +74,50 @@ impl Filterable for WindowsFeatureInfo {
             && matches_optional_string(&self.description, &filter.description)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn feature() -> WindowsFeatureInfo {
+        WindowsFeatureInfo {
+            feature_name: Some("Web-Server".to_string()),
+            exist: Some(true),
+            state: Some(FeatureState::Installed),
+            display_name: Some("Web Server (IIS)".to_string()),
+            description: Some("Web Server role".to_string()),
+            restart_required: Some(RestartType::No),
+            enable_all: None,
+            source_paths: None,
+            limit_access: None,
+            metadata: None,
+        }
+    }
+
+    #[test]
+    fn filter_matches_all_supported_fields() {
+        let filter = WindowsFeatureInfo {
+            feature_name: Some("web-server".to_string()),
+            state: Some(FeatureState::Installed),
+            display_name: Some("web server (iis)".to_string()),
+            description: Some("web server role".to_string()),
+            ..Default::default()
+        };
+
+        assert!(feature().matches_filter(&filter));
+    }
+
+    #[test]
+    fn filter_uses_exact_string_and_state_matching() {
+        let feature = feature();
+
+        assert!(!feature.matches_filter(&WindowsFeatureInfo {
+            feature_name: Some("Web*".to_string()),
+            ..Default::default()
+        }));
+        assert!(!feature.matches_filter(&WindowsFeatureInfo {
+            state: Some(FeatureState::NotPresent),
+            ..Default::default()
+        }));
+    }
+}

@@ -5,7 +5,7 @@ use rust_i18n::t;
 
 use crate::dism::DismSessionHandle;
 use crate::feature_on_demand::types::{CapabilityState, FeatureOnDemandInfo, FeatureOnDemandList};
-use crate::util::Filterable;
+use crate::util::{Filterable, matches_filter_name};
 
 pub fn handle_export(input: &str) -> Result<String, String> {
     let filters: Vec<FeatureOnDemandInfo> = if input.trim().is_empty() {
@@ -41,9 +41,7 @@ pub fn handle_export(input: &str) -> Result<String, String> {
             let mut should_get_full = !filters_without_identity.is_empty();
             if !should_get_full {
                 for f in &filters_with_identity {
-                    if let Some(ref filter_identity) = f.identity
-                        && name.eq_ignore_ascii_case(filter_identity)
-                    {
+                    if matches_filter_name(name, f.identity.as_deref()) {
                         should_get_full = true;
                         break;
                     }

@@ -60,6 +60,11 @@ pub fn matches_optional_string(info_value: &Option<String>, filter_value: &Optio
     }
 }
 
+/// Check whether an enumerated DISM name matches a populated filter identity.
+pub fn matches_filter_name(name: &str, filter_name: Option<&str>) -> bool {
+    filter_name.is_some_and(|filter_name| name.eq_ignore_ascii_case(filter_name))
+}
+
 /// Check that an optional field matches an exact filter value.
 /// Returns true if the filter has no value (no constraint).
 pub fn matches_optional_exact<T: PartialEq>(info_value: &Option<T>, filter_value: &Option<T>) -> bool {
@@ -104,6 +109,34 @@ mod tests {
         assert!(!matches_optional_string(&value, &Some("World".to_string())));
         assert!(matches_optional_string(&value, &None));
         assert!(!matches_optional_string(&None, &Some("Hello".to_string())));
+    }
+
+    #[test]
+    fn filter_name_matching_requires_a_case_insensitive_exact_value() {
+        assert!(matches_filter_name("Web-Server", Some("web-server")));
+        assert!(!matches_filter_name("Web-Server", Some("Web-*")));
+        assert!(!matches_filter_name("Web-Server", Some("TelnetClient")));
+        assert!(!matches_filter_name("Web-Server", None));
+    }
+
+    #[test]
+    fn optional_exact_and_any_filter_cover_all_outcomes() {
+        assert!(matches_optional_exact(&Some(1), &None));
+        assert!(matches_optional_exact(&Some(1), &Some(1)));
+        assert!(!matches_optional_exact(&Some(1), &Some(2)));
+        assert!(!matches_optional_exact(&None, &Some(1)));
+
+        struct Number(i32);
+
+        impl Filterable for Number {
+            fn matches_filter(&self, filter: &Self) -> bool {
+                self.0 == filter.0
+            }
+        }
+
+        assert!(Number(2).matches_any_filter(&[Number(1), Number(2)]));
+        assert!(!Number(2).matches_any_filter(&[Number(1), Number(3)]));
+        assert!(!Number(2).matches_any_filter(&[]));
     }
 
     #[test]

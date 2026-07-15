@@ -4,7 +4,7 @@
 use rust_i18n::t;
 
 use crate::dism::DismSessionHandle;
-use crate::util::Filterable;
+use crate::util::{Filterable, matches_filter_name};
 use crate::windows_feature::types::{FeatureState, WindowsFeatureInfo, WindowsFeatureList};
 
 pub fn handle_export(input: &str) -> Result<String, String> {
@@ -47,9 +47,7 @@ pub fn handle_export(input: &str) -> Result<String, String> {
             let mut should_get_full = !filters_without_name.is_empty();
             if !should_get_full {
                 for filter in &filters_with_name {
-                    if let Some(ref filter_name) = filter.feature_name
-                        && name.eq_ignore_ascii_case(filter_name)
-                    {
+                    if matches_filter_name(name, filter.feature_name.as_deref()) {
                         should_get_full = true;
                         break;
                     }

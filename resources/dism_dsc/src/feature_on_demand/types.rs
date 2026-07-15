@@ -45,3 +45,49 @@ impl Filterable for FeatureOnDemandInfo {
             && matches_optional_exact(&self.install_size, &filter.install_size)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn capability() -> FeatureOnDemandInfo {
+        FeatureOnDemandInfo {
+            identity: Some("OpenSSH.Client~~~~0.0.1.0".to_string()),
+            exist: Some(true),
+            state: Some(CapabilityState::Installed),
+            display_name: Some("OpenSSH Client".to_string()),
+            description: Some("OpenSSH client capability".to_string()),
+            download_size: Some(1_024),
+            install_size: Some(2_048),
+        }
+    }
+
+    #[test]
+    fn filter_matches_all_supported_fields() {
+        let filter = FeatureOnDemandInfo {
+            identity: Some("openssh.client~~~~0.0.1.0".to_string()),
+            state: Some(CapabilityState::Installed),
+            display_name: Some("openssh client".to_string()),
+            description: Some("openssh client capability".to_string()),
+            download_size: Some(1_024),
+            install_size: Some(2_048),
+            ..Default::default()
+        };
+
+        assert!(capability().matches_filter(&filter));
+    }
+
+    #[test]
+    fn filter_uses_exact_string_and_numeric_matching() {
+        let capability = capability();
+
+        assert!(!capability.matches_filter(&FeatureOnDemandInfo {
+            identity: Some("OpenSSH*".to_string()),
+            ..Default::default()
+        }));
+        assert!(!capability.matches_filter(&FeatureOnDemandInfo {
+            download_size: Some(2_048),
+            ..Default::default()
+        }));
+    }
+}
