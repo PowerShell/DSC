@@ -287,6 +287,7 @@ noObjectArgs = "Function '%{name}' does not accept object arguments, accepted ty
 noStringArgs = "Function '%{name}' does not accept string arguments, accepted types are: %{accepted_args_string}"
 lambdaNotFound = "Function '%{name}' could not find lambda with ID '%{id}'"
 lambdaTooManyParams = "Function '%{name}' requires lambda with 1 or 2 parameters (element and optional index)"
+invalidCategory = "Invalid function category '%{category}', valid categories are: %{valid_categories}"
 
 [functions.add]
 description = "Adds two or more numbers together"
