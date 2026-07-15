@@ -2448,6 +2448,8 @@ function Get-CodeCoverageReport {
                     $currentLineNum++
                 } elseif ($diffLine.StartsWith('-') -and -not $diffLine.StartsWith('---')) {
                     # Deleted lines don't advance the new file line counter
+                } elseif ($diffLine.StartsWith('\')) {
+                    # "\ No newline at end of file" marker — not a real line
                 } else {
                     $currentLineNum++
                 }
@@ -2469,27 +2471,20 @@ function Get-CodeCoverageReport {
             }
 
             if (-not $fileCoverage) {
-                Write-Verbose -Verbose "No LCOV match for '$file' (absPath='$absPath'). LCOV keys: $($lcovData.Keys -join ', ')"
+                Write-Verbose -Verbose "Skipping '$file': not in LCOV data (possibly platform-specific or not instrumented)"
+                continue
             }
 
             # Build per-line coverage map for this file (only added executable lines)
             $lineCoverageMap = @{}
-            if ($fileCoverage) {
-                foreach ($lineNum in $addedLineNumbers) {
-                    if ($fileCoverage.ContainsKey($lineNum)) {
-                        $totalChangedLines++
-                        $isCovered = $fileCoverage[$lineNum] -gt 0
-                        if ($isCovered) {
-                            $coveredLines++
-                        }
-                        $lineCoverageMap[$lineNum] = $isCovered
+            foreach ($lineNum in $addedLineNumbers) {
+                if ($fileCoverage.ContainsKey($lineNum)) {
+                    $totalChangedLines++
+                    $isCovered = $fileCoverage[$lineNum] -gt 0
+                    if ($isCovered) {
+                        $coveredLines++
                     }
-                }
-            } else {
-                # File not in coverage report - count added lines as uncovered
-                $totalChangedLines += $addedLineNumbers.Count
-                foreach ($lineNum in $addedLineNumbers) {
-                    $lineCoverageMap[$lineNum] = $false
+                    $lineCoverageMap[$lineNum] = $isCovered
                 }
             }
 
