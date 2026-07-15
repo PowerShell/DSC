@@ -104,8 +104,6 @@ macro_rules! find_resource_or_error {
 /// * `resource` - The resource to export.
 /// * `conf` - The configuration to add the results to.
 /// * `input` - The input to the export operation.
-/// * `filter` - Optional `exportFilter` directive applied by the engine to the exported instances.
-///
 /// # Panics
 ///
 /// Doesn't panic because there is a match/Some check before `unwrap()`; false positive.
@@ -113,7 +111,32 @@ macro_rules! find_resource_or_error {
 /// # Errors
 ///
 /// This function will return an error if the underlying resource fails.
-pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf: &mut Configuration, input: &str, filter: Option<&[Map<String, Value>]>) -> Result<ExportResult, DscError> {
+pub fn add_resource_export_results_to_configuration(
+    resource: &DscResource,
+    conf: &mut Configuration,
+    input: &str,
+) -> Result<ExportResult, DscError> {
+    add_filtered_resource_export_results_to_configuration(resource, conf, input, None)
+}
+
+/// Add filtered results of an export operation to a configuration.
+///
+/// # Arguments
+///
+/// * `resource` - The resource to export.
+/// * `conf` - The configuration to add the results to.
+/// * `input` - The input to the export operation.
+/// * `filter` - Optional `exportFilter` directive applied by the engine to the exported instances.
+///
+/// # Errors
+///
+/// This function will return an error if the underlying resource fails.
+pub fn add_filtered_resource_export_results_to_configuration(
+    resource: &DscResource,
+    conf: &mut Configuration,
+    input: &str,
+    filter: Option<&[Map<String, Value>]>,
+) -> Result<ExportResult, DscError> {
 
     let start_datetime = chrono::Local::now();
     let mut export_result = resource.export(input)?;
@@ -919,7 +942,12 @@ impl Configurator {
             let input = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
             trace!("{}", t!("configure.mod.exportInput", input = input));
             let export_filter = resource.directives.as_ref().and_then(|d| d.export_filter.as_deref());
-            let export_result = match add_resource_export_results_to_configuration(dsc_resource, &mut conf, input.as_str(), export_filter) {
+            let export_result = match add_filtered_resource_export_results_to_configuration(
+                dsc_resource,
+                &mut conf,
+                input.as_str(),
+                export_filter,
+            ) {
                 Ok(result) => result,
                 Err(e) => {
                     progress.set_failure(get_failure_from_error(&e));

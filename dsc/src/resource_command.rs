@@ -339,7 +339,7 @@ pub fn export(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, vers
     }
 
     let mut conf = Configuration::new();
-    if let Err(err) = add_resource_export_results_to_configuration(dsc_resource, &mut conf, input, None) {
+    if let Err(err) = add_resource_export_results_to_configuration(dsc_resource, &mut conf, input) {
         error!("{err}");
         exit(EXIT_DSC_ERROR);
     }

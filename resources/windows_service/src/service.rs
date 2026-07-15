@@ -826,28 +826,60 @@ unsafe fn wait_for_status(
     }
 }
 
+/// Match `text` against `pattern` where `*` matches zero or more characters.
+/// The comparison is case-insensitive.
+fn matches_wildcard(pattern: &str, text: &str) -> bool {
+    let pattern: Vec<char> = pattern.to_lowercase().chars().collect();
+    let text: Vec<char> = text.to_lowercase().chars().collect();
+
+    let (mut pattern_index, mut text_index) = (0usize, 0usize);
+    let mut star_index = None;
+    let mut star_text_index = 0usize;
+
+    while text_index < text.len() {
+        if pattern_index < pattern.len() && pattern[pattern_index] == '*' {
+            star_index = Some(pattern_index);
+            star_text_index = text_index;
+            pattern_index += 1;
+        } else if pattern_index < pattern.len()
+            && pattern[pattern_index] == text[text_index]
+        {
+            pattern_index += 1;
+            text_index += 1;
+        } else if let Some(star_index) = star_index {
+            pattern_index = star_index + 1;
+            star_text_index += 1;
+            text_index = star_text_index;
+        } else {
+            return false;
+        }
+    }
+
+    pattern[pattern_index..].iter().all(|character| *character == '*')
+}
+
 /// Check whether `service` matches all non-`None` fields in `filter`.
 fn matches_filter(service: &WindowsService, filter: &WindowsService) -> bool {
-    // name — case-insensitive exact match
+    // name - case-insensitive wildcard match
     if let Some(ref expected) = filter.name {
         let name = service.name.as_deref().unwrap_or("");
-        if !name.eq_ignore_ascii_case(expected) {
+        if !matches_wildcard(expected, name) {
             return false;
         }
     }
 
-    // display_name — case-insensitive exact match
+    // display_name - case-insensitive wildcard match
     if let Some(ref expected) = filter.display_name {
         let dn = service.display_name.as_deref().unwrap_or("");
-        if !dn.eq_ignore_ascii_case(expected) {
+        if !matches_wildcard(expected, dn) {
             return false;
         }
     }
 
-    // description — case-insensitive exact match
+    // description - case-insensitive wildcard match
     if let Some(ref expected) = filter.description {
         let desc = service.description.as_deref().unwrap_or("");
-        if !desc.eq_ignore_ascii_case(expected) {
+        if !matches_wildcard(expected, desc) {
             return false;
         }
     }
@@ -876,10 +908,10 @@ fn matches_filter(service: &WindowsService, filter: &WindowsService) -> bool {
         }
     }
 
-    // logon_account — exact case-insensitive match
+    // logon_account - case-insensitive wildcard match
     if let Some(ref expected_account) = filter.logon_account {
         let actual = service.logon_account.as_deref().unwrap_or("");
-        if !actual.eq_ignore_ascii_case(expected_account) {
+        if !matches_wildcard(expected_account, actual) {
             return false;
         }
     }
@@ -890,8 +922,7 @@ fn matches_filter(service: &WindowsService, filter: &WindowsService) -> bool {
     if let Some(ref expected_deps) = filter.dependencies {
         let actual_deps = service.dependencies.as_deref().unwrap_or(&[]);
         for dep in expected_deps {
-            let dep_lower = dep.to_lowercase();
-            if !actual_deps.iter().any(|d| d.to_lowercase() == dep_lower) {
+            if !actual_deps.iter().any(|actual| matches_wildcard(dep, actual)) {
                 return false;
             }
         }
@@ -1071,5 +1102,40 @@ pub fn what_if_delete_service(input: &WindowsService) -> Result<WindowsService, 
             ]),
         });
         Ok(current)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn wildcard_matching_is_case_insensitive() {
+        assert!(matches_wildcard("*Ssh*", "OpenSSH Server"));
+        assert!(matches_wildcard("ssh*", "sshd"));
+        assert!(matches_wildcard("*", "anything"));
+        assert!(!matches_wildcard("ssh*", "OpenSSH Server"));
+    }
+
+    #[test]
+    fn service_string_filters_support_wildcards() {
+        let service = WindowsService {
+            name: Some("sshd".to_string()),
+            display_name: Some("OpenSSH SSH Server".to_string()),
+            description: Some("Secure shell service".to_string()),
+            logon_account: Some("LocalSystem".to_string()),
+            dependencies: Some(vec!["Tcpip".to_string(), "RpcSs".to_string()]),
+            ..Default::default()
+        };
+        let filter = WindowsService {
+            name: Some("SSH*".to_string()),
+            display_name: Some("*ssh server".to_string()),
+            description: Some("secure*".to_string()),
+            logon_account: Some("local*".to_string()),
+            dependencies: Some(vec!["tcp*".to_string()]),
+            ..Default::default()
+        };
+
+        assert!(matches_filter(&service, &filter));
     }
 }
