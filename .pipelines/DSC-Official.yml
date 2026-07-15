@@ -81,9 +81,9 @@ extends:
       - job: SetPackageVersion
         displayName: Set PackageVersion
         pool:
-          type: windows
-          vmImage: windows-latest
+          type: linux
         variables:
+          LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2204:latest'
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           ob_sdl_sbom_enabled: false
           ob_signing_setup_enabled: false

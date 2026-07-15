@@ -931,6 +931,9 @@ settingNotFound = "Setting '%{name}' not found"
 failedToAbsolutizePath = "Failed to absolutize path '%{path}'"
 executableNotFoundInWorkingDirectory = "Executable '%{executable}' not found with working directory '%{cwd}'"
 executableNotFound = "Executable '%{executable}' not found"
+policyFolderNotSecure = "Policy folder '%{path}' is not secure, settings file will not be used. Required permissions: %{required}"
+policyFolderNotSecureLinux = "Only root should have write access (no group/other write bits)"
+policyFolderNotSecureWindows = "Only SYSTEM and Administrators should have write access"
 
 [types.date_version]
 invalidDay = "day `%{day}` for month `%{month}` is invalid - must be between `01` and `%{max_days}`"
