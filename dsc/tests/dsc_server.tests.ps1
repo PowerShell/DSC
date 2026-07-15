@@ -302,7 +302,7 @@ Describe 'Tests for DSC server' {
         $expectedFunctions = dsc function list --category String --output-format json | ConvertFrom-Json
         $response.result.structuredContent.functions.Count | Should -Be $expectedFunctions.Count
         foreach ($func in $response.result.structuredContent.functions) {
-            $func.category | Should -Contain "String"
+            $func.category | Should -Contain "string"
         }
     }
 
