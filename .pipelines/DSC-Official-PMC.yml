@@ -21,6 +21,10 @@ variables:
     value: ${{ parameters.PublishToPMC }}
   - name: RustVersion
     value: ms-prod-1.95
+  - name: LinuxContainerImage
+    value: 'onebranch.azurecr.io/linux/ubuntu-2204:latest'
+  - name: RepoRoot
+    value: '$(Build.SourcesDirectory)/DSC'
 
 resources:
   repositories:
@@ -32,13 +36,8 @@ resources:
 extends:
   template: v2/OneBranch.Official.CrossPlat.yml@onebranchTemplates
   parameters:
-    release:
-      category: Azure
     featureFlags:
-      WindowsHostVersion:
-        Disk: Large
-        Version: 2022
-        Network: KS1
+      linuxEsrpSigning: true
     customTags: 'ES365AIMigrationTooling'
     globalSdl:
       disableLegacyManifest: true
@@ -67,9 +66,9 @@ extends:
       - job: SetPackageVersion
         displayName: Set PackageVersion
         pool:
-          type: windows
-          vmImage: windows-latest
+          type: linux
         variables:
+          LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2204:latest'
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           ob_sdl_sbom_enabled: false
           ob_signing_setup_enabled: false
@@ -189,13 +188,13 @@ extends:
           - name: ob_outputDirectory
             value: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
           - name: ev2ServiceGroupRootFolder
-            value: '$(Build.SourcesDirectory)/.pipelines/EV2Specs/ServiceGroupRoot'
+            value: '$(RepoRoot)/.pipelines/EV2Specs/ServiceGroupRoot'
           - name: ev2ParametersFolder
-            value: '$(Build.SourcesDirectory)/.pipelines/EV2Specs/ServiceGroupRoot/Parameters'
+            value: '$(RepoRoot)/.pipelines/EV2Specs/ServiceGroupRoot/Parameters'
           - name: ob_sdl_credscan_suppressionsFile
-            value: $(Build.SourcesDirectory)/.config/suppress.json
+            value: $(RepoRoot)/.config/suppress.json
           - name: ob_sdl_tsa_configFile
-            value: $(Build.SourcesDirectory)/.config/tsaoptions.json
+            value: $(RepoRoot)/.config/tsaoptions.json
           - group: 'DSC-packages.microsoft.com'
         steps:
         - checkout: self
@@ -209,9 +208,28 @@ extends:
           env:
             ob_restore_phase: true
 
+        - pwsh: |
+            Get-ChildItem Env: | Out-String -Stream | write-Verbose -Verbose
+          displayName: 'Capture Environment Variables'
+          env:
+            ob_restore_phase: true
+
+        - pwsh: |
+            Get-ChildItem '$(Build.SourcesDirectory)'
+          displayName: 'Capture BuildDirectory'
+          env:
+            ob_restore_phase: true
+
+        - pwsh: |
+            Get-ChildItem '$(Pipeline.Workspace)' -Recurse | Out-String -Stream | write-Verbose -Verbose
+          displayName: 'Capture Workspace'
+          env:
+            ob_restore_phase: true
+
         - task: PipAuthenticate@1
           inputs:
-            artifactFeeds: 'PowerShellCore/PowerShellCore_PublicPackages'
+            # artifactFeeds: 'One/DSC-Compute-PMC'
+            artifactFeeds: 'One/azsecpack-pmc-cli'
           displayName: 'Pip Authenticate'
           env:
             ob_restore_phase: true
@@ -221,7 +239,7 @@ extends:
             pip --version --verbose
             $pythonDlFolderPath = Join-Path '$(ev2ServiceGroupRootFolder)/Shell/Run' -ChildPath "python_dl"
             New-Item -Path $pythonDlFolderPath -ItemType Directory -Force > $null
-            pip download -d $pythonDlFolderPath pmc-cli --platform=manylinux_2_17_x86_64 --only-binary=:all: --verbose
+            pip download -d $pythonDlFolderPath pmc-cli --only-binary=:all: -vvv
           displayName: 'Download pmc-cli package'
           env:
             ob_restore_phase: true
@@ -252,12 +270,12 @@ extends:
             $metadataHash = @{
               ReleaseTag   = "v$packageVersion"
               ForProduction = $true
-              SkipPublish  = $(PublishToPMC) -eq 'false'
+              SkipPublish  = '$(PublishToPMC)' -eq 'False'
             }
 
             $metadataHash | ConvertTo-Json | Out-File $pathToPMCMetadataFile
 
-            $mappingFilePath = Join-Path -Path '$(Build.SourcesDirectory)/tools/packages.microsoft.com' -ChildPath 'mapping.json'
+            $mappingFilePath = Join-Path -Path '$(RepoRoot)/tools/packages.microsoft.com' -ChildPath 'mapping.json'
             $mappingFileEV2Path = Join-Path -Path '$(ev2ParametersFolder)' -ChildPath 'mapping.json'
             Write-Verbose -Verbose "Copying mapping.json from $mappingFilePath to $mappingFileEV2Path"
             Copy-Item -Path $mappingFilePath -Destination $mappingFileEV2Path
@@ -330,9 +348,10 @@ extends:
 
         - task: CopyFiles@2
           inputs:
-            SourceFolder: '$(Build.SourcesDirectory)/.pipelines'
+            SourceFolder: '$(RepoRoot)/.pipelines'
             Contents: 'EV2Specs/**'
             TargetFolder: $(ob_outputDirectory)
+
     - stage: Prod_PMCRelease
       displayName: 'Deploy packages to PMC with EV2'
       dependsOn:
@@ -340,8 +359,6 @@ extends:
       variables:
         - name: ob_release_environment
           value: Production
-        - name: repoRoot
-          value: $(Build.SourcesDirectory)
       jobs:
       - job: Prod_ReleaseJob
         displayName: Publish to PMC
