@@ -284,6 +284,71 @@ Describe 'Tests for DSC server' {
         }
     }
 
+    It 'Calling list_dsc_functions with category_filter works' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 11
+            method  = "tools/call"
+            params  = @{
+                name      = "list_dsc_functions"
+                arguments = @{
+                    category_filter = @("string")
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 11
+        $expectedFunctions = dsc function list --category String --output-format json | ConvertFrom-Json
+        $response.result.structuredContent.functions.Count | Should -Be $expectedFunctions.Count
+        foreach ($func in $response.result.structuredContent.functions) {
+            $func.category | Should -Contain "string"
+        }
+    }
+
+    It 'Calling list_dsc_functions with description_filter works' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 12
+            method  = "tools/call"
+            params  = @{
+                name      = "list_dsc_functions"
+                arguments = @{
+                    description_filter = "*base64*"
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 12
+        $expectedFunctions = dsc function list --description "*base64*" --output-format json | ConvertFrom-Json
+        $response.result.structuredContent.functions.Count | Should -Be $expectedFunctions.Count
+        foreach ($func in $response.result.structuredContent.functions) {
+            $func.description | Should -Match "(?i)base64"
+        }
+    }
+
+    It 'Calling list_dsc_functions combines all filters' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 13
+            method  = "tools/call"
+            params  = @{
+                name      = "list_dsc_functions"
+                arguments = @{
+                    function_filter    = "base64"
+                    category_filter    = @("string")
+                    description_filter = "*base64*"
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 13
+        $response.result.structuredContent.functions.Count | Should -Be 1
+        $response.result.structuredContent.functions[0].name | Should -BeExactly "base64"
+    }
+
     # dont check for error as dsc function list returns empty list for invalid patterns
     It 'Calling list_dsc_functions with invalid pattern returns empty result' {
         $mcpRequest = @{
