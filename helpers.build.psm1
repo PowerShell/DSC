@@ -2469,27 +2469,23 @@ function Get-CodeCoverageReport {
             }
 
             if (-not $fileCoverage) {
-                Write-Verbose -Verbose "No LCOV match for '$file' (absPath='$absPath'). LCOV keys: $($lcovData.Keys -join ', ')"
+                # File not in coverage report means LLVM found no instrumentable
+                # executable code in it (e.g., struct/enum definitions with derive
+                # macros). Skip it rather than penalizing as uncovered.
+                Write-Verbose -Verbose "No LCOV data for '$file' - file has no instrumentable code, skipping"
+                continue
             }
 
             # Build per-line coverage map for this file (only added executable lines)
             $lineCoverageMap = @{}
-            if ($fileCoverage) {
-                foreach ($lineNum in $addedLineNumbers) {
-                    if ($fileCoverage.ContainsKey($lineNum)) {
-                        $totalChangedLines++
-                        $isCovered = $fileCoverage[$lineNum] -gt 0
-                        if ($isCovered) {
-                            $coveredLines++
-                        }
-                        $lineCoverageMap[$lineNum] = $isCovered
+            foreach ($lineNum in $addedLineNumbers) {
+                if ($fileCoverage.ContainsKey($lineNum)) {
+                    $totalChangedLines++
+                    $isCovered = $fileCoverage[$lineNum] -gt 0
+                    if ($isCovered) {
+                        $coveredLines++
                     }
-                }
-            } else {
-                # File not in coverage report - count added lines as uncovered
-                $totalChangedLines += $addedLineNumbers.Count
-                foreach ($lineNum in $addedLineNumbers) {
-                    $lineCoverageMap[$lineNum] = $false
+                    $lineCoverageMap[$lineNum] = $isCovered
                 }
             }
 

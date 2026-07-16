@@ -17,6 +17,20 @@ Describe 'tests for dsc settings' {
         if ($IsWindows) { #"Setting policy on Linux requires sudo"
             $script:policyDirPath = $script:policyFilePath | Split-Path
             New-Item -ItemType Directory -Path $script:policyDirPath | Out-Null
+            # Set secure ACLs: only SYSTEM and Administrators have write access
+            $acl = Get-Acl -Path $script:policyDirPath
+            $acl.SetAccessRuleProtection($true, $false)
+            $acl.Access | ForEach-Object { $acl.RemoveAccessRule($_) } | Out-Null
+            $systemRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+                "NT AUTHORITY\SYSTEM", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
+            $adminsRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+                "BUILTIN\Administrators", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
+            $usersReadRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+                "BUILTIN\Users", "ReadAndExecute", "ContainerInherit,ObjectInherit", "None", "Allow")
+            $acl.AddAccessRule($systemRule)
+            $acl.AddAccessRule($adminsRule)
+            $acl.AddAccessRule($usersReadRule)
+            Set-Acl -Path $script:policyDirPath -AclObject $acl
         }
 
         #create backups of settings files
@@ -105,5 +119,31 @@ Describe 'tests for dsc settings' {
         dsc resource list 2> $TestDrive/tracing.txt
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Trace-level is Trace"
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Using Resource Path: Defaultv1SettingsDir'
+    }
+
+    It 'DSC_IGNORE_SETTINGS_FILE environment variable disables settings file' {
+        $oldEnv = $env:DSC_IGNORE_SETTINGS_FILE
+        try {
+            $env:DSC_IGNORE_SETTINGS_FILE = "1"
+            $null = dsc -l warn resource list 2> $TestDrive/tracing.txt
+            $errorLog = Get-Content "$TestDrive/tracing.txt" -Raw
+            $errorLog | Should -BeLike "*WARN*Ignoring settings file due to environment variable 'DSC_IGNORE_SETTINGS_FILE' being set or '--ignore-settings-file' flag being used*"
+        }
+        finally {
+            $env:DSC_IGNORE_SETTINGS_FILE = $oldEnv
+        }
+    }
+
+    It '--ignore-settings-file command-line argument disables settings file' {
+        $oldEnv = $env:DSC_IGNORE_SETTINGS_FILE
+        try {
+            $env:DSC_IGNORE_SETTINGS_FILE = $null
+            $null = dsc --ignore-settings-file -l warn resource list 2> $TestDrive/tracing.txt
+            $errorLog = Get-Content "$TestDrive/tracing.txt" -Raw
+            $errorLog | Should -BeLike "*WARN*Ignoring settings file due to environment variable 'DSC_IGNORE_SETTINGS_FILE' being set or '--ignore-settings-file' flag being used*"
+        }
+        finally {
+            $env:DSC_IGNORE_SETTINGS_FILE = $oldEnv
+        }
     }
 }
