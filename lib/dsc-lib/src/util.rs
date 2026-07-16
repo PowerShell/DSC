@@ -14,6 +14,8 @@ use std::{
 use tracing::{debug, warn};
 use which::which;
 
+pub const DSC_IGNORE_SETTINGS_FILE: &str = "DSC_IGNORE_SETTINGS_FILE";
+
 pub struct DscSettingValue {
     pub setting:  Value,
     pub policy: Value,
@@ -182,6 +184,11 @@ pub fn get_setting(value_name: &str) -> Result<DscSettingValue, DscError> {
 
     let mut result: DscSettingValue = DscSettingValue::default();
     let mut settings_file_path : PathBuf;
+
+    if env::var(DSC_IGNORE_SETTINGS_FILE).is_ok() {
+        warn!("{}", t!("util.ignoreSettingsFile"));
+        return Ok(result);
+    }
 
     if let Some(exe_home) = get_exe_path()?.parent() {
         // First, get setting from the default settings file
