@@ -4,10 +4,10 @@
 use args::{Args, SubCommand};
 use clap::{CommandFactory, Parser};
 use clap_complete::generate;
-use dsc_lib::progress::ProgressFormat;
 use mcp::start_mcp_server;
+use dsc_lib::{progress::ProgressFormat, util::DSC_IGNORE_SETTINGS_FILE};
 use rust_i18n::{i18n, t};
-use std::{io, process::exit};
+use std::{env::set_var, io, process::exit};
 use sysinfo::{Process, RefreshKind, System, get_current_pid, ProcessRefreshKind};
 use tracing::{error, info, warn, debug};
 
@@ -40,6 +40,13 @@ fn main() {
     }
 
     let args = Args::parse();
+
+    // if args.ignore_settings_file is set, we create an env var called `DSC_IGNORE_SETTINGS_FILE` set to value 1
+    if args.ignore_settings_file {
+        unsafe {
+            set_var(DSC_IGNORE_SETTINGS_FILE, "1");
+        }
+    }
 
     util::enable_tracing(args.trace_level.as_ref(), args.trace_format.as_ref());
 

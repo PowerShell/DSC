@@ -54,6 +54,8 @@ pub struct Args {
     pub trace_format: Option<TraceFormat>,
     #[clap(short = 'p', long, help = t!("args.progressFormat").to_string(), value_enum)]
     pub progress_format: Option<ProgressFormat>,
+    #[clap(short = 'i', long, help = t!("args.ignoreSettingsFile").to_string())]
+    pub ignore_settings_file: bool,
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
