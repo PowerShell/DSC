@@ -2,21 +2,6 @@
 # Licensed under the MIT License.
 
 Describe 'Microsoft.Windows/WindowsFeatureList - export operation' -Skip:(!$IsWindows) {
-    BeforeAll {
-        # Discover at least one enabled and one disabled feature using DISM
-        $dismOutput = & dism /Online /Get-Features /Format:Table /English 2>&1
-        if ($LASTEXITCODE -ne 0) {
-            throw "Failed to enumerate features using dism: $dismOutput"
-        }
-        $enabledMatches  = $dismOutput | Select-String -Pattern '^\s*(\S+)\s+\|\s+Enabled\s*$'
-        $disabledMatches = $dismOutput | Select-String -Pattern '^\s*(\S+)\s+\|\s+Disabled\s*$'
-        if (-not $enabledMatches -or -not $disabledMatches) {
-            throw "Failed to find both enabled and disabled features in DISM output.`nOutput:`n$dismOutput"
-        }
-        $knownEnabledFeature  = $enabledMatches[0].Matches[0].Groups[1].Value
-        $knownDisabledFeature = $disabledMatches[0].Matches[0].Groups[1].Value
-    }
-
     It 'exports all features with no input filter' {
         $output = dsc resource export -r Microsoft.Windows/WindowsFeatureList | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
@@ -30,46 +15,10 @@ Describe 'Microsoft.Windows/WindowsFeatureList - export operation' -Skip:(!$IsWi
         )
     }
 
-    It 'exports features filtered by exact featureName' {
-        $inputJson = '{"features":[{"featureName":"' + $knownEnabledFeature + '"}]}'
-        $output = dsc resource export -r Microsoft.Windows/WindowsFeatureList -i $inputJson | ConvertFrom-Json
-        $LASTEXITCODE | Should -Be 0
-        $features = $output.resources[0].properties.features
-        $features | Should -Not -BeNullOrEmpty
-        $features.Count | Should -Be 1
-        $features[0].featureName | Should -BeExactly $knownEnabledFeature
-    }
-
-    It 'treats wildcard characters as literal featureName characters' {
-        $inputJson = '{"features":[{"featureName":"' + $knownEnabledFeature + '*"}]}'
-        $output = dsc resource export -r Microsoft.Windows/WindowsFeatureList -i $inputJson | ConvertFrom-Json
-        $LASTEXITCODE | Should -Be 0
-        $output.resources[0].properties.features.Count | Should -Be 0
-    }
-
-    It 'exports features filtered by state Installed' {
-        $inputJson = '{"features":[{"state":"Installed"}]}'
-        $output = dsc resource export -r Microsoft.Windows/WindowsFeatureList -i $inputJson | ConvertFrom-Json
-        $LASTEXITCODE | Should -Be 0
-        $features = $output.resources[0].properties.features
-        $features | Should -Not -BeNullOrEmpty
-        $features | ForEach-Object { $_.state | Should -Be 'Installed' }
-    }
-
-    It 'returns empty features list for a non-matching filter' {
-        $inputJson = '{"features":[{"featureName":"NonExistent-Feature-1234567890"}]}'
-        $output = dsc resource export -r Microsoft.Windows/WindowsFeatureList -i $inputJson | ConvertFrom-Json
-        $LASTEXITCODE | Should -Be 0
-        $features = $output.resources[0].properties.features
-        $features | Should -BeNullOrEmpty
-    }
-
-    It 'exports multiple feature filters (OR logic)' {
-        $inputJson = '{"features":[{"featureName":"' + $knownEnabledFeature + '"},{"featureName":"' + $knownDisabledFeature + '"}]}'
-        $output = dsc resource export -r Microsoft.Windows/WindowsFeatureList -i $inputJson | ConvertFrom-Json
-        $LASTEXITCODE | Should -Be 0
-        $featureNames = $output.resources[0].properties.features | Select-Object -ExpandProperty featureName
-        $featureNames | Should -Contain $knownEnabledFeature
-        $featureNames | Should -Contain $knownDisabledFeature
+    It 'returns an error when export input is provided' {
+        $inputJson = '{"features":[{"featureName":"Web-Server"}]}'
+        dsc resource export -r Microsoft.Windows/WindowsFeatureList -i $inputJson 2>$TESTDRIVE/error.log | Out-Null
+        $LASTEXITCODE | Should -Be 2
+        (Get-Content -Raw $TESTDRIVE/error.log) | Should -Match 'does not support export filtering'
     }
 }

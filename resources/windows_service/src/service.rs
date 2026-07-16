@@ -371,22 +371,8 @@ unsafe fn query_status(service_handle: SC_HANDLE) -> Result<ServiceStatus, Servi
     }
 }
 
-/// Convert a `ServiceStatus` to the corresponding Windows `SERVICE_STATUS_CURRENT_STATE` constant.
-fn status_to_current_state(status: &ServiceStatus) -> SERVICE_STATUS_CURRENT_STATE {
-    match status {
-        ServiceStatus::Running => SERVICE_RUNNING,
-        ServiceStatus::Stopped => SERVICE_STOPPED,
-        ServiceStatus::Paused => SERVICE_PAUSED,
-        ServiceStatus::StartPending => SERVICE_START_PENDING,
-        ServiceStatus::StopPending => SERVICE_STOP_PENDING,
-        ServiceStatus::PausePending => SERVICE_PAUSE_PENDING,
-        ServiceStatus::ContinuePending => SERVICE_CONTINUE_PENDING,
-    }
-}
-
-/// Export (enumerate) all services, optionally filtering by the provided criteria.
-/// Returns a list of matching services.
-pub fn export_services(filter: Option<&WindowsService>) -> Result<Vec<WindowsService>, ServiceError> {
+/// Export (enumerate) all services. Returns a list of all services.
+pub fn export_services() -> Result<Vec<WindowsService>, ServiceError> {
     let scm = unsafe { OpenSCManagerW(None, None, SC_MANAGER_CONNECT | SC_MANAGER_ENUMERATE_SERVICE) }
         .map_err(|e| ServiceError::from(t!("get.openScmFailed", error = e.to_string()).to_string()))?;
     let scm = ScHandle(scm);
@@ -394,23 +380,11 @@ pub fn export_services(filter: Option<&WindowsService>) -> Result<Vec<WindowsSer
     let services = unsafe { enumerate_services(scm.0) }?;
     let mut results = Vec::new();
 
-    // Pre-compute the status filter value for early rejection before expensive per-service queries
-    let status_filter_dw = filter.and_then(|f| f.status.as_ref()).map(status_to_current_state);
-
-    for (service_name, current_state) in &services {
-        // Quick reject based on status before opening the service handle
-        if let Some(expected_state) = status_filter_dw && *current_state != expected_state {
-            continue;
-        }
-
+    for (service_name, _current_state) in &services {
         let svc = match unsafe { get_service_details(scm.0, service_name) } {
             Ok(s) => s,
             Err(_) => continue, // skip services we can't query
         };
-
-        if let Some(f) = filter && !matches_filter(&svc, f) {
-            continue;
-        }
 
         results.push(svc);
     }
@@ -826,111 +800,6 @@ unsafe fn wait_for_status(
     }
 }
 
-/// Match `text` against `pattern` where `*` matches zero or more characters.
-/// The comparison is case-insensitive.
-fn matches_wildcard(pattern: &str, text: &str) -> bool {
-    let pattern: Vec<char> = pattern.to_lowercase().chars().collect();
-    let text: Vec<char> = text.to_lowercase().chars().collect();
-
-    let (mut pattern_index, mut text_index) = (0usize, 0usize);
-    let mut star_index = None;
-    let mut star_text_index = 0usize;
-
-    while text_index < text.len() {
-        if pattern_index < pattern.len() && pattern[pattern_index] == '*' {
-            star_index = Some(pattern_index);
-            star_text_index = text_index;
-            pattern_index += 1;
-        } else if pattern_index < pattern.len()
-            && pattern[pattern_index] == text[text_index]
-        {
-            pattern_index += 1;
-            text_index += 1;
-        } else if let Some(star_index) = star_index {
-            pattern_index = star_index + 1;
-            star_text_index += 1;
-            text_index = star_text_index;
-        } else {
-            return false;
-        }
-    }
-
-    pattern[pattern_index..].iter().all(|character| *character == '*')
-}
-
-/// Check whether `service` matches all non-`None` fields in `filter`.
-fn matches_filter(service: &WindowsService, filter: &WindowsService) -> bool {
-    // name - case-insensitive wildcard match
-    if let Some(ref expected) = filter.name {
-        let name = service.name.as_deref().unwrap_or("");
-        if !matches_wildcard(expected, name) {
-            return false;
-        }
-    }
-
-    // display_name - case-insensitive wildcard match
-    if let Some(ref expected) = filter.display_name {
-        let dn = service.display_name.as_deref().unwrap_or("");
-        if !matches_wildcard(expected, dn) {
-            return false;
-        }
-    }
-
-    // description - case-insensitive wildcard match
-    if let Some(ref expected) = filter.description {
-        let desc = service.description.as_deref().unwrap_or("");
-        if !matches_wildcard(expected, desc) {
-            return false;
-        }
-    }
-
-    // exist — exact match
-    if let Some(expected_exist) = filter.exist {
-        let actual_exist = service.exist.unwrap_or(false);
-        if actual_exist != expected_exist {
-            return false;
-        }
-    }
-
-    // status — exact match
-    if let Some(ref expected_status) = filter.status {
-        match &service.status {
-            Some(actual_status) if actual_status == expected_status => {}
-            _ => return false,
-        }
-    }
-
-    // start_type — exact match
-    if let Some(ref expected_start) = filter.start_type {
-        match &service.start_type {
-            Some(actual_start) if actual_start == expected_start => {}
-            _ => return false,
-        }
-    }
-
-    // logon_account - case-insensitive wildcard match
-    if let Some(ref expected_account) = filter.logon_account {
-        let actual = service.logon_account.as_deref().unwrap_or("");
-        if !matches_wildcard(expected_account, actual) {
-            return false;
-        }
-    }
-
-    // Note: executable_path and error_control are intentionally not filtered.
-
-    // dependencies — service must have at least all specified dependencies
-    if let Some(ref expected_deps) = filter.dependencies {
-        let actual_deps = service.dependencies.as_deref().unwrap_or(&[]);
-        for dep in expected_deps {
-            if !actual_deps.iter().any(|actual| matches_wildcard(dep, actual)) {
-                return false;
-            }
-        }
-    }
-
-    true
-}
-
 /// Compute the projected state of a service after applying `input`, without
 /// making any changes. Populates `_metadata.whatIf` with one entry per change
 /// that would be applied. If the service does not exist, returns the desired
@@ -1102,152 +971,5 @@ pub fn what_if_delete_service(input: &WindowsService) -> Result<WindowsService, 
             ]),
         });
         Ok(current)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn service_fixture() -> WindowsService {
-        WindowsService {
-            name: Some("sshd".to_string()),
-            display_name: Some("OpenSSH SSH Server".to_string()),
-            description: Some("Secure shell service".to_string()),
-            exist: Some(true),
-            status: Some(ServiceStatus::Running),
-            start_type: Some(StartType::Automatic),
-            executable_path: Some("C:\\Windows\\System32\\OpenSSH\\sshd.exe".to_string()),
-            logon_account: Some("LocalSystem".to_string()),
-            error_control: Some(ErrorControl::Normal),
-            dependencies: Some(vec!["Tcpip".to_string(), "RpcSs".to_string()]),
-            metadata: None,
-        }
-    }
-
-    #[test]
-    fn wildcard_matching_supports_exact_case_insensitive_and_star_patterns() {
-        assert!(matches_wildcard("sshd", "sshd"));
-        assert!(matches_wildcard("*Ssh*", "OpenSSH Server"));
-        assert!(matches_wildcard("ssh*", "sshd"));
-        assert!(matches_wildcard("*shd", "sshd"));
-        assert!(matches_wildcard("s*h*d", "sshd"));
-        assert!(matches_wildcard("**ssh**", "ssh"));
-        assert!(matches_wildcard("*", "anything"));
-        assert!(matches_wildcard("*", ""));
-    }
-
-    #[test]
-    fn wildcard_matching_rejects_non_matching_patterns() {
-        assert!(!matches_wildcard("", "sshd"));
-        assert!(!matches_wildcard("sshd", ""));
-        assert!(!matches_wildcard("sshd", "sshd2"));
-        assert!(!matches_wildcard("sshd2", "sshd"));
-        assert!(!matches_wildcard("ssh*", "OpenSSH Server"));
-        assert!(!matches_wildcard("*ssh", "OpenSSH Server"));
-    }
-
-    #[test]
-    fn service_string_filters_support_wildcards() {
-        let service = service_fixture();
-        let filter = WindowsService {
-            name: Some("SSH*".to_string()),
-            display_name: Some("*ssh server".to_string()),
-            description: Some("secure*".to_string()),
-            exist: Some(true),
-            status: Some(ServiceStatus::Running),
-            start_type: Some(StartType::Automatic),
-            logon_account: Some("local*".to_string()),
-            dependencies: Some(vec!["tcp*".to_string()]),
-            ..Default::default()
-        };
-
-        assert!(matches_filter(&service, &filter));
-    }
-
-    #[test]
-    fn service_filter_rejects_non_matching_string_fields() {
-        let service = service_fixture();
-
-        for filter in [
-            WindowsService {
-                name: Some("http*".to_string()),
-                ..Default::default()
-            },
-            WindowsService {
-                display_name: Some("HTTP*".to_string()),
-                ..Default::default()
-            },
-            WindowsService {
-                description: Some("Web*".to_string()),
-                ..Default::default()
-            },
-            WindowsService {
-                logon_account: Some("Network*".to_string()),
-                ..Default::default()
-            },
-        ] {
-            assert!(!matches_filter(&service, &filter));
-        }
-    }
-
-    #[test]
-    fn service_filter_rejects_non_matching_state_fields() {
-        let service = service_fixture();
-
-        assert!(!matches_filter(
-            &service,
-            &WindowsService {
-                exist: Some(false),
-                ..Default::default()
-            },
-        ));
-        assert!(!matches_filter(
-            &service,
-            &WindowsService {
-                status: Some(ServiceStatus::Stopped),
-                ..Default::default()
-            },
-        ));
-        assert!(!matches_filter(
-            &service,
-            &WindowsService {
-                start_type: Some(StartType::Manual),
-                ..Default::default()
-            },
-        ));
-
-        let service_without_state = WindowsService::default();
-        assert!(!matches_filter(
-            &service_without_state,
-            &WindowsService {
-                status: Some(ServiceStatus::Running),
-                ..Default::default()
-            },
-        ));
-        assert!(!matches_filter(
-            &service_without_state,
-            &WindowsService {
-                start_type: Some(StartType::Automatic),
-                ..Default::default()
-            },
-        ));
-    }
-
-    #[test]
-    fn service_filter_requires_every_dependency() {
-        let service = service_fixture();
-        let matching_filter = WindowsService {
-            dependencies: Some(vec!["tcp*".to_string(), "RPC*".to_string()]),
-            ..Default::default()
-        };
-        let missing_filter = WindowsService {
-            dependencies: Some(vec!["missing*".to_string()]),
-            ..Default::default()
-        };
-
-        assert!(matches_filter(&service, &matching_filter));
-        assert!(!matches_filter(&service, &missing_filter));
-        assert!(!matches_filter(&WindowsService::default(), &matching_filter));
     }
 }

@@ -37,7 +37,7 @@
             "export",
             "windows-feature"
         ],
-        "input": "stdin"
+        "supportsFiltering": false
     },
     "exitCodes": {
         "0": "Success",
@@ -66,7 +66,7 @@
                 "features": {
                     "type": "array",
                     "title": "Features",
-                    "description": "An array of feature filters or feature information objects.",
+                    "description": "An array of feature information objects.",
                     "items": {
                         "type": "object",
                         "additionalProperties": false,
@@ -74,7 +74,7 @@
                             "featureName": {
                                 "type": "string",
                                 "title": "Feature name",
-                                "description": "The name of the Windows feature as reported by DISM. Required for get and set operations. For export, this is optional and supports case-insensitive exact filtering."
+                                "description": "The name of the Windows feature as reported by DISM. Required for get and set operations. Returned by export operation."
                             },
                             "_exist": {
                                 "type": "boolean",
@@ -99,12 +99,12 @@
                             "displayName": {
                                 "type": "string",
                                 "title": "Display name",
-                                "description": "The display name of the feature. Returned by get and export operations. For export, wildcards (*) are supported for case-insensitive filtering."
+                                "description": "The display name of the feature. Returned by the get operation."
                             },
                             "description": {
                                 "type": "string",
                                 "title": "Description",
-                                "description": "The description of the feature. Returned by get and export operations. For export, wildcards (*) are supported for case-insensitive filtering."
+                                "description": "The description of the feature. Returned by the get operation."
                             },
                             "restartRequired": {
                                 "type": "string",

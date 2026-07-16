@@ -116,18 +116,7 @@ fn main() {
             }
         }
         "export" => {
-            let filter: Option<WindowsService> = match input_json {
-                Some(json) => match serde_json::from_str(&json) {
-                    Ok(s) => Some(s),
-                    Err(e) => {
-                        write_error(&t!("main.invalidJson", error = e.to_string()));
-                        exit(EXIT_INVALID_INPUT);
-                    }
-                },
-                None => None,
-            };
-
-            match service::export_services(filter.as_ref()) {
+            match service::export_services() {
                 Ok(services) => {
                     for svc in &services {
                         print_json(svc);

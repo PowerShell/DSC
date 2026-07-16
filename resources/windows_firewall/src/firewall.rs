@@ -11,7 +11,6 @@ use windows::Win32::System::Ole::IEnumVARIANT;
 use windows::Win32::System::Variant::{VARIANT, VariantClear};
 
 use crate::types::{FirewallError, FirewallRule, FirewallRuleList, Metadata, RuleAction, RuleDirection, UnspecifiedRulesAction};
-use crate::util::matches_any_filter;
 
 /// RAII wrapper for VARIANT that automatically calls VariantClear on drop
 struct SafeVariant(VARIANT);
@@ -558,21 +557,13 @@ pub fn set_rules(input: &FirewallRuleList, what_if: bool) -> Result<FirewallRule
     Ok(FirewallRuleList { rules: results, unspecified_rules_action: input.unspecified_rules_action.clone() })
 }
 
-pub fn export_rules(filters: Option<&FirewallRuleList>) -> Result<FirewallRuleList, FirewallError> {
+pub fn export_rules() -> Result<FirewallRuleList, FirewallError> {
     let store = FirewallStore::open()?;
     let all_rules = store.enumerate_rules()?;
-    let default_filter;
-    let filter_rules: &[FirewallRule] = match filters {
-        Some(input) if !input.rules.is_empty() => &input.rules,
-        _ => { default_filter = [FirewallRule::default()]; &default_filter }
-    };
 
     let mut results = Vec::new();
     for rule in all_rules {
-        let model = rule_to_model(&rule)?;
-        if matches_any_filter(&model, filter_rules) {
-            results.push(model);
-        }
+        results.push(rule_to_model(&rule)?);
     }
 
     Ok(FirewallRuleList { rules: results, unspecified_rules_action: None })
