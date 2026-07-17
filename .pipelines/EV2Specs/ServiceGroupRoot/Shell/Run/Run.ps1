@@ -16,6 +16,7 @@
     - PMC_METADATA: URL to the pmcMetadata.json file
 #>
 
+$env:NO_COLOR = 1
 $PSStyle.OutputRendering = 'PlainText'
 
 function Get-MappedRepositoryIds {
