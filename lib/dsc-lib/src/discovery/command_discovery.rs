@@ -167,7 +167,7 @@ impl CommandDiscovery {
         let mut uniques: HashSet<PathBuf> = HashSet::new();
         paths.retain(|e|uniques.insert((*e).clone()));
 
-        if dsc_restricted_path.is_some() {
+        if resource_path_setting.allow_env_override && dsc_restricted_path.is_some() {
             // when using restricted path, intent is to isolate the search of manifests and executables to the restricted path
             // so we replace the PATH with the restricted path
             if let Ok(new_path) = env::join_paths(paths.clone()) {
@@ -201,8 +201,6 @@ impl CommandDiscovery {
         if let Ok(final_resource_path) = env::join_paths(paths.clone()) {
             debug!("{}", t!("discovery.commandDiscovery.usingResourcePath", path = final_resource_path.to_string_lossy()));
         }
-
-        debug!("PATH = {:?}", env::var_os("PATH").unwrap_or_default().to_string_lossy());
 
         Ok(paths)
     }

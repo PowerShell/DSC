@@ -380,11 +380,11 @@ Describe 'tests for resource discovery' {
         New-Item -Path $exePath2 -ItemType Directory -Force | Out-Null
         Copy-Item -Path "$($dscEcho.Source)" -Destination $exePath1
         Copy-Item -Path "$($dscEcho.Source)" -Destination $exePath2
-        $manifest1 = Get-Content -Raw -Path "$(Split-Path -Path $dscEcho.Source -Parent)\echo.dsc.resource.json" | ConvertFrom-Json -AsHashtable
+        $manifest1 = Get-Content -Raw -Path "$(Split-Path -Path $dscEcho.Source -Parent)/echo.dsc.resource.json" | ConvertFrom-Json -AsHashtable
         $manifest1.type = 'Test/RestrictedPathResource1'
         $manifest1.condition = "[not(equals(tryWhich('dscecho'), null()))]"
         Set-Content -Path (Join-Path $exePath1 'test.dsc.resource.json') -Value ($manifest1 | ConvertTo-Json -Depth 10)
-        $manifest2 = Get-Content -Raw -Path "$(Split-Path -Path $dscEcho.Source -Parent)\echo.dsc.resource.json" | ConvertFrom-Json -AsHashtable
+        $manifest2 = Get-Content -Raw -Path "$(Split-Path -Path $dscEcho.Source -Parent)/echo.dsc.resource.json" | ConvertFrom-Json -AsHashtable
         $manifest2.type = 'Test/RestrictedPathResource2'
         $manifest2.condition = "[not(equals(tryWhich('dscecho'), null()))]"
         Set-Content -Path (Join-Path $exePath2 'test.dsc.resource.json') -Value ($manifest2 | ConvertTo-Json -Depth 10)
@@ -411,11 +411,11 @@ Describe 'tests for resource discovery' {
         New-Item -Path $exePath1 -ItemType Directory -Force | Out-Null
         New-Item -Path $exePath2 -ItemType Directory -Force | Out-Null
         Copy-Item -Path "$($dscEcho.Source)" -Destination $exePath1
-        $manifest1 = Get-Content -Raw -Path "$(Split-Path -Path $dscEcho.Source -Parent)\echo.dsc.resource.json" | ConvertFrom-Json -AsHashtable
+        $manifest1 = Get-Content -Raw -Path "$(Split-Path -Path $dscEcho.Source -Parent)/echo.dsc.resource.json" | ConvertFrom-Json -AsHashtable
         $manifest1.type = 'Test/RestrictedPathResource1'
         $manifest1.condition = "[not(equals(tryWhich('dscecho'), null()))]"
         Set-Content -Path (Join-Path $exePath1 'test.dsc.resource.json') -Value ($manifest1 | ConvertTo-Json -Depth 10)
-        $manifest2 = Get-Content -Raw -Path "$(Split-Path -Path $dscEcho.Source -Parent)\echo.dsc.resource.json" | ConvertFrom-Json -AsHashtable
+        $manifest2 = Get-Content -Raw -Path "$(Split-Path -Path $dscEcho.Source -Parent)/echo.dsc.resource.json" | ConvertFrom-Json -AsHashtable
         $manifest2.type = 'Test/RestrictedPathResource2'
         $manifest2.condition = "[not(equals(tryWhich('doesnotexist'), null()))]"
         Set-Content -Path (Join-Path $exePath2 'test.dsc.resource.json') -Value ($manifest2 | ConvertTo-Json -Depth 10)
@@ -446,6 +446,23 @@ Describe 'tests for resource discovery' {
         }
         finally {
             $env:DSC_RESOURCE_PATH = $oldResourcePath
+        }
+    }
+
+    It 'DSC_RESTRICTED_PATH takes precedence over DSC_RESOURCE_PATH' {
+        $dscHome = Split-Path -Path (Get-Command dsc -ErrorAction Stop).Source -Parent
+        $oldResourcePath = $env:DSC_RESOURCE_PATH
+        $oldRestrictedPath = $env:DSC_RESTRICTED_PATH
+        try {
+            $env:DSC_RESOURCE_PATH = $dscHome
+            $env:DSC_RESTRICTED_PATH = $testdrive
+            $out = dsc -l trace resource list Microsoft.Adapter/PowerShell 2> "$testdrive/error.txt" | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw -Path "$testdrive/error.txt")
+            $out.Count | Should -Be 0 -Because (Get-Content -Raw -Path "$testdrive/error.txt")
+        }
+        finally {
+            $env:DSC_RESOURCE_PATH = $oldResourcePath
+            $env:DSC_RESTRICTED_PATH = $oldRestrictedPath
         }
     }
 }

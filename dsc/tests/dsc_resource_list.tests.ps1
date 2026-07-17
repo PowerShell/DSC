@@ -150,7 +150,7 @@ Describe 'Tests for listing resources' {
 
         $oldPath = $env:DSC_RESTRICTED_PATH
         try {
-            $env:DSC_RESTRICTED_PATHTH = $TestDrive + [System.IO.Path]::PathSeparator + $env:PATH
+            $env:DSC_RESTRICTED_PATH = $TestDrive + [System.IO.Path]::PathSeparator + $env:PATH
             $resources = dsc resource list | ConvertFrom-Json
             $LASTEXITCODE | Should -Be 0
             $resourceGroups = $resources | Group-Object -Property type, version
