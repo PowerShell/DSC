@@ -16,7 +16,7 @@ Describe 'WindowsPowerShell adapter resource tests - requires elevated permissio
     $dscHome = Split-Path (Get-Command dsc -ErrorAction Stop).Source -Parent
     $psexeHome = Split-Path (Get-Command powershell -ErrorAction Stop).Source -Parent
     $ps7exeHome = Split-Path (Get-Command pwsh -ErrorAction Stop).Source -Parent
-    $env:DSC_RESOURCE_PATH = $dscHome + [System.IO.Path]::PathSeparator + $psexeHome + [System.IO.Path]::PathSeparator + $ps7exeHome
+    $env:DSC_RESTRICTED_PATH = $dscHome + [System.IO.Path]::PathSeparator + $psexeHome + [System.IO.Path]::PathSeparator + $ps7exeHome
     $windowsPowerShellPath = Join-Path $testDrive 'WindowsPowerShell' 'Modules'
     $moduleFile = @"
 @{
@@ -214,7 +214,7 @@ class PSClassResource {
                 Name = $Name
                 Credential = $Credential
         }
-      
+
     }
 
     function Test-TargetResource {
@@ -246,7 +246,7 @@ class PSClassResource {
 
 
         return $inDesiredState
-        
+
     }
 
     function Set-TargetResource {
@@ -316,7 +316,7 @@ class PSClassResource {
     }
 
     $env:PSModulePath = $windowsPowerShellPath + [System.IO.Path]::PathSeparator + $env:PSModulePath + [System.IO.Path]::PathSeparator + $ProgramFileModule
-    
+
     #Remove-Item "$env:LOCALAPPDATA\dsc\WindowsPSAdapterCache.json" -Force -ErrorAction SilentlyContinue
 
     #Invoke-DscCacheRefresh -Module "TestScriptBaseDSC"
@@ -329,7 +329,7 @@ class PSClassResource {
 
   AfterAll {
     $env:PSModulePath = $OldPSModulePath
-    $env:DSC_RESOURCE_PATH = $null
+    $env:DSC_RESTRICTED_PATH = $null
   }
 
   It '_inDesiredState is returned correction: <Context>' -TestCases @(
@@ -423,7 +423,7 @@ resources:
       type: TestScriptBaseDSC/CredentialValidation
       properties:
         Name: TestScriptResource1
-        Credential:       
+        Credential:
            UserName: MyUser
            Password: Password
 '@
@@ -449,7 +449,7 @@ resources:
       type: TestScriptBaseDSC/CredentialValidation
       properties:
         Name: TestScriptResource1
-        Credential:       
+        Credential:
            username: MyUser
            Notpassword: Password
 '@

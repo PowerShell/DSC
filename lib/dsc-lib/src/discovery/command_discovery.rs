@@ -64,7 +64,7 @@ pub struct CommandDiscovery {
 
 #[derive(Deserialize)]
 pub struct ResourcePathSetting {
-    /// whether to allow overriding with the `DSC_RESOURCE_PATH` environment variable
+    /// whether to allow overriding with the `DSC_RESTRICTED_PATH` or `DSC_RESOURCE_PATH` environment variables
     #[serde(rename = "allowEnvOverride")]
     allow_env_override: bool,
     /// whether to append the PATH environment variable to the list of resource directories
@@ -133,16 +133,16 @@ impl CommandDiscovery {
             }
         }
 
-        let mut using_custom_path = false;
         let mut paths: Vec<PathBuf> = vec![];
 
+        let dsc_restricted_path = env::var_os("DSC_RESTRICTED_PATH");
         let dsc_resource_path = env::var_os("DSC_RESOURCE_PATH");
-        if resource_path_setting.allow_env_override && dsc_resource_path.is_some() {
-            if let Some(value) = dsc_resource_path {
-                debug!("DSC_RESOURCE_PATH: {:?}", value.to_string_lossy());
-                using_custom_path = true;
-                paths.append(&mut env::split_paths(&value).collect::<Vec<_>>());
-            }
+        if resource_path_setting.allow_env_override && let Some(restricted_path) = &dsc_restricted_path {
+            debug!("DSC_RESTRICTED_PATH: {:?}", restricted_path.to_string_lossy());
+            paths.append(&mut env::split_paths(&restricted_path).collect::<Vec<_>>());
+        } else if resource_path_setting.allow_env_override && let Some(resource_path) = &dsc_resource_path {
+            debug!("DSC_RESOURCE_PATH: {:?}", resource_path.to_string_lossy());
+            paths.append(&mut env::split_paths(&resource_path).collect::<Vec<_>>());
         } else {
             for p in resource_path_setting.directories {
                 let v = PathBuf::from_str(&p);
@@ -167,9 +167,9 @@ impl CommandDiscovery {
         let mut uniques: HashSet<PathBuf> = HashSet::new();
         paths.retain(|e|uniques.insert((*e).clone()));
 
-        if using_custom_path {
-            // when using custom path, intent is to isolate the search of manifests and executables to the custom path
-            // so we replace the PATH with the custom path
+        if dsc_restricted_path.is_some() {
+            // when using restricted path, intent is to isolate the search of manifests and executables to the restricted path
+            // so we replace the PATH with the restricted path
             if let Ok(new_path) = env::join_paths(paths.clone()) {
                 unsafe {
                     env::set_var("PATH", new_path);
@@ -177,7 +177,7 @@ impl CommandDiscovery {
             } else {
                 return Err(DscError::Operation(t!("discovery.commandDiscovery.failedJoinEnvPath").to_string()));
             }
-        } else {
+        } else if dsc_resource_path.is_none() { // if DSC_RESOURCE_PATH is used, we don't want to modify the PATH env var, as it is intended to be used for resource discovery only
             // if exe home is not already in PATH env var then add it to env var and list of searched paths
             if let Some(exe_home) = get_exe_path()?.parent() {
                 let exe_home_pb = exe_home.to_path_buf();
@@ -191,6 +191,8 @@ impl CommandDiscovery {
                         unsafe {
                             env::set_var("PATH", new_path);
                         }
+                    } else {
+                        return Err(DscError::Operation(t!("discovery.commandDiscovery.failedJoinEnvPath").to_string()));
                     }
                 }
             }
@@ -199,6 +201,8 @@ impl CommandDiscovery {
         if let Ok(final_resource_path) = env::join_paths(paths.clone()) {
             debug!("{}", t!("discovery.commandDiscovery.usingResourcePath", path = final_resource_path.to_string_lossy()));
         }
+
+        debug!("PATH = {:?}", env::var_os("PATH").unwrap_or_default().to_string_lossy());
 
         Ok(paths)
     }
