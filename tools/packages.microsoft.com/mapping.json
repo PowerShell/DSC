@@ -5,28 +5,28 @@
       "distribution": [
         "stable"
       ],
-      "PackageFormat": "PACKAGE_NAME_RELEASE_VERSION-1_x86_64.rpm"
+      "PackageFormat": "PACKAGE_NAME_RELEASE_VERSION-1.x86_64.rpm"
     },
     {
       "url": "microsoft-rhel9.0-prod",
       "distribution": [
         "stable"
       ],
-      "PackageFormat": "PACKAGE_NAME_RELEASE_VERSION-1_x86_64.rpm"
+      "PackageFormat": "PACKAGE_NAME_RELEASE_VERSION-1.x86_64.rpm"
     },
     {
       "url": "microsoft-rhel8.0-prod",
       "distribution": [
         "stable"
       ],
-      "PackageFormat": "PACKAGE_NAME_RELEASE_VERSION-1_aarch64.rpm"
+      "PackageFormat": "PACKAGE_NAME_RELEASE_VERSION-1.aarch64.rpm"
     },
     {
       "url": "microsoft-rhel9.0-prod",
       "distribution": [
         "stable"
       ],
-      "PackageFormat": "PACKAGE_NAME_RELEASE_VERSION-1_aarch64.rpm"
+      "PackageFormat": "PACKAGE_NAME_RELEASE_VERSION-1.aarch64.rpm"
     },
     {
       "url": "microsoft-debian-bullseye-prod",

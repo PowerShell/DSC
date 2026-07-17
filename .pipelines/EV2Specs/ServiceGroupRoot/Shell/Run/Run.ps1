@@ -16,7 +16,7 @@
     - PMC_METADATA: URL to the pmcMetadata.json file
 #>
 
-$env:NO_COLOR = 1
+$PSStyle.OutputRendering = 'PlainText'
 
 function Get-MappedRepositoryIds {
     param(
@@ -277,7 +277,7 @@ try {
     $skipPublish = $metadataContent.SkipPublish
 
     $channel = if ($releaseVersion.Contains('-')) { 'preview' } else { 'stable' }
-    $packageName = $channel -eq 'preview' ? 'dsc-preview' : 'dsc'
+    $packageName = 'dsc'
 
     Write-Verbose "Release version: $releaseVersion, Channel: $channel" -Verbose
 
