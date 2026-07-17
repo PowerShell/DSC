@@ -1,0 +1,27 @@
+_version = 1
+
+[main]
+emptyStdin = "No input provided via STDIN; using defaults"
+invalidInput = "Failed to parse discovery input from STDIN"
+invalidUtf8 = "Invalid UTF-8 sequence in STDIN"
+noRegistries = "No registries configured. Provide registries via STDIN JSON or the DSC_ORAS_REGISTRIES environment variable."
+readStdin = "Reading discovery input from STDIN"
+startingDiscovery = "Starting ORAS artifact discovery"
+
+[discovery]
+authenticating = "Authenticating with registry"
+authFailed = "Authentication failed for registry"
+fetchingManifest = "Fetching manifest"
+fetchingTags = "Fetching tags from repository"
+filteringArtifacts = "Filtering artifacts"
+invalidManifest = "Manifest validation failed"
+noTagsFound = "No tags found in repository"
+parsingManifest = "Parsing manifest response"
+platformNotFound = "No manifest found matching requested platform"
+processingIndex = "Processing OCI index manifest"
+registryError = "Registry request failed"
+artifactNotFound = "Artifact not found"
+discoveryComplete = "Discovery complete"
+
+[tracing]
+unableToSetSubscriber = "Unable to set global default tracing subscriber. Tracing is disabled."

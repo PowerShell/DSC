@@ -1,0 +1,12 @@
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "type": "Microsoft.DSC.ORAS/Discover",
+    "version": "0.1.0",
+    "description": "Discovers DSC resources from OCI-compliant registries using ORAS conventions.",
+    "discover": {
+        "executable": "oras-artifact-discover",
+        "args": [
+            "discover"
+        ]
+    }
+}

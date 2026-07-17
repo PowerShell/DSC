@@ -32,6 +32,7 @@ members = [
     "tools/test_group_resource",
     "xtask",
     "y2j"
+    "extensions/oras-artifact"
 ]
 
 # This value is modified by the `Set-DefaultWorkspaceMember` helper.
@@ -67,6 +68,7 @@ default-members = [
     "tools/test_group_resource",
     "xtask",
     "y2j"
+    "extensions/oras-artifact"
 ]
 
 [workspace.metadata.groups]
@@ -103,6 +105,8 @@ Windows = [
     "tools/test_group_resource",
     "xtask",
     "y2j"
+    "resources/dism_dsc",
+    "extensions/oras-artifact"
 ]
 macOS = [
     "dsc",
@@ -125,6 +129,8 @@ macOS = [
     "tools/test_group_resource",
     "xtask",
     "y2j",
+    "xtask",
+    "extensions/oras-artifact"
 ]
 Linux = [
     "dsc",
@@ -145,8 +151,11 @@ Linux = [
     "resources/sshdconfig",
     "tools/dsctest",
     "tools/test_group_resource",
+    "grammars/tree-sitter-dscexpression",
+    "grammars/tree-sitter-ssh-server-config",
+    "y2j",
     "xtask",
-    "y2j"
+    "extensions/oras-artifact"
 ]
 
 [profile.release]
@@ -212,6 +221,8 @@ version-compare = { version = "0.2" }
 path-absolutize = { version = "4.0.1" }
 # dsc-bicep-ext
 prost = { version = "0.14.4" }
+# oras-artifact-discover
+reqwest = { version = "0.13", features = ["blocking", "json"] }
 # dsc-lib-jsonschema-macros
 proc-macro2 = { version = "1.0.107" }
 # dsc-lib-jsonschema-macros

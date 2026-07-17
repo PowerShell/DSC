@@ -1,0 +1,14 @@
+{
+    "Name": "extensions/oras-artifact",
+    "Kind": "Extension",
+    "IsRust": true,
+    "RustPackageName": "oras-artifact-discover",
+    "Binaries": [
+        "oras-artifact-discover"
+    ],
+    "CopyFiles": {
+        "All": [
+            "oras-artifact.dsc.extension.json"
+        ]
+    }
+}
