@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}, context::ProcessMode, parameters::{SECURE_VALUE_REDACTED, is_secure_value}}, dscresources::resource_manifest::{AdapterInputKind, Kind}, types::{FullyQualifiedTypeName, ResourceVersion}};
+use crate::{configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}, context::ProcessMode, parameters::{SECURE_VALUE_REDACTED, is_secure_value}, schema_cache::{RESOURCE_SCHEMAS, SchemaCache, get_resource_schemas}}, dscresources::resource_manifest::{AdapterInputKind, Kind}, locked_extend, types::{FullyQualifiedTypeName, ResourceVersion}};
 use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse};
 use crate::schemas::transforms::idiomaticize_string_enum;
@@ -529,6 +529,11 @@ impl Invoke for DscResource {
     }
 
     fn schema(&self) -> Result<String, DscError> {
+        if let Some(schema) = get_resource_schemas(&self.type_name, &self.version) {
+            debug!("{}", t!("dscresources.dscresource.retrievedSchemaFromCache", resource = self.type_name, version = self.version));
+            return Ok(serde_json::to_string(&schema)?);
+        }
+
         debug!("{}", t!("dscresources.dscresource.invokeSchema", resource = self.type_name));
         if let Some(deprecation_message) = self.deprecation_message.as_ref() {
             warn!("{}", t!("dscresources.dscresource.deprecationMessage", resource = self.type_name, message = deprecation_message));
@@ -542,7 +547,11 @@ impl Invoke for DscResource {
 
         match &self.implemented_as {
             Some(ImplementedAs::Command) => {
-                command_resource::get_schema(self, self.target_resource.as_deref())
+                let schema = command_resource::get_schema(self, self.target_resource.as_deref())?;
+                let mut schema_cache = SchemaCache::new();
+                schema_cache.insert(self.type_name.clone(), HashMap::from([(self.version.clone(), serde_json::from_str(&schema)?)]));
+                locked_extend!(RESOURCE_SCHEMAS, schema_cache);
+                Ok(schema)
             },
             _ => {
                 Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))

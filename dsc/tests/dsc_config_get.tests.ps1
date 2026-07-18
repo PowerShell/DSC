@@ -182,4 +182,54 @@ Describe 'dsc config get tests' {
         $result.results[0].result.actualState.family | Should -BeIn @('Windows', 'Linux', 'macOS')
         $LASTEXITCODE | Should -Be 0
     }
+
+    It 'embedded schema should only be retrieved once for multiple instances of the same resource' {
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo 1
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: hello
+            - name: Echo 2
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: world
+"@
+        $result = dsc -l debug config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json
+        $errorLog = Get-Content $TestDrive/error.log -Raw
+        $LASTEXITCODE | Should -Be 0 -Because $errorLog
+        $result.hadErrors | Should -BeFalse
+        $result.results.Count | Should -Be 2
+        $errorLog | Should -BeLike "*Retrieved schema for resource 'Microsoft.DSC.Debug/Echo' with version '1.0.0' from cache*"
+    }
+
+    It 'command resource schema should only be retrieved once for multiple instances of the same resource' {
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: one
+              type: Test/Version
+              requireVersion: =1.1.0
+              properties:
+                version: 1.1.0
+            - name: two
+              type: Test/Version
+              requireVersion: =1.1.0
+              properties:
+                version: 1.1.0
+            - name: three
+              type: Test/Version
+              requireVersion: =2.0.0
+              properties:
+                version: 2.0.0
+"@
+        $result = dsc -l debug config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json
+        $errorLog = Get-Content $TestDrive/error.log -Raw
+        $LASTEXITCODE | Should -Be 0 -Because $errorLog
+        $result.hadErrors | Should -BeFalse
+        $result.results.Count | Should -Be 3
+        $errorLog | Should -BeLike "*Retrieved schema for resource 'Test/Version' with version '1.1.0' from cache*"
+        $errorLog | Should -BeLike "*Retrieved schema for resource 'Test/Version' with version '2.0.0' from cache*"
+    }
 }

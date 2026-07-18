@@ -8,8 +8,9 @@ use rust_i18n::t;
 use serde::Deserialize;
 use serde_json::{Map, Value};
 use std::{collections::HashMap, env, path::Path, process::Stdio};
-use crate::{configure::{config_doc::{ExecutionKind, SecurityContextKind}, config_result::{ResourceGetResult, ResourceTestResult}}, dscresources::resource_manifest::{ExportSchemaKind, ExportSchemaOrFiltering, SchemaArgKind}, types::{ExitCodesMap}, util::canonicalize_which};
+use crate::{configure::{config_doc::{ExecutionKind, SecurityContextKind}, config_result::{ResourceGetResult, ResourceTestResult}, schema_cache::{get_resource_schemas, SchemaCache, RESOURCE_SCHEMAS}}, dscresources::resource_manifest::{ExportSchemaKind, ExportSchemaOrFiltering, SchemaArgKind}, types::ExitCodesMap, util::canonicalize_which};
 use crate::dscerror::DscError;
+use crate::locked_extend;
 use super::{
     dscresource::{get_diff, redact, DscResource},
     invoke_result::{
@@ -556,6 +557,11 @@ pub fn invoke_validate(resource: &DscResource, config: &str, target_resource: Op
 ///
 /// Error if schema is not available or if there is an error getting the schema
 pub fn get_schema(resource: &DscResource, target_resource: Option<&DscResource>) -> Result<String, DscError> {
+    if let Some(schema) = get_resource_schemas(&resource.type_name, &resource.version) {
+        debug!("{}", t!("dscresources.commandResource.retrievedSchemaFromCache", resource = &resource.type_name, version = &resource.version));
+        return Ok(serde_json::to_string(&schema)?);
+    }
+
     let Some(manifest) = &resource.manifest else {
         return Err(DscError::MissingManifest(resource.type_name.to_string()));
     };
@@ -573,17 +579,21 @@ pub fn get_schema(resource: &DscResource, target_resource: Option<&DscResource>)
         return Err(DscError::SchemaNotAvailable(target_resource.type_name.to_string()));
     };
 
-    match schema_kind {
+    let schema = match schema_kind {
         SchemaKind::Command(command) => {
             let args = process_schema_args(command.args.as_ref(), target_resource);
             let (_exit_code, stdout, _stderr) = invoke_command(&command.executable, args, None, Some(&resource.directory), None, manifest.exit_codes.as_ref())?;
-            Ok(stdout)
+            stdout
         },
         SchemaKind::Embedded(schema) => {
-            let json = serde_json::to_string(&schema)?;
-            Ok(json)
+            serde_json::to_string(&schema)?
         },
-    }
+    };
+
+    let mut schema_cache = SchemaCache::new();
+    schema_cache.insert(resource.type_name.clone(), HashMap::from([(resource.version.clone(), serde_json::from_str(&schema)?)]));
+    locked_extend!(RESOURCE_SCHEMAS, schema_cache);
+    Ok(schema)
 }
 
 fn verify_with_export_schema(input: &str, resource: &DscResource, target_resource: Option<&DscResource>) -> Result<(), DscError> {
