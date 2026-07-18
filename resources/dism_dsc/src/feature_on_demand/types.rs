@@ -4,7 +4,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
-use crate::util::DismState;
+use crate::util::{DismState, WildcardFilterable, matches_optional_wildcard, matches_optional_exact};
 
 pub type CapabilityState = DismState;
 
@@ -33,4 +33,15 @@ pub struct FeatureOnDemandInfo {
     pub download_size: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub install_size: Option<u32>,
+}
+
+impl WildcardFilterable for FeatureOnDemandInfo {
+    fn matches_filter(&self, filter: &Self) -> bool {
+        matches_optional_wildcard(&self.identity, &filter.identity)
+            && matches_optional_exact(&self.state, &filter.state)
+            && matches_optional_wildcard(&self.display_name, &filter.display_name)
+            && matches_optional_wildcard(&self.description, &filter.description)
+            && matches_optional_exact(&self.download_size, &filter.download_size)
+            && matches_optional_exact(&self.install_size, &filter.install_size)
+    }
 }

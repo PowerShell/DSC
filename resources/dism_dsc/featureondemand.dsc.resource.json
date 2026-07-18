@@ -9,7 +9,7 @@
         "fod"
     ],
     "type": "Microsoft.Windows/FeatureOnDemandList",
-    "version": "0.1.1",
+    "version": "0.1.0",
     "get": {
         "executable": "dism_dsc",
         "args": [
@@ -25,7 +25,7 @@
             "export",
             "feature-on-demand"
         ],
-        "supportsFiltering": false,
+        "input": "stdin",
         "requireSecurityContext": "elevated"
     },
     "set": {
@@ -64,7 +64,7 @@
                 "capabilities": {
                     "type": "array",
                     "title": "Capabilities",
-                    "description": "An array of Feature on Demand (capability) information objects.",
+                    "description": "An array of Feature on Demand (capability) filters or information objects.",
                     "items": {
                         "type": "object",
                         "additionalProperties": false,
@@ -72,7 +72,7 @@
                             "identity": {
                                 "type": "string",
                                 "title": "Capability identity",
-                                "description": "The identity of the Windows capability (Feature on Demand). Required for get and set operations. Returned by export operation."
+                                "description": "The identity of the Windows capability (Feature on Demand). Required for get and set operations. For export operation, this is optional and wildcards (*) are supported for case-insensitive filtering."
                             },
                             "_exist": {
                                 "type": "boolean",
@@ -97,12 +97,12 @@
                             "displayName": {
                                 "type": "string",
                                 "title": "Display name",
-                                "description": "The display name of the capability. Returned by the get operation."
+                                "description": "The display name of the capability. Returned by get and export operations. For export, wildcards (*) are supported for case-insensitive filtering."
                             },
                             "description": {
                                 "type": "string",
                                 "title": "Description",
-                                "description": "The description of the capability. Returned by the get operation."
+                                "description": "The description of the capability. Returned by get and export operations. For export, wildcards (*) are supported for case-insensitive filtering."
                             },
                             "downloadSize": {
                                 "type": "integer",

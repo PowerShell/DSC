@@ -24,6 +24,7 @@ identityRequired = "identity is required for get operation"
 failedSerializeOutput = "Failed to serialize output: %{err}"
 
 [fod_export]
+failedParseInput = "Failed to parse input: %{err}"
 failedSerializeOutput = "Failed to serialize output: %{err}"
 
 [fod_set]
