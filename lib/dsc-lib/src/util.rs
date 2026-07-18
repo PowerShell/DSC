@@ -14,6 +14,8 @@ use std::{
 use tracing::{debug, warn};
 use which::which;
 
+pub const DSC_IGNORE_SETTINGS_FILE: &str = "DSC_IGNORE_SETTINGS_FILE";
+
 pub struct DscSettingValue {
     pub setting:  Value,
     pub policy: Value,
@@ -72,8 +74,15 @@ pub fn parse_input_to_json(value: &str) -> Result<String, DscError> {
 /// A string that holds the regex pattern.
 #[must_use]
 pub fn convert_wildcard_to_regex(wildcard: &str) -> String {
-    let mut regex = wildcard.to_string().replace('.', "\\.").replace('?', ".").replace('*', ".*?");
-    regex.insert(0, '^');
+    let mut regex = String::with_capacity(wildcard.len() + 2);
+    regex.push('^');
+    for c in wildcard.chars() {
+        match c {
+            '*' => regex.push_str(".*?"),
+            '?' => regex.push('.'),
+            _ => regex.push_str(&regex::escape(&c.to_string())),
+        }
+    }
     regex.push('$');
     regex
 }
@@ -95,6 +104,10 @@ mod tests {
         let wildcard = "r*";
         let regex = convert_wildcard_to_regex(wildcard);
         assert_eq!(regex, "^r.*?$");
+
+        let wildcard = "a+b(c)[d]^e$f|g\\h";
+        let regex = convert_wildcard_to_regex(wildcard);
+        assert_eq!(regex, r"^a\+b\(c\)\[d\]\^e\$f\|g\\h$");
     }
 
     #[cfg(not(target_os = "windows"))]
@@ -171,6 +184,11 @@ pub fn get_setting(value_name: &str) -> Result<DscSettingValue, DscError> {
 
     let mut result: DscSettingValue = DscSettingValue::default();
     let mut settings_file_path : PathBuf;
+
+    if env::var(DSC_IGNORE_SETTINGS_FILE).is_ok() {
+        warn!("{}", t!("util.ignoreSettingsFile"));
+        return Ok(result);
+    }
 
     if let Some(exe_home) = get_exe_path()?.parent() {
         // First, get setting from the default settings file
