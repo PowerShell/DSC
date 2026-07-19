@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 mod types;
+mod util;
 
 #[cfg(windows)]
 mod firewall;
@@ -96,7 +97,18 @@ fn main() {
             }
         }
         "export" => {
-            match firewall::export_rules() {
+            let filters: Option<FirewallRuleList> = match input_json {
+                Some(json) => match serde_json::from_str(&json) {
+                    Ok(value) => Some(value),
+                    Err(error) => {
+                        write_error(&t!("main.invalidJson", error = error.to_string()));
+                        exit(EXIT_INVALID_INPUT);
+                    }
+                },
+                None => None,
+            };
+
+            match firewall::export_rules(filters.as_ref()) {
                 Ok(result) => {
                     print_json(&result);
                     exit(EXIT_SUCCESS);

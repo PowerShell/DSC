@@ -238,6 +238,8 @@ pub struct ConfigDirective {
 pub struct ResourceDirective {
     /// Filters applied by the engine to exported instances. Filters in the array are logically
     /// OR'd while properties within a filter are logically AND'd. String values support the `*` wildcard.
+    /// If the resource performs its own filtering based on its input, this filter is applied
+    /// afterwards to the instances the resource returned.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub export_filter: Option<Vec<Map<String, Value>>>,
     /// Specify specific adapter type used for implicit operations

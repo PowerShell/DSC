@@ -324,6 +324,41 @@ resources:
         $out.resources.properties.name | Should -Be @('Steve', 'Tess')
     }
 
+    It 'engine filters properties for a resource that does not support filtering natively' {
+        $yaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: No Native Filtering
+  type: Test/ExportSchemaNoFiltering
+  properties:
+    name: '*e*'
+'@
+        $out = dsc --trace-level info config export -i $yaml 2>$TESTDRIVE/error.log | ConvertFrom-Json
+        $errorlog = Get-Content "$TESTDRIVE/error.log" -Raw
+        $LASTEXITCODE | Should -Be 0 -Because $errorlog
+        @($out.resources).Count | Should -Be 2
+        $out.resources.properties.name | Should -Be @('Steve', 'Tess')
+        $errorlog | Should -Match 'does not support export filtering, the engine will filter the exported instances'
+    }
+
+    It 'engine filtered properties compose with an exportFilter directive' {
+        $yaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: No Native Filtering
+  type: Test/ExportSchemaNoFiltering
+  directives:
+    exportFilter:
+    - name: 'te*'
+  properties:
+    name: '*e*'
+'@
+        $out = dsc config export -i $yaml 2>$TESTDRIVE/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content "$TESTDRIVE/error.log" -Raw)
+        @($out.resources).Count | Should -Be 1
+        $out.resources[0].properties.name | Should -BeExactly 'Tess'
+    }
+
     It 'exportFilter works with an exporter resource' {
         $yaml = @'
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json

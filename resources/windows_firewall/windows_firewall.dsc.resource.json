@@ -6,7 +6,7 @@
         "Windows",
         "Firewall"
     ],
-    "version": "0.2.1",
+    "version": "0.2.0",
     "get": {
         "executable": "windows_firewall",
         "args": [
@@ -38,9 +38,12 @@
     "export": {
         "executable": "windows_firewall",
         "args": [
-            "export"
-        ],
-        "supportsFiltering": false
+            "export",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": false
+            }
+        ]
     },
     "exitCodes": {
         "0": "Success",
@@ -52,7 +55,7 @@
         "embedded": {
             "$schema": "http://json-schema.org/draft-07/schema#",
             "title": "Windows Firewall Rule List",
-            "description": "Manage Windows Firewall rules using the netfw.h APIs. The input is a single object that contains a rules array.",
+            "description": "Manage Windows Firewall rules using the netfw.h APIs. The input is a single object that contains a rules array. For export, each object in the array is a filter where properties are ANDed together and the array entries are ORed together.",
             "type": "object",
             "additionalProperties": false,
             "required": [

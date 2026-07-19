@@ -4,7 +4,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
-use crate::util::DismState;
+use crate::util::{DismState, WildcardFilterable, matches_optional_wildcard, matches_optional_exact};
 
 pub type FeatureState = DismState;
 
@@ -51,3 +51,11 @@ impl RestartType {
     }
 }
 
+impl WildcardFilterable for OptionalFeatureInfo {
+    fn matches_filter(&self, filter: &Self) -> bool {
+        matches_optional_wildcard(&self.feature_name, &filter.feature_name)
+            && matches_optional_exact(&self.state, &filter.state)
+            && matches_optional_wildcard(&self.display_name, &filter.display_name)
+            && matches_optional_wildcard(&self.description, &filter.description)
+    }
+}

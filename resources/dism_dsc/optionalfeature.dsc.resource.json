@@ -8,7 +8,7 @@
         "feature"
     ],
     "type": "Microsoft.Windows/OptionalFeatureList",
-    "version": "0.1.1",
+    "version": "0.1.0",
     "get": {
         "executable": "dism_dsc",
         "args": [
@@ -35,7 +35,7 @@
             "export",
             "optional-feature"
         ],
-        "supportsFiltering": false,
+        "input": "stdin",
         "requireSecurityContext": "elevated"
     },
     "schema": {
@@ -63,7 +63,7 @@
                 "features": {
                     "type": "array",
                     "title": "Features",
-                    "description": "An array of optional feature information objects.",
+                    "description": "An array of optional feature filters or feature information objects.",
                     "items": {
                         "type": "object",
                         "additionalProperties": false,
@@ -71,7 +71,7 @@
                             "featureName": {
                                 "type": "string",
                                 "title": "Feature name",
-                                "description": "The name of the Windows optional feature. Required for get operation. Returned by export operation."
+                                "description": "The name of the Windows optional feature. Required for get operation. For export operation, this is optional and wildcards (*) are supported for case-insensitive filtering."
                             },
                             "_exist": {
                                 "type": "boolean",
@@ -95,12 +95,12 @@
                             "displayName": {
                                 "type": "string",
                                 "title": "Display name",
-                                "description": "The display name of the optional feature. Returned by the get operation."
+                                "description": "The display name of the optional feature. Returned by get and export operations. For export, wildcards (*) are supported for case-insensitive filtering."
                             },
                             "description": {
                                 "type": "string",
                                 "title": "Description",
-                                "description": "The description of the optional feature. Returned by the get operation."
+                                "description": "The description of the optional feature. Returned by get and export operations. For export, wildcards (*) are supported for case-insensitive filtering."
                             },
                             "restartRequired": {
                                 "type": "string",
