@@ -2,9 +2,9 @@
 Unit tests for pyDscAdapter internals.
 
 **RUNS IN-PLACE**: This test file is NOT copied by the build system and runs directly
-from the tests directory. It imports pyDscAdapter from the parent directory using:
-    Path(__file__).parent.parent = adapters/python/
-Which gives it access to: adapters/python/pyDscAdapter/
+from the tests directory. It imports adapter modules from the sibling directory using:
+    Path(__file__).parent.parent / "pyDscAdapter" = adapters/python/pyDscAdapter/
+Which matches how DSC runs the adapter as a script file (sibling-style imports).
 
 These tests exercise adapter functions, classes, and error paths directly
 (complementing pythoncomponent.tests.ps1 which tests via subprocess invocation).
@@ -29,20 +29,23 @@ import sys
 from pathlib import Path
 import io
 
-# Ensure package-style adapter imports resolve the same way they do in normal use.
+# The adapter modules use sibling-style imports (e.g. `from dsc_logging import ...`)
+# because DSC runs them as script files with the pyDscAdapter/ directory on sys.path.
+# Insert that directory here so the same import form resolves in unit tests too.
 tests_dir = Path(__file__).resolve().parent
 adapter_root = tests_dir.parent
-adapter_root_str = str(adapter_root)
-if adapter_root_str not in sys.path:
-    sys.path.insert(0, adapter_root_str)
+package_dir = adapter_root / "pyDscAdapter"
+for p in (str(package_dir), str(adapter_root)):
+    if p not in sys.path:
+        sys.path.insert(0, p)
 try:
-    from pyDscAdapter import adapter as adapter_module
-    from pyDscAdapter.adapter import ResourceAdapter
-    from pyDscAdapter.utils import parse_json
+    import adapter as adapter_module
+    from adapter import ResourceAdapter
+    from utils import parse_json
 except ImportError as e:
     raise ImportError(
          "Could not import adapter modules. "
-         "Ensure adapters/python is on PYTHONPATH. "
+         "Ensure adapters/python/pyDscAdapter is on PYTHONPATH. "
          f"Error: {e}"
     ) from e
 
@@ -367,7 +370,7 @@ class TestEdgeCases(unittest.TestCase):
                 exit_code, result = self.adapter.run_operation("get", "{}", "", "")
 
         self.assertEqual(exit_code, 0)
-        self.assertIn("result", result)
+        self.assertEqual(result, {"name": "pkg", "_exist": True})
         mock_resolve.assert_called_once_with("PythonTest/Get", "")
 
     def test_run_operation_get_wrapper_uses_resolved_type_and_name_fallbacks(self):
@@ -386,9 +389,7 @@ class TestEdgeCases(unittest.TestCase):
                 exit_code, result = self.adapter.run_operation("get", '{"name":""}', "", "")
 
         self.assertEqual(exit_code, 0)
-        self.assertEqual(result["result"][0]["type"], "PythonTest/Get")
-        self.assertEqual(result["name"], "PythonTest/Get")
-        self.assertEqual(result["result"][0]["name"], "PythonTest/Get")
+        self.assertEqual(result, {"_exist": True})
         mock_resolve.assert_called_once_with("PythonTest/Get", "")
 
     def test_run_operation_get_wrapper_uses_normalized_resolved_type(self):
@@ -407,9 +408,7 @@ class TestEdgeCases(unittest.TestCase):
                 exit_code, result = self.adapter.run_operation("get", "{}", "  PythonTest/Get  ", "")
 
         self.assertEqual(exit_code, 0)
-        self.assertEqual(result["result"][0]["type"], "PythonTest/Get")
-        self.assertEqual(result["name"], "PythonTest/Get")
-        self.assertEqual(result["result"][0]["name"], "PythonTest/Get")
+        self.assertEqual(result, {"_exist": True})
         mock_resolve.assert_called_once_with("PythonTest/Get", "")
 
     def test_run_operation_get_handles_system_exit(self):

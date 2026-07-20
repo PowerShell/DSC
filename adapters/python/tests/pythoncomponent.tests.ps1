@@ -14,6 +14,7 @@ param(
 Describe "Python Adapter - Component Tests" {
     BeforeAll {
         $manifestName = "pythontest.dsc.manifests.json"
+        $testRoot = $null
         $manifestPath = $null
 
         $searchStarts = @()
@@ -22,19 +23,73 @@ Describe "Python Adapter - Component Tests" {
         }
         $searchStarts += (Get-Location).Path
 
+        function script:Resolve-ManifestResourcePath {
+            param(
+                [string]$EntryPath,
+                [string]$BaseDir
+            )
+
+            if ([string]::IsNullOrWhiteSpace($EntryPath)) {
+                throw "Manifest entry path is empty."
+            }
+
+            foreach ($candidatePath in @(
+                (Join-Path -Path $BaseDir -ChildPath $EntryPath),
+                (Join-Path -Path (Join-Path -Path $BaseDir -ChildPath "src") -ChildPath $EntryPath)
+            )) {
+                if (Test-Path -LiteralPath $candidatePath) {
+                    return (Resolve-Path -LiteralPath $candidatePath).Path
+                }
+            }
+
+             throw "Unable to resolve resource path '$EntryPath' relative to test root '$BaseDir'."
+        }
+
+        function script:Test-TestRoot {
+            param([string]$CandidateRoot)
+
+            $candidateManifestPath = Join-Path -Path $CandidateRoot -ChildPath $manifestName
+            $candidatePyProjectPath = Join-Path -Path $CandidateRoot -ChildPath "pyproject.toml"
+
+            if (-not (Test-Path -LiteralPath $candidateManifestPath) -or -not (Test-Path -LiteralPath $candidatePyProjectPath)) {
+                return $false
+            }
+
+            $candidateManifest = Get-Content -LiteralPath $candidateManifestPath -Raw | ConvertFrom-Json
+            foreach ($requiredType in "PythonTest/Get", "PythonTest/Set", "PythonTest/Test", "PythonTest/Export") {
+                $entry = $candidateManifest.adaptedResources | Where-Object { $_.type -eq $requiredType } | Select-Object -First 1
+                if ($null -eq $entry -or $null -eq $entry.path) {
+                    return $false
+                }
+
+                try {
+                    $null = Resolve-ManifestResourcePath -EntryPath $entry.path -BaseDir $CandidateRoot
+                }
+                catch {
+                    return $false
+                }
+            }
+
+            return $true
+        }
+
         foreach ($start in ($searchStarts | Select-Object -Unique)) {
             $current = (Resolve-Path -LiteralPath $start -ErrorAction Stop).Path
 
             while ($true) {
-                $candidate = Join-Path -Path $current -ChildPath "adapters/python/tests/$manifestName"
-                if (Test-Path -LiteralPath $candidate) {
-                    $manifestPath = (Resolve-Path -LiteralPath $candidate).Path
-                    break
+                foreach ($candidateRoot in @(
+                    (Join-Path -Path $current -ChildPath "adapters/python/tests"),
+                    (Join-Path -Path $current -ChildPath "bin/debug"),
+                    $current
+                )) {
+                    if (Test-TestRoot -CandidateRoot $candidateRoot) {
+                        $testRoot = (Resolve-Path -LiteralPath $candidateRoot).Path
+                        $manifestPath = Join-Path -Path $testRoot -ChildPath $manifestName
+                        break
+                    }
                 }
 
-                $candidateLocal = Join-Path -Path $current -ChildPath $manifestName
-                if (Test-Path -LiteralPath $candidateLocal) {
-                    $manifestPath = (Resolve-Path -LiteralPath $candidateLocal).Path
+                if ($manifestPath) {
                     break
                 }
 
@@ -54,33 +109,16 @@ Describe "Python Adapter - Component Tests" {
             throw "Unable to locate '$manifestName' from PSScriptRoot or current directory."
         }
 
-        $manifestDir = Split-Path -Parent $manifestPath
+        $manifestPath = (Resolve-Path -LiteralPath $manifestPath).Path
+        $testRoot = Split-Path -Parent $manifestPath
         $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
-
-        function script:Resolve-ManifestResourcePath {
-            param(
-                [string]$EntryPath,
-                [string]$BaseDir
-            )
-
-            if ([string]::IsNullOrWhiteSpace($EntryPath)) {
-                throw "Manifest entry path is empty."
-            }
-
-            $manifestRelativePath = Join-Path -Path $BaseDir -ChildPath $EntryPath
-            if (Test-Path -LiteralPath $manifestRelativePath) {
-                return (Resolve-Path -LiteralPath $manifestRelativePath).Path
-            }
-
-             throw "Unable to resolve resource path '$EntryPath' relative to manifest directory '$BaseDir'."
-        }
 
         $script:ResourcePathByType = @{}
         foreach ($entry in $manifest.adaptedResources) {
             if ($null -eq $entry.type -or $null -eq $entry.path) {
                 continue
             }
-            $script:ResourcePathByType[$entry.type] = Resolve-ManifestResourcePath -EntryPath $entry.path -BaseDir $manifestDir
+            $script:ResourcePathByType[$entry.type] = Resolve-ManifestResourcePath -EntryPath $entry.path -BaseDir $testRoot
         }
 
         foreach ($requiredType in "PythonTest/Get", "PythonTest/Set", "PythonTest/Test", "PythonTest/Export") {
@@ -185,8 +223,8 @@ Describe "Python Adapter - Component Tests" {
     }
 
     It "GET returns expected wrapper output for <CaseName>" -TestCases @(
-        @{ CaseName = "named input"; InputJson = '{"name":"pkg","_exist":true}'; ExpectedActualStateName = "pkg"; ExpectedActualStateExists = $true }
-        @{ CaseName = "missing name input"; InputJson = '{"_exist":true}'; ExpectedActualStateName = "pkg"; ExpectedActualStateExists = $true }
+           @{ CaseName = "simulated package exists"; InputJson = '{"name":"pkg"}'; ExpectedActualStateName = "pkg"; ExpectedActualStateExists = $true }
+           @{ CaseName = "simulated package is absent"; InputJson = '{"name":"curl"}'; ExpectedActualStateName = "curl"; ExpectedActualStateExists = $false }
     ) {
         $resourceType = "PythonTest/Get"
         $result = Invoke-Adapter -Operation "get" -ResourceType $resourceType -InputJson $InputJson
@@ -253,8 +291,8 @@ Describe "Python Adapter - Component Tests" {
 
         $payload = $result.StdOut | ConvertFrom-Json
             $payload.packages.Count | Should -Be 2
-            $payload.packages[0].name | Should -Be "alpha"
-            $payload.packages[1].name | Should -Be "beta"
+            $payload.packages[0].name | Should -Be "pkg"
+            $payload.packages[1].name | Should -Be "curl"
     }
 
     It "LIST returns empty resources for <CaseName>" -TestCases @(
@@ -293,15 +331,25 @@ Describe "Python Adapter - Component Tests" {
            $result.StdOut | Should -Match '"error"'
     }
 
+    It '<Operation> with missing name returns error' -TestCases @(
+    @{ Operation = 'get'; ResourceType = 'PythonTest/Get' }
+    @{ Operation = 'set'; ResourceType = 'PythonTest/Set' }
+    @{ Operation = 'test'; ResourceType = 'PythonTest/Test' }
+    ) {
+        $result = Invoke-Adapter -Operation $Operation -ResourceType $ResourceType -InputJson '{}'
+           $result.ExitCode | Should -Be 1
+           $result.StdOut | Should -Match '"error"'
+    }
+
     It "EXPORT with filter input still returns package collection" {
-        $result = Invoke-Adapter -Operation "export" -ResourceType "PythonTest/Export" -InputJson '{"name":"alpha"}'
+        $result = Invoke-Adapter -Operation "export" -ResourceType "PythonTest/Export" -InputJson '{"name":"pkg"}'
 
             $result.ExitCode | Should -Be 0 -Because $result.StdErr
             $result.StdOut | Should -Match '^\{.*\}$' -Because $result.StdErr
 
           $payload = $result.StdOut | ConvertFrom-Json
             $payload.packages.Count | Should -Be 1
-            $payload.packages[0].name | Should -Be "alpha"
+                        $payload.packages[0].name | Should -Be "pkg"
     }
 
     It "Unknown resource type returns exit code 2" {

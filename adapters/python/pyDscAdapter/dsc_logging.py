@@ -63,10 +63,11 @@ def setup_dsc_logging(level="info"):
     Returns:
         Logger instance ready to use
     """
-    # Map DSC levels to Python levels
+    # Map DSC levels to Python levels.
+    # Only DSC 'trace' enables Python DEBUG records.
     level_map = {
         "trace": logging.DEBUG,
-        "debug": logging.DEBUG,
+        "debug": logging.INFO,
         "info": logging.INFO,
         "warning": logging.WARNING,
         "error": logging.ERROR,

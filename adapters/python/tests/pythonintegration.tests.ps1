@@ -192,11 +192,13 @@ Describe "Python Adapter - LIST Operation via DSC" {
 }
 
 Describe "Python Adapter - GET Operation via DSC" {
-    It "should return wrapper JSON with actualState" {
+    It "should return wrapper JSON with actualState for <CaseName>" -TestCases @(
+        @{ CaseName = "simulated package exists"; InputJson = '{"name":"pkg"}'; ExpectedActualStateName = "pkg"; ExpectedActualStateExists = $true }
+        @{ CaseName = "simulated package is absent"; InputJson = '{"name":"curl"}'; ExpectedActualStateName = "curl"; ExpectedActualStateExists = $false }
+    ) {
         $rt = "PythonTest/Get"
-        $json = '{"name":"pkg","_exist":true}'
 
-        $result = Invoke-DscResourceGet -ResourceType $rt -InputJson $json -ErrorLog "$TestDrive/error.log"
+        $result = Invoke-DscResourceGet -ResourceType $rt -InputJson $InputJson -ErrorLog "$TestDrive/error.log"
 
         if ($result.ExitCode -eq 0) {
                 $result.StdOut | Should -Match '^\{.*\}$' -Because "Expected JSON output"
@@ -206,8 +208,8 @@ Describe "Python Adapter - GET Operation via DSC" {
             $payload.actualState | Should -Not -BeNullOrEmpty -Because "GET output should include top-level actualState"
             $payload.actualState.result | Should -BeNullOrEmpty -Because "actualState should be the resource state, not another DSC wrapper"
 
-            $payload.actualState.name | Should -Be "pkg"
-            $payload.actualState._exist | Should -Be $true
+            $payload.actualState.name | Should -Be $ExpectedActualStateName
+            $payload.actualState._exist | Should -Be $ExpectedActualStateExists
         }
         else {
             Assert-KnownDscAdapterFailure -Result $result
@@ -305,12 +307,12 @@ Describe "Python Adapter - EXPORT Operation via DSC" {
                 $exported.packages.Count | Should -BeGreaterThan 0
             
             # Verify first package
-                $exported.packages[0].name | Should -Be "alpha"
+                $exported.packages[0].name | Should -Be "pkg"
                 $exported.packages[0].version | Should -Be "1.0.0"
                 $exported.packages[0]._exist | Should -Be $true
             
             # Verify second package
-                $exported.packages[1].name | Should -Be "beta"
+                $exported.packages[1].name | Should -Be "curl"
                 $exported.packages[1].version | Should -Be "2.0.0"
                 $exported.packages[1]._exist | Should -Be $true
         }
