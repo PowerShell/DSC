@@ -105,10 +105,6 @@ function Get-PackageObjects {
 
         $pkgName = $pkg.PackageFormat.Replace('PACKAGE_NAME', $PackageName).Replace('RELEASE_VERSION', $ReleaseVersion)
 
-        if ($pkgName.EndsWith('.rpm')) {
-            $pkgName = $pkgName.Replace($ReleaseVersion, $ReleaseVersion.Replace('-', '_'))
-        }
-
         $packagePath = "$script:dscPackagesFolder/$pkgName"
         if (-not (Test-Path -Path $packagePath)) {
             throw "Package path $packagePath does not exist"
