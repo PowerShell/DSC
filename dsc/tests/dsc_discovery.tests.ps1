@@ -405,32 +405,22 @@ Describe 'tests for resource discovery' {
     }
 
     It 'Should not return results where the exe is not found in DSC_RESTRICTED_PATH' {
-        $dscEcho = Get-Command dscecho -ErrorAction Stop
-        $exePath1 = Join-Path $testdrive 'restricted1'
-        $exePath2 = Join-Path $testdrive 'restricted2'
-        New-Item -Path $exePath1 -ItemType Directory -Force | Out-Null
-        New-Item -Path $exePath2 -ItemType Directory -Force | Out-Null
-        Copy-Item -Path "$($dscEcho.Source)" -Destination $exePath1
-        $manifest1 = Get-Content -Raw -Path "$(Split-Path -Path $dscEcho.Source -Parent)/echo.dsc.resource.json" | ConvertFrom-Json -AsHashtable
-        $manifest1.type = 'Test/RestrictedPathResource1'
-        $manifest1.condition = "[not(equals(tryWhich('dscecho'), null()))]"
-        Set-Content -Path (Join-Path $exePath1 'test.dsc.resource.json') -Value ($manifest1 | ConvertTo-Json -Depth 10)
-        $manifest2 = Get-Content -Raw -Path "$(Split-Path -Path $dscEcho.Source -Parent)/echo.dsc.resource.json" | ConvertFrom-Json -AsHashtable
-        $manifest2.type = 'Test/RestrictedPathResource2'
-        $manifest2.condition = "[not(equals(tryWhich('doesnotexist'), null()))]"
-        Set-Content -Path (Join-Path $exePath2 'test.dsc.resource.json') -Value ($manifest2 | ConvertTo-Json -Depth 10)
-
-        $oldPath = $env:DSC_RESTRICTED_PATH
+        # For this test we copy the PSScript resource to $TestDrive and then set DSC_RESTRICTED_PATH to that folder
+        # Since that resource conditionally requires `pwsh` and that exe won't be there, that resource should not be returned in the list results
+        $dscHome = Split-Path -Path (Get-Command dsc -ErrorAction Stop).Source -Parent
+        Copy-Item -Path "$dscHome/psscript.dsc.resource.json" -Destination "$testdrive"
+        Copy-Item -Path "$dscHome/echo.dsc.resource.json" -Destination "$testdrive"
+        Copy-Item -Path "$dscHome/dscecho*" -Destination "$testdrive"
+        $oldRestrictedPath = $env:DSC_RESTRICTED_PATH
         try {
-            $env:DSC_RESTRICTED_PATH = "$exePath1" + [System.IO.Path]::PathSeparator + "$exePath2"
-
+            $env:DSC_RESTRICTED_PATH = $testdrive
             $out = dsc -l trace resource list 2> "$testdrive/error.txt" | ConvertFrom-Json
             $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw -Path "$testdrive/error.txt")
-            $out.Count | Should -Be 1 -Because (Get-Content -Raw -Path "$testdrive/error.txt")
-            $out[0].type | Should -BeExactly 'Test/RestrictedPathResource1'
+            $out.Count | Should -Be 1
+            $out[0].type | Should -BeExactly 'Microsoft.DSC.Debug/Echo'
         }
         finally {
-            $env:DSC_RESTRICTED_PATH = $oldPath
+            $env:DSC_RESTRICTED_PATH = $oldRestrictedPath
         }
     }
 
