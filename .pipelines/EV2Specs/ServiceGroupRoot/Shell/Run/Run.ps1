@@ -103,12 +103,13 @@ function Get-PackageObjects {
         $pkgRepo = $pkg.RepoId | Select-Object -First 1
         $pkgDistribution = $pkg.Distribution | Select-Object -First 1
 
+        $pkgReleaseVersion = $ReleaseVersion
         if ($pkg.PackageFormat.EndsWith('.rpm')) {
             # RPM requires no dashes in the version string, so replace any dashes with tildes
-            $ReleaseVersion = $ReleaseVersion.Replace('-', '~')
+            $pkgReleaseVersion = $pkgReleaseVersion.Replace('-', '~')
         }
 
-        $pkgName = $pkg.PackageFormat.Replace('PACKAGE_NAME', $PackageName).Replace('RELEASE_VERSION', $ReleaseVersion)
+        $pkgName = $pkg.PackageFormat.Replace('PACKAGE_NAME', $PackageName).Replace('RELEASE_VERSION', $pkgReleaseVersion)
 
         $packagePath = "$script:dscPackagesFolder/$pkgName"
         if (-not (Test-Path -Path $packagePath)) {
