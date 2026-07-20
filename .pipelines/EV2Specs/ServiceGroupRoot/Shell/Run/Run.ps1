@@ -103,7 +103,7 @@ function Get-PackageObjects {
         $pkgRepo = $pkg.RepoId | Select-Object -First 1
         $pkgDistribution = $pkg.Distribution | Select-Object -First 1
 
-        if ($pkgName.EndsWith('.rpm')) {
+        if ($pkg.PackageFormat.EndsWith('.rpm')) {
             # RPM requires no dashes in the version string, so replace any dashes with tildes
             $ReleaseVersion = $ReleaseVersion.Replace('-', '~')
         }
@@ -299,7 +299,7 @@ try {
     Write-Verbose "SkipPublish: $skipPublish" -Verbose
     Publish-PackageToPMC -PackageObject $packageObjects -ConfigPath $configPath -SkipPublish $skipPublish
 } catch {
-    Write-Error -ErrorAction Stop $_.Exception.Message
+    Write-Error -ErrorAction Stop (Get-Error | Out-String)
     return 1
 }
 
