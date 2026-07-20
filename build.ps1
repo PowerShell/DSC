@@ -66,6 +66,22 @@ using module ./helpers.build.psm1
     The head commit SHA to compare when detecting changed Rust files. When specified along with
     `-CodeCoverageBaseSha`, coverage is skipped if no `.rs` files were modified.
 
+    .PARAMETER CodeCoverageShowFiles
+    When specified, displays a file-by-file coverage breakdown sorted by coverage percentage
+    (lowest first) after the summary. Use with `-CodeCoverage`.
+
+    .PARAMETER CodeCoverageShowUncoveredLines
+    When specified, displays the actual uncovered source lines for files below the threshold
+    set by `-CodeCoverageUncoveredThreshold`. Implies file-level display. Use with `-CodeCoverage`.
+
+    .PARAMETER CodeCoverageUncoveredThreshold
+    Files with coverage at or below this percentage will have uncovered lines shown when
+    `-CodeCoverageShowUncoveredLines` is specified. Defaults to 80.
+
+    .PARAMETER CodeCoverageTopFiles
+    Limits the file-by-file display to the N files with the lowest coverage. Defaults to 0
+    (show all files). Use with `-CodeCoverageShowFiles` or `-CodeCoverageShowUncoveredLines`.
+
     .PARAMETER GetPackageVersion
     Short circuits the build to return the current version of the DSC CLI crate.
 
@@ -113,6 +129,10 @@ param(
     [string]$CodeCoverageOutputPath = (Join-Path $PSScriptRoot 'lcov.info'),
     [string]$CodeCoverageBaseSha,
     [string]$CodeCoverageHeadSha,
+    [switch]$CodeCoverageShowFiles,
+    [switch]$CodeCoverageShowUncoveredLines,
+    [int]$CodeCoverageUncoveredThreshold = 80,
+    [int]$CodeCoverageTopFiles = 0,
     [string[]]$Project,
     [switch]$ExcludeRustTests,
     [string]$RustTestFilter,
@@ -366,7 +386,30 @@ process {
         Write-BuildProgress @progressParams -Status 'Restoring environment variables'
         Reset-LlvmCovEnvironment -PriorValues $priorLlvmCovEnv @VerboseParam
 
-        # Determine base and head SHAs for analysis
+        # Full codebase coverage summary
+        $progressParams.Activity = 'Analyzing code coverage'
+        Write-BuildProgress @progressParams -Status 'Computing full codebase coverage'
+        $fullReport = Get-FullCodeCoverageReport -LcovPath $CodeCoverageOutputPath @VerboseParam
+        Write-Host ""
+        Write-Host "$($PSStyle.Bold)Full Codebase Coverage: $($fullReport.Percentage)% ($($fullReport.Label))$($PSStyle.BoldOff)"
+        Write-Host "  Total executable lines: $($fullReport.TotalLines) | Lines covered: $($fullReport.CoveredLines)"
+
+        # File-by-file breakdown and line-level detail
+        if ($CodeCoverageShowFiles -or $CodeCoverageShowUncoveredLines) {
+            $showParams = @{
+                LcovPath = $CodeCoverageOutputPath
+            }
+            if ($CodeCoverageShowUncoveredLines) {
+                $showParams.ShowUncoveredLines = $true
+                $showParams.UncoveredThreshold = $CodeCoverageUncoveredThreshold
+            }
+            if ($CodeCoverageTopFiles -gt 0) {
+                $showParams.Top = $CodeCoverageTopFiles
+            }
+            Show-FullCodeCoverageReport @showParams
+        }
+
+        # Determine base and head SHAs for changed-code analysis
         $baseSha = $CodeCoverageBaseSha
         $headSha = $CodeCoverageHeadSha
 
@@ -388,12 +431,19 @@ process {
         }
 
         if ($baseSha -and $headSha) {
-            $progressParams.Activity = 'Analyzing code coverage'
-            Write-BuildProgress @progressParams
+            Write-BuildProgress @progressParams -Status 'Analyzing changed code coverage'
             $report = Get-CodeCoverageReport -LcovPath $CodeCoverageOutputPath -BaseSha $baseSha -HeadSha $headSha @VerboseParam
-            Write-Host "$($report.Emoji) Changed code coverage: $($report.Percentage)% ($($report.Label))"
-            Write-Host "  Lines analyzed: $($report.TotalLines) | Lines covered: $($report.CoveredLines)"
+            Write-Host ""
+            Write-Host "$($PSStyle.Bold)Changed Code Coverage: $($report.Percentage)% ($($report.Label))$($PSStyle.BoldOff)"
+            Write-Host "  Changed lines analyzed: $($report.TotalLines) | Lines covered: $($report.CoveredLines)"
+        } else {
+            Write-Host ""
+            Write-Host "No base branch detected for changed-code analysis. Showing full report only."
+            Write-Host "Use -CodeCoverageBaseSha and -CodeCoverageHeadSha for changed-code coverage."
         }
+
+        Write-Host ""
+        Write-Host "LCOV report: $CodeCoverageOutputPath"
     }
     #endregion Code coverage report
 

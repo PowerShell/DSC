@@ -9,7 +9,7 @@ use crate::functions::user_function::invoke_user_function;
 use crate::schemas::dsc_repo::DscRepoSchema;
 use rust_i18n::t;
 use schemars::JsonSchema;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fmt::Display;
 
@@ -392,7 +392,7 @@ pub struct FunctionDefinition {
     pub return_types: Vec<FunctionArgKind>,
 }
 
-#[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Serialize, JsonSchema, DscRepoSchema)]
+#[derive(Clone, Debug, Deserialize, Ord, PartialOrd, Eq, PartialEq, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 #[dsc_repo_schema(base_name = "category", folder_path = "definitions/functions/builtin")]
 pub enum FunctionCategory {
@@ -425,6 +425,49 @@ impl Display for FunctionCategory {
             FunctionCategory::Resource => write!(f, "Resource"),
             FunctionCategory::String => write!(f, "String"),
             FunctionCategory::System => write!(f, "System"),
+        }
+    }
+}
+
+impl FunctionCategory {
+    /// All defined function categories.
+    pub const ALL: [FunctionCategory; 12] = [
+        FunctionCategory::Array,
+        FunctionCategory::Cidr,
+        FunctionCategory::Comparison,
+        FunctionCategory::Date,
+        FunctionCategory::Deployment,
+        FunctionCategory::Lambda,
+        FunctionCategory::Logical,
+        FunctionCategory::Numeric,
+        FunctionCategory::Object,
+        FunctionCategory::Resource,
+        FunctionCategory::String,
+        FunctionCategory::System,
+    ];
+}
+
+impl std::str::FromStr for FunctionCategory {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "array" => Ok(FunctionCategory::Array),
+            "cidr" => Ok(FunctionCategory::Cidr),
+            "comparison" => Ok(FunctionCategory::Comparison),
+            "date" => Ok(FunctionCategory::Date),
+            "deployment" => Ok(FunctionCategory::Deployment),
+            "lambda" => Ok(FunctionCategory::Lambda),
+            "logical" => Ok(FunctionCategory::Logical),
+            "numeric" => Ok(FunctionCategory::Numeric),
+            "object" => Ok(FunctionCategory::Object),
+            "resource" => Ok(FunctionCategory::Resource),
+            "string" => Ok(FunctionCategory::String),
+            "system" => Ok(FunctionCategory::System),
+            _ => {
+                let valid = Self::ALL.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ");
+                Err(t!("functions.invalidCategory", category = s, valid_categories = valid).to_string())
+            },
         }
     }
 }
