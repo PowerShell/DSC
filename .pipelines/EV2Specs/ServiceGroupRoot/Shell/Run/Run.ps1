@@ -171,7 +171,7 @@ function Publish-PackageToPMC {
                     throw "pmc package upload failed with exit code $LASTEXITCODE; --config '$ConfigPath' package upload '$packagePath' --type '$packageType'"
                 }
             } catch {
-                $errorMessages.Add("Uploading package $($finalPackage.PackageName) to $pkgRepo failed. See errors above for details.")
+                $errorMessages.Add("Uploading package $($finalPackage.PackageName) to $pkgRepo failed: $($_.Exception.Message)")
                 continue
             }
 
@@ -200,7 +200,7 @@ function Publish-PackageToPMC {
                     throw "Unsupported package type: $packageType"
                 }
             } catch {
-                $errorMessages.Add("Update for package $($finalPackage.PackageName) to $pkgRepo failed. See errors above for details.")
+                $errorMessages.Add("Update for package $($finalPackage.PackageName) to $pkgRepo failed: $($_.Exception.Message)")
                 continue
             }
 
@@ -218,7 +218,7 @@ function Publish-PackageToPMC {
                     throw "pmc repo publish failed with exit code $LASTEXITCODE; --config '$ConfigPath' repo publish '$pkgRepo'"
                 }
             } catch {
-                $errorMessages.Add("Final publish for package $($finalPackage.PackageName) to $pkgRepo failed. See errors above for details.")
+                $errorMessages.Add("Final publish for package $($finalPackage.PackageName) to $pkgRepo failed: $($_.Exception.Message)")
                 continue
             }
 
