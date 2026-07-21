@@ -17,6 +17,7 @@ use crate::canonical_properties::CanonicalProperty;
 use crate::error::SshdConfigError;
 use crate::inputs::{CommandInfo, SSHD_CONFIG_FILEPATH};
 use crate::parser::parse_text_to_map;
+use crate::repeat_keyword::MULTI_ARG_KEYWORDS_SPACE_SEP;
 use crate::util::{
     build_command_info,
     extract_sshd_defaults,
@@ -133,6 +134,12 @@ pub fn get_sshd_settings(cmd_info: &CommandInfo, is_get: bool) -> Result<Map<Str
         result.insert("match".to_string(), match_value.clone());
     }
 
+    // sshd -T normalizes space-separated list keywords by stripping the quotes that preserve
+    // values containing spaces (e.g. Windows group names like "openssh users"), splitting them
+    // into separate entries. Prefer the value parsed directly from the config file, which retains
+    // the quoting, for these keywords when they are explicitly set.
+    prefer_explicit_space_sep_lists(&mut result, &explicit_settings);
+
     if cmd_info.include_defaults {
         // get default from SSHD -T with empty config
         let mut defaults = extract_sshd_defaults()?;
@@ -170,4 +177,66 @@ pub fn get_sshd_settings(cmd_info: &CommandInfo, is_get: bool) -> Result<Map<Str
         result.insert(CanonicalProperty::InheritedDefaults.to_string(), serde_json::to_value(inherited_defaults)?);
     }
     Ok(result)
+}
+
+fn prefer_explicit_space_sep_lists(result: &mut Map<String, Value>, explicit_settings: &Map<String, Value>) {
+    for keyword in MULTI_ARG_KEYWORDS_SPACE_SEP {
+        if let Some(value) = explicit_settings.get(keyword) {
+            result.insert((*keyword).to_string(), value.clone());
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn overrides_split_group_list_with_quoted_file_value() {
+        // sshd -T stripped the quotes and split "openssh users" into two entries.
+        let mut result = Map::new();
+        result.insert("allowgroups".to_string(), json!(["administrators", "openssh", "users"]));
+
+        // The raw config file parse preserved the quoted grouping.
+        let mut explicit_settings = Map::new();
+        explicit_settings.insert("allowgroups".to_string(), json!(["administrators", "openssh users"]));
+
+        prefer_explicit_space_sep_lists(&mut result, &explicit_settings);
+
+        assert_eq!(
+            result.get("allowgroups").unwrap(),
+            &json!(["administrators", "openssh users"])
+        );
+    }
+
+    #[test]
+    fn leaves_keyword_absent_from_file_untouched() {
+        // allowgroups is present in sshd -T output but not explicitly set in the config file.
+        let mut result = Map::new();
+        result.insert("allowgroups".to_string(), json!(["administrators", "openssh", "users"]));
+
+        let explicit_settings = Map::new();
+
+        prefer_explicit_space_sep_lists(&mut result, &explicit_settings);
+
+        assert_eq!(
+            result.get("allowgroups").unwrap(),
+            &json!(["administrators", "openssh", "users"])
+        );
+    }
+
+    #[test]
+    fn leaves_non_space_sep_keyword_untouched() {
+        // port is not a space-separated list keyword and must not be overridden.
+        let mut result = Map::new();
+        result.insert("port".to_string(), json!([22]));
+
+        let mut explicit_settings = Map::new();
+        explicit_settings.insert("port".to_string(), json!([2222]));
+
+        prefer_explicit_space_sep_lists(&mut result, &explicit_settings);
+
+        assert_eq!(result.get("port").unwrap(), &json!([22]));
+    }
 }
