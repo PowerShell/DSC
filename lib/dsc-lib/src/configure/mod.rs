@@ -154,6 +154,7 @@ pub fn add_filtered_resource_export_results_to_configuration(
         export_filter::apply_export_filter(&mut export_result.actual_state, filters);
     }
     if let Some(filter) = filter {
+        info!("{}", t!("configure.mod.applyingExportFilterDirective", resource = resource.type_name));
         export_filter::apply_export_filter(&mut export_result.actual_state, filter);
     }
 

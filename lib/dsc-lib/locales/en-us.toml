@@ -52,6 +52,7 @@ deleteNotSupported = "Resource '%{resource}' does not support `delete` and does 
 expectedState = "Expected state: %{state}"
 exportInput = "Export input: %{input}"
 engineExportFiltering = "Resource '%{resource}' does not support export filtering, the engine will filter the exported instances"
+applyingExportFilterDirective = "Applying 'exportFilter' directive to the instances exported by resource '%{resource}'"
 invalidExportFilterInput = "Invalid export filter input: %{error}"
 exportFilterNotObject = "Export filter input must be a JSON object or an array of JSON objects"
 noParameters = "No parameters defined in configuration and no parameters input"

@@ -238,6 +238,8 @@ pub struct ConfigDirective {
 pub struct ResourceDirective {
     /// Filters applied by the engine to exported instances. Filters in the array are logically
     /// OR'd while properties within a filter are logically AND'd. String values support the `*` wildcard.
+    /// A filter value that is an array of objects filters the elements of the corresponding array
+    /// property, while an array of other values requires each to be present in the property's array.
     /// If the resource performs its own filtering based on its input, this filter is applied
     /// afterwards to the instances the resource returned.
     #[serde(skip_serializing_if = "Option::is_none")]
