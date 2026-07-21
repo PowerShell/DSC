@@ -578,7 +578,7 @@ extends:
             targetPublishMode: 'Manual'
 
     - stage: ReleaseUniversalPackage
-      dependsOn: ['BuildAndSign','Release']
+      dependsOn: ['BuildAndSign', 'Validation']
       condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'), eq(variables.officialBuild, true))
       variables:
         - name: PackageVersion
@@ -637,6 +637,22 @@ extends:
             }
 
           displayName: Prepare files for Universal Package
+
+        - task: PipAuthenticate@1
+          displayName: 'Pip Authenticate'
+          inputs:
+            artifactFeeds: 'One/dsc-cfs-publicpackages'
+
+        - task: AzureCLI@2
+          displayName: Install Azure DevOps Extension
+          inputs:
+            azureSubscription: PS-PS-DSC-UniversalFeed
+            scriptType: pscore
+            scriptLocation: inlineScript
+            inlineScript: |
+              az --version
+              az extension list
+              az extension add --name azure-devops --debug
 
         - task: AzureCLI@2
           displayName: Publish Windows - Universal Package
