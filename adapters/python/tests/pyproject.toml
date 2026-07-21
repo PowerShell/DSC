@@ -1,0 +1,5 @@
+[tool.dsc.resources]
+"PythonTest/Get" = "GetOnlyResource"
+"PythonTest/Set" = "SetOnlyResource"
+"PythonTest/Test" = "TestOnlyResource"
+"PythonTest/Export" = "ExportOnlyResource"

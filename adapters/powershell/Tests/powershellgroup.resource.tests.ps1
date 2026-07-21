@@ -279,8 +279,8 @@ Describe 'PowerShell adapter resource tests' {
             $adapterPath = Join-Path $PSScriptRoot 'TestAdapter'
             $env:PATH += [System.IO.Path]::PathSeparator + $adapterPath
 
-            $r = '{"TestCaseId": 1}' | dsc resource test -r 'Test/TestCase' -f -
-            $LASTEXITCODE | Should -Be 0
+            $r = '{"TestCaseId": 1}' | dsc resource test -r 'Test/TestCase' -f - 2> $TestDrive/tracing.txt
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/tracing.txt | Out-String)
             $resources = $r | ConvertFrom-Json
             $resources.actualState.TestCaseId | Should -Be 1
         }
