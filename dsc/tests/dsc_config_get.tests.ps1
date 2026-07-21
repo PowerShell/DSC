@@ -204,7 +204,7 @@ Describe 'dsc config get tests' {
         $errorLog | Should -BeLike "*Retrieved schema for resource 'Microsoft.DSC.Debug/Echo' with version '1.0.0' from cache*"
     }
 
-    It 'command resource schema should only be retrieved once for multiple instances of the same resource' {
+    It 'retrieves command resource schema from cache for multiple instances of the same resource' {
         $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:

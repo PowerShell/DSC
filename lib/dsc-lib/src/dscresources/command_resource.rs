@@ -8,9 +8,9 @@ use rust_i18n::t;
 use serde::Deserialize;
 use serde_json::{Map, Value};
 use std::{collections::HashMap, env, path::Path, process::Stdio};
-use crate::{configure::{config_doc::{ExecutionKind, SecurityContextKind}, config_result::{ResourceGetResult, ResourceTestResult}, schema_cache::{get_resource_schemas, SchemaCache, RESOURCE_SCHEMAS}}, dscresources::resource_manifest::{ExportSchemaKind, ExportSchemaOrFiltering, SchemaArgKind}, types::ExitCodesMap, util::canonicalize_which};
+use crate::{configure::{config_doc::{ExecutionKind, SecurityContextKind}, config_result::{ResourceGetResult, ResourceTestResult}, schema_cache::{get_resource_schemas, RESOURCE_SCHEMAS}}, dscresources::resource_manifest::{ExportSchemaKind, ExportSchemaOrFiltering, SchemaArgKind}, types::ExitCodesMap, util::canonicalize_which};
 use crate::dscerror::DscError;
-use crate::locked_extend;
+use crate::locked_insert;
 use super::{
     dscresource::{get_diff, redact, DscResource},
     invoke_result::{
@@ -557,8 +557,9 @@ pub fn invoke_validate(resource: &DscResource, config: &str, target_resource: Op
 ///
 /// Error if schema is not available or if there is an error getting the schema
 pub fn get_schema(resource: &DscResource, target_resource: Option<&DscResource>) -> Result<String, DscError> {
-    if let Some(schema) = get_resource_schemas(&resource.type_name, &resource.version) {
-        debug!("{}", t!("dscresources.commandResource.retrievedSchemaFromCache", resource = &resource.type_name, version = &resource.version));
+    let cached_resource = target_resource.unwrap_or(resource);
+    if let Some(schema) = get_resource_schemas(&cached_resource.type_name, &cached_resource.version) {
+        debug!("{}", t!("dscresources.commandResource.retrievedSchemaFromCache", resource = &cached_resource.type_name, version = &cached_resource.version));
         return Ok(serde_json::to_string(&schema)?);
     }
 
@@ -590,9 +591,9 @@ pub fn get_schema(resource: &DscResource, target_resource: Option<&DscResource>)
         },
     };
 
-    let mut schema_cache = SchemaCache::new();
-    schema_cache.insert(resource.type_name.clone(), HashMap::from([(resource.version.clone(), serde_json::from_str(&schema)?)]));
-    locked_extend!(RESOURCE_SCHEMAS, schema_cache);
+    let schema_value: Value = serde_json::from_str(&schema)?;
+    locked_insert!(RESOURCE_SCHEMAS, cached_resource.type_name.clone(), cached_resource.version.clone(), schema_value);
+
     Ok(schema)
 }
 

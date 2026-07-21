@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}, context::ProcessMode, parameters::{SECURE_VALUE_REDACTED, is_secure_value}, schema_cache::{RESOURCE_SCHEMAS, SchemaCache, get_resource_schemas}}, dscresources::resource_manifest::{AdapterInputKind, Kind}, locked_extend, types::{FullyQualifiedTypeName, ResourceVersion}};
+use crate::{configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}, context::ProcessMode, parameters::{SECURE_VALUE_REDACTED, is_secure_value}, schema_cache::get_resource_schemas}, dscresources::resource_manifest::{AdapterInputKind, Kind}, types::{FullyQualifiedTypeName, ResourceVersion}};
 use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse};
 use crate::schemas::transforms::idiomaticize_string_enum;
@@ -529,8 +529,9 @@ impl Invoke for DscResource {
     }
 
     fn schema(&self) -> Result<String, DscError> {
-        if let Some(schema) = get_resource_schemas(&self.type_name, &self.version) {
-            debug!("{}", t!("dscresources.dscresource.retrievedSchemaFromCache", resource = self.type_name, version = self.version));
+        let target_resource = self.target_resource.as_deref().unwrap_or(self);
+        if let Some(schema) = get_resource_schemas(&target_resource.type_name, &target_resource.version) {
+            debug!("{}", t!("dscresources.dscresource.retrievedSchemaFromCache", resource = target_resource.type_name, version = target_resource.version));
             return Ok(serde_json::to_string(&schema)?);
         }
 
@@ -547,11 +548,7 @@ impl Invoke for DscResource {
 
         match &self.implemented_as {
             Some(ImplementedAs::Command) => {
-                let schema = command_resource::get_schema(self, self.target_resource.as_deref())?;
-                let mut schema_cache = SchemaCache::new();
-                schema_cache.insert(self.type_name.clone(), HashMap::from([(self.version.clone(), serde_json::from_str(&schema)?)]));
-                locked_extend!(RESOURCE_SCHEMAS, schema_cache);
-                Ok(schema)
+                command_resource::get_schema(self, self.target_resource.as_deref())
             },
             _ => {
                 Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))

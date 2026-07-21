@@ -515,3 +515,11 @@ macro_rules! locked_get {
         }
     }};
 }
+
+#[macro_export]
+macro_rules! locked_insert {
+    ($lockable:expr, $key:expr, $subkey:expr, $value:expr) => {{
+        let mut btree = $lockable.write().unwrap();
+        btree.entry($key).or_default().insert($subkey, $value);
+    }};
+}
