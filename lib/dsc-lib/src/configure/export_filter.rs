@@ -3,6 +3,7 @@
 
 use rust_i18n::t;
 use serde_json::{Map, Value};
+use std::collections::BTreeMap;
 use tracing::debug;
 
 /// Apply an export filter to a list of exported instances, retaining only matching instances.
@@ -43,18 +44,27 @@ fn filter_array_elements(instance: &mut Value, filters: &[&Map<String, Value>]) 
         return;
     };
 
+    // Top-level filters are logically OR'd, so element filters targeting the same array property
+    // must be unioned across all matching filters. Collect them per property first, then filter
+    // each array once: filtering per filter with sequential `retain` calls would instead intersect
+    // (AND) the sets and could wrongly empty an array (e.g. two filters targeting `features` with
+    // different `featureName` patterns).
+    let mut element_filters_by_property: BTreeMap<&String, Vec<&Map<String, Value>>> = BTreeMap::new();
     for filter in filters {
         for (name, expected) in *filter {
-            let Some(element_filters) = as_element_filters(expected) else {
-                continue;
-            };
-            if let Some(elements) = instance_obj.get_mut(name).and_then(Value::as_array_mut) {
-                elements.retain(|element| {
-                    element.as_object().is_some_and(|element_obj| {
-                        element_filters.iter().any(|element_filter| instance_matches_filter(element_obj, element_filter))
-                    })
-                });
+            if let Some(element_filters) = as_element_filters(expected) {
+                element_filters_by_property.entry(name).or_default().extend(element_filters);
             }
+        }
+    }
+
+    for (name, element_filters) in element_filters_by_property {
+        if let Some(elements) = instance_obj.get_mut(name).and_then(Value::as_array_mut) {
+            elements.retain(|element| {
+                element.as_object().is_some_and(|element_obj| {
+                    element_filters.iter().any(|element_filter| instance_matches_filter(element_obj, element_filter))
+                })
+            });
         }
     }
 }
@@ -284,6 +294,28 @@ mod tests {
         apply_export_filter(&mut instances, &filters);
         let features = instances[0]["features"].as_array().unwrap();
         assert_eq!(features.len(), 3);
+    }
+
+    #[test]
+    fn element_filters_union_across_multiple_matching_filters() {
+        let mut instances = vec![json!({"features": [
+            {"featureName": "TelnetClient", "state": "Installed"},
+            {"featureName": "Printing-Foundation", "state": "Installed"},
+            {"featureName": "SMB1", "state": "NotPresent"}
+        ]})];
+        let filters = to_filters(json!([
+            { "features": [{ "featureName": "printing-*" }] },
+            { "features": [{ "featureName": "telnet*" }] }
+        ]));
+        apply_export_filter(&mut instances, &filters);
+        assert_eq!(instances.len(), 1);
+        let names: Vec<&str> = instances[0]["features"].as_array().unwrap()
+            .iter()
+            .map(|f| f["featureName"].as_str().unwrap())
+            .collect();
+        assert_eq!(names.len(), 2);
+        assert!(names.contains(&"Printing-Foundation"));
+        assert!(names.contains(&"TelnetClient"));
     }
 
     #[test]
