@@ -584,7 +584,8 @@ pub fn get_schema(resource: &DscResource, target_resource: Option<&DscResource>)
         SchemaKind::Command(command) => {
             let args = process_schema_args(command.args.as_ref(), target_resource);
             let (_exit_code, stdout, _stderr) = invoke_command(&command.executable, args, None, Some(&resource.directory), None, manifest.exit_codes.as_ref())?;
-            (stdout.clone(), serde_json::from_str(&stdout)?)
+            let schema_value: Value = serde_json::from_str(&stdout)?;
+            (stdout, schema_value)
         },
         SchemaKind::Embedded(schema) => {
             (serde_json::to_string(&schema)?, schema.clone())
