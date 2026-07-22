@@ -148,7 +148,7 @@ impl CommandDiscovery {
                     env::set_var("PATH", new_path);
                 }
             } else {
-                return Err(DscError::Operation(t!("discovery.commandDiscovery.failedJoinEnvPath").to_string()));
+                return Err(DscError::Operation(t!("discovery.commandDiscovery.failedJoinRestrictedPath").to_string()));
             }
         } else if resource_path_setting.allow_env_override && let Some(resource_path) = &dsc_resource_path {
             debug!("DSC_RESOURCE_PATH: {:?}", resource_path.to_string_lossy());
@@ -206,7 +206,7 @@ fn add_exe_home_to_path(mut paths: Vec<PathBuf>) -> Result<Vec<PathBuf>, DscErro
                     env::set_var("PATH", new_path);
                 }
             } else {
-                return Err(DscError::Operation(t!("discovery.commandDiscovery.failedJoinEnvPath").to_string()));
+                warn!("{}", t!("discovery.commandDiscovery.failedJoinEnvPath").to_string());
             }
         }
     }
