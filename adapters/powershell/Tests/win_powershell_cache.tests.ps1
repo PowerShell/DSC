@@ -16,6 +16,7 @@ Describe 'WindowsPowerShell adapter resource tests - requires elevated permissio
     $dscHome = Split-Path (Get-Command dsc -ErrorAction Stop).Source -Parent
     $psexeHome = Split-Path (Get-Command powershell -ErrorAction Stop).Source -Parent
     $ps7exeHome = Split-Path (Get-Command pwsh -ErrorAction Stop).Source -Parent
+    $oldDscRestrictedPath = $env:DSC_RESTRICTED_PATH
     $env:DSC_RESTRICTED_PATH = $dscHome + [System.IO.Path]::PathSeparator + $psexeHome + [System.IO.Path]::PathSeparator + $ps7exeHome
     $null = winrm quickconfig -quiet -force 2>&1
     $env:PSModulePath = $PSScriptRoot + [System.IO.Path]::PathSeparator + $env:PSModulePath
@@ -29,7 +30,7 @@ Describe 'WindowsPowerShell adapter resource tests - requires elevated permissio
 
   AfterAll {
     $env:PSModulePath = $OldPSModulePath
-    $env:DSC_RESTRICTED_PATH = $null
+    $env:DSC_RESTRICTED_PATH = $oldDscRestrictedPath
 
     # Remove after all the tests are done
     Remove-Module $script:winPSModule -Force -ErrorAction Ignore
