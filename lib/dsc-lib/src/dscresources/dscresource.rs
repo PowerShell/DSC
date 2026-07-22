@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}, context::ProcessMode, parameters::{SECURE_VALUE_REDACTED, is_secure_value}, schema_cache::get_resource_schemas}, dscresources::resource_manifest::{AdapterInputKind, Kind}, types::{FullyQualifiedTypeName, ResourceVersion}};
+use crate::{configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}, context::ProcessMode, parameters::{SECURE_VALUE_REDACTED, is_secure_value}, schema_cache::get_resource_schema}, dscresources::resource_manifest::{AdapterInputKind, Kind}, types::{FullyQualifiedTypeName, ResourceVersion}};
 use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse};
 use crate::schemas::transforms::idiomaticize_string_enum;
@@ -530,7 +530,7 @@ impl Invoke for DscResource {
 
     fn schema(&self) -> Result<String, DscError> {
         let target_resource = self.target_resource.as_deref().unwrap_or(self);
-        if let Some(schema) = get_resource_schemas(&target_resource.type_name, &target_resource.version) {
+        if let Some(schema) = get_resource_schema(&target_resource.type_name, &target_resource.version) {
             debug!("{}", t!("dscresources.dscresource.retrievedSchemaFromCache", resource = target_resource.type_name, version = target_resource.version));
             return Ok(serde_json::to_string(&schema)?);
         }
