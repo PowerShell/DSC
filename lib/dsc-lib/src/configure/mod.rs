@@ -35,7 +35,7 @@ pub mod config_result;
 pub mod constraints;
 pub mod depends_on;
 pub mod parameters;
-pub mod schema_cache;
+pub(crate) mod schema_cache;
 
 pub struct Configurator {
     json: String,
