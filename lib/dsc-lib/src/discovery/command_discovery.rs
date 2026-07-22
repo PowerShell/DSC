@@ -177,25 +177,13 @@ impl CommandDiscovery {
             } else {
                 return Err(DscError::Operation(t!("discovery.commandDiscovery.failedJoinEnvPath").to_string()));
             }
-        } else if dsc_resource_path.is_none() { // if DSC_RESOURCE_PATH is used, we don't want to modify the PATH env var, as it is intended to be used for resource discovery only
+        } else if dsc_resource_path.is_some() {
+            // just add exe home to PATH env var if not already in PATH env var
+            let env_paths = env::var_os("PATH").map(|paths| env::split_paths(&paths).collect::<Vec<_>>()).unwrap_or_default();
+            _ = add_exe_home_to_path(env_paths)?;
+        } else {
             // if exe home is not already in PATH env var then add it to env var and list of searched paths
-            if let Some(exe_home) = get_exe_path()?.parent() {
-                let exe_home_pb = exe_home.to_path_buf();
-                if paths.contains(&exe_home_pb) {
-                    trace!("{}", t!("discovery.commandDiscovery.exeHomeAlreadyInPath", path = exe_home.to_string_lossy()));
-                } else {
-                    trace!("{}", t!("discovery.commandDiscovery.addExeHomeToPath", path = exe_home.to_string_lossy()));
-                    paths.push(exe_home_pb);
-
-                    if let Ok(new_path) = env::join_paths(paths.clone()) {
-                        unsafe {
-                            env::set_var("PATH", new_path);
-                        }
-                    } else {
-                        return Err(DscError::Operation(t!("discovery.commandDiscovery.failedJoinEnvPath").to_string()));
-                    }
-                }
-            }
+            paths = add_exe_home_to_path(paths)?;
         }
 
         if let Ok(final_resource_path) = env::join_paths(paths.clone()) {
@@ -204,6 +192,27 @@ impl CommandDiscovery {
 
         Ok(paths)
     }
+}
+
+fn add_exe_home_to_path(mut paths: Vec<PathBuf>) -> Result<Vec<PathBuf>, DscError> {
+    if let Some(exe_home) = get_exe_path()?.parent() {
+        let exe_home_pb = exe_home.to_path_buf();
+        if paths.contains(&exe_home_pb) {
+            trace!("{}", t!("discovery.commandDiscovery.exeHomeAlreadyInPath", path = exe_home.to_string_lossy()));
+        } else {
+            trace!("{}", t!("discovery.commandDiscovery.addExeHomeToPath", path = exe_home.to_string_lossy()));
+            paths.push(exe_home_pb);
+
+            if let Ok(new_path) = env::join_paths(paths.clone()) {
+                unsafe {
+                    env::set_var("PATH", new_path);
+                }
+            } else {
+                return Err(DscError::Operation(t!("discovery.commandDiscovery.failedJoinEnvPath").to_string()));
+            }
+        }
+    }
+    Ok(paths)
 }
 
 impl Default for CommandDiscovery {
