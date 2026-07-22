@@ -184,6 +184,10 @@ impl CommandDiscovery {
         let mut uniques: HashSet<PathBuf> = HashSet::new();
         paths.retain(|e|uniques.insert((*e).clone()));
 
+        if let Ok(final_resource_path) = env::join_paths(paths.clone()) {
+            debug!("{}", t!("discovery.commandDiscovery.usingResourcePath", path = final_resource_path.to_string_lossy()));
+        }
+
         Ok(paths)
     }
 }
