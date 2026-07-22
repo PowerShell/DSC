@@ -319,7 +319,7 @@ try {
     Write-Verbose "SkipPublish: $skipPublish" -Verbose
     Publish-PackageToPMC -PackageObject $packageObjects -ConfigPath $configPath -SkipPublish $skipPublish
 } catch {
-    Write-Error -ErrorAction Stop (Get-Error | Out-String)
+    Write-Error (Get-Error | Out-String)
     return 1
 }
 
