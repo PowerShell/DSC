@@ -427,7 +427,9 @@ Describe 'tests for resource discovery' {
     It 'Should return result where the exe is not found in DSC_RESOURCE_PATH' {
         $dscHome = Split-Path -Path (Get-Command dsc -ErrorAction Stop).Source -Parent
         $oldResourcePath = $env:DSC_RESOURCE_PATH
+        $oldRestrictedPath = $env:DSC_RESTRICTED_PATH
         try {
+            $env:DSC_RESTRICTED_PATH = $null
             $env:DSC_RESOURCE_PATH = $dscHome
             $out = dsc -l trace resource list Microsoft.Adapter/PowerShell 2> "$testdrive/error.txt" | ConvertFrom-Json
             $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw -Path "$testdrive/error.txt")
@@ -436,6 +438,7 @@ Describe 'tests for resource discovery' {
         }
         finally {
             $env:DSC_RESOURCE_PATH = $oldResourcePath
+            $env:DSC_RESTRICTED_PATH = $oldRestrictedPath
         }
     }
 
@@ -446,7 +449,9 @@ Describe 'tests for resource discovery' {
         $echoResource.type = 'Test/MyEcho'
         $echoResource | ConvertTo-Json -Depth 10 | Set-Content -Path (Join-Path $TestDrive 'myecho.dsc.resource.json') -Force
         $oldResourcePath = $env:DSC_RESOURCE_PATH
+        $oldRestrictedPath = $env:DSC_RESTRICTED_PATH
         try {
+            $env:DSC_RESTRICTED_PATH = $null
             $env:DSC_RESOURCE_PATH = "$testdrive"
             $out = dsc -l trace resource list Test/MyEcho 2> "$testdrive/error.txt" | ConvertFrom-Json
             $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw -Path "$testdrive/error.txt")
@@ -455,6 +460,7 @@ Describe 'tests for resource discovery' {
         }
         finally {
             $env:DSC_RESOURCE_PATH = $oldResourcePath
+            $env:DSC_RESTRICTED_PATH = $oldRestrictedPath
         }
     }
 
