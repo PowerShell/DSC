@@ -244,7 +244,7 @@ Describe 'Tests for adapter support' {
             $out = dsc -l trace resource set -r Adapted/Two -i '{"two":"2"}' 2>$TestDrive/error.log | ConvertFrom-Json -Depth 10
             $errorLog = Get-Content $TestDrive/error.log -Raw
             $LASTEXITCODE | Should -Be 0 -Because $errorLog
-            $errorLog | Should -BeLike '*Invoking command ''dsctest'' with args Some(`["adapter", "--operation", "set", "--input", "{\"two\":\"2\"}", "--resource-type", "Adapted/Two", "--resource-path", "\"*adaptedTest.dsc.adaptedResource.json\""`])*' -Because $errorLog
+            $errorLog | Should -BeLike '*Invoking command ''dsctest'' with args Some(`["adapter", "--operation", "set", "--input", "{\"two\":\"2\"}", "--resource-type", "Adapted/Two", "--resource-path", "\"*adaptedTest.dsc.adaptedResource.json\"", "--resource-version", "2.0.0"`])*' -Because $errorLog
             $out.afterState.two | Should -BeExactly 'value2' -Because $errorLog
         }
 
