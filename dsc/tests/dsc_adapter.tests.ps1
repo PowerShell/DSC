@@ -98,6 +98,40 @@ Describe 'Tests for adapter support' {
             }
         }
 
+        It 'Specifying adapted resource version succeeds' {
+            $config_yaml = @"
+                `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+                resources:
+                - name: Test
+                  type: Adapted/One
+                  requireVersion: =1.0.0
+                  properties:
+                    one: '1'
+"@
+            $out = dsc config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json -Depth 10
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log | Out-String)
+            $out.results.Count | Should -Be 1
+            $out.results[0].type | Should -BeExactly 'Adapted/One'
+            $out.results[0].Name | Should -Be 'Test'
+            $out.results[0].result.actualState.one | Should -BeExactly 'value1'
+        }
+
+        It 'Specifying invalid adapted resource version fails' {
+            $config_yaml = @"
+                `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+                resources:
+                - name: Test
+                  type: Adapted/One
+                  requireVersion: =2.0.0
+                  properties:
+                    one: '1'
+"@
+            $out = dsc config get -i $config_yaml 2>$TestDrive/error.log
+            $LASTEXITCODE | Should -Be 2 -Because (Get-Content $TestDrive/error.log | Out-String)
+            $errorContent = Get-Content $TestDrive/error.log -Raw
+            $errorContent | Should -Match "Resource not found: Adapted/One =2.0.0" -Because $errorContent
+            $out | Should -BeNullOrEmpty -Because $errorContent
+        }
 
         It 'Specifying invalid adapter via metadata fails' {
             $config_yaml = @"

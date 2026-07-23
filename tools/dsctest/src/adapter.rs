@@ -8,7 +8,7 @@ use crate::args::AdapterOperation;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
-pub struct AdaptedOne {
+struct AdaptedOne {
     pub one: String,
     #[serde(rename = "_name", skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
@@ -16,15 +16,19 @@ pub struct AdaptedOne {
     pub path: Option<String>,
 }
 
+const ADAPTED_ONE_VERSION: &str = "1.0.0";
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
-pub struct AdaptedTwo {
+struct AdaptedTwo {
     pub two: String,
     #[serde(rename = "_name", skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub path: Option<String>,
 }
+
+const ADAPTED_TWO_VERSION: &str = "2.0.0";
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -52,13 +56,13 @@ pub struct DscResource {
     pub require_adapter: Option<String>,
 }
 
-pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation, resource_path: &Option<String>) -> Result<String, String> {
+pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation, resource_path: &Option<String>, resource_version: &Option<String>) -> Result<String, String> {
     match operation {
         AdapterOperation::List => {
             let resource_one = DscResource {
                 type_name: "Adapted/One".to_string(),
                 kind: "resource".to_string(),
-                version: "1.0.0".to_string(),
+                version: ADAPTED_ONE_VERSION.to_string(),
                 capabilities: vec!["get".to_string(), "set".to_string(), "test".to_string(), "export".to_string()],
                 path: "path/to/adapted/one".to_string(),
                 directory: "path/to/adapted".to_string(),
@@ -69,7 +73,7 @@ pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation, res
             let resource_two = DscResource {
                 type_name: "Adapted/Two".to_string(),
                 kind: "resource".to_string(),
-                version: "1.0.0".to_string(),
+                version: ADAPTED_TWO_VERSION.to_string(),
                 capabilities: vec!["get".to_string(), "set".to_string(), "test".to_string(), "export".to_string()],
                 path: "path/to/adapted/two".to_string(),
                 directory: "path/to/adapted".to_string(),
@@ -84,6 +88,11 @@ pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation, res
         AdapterOperation::Get => {
             match resource_type {
                 "Adapted/One" => {
+                    if let Some(version) = resource_version {
+                        if version != ADAPTED_ONE_VERSION {
+                            return Err(format!("Unsupported version for Adapted/One: {version}"));
+                        }
+                    }
                     let adapted_one = AdaptedOne {
                         one: "value1".to_string(),
                         name: None,
@@ -92,6 +101,11 @@ pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation, res
                     Ok(serde_json::to_string(&adapted_one).unwrap())
                 },
                 "Adapted/Two" => {
+                    if let Some(version) = resource_version {
+                        if version != ADAPTED_TWO_VERSION {
+                            return Err(format!("Unsupported version for Adapted/Two: {version}"));
+                        }
+                    }
                     let adapted_two = AdaptedTwo {
                         two: "value2".to_string(),
                         name: None,

@@ -129,6 +129,11 @@ pub enum GetArgKind {
         /// The argument that accepts the resource type name.
         resource_type_arg: String,
     },
+    #[serde(rename_all = "camelCase")]
+    ResourceVersion {
+        /// The argument that accepts the resource version.
+        resource_version_arg: String,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
@@ -162,6 +167,11 @@ pub enum SetDeleteArgKind {
         /// The argument that accepts the resource type name.
         resource_type_arg: String,
     },
+    #[serde(rename_all = "camelCase")]
+    ResourceVersion {
+        /// The argument that accepts the resource version.
+        resource_version_arg: String,
+    },
     /// The argument is passed when the resource is invoked in what-if mode.
     #[serde(rename_all = "camelCase")]
     WhatIf {
@@ -176,10 +186,15 @@ pub enum SetDeleteArgKind {
 pub enum SchemaArgKind {
     /// The argument is a string.
     String(String),
+    #[serde(rename_all = "camelCase")]
     ResourceType {
         /// The argument that accepts the resource type name.
-        #[serde(rename = "resourceTypeArg")]
         resource_type_arg: String,
+    },
+    #[serde(rename_all = "camelCase")]
+    ResourceVersion {
+        /// The argument that accepts the resource version.
+        resource_version_arg: String,
     },
 }
 
