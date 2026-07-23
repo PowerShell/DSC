@@ -76,7 +76,7 @@ Describe 'tests for dsc settings' {
         $script:dscDefaultv1Settings | ConvertTo-Json -Depth 90 | Set-Content -Force -Path $script:dscSettingsFilePath
         dsc -l debug resource list 2> $TestDrive/tracing.txt
         $expectedString = 'Using Resource Path: TestDir1'+[System.IO.Path]::PathSeparator+'TestDir2'
-        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly $expectedString
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly $expectedString -Because (Get-Content $TestDrive/tracing.txt -Raw)
     }
 
     It 'Confirm settings override priorities' {
