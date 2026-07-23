@@ -88,10 +88,8 @@ pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation, res
         AdapterOperation::Get => {
             match resource_type {
                 "Adapted/One" => {
-                    if let Some(version) = resource_version {
-                        if version != ADAPTED_ONE_VERSION {
-                            return Err(format!("Unsupported version for Adapted/One: {version}"));
-                        }
+                    if let Some(version) = resource_version && version != ADAPTED_ONE_VERSION {
+                        return Err(format!("Unsupported version for Adapted/One: {version}"));
                     }
                     let adapted_one = AdaptedOne {
                         one: "value1".to_string(),
@@ -101,10 +99,8 @@ pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation, res
                     Ok(serde_json::to_string(&adapted_one).unwrap())
                 },
                 "Adapted/Two" => {
-                    if let Some(version) = resource_version {
-                        if version != ADAPTED_TWO_VERSION {
-                            return Err(format!("Unsupported version for Adapted/Two: {version}"));
-                        }
+                    if let Some(version) = resource_version && version != ADAPTED_TWO_VERSION {
+                        return Err(format!("Unsupported version for Adapted/Two: {version}"));
                     }
                     let adapted_two = AdaptedTwo {
                         two: "value2".to_string(),
@@ -135,20 +131,16 @@ pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation, res
         AdapterOperation::Set | AdapterOperation::Test => {
             match resource_type {
                 "Adapted/One" => {
-                    if let Some(version) = resource_version {
-                        if version != ADAPTED_ONE_VERSION {
-                            return Err(format!("Unsupported version for {resource_type}: {version}"));
-                        }
+                    if let Some(version) = resource_version && version != ADAPTED_ONE_VERSION {
+                        return Err(format!("Unsupported version for {resource_type}: {version}"));
                     }
                     let adapted_one: AdaptedOne = serde_json::from_str(input)
                         .map_err(|e| format!("Failed to parse input for Adapted/One: {e}"))?;
                     Ok(serde_json::to_string(&adapted_one).unwrap())
                 },
                 "Adapted/Two" => {
-                    if let Some(version) = resource_version {
-                        if version != ADAPTED_TWO_VERSION {
-                            return Err(format!("Unsupported version for {resource_type}: {version}"));
-                        }
+                    if let Some(version) = resource_version && version != ADAPTED_TWO_VERSION {
+                        return Err(format!("Unsupported version for {resource_type}: {version}"));
                     }
                     let adapted_two: AdaptedTwo = serde_json::from_str(input)
                         .map_err(|e| format!("Failed to parse input for Adapted/Two: {e}"))?;
@@ -165,10 +157,8 @@ pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation, res
         AdapterOperation::Export => {
             match resource_type {
                 "Adapted/One" => {
-                    if let Some(version) = resource_version {
-                        if version != ADAPTED_ONE_VERSION {
-                            return Err(format!("Unsupported version for {resource_type}: {version}"));
-                        }
+                    if let Some(version) = resource_version && version != ADAPTED_ONE_VERSION {
+                        return Err(format!("Unsupported version for {resource_type}: {version}"));
                     }
                     let adapted_one = AdaptedOne {
                         one: "first1".to_string(),
@@ -185,10 +175,8 @@ pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation, res
                     std::process::exit(0);
                 },
                 "Adapted/Two" => {
-                    if let Some(version) = resource_version {
-                        if version != ADAPTED_TWO_VERSION {
-                            return Err(format!("Unsupported version for {resource_type}: {version}"));
-                        }
+                    if let Some(version) = resource_version && version != ADAPTED_TWO_VERSION {
+                        return Err(format!("Unsupported version for {resource_type}: {version}"));
                     }
                     let adapted_two = AdaptedTwo {
                         two: "first2".to_string(),
