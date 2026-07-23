@@ -17,6 +17,8 @@
 #>
 
 $env:NO_COLOR = 1
+$env:TERM = 'dumb'
+$PSStyle.OutputRendering = 'PlainText'
 
 function Get-MappedRepositoryIds {
     param(
@@ -102,11 +104,13 @@ function Get-PackageObjects {
         $pkgRepo = $pkg.RepoId | Select-Object -First 1
         $pkgDistribution = $pkg.Distribution | Select-Object -First 1
 
-        $pkgName = $pkg.PackageFormat.Replace('PACKAGE_NAME', $PackageName).Replace('RELEASE_VERSION', $ReleaseVersion)
-
-        if ($pkgName.EndsWith('.rpm')) {
-            $pkgName = $pkgName.Replace($ReleaseVersion, $ReleaseVersion.Replace('-', '_'))
+        $pkgReleaseVersion = $ReleaseVersion
+        if ($pkg.PackageFormat.EndsWith('.rpm')) {
+            # RPM requires no dashes in the version string, so replace any dashes with tildes
+            $pkgReleaseVersion = $pkgReleaseVersion.Replace('-', '~')
         }
+
+        $pkgName = $pkg.PackageFormat.Replace('PACKAGE_NAME', $PackageName).Replace('RELEASE_VERSION', $pkgReleaseVersion)
 
         $packagePath = "$script:dscPackagesFolder/$pkgName"
         if (-not (Test-Path -Path $packagePath)) {
@@ -149,6 +153,9 @@ function Publish-PackageToPMC {
         $packageType = $extension -replace '^\.'
 
         $packageListJson = pmc --config $ConfigPath package $packageType list --file $packagePath
+        if ($LASTEXITCODE -ne 0) {
+            throw "pmc package $packageType list failed with exit code $LASTEXITCODE; --config '$ConfigPath' package $packageType list --file '$packagePath'"
+        }
         $list = $packageListJson | ConvertFrom-Json
 
         $packageId = @()
@@ -160,8 +167,11 @@ function Publish-PackageToPMC {
             $uploadResult = $null
             try {
                 $uploadResult = pmc --config $ConfigPath package upload $packagePath --type $packageType
+                if ($LASTEXITCODE -ne 0) {
+                    throw "pmc package upload failed with exit code $LASTEXITCODE; --config '$ConfigPath' package upload '$packagePath' --type '$packageType'"
+                }
             } catch {
-                $errorMessages.Add("Uploading package $($finalPackage.PackageName) to $pkgRepo failed. See errors above for details.")
+                $errorMessages.Add("Uploading package $($finalPackage.PackageName) to $pkgRepo failed: $($_.Exception.Message)")
                 continue
             }
 
@@ -178,13 +188,19 @@ function Publish-PackageToPMC {
             try {
                 if ($packageType -eq 'rpm') {
                     $rawUpdateResponse = pmc --config $ConfigPath repo package update $pkgRepo --add-packages $packageId
+                    if ($LASTEXITCODE -ne 0) {
+                        throw "pmc repo package update failed with exit code $LASTEXITCODE; --config '$ConfigPath' repo package update '$pkgRepo' --add-packages '$packageId'"
+                    }
                 } elseif ($packageType -eq 'deb') {
                     $rawUpdateResponse = pmc --config $ConfigPath repo package update $pkgRepo $distribution --add-packages $packageId
+                    if ($LASTEXITCODE -ne 0) {
+                        throw "pmc repo package update failed with exit code $LASTEXITCODE; --config '$ConfigPath' repo package update '$pkgRepo' '$distribution' --add-packages '$packageId'"
+                    }
                 } else {
                     throw "Unsupported package type: $packageType"
                 }
             } catch {
-                $errorMessages.Add("Update for package $($finalPackage.PackageName) to $pkgRepo failed. See errors above for details.")
+                $errorMessages.Add("Update for package $($finalPackage.PackageName) to $pkgRepo failed: $($_.Exception.Message)")
                 continue
             }
 
@@ -198,8 +214,11 @@ function Publish-PackageToPMC {
             $rawPublishResponse = $null
             try {
                 $rawPublishResponse = pmc --config $ConfigPath repo publish $pkgRepo
+                if ($LASTEXITCODE -ne 0) {
+                    throw "pmc repo publish failed with exit code $LASTEXITCODE; --config '$ConfigPath' repo publish '$pkgRepo'"
+                }
             } catch {
-                $errorMessages.Add("Final publish for package $($finalPackage.PackageName) to $pkgRepo failed. See errors above for details.")
+                $errorMessages.Add("Final publish for package $($finalPackage.PackageName) to $pkgRepo failed: $($_.Exception.Message)")
                 continue
             }
 
@@ -277,13 +296,16 @@ try {
     $skipPublish = $metadataContent.SkipPublish
 
     $channel = if ($releaseVersion.Contains('-')) { 'preview' } else { 'stable' }
-    $packageName = $channel -eq 'preview' ? 'dsc-preview' : 'dsc'
+    $packageName = 'dsc'
 
     Write-Verbose "Release version: $releaseVersion, Channel: $channel" -Verbose
 
     # Get PMC repository list
     Write-Verbose "Getting PMC repository list" -Verbose
     $rawResponse = pmc --config $configPath repo list --limit 800
+    if ($LASTEXITCODE -ne 0) {
+        throw "pmc repo list failed with exit code $LASTEXITCODE; --config '$configPath' repo list --limit 800"
+    }
     $response = $rawResponse | ConvertFrom-Json
     Write-Verbose "PMC repo list: limit=$($response.limit), count=$($response.count)" -Verbose
     $repoList = $response.results
@@ -297,7 +319,7 @@ try {
     Write-Verbose "SkipPublish: $skipPublish" -Verbose
     Publish-PackageToPMC -PackageObject $packageObjects -ConfigPath $configPath -SkipPublish $skipPublish
 } catch {
-    Write-Error -ErrorAction Stop $_.Exception.Message
+    Write-Error (Get-Error | Out-String)
     return 1
 }
 
