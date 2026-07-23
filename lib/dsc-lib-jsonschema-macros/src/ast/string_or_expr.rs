@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use darling::export::syn;
+
 /// Simplifies passing either a literal string or an expression that evaluates to a string for the
 /// annotation fields.
 #[derive(Clone, Debug, PartialEq, Eq)]

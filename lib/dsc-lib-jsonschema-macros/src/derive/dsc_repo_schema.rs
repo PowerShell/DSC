@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use darling::{FromDeriveInput, FromMeta};
+use darling::{FromDeriveInput, FromMeta, export::syn};
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{DeriveInput, Ident, Path, parse_macro_input};
@@ -127,7 +127,7 @@ fn generate_without_schema_field(
 /// Generates the implementation of the `DscRepoSchema` trait for a type that defines the
 /// `schema_field` option in the macro attribute. This is typically used for root schemas, like the
 /// configuration document or resource manifest.
-/// 
+///
 /// It generates the trait implementation with the associated constants, the metadata for the field,
 /// and the schema URI validation function.
 fn generate_with_schema_field(
