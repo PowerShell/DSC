@@ -64,6 +64,8 @@ pub enum SubCommand {
         resource_type: String,
         #[clap(name = "resource-path", long, help = "The path to the adapted resource")]
         resource_path: Option<String>,
+        #[clap(name = "resource-version", long, help = "The version of the adapted resource")]
+        resource_version: Option<String>,
         #[clap(name = "operation", short, long, help = "The operation to perform")]
         operation: AdapterOperation,
     },
