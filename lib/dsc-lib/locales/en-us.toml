@@ -456,7 +456,6 @@ invalidArgType = "Invalid argument type, argument must be an array or string"
 [functions.format]
 description = "Formats a string using the given arguments"
 syntax = "format( <string>, <value>, ... )"
-experimental = "`format()` function is experimental"
 formatInvalid = "First `format()` argument must be a string"
 numberTooLarge = "Number is too large"
 invalidArgType = "Unsupported argument type"

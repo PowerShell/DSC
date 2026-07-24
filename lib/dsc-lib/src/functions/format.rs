@@ -7,7 +7,6 @@ use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMeta
 use rt_format::{Format as RtFormat, FormatArgument, ParsedFormat, argument::NoNamedArguments};
 use rust_i18n::t;
 use serde_json::Value;
-use tracing::warn;
 
 #[derive(Debug, PartialEq)]
 enum Variant {
@@ -103,7 +102,6 @@ impl Function for Format {
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
-        warn!("{}", t!("functions.format.experimental"));
         let Some(format_string) = args[0].as_str() else {
             return Err(DscError::Parser(t!("functions.format.formatInvalid").to_string()));
         };
