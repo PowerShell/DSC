@@ -98,6 +98,67 @@ Describe 'Tests for adapter support' {
             }
         }
 
+        It 'Specifying adapted resource version succeeds for <operation>' -TestCases @(
+            @{ operation = 'get' },
+            @{ operation = 'set' },
+            @{ operation = 'test' },
+            @{ operation = 'export' }
+        ){
+            param($operation)
+
+            $config_yaml = @"
+                `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+                resources:
+                - name: Test
+                  type: Adapted/One
+                  requireVersion: =1.0.0
+                  properties:
+                    one: '1'
+"@
+            $out = dsc config $operation -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json -Depth 10
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log | Out-String)
+            switch ($operation) {
+                'get' {
+                    $out.results[0].result.actualState.one | Should -BeExactly 'value1'
+                }
+                'set' {
+                    $out.results[0].result.afterState.one | Should -BeExactly 'value1'
+                }
+                'test' {
+                    $out.results[0].result.actualState.one | Should -BeExactly 'value1'
+                    $out.results[0].result.inDesiredState | Should -BeFalse
+                    $out.results[0].result.differingProperties | Should -Be @('one')
+                }
+                'export' {
+                    $out.resources[0].properties.one | Should -BeExactly 'first1'
+                    $out.resources[1].properties.one | Should -BeExactly 'second1'
+                }
+            }
+        }
+
+        It 'Specifying invalid adapted resource version fails for <operation>' -TestCases @(
+            @{ operation = 'get' },
+            @{ operation = 'set' },
+            @{ operation = 'test' },
+            @{ operation = 'export' }
+        ){
+            param($operation)
+
+            $config_yaml = @"
+                `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+                resources:
+                - name: Test
+                  type: Adapted/One
+                  requireVersion: =2.0.0
+                  properties:
+                    one: '1'
+"@
+            $out = dsc config $operation -i $config_yaml 2>$TestDrive/error.log
+            $LASTEXITCODE | Should -Be 2 -Because (Get-Content $TestDrive/error.log | Out-String)
+            $errorContent = Get-Content $TestDrive/error.log -Raw
+            $errorContent | Should -Match "Resource not found: Adapted/One =2.0.0" -Because $errorContent
+            $out | Should -BeNullOrEmpty -Because $errorContent
+        }
 
         It 'Specifying invalid adapter via metadata fails' {
             $config_yaml = @"
@@ -183,7 +244,7 @@ Describe 'Tests for adapter support' {
             $out = dsc -l trace resource set -r Adapted/Two -i '{"two":"2"}' 2>$TestDrive/error.log | ConvertFrom-Json -Depth 10
             $errorLog = Get-Content $TestDrive/error.log -Raw
             $LASTEXITCODE | Should -Be 0 -Because $errorLog
-            $errorLog | Should -BeLike '*Invoking command ''dsctest'' with args Some(`["adapter", "--operation", "set", "--input", "{\"two\":\"2\"}", "--resource-type", "Adapted/Two", "--resource-path", "\"*adaptedTest.dsc.adaptedResource.json\""`])*' -Because $errorLog
+            $errorLog | Should -BeLike '*Invoking command ''dsctest'' with args Some(`["adapter", "--operation", "set", "--input", "{\"two\":\"2\"}", "--resource-type", "Adapted/Two", "--resource-path", "\"*adaptedTest.dsc.adaptedResource.json\"", "--resource-version", "2.0.0"`])*' -Because $errorLog
             $out.afterState.two | Should -BeExactly 'value2' -Because $errorLog
         }
 
