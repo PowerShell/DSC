@@ -30,7 +30,7 @@ Describe 'Resource export tests' {
         $LASTEXITCODE | Should -Be 0 -Because $errorlog
         $output.resources.count | Should -Be $expected.Count -Because ($output | ConvertTo-Json -Depth 4)
         $output.resources.properties.name | Should -Be $expected -Because ($output | ConvertTo-Json -Depth 4)
-        $errorlog | Should -Match "Resource '$resource' does not support export filtering, the engine will filter the exported instances"
+        $errorlog | Should -Match "Resource '$resource' does not support export filtering, the engine will filter the exported instances \(experimental feature\)"
     }
 
     It 'Engine filtering rejects input that is not an object or array of objects' {

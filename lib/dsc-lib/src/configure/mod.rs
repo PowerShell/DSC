@@ -99,6 +99,10 @@ macro_rules! find_resource_or_error {
 
 /// Add the results of an export operation to a configuration.
 ///
+/// If the resource supports export filtering natively, any input is passed through to the
+/// resource. If it does not, the input is interpreted as a filter and the engine performs
+/// the filtering on the exported instances instead.
+///
 /// # Arguments
 ///
 /// * `resource` - The resource to export.
@@ -112,31 +116,6 @@ pub fn add_resource_export_results_to_configuration(
     resource: &DscResource,
     conf: &mut Configuration,
     input: &str,
-) -> Result<ExportResult, DscError> {
-    add_filtered_resource_export_results_to_configuration(resource, conf, input, None)
-}
-
-/// Add filtered results of an export operation to a configuration.
-///
-/// If the resource supports export filtering natively, any input is passed through to the
-/// resource. If it does not, the input is interpreted as a filter and the engine performs
-/// the filtering on the exported instances instead.
-///
-/// # Arguments
-///
-/// * `resource` - The resource to export.
-/// * `conf` - The configuration to add the results to.
-/// * `input` - The input to the export operation.
-/// * `filter` - Optional `exportFilter` directive applied by the engine to the exported instances.
-///
-/// # Errors
-///
-/// This function will return an error if the underlying resource fails.
-pub fn add_filtered_resource_export_results_to_configuration(
-    resource: &DscResource,
-    conf: &mut Configuration,
-    input: &str,
-    filter: Option<&[Map<String, Value>]>,
 ) -> Result<ExportResult, DscError> {
     let mut resource_input = input;
     let mut input_filters: Option<Vec<Map<String, Value>>> = None;
@@ -152,10 +131,6 @@ pub fn add_filtered_resource_export_results_to_configuration(
 
     if let Some(filters) = input_filters.as_deref() {
         export_filter::apply_export_filter(&mut export_result.actual_state, filters);
-    }
-    if let Some(filter) = filter {
-        info!("{}", t!("configure.mod.applyingExportFilterDirective", resource = resource.type_name));
-        export_filter::apply_export_filter(&mut export_result.actual_state, filter);
     }
 
     if resource.kind == Kind::Exporter {
@@ -987,12 +962,10 @@ impl Configurator {
             debug!("resource_type {}", &resource.resource_type);
             let input = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
             trace!("{}", t!("configure.mod.exportInput", input = input));
-            let export_filter = resource.directives.as_ref().and_then(|d| d.export_filter.as_deref());
-            let export_result = match add_filtered_resource_export_results_to_configuration(
+            let export_result = match add_resource_export_results_to_configuration(
                 dsc_resource,
                 &mut conf,
                 input.as_str(),
-                export_filter,
             ) {
                 Ok(result) => result,
                 Err(e) => {

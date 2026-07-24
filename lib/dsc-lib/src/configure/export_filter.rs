@@ -16,7 +16,7 @@ use tracing::debug;
 /// # Arguments
 ///
 /// * `instances` - The exported instances to filter.
-/// * `filters` - The filter objects from the `exportFilter` directive.
+/// * `filters` - The filter objects derived from the export input.
 pub(super) fn apply_export_filter(instances: &mut Vec<Value>, filters: &[Map<String, Value>]) {
     if filters.is_empty() {
         // an empty filter list means no filtering is applied
