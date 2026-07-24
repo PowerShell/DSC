@@ -129,6 +129,7 @@ fn main() {
             for i in 0..export.count {
                 let instance = Export {
                     count: i,
+                    name: Some(format!("Instance{i}")),
                     _name: Some("TestName".to_string()),
                     _security_context: Some("elevated".to_string()),
                 };

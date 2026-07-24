@@ -10,7 +10,7 @@ use crate::dscerror::DscError;
 use crate::dscresources::{
     {dscresource::{Capability, Invoke, get_diff, validate_properties, get_adapter_input_kind},
     invoke_result::{DeleteResult, DeleteResultKind, GetResult, SetResult, TestResult, ExportResult, ResourceSetResponse}},
-    resource_manifest::{AdapterInputKind, Kind},
+    resource_manifest::{AdapterInputKind, ExportSchemaOrFiltering, Kind},
 };
 use crate::DscResource;
 use crate::discovery::Discovery;
@@ -34,6 +34,7 @@ pub mod config_result;
 pub mod constraints;
 pub mod depends_on;
 pub mod parameters;
+mod export_filter;
 
 pub struct Configurator {
     json: String,
@@ -98,24 +99,39 @@ macro_rules! find_resource_or_error {
 
 /// Add the results of an export operation to a configuration.
 ///
+/// If the resource supports export filtering natively, any input is passed through to the
+/// resource. If it does not, the input is interpreted as a filter and the engine performs
+/// the filtering on the exported instances instead.
+///
 /// # Arguments
 ///
 /// * `resource` - The resource to export.
 /// * `conf` - The configuration to add the results to.
 /// * `input` - The input to the export operation.
 ///
-/// # Panics
-///
-/// Doesn't panic because there is a match/Some check before `unwrap()`; false positive.
-///
 /// # Errors
 ///
 /// This function will return an error if the underlying resource fails.
-pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf: &mut Configuration, input: &str) -> Result<ExportResult, DscError> {
+pub fn add_resource_export_results_to_configuration(
+    resource: &DscResource,
+    conf: &mut Configuration,
+    input: &str,
+) -> Result<ExportResult, DscError> {
+    let mut resource_input = input;
+    let mut input_filters: Option<Vec<Map<String, Value>>> = None;
+    if !input.is_empty() && !resource_supports_export_filtering(resource) {
+        input_filters = Some(parse_export_filter_input(input)?);
+        resource_input = "";
+        info!("{}", t!("configure.mod.engineExportFiltering", resource = resource.type_name));
+    }
 
     let start_datetime = chrono::Local::now();
-    let export_result = resource.export(input)?;
+    let mut export_result = resource.export(resource_input)?;
     let end_datetime = chrono::Local::now();
+
+    if let Some(filters) = input_filters.as_deref() {
+        export_filter::apply_export_filter(&mut export_result.actual_state, filters);
+    }
 
     if resource.kind == Kind::Exporter {
         for instance in &export_result.actual_state {
@@ -171,6 +187,40 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf
     }
 
     Ok(export_result)
+}
+
+/// A resource supports native export filtering unless its manifest export method explicitly
+/// declares `supportsFiltering: false`.
+fn resource_supports_export_filtering(resource: &DscResource) -> bool {
+    !matches!(
+        resource.manifest.as_ref()
+            .and_then(|m| m.export.as_ref())
+            .and_then(|e| e.schema_or_filtering.as_ref()),
+        Some(ExportSchemaOrFiltering::SupportsFiltering(false))
+    )
+}
+
+/// Parse export input into engine filters: a JSON object is a single filter while a JSON array
+/// of objects is a set of logically OR'd filters.
+fn parse_export_filter_input(input: &str) -> Result<Vec<Map<String, Value>>, DscError> {
+    let value: Value = serde_json::from_str(input)
+        .map_err(|e| DscError::Parser(t!("configure.mod.invalidExportFilterInput", error = e).to_string()))?;
+    let mut filters = match value {
+        Value::Object(map) => vec![map],
+        Value::Array(items) => items.into_iter().map(|item| {
+            if let Value::Object(map) = item {
+                Ok(map)
+            } else {
+                Err(DscError::Parser(t!("configure.mod.exportFilterNotObject").to_string()))
+            }
+        }).collect::<Result<Vec<_>, _>>()?,
+        _ => return Err(DscError::Parser(t!("configure.mod.exportFilterNotObject").to_string())),
+    };
+    // `_metadata` is injected by `add_metadata()` and is not a property to filter on
+    for filter in &mut filters {
+        filter.remove("_metadata");
+    }
+    Ok(filters)
 }
 
 // for values returned by resources, they may look like expressions, so we make sure to escape them in case
@@ -912,7 +962,11 @@ impl Configurator {
             debug!("resource_type {}", &resource.resource_type);
             let input = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
             trace!("{}", t!("configure.mod.exportInput", input = input));
-            let export_result = match add_resource_export_results_to_configuration(dsc_resource, &mut conf, input.as_str()) {
+            let export_result = match add_resource_export_results_to_configuration(
+                dsc_resource,
+                &mut conf,
+                input.as_str(),
+            ) {
                 Ok(result) => result,
                 Err(e) => {
                     progress.set_failure(get_failure_from_error(&e));
@@ -1464,5 +1518,87 @@ fn get_failure_from_error(err: &DscError) -> Option<Failure> {
             })
         },
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    fn resource_with_export(export: Value) -> DscResource {
+        let mut resource = DscResource::new();
+        resource.manifest = Some(serde_json::from_value(json!({
+            "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+            "type": "Test/Test",
+            "version": "0.1.0",
+            "export": export
+        })).unwrap());
+        resource
+    }
+
+    #[test]
+    fn no_manifest_supports_filtering() {
+        let resource = DscResource::new();
+        assert!(resource_supports_export_filtering(&resource));
+    }
+
+    #[test]
+    fn export_without_filtering_declaration_supports_filtering() {
+        let resource = resource_with_export(json!({ "executable": "test" }));
+        assert!(resource_supports_export_filtering(&resource));
+    }
+
+    #[test]
+    fn export_with_schema_supports_filtering() {
+        let resource = resource_with_export(json!({ "executable": "test", "schema": { "command": "test" } }));
+        assert!(resource_supports_export_filtering(&resource));
+    }
+
+    #[test]
+    fn export_with_supports_filtering_false_does_not_support_filtering() {
+        let resource = resource_with_export(json!({ "executable": "test", "supportsFiltering": false }));
+        assert!(!resource_supports_export_filtering(&resource));
+    }
+
+    #[test]
+    fn export_with_supports_filtering_true_supports_filtering() {
+        let resource = resource_with_export(json!({ "executable": "test", "supportsFiltering": true }));
+        assert!(resource_supports_export_filtering(&resource));
+    }
+
+    #[test]
+    fn filter_input_object_is_single_filter() {
+        let filters = parse_export_filter_input(r#"{"name":"test"}"#).unwrap();
+        assert_eq!(filters.len(), 1);
+        assert_eq!(filters[0].get("name"), Some(&json!("test")));
+    }
+
+    #[test]
+    fn filter_input_array_is_multiple_filters() {
+        let filters = parse_export_filter_input(r#"[{"name":"one"},{"name":"two"}]"#).unwrap();
+        assert_eq!(filters.len(), 2);
+    }
+
+    #[test]
+    fn filter_input_strips_metadata() {
+        let filters = parse_export_filter_input(r#"{"name":"test","_metadata":{"securityContext":"current"}}"#).unwrap();
+        assert_eq!(filters.len(), 1);
+        assert!(!filters[0].contains_key("_metadata"));
+    }
+
+    #[test]
+    fn filter_input_scalar_is_error() {
+        assert!(parse_export_filter_input(r#""test""#).is_err());
+    }
+
+    #[test]
+    fn filter_input_array_with_non_object_is_error() {
+        assert!(parse_export_filter_input(r#"[{"name":"one"},"two"]"#).is_err());
+    }
+
+    #[test]
+    fn filter_input_invalid_json_is_error() {
+        assert!(parse_export_filter_input("not json").is_err());
     }
 }

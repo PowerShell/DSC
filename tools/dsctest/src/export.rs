@@ -9,6 +9,9 @@ use serde::{Deserialize, Serialize};
 pub struct Export {
     /// Number of instances to return
     pub count: u64,
+    /// Name of the instance
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub _name: Option<String>,
     #[serde(rename = "_securityContext", skip_serializing_if = "Option::is_none")]

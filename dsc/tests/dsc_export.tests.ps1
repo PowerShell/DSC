@@ -213,3 +213,53 @@ resources:
       $out.resources[0].properties.id | Should -Be 1
     }
 }
+
+Describe 'engine export filtering tests' {
+    It 'engine filters properties for a resource that does not support filtering natively' {
+        $yaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: No Native Filtering
+  type: Test/ExportSchemaNoFiltering
+  properties:
+    name: '*e*'
+'@
+        $out = dsc --trace-level info config export -i $yaml 2>$TESTDRIVE/error.log | ConvertFrom-Json
+        $errorlog = Get-Content "$TESTDRIVE/error.log" -Raw
+        $LASTEXITCODE | Should -Be 0 -Because $errorlog
+        @($out.resources).Count | Should -Be 2
+        $out.resources.properties.name | Should -Be @('Steve', 'Tess')
+        $errorlog | Should -Match 'does not support export filtering, the engine will filter the exported instances'
+    }
+
+    It 'INFO message indicates engine export filtering is experimental' {
+        $yaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: No Native Filtering
+  type: Test/ExportSchemaNoFiltering
+  properties:
+    name: 'Gijs'
+'@
+        $out = dsc --trace-level info config export -i $yaml 2>$TESTDRIVE/error.log | ConvertFrom-Json
+        $errorlog = Get-Content "$TESTDRIVE/error.log" -Raw
+        $LASTEXITCODE | Should -Be 0 -Because $errorlog
+        @($out.resources).Count | Should -Be 1
+        $out.resources[0].properties.name | Should -BeExactly 'Gijs'
+        $errorlog | Should -Match 'experimental'
+    }
+
+    It 'no INFO message is emitted when no filter input is provided' {
+        $yaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: No Native Filtering
+  type: Test/ExportSchemaNoFiltering
+'@
+        $out = dsc --trace-level info config export -i $yaml 2>$TESTDRIVE/error.log | ConvertFrom-Json
+        $errorlog = Get-Content "$TESTDRIVE/error.log" -Raw
+        $LASTEXITCODE | Should -Be 0 -Because $errorlog
+        @($out.resources).Count | Should -Be 3
+        $errorlog | Should -Not -Match 'the engine will filter the exported instances'
+    }
+}

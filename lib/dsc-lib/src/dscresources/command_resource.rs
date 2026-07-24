@@ -696,11 +696,11 @@ pub fn invoke_export(resource: &DscResource, input: Option<&str>, target_resourc
     validate_security_context(&export.require_security_context, &command_resource.type_name, "export")?;
 
     if let Some(input) = input {
-        if matches!(export.schema_or_filtering, Some(ExportSchemaOrFiltering::SupportsFiltering(false))) {
-            return Err(DscError::Operation(t!("dscresources.commandResource.exportFilteringNotSupported", resource = &resource.type_name).to_string()));
-        }
-
         if !input.is_empty() {
+            if matches!(export.schema_or_filtering, Some(ExportSchemaOrFiltering::SupportsFiltering(false))) {
+                return Err(DscError::Operation(t!("dscresources.commandResource.exportFilteringNotSupported", resource = &resource.type_name).to_string()));
+            }
+
             verify_with_export_schema(input, resource, target_resource)?;
 
             command_input = get_command_input(export.input.as_ref(), input)?;
