@@ -1,5 +1,6 @@
 ---
-applyTo: "**/*.rs, **/*.ps1, **/*.psm1, **/*.tests.ps1, **/*.json"
+applyTo: '**/*.rs,**/*.ps1,**/*.psm1,**/*.tests.ps1,**/*.json'
+description: 'Repository-specific code review guidance for DSC (Rust, PowerShell/Pester, JSON)'
 ---
 
 # Code Review Instructions for DSC Repository
@@ -18,7 +19,7 @@ Focus on high-confidence, actionable findings. Do not comment on style, formatti
 ### Caching and State Management
 
 - **Cache key correctness**: When caching by resource type/version, verify the cache key accounts for all dimensions that affect the cached value. For adapter resources with a `target_resource`, the cache key must include the target resource identity, not just the adapter's type/version.
-- **Duplicate caching**: Watch for cache writes that duplicate logic already handled elsewhere. `BTreeMap::extend` overwrites existing entries — if multiple versions of a resource should coexist in the cache, use entry-based insertion instead.
+- **Duplicate caching**: Watch for cache writes that duplicate logic already handled elsewhere. `BTreeMap::extend` overwrites values for duplicate keys; if overwrites are undesirable, use `entry` to skip/merge, or include the distinguishing dimension(s) (e.g., version/target identity) in the key so distinct values can coexist.
 - **Unused imports after refactoring**: When cache writes or other logic are centralized, verify that moved-from modules no longer import the now-unused symbols.
 
 ### API Surface and Visibility
