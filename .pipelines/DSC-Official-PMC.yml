@@ -25,6 +25,9 @@ variables:
     value: 'onebranch.azurecr.io/linux/ubuntu-2204:latest'
   - name: RepoRoot
     value: '$(Build.SourcesDirectory)/DSC'
+  - group: DSC-packages.microsoft.com
+  - name: SigningProfile
+    value: $(pgp_linux_cert_id)
 
 resources:
   repositories:
@@ -114,6 +117,13 @@ extends:
             Copy-Item ./bin/*.deb "$(ob_outputDirectory)"
           displayName: 'Build x86_64-unknown-linux-musl'
           condition: succeeded()
+        - task: onebranch.pipeline.signing@1
+          displayName: Sign deb and rpm packages
+          inputs:
+            command: 'sign'
+            signing_profile: '$(SigningProfile)'
+            files_to_sign: '**/*.rpm;**/*.deb'
+            search_root: '$(ob_outputDirectory)'
 
       - job: BuildLinuxArm64Musl
         dependsOn: SetPackageVersion
@@ -165,6 +175,13 @@ extends:
             Copy-Item ./bin/*.deb "$(ob_outputDirectory)"
           displayName: 'Build aarch64-unknown-linux-musl'
           condition: succeeded()
+        - task: onebranch.pipeline.signing@1
+          displayName: Sign deb and rpm packages
+          inputs:
+            command: 'sign'
+            signing_profile: '$(SigningProfile)'
+            files_to_sign: '**/*.rpm;**/*.deb'
+            search_root: '$(ob_outputDirectory)'
 
     - stage: PrepPackagesForEv2PMC
       displayName: Publish Linux Packages to packages.microsoft.com
@@ -195,7 +212,6 @@ extends:
             value: $(RepoRoot)/.config/suppress.json
           - name: ob_sdl_tsa_configFile
             value: $(RepoRoot)/.config/tsaoptions.json
-          - group: 'DSC-packages.microsoft.com'
         steps:
         - checkout: self
           lfs: false
