@@ -8,7 +8,7 @@
         "security"
     ],
     "type": "Microsoft.Windows/UpdateList",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "get": {
         "executable": "wu_dsc",
         "args": [
@@ -19,11 +19,16 @@
     "set": {
         "executable": "wu_dsc",
         "args": [
-            "set"
+            "set",
+            {
+                "whatIfArg": "--what-if"
+            }
         ],
         "input": "stdin",
-        "preTest": true,
-        "return": "state"
+        "implementsPretest": true,
+        "requireSecurityContext": "elevated",
+        "return": "state",
+        "whatIfReturns": "state"
     },
     "export": {
         "executable": "wu_dsc",
@@ -138,6 +143,20 @@
                                 "title": "Installation behavior",
                                 "description": "Indicates the reboot behavior expected from installing this update. NeverReboots means the update never requires a reboot, AlwaysRequiresReboot means it always requires one, and CanRequestReboot means it may request a reboot.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#installationbehavior\n",
                                 "markdownDescription": "Indicates the reboot behavior expected from installing this update.\n\n- **NeverReboots**: The update never requires a reboot\n- **AlwaysRequiresReboot**: The update always requires a reboot\n- **CanRequestReboot**: The update may request a reboot\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/updatelist/resource#installationbehavior\n"
+                            },
+                            "_metadata": {
+                                "type": "object",
+                                "title": "Metadata",
+                                "description": "Metadata populated during what-if operations.",
+                                "readOnly": true,
+                                "additionalProperties": false,
+                                "properties": {
+                                    "whatIf": {
+                                        "type": "array",
+                                        "description": "Messages describing what the set operation would do.",
+                                        "items": { "type": "string" }
+                                    }
+                                }
                             }
                         }
                     }

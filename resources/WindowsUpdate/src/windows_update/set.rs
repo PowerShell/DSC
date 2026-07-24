@@ -10,14 +10,23 @@ use windows::{
     Win32::System::UpdateAgent::*,
 };
 
-use crate::windows_update::types::{UpdateList, UpdateInfo, extract_update_info};
+use crate::windows_update::types::{UpdateList, UpdateInfo, Metadata, extract_update_info};
 
 /// Gets the computer name using the COMPUTERNAME environment variable
 fn get_computer_name() -> String {
     std::env::var("COMPUTERNAME").unwrap_or_else(|_| "localhost".to_string())
 }
 
-pub fn handle_set(input: &str) -> Result<String> {
+fn project_what_if_install(mut info: UpdateInfo) -> UpdateInfo {
+    let title = info.title.clone().unwrap_or_default();
+    info.is_installed = Some(true);
+    info.metadata = Some(Metadata {
+        what_if: Some(vec![t!("set.whatIfInstallUpdate", title = title).to_string()]),
+    });
+    info
+}
+
+pub fn handle_set(input: &str, what_if: bool) -> Result<String> {
     // Parse input as UpdateList
     let update_list: UpdateList = serde_json::from_str(input)
         .map_err(|e| Error::new(E_INVALIDARG, t!("set.failedParseInput", err = e.to_string())))?;
@@ -217,6 +226,9 @@ pub fn handle_set(input: &str) -> Result<String> {
             let update_info = if is_installed {
                 // Already installed, just return current state
                 extract_update_info(&update)?
+            } else if what_if {
+                // What-if: project the state after installation without making changes
+                project_what_if_install(extract_update_info(&update)?)
             } else {
                 // Not installed - proceed with installation
                 // Create update collection for download/install
@@ -299,5 +311,59 @@ pub fn handle_set(input: &str) -> Result<String> {
                 .map_err(|e| Error::new(E_FAIL, t!("set.failedSerializeOutput", err = e.to_string())))
         }
         Err(e) => Err(e),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::project_what_if_install;
+    use crate::windows_update::types::UpdateInfo;
+
+    fn test_update_info() -> UpdateInfo {
+        UpdateInfo {
+            metadata: None,
+            description: None,
+            id: Some("aeb14a2c-5540-481a-8a4d-6a4f9b962692".to_string()),
+            installation_behavior: None,
+            is_installed: Some(false),
+            is_uninstallable: None,
+            kb_article_ids: None,
+            msrc_severity: None,
+            recommended_hard_disk_space: None,
+            security_bulletin_ids: None,
+            title: Some("Test Update".to_string()),
+            update_type: None,
+        }
+    }
+
+    #[test]
+    fn projects_installed_state_with_what_if_message() {
+        let projected = project_what_if_install(test_update_info());
+
+        assert_eq!(projected.is_installed, Some(true));
+        let metadata = projected.metadata.expect("metadata should be set");
+        let messages = metadata.what_if.expect("whatIf messages should be set");
+        assert_eq!(messages.len(), 1);
+        assert!(messages[0].contains("Test Update"));
+    }
+
+    #[test]
+    fn preserves_other_fields() {
+        let projected = project_what_if_install(test_update_info());
+
+        assert_eq!(projected.id.as_deref(), Some("aeb14a2c-5540-481a-8a4d-6a4f9b962692"));
+        assert_eq!(projected.title.as_deref(), Some("Test Update"));
+        assert!(projected.description.is_none());
+    }
+
+    #[test]
+    fn handles_missing_title() {
+        let mut info = test_update_info();
+        info.title = None;
+
+        let projected = project_what_if_install(info);
+
+        assert_eq!(projected.is_installed, Some(true));
+        assert!(projected.metadata.and_then(|m| m.what_if).is_some());
     }
 }
