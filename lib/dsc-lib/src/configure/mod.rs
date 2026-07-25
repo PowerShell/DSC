@@ -99,9 +99,11 @@ macro_rules! find_resource_or_error {
 
 /// Add the results of an export operation to a configuration.
 ///
-/// If the resource supports export filtering natively, any input is passed through to the
-/// resource. If it does not, the input is interpreted as a filter and the engine performs
-/// the filtering on the exported instances instead.
+/// A resource declares whether it filters its own export through the `supportsFiltering` field on
+/// its manifest's `export` method. When filtering is native (the default, or `supportsFiltering:
+/// true`), any input is passed through to the resource unchanged. When the manifest declares
+/// `supportsFiltering: false`, the engine instead interprets the input as a filter, exports all
+/// instances, and filters them itself. There is no separate export filter directive.
 ///
 /// # Arguments
 ///

@@ -95,7 +95,7 @@
                             "displayName": {
                                 "type": "string",
                                 "title": "Display name",
-                                "description": "The display name of the optional feature. Returned by the get operation."
+                                "description": "The display name of the optional feature. Returned by the get and export operations."
                             },
                             "description": {
                                 "type": "string",

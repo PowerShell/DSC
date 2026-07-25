@@ -185,6 +185,27 @@ mod tests {
     }
 
     #[test]
+    fn wildcard_match_consecutive_stars() {
+        // consecutive `*` collapse to a single wildcard and match zero or more characters
+        assert!(wildcard_match("**", ""));
+        assert!(wildcard_match("**", "anything"));
+        assert!(wildcard_match("a**b", "ab"));
+        assert!(wildcard_match("a**b", "axyzb"));
+        assert!(wildcard_match("**ssh**", "openssh-server"));
+        assert!(!wildcard_match("a**b", "axyz"));
+    }
+
+    #[test]
+    fn wildcard_match_literal_asterisk_in_text() {
+        // an asterisk in the text is an ordinary character, not a wildcard
+        assert!(wildcard_match("*", "a*b"));
+        assert!(wildcard_match("a*b", "a*b"));
+        assert!(wildcard_match("a*c", "a*c"));
+        assert!(wildcard_match("*.*", "3.5*"));
+        assert!(!wildcard_match("ab", "a*b"));
+    }
+
+    #[test]
     fn empty_filter_list_matches_nothing_but_apply_is_noop() {
         let mut instances = vec![json!({"name": "one"}), json!({"name": "two"})];
         apply_export_filter(&mut instances, &[]);
@@ -203,6 +224,22 @@ mod tests {
         assert!(instance_matches_filters(&json!({"name": "spooler", "startType": "automatic"}), &filters));
         // matches neither
         assert!(!instance_matches_filters(&json!({"name": "spooler", "startType": "manual"}), &filters));
+    }
+
+    #[test]
+    fn instance_matched_by_multiple_filters_is_retained_once() {
+        let mut instances = vec![
+            json!({"name": "sshd", "startType": "automatic"}),
+            json!({"name": "spooler", "startType": "manual"}),
+        ];
+        // both filters match the "sshd" instance, but it must not be duplicated in the result
+        let filters = to_filters(json!([
+            { "name": "*ssh*" },
+            { "startType": "automatic" }
+        ]));
+        apply_export_filter(&mut instances, &filters);
+        assert_eq!(instances.len(), 1);
+        assert_eq!(instances[0]["name"], "sshd");
     }
 
     #[test]
@@ -316,6 +353,26 @@ mod tests {
         assert_eq!(names.len(), 2);
         assert!(names.contains(&"Printing-Foundation"));
         assert!(names.contains(&"TelnetClient"));
+    }
+
+    #[test]
+    fn element_filters_union_does_not_duplicate_shared_matches() {
+        let mut instances = vec![json!({"features": [
+            {"featureName": "Printing-Foundation", "state": "Installed"},
+            {"featureName": "TelnetClient", "state": "Installed"},
+            {"featureName": "SMB1", "state": "NotPresent"}
+        ]})];
+        let filters = to_filters(json!([
+            { "features": [{ "featureName": "printing-*" }] },
+            { "features": [{ "state": "Installed" }] }
+        ]));
+        apply_export_filter(&mut instances, &filters);
+        assert_eq!(instances.len(), 1);
+        let names: Vec<&str> = instances[0]["features"].as_array().unwrap()
+            .iter()
+            .map(|f| f["featureName"].as_str().unwrap())
+            .collect();
+        assert_eq!(names, vec!["Printing-Foundation", "TelnetClient"]);
     }
 
     #[test]
