@@ -1004,6 +1004,10 @@ pub fn process_get_args(args: Option<&Vec<GetArgKind>>, input: &str, resource: &
                 processed_args.push(resource_type_arg.clone());
                 processed_args.push(resource.type_name.to_string());
             },
+            GetArgKind::ResourceVersion { resource_version_arg } => {
+                processed_args.push(resource_version_arg.clone());
+                processed_args.push(resource.version.to_string());
+            },
             GetArgKind::ResourcePath { resource_path_arg, include_quotes} => {
                 processed_args.push(resource_path_arg.clone());
                 if *include_quotes {
@@ -1033,6 +1037,10 @@ fn process_schema_args(args: Option<&Vec<SchemaArgKind>>, command_resource: &Dsc
             SchemaArgKind::ResourceType { resource_type_arg } => {
                 processed_args.push(resource_type_arg.clone());
                 processed_args.push(command_resource.type_name.to_string());
+            },
+            SchemaArgKind::ResourceVersion { resource_version_arg } => {
+                processed_args.push(resource_version_arg.clone());
+                processed_args.push(command_resource.version.to_string());
             },
         }
     }
@@ -1090,6 +1098,10 @@ fn process_set_delete_args(args: Option<&Vec<SetDeleteArgKind>>, input: &str, re
             SetDeleteArgKind::ResourceType { resource_type_arg } => {
                 processed_args.push(resource_type_arg.clone());
                 processed_args.push(resource.type_name.to_string());
+            },
+            SetDeleteArgKind::ResourceVersion { resource_version_arg } => {
+                processed_args.push(resource_version_arg.clone());
+                processed_args.push(resource.version.to_string());
             },
             SetDeleteArgKind::WhatIf { what_if_arg } => {
                 supports_whatif = true;
