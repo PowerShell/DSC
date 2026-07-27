@@ -70,7 +70,7 @@ pub static VSCODE_DIALECT_REGISTRY: LazyLock<Registry<'static>> = LazyLock::new(
         .add(VSCodeDialect::SCHEMA_ID, VSCodeDialect::default_schema_resource())
         .unwrap_or_else(|e| panic!("invalid URI for {}: {e}", VSCodeDialect::SCHEMA_ID))
         .prepare()
-        .expect("valid registry")
+        .unwrap_or_else(|e| panic!("failed to prepare VSCODE_DIALECT_REGISTRY: {e}"))
 });
 
 /// Defines extension methods to the [`jsonschema::ValidationOptions`] to simplify registering the
