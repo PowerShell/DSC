@@ -3,7 +3,8 @@
 
 #![allow(unused_imports)]
 
-use jsonschema::{Keyword, Resource, ValidationError, ValidationOptions, paths::Location};
+use jsonschema::{Keyword, ValidationError, ValidationOptions, paths::Location};
+use referencing::Resource;
 use schemars::{JsonSchema, Schema, json_schema};
 use serde_json::{Map, Value};
 

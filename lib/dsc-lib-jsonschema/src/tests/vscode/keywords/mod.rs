@@ -23,7 +23,7 @@
 /// })).unwrap_err().to_owned();
 /// 
 /// assert_eq!(
-///     validation_error.instance_path().as_str(),
+///     validation_error.schema_path().as_str(),
 ///     "/allowComments"
 /// );
 /// ```

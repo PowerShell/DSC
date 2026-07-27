@@ -3,7 +3,7 @@
 
 use std::sync::{Arc, LazyLock};
 
-use jsonschema::Resource;
+use referencing::Resource;
 use rust_i18n::t;
 use schemars::{JsonSchema, Schema, SchemaGenerator, generate::SchemaSettings, json_schema};
 
@@ -194,6 +194,16 @@ impl VSCodeVocabulary {
     /// [`with_resources()`]: jsonschema::ValidationOptions::with_resources
     pub fn schema_resource_canonical(generator: &mut schemars::SchemaGenerator) -> Resource {
         Resource::from_contents(Self::json_schema_canonical(generator).to_value())
+    }
+
+    /// Returns the default canonical schema for the vocabulary as a [`Resource`].
+    ///
+    /// This is a convenience method that uses the default [`SchemaGenerator`] settings.
+    #[must_use]
+    pub fn default_schema_resource() -> Resource {
+        use schemars::{SchemaGenerator, generate::SchemaSettings};
+        let generator = &mut SchemaGenerator::new(SchemaSettings::draft2020_12());
+        Self::schema_resource_canonical(generator)
     }
 }
 
