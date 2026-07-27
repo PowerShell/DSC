@@ -27,7 +27,7 @@ service management. These resources typically run elevated.
 
 - **Unresolvable system objects**: AppX/UWP firewall rules with names like "ms-resource://" cannot be referenced by users. Skip them in destructive reconciliation.
 - **Service credential handling**: Flag logon identity changes without secure credential supply.
-- **Protocol normalization**: Handle `Option<protocol>` correctly -- protocol may be required for the operation even if optional in the input struct.
+- **Protocol normalization**: Handle `Option<i32>` protocol correctly -- protocol may be required for the operation even if optional in the input struct.
 
 ## COM Enumeration
 
