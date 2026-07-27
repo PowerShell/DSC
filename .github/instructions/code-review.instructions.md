@@ -48,9 +48,14 @@ These apply to ALL areas:
 - **Log level appropriateness**: Full `PATH` contents at `trace!`, not `debug!`. Never log secrets.
 - **Doc comments matching implementation**: Update when described behavior doesn't match reality.
 - **Remove debug print statements**: Do not use `println!` for debugging -- use `debug!`/`trace!` macros. Note that `println!` is acceptable for intentional CLI user-facing output.
-- **Locale/i18n string accuracy**: Verify key names match the keyword/function they describe.
-- **Dead locale strings**: Do not add i18n keys never referenced in code.
 - **Prefer scan-friendly wording**: Log/error strings should be concise for readability in diagnostics.
+
+## Internationalization (All Rust Code)
+
+- **Use `rust-i18n` with the `t!` macro**: All user-facing strings in Rust code must use the `t!` macro from the `rust-i18n` crate. Do not hard-code English strings in source files.
+- **Strings go in `en-us.toml`**: Localized text must be defined in the `en-us.toml` locale file, not inline in Rust source.
+- **Locale key accuracy**: Verify key names match the keyword/function they describe.
+- **No dead locale strings**: Do not add i18n keys that are never referenced in code.
 
 ## CI/CD (All Areas)
 
