@@ -261,6 +261,6 @@ impl<'i> VSCodeValidationOptionsExtensions<'i> for ValidationOptions<'i> {
         self.with_vscode_keywords()
     }
     fn with_vscode_dialect(self) -> ValidationOptions<'i> {
-        self.with_vscode_keywords()
+        self.with_vscode_vocabulary()
     }
 }
