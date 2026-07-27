@@ -1,5 +1,5 @@
 ---
-applyTo: '**/*.tests.ps1,**/tests/**'
+applyTo: '**/*.tests.ps1,**/tests/**,**/test/**,**/Tests/**'
 description: 'Code review guidance for DSC tests (Pester and Rust integration tests)'
 ---
 

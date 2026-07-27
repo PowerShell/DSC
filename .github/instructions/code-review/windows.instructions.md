@@ -1,5 +1,5 @@
 ---
-applyTo: 'resources/windows_firewall/**,resources/windows_service/**,resources/WindowsUpdate/**,resources/windows_personalization/**,resources/dism_dsc/**,resources/registry/**,lib/dsc-lib-registry/**,pal/windows/**'
+applyTo: 'resources/windows_firewall/**,resources/windows_service/**,resources/WindowsUpdate/**,resources/windows_personalization/**,resources/dism_dsc/**,resources/registry/**,lib/dsc-lib-registry/**,lib/dsc-lib-pal/**'
 description: 'Code review guidance for Windows-specific code (FFI, COM, registry, DISM, services)'
 ---
 

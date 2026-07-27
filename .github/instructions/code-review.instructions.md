@@ -20,12 +20,12 @@ Use the path-based mapping below to determine which area instructions apply to t
 | Adapters | `adapters/` | `code-review/adapter.instructions.md` |
 | Extensions | `extensions/`, `lib/dsc-lib/src/extensions/` | `code-review/extension.instructions.md` |
 | CLI | `dsc/src/` | `code-review/cli.instructions.md` |
-| Tests | `**/*.tests.ps1`, `**/tests/` | `code-review/tests.instructions.md` |
+| Tests | `**/*.tests.ps1`, `**/tests/`, `**/test/`, `**/Tests/` | `code-review/tests.instructions.md` |
 | Libraries | `lib/` | `code-review/library.instructions.md` |
 | Security | `lib/dsc-lib/src/util.rs`, `lib/dsc-lib-security_context/`, `lib/dsc-lib-registry/`, `resources/registry/`, `resources/windows_firewall/`, `resources/windows_service/`, `resources/dism_dsc/` | `code-review/security.instructions.md` |
 | Performance | Any `*.rs` file in hot paths | `code-review/performance.instructions.md` |
-| Windows | `resources/windows_*`, `resources/dism_dsc/`, `resources/registry/`, `lib/dsc-lib-registry/`, `pal/windows/` | `code-review/windows.instructions.md` |
-| Linux/macOS | `resources/apt/`, `resources/sshdconfig/`, `resources/brew/`, `pal/linux/` | `code-review/linux.instructions.md` |
+| Windows | `resources/windows_*`, `resources/dism_dsc/`, `resources/registry/`, `lib/dsc-lib-registry/`, `lib/dsc-lib-pal/` | `code-review/windows.instructions.md` |
+| Linux/macOS | `resources/apt/`, `resources/sshdconfig/`, `resources/brew/`, `lib/dsc-lib-pal/` | `code-review/linux.instructions.md` |
 
 Multiple areas may apply to a single file. For example, `resources/windows_firewall/` triggers
 both the Resource, Windows, and Security instructions.
@@ -47,7 +47,7 @@ These apply to ALL areas:
 - **Accurate comments**: If code behavior changes, update comments to match.
 - **Log level appropriateness**: Full `PATH` contents at `trace!`, not `debug!`. Never log secrets.
 - **Doc comments matching implementation**: Update when described behavior doesn't match reality.
-- **Remove debug print statements**: No `println!` in production or test code. Use `debug!`/`trace!` macros.
+- **Remove debug print statements**: Do not use `println!` for debugging -- use `debug!`/`trace!` macros. Note that `println!` is acceptable for intentional CLI user-facing output.
 - **Locale/i18n string accuracy**: Verify key names match the keyword/function they describe.
 - **Dead locale strings**: Do not add i18n keys never referenced in code.
 - **Prefer scan-friendly wording**: Log/error strings should be concise for readability in diagnostics.

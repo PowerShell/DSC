@@ -1,5 +1,5 @@
 ---
-applyTo: 'resources/apt/**,resources/sshdconfig/**,pal/linux/**,resources/brew/**'
+applyTo: 'resources/apt/**,resources/sshdconfig/**,lib/dsc-lib-pal/**,resources/brew/**'
 description: 'Code review guidance for Linux/macOS-specific code (SSH, apt, platform abstraction)'
 ---
 
