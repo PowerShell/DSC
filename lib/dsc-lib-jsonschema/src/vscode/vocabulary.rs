@@ -161,7 +161,7 @@ impl VSCodeVocabulary {
         Resource::from_contents(Self::json_schema(generator).to_value())
     }
 
-    /// Retrieves the bundled form of the vocabulary schema as a [`Resource`] so you can include
+    /// Retrieves the canonical form of the vocabulary schema as a [`Resource`] so you can include
     /// it in the registered resources for a [`jsonschema::Validator`] using the [`with_registry()`] method on [`jsonschema::ValidationOptions`].
     /// 
     /// The canonical form presents the vocabulary schema without bundling the VS Code keyword

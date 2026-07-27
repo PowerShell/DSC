@@ -131,8 +131,7 @@ impl VSCodeKeyword {
     /// [`VSCodeValidationOptionsExtensions`]: crate::vscode::VSCodeValidationOptionsExtensions
     /// [`with_vscode_keyword()`]: crate::vscode::VSCodeValidationOptionsExtensions::with_vscode_keyword
     /// [`VSCODE_DIALECT_REGISTRY`]: crate::vscode::VSCODE_DIALECT_REGISTRY
-    #[allow(clippy::elidable_lifetime_names)]
-    pub fn register<'i>(self, options: ValidationOptions<'i>) -> ValidationOptions<'i> {
+    pub fn register(self, options: ValidationOptions<'_>) -> ValidationOptions<'_> {
         match self {
             Self::AllowComments => options.with_keyword(
                 AllowCommentsKeyword::KEYWORD_NAME,

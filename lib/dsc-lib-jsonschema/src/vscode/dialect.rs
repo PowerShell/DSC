@@ -147,7 +147,7 @@ impl VSCodeDialect {
         Resource::from_contents(Self::json_schema(generator).to_value())
     }
 
-    /// Retrieves the bundled form of the meta schema as a [`Resource`] so you can include
+    /// Retrieves the canonical form of the meta schema as a [`Resource`] so you can include
     /// it in the registered resources for a [`jsonschema::Validator`] using the [`with_registry()`] method on [`jsonschema::ValidationOptions`].
     ///
     /// The canonical form presents the meta schema without bundling the VS Code vocabulary or
