@@ -19,8 +19,11 @@ output formatting (JSON/YAML/table), and the MCP server mode.
 - **Prefer `Result` over panics**: Avoid `unwrap()`/`expect()` on user input or parsed data. Return clear error messages and exit codes.
 - **Names must match semantics**: Flag singular/plural mismatches, stale help text, and deprecated options still visibly advertised.
 
-## Server Mode (MCP)
+## Server Mode (JSONRPC)
 
+- **CLI additions must be reflected in server mode**: Any new CLI subcommand or capability must
+  also be exposed as a corresponding JSONRPC API in server mode. Flag PRs that add CLI
+  functionality without a matching server-mode implementation or a tracking issue for follow-up.
 - **Schema/typing for tool parameters**: Prefer typed parameters over generic `serde_json::Value` with runtime validation. This gives clients correct schemas.
 - **Tool name accuracy**: Ensure locale strings and schema descriptions reference the correct tool name (e.g., `list_dsc_functions` not `list_dsc_function`).
 
