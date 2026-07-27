@@ -34,7 +34,7 @@ both the Resource, Windows, and Security instructions.
 
 These apply to ALL areas:
 
-- **Do not claim code will not compile unless you are certain**: Multiple reviews were rejected because Copilot incorrectly claimed Rust ownership/borrowing errors. If the code compiles and tests pass in CI, do not assert otherwise.
+- **Do not claim code will not compile unless you can cite a specific rule violation**: Avoid speculative "this won't compile" claims about Rust ownership/borrowing. Only flag compile errors when you can point to a concrete language rule being violated.
 - **Test resources are not production code**: Code in `tools/dsctest/` is for testing only and is never user-facing. Do not require production-grade error handling in test harnesses unless panics would hide regressions.
 - **Automatically-generated files**: Files like `lib/dsc-lib-jsonschema/.versions.json` are updated by build automation. Do not flag version bumps as unintentional.
 - **Do not demand large abstractions in small PRs**: Suggest extracting a helper function. Do not block a focused PR by requesting trait/framework redesigns -- that is follow-up work.

@@ -5,8 +5,8 @@ description: 'Code review guidance for performance (Rust allocations, caching, s
 
 # Performance Code Review
 
-Performance matters most in the engine hot paths: resource discovery (many manifests),
-schema caching, and configuration processing.
+These patterns apply to all Rust code but are most critical in engine hot paths: resource
+discovery (many manifests), schema caching, and configuration processing.
 
 ## Caching
 
