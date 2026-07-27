@@ -216,7 +216,6 @@ impl<'i> VSCodeValidationOptionsExtensions<'i> for ValidationOptions<'i> {
     }
     fn with_vscode_keywords(self) -> ValidationOptions<'i> {
         self
-            .with_registry(&VSCODE_DIALECT_REGISTRY)
             .with_vscode_keyword(VSCodeKeyword::AllowComments)
             .with_vscode_keyword(VSCodeKeyword::AllowTrailingCommas)
             .with_vscode_keyword(VSCodeKeyword::CompletionDetail)
@@ -234,7 +233,6 @@ impl<'i> VSCodeValidationOptionsExtensions<'i> for ValidationOptions<'i> {
     }
     fn with_vscode_completion_keywords(self) -> ValidationOptions<'i> {
         self
-            .with_registry(&VSCODE_DIALECT_REGISTRY)
             .with_vscode_keyword(VSCodeKeyword::CompletionDetail)
             .with_vscode_keyword(VSCodeKeyword::DefaultSnippets)
             .with_vscode_keyword(VSCodeKeyword::DoNotSuggest)
@@ -244,7 +242,6 @@ impl<'i> VSCodeValidationOptionsExtensions<'i> for ValidationOptions<'i> {
     }
     fn with_vscode_documentation_keywords(self) -> ValidationOptions<'i> {
         self
-            .with_registry(&VSCODE_DIALECT_REGISTRY)
             .with_vscode_keyword(VSCodeKeyword::DeprecationMessage)
             .with_vscode_keyword(VSCodeKeyword::EnumDescriptions)
             .with_vscode_keyword(VSCodeKeyword::MarkdownDescription)
@@ -252,13 +249,11 @@ impl<'i> VSCodeValidationOptionsExtensions<'i> for ValidationOptions<'i> {
     }
     fn with_vscode_error_keywords(self) -> ValidationOptions<'i> {
         self
-            .with_registry(&VSCODE_DIALECT_REGISTRY)
             .with_vscode_keyword(VSCodeKeyword::ErrorMessage)
             .with_vscode_keyword(VSCodeKeyword::PatternErrorMessage)
     }
     fn with_vscode_parsing_keywords(self) -> ValidationOptions<'i> {
         self
-            .with_registry(&VSCODE_DIALECT_REGISTRY)
             .with_vscode_keyword(VSCodeKeyword::AllowComments)
             .with_vscode_keyword(VSCodeKeyword::AllowTrailingCommas)
     }

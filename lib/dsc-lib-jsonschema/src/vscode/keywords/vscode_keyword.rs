@@ -119,16 +119,19 @@ impl VSCodeKeyword {
             Self::SuggestSortText => SuggestSortTextKeyword::KEYWORD_NAME,
         }
     }
-    /// Registers the keyword with an instance of [`ValidationOptions`] from the `jsonschema`
-    /// crate.
+    /// Registers the keyword factory with an instance of [`ValidationOptions`] from the
+    /// `jsonschema` crate.
     /// 
-    /// This convenience method enables you to quickly add keywords to the validator. However,
-    /// it doesn't follow the builder pattern typically used with [`ValidationOptions`].
-    /// 
-    /// For a more ergonomic way to register keywords, see [`VSCodeValidationOptionsExtensions`].
+    /// This method only registers the keyword factory itself. It does **not** register the
+    /// schema resources (keyword `$id` schemas, vocabulary, or dialect meta schema) needed for
+    /// `$ref` resolution. To also register schema resources, use the
+    /// [`VSCodeValidationOptionsExtensions`] trait methods (e.g., [`with_vscode_keyword()`]),
+    /// which handle both keyword factories and the [`VSCODE_DIALECT_REGISTRY`].
     /// 
     /// [`VSCodeValidationOptionsExtensions`]: crate::vscode::VSCodeValidationOptionsExtensions
-    pub fn register<'i>(self, options: ValidationOptions<'i>) -> ValidationOptions<'i> {
+    /// [`with_vscode_keyword()`]: crate::vscode::VSCodeValidationOptionsExtensions::with_vscode_keyword
+    /// [`VSCODE_DIALECT_REGISTRY`]: crate::vscode::VSCODE_DIALECT_REGISTRY
+    pub fn register(self, options: ValidationOptions<'_>) -> ValidationOptions<'_> {
         match self {
             Self::AllowComments => options.with_keyword(
                 AllowCommentsKeyword::KEYWORD_NAME,
