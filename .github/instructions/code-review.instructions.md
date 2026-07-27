@@ -41,6 +41,7 @@ These apply to ALL areas:
 - **Table output is not a stable API**: JSON/YAML are canonical machine-readable outputs. Table layout changes are not breaking.
 - **Separate input/output structs can be intentional**: Resources often distinguish desired state from observed state. Do not assume duplicate structs are accidental.
 - **Intentional design decisions**: When maintainers explicitly label behavior as "intentional", do not re-flag.
+- **Extract repetitive code into helper functions**: When the same logic appears in multiple places, flag it and suggest extracting a shared helper function to reduce duplication and improve maintainability.
 
 ## Documentation and Logging (All Areas)
 
