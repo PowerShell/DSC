@@ -130,8 +130,8 @@ impl VSCodeVocabulary {
         schema
     }
 
-    /// Retrieves the bundled form of the vocabulary schema as a [`Resource`] so you can include
-    /// it in the registered resources for a [`jsonschema::Validator`] using the [`with_registry()`] method on [`jsonschema::ValidationOptions`].
+    /// Retrieves the bundled form of the vocabulary schema as a [`Resource`] so you can add
+    /// it to a [`referencing::Registry`] and pass that registry to [`with_registry()`] on [`jsonschema::ValidationOptions`].
     /// 
     /// The bundled form presents the vocabulary schema as a compound schema document with the
     /// VS Code keyword schemas included under the `$defs` keyword. Use this form of the schema
@@ -161,8 +161,8 @@ impl VSCodeVocabulary {
         Resource::from_contents(Self::json_schema(generator).to_value())
     }
 
-    /// Retrieves the canonical form of the vocabulary schema as a [`Resource`] so you can include
-    /// it in the registered resources for a [`jsonschema::Validator`] using the [`with_registry()`] method on [`jsonschema::ValidationOptions`].
+    /// Retrieves the canonical form of the vocabulary schema as a [`Resource`] so you can add
+    /// it to a [`referencing::Registry`] and pass that registry to [`with_registry()`] on [`jsonschema::ValidationOptions`].
     /// 
     /// The canonical form presents the vocabulary schema without bundling the VS Code keyword
     /// schemas under the `$defs` keyword. Use this form of the schema when you can rely on
@@ -301,8 +301,8 @@ pub static VSCODE_VOCABULARY_SCHEMA_CANONICAL: LazyLock<Arc<Schema>> = LazyLock:
 });
 
 /// Contains the bundled form of the VS Code vocabulary schema as a [`Resource`] so you can
-/// include it in the registered resources for a [`jsonschema::Validator`] using the
-/// [`with_registry()`] method on [`jsonschema::ValidationOptions`].
+/// add it to a [`referencing::Registry`] and pass that registry to [`with_registry()`] on
+/// [`jsonschema::ValidationOptions`].
 /// 
 /// The bundled form presents the vocabulary schema as a compound schema document with the
 /// VS Code keyword schemas included under the `$defs` keyword. Use this form of the schema
@@ -326,8 +326,8 @@ pub static VSCODE_VOCABULARY_SCHEMA_RESOURCE_BUNDLED: LazyLock<Arc<Resource>> = 
 });
 
 /// Contains the canonical form of the VS Code vocabulary schema as a [`Resource`] so you can
-/// include it in the registered resources for a [`jsonschema::Validator`] using the
-/// [`with_registry()`] method on [`jsonschema::ValidationOptions`].
+/// add it to a [`referencing::Registry`] and pass that registry to [`with_registry()`] on
+/// [`jsonschema::ValidationOptions`].
 /// 
 /// The canonical form presents the meta schema without bundling the VS Code keyword schemas
 /// under the `$defs` keyword. Use this form of the schema when you can rely on retrieving the

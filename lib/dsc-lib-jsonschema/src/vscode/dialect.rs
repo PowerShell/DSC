@@ -117,8 +117,8 @@ impl VSCodeDialect {
         schema
     }
 
-    /// Retrieves the bundled form of the meta schema as a [`Resource`] so you can include
-    /// it in the registered resources for a [`jsonschema::Validator`] using the [`with_registry()`] method on [`jsonschema::ValidationOptions`].
+    /// Retrieves the bundled form of the meta schema as a [`Resource`] so you can add
+    /// it to a [`referencing::Registry`] and pass that registry to [`with_registry()`] on [`jsonschema::ValidationOptions`].
     ///
     /// The bundled form presents the meta schema as a compound schema document with the VS Code
     /// vocabulary and keyword schemas included under the `$defs` keyword. Use this form of the
@@ -147,8 +147,8 @@ impl VSCodeDialect {
         Resource::from_contents(Self::json_schema(generator).to_value())
     }
 
-    /// Retrieves the canonical form of the meta schema as a [`Resource`] so you can include
-    /// it in the registered resources for a [`jsonschema::Validator`] using the [`with_registry()`] method on [`jsonschema::ValidationOptions`].
+    /// Retrieves the canonical form of the meta schema as a [`Resource`] so you can add
+    /// it to a [`referencing::Registry`] and pass that registry to [`with_registry()`] on [`jsonschema::ValidationOptions`].
     ///
     /// The canonical form presents the meta schema without bundling the VS Code vocabulary or
     /// keyword schemas under the `$defs` keyword. Use this form of the schema when you can rely
@@ -282,8 +282,8 @@ pub static VSCODE_DIALECT_SCHEMA_CANONICAL: LazyLock<Arc<Schema>> = LazyLock::ne
     Arc::from(VSCodeDialect::json_schema_canonical(generator))
 });
 
-/// Contains the bundled form of the VS Code meta schema as a [`Resource`] so you can include
-/// it in the registered resources for a [`jsonschema::Validator`] using the [`with_registry()`] method on [`jsonschema::ValidationOptions`].
+/// Contains the bundled form of the VS Code meta schema as a [`Resource`] so you can add
+/// it to a [`referencing::Registry`] and pass that registry to [`with_registry()`] on [`jsonschema::ValidationOptions`].
 ///
 /// The bundled form presents the meta schema as a compound schema document with the VS Code
 /// vocabulary and keyword schemas included under the `$defs` keyword. Use this form of the
@@ -306,8 +306,8 @@ pub static VSCODE_DIALECT_SCHEMA_RESOURCE_BUNDLED: LazyLock<Arc<Resource>> = Laz
     Arc::from(VSCodeDialect::schema_resource_bundled(generator))
 });
 
-/// Contains the canonical form of the VS Code meta schema as a [`Resource`] so you can include
-/// it in the registered resources for a [`jsonschema::Validator`] using the [`with_registry()`] method on [`jsonschema::ValidationOptions`].
+/// Contains the canonical form of the VS Code meta schema as a [`Resource`] so you can add
+/// it to a [`referencing::Registry`] and pass that registry to [`with_registry()`] on [`jsonschema::ValidationOptions`].
 ///
 /// The canonical form presents the meta schema without bundling the VS Code vocabulary or
 /// keyword schemas under the `$defs` keyword. Use this form of the schema when you can rely
