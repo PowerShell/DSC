@@ -94,11 +94,13 @@ pub struct PlatformFilter {
 /// A registry repository reference to query during discovery.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct RegistryReference {
-    /// Registry and repository path, optionally including a tag.
+    /// Registry reference: either a full repository path or just the registry host.
     ///
     /// Examples:
-    /// - `ghcr.io/contoso/dsc-resources`  (all tags)
-    /// - `ghcr.io/contoso/dsc-resources:v2.0.0`  (specific tag)
+    /// - `ghcr.io/contoso/dsc-resources`  (specific repository, all tags)
+    /// - `ghcr.io/contoso/dsc-resources:v2.0.0`  (specific repository with tag)
+    /// - `orasdscartifacts.azurecr.io`  (entire registry, discovers all repositories)
+    /// - `registry.io:5000`  (registry with custom port, discovers all repositories)
     pub reference: String,
 }
 

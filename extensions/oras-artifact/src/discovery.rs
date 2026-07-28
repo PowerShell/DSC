@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use reqwest::{
     blocking::{Client, Response},
     header::{ACCEPT, AUTHORIZATION, WWW_AUTHENTICATE},
-    StatusCode,
+    StatusCode, Url,
 };
 use tracing::{debug, trace, warn};
 
@@ -54,7 +54,8 @@ struct ParsedReference {
     /// Hostname (and optional port) of the registry, e.g. `ghcr.io`.
     host: String,
     /// Repository path inside the registry, e.g. `contoso/dsc-resources`.
-    repository: String,
+    /// `None` when the reference is registry-only (triggers catalog discovery).
+    repository: Option<String>,
     /// Tag component when provided; `None` means "all tags".
     tag: Option<String>,
 }
@@ -75,28 +76,49 @@ impl ParsedReference {
             (reference, None)
         };
 
-        // The host is the part before the first '/'.
-        let slash_pos = without_tag.find('/').ok_or_else(|| DiscoveryError::InvalidReference {
-            reference: reference.to_string(),
-            message: "reference must be in the form 'host/repository[:tag]'".to_string(),
-        })?;
-
-        let host = without_tag[..slash_pos].to_string();
-        let repository = without_tag[slash_pos + 1..].to_string();
-
-        if host.is_empty() || repository.is_empty() {
+        if without_tag.is_empty() {
             return Err(DiscoveryError::InvalidReference {
                 reference: reference.to_string(),
-                message: "host and repository must not be empty".to_string(),
+                message: "registry host must not be empty".to_string(),
             });
         }
+
+        // If there is no '/', the reference is registry-only (catalog discovery mode).
+        let (host, repository) = if let Some(slash_pos) = without_tag.find('/') {
+            let host = without_tag[..slash_pos].to_string();
+            let repo = without_tag[slash_pos + 1..].to_string();
+            if host.is_empty() || repo.is_empty() {
+                return Err(DiscoveryError::InvalidReference {
+                    reference: reference.to_string(),
+                    message: "host and repository must not be empty".to_string(),
+                });
+            }
+            (host, Some(repo))
+        } else {
+            (without_tag.to_string(), None)
+        };
 
         Ok(ParsedReference { host, repository, tag })
     }
 
-    /// Returns the base URL for the OCI distribution API.
+    /// Returns the base URL for the OCI distribution API for a specific repository.
+    fn api_base_for(&self, repo: &str) -> String {
+        format!("https://{}/v2/{}", self.host, repo)
+    }
+
+    /// Returns the base URL for the OCI distribution API using the stored repository.
+    /// Panics if called on a registry-only reference.
     fn api_base(&self) -> String {
-        format!("https://{}/v2/{}", self.host, self.repository)
+        self.api_base_for(
+            self.repository
+                .as_deref()
+                .expect("api_base() called on a registry-only ParsedReference"),
+        )
+    }
+
+    /// Returns the base URL for registry-level API calls (e.g. `_catalog`).
+    fn registry_base(&self) -> String {
+        format!("https://{}", self.host)
     }
 }
 
@@ -132,10 +154,12 @@ impl RegistryClient {
 
     /// Performs a GET request to `url` with the given `accept` header, handling
     /// `401` responses by fetching a Bearer token and retrying once.
-    fn get_authenticated(
+    /// Set `catalog_scope` to true when accessing registry-level endpoints like `/_catalog`.
+    fn get_authenticated_internal(
         &mut self,
         url: &str,
         accept: &str,
+        catalog_scope: bool,
     ) -> Result<Response, DiscoveryError> {
         let response = self
             .client
@@ -148,32 +172,58 @@ impl RegistryClient {
                 source: e,
             })?;
 
-        if response.status() == StatusCode::UNAUTHORIZED && self.token.is_none() {
+        if response.status() == StatusCode::UNAUTHORIZED {
             // Attempt to authenticate using the WWW-Authenticate challenge.
+            // Always re-authenticate even if we have an existing token — the current
+            // token may have been issued with a different scope (e.g. catalog vs repository).
             if let Some(www_auth) = response.headers().get(WWW_AUTHENTICATE) {
-                let challenge_str = www_auth.to_str().unwrap_or("");
+                let challenge_str = www_auth.to_str().unwrap_or("").to_string();
                 debug!("Received WWW-Authenticate: {challenge_str}");
-                self.authenticate(challenge_str)?;
-            }
+                self.token = None; // clear stale / wrong-scope token before re-authenticating
+                self.authenticate(&challenge_str, catalog_scope)?;
 
-            // Retry with the newly acquired token.
-            return self
-                .client
-                .get(url)
-                .header(ACCEPT, accept)
-                .bearer_auth_opt(self.token.as_deref())
-                .send()
-                .map_err(|e| DiscoveryError::HttpRequest {
-                    context: url.to_string(),
-                    source: e,
-                });
+                // Retry with the newly acquired token.
+                return self
+                    .client
+                    .get(url)
+                    .header(ACCEPT, accept)
+                    .bearer_auth_opt(self.token.as_deref())
+                    .send()
+                    .map_err(|e| DiscoveryError::HttpRequest {
+                        context: url.to_string(),
+                        source: e,
+                    });
+            } else {
+                // No WWW-Authenticate challenge; return the 401 for the caller to handle.
+                debug!("Received 401 without WWW-Authenticate header; repository may require credentials");
+                return Ok(response);
+            }
         }
 
         Ok(response)
     }
 
+    /// Convenience wrapper for non-catalog endpoints.
+    fn get_authenticated(
+        &mut self,
+        url: &str,
+        accept: &str,
+    ) -> Result<Response, DiscoveryError> {
+        self.get_authenticated_internal(url, accept, false)
+    }
+
+    /// Convenience wrapper for catalog endpoints that need `registry:catalog:*` scope.
+    fn get_authenticated_catalog(
+        &mut self,
+        url: &str,
+        accept: &str,
+    ) -> Result<Response, DiscoveryError> {
+        self.get_authenticated_internal(url, accept, true)
+    }
+
     /// Fetches a Bearer token using the challenge parameters from `www_authenticate`.
-    fn authenticate(&mut self, www_authenticate: &str) -> Result<(), DiscoveryError> {
+    /// If `catalog_scope` is true, appends the catalog scope to the token request.
+    fn authenticate(&mut self, www_authenticate: &str, catalog_scope: bool) -> Result<(), DiscoveryError> {
         let challenge = parse_bearer_challenge(www_authenticate);
 
         if challenge.realm.is_empty() {
@@ -185,15 +235,31 @@ impl RegistryClient {
 
         debug!("Fetching token from realm: {}", challenge.realm);
 
-        let mut request = self.client.get(&challenge.realm);
-        if let Some(service) = &challenge.service {
-            request = request.query(&[("service", service.as_str())]);
-        }
-        if let Some(scope) = &challenge.scope {
-            request = request.query(&[("scope", scope.as_str())]);
+        let mut token_url = Url::parse(&challenge.realm).map_err(|e| DiscoveryError::Auth {
+            registry: self.parsed.host.clone(),
+            message: format!("Invalid token endpoint URL '{}': {e}", challenge.realm),
+        })?;
+
+        {
+            let mut pairs = token_url.query_pairs_mut();
+            if let Some(service) = &challenge.service {
+                pairs.append_pair("service", service);
+            }
+            if let Some(scope) = &challenge.scope {
+                pairs.append_pair("scope", scope);
+            }
+            // For catalog discovery, always include the catalog scope.
+            if catalog_scope {
+                pairs.append_pair("scope", "registry:catalog:*");
+            } else {
+                // For repository-level operations (tags, manifests) include a wildcard
+                // repository scope so the token works across all repos — mirrors
+                // PSResourceGet's `scope=repository:*:*` behaviour.
+                pairs.append_pair("scope", "repository:*:*");
+            }
         }
 
-        let response = request.send().map_err(|e| DiscoveryError::Auth {
+        let response = self.client.post(token_url).send().map_err(|e| DiscoveryError::Auth {
             registry: self.parsed.host.clone(),
             message: format!("Failed to reach token endpoint: {e}"),
         })?;
@@ -208,7 +274,12 @@ impl RegistryClient {
             });
         }
 
-        let token_response: TokenResponse = response.json().map_err(|e| DiscoveryError::Auth {
+        let body = response.text().map_err(|e| DiscoveryError::Auth {
+            registry: self.parsed.host.clone(),
+            message: format!("Failed to read token response: {e}"),
+        })?;
+
+        let token_response: TokenResponse = serde_json::from_str(&body).map_err(|e| DiscoveryError::Auth {
             registry: self.parsed.host.clone(),
             message: format!("Failed to parse token response: {e}"),
         })?;
@@ -223,17 +294,23 @@ impl RegistryClient {
         Ok(())
     }
 
-    /// Returns the full list of tags available in the repository.
-    fn list_tags(&mut self) -> Result<Vec<String>, DiscoveryError> {
-        let url = format!("{}/tags/list", self.parsed.api_base());
+    /// Returns the full list of tags available in the given repository.
+    fn list_tags(&mut self, repo: &str) -> Result<Vec<String>, DiscoveryError> {
+        let url = format!("{}/tags/list", self.parsed.api_base_for(repo));
         debug!("Fetching tags from: {url}");
 
         let response = self.get_authenticated(&url, "application/json")?;
 
         if response.status() == StatusCode::NOT_FOUND {
             return Err(DiscoveryError::NotFound {
-                reference: format!("{}/{}", self.parsed.host, self.parsed.repository),
+                reference: format!("{}/{}", self.parsed.host, repo),
             });
+        }
+
+        // Handle 401 responses without authentication challenge.
+        if response.status() == StatusCode::UNAUTHORIZED {
+            warn!("Received 401 Unauthorized from {url}; returning empty tags");
+            return Ok(Vec::new());
         }
 
         if !response.status().is_success() {
@@ -251,12 +328,68 @@ impl RegistryClient {
             tags: Option<Vec<String>>,
         }
 
-        let tags_resp: TagsResponse = response.json().map_err(|e| DiscoveryError::ManifestParse {
-            url: format!("{}/tags/list", self.parsed.api_base()),
+        let body = response.text().map_err(|e| DiscoveryError::HttpRequest {
+            context: url.clone(),
+            source: e,
+        })?;
+
+        let tags_resp: TagsResponse = serde_json::from_str(&body).map_err(|e| DiscoveryError::ManifestParse {
+            url,
             source: e,
         })?;
 
         Ok(tags_resp.tags.unwrap_or_default())
+    }
+
+    /// Returns the full list of repositories in the registry (registry-level catalog).
+    fn list_repositories(&mut self) -> Result<Vec<String>, DiscoveryError> {
+        let url = format!("{}/_catalog", self.parsed.registry_base());
+        debug!("Fetching catalog from: {url}");
+
+        let response = self.get_authenticated_catalog(&url, "application/json")?;
+
+        // ACR and some other registries do not implement the _catalog endpoint;
+        // treat 404 and 401 as "catalog not supported" rather than a hard error.
+        if response.status() == StatusCode::NOT_FOUND {
+            warn!(
+                "Registry '{}' does not support the _catalog endpoint; \
+                 specify a repository path (e.g. '{}/my-repo') to discover artifacts",
+                self.parsed.host, self.parsed.host
+            );
+            return Ok(Vec::new());
+        }
+
+        if response.status() == StatusCode::UNAUTHORIZED {
+            warn!("Received 401 Unauthorized from {url}; returning empty catalog");
+            return Ok(Vec::new());
+        }
+
+        if !response.status().is_success() {
+            let status = response.status().as_u16();
+            let body = response.text().unwrap_or_default();
+            return Err(DiscoveryError::HttpStatus { status, url, body });
+        }
+
+        #[derive(serde::Deserialize)]
+        struct CatalogResponse {
+            repositories: Option<Vec<String>>,
+        }
+
+        let body = response.text().map_err(|e| DiscoveryError::HttpRequest {
+            context: url.clone(),
+            source: e,
+        })?;
+
+        let catalog_resp: CatalogResponse = serde_json::from_str(&body).map_err(|e| DiscoveryError::ManifestParse {
+            url,
+            source: e,
+        })?;
+
+        let repos = catalog_resp.repositories.unwrap_or_default();
+        if repos.is_empty() {
+            warn!("No repositories found in registry {}", self.parsed.host);
+        }
+        Ok(repos)
     }
 
     /// Fetches the manifest (or index) for `reference` (tag or digest).
@@ -270,8 +403,19 @@ impl RegistryClient {
             return Err(DiscoveryError::NotFound {
                 reference: format!(
                     "{}/{}:{}",
-                    self.parsed.host, self.parsed.repository, reference
+                    self.parsed.host, self.parsed.repository.as_deref().unwrap_or(""), reference
                 ),
+            });
+        }
+
+        // Handle 401 responses - return as error so caller can skip this reference
+        if response.status() == StatusCode::UNAUTHORIZED {
+            let body = response.text().unwrap_or_default();
+            warn!("Received 401 Unauthorized from {url} for reference {reference}");
+            return Err(DiscoveryError::HttpStatus {
+                status: StatusCode::UNAUTHORIZED.as_u16(),
+                url,
+                body,
             });
         }
 
@@ -525,7 +669,7 @@ impl RegistryClient {
         version: Option<&str>,
     ) -> Result<Vec<DiscoveredArtifact>, DiscoveryError> {
         let mut results = Vec::new();
-        let repo_ref = format!("{}/{}", self.parsed.host, self.parsed.repository);
+        let repo_ref = format!("{}/{}", self.parsed.host, self.parsed.repository.as_deref().unwrap_or(""));
         let mut platform_candidate_found = platform.is_none();
 
         for entry in &index.manifests {
@@ -599,29 +743,55 @@ impl RegistryClient {
         &mut self,
         input: &DiscoveryInput,
     ) -> Result<Vec<DiscoveredArtifact>, DiscoveryError> {
+        // Determine which repositories to scan.
+        let repos: Vec<String> = if let Some(repo) = self.parsed.repository.clone() {
+            vec![repo]
+        } else {
+            debug!("No repository specified; listing all repositories in {}", self.parsed.host);
+            self.list_repositories()?
+        };
+
+        let mut all_artifacts: Vec<DiscoveredArtifact> = Vec::new();
+
+        for repo in &repos {
+            debug!("Scanning repository '{}/{repo}'", self.parsed.host);
+            let repo_artifacts = self.discover_repo(repo, input)?;
+            all_artifacts.extend(repo_artifacts);
+        }
+
+        Ok(all_artifacts)
+    }
+
+    /// Discovers artifacts in a specific repository.
+    fn discover_repo(
+        &mut self,
+        repo: &str,
+        input: &DiscoveryInput,
+    ) -> Result<Vec<DiscoveredArtifact>, DiscoveryError> {
+        // Override the client's parsed repository for this call by temporarily
+        // adjusting api_base via the repo argument passed down to each method.
         let tags: Vec<String> = if let Some(tag) = &self.parsed.tag.clone() {
             vec![tag.clone()]
         } else {
-            debug!(
-                "No tag specified; listing all tags for {}/{}",
-                self.parsed.host, self.parsed.repository
-            );
-            let tags = self.list_tags()?;
+            debug!("No tag specified; listing all tags for {}/{repo}", self.parsed.host);
+            let tags = self.list_tags(repo)?;
             if tags.is_empty() {
-                warn!(
-                    "No tags found for {}/{}",
-                    self.parsed.host, self.parsed.repository
-                );
+                warn!("No tags found for {}/{repo}", self.parsed.host);
             }
             tags
         };
 
         let mut all_artifacts: Vec<DiscoveredArtifact> = Vec::new();
-        let repo_ref = format!("{}/{}", self.parsed.host, self.parsed.repository);
+        let repo_ref = format!("{}/{}", self.parsed.host, repo);
 
         for tag in &tags {
             debug!("Processing tag '{tag}' in {repo_ref}");
-            let (digest, moi) = match self.fetch_manifest(tag) {
+            // Temporarily set the repository so fetch_manifest uses the right URL.
+            let prev_repo = self.parsed.repository.replace(repo.to_string());
+            let result = self.fetch_manifest(tag);
+            self.parsed.repository = prev_repo;
+
+            let (digest, moi) = match result {
                 Ok(m) => m,
                 Err(DiscoveryError::NotFound { .. }) => {
                     warn!("Tag '{tag}' not found in {repo_ref}; skipping");
@@ -666,13 +836,18 @@ impl RegistryClient {
                 OciManifestOrIndex::Index(index) => {
                     debug!("Tag '{tag}' is an OCI index with {} entries", index.manifests.len());
                     let platform_filter = input.platform.as_ref();
-                    let mut artifacts = self.process_index(
+                    // Temporarily set the repository for process_index.
+                    let prev_repo = self.parsed.repository.replace(repo.to_string());
+                    let result = self.process_index(
                         &index,
                         tag,
                         platform_filter,
                         input.kind.as_ref(),
                         input.version.as_deref(),
-                    )?;
+                    );
+                    self.parsed.repository = prev_repo;
+
+                    let mut artifacts = result?;
 
                     if artifacts.is_empty() && platform_filter.is_some() {
                         let pf = platform_filter.unwrap();
