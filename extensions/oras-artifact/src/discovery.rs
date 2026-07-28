@@ -245,21 +245,19 @@ impl RegistryClient {
             if let Some(service) = &challenge.service {
                 pairs.append_pair("service", service);
             }
-            if let Some(scope) = &challenge.scope {
-                pairs.append_pair("scope", scope);
-            }
-            // For catalog discovery, always include the catalog scope.
+            // Use explicit scopes matching PSResourceGet's behaviour rather than
+            // echoing the challenge scope (which may duplicate what we append below).
             if catalog_scope {
+                // registry-level catalog access
                 pairs.append_pair("scope", "registry:catalog:*");
             } else {
-                // For repository-level operations (tags, manifests) include a wildcard
-                // repository scope so the token works across all repos — mirrors
-                // PSResourceGet's `scope=repository:*:*` behaviour.
+                // repository-level operations: wildcard repo scope + catalog scope
                 pairs.append_pair("scope", "repository:*:*");
+                pairs.append_pair("scope", "registry:catalog:*");
             }
         }
 
-        let response = self.client.post(token_url).send().map_err(|e| DiscoveryError::Auth {
+        let response = self.client.get(token_url).send().map_err(|e| DiscoveryError::Auth {
             registry: self.parsed.host.clone(),
             message: format!("Failed to reach token endpoint: {e}"),
         })?;
@@ -343,13 +341,21 @@ impl RegistryClient {
 
     /// Returns the full list of repositories in the registry (registry-level catalog).
     fn list_repositories(&mut self) -> Result<Vec<String>, DiscoveryError> {
+        // ACR (and some other registries) return 404 — not 401 — when /_catalog is
+        // requested without a token, effectively hiding the endpoint.  PSResourceGet
+        // works around this by pre-authenticating via the /v2/ ping endpoint, which
+        // always issues a Bearer challenge, before calling /_catalog.
+        // We do the same: if we have no token yet, hit /v2/ first to acquire one.
+        if self.token.is_none() {
+            self.ensure_catalog_token()?;
+        }
+
         let url = format!("{}/_catalog", self.parsed.registry_base());
         debug!("Fetching catalog from: {url}");
 
         let response = self.get_authenticated_catalog(&url, "application/json")?;
 
-        // ACR and some other registries do not implement the _catalog endpoint;
-        // treat 404 and 401 as "catalog not supported" rather than a hard error.
+        // If we still get 404 the registry genuinely doesn't implement /_catalog.
         if response.status() == StatusCode::NOT_FOUND {
             warn!(
                 "Registry '{}' does not support the _catalog endpoint; \
@@ -390,6 +396,36 @@ impl RegistryClient {
             warn!("No repositories found in registry {}", self.parsed.host);
         }
         Ok(repos)
+    }
+
+    /// Pre-authenticates for catalog access by issuing a HEAD request to the
+    /// `/v2/` ping endpoint, which always returns a Bearer challenge.
+    /// This mirrors PSResourceGet's `IsContainerRegistryUnauthenticated()` pattern:
+    /// ACR returns 404 (not 401) for unauthenticated `/_catalog` requests, so we
+    /// must obtain a token before attempting the catalog call.
+    fn ensure_catalog_token(&mut self) -> Result<(), DiscoveryError> {
+        let ping_url = format!("{}/v2/", self.parsed.registry_base());
+        debug!("Pre-authenticating via registry ping: {ping_url}");
+
+        let response = self
+            .client
+            .head(&ping_url)
+            .send()
+            .map_err(|e| DiscoveryError::HttpRequest {
+                context: ping_url.clone(),
+                source: e,
+            })?;
+
+        if response.status() == StatusCode::UNAUTHORIZED {
+            if let Some(www_auth) = response.headers().get(WWW_AUTHENTICATE) {
+                let challenge_str = www_auth.to_str().unwrap_or("").to_string();
+                debug!("Ping challenge: {challenge_str}");
+                self.authenticate(&challenge_str, true)?;
+                debug!("Catalog token acquired via ping endpoint");
+            }
+        }
+        // If /v2/ returns 200 (public registry) or anything else, proceed without token.
+        Ok(())
     }
 
     /// Fetches the manifest (or index) for `reference` (tag or digest).
