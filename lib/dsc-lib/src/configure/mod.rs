@@ -28,12 +28,14 @@ use serde_json::{Map, Value};
 use std::path::PathBuf;
 use std::collections::HashMap;
 use tracing::{debug, info, trace, warn};
+
 pub mod context;
 pub mod config_doc;
 pub mod config_result;
 pub mod constraints;
 pub mod depends_on;
 pub mod parameters;
+pub(crate) mod schema_cache;
 
 pub struct Configurator {
     json: String,
