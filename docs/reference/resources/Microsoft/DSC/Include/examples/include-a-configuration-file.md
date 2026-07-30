@@ -15,7 +15,7 @@ file.
 
 First, author the configuration document that you want to include. This document defines a parameter
 named `osFamily` and uses it to check the operating system with the `Microsoft/OSInfo` resource.
-Save it next to the parent document as `osinfo.dsc.yaml`.
+Save it as `osinfo.dsc.yaml`.
 
 ```yaml
 # osinfo.dsc.yaml
@@ -38,7 +38,7 @@ resources:
 ## Author the parameters file
 
 Next, author the parameters file that supplies a value for the `osFamily` parameter. Save it next to
-the parent document as `osinfo.parameters.yaml`.
+the configuration document as `osinfo.parameters.yaml`.
 
 ```yaml
 # osinfo.parameters.yaml
