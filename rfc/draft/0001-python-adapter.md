@@ -505,7 +505,7 @@ If the manifest cache is missing or corrupted, the adapter regenerates manifests
 ### Alternative A: Single Python file adapter
 
 A single-file adapter is simpler to ship but limits testability and extensibility.
-Rejected in favour of the package-based adapter structure.
+Rejected in favor of the package-based adapter structure.
 
 ### Alternative B: Require Pydantic for all resources
 
