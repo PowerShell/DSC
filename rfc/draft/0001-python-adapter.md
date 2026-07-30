@@ -366,21 +366,6 @@ The venv index is maintained across discovery cycles, but validated each time:
 - If new venvs appear in `DSC_PYTHON_VIRTUAL_ENV_PATH`, discover resources from those venvs and add to index
 - If all venvs are gone or the index is empty, fall back to system Python only and log a warning
 
-### Stdin/stdout contract
-
-The adapter reads a JSON object from stdin and writes results to stdout as
-newline-delimited JSON (NDJSON). Unknown input fields are silently ignored.
-
-| Operation | stdin | stdout lines |
-|-----------|-------|-------------|
-| `get` | Desired state | 1 — actual state |
-| `set` (STATE) | Desired state | 1 — actual state |
-| `set` (STATE_AND_DIFF) | Desired state | 2 — actual state, then `["changedProp", ...]` |
-| `test` (STATE) | Desired state | 1 — actual state |
-| `test` (STATE_AND_DIFF) | Desired state | 2 — actual state, then `["differingProp", ...]` |
-| `delete` | Desired state | 0 |
-| `export` | Filter or `{}` | 0..N — one object per instance |
-
 ### Discovery mechanism
 
 Two discovery paths are supported:
