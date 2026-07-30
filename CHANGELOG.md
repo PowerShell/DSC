@@ -745,7 +745,7 @@ changes in this release, see the [diff on GitHub][compare-v3.2.0].
     configuration file for an SSH server.
   - `Microsoft.OpenSSH.SSHD/SubsystemList` - Manages multiple entries for the `Subsystem` keyword
     in the configuration file for an SSH server.
-  - `Microsoft.OpenSSH.SSHD/Windows` - Manages global settings for an SSH server on Windows.
+  - `Microsoft.OpenSSH.SSHD/Windows` - Manages global settings, such as the default shell, for an SSH server on Windows.
 
   <details><summary>Related work items</summary>
 
