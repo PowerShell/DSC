@@ -1,12 +1,12 @@
 ---
-RFC:          0001
+RFC:          RFC0001
 Author:       "@ThomasNieto"
 Sponsor:      "@ThomasNieto"
 Status:       Draft
-SupercededBy: null
+SupersededBy: null
 Version:      1.0
 Area:         Adapter
-CommentsDue:  null
+CommentsDue:  2026-08-31
 ---
 
 # Microsoft.Adapter/Python: Python DSC Resource Adapter
