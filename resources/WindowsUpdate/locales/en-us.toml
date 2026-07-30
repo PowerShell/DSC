@@ -47,6 +47,7 @@ noMatchingUpdateForCriteria = "No matching update found for criteria: %{criteria
 failedDownloadUpdate = "Failed to download update. Result code: %{code}"
 failedInstallUpdate = "Failed to install update. Result code: %{code}"
 failedSerializeOutput = "Failed to serialize output: %{err}"
+whatIfInstallUpdate = "Would install update '%{title}'"
 criteriaTitle = "title '%{value}'"
 criteriaId = "id '%{value}'"
 criteriaIsInstalled = "is_installed %{value}"

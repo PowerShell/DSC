@@ -18,6 +18,7 @@ pub fn handle_export(input: &str) -> Result<String> {
         UpdateList {
             restart_required: None,
             updates: vec![UpdateInfo {
+                metadata: None,
                 description: None,
                 id: None,
                 installation_behavior: None,
