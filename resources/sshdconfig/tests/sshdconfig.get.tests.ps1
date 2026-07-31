@@ -41,6 +41,20 @@ PasswordAuthentication no
 "@
         $TestConfigPathWithInclude = Join-Path $TestDrive 'test_sshd_config_include'
         $configWithInclude | Set-Content -Path $TestConfigPathWithInclude
+        $configWithQuotedGroups = @"
+PasswordAuthentication no
+AllowGroups administrators "openssh users"
+"@
+        $TestConfigPathWithQuotedGroups = Join-Path $TestDrive 'test_sshd_config_quoted_groups'
+        $configWithQuotedGroups | Set-Content -Path $TestConfigPathWithQuotedGroups
+        $BannerPath = Join-Path $TestDrive 'Sample Banner.txt'
+        'welcome' | Set-Content -Path $BannerPath
+        $configWithQuotedPath = @"
+PasswordAuthentication no
+Banner "$BannerPath"
+"@
+        $TestConfigPathWithQuotedPath = Join-Path $TestDrive 'test_sshd_config_quoted_path'
+        $configWithQuotedPath | Set-Content -Path $TestConfigPathWithQuotedPath
     }
 
     AfterAll {
@@ -52,6 +66,15 @@ PasswordAuthentication no
         }
         if (Test-Path $TestConfigPathWithInclude) {
             Remove-Item -Path $TestConfigPathWithInclude -Force -ErrorAction SilentlyContinue
+        }
+        if (Test-Path $TestConfigPathWithQuotedGroups) {
+            Remove-Item -Path $TestConfigPathWithQuotedGroups -Force -ErrorAction SilentlyContinue
+        }
+        if (Test-Path $TestConfigPathWithQuotedPath) {
+            Remove-Item -Path $TestConfigPathWithQuotedPath -Force -ErrorAction SilentlyContinue
+        }
+        if (Test-Path $BannerPath) {
+            Remove-Item -Path $BannerPath -Force -ErrorAction SilentlyContinue
         }
     }
 
@@ -140,6 +163,50 @@ PasswordAuthentication no
         $stderr = Get-Content -Path $stderrFile -Raw -ErrorAction SilentlyContinue
         $stderr | Should -BeLike "*WARN*Include directive found in sshd_config*"
         Remove-Item -Path $stderrFile -Force -ErrorAction SilentlyContinue
+    }
+
+    It '<Command> command preserves quoted group names containing spaces' -TestCases @(
+        @{ Command = 'get' }
+        @{ Command = 'export' }
+    ) {
+        param($Command)
+
+        $inputData = @{
+            sshd_config_filepath = $TestConfigPathWithQuotedGroups
+        } | ConvertTo-Json
+
+        if ($Command -eq 'get') {
+            $result = sshdconfig $Command --input $inputData -s sshd-config 2>$null | ConvertFrom-Json
+        }
+        else {
+            $result = sshdconfig $Command --input $inputData 2>$null | ConvertFrom-Json
+        }
+
+        # "openssh users" must remain a single entry rather than being split into "openssh" and "users".
+        $result.AllowGroups.Count | Should -Be 2
+        $result.AllowGroups[0] | Should -Be "administrators"
+        $result.AllowGroups[1] | Should -Be "openssh users"
+    }
+
+    It '<Command> command preserves a single-value keyword whose path contains spaces' -TestCases @(
+        @{ Command = 'get' }
+        @{ Command = 'export' }
+    ) {
+        param($Command)
+
+        $inputData = @{
+            sshd_config_filepath = $TestConfigPathWithQuotedPath
+        } | ConvertTo-Json
+
+        if ($Command -eq 'get') {
+            $result = sshdconfig $Command --input $inputData -s sshd-config 2>$null | ConvertFrom-Json
+        }
+        else {
+            $result = sshdconfig $Command --input $inputData 2>$null | ConvertFrom-Json
+        }
+
+        $LASTEXITCODE | Should -Be 0
+        $result.Banner | Should -Be $BannerPath
     }
 
     It 'Should fail without creating target config when file does not exist' {
