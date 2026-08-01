@@ -12,8 +12,7 @@
         "list": {
             "executable": "python",
             "args": [
-                "-m",
-                "pyadapter.cli",
+                "./pyadapter.py",
                 "list"
             ]
         },
@@ -22,8 +21,7 @@
     "get": {
         "executable": "python",
         "args": [
-            "-m",
-            "pyadapter.cli",
+            "./pyadapter.py",
             "get",
             {
                 "resourceTypeArg": "--resource"
@@ -37,8 +35,7 @@
     "set": {
         "executable": "python",
         "args": [
-            "-m",
-            "pyadapter.cli",
+            "./pyadapter.py",
             "set",
             {
                 "resourceTypeArg": "--resource"
@@ -53,8 +50,7 @@
     "test": {
         "executable": "python",
         "args": [
-            "-m",
-            "pyadapter.cli",
+            "./pyadapter.py",
             "test",
             {
                 "resourceTypeArg": "--resource"
@@ -69,8 +65,7 @@
     "delete": {
         "executable": "python",
         "args": [
-            "-m",
-            "pyadapter.cli",
+            "./pyadapter.py",
             "delete",
             {
                 "resourceTypeArg": "--resource"
@@ -84,8 +79,7 @@
     "export": {
         "executable": "python",
         "args": [
-            "-m",
-            "pyadapter.cli",
+            "./pyadapter.py",
             "export",
             {
                 "resourceTypeArg": "--resource"
@@ -100,8 +94,7 @@
     "validate": {
         "executable": "python",
         "args": [
-            "-m",
-            "pyadapter.cli",
+            "./pyadapter.py",
             "validate",
             {
                 "resourceTypeArg": "--resource"
