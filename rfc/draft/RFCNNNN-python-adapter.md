@@ -1,5 +1,5 @@
 ---
-RFC:          RFC0001
+RFC:          RFCNNNN
 Author:       "@ThomasNieto"
 Sponsor:      "@ThomasNieto"
 Status:       Draft
