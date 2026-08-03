@@ -1,5 +1,5 @@
 ---
-RFC:          RFCNNNN
+RFC:          RFC0000
 Author:       @michaeltlombardi
 Sponsor:      @michaeltlombardi
 Status:       Draft
