@@ -15,6 +15,7 @@ No caching is performed; the importlib.resources lookup is fast at startup.
 """
 from __future__ import annotations
 
+import argparse
 import importlib.metadata
 import importlib.resources
 import json
@@ -27,7 +28,7 @@ _MANIFEST_SUFFIXES = (
 )
 
 
-def _manifests_for_dist(dist) -> list[dict[str, str]]:
+def _manifests_for_dist(dist, manifest_suffixes: tuple[str, ...]) -> list[dict[str, str]]:
     """
     Return manifest path entries for a single distribution.
 
@@ -45,7 +46,7 @@ def _manifests_for_dist(dist) -> list[dict[str, str]]:
 
     try:
         for resource in dsc_ref.iterdir():
-            if any(resource.name.lower().endswith(s) for s in _MANIFEST_SUFFIXES):
+            if any(resource.name.lower().endswith(s) for s in manifest_suffixes):
                 try:
                     abs_path = Path(str(resource)).resolve()
                     if abs_path.exists():
@@ -59,8 +60,14 @@ def _manifests_for_dist(dist) -> list[dict[str, str]]:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description="Python DSC discovery extension")
+    parser.add_argument("--file-extensions", help="Comma-separated list of manifest file extensions")
+    args = parser.parse_args()
+    
+    manifest_suffixes = tuple(f".{ext.lstrip('.')}" for ext in args.file_extensions.split(",")) if args.file_extensions else ()
+    
     for dist in importlib.metadata.distributions():
-        for entry in _manifests_for_dist(dist):
+        for entry in _manifests_for_dist(dist, manifest_suffixes):
             print(json.dumps(entry), flush=True)
     return 0
 

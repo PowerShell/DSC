@@ -1,11 +1,11 @@
 {
   "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
-  "type": "Microsoft.Python/Discover",
+  "type": "Microsoft.Python3/Discover",
   "version": "0.1.0",
-  "description": "Discovers DSC resources packaged in Python distributions.",
-  "condition": "[not(equals(tryWhich('python'), null()))]",
+  "description": "Discovers DSC resources packaged in Python distributions using python3.",
+  "condition": "[not(equals(tryWhich('python3'), null()))]",
   "discover": {
-    "executable": "python",
+    "executable": "python3",
     "args": [
       "./python.discover.py",
       {
