@@ -35,15 +35,12 @@ impl VSCodeKeywordDefinition for CompletionDetailKeyword {
     fn keyword_factory<'a>(
         _parent: &'a serde_json::Map<String, serde_json::Value>,
         value: &'a serde_json::Value,
-        path: jsonschema::paths::Location,
-    ) -> Result<Box<dyn Keyword>, jsonschema::ValidationError<'a>> {
+        _path: jsonschema::paths::Location,
+    ) -> Result<Box<dyn for<'instance> Keyword<'instance>>, jsonschema::ValidationError<'a>> {
         if let Some(v) = value.as_str() {
             Ok(Box::new(Self(v.to_string())))
         } else {
             Err(ValidationError::custom(
-                Location::new(),
-                path,
-                value,
                 t!("vscode.keywords.completion_detail.factory_error_invalid_type"),
             ))
         }
@@ -67,15 +64,14 @@ impl JsonSchema for CompletionDetailKeyword {
     }
 }
 
-impl Keyword for CompletionDetailKeyword {
-    fn validate<'i>(
+impl<'i> Keyword<'i> for CompletionDetailKeyword {
+    fn validate(
             &self,
             _: &'i serde_json::Value,
-            _: &jsonschema::paths::LazyLocation,
         ) -> Result<(), jsonschema::ValidationError<'i>> {
         Ok(())
     }
-    fn is_valid(&self, _: &serde_json::Value) -> bool {
+    fn is_valid(&self, _: &'i serde_json::Value) -> bool {
         true
     }
 }

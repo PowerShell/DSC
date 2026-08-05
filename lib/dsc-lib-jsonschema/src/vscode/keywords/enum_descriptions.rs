@@ -40,8 +40,8 @@ impl VSCodeKeywordDefinition for EnumDescriptionsKeyword {
     fn keyword_factory<'a>(
         _parent: &'a serde_json::Map<String, serde_json::Value>,
         value: &'a serde_json::Value,
-        path: Location,
-    ) -> Result<Box<dyn Keyword>, ValidationError<'a>> {
+        _path: Location,
+    ) -> Result<Box<dyn for<'instance> Keyword<'instance>>, ValidationError<'a>> {
         if let Some(v) = value.as_array() {
             if v.iter().all(|item| item.as_str().is_some()) {
                 Ok(Box::new(Self(
@@ -49,9 +49,6 @@ impl VSCodeKeywordDefinition for EnumDescriptionsKeyword {
                 )))
             } else {
                 Err(ValidationError::custom(
-                    Location::new(),
-                    path,
-                    value,
                     format!(
                         "{} {}",
                         t!("vscode.keywords.enum_descriptions.factory_error_non_string_item"),
@@ -61,9 +58,6 @@ impl VSCodeKeywordDefinition for EnumDescriptionsKeyword {
             }
         } else {
             Err(ValidationError::custom(
-                Location::new(),
-                path,
-                value,
                 format!(
                     "{} {}",
                     t!("vscode.keywords.enum_descriptions.factory_error_not_array"),
@@ -94,15 +88,14 @@ impl JsonSchema for EnumDescriptionsKeyword {
     }
 }
 
-impl Keyword for EnumDescriptionsKeyword {
-    fn validate<'i>(
+impl<'i> Keyword<'i> for EnumDescriptionsKeyword {
+    fn validate(
             &self,
             _: &'i serde_json::Value,
-            _: &jsonschema::paths::LazyLocation,
         ) -> Result<(), jsonschema::ValidationError<'i>> {
         Ok(())
     }
-    fn is_valid(&self, _: &serde_json::Value) -> bool {
+    fn is_valid(&self, _: &'i serde_json::Value) -> bool {
         true
     }
 }

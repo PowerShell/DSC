@@ -173,7 +173,9 @@ async-stream = { version = "0.3" }
 # dsc-lib-security_context::windows
 is_elevated = { version = "0.1" }
 # dsc, dsc-lib
-jsonschema = { version = "0.38", default-features = false }
+jsonschema = { version = "0.49.1", default-features = false }
+# dsc-lib-jsonschema
+referencing = { version = "0.49.1" }
 # dsc-lib
 linked-hash-map = { version = "0.5" }
 # dsc-lib

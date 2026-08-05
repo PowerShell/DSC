@@ -9,3 +9,4 @@
 #[cfg(test)] mod transforms;
 #[cfg(test)] mod validation_options_extensions;
 #[cfg(test)] mod vocabulary;
+#[cfg(test)] mod vscode_dialect_registry;

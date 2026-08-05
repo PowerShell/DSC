@@ -44,15 +44,12 @@ impl VSCodeKeywordDefinition for SuggestSortTextKeyword {
     fn keyword_factory<'a>(
         _parent: &'a serde_json::Map<String, serde_json::Value>,
         value: &'a serde_json::Value,
-        path: Location,
-    ) -> Result<Box<dyn Keyword>, ValidationError<'a>> {
+        _path: Location,
+    ) -> Result<Box<dyn for<'instance> Keyword<'instance>>, ValidationError<'a>> {
         if let Some(v) = value.as_str() {
             Ok(Box::new(Self(v.to_string())))
         } else {
             Err(ValidationError::custom(
-                Location::new(),
-                path,
-                value,
                 t!("vscode.keywords.suggest_sort_text.factory_error_invalid_type"),
             ))
         }
@@ -76,15 +73,11 @@ impl JsonSchema for SuggestSortTextKeyword {
     }
 }
 
-impl Keyword for SuggestSortTextKeyword {
-    fn validate<'i>(
-            &self,
-            _: &'i serde_json::Value,
-            _: &jsonschema::paths::LazyLocation,
-        ) -> Result<(), jsonschema::ValidationError<'i>> {
+impl<'i> Keyword<'i> for SuggestSortTextKeyword {
+    fn validate(&self, _: &'i serde_json::Value) -> Result<(), ValidationError<'i>> {
         Ok(())
     }
-    fn is_valid(&self, _: &serde_json::Value) -> bool {
+    fn is_valid(&self, _: &'i serde_json::Value) -> bool {
         true
     }
 }
