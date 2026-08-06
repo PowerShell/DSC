@@ -3,11 +3,11 @@
 """
 JSON Schema generation from Python dataclasses.
 
-Delegates to ms_dsc.schema.DataclassSchemaProvider for schema generation.
+Delegates to ms_dsc.schema utilities for schema generation.
 """
 from __future__ import annotations
 
-from ms_dsc.schema import DataclassSchemaProvider
+from ms_dsc.schema import DataclassSchemaProvider, get_schema_type
 
 
 def generate_schema(cls: type) -> dict:
@@ -33,7 +33,7 @@ def generate_schema(cls: type) -> dict:
             pass
 
     # Try to use DataclassSchemaProvider from ms_dsc
-    schema_type = _get_schema_type(cls)
+    schema_type = get_schema_type(cls)
     if schema_type is not None:
         try:
             provider = DataclassSchemaProvider(schema_type)
@@ -42,19 +42,3 @@ def generate_schema(cls: type) -> dict:
             pass
 
     return {}
-
-
-def _get_schema_type(cls: type) -> type | None:
-    """Resolve T from DscResource[T] via schema_provider or __orig_bases__."""
-    import dataclasses
-    import typing
-
-    provider = getattr(cls, "schema_provider", None)
-    if provider is not None and hasattr(provider, "schema_type"):
-        return provider.schema_type  # type: ignore[no-any-return]
-
-    for base in getattr(cls, "__orig_bases__", ()):
-        args = typing.get_args(base)
-        if len(args) == 1 and dataclasses.is_dataclass(args[0]):
-            return args[0]
-    return None

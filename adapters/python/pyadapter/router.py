@@ -16,14 +16,14 @@ stdout contract (single-config mode):
 """
 from __future__ import annotations
 
-import dataclasses
 import importlib
 import importlib.metadata
 import json
 import logging
 import sys
-import typing
 from typing import Any
+
+from ms_dsc.schema import build_schema_instance, to_dict
 
 _logger = logging.getLogger(__name__)
 
@@ -53,10 +53,10 @@ def dispatch(operation: str, resource_type: str, stdin_json: str, adapted_conten
     try:
         # Export is the only operation where an empty input means "no filter" (None).
         if operation == "export":
-            instance = _build_schema_instance(cls, data) if data else None
+            instance = build_schema_instance(cls, data) if data else None
             return _do_export(resource, instance)
 
-        schema_instance = _build_schema_instance(cls, data)
+        schema_instance = build_schema_instance(cls, data)
 
         if operation == "get":
             return _do_get(resource, schema_instance)
@@ -115,60 +115,15 @@ def _resolve_class(resource_type: str, adapted_content: dict | None = None) -> t
     )
 
 
-def _get_schema_type(cls: type) -> type | None:
-    """Resolve T from DscResource[T] via schema_provider or __orig_bases__."""
-    provider = getattr(cls, "schema_provider", None)
-    if provider is not None and hasattr(provider, "schema_type"):
-        return provider.schema_type  # type: ignore[no-any-return]
-
-    for base in getattr(cls, "__orig_bases__", ()):
-        args = typing.get_args(base)
-        if len(args) == 1 and dataclasses.is_dataclass(args[0]):
-            return args[0]
-    return None
-
-
-def _build_schema_instance(cls: type, data: dict) -> Any:
-    """Construct the schema (T) instance from JSON data."""
-    schema_type = _get_schema_type(cls)
-
-    if schema_type is None:
-        return data
-
-    if dataclasses.is_dataclass(schema_type):
-        known = {f.name for f in dataclasses.fields(schema_type)}
-        filtered = {k: v for k, v in data.items() if k in known}
-        return schema_type(**filtered)
-
-    # Pydantic BaseModel
-    if hasattr(schema_type, "model_validate"):
-        return schema_type.model_validate(data)
-
-    try:
-        return schema_type(**data)
-    except Exception:
-        return data
-
-
-def _to_dict(obj: Any) -> dict:
-    if dataclasses.is_dataclass(obj) and not isinstance(obj, type):
-        return dataclasses.asdict(obj)
-    if isinstance(obj, dict):
-        return obj
-    if hasattr(obj, "model_dump"):
-        return obj.model_dump()
-    raise TypeError(f"Cannot serialise {type(obj)!r} to dict")
-
-
 def _do_get(resource: Any, instance: Any) -> int:
     result = resource.get(instance)
-    print(json.dumps(_to_dict(result)))
+    print(json.dumps(to_dict(result)))
     return 0
 
 
 def _do_set(resource: Any, instance: Any, metadata: Any) -> int:
     result = resource.set(instance)
-    print(json.dumps(_to_dict(result.actual_state)))
+    print(json.dumps(to_dict(result.actual_state)))
 
     # Check SetReturn metadata to determine output format
     set_return = getattr(getattr(metadata, "set_return", None), "value", "state") if metadata is not None else "state"
@@ -179,7 +134,7 @@ def _do_set(resource: Any, instance: Any, metadata: Any) -> int:
 
 def _do_test(resource: Any, instance: Any, metadata: Any) -> int:
     result = resource.test(instance)
-    print(json.dumps(_to_dict(result.actual_state)))
+    print(json.dumps(to_dict(result.actual_state)))
 
     # Check TestReturn metadata to determine output format
     test_return = getattr(getattr(metadata, "test_return", None), "value", "state") if metadata is not None else "state"
@@ -195,5 +150,5 @@ def _do_delete(resource: Any, instance: Any) -> int:
 
 def _do_export(resource: Any, instance: Any | None) -> int:
     for item in resource.export(instance):
-        print(json.dumps(_to_dict(item)))
+        print(json.dumps(to_dict(item)))
     return 0

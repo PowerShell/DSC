@@ -38,9 +38,9 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    from pyadapter import logging as dsc_logging
+    from ms_dsc.logging import configure_logging
 
-    dsc_logging.configure_logging()
+    configure_logging()
 
     parser = _build_parser()
     args = parser.parse_args(argv)

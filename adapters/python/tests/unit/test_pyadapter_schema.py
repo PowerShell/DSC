@@ -9,8 +9,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from ms_dsc import DscResource, dsc_resource
-from ms_dsc.schema import DataclassSchemaProvider
-from pyadapter.schema import generate_schema, _get_schema_type
+from ms_dsc.schema import DataclassSchemaProvider, get_schema_type
+from pyadapter.schema import generate_schema
 
 
 @dataclass
@@ -133,7 +133,7 @@ class TestGenerateSchema:
             def get(self, i):
                 return i
 
-        schema_type = _get_schema_type(MyResource)
+        schema_type = get_schema_type(MyResource)
         assert schema_type is CustomState
 
     def test_get_schema_type_from_provider(self):
@@ -149,7 +149,7 @@ class TestGenerateSchema:
             def get(self, i):
                 return i
 
-        schema_type = _get_schema_type(MyResource)
+        schema_type = get_schema_type(MyResource)
         assert schema_type is ProviderState
 
     def test_get_schema_type_no_type_annotation(self):
@@ -158,7 +158,7 @@ class TestGenerateSchema:
         class PlainClass:
             pass
 
-        schema_type = _get_schema_type(PlainClass)
+        schema_type = get_schema_type(PlainClass)
         assert schema_type is None
 
 
@@ -308,7 +308,7 @@ class TestGetSchemaTypeEdgeCases:
             def get(self, i):
                 return i
 
-        schema_type = _get_schema_type(WithProvider)
+        schema_type = get_schema_type(WithProvider)
         assert schema_type is ProviderState
 
     def test_orig_bases_extraction(self):
@@ -322,7 +322,7 @@ class TestGetSchemaTypeEdgeCases:
             def get(self, i):
                 return i
 
-        schema_type = _get_schema_type(MyResource)
+        schema_type = get_schema_type(MyResource)
         assert schema_type is MyState
 
     def test_class_without_dsc_resource_base(self):
@@ -335,7 +335,7 @@ class TestGetSchemaTypeEdgeCases:
         class PlainClass:
             pass
 
-        schema_type = _get_schema_type(PlainClass)
+        schema_type = get_schema_type(PlainClass)
         assert schema_type is None
 
     def test_non_dataclass_in_orig_bases(self):
@@ -349,7 +349,7 @@ class TestGetSchemaTypeEdgeCases:
         class FakeResource:
             __orig_bases__ = ("SomeBase[SomeType]",)  # String instead of type
 
-        schema_type = _get_schema_type(FakeResource)
+        schema_type = get_schema_type(FakeResource)
         assert schema_type is None
 
     def test_schema_provider_no_schema_type_attribute(self):
@@ -364,7 +364,7 @@ class TestGetSchemaTypeEdgeCases:
             def get(self, i):
                 return i
 
-        schema_type = _get_schema_type(WithBadProvider)
+        schema_type = get_schema_type(WithBadProvider)
         # Should fall through to __orig_bases__
         assert schema_type is SimpleState
 
@@ -384,7 +384,7 @@ class TestGetSchemaTypeEdgeCases:
             def get(self, i):
                 return i
 
-        schema_type = _get_schema_type(MultiBase)
+        schema_type = get_schema_type(MultiBase)
         assert schema_type is FirstState
 
     def test_get_schema_type_with_no_orig_bases(self):
@@ -397,5 +397,5 @@ class TestGetSchemaTypeEdgeCases:
         if hasattr(NoOrigBases, "__orig_bases__"):
             delattr(NoOrigBases, "__orig_bases__")
 
-        schema_type = _get_schema_type(NoOrigBases)
+        schema_type = get_schema_type(NoOrigBases)
         assert schema_type is None

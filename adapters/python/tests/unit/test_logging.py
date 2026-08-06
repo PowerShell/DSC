@@ -1,6 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
-"""Unit tests for pyadapter.logging — DscLogHandler and configure_logging."""
+"""Unit tests for ms_dsc.logging — DscLogHandler and configure_logging."""
 from __future__ import annotations
 
 import json
@@ -11,7 +11,7 @@ from unittest.mock import patch
 
 import pytest
 
-from pyadapter.logging import (
+from ms_dsc.logging import (
     DscLogHandler,
     _DSC_TO_PYTHON,
     _PYTHON_TO_DSC,
