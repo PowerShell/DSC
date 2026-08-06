@@ -5,12 +5,13 @@ import pstats
 import time
 import io
 import os
+import inspect
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 # TODO: Currently using absolute imports. Switch to relative imports if this is later used as a module in the adapter manifest; otherwise, keep as-is for direct script execution.
 from dsc_logging import setup_dsc_logging, operation_context
-from discovery import get_class_map_from_pyproject, import_class_from_file
+from discovery import get_class_map_from_pyproject, get_project_metadata_from_pyproject, get_resource_metadata_from_pyproject, import_class_from_file
 
 #----------------------------------------------------------------------------
 # ResourceAdapter - main adapter class with registry, profiling, and logging
@@ -162,6 +163,97 @@ class ResourceAdapter:
         data = json.loads(json_input or "{}")
         return cls(**data)
 
+    def _build_list_entry(self, resource_type: str, class_name: str, resource_path: str, pyproject_path: Path, resource_metadata: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+        """Build a list entry compatible with DSC adapter list output."""
+        capabilities: List[str] = []
+        properties: List[str] = []
+        project_metadata = get_project_metadata_from_pyproject(pyproject_path)
+        resource_metadata = resource_metadata or {}
+
+        try:
+            cls = import_class_from_file(resource_path, resource_type, class_name)
+            for operation in ("get", "set", "test", "export"):
+                if callable(getattr(cls, operation, None)):
+                    capabilities.append(operation)
+
+            init_fn = getattr(cls, "__init__", None)
+            if callable(init_fn):
+                signature = inspect.signature(init_fn)
+                properties = [
+                    name for name in signature.parameters
+                    if name != "self" and not name.startswith("_")
+                ]
+        except Exception as err:
+            # List should be best-effort; avoid failing the whole operation for one resource.
+            self.logger.debug(
+                "Unable to introspect resource '%s' at '%s': %s",
+                resource_type,
+                resource_path,
+                err,
+            )
+
+        if not capabilities:
+            capabilities = ["get", "set", "test"]  # remove this
+
+        return {
+            "type": resource_type,
+            "kind": "resource",
+            "version": resource_metadata.get("version") or project_metadata["version"],
+            "capabilities": capabilities,
+            "path": str(Path(resource_path).resolve()),
+            "directory": str(pyproject_path.parent.resolve()),
+            "implementedAs": "Python",
+            "author": resource_metadata.get("author") or project_metadata["author"],
+            "properties": properties,
+            "requireAdapter": "Microsoft.DSC.Adapters/Python",
+            "description": resource_metadata.get("description") or project_metadata["description"],
+        }
+
+    def _discover_python_resources(self, resource_path: str = "") -> List[Dict[str, Any]]:
+        """Discover Python resources from pyproject.toml files and create list entries."""
+        resources: List[Dict[str, Any]] = []
+        pyproject_candidates: List[Path] = []
+
+        # If a resource path is provided, scope discovery to the nearest pyproject.toml.
+        if resource_path:
+            pyproject_path = self._resolve_pyproject_path(resource_path)
+            if pyproject_path:
+                pyproject_candidates.append(pyproject_path)
+        else:
+            # For list without resource path, search from adapter root and include nested test/resource projects.
+            adapter_root = Path(__file__).resolve().parents[1]
+            pyproject_candidates = list(adapter_root.rglob("pyproject.toml"))
+
+        seen = set()
+        for pyproject_path in pyproject_candidates:
+            key = str(pyproject_path.resolve()).casefold()
+            if key in seen:
+                continue
+            seen.add(key)
+
+            class_map = get_class_map_from_pyproject(pyproject_path)
+            resource_metadata_map = get_resource_metadata_from_pyproject(pyproject_path)
+            if not class_map:
+                continue
+
+            for discovered_type, class_name in class_map.items():
+                resource_file = pyproject_path.parent / (discovered_type.split("/")[-1].lower() + ".py")
+                if not resource_file.exists():
+                    resource_file = pyproject_path.parent / (class_name.lower() + ".py")
+
+                resources.append(
+                    self._build_list_entry(
+                        resource_type=discovered_type,
+                        class_name=class_name,
+                        resource_path=str(resource_file),
+                        pyproject_path=pyproject_path,
+                        resource_metadata=resource_metadata_map.get(discovered_type, {}),
+                    )
+                )
+
+        resources.sort(key=lambda item: item.get("type", ""))
+        return resources
+
     # -----------------
     # Operation routing
     # ----------------- 
@@ -181,9 +273,13 @@ class ResourceAdapter:
 
         with operation_context(op, resource_type):
             if op == "list":
-                self.logger.debug("List operation: returning empty resource list")
-                #TODO: Return supported resource types instead of an empty list after Pypi integration.
-                return 0, {"resources": []} 
+                self.logger.debug("List operation: discovering Python resources")
+                resources = self._discover_python_resources(resource_path)
+                for discovered_resource in resources:
+                    sys.stdout.write(json.dumps(discovered_resource, ensure_ascii=False) + "\n")
+
+                # Signal stdout already emitted so CLI does not wrap list output.
+                return 0, {"_stdout_emitted": True}
             if op == "validate":
                 self.logger.debug(f"Validate operation: returning valid=True for '{resource_type}'")
                 #TODO: This will be removed later once adapted resource manifest schema is supported

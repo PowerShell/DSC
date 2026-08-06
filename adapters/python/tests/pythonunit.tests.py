@@ -111,12 +111,54 @@ class TestResourceAdapterOperationRouting(unittest.TestCase):
         with patch.dict("os.environ", {"DSC_TRACE_LEVEL": "info"}):
             self.adapter = ResourceAdapter()
 
-    def test_list_operation_returns_empty_resources(self):
-        """LIST operation should return empty resources array."""
-        exit_code, result = self.adapter.run_operation("list", "{}", "", "")
+    def test_list_operation_streams_resources(self):
+        """LIST operation should stream JSON lines and signal stdout was emitted."""
+        with patch.object(self.adapter, "_discover_python_resources", return_value=[{"type": "PythonTest/Get"}]):
+            with patch("sys.stdout", new_callable=io.StringIO) as mock_stdout:
+                exit_code, result = self.adapter.run_operation("list", "{}", "", "")
+
         self.assertEqual(exit_code, 0)
-        self.assertIn("resources", result)
-        self.assertEqual(result["resources"], [])
+        self.assertTrue(result.get("_stdout_emitted"))
+        output_lines = [line for line in mock_stdout.getvalue().splitlines() if line.strip()]
+        self.assertEqual(len(output_lines), 1)
+        self.assertEqual(json.loads(output_lines[0])["type"], "PythonTest/Get")
+
+    def test_build_list_entry_uses_pyproject_metadata(self):
+        """LIST entries should populate metadata from pyproject [project]."""
+        resource_path = Path(__file__).parent / "src" / "get.py"
+        pyproject_path = Path(__file__).parent / "pyproject.toml"
+
+        result = self.adapter._build_list_entry(
+            resource_type="PythonTest/Get",
+            class_name="GetOnlyResource",
+            resource_path=str(resource_path),
+            pyproject_path=pyproject_path,
+        )
+
+        self.assertEqual(result["version"], "0.1.0")
+        self.assertEqual(result["description"], "Python adapter test resources")
+        self.assertEqual(result["author"], "DSC Python Team")
+
+    def test_build_list_entry_prefers_resource_metadata(self):
+        """Per-resource metadata should override project metadata when present."""
+        resource_path = Path(__file__).parent / "src" / "get.py"
+        pyproject_path = Path(__file__).parent / "pyproject.toml"
+
+        result = self.adapter._build_list_entry(
+            resource_type="PythonTest/Get",
+            class_name="GetOnlyResource",
+            resource_path=str(resource_path),
+            pyproject_path=pyproject_path,
+            resource_metadata={
+                "version": "9.9.9",
+                "description": "Resource-specific description",
+                "author": "Resource Author",
+            },
+        )
+
+        self.assertEqual(result["version"], "9.9.9")
+        self.assertEqual(result["description"], "Resource-specific description")
+        self.assertEqual(result["author"], "Resource Author")
 
     def test_validate_operation_returns_valid(self):
         """VALIDATE operation should return valid=True."""

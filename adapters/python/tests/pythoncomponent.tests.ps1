@@ -223,8 +223,8 @@ Describe "Python Adapter - Component Tests" {
     }
 
     It "GET returns expected wrapper output for <CaseName>" -TestCases @(
-           @{ CaseName = "simulated package exists"; InputJson = '{"name":"pkg"}'; ExpectedActualStateName = "pkg"; ExpectedActualStateExists = $true }
-           @{ CaseName = "simulated package is absent"; InputJson = '{"name":"curl"}'; ExpectedActualStateName = "curl"; ExpectedActualStateExists = $false }
+            @{ CaseName = "simulated package exists"; InputJson = '{"name":"pkg"}'; ExpectedActualStateName = "pkg"; ExpectedActualStateExists = $true }
+            @{ CaseName = "simulated package is absent"; InputJson = '{"name":"curl"}'; ExpectedActualStateName = "curl"; ExpectedActualStateExists = $false }
     ) {
         $resourceType = "PythonTest/Get"
         $result = Invoke-Adapter -Operation "get" -ResourceType $resourceType -InputJson $InputJson
@@ -295,22 +295,23 @@ Describe "Python Adapter - Component Tests" {
             $payload.packages[1].name | Should -Be "curl"
     }
 
-    It "LIST returns empty resources for <CaseName>" -TestCases @(
+    It "LIST streams discovered resources for <CaseName>" -TestCases @(
         @{ CaseName = "empty resource type"; ResourceType = "" }
         @{ CaseName = "unknown resource type"; ResourceType = "Unknown/Resource" }
     ) {
         $result = Invoke-Adapter -Operation "list" -ResourceType $ResourceType -InputJson "{}"
 
             $result.ExitCode | Should -Be 0 -Because $result.StdErr
-            $result.StdOut | Should -Match '^\{.*\}$' -Because $result.StdErr
 
-        $payload = $result.StdOut | ConvertFrom-Json
-        $resources = @()
-        if ($null -ne $payload -and $null -ne $payload.resources) {
-            $resources = @($payload.resources)
-        }
+        $resources = @(Convert-StdOutToJsonLines -StdOut $result.StdOut | ForEach-Object { $_ | ConvertFrom-Json })
 
-            $resources.Count | Should -Be 0
+            $resources.Count | Should -Be 4
+            ($resources.type | Sort-Object) | Should -Be @(
+                "PythonTest/Export",
+                "PythonTest/Get",
+                "PythonTest/Set",
+                "PythonTest/Test"
+            )
     }
 
     It "VALIDATE returns valid true" {

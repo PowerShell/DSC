@@ -21,8 +21,6 @@ Describe "Python Adapter - Integration Tests via DSC CLI" {
 
                 $Result.ExitCode | Should -Not -Be 0
                 $Result.StdErr | Should -Not -BeNullOrEmpty
-                # Python adapter manifest now has a condition on python3 availability.
-                # If unavailable, resource discovery should fail cleanly rather than execution failing.
                 $Result.StdErr | Should -Match "Resource not found:\s*PythonTest/|Failed to parse resource:"
         }
 

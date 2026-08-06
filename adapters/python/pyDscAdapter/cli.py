@@ -40,10 +40,11 @@ def main(argv: Optional[list] = None) -> int:
     # 1. Start with --input as the authoritative source
     input_str = args.input
 
-    # 2. If stdin has data, it overrides --input (DSC convention)
-    stdin_data = sys.stdin.read().strip() if not sys.stdin.isatty() else ""
-    if stdin_data:
-        input_str = stdin_data
+    # 2. If stdin has data, it overrides --input (DSC convention) for operations that accept input
+    if args.operation in ("get", "set", "test", "export", "validate"):
+        stdin_data = sys.stdin.read().strip() if not sys.stdin.isatty() else ""
+        if stdin_data:
+            input_str = stdin_data
 
     # 3. Call operation handler
     exit_code, result = adapter.run_operation(

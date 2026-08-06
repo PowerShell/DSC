@@ -30,6 +30,10 @@ class GetOnlyResource:
         except json.JSONDecodeError as err:
             logger.error(f"Failed to parse JSON input: {err}")
             raise
+        if not isinstance(data, dict):
+            logger.error("Input JSON must be an object")
+            raise ValueError("Input JSON must be an object")
+
         name = data.get("name")
         if not isinstance(name, str) or not name.strip():
             logger.error("Input must include a non-empty string 'name'")
