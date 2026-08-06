@@ -16,6 +16,8 @@ impl Function for Take {
         FunctionMetadata {
             name: "take".to_string(),
             description: t!("functions.take.description").to_string(),
+            syntax: t!("functions.take.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Array, FunctionCategory::String],
             min_args: 2,
             max_args: 2,

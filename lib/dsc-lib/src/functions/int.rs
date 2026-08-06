@@ -17,6 +17,8 @@ impl Function for Int {
         FunctionMetadata {
             name: "int".to_string(),
             description: t!("functions.int.description").to_string(),
+            syntax: t!("functions.int.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Numeric],
             min_args: 1,
             max_args: 1,

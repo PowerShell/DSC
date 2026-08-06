@@ -16,6 +16,8 @@ impl Function for TryIndexFromEnd {
         FunctionMetadata {
             name: "tryIndexFromEnd".to_string(),
             description: t!("functions.tryIndexFromEnd.description").to_string(),
+            syntax: t!("functions.tryIndexFromEnd.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Array],
             min_args: 2,
             max_args: 2,
@@ -52,7 +54,7 @@ impl Function for TryIndexFromEnd {
         }
 
         let actual_index = array.len() - reverse_index_usize;
-        
+
         Ok(array[actual_index].clone())
     }
 }

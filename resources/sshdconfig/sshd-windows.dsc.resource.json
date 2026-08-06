@@ -24,8 +24,12 @@
             {
                 "jsonInputArg": "--input",
                 "mandatory": true
+            },
+            {
+                "whatIfArg": "--what-if"
             }
-        ]
+        ],
+        "whatIfReturns": "state"
     },
     "schema": {
         "command": {

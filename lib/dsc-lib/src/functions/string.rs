@@ -16,6 +16,8 @@ impl Function for StringFn {
         FunctionMetadata {
             name: "string".to_string(),
             description: t!("functions.string.description").to_string(),
+            syntax: t!("functions.string.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::String],
             min_args: 1,
             max_args: 1,

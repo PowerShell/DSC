@@ -4,11 +4,11 @@
 Describe 'Deprecated resource tests' {
     BeforeAll {
         $dscHome = Split-Path (Get-Command dsc).Source -Parent
-        $env:DSC_RESOURCE_PATH = (Join-Path -Path $dscHome -ChildPath 'deprecated') + [System.IO.Path]::PathSeparator + $dscHome
+        $env:DSC_RESTRICTED_PATH = (Join-Path -Path $dscHome -ChildPath 'deprecated') + [System.IO.Path]::PathSeparator + $dscHome
     }
 
     AfterAll {
-        $env:DSC_RESOURCE_PATH = $null
+        $env:DSC_RESTRICTED_PATH = $null
     }
 
     It 'Deprecated resource for operation <operation>' -TestCases @(

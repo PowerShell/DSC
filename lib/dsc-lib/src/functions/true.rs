@@ -16,6 +16,8 @@ impl Function for True {
         FunctionMetadata {
             name: "true".to_string(),
             description: t!("functions.true.description").to_string(),
+            syntax: t!("functions.true.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Logical],
             min_args: 0,
             max_args: 0,

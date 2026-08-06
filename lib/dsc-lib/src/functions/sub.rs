@@ -16,6 +16,8 @@ impl Function for Sub {
         FunctionMetadata {
             name: "sub".to_string(),
             description: t!("functions.sub.description").to_string(),
+            syntax: t!("functions.sub.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Numeric],
             min_args: 2,
             max_args: 2,

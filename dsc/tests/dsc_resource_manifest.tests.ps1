@@ -35,7 +35,7 @@ Describe 'Resource Manifests' {
 "@
 
         try {
-            $env:DSC_RESOURCE_PATH = $TestDrive
+            $env:DSC_RESTRICTED_PATH = $TestDrive
             $manifestPath = Join-Path -Path $TestDrive -ChildPath 'MyEcho.dsc.resource.json'
             $resource_manifest | Out-File -FilePath $manifestPath -Encoding utf8
             $resources = dsc resource list | ConvertFrom-Json -Depth 10
@@ -48,7 +48,7 @@ Describe 'Resource Manifests' {
                 $resources.count | Should -Be 0
             }
         } finally {
-            $env:DSC_RESOURCE_PATH = $null
+            $env:DSC_RESTRICTED_PATH = $null
         }
     }
 }

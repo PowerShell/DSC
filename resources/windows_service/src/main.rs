@@ -69,6 +69,7 @@ fn main() {
 
     let operation = args[1].as_str();
     let input_json = parse_input_arg(&args);
+    let what_if = parse_what_if_flag(&args);
 
     match operation {
         "get" => {
@@ -88,7 +89,22 @@ fn main() {
         "set" => {
             let input = require_input(input_json);
 
-            match service::set_service(&input) {
+            // In what-if, if the desired state is _exist: false, route to delete
+            // so the projected state and metadata describe a delete operation.
+            if what_if && matches!(input.exist, Some(false)) {
+                match service::what_if_delete_service(&input) {
+                    Ok(result) => {
+                        print_json(&result);
+                        exit(EXIT_SUCCESS);
+                    }
+                    Err(e) => {
+                        write_error(&e.to_string());
+                        exit(EXIT_SERVICE_ERROR);
+                    }
+                }
+            }
+
+            match service::set_service(&input, what_if) {
                 Ok(result) => {
                     print_json(&result);
                     exit(EXIT_SUCCESS);
@@ -145,4 +161,9 @@ fn parse_input_arg(args: &[String]) -> Option<String> {
         i += 1;
     }
     None
+}
+
+/// Parse the `--what-if` / `-w` flag from the command-line args.
+fn parse_what_if_flag(args: &[String]) -> bool {
+    args.iter().skip(2).any(|a| a == "--what-if" || a == "-w")
 }

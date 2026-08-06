@@ -6,7 +6,6 @@ use crate::resolve::{get_contents, Include};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
 use crate::util::{get_input, get_schema, in_desired_state, set_dscconfigroot, write_object, DSC_CONFIG_ROOT, EXIT_DSC_ASSERTION_FAILED, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR};
-use dsc_lib::functions::FunctionArgKind;
 use dsc_lib::types::{FullyQualifiedTypeName, ResourceVersionReq, TypeNameFilter};
 use dsc_lib::{
     configure::{
@@ -29,7 +28,7 @@ use dsc_lib::{
     },
     dscresources::dscresource::{Capability, ImplementedAs, validate_json, validate_properties},
     extensions::dscextension::Capability as ExtensionCapability,
-    functions::FunctionDispatcher,
+    functions::{FunctionCategory, FunctionDispatcher},
     progress::ProgressFormat,
     util::convert_wildcard_to_regex,
 };
@@ -542,8 +541,8 @@ pub fn extension(subcommand: &ExtensionSubCommand, progress_format: ProgressForm
 pub fn function(subcommand: &FunctionSubCommand) {
     let functions = FunctionDispatcher::new();
     match subcommand {
-        FunctionSubCommand::List { function_name, output_format } => {
-            list_functions(&functions, function_name.as_ref(), output_format.as_ref());
+        FunctionSubCommand::List { function_name, category, description, output_format } => {
+            list_functions(&functions, function_name.as_ref(), category, description.as_ref(), output_format.as_ref());
         },
     }
 }
@@ -556,14 +555,14 @@ pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat
         ResourceSubCommand::List { resource_name, adapter_name, description, tags, output_format } => {
             list_resources(&mut dsc, resource_name, adapter_name.as_ref(), description.as_ref(), tags.as_ref(), output_format.as_ref(), progress_format);
         },
-        ResourceSubCommand::Schema { resource , version, output_format } => {
+        ResourceSubCommand::Schema { resource, required_version: version, output_format } => {
             if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone(), None)], progress_format) {
                 error!("{}: {err}", t!("subcommand.failedDiscoverResource"));
                 exit(EXIT_DSC_ERROR);
             }
             resource_command::schema(&mut dsc, resource, version.as_ref(), output_format.as_ref());
         },
-        ResourceSubCommand::Export { resource, version, input, file, output_format } => {
+        ResourceSubCommand::Export { resource, required_version: version, input, file, output_format } => {
             if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone(), None)], progress_format) {
                 error!("{}: {err}", t!("subcommand.failedDiscoverResource"));
                 exit(EXIT_DSC_ERROR);
@@ -571,7 +570,7 @@ pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat
             let parsed_input = get_input(input.as_ref(), file.as_ref());
             resource_command::export(&mut dsc, resource, version.as_ref(), &parsed_input, output_format.as_ref());
         },
-        ResourceSubCommand::Get { resource, version, input, file: path, all, output_format } => {
+        ResourceSubCommand::Get { resource, required_version: version, input, file: path, all, output_format } => {
             if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone(), None)], progress_format) {
                 error!("{}: {err}", t!("subcommand.failedDiscoverResource"));
                 exit(EXIT_DSC_ERROR);
@@ -588,7 +587,7 @@ pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat
                 resource_command::get(&mut dsc, resource, version.as_ref(), &parsed_input, output_format.as_ref());
             }
         },
-        ResourceSubCommand::Set { resource, version, input, file: path, output_format, what_if } => {
+        ResourceSubCommand::Set { resource, required_version: version, input, file: path, output_format, what_if } => {
             if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone(), None)], progress_format) {
                 error!("{}: {err}", t!("subcommand.failedDiscoverResource"));
                 exit(EXIT_DSC_ERROR);
@@ -596,7 +595,7 @@ pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat
             let parsed_input = get_input(input.as_ref(), path.as_ref());
             resource_command::set(&mut dsc, resource, version.as_ref(), &parsed_input, output_format.as_ref(), *what_if);
         },
-        ResourceSubCommand::Test { resource, version, input, file: path, output_format } => {
+        ResourceSubCommand::Test { resource, required_version: version, input, file: path, output_format } => {
             if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone(), None)], progress_format) {
                 error!("{}: {err}", t!("subcommand.failedDiscoverResource"));
                 exit(EXIT_DSC_ERROR);
@@ -604,7 +603,7 @@ pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat
             let parsed_input = get_input(input.as_ref(), path.as_ref());
             resource_command::test(&mut dsc, resource, version.as_ref(), &parsed_input, output_format.as_ref());
         },
-        ResourceSubCommand::Delete { resource, version, input, file: path, output_format, what_if } => {
+        ResourceSubCommand::Delete { resource, required_version: version, input, file: path, output_format, what_if } => {
             if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone(), None)], progress_format) {
                 error!("{}: {err}", t!("subcommand.failedDiscoverResource"));
                 exit(EXIT_DSC_ERROR);
@@ -615,18 +614,27 @@ pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat
     }
 }
 
+/// Indicates whether to emit a table based on the output format and whether stdout is a terminal.
+fn should_write_table(format: Option<&ListOutputFormat>) -> bool {
+    if matches!(format, Some(ListOutputFormat::TableNoTruncate)) {
+        // write as table if user specified the table format
+        true
+    } else {
+        // write as table if format is not specified and interactive
+        format.is_none() && io::stdout().is_terminal()
+    }
+}
+
 fn list_extensions(dsc: &mut DscManager, extension_name: &TypeNameFilter, format: Option<&ListOutputFormat>, progress_format: ProgressFormat) {
-    let mut write_table = false;
+    let write_table = should_write_table(format);
+
     let mut table = Table::new(&[
         t!("subcommand.tableHeader_type").to_string().as_ref(),
         t!("subcommand.tableHeader_version").to_string().as_ref(),
         t!("subcommand.tableHeader_capabilities").to_string().as_ref(),
         t!("subcommand.tableHeader_description").to_string().as_ref(),
     ]);
-    if format.is_none() && io::stdout().is_terminal() {
-        // write as table if format is not specified and interactive
-        write_table = true;
-    }
+
     let mut include_separator = false;
 
     for manifest_resource in dsc.list_available(&DiscoveryKind::Extension, extension_name, None, progress_format) {
@@ -681,30 +689,16 @@ fn list_extensions(dsc: &mut DscManager, extension_name: &TypeNameFilter, format
     }
 }
 
-fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>, output_format: Option<&ListOutputFormat>) {
-    let mut write_table = false;
+fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>, category: &[FunctionCategory], description: Option<&String>, output_format: Option<&ListOutputFormat>) {
+    let write_table = should_write_table(output_format);
     let mut table = Table::new(&[
         t!("subcommand.tableHeader_functionCategory").to_string().as_ref(),
         t!("subcommand.tableHeader_functionName").to_string().as_ref(),
-        t!("subcommand.tableHeader_minArgs").to_string().as_ref(),
-        t!("subcommand.tableHeader_maxArgs").to_string().as_ref(),
-        t!("subcommand.tableHeader_argTypes").to_string().as_ref(),
+        t!("subcommand.tableHeader_syntax").to_string().as_ref(),
         t!("subcommand.tableHeader_description").to_string().as_ref(),
     ]);
-    if output_format.is_none() && io::stdout().is_terminal() {
-        // write as table if format is not specified and interactive
-        write_table = true;
-    }
-    let mut include_separator = false;
-    let returned_types= [
-        (FunctionArgKind::Array, "a"),
-        (FunctionArgKind::Boolean, "b"),
-        (FunctionArgKind::Lambda, "l"),
-        (FunctionArgKind::Number, "n"),
-        (FunctionArgKind::String, "s"),
-        (FunctionArgKind::Object, "o"),
-    ];
 
+    let mut include_separator = false;
     let asterisks = String::from("*");
     let name = function_name.unwrap_or(&asterisks);
     let regex_str = convert_wildcard_to_regex(name);
@@ -715,6 +709,19 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
         exit(EXIT_INVALID_ARGS);
     };
 
+    let description_regex = description.map(|description| {
+        let regex_str = convert_wildcard_to_regex(description);
+        // strip the `^` and `$` anchors so the filter searches within the description text
+        let regex_str = &regex_str[1..regex_str.len() - 1];
+        let mut regex_builder = RegexBuilder::new(regex_str);
+        regex_builder.case_insensitive(true);
+        let Ok(regex) = regex_builder.build() else {
+            error!("{}: {}", t!("subcommand.invalidFunctionDescriptionFilter"), regex_str);
+            exit(EXIT_INVALID_ARGS);
+        };
+        regex
+    });
+
     let mut functions_list = functions.list();
     functions_list.sort();
     for function in functions_list {
@@ -722,27 +729,21 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
             continue;
         }
 
+        // all specified categories must be present on the function (AND filter)
+        if !category.iter().all(|c| function.category.contains(c)) {
+            continue;
+        }
+
+        if let Some(ref description_regex) = description_regex
+            && !description_regex.is_match(&function.description) {
+            continue;
+        }
+
         if write_table {
-            // construct arg_types from '-' times number of accepted_arg_types
-            let mut arg_types = "-".repeat(returned_types.len());
-            for (i, (arg_type, letter)) in returned_types.iter().enumerate() {
-                if function.return_types.contains(arg_type) {
-                    arg_types.replace_range(i..=i, letter);
-                }
-            }
-
-            let max_args = if function.max_args == usize::MAX {
-                t!("subcommand.maxInt").to_string()
-            } else {
-                function.max_args.to_string()
-            };
-
             table.add_row(vec![
                 function.category.iter().map(std::string::ToString::to_string).collect::<Vec<String>>().join(", "),
                 function.name,
-                function.min_args.to_string(),
-                max_args,
-                arg_types,
+                function.syntax,
                 function.description
             ]);
         }

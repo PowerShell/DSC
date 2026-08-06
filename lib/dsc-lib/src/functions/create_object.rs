@@ -16,6 +16,8 @@ impl Function for CreateObject {
         FunctionMetadata {
             name: "createObject".to_string(),
             description: t!("functions.createObject.description").to_string(),
+            syntax: t!("functions.createObject.syntax").to_string(),
+            constraints: Some(t!("functions.createObject.argsMustBePairs").to_string()),
             category: vec![FunctionCategory::Object],
             min_args: 0,
             max_args: usize::MAX,

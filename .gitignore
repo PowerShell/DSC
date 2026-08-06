@@ -233,3 +233,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+# Code coverage artifacts
+lcov.info
+*.profraw
+*.profdata

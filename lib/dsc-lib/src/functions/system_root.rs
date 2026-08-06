@@ -18,6 +18,8 @@ impl Function for SystemRoot {
         FunctionMetadata {
             name: "systemRoot".to_string(),
             description: t!("functions.systemRoot.description").to_string(),
+            syntax: t!("functions.systemRoot.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::System],
             min_args: 0,
             max_args: 0,

@@ -18,6 +18,8 @@ impl Function for DataUri {
         FunctionMetadata {
             name: "dataUri".to_string(),
             description: t!("functions.dataUri.description").to_string(),
+            syntax: t!("functions.dataUri.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::String],
             min_args: 1,
             max_args: 1,

@@ -118,14 +118,11 @@ impl VSCodeKeywordDefinition for DefaultSnippetsKeyword {
     fn keyword_factory<'a>(
         _parent: &'a serde_json::Map<String, Value>,
         value: &'a Value,
-        path: Location,
-    ) -> Result<Box<dyn Keyword>, ValidationError<'a>> {
+        _path: Location,
+    ) -> Result<Box<dyn for<'instance> Keyword<'instance>>, ValidationError<'a>> {
         if let Some(v) = value.as_array() {
             if v.iter().any(|item| item.as_object().is_none()) {
                 Err(ValidationError::custom(
-                    Location::new(),
-                    path,
-                    value,
                     format!(
                         "{} {}",
                         t!("vscode.keywords.default_snippets.factory_error_non_object_item"),
@@ -136,9 +133,6 @@ impl VSCodeKeywordDefinition for DefaultSnippetsKeyword {
                 Ok(Box::new(snippets))
             } else {
                 Err(ValidationError::custom(
-                    Location::new(),
-                    path,
-                    value,
                     format!(
                         "{} {}",
                         t!("vscode.keywords.default_snippets.factory_error_invalid_item"),
@@ -148,9 +142,6 @@ impl VSCodeKeywordDefinition for DefaultSnippetsKeyword {
             }
         } else {
             Err(ValidationError::custom(
-                Location::new(),
-                path,
-                value,
                 format!(
                     "{} {}",
                     t!("vscode.keywords.default_snippets.factory_error_not_array"),
@@ -217,15 +208,14 @@ impl JsonSchema for DefaultSnippetsKeyword {
     }
 }
 
-impl Keyword for DefaultSnippetsKeyword {
-    fn validate<'i>(
+impl<'i> Keyword<'i> for DefaultSnippetsKeyword {
+    fn validate(
             &self,
             _: &'i serde_json::Value,
-            _: &jsonschema::paths::LazyLocation,
         ) -> Result<(), jsonschema::ValidationError<'i>> {
         Ok(())
     }
-    fn is_valid(&self, _: &serde_json::Value) -> bool {
+    fn is_valid(&self, _: &'i serde_json::Value) -> bool {
         true
     }
 }

@@ -9,7 +9,7 @@ use crate::functions::user_function::invoke_user_function;
 use crate::schemas::dsc_repo::DscRepoSchema;
 use rust_i18n::t;
 use schemars::JsonSchema;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fmt::Display;
 
@@ -71,10 +71,12 @@ pub mod path;
 pub mod range;
 pub mod reference;
 pub mod resource_id;
+pub mod restart_required;
 pub mod secret;
 pub mod shallow_merge;
 pub mod skip;
 pub mod starts_with;
+pub mod state_changed;
 pub mod stdout;
 pub mod string;
 pub mod take;
@@ -100,6 +102,7 @@ pub mod try_which;
 /// The kind of argument that a function accepts.
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Serialize, JsonSchema, DscRepoSchema)]
 #[dsc_repo_schema(base_name = "argKind", folder_path = "definitions/functions/builtin")]
+#[serde(rename_all = "camelCase")]
 pub enum FunctionArgKind {
     Array,
     Boolean,
@@ -127,6 +130,8 @@ impl Display for FunctionArgKind {
 pub struct FunctionMetadata {
     pub name: String,
     pub description: String,
+    pub syntax: String,
+    pub constraints: Option<String>,
     pub category: Vec<FunctionCategory>,
     pub min_args: usize,
     pub max_args: usize,
@@ -218,10 +223,12 @@ impl FunctionDispatcher {
             Box::new(range::Range{}),
             Box::new(reference::Reference{}),
             Box::new(resource_id::ResourceId{}),
+            Box::new(restart_required::RestartRequired{}),
             Box::new(secret::Secret{}),
             Box::new(shallow_merge::ShallowMerge{}),
             Box::new(skip::Skip{}),
             Box::new(starts_with::StartsWith{}),
+            Box::new(state_changed::StateChanged{}),
             Box::new(stdout::Stdout{}),
             Box::new(string::StringFn{}),
             Box::new(sub::Sub{}),
@@ -346,6 +353,8 @@ impl FunctionDispatcher {
                 category: metadata.category.clone(),
                 name: name.clone(),
                 description: metadata.description,
+                syntax: metadata.syntax,
+                constraints: metadata.constraints.clone(),
                 min_args: metadata.min_args,
                 max_args: metadata.max_args,
                 accepted_arg_ordered_types: metadata.accepted_arg_ordered_types.clone(),
@@ -369,6 +378,8 @@ pub struct FunctionDefinition {
     pub category: Vec<FunctionCategory>,
     pub name: String,
     pub description: String,
+    pub syntax: String,
+    pub constraints: Option<String>,
     #[serde(rename = "minArgs")]
     pub min_args: usize,
     #[serde(rename = "maxArgs")]
@@ -381,8 +392,8 @@ pub struct FunctionDefinition {
     pub return_types: Vec<FunctionArgKind>,
 }
 
-#[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Serialize, JsonSchema, DscRepoSchema)]
-#[serde(deny_unknown_fields)]
+#[derive(Clone, Debug, Deserialize, Ord, PartialOrd, Eq, PartialEq, Serialize, JsonSchema, DscRepoSchema)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 #[dsc_repo_schema(base_name = "category", folder_path = "definitions/functions/builtin")]
 pub enum FunctionCategory {
     Array,
@@ -414,6 +425,49 @@ impl Display for FunctionCategory {
             FunctionCategory::Resource => write!(f, "Resource"),
             FunctionCategory::String => write!(f, "String"),
             FunctionCategory::System => write!(f, "System"),
+        }
+    }
+}
+
+impl FunctionCategory {
+    /// All defined function categories.
+    pub const ALL: [FunctionCategory; 12] = [
+        FunctionCategory::Array,
+        FunctionCategory::Cidr,
+        FunctionCategory::Comparison,
+        FunctionCategory::Date,
+        FunctionCategory::Deployment,
+        FunctionCategory::Lambda,
+        FunctionCategory::Logical,
+        FunctionCategory::Numeric,
+        FunctionCategory::Object,
+        FunctionCategory::Resource,
+        FunctionCategory::String,
+        FunctionCategory::System,
+    ];
+}
+
+impl std::str::FromStr for FunctionCategory {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "array" => Ok(FunctionCategory::Array),
+            "cidr" => Ok(FunctionCategory::Cidr),
+            "comparison" => Ok(FunctionCategory::Comparison),
+            "date" => Ok(FunctionCategory::Date),
+            "deployment" => Ok(FunctionCategory::Deployment),
+            "lambda" => Ok(FunctionCategory::Lambda),
+            "logical" => Ok(FunctionCategory::Logical),
+            "numeric" => Ok(FunctionCategory::Numeric),
+            "object" => Ok(FunctionCategory::Object),
+            "resource" => Ok(FunctionCategory::Resource),
+            "string" => Ok(FunctionCategory::String),
+            "system" => Ok(FunctionCategory::System),
+            _ => {
+                let valid = Self::ALL.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ");
+                Err(t!("functions.invalidCategory", category = s, valid_categories = valid).to_string())
+            },
         }
     }
 }

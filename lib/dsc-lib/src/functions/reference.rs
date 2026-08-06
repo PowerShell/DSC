@@ -16,6 +16,8 @@ impl Function for Reference {
         FunctionMetadata {
             name: "reference".to_string(),
             description: t!("functions.reference.description").to_string(),
+            syntax: t!("functions.reference.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Resource],
             min_args: 1,
             max_args: 1,

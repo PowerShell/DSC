@@ -65,7 +65,7 @@ impl McpServer {
         let result = task::spawn_blocking(move || {
             let mut dsc = DscManager::new();
             let Some(resource) = dsc.find_resource(&DiscoveryFilter::new(&r#type, None, None)).unwrap_or(None) else {
-                return Err(McpError::invalid_params(t!("mcp.show_dsc_resource.resourceNotFound", type_name = r#type), None))
+                return Err(McpError::invalid_params(t!("server.show_dsc_resource.resourceNotFound", type_name = r#type), None))
             };
             let schema = match resource.schema() {
                 Ok(schema_str) => serde_json::from_str(&schema_str).ok(),

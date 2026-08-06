@@ -129,6 +129,11 @@ pub enum GetArgKind {
         /// The argument that accepts the resource type name.
         resource_type_arg: String,
     },
+    #[serde(rename_all = "camelCase")]
+    ResourceVersion {
+        /// The argument that accepts the resource version.
+        resource_version_arg: String,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
@@ -162,6 +167,11 @@ pub enum SetDeleteArgKind {
         /// The argument that accepts the resource type name.
         resource_type_arg: String,
     },
+    #[serde(rename_all = "camelCase")]
+    ResourceVersion {
+        /// The argument that accepts the resource version.
+        resource_version_arg: String,
+    },
     /// The argument is passed when the resource is invoked in what-if mode.
     #[serde(rename_all = "camelCase")]
     WhatIf {
@@ -176,10 +186,15 @@ pub enum SetDeleteArgKind {
 pub enum SchemaArgKind {
     /// The argument is a string.
     String(String),
+    #[serde(rename_all = "camelCase")]
     ResourceType {
         /// The argument that accepts the resource type name.
-        #[serde(rename = "resourceTypeArg")]
         resource_type_arg: String,
+    },
+    #[serde(rename_all = "camelCase")]
+    ResourceVersion {
+        /// The argument that accepts the resource version.
+        resource_version_arg: String,
     },
 }
 
@@ -203,6 +218,16 @@ pub enum SchemaKind {
     Command(SchemaCommand),
     /// The schema is embedded in the manifest.
     #[serde(rename = "embedded")]
+    Embedded(Value),
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[dsc_repo_schema(base_name = "manifest.exportSchema", folder_path = "definitions")]
+#[serde(rename_all = "camelCase")]
+pub enum ExportSchemaKind {
+    /// The export schema is returned by running a command.
+    Command(SchemaCommand),
+    /// The export schema is embedded in the manifest.
     Embedded(Value),
 }
 
@@ -309,6 +334,13 @@ pub struct ValidateMethod { // TODO: enable validation via schema or command
     pub input: Option<InputKind>,
 }
 
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub enum ExportSchemaOrFiltering {
+    Schema(ExportSchemaKind),
+    SupportsFiltering(bool),
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[dsc_repo_schema(base_name = "manifest.export", folder_path = "resource")]
 pub struct ExportMethod {
@@ -321,6 +353,8 @@ pub struct ExportMethod {
     /// The security context required to run the Export method.  Default if not specified is `current`.
     #[serde(rename = "requireSecurityContext", skip_serializing_if = "Option::is_none")]
     pub require_security_context: Option<SecurityContextKind>,
+    #[serde(flatten, skip_serializing_if = "Option::is_none")]
+    pub schema_or_filtering: Option<ExportSchemaOrFiltering>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]

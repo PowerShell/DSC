@@ -11,6 +11,8 @@ pub enum Schemas {
     Exist,
     ExitCode,
     Export,
+    ExportGetSchema,
+    ExportSchema,
     Exporter,
     Get,
     InDesiredState,
@@ -18,6 +20,7 @@ pub enum Schemas {
     Operation,
     RefreshEnv,
     RestartRequired,
+    Set,
     Sleep,
     StateAndDiff,
     Trace,
@@ -61,6 +64,8 @@ pub enum SubCommand {
         resource_type: String,
         #[clap(name = "resource-path", long, help = "The path to the adapted resource")]
         resource_path: Option<String>,
+        #[clap(name = "resource-version", long, help = "The version of the adapted resource")]
+        resource_version: Option<String>,
         #[clap(name = "operation", short, long, help = "The operation to perform")]
         operation: AdapterOperation,
     },
@@ -92,6 +97,12 @@ pub enum SubCommand {
     #[clap(name = "export", about = "Export instances")]
     Export {
         #[clap(name = "input", short, long, help = "The input to the export command as JSON")]
+        input: String,
+    },
+
+    #[clap(name = "export-schema", about = "Test export specific schema")]
+    ExportSchema {
+        #[clap(name = "input", short, long, help = "The input to the export schema command as JSON")]
         input: String,
     },
 
@@ -150,6 +161,14 @@ pub enum SubCommand {
     Schema {
         #[clap(name = "subcommand", short, long, help = "The subcommand to get the schema for")]
         subcommand: Schemas,
+    },
+
+    #[clap(name = "set", about = "Set a resource")]
+    Set {
+        #[clap(name = "get", short, long, help = "Get the current state of the resource before setting it")]
+        get: bool,
+        #[clap(name = "input", short, long, help = "The input to the set command as JSON")]
+        input: Option<String>,
     },
 
     #[clap(name = "sleep", about = "Sleep for a specified number of seconds")]
