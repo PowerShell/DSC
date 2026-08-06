@@ -56,7 +56,10 @@
     },
     "schema": {
         "embedded": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
             "type": "object",
+            "title": "Transitional Windows PowerShell script resource",
+            "description": "Defines an instance of the `Microsoft.DSC.Transitional/WindowsPowerShellScript` resource, which enables users to define inline scripts for the get, set, and test resource operations.",
             "oneOf": [
                 {
                     "description": "Defines constraints for the return data of the resource operations.",
