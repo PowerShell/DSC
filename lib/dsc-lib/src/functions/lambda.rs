@@ -18,6 +18,8 @@ impl Function for LambdaFn {
         FunctionMetadata {
             name: "lambda".to_string(),
             description: t!("functions.lambda.description").to_string(),
+            syntax: t!("functions.lambda.syntax").to_string(),
+            constraints: Some(t!("functions.lambda.constraints").to_string()),
             category: vec![FunctionCategory::Lambda],
             min_args: 0, // Args come through context.lambda_raw_args
             max_args: 0,

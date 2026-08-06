@@ -17,6 +17,8 @@ impl Function for TryWhich {
         FunctionMetadata {
             name: "tryWhich".to_string(),
             description: t!("functions.tryWhich.description").to_string(),
+            syntax: t!("functions.tryWhich.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::System],
             min_args: 1,
             max_args: 1,

@@ -15,6 +15,8 @@ impl Function for Items {
         FunctionMetadata {
             name: "items".to_string(),
             description: t!("functions.items.description").to_string(),
+            syntax: t!("functions.items.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Object],
             min_args: 1,
             max_args: 1,
@@ -57,17 +59,17 @@ mod tests {
     fn items_basic_object() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[items(createObject('a', 1, 'b', 2, 'c', 3))]", &Context::new()).unwrap();
-        
+
         let arr = result.as_array().unwrap();
         assert_eq!(arr.len(), 3);
-        
+
         for item in arr {
             assert!(item.is_object());
             let obj = item.as_object().unwrap();
             assert!(obj.contains_key("key"));
             assert!(obj.contains_key("value"));
         }
-        
+
         let has_a = arr.iter().any(|item| {
             let obj = item.as_object().unwrap();
             obj.get("key").and_then(Value::as_str) == Some("a")
@@ -87,14 +89,14 @@ mod tests {
     fn items_nested_values() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[items(createObject('person', createObject('name', 'John', 'age', 30)))]", &Context::new()).unwrap();
-        
+
         let arr = result.as_array().unwrap();
         assert_eq!(arr.len(), 1);
-        
+
         let item = &arr[0];
         let obj = item.as_object().unwrap();
         assert_eq!(obj.get("key").and_then(Value::as_str), Some("person"));
-        
+
         let person = obj.get("value").unwrap();
         assert!(person.is_object());
         let person_obj = person.as_object().unwrap();
@@ -106,14 +108,14 @@ mod tests {
     fn items_array_values() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[items(createObject('list', createArray('a', 'b', 'c')))]", &Context::new()).unwrap();
-        
+
         let arr = result.as_array().unwrap();
         assert_eq!(arr.len(), 1);
-        
+
         let item = &arr[0];
         let obj = item.as_object().unwrap();
         assert_eq!(obj.get("key").and_then(Value::as_str), Some("list"));
-        
+
         let list = obj.get("value").unwrap();
         assert_eq!(list, &json!(["a", "b", "c"]));
     }
@@ -122,17 +124,17 @@ mod tests {
     fn items_string_values() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[items(createObject('greeting', 'Hello', 'farewell', 'Goodbye'))]", &Context::new()).unwrap();
-        
+
         let arr = result.as_array().unwrap();
         assert_eq!(arr.len(), 2);
-        
+
         let has_greeting = arr.iter().any(|item| {
             let obj = item.as_object().unwrap();
             obj.get("key").and_then(Value::as_str) == Some("greeting")
                 && obj.get("value").and_then(Value::as_str) == Some("Hello")
         });
         assert!(has_greeting);
-        
+
         let has_farewell = arr.iter().any(|item| {
             let obj = item.as_object().unwrap();
             obj.get("key").and_then(Value::as_str) == Some("farewell")
@@ -145,24 +147,24 @@ mod tests {
     fn items_mixed_types() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[items(createObject('str', 'text', 'num', 42, 'bool', true()))]", &Context::new()).unwrap();
-        
+
         let arr = result.as_array().unwrap();
         assert_eq!(arr.len(), 3);
-        
+
         let has_str = arr.iter().any(|item| {
             let obj = item.as_object().unwrap();
             obj.get("key").and_then(Value::as_str) == Some("str")
                 && obj.get("value").and_then(Value::as_str) == Some("text")
         });
         assert!(has_str);
-        
+
         let has_num = arr.iter().any(|item| {
             let obj = item.as_object().unwrap();
             obj.get("key").and_then(Value::as_str) == Some("num")
                 && obj.get("value").and_then(Value::as_i64) == Some(42)
         });
         assert!(has_num);
-        
+
         let has_bool = arr.iter().any(|item| {
             let obj = item.as_object().unwrap();
             obj.get("key").and_then(Value::as_str) == Some("bool")

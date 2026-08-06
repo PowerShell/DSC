@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'Windows Update Get operation tests' {
+Describe 'Windows Update Get operation tests' -Skip:(!$IsWindows) {
     BeforeAll {
         $resourceType = 'Microsoft.Windows/UpdateList'
         $result = dsc resource export -r $resourceType | ConvertFrom-Json
@@ -21,7 +21,7 @@ Describe 'Windows Update Get operation tests' {
                 )
             } | ConvertTo-Json -Depth 10 -Compress
             $out = $json | dsc resource get -r $resourceType -f - 2>&1
-            
+
             $LASTEXITCODE | Should -Be 0
             $getResult = $out | ConvertFrom-Json
             $getResult.actualState | Should -Not -BeNullOrEmpty
@@ -36,7 +36,7 @@ Describe 'Windows Update Get operation tests' {
 
         It 'should handle case-insensitive exact title match' -Skip:(!$IsWindows) {
             $exactTitle = $exportOut.updates[0].title
-            
+
             # Test with lowercase version
             $jsonLower = @{
                 updates = @(
@@ -46,7 +46,7 @@ Describe 'Windows Update Get operation tests' {
                 )
             } | ConvertTo-Json -Depth 10 -Compress
             $outLower = $jsonLower | dsc resource get -r $resourceType -f - 2>&1
-            
+
             # Test with uppercase version
             $jsonUpper = @{
                 updates = @(
@@ -56,7 +56,7 @@ Describe 'Windows Update Get operation tests' {
                 )
             } | ConvertTo-Json -Depth 10 -Compress
             $outUpper = $jsonUpper | dsc resource get -r $resourceType -f - 2>&1
-            
+
             # Both should succeed
             if ($outLower -and $outUpper) {
                 $resultLower = $outLower | ConvertFrom-Json
@@ -104,7 +104,7 @@ Describe 'Windows Update Get operation tests' {
                 )
             } | ConvertTo-Json -Depth 10 -Compress
             $out = $json | dsc resource get -r $resourceType -f - 2>&1
-            
+
             $LASTEXITCODE | Should -Be 0
             $result = $out | ConvertFrom-Json
             $result.actualState.updates[0].title | Should -Be $testUpdate.title
@@ -122,7 +122,7 @@ Describe 'Windows Update Get operation tests' {
                 )
             } | ConvertTo-Json -Depth 10 -Compress
             $null = $json | dsc resource get -r $resourceType -f - 2>&1
-            
+
             # Should fail because id doesn't match
             $LASTEXITCODE | Should -Not -Be 0
         }
@@ -138,7 +138,7 @@ Describe 'Windows Update Get operation tests' {
                 )
             } | ConvertTo-Json -Depth 10 -Compress
             $null = $json | dsc resource get -r $resourceType -f - 2>&1
-            
+
             # Should fail because title doesn't match
             $LASTEXITCODE | Should -Not -Be 0
         }
@@ -152,7 +152,7 @@ Describe 'Windows Update Get operation tests' {
                 )
             } | ConvertTo-Json -Depth 10 -Compress
             $out = $json | dsc resource get -r $resourceType -f - 2>&1
-            $LASTEXITCODE | Should -Be 0            
+            $LASTEXITCODE | Should -Be 0
             $result = $out | ConvertFrom-Json
             $result.actualState.updates[0].isInstalled | Should -BeOfType [bool]
         }
@@ -166,7 +166,7 @@ Describe 'Windows Update Get operation tests' {
                 )
             } | ConvertTo-Json -Depth 10 -Compress
             $out = $json | dsc resource get -r $resourceType -f - 2>&1
-            $LASTEXITCODE | Should -Be 0            
+            $LASTEXITCODE | Should -Be 0
             $result = $out | ConvertFrom-Json
             $result.actualState.updates[0].recommendedHardDiskSpace | Should -BeGreaterOrEqual 0
         }
@@ -180,7 +180,7 @@ Describe 'Windows Update Get operation tests' {
                 )
             } | ConvertTo-Json -Depth 10 -Compress
             $out = $json | dsc resource get -r $resourceType -f - 2>&1
-            $LASTEXITCODE | Should -Be 0            
+            $LASTEXITCODE | Should -Be 0
             $result = $out | ConvertFrom-Json
             $result.actualState.updates[0].kbArticleIds.GetType().BaseType.Name | Should -Be 'Array'
         }
@@ -194,14 +194,14 @@ Describe 'Windows Update Get operation tests' {
                 )
             } | ConvertTo-Json -Depth 10 -Compress
             $out = $json | dsc resource get -r $resourceType -f - 2>&1
-            $LASTEXITCODE | Should -Be 0            
+            $LASTEXITCODE | Should -Be 0
             $result = $out | ConvertFrom-Json
             $result.actualState.updates[0].updateType | Should -BeIn @('Software', 'Driver')
         }
 
         It 'should return valid enum value for msrcSeverity when present' -Skip:(!$IsWindows) {
             $updateWithSeverity = $exportOut.updates | Where-Object { $null -ne $_.msrcSeverity } | Select-Object -First 1
-                
+
             if ($updateWithSeverity) {
                 $json = @{
                     updates = @(
@@ -226,7 +226,7 @@ Describe 'Windows Update Get operation tests' {
                 )
             } | ConvertTo-Json -Depth 10 -Compress
             $out = $json | dsc resource get -r $resourceType -f - 2>&1
-                    
+
             $LASTEXITCODE | Should -Be 0
             $result = $out | ConvertFrom-Json
             # Basic GUID format check (8-4-4-4-12 hex digits)
@@ -243,7 +243,7 @@ Describe 'Windows Update Get operation tests' {
                 )
             } | ConvertTo-Json -Depth 10 -Compress
             $out = $json | dsc resource get -r $resourceType -f - 2>&1
-                    
+
             $LASTEXITCODE | Should -Be 0
             $result = $out | ConvertFrom-Json
             $result.actualState.updates[0].id | Should -Be $updateId
@@ -254,7 +254,7 @@ Describe 'Windows Update Get operation tests' {
             if ($exportOut.updates.Count -ge 2) {
                 $update1 = $exportOut.updates[0]
                 $update2 = $exportOut.updates[1]
-                
+
                 $json = @{
                     updates = @(
                         @{
@@ -266,7 +266,7 @@ Describe 'Windows Update Get operation tests' {
                     )
                 } | ConvertTo-Json -Depth 10 -Compress
                 $out = $json | dsc resource get -r $resourceType -f - 2>&1
-                
+
                 $LASTEXITCODE | Should -Be 0
                 $getResult = $out | ConvertFrom-Json
                 $getResult.actualState.updates.Count | Should -Be 2
@@ -279,7 +279,7 @@ Describe 'Windows Update Get operation tests' {
 
         It 'should fail if any input object does not have a match' -Skip:(!$IsWindows) {
             $update1 = $exportOut.updates[0]
-            
+
             $json = @{
                 updates = @(
                     @{
@@ -291,10 +291,10 @@ Describe 'Windows Update Get operation tests' {
                 )
             } | ConvertTo-Json -Depth 10 -Compress
             $stderr = $json | dsc resource get -r $resourceType -f - 2>&1
-            
+
             # Should fail because second input has no match
             $LASTEXITCODE | Should -Not -Be 0
-            
+
             # Check for error message in stderr
             $errorText = $stderr | Out-String
             $errorText | Should -Match 'No matching update found'
@@ -303,7 +303,7 @@ Describe 'Windows Update Get operation tests' {
         It 'should support filtering by KB article IDs' -Skip:(!$IsWindows) {
             # Find an update with KB article IDs
             $updateWithKB = $exportOut.updates | Where-Object { $_.kbArticleIds.Count -gt 0 } | Select-Object -First 1
-            
+
             if ($updateWithKB) {
                 $json = @{
                     updates = @(
@@ -313,7 +313,7 @@ Describe 'Windows Update Get operation tests' {
                     )
                 } | ConvertTo-Json -Depth 10 -Compress
                 $out = $json | dsc resource get -r $resourceType -f - 2>&1
-                
+
                 $LASTEXITCODE | Should -Be 0
                 $getResult = $out | ConvertFrom-Json
                 $getResult.actualState.updates[0].kbArticleIds | Should -Contain $updateWithKB.kbArticleIds[0]
@@ -324,7 +324,7 @@ Describe 'Windows Update Get operation tests' {
 
         It 'should support filtering by update type' -Skip:(!$IsWindows) {
             $softwareUpdate = $exportOut.updates | Where-Object { $_.updateType -eq 'Software' } | Select-Object -First 1
-            
+
             if ($softwareUpdate) {
                 $json = @{
                     updates = @(
@@ -335,7 +335,7 @@ Describe 'Windows Update Get operation tests' {
                     )
                 } | ConvertTo-Json -Depth 10 -Compress
                 $out = $json | dsc resource get -r $resourceType -f - 2>&1
-                
+
                 $LASTEXITCODE | Should -Be 0
                 $getResult = $out | ConvertFrom-Json
                 $getResult.actualState.updates[0].updateType | Should -Be 'Software'
@@ -346,7 +346,7 @@ Describe 'Windows Update Get operation tests' {
 
         It 'should support filtering by MSRC severity with AND logic' -Skip:(!$IsWindows) {
             $updateWithSeverity = $exportOut.updates | Where-Object { $null -ne $_.msrcSeverity } | Select-Object -First 1
-            
+
             if ($updateWithSeverity) {
                 $json = @{
                     updates = @(
@@ -357,7 +357,7 @@ Describe 'Windows Update Get operation tests' {
                     )
                 } | ConvertTo-Json -Depth 10 -Compress
                 $out = $json | dsc resource get -r $resourceType -f - 2>&1
-                
+
                 $LASTEXITCODE | Should -Be 0
                 $getResult = $out | ConvertFrom-Json
                 $getResult.actualState.updates[0].msrcSeverity | Should -Be $updateWithSeverity.msrcSeverity
@@ -375,7 +375,7 @@ Describe 'Windows Update Get operation tests' {
                 )
             } | ConvertTo-Json -Depth 10 -Compress
             $out = $json | dsc resource get -r $resourceType -f - 2>&1
-            
+
             $LASTEXITCODE | Should -Be 0
             $result = $out | ConvertFrom-Json
             # installationBehavior should be one of the valid enum values if present
@@ -387,7 +387,7 @@ Describe 'Windows Update Get operation tests' {
         It 'should return valid enum value for installationBehavior' -Skip:(!$IsWindows) {
             # Find an update that has installationBehavior set
             $updateWithBehavior = $exportOut.updates | Where-Object { $null -ne $_.installationBehavior } | Select-Object -First 1
-            
+
             if ($updateWithBehavior) {
                 $json = @{
                     updates = @(
@@ -397,7 +397,7 @@ Describe 'Windows Update Get operation tests' {
                     )
                 } | ConvertTo-Json -Depth 10 -Compress
                 $out = $json | dsc resource get -r $resourceType -f - 2>&1
-                
+
                 $LASTEXITCODE | Should -Be 0
                 $getResult = $out | ConvertFrom-Json
                 $getResult.actualState.updates[0].installationBehavior | Should -BeIn @('NeverReboots', 'AlwaysRequiresReboot', 'CanRequestReboot')
@@ -410,10 +410,10 @@ Describe 'Windows Update Get operation tests' {
             # Find a title pattern that might match multiple updates
             # Using isInstalled filter with a common partial title like 'Windows' could match multiple
             # This test verifies the new multiple-match detection behavior
-            
+
             # First, check if there are multiple updates with similar titles
             $windowsUpdates = $exportOut.updates | Where-Object { $_.title -like '*Windows*' }
-            
+
             if ($windowsUpdates.Count -ge 2) {
                 # Find a common substring that appears in multiple update titles
                 # Try to use a very generic criteria that would match multiple
@@ -425,7 +425,7 @@ Describe 'Windows Update Get operation tests' {
                     )
                 } | ConvertTo-Json -Depth 10 -Compress
                 $stderr = $json | dsc resource get -r $resourceType -f - 2>&1
-                
+
                 # If multiple updates match isInstalled=true, it should error
                 $installedCount = ($exportOut.updates | Where-Object { $_.isInstalled -eq $true }).Count
                 if ($installedCount -gt 1) {
@@ -445,7 +445,7 @@ Describe 'Windows Update Get operation tests' {
             # Find a case where using title-only might match multiple updates
             # Group updates by similar starting titles
             $titleGroups = $exportOut.updates | Group-Object { ($_.title -split ' ')[0..2] -join ' ' } | Where-Object { $_.Count -gt 1 }
-            
+
             if ($titleGroups.Count -gt 0) {
                 # Use the first duplicate-ish title group
                 $firstGroup = $titleGroups[0].Group
@@ -461,7 +461,7 @@ Describe 'Windows Update Get operation tests' {
                         )
                     } | ConvertTo-Json -Depth 10 -Compress
                     $stderr = $json | dsc resource get -r $resourceType -f - 2>&1
-                    
+
                     # This may or may not fail depending on uniqueness
                     if ($LASTEXITCODE -ne 0) {
                         $errorText = $stderr | Out-String

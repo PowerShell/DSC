@@ -16,6 +16,8 @@ impl Function for Last {
         FunctionMetadata {
             name: "last".to_string(),
             description: t!("functions.last.description").to_string(),
+            syntax: t!("functions.last.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Array, FunctionCategory::String],
             min_args: 1,
             max_args: 1,
@@ -27,7 +29,7 @@ impl Function for Last {
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.last.invoked"));
-        
+
         if let Some(array) = args[0].as_array() {
             if array.is_empty() {
                 return Ok(Value::Null);

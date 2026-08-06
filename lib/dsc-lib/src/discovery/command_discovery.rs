@@ -16,6 +16,7 @@ use crate::schemas::transforms::idiomaticize_externally_tagged_enum;
 use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::Deserialize;
+use serde_json::Value;
 use std::{collections::{HashMap, HashSet}, sync::{LazyLock, RwLock}};
 use std::env;
 use std::ffi::OsStr;
@@ -27,10 +28,11 @@ use tracing::{debug, info, trace, warn};
 use crate::util::get_setting;
 use crate::util::{canonicalize_which, get_exe_path};
 
-const DSC_ADAPTED_RESOURCE_EXTENSIONS: [&str; 3] = [".dsc.adaptedresource.json", ".dsc.adaptedresource.yaml", ".dsc.adaptedresource.yml"];
-const DSC_EXTENSION_EXTENSIONS: [&str; 3] = [".dsc.extension.json", ".dsc.extension.yaml", ".dsc.extension.yml"];
-const DSC_MANIFEST_LIST_EXTENSIONS: [&str; 3] = [".dsc.manifests.json", ".dsc.manifests.yaml", ".dsc.manifests.yml"];
-const DSC_RESOURCE_EXTENSIONS: [&str; 3] = [".dsc.resource.json", ".dsc.resource.yaml", ".dsc.resource.yml"];
+// NOTE: if new types of file extensions are added, ensure they are added to `process_discover_args` in `lib/dsc-lib/src/extensions/discover.rs`
+pub const DSC_ADAPTED_RESOURCE_EXTENSIONS: [&str; 3] = [".dsc.adaptedresource.json", ".dsc.adaptedresource.yaml", ".dsc.adaptedresource.yml"];
+pub const DSC_EXTENSION_EXTENSIONS: [&str; 3] = [".dsc.extension.json", ".dsc.extension.yaml", ".dsc.extension.yml"];
+pub const DSC_MANIFEST_LIST_EXTENSIONS: [&str; 3] = [".dsc.manifests.json", ".dsc.manifests.yaml", ".dsc.manifests.yml"];
+pub const DSC_RESOURCE_EXTENSIONS: [&str; 3] = [".dsc.resource.json", ".dsc.resource.yaml", ".dsc.resource.yml"];
 
 static ADAPTERS: LazyLock<RwLock<DiscoveryResourceCache>> = LazyLock::new(|| RwLock::new(DiscoveryResourceCache::new()));
 static RESOURCES: LazyLock<RwLock<DiscoveryResourceCache>> = LazyLock::new(|| RwLock::new(DiscoveryResourceCache::new()));
@@ -62,7 +64,7 @@ pub struct CommandDiscovery {
 
 #[derive(Deserialize)]
 pub struct ResourcePathSetting {
-    /// whether to allow overriding with the `DSC_RESOURCE_PATH` environment variable
+    /// whether to allow overriding with the `DSC_RESTRICTED_PATH` or `DSC_RESOURCE_PATH` environment variables
     #[serde(rename = "allowEnvOverride")]
     allow_env_override: bool,
     /// whether to append the PATH environment variable to the list of resource directories
@@ -131,16 +133,30 @@ impl CommandDiscovery {
             }
         }
 
-        let mut using_custom_path = false;
         let mut paths: Vec<PathBuf> = vec![];
 
+        let dsc_restricted_path = env::var_os("DSC_RESTRICTED_PATH");
         let dsc_resource_path = env::var_os("DSC_RESOURCE_PATH");
-        if resource_path_setting.allow_env_override && dsc_resource_path.is_some() {
-            if let Some(value) = dsc_resource_path {
-                debug!("DSC_RESOURCE_PATH: {:?}", value.to_string_lossy());
-                using_custom_path = true;
-                paths.append(&mut env::split_paths(&value).collect::<Vec<_>>());
+        if resource_path_setting.allow_env_override && let Some(restricted_path) = &dsc_restricted_path {
+            debug!("DSC_RESTRICTED_PATH: {:?}", restricted_path.to_string_lossy());
+            paths.append(&mut env::split_paths(&restricted_path).collect::<Vec<_>>());
+
+            // when using restricted path, intent is to isolate the search of manifests and executables to the restricted path
+            // so we replace the PATH with the restricted path
+            if let Ok(new_path) = env::join_paths(paths.clone()) {
+                unsafe {
+                    env::set_var("PATH", new_path);
+                }
+            } else {
+                return Err(DscError::Operation(t!("discovery.commandDiscovery.failedJoinRestrictedPath").to_string()));
             }
+        } else if resource_path_setting.allow_env_override && let Some(resource_path) = &dsc_resource_path {
+            debug!("DSC_RESOURCE_PATH: {:?}", resource_path.to_string_lossy());
+            paths.append(&mut env::split_paths(&resource_path).collect::<Vec<_>>());
+
+            // just add exe home to PATH env var if not already in PATH env var
+            let env_paths = env::var_os("PATH").map(|paths| env::split_paths(&paths).collect::<Vec<_>>()).unwrap_or_default();
+            _ = add_exe_home_to_path(env_paths)?;
         } else {
             for p in resource_path_setting.directories {
                 let v = PathBuf::from_str(&p);
@@ -159,40 +175,14 @@ impl CommandDiscovery {
                     }
                 }
             }
+
+            // if exe home is not already in PATH env var then add it to env var and list of searched paths
+            paths = add_exe_home_to_path(paths)?;
         }
 
         // remove duplicate entries
         let mut uniques: HashSet<PathBuf> = HashSet::new();
         paths.retain(|e|uniques.insert((*e).clone()));
-
-        if using_custom_path {
-            // when using custom path, intent is to isolate the search of manifests and executables to the custom path
-            // so we replace the PATH with the custom path
-            if let Ok(new_path) = env::join_paths(paths.clone()) {
-                unsafe {
-                    env::set_var("PATH", new_path);
-                }
-            } else {
-                return Err(DscError::Operation(t!("discovery.commandDiscovery.failedJoinEnvPath").to_string()));
-            }
-        } else {
-            // if exe home is not already in PATH env var then add it to env var and list of searched paths
-            if let Some(exe_home) = get_exe_path()?.parent() {
-                let exe_home_pb = exe_home.to_path_buf();
-                if paths.contains(&exe_home_pb) {
-                    trace!("{}", t!("discovery.commandDiscovery.exeHomeAlreadyInPath", path = exe_home.to_string_lossy()));
-                } else {
-                    trace!("{}", t!("discovery.commandDiscovery.addExeHomeToPath", path = exe_home.to_string_lossy()));
-                    paths.push(exe_home_pb);
-
-                    if let Ok(new_path) = env::join_paths(paths.clone()) {
-                        unsafe {
-                            env::set_var("PATH", new_path);
-                        }
-                    }
-                }
-            }
-        }
 
         if let Ok(final_resource_path) = env::join_paths(paths.clone()) {
             debug!("{}", t!("discovery.commandDiscovery.usingResourcePath", path = final_resource_path.to_string_lossy()));
@@ -200,6 +190,27 @@ impl CommandDiscovery {
 
         Ok(paths)
     }
+}
+
+fn add_exe_home_to_path(mut paths: Vec<PathBuf>) -> Result<Vec<PathBuf>, DscError> {
+    if let Some(exe_home) = get_exe_path()?.parent() {
+        let exe_home_pb = exe_home.to_path_buf();
+        if paths.contains(&exe_home_pb) {
+            trace!("{}", t!("discovery.commandDiscovery.exeHomeAlreadyInPath", path = exe_home.to_string_lossy()));
+        } else {
+            trace!("{}", t!("discovery.commandDiscovery.addExeHomeToPath", path = exe_home.to_string_lossy()));
+            paths.push(exe_home_pb);
+
+            if let Ok(new_path) = env::join_paths(paths.clone()) {
+                unsafe {
+                    env::set_var("PATH", new_path);
+                }
+            } else {
+                warn!("{}", t!("discovery.commandDiscovery.failedJoinEnvPath").to_string());
+            }
+        }
+    }
+    Ok(paths)
 }
 
 impl Default for CommandDiscovery {
@@ -635,6 +646,77 @@ fn evaluate_condition(condition: Option<&str>) -> Result<bool, DscError> {
     Ok(true)
 }
 
+/// Loads a manifest from the given content and returns a vector of `ImportedManifest`.
+///
+/// # Arguments
+///
+/// * `content` - The content of the manifest file as a string.
+///
+/// # Returns
+///
+/// * `Vec<ImportedManifest>` if the manifest was loaded successfully.
+///
+/// # Errors
+/// * Returns a `DscError` if the manifest could not be loaded or parsed.
+pub fn load_manifest_content(content: &Value) -> Result<Vec<ImportedManifest>, DscError> {
+    if let Ok(resource) = serde_json::from_value::<AdaptedDscResourceManifest>(content.clone()) {
+        if !evaluate_condition(resource.condition.as_deref())? {
+            debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = "manifest content", condition = resource.condition.unwrap_or_default(), resource = resource.type_name));
+            return Ok(vec![]);
+        }
+        let resource = load_adapted_resource_manifest(Path::new("manifest content"), &resource)?;
+        return Ok(vec![ImportedManifest::Resource(resource)]);
+    } else if let Ok(resource) = serde_json::from_value::<ResourceManifest>(content.clone()) {
+        if !evaluate_condition(resource.condition.as_deref())? {
+            debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = "manifest content", condition = resource.condition.unwrap_or_default(), resource = resource.resource_type));
+            return Ok(vec![]);
+        }
+        let resource = load_resource_manifest(Path::new("manifest content"), &resource)?;
+        return Ok(vec![ImportedManifest::Resource(resource)]);
+    } else if let Ok(extension) = serde_json::from_value::<ExtensionManifest>(content.clone()) {
+        if !evaluate_condition(extension.condition.as_deref())? {
+            debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = "manifest content", condition = extension.condition.unwrap_or_default(), resource = extension.r#type));
+            return Ok(vec![]);
+        }
+        let extension = load_extension_manifest(Path::new("manifest content"), &extension)?;
+        return Ok(vec![ImportedManifest::Extension(extension)]);
+    } else if let Ok(manifest_list) = serde_json::from_value::<ManifestList>(content.clone()) {
+        let mut resources: Vec<ImportedManifest> = vec![];
+        if let Some(adapted_resources) = manifest_list.adapted_resources {
+            for adapted_resource in adapted_resources {
+                if !evaluate_condition(adapted_resource.condition.as_deref())? {
+                    debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = "manifest content", condition = adapted_resource.condition.unwrap_or_default(), resource = adapted_resource.type_name));
+                    continue;
+                }
+                let resource = load_adapted_resource_manifest(Path::new("manifest content"), &adapted_resource)?;
+                resources.push(ImportedManifest::Resource(resource));
+            }
+        }
+        if let Some(resource_manifests) = manifest_list.resources {
+            for resource_manifest in resource_manifests {
+                if !evaluate_condition(resource_manifest.condition.as_deref())? {
+                    debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = "manifest content", condition = resource_manifest.condition.unwrap_or_default(), resource = resource_manifest.resource_type));
+                    continue;
+                }
+                let resource = load_resource_manifest(Path::new("manifest content"), &resource_manifest)?;
+                resources.push(ImportedManifest::Resource(resource));
+            }
+        }
+        if let Some(extension_manifests) = manifest_list.extensions {
+            for extension_manifest in extension_manifests {
+                if !evaluate_condition(extension_manifest.condition.as_deref())? {
+                    debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = "manifest content", condition = extension_manifest.condition.unwrap_or_default(), resource = extension_manifest.r#type));
+                    continue;
+                }
+                let extension = load_extension_manifest(Path::new("manifest content"), &extension_manifest)?;
+                resources.push(ImportedManifest::Extension(extension));
+            }
+        }
+        return Ok(resources);
+    }
+    Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.invalidManifestContent").to_string()))
+}
+
 /// Loads a manifest from the given path and returns a vector of `ImportedManifest`.
 ///
 /// # Arguments
@@ -775,7 +857,7 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
     Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.invalidManifestFile", resource = path.to_string_lossy()).to_string()))
 }
 
-fn load_adapted_resource_manifest(path: &Path, manifest: &AdaptedDscResourceManifest) -> Result<DscResource, DscError> {
+pub fn load_adapted_resource_manifest(path: &Path, manifest: &AdaptedDscResourceManifest) -> Result<DscResource, DscError> {
     if manifest.version.is_date_version() {
         warn!("{}", t!(
             "discovery.commandDiscovery.invalidManifestVersion",

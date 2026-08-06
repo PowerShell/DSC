@@ -1,8 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'Windows Personalization get tests' {
-    It 'Convert dword to boolean' -Skip:(!$IsWindows) {
+Describe 'Windows Personalization get tests' -Skip:(!$IsWindows) {
+    It 'Convert dword to boolean' {
         $json = @{
             "appsUseLightTheme" = $true
         } | ConvertTo-Json -Compress
@@ -11,7 +11,7 @@ Describe 'Windows Personalization get tests' {
         $out.actualState.appsUseLightTheme | Should -BeIn @($true, $false)
     }
 
-    It 'Convert binary to string array' -Skip:(!$IsWindows) {
+    It 'Convert binary to string array' {
         $json = @{
             "startMenuVisiblePlaces" = @()
         } | ConvertTo-Json -Compress
@@ -33,7 +33,7 @@ Describe 'Windows Personalization get tests' {
         }
     }
 
-    It 'Convert dword to string enum' -Skip:(!$IsWindows) {
+    It 'Convert dword to string enum' {
         $json = @{
             "multimonitorTaskbarGroupingMode" = 'NeverCombine'
         } | ConvertTo-Json -Compress

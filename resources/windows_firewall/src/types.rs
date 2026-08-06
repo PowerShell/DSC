@@ -21,9 +21,19 @@ pub enum RuleAction {
     Block,
 }
 
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub enum UnspecifiedRulesAction {
+    Ignore,
+    Disable,
+    Remove,
+}
+
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct FirewallRuleList {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub unspecified_rules_action: Option<UnspecifiedRulesAction>,
     pub rules: Vec<FirewallRule>,
 }
 

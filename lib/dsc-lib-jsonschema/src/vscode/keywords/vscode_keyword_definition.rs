@@ -1,15 +1,17 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use jsonschema::{Keyword, Resource, ValidationError, paths::Location};
+use jsonschema::{Keyword, ValidationError, paths::Location};
+use referencing::Resource;
 use schemars::{JsonSchema, Schema, SchemaGenerator, generate::SchemaSettings, json_schema};
 use serde_json::{Map, Value};
 
 /// Defines a VS Code keyword for the [`jsonschema`] crate.
 ///
-/// This trait requires the target type to implement both the [`JsonSchema`] and [`Keyword`] traits,
-/// as this crate publishes both a vocabulary and meta schema for using the VS Code keywords.
-pub trait VSCodeKeywordDefinition : JsonSchema + Keyword {
+/// This trait requires the target type to implement both the [`JsonSchema`] and
+/// [`Keyword`] traits, as this crate publishes both a vocabulary and meta schema for using
+/// the VS Code keywords.
+pub trait VSCodeKeywordDefinition : JsonSchema + for<'i> Keyword<'i> {
     /// Defines the property name for the keyword, like `markdownDescription`.
     const KEYWORD_NAME: &str;
 
@@ -33,7 +35,7 @@ pub trait VSCodeKeywordDefinition : JsonSchema + Keyword {
         _parent: &'a Map<String, Value>,
         value: &'a Value,
         path: Location,
-    ) -> Result<Box<dyn Keyword>, ValidationError<'a>>;
+    ) -> Result<Box<dyn for<'instance> Keyword<'instance>>, ValidationError<'a>>;
 
     /// Returns the default representation of the JSON Schema for the keyword.
     ///

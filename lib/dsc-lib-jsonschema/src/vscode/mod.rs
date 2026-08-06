@@ -11,4 +11,4 @@ pub mod vocabulary;
 mod schema_extensions;
 pub use schema_extensions::VSCodeSchemaExtensions;
 mod validation_options_extensions;
-pub use validation_options_extensions::VSCodeValidationOptionsExtensions;
+pub use validation_options_extensions::{VSCodeValidationOptionsExtensions, VSCODE_DIALECT_REGISTRY};

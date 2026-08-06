@@ -16,6 +16,8 @@ impl Function for Array {
         FunctionMetadata {
             name: "array".to_string(),
             description: t!("functions.array.description").to_string(),
+            syntax: t!("functions.array.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Array],
             min_args: 1,
             max_args: 1,
@@ -29,7 +31,7 @@ impl Function for Array {
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.array.invoked"));
-        
+
         Ok(Value::Array(vec![args[0].clone()]))
     }
 }

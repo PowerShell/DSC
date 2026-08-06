@@ -16,6 +16,8 @@ impl Function for ToUpper {
         FunctionMetadata {
             name: "toUpper".to_string(),
             description: t!("functions.toUpper.description").to_string(),
+            syntax: t!("functions.toUpper.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::String],
             min_args: 1,
             max_args: 1,

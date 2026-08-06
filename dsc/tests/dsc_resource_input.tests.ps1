@@ -84,13 +84,13 @@ Describe 'tests for resource input' {
         }
     }
 '@
-        $oldPath = $env:DSC_RESOURCE_PATH
-        $env:DSC_RESOURCE_PATH = $TestDrive + [System.IO.Path]::PathSeparator + $env:PATH
+        $oldPath = $env:DSC_RESTRICTED_PATH
+        $env:DSC_RESTRICTED_PATH = $TestDrive + [System.IO.Path]::PathSeparator + $env:PATH
         Set-Content $TestDrive/EnvVarInput.dsc.resource.json -Value $manifest
     }
 
     AfterAll {
-        $env:DSC_RESOURCE_PATH = $oldPath
+        $env:DSC_RESTRICTED_PATH = $oldPath
     }
 
     It 'Input can be sent to the resource for: <operation>' -TestCases @(

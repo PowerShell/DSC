@@ -13,6 +13,9 @@ pub enum RegistryError {
     #[error("{t}: {0}", t = t!("error.json"))]
     Json(#[from] serde_json::Error),
 
+    #[error("{t}: {0}", t = t!("error.offlineRegistry"))]
+    OfflineRegistry(String),
+
     #[error("{t}: {0}", t = t!("error.registry"))]
     Registry(#[from] registry::Error),
 

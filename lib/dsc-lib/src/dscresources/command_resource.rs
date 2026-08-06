@@ -8,8 +8,9 @@ use rust_i18n::t;
 use serde::Deserialize;
 use serde_json::{Map, Value};
 use std::{collections::HashMap, env, path::Path, process::Stdio};
-use crate::{configure::{config_doc::{ExecutionKind, SecurityContextKind}, config_result::{ResourceGetResult, ResourceTestResult}}, dscresources::{resource_manifest::SchemaArgKind}, types::ExitCodesMap, util::canonicalize_which};
+use crate::{configure::{config_doc::{ExecutionKind, SecurityContextKind}, config_result::{ResourceGetResult, ResourceTestResult}, schema_cache::{get_resource_schema, RESOURCE_SCHEMAS}}, dscresources::resource_manifest::{ExportSchemaKind, ExportSchemaOrFiltering, SchemaArgKind}, types::ExitCodesMap, util::canonicalize_which};
 use crate::dscerror::DscError;
+use crate::locked_insert;
 use super::{
     dscresource::{get_diff, redact, DscResource},
     invoke_result::{
@@ -556,6 +557,12 @@ pub fn invoke_validate(resource: &DscResource, config: &str, target_resource: Op
 ///
 /// Error if schema is not available or if there is an error getting the schema
 pub fn get_schema(resource: &DscResource, target_resource: Option<&DscResource>) -> Result<String, DscError> {
+    let cached_resource = target_resource.unwrap_or(resource);
+    if let Some(schema) = get_resource_schema(&cached_resource.type_name, &cached_resource.version) {
+        debug!("{}", t!("dscresources.commandResource.retrievedSchemaFromCache", resource = &cached_resource.type_name, version = &cached_resource.version));
+        return Ok(serde_json::to_string(&schema)?);
+    }
+
     let Some(manifest) = &resource.manifest else {
         return Err(DscError::MissingManifest(resource.type_name.to_string()));
     };
@@ -573,17 +580,79 @@ pub fn get_schema(resource: &DscResource, target_resource: Option<&DscResource>)
         return Err(DscError::SchemaNotAvailable(target_resource.type_name.to_string()));
     };
 
-    match schema_kind {
+    let (schema, schema_value) = match schema_kind {
         SchemaKind::Command(command) => {
             let args = process_schema_args(command.args.as_ref(), target_resource);
             let (_exit_code, stdout, _stderr) = invoke_command(&command.executable, args, None, Some(&resource.directory), None, manifest.exit_codes.as_ref())?;
-            Ok(stdout)
+            let schema_value: Value = serde_json::from_str(&stdout)?;
+            (stdout, schema_value)
         },
         SchemaKind::Embedded(schema) => {
-            let json = serde_json::to_string(&schema)?;
-            Ok(json)
+            (serde_json::to_string(&schema)?, schema.clone())
         },
+    };
+
+    locked_insert!(RESOURCE_SCHEMAS, cached_resource.type_name.clone(), cached_resource.version.clone(), schema_value);
+
+    Ok(schema)
+}
+
+fn verify_with_export_schema(input: &str, resource: &DscResource, target_resource: Option<&DscResource>) -> Result<(), DscError> {
+    let Some(manifest) = &resource.manifest else {
+        return Err(DscError::MissingManifest(resource.type_name.to_string()));
+    };
+
+    let Some(export) = manifest.export.as_ref() else {
+        return Err(DscError::SchemaNotAvailable(resource.type_name.to_string()));
+    };
+
+    let command_resource = match target_resource {
+        Some(r) => r,
+        None => resource,
+    };
+
+    let schema = match export.schema_or_filtering {
+        Some(ExportSchemaOrFiltering::Schema(ExportSchemaKind::Command(ref command))) => {
+            let args = process_schema_args(command.args.as_ref(), command_resource);
+            let (_exit_code, stdout, _stderr) = invoke_command(&command.executable, args, None, Some(&resource.directory), None, manifest.exit_codes.as_ref())?;
+            stdout
+        },
+        Some(ExportSchemaOrFiltering::Schema(ExportSchemaKind::Embedded(ref schema))) => {
+            serde_json::to_string(schema)?
+        },
+        Some(ExportSchemaOrFiltering::SupportsFiltering(false)) => {
+            return Err(DscError::Operation(t!("dscresources.commandResource.exportFilteringNotSupported", resource = &resource.type_name).to_string()));
+        },
+        Some(ExportSchemaOrFiltering::SupportsFiltering(true)) | None => {
+            if manifest.validate.is_some() {
+                let result = invoke_validate(resource, input, target_resource)?;
+                if result.valid {
+                    return Ok(());
+                }
+
+                let reason = result
+                    .reason
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty())
+                    .unwrap_or_else(|| t!("dscresources.commandResource.resourceInvalidJson").to_string());
+                return Err(DscError::Validation(reason));
+            }
+
+            get_schema(resource, target_resource)?
+        }
+    };
+    let schema = serde_json::from_str(&schema)?;
+    let compiled_schema = match Validator::new(&schema) {
+        Ok(schema) => schema,
+        Err(e) => {
+            return Err(DscError::Schema(e.to_string()));
+        },
+    };
+    let json: Value = serde_json::from_str(input)?;
+    if let Err(err) = compiled_schema.validate(&json) {
+        return Err(DscError::Schema(err.to_string()));
     }
+    Ok(())
 }
 
 /// Invoke the export operation on a resource
@@ -636,9 +705,14 @@ pub fn invoke_export(resource: &DscResource, input: Option<&str>, target_resourc
         None => resource,
     };
     validate_security_context(&export.require_security_context, &command_resource.type_name, "export")?;
+
     if let Some(input) = input {
+        if matches!(export.schema_or_filtering, Some(ExportSchemaOrFiltering::SupportsFiltering(false))) {
+            return Err(DscError::Operation(t!("dscresources.commandResource.exportFilteringNotSupported", resource = &resource.type_name).to_string()));
+        }
+
         if !input.is_empty() {
-            verify_json_from_manifest(resource, input, target_resource)?;
+            verify_with_export_schema(input, resource, target_resource)?;
 
             command_input = get_command_input(export.input.as_ref(), input)?;
         }
@@ -941,6 +1015,10 @@ pub fn process_get_args(args: Option<&Vec<GetArgKind>>, input: &str, resource: &
                 processed_args.push(resource_type_arg.clone());
                 processed_args.push(resource.type_name.to_string());
             },
+            GetArgKind::ResourceVersion { resource_version_arg } => {
+                processed_args.push(resource_version_arg.clone());
+                processed_args.push(resource.version.to_string());
+            },
             GetArgKind::ResourcePath { resource_path_arg, include_quotes} => {
                 processed_args.push(resource_path_arg.clone());
                 if *include_quotes {
@@ -970,6 +1048,10 @@ fn process_schema_args(args: Option<&Vec<SchemaArgKind>>, command_resource: &Dsc
             SchemaArgKind::ResourceType { resource_type_arg } => {
                 processed_args.push(resource_type_arg.clone());
                 processed_args.push(command_resource.type_name.to_string());
+            },
+            SchemaArgKind::ResourceVersion { resource_version_arg } => {
+                processed_args.push(resource_version_arg.clone());
+                processed_args.push(command_resource.version.to_string());
             },
         }
     }
@@ -1027,6 +1109,10 @@ fn process_set_delete_args(args: Option<&Vec<SetDeleteArgKind>>, input: &str, re
             SetDeleteArgKind::ResourceType { resource_type_arg } => {
                 processed_args.push(resource_type_arg.clone());
                 processed_args.push(resource.type_name.to_string());
+            },
+            SetDeleteArgKind::ResourceVersion { resource_version_arg } => {
+                processed_args.push(resource_version_arg.clone());
+                processed_args.push(resource.version.to_string());
             },
             SetDeleteArgKind::WhatIf { what_if_arg } => {
                 supports_whatif = true;

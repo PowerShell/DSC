@@ -99,4 +99,29 @@
             );
         }
     }
+    #[cfg(test)] mod default_schema_resource {
+        use crate::vscode::dialect::VSCodeDialect;
+
+        #[test] fn does_not_panic() {
+            let _ = VSCodeDialect::default_schema_resource();
+        }
+
+        #[test] fn returns_resource_with_correct_id() {
+            let resource = VSCodeDialect::default_schema_resource();
+            let contents = resource.contents();
+            let id = contents.get("$id").and_then(serde_json::Value::as_str);
+
+            assert_eq!(id, Some(VSCodeDialect::SCHEMA_ID));
+        }
+
+        #[test] fn returns_canonical_form_without_bundled_defs() {
+            let resource = VSCodeDialect::default_schema_resource();
+            let contents = resource.contents();
+            let has_defs = contents.get("$defs")
+                .and_then(serde_json::Value::as_object)
+                .is_some_and(|defs| !defs.is_empty());
+
+            assert!(!has_defs, "default_schema_resource should return canonical form without bundled $defs");
+        }
+    }
 }

@@ -16,6 +16,8 @@ impl Function for CreateArray {
         FunctionMetadata {
             name: "createArray".to_string(),
             description: t!("functions.createArray.description").to_string(),
+            syntax: t!("functions.createArray.syntax").to_string(),
+            constraints: Some(t!("functions.createArray.constraints").to_string()),
             category: vec![FunctionCategory::Array],
             min_args: 0,
             max_args: usize::MAX,

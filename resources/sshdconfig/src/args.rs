@@ -19,7 +19,7 @@ pub enum TraceLevel {
     Warn,
     Info,
     Debug,
-    Trace
+    Trace,
 }
 
 #[derive(Parser)]
@@ -28,7 +28,13 @@ pub struct Args {
     pub command: Command,
     #[clap(short = 'l', long, help = "Trace level to use", value_enum)]
     pub trace_level: Option<TraceLevel>,
-    #[clap(short = 'f', long, help = "Trace format to use", value_enum, default_value = "json")]
+    #[clap(
+        short = 'f',
+        long,
+        help = "Trace format to use",
+        value_enum,
+        default_value = "json"
+    )]
     pub trace_format: TraceFormat,
 }
 
@@ -47,6 +53,8 @@ pub enum Command {
         input: String,
         #[clap(short = 's', long, hide = true)]
         setting: Setting,
+        #[clap(short = 'w', long = "what-if", help = t!("args.setWhatIf").to_string())]
+        what_if: bool,
     },
     /// Export `sshd_config`, eventually to be used for repeatable keywords
     Export {

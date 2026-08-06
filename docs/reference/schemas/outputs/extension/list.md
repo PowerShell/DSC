@@ -70,6 +70,13 @@ The following list describes the available capabilities for an extension:
   manifests that aren't in the `PATH` or `DSC_RESOURCE_PATH`, as with resources installed as Appx
   packages.
 
+- <a id="capability-secret"></a> `secret` - The extension supports retrieving secret values from a
+  vault at runtime instead of passing sensitive values directly to a command or with a parameter
+  file.
+
+- <a id="capability-import"></a> `import` - The extension supports resolving files as DSC
+  configuration documents to enable passing those files to DSC for `dsc config` commands.
+
 ```yaml
 Type:              array
 Required:          true

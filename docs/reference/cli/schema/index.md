@@ -178,42 +178,42 @@ definitions:
 This option is mandatory for the `schema` command. The value for this option determines which
 schema the application returns:
 
-- `configuration` ([reference documentation][01]) - Validates a DSC Configuration document. If the
-  document is invalid, DSC raises an error.
-- `dsc-resource` ([reference documentation][02]) - Represents a DSC Resource as returned from the
-  `dsc resource list` command.
-- `resource-manifest` ([reference documentation][03]) - Validates a command resource's manifest. If
-  the manifest is invalid, DSC raises an error.
-- `include` <!-- ([reference documentation][04]) --> - represents the instance schema for the
-  built-in `Microsoft.DSC/Include` importer resource.
-- `configuration-get-result` ([reference documentation][05]) - Represents the output from the
-  `dsc config get` command.
-- `configuration-set-result` ([reference documentation][06]) - Represents the output from the
-  `dsc config set` command.
-- `configuration-test-result` ([reference documentation][07]) - Represents the output from the
-  `dsc config test` command.
-- `get-result` ([reference documentation][08]) - Represents the output from the `dsc resource get`
-  command.
-- `resolve-result` <!-- ([reference documentation][09]) --> - Represents the resolved form of the
-  configuration document an `importer` resource emits.
-- `set-result` ([reference documentation][10]) - Represents the output from the `dsc resource set`
-  command.
-- `test-result` ([reference documentation][11]) - Represents the output from the
-  `dsc resource test` command.
+- `configuration` ([reference documentation][aa]) - Validates a DSC Configuration document. If the document is invalid, DSC raises an error.
+- `configuration-get-result` ([reference documentation][ab]) - Represents the output from the `dsc config get` command.
+- `configuration-set-result` ([reference documentation][ac]) - Represents the output from the `dsc config set` command.
+- `configuration-test-result` ([reference documentation][ad]) - Represents the output from the `dsc config test` command.
+- `dsc-resource` ([reference documentation][ae]) - Represents a DSC Resource as returned from the `dsc resource list` command.
+- `extension-discover-result` ([reference documentation][af]) - Represents the output DSC expects an extension to return for the `discover` operation.
+- `extension-manifest` ([reference documentation][ag]) - Validates an extension's manifest. If the manifest is invalid, DSC raises an error.
+- `function-definition` ([reference documentation][ah]) - Represents a DSC function as returned from the `dsc function list` command.
+- `get-result` ([reference documentation][ai]) - Represents the output from the `dsc resource get` command.
+- `include` ([reference documentation][aj]) - represents the instance schema for the built-in `Microsoft.DSC/Include` importer resource.
+- `manifest-list` ([reference documentation][ak])
+- `resolve-result` ([reference documentation][al]) - Represents the resolved form of the configuration document an `importer` resource emits.
+- `resource` ([reference documentation][am]) - Represents an instance of a resource in a configuration document.
+- `resource-manifest` ([reference documentation][an]) - Validates a command resource's manifest. If the manifest is invalid, DSC raises an error.
+- `restart-required` ([reference documentation][ao])
+- `set-result` ([reference documentation][ap]) - Represents the output from the `dsc resource set` command.
+- `test-result` ([reference documentation][aq]) - Represents the output from the `dsc resource test` command.
 
 ```yaml
 Type:        string
 Mandatory:   true
 ValidValues: [
                configuration
-               dsc-resource
-               resource-manifest
-               include
                configuration-get-result
                configuration-set-result
                configuration-test-result
+               dsc-resource
+               extension-discover-result
+               extension-manifest
+               function-definition
                get-result
+               include
+               manifest-list
                resolve-result
+               resource-manifest
+               restart-required
                set-result
                test-result
              ]
@@ -229,7 +229,7 @@ ShortSyntax : -t <TYPE>
 The `--output-format` option controls which format DSC uses for the data the command returns. The
 available formats are:
 
-- `json` to emit the data as a [JSON Line][12].
+- `json` to emit the data as a [JSON Line][ar].
 - `pretty-json` to emit the data as JSON with newlines, indentation, and spaces for readability.
 - `yaml` to emit the data as YAML.
 
@@ -279,15 +279,21 @@ This command returns formatted data representing a JSON Schema specified by the
 For more information about the formatting of the output data, see the
 [--output-format option](#--output-format).
 
-[01]: ../../schemas/config/document.md
-[02]: ../../schemas/outputs/resource/list.md
-[03]: ../../schemas/resource/manifest/root.md
-[04]: ../../../reference/resources/microsoft/dsc/include/index.md
-[05]: ../../schemas/outputs/config/get.md
-[06]: ../../schemas/outputs/config/set.md
-[07]: ../../schemas/outputs/config/test.md
-[08]: ../../schemas/outputs/resource/get.md
-[09]: ../../schemas/resource/stdout/resolve
-[10]: ../../schemas/outputs/resource/set.md
-[11]: ../../schemas/outputs/resource/test.md
-[12]: https://jsonlines.org/
+[aa]: ../../schemas/config/document.md
+[ab]: ../../schemas/outputs/config/get.md
+[ac]: ../../schemas/outputs/config/set.md
+[ad]: ../../schemas/outputs/config/test.md
+[ae]: ../../schemas/outputs/resource/list.md
+[af]: ../../schemas/extension/stdout/discover.md
+[ag]: ../../schemas/extension/manifest/root.md
+[ah]: ../../schemas/outputs/function/list.md
+[ai]: ../../schemas/outputs/resource/get.md
+[aj]: ../../../reference/resources/microsoft/dsc/include/index.md
+[ak]: ../../schemas/definitions/manifest-list.md
+[al]: ../../schemas/resource/stdout/resolve
+[am]: ../../schemas/config/resource.md
+[an]: ../../schemas/resource/manifest/root.md
+[ao]: ../../schemas/resource/properties/restartRequired.md
+[ap]: ../../schemas/outputs/resource/set.md
+[aq]: ../../schemas/outputs/resource/test.md
+[ar]: https://jsonlines.org/

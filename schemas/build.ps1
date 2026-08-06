@@ -678,6 +678,7 @@ process {
             "$OutputDirectory/extension"
             "$OutputDirectory/outputs"
             "$OutputDirectory/resource"
+            "$OutputDirectory/adaptedresource"
         )
         SchemaHost       = $Config.host
         SchemaPrefix     = $Config.prefix

@@ -28,15 +28,12 @@ impl VSCodeKeywordDefinition for AllowTrailingCommasKeyword {
     fn keyword_factory<'a>(
         _parent: &'a serde_json::Map<String, serde_json::Value>,
         value: &'a serde_json::Value,
-        path: Location,
-    ) -> Result<Box<dyn Keyword>, ValidationError<'a>> {
+        _path: Location,
+    ) -> Result<Box<dyn for<'instance> Keyword<'instance>>, ValidationError<'a>> {
         if let Some(v) = value.as_bool() {
             Ok(Box::new(Self(v)))
         } else {
             Err(ValidationError::custom(
-                Location::new(),
-                path,
-                value,
                 t!("vscode.keywords.allow_trailing_commas.factory_error_invalid_type"),
             ))
         }
@@ -61,15 +58,14 @@ impl JsonSchema for AllowTrailingCommasKeyword {
     }
 }
 
-impl Keyword for AllowTrailingCommasKeyword {
-    fn validate<'i>(
+impl<'i> Keyword<'i> for AllowTrailingCommasKeyword {
+    fn validate(
             &self,
             _: &'i serde_json::Value,
-            _: &jsonschema::paths::LazyLocation,
         ) -> Result<(), jsonschema::ValidationError<'i>> {
         Ok(())
     }
-    fn is_valid(&self, _: &serde_json::Value) -> bool {
+    fn is_valid(&self, _: &'i serde_json::Value) -> bool {
         true
     }
 }

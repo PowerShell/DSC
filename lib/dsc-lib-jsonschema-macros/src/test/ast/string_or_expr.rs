@@ -1,14 +1,14 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use darling::FromMeta;
+use darling::{FromMeta, export::syn};
 
 use crate::ast::StringOrExpr;
 
 #[test] fn test_string_literal() {
     let code = syn::parse_quote!("literal");
     let parsed = StringOrExpr::from_value(&code);
-    
+
     assert_eq!(parsed.unwrap(), StringOrExpr::String("literal".to_string()));
 }
 

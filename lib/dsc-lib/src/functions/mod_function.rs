@@ -16,6 +16,8 @@ impl Function for Mod {
         FunctionMetadata {
             name: "mod".to_string(),
             description: t!("functions.mod.description").to_string(),
+            syntax: t!("functions.mod.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Numeric],
             min_args: 2,
             max_args: 2,

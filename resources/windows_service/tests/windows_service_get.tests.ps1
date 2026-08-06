@@ -73,10 +73,14 @@ Describe 'Windows Service get tests' -Skip:(!$IsWindows) {
             $result._exist | Should -BeTrue
         }
 
-        It 'Returns error when name and displayName do not match' {
+        It 'Returns the live displayName when the desired displayName differs (name is authoritative)' {
             $json = @{ name = $knownServiceName; displayName = 'Wrong Display Name' } | ConvertTo-Json -Compress
-            $out = $json | dsc resource get -r $resourceType -f - 2>&1
-            $LASTEXITCODE | Should -Not -Be 0
+            $out = $json | dsc resource get -r $resourceType -f - 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
+            $result = ($out | ConvertFrom-Json).actualState
+            $result.name | Should -BeExactly $knownServiceName
+            $result.displayName | Should -BeExactly $knownDisplayName
+            $result._exist | Should -BeTrue
         }
     }
 

@@ -72,7 +72,7 @@ impl McpServer {
         let result = task::spawn_blocking(move || {
             let mut dsc = DscManager::new();
             let Some(resource) = dsc.find_resource(&DiscoveryFilter::new(&resource_type, None, None)).unwrap_or(None) else {
-                return Err(McpError::invalid_request(t!("mcp.invoke_dsc_resource.resourceNotFound", resource = resource_type), None));
+                return Err(McpError::invalid_request(t!("server.invoke_dsc_resource.resourceNotFound", resource = resource_type), None));
             };
             match operation {
                 DscOperation::Get => {

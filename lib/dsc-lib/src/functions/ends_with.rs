@@ -17,6 +17,8 @@ impl Function for EndsWith {
         FunctionMetadata {
             name: "endsWith".to_string(),
             description: t!("functions.endsWith.description").to_string(),
+            syntax: t!("functions.endsWith.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::String],
             min_args: 2,
             max_args: 2,

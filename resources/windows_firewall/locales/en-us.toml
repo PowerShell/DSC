@@ -34,3 +34,5 @@ invalidProtocol = "Invalid protocol number '%{value}'. Must be between 0 and 256
 [firewall_helper]
 whatIfCreateRule = "Would create firewall rule '%{name}'"
 whatIfRemoveRule = "Would remove firewall rule '%{name}'"
+whatIfDisableUnspecifiedRule = "Would disable unspecified firewall rule '%{name}'"
+whatIfRemoveUnspecifiedRule = "Would remove unspecified firewall rule '%{name}'"
