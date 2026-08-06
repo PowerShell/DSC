@@ -75,7 +75,17 @@
                     "$ref": "#/$defs/powershellScript"
                 },
                 "input": {
-                    "type": ["string", "boolean", "integer", "object", "array", "null"]
+                    "title": "Script input data",
+                    "description": "Defines the data to pass to every script as a parameter. When defined, every script property must include a `param()` statement with a single parameter.",
+                    "writeOnly": true,
+                    "type": [
+                        "string",
+                        "boolean",
+                        "integer",
+                        "number",
+                        "object",
+                        "array"
+                    ]
                 },
                 "output": {
                     "type": ["array", "null"]
