@@ -51,12 +51,12 @@ schema = "Schema command:"
 set = "Set command: '%{input}'"
 
 [parser]
+combinedMultiArgValue = "combined multiple arguments into a single value for keyword '%{keyword}'"
 failedToParse = "failed to parse: '%{input}'"
 failedToParseAsArray = "value is not an array"
 failedToParseNode = "failed to parse '%{input}'"
 failedToParseRoot = "failed to parse root: '%{input}'"
 invalidConfig = "invalid config: '%{input}'"
-invalidMultiArgNode = "multi-arg node '%{input}' is not valid"
 keyNotFound = "key '%{key}' not found"
 keyNotRepeatable = "key '%{key}' is not repeatable"
 missingCriteriaInMatch = "missing criteria field in match block: '%{input}'"
