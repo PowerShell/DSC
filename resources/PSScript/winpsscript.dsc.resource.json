@@ -57,6 +57,50 @@
     "schema": {
         "embedded": {
             "type": "object",
+            "oneOf": [
+                {
+                    "description": "Defines constraints for the return data of the resource operations.",
+                    "anyOf": [
+                        {
+                            "description": "Defines the valid return data for `get` and `set` operations with a defined script.",
+                            "required": [
+                                "output"
+                            ]
+                        },
+                        {
+                            "description": "Defines the return data as an empty object for operations with an undefined script.",
+                            "minProperties": 0,
+                            "maxProperties": 0
+                        },
+                        {
+                            "description": "Defines the valid return data for implemented `test` operations.",
+                            "required": [
+                                "_inDesiredState"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "description": "Defines constraints for the input data of the resource operations. You must define at least one script property to use this resource.",
+                    "anyOf": [
+                        {
+                            "required": [
+                                "getScript"
+                            ]
+                        },
+                        {
+                            "required": [
+                                "testScript"
+                            ]
+                        },
+                        {
+                            "required": [
+                                "setScript"
+                            ]
+                        }
+                    ]
+                }
+            ],
             "properties": {
                 "getScript": {
                     "title": "Get operation script",
