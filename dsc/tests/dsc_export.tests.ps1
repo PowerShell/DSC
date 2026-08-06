@@ -246,7 +246,7 @@ resources:
         $LASTEXITCODE | Should -Be 0 -Because $errorlog
         @($out.resources).Count | Should -Be 1
         $out.resources[0].properties.name | Should -BeExactly 'Gijs'
-        $errorlog | Should -Match 'experimental'
+        $errorlog | Should -BeLike "*INFO*Resource 'Test/ExportSchemaNoFiltering' does not support export filtering, the engine will filter the exported instances (experimental feature)*"
     }
 
     It 'no INFO message is emitted when no filter input is provided' {
