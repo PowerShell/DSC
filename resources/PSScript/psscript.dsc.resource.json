@@ -60,13 +60,19 @@
             "type": "object",
             "properties": {
                 "getScript": {
-                    "type": ["string", "null"]
+                    "title": "Get operation script",
+                    "description": "A PowerShell script that retrieves the current state of the instance.",
+                    "$ref": "#/$defs/powershellScript"
                 },
                 "setScript": {
-                    "type": ["string", "null"]
+                    "title": "Set operation script",
+                    "description": "A PowerShell script that enforces the desired state for the instance.",
+                    "$ref": "#/$defs/powershellScript"
                 },
                 "testScript": {
-                    "type": ["string", "null"]
+                    "title": "Test operation script",
+                    "description": "A PowerShell script that checks whether the instance is in the desired state.",
+                    "$ref": "#/$defs/powershellScript"
                 },
                 "input": {
                     "type": ["string", "boolean", "integer", "object", "array", "null"]
@@ -79,6 +85,12 @@
                 }
             },
             "$defs": {
+                "powershellScript": {
+                    "writeOnly": true,
+                    "type": "string",
+                    "minLength": 1,
+                    "contentMediaType": "text/vnd.microsoft.powershell"
+                },
                 "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/inDesiredState.json": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/inDesiredState.json",
