@@ -25,10 +25,10 @@ Describe 'Tests for PSScript resource' {
         param($resourceType)
 
         $yaml = @"
-        GetScript: |
+        getScript: |
           "Hello, World!"
           1+1
-        SetScript: |
+        setScript: |
           throw 'This should not be executed'
 "@
         $result = dsc resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
@@ -42,7 +42,7 @@ Describe 'Tests for PSScript resource' {
         param($resourceType)
 
         $yaml = @"
-        SetScript: |
+        setScript: |
           "Hello, World!"
           1+1
 "@
@@ -57,10 +57,10 @@ Describe 'Tests for PSScript resource' {
         param($resourceType)
 
         $yaml = @"
-        GetScript: |
+        getScript: |
           "Hello, World!"
           1+1
-        SetScript: |
+        setScript: |
           "Hello, World!"
           2+2
 "@
@@ -78,7 +78,7 @@ Describe 'Tests for PSScript resource' {
         param($resourceType)
 
         $yaml = @'
-        TestScript: |
+        testScript: |
             $true
 '@
         $result = dsc resource test -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
@@ -90,7 +90,7 @@ Describe 'Tests for PSScript resource' {
         param($resourceType)
 
         $yaml = @'
-        TestScript: |
+        testScript: |
             $false
 '@
         $result = dsc resource test -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
@@ -102,7 +102,7 @@ Describe 'Tests for PSScript resource' {
         param($resourceType)
 
         $yaml = @'
-        TestScript: |
+        testScript: |
             "This is not a boolean"
 '@
         $result = dsc resource test -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
@@ -116,7 +116,7 @@ Describe 'Tests for PSScript resource' {
         param($resourceType)
 
         $yaml = @'
-        TestScript: |
+        testScript: |
             $true
             $false
 '@
@@ -127,14 +127,14 @@ Describe 'Tests for PSScript resource' {
         $errorLog | Should -BeLike '*ERROR*:*Test operation did not return a single boolean value.*' -Because $errorLog
     }
 
-    It 'Empty SetScript is ignored for <resourceType>' -TestCases $testCases {
+    It 'Empty setScript is ignored for <resourceType>' -TestCases $testCases {
         param($resourceType)
 
         $yaml = @'
-        GetScript: |
+        getScript: |
           "Hello, World!"
           1+1
-        TestScript: |
+        testScript: |
           $true
 '@
 
@@ -146,14 +146,14 @@ Describe 'Tests for PSScript resource' {
         $result.afterState.output.Count | Should -Be 0
     }
 
-    It 'Empty GetScript is ignored for <resourceType>' -TestCases $testCases {
+    It 'Empty getScript is ignored for <resourceType>' -TestCases $testCases {
         param($resourceType)
 
         $yaml = @'
-        SetScript: |
+        setScript: |
           "Hello, World!"
           1+1
-        TestScript: |
+        testScript: |
           $true
 '@
         $result = dsc resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
@@ -161,14 +161,14 @@ Describe 'Tests for PSScript resource' {
         $result.actualState.output.Count | Should -Be 0 -Because ($result | ConvertTo-Json | Out-String)
     }
 
-    It 'Empty TestScript is ignored for <resourceType>' -TestCases $testCases {
+    It 'Empty testScript is ignored for <resourceType>' -TestCases $testCases {
         param($resourceType)
 
         $yaml = @'
-        GetScript: |
+        getScript: |
           "Hello, World!"
           1+1
-        SetScript: |
+        setScript: |
           "Hello, World!"
           2+2
 '@
@@ -181,7 +181,7 @@ Describe 'Tests for PSScript resource' {
         param($resourceType)
 
         $yaml = @'
-        GetScript: |
+        getScript: |
           Write-Warning "This is a warning"
           Write-Warning "This is second warning"
 '@
@@ -198,7 +198,7 @@ Describe 'Tests for PSScript resource' {
         param($resourceType)
 
         $yaml = @'
-        GetScript: |
+        getScript: |
           Write-Error "This is an error"
 '@
 
@@ -213,7 +213,7 @@ Describe 'Tests for PSScript resource' {
         param($resourceType)
 
         $yaml = @'
-        GetScript: |
+        getScript: |
           Write-Verbose "This is a verbose message"
 '@
         $result = dsc -l info resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
@@ -227,7 +227,7 @@ Describe 'Tests for PSScript resource' {
         param($resourceType)
 
         $yaml = @'
-        GetScript: |
+        getScript: |
           Write-Debug "This is a debug message"
 '@
         $result = dsc -l debug resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
@@ -241,7 +241,7 @@ Describe 'Tests for PSScript resource' {
         param($resourceType)
 
         $yaml = @'
-        GetScript: |
+        getScript: |
           $InformationPreference = 'Continue'
           Write-Information "This is an information message"
 '@
@@ -256,7 +256,7 @@ Describe 'Tests for PSScript resource' {
         param($resourceType)
 
         $yaml = @'
-        GetScript: |
+        getScript: |
           throw "This is an exception"
 '@
         $result = dsc resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
@@ -287,7 +287,8 @@ Describe 'Tests for PSScript resource' {
         $result = dsc resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.txt -Raw | Out-String)
         $result.actualState.output.Count | Should -Be 1 -Because ($result | ConvertTo-Json -Depth 10 | Out-String)
-        $result.actualState.output[0] | Should -BeExactly "Input: This is a string"
+        $result.actualState.output.GetType().Name | Should -Be 'String'
+        $result.actualState.output | Should -BeExactly "Input: This is a string"
     }
 
     It 'Input without param block is an error for <resourceType>' -TestCases $testCases {
@@ -347,7 +348,8 @@ Describe 'Tests for PSScript resource' {
         $result = dsc -l debug resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.txt -Raw | Out-String)
         $result.actualState.output.Count | Should -Be 1 -Because ($result | ConvertTo-Json -Depth 10 | Out-String)
-        $result.actualState.output[0] | Should -BeExactly "This should still be output"
+        $result.actualState.output.GetType().Name | Should -Be 'String'
+        $result.actualState.output | Should -BeExactly "This should still be output"
         $errorLog = Get-Content $TestDrive/error.txt -Raw
         $errorLog | Should -BeLike '*DEBUG*:*Non-terminating errors occurred during script execution.*' -Because $errorLog
     }
@@ -356,7 +358,7 @@ Describe 'Tests for PSScript resource' {
         param($resourceType)
 
         $yaml = @'
-        GetScript: |
+        getScript: |
             Get-Item "ThisFileDoesNotExist.txt" -ErrorAction Stop
 '@
         $result = dsc resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json

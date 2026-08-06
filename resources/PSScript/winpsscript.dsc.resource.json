@@ -2,7 +2,7 @@
     "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
     "type": "Microsoft.DSC.Transitional/WindowsPowerShellScript",
     "description": "Enable running Windows PowerShell 5.1 scripts inline",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "get": {
         "executable": "powershell",
         "args": [
@@ -134,7 +134,18 @@
                     ]
                 },
                 "output": {
-                    "type": ["array", "null"]
+                    "title": "Script output data",
+                    "description": "Defines output emitted to the success stream from the invoked script. The resource result for an operation only includes this property when the script emits one or more items to the success stream.",
+                    "readOnly": true,
+                    "type": [
+                        "string",
+                        "boolean",
+                        "integer",
+                        "number",
+                        "object",
+                        "array",
+                        "null"
+                    ]
                 },
                 "_inDesiredState": {
                     "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/inDesiredState.json"
