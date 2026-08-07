@@ -323,6 +323,8 @@ process {
             Build-RustProject @buildParams -Audit:$Audit -Clippy:$Clippy @VerboseParam
             Write-BuildProgress @progressParams -Status "Copying build artifacts"
             Copy-BuildArtifact @buildParams -ExecutableFile $BuildData.PackageFiles.Executable @VerboseParam
+            Write-BuildProgress @progressParams -Status "Bundling Python SDK"
+            Copy-PythonAdapterSdk -Architecture $Architecture -Release:$Release @VerboseParam
         }
     }
 
@@ -374,6 +376,12 @@ process {
             Write-BuildProgress @progressParams -Status "Invoking pester"
             Test-ProjectWithPester @pesterParams @VerboseParam
         }
+        
+        Write-BuildProgress @progressParams -Status "Testing Python adapter with pytest"
+        $pythonTestParams = @{
+            UsingADO = $usingADO
+        }
+        Test-PythonAdapterWithPytest @pythonTestParams @VerboseParam
     }
 
     #region    Code coverage report

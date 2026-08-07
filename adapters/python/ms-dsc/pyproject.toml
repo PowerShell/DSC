@@ -1,0 +1,25 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ms-dsc"
+version = "0.1.0"
+description = "Python SDK for writing Microsoft DSC v3 resources."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+dsc-gen = "ms_dsc.cli:main"
+
+[project.entry-points."hatch.build.hook"]
+dsc = "ms_dsc.build.hatchling:DscManifestBuildHook"
+
+[project.urls]
+Homepage = "https://github.com/PowerShell/DSC"
+Repository = "https://github.com/PowerShell/DSC"
+
+[tool.hatch.build.targets.wheel]
+packages = ["ms_dsc"]

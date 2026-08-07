@@ -1795,6 +1795,70 @@ function Copy-BuildArtifact {
         }
     }
 }
+
+function Copy-PythonAdapterSdk {
+    <#
+        .SYNOPSIS
+        Copies the bundled ms_dsc Python SDK into the build output directory.
+
+        .DESCRIPTION
+        The Python adapter bundles the ms_dsc SDK alongside pyadapter/ so that
+        resources can import ms_dsc without a separate pip install.  This function
+        copies the SDK source from adapters/python/ms-dsc/ms_dsc/ to the artifact
+        bin directory as ms_dsc/, excluding the build hook (ms_dsc/build/) and
+        any __pycache__ directories.
+
+        DSC invokes the adapter as ``python -m pyadapter.cli <verb>``, which
+        adds '' (CWD = manifest directory) to sys.path[0] automatically.  Both
+        pyadapter/ and the bundled ms_dsc/ are therefore importable without any
+        sys.path manipulation or PYTHONPATH configuration.
+    #>
+    [CmdletBinding()]
+    param(
+        [ValidateSet(
+            'current',
+            'aarch64-pc-windows-msvc',
+            'x86_64-pc-windows-msvc',
+            'aarch64-apple-darwin',
+            'x86_64-apple-darwin',
+            'aarch64-unknown-linux-gnu',
+            'aarch64-unknown-linux-musl',
+            'x86_64-unknown-linux-gnu',
+            'x86_64-unknown-linux-musl'
+        )]
+        $Architecture = 'current',
+        [switch]$Release
+    )
+
+    process {
+        $sdkSource = Join-Path $PSScriptRoot 'adapters' 'python' 'ms-dsc' 'ms_dsc'
+        if (-not (Test-Path $sdkSource)) {
+            Write-Warning "Python SDK source not found at '$sdkSource'; skipping bundled ms_dsc copy."
+            return
+        }
+
+        $artifactDirectory = Get-ArtifactDirectoryPath -Architecture $Architecture -Release:$Release
+        $sdkDest = Join-Path $artifactDirectory.Bin 'ms_dsc'
+
+        Write-Verbose "Bundling Python SDK: '$sdkSource' -> '$sdkDest'"
+
+        Get-ChildItem -Path $sdkSource -Recurse -File | Where-Object {
+            $rel = $_.FullName.Substring($sdkSource.Length).TrimStart([System.IO.Path]::DirectorySeparatorChar, '/')
+            $rel -notlike 'build*' -and $rel -notlike '*__pycache__*'
+        } | ForEach-Object {
+            $rel  = $_.FullName.Substring($sdkSource.Length).TrimStart([System.IO.Path]::DirectorySeparatorChar, '/')
+            $dest = Join-Path $sdkDest $rel
+            $destDir = Split-Path $dest -Parent
+            if (-not (Test-Path $destDir)) {
+                New-Item -Path $destDir -ItemType Directory -Force | Out-Null
+            }
+            Write-Verbose "  Copying ms_dsc/$rel"
+            Copy-Item -Path $_.FullName -Destination $dest -Force
+        }
+
+        Write-Verbose "Python SDK bundled successfully."
+    }
+}
 #endregion Build project functions
 
 #region    Documenting project functions
@@ -2914,6 +2978,62 @@ function Test-ProjectWithPester {
             Write-Verbose "Invoking pester for all groups and projects"
         }
         Invoke-Pester @pesterParams
+    }
+}
+
+function Test-PythonAdapterWithPytest {
+    [cmdletbinding()]
+    param(
+        [switch]$UsingADO
+    )
+
+    begin {
+        $repository = $UsingADO ? 'CFS' : 'PSGallery'
+        $pythonAdapterRoot = Join-Path $PSScriptRoot 'adapters' 'python'
+        $pythonTestDir = Join-Path $pythonAdapterRoot 'tests'
+        
+        Write-Verbose "Python adapter root: $pythonAdapterRoot"
+        Write-Verbose "Python test directory: $pythonTestDir"
+        
+        # Check if Python is available
+        $pythonCmd = if ($IsWindows) {
+            Get-Command python -ErrorAction SilentlyContinue
+        } else {
+            Get-Command python3 -ErrorAction SilentlyContinue
+        }
+        
+        if (-not $pythonCmd) {
+            Write-Warning "Python not found on PATH; skipping Python adapter tests"
+            return
+        }
+        
+        Write-Verbose "Python executable: $($pythonCmd.Source)"
+    }
+
+    process {
+        Write-Verbose "Invoking pytest for Python adapter"
+        Push-Location $pythonTestDir
+        try {
+            # Install test fixture if needed
+            if (-not (Test-Path (Join-Path $pythonAdapterRoot 'tests' 'fixture'))) {
+                Write-Verbose "Python test fixture directory not found"
+                return
+            }
+            
+            Write-Verbose "Installing Python test fixture package"
+            & python -m pip install -e fixture/ -q --disable-pip-version-check
+            
+            Write-Verbose "Running pytest with coverage"
+            & python -m pytest unit/ -v --tb=short
+            
+            if ($LASTEXITCODE -ne 0) {
+                Write-Error "Python adapter tests failed with exit code $LASTEXITCODE"
+            } else {
+                Write-Verbose "Python adapter tests passed"
+            }
+        } finally {
+            Pop-Location
+        }
     }
 }
 #endregion Test project functions

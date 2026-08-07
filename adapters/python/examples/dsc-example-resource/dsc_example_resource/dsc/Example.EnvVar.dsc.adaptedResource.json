@@ -1,0 +1,46 @@
+{
+  "$schema": "https://aka.ms/dsc/schemas/v3/bundled/adaptedresource/manifest.json",
+  "type": "Example/EnvVar",
+  "kind": "resource",
+  "version": "1.0.0",
+  "capabilities": [
+    "get",
+    "set",
+    "test",
+    "delete",
+    "export"
+  ],
+  "requireAdapter": "Microsoft.Adapter/Python",
+  "content": {
+    "module": "dsc_example_resource.resources",
+    "class": "EnvVarResource"
+  },
+  "description": "Manages a process-scope environment variable. Demonstrates the _exist presence pattern used across DSC resources.",
+  "schema": {
+    "embedded": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the environment variable.",
+          "title": "Name"
+        },
+        "value": {
+          "type": "string",
+          "description": "Value of the environment variable.",
+          "title": "Value"
+        },
+        "_exist": {
+          "type": "boolean",
+          "description": "Whether the environment variable should exist.",
+          "title": "Exist"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ]
+    }
+  }
+}
