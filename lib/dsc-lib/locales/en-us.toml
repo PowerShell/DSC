@@ -35,6 +35,9 @@ dependencyNotInOrder = "Dependency not found in order"
 circularDependency = "Circular dependency detected for resource named '%{resource}'"
 invocationOrder = "Resource invocation order"
 
+[configure.export_filter]
+filteredInstances = "Export filter reduced %{original} instances to %{retained}"
+
 [configure.mod]
 nestedArraysNotSupported = "Nested arrays not supported"
 arrayElementCouldNotTransformAsString = "Array element could not be transformed as string"
@@ -48,6 +51,9 @@ groupNotSupportedForDelete = "Group resources not supported for delete"
 deleteNotSupported = "Resource '%{resource}' does not support `delete` and does not handle `_exist` as false"
 expectedState = "Expected state: %{state}"
 exportInput = "Export input: %{input}"
+engineExportFiltering = "Resource '%{resource}' does not support export filtering, the engine will filter the exported instances (experimental feature)"
+invalidExportFilterInput = "Invalid export filter input: %{error}"
+exportFilterNotObject = "Export filter input must be a JSON object or an array of JSON objects"
 noParameters = "No parameters defined in configuration and no parameters input"
 noParametersDefined = "No parameters defined in configuration"
 processingParameter = "Processing parameter '%{name}'"

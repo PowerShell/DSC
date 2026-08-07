@@ -8,7 +8,7 @@
         "feature"
     ],
     "type": "Microsoft.Windows/OptionalFeatureList",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "get": {
         "executable": "dism_dsc",
         "args": [
@@ -36,7 +36,8 @@
             "optional-feature"
         ],
         "input": "stdin",
-        "requireSecurityContext": "elevated"
+        "requireSecurityContext": "elevated",
+        "supportsFiltering": true
     },
     "schema": {
         "embedded": {
