@@ -61,7 +61,7 @@ Describe "Python DSC Adapter — Component Tests" {
             $a = @("-m", "pyadapter.cli", $Op)
             if ($Res) { $a += "--resource"; $a += $Res }
             $errFile = [System.IO.Path]::GetTempFileName()
-            # CWD must be the adapter root so Python can find pyadapter/ via sys.path[0]=''
+            # CWD must be the adapter root so Python can find pyadapter/ and ms_dsc/ via '' in sys.path[0]
             Push-Location $script:_adapterRoot
             try {
                 if ($NoIn -or -not $Json) { $out = & $script:_py @a 2>$errFile }

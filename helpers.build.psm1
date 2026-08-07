@@ -1808,10 +1808,10 @@ function Copy-PythonAdapterSdk {
         bin directory as ms_dsc/, excluding the build hook (ms_dsc/build/) and
         any __pycache__ directories.
 
-        DSC sets the working directory to the manifest's directory when invoking
-        the adapter.  Because Python's -m invocation includes '' (CWD) in
-        sys.path[0], both pyadapter/ and the bundled ms_dsc/ are importable
-        without any PYTHONPATH manipulation.
+        DSC invokes the adapter as ``python -m pyadapter.cli <verb>``, which
+        adds '' (CWD = manifest directory) to sys.path[0] automatically.  Both
+        pyadapter/ and the bundled ms_dsc/ are therefore importable without any
+        sys.path manipulation or PYTHONPATH configuration.
     #>
     [CmdletBinding()]
     param(

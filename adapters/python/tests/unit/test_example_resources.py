@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-# Ensure the demo package is importable even if not pip-installed.
+# Ensure the demo package is importable even if not pip-installed (test-only path setup).
 _DEMO_ROOT = Path(__file__).parent.parent.parent / "examples" / "dsc-example-resource"
 if str(_DEMO_ROOT) not in sys.path:
     sys.path.insert(0, str(_DEMO_ROOT))

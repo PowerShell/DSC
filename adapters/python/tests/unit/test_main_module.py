@@ -13,7 +13,7 @@ import pytest
 
 
 class TestMainModuleEntry:
-    """Test that the __main__ module correctly handles sys.path and delegates to cli.main()."""
+    """Test that the __main__ module delegates correctly to cli.main()."""
 
     def test_main_module_invocation_help(self):
         """python -m pyadapter --help should work."""

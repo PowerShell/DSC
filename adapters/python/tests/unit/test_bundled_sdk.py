@@ -122,14 +122,14 @@ class TestModuleInvocation:
 
 
 # ---------------------------------------------------------------------------
-# sys.path behaviour with -m invocation
+# CWD-based importability tests
 # ---------------------------------------------------------------------------
 
-class TestSysPathWithModuleInvocation:
+class TestCwdBasedImportability:
     """
     Verify that the bundled ms_dsc/ directory is importable when python is
-    invoked as ``python -m pyadapter.cli`` from the adapter root (simulating
-    DSC's CWD = manifest directory behaviour).
+    invoked from the adapter root (simulating DSC's CWD = manifest directory
+    behaviour with ``python -m pyadapter.cli``).
     """
 
     def test_ms_dsc_importable_from_cwd(self):

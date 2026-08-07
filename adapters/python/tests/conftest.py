@@ -4,6 +4,8 @@
 pytest configuration for the Python DSC adapter unit tests.
 
 Adds pyadapter to sys.path so tests can import it without a pip install.
+This is test-only setup: in production, DSC invokes the adapter via
+``python -m pyadapter.cli``, which adds '' (CWD) to sys.path[0] automatically.
 ms-dsc is expected to be pip-installed in the test environment.
 """
 from __future__ import annotations

@@ -47,11 +47,11 @@ For resource development, the build-time requirement is declared in `pyproject.t
 ## Bundled ms_dsc SDK
 
 When DSC ships the Python adapter, the build process copies the `ms_dsc/` SDK
-alongside `pyadapter/` in the same output directory.  DSC sets the working
-directory to the manifest's location when invoking the adapter, so Python's
-`sys.path[0]` (the CWD) resolves to the DSC install directory where both
-`pyadapter/` and `ms_dsc/` reside.  This means user resources can `import ms_dsc`
-without a separate `pip install`.
+alongside `pyadapter/` in the same output directory.  DSC invokes the adapter
+with `python -m pyadapter.cli`, which adds `''` (CWD = manifest directory) to
+`sys.path[0]`.  Both `pyadapter/` and `ms_dsc/` reside in that directory, so
+user resources can `import ms_dsc` without a separate `pip install` and without
+any sys.path or PYTHONPATH configuration.
 
 The build step (`Copy-PythonAdapterSdk` in `helpers.build.psm1`) copies the
 runtime-only subset of `ms_dsc/` — excluding the `build/` Hatchling hook and
@@ -71,17 +71,16 @@ See [Writing a Python DSC resource](#writing-a-python-dsc-resource) for the reco
 
 ## Adapter invocation
 
-DSC invokes the adapter as a Python module, not a script path:
+DSC invokes the adapter as a Python module:
 
 ```
 python -m pyadapter.cli <verb> [--resource TYPE]
 ```
 
-This is cleaner than the legacy `python ./pyadapter/__main__.py <verb>` approach
-because Python's `-m` invocation correctly sets `sys.path[0] = ''` (CWD), making
-both `pyadapter` and the bundled `ms_dsc` importable without path manipulation.
+Python's `-m` invocation adds `''` (CWD) to `sys.path[0]`, making both
+`pyadapter` and the bundled `ms_dsc` importable without any path manipulation.
 
-For development and manual testing, you can use either form from the adapter root:
+For development and manual testing, use either form from the adapter root:
 
 ```bash
 # Preferred (matches DSC invocation)
