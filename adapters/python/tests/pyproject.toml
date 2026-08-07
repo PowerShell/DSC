@@ -1,0 +1,31 @@
+[project]
+name = "pythontest"
+version = "0.1.0"
+description = "Python adapter test resources"
+
+[[project.authors]]
+name = "DSC Python Team"
+
+[tool.dsc.resources."PythonTest/Get"]
+class = "GetOnlyResource"
+version = "0.1.0"
+description = "An adapted resource for testing Python Adapter."
+author = "DSC Python Team"
+
+[tool.dsc.resources."PythonTest/Set"]
+class = "SetOnlyResource"
+version = "0.1.0"
+description = "An adapted resource for testing Python Adapter."
+author = "DSC Python Team"
+
+[tool.dsc.resources."PythonTest/Test"]
+class = "TestOnlyResource"
+version = "0.1.0"
+description = "An adapted resource for testing Python Adapter."
+author = "DSC Python Team"
+
+[tool.dsc.resources."PythonTest/Export"]
+class = "ExportOnlyResource"
+version = "0.1.0"
+description = "An adapted resource for testing Python Adapter."
+author = "DSC Python Team"
