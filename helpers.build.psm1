@@ -2448,6 +2448,8 @@ function Get-CodeCoverageReport {
                     $currentLineNum++
                 } elseif ($diffLine.StartsWith('-') -and -not $diffLine.StartsWith('---')) {
                     # Deleted lines don't advance the new file line counter
+                } elseif ($diffLine.StartsWith('\')) {
+                    # "\ No newline at end of file" marker — not a real line
                 } else {
                     $currentLineNum++
                 }
@@ -2469,10 +2471,7 @@ function Get-CodeCoverageReport {
             }
 
             if (-not $fileCoverage) {
-                # File not in coverage report means LLVM found no instrumentable
-                # executable code in it (e.g., struct/enum definitions with derive
-                # macros). Skip it rather than penalizing as uncovered.
-                Write-Verbose -Verbose "No LCOV data for '$file' - file has no instrumentable code, skipping"
+                Write-Verbose -Verbose "Skipping '$file': not in LCOV data (possibly platform-specific or not instrumented)"
                 continue
             }
 
