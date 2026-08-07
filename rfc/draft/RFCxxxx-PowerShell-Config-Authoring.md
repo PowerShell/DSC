@@ -58,7 +58,7 @@ $config.Metadata = @{
 
 # cmdlets provided to create consistent discovery experience
 # the `parameters` member is a collection of `[Dsc.Parameter]` objects
-$config.Parameters += New-DscParameter -Name 'ComputerName' -Type 'string' -Required
+$config.Parameters += New-DscParameter -Name 'ComputerName' -Type 'string'
 
 # users can also use the types directly to create a parameter
 $config.Parameters += [DSC.Parameter]@{
@@ -106,8 +106,7 @@ This would generate the following configuration document:
   "Parameters": [
     {
       "Name": "ComputerName",
-      "Type": "string",
-      "Required": true
+      "Type": "string"
     },
     {
       "Name": "Environment",
@@ -150,9 +149,40 @@ This would generate the following configuration document:
 
 ## Alternate Proposals and Considerations
 
-<!--
-    Include any alternate proposals and notes for the RFC in this section.
--->
+There is an alternate proposal for a Pester-like experience although this would require significantly more work:
+
+```powershell
+DscConfiguration {
+    Metadata {
+        Name = 'MyConfiguration'
+        Version = '1.0.0'
+        Author = 'SteveL-MSFT'
+    }
+
+    Parameters {
+        Parameter 'ComputerName' -Type 'string'
+        Parameter 'Environment' -Type 'string' -DefaultValue 'Production'
+    }
+
+    Resource 'My echo' -Type 'Microsoft.DSC.Debug/Echo' {
+        Properties {
+            Output = 'Hello World'
+        }
+    }
+
+    Resource 'My echo 2' -Type 'Microsoft.DSC.Debug/Echo' {
+        Properties {
+            Output = {
+                $Parameters['Environment'] + ' ' + $Parameters['ComputerName']
+            }
+        }
+        DependsOn 'My echo'
+    }
+}
+```
+
+In this example, there isn't an explicit `export()` method or cmdlet, simply executing the script would generate the configuration document.
+Also, it's not clear how intellisense would work for resource properties as they would be dynamically generated based on the resource type.
 
 ## Related work items
 
