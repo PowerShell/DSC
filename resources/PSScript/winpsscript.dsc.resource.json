@@ -2,7 +2,7 @@
     "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
     "type": "Microsoft.DSC.Transitional/WindowsPowerShellScript",
     "description": "Enable running Windows PowerShell 5.1 scripts inline",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "get": {
         "executable": "powershell",
         "args": [
@@ -56,26 +56,118 @@
     },
     "schema": {
         "embedded": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
             "type": "object",
+            "title": "Transitional Windows PowerShell script resource",
+            "description": "Defines an instance of the `Microsoft.DSC.Transitional/WindowsPowerShellScript` resource, which enables users to define inline scripts for the get, set, and test resource operations.",
+            "oneOf": [
+                {
+                    "description": "Defines constraints for the return data of the resource operations.",
+                    "anyOf": [
+                        {
+                            "description": "Defines the valid return data for `get` and `set` operations with a defined script.",
+                            "required": [
+                                "output"
+                            ]
+                        },
+                        {
+                            "description": "Defines the return data as an empty object for operations with an undefined script.",
+                            "minProperties": 0,
+                            "maxProperties": 0
+                        },
+                        {
+                            "description": "Defines the valid return data for implemented `test` operations.",
+                            "required": [
+                                "_inDesiredState"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "description": "Defines constraints for the input data of the resource operations. You must define at least one script property to use this resource.",
+                    "anyOf": [
+                        {
+                            "required": [
+                                "getScript"
+                            ]
+                        },
+                        {
+                            "required": [
+                                "testScript"
+                            ]
+                        },
+                        {
+                            "required": [
+                                "setScript"
+                            ]
+                        }
+                    ]
+                }
+            ],
             "properties": {
                 "getScript": {
-                    "type": ["string", "null"]
+                    "title": "Get operation script",
+                    "description": "A Windows PowerShell script that retrieves the current state of the instance.",
+                    "$ref": "#/$defs/powershellScript"
                 },
                 "setScript": {
-                    "type": ["string", "null"]
+                    "title": "Set operation script",
+                    "description": "A Windows PowerShell script that enforces the desired state for the instance.",
+                    "$ref": "#/$defs/powershellScript"
                 },
                 "testScript": {
-                    "type": ["string", "null"]
+                    "title": "Test operation script",
+                    "description": "A Windows PowerShell script that checks whether the instance is in the desired state.",
+                    "$ref": "#/$defs/powershellScript"
                 },
                 "input": {
-                    "type": ["string", "boolean", "integer", "object", "array", "null"]
+                    "title": "Script input data",
+                    "description": "Defines the data to pass to every script as a parameter. When defined, every script property must include a `param()` statement with a single parameter.",
+                    "writeOnly": true,
+                    "type": [
+                        "string",
+                        "boolean",
+                        "integer",
+                        "number",
+                        "object",
+                        "array"
+                    ]
                 },
                 "output": {
-                    "type": ["array", "null"]
+                    "title": "Script output data",
+                    "description": "Defines output emitted to the success stream from the invoked script. The resource result for an operation only includes this property when the script emits one or more items to the success stream.",
+                    "readOnly": true,
+                    "type": [
+                        "string",
+                        "boolean",
+                        "integer",
+                        "number",
+                        "object",
+                        "array",
+                        "null"
+                    ]
                 },
                 "_inDesiredState": {
-                    "type": ["boolean", "null"],
-                    "default": null
+                    "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/inDesiredState.json"
+                }
+            },
+            "$defs": {
+                "powershellScript": {
+                    "writeOnly": true,
+                    "type": "string",
+                    "minLength": 1,
+                    "contentMediaType": "text/vnd.microsoft.powershell"
+                },
+                "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/inDesiredState.json": {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/inDesiredState.json",
+                    "title": "Instance is in the Desired State",
+                    "description": "Indicates whether the instance is in the desired state. This property is only returned by the `test` method.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ],
+                    "readOnly": true
                 }
             }
         }

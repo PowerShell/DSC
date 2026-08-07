@@ -189,5 +189,22 @@ if ($Operation -eq 'Test') {
         exit 1
     }
 } else {
-    @{ output = $outputObjects } | ConvertTo-Json -Compress -Depth 10
+    $outputData = @{}
+    if ($outputObjects.Count -eq 1) {
+        $outputData.output = $outputObjects | Select-Object -First 1
+    } elseif ($outputObjects.Count -gt 1) {
+        $outputData.output = $outputObjects
+    }
+
+    $toJsonParams = @{
+        Compress = $true
+        Depth    = 10
+    }
+    # For PowerShell, use `-EnumsAsStrings` to ensure that enum values are serialized as strings instead of integers.
+    # No equivalent option for Windows PowerShell, so this is a limitation of the WindowsPowerShellScript resource.
+    if ($PSVersionTable.PSVersion -ge [Version]'6.0') {
+        $toJsonParams['EnumsAsStrings'] = $true
+    }
+
+    $outputData | ConvertTo-Json @toJsonParams
 }
