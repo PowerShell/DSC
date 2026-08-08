@@ -189,4 +189,4 @@ When the resource returns this exit code, it also emits an error message with de
 <!-- Link definitions -->
 [01]: ./examples/query-operating-system-info.md
 [02]: ./examples/query-filtered-disk-info.md
-[03]: ../../../../schemas/config/type.md
+[03]: ../../../../schemas/definitions/resourceType.md

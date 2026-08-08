@@ -1,8 +1,6 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use std::str::FromStr;
-
 use jsonschema::ValidationOptions;
 
 use crate::vscode::keywords::{
@@ -121,116 +119,75 @@ impl VSCodeKeyword {
             Self::SuggestSortText => SuggestSortTextKeyword::KEYWORD_NAME,
         }
     }
-    /// Registers the keyword with an instance of [`ValidationOptions`] from the `jsonschema`
-    /// crate.
+    /// Registers the keyword factory with an instance of [`ValidationOptions`] from the
+    /// `jsonschema` crate.
     /// 
-    /// This convenience method enables you to quickly add keywords to the validator. However,
-    /// it doesn't follow the builder pattern typically used with [`ValidationOptions`].
-    /// 
-    /// For a more ergonomic way to register keywords, see [`VSCodeValidationOptionsExtensions`].
+    /// This method only registers the keyword factory itself. It does **not** register the
+    /// schema resources (keyword `$id` schemas, vocabulary, or dialect meta schema) needed for
+    /// `$ref` resolution. To also register schema resources, use the
+    /// [`VSCodeValidationOptionsExtensions`] trait methods (e.g., [`with_vscode_keyword()`]),
+    /// which handle both keyword factories and the [`VSCODE_DIALECT_REGISTRY`].
     /// 
     /// [`VSCodeValidationOptionsExtensions`]: crate::vscode::VSCodeValidationOptionsExtensions
-    pub fn register(self, options: ValidationOptions) -> ValidationOptions {
+    /// [`with_vscode_keyword()`]: crate::vscode::VSCodeValidationOptionsExtensions::with_vscode_keyword
+    /// [`VSCODE_DIALECT_REGISTRY`]: crate::vscode::VSCODE_DIALECT_REGISTRY
+    pub fn register(self, options: ValidationOptions<'_>) -> ValidationOptions<'_> {
         match self {
             Self::AllowComments => options.with_keyword(
                 AllowCommentsKeyword::KEYWORD_NAME,
                 AllowCommentsKeyword::keyword_factory
-            ).with_resource(
-                AllowCommentsKeyword::KEYWORD_ID,
-                AllowCommentsKeyword::default_schema_resource()
             ),
-
             Self::AllowTrailingCommas => options.with_keyword(
                 AllowTrailingCommasKeyword::KEYWORD_NAME,
                 AllowTrailingCommasKeyword::keyword_factory
-            ).with_resource(
-                AllowTrailingCommasKeyword::KEYWORD_ID,
-                AllowTrailingCommasKeyword::default_schema_resource()
             ),
-
             Self::CompletionDetail => options.with_keyword(
                 CompletionDetailKeyword::KEYWORD_NAME,
                 CompletionDetailKeyword::keyword_factory
-            ).with_resource(
-                CompletionDetailKeyword::KEYWORD_ID,
-                CompletionDetailKeyword::default_schema_resource()
             ),
             Self::DefaultSnippets => options.with_keyword(
                 DefaultSnippetsKeyword::KEYWORD_NAME,
                 DefaultSnippetsKeyword::keyword_factory
-            ).with_resource(
-                DefaultSnippetsKeyword::KEYWORD_ID,
-                DefaultSnippetsKeyword::default_schema_resource()
             ),
             Self::DeprecationMessage => options.with_keyword(
                 DeprecationMessageKeyword::KEYWORD_NAME,
                 DeprecationMessageKeyword::keyword_factory
-            ).with_resource(
-                DeprecationMessageKeyword::KEYWORD_ID,
-                DeprecationMessageKeyword::default_schema_resource()
             ),
             Self::DoNotSuggest => options.with_keyword(
                 DoNotSuggestKeyword::KEYWORD_NAME,
                 DoNotSuggestKeyword::keyword_factory
-            ).with_resource(
-                DoNotSuggestKeyword::KEYWORD_ID,
-                DoNotSuggestKeyword::default_schema_resource()
             ),
             Self::EnumDescriptions => options.with_keyword(
                 EnumDescriptionsKeyword::KEYWORD_NAME,
                 EnumDescriptionsKeyword::keyword_factory
-            ).with_resource(
-                EnumDescriptionsKeyword::KEYWORD_ID,
-                EnumDescriptionsKeyword::default_schema_resource()
             ),
             Self::EnumDetails => options.with_keyword(
                 EnumDetailsKeyword::KEYWORD_NAME,
                 EnumDetailsKeyword::keyword_factory
-            ).with_resource(
-                EnumDetailsKeyword::KEYWORD_ID,
-                EnumDetailsKeyword::default_schema_resource()
             ),
             Self::EnumSortTexts => options.with_keyword(
                 EnumSortTextsKeyword::KEYWORD_NAME,
                 EnumSortTextsKeyword::keyword_factory
-            ).with_resource(
-                EnumSortTextsKeyword::KEYWORD_ID,
-                EnumSortTextsKeyword::default_schema_resource()
             ),
             Self::ErrorMessage => options.with_keyword(
                 ErrorMessageKeyword::KEYWORD_NAME,
                 ErrorMessageKeyword::keyword_factory
-            ).with_resource(
-                ErrorMessageKeyword::KEYWORD_ID,
-                ErrorMessageKeyword::default_schema_resource()
             ),
             Self::MarkdownDescription => options.with_keyword(
                 MarkdownDescriptionKeyword::KEYWORD_NAME,
                 MarkdownDescriptionKeyword::keyword_factory
-            ).with_resource(
-                MarkdownDescriptionKeyword::KEYWORD_ID,
-                MarkdownDescriptionKeyword::default_schema_resource()
             ),
             Self::MarkdownEnumDescriptions => options.with_keyword(
                 MarkdownEnumDescriptionsKeyword::KEYWORD_NAME,
                 MarkdownEnumDescriptionsKeyword::keyword_factory
-            ).with_resource(
-                MarkdownEnumDescriptionsKeyword::KEYWORD_ID,
-                MarkdownEnumDescriptionsKeyword::default_schema_resource()
             ),
             Self::PatternErrorMessage => options.with_keyword(
                 PatternErrorMessageKeyword::KEYWORD_NAME,
                 PatternErrorMessageKeyword::keyword_factory
-            ).with_resource(
-                PatternErrorMessageKeyword::KEYWORD_ID,
-                PatternErrorMessageKeyword::default_schema_resource()
             ),
             Self::SuggestSortText => options.with_keyword(
                 SuggestSortTextKeyword::KEYWORD_NAME,
                 SuggestSortTextKeyword::keyword_factory
-            ).with_resource(
-                SuggestSortTextKeyword::KEYWORD_ID,
-                SuggestSortTextKeyword::default_schema_resource()
             ),
         }
     }

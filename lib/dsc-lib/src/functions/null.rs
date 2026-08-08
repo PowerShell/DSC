@@ -16,6 +16,8 @@ impl Function for Null {
         FunctionMetadata {
             name: "null".to_string(),
             description: t!("functions.null.description").to_string(),
+            syntax: t!("functions.null.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Object],
             min_args: 0,
             max_args: 0,

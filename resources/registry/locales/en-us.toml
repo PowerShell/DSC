@@ -1,7 +1,30 @@
 _version = 1
 
+[adapter]
+getProcessingKey = "Processing key: %{key}"
+noAdaptedRegistryValueFound = "No adapted registry value found for key: %{key}"
+setProcessingKey = "Setting key: %{key}"
+registryValueNotFound = "Registry value not found for key path: %{key_path} and value name: %{value_name}"
+unsupportedConversionToJsonType = "Unsupported conversion from %{registry_value_data} to JSON type: %{json_type}"
+unsupportedValueType = "For value name %{value_name}, unsupported value type: %{value}"
+couldNotConvertDefaultValue = "Could not convert default value '%{default_value}' to registry data type: %{reg_type}"
+valueMappingNotFound = "No mapping found for value '%{value}' of type %{reg_type}"
+mappedValueNotU64 = "Mapped value for '%{value}' is not a u64"
+mappedValueNotString = "Mapped value for '%{value}' is not a string"
+unmappedByteSlice = "No mapping found for byte slice: %{hex_string}"
+nonStringInMultiStringDefault = "Non-string value found in default value array for REG_MULTI_SZ: %{value}"
+emptyReverseMap = "The reverse map is empty"
+mapJsonToRegistryNotFound = "No mapping found for key: %{key}"
+
 [args]
 about = "Manage state of Windows registry"
+adapterAbout = "Use adapted registry resources."
+adapterArgsInputHelp = "The registry JSON input for the adapted resource."
+adapterExportAbout = "Use 'export' operation with adapted registry resources."
+adapterGetAbout = "Use 'get' operation with adapted registry resources."
+adapterSetAbout = "Use 'set' operation with adapted registry resources."
+adapterSchemaAbout = "Retrieve JSON schema for registry adapter content in adapted manifest."
+adapterArgsAdaptedResourceHelp = "The content of the adapted resource to use."
 configAbout = "Manage registry configuration."
 configArgsInputHelp = "The registry JSON input."
 configArgsWhatIfHelp = "Run as a what-if operation instead of applying the registry configuration."

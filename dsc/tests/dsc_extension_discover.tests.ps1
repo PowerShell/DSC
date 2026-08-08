@@ -102,18 +102,17 @@ Describe 'Discover extension tests' {
         Set-Content -Path "$TestDrive/test.dsc.extension.json" -Value $extension_json
         Copy-Item -Path "$toolPath/discover.ps1" -Destination $TestDrive | Out-Null
         Copy-Item -Path "$toolPath/resources" -Destination $TestDrive -Recurse | Out-Null
-        $env:DSC_RESOURCE_PATH = "$TestDrive" + [System.IO.Path]::PathSeparator + (Split-Path (Get-Command pwsh).Source -Parent)
+        $env:DSC_RESTRICTED_PATH = "$TestDrive" + [System.IO.Path]::PathSeparator + (Split-Path (Get-Command pwsh).Source -Parent)
         try {
             $out = dsc extension list | ConvertFrom-Json
             $out.Count | Should -Be 1 -Because ($out | Out-String)
             $out.type | Should -Be 'Test/DiscoverRelative'
-            $out = dsc resource list 2> $TestDrive/error.log
+            $null = dsc resource list 2> $TestDrive/error.log
             $LASTEXITCODE | Should -Be 0
-            $out | Should -BeNullOrEmpty
             $errorMessage = Get-Content -Path "$TestDrive/error.log" -Raw
             $errorMessage | Should -BeLike '*is not an absolute path*'
         } finally {
-            $env:DSC_RESOURCE_PATH = $null
+            $env:DSC_RESTRICTED_PATH = $null
         }
     }
 
@@ -147,13 +146,13 @@ Describe 'Discover extension tests' {
     It 'Deprecated extension shows message' {
         try {
             $dscHome = Split-Path (Get-Command dsc).Source -Parent
-            $env:DSC_RESOURCE_PATH = (Join-Path -Path $dscHome -ChildPath 'deprecated') + [System.IO.Path]::PathSeparator + $dscHome
+            $env:DSC_RESTRICTED_PATH = (Join-Path -Path $dscHome -ChildPath 'deprecated') + [System.IO.Path]::PathSeparator + $dscHome
 
             $null = dsc resource list 2> $TestDrive/error.log
             $LASTEXITCODE | Should -Be 0
             (Get-Content -Path "$TestDrive/error.log" -Raw) | Should -Match "Extension 'Test/ExtensionDeprecated' is deprecated: This extension is deprecated" -Because (Get-Content -Path "$TestDrive/error.log" -Raw | Out-String)
         } finally {
-            $env:DSC_RESOURCE_PATH = $null
+            $env:DSC_RESTRICTED_PATH = $null
         }
     }
 
@@ -199,7 +198,7 @@ Describe 'Discover extension tests' {
         Set-Content -Path "$TestDrive/discover.ps1" -Value $resourceScript
         Set-Content -Path "$TestDrive/extension.dsc.extension.json" -Value $extensionManifest
         try {
-            $env:DSC_RESOURCE_PATH = $TestDrive + [System.IO.Path]::PathSeparator + $env:PATH
+            $env:DSC_RESTRICTED_PATH = $TestDrive + [System.IO.Path]::PathSeparator + $env:PATH
             $env:TestDrive = $TestDrive
             $out = dsc -l info resource list 2> $TestDrive/error.log | ConvertFrom-Json
             $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path "$TestDrive/error.log" -Raw | Out-String)
@@ -209,8 +208,67 @@ Describe 'Discover extension tests' {
             }
             (Get-Content -Path "$TestDrive/error.log" -Raw) | Should -BeLike "*INFO Extension 'Test/DiscoverInvalid' failed to load manifest: Invalid manifest for resource '*invalidManifest.dsc.resource.json'*" -Because (Get-Content -Path "$TestDrive/error.log" -Raw | Out-String)
         } finally {
-            $env:DSC_RESOURCE_PATH = $null
+            $env:DSC_RESTRICTED_PATH = $null
             $env:TestDrive = $null
+        }
+    }
+
+    It 'ExtensionsArg is received correctly' {
+        $extension_json = @'
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "type": "Test/DiscoverExtensions",
+    "version": "0.1.0",
+    "description": "Test discover resource",
+    "discover": {
+        "executable": "pwsh",
+        "args": [
+            "-NoLogo",
+            "-NonInteractive",
+            "-NoProfile",
+            "-Command",
+            "./discover.ps1",
+            {
+                "extensionsArg": "-Extensions",
+                "includeQuotes": true
+            }
+        ]
+    }
+}
+'@
+
+        $extensions = @{
+            '.dsc.manifests.yml' = $false
+            '.dsc.manifests.yaml' = $false
+            '.dsc.manifests.json' = $false
+            '.dsc.extension.yml' = $false
+            '.dsc.extension.yaml' = $false
+            '.dsc.extension.json' = $false
+            '.dsc.adaptedresource.yml' = $false
+            '.dsc.adaptedresource.yaml' = $false
+            '.dsc.adaptedresource.json' = $false
+            '.dsc.resource.yml' = $false
+            '.dsc.resource.yaml' = $false
+            '.dsc.resource.json' = $false
+        }
+
+        Set-Content -Path "$TestDrive/test.dsc.extension.json" -Value $extension_json
+        Copy-Item -Path "$toolPath/discover.ps1" -Destination $TestDrive | Out-Null
+        $env:DSC_RESTRICTED_PATH = "$TestDrive" + [System.IO.Path]::PathSeparator + (Split-Path (Get-Command pwsh).Source -Parent)
+        try {
+            $out = dsc resource list 2> $TestDrive/error.log | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            foreach ($resource in $out) {
+                if ($resource.type.startsWith('TestDiscover/')) {
+                    $extensions[$resource.adaptedContent.extension] = $true
+                }
+            }
+        } finally {
+            $env:DSC_RESTRICTED_PATH = $null
+        }
+
+        foreach ($key in $extensions.Keys) {
+            $extensions[$key] | Should -BeTrue -Because "Extension $key was not found"
         }
     }
 }

@@ -50,4 +50,4 @@ changedProperties: []
 > If you want to capture the output, you should redirect it to a file.
 
 <!-- Link reference definitions -->
-[00]: ../../../../../cli/resource/set.md
+[00]: ../../../../../../cli/resource/set.md

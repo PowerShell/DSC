@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+  - name: Operating System Assertion
+    type: Microsoft.DSC/Assertion
+    properties:
+      $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+      resources:
+        - name: Minimum operating system version
+          type: Microsoft/OSInfo
+          properties:
+            version: '>= 10.0'
+  - name: Show operating system
+    type: Microsoft.DSC.Debug/Echo
+    properties:
+      output: 'The operating system meets the minimum version requirement.'
+    dependsOn:
+      - "[resourceId('Microsoft.DSC/Assertion', 'Operating System Assertion')]"

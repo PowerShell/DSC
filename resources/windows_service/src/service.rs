@@ -153,6 +153,7 @@ unsafe fn read_service_state(
         logon_account,
         error_control,
         dependencies,
+        metadata: None,
     })
 }
 
@@ -220,18 +221,6 @@ pub fn get_service(input: &WindowsService) -> Result<WindowsService, ServiceErro
 
     let svc = unsafe { read_service_state(service_handle.0, &service_key_name) }?;
 
-    // If both name and display_name were provided, verify they match
-    if input.name.is_some() && let Some(expected_dn) = input.display_name.as_ref() {
-        // let expected_dn = input.display_name.as_ref().unwrap();
-        let actual_dn = svc.display_name.as_deref().unwrap_or("");
-        if !actual_dn.eq_ignore_ascii_case(expected_dn) {
-            return Err(
-                t!("get.displayNameMismatch", expected = expected_dn, actual = actual_dn)
-                    .to_string()
-                    .into(),
-            );
-        }
-    }
 
     Ok(svc)
 }
@@ -382,22 +371,8 @@ unsafe fn query_status(service_handle: SC_HANDLE) -> Result<ServiceStatus, Servi
     }
 }
 
-/// Convert a `ServiceStatus` to the corresponding Windows `SERVICE_STATUS_CURRENT_STATE` constant.
-fn status_to_current_state(status: &ServiceStatus) -> SERVICE_STATUS_CURRENT_STATE {
-    match status {
-        ServiceStatus::Running => SERVICE_RUNNING,
-        ServiceStatus::Stopped => SERVICE_STOPPED,
-        ServiceStatus::Paused => SERVICE_PAUSED,
-        ServiceStatus::StartPending => SERVICE_START_PENDING,
-        ServiceStatus::StopPending => SERVICE_STOP_PENDING,
-        ServiceStatus::PausePending => SERVICE_PAUSE_PENDING,
-        ServiceStatus::ContinuePending => SERVICE_CONTINUE_PENDING,
-    }
-}
-
-/// Export (enumerate) all services, optionally filtering by the provided criteria.
-/// Returns a list of matching services.
-pub fn export_services(filter: Option<&WindowsService>) -> Result<Vec<WindowsService>, ServiceError> {
+/// Export (enumerate) all services. Returns a list of all services.
+pub fn export_services() -> Result<Vec<WindowsService>, ServiceError> {
     let scm = unsafe { OpenSCManagerW(None, None, SC_MANAGER_CONNECT | SC_MANAGER_ENUMERATE_SERVICE) }
         .map_err(|e| ServiceError::from(t!("get.openScmFailed", error = e.to_string()).to_string()))?;
     let scm = ScHandle(scm);
@@ -405,23 +380,11 @@ pub fn export_services(filter: Option<&WindowsService>) -> Result<Vec<WindowsSer
     let services = unsafe { enumerate_services(scm.0) }?;
     let mut results = Vec::new();
 
-    // Pre-compute the status filter value for early rejection before expensive per-service queries
-    let status_filter_dw = filter.and_then(|f| f.status.as_ref()).map(status_to_current_state);
-
-    for (service_name, current_state) in &services {
-        // Quick reject based on status before opening the service handle
-        if let Some(expected_state) = status_filter_dw && *current_state != expected_state {
-            continue;
-        }
-
+    for (service_name, _current_state) in &services {
         let svc = match unsafe { get_service_details(scm.0, service_name) } {
             Ok(s) => s,
             Err(_) => continue, // skip services we can't query
         };
-
-        if let Some(f) = filter && !matches_filter(&svc, f) {
-            continue;
-        }
 
         results.push(svc);
     }
@@ -524,55 +487,6 @@ unsafe fn get_service_details(scm: SC_HANDLE, service_name: &str) -> Result<Wind
     unsafe { read_service_state(service_handle.0, service_name) }
 }
 
-/// Match a string against a pattern supporting `*` wildcards.
-/// If no wildcard is present, performs an exact case-insensitive comparison.
-fn matches_wildcard(text: &str, pattern: &str) -> bool {
-    if pattern == "*" {
-        return true;
-    }
-
-    let text_lower = text.to_lowercase();
-    let pattern_lower = pattern.to_lowercase();
-
-    let parts: Vec<&str> = pattern_lower.split('*').collect();
-
-    // No wildcard → exact match
-    if parts.len() == 1 {
-        return text_lower == pattern_lower;
-    }
-
-    let starts_with_wildcard = pattern_lower.starts_with('*');
-    let ends_with_wildcard = pattern_lower.ends_with('*');
-
-    let mut pos = 0;
-
-    for (i, part) in parts.iter().enumerate() {
-        if part.is_empty() {
-            continue;
-        }
-
-        if i == 0 && !starts_with_wildcard {
-            if !text_lower.starts_with(part) {
-                return false;
-            }
-            pos = part.len();
-        } else if let Some(found) = text_lower[pos..].find(part) {
-            pos += found + part.len();
-        } else {
-            return false;
-        }
-    }
-
-    if !ends_with_wildcard
-        && let Some(last) = parts.last()
-        && !last.is_empty()
-        && !text_lower.ends_with(last) {
-            return false;
-        }
-
-    true
-}
-
 /// Build a double-null-terminated UTF-16 multi-string from a list of dependency names.
 fn deps_to_multi_string(deps: &[String]) -> Vec<u16> {
     let mut buf = Vec::new();
@@ -603,7 +517,7 @@ fn is_builtin_service_account(account: &str) -> bool {
     )
 }
 
-pub fn set_service(input: &WindowsService) -> Result<WindowsService, ServiceError> {
+pub fn set_service(input: &WindowsService, what_if: bool) -> Result<WindowsService, ServiceError> {
     let name = input.name.as_deref()
         .ok_or_else(|| t!("set.nameRequired").to_string())?;
 
@@ -611,6 +525,10 @@ pub fn set_service(input: &WindowsService) -> Result<WindowsService, ServiceErro
         return Err(ServiceError::from(
             t!("set.unsupportedLogonAccount", account = account).to_string(),
         ));
+    }
+
+    if what_if {
+        return what_if_set(input, name);
     }
 
     unsafe {
@@ -882,76 +800,176 @@ unsafe fn wait_for_status(
     }
 }
 
-/// Check whether `service` matches all non-`None` fields in `filter`.
-fn matches_filter(service: &WindowsService, filter: &WindowsService) -> bool {
-    // name — wildcard match
-    if let Some(ref pattern) = filter.name {
-        let name = service.name.as_deref().unwrap_or("");
-        if !matches_wildcard(name, pattern) {
-            return false;
+/// Compute the projected state of a service after applying `input`, without
+/// making any changes. Populates `_metadata.whatIf` with one entry per change
+/// that would be applied. If the service does not exist, returns the desired
+/// state with a single `whatIf` entry describing the failure to open it.
+fn what_if_set(input: &WindowsService, name: &str) -> Result<WindowsService, ServiceError> {
+    // Look up the current state using only the service key name; we want the
+    // live values to compare against, not a re-validation of the desired ones.
+    let lookup = WindowsService {
+        name: Some(name.to_string()),
+        ..Default::default()
+    };
+    let current = match get_service(&lookup) {
+        Ok(svc) => svc,
+        Err(e) => {
+            // Surface the error via metadata so what-if never errors out.
+            return Ok(WindowsService {
+                name: Some(name.to_string()),
+                exist: Some(false),
+                metadata: Some(Metadata {
+                    what_if: Some(vec![e.to_string()]),
+                }),
+                ..Default::default()
+            });
         }
+    };
+
+    let mut messages: Vec<String> = Vec::new();
+    let exists = current.exist.unwrap_or(true);
+
+    if !exists {
+        messages.push(
+            t!("set.whatIfServiceNotFound", name = name).to_string(),
+        );
+        return Ok(WindowsService {
+            name: Some(name.to_string()),
+            display_name: input.display_name.clone(),
+            description: input.description.clone(),
+            status: input.status.clone(),
+            start_type: input.start_type.clone(),
+            executable_path: input.executable_path.clone(),
+            logon_account: input.logon_account.clone(),
+            error_control: input.error_control.clone(),
+            dependencies: input.dependencies.clone(),
+            exist: Some(false),
+            metadata: Some(Metadata { what_if: Some(messages) }),
+        });
     }
 
-    // display_name — wildcard match
-    if let Some(ref pattern) = filter.display_name {
-        let dn = service.display_name.as_deref().unwrap_or("");
-        if !matches_wildcard(dn, pattern) {
-            return false;
-        }
+    // Compare each desired field to the current state and emit messages only
+    // when the value would actually change.
+    if let Some(ref desired) = input.display_name
+        && current.display_name.as_deref() != Some(desired.as_str()) {
+        messages.push(t!("set.whatIfChangeDisplayName",
+            current = current.display_name.clone().unwrap_or_default(),
+            desired = desired
+        ).to_string());
+    }
+    if let Some(ref desired) = input.description
+        && current.description.as_deref() != Some(desired.as_str()) {
+        messages.push(t!("set.whatIfChangeDescription",
+            current = current.description.clone().unwrap_or_default(),
+            desired = desired
+        ).to_string());
+    }
+    if let Some(ref desired) = input.start_type
+        && current.start_type.as_ref() != Some(desired) {
+        messages.push(t!("set.whatIfChangeStartType",
+            current = current.start_type.as_ref().map_or_else(String::new, ToString::to_string),
+            desired = desired.to_string()
+        ).to_string());
+    }
+    if let Some(ref desired) = input.executable_path
+        && current.executable_path.as_deref() != Some(desired.as_str()) {
+        messages.push(t!("set.whatIfChangeExecutablePath",
+            current = current.executable_path.clone().unwrap_or_default(),
+            desired = desired
+        ).to_string());
+    }
+    if let Some(ref desired) = input.logon_account
+        && current.logon_account.as_deref().is_none_or(|c| !c.eq_ignore_ascii_case(desired)) {
+        messages.push(t!("set.whatIfChangeLogonAccount",
+            current = current.logon_account.clone().unwrap_or_default(),
+            desired = desired
+        ).to_string());
+    }
+    if let Some(ref desired) = input.error_control
+        && current.error_control.as_ref() != Some(desired) {
+        messages.push(t!("set.whatIfChangeErrorControl",
+            current = current.error_control.as_ref().map_or_else(String::new, ToString::to_string),
+            desired = desired.to_string()
+        ).to_string());
+    }
+    if let Some(ref desired) = input.dependencies
+        && current.dependencies.as_deref() != Some(desired.as_slice()) {
+        messages.push(t!("set.whatIfChangeDependencies",
+            desired = desired.join(", ")
+        ).to_string());
+    }
+    if let Some(ref desired) = input.status
+        && current.status.as_ref() != Some(desired) {
+        messages.push(t!("set.whatIfChangeStatus",
+            current = current.status.as_ref().map_or_else(String::new, ToString::to_string),
+            desired = desired.to_string()
+        ).to_string());
     }
 
-    // description — wildcard match
-    if let Some(ref pattern) = filter.description {
-        let desc = service.description.as_deref().unwrap_or("");
-        if !matches_wildcard(desc, pattern) {
-            return false;
-        }
-    }
+    // Project the desired state — fields explicitly provided in input override
+    // the corresponding values from the current state.
+    let projected = WindowsService {
+        name: Some(name.to_string()),
+        display_name: input.display_name.clone().or(current.display_name),
+        description: input.description.clone().or(current.description),
+        exist: Some(true),
+        status: input.status.clone().or(current.status),
+        start_type: input.start_type.clone().or(current.start_type),
+        executable_path: input.executable_path.clone().or(current.executable_path),
+        logon_account: input.logon_account.clone().or(current.logon_account),
+        error_control: input.error_control.clone().or(current.error_control),
+        dependencies: input.dependencies.clone().or(current.dependencies),
+        metadata: if messages.is_empty() {
+            None
+        } else {
+            Some(Metadata { what_if: Some(messages) })
+        },
+    };
 
-    // exist — exact match
-    if let Some(expected_exist) = filter.exist {
-        let actual_exist = service.exist.unwrap_or(false);
-        if actual_exist != expected_exist {
-            return false;
-        }
-    }
+    Ok(projected)
+}
 
-    // status — exact match
-    if let Some(ref expected_status) = filter.status {
-        match &service.status {
-            Some(actual_status) if actual_status == expected_status => {}
-            _ => return false,
-        }
-    }
+/// Project the state for a service deletion without making any changes.
+pub fn what_if_delete_service(input: &WindowsService) -> Result<WindowsService, ServiceError> {
+    let name = input.name.as_deref()
+        .ok_or_else(|| t!("set.nameRequired").to_string())?;
 
-    // start_type — exact match
-    if let Some(ref expected_start) = filter.start_type {
-        match &service.start_type {
-            Some(actual_start) if actual_start == expected_start => {}
-            _ => return false,
-        }
-    }
+    unsafe {
+        let scm = OpenSCManagerW(None, None, SC_MANAGER_CONNECT)
+            .map_err(|e| t!("set.openScmFailed", error = e.to_string()).to_string())?;
+        let scm = ScHandle(scm);
 
-    // logon_account — exact case-insensitive match
-    if let Some(ref expected_account) = filter.logon_account {
-        let actual = service.logon_account.as_deref().unwrap_or("");
-        if !actual.eq_ignore_ascii_case(expected_account) {
-            return false;
-        }
-    }
-
-    // Note: executable_path and error_control are intentionally not filtered.
-
-    // dependencies — service must have at least all specified dependencies
-    if let Some(ref expected_deps) = filter.dependencies {
-        let actual_deps = service.dependencies.as_deref().unwrap_or(&[]);
-        for dep in expected_deps {
-            let dep_lower = dep.to_lowercase();
-            if !actual_deps.iter().any(|d| d.to_lowercase() == dep_lower) {
-                return false;
+        let name_wide = to_wide(name);
+        let service_handle = match OpenServiceW(
+            scm.0,
+            PCWSTR(name_wide.as_ptr()),
+            SERVICE_QUERY_CONFIG | SERVICE_QUERY_STATUS,
+        ) {
+            Ok(h) => ScHandle(h),
+            Err(e) if e.code() == ERROR_SERVICE_DOES_NOT_EXIST.to_hresult() => {
+                return Ok(WindowsService {
+                    name: Some(name.to_string()),
+                    exist: Some(false),
+                    metadata: Some(Metadata {
+                        what_if: Some(vec![
+                            t!("set.whatIfDeleteServiceNotFound", name = name).to_string(),
+                        ]),
+                    }),
+                    ..Default::default()
+                });
             }
-        }
-    }
+            Err(e) => {
+                return Err(t!("set.openServiceFailed", error = e.to_string()).to_string().into());
+            }
+        };
 
-    true
+        let mut current = read_service_state(service_handle.0, name)?;
+        current.exist = Some(false);
+        current.metadata = Some(Metadata {
+            what_if: Some(vec![
+                t!("set.whatIfDeleteService", name = name).to_string(),
+            ]),
+        });
+        Ok(current)
+    }
 }

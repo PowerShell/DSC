@@ -151,43 +151,6 @@ hadErrors: false
 The function returns `1704326400`, which represents the most recent backup in
 the chronologically sorted array.
 
-### Example 4 - Combine with other functions for complex logic
-
-Use `last()` together with [`split()`][02] to extract file extensions or path
-components. This example demonstrates parsing a filename to get its extension.
-
-```yaml
-# last.example.4.dsc.config.yaml
-$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
-resources:
-- name: File Extension Parser
-  type: Microsoft.DSC.Debug/Echo
-  properties:
-    output:
-      filename: config.production.yaml
-      extension: "[last(split('config.production.yaml', '.'))]"
-```
-
-```bash
-dsc config get --file last.example.4.dsc.config.yaml
-```
-
-```yaml
-results:
-- name: File Extension Parser
-  type: Microsoft.DSC.Debug/Echo
-  result:
-    actualState:
-      output:
-        filename: config.production.yaml
-        extension: yaml
-messages: []
-hadErrors: false
-```
-
-By combining `split()` and `last()`, you can extract the `yaml` extension from
-the full filename.
-
 ## Parameters
 
 ### arg
@@ -222,10 +185,8 @@ The function returns an error in the following cases:
 ## Related functions
 
 - [`first()`][00] - Returns the first element of an array or character of a string
-- [`split()`][02] - Splits a string into an array
 - [`createArray()`][01] - Creates an array from provided values
 
 <!-- Link reference definitions -->
 [00]: ./first.md
 [01]: ./createArray.md
-[02]: ./split.md

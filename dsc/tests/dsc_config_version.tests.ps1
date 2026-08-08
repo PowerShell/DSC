@@ -91,4 +91,26 @@ Describe 'Tests for resource versioning' {
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
         $out.results[0].result.actualState.version | Should -BeExactly '1.1.2'
     }
+
+    It 'Skips adapter discovery when a native resource type version requirement cannot be satisfied' {
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Test Version
+              type: Test/Version
+              requireVersion: '=99.0.0'
+              properties:
+                version: '99.0.0'
+"@
+        $out = dsc -l trace config get -i $config_yaml 2> $TestDrive/error.log
+        $LASTEXITCODE | Should -Not -Be 0
+
+        $traces = Get-Content $TestDrive/error.log -Raw
+
+        $traces | Should -Match "Skipping adapter search for resource 'Test/Version'"
+        $traces | Should -Not -Match 'Searching for adapted resources'
+        $traces | Should -Not -Match 'Enumerating resources for adapter'
+        $traces | Should -Match "Test/Version"
+        $traces | Should -Match "=99.0.0"
+    }
 }

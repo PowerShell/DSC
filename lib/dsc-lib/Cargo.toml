@@ -54,6 +54,7 @@ tree-sitter-dscexpression = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
 registry = { workspace = true }
+windows = { workspace = true }
 
 [dev-dependencies]
 serde_yaml = { workspace = true }
@@ -61,6 +62,9 @@ serde_yaml = { workspace = true }
 pretty_assertions = { workspace = true }
 # Enables parameterized test cases
 test-case = { workspace = true }
+
+[target.'cfg(not(target_os = "windows"))'.dev-dependencies]
+nix = { workspace = true, features = ["user"] }
 
 [build-dependencies]
 cc = { workspace = true }

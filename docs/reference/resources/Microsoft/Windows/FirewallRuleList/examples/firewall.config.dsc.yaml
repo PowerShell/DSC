@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+  - name: Application firewall rules
+    type: Microsoft.Windows/FirewallRuleList
+    properties:
+      rules:
+        - name: DscDemo - Custom App (TCP-In)
+          description: Allow inbound TCP traffic on port 8080 for the custom app.
+          protocol: 6
+          localPorts: '8080'
+          direction: Inbound
+          action: Allow
+          enabled: true
+          profiles:
+            - Domain
+            - Private
+        - name: DscDemo - Block Telnet (TCP-Out)
+          description: Block all outbound Telnet connections.
+          protocol: 6
+          remotePorts: '23'
+          direction: Outbound
+          action: Block
+          enabled: true
+          profiles:
+            - All

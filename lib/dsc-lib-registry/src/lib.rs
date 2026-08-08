@@ -11,12 +11,19 @@ rust_i18n::i18n!("locales", fallback = "en-us");
 
 pub mod error;
 pub mod config;
+pub mod offreg;
+
+use std::ffi::OsStr;
+use std::os::windows::ffi::OsStrExt;
+use std::path::Path;
+use offreg::{OfflineHive, REG_SZ, REG_EXPAND_SZ, REG_BINARY, REG_DWORD, REG_MULTI_SZ, REG_QWORD, REG_NONE};
 
 pub struct RegistryHelper {
     config: Registry,
     hive: Hive,
     subkey: String,
     what_if: bool,
+    offline_hive: Option<OfflineHive>,
 }
 
 impl RegistryHelper {
@@ -37,12 +44,19 @@ impl RegistryHelper {
         let key_path = registry.key_path.clone();
         let (hive, subkey) = get_hive_from_path(&key_path)?;
 
+        let offline_hive = if let Some(ref file_path) = registry.registry_file_path {
+            Some(OfflineHive::open(Path::new(file_path))?)
+        } else {
+            None
+        };
+
         Ok(
             Self {
                 config: registry,
                 hive,
                 subkey: subkey.to_string(),
-                what_if: false
+                what_if: false,
+                offline_hive,
             }
         )
     }
@@ -59,12 +73,19 @@ impl RegistryHelper {
     pub fn new_from_registry(registry_entry: &Registry) -> Result<Self, RegistryError> {
         let (hive, subkey) = get_hive_from_path(&registry_entry.key_path)?;
 
+        let offline_hive = if let Some(ref file_path) = registry_entry.registry_file_path {
+            Some(OfflineHive::open(Path::new(file_path))?)
+        } else {
+            None
+        };
+
         Ok(
             Self {
                 config: registry_entry.clone(),
                 hive,
                 subkey: subkey.to_string(),
-                what_if: false
+                what_if: false,
+                offline_hive,
             }
         )
     }
@@ -86,13 +107,15 @@ impl RegistryHelper {
             value_data,
             metadata: None,
             exist: None,
+            registry_file_path: None,
         };
         Ok(
             Self {
                 config,
                 hive,
                 subkey: subkey.to_string(),
-                what_if: false
+                what_if: false,
+                offline_hive: None,
             }
         )
     }
@@ -111,6 +134,10 @@ impl RegistryHelper {
     ///
     /// * `RegistryError` - The error that occurred.
     pub fn get(&self) -> Result<Registry, RegistryError> {
+        if self.offline_hive.is_some() {
+            return self.get_offline();
+        }
+
         let exist: bool;
         let (reg_key, _subkey) = match self.open(Security::Read) {
             Ok((reg_key, subkey)) => {
@@ -166,6 +193,10 @@ impl RegistryHelper {
     ///
     /// * `RegistryError` - The error that occurred.
     pub fn set(&self) -> Result<Option<Registry>, RegistryError> {
+        if self.offline_hive.is_some() {
+            return self.set_offline();
+        }
+
         let mut what_if_metadata: Vec<String> = Vec::new();
         let reg_key = match self.open(Security::Write) {
             Ok((reg_key, _subkey)) => Some(reg_key),
@@ -281,6 +312,10 @@ impl RegistryHelper {
     ///
     /// * `RegistryError` - The error that occurred.
     pub fn remove(&self) -> Result<Option<Registry>, RegistryError> {
+        if self.offline_hive.is_some() {
+            return self.remove_offline();
+        }
+
         // For deleting a value, we need SetValue permission (KEY_SET_VALUE).
         // Try to open with the minimal required permission.
         // If that fails due to permission, try with AllAccess as a fallback.
@@ -355,6 +390,189 @@ impl RegistryHelper {
 
     fn open(&self, permission: Security) -> Result<(RegKey, &str), RegistryError> {
         open_regkey(&self.config.key_path, permission)
+    }
+
+    // --- Offline registry implementations ---
+
+    fn get_offline(&self) -> Result<Registry, RegistryError> {
+        let hive = self.offline_hive.as_ref().unwrap();
+
+        // Check if the subkey exists
+        match hive.open_key(&self.subkey) {
+            Ok(key) => {
+                hive.close_key(key);
+            },
+            Err(RegistryError::RegistryKeyNotFound(_)) => {
+                return Ok(Registry {
+                    key_path: self.config.key_path.clone(),
+                    exist: Some(false),
+                    ..Default::default()
+                });
+            },
+            Err(e) => return Err(e),
+        }
+
+        if let Some(value_name) = &self.config.value_name {
+            match hive.get_value(&self.subkey, value_name)? {
+                Some((value_type, data)) => {
+                    let value_data = convert_offline_reg_value(value_type, &data)?;
+                    Ok(Registry {
+                        key_path: self.config.key_path.clone(),
+                        value_name: Some(value_name.clone()),
+                        value_data,
+                        ..Default::default()
+                    })
+                },
+                None => {
+                    Ok(Registry {
+                        key_path: self.config.key_path.clone(),
+                        value_name: Some(value_name.clone()),
+                        exist: Some(false),
+                        ..Default::default()
+                    })
+                }
+            }
+        } else {
+            Ok(Registry {
+                key_path: self.config.key_path.clone(),
+                ..Default::default()
+            })
+        }
+    }
+
+    fn set_offline(&self) -> Result<Option<Registry>, RegistryError> {
+        let hive = self.offline_hive.as_ref().unwrap();
+        let mut what_if_metadata: Vec<String> = Vec::new();
+
+        // Ensure the key exists (create if needed)
+        let key = match hive.open_key(&self.subkey) {
+            Ok(k) => k,
+            Err(RegistryError::RegistryKeyNotFound(_)) => {
+                if self.what_if {
+                    what_if_metadata.push(t!("registry_helper.whatIfCreateKey", subkey = &self.subkey).to_string());
+                    if let Some(value_name) = &self.config.value_name {
+                        let value_data = self.config.value_data.clone().unwrap_or(RegistryValueData::None);
+                        return Ok(Some(Registry {
+                            key_path: self.config.key_path.clone(),
+                            value_name: Some(value_name.clone()),
+                            value_data: Some(value_data),
+                            metadata: Some(Metadata { what_if: Some(what_if_metadata) }),
+                            ..Default::default()
+                        }));
+                    }
+                    return Ok(Some(Registry {
+                        key_path: self.config.key_path.clone(),
+                        metadata: Some(Metadata { what_if: Some(what_if_metadata) }),
+                        ..Default::default()
+                    }));
+                }
+                hive.create_key(&self.subkey)?
+            },
+            Err(e) => return self.handle_error_or_what_if(e),
+        };
+
+        if let Some(value_name) = &self.config.value_name {
+            let value_data = self.config.value_data.clone().unwrap_or(RegistryValueData::None);
+
+            if self.what_if {
+                hive.close_key(key);
+                return Ok(Some(Registry {
+                    key_path: self.config.key_path.clone(),
+                    value_data: Some(value_data),
+                    value_name: Some(value_name.clone()),
+                    metadata: if what_if_metadata.is_empty() { None } else { Some(Metadata { what_if: Some(what_if_metadata) }) },
+                    ..Default::default()
+                }));
+            }
+
+            let (reg_type, data) = convert_value_data_to_offline(&value_data)?;
+            hive.set_value(&key, value_name, reg_type, &data)?;
+        }
+
+        hive.close_key(key);
+
+        if self.what_if {
+            return Ok(Some(Registry {
+                key_path: self.config.key_path.clone(),
+                metadata: if what_if_metadata.is_empty() { None } else { Some(Metadata { what_if: Some(what_if_metadata) }) },
+                ..Default::default()
+            }));
+        }
+
+        // Save the hive back to disk
+        hive.save(Path::new(hive.path()))?;
+
+        Ok(None)
+    }
+
+    fn remove_offline(&self) -> Result<Option<Registry>, RegistryError> {
+        let hive = self.offline_hive.as_ref().unwrap();
+        let mut what_if_metadata: Vec<String> = Vec::new();
+
+        let key = match hive.open_key(&self.subkey) {
+            Ok(k) => k,
+            Err(RegistryError::RegistryKeyNotFound(_)) => {
+                return Ok(None);
+            },
+            Err(e) => return self.handle_error_or_what_if(e),
+        };
+
+        if let Some(value_name) = &self.config.value_name {
+            if self.what_if {
+                // Check if the value actually exists before reporting what-if
+                let value_exists = hive.get_value(&self.subkey, value_name)?.is_some();
+                hive.close_key(key);
+                if !value_exists {
+                    return Ok(Some(Registry {
+                        key_path: self.config.key_path.clone(),
+                        value_name: Some(value_name.clone()),
+                        exist: Some(false),
+                        ..Default::default()
+                    }));
+                }
+                what_if_metadata.push(t!("registry_helper.whatIfDeleteValue", value_name = value_name).to_string());
+                return Ok(Some(Registry {
+                    key_path: self.config.key_path.clone(),
+                    value_name: Some(value_name.clone()),
+                    metadata: Some(Metadata { what_if: Some(what_if_metadata) }),
+                    ..Default::default()
+                }));
+            }
+            hive.delete_value(&key, value_name)?;
+        } else {
+            // Delete the key itself
+            let subkey_name = match self.subkey.rfind('\\') {
+                Some(idx) => &self.subkey[idx + 1..],
+                None => &self.subkey,
+            };
+            let parent_subkey = get_parent_key_path(&self.subkey);
+
+            if self.what_if {
+                what_if_metadata.push(t!("registry_helper.whatIfDeleteSubkey", subkey_name = subkey_name).to_string());
+                hive.close_key(key);
+                return Ok(Some(Registry {
+                    key_path: self.config.key_path.clone(),
+                    metadata: Some(Metadata { what_if: Some(what_if_metadata) }),
+                    ..Default::default()
+                }));
+            }
+
+            hive.close_key(key);
+            let parent_key = hive.open_key(parent_subkey)?;
+            hive.delete_key(&parent_key, subkey_name)?;
+            hive.close_key(parent_key);
+
+            // Save the hive back to disk
+            hive.save(Path::new(hive.path()))?;
+            return Ok(None);
+        }
+
+        hive.close_key(key);
+
+        // Save the hive back to disk
+        hive.save(Path::new(hive.path()))?;
+
+        Ok(None)
     }
 
     // Find the valid parent key that exists and the subkeys that don't exist
@@ -464,6 +682,111 @@ fn convert_reg_value(value: &Data) -> Result<Option<RegistryValueData>, Registry
         Data::None => Ok(None),
         _ => Err(RegistryError::UnsupportedValueDataType)
     }
+}
+
+/// Convert raw offline registry value data (type + bytes) to `RegistryValueData`.
+fn convert_offline_reg_value(value_type: u32, data: &[u8]) -> Result<Option<RegistryValueData>, RegistryError> {
+    match value_type {
+        REG_SZ => {
+            let s = decode_utf16_bytes(data);
+            Ok(Some(RegistryValueData::String(s)))
+        },
+        REG_EXPAND_SZ => {
+            let s = decode_utf16_bytes(data);
+            Ok(Some(RegistryValueData::ExpandString(s)))
+        },
+        REG_BINARY => Ok(Some(RegistryValueData::Binary(data.to_vec()))),
+        REG_DWORD => {
+            if data.len() >= 4 {
+                let val = u32::from_le_bytes([data[0], data[1], data[2], data[3]]);
+                Ok(Some(RegistryValueData::DWord(val)))
+            } else {
+                Ok(Some(RegistryValueData::DWord(0)))
+            }
+        },
+        REG_MULTI_SZ => {
+            let strings = decode_multi_sz(data);
+            Ok(Some(RegistryValueData::MultiString(strings)))
+        },
+        REG_QWORD => {
+            if data.len() >= 8 {
+                let val = u64::from_le_bytes([data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]]);
+                Ok(Some(RegistryValueData::QWord(val)))
+            } else {
+                Ok(Some(RegistryValueData::QWord(0)))
+            }
+        },
+        REG_NONE => Ok(None),
+        _ => Err(RegistryError::UnsupportedValueDataType)
+    }
+}
+
+/// Convert `RegistryValueData` to raw bytes + type for offline registry.
+fn convert_value_data_to_offline(value_data: &RegistryValueData) -> Result<(u32, Vec<u8>), RegistryError> {
+    match value_data {
+        RegistryValueData::String(s) => {
+            let data = encode_utf16_bytes(s);
+            Ok((REG_SZ, data))
+        },
+        RegistryValueData::ExpandString(s) => {
+            let data = encode_utf16_bytes(s);
+            Ok((REG_EXPAND_SZ, data))
+        },
+        RegistryValueData::Binary(b) => Ok((REG_BINARY, b.clone())),
+        RegistryValueData::DWord(d) => Ok((REG_DWORD, d.to_le_bytes().to_vec())),
+        RegistryValueData::MultiString(m) => {
+            let data = encode_multi_sz(m);
+            Ok((REG_MULTI_SZ, data))
+        },
+        RegistryValueData::QWord(q) => Ok((REG_QWORD, q.to_le_bytes().to_vec())),
+        RegistryValueData::None => Ok((REG_NONE, Vec::new())),
+    }
+}
+
+/// Decode a null-terminated UTF-16LE byte slice to a String.
+fn decode_utf16_bytes(data: &[u8]) -> String {
+    let u16_slice: Vec<u16> = data.chunks_exact(2)
+        .map(|chunk| u16::from_le_bytes([chunk[0], chunk[1]]))
+        .collect();
+    // Strip trailing null
+    let len = u16_slice.iter().position(|&c| c == 0).unwrap_or(u16_slice.len());
+    String::from_utf16_lossy(&u16_slice[..len])
+}
+
+/// Encode a String to null-terminated UTF-16LE bytes.
+fn encode_utf16_bytes(s: &str) -> Vec<u8> {
+    let wide: Vec<u16> = OsStr::new(s).encode_wide().chain(std::iter::once(0)).collect();
+    wide.iter().flat_map(|&c| c.to_le_bytes()).collect()
+}
+
+/// Decode REG_MULTI_SZ: double-null-terminated list of null-terminated UTF-16LE strings.
+fn decode_multi_sz(data: &[u8]) -> Vec<String> {
+    let u16_slice: Vec<u16> = data.chunks_exact(2)
+        .map(|chunk| u16::from_le_bytes([chunk[0], chunk[1]]))
+        .collect();
+    let mut strings = Vec::new();
+    let mut start = 0;
+    for (i, &c) in u16_slice.iter().enumerate() {
+        if c == 0 {
+            if i == start {
+                break; // double null - end of multi-sz
+            }
+            strings.push(String::from_utf16_lossy(&u16_slice[start..i]));
+            start = i + 1;
+        }
+    }
+    strings
+}
+
+/// Encode a list of strings to REG_MULTI_SZ format (double-null-terminated UTF-16LE).
+fn encode_multi_sz(strings: &[String]) -> Vec<u8> {
+    let mut result: Vec<u16> = Vec::new();
+    for s in strings {
+        result.extend(OsStr::new(s).encode_wide());
+        result.push(0); // null terminator for each string
+    }
+    result.push(0); // final null terminator
+    result.iter().flat_map(|&c| c.to_le_bytes()).collect()
 }
 
 #[test]

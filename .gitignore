@@ -11,3 +11,8 @@ grammars/**/src/
 grammars/**/parser.*
 tree-sitter-ssh-server-config/
 tree-sitter-dscexpression/
+
+# Code coverage artifacts
+lcov.info
+*.profraw
+*.profdata

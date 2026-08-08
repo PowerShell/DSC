@@ -55,7 +55,7 @@ semantic version, the latest schema for a minor version, or the latest schema fo
 of DSC. For more information about schema URIs and versioning, see
 [DSC JSON Schema URIs](../../schema-uris.md).
 
-For every version of the schema, there are three valid urls:
+For every version of the schema, there are three valid URLs:
 
 - `.../extension/manifest.json`
 
@@ -77,8 +77,9 @@ For every version of the schema, there are three valid urls:
   it includes additional definitions that provide contextual help and snippets that the others
   don't include.
 
-  This schema uses keywords that are only recognized by VS Code. While DSC can still validate the
-  document when it uses this schema, other tools may error or behave in unexpected ways.
+  This schema uses keywords that are only recognized by Visual Studio Code. While DSC can still 
+  validate the document when it uses this schema, other tools may error or behave in unexpected 
+  ways.
 
 ```yaml
 Type:        string
@@ -120,7 +121,7 @@ Pattern:  ^\w+(\.\w+){0,3}\/\w+$
 ### version
 
 The `version` property must be the current version of the extension as a valid semantic version
-(semver) string.
+(SemVer) string.
 
 ```yaml
 Type:     string

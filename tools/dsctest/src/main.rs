@@ -7,6 +7,7 @@ mod delete;
 mod exist;
 mod exit_code;
 mod export;
+mod export_schema;
 mod exporter;
 mod get;
 mod in_desired_state;
@@ -15,6 +16,7 @@ mod operation;
 mod adapter;
 mod refresh_env;
 mod restart_required;
+mod set;
 mod sleep;
 mod state_and_diff;
 mod trace;
@@ -31,6 +33,7 @@ use crate::delete::Delete;
 use crate::exist::{Exist, State};
 use crate::exit_code::ExitCode;
 use crate::export::Export;
+use crate::export_schema::{ExportSchema, invoke_export_schema};
 use crate::exporter::{Exporter, Resource};
 use crate::get::Get;
 use crate::in_desired_state::InDesiredState;
@@ -38,6 +41,7 @@ use crate::metadata::Metadata;
 use crate::operation::Operation;
 use crate::refresh_env::RefreshEnv;
 use crate::restart_required::RestartRequired;
+use crate::set::{Set, invoke_set};
 use crate::sleep::Sleep;
 use crate::state_and_diff::StateAndDiff;
 use crate::trace::Trace;
@@ -50,8 +54,8 @@ use std::{thread, time::Duration};
 fn main() {
     let args = Args::parse();
     let json = match args.subcommand {
-        SubCommand::Adapter { input , resource_type, resource_path, operation } => {
-            match adapter::adapt(&resource_type, &input, &operation, &resource_path) {
+        SubCommand::Adapter { input , resource_type, resource_path, resource_version, operation } => {
+            match adapter::adapt(&resource_type, &input, &operation, &resource_path, &resource_version) {
                 Ok(result) => result,
                 Err(err) => {
                     eprintln!("Error adapting resource: {err}");
@@ -125,12 +129,16 @@ fn main() {
             for i in 0..export.count {
                 let instance = Export {
                     count: i,
+                    name: Some(format!("Instance{i}")),
                     _name: Some("TestName".to_string()),
                     _security_context: Some("elevated".to_string()),
                 };
                 println!("{}", serde_json::to_string(&instance).unwrap());
             }
             String::new()
+        },
+        SubCommand::ExportSchema { input } => {
+            invoke_export_schema(&input)
         },
         SubCommand::Exporter { input } => {
             let exporter = match serde_json::from_str::<Exporter>(&input) {
@@ -300,6 +308,12 @@ fn main() {
                 Schemas::Export => {
                     schema_for!(Export)
                 },
+                Schemas::ExportGetSchema => {
+                    schema_for!(export_schema::Schema)
+                },
+                Schemas::ExportSchema => {
+                    schema_for!(ExportSchema)
+                },
                 Schemas::Exporter => {
                     schema_for!(Exporter)
                 },
@@ -321,6 +335,9 @@ fn main() {
                 Schemas::RestartRequired => {
                     schema_for!(RestartRequired)
                 },
+                Schemas::Set => {
+                    schema_for!(Set)
+                },
                 Schemas::Sleep => {
                     schema_for!(Sleep)
                 },
@@ -341,6 +358,9 @@ fn main() {
                 }
             };
             serde_json::to_string(&schema).unwrap()
+        },
+        SubCommand::Set { get, input } => {
+            invoke_set( get, input )
         },
         SubCommand::Sleep { input } => {
             let sleep = match serde_json::from_str::<Sleep>(&input) {

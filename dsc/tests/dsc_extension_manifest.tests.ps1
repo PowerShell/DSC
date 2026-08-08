@@ -25,7 +25,7 @@ Describe 'Extension Manifests' {
 "@
 
         try {
-            $env:DSC_RESOURCE_PATH = $TestDrive
+            $env:DSC_RESTRICTED_PATH = $TestDrive
             $manifestPath = Join-Path -Path $TestDrive -ChildPath 'Extension.dsc.extension.json'
             $extension_manifest | Out-File -FilePath $manifestPath -Encoding utf8
             $extensions = dsc extension list | ConvertFrom-Json -Depth 10
@@ -38,7 +38,7 @@ Describe 'Extension Manifests' {
                 $extensions.count | Should -Be 0
             }
         } finally {
-            $env:DSC_RESOURCE_PATH = $null
+            $env:DSC_RESTRICTED_PATH = $null
         }
     }
 }

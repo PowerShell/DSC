@@ -16,6 +16,8 @@ impl Function for Variables {
         FunctionMetadata {
             name: "variables".to_string(),
             description: t!("functions.variables.description").to_string(),
+            syntax: t!("functions.variables.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Deployment],
             min_args: 1,
             max_args: 1,

@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use clap::{Parser};
+use clap::Parser;
 use rust_i18n::{i18n, t};
 use schemars::schema_for;
 use serde_json::Map;
@@ -43,33 +43,35 @@ fn main() {
         Command::Export { input, compare } => {
             debug!("{}: {:?}", t!("main.export").to_string(), input);
             invoke_export(input.as_ref(), *compare)
-        },
-        Command::Get { input, setting } => {
-            invoke_get(input.as_ref(), setting)
-        },
+        }
+        Command::Get { input, setting } => invoke_get(input.as_ref(), setting),
         Command::Schema { setting } => {
             debug!("{}; {:?}", t!("main.schema").to_string(), setting);
             let schema = match setting {
                 Setting::SshdConfig => {
                     schema_for!(SshdConfigParser)
-                },
+                }
                 Setting::SshdConfigRepeat => {
                     schema_for!(RepeatInput)
-                },
+                }
                 Setting::SshdConfigRepeatList => {
                     schema_for!(RepeatListInput)
-                },
+                }
                 Setting::WindowsGlobal => {
                     schema_for!(DefaultShell)
                 }
             };
             println!("{}", serde_json::to_string(&schema).unwrap());
             Ok(Map::new())
-        },
-        Command::Set { input, setting } => {
+        }
+        Command::Set {
+            input,
+            setting,
+            what_if,
+        } => {
             debug!("{}", t!("main.set", input = input).to_string());
-            invoke_set(input, setting)
-        },
+            invoke_set(input, setting, *what_if)
+        }
     };
 
     match result {
@@ -84,7 +86,7 @@ fn main() {
                 }
             }
             exit(EXIT_SUCCESS);
-        },
+        }
         Err(e) => {
             error!("{}", e);
             exit(EXIT_FAILURE);

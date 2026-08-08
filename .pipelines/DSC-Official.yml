@@ -31,6 +31,8 @@ variables:
     value: ${{ parameters.OfficialBuild }}
   - name: PublishToStore
     value: ${{ parameters.PublishToStore }}
+  - name: RustVersion
+    value: ms-prod-1.95
 
 resources:
   repositories:
@@ -79,9 +81,9 @@ extends:
       - job: SetPackageVersion
         displayName: Set PackageVersion
         pool:
-          type: windows
-          vmImage: windows-latest
+          type: linux
         variables:
+          LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2204:latest'
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           ob_sdl_sbom_enabled: false
           ob_signing_setup_enabled: false
@@ -114,6 +116,7 @@ extends:
             signSrcPath: '$(signSrcPath)'
             PackageRoot: '$(PackageRoot)'
             rustSDK: '$(Rust.SDK)'
+            rustVersion: ${{ variables.RustVersion }}
 
       - job: BuildWin_arm64
         dependsOn: SetPackageVersion
@@ -134,7 +137,7 @@ extends:
             signSrcPath: '$(signSrcPath)'
             PackageRoot: '$(PackageRoot)'
             rustSDK: '$(Rust.SDK)'
-
+            rustVersion: ${{ variables.RustVersion }}
       - job: CreateMsixBundle
         dependsOn:
           - BuildWin_x64
@@ -283,7 +286,7 @@ extends:
         steps:
         - task: RustInstaller@1
           inputs:
-            rustVersion: ms-prod-1.93
+            rustVersion: ${{ variables.RustVersion }}
             toolchainFeed: $(Rust.SDK)
             additionalTargets: x86_64-unknown-linux-musl
           displayName: Install Rust
@@ -317,7 +320,7 @@ extends:
         steps:
         - task: RustInstaller@1
           inputs:
-            rustVersion: ms-prod-1.93
+            rustVersion: ${{ variables.RustVersion }}
             toolchainFeed: $(Rust.SDK)
             additionalTargets: aarch64-unknown-linux-musl
           displayName: Install Rust
@@ -375,7 +378,7 @@ extends:
         steps:
         - task: RustInstaller@1
           inputs:
-            rustVersion: ms-prod-1.93
+            rustVersion: ${{ variables.RustVersion }}
             toolchainFeed: $(Rust.SDK)
             additionalTargets: $(buildName)
           displayName: Install Rust
@@ -575,7 +578,7 @@ extends:
             targetPublishMode: 'Manual'
 
     - stage: ReleaseUniversalPackage
-      dependsOn: ['BuildAndSign','Release']
+      dependsOn: ['BuildAndSign', 'Validation']
       condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'), eq(variables.officialBuild, true))
       variables:
         - name: PackageVersion
@@ -635,6 +638,22 @@ extends:
 
           displayName: Prepare files for Universal Package
 
+        - task: PipAuthenticate@1
+          displayName: 'Pip Authenticate'
+          inputs:
+            artifactFeeds: 'One/dsc-cfs-publicpackages'
+
+        - task: AzureCLI@2
+          displayName: Install Azure DevOps Extension
+          inputs:
+            azureSubscription: PS-PS-DSC-UniversalFeed
+            scriptType: pscore
+            scriptLocation: inlineScript
+            inlineScript: |
+              az --version
+              az extension list
+              az extension add --name azure-devops --debug
+
         - task: AzureCLI@2
           displayName: Publish Windows - Universal Package
           inputs:
@@ -682,3 +701,5 @@ extends:
               Write-Verbose -Verbose "Universal Package version: $packageVersion"
               az artifacts universal publish --organization https://dev.azure.com/PowerShell/ --project PowerShell --feed PowerShell-Universal --name microsoft.dsc-macos --version $packageVersion --description "Microsoft Desired State Configuration (DSC) - Universal Package" --path "$(MacOSDirectory)" --scope project --verbose
           condition: succeeded()
+
+

@@ -4,10 +4,10 @@
 use args::{Args, SubCommand};
 use clap::{CommandFactory, Parser};
 use clap_complete::generate;
-use dsc_lib::progress::ProgressFormat;
-use mcp::start_mcp_server;
+use dsc_lib::{progress::ProgressFormat, util::DSC_IGNORE_SETTINGS_FILE};
+use server::start_server;
 use rust_i18n::{i18n, t};
-use std::{io, process::exit};
+use std::{env::set_var, io, process::exit};
 use sysinfo::{Process, RefreshKind, System, get_current_pid, ProcessRefreshKind};
 use tracing::{error, info, warn, debug};
 
@@ -19,9 +19,9 @@ use crossterm::event;
 use std::env;
 
 pub mod args;
-pub mod mcp;
 pub mod resolve;
 pub mod resource_command;
+pub mod server;
 pub mod subcommand;
 pub mod tablewriter;
 pub mod util;
@@ -29,6 +29,32 @@ pub mod util;
 i18n!("locales", fallback = "en-us");
 
 fn main() {
+    #[cfg(windows)]
+    {
+        let handle = match std::thread::Builder::new()
+            .name("dsc-main".to_string())
+            .stack_size(2 * 1024 * 1024) // Default stack is too small on Windows causing overflow
+            .spawn(dsc_main)
+        {
+            Ok(handle) => handle,
+            Err(err) => {
+                error!("{}", t!("main.failedToSpawnMain", error = err));
+                exit(util::EXIT_DSC_ERROR);
+            }
+        };
+
+        if let Err(err) = handle.join() {
+            error!("{}", t!("main.failedToJoinMain", error = err : {:?}));
+            exit(util::EXIT_DSC_ERROR);
+        }
+    }
+    #[cfg(not(windows))]
+    {
+        dsc_main();
+    }
+}
+
+fn dsc_main() {
     #[cfg(debug_assertions)]
     check_debug();
 
@@ -40,6 +66,13 @@ fn main() {
     }
 
     let args = Args::parse();
+
+    // if args.ignore_settings_file is set, we create an env var called `DSC_IGNORE_SETTINGS_FILE` set to value 1
+    if args.ignore_settings_file {
+        unsafe {
+            set_var(DSC_IGNORE_SETTINGS_FILE, "1");
+        }
+    }
 
     util::enable_tracing(args.trace_level.as_ref(), args.trace_format.as_ref());
 
@@ -85,10 +118,10 @@ fn main() {
         SubCommand::Function { subcommand } => {
             subcommand::function(&subcommand);
         },
-        SubCommand::Mcp => {
-            if let Err(err) = start_mcp_server() {
-                error!("{}", t!("main.failedToStartMcpServer", error = err));
-                exit(util::EXIT_MCP_FAILED);
+        SubCommand::Server => {
+            if let Err(err) = start_server() {
+                error!("{}", t!("main.failedToStartServer", error = err));
+                exit(util::EXIT_SERVER_FAILED);
             }
             exit(util::EXIT_SUCCESS);
         }
@@ -195,3 +228,4 @@ fn check_store() {
         exit(util::EXIT_INVALID_ARGS);
     }
 }
+

@@ -9,7 +9,7 @@ title:       Remove a package with Brew
 # Remove a package with Brew
 
 This example demonstrates how to use the `DSC.PackageManagement/Brew` resource to remove a package
-on MacOS systems using Brew.
+on macOS systems using Brew.
 
 ## Test if package is installed
 

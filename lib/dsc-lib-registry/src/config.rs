@@ -32,11 +32,15 @@ pub struct Registry {
     pub value_data: Option<RegistryValueData>,
     #[serde(rename = "_exist", skip_serializing_if = "Option::is_none")]
     pub exist: Option<bool>,
+    /// Optional path to an offline registry hive file. When specified, operations
+    /// are performed against the offline hive instead of the live system registry.
+    #[serde(rename = "registryFilePath", skip_serializing_if = "Option::is_none")]
+    pub registry_file_path: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
-#[serde(deny_unknown_fields)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct Metadata {
-    #[serde(rename = "whatIf", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub what_if: Option<Vec<String>>
 }

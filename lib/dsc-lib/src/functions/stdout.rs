@@ -16,6 +16,8 @@ impl Function for Stdout {
         FunctionMetadata {
             name: "stdout".to_string(),
             description: t!("functions.stdout.description").to_string(),
+            syntax: t!("functions.stdout.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::System],
             min_args: 0,
             max_args: 0,

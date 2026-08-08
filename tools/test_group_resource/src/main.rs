@@ -27,6 +27,7 @@ fn main() {
                 author: Some("Microsoft".to_string()),
                 properties: Some(vec!["Property1".to_string(), "Property2".to_string()]),
                 require_adapter: Some("Test/TestGroup".parse().unwrap()),
+                adapted_content: None,
                 target_resource: None,
                 schema: None,
                 manifest: Some(ResourceManifest {
@@ -55,6 +56,7 @@ fn main() {
                 author: Some("Microsoft".to_string()),
                 properties: Some(vec!["Property1".to_string(), "Property2".to_string()]),
                 require_adapter: Some("Test/TestGroup".parse().unwrap()),
+                adapted_content: None,
                 target_resource: None,
                 schema: None,
                 manifest: Some(ResourceManifest {
@@ -87,6 +89,7 @@ fn main() {
                 author: Some("Microsoft".to_string()),
                 properties: Some(vec!["Property1".to_string(), "Property2".to_string()]),
                 require_adapter: None,
+                adapted_content: None,
                 target_resource: None,
                 manifest: None,
                 schema: None,

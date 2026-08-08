@@ -161,7 +161,7 @@ non validating keywords are omitted.
 - [DSC resource capabilities][01]
 
 <!-- Link definitions -->
-[01]: ../../../../../concepts/resources/capabilities.md
-[02]: ../../../../../concepts/resources/properties.md#required-resource-properties
-[03]: ../../../../../concepts/resources/properties.md#key-resource-properties
-[04]: ../../osinfo/index.md
+[01]: ../../../../../../concepts/resources/capabilities.md
+[02]: ../../../../../../concepts/resources/properties.md#required-resource-properties
+[03]: ../../../../../../concepts/resources/properties.md#key-resource-properties
+[04]: ../../../../Microsoft/OSInfo/index.md

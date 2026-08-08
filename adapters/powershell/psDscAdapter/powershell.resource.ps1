@@ -64,10 +64,6 @@ $ps = [PowerShell]::Create().AddScript({
         [string]$ScriptRoot
     )
 
-    trap {
-        Write-Error ($_ | Format-List -Force | Out-String)
-    }
-
     # NOTE:
     # The adapter explicitly suppresses Debug and Verbose output by default to avoid
     # excessively noisy logs from DSC resources that call Write-Debug / Write-Verbose.
@@ -85,7 +81,7 @@ $ps = [PowerShell]::Create().AddScript({
     # an example of this pattern.
     $DebugPreference = 'SilentlyContinue'
     $VerbosePreference = 'SilentlyContinue'
-    $ErrorActionPreference = 'Continue'
+    $ErrorActionPreference = 'Stop'
     $InformationPreference = 'Continue'
     $ProgressPreference = 'SilentlyContinue'
 
@@ -369,7 +365,7 @@ $traceLevel = if ($env:DSC_TRACE_LEVEL) {
     [DscTraceLevel]::Warn
 }
 
-$null = Register-ObjectEvent -InputObject $ps.Streams.Error -EventName DataAdding -MessageData @{traceQueue=$traceQueue; hadErrors=$hadErrors} -Action {
+$null = Register-ObjectEvent -SourceIdentifier 'PSAdapter.Error' -InputObject $ps.Streams.Error -EventName DataAdding -MessageData @{traceQueue=$traceQueue; hadErrors=$hadErrors} -Action {
     $traceQueue = $Event.MessageData.traceQueue
     # convert error to string since it's an ErrorRecord
     $traceQueue.Enqueue(@{ error = [string]$EventArgs.ItemAdded })
@@ -377,15 +373,15 @@ $null = Register-ObjectEvent -InputObject $ps.Streams.Error -EventName DataAddin
 }
 
 if ($traceLevel -ge [DscTraceLevel]::Warn) {
-    $null = Register-ObjectEvent -InputObject $ps.Streams.Warning -EventName DataAdding -MessageData $traceQueue -Action {
-        $traceQueue = $Event.MessageData
+    $null = Register-ObjectEvent -SourceIdentifier 'PSAdapter.Warning' -InputObject $ps.Streams.Warning -EventName DataAdding -MessageData @{traceQueue=$traceQueue} -Action {
+        $traceQueue = $Event.MessageData.traceQueue
         $traceQueue.Enqueue(@{ warn = $EventArgs.ItemAdded.Message })
     }
 }
 
 if ($traceLevel -ge [DscTraceLevel]::Info) {
-    $null = Register-ObjectEvent -InputObject $ps.Streams.Information -EventName DataAdding -MessageData $traceQueue -Action {
-        $traceQueue = $Event.MessageData
+    $null = Register-ObjectEvent -SourceIdentifier 'PSAdapter.Information' -InputObject $ps.Streams.Information -EventName DataAdding -MessageData @{traceQueue=$traceQueue} -Action {
+        $traceQueue = $Event.MessageData.traceQueue
         if ($null -ne $EventArgs.ItemAdded.MessageData) {
             $traceQueue.Enqueue(@{ info = [string]$EventArgs.ItemAdded.MessageData })
         }
@@ -393,59 +389,60 @@ if ($traceLevel -ge [DscTraceLevel]::Info) {
 }
 
 if ($traceLevel -ge [DscTraceLevel]::Debug) {
-    $null = Register-ObjectEvent -InputObject $ps.Streams.Verbose -EventName DataAdding -MessageData $traceQueue -Action {
-        $traceQueue = $Event.MessageData
+    $null = Register-ObjectEvent -SourceIdentifier 'PSAdapter.Debug' -InputObject $ps.Streams.Verbose -EventName DataAdding -MessageData @{traceQueue=$traceQueue} -Action {
+        $traceQueue = $Event.MessageData.traceQueue
         # Verbose messages tend to be in large quantity and more useful to developers, so log as Debug
         $traceQueue.Enqueue(@{ debug = $EventArgs.ItemAdded.Message })
     }
 }
 
 if ($traceLevel -ge [DscTraceLevel]::Trace) {
-    $null = Register-ObjectEvent -InputObject $ps.Streams.Debug -EventName DataAdding -MessageData $traceQueue -Action {
-        $traceQueue = $Event.MessageData
+    $null = Register-ObjectEvent -SourceIdentifier 'PSAdapter.Trace' -InputObject $ps.Streams.Debug -EventName DataAdding -MessageData @{traceQueue=$traceQueue} -Action {
+        $traceQueue = $Event.MessageData.traceQueue
         # Debug messages may contain raw info, so log as Trace
         $traceQueue.Enqueue(@{ trace = $EventArgs.ItemAdded.Message })
     }
 }
-$outputObjects = [System.Collections.Generic.List[Object]]::new()
 
 try {
     $asyncResult = $ps.BeginInvoke()
-    # This while loop with sleep must remain so that registered object events 
-    # can take over the pipeline thread.
     while (-not $asyncResult.IsCompleted) {
         Write-TraceQueue
-
         Start-Sleep -Milliseconds 100
     }
+
+    if ($ps.InvocationStateInfo.State -eq 'Failed') {
+        $record  = $ps.InvocationStateInfo.Reason.ErrorRecord
+        $message = if ($null -ne $record) {
+            "Script failed with terminating error at line {0} for statement ``{1}`` - {2}" -f @(
+                $record.InvocationInfo.ScriptLineNumber,
+                $record.InvocationInfo.Line,
+                $record.Exception.ToString()
+            )
+        } else {
+            "Script failed with terminating error: $($ps.InvocationStateInfo.Reason)"
+        }
+        Write-TraceQueue
+        Write-DscTrace -Now -Operation Error -Message $message
+        exit 1
+    }
+
     $outputCollection = $ps.EndInvoke($asyncResult)
-    Write-TraceQueue
-
-    if ($ps.HadErrors) {
-        # Anything written to stderr sets this flag, so we'll write a debug trace, but not treat as error
-        Write-DscTrace -Now -Operation Debug -Message 'HadErrors set during script execution.'
-    }
-
-    foreach ($output in $outputCollection) {
-        $outputObjects.Add($output)
-    }
 }
 catch {
     Write-DscTrace -Now -Operation Error -Message $_
+    Write-TraceQueue
     exit 1
 }
-finally {
-    $ps.Dispose()
-    Get-EventSubscriber | Unregister-Event
-}
 
-# Allow any remaining event handlers time to enqueue to $traceQueue and $hadErrors
-Start-Sleep -Milliseconds 200
 if ($hadErrors.Count -gt 0) {
-    Write-DscTrace -Now -Operation Error -Message 'Errors were captured during script execution. Check previous error traces for details.'
-    exit 1
+    Write-DscTrace -Now -Operation Debug -Message 'Errors were captured during script execution. Check previous error traces for details.'
 }
 
-foreach ($obj in $outputObjects) {
+Start-Sleep -Milliseconds 200  # wait a bit to ensure all events are processed before unregistering
+Get-EventSubscriber | Where-Object { $_.SourceIdentifier -like 'PSAdapter.*' } | ForEach-Object { Unregister-Event -SourceIdentifier $_.SourceIdentifier }  # unregister before dispose
+Write-TraceQueue
+
+foreach ($obj in $outputCollection) {
     $obj | ConvertTo-Json -Depth 10 -Compress
 }

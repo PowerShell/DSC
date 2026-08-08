@@ -2,7 +2,6 @@
 // Licensed under the MIT License.
 
 mod types;
-mod util;
 
 #[cfg(windows)]
 mod firewall;
@@ -83,8 +82,9 @@ fn main() {
             }
         }
         "set" => {
+            let what_if = parse_what_if_arg(&args);
             let input = require_input(input_json);
-            match firewall::set_rules(&input) {
+            match firewall::set_rules(&input, what_if) {
                 Ok(result) => {
                     print_json(&result);
                     exit(EXIT_SUCCESS);
@@ -96,18 +96,7 @@ fn main() {
             }
         }
         "export" => {
-            let filters: Option<FirewallRuleList> = match input_json {
-                Some(json) => match serde_json::from_str(&json) {
-                    Ok(value) => Some(value),
-                    Err(error) => {
-                        write_error(&t!("main.invalidJson", error = error.to_string()));
-                        exit(EXIT_INVALID_INPUT);
-                    }
-                },
-                None => None,
-            };
-
-            match firewall::export_rules(filters.as_ref()) {
+            match firewall::export_rules() {
                 Ok(result) => {
                     print_json(&result);
                     exit(EXIT_SUCCESS);
@@ -138,4 +127,8 @@ fn parse_input_arg(args: &[String]) -> Option<String> {
         index += 1;
     }
     None
+}
+
+fn parse_what_if_arg(args: &[String]) -> bool {
+    args.iter().any(|arg| arg == "-w" || arg == "--what-if")
 }

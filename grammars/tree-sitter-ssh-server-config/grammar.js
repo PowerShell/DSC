@@ -13,6 +13,12 @@ export default grammar({
 
   extras: $ => [' ', '\t', '\r', $.comment],
 
+  inline: $ => [$._new_line, $._argument],
+
+  precedences: $ => [
+    [$.boolean, $.number, $.string],
+  ],
+
   rules: {
     server_config: $ => seq(repeat(choice($._new_line, $.keyword)), repeat($.match)),
 
@@ -29,7 +35,8 @@ export default grammar({
 
     match: $ => seq(
       token(prec(PREC.MATCH, /match/i)),
-      seq(repeat1($.criteria), $._new_line),
+      repeat1($.criteria),
+      $._new_line,
       repeat1(choice($._new_line, $.keyword))
     ),
 
@@ -39,7 +46,7 @@ export default grammar({
       field('argument', alias($._argument, $.argument))
     ),
 
-    _argument: $ => choice($.boolean, $.number, $.string, $._commaSeparatedString, $._doublequotedString, $._singlequotedString),
+    _argument: $ => choice($.boolean, $.number, $._stringArg, $._doublequotedString, $._singlequotedString),
     arguments: $ => repeat1($._argument),
 
     alpha: $ => /[a-zA-Z]+/i,
@@ -49,11 +56,11 @@ export default grammar({
     operator: $ => token(prec(PREC.OPERATOR, /[-+\^]/)),
     string: $ => /[^\n\r\s,"'#]+/, /* cannot contain spaces */
 
+    _stringArg: $ => seq($.string, repeat(seq(',', $.string))),
+
     _quotedString: $ => /[^\r\n,"']+/, /* can contain spaces */
     _doublequotedString: $ => seq('"', alias($._quotedString, $.string), repeat(seq(',', alias($._quotedString, $.string))), '"'),
     _singlequotedString: $ => seq('\'', alias($._quotedString, $.string), repeat(seq(',', alias($._quotedString, $.string))), '\''),
-
-    _commaSeparatedString: $ => prec(1, seq($.string, repeat1(seq(',', $.string))))
   }
 
 });

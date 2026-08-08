@@ -68,7 +68,7 @@ ValidValues:  [Resource, Adapter, Group]
 
 ### version
 
-Represents the current version of the resource as a valid semantic version (semver) string. The
+Represents the current version of the resource as a valid semantic version (SemVer) string. The
 version applies to the resource, not the software it manages.
 
 ```yaml

@@ -224,7 +224,7 @@ Describe 'tests for function expressions' {
     $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json
     if ($isError) {
       $LASTEXITCODE | Should -Be 2 -Because (Get-Content $TestDrive/error.log -Raw)
-      (Get-Content $TestDrive/error.log -Raw) | Should -Match 'All arguments must either be arrays or objects'
+      (Get-Content $TestDrive/error.log -Raw) | Should -Match 'Arguments must either be all arrays or all objects'
     } else {
       $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
       ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)
@@ -1017,14 +1017,14 @@ Describe 'tests for function expressions' {
 "@
     $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
     $result = $out.results[0].result.actualState.output
-    
+
     if ($expected -is [PSCustomObject]) {
       $expectedHash = @{}
       $expected.PSObject.Properties | ForEach-Object { $expectedHash[$_.Name] = $_.Value }
-      
+
       $resultHash = @{}
       $result.PSObject.Properties | ForEach-Object { $resultHash[$_.Name] = $_.Value }
-      
+
       $resultHash.Count | Should -Be $expectedHash.Count
       foreach ($key in $expectedHash.Keys) {
         $resultHash[$key] | Should -Be $expectedHash[$key]
@@ -1049,13 +1049,13 @@ Describe 'tests for function expressions' {
 "@
     $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
     $result = $out.results[0].result.actualState.output
-    
+
     # Verify top-level keys
     $result.PSObject.Properties.Name | Should -HaveCount $expectedKeys.Count
     foreach ($key in $expectedKeys) {
       $result.PSObject.Properties.Name | Should -Contain $key
     }
-    
+
     # Verify nested object was completely replaced (shallow merge)
     if ($nestedKeys.Count -gt 0) {
       $result.nested.PSObject.Properties.Name | Should -HaveCount $nestedKeys.Count
@@ -1082,14 +1082,14 @@ Describe 'tests for function expressions' {
 "@
     $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
     $result = $out.results[0].result.actualState.output
-    
+
     if ($expectedKeys) {
       $result.PSObject.Properties.Name | Should -HaveCount $expectedKeys.Count
       foreach ($key in $expectedKeys) {
         $result.PSObject.Properties.Name | Should -Contain $key
       }
     }
-    
+
     if ($expected) {
       $result | Should -Be $expected
     }
@@ -1800,5 +1800,66 @@ Describe 'tests for function expressions' {
     $LASTEXITCODE | Should -Not -Be 0
     $errorContent = Get-Content $TestDrive/error.log -Raw
     $errorContent | Should -Match $expectedError
+  }
+
+  It 'stateChanged function returns if resource state had changed: <testName>' -TestCases @(
+    @{ testName = 'state changed'; value = 'new'; object = @{ property = 'Original' }; expected = $true }
+    @{ testName = 'state unchanged'; value = 'Original'; object = @{ property = 'Original' }; expected = $false }
+    @{ testName = 'state changed with nested object'; value = 'Original'; object = @{ property = 'New' }; expected = $true }
+    @{ testName = 'state unchanged with nested object'; value = 'Original'; object = @{ property = 'Original' }; expected = $false }
+  ) {
+    param($value, $object, $expected)
+
+    $config = @{
+      '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+      resources = @(
+        @{
+          name = 'Test'
+          type = 'Test/Set'
+          properties = @{
+            value = $value
+            object = $object
+          }
+        }
+      )
+      outputs = @{
+        stateChanged = @{
+          type = 'bool'
+          value = "[stateChanged(resourceId('Test/Set','Test'))]"
+        }
+      }
+    }
+
+    $config = $config | ConvertTo-Json -Depth 10 -Compress
+    $out = dsc -l trace config set -i $config 2> $TestDrive/error.log | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+    $out.outputs.stateChanged | Should -Be $expected -Because ($out | ConvertTo-Json -Depth 10 | Out-String)
+  }
+
+  It 'stateChanged function returns false for non-existent resource' {
+    $config = @{
+      '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+      resources = @(
+        @{
+          name = 'Test'
+          type = 'Test/Set'
+          properties = @{
+            value = 'new'
+          }
+        }
+      )
+      outputs = @{
+        stateChanged = @{
+          type = 'bool'
+          value = "[stateChanged(resourceId('NonExistent/Resource','Test'))]"
+        }
+      }
+    }
+
+    $config = $config | ConvertTo-Json -Depth 10 -Compress
+    $null = dsc -l trace config set -i $config 2> $TestDrive/error.log
+    $errorLog = Get-Content $TestDrive/error.log -Raw
+    $LASTEXITCODE | Should -Be 2 -Because $errorLog
+    $errorLog | Should -BeLike "*Error* No state change information available for resourceId 'NonExistent/Resource:Test' as it has not executed yet or does not exist*"
   }
 }

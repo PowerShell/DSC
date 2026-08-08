@@ -2,7 +2,10 @@
 # Licensed under the MIT License.
 
 [CmdletBinding()]
-param ()
+param (
+    [Parameter()]
+    [string]$extensions
+)
 
 function Get-CacheFilePath {
     if ($IsWindows) {
@@ -14,33 +17,33 @@ function Get-CacheFilePath {
 
 function Test-CacheValid {
     param([string]$CacheFilePath, [string[]]$PSPaths)
-    
+
     if (-not (Test-Path $CacheFilePath)) {
         return $false
     }
-    
+
     try {
         $cache = Get-Content -Raw $CacheFilePath | ConvertFrom-Json
-        
+
         foreach ($entry in $cache.PathInfo.PSObject.Properties) {
             $path = $entry.Name
             if (-not (Test-Path $path)) {
                 return $false
             }
-            
+
             $currentLastWrite = (Get-Item $path).LastWriteTimeUtc
             $cachedLastWrite = [DateTime]$entry.Value
-            
+
             if ($currentLastWrite -ne $cachedLastWrite) {
                 return $false
             }
         }
-        
+
         $cachedPaths = [string[]]$cache.PSModulePaths
         if ($cachedPaths.Count -ne $PSPaths.Count) {
             return $false
         }
-        
+
         $diff = Compare-Object $cachedPaths $PSPaths
         if ($null -ne $diff) {
             return $false
@@ -60,11 +63,14 @@ function Test-CacheValid {
 
 function Invoke-DscResourceDiscovery {
     [CmdletBinding()]
-    param()
-    
+    param(
+        [Parameter()]
+        [string]$extensions
+    )
+
     begin {
         $psPaths = $env:PSModulePath -split [System.IO.Path]::PathSeparator | Where-Object { $_ -notmatch 'WindowsPowerShell' }
-        
+
         $cacheFilePath = Get-CacheFilePath
         $useCache = Test-CacheValid -CacheFilePath $cacheFilePath -PSPaths $psPaths
     }
@@ -74,17 +80,10 @@ function Invoke-DscResourceDiscovery {
             $manifests = $cache.Manifests
         } else {
             $manifests = $psPaths | ForEach-Object -Parallel {
-                $searchPatterns = @(
-                    '*.dsc.resource.json'
-                    '*.dsc.resource.yaml'
-                    '*.dsc.resource.yml'
-                    '*.dsc.adaptedresource.json'
-                    '*.dsc.adaptedresource.yaml'
-                    '*.dsc.adaptedresource.yml'
-                    '*.dsc.manifests.json'
-                    '*.dsc.manifests.yaml'
-                    '*.dsc.manifests.yml'
-                )
+                $searchPatterns = [System.Collections.Generic.List[string]]::new()
+                foreach ($extension in ($using:extensions).Split(',')) {
+                    $searchPatterns.Add('*' + $extension)
+                }
                 $enumOptions = [System.IO.EnumerationOptions]@{ IgnoreInaccessible = $true; RecurseSubdirectories = $true }
                 foreach ($pattern in $searchPatterns) {
                     try {
@@ -94,7 +93,7 @@ function Invoke-DscResourceDiscovery {
                     } catch { }
                 }
             } -ThrottleLimit 10
-            
+
             $pathInfo = @{}
             foreach ($path in $psPaths) {
                 $item = Get-Item -LiteralPath $path -ErrorAction Ignore
@@ -107,13 +106,13 @@ function Invoke-DscResourceDiscovery {
                     }
                 }
             }
-            
+
             $cacheObject = @{
                 PSModulePaths = $psPaths
                 PathInfo      = $pathInfo
                 Manifests     = $manifests
             }
-            
+
             $cacheDir = Split-Path $cacheFilePath -Parent
             if (-not (Test-Path $cacheDir)) {
                 New-Item -ItemType Directory -Path $cacheDir -Force | Out-Null
@@ -129,4 +128,4 @@ function Invoke-DscResourceDiscovery {
     }
 }
 
-Invoke-DscResourceDiscovery
+Invoke-DscResourceDiscovery -extensions $extensions

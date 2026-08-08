@@ -16,6 +16,8 @@ impl Function for IndexOf {
         FunctionMetadata {
             name: "indexOf".to_string(),
             description: t!("functions.indexOf.description").to_string(),
+            syntax: t!("functions.indexOf.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Array, FunctionCategory::String],
             min_args: 2,
             max_args: 2,
@@ -30,7 +32,7 @@ impl Function for IndexOf {
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.indexOf.invoked"));
-        
+
         let Some(array) = args[0].as_array() else {
             return Err(DscError::Parser(t!("functions.indexOf.invalidArrayArg").to_string()));
         };

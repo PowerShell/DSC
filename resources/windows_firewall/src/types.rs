@@ -3,6 +3,12 @@
 
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Metadata {
+    #[serde(rename = "whatIf", skip_serializing_if = "Option::is_none")]
+    pub what_if: Option<Vec<String>>,
+}
+
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum RuleDirection {
     Inbound,
@@ -15,9 +21,19 @@ pub enum RuleAction {
     Block,
 }
 
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub enum UnspecifiedRulesAction {
+    Ignore,
+    Disable,
+    Remove,
+}
+
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct FirewallRuleList {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub unspecified_rules_action: Option<UnspecifiedRulesAction>,
     pub rules: Vec<FirewallRule>,
 }
 
@@ -33,6 +49,9 @@ pub struct FirewallRule {
     /// output without a redundant `_exist: true` field.
     #[serde(rename = "_exist", skip_serializing_if = "Option::is_none")]
     pub exist: Option<bool>,
+
+    #[serde(rename = "_metadata", skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<Metadata>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,

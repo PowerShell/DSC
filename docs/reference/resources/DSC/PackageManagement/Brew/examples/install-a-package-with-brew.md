@@ -9,7 +9,7 @@ title:       Install a package with Brew
 # Install a package with Brew
 
 This example demonstrates how to use the `DSC.PackageManagement/Brew` resource to install a package
-on MacOS systems using Brew.
+on macOS systems using Brew.
 
 ## Test if package is installed
 

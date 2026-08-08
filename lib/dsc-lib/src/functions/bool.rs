@@ -16,6 +16,8 @@ impl Function for Bool {
         FunctionMetadata {
             name: "bool".to_string(),
             description: t!("functions.bool.description").to_string(),
+            syntax: t!("functions.bool.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Logical],
             min_args: 1,
             max_args: 1,

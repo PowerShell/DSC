@@ -3,14 +3,14 @@
 
 use crate::configure::config_doc::{ExecutionInformation, ResourceDirective};
 use crate::configure::context::{Context, ProcessMode};
-use crate::configure::parameters::import_parameters;
+use crate::configure::parameters::{SecureObject, SecureString, import_parameters};
 use crate::configure::{config_doc::{ExecutionKind, IntOrExpression, Metadata, Parameter, Resource, ResourceDiscoveryMode, RestartRequired, ValueOrCopy}};
 use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscerror::DscError;
 use crate::dscresources::{
     {dscresource::{Capability, Invoke, get_diff, validate_properties, get_adapter_input_kind},
     invoke_result::{DeleteResult, DeleteResultKind, GetResult, SetResult, TestResult, ExportResult, ResourceSetResponse}},
-    resource_manifest::{AdapterInputKind, Kind},
+    resource_manifest::{AdapterInputKind, ExportSchemaOrFiltering, Kind},
 };
 use crate::DscResource;
 use crate::discovery::Discovery;
@@ -22,18 +22,21 @@ use self::config_doc::{Configuration, DataType, MicrosoftDscMetadata, Operation,
 use self::depends_on::get_resource_invocation_order;
 use self::config_result::{ConfigurationExportResult, ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult};
 use self::constraints::{check_length, check_number_limits, check_allowed_values};
-use rust_i18n::t;
 use dsc_lib_security_context::{SecurityContext, get_security_context};
+use rust_i18n::t;
 use serde_json::{Map, Value};
 use std::path::PathBuf;
 use std::collections::HashMap;
 use tracing::{debug, info, trace, warn};
+
 pub mod context;
 pub mod config_doc;
 pub mod config_result;
 pub mod constraints;
 pub mod depends_on;
 pub mod parameters;
+mod export_filter;
+pub(crate) mod schema_cache;
 
 pub struct Configurator {
     json: String,
@@ -98,24 +101,41 @@ macro_rules! find_resource_or_error {
 
 /// Add the results of an export operation to a configuration.
 ///
+/// A resource declares whether it filters its own export through the `supportsFiltering` field on
+/// its manifest's `export` method. When filtering is native (the default, or `supportsFiltering:
+/// true`), any input is passed through to the resource unchanged. When the manifest declares
+/// `supportsFiltering: false`, the engine instead interprets the input as a filter, exports all
+/// instances, and filters them itself. There is no separate export filter directive.
+///
 /// # Arguments
 ///
 /// * `resource` - The resource to export.
 /// * `conf` - The configuration to add the results to.
 /// * `input` - The input to the export operation.
 ///
-/// # Panics
-///
-/// Doesn't panic because there is a match/Some check before `unwrap()`; false positive.
-///
 /// # Errors
 ///
 /// This function will return an error if the underlying resource fails.
-pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf: &mut Configuration, input: &str) -> Result<ExportResult, DscError> {
+pub fn add_resource_export_results_to_configuration(
+    resource: &DscResource,
+    conf: &mut Configuration,
+    input: &str,
+) -> Result<ExportResult, DscError> {
+    let mut resource_input = input;
+    let mut input_filters: Option<Vec<Map<String, Value>>> = None;
+    if !input.is_empty() && !resource_supports_export_filtering(resource) {
+        input_filters = Some(parse_export_filter_input(input)?);
+        resource_input = "";
+        info!("{}", t!("configure.mod.engineExportFiltering", resource = resource.type_name));
+    }
 
     let start_datetime = chrono::Local::now();
-    let export_result = resource.export(input)?;
+    let mut export_result = resource.export(resource_input)?;
     let end_datetime = chrono::Local::now();
+
+    if let Some(filters) = input_filters.as_deref() {
+        export_filter::apply_export_filter(&mut export_result.actual_state, filters);
+    }
 
     if resource.kind == Kind::Exporter {
         for instance in &export_result.actual_state {
@@ -171,6 +191,40 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf
     }
 
     Ok(export_result)
+}
+
+/// A resource supports native export filtering unless its manifest export method explicitly
+/// declares `supportsFiltering: false`.
+fn resource_supports_export_filtering(resource: &DscResource) -> bool {
+    !matches!(
+        resource.manifest.as_ref()
+            .and_then(|m| m.export.as_ref())
+            .and_then(|e| e.schema_or_filtering.as_ref()),
+        Some(ExportSchemaOrFiltering::SupportsFiltering(false))
+    )
+}
+
+/// Parse export input into engine filters: a JSON object is a single filter while a JSON array
+/// of objects is a set of logically OR'd filters.
+fn parse_export_filter_input(input: &str) -> Result<Vec<Map<String, Value>>, DscError> {
+    let value: Value = serde_json::from_str(input)
+        .map_err(|e| DscError::Parser(t!("configure.mod.invalidExportFilterInput", error = e).to_string()))?;
+    let mut filters = match value {
+        Value::Object(map) => vec![map],
+        Value::Array(items) => items.into_iter().map(|item| {
+            if let Value::Object(map) = item {
+                Ok(map)
+            } else {
+                Err(DscError::Parser(t!("configure.mod.exportFilterNotObject").to_string()))
+            }
+        }).collect::<Result<Vec<_>, _>>()?,
+        _ => return Err(DscError::Parser(t!("configure.mod.exportFilterNotObject").to_string())),
+    };
+    // `_metadata` is injected by `add_metadata()` and is not a property to filter on
+    for filter in &mut filters {
+        filter.remove("_metadata");
+    }
+    Ok(filters)
 }
 
 // for values returned by resources, they may look like expressions, so we make sure to escape them in case
@@ -767,11 +821,12 @@ impl Configurator {
             let resource_result = config_result::ResourceSetResult {
                 execution_information: Some(execution_information),
                 metadata: Some(metadata),
-                name: evaluated_name,
+                name: evaluated_name.clone(),
                 resource_type: resource.resource_type.clone(),
                 result: set_result.clone(),
             };
             result.results.push(resource_result);
+            self.context.state_changed.insert(resource_id(&resource.resource_type, &evaluated_name), set_result.is_changed());
             progress.set_result(&serde_json::to_value(set_result)?);
             progress.write_increment(1);
         }
@@ -911,7 +966,11 @@ impl Configurator {
             debug!("resource_type {}", &resource.resource_type);
             let input = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
             trace!("{}", t!("configure.mod.exportInput", input = input));
-            let export_result = match add_resource_export_results_to_configuration(dsc_resource, &mut conf, input.as_str()) {
+            let export_result = match add_resource_export_results_to_configuration(
+                dsc_resource,
+                &mut conf,
+                input.as_str(),
+            ) {
                 Ok(result) => result,
                 Err(e) => {
                     progress.set_failure(get_failure_from_error(&e));
@@ -1048,6 +1107,29 @@ impl Configurator {
                     // TODO: additional array constraints
                     // TODO: object constraints
 
+                    let value = match &constraint.parameter_type {
+                        DataType::SecureString => {
+                            if let Some(string_value) = value.as_str() {
+                                let secure_string = SecureString {
+                                    secure_string: string_value.to_string(),
+                                };
+                                serde_json::to_value(secure_string)?
+                            } else {
+                                return Err(DscError::Validation(t!("configure.mod.secureStringMustBeString", name = name).to_string()));
+                            }
+                        },
+                        DataType::SecureObject => {
+                            if let Some(object_value) = value.as_object() {
+                                let secure_object = SecureObject {
+                                    secure_object: serde_json::to_value(object_value)?,
+                                };
+                                serde_json::to_value(secure_object)?
+                            } else {
+                                return Err(DscError::Validation(t!("configure.mod.secureObjectMustBeObject", name = name).to_string()));
+                            }
+                        },
+                        _ => value.clone(),
+                    };
                     validate_parameter_type(&name, &value, &constraint.parameter_type)?;
                     if constraint.parameter_type == DataType::SecureString || constraint.parameter_type == DataType::SecureObject {
                         info!("{}", t!("configure.mod.setSecureParameter", name = name));
@@ -1081,27 +1163,37 @@ impl Configurator {
                 debug!("{}", t!("configure.mod.processingParameter", name = name));
                 if let Some(default_value) = &parameter.default_value {
                     debug!("{}", t!("configure.mod.setDefaultParameter", name = name));
-                    let value_result = if default_value.is_string() {
+                    let mut value = if default_value.is_string() {
                         if let Some(value) = default_value.as_str() {
                             self.context.process_mode = ProcessMode::ParametersDefault;
-                            let result = self.statement_parser.parse_and_execute(value, &self.context);
+                            let result = self.statement_parser.parse_and_execute(value, &self.context)?;
                             self.context.process_mode = ProcessMode::Normal;
                             result
                         } else {
                             return Err(DscError::Parser(t!("configure.mod.defaultStringNotDefined").to_string()));
                         }
                     } else {
-                        Ok(default_value.clone())
+                        default_value.clone()
                     };
 
-                    if let Ok(value) = value_result {
-                        check_length(name, &value, parameter)?;
-                        check_allowed_values(name, &value, parameter)?;
-                        check_number_limits(name, &value, parameter)?;
-                        validate_parameter_type(name, &value, &parameter.parameter_type)?;
-                        self.context.parameters.insert(name.to_string(), (value, parameter.parameter_type.clone()));
-                        resolved_in_this_pass.push(name.clone());
+                    if parameter.parameter_type == DataType::SecureString && value.is_string() {
+                        let secure_string = SecureString {
+                            secure_string: value.as_str().unwrap().to_string(),
+                        };
+                        value = serde_json::to_value(secure_string)?;
+                    } else if parameter.parameter_type == DataType::SecureObject && value.is_object() {
+                        let secure_object = SecureObject {
+                            secure_object: value.clone(),
+                        };
+                        value = serde_json::to_value(secure_object)?;
                     }
+
+                    check_length(name, &value, parameter)?;
+                    check_allowed_values(name, &value, parameter)?;
+                    check_number_limits(name, &value, parameter)?;
+                    validate_parameter_type(name, &value, &parameter.parameter_type)?;
+                    self.context.parameters.insert(name.to_string(), (value, parameter.parameter_type.clone()));
+                    resolved_in_this_pass.push(name.clone());
                 } else {
                     resolved_in_this_pass.push(name.clone());
                 }
@@ -1375,7 +1467,12 @@ pub fn invoke_property_expressions(parser: &mut Statement, context: &Context, pr
 ///
 pub fn validate_parameter_type(name: &str, value: &Value, parameter_type: &DataType) -> Result<(), DscError> {
     match parameter_type {
-        DataType::String | DataType::SecureString => {
+        DataType::SecureString => {
+            if serde_json::from_value::<SecureString>(value.clone()).is_err() {
+                return Err(DscError::Validation(t!("configure.mod.parameterNotSecureString", name = name).to_string()));
+            }
+        }
+        DataType::String => {
             if !value.is_string() {
                 return Err(DscError::Validation(t!("configure.mod.parameterNotString", name = name).to_string()));
             }
@@ -1395,7 +1492,12 @@ pub fn validate_parameter_type(name: &str, value: &Value, parameter_type: &DataT
                 return Err(DscError::Validation(t!("configure.mod.parameterNotArray", name = name).to_string()));
             }
         },
-        DataType::Object | DataType::SecureObject => {
+        DataType::SecureObject => {
+            if serde_json::from_value::<SecureObject>(value.clone()).is_err() {
+                return Err(DscError::Validation(t!("configure.mod.parameterNotSecureObject", name = name).to_string()));
+            }
+        },
+        DataType::Object => {
             if !value.is_object() {
                 return Err(DscError::Validation(t!("configure.mod.parameterNotObject", name = name).to_string()));
             }
@@ -1420,5 +1522,87 @@ fn get_failure_from_error(err: &DscError) -> Option<Failure> {
             })
         },
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    fn resource_with_export(export: Value) -> DscResource {
+        let mut resource = DscResource::new();
+        resource.manifest = Some(serde_json::from_value(json!({
+            "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+            "type": "Test/Test",
+            "version": "0.1.0",
+            "export": export
+        })).unwrap());
+        resource
+    }
+
+    #[test]
+    fn no_manifest_supports_filtering() {
+        let resource = DscResource::new();
+        assert!(resource_supports_export_filtering(&resource));
+    }
+
+    #[test]
+    fn export_without_filtering_declaration_supports_filtering() {
+        let resource = resource_with_export(json!({ "executable": "test" }));
+        assert!(resource_supports_export_filtering(&resource));
+    }
+
+    #[test]
+    fn export_with_schema_supports_filtering() {
+        let resource = resource_with_export(json!({ "executable": "test", "schema": { "command": "test" } }));
+        assert!(resource_supports_export_filtering(&resource));
+    }
+
+    #[test]
+    fn export_with_supports_filtering_false_does_not_support_filtering() {
+        let resource = resource_with_export(json!({ "executable": "test", "supportsFiltering": false }));
+        assert!(!resource_supports_export_filtering(&resource));
+    }
+
+    #[test]
+    fn export_with_supports_filtering_true_supports_filtering() {
+        let resource = resource_with_export(json!({ "executable": "test", "supportsFiltering": true }));
+        assert!(resource_supports_export_filtering(&resource));
+    }
+
+    #[test]
+    fn filter_input_object_is_single_filter() {
+        let filters = parse_export_filter_input(r#"{"name":"test"}"#).unwrap();
+        assert_eq!(filters.len(), 1);
+        assert_eq!(filters[0].get("name"), Some(&json!("test")));
+    }
+
+    #[test]
+    fn filter_input_array_is_multiple_filters() {
+        let filters = parse_export_filter_input(r#"[{"name":"one"},{"name":"two"}]"#).unwrap();
+        assert_eq!(filters.len(), 2);
+    }
+
+    #[test]
+    fn filter_input_strips_metadata() {
+        let filters = parse_export_filter_input(r#"{"name":"test","_metadata":{"securityContext":"current"}}"#).unwrap();
+        assert_eq!(filters.len(), 1);
+        assert!(!filters[0].contains_key("_metadata"));
+    }
+
+    #[test]
+    fn filter_input_scalar_is_error() {
+        assert!(parse_export_filter_input(r#""test""#).is_err());
+    }
+
+    #[test]
+    fn filter_input_array_with_non_object_is_error() {
+        assert!(parse_export_filter_input(r#"[{"name":"one"},"two"]"#).is_err());
+    }
+
+    #[test]
+    fn filter_input_invalid_json_is_error() {
+        assert!(parse_export_filter_input("not json").is_err());
     }
 }

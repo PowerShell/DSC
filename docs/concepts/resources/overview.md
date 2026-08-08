@@ -29,7 +29,7 @@ DSC supports several kinds of resources:
   resource instances and processes them. Group resources can apply special handling to their nested
   resource instances, like changing the user the resources run as.
 - An _adapter resource_ is a group resource that enables the use of noncommand resources with DSC.
-  For example, the `Microsoft.DSC/PowerShell` and `Microsoft.Windows/WindowsPowerShell` adapter
+  For example, the `Microsoft.Adapter/PowerShell` and `Microsoft.Adapter/WindowsPowerShell` adapter
   resources enable the use of PowerShell DSC (PSDSC) resources in DSC, invoking the resources in
   PowerShell and Windows PowerShell respectively.
 
@@ -138,7 +138,7 @@ Every resource implements the **Get** operation, which retrieves the actual stat
 instance. Use the `dsc resource get` command to invoke the operation.
 
 For example, you can use the `Microsoft.Windows/Registry` resource to get the actual state for a
-registry key value:
+registry key-value:
 
 ```powershell
 dsc resource get --resource Microsoft.Windows/Registry --input '{

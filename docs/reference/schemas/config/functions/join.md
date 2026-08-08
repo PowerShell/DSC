@@ -28,7 +28,7 @@ The `delimiter` can be any value; it’s converted to a string.
 
 ### Example 1 - Produce a list of servers
 
-Create a comma-separated string from a list of host names to pass to tools or
+Create a comma-separated string from a list of hostnames to pass to tools or
 APIs that accept CSV input. This example uses [`createArray()`][02] to build
 the server list and joins with ", ".
 

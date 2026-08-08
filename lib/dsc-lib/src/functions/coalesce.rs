@@ -16,6 +16,8 @@ impl Function for Coalesce {
         FunctionMetadata {
             name: "coalesce".to_string(),
             description: t!("functions.coalesce.description").to_string(),
+            syntax: t!("functions.coalesce.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Comparison],
             min_args: 1,
             max_args: usize::MAX,

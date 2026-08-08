@@ -104,7 +104,11 @@ pub struct ResourceManifest {
 pub enum GetArgKind {
     /// The argument is a string.
     String(String),
-    /// The argument accepts the JSON input object.
+    AdaptedContent {
+        /// The argument that accepts the JSON content from the manifest.
+        #[serde(rename = "adaptedContentArg")]
+        adapted_content_arg: String,
+    },
     Json {
         /// The argument that accepts the JSON input object.
         #[serde(rename = "jsonInputArg")]
@@ -112,15 +116,23 @@ pub enum GetArgKind {
         /// Indicates if argument is mandatory which will pass an empty string if no JSON input is provided.  Default is false.
         mandatory: Option<bool>,
     },
+    #[serde(rename_all = "camelCase")]
     ResourcePath {
         /// The argument that accepts the resource path.
-        #[serde(rename = "resourcePathArg")]
         resource_path_arg: String,
+        /// Indicates if the argument should be wrapped in quotes.  Default is false.
+        #[serde(default)]
+        include_quotes: bool,
     },
+    #[serde(rename_all = "camelCase")]
     ResourceType {
         /// The argument that accepts the resource type name.
-        #[serde(rename = "resourceTypeArg")]
         resource_type_arg: String,
+    },
+    #[serde(rename_all = "camelCase")]
+    ResourceVersion {
+        /// The argument that accepts the resource version.
+        resource_version_arg: String,
     },
 }
 
@@ -130,7 +142,11 @@ pub enum GetArgKind {
 pub enum SetDeleteArgKind {
     /// The argument is a string.
     String(String),
-    /// The argument accepts the JSON input object.
+    AdaptedContent {
+        /// The argument that accepts the JSON content from the manifest.
+        #[serde(rename = "adaptedContentArg")]
+        adapted_content_arg: String,
+    },
     Json {
         /// The argument that accepts the JSON input object.
         #[serde(rename = "jsonInputArg")]
@@ -138,20 +154,28 @@ pub enum SetDeleteArgKind {
         /// Indicates if argument is mandatory which will pass an empty string if no JSON input is provided.  Default is false.
         mandatory: Option<bool>,
     },
+    #[serde(rename_all = "camelCase")]
     ResourcePath {
         /// The argument that accepts the resource path.
-        #[serde(rename = "resourcePathArg")]
         resource_path_arg: String,
+        /// Indicates if the resource path should be passed with quotes.  Default is false.
+        #[serde(default)]
+        include_quotes: bool,
     },
+    #[serde(rename_all = "camelCase")]
     ResourceType {
         /// The argument that accepts the resource type name.
-        #[serde(rename = "resourceTypeArg")]
         resource_type_arg: String,
     },
+    #[serde(rename_all = "camelCase")]
+    ResourceVersion {
+        /// The argument that accepts the resource version.
+        resource_version_arg: String,
+    },
     /// The argument is passed when the resource is invoked in what-if mode.
+    #[serde(rename_all = "camelCase")]
     WhatIf {
         /// The argument to pass when in what-if mode.
-        #[serde(rename = "whatIfArg")]
         what_if_arg: String,
     }
 }
@@ -162,10 +186,15 @@ pub enum SetDeleteArgKind {
 pub enum SchemaArgKind {
     /// The argument is a string.
     String(String),
+    #[serde(rename_all = "camelCase")]
     ResourceType {
         /// The argument that accepts the resource type name.
-        #[serde(rename = "resourceTypeArg")]
         resource_type_arg: String,
+    },
+    #[serde(rename_all = "camelCase")]
+    ResourceVersion {
+        /// The argument that accepts the resource version.
+        resource_version_arg: String,
     },
 }
 
@@ -189,6 +218,16 @@ pub enum SchemaKind {
     Command(SchemaCommand),
     /// The schema is embedded in the manifest.
     #[serde(rename = "embedded")]
+    Embedded(Value),
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[dsc_repo_schema(base_name = "manifest.exportSchema", folder_path = "definitions")]
+#[serde(rename_all = "camelCase")]
+pub enum ExportSchemaKind {
+    /// The export schema is returned by running a command.
+    Command(SchemaCommand),
+    /// The export schema is embedded in the manifest.
     Embedded(Value),
 }
 
@@ -295,6 +334,13 @@ pub struct ValidateMethod { // TODO: enable validation via schema or command
     pub input: Option<InputKind>,
 }
 
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub enum ExportSchemaOrFiltering {
+    Schema(ExportSchemaKind),
+    SupportsFiltering(bool),
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[dsc_repo_schema(base_name = "manifest.export", folder_path = "resource")]
 pub struct ExportMethod {
@@ -307,6 +353,8 @@ pub struct ExportMethod {
     /// The security context required to run the Export method.  Default if not specified is `current`.
     #[serde(rename = "requireSecurityContext", skip_serializing_if = "Option::is_none")]
     pub require_security_context: Option<SecurityContextKind>,
+    #[serde(flatten, skip_serializing_if = "Option::is_none")]
+    pub schema_or_filtering: Option<ExportSchemaOrFiltering>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
@@ -324,7 +372,7 @@ pub struct ResolveMethod {
 #[dsc_repo_schema(base_name = "manifest.adapter", folder_path = "resource")]
 pub struct Adapter {
     /// The way to list adapter supported resources.
-    pub list: ListMethod,
+    pub list: Option<ListMethod>,
     /// Defines how the adapter supports accepting configuration.
     #[serde(alias = "config", rename = "inputKind")]
     pub input_kind: AdapterInputKind,

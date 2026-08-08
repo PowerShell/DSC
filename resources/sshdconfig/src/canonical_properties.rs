@@ -17,8 +17,6 @@ pub enum CanonicalProperty {
     IncludeDefaults,
     /// Contains SSH default values inherited from system
     InheritedDefaults,
-    /// Metadata object containing filepath and other configuration info
-    Metadata,
     /// Boolean flag indicating if non-specified entries should be removed
     Purge,
 }
@@ -30,7 +28,6 @@ impl CanonicalProperty {
             Self::Exist => "_exist",
             Self::IncludeDefaults => "_includeDefaults",
             Self::InheritedDefaults => "_inheritedDefaults",
-            Self::Metadata => "_metadata",
             Self::Purge => "_purge",
         }
     }
@@ -41,7 +38,6 @@ impl CanonicalProperty {
             "_exist" => Some(Self::Exist),
             "_includeDefaults" => Some(Self::IncludeDefaults),
             "_inheritedDefaults" => Some(Self::InheritedDefaults),
-            "_metadata" => Some(Self::Metadata),
             "_purge" => Some(Self::Purge),
             _ => None,
         }
@@ -53,7 +49,6 @@ impl CanonicalProperty {
             Self::Exist,
             Self::IncludeDefaults,
             Self::InheritedDefaults,
-            Self::Metadata,
             Self::Purge,
         ]
     }

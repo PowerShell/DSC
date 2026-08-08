@@ -18,6 +18,8 @@ impl Function for UtcNow {
         FunctionMetadata {
             name: "utcNow".to_string(),
             description: t!("functions.utcNow.description").to_string(),
+            syntax: t!("functions.utcNow.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Date],
             min_args: 0,
             max_args: 1,

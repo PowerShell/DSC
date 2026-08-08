@@ -16,6 +16,8 @@ impl Function for Mul {
         FunctionMetadata {
             name: "mul".to_string(),
             description: t!("functions.mul.description").to_string(),
+            syntax: t!("functions.mul.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Numeric],
             min_args: 2,
             max_args: 2,

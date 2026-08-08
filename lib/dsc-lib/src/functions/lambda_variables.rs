@@ -16,6 +16,8 @@ impl Function for LambdaVariables {
         FunctionMetadata {
             name: "lambdaVariables".to_string(),
             description: t!("functions.lambdaVariables.description").to_string(),
+            syntax: t!("functions.lambdaVariables.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Lambda],
             min_args: 1,
             max_args: 1,
@@ -55,7 +57,7 @@ mod tests {
     fn lookup_existing_variable() {
         let mut context = Context::new();
         context.lambda_variables.insert("x".to_string(), json!(42));
-        
+
         let func = LambdaVariables {};
         let result = func.invoke(&[Value::String("x".to_string())], &context).unwrap();
         assert_eq!(result, json!(42));

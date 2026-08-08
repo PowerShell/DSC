@@ -16,6 +16,8 @@ impl Function for Min {
         FunctionMetadata {
             name: "min".to_string(),
             description: t!("functions.min.description").to_string(),
+            syntax: t!("functions.min.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Numeric],
             min_args: 1,
             max_args: usize::MAX,

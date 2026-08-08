@@ -16,6 +16,8 @@ impl Function for LessOrEquals {
         FunctionMetadata {
             name: "lessOrEquals".to_string(),
             description: t!("functions.lessOrEquals.description").to_string(),
+            syntax: t!("functions.lessOrEquals.syntax").to_string(),
+            constraints: None,
             category: vec![FunctionCategory::Comparison],
             min_args: 2,
             max_args: 2,

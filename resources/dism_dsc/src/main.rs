@@ -2,16 +2,18 @@
 // Licensed under the MIT License.
 
 #[cfg(windows)]
-mod util;
-#[cfg(windows)]
 pub(crate) mod dism;
+#[cfg(windows)]
+mod feature_on_demand;
 #[cfg(windows)]
 mod optional_feature;
 #[cfg(windows)]
-mod feature_on_demand;
+mod util;
+#[cfg(windows)]
+mod windows_feature;
 
 use rust_i18n::t;
-use std::io::{self, Read, IsTerminal};
+use std::io::{self, IsTerminal, Read};
 
 rust_i18n::i18n!("locales", fallback = "en-us");
 
@@ -72,8 +74,17 @@ fn main() {
         ("get", "feature-on-demand") => dispatch(feature_on_demand::handle_get),
         ("set", "feature-on-demand") => dispatch(feature_on_demand::handle_set),
         ("export", "feature-on-demand") => dispatch(feature_on_demand::handle_export),
+        ("get", "windows-feature") => dispatch(windows_feature::handle_get),
+        ("set", "windows-feature") => {
+            let what_if = args.iter().any(|arg| arg == "-w" || arg == "--what-if");
+            dispatch(|input| windows_feature::handle_set(input, what_if));
+        }
+        ("export", "windows-feature") => dispatch(windows_feature::handle_export),
         ("get" | "set" | "export", _) => {
-            eprintln!("{}", t!("main.unknownResourceType", resource_type = resource_type));
+            eprintln!(
+                "{}",
+                t!("main.unknownResourceType", resource_type = resource_type)
+            );
             eprintln!("{}", t!("main.usage"));
             std::process::exit(1);
         }

@@ -55,7 +55,7 @@ semantic version, the latest schema for a minor version, or the latest schema fo
 of DSC. For more information about schema URIs and versioning, see
 [DSC JSON Schema URIs](../../schema-uris.md).
 
-For every version of the schema, there are three valid urls:
+For every version of the schema, there are three valid URLs:
 
 - `.../resource/manifest.json`
 
@@ -77,8 +77,9 @@ For every version of the schema, there are three valid urls:
   it includes additional definitions that provide contextual help and snippets that the others
   don't include.
 
-  This schema uses keywords that are only recognized by VS Code. While DSC can still validate the
-  document when it uses this schema, other tools may error or behave in unexpected ways.
+  This schema uses keywords that are only recognized by Visual Studio Code. While DSC can still 
+  validate the document when it uses this schema, other tools may error or behave in unexpected
+  ways.
 
 ```yaml
 Type:        string
@@ -146,7 +147,7 @@ Pattern:  ^\w+(\.\w+){0,2}\/\w+$
 ### version
 
 The `version` property must be the current version of the resource as a valid semantic version
-(semver) string. The version applies to the resource, not the software it manages.
+(SemVer) string. The version applies to the resource, not the software it manages.
 
 ```yaml
 Type:     string
@@ -292,14 +293,14 @@ Type:     object
 Required: false
 ```
 
-### provider
+### adapter
 
-When specified, the `provider` property defines the resource as a DSC Resource Provider.
+When specified, the `adapter` property defines the resource as a DSC Resource Adapter.
 
 The value of this property must be an object. The object's `list` and `config` properties are
-mandatory. The `list` property defines how to call the provider to return the resources that the
-provider can manage. The `config` property defines how the provider expects input. For more
-information, see the [DSC Resource manifest provider property schema reference][13].
+mandatory. The `list` property defines how to call the adapter to return the resources that the
+adapter can manage. The `config` property defines how the adapter expects input. For more
+information, see the [DSC Resource manifest adapter property schema reference][13].
 
 ### exitCodes
 
@@ -363,5 +364,5 @@ Required: true
 [10]: whatif.md
 [11]: test.md
 [12]: validate.md
-[13]: provider.md
+[13]: adapter.md
 [14]: schema/property.md

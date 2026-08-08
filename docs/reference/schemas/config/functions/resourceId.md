@@ -105,7 +105,7 @@ Position: 0
 
 <!-- Link reference definitions -->
 [01]: ../resource.md#dependson
-[02]: /powershell/dsc/glossary#nested-resource-instance
+[02]: ../../../../glossary.md#nested-resource-instance
 [03]: ../resource.md#type
 [04]: ../../definitions/resourceType.md
 [05]: ../resource.md#name

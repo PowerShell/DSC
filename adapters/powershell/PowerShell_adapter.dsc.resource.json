@@ -41,7 +41,8 @@
                 "resourceTypeArg": "-ResourceType"
             },
             {
-                "resourcePathArg": "-ResourcePath"
+                "resourcePathArg": "-ResourcePath",
+                "includeQuotes": true
             }
         ],
         "input": "stdin"
@@ -61,7 +62,8 @@
                 "resourceTypeArg": "-ResourceType"
             },
             {
-                "resourcePathArg": "-ResourcePath"
+                "resourcePathArg": "-ResourcePath",
+                "includeQuotes": true
             }
         ],
         "input": "stdin",
@@ -83,7 +85,8 @@
                 "resourceTypeArg": "-ResourceType"
             },
             {
-                "resourcePathArg": "-ResourcePath"
+                "resourcePathArg": "-ResourcePath",
+                "includeQuotes": true
             }
         ],
         "input": "stdin",
@@ -104,7 +107,8 @@
                 "resourceTypeArg": "-ResourceType"
             },
             {
-                "resourcePathArg": "-ResourcePath"
+                "resourcePathArg": "-ResourcePath",
+                "includeQuotes": true
             }
         ],
         "input": "stdin",
