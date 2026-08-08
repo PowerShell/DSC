@@ -58,6 +58,8 @@ configuration settings stored in the `sshd_config` file. The resource can:
   file.
 - On Windows, the default configuration file path is `%ProgramData%\ssh\sshd_config`.
 - On Linux, the default configuration file path is `/etc/ssh/sshd_config`.
+- To manage a configuration file in a non-default location, specify the
+  [sshd_config_filepath](#sshd_config_filepath) property for the instance.
 
 ## Capabilities
 
@@ -95,6 +97,122 @@ Port: 22
 For the full list of supported directives and their values, see the
 [sshd_config man page][05] or the OpenSSH documentation.
 
+In addition to the `sshd_config` directives, the resource defines the following properties that
+control how it reads and writes the configuration file.
+
+- [sshd_config_filepath](#sshd_config_filepath) - The path to the `sshd_config` file to manage.
+- [_includeDefaults](#_includedefaults) - Whether to include settings inherited from the OpenSSH
+  defaults.
+- [_inheritedDefaults](#_inheriteddefaults) - The directives that came from the OpenSSH defaults.
+- [_purge](#_purge) - Whether to remove directives that aren't defined in the instance.
+
+### sshd_config_filepath
+
+<details><summary>Expand for <code>sshd_config_filepath</code> property metadata</summary>
+
+```yaml
+Type             : string
+IsRequired       : false
+IsKey            : false
+IsReadOnly       : false
+IsWriteOnly      : false
+```
+
+</details>
+
+Defines the path to the `sshd_config` file that the resource reads from and writes to. When you
+don't specify this property, the resource uses the default path for the operating system. Use this
+property to manage a configuration file in a non-default location:
+
+```yaml
+resources:
+- name: Non-default SSH server configuration
+  type: Microsoft.OpenSSH.SSHD/sshd_config
+  properties:
+    sshd_config_filepath: 'C:\ProgramData\ssh\non_default_sshd_config'
+    passwordauthentication: 'no'
+```
+
+When you specify this property, the resource returns it as part of the result for the `get` and
+`export` operations.
+
+### _includeDefaults
+
+<details><summary>Expand for <code>_includeDefaults</code> property metadata</summary>
+
+```yaml
+Type             : boolean
+IsRequired       : false
+IsKey            : false
+IsReadOnly       : false
+IsWriteOnly      : false
+```
+
+</details>
+
+Determines whether the result includes the settings that the SSH server inherits from the OpenSSH
+defaults, rather than only the directives explicitly set in the configuration file.
+
+The default value for this property depends on the operation:
+
+- For the `get` operation, the default value is `true`. Set the property to `false` to return only
+  the directives explicitly set in the configuration file.
+- For the `export` operation, the default value is `false`. Set the property to `true` to return
+  the full effective configuration.
+
+### _inheritedDefaults
+
+<details><summary>Expand for <code>_inheritedDefaults</code> property metadata</summary>
+
+```yaml
+Type             : array
+IsRequired       : false
+IsKey            : false
+IsReadOnly       : true
+IsWriteOnly      : false
+```
+
+</details>
+
+Lists the directives whose values come from the OpenSSH defaults instead of the configuration
+file. The `get` operation returns this property when the result includes inherited defaults, in
+addition to the returned directives and their values:
+
+```yaml
+actualState:
+  port: '22'
+  addressfamily: any
+  passwordauthentication: 'no'
+  _inheritedDefaults:
+  - port
+  - addressfamily
+```
+
+This property is read-only. The resource returns it in the result, but you can't set it as part
+of the desired state.
+
+### _purge
+
+<details><summary>Expand for <code>_purge</code> property metadata</summary>
+
+```yaml
+Type             : boolean
+IsRequired       : false
+IsKey            : false
+IsReadOnly       : false
+IsWriteOnly      : true
+```
+
+</details>
+
+Determines whether the `set` operation removes directives from the `sshd_config` file that aren't
+defined in the instance. The default value is `false`.
+
+When this property is `false`, the resource enforces only the directives defined in the instance
+and leaves any other directives in the file untouched. When this property is `true`, the resource
+rewrites the file to match the instance exactly, removing any directive that isn't defined,
+including directives added outside of DSC.
+
 ## Instance validating schema
 
 The resource uses an embedded open-object schema. Any `sshd_config` directive is a valid property.
@@ -104,7 +222,12 @@ The resource uses an embedded open-object schema. Any `sshd_config` directive is
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "sshdconfig",
   "type": "object",
-  "properties": {},
+  "properties": {
+    "sshd_config_filepath": {
+      "type": "string",
+      "description": "Path to the sshd_config file to be processed. If not specified, the default path for the OS is used."
+    }
+  },
   "additionalProperties": true
 }
 ```

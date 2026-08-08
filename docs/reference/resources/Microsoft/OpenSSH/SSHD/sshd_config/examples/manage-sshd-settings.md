@@ -19,8 +19,8 @@ authentication.
 
 ## Get the current state of specific settings
 
-The following snippet shows how to use the [dsc resource get][00] command to retrieve the current
-values of specific `sshd_config` directives.
+The following snippet shows how to use the [dsc resource export][00] command to retrieve the
+current values of specific `sshd_config` directives.
 
 ```powershell
 $instance = @{
@@ -28,17 +28,26 @@ $instance = @{
     permitrootlogin        = 'no'
 } | ConvertTo-Json
 
-dsc resource get --resource Microsoft.OpenSSH.SSHD/sshd_config --input $instance
+dsc resource export --resource Microsoft.OpenSSH.SSHD/sshd_config --input $instance
 ```
 
-When the settings differ from the desired values, DSC returns the current state from the
-`sshd_config` file:
+DSC returns the current values for the requested directives from the `sshd_config` file:
 
 ```yaml
-actualState:
-  passwordauthentication: 'yes'
-  permitrootlogin: prohibit-password
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: Microsoft.OpenSSH.SSHD/sshd_config[0]
+  type: Microsoft.OpenSSH.SSHD/sshd_config
+  properties:
+    passwordauthentication: 'yes'
+    permitrootlogin: prohibit-password
 ```
+
+> [!IMPORTANT]
+> Use the `export` operation to retrieve specific directives. The `get` operation doesn't support
+> filtering by keyword. When you pass directives as input to `dsc resource get`, the resource
+> emits the warning `get command does not support filtering based on input settings, provided
+> input will be ignored` and returns the entire effective configuration instead.
 
 ## Test whether the settings are in the desired state
 
@@ -108,6 +117,6 @@ differingProperties: []
 > effect. On Windows, run `Restart-Service sshd`. On Linux, run `sudo systemctl restart sshd`.
 
 <!-- Link reference definitions -->
-[00]: ../../../../../../cli/resource/get.md
+[00]: ../../../../../../cli/resource/export.md
 [01]: ../../../../../../cli/resource/test.md
 [02]: ../../../../../../cli/resource/set.md
