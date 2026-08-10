@@ -24,9 +24,10 @@ Author       : Microsoft
 
 By default, DSC discovers command resources by searching the folders in the `PATH` or
 [`DSC_RESOURCE_PATH`][01] environment variable for manifest files. The
-`Microsoft.Windows.Appx/Discover` extension expands that discovery to Appx packages on Windows:
-it enumerates the Appx packages installed for the current user and searches the installation
-folder of each package for DSC manifest files, returning their paths to DSC.
+`Microsoft.Windows.Appx/Discover` extension expands that discovery to Appx packages on Windows.
+
+This extension enumerates the Appx packages installed for the current user and searches the
+installation folder of each package for DSC manifest files, returning their paths to DSC.
 
 With this extension, publishers can include a DSC resource in an application that's distributed
 through the Microsoft Store or installed as an MSIX/Appx package. After a user installs the
@@ -42,8 +43,9 @@ following extensions:
 - `.dsc.extension.json`, `.dsc.extension.yaml`, `.dsc.extension.yml`
 
 > [!NOTE]
-> The extension searches only the root of each package's installation folder, not its
-> subfolders. Manifests must be placed at the top level of the package.
+> The extension only searches the root of each package's installation folder, _not_ its subfolders.
+> For the extension to discover any manifests, publishers must place them at the top level of the
+> package.
 
 ## Requirements
 

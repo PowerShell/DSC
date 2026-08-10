@@ -22,17 +22,20 @@ Author       : Microsoft
 
 ## Condition
 
-The extension only applies on systems where the `pwsh` executable is available in `PATH`. DSC
-evaluates this with the expression `[not(equals(tryWhich('pwsh'), null()))]` and skips the
-extension if `pwsh` isn't found.
+The extension only applies on systems where the `pwsh` executable is available in `PATH`. DSC skips
+the extension if `pwsh` isn't found.
+
+DSC uses the following expression to evaluate whether to load and use this extension:
+
 
 ## Description
 
 By default, DSC discovers command resources by searching the folders in the `PATH` or
 [`DSC_RESOURCE_PATH`][01] environment variable for manifest files. The
-`Microsoft.PowerShell/Discover` extension expands that discovery to PowerShell 7 modules: it
-recursively searches every folder in the `PSModulePath` environment variable for DSC manifest
-files and returns their paths to DSC.
+`Microsoft.PowerShell/Discover` extension expands that discovery to PowerShell 7 modules.
+
+This extension recursively searches every folder in the `PSModulePath` environment variable for DSC
+manifest files and returns their paths to DSC.
 
 With this extension, publishers can package command resources inside a PowerShell module and
 distribute the module through the PowerShell Gallery or a private repository. After a user
@@ -47,9 +50,9 @@ The extension searches for files with the following extensions, in any folder of
 - `.dsc.extension.json`, `.dsc.extension.yaml`, `.dsc.extension.yml`
 
 > [!NOTE]
-> This extension discovers *manifest-based* resources that happen to ship inside a PowerShell
-> module. It doesn't make class-based PowerShell DSC resources available to DSC - those are
-> handled by the [Microsoft.Adapter/PowerShell][02] adapter resource.
+> This extension discovers DSC _manifests_ that happen to ship inside a PowerShell module. It
+> doesn't make class-based PowerShell DSC (PSDSC) resources available to DSC. The
+> [Microsoft.Adapter/PowerShell][02] adapter discovers and invokes PSDSC resources.
 >
 > Folders for Windows PowerShell modules in `PSModulePath` are excluded from the search.
 
