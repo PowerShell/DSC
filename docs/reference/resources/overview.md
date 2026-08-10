@@ -5,17 +5,25 @@ This document lists the available resources and links to the reference documenta
 
 ## All built-in resources
 
+- [DSC.PackageManagement/Apt](./DSC/PackageManagement/APT/index.md)
+- [DSC.PackageManagement/Brew](./DSC/PackageManagement/Brew/index.md)
 - [Microsoft/OSInfo](./Microsoft/OSInfo/index.md)
+- [Microsoft.Adapter/PowerShell](./Microsoft/Adapter/PowerShell/index.md)
+- [Microsoft.Adapter/WindowsPowerShell](./Microsoft/Adapter/WindowsPowerShell/index.md)
 - [Microsoft.DSC/Assertion](./Microsoft/DSC/Assertion/index.md)
 - [Microsoft.DSC/Group](./Microsoft/DSC/Group/index.md)
 - [Microsoft.DSC/Include](./Microsoft/DSC/Include/index.md)
-- [Microsoft.Adapter/PowerShell](./Microsoft/Adapter/PowerShell/index.md)
-- [Microsoft.Adapter/WindowsPowerShell](./Microsoft/Adapter/WindowsPowerShell/index.md)
 - [Microsoft.DSC/PowerShell](./Microsoft/DSC/PowerShell/index.md)
 - [Microsoft.DSC.Debug/Echo](./Microsoft/DSC/Debug/echo/index.md)
+- [Microsoft.DSC.Transitional/PowerShellScript](./Microsoft/DSC/Transitional/PowerShellScript/index.md)
 - [Microsoft.DSC.Transitional/RunCommandOnSet](./Microsoft/DSC/Transitional/RunCommandOnSet/index.md)
+- [Microsoft.DSC.Transitional/WindowsPowerShellScript](./Microsoft/DSC/Transitional/WindowsPowerShellScript/index.md)
+- [Microsoft.Windows/FeatureOnDemandList](./Microsoft/Windows/FeatureOnDemandList/index.md)
+- [Microsoft.Windows/FirewallRuleList](./Microsoft/Windows/FirewallRuleList/index.md)
+- [Microsoft.Windows/OptionalFeatureList](./Microsoft/Windows/OptionalFeatureList/index.md)
 - [Microsoft.Windows/RebootPending](./Microsoft/Windows/RebootPending/index.md)
 - [Microsoft.Windows/Registry](./Microsoft/Windows/Registry/index.md)
+- [Microsoft.Windows/Service](./Microsoft/Windows/Service/index.md)
 - [Microsoft.Windows/WindowsPowerShell](./Microsoft/Windows/WindowsPowerShell/index.md)
 - [Microsoft.Windows/WMI](./Microsoft/Windows/WMI/index.md)
 
@@ -46,10 +54,18 @@ Manifest:
 
 ## Built-in configurable resources
 
-The following built-in resources to change the state of a machine directly:
+The following built-in resources change the state of a machine directly:
 
+- [DSC.PackageManagement/Apt](./DSC/PackageManagement/APT/index.md)
+- [DSC.PackageManagement/Brew](./DSC/PackageManagement/Brew/index.md)
+- [Microsoft.DSC.Transitional/PowerShellScript](./Microsoft/DSC/Transitional/PowerShellScript/index.md)
 - [Microsoft.DSC.Transitional/RunCommandOnSet](./Microsoft/DSC/Transitional/RunCommandOnSet/index.md)
+- [Microsoft.DSC.Transitional/WindowsPowerShellScript](./Microsoft/DSC/Transitional/WindowsPowerShellScript/index.md)
+- [Microsoft.Windows/FeatureOnDemandList](./Microsoft/Windows/FeatureOnDemandList/index.md)
+- [Microsoft.Windows/FirewallRuleList](./Microsoft/Windows/FirewallRuleList/index.md)
+- [Microsoft.Windows/OptionalFeatureList](./Microsoft/Windows/OptionalFeatureList/index.md)
 - [Microsoft.Windows/Registry](./Microsoft/Windows/Registry/index.md)
+- [Microsoft.Windows/Service](./Microsoft/Windows/Service/index.md)
 
 ## Built-in debugging resources
 
@@ -66,3 +82,7 @@ instances:
 - [Microsoft.DSC/Assertion](./Microsoft/DSC/Assertion/index.md)
 - [Microsoft.DSC/Group](./Microsoft/DSC/Group/index.md)
 - [Microsoft.DSC/Include](./Microsoft/DSC/Include/index.md)
+
+## See also
+
+- [Built-in DSC extension reference](../extensions/overview.md)
