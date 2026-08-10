@@ -27,6 +27,9 @@ the extension if `pwsh` isn't found.
 
 DSC uses the following expression to evaluate whether to load and use this extension:
 
+```yaml
+condition: "[not(equals(tryWhich('pwsh'), null()))]"
+```
 
 ## Description
 
