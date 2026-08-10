@@ -155,7 +155,7 @@ Describe 'metadata tests' {
           - name: return variable
             type: Microsoft.DSC.Transitional/PowerShellScript
             properties:
-              SetScript: |
+              setScript: |
                 if ($IsWindows) {
                   $env:myTestVariable
                 }
@@ -189,7 +189,7 @@ Describe 'metadata tests' {
           - name: return path
             type: Microsoft.DSC.Transitional/PowerShellScript
             properties:
-              SetScript: |
+              setScript: |
                 $env:PATH
 '@
         $oldUserPath = [System.Environment]::GetEnvironmentVariable('PATH', [System.EnvironmentVariableTarget]::User)
@@ -219,7 +219,7 @@ Describe 'metadata tests' {
           - name: return variable
             type: Microsoft.DSC.Transitional/PowerShellScript
             properties:
-              SetScript: |
+              setScript: |
                 if ($IsWindows) {
                   $env:myTestVariable
                 }
