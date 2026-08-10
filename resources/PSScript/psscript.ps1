@@ -191,7 +191,7 @@ if ($Operation -eq 'Test') {
 } else {
     $outputData = @{}
     if ($outputObjects.Count -eq 1) {
-        $outputData.output = $outputObjects | Select-Object -First 1
+        $outputData.output = $outputObjects[0]
     } elseif ($outputObjects.Count -gt 1) {
         $outputData.output = $outputObjects
     }
