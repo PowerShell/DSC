@@ -371,22 +371,8 @@ unsafe fn query_status(service_handle: SC_HANDLE) -> Result<ServiceStatus, Servi
     }
 }
 
-/// Convert a `ServiceStatus` to the corresponding Windows `SERVICE_STATUS_CURRENT_STATE` constant.
-fn status_to_current_state(status: &ServiceStatus) -> SERVICE_STATUS_CURRENT_STATE {
-    match status {
-        ServiceStatus::Running => SERVICE_RUNNING,
-        ServiceStatus::Stopped => SERVICE_STOPPED,
-        ServiceStatus::Paused => SERVICE_PAUSED,
-        ServiceStatus::StartPending => SERVICE_START_PENDING,
-        ServiceStatus::StopPending => SERVICE_STOP_PENDING,
-        ServiceStatus::PausePending => SERVICE_PAUSE_PENDING,
-        ServiceStatus::ContinuePending => SERVICE_CONTINUE_PENDING,
-    }
-}
-
-/// Export (enumerate) all services, optionally filtering by the provided criteria.
-/// Returns a list of matching services.
-pub fn export_services(filter: Option<&WindowsService>) -> Result<Vec<WindowsService>, ServiceError> {
+/// Export (enumerate) all services. Returns a list of all services.
+pub fn export_services() -> Result<Vec<WindowsService>, ServiceError> {
     let scm = unsafe { OpenSCManagerW(None, None, SC_MANAGER_CONNECT | SC_MANAGER_ENUMERATE_SERVICE) }
         .map_err(|e| ServiceError::from(t!("get.openScmFailed", error = e.to_string()).to_string()))?;
     let scm = ScHandle(scm);
@@ -394,23 +380,11 @@ pub fn export_services(filter: Option<&WindowsService>) -> Result<Vec<WindowsSer
     let services = unsafe { enumerate_services(scm.0) }?;
     let mut results = Vec::new();
 
-    // Pre-compute the status filter value for early rejection before expensive per-service queries
-    let status_filter_dw = filter.and_then(|f| f.status.as_ref()).map(status_to_current_state);
-
-    for (service_name, current_state) in &services {
-        // Quick reject based on status before opening the service handle
-        if let Some(expected_state) = status_filter_dw && *current_state != expected_state {
-            continue;
-        }
-
+    for (service_name, _current_state) in &services {
         let svc = match unsafe { get_service_details(scm.0, service_name) } {
             Ok(s) => s,
             Err(_) => continue, // skip services we can't query
         };
-
-        if let Some(f) = filter && !matches_filter(&svc, f) {
-            continue;
-        }
 
         results.push(svc);
     }
@@ -511,55 +485,6 @@ unsafe fn get_service_details(scm: SC_HANDLE, service_name: &str) -> Result<Wind
     let service_handle = ScHandle(service_handle);
 
     unsafe { read_service_state(service_handle.0, service_name) }
-}
-
-/// Match a string against a pattern supporting `*` wildcards.
-/// If no wildcard is present, performs an exact case-insensitive comparison.
-fn matches_wildcard(text: &str, pattern: &str) -> bool {
-    if pattern == "*" {
-        return true;
-    }
-
-    let text_lower = text.to_lowercase();
-    let pattern_lower = pattern.to_lowercase();
-
-    let parts: Vec<&str> = pattern_lower.split('*').collect();
-
-    // No wildcard → exact match
-    if parts.len() == 1 {
-        return text_lower == pattern_lower;
-    }
-
-    let starts_with_wildcard = pattern_lower.starts_with('*');
-    let ends_with_wildcard = pattern_lower.ends_with('*');
-
-    let mut pos = 0;
-
-    for (i, part) in parts.iter().enumerate() {
-        if part.is_empty() {
-            continue;
-        }
-
-        if i == 0 && !starts_with_wildcard {
-            if !text_lower.starts_with(part) {
-                return false;
-            }
-            pos = part.len();
-        } else if let Some(found) = text_lower[pos..].find(part) {
-            pos += found + part.len();
-        } else {
-            return false;
-        }
-    }
-
-    if !ends_with_wildcard
-        && let Some(last) = parts.last()
-        && !last.is_empty()
-        && !text_lower.ends_with(last) {
-            return false;
-        }
-
-    true
 }
 
 /// Build a double-null-terminated UTF-16 multi-string from a list of dependency names.
@@ -873,80 +798,6 @@ unsafe fn wait_for_status(
         }
         std::thread::sleep(std::time::Duration::from_millis(STATUS_POLL_INTERVAL_MS));
     }
-}
-
-/// Check whether `service` matches all non-`None` fields in `filter`.
-fn matches_filter(service: &WindowsService, filter: &WindowsService) -> bool {
-    // name — wildcard match
-    if let Some(ref pattern) = filter.name {
-        let name = service.name.as_deref().unwrap_or("");
-        if !matches_wildcard(name, pattern) {
-            return false;
-        }
-    }
-
-    // display_name — wildcard match
-    if let Some(ref pattern) = filter.display_name {
-        let dn = service.display_name.as_deref().unwrap_or("");
-        if !matches_wildcard(dn, pattern) {
-            return false;
-        }
-    }
-
-    // description — wildcard match
-    if let Some(ref pattern) = filter.description {
-        let desc = service.description.as_deref().unwrap_or("");
-        if !matches_wildcard(desc, pattern) {
-            return false;
-        }
-    }
-
-    // exist — exact match
-    if let Some(expected_exist) = filter.exist {
-        let actual_exist = service.exist.unwrap_or(false);
-        if actual_exist != expected_exist {
-            return false;
-        }
-    }
-
-    // status — exact match
-    if let Some(ref expected_status) = filter.status {
-        match &service.status {
-            Some(actual_status) if actual_status == expected_status => {}
-            _ => return false,
-        }
-    }
-
-    // start_type — exact match
-    if let Some(ref expected_start) = filter.start_type {
-        match &service.start_type {
-            Some(actual_start) if actual_start == expected_start => {}
-            _ => return false,
-        }
-    }
-
-    // logon_account — exact case-insensitive match
-    if let Some(ref expected_account) = filter.logon_account {
-        let actual = service.logon_account.as_deref().unwrap_or("");
-        if !actual.eq_ignore_ascii_case(expected_account) {
-            return false;
-        }
-    }
-
-    // Note: executable_path and error_control are intentionally not filtered.
-
-    // dependencies — service must have at least all specified dependencies
-    if let Some(ref expected_deps) = filter.dependencies {
-        let actual_deps = service.dependencies.as_deref().unwrap_or(&[]);
-        for dep in expected_deps {
-            let dep_lower = dep.to_lowercase();
-            if !actual_deps.iter().any(|d| d.to_lowercase() == dep_lower) {
-                return false;
-            }
-        }
-    }
-
-    true
 }
 
 /// Compute the projected state of a service after applying `input`, without

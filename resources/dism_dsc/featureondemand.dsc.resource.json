@@ -9,7 +9,7 @@
         "fod"
     ],
     "type": "Microsoft.Windows/FeatureOnDemandList",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "get": {
         "executable": "dism_dsc",
         "args": [
@@ -26,7 +26,8 @@
             "feature-on-demand"
         ],
         "input": "stdin",
-        "requireSecurityContext": "elevated"
+        "requireSecurityContext": "elevated",
+        "supportsFiltering": true
     },
     "set": {
         "executable": "dism_dsc",

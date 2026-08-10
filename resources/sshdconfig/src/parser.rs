@@ -266,10 +266,11 @@ fn parse_arguments_node(arg_node: tree_sitter::Node, input: &str, input_bytes: &
     let mut vec: Vec<Value> = Vec::new();
     let is_vec = keyword_info.is_multi_arg();
 
-    // if there is more than one argument, but a vector is not expected for the keyword, throw an error
     let children: Vec<_> = arg_node.named_children(&mut cursor).collect();
+
     if children.len() > 1 && !is_vec {
-        return Err(SshdConfigError::ParserError(t!("parser.invalidMultiArgNode", input = input).to_string()));
+        debug!("{}", t!("parser.combinedMultiArgValue", keyword = &keyword_info.name).to_string());
+        return Ok(Value::String(combine_args(&children, input, input_bytes)?));
     }
 
     for node in &children {
@@ -331,6 +332,33 @@ fn parse_arguments_node(arg_node: tree_sitter::Node, input: &str, input_bytes: &
     } else { /* shouldn't happen */
         Err(SshdConfigError::ParserError(t!("parser.noArgumentsFound", input = input).to_string()))
     }
+}
+
+/// Combine multiple argument nodes into a single string value.
+///
+/// The grammar cannot include spaces in a `string` token, so an unquoted value containing spaces is
+/// split into several argument nodes. The separator that appeared between two arguments in the
+/// source text is preserved, so a comma-separated value is not silently rewritten as a
+/// space-separated one. Quote characters sit between the argument nodes and are dropped, matching
+/// how a quoted value that parsed as a single argument is handled.
+fn combine_args(children: &[tree_sitter::Node], input: &str, input_bytes: &[u8]) -> Result<String, SshdConfigError> {
+    let mut combined = String::new();
+    let mut previous_end: Option<usize> = None;
+
+    for node in children {
+        if node.is_error() {
+            return Err(SshdConfigError::ParserError(t!("parser.failedToParseNode", input = input).to_string()));
+        }
+        if let Some(end) = previous_end {
+            let between = input.get(end..node.start_byte()).unwrap_or_default();
+            combined.push_str(if between.contains(',') { "," } else { " " });
+        }
+        combined.push_str(node.utf8_text(input_bytes)?.trim());
+        previous_end = Some(node.end_byte());
+    }
+
+    // Unescape backslashes (sshd -T escapes them on Windows)
+    Ok(unescape_backslashes(&combined))
 }
 
 /// Parse arguments node for match criteria, always returning an array.
@@ -485,6 +513,57 @@ mod tests {
         assert_eq!(allowgroups.len(), 2);
         assert_eq!(allowgroups[0], Value::String("administrators".to_string()));
         assert_eq!(allowgroups[1], Value::String("developers".to_string()));
+    }
+
+    #[test]
+    fn single_value_keyword_with_spaces() {
+        // sshd -T prints Banner "C:\Program Files\ssh\sample_banner.txt" without the quotes.
+        let input = "banner c:\\program files\\ssh\\sample_banner.txt\r\n";
+        let result: Map<String, Value> = parse_text_to_map(input).unwrap();
+        assert_eq!(
+            result.get("banner").unwrap(),
+            &Value::String("c:\\program files\\ssh\\sample_banner.txt".to_string())
+        );
+    }
+
+    #[test]
+    fn single_value_keyword_with_quotes_matches_unquoted() {
+        let quoted = parse_text_to_map("banner \"c:\\program files\\ssh\\sample_banner.txt\"\r\n").unwrap();
+        let unquoted = parse_text_to_map("banner c:\\program files\\ssh\\sample_banner.txt\r\n").unwrap();
+        assert_eq!(quoted.get("banner").unwrap(), unquoted.get("banner").unwrap());
+    }
+
+    #[test]
+    fn single_value_keyword_preserves_comma_separator() {
+        // logverbose is not a known multi-arg keyword, but its value is comma-separated.
+        let input = "logverbose kex.c:*:1,monitor.c:*\r\n";
+        let result: Map<String, Value> = parse_text_to_map(input).unwrap();
+        assert_eq!(
+            result.get("logverbose").unwrap(),
+            &Value::String("kex.c:*:1,monitor.c:*".to_string())
+        );
+    }
+
+    #[test]
+    fn single_value_keyword_preserves_mixed_separators() {
+        let input = "forcecommand /usr/bin/cmd -o a,b -x\r\n";
+        let result: Map<String, Value> = parse_text_to_map(input).unwrap();
+        assert_eq!(
+            result.get("forcecommand").unwrap(),
+            &Value::String("/usr/bin/cmd -o a,b -x".to_string())
+        );
+    }
+
+    #[test]
+    fn single_value_keyword_with_spaces_roundtrip() {
+        use crate::formatter::write_config_map_to_text;
+
+        let input = "banner \"/etc/ssh/sample banner.txt\"\n";
+        let parsed = parse_text_to_map(input).unwrap();
+        let formatted = write_config_map_to_text(&parsed).unwrap();
+        let reparsed = parse_text_to_map(&formatted).unwrap();
+
+        assert_eq!(parsed.get("banner").unwrap(), reparsed.get("banner").unwrap());
     }
 
     #[test]

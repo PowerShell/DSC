@@ -5,7 +5,7 @@
     "tags": [
         "Windows"
     ],
-    "version": "0.1.0",
+    "version": "0.1.1",
     "get": {
         "executable": "windows_service",
         "args": [
@@ -36,12 +36,9 @@
     "export": {
         "executable": "windows_service",
         "args": [
-            "export",
-            {
-                "jsonInputArg": "--input",
-                "mandatory": false
-            }
-        ]
+            "export"
+        ],
+        "supportsFiltering": false
     },
     "exitCodes": {
         "0": "Success",

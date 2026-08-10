@@ -133,6 +133,12 @@ pub fn get_sshd_settings(cmd_info: &CommandInfo, is_get: bool) -> Result<Map<Str
         result.insert("match".to_string(), match_value.clone());
     }
 
+    // sshd -T strips the quotes that preserve values containing spaces (e.g. Windows group names
+    // like "openssh users" or paths like "C:\Program Files\ssh\banner.txt") and normalizes their
+    // casing. Prefer the value parsed directly from the config file, which retains the quoting and
+    // the original casing, for any keyword whose explicit value contains whitespace.
+    prefer_explicit_values_with_spaces(&mut result, &explicit_settings);
+
     if cmd_info.include_defaults {
         // get default from SSHD -T with empty config
         let mut defaults = extract_sshd_defaults()?;
@@ -170,4 +176,110 @@ pub fn get_sshd_settings(cmd_info: &CommandInfo, is_get: bool) -> Result<Map<Str
         result.insert(CanonicalProperty::InheritedDefaults.to_string(), serde_json::to_value(inherited_defaults)?);
     }
     Ok(result)
+}
+
+fn prefer_explicit_values_with_spaces(result: &mut Map<String, Value>, explicit_settings: &Map<String, Value>) {
+    for (keyword, value) in explicit_settings {
+        if contains_whitespace(value) {
+            result.insert(keyword.clone(), value.clone());
+        }
+    }
+}
+
+/// Whether the value, or any value nested within it, is a string containing whitespace.
+fn contains_whitespace(value: &Value) -> bool {
+    match value {
+        Value::String(s) => s.contains(char::is_whitespace),
+        Value::Array(items) => items.iter().any(contains_whitespace),
+        Value::Object(map) => map.values().any(contains_whitespace),
+        _ => false
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn overrides_split_group_list_with_quoted_file_value() {
+        // sshd -T stripped the quotes and split "openssh users" into two entries.
+        let mut result = Map::new();
+        result.insert("allowgroups".to_string(), json!(["administrators", "openssh", "users"]));
+
+        // The raw config file parse preserved the quoted grouping.
+        let mut explicit_settings = Map::new();
+        explicit_settings.insert("allowgroups".to_string(), json!(["administrators", "openssh users"]));
+
+        prefer_explicit_values_with_spaces(&mut result, &explicit_settings);
+
+        assert_eq!(
+            result.get("allowgroups").unwrap(),
+            &json!(["administrators", "openssh users"])
+        );
+    }
+
+    #[test]
+    fn overrides_single_value_keyword_with_quoted_file_value() {
+        let mut result = Map::new();
+        result.insert("banner".to_string(), json!("c:\\program files\\ssh\\sample_banner.txt"));
+
+        let mut explicit_settings = Map::new();
+        explicit_settings.insert("banner".to_string(), json!("C:\\Program Files\\ssh\\sample_banner.txt"));
+
+        prefer_explicit_values_with_spaces(&mut result, &explicit_settings);
+
+        assert_eq!(
+            result.get("banner").unwrap(),
+            &json!("C:\\Program Files\\ssh\\sample_banner.txt")
+        );
+    }
+
+    #[test]
+    fn overrides_nested_value_with_spaces() {
+        let mut result = Map::new();
+        result.insert("subsystem".to_string(), json!([{"name": "sftp", "value": "c:/program files/openssh/sftp-server.exe"}]));
+
+        let mut explicit_settings = Map::new();
+        explicit_settings.insert("subsystem".to_string(), json!([{"name": "sftp", "value": "C:/Program Files/OpenSSH/sftp-server.exe"}]));
+
+        prefer_explicit_values_with_spaces(&mut result, &explicit_settings);
+
+        assert_eq!(
+            result.get("subsystem").unwrap(),
+            &json!([{"name": "sftp", "value": "C:/Program Files/OpenSSH/sftp-server.exe"}])
+        );
+    }
+
+    #[test]
+    fn leaves_keyword_absent_from_file_untouched() {
+        // allowgroups is present in sshd -T output but not explicitly set in the config file.
+        let mut result = Map::new();
+        result.insert("allowgroups".to_string(), json!(["administrators", "openssh", "users"]));
+
+        let explicit_settings = Map::new();
+
+        prefer_explicit_values_with_spaces(&mut result, &explicit_settings);
+
+        assert_eq!(
+            result.get("allowgroups").unwrap(),
+            &json!(["administrators", "openssh", "users"])
+        );
+    }
+
+    #[test]
+    fn leaves_value_without_spaces_untouched() {
+        let mut result = Map::new();
+        result.insert("port".to_string(), json!([22]));
+        result.insert("allowgroups".to_string(), json!(["administrators"]));
+
+        let mut explicit_settings = Map::new();
+        explicit_settings.insert("port".to_string(), json!([2222]));
+        explicit_settings.insert("allowgroups".to_string(), json!(["openssh"]));
+
+        prefer_explicit_values_with_spaces(&mut result, &explicit_settings);
+
+        assert_eq!(result.get("port").unwrap(), &json!([22]));
+        assert_eq!(result.get("allowgroups").unwrap(), &json!(["administrators"]));
+    }
 }
