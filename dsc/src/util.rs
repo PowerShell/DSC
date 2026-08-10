@@ -386,7 +386,7 @@ pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Op
         TraceLevel::Debug => Level::DEBUG,
         TraceLevel::Trace => Level::TRACE,
     };
-    // convert to 'dsc-lib-otel' crate type
+    // convert to 'dsc-lib-telemetry' crate type
     let stderr_format = match tracing_setting.format {
         TraceFormat::Default => StderrFormat::Default,
         TraceFormat::Plaintext => StderrFormat::Plaintext,

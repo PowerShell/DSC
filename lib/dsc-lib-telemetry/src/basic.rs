@@ -3,10 +3,10 @@
 
 //! This module provides basic tracing functionality for applications that do not require full
 //! OpenTelemetry support.
-//! 
+//!
 //! It bundles the [`tracing`] crate and related crates to provide a simple way to emit trace
 //! events to stderr in a human-readable format.
-//! 
+//!
 //! This module simplifies the process of setting up a tracing subscriber with configurable options
 //! for tracing level and stderr output format. It also provides a default guard for capturing
 //! events emitted during application initialization, enabling developers to set up their own
@@ -117,9 +117,8 @@ impl BasicTracingOptions {
             .with(default_fmt)
             .with(default_filter)
             .with(default_indicatif_layer);
-        let default_guard = tracing::subscriber::set_default(default_subscriber);
 
-        default_guard
+        tracing::subscriber::set_default(default_subscriber)
     }
 
     /// Initializes a tracing subscriber based on the provided [`BasicTracingOptions`].
@@ -134,7 +133,7 @@ impl BasicTracingOptions {
     /// subscriber and set it as the global default subscriber.
     ///
     /// ```rust
-    /// # use dsc_lib_telemetry::basic::{BasicTracingOptions, StderrFormat};
+    /// # use dsc_lib_telemetry::{basic::BasicTracingOptions, StderrFormat};
     /// # use tracing::Level;
     ///
     /// let tracing_options = BasicTracingOptions {
