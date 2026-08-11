@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68", "ms-dsc @ file://../ms-dsc"]
+requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,7 +7,9 @@ name = "dsc-test-resource"
 version = "0.1.0"
 description = "Test fixture DSC resources for the Python adapter test suite."
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "ms-dsc>=0.1.0",
+]
 
 [project.entry-points."microsoft.dsc.resources"]
 "DscTest/Get"       = "dsc_test_resource.resources:GetResource"

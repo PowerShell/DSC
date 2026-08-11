@@ -3016,13 +3016,26 @@ function Test-PythonAdapterWithPytest {
         Push-Location $pythonTestDir
         try {
             # Install test fixture if needed
-            if (-not (Test-Path (Join-Path $pythonAdapterRoot 'tests' 'fixture'))) {
+            $fixtureDir = Join-Path $pythonAdapterRoot 'tests' 'fixture'
+            if (-not (Test-Path $fixtureDir)) {
                 Write-Verbose "Python test fixture directory not found"
                 return
             }
             
-            Write-Verbose "Installing Python test fixture package"
-            & $pythonCmd.Source -m pip install -e fixture/ -q --disable-pip-version-check
+            # Resolve to absolute paths
+            $pythonAdapterAbsPath = (Resolve-Path $pythonAdapterRoot).Path
+            $fixtureAbsPath = (Resolve-Path $fixtureDir).Path
+            
+            # Install ms-dsc package first so it's available as a dependency for the fixture
+            Write-Verbose "Installing ms-dsc package from: $pythonAdapterAbsPath"
+            & $pythonCmd.Source -m pip install -e "$pythonAdapterAbsPath" -q --disable-pip-version-check
+            if ($LASTEXITCODE -ne 0) {
+                throw "Python ms-dsc package install failed with exit code $LASTEXITCODE"
+            }
+            
+            # Now install the test fixture which depends on ms-dsc
+            Write-Verbose "Installing Python test fixture package from: $fixtureAbsPath"
+            & $pythonCmd.Source -m pip install -e "$fixtureAbsPath" -q --disable-pip-version-check
             if ($LASTEXITCODE -ne 0) {
                 throw "Python fixture install failed with exit code $LASTEXITCODE"
             }
