@@ -47,3 +47,6 @@ exclude_lines = [
 
 [tool.coverage.html]
 directory = "htmlcov"
+
+[tool.hatch.build.targets.wheel]
+packages = ["pyadapter"]

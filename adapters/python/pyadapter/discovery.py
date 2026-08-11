@@ -57,6 +57,10 @@ def _manifests_for_dist(dist) -> list[dict]:
     """Return manifest path entries for a single distribution."""
     found: list[dict] = []
 
+    # Skip distributions without a name (can happen in some edge cases)
+    if not dist.name:
+        return []
+
     # Derive the importable package name from the distribution name.
     # PEP 503 normalisation: hyphens and dots become underscores.
     pkg_name = dist.name.replace("-", "_").replace(".", "_")
