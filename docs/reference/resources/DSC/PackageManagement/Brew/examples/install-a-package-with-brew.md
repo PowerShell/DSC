@@ -14,7 +14,7 @@ on macOS systems using Brew.
 ## Test if package is installed
 
 The following snippet shows how you can use the resource with the [dsc resource test][00] command
-to check whether the `node` package exists.
+to check whether the `node` package doesn't exist.
 
 ```bash
 dsc resource test --resource DSC.PackageManagement/Brew --input '{"packageName":"node"}'
