@@ -3026,22 +3026,44 @@ function Test-PythonAdapterWithPytest {
             $pythonAdapterAbsPath = (Resolve-Path $pythonAdapterRoot).Path
             $fixtureAbsPath = (Resolve-Path $fixtureDir).Path
             
+            # Create a virtual environment for testing to avoid PEP 668 externally-managed-environment errors
+            $venvPath = Join-Path $pythonTestDir '.venv'
+            Write-Verbose "Creating Python virtual environment at: $venvPath"
+            & $pythonCmd.Source -m venv "$venvPath"
+            if ($LASTEXITCODE -ne 0) {
+                throw "Failed to create virtual environment with exit code $LASTEXITCODE"
+            }
+            
+            # Determine the path to the Python executable in the venv
+            $venvPythonCmd = if ($IsWindows) {
+                Join-Path $venvPath 'Scripts' 'python.exe'
+            } else {
+                Join-Path $venvPath 'bin' 'python'
+            }
+            
+            # Verify venv Python was created successfully
+            if (-not (Test-Path $venvPythonCmd)) {
+                throw "Virtual environment Python executable not found at $venvPythonCmd"
+            }
+            
+            Write-Verbose "Using virtual environment Python: $venvPythonCmd"
+            
             # Install ms-dsc package first so it's available as a dependency for the fixture
             Write-Verbose "Installing ms-dsc package from: $pythonAdapterAbsPath"
-            & $pythonCmd.Source -m pip install -e "$pythonAdapterAbsPath" -q --disable-pip-version-check
+            & $venvPythonCmd -m pip install -e "$pythonAdapterAbsPath" -q --disable-pip-version-check
             if ($LASTEXITCODE -ne 0) {
                 throw "Python ms-dsc package install failed with exit code $LASTEXITCODE"
             }
             
             # Now install the test fixture which depends on ms-dsc
             Write-Verbose "Installing Python test fixture package from: $fixtureAbsPath"
-            & $pythonCmd.Source -m pip install -e "$fixtureAbsPath" -q --disable-pip-version-check
+            & $venvPythonCmd -m pip install -e "$fixtureAbsPath" -q --disable-pip-version-check
             if ($LASTEXITCODE -ne 0) {
                 throw "Python fixture install failed with exit code $LASTEXITCODE"
             }
             
             Write-Verbose "Running pytest with coverage"
-            & $pythonCmd.Source -m pytest unit/ -v --tb=short
+            & $venvPythonCmd -m pytest unit/ -v --tb=short
             
             if ($LASTEXITCODE -ne 0) {
                 throw "Python adapter tests failed with exit code $LASTEXITCODE"
