@@ -6,7 +6,6 @@
             "pyadapter/__init__.py",
             "pyadapter/__main__.py",
             "pyadapter/cli.py",
-            "pyadapter/logging.py",
             "pyadapter/cache.py",
             "pyadapter/discovery.py",
             "pyadapter/schema.py",

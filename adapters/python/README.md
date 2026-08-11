@@ -16,8 +16,7 @@ adapters/python/
 │   ├── router.py     # Operation dispatcher (get/set/test/delete/export)
 │   ├── discovery.py  # Resource discovery (entry points + editable install scanning)
 │   ├── cache.py      # Disk cache keyed by installed-distribution fingerprint
-│   ├── schema.py     # JSON Schema generation (uses ms_dsc.schema providers)
-│   └── logging.py    # DscLogHandler → DSC structured JSON stderr
+│   └── schema.py     # JSON Schema generation (uses ms_dsc.schema providers)
 ├── ms-dsc/                                       # SDK for resource authors (PyPI source)
 │   ├── pyproject.toml
 │   └── ms_dsc/       # See ms-dsc/README.md
