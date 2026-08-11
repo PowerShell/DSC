@@ -37,6 +37,7 @@
       "ms_dsc/",
       "pyadapter/",
       "python.dsc.extension.json",
+      "python3.dsc.extension.json",
       "python.discover.py"
     ],
     "macOS": [
@@ -68,10 +69,11 @@
       "sshd-subsystem.dsc.resource.json",
       "sshd-subsystemList.dsc.resource.json",
       "y2j",
-      "Microsoft.Adapter.Python3.dsc.resource.json",
+      "python3.dsc.resource.json",
       "ms_dsc/",
       "pyadapter/",
       "python.dsc.extension.json",
+      "python3.dsc.extension.json",
       "python.discover.py"
     ],
     "Windows": [

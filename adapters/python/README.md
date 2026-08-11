@@ -10,13 +10,13 @@ for writing Python-based DSC resources.
 adapters/python/
 ├── python.dsc.resource.json   # Adapter manifest (Windows — uses 'python')
 ├── python3.dsc.resource.json  # Adapter manifest (Linux/macOS — uses 'python3')
-├── pyadapter/                 # Adapter implementation (stdlib-only)
+├── pyadapter/                 # Adapter implementation (depends on bundled ms_dsc SDK)
 │   ├── __main__.py   # Entry point: python -m pyadapter [<verb>] or python -m pyadapter.cli <verb>
 │   ├── cli.py        # Argument parser + __main__ guard for -m pyadapter.cli invocation
 │   ├── router.py     # Operation dispatcher (get/set/test/delete/export)
 │   ├── discovery.py  # Resource discovery (entry points + editable install scanning)
 │   ├── cache.py      # Disk cache keyed by installed-distribution fingerprint
-│   ├── schema.py     # Dataclass → JSON Schema generation (standalone, no ms-dsc dep)
+│   ├── schema.py     # JSON Schema generation (uses ms_dsc.schema providers)
 │   └── logging.py    # DscLogHandler → DSC structured JSON stderr
 ├── ms-dsc/                                       # SDK for resource authors (PyPI source)
 │   ├── pyproject.toml

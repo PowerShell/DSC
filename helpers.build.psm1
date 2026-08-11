@@ -3022,16 +3022,19 @@ function Test-PythonAdapterWithPytest {
             }
             
             Write-Verbose "Installing Python test fixture package"
-            & python -m pip install -e fixture/ -q --disable-pip-version-check
+            & $pythonCmd.Source -m pip install -e fixture/ -q --disable-pip-version-check
+            if ($LASTEXITCODE -ne 0) {
+                throw "Python fixture install failed with exit code $LASTEXITCODE"
+            }
             
             Write-Verbose "Running pytest with coverage"
-            & python -m pytest unit/ -v --tb=short
+            & $pythonCmd.Source -m pytest unit/ -v --tb=short
             
             if ($LASTEXITCODE -ne 0) {
-                Write-Error "Python adapter tests failed with exit code $LASTEXITCODE"
-            } else {
-                Write-Verbose "Python adapter tests passed"
+                throw "Python adapter tests failed with exit code $LASTEXITCODE"
             }
+            
+            Write-Verbose "Python adapter tests passed"
         } finally {
             Pop-Location
         }

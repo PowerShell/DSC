@@ -15,7 +15,7 @@ dependencies = []
 dsc-gen = "ms_dsc.cli:main"
 
 [project.entry-points."hatch.build.hook"]
-dsc = "ms_dsc.build.hatchling:DscManifestBuildHook"
+dsc = "ms_dsc.hooks.hatchling:DscManifestBuildHook"
 
 [project.urls]
 Homepage = "https://github.com/PowerShell/DSC"
