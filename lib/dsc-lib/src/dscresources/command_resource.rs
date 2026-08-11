@@ -454,9 +454,13 @@ fn invoke_synthetic_test(resource: &DscResource, expected: &str, target_resource
         }
     };
     let expected_value: Value = serde_json::from_str(expected)?;
-    let schema: Option<Value> = get_schema(resource, target_resource)
-        .ok()
-        .and_then(|s| serde_json::from_str(&s).ok());
+    let cached_resource = target_resource.unwrap_or(resource);
+    let schema: Option<Value> = get_resource_schema(&cached_resource.type_name, &cached_resource.version)
+        .or_else(|| {
+            // Populate the cache on a miss, then read from cache
+            get_schema(resource, target_resource).ok();
+            get_resource_schema(&cached_resource.type_name, &cached_resource.version)
+        });
     let diff_properties = get_diff_with_schema(&expected_value, &actual_state, schema.as_ref());
     Ok(TestResult::Resource(ResourceTestResponse {
         desired_state: expected_value,

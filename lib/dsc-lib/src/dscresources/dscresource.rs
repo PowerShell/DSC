@@ -669,7 +669,7 @@ pub fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
 /// # Returns
 ///
 /// An array of top level properties that differ, if any
-pub fn get_diff_with_schema(expected: &Value, actual: &Value, schema: Option<&Value>) -> Vec<String> {
+pub(crate) fn get_diff_with_schema(expected: &Value, actual: &Value, schema: Option<&Value>) -> Vec<String> {
     let mut diff_properties: Vec<String> = Vec::new();
     if expected.is_null() {
         return diff_properties;
