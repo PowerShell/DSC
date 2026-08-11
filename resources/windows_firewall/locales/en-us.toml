@@ -26,8 +26,10 @@ ruleUpdateFailed = "Failed to update firewall rule '%{name}': %{error}"
 ruleReadFailed = "Failed to read firewall rule '%{name}': %{error}"
 portsNotAllowed = "Ports cannot be specified for firewall rule '%{name}' because protocol %{protocol} does not support ports"
 invalidProfiles = "Invalid profiles value '%{value}'. Valid values are Domain, Private, Public, or All"
+emptyUnspecifiedProfiles = "The unspecified rules profiles filter cannot be empty"
 invalidInterfaceType = "Invalid interface type '%{value}'. Valid values are RemoteAccess, Wireless, Lan, or All"
 invalidProtocol = "Invalid protocol number '%{value}'. Must be between 0 and 256"
+variantClearFailed = "Warning: VariantClear failed with HRESULT: %{hresult}"
 
 [firewall_helper]
 whatIfCreateRule = "Would create firewall rule '%{name}'"

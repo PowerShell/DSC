@@ -265,6 +265,20 @@ Describe 'Microsoft.Windows/FirewallRuleList - unspecifiedRules (what-if)' -Skip
         Get-Content -Raw $testdrive/error.log | Should -Match 'action'
     }
 
+    It 'rejects an empty unspecifiedRules profiles filter' -Skip:(!$isElevated) {
+        $json = @{
+            unspecifiedRules = @{
+                action = 'disable'
+                profiles = @()
+            }
+            rules = @()
+        } | ConvertTo-Json -Compress -Depth 5
+
+        $json | dsc resource set -r 'Microsoft.Windows/FirewallRuleList' -f - 2>$testdrive/error.log | Out-Null
+        $LASTEXITCODE | Should -Not -Be 0
+        Get-Content -Raw $testdrive/error.log | Should -Match 'profiles'
+    }
+
     It 'filters unspecified rules by <Direction> direction' -ForEach @(
         @{
             Direction = 'Inbound'

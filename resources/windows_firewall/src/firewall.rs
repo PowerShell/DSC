@@ -38,10 +38,13 @@ impl SafeVariant {
 impl Drop for SafeVariant {
     fn drop(&mut self) {
         if let Err(e) = unsafe { VariantClear(&mut self.0) } {
-            crate::write_error(&format!(
-                "Warning: VariantClear failed with HRESULT: {:#010x}",
-                e.code().0 as u32
-            ));
+            crate::write_error(
+                t!(
+                    "firewall.variantClearFailed",
+                    hresult = format!("{:#010x}", e.code().0 as u32)
+                )
+                .as_ref(),
+            );
         }
     }
 }
@@ -264,6 +267,9 @@ fn rule_matches_unspecified_scope(
     }
 
     if let Some(profiles) = unspecified_rules.profiles.as_ref() {
+        if profiles.is_empty() {
+            return Err(t!("firewall.emptyUnspecifiedProfiles").to_string().into());
+        }
         let requested_mask = profiles_to_mask(profiles)?;
         let rule_mask = profiles_to_mask(rule.profiles.as_deref().unwrap_or_default())?;
         if requested_mask & rule_mask == 0 {
@@ -830,6 +836,16 @@ mod tests {
         assert!(
             rule_matches_unspecified_scope(&rule(RuleDirection::Inbound, &["All"]), &filter)
                 .unwrap()
+        );
+    }
+
+    #[test]
+    fn unspecified_rule_profile_scope_rejects_empty_filter() {
+        let filter = scope(None, Some(&[]));
+
+        assert!(
+            rule_matches_unspecified_scope(&rule(RuleDirection::Inbound, &["Domain"]), &filter)
+                .is_err()
         );
     }
 }

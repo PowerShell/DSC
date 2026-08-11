@@ -91,6 +91,7 @@
                             "type": "array",
                             "title": "Profiles",
                             "description": "Limits the action to unspecified rules that apply to any of these firewall profiles.",
+                            "minItems": 1,
                             "items": {
                                 "type": "string",
                                 "enum": [
