@@ -46,10 +46,11 @@ Describe 'Microsoft.Windows/FirewallRuleList - set operation' -Skip:(!$isElevate
         $LASTEXITCODE | Should -Not -Be 0
     }
 
-    It 'fails when rules array is empty' -Skip:(!$isElevated) {
+    It 'accepts an empty rules array' -Skip:(!$isElevated) {
         $json = '{"rules":[]}'
-        $out = $json | dsc resource set -r $resourceType -f - 2>&1
-        $LASTEXITCODE | Should -Not -Be 0
+        $out = $json | dsc resource set -r $resourceType -f - 2>$testdrive/error.log
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
+        ($out | ConvertFrom-Json).afterState.rules | Should -BeNullOrEmpty
     }
 
     It 'updates an existing rule' -Skip:(!$isElevated) {
@@ -146,7 +147,7 @@ Describe 'Microsoft.Windows/FirewallRuleList - set operation' -Skip:(!$isElevate
     }
 }
 
-Describe 'Microsoft.Windows/FirewallRuleList - unspecifiedRulesAction (what-if)' -Skip:(!$isElevated) {
+Describe 'Microsoft.Windows/FirewallRuleList - unspecifiedRules (what-if)' -Skip:(!$isElevated) {
     BeforeDiscovery {
         $isElevated = if ($IsWindows) {
             ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
@@ -158,6 +159,10 @@ Describe 'Microsoft.Windows/FirewallRuleList - unspecifiedRulesAction (what-if)'
 
     BeforeAll {
         $testRuleName = 'DSC-WindowsFirewall-Unspecified-Test'
+        $inboundDomainRule = 'DSC-WindowsFirewall-Scope-Inbound-Domain'
+        $outboundDomainRule = 'DSC-WindowsFirewall-Scope-Outbound-Domain'
+        $inboundPrivateRule = 'DSC-WindowsFirewall-Scope-Inbound-Private'
+        $allProfilesRule = 'DSC-WindowsFirewall-Scope-Inbound-All'
 
         function Initialize-TestFirewallRule {
             $existing = Get-NetFirewallRule -Name $testRuleName -ErrorAction SilentlyContinue
@@ -168,19 +173,49 @@ Describe 'Microsoft.Windows/FirewallRuleList - unspecifiedRulesAction (what-if)'
             }
         }
 
+        function Initialize-ScopeFirewallRules {
+            Remove-NetFirewallRule -Name 'DSC-WindowsFirewall-Scope-*' -ErrorAction SilentlyContinue
+            New-NetFirewallRule -Name $inboundDomainRule -DisplayName $inboundDomainRule -Direction Inbound -Profile Domain -Action Allow -Enabled True | Out-Null
+            New-NetFirewallRule -Name $outboundDomainRule -DisplayName $outboundDomainRule -Direction Outbound -Profile Domain -Action Allow -Enabled True | Out-Null
+            New-NetFirewallRule -Name $inboundPrivateRule -DisplayName $inboundPrivateRule -Direction Inbound -Profile Private -Action Allow -Enabled True | Out-Null
+            New-NetFirewallRule -Name $allProfilesRule -DisplayName $allProfilesRule -Direction Inbound -Profile Any -Action Allow -Enabled True | Out-Null
+        }
+
+        function Get-UnspecifiedWhatIfRuleNames {
+            param(
+                [Parameter(Mandatory)]
+                [hashtable]$UnspecifiedRules,
+
+                [array]$Rules = @()
+            )
+
+            $json = @{
+                unspecifiedRules = $UnspecifiedRules
+                rules = $Rules
+            } | ConvertTo-Json -Compress -Depth 5
+
+            $result = windows_firewall set -w --input $json 2>$testdrive/error.log | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
+
+            return @($result.rules |
+                Where-Object { $_._metadata.whatIf -match 'Would (disable|remove) unspecified firewall rule' } |
+                ForEach-Object { $_.name })
+        }
+
         Initialize-TestFirewallRule
     }
 
     AfterAll {
         Remove-NetFirewallRule -Name $testRuleName -ErrorAction SilentlyContinue
+        Remove-NetFirewallRule -Name 'DSC-WindowsFirewall-Scope-*' -ErrorAction SilentlyContinue
     }
 
-    It 'does not affect unspecified rules when unspecifiedRulesAction is ignore' -Skip:(!$isElevated) {
+    It 'does not affect unspecified rules when action is ignore' -Skip:(!$isElevated) {
         Initialize-TestFirewallRule
 
         # Specify a different rule name so $testRuleName is "unspecified"
         $json = @{
-            unspecifiedRulesAction = 'ignore'
+            unspecifiedRules = @{ action = 'ignore' }
             rules = @(@{
                 name      = 'SomeOtherRuleThatMayNotExist'
                 direction = 'Inbound'
@@ -198,7 +233,7 @@ Describe 'Microsoft.Windows/FirewallRuleList - unspecifiedRulesAction (what-if)'
         $unspecifiedEntries | Should -BeNullOrEmpty
     }
 
-    It 'does not affect unspecified rules when unspecifiedRulesAction is omitted' -Skip:(!$isElevated) {
+    It 'does not affect unspecified rules when unspecifiedRules is omitted' -Skip:(!$isElevated) {
         Initialize-TestFirewallRule
 
         $json = @{
@@ -219,12 +254,121 @@ Describe 'Microsoft.Windows/FirewallRuleList - unspecifiedRulesAction (what-if)'
         $unspecifiedEntries | Should -BeNullOrEmpty
     }
 
-    It 'reports would disable unspecified rules when unspecifiedRulesAction is disable' -Skip:(!$isElevated) {
+    It 'requires action when unspecifiedRules is used' -Skip:(!$isElevated) {
+        $json = @{
+            unspecifiedRules = @{ direction = 'Inbound' }
+            rules = @()
+        } | ConvertTo-Json -Compress -Depth 5
+
+        $json | dsc resource set -r 'Microsoft.Windows/FirewallRuleList' -f - 2>$testdrive/error.log | Out-Null
+        $LASTEXITCODE | Should -Not -Be 0
+        Get-Content -Raw $testdrive/error.log | Should -Match 'action'
+    }
+
+    It 'filters unspecified rules by <Direction> direction' -ForEach @(
+        @{
+            Direction = 'Inbound'
+            IncludedRules = @(
+                'DSC-WindowsFirewall-Scope-Inbound-Domain'
+                'DSC-WindowsFirewall-Scope-Inbound-Private'
+            )
+            ExcludedRule = 'DSC-WindowsFirewall-Scope-Outbound-Domain'
+        }
+        @{
+            Direction = 'Outbound'
+            IncludedRules = @('DSC-WindowsFirewall-Scope-Outbound-Domain')
+            ExcludedRule = 'DSC-WindowsFirewall-Scope-Inbound-Domain'
+        }
+    ) -Skip:(!$isElevated) {
+        Initialize-ScopeFirewallRules
+
+        $affectedNames = Get-UnspecifiedWhatIfRuleNames -UnspecifiedRules @{
+            action = 'disable'
+            direction = $Direction
+        }
+
+        foreach ($includedRule in $IncludedRules) {
+            $affectedNames | Should -Contain $includedRule
+        }
+        $affectedNames | Should -Not -Contain $ExcludedRule
+    }
+
+    It 'filters unspecified rules by profiles and includes rules that apply to all profiles' -Skip:(!$isElevated) {
+        Initialize-ScopeFirewallRules
+
+        $affectedNames = Get-UnspecifiedWhatIfRuleNames -UnspecifiedRules @{
+            action = 'disable'
+            profiles = @('Domain')
+        }
+
+        $affectedNames | Should -Contain $inboundDomainRule
+        $affectedNames | Should -Contain $outboundDomainRule
+        $affectedNames | Should -Contain $allProfilesRule
+        $affectedNames | Should -Not -Contain $inboundPrivateRule
+    }
+
+    It 'matches any profile listed in the profiles filter' -Skip:(!$isElevated) {
+        Initialize-ScopeFirewallRules
+
+        $affectedNames = Get-UnspecifiedWhatIfRuleNames -UnspecifiedRules @{
+            action = 'disable'
+            profiles = @('Domain', 'Private')
+        }
+
+        $affectedNames | Should -Contain $inboundDomainRule
+        $affectedNames | Should -Contain $outboundDomainRule
+        $affectedNames | Should -Contain $inboundPrivateRule
+    }
+
+    It 'combines direction and profiles when filtering unspecified rules' -Skip:(!$isElevated) {
+        Initialize-ScopeFirewallRules
+
+        $affectedNames = Get-UnspecifiedWhatIfRuleNames -UnspecifiedRules @{
+            action = 'disable'
+            direction = 'Inbound'
+            profiles = @('Domain')
+        }
+
+        $affectedNames | Should -Contain $inboundDomainRule
+        $affectedNames | Should -Contain $allProfilesRule
+        $affectedNames | Should -Not -Contain $outboundDomainRule
+        $affectedNames | Should -Not -Contain $inboundPrivateRule
+    }
+
+    It 'applies remove to an empty rules list only within the filtered scope' -Skip:(!$isElevated) {
+        Initialize-ScopeFirewallRules
+
+        $affectedNames = Get-UnspecifiedWhatIfRuleNames -UnspecifiedRules @{
+            action = 'remove'
+            direction = 'Outbound'
+            profiles = @('Domain')
+        }
+
+        $affectedNames | Should -Contain $outboundDomainRule
+        $affectedNames | Should -Not -Contain $inboundDomainRule
+        $affectedNames | Should -Not -Contain $inboundPrivateRule
+        $affectedNames | Should -Not -Contain $allProfilesRule
+    }
+
+    It 'does not act on a declared rule that matches the unspecified rule scope' -Skip:(!$isElevated) {
+        Initialize-ScopeFirewallRules
+
+        $affectedNames = Get-UnspecifiedWhatIfRuleNames -UnspecifiedRules @{
+            action = 'disable'
+            direction = 'Inbound'
+            profiles = @('Domain')
+        } -Rules @(@{ name = $inboundDomainRule })
+
+        $affectedNames | Should -Not -Contain $inboundDomainRule
+        $affectedNames | Should -Contain $allProfilesRule
+    }
+
+    It 'reports would disable unspecified rules when action is disable' -Skip:(!$isElevated) {
         Initialize-TestFirewallRule
 
         # Specify only testRuleName; all other rules are "unspecified" and should be disabled
         $json = @{
-            unspecifiedRulesAction = 'disable'
+            unspecifiedRules = @{ action = 'disable' }
             rules = @(@{
                 name    = $testRuleName
                 enabled = $true
@@ -252,7 +396,7 @@ Describe 'Microsoft.Windows/FirewallRuleList - unspecifiedRulesAction (what-if)'
         $actual.Enabled | Should -Be 'True'
     }
 
-    It 'skips already-disabled rules when unspecifiedRulesAction is disable' -Skip:(!$isElevated) {
+    It 'skips already-disabled rules when action is disable' -Skip:(!$isElevated) {
         Initialize-TestFirewallRule
         # Disable the test rule so it is already disabled
         Set-NetFirewallRule -Name $testRuleName -Enabled False
@@ -262,7 +406,7 @@ Describe 'Microsoft.Windows/FirewallRuleList - unspecifiedRulesAction (what-if)'
         New-NetFirewallRule -Name $otherRuleName -DisplayName $otherRuleName -Direction Inbound -Action Allow -Protocol TCP -LocalPort 32790 -Enabled True -ErrorAction SilentlyContinue | Out-Null
 
         $json = @{
-            unspecifiedRulesAction = 'disable'
+            unspecifiedRules = @{ action = 'disable' }
             rules = @(@{
                 name    = $otherRuleName
                 enabled = $true
@@ -279,7 +423,7 @@ Describe 'Microsoft.Windows/FirewallRuleList - unspecifiedRulesAction (what-if)'
         Remove-NetFirewallRule -Name $otherRuleName -ErrorAction SilentlyContinue
     }
 
-    It 'reports would remove unspecified rules when unspecifiedRulesAction is remove' -Skip:(!$isElevated) {
+    It 'reports would remove unspecified rules when action is remove' -Skip:(!$isElevated) {
         Initialize-TestFirewallRule
 
         # Specify a different rule so testRuleName is "unspecified"
@@ -287,7 +431,7 @@ Describe 'Microsoft.Windows/FirewallRuleList - unspecifiedRulesAction (what-if)'
         $knownRule = (Get-NetFirewallRule | Select-Object -First 1).Name
 
         $json = @{
-            unspecifiedRulesAction = 'remove'
+            unspecifiedRules = @{ action = 'remove' }
             rules = @(@{
                 name    = $knownRule
                 enabled = $true

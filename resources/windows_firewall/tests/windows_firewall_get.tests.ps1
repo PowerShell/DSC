@@ -56,10 +56,11 @@ Describe 'Microsoft.Windows/FirewallRuleList - get operation' -Skip:(!$IsWindows
         $result.PSObject.Properties.Name | Should -Not -Contain 'direction'
     }
 
-    It 'fails when rules array is empty' {
+    It 'accepts an empty rules array' {
         $json = '{"rules":[]}'
-        $out = $json | dsc resource get -r $resourceType -f - 2>&1
-        $LASTEXITCODE | Should -Not -Be 0
+        $out = $json | dsc resource get -r $resourceType -f - 2>$testdrive/error.log
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
+        ($out | ConvertFrom-Json).actualState.rules | Should -BeNullOrEmpty
     }
 
     It 'handles multiple rules in a single request' {

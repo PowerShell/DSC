@@ -6,7 +6,7 @@
         "Windows",
         "Firewall"
     ],
-    "version": "0.2.1",
+    "version": "0.3.0",
     "get": {
         "executable": "windows_firewall",
         "args": [
@@ -59,16 +59,49 @@
                 "rules"
             ],
             "properties": {
-                "unspecifiedRulesAction": {
-                    "type": "string",
-                    "title": "Unspecified rules action",
-                    "description": "The action to take on firewall rules not explicitly listed in the rules array. 'ignore' (default) leaves them unchanged, 'disable' disables them, and 'remove' deletes them.",
-                    "default": "ignore",
-                    "enum": [
-                        "ignore",
-                        "disable",
-                        "remove"
-                    ]
+                "unspecifiedRules": {
+                    "type": "object",
+                    "title": "Unspecified rules",
+                    "description": "Defines the action and optional scope for firewall rules not explicitly listed in the rules array. When both direction and profiles are specified, a rule must match both filters.",
+                    "additionalProperties": false,
+                    "required": [
+                        "action"
+                    ],
+                    "properties": {
+                        "action": {
+                            "type": "string",
+                            "title": "Action",
+                            "description": "The action to take on matching unspecified firewall rules. 'ignore' leaves them unchanged, 'disable' disables them, and 'remove' deletes them.",
+                            "enum": [
+                                "ignore",
+                                "disable",
+                                "remove"
+                            ]
+                        },
+                        "direction": {
+                            "type": "string",
+                            "title": "Direction",
+                            "description": "Limits the action to unspecified rules with this traffic direction.",
+                            "enum": [
+                                "Inbound",
+                                "Outbound"
+                            ]
+                        },
+                        "profiles": {
+                            "type": "array",
+                            "title": "Profiles",
+                            "description": "Limits the action to unspecified rules that apply to any of these firewall profiles.",
+                            "items": {
+                                "type": "string",
+                                "enum": [
+                                    "Domain",
+                                    "Private",
+                                    "Public",
+                                    "All"
+                                ]
+                            }
+                        }
+                    }
                 },
                 "rules": {
                     "type": "array",

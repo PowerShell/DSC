@@ -2,15 +2,21 @@
 // Licensed under the MIT License.
 
 use rust_i18n::t;
-use windows::core::{BSTR, Interface};
-use windows::core::HRESULT;
 use windows::Win32::Foundation::{S_FALSE, VARIANT_BOOL};
 use windows::Win32::NetworkManagement::WindowsFirewall::*;
-use windows::Win32::System::Com::{CLSCTX_INPROC_SERVER, CoCreateInstance, CoInitializeEx, CoUninitialize, IDispatch, COINIT_APARTMENTTHREADED};
+use windows::Win32::System::Com::{
+    CLSCTX_INPROC_SERVER, COINIT_APARTMENTTHREADED, CoCreateInstance, CoInitializeEx,
+    CoUninitialize, IDispatch,
+};
 use windows::Win32::System::Ole::IEnumVARIANT;
 use windows::Win32::System::Variant::{VARIANT, VariantClear};
+use windows::core::HRESULT;
+use windows::core::{BSTR, Interface};
 
-use crate::types::{FirewallError, FirewallRule, FirewallRuleList, Metadata, RuleAction, RuleDirection, UnspecifiedRulesAction};
+use crate::types::{
+    FirewallError, FirewallRule, FirewallRuleList, Metadata, RuleAction, RuleDirection,
+    UnspecifiedRuleAction, UnspecifiedRules,
+};
 
 /// RAII wrapper for VARIANT that automatically calls VariantClear on drop
 struct SafeVariant(VARIANT);
@@ -32,7 +38,10 @@ impl SafeVariant {
 impl Drop for SafeVariant {
     fn drop(&mut self) {
         if let Err(e) = unsafe { VariantClear(&mut self.0) } {
-            crate::write_error(&format!("Warning: VariantClear failed with HRESULT: {:#010x}", e.code().0 as u32));
+            crate::write_error(&format!(
+                "Warning: VariantClear failed with HRESULT: {:#010x}",
+                e.code().0 as u32
+            ));
         }
     }
 }
@@ -62,36 +71,46 @@ struct FirewallStore {
 impl FirewallStore {
     fn open() -> Result<Self, FirewallError> {
         let com = ComGuard::new()?;
-        let policy: INetFwPolicy2 = unsafe { CoCreateInstance(&NetFwPolicy2, None, CLSCTX_INPROC_SERVER) }
-            .map_err(|error| t!("firewall.policyOpenFailed", error = error.to_string()).to_string())?;
-        let rules = unsafe { policy.Rules() }
-            .map_err(|error| t!("firewall.policyOpenFailed", error = error.to_string()).to_string())?;
+        let policy: INetFwPolicy2 =
+            unsafe { CoCreateInstance(&NetFwPolicy2, None, CLSCTX_INPROC_SERVER) }.map_err(
+                |error| t!("firewall.policyOpenFailed", error = error.to_string()).to_string(),
+            )?;
+        let rules = unsafe { policy.Rules() }.map_err(|error| {
+            t!("firewall.policyOpenFailed", error = error.to_string()).to_string()
+        })?;
         Ok(Self { rules, _com: com })
     }
 
     fn enumerate_rules(&self) -> Result<Vec<INetFwRule>, FirewallError> {
-        let enumerator = unsafe { self.rules._NewEnum() }
-            .map_err(|error| t!("firewall.ruleEnumerationFailed", error = error.to_string()).to_string())?;
-        let enum_variant: IEnumVARIANT = enumerator
-            .cast()
-            .map_err(|error| t!("firewall.ruleEnumerationFailed", error = error.to_string()).to_string())?;
+        let enumerator = unsafe { self.rules._NewEnum() }.map_err(|error| {
+            t!("firewall.ruleEnumerationFailed", error = error.to_string()).to_string()
+        })?;
+        let enum_variant: IEnumVARIANT = enumerator.cast().map_err(|error| {
+            t!("firewall.ruleEnumerationFailed", error = error.to_string()).to_string()
+        })?;
 
         let mut results = Vec::new();
         loop {
             let mut fetched = 0u32;
             let mut safe_variant = SafeVariant::new();
-            let hr = unsafe { enum_variant.Next(std::slice::from_mut(safe_variant.as_mut()), &mut fetched) };
+            let hr = unsafe {
+                enum_variant.Next(std::slice::from_mut(safe_variant.as_mut()), &mut fetched)
+            };
             if hr == S_FALSE || fetched == 0 {
                 break;
             }
-            hr.ok()
-                .map_err(|error| t!("firewall.ruleEnumerationFailed", error = error.to_string()).to_string())?;
+            hr.ok().map_err(|error| {
+                t!("firewall.ruleEnumerationFailed", error = error.to_string()).to_string()
+            })?;
 
-            let dispatch = IDispatch::try_from(safe_variant.as_ref())
-                .map_err(|error: windows::core::Error| t!("firewall.ruleEnumerationFailed", error = error.to_string()).to_string())?;
-            let rule: INetFwRule = dispatch
-                .cast()
-                .map_err(|error| t!("firewall.ruleEnumerationFailed", error = error.to_string()).to_string())?;
+            let dispatch = IDispatch::try_from(safe_variant.as_ref()).map_err(
+                |error: windows::core::Error| {
+                    t!("firewall.ruleEnumerationFailed", error = error.to_string()).to_string()
+                },
+            )?;
+            let rule: INetFwRule = dispatch.cast().map_err(|error| {
+                t!("firewall.ruleEnumerationFailed", error = error.to_string()).to_string()
+            })?;
             results.push(rule);
 
             // SafeVariant will automatically call VariantClear when it goes out of scope
@@ -100,7 +119,10 @@ impl FirewallStore {
         Ok(results)
     }
 
-    fn find_by_selector(&self, selector: &FirewallRule) -> Result<Option<INetFwRule>, FirewallError> {
+    fn find_by_selector(
+        &self,
+        selector: &FirewallRule,
+    ) -> Result<Option<INetFwRule>, FirewallError> {
         // HRESULT 0x80070002 is HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND), returned when the
         // rule name does not match any existing rule.
         const HRESULT_FILE_NOT_FOUND: HRESULT = HRESULT(0x80070002_u32 as i32);
@@ -112,19 +134,34 @@ impl FirewallStore {
         match unsafe { self.rules.Item(&BSTR::from(lookup_name)) } {
             Ok(rule) => Ok(Some(rule)),
             Err(e) if e.code() == HRESULT_FILE_NOT_FOUND => Ok(None),
-            Err(e) => Err(t!("firewall.ruleLookupFailed", name = lookup_name, error = e.to_string()).to_string().into()),
+            Err(e) => Err(t!(
+                "firewall.ruleLookupFailed",
+                name = lookup_name,
+                error = e.to_string()
+            )
+            .to_string()
+            .into()),
         }
     }
 
     fn remove_rule(&self, rule_name: &str) -> Result<(), FirewallError> {
-        unsafe { self.rules.Remove(&BSTR::from(rule_name)) }
-            .map_err(|error| t!("firewall.ruleRemoveFailed", name = rule_name, error = error.to_string()).to_string())?;
+        unsafe { self.rules.Remove(&BSTR::from(rule_name)) }.map_err(|error| {
+            t!(
+                "firewall.ruleRemoveFailed",
+                name = rule_name,
+                error = error.to_string()
+            )
+            .to_string()
+        })?;
         Ok(())
     }
 
     fn create_rule_object(&self) -> Result<INetFwRule, FirewallError> {
-        unsafe { CoCreateInstance(&NetFwRule, None, CLSCTX_INPROC_SERVER) }
-            .map_err(|error| t!("firewall.ruleCreateFailed", error = error.to_string()).to_string().into())
+        unsafe { CoCreateInstance(&NetFwRule, None, CLSCTX_INPROC_SERVER) }.map_err(|error| {
+            t!("firewall.ruleCreateFailed", error = error.to_string())
+                .to_string()
+                .into()
+        })
     }
 }
 
@@ -206,20 +243,47 @@ fn profiles_to_mask(values: &[String]) -> Result<i32, FirewallError> {
             "domain" => mask |= NET_FW_PROFILE2_DOMAIN.0,
             "private" => mask |= NET_FW_PROFILE2_PRIVATE.0,
             "public" => mask |= NET_FW_PROFILE2_PUBLIC.0,
-            _ => return Err(t!("firewall.invalidProfiles", value = value).to_string().into()),
+            _ => {
+                return Err(t!("firewall.invalidProfiles", value = value)
+                    .to_string()
+                    .into());
+            }
         }
     }
     Ok(mask)
 }
 
+fn rule_matches_unspecified_scope(
+    rule: &FirewallRule,
+    unspecified_rules: &UnspecifiedRules,
+) -> Result<bool, FirewallError> {
+    if let Some(direction) = unspecified_rules.direction.as_ref()
+        && rule.direction.as_ref() != Some(direction)
+    {
+        return Ok(false);
+    }
+
+    if let Some(profiles) = unspecified_rules.profiles.as_ref() {
+        let requested_mask = profiles_to_mask(profiles)?;
+        let rule_mask = profiles_to_mask(rule.profiles.as_deref().unwrap_or_default())?;
+        if requested_mask & rule_mask == 0 {
+            return Ok(false);
+        }
+    }
+
+    Ok(true)
+}
+
 fn split_csv(value: Option<String>) -> Option<Vec<String>> {
-    value.map(|raw| {
-        raw.split(',')
-            .map(str::trim)
-            .filter(|entry| !entry.is_empty())
-            .map(ToOwned::to_owned)
-            .collect::<Vec<String>>()
-    }).filter(|items| !items.is_empty())
+    value
+        .map(|raw| {
+            raw.split(',')
+                .map(str::trim)
+                .filter(|entry| !entry.is_empty())
+                .map(ToOwned::to_owned)
+                .collect::<Vec<String>>()
+        })
+        .filter(|items| !items.is_empty())
 }
 
 fn join_csv(value: &[String]) -> String {
@@ -238,7 +302,11 @@ fn interface_types_to_string(values: &[String]) -> Result<String, FirewallError>
             "remoteaccess" => normalized.push("RemoteAccess".to_string()),
             "wireless" => normalized.push("Wireless".to_string()),
             "lan" => normalized.push("Lan".to_string()),
-            _ => return Err(t!("firewall.invalidInterfaceType", value = value).to_string().into()),
+            _ => {
+                return Err(t!("firewall.invalidInterfaceType", value = value)
+                    .to_string()
+                    .into());
+            }
         }
     }
     Ok(join_csv(&normalized))
@@ -251,21 +319,46 @@ fn protocol_supports_ports(protocol: i32) -> bool {
 fn validate_protocol(protocol: i32) -> Result<(), FirewallError> {
     // IANA protocol numbers 0-255 plus the Windows-specific 256 (Any)
     if !(0..=256).contains(&protocol) {
-        return Err(t!("firewall.invalidProtocol", value = protocol).to_string().into());
+        return Err(t!("firewall.invalidProtocol", value = protocol)
+            .to_string()
+            .into());
     }
     Ok(())
 }
 
 fn map_update_err(name: &str) -> impl Fn(windows::core::Error) -> FirewallError + '_ {
-    move |error| t!("firewall.ruleUpdateFailed", name = name, error = error.to_string()).to_string().into()
+    move |error| {
+        t!(
+            "firewall.ruleUpdateFailed",
+            name = name,
+            error = error.to_string()
+        )
+        .to_string()
+        .into()
+    }
 }
 
 fn map_read_err(name: &str) -> impl Fn(windows::core::Error) -> FirewallError + '_ {
-    move |error| t!("firewall.ruleReadFailed", name = name, error = error.to_string()).to_string().into()
+    move |error| {
+        t!(
+            "firewall.ruleReadFailed",
+            name = name,
+            error = error.to_string()
+        )
+        .to_string()
+        .into()
+    }
 }
 
 fn rule_to_model(rule: &INetFwRule) -> Result<FirewallRule, FirewallError> {
-    let name = unsafe { rule.Name() }.map_err(|error| t!("firewall.ruleReadFailed", name = "<unknown>", error = error.to_string()).to_string())?;
+    let name = unsafe { rule.Name() }.map_err(|error| {
+        t!(
+            "firewall.ruleReadFailed",
+            name = "<unknown>",
+            error = error.to_string()
+        )
+        .to_string()
+    })?;
     let name = name.to_string();
     let err = map_read_err(&name);
     let profiles = profiles_from_mask(unsafe { rule.Profiles() }.map_err(&err)?);
@@ -287,12 +380,18 @@ fn rule_to_model(rule: &INetFwRule) -> Result<FirewallRule, FirewallError> {
         enabled: Some(unsafe { rule.Enabled() }.map_err(&err)?.as_bool()),
         profiles: Some(profiles),
         grouping: bstr_to_option(unsafe { rule.Grouping() }.map_err(&err)?)?,
-        interface_types: split_csv(bstr_to_option(unsafe { rule.InterfaceTypes() }.map_err(&err)?)?),
+        interface_types: split_csv(bstr_to_option(
+            unsafe { rule.InterfaceTypes() }.map_err(&err)?,
+        )?),
         edge_traversal: Some(unsafe { rule.EdgeTraversal() }.map_err(&err)?.as_bool()),
     })
 }
 
-fn apply_rule_properties(rule: &INetFwRule, desired: &FirewallRule, existing_protocol: Option<i32>) -> Result<(), FirewallError> {
+fn apply_rule_properties(
+    rule: &INetFwRule,
+    desired: &FirewallRule,
+    existing_protocol: Option<i32>,
+) -> Result<(), FirewallError> {
     let name = desired.selector_name().unwrap_or("<unknown>");
     let err = map_update_err(name);
 
@@ -315,20 +414,27 @@ fn apply_rule_properties(rule: &INetFwRule, desired: &FirewallRule, existing_pro
     // because the caller may only be setting local_ports or remote_ports.
     if let Some(protocol) = effective_protocol
         && !protocol_supports_ports(protocol)
-        && (desired.local_ports.is_some() || desired.remote_ports.is_some()) {
-            return Err(t!("firewall.portsNotAllowed", name = name, protocol = protocol).to_string().into());
-        }
+        && (desired.local_ports.is_some() || desired.remote_ports.is_some())
+    {
+        return Err(
+            t!("firewall.portsNotAllowed", name = name, protocol = protocol)
+                .to_string()
+                .into(),
+        );
+    }
 
     if let Some(protocol) = desired.protocol {
         if let Some(current_protocol) = existing_protocol
-            && current_protocol != protocol && !protocol_supports_ports(protocol) {
-                if desired.local_ports.is_none() {
-                    unsafe { rule.SetLocalPorts(&BSTR::from("")) }.map_err(&err)?;
-                }
-                if desired.remote_ports.is_none() {
-                    unsafe { rule.SetRemotePorts(&BSTR::from("")) }.map_err(&err)?;
-                }
+            && current_protocol != protocol
+            && !protocol_supports_ports(protocol)
+        {
+            if desired.local_ports.is_none() {
+                unsafe { rule.SetLocalPorts(&BSTR::from("")) }.map_err(&err)?;
             }
+            if desired.remote_ports.is_none() {
+                unsafe { rule.SetRemotePorts(&BSTR::from("")) }.map_err(&err)?;
+            }
+        }
         unsafe { rule.SetProtocol(protocol) }.map_err(&err)?;
     }
 
@@ -381,10 +487,6 @@ fn apply_rule_properties(rule: &INetFwRule, desired: &FirewallRule, existing_pro
 }
 
 pub fn get_rules(input: &FirewallRuleList) -> Result<FirewallRuleList, FirewallError> {
-    if input.rules.is_empty() {
-        return Err(t!("get.rulesArrayEmpty").to_string().into());
-    }
-
     let store = FirewallStore::open()?;
     let mut results = Vec::new();
 
@@ -399,7 +501,10 @@ pub fn get_rules(input: &FirewallRuleList) -> Result<FirewallRuleList, FirewallE
         }
     }
 
-    Ok(FirewallRuleList { rules: results, unspecified_rules_action: None })
+    Ok(FirewallRuleList {
+        rules: results,
+        unspecified_rules: None,
+    })
 }
 
 fn project_rule(current: &FirewallRule, desired: &FirewallRule) -> FirewallRule {
@@ -407,29 +512,61 @@ fn project_rule(current: &FirewallRule, desired: &FirewallRule) -> FirewallRule 
         name: current.name.clone(),
         exist: None,
         metadata: None,
-        description: desired.description.clone().or_else(|| current.description.clone()),
-        application_name: desired.application_name.clone().or_else(|| current.application_name.clone()),
-        service_name: desired.service_name.clone().or_else(|| current.service_name.clone()),
+        description: desired
+            .description
+            .clone()
+            .or_else(|| current.description.clone()),
+        application_name: desired
+            .application_name
+            .clone()
+            .or_else(|| current.application_name.clone()),
+        service_name: desired
+            .service_name
+            .clone()
+            .or_else(|| current.service_name.clone()),
         protocol: desired.protocol.or(current.protocol),
-        local_ports: desired.local_ports.clone().or_else(|| current.local_ports.clone()),
-        remote_ports: desired.remote_ports.clone().or_else(|| current.remote_ports.clone()),
-        local_addresses: desired.local_addresses.clone().or_else(|| current.local_addresses.clone()),
-        remote_addresses: desired.remote_addresses.clone().or_else(|| current.remote_addresses.clone()),
-        direction: desired.direction.clone().or_else(|| current.direction.clone()),
+        local_ports: desired
+            .local_ports
+            .clone()
+            .or_else(|| current.local_ports.clone()),
+        remote_ports: desired
+            .remote_ports
+            .clone()
+            .or_else(|| current.remote_ports.clone()),
+        local_addresses: desired
+            .local_addresses
+            .clone()
+            .or_else(|| current.local_addresses.clone()),
+        remote_addresses: desired
+            .remote_addresses
+            .clone()
+            .or_else(|| current.remote_addresses.clone()),
+        direction: desired
+            .direction
+            .clone()
+            .or_else(|| current.direction.clone()),
         action: desired.action.clone().or_else(|| current.action.clone()),
         enabled: desired.enabled.or(current.enabled),
-        profiles: desired.profiles.clone().or_else(|| current.profiles.clone()),
-        grouping: desired.grouping.clone().or_else(|| current.grouping.clone()),
-        interface_types: desired.interface_types.clone().or_else(|| current.interface_types.clone()),
+        profiles: desired
+            .profiles
+            .clone()
+            .or_else(|| current.profiles.clone()),
+        grouping: desired
+            .grouping
+            .clone()
+            .or_else(|| current.grouping.clone()),
+        interface_types: desired
+            .interface_types
+            .clone()
+            .or_else(|| current.interface_types.clone()),
         edge_traversal: desired.edge_traversal.or(current.edge_traversal),
     }
 }
 
-pub fn set_rules(input: &FirewallRuleList, what_if: bool) -> Result<FirewallRuleList, FirewallError> {
-    if input.rules.is_empty() {
-        return Err(t!("set.rulesArrayEmpty").to_string().into());
-    }
-
+pub fn set_rules(
+    input: &FirewallRuleList,
+    what_if: bool,
+) -> Result<FirewallRuleList, FirewallError> {
     let store = FirewallStore::open()?;
     let mut results = Vec::new();
 
@@ -441,12 +578,20 @@ pub fn set_rules(input: &FirewallRuleList, what_if: bool) -> Result<FirewallRule
         match store.find_by_selector(desired)? {
             Some(rule) => {
                 let current = rule_to_model(&rule)?;
-                let rule_name = current.name.clone().unwrap_or_else(|| desired.selector_name().unwrap_or_default().to_string());
+                let rule_name = current
+                    .name
+                    .clone()
+                    .unwrap_or_else(|| desired.selector_name().unwrap_or_default().to_string());
 
                 if desired.exist == Some(false) {
                     if what_if {
                         let mut projected = desired.missing_from_input();
-                        projected.metadata = Some(Metadata { what_if: Some(vec![t!("firewall_helper.whatIfRemoveRule", name = rule_name).to_string()]) });
+                        projected.metadata = Some(Metadata {
+                            what_if: Some(vec![
+                                t!("firewall_helper.whatIfRemoveRule", name = rule_name)
+                                    .to_string(),
+                            ]),
+                        });
                         results.push(projected);
                     } else {
                         store.remove_rule(&rule_name)?;
@@ -468,39 +613,71 @@ pub fn set_rules(input: &FirewallRuleList, what_if: bool) -> Result<FirewallRule
                     continue;
                 }
 
-                let rule_name = desired.name.clone()
+                let rule_name = desired
+                    .name
+                    .clone()
                     .ok_or_else(|| t!("set.selectorRequired").to_string())?;
 
                 if what_if {
                     let mut projected = desired.clone();
-                    projected.metadata = Some(Metadata { what_if: Some(vec![t!("firewall_helper.whatIfCreateRule", name = rule_name).to_string()]) });
+                    projected.metadata = Some(Metadata {
+                        what_if: Some(vec![
+                            t!("firewall_helper.whatIfCreateRule", name = rule_name).to_string(),
+                        ]),
+                    });
                     results.push(projected);
                 } else {
                     let rule = store.create_rule_object()?;
-                    unsafe { rule.SetName(&BSTR::from(rule_name.as_str())) }
-                        .map_err(|error| t!("firewall.ruleAddFailed", name = rule_name.as_str(), error = error.to_string()).to_string())?;
+                    unsafe { rule.SetName(&BSTR::from(rule_name.as_str())) }.map_err(|error| {
+                        t!(
+                            "firewall.ruleAddFailed",
+                            name = rule_name.as_str(),
+                            error = error.to_string()
+                        )
+                        .to_string()
+                    })?;
 
                     apply_rule_properties(&rule, desired, None)?;
-                    unsafe { store.rules.Add(&rule) }
-                        .map_err(|error| t!("firewall.ruleAddFailed", name = rule_name.as_str(), error = error.to_string()).to_string())?;
+                    unsafe { store.rules.Add(&rule) }.map_err(|error| {
+                        t!(
+                            "firewall.ruleAddFailed",
+                            name = rule_name.as_str(),
+                            error = error.to_string()
+                        )
+                        .to_string()
+                    })?;
 
                     let created = store
                         .find_by_selector(&FirewallRule {
                             name: Some(rule_name),
                             ..FirewallRule::default()
                         })?
-                        .ok_or_else(|| t!("firewall.ruleLookupFailed", name = desired.selector_name().unwrap_or("<unknown>"), error = "created rule not found").to_string())?;
+                        .ok_or_else(|| {
+                            t!(
+                                "firewall.ruleLookupFailed",
+                                name = desired.selector_name().unwrap_or("<unknown>"),
+                                error = "created rule not found"
+                            )
+                            .to_string()
+                        })?;
                     results.push(rule_to_model(&created)?);
                 }
             }
         }
     }
 
-    // Handle unspecified_rules_action: Disable or Remove rules not explicitly listed
-    match &input.unspecified_rules_action {
-        Some(UnspecifiedRulesAction::Disable) | Some(UnspecifiedRulesAction::Remove) => {
-            let is_remove = matches!(&input.unspecified_rules_action, Some(UnspecifiedRulesAction::Remove));
-            let specified_names: std::collections::HashSet<String> = input.rules.iter()
+    // Disable or remove rules that aren't explicitly listed and match the requested scope.
+    match &input.unspecified_rules {
+        Some(unspecified_rules)
+            if matches!(
+                unspecified_rules.action,
+                UnspecifiedRuleAction::Disable | UnspecifiedRuleAction::Remove
+            ) =>
+        {
+            let is_remove = unspecified_rules.action == UnspecifiedRuleAction::Remove;
+            let specified_names: std::collections::HashSet<String> = input
+                .rules
+                .iter()
                 .filter_map(|r| r.selector_name().map(|n| n.to_ascii_lowercase()))
                 .collect();
 
@@ -516,19 +693,34 @@ pub fn set_rules(input: &FirewallRuleList, what_if: bool) -> Result<FirewallRule
                 if rule_name.starts_with("ms-resource://") {
                     continue;
                 }
-                
+
                 if specified_names.contains(&rule_name.to_ascii_lowercase()) {
+                    continue;
+                }
+
+                if !rule_matches_unspecified_scope(&model, unspecified_rules)? {
                     continue;
                 }
 
                 if is_remove {
                     if what_if {
                         let mut projected = model.missing_from_input();
-                        projected.metadata = Some(Metadata { what_if: Some(vec![t!("firewall_helper.whatIfRemoveUnspecifiedRule", name = rule_name).to_string()]) });
+                        projected.metadata = Some(Metadata {
+                            what_if: Some(vec![
+                                t!(
+                                    "firewall_helper.whatIfRemoveUnspecifiedRule",
+                                    name = rule_name
+                                )
+                                .to_string(),
+                            ]),
+                        });
                         results.push(projected);
                     } else {
                         store.remove_rule(&rule_name)?;
-                        let mut removed = FirewallRule { name: Some(rule_name), ..FirewallRule::default() };
+                        let mut removed = FirewallRule {
+                            name: Some(rule_name),
+                            ..FirewallRule::default()
+                        };
                         removed.exist = Some(false);
                         results.push(removed);
                     }
@@ -541,7 +733,15 @@ pub fn set_rules(input: &FirewallRuleList, what_if: bool) -> Result<FirewallRule
                     if what_if {
                         let mut projected = model.clone();
                         projected.enabled = Some(false);
-                        projected.metadata = Some(Metadata { what_if: Some(vec![t!("firewall_helper.whatIfDisableUnspecifiedRule", name = rule_name).to_string()]) });
+                        projected.metadata = Some(Metadata {
+                            what_if: Some(vec![
+                                t!(
+                                    "firewall_helper.whatIfDisableUnspecifiedRule",
+                                    name = rule_name
+                                )
+                                .to_string(),
+                            ]),
+                        });
                         results.push(projected);
                     } else {
                         unsafe { rule.SetEnabled(VARIANT_BOOL::from(false)) }
@@ -551,10 +751,13 @@ pub fn set_rules(input: &FirewallRuleList, what_if: bool) -> Result<FirewallRule
                 }
             }
         }
-        _ => {} // None or Ignore — no additional action
+        _ => {} // None or Ignore: no additional action.
     }
 
-    Ok(FirewallRuleList { rules: results, unspecified_rules_action: input.unspecified_rules_action.clone() })
+    Ok(FirewallRuleList {
+        rules: results,
+        unspecified_rules: input.unspecified_rules.clone(),
+    })
 }
 
 pub fn export_rules() -> Result<FirewallRuleList, FirewallError> {
@@ -566,5 +769,67 @@ pub fn export_rules() -> Result<FirewallRuleList, FirewallError> {
         results.push(rule_to_model(&rule)?);
     }
 
-    Ok(FirewallRuleList { rules: results, unspecified_rules_action: None })
+    Ok(FirewallRuleList {
+        rules: results,
+        unspecified_rules: None,
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn rule(direction: RuleDirection, profiles: &[&str]) -> FirewallRule {
+        FirewallRule {
+            direction: Some(direction),
+            profiles: Some(
+                profiles
+                    .iter()
+                    .map(|profile| (*profile).to_string())
+                    .collect(),
+            ),
+            ..FirewallRule::default()
+        }
+    }
+
+    fn scope(direction: Option<RuleDirection>, profiles: Option<&[&str]>) -> UnspecifiedRules {
+        UnspecifiedRules {
+            action: UnspecifiedRuleAction::Disable,
+            direction,
+            profiles: profiles.map(|values| {
+                values
+                    .iter()
+                    .map(|profile| (*profile).to_string())
+                    .collect()
+            }),
+        }
+    }
+
+    #[test]
+    fn unspecified_rule_scope_combines_direction_and_profiles() {
+        let filter = scope(Some(RuleDirection::Inbound), Some(&["Domain"]));
+
+        assert!(
+            rule_matches_unspecified_scope(&rule(RuleDirection::Inbound, &["Domain"]), &filter)
+                .unwrap()
+        );
+        assert!(
+            !rule_matches_unspecified_scope(&rule(RuleDirection::Outbound, &["Domain"]), &filter)
+                .unwrap()
+        );
+        assert!(
+            !rule_matches_unspecified_scope(&rule(RuleDirection::Inbound, &["Private"]), &filter)
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn unspecified_rule_profile_scope_intersects_all_profiles() {
+        let filter = scope(None, Some(&["Domain"]));
+
+        assert!(
+            rule_matches_unspecified_scope(&rule(RuleDirection::Inbound, &["All"]), &filter)
+                .unwrap()
+        );
+    }
 }

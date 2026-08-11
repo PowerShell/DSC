@@ -9,11 +9,9 @@ invalidJson = "Invalid JSON input: %{error}"
 windowsOnly = "This resource is only supported on Windows"
 
 [get]
-rulesArrayEmpty = "The rules array cannot be empty for get operations"
 selectorRequired = "Each firewall rule in a get request must include a name"
 
 [set]
-rulesArrayEmpty = "The rules array cannot be empty for set operations"
 selectorRequired = "Each firewall rule in a set request must include a name"
 
 [firewall]
