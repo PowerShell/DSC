@@ -428,10 +428,7 @@ pub fn get_rules(input: &FirewallRuleList) -> Result<FirewallRuleList, FirewallE
         }
     }
 
-    Ok(FirewallRuleList {
-        rules: results,
-        unspecified_rules: None,
-    })
+    Ok(FirewallRuleList { rules: results, unspecified_rules: None })
 }
 
 fn project_rule(current: &FirewallRule, desired: &FirewallRule) -> FirewallRule {
@@ -457,10 +454,7 @@ fn project_rule(current: &FirewallRule, desired: &FirewallRule) -> FirewallRule 
     }
 }
 
-pub fn set_rules(
-    input: &FirewallRuleList,
-    what_if: bool,
-) -> Result<FirewallRuleList, FirewallError> {
+pub fn set_rules(input: &FirewallRuleList, what_if: bool) -> Result<FirewallRuleList, FirewallError> {
     let store = FirewallStore::open()?;
     let mut results = Vec::new();
 
@@ -529,16 +523,13 @@ pub fn set_rules(
 
     // Disable or remove rules that aren't explicitly listed and match the requested scope.
     match &input.unspecified_rules {
-        Some(unspecified_rules)
-            if matches!(
-                unspecified_rules.action,
-                UnspecifiedRuleAction::Disable | UnspecifiedRuleAction::Remove
-            ) =>
+        Some(unspecified_rules) if matches!(
+            unspecified_rules.action,
+            UnspecifiedRuleAction::Disable | UnspecifiedRuleAction::Remove
+        ) =>
         {
             let is_remove = unspecified_rules.action == UnspecifiedRuleAction::Remove;
-            let specified_names: std::collections::HashSet<String> = input
-                .rules
-                .iter()
+            let specified_names: std::collections::HashSet<String> = input.rules.iter()
                 .filter_map(|r| r.selector_name().map(|n| n.to_ascii_lowercase()))
                 .collect();
 
@@ -596,10 +587,7 @@ pub fn set_rules(
         _ => {} // None or Ignore: no additional action.
     }
 
-    Ok(FirewallRuleList {
-        rules: results,
-        unspecified_rules: input.unspecified_rules.clone(),
-    })
+    Ok(FirewallRuleList { rules: results, unspecified_rules: input.unspecified_rules.clone() })
 }
 
 pub fn export_rules() -> Result<FirewallRuleList, FirewallError> {
@@ -611,10 +599,7 @@ pub fn export_rules() -> Result<FirewallRuleList, FirewallError> {
         results.push(rule_to_model(&rule)?);
     }
 
-    Ok(FirewallRuleList {
-        rules: results,
-        unspecified_rules: None,
-    })
+    Ok(FirewallRuleList { rules: results, unspecified_rules: None })
 }
 
 #[cfg(test)]
