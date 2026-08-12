@@ -12,7 +12,7 @@ use crate::{configure::{config_doc::{ExecutionKind, SecurityContextKind}, config
 use crate::dscerror::DscError;
 use crate::locked_insert;
 use super::{
-    dscresource::{get_diff, redact, DscResource},
+    dscresource::{get_diff, get_diff_with_schema, redact, DscResource},
     invoke_result::{
         DeleteResult, DeleteResultKind, ExportResult,
         GetResult, ResolveResult, SetResult, TestResult, ValidateResult,
@@ -454,7 +454,14 @@ fn invoke_synthetic_test(resource: &DscResource, expected: &str, target_resource
         }
     };
     let expected_value: Value = serde_json::from_str(expected)?;
-    let diff_properties = get_diff(&expected_value, &actual_state);
+    let cached_resource = target_resource.unwrap_or(resource);
+    let schema: Option<Value> = get_resource_schema(&cached_resource.type_name, &cached_resource.version)
+        .or_else(|| {
+            // Populate the cache on a miss, then read from cache
+            get_schema(resource, target_resource).ok();
+            get_resource_schema(&cached_resource.type_name, &cached_resource.version)
+        });
+    let diff_properties = get_diff_with_schema(&expected_value, &actual_state, schema.as_ref());
     Ok(TestResult::Resource(ResourceTestResponse {
         desired_state: expected_value,
         actual_state,
