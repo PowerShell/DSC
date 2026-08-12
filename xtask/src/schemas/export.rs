@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use std::{fs, ops::Add, path::PathBuf, sync::LazyLock};
+use std::{collections::HashSet, fs, ops::Add, path::PathBuf, sync::LazyLock};
 
 use dsc_lib::schemas::{
     dsc_repo::{DscRepoSchema, RecognizedSchemaVersion},
@@ -20,6 +20,10 @@ pub(crate) enum SchemaExportError {
     /// Raised when an IO error prevents exporting a schema to the file system.
     #[error("{t}: {0}", t = t!("schemas.export.ioError"))]
     IOError(#[from] std::io::Error),
+    /// Raised when two exported types resolve to the same file path, which would silently
+    /// overwrite one schema with another.
+    #[error("{t}: {0}", t = t!("schemas.export.duplicatePath"))]
+    DuplicatePath(String),
 }
 
 /// Helper static to retrieve the root folder once and use repeatedly when exporting schemas to the
@@ -30,8 +34,18 @@ static PROJECT_DIR: LazyLock<PathBuf> = LazyLock::new(|| {
 });
 
 /// Writes the given JSON Schema to the filesystem relative to the project folder.
-pub(crate) fn write_schema(relative_path: PathBuf, schema: Schema) -> Result<(), SchemaExportError> {
-    
+///
+/// The `written_paths` set records every path exported during the run so that two types
+/// resolving to the same path fail the export instead of silently overwriting each other.
+pub(crate) fn write_schema(
+    written_paths: &mut HashSet<PathBuf>,
+    relative_path: PathBuf,
+    schema: Schema
+) -> Result<(), SchemaExportError> {
+    if !written_paths.insert(relative_path.clone()) {
+        return Err(SchemaExportError::DuplicatePath(relative_path.display().to_string()));
+    }
+
     let json_schema = serde_json::to_string_pretty(&schema.to_value_with_stable_order())?.add("\n");
     let path = PROJECT_DIR.clone().join("schemas").join(relative_path);
     let folder = path.parent().unwrap();
@@ -46,11 +60,12 @@ pub(crate) fn write_schema(relative_path: PathBuf, schema: Schema) -> Result<(),
 }
 
 macro_rules! export_type_schemas {
-    ($schema_version:expr => $($type_to_export:ty),+) => {
+    ($written_paths:expr, $schema_version:expr => $($type_to_export:ty),+) => {
         {
             $(
                 for schema_form in <$type_to_export>::get_valid_schema_forms() {
                     write_schema(
+                        $written_paths,
                         <$type_to_export>::get_schema_relative_path($schema_version, schema_form).into(),
                         <$type_to_export>::generate_exportable_schema($schema_version, schema_form)
                     )?;
@@ -63,16 +78,21 @@ macro_rules! export_type_schemas {
 pub(crate) fn export_schemas(
     schema_version: RecognizedSchemaVersion
 ) -> Result<(), SchemaExportError> {
+    let mut written_paths: HashSet<PathBuf> = HashSet::new();
     export_type_schemas!(
+        &mut written_paths,
         schema_version =>
+        dsc_lib::configure::config_doc::ConfigDirective,
         dsc_lib::configure::config_doc::Configuration,
         dsc_lib::configure::config_doc::DataType,
+        dsc_lib::configure::config_doc::ExecutionInformation,
         dsc_lib::configure::config_doc::ExecutionKind,
         dsc_lib::configure::config_doc::Metadata,
         dsc_lib::configure::config_doc::Operation,
         dsc_lib::configure::config_doc::Output,
         dsc_lib::configure::config_doc::Parameter,
         dsc_lib::configure::config_doc::Resource,
+        dsc_lib::configure::config_doc::ResourceDirective,
         dsc_lib::configure::config_doc::ResourceDiscoveryMode,
         dsc_lib::configure::config_doc::RestartRequired,
         dsc_lib::configure::config_doc::SecurityContextKind,
@@ -87,6 +107,7 @@ pub(crate) fn export_schemas(
         dsc_lib::configure::config_result::ResourceGetResult,
         dsc_lib::configure::config_result::ResourceMessage,
         dsc_lib::configure::config_result::ResourceSetResult,
+        dsc_lib::configure::config_result::ResourceTestResult,
         dsc_lib::dscresources::adapted_resource_manifest::AdaptedDscResourceManifest,
         dsc_lib::dscresources::dscresource::Capability,
         dsc_lib::dscresources::dscresource::DscResource,
@@ -104,6 +125,7 @@ pub(crate) fn export_schemas(
         dsc_lib::dscresources::resource_manifest::Adapter,
         dsc_lib::dscresources::resource_manifest::DeleteMethod,
         dsc_lib::dscresources::resource_manifest::ExportMethod,
+        dsc_lib::dscresources::resource_manifest::ExportSchemaKind,
         dsc_lib::dscresources::resource_manifest::GetArgKind,
         dsc_lib::dscresources::resource_manifest::GetMethod,
         dsc_lib::dscresources::resource_manifest::InputKind,
@@ -111,6 +133,7 @@ pub(crate) fn export_schemas(
         dsc_lib::dscresources::resource_manifest::ResolveMethod,
         dsc_lib::dscresources::resource_manifest::ResourceManifest,
         dsc_lib::dscresources::resource_manifest::ReturnKind,
+        dsc_lib::dscresources::resource_manifest::SchemaArgKind,
         dsc_lib::dscresources::resource_manifest::SchemaKind,
         dsc_lib::dscresources::resource_manifest::SetDeleteArgKind,
         dsc_lib::dscresources::resource_manifest::SetMethod,
@@ -126,12 +149,14 @@ pub(crate) fn export_schemas(
         dsc_lib::functions::FunctionArgKind,
         dsc_lib::functions::FunctionCategory,
         dsc_lib::functions::FunctionDefinition,
+        dsc_lib::types::DateVersion,
         dsc_lib::types::ExitCodesMap,
         dsc_lib::types::FullyQualifiedTypeName,
         dsc_lib::types::ResourceVersion,
         dsc_lib::types::ResourceVersionReq,
         dsc_lib::types::SemanticVersion,
         dsc_lib::types::SemanticVersionReq,
+        dsc_lib::types::Tag,
         dsc_lib::types::TagList
     );
 
