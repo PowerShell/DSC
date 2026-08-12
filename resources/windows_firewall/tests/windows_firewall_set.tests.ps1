@@ -8,9 +8,15 @@ BeforeDiscovery {
     } else {
         $false
     }
+    $hasNetSecurity = @(
+        'Get-NetFirewallRule'
+        'New-NetFirewallRule'
+        'Remove-NetFirewallRule'
+        'Set-NetFirewallRule'
+    ).Where({ $null -eq (Get-Command $_ -ErrorAction SilentlyContinue) }).Count -eq 0
 }
 
-Describe 'Microsoft.Windows/FirewallRuleList - set operation' -Skip:(!$isElevated) {
+Describe 'Microsoft.Windows/FirewallRuleList - set operation' -Skip:(!$isElevated -or !$hasNetSecurity) {
     BeforeAll {
         $resourceType = 'Microsoft.Windows/FirewallRuleList'
         $testRuleName = 'DSC-WindowsFirewall-Set-Test'
@@ -147,7 +153,7 @@ Describe 'Microsoft.Windows/FirewallRuleList - set operation' -Skip:(!$isElevate
     }
 }
 
-Describe 'Microsoft.Windows/FirewallRuleList - unspecifiedRules (what-if)' -Skip:(!$isElevated) {
+Describe 'Microsoft.Windows/FirewallRuleList - unspecifiedRules (what-if)' -Skip:(!$isElevated -or !$hasNetSecurity) {
     BeforeAll {
         $testRuleName = 'DSC-WindowsFirewall-Unspecified-Test'
         $inboundDomainRule = 'DSC-WindowsFirewall-Scope-Inbound-Domain'

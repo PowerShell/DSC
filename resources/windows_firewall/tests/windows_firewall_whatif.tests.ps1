@@ -8,7 +8,11 @@ BeforeDiscovery {
     } else {
         $false
     }
-    $hasNetSecurity = $null -ne (Get-Command 'Get-NetFirewallRule' -ErrorAction SilentlyContinue)
+    $hasNetSecurity = @(
+        'Get-NetFirewallRule'
+        'New-NetFirewallRule'
+        'Remove-NetFirewallRule'
+    ).Where({ $null -eq (Get-Command $_ -ErrorAction SilentlyContinue) }).Count -eq 0
 }
 
 Describe 'windows_firewall config whatif tests' -Skip:(!$isElevated -or !$hasNetSecurity) {
