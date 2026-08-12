@@ -351,8 +351,8 @@ jobs:
           $pesterLcovFiles = Get-ChildItem -Path 'coverage-data' -Filter 'pester-lcov.info' -Recurse
           $allLcovFiles = @($lcovFiles) + @($pesterLcovFiles) | Where-Object { $_ }
           $linuxLcovFiles = @($allLcovFiles | Where-Object {
-              $_.FullName -match '[/\\]linux-[^/\\]+-coverage[/\\]'
-              -or $_.FullName -match '[/\\]linux-coverage[/\\]'
+              ($_.FullName -match '[/\\]linux-[^/\\]+-coverage[/\\]') -or
+              ($_.FullName -match '[/\\]linux-coverage[/\\]')
           })
 
           if ($allLcovFiles.Count -eq 0) {

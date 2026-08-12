@@ -1,17 +1,17 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'windows_firewall config whatif tests' -Skip:(!$isElevated -or !$hasNetSecurity) {
-    BeforeDiscovery {
-        $isElevated = if ($IsWindows) {
-            ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
-                [Security.Principal.WindowsBuiltInRole]::Administrator)
-        } else {
-            $false
-        }
-        $hasNetSecurity = $null -ne (Get-Command 'Get-NetFirewallRule' -ErrorAction SilentlyContinue)
+BeforeDiscovery {
+    $isElevated = if ($IsWindows) {
+        ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
+            [Security.Principal.WindowsBuiltInRole]::Administrator)
+    } else {
+        $false
     }
+    $hasNetSecurity = $null -ne (Get-Command 'Get-NetFirewallRule' -ErrorAction SilentlyContinue)
+}
 
+Describe 'windows_firewall config whatif tests' -Skip:(!$isElevated -or !$hasNetSecurity) {
     BeforeAll {
         $testRuleName = 'DSC-WindowsFirewall-WhatIf-Test'
 

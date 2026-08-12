@@ -1,16 +1,16 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'Microsoft.Windows/FirewallRuleList - set operation' -Skip:(!$isElevated) {
-    BeforeDiscovery {
-        $isElevated = if ($IsWindows) {
-            ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
-                [Security.Principal.WindowsBuiltInRole]::Administrator)
-        } else {
-            $false
-        }
+BeforeDiscovery {
+    $isElevated = if ($IsWindows) {
+        ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
+            [Security.Principal.WindowsBuiltInRole]::Administrator)
+    } else {
+        $false
     }
+}
 
+Describe 'Microsoft.Windows/FirewallRuleList - set operation' -Skip:(!$isElevated) {
     BeforeAll {
         $resourceType = 'Microsoft.Windows/FirewallRuleList'
         $testRuleName = 'DSC-WindowsFirewall-Set-Test'
@@ -148,15 +148,6 @@ Describe 'Microsoft.Windows/FirewallRuleList - set operation' -Skip:(!$isElevate
 }
 
 Describe 'Microsoft.Windows/FirewallRuleList - unspecifiedRules (what-if)' -Skip:(!$isElevated) {
-    BeforeDiscovery {
-        $isElevated = if ($IsWindows) {
-            ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
-                [Security.Principal.WindowsBuiltInRole]::Administrator)
-        } else {
-            $false
-        }
-    }
-
     BeforeAll {
         $testRuleName = 'DSC-WindowsFirewall-Unspecified-Test'
         $inboundDomainRule = 'DSC-WindowsFirewall-Scope-Inbound-Domain'
