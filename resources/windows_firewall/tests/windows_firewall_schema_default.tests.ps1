@@ -1,14 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'Microsoft.Windows/FirewallRuleList - synthetic test with schema defaults' {
+Describe 'Microsoft.Windows/FirewallRuleList - synthetic test with schema defaults' -Skip:(!$canRunFirewallTests) {
     BeforeDiscovery {
-        $isElevated = if ($IsWindows) {
+        $canRunFirewallTests = $IsWindows -and
+            (Get-Command Get-NetFirewallRule -ErrorAction Ignore) -and
             ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
                 [Security.Principal.WindowsBuiltInRole]::Administrator)
-        } else {
-            $false
-        }
     }
 
     BeforeAll {
@@ -16,7 +14,7 @@ Describe 'Microsoft.Windows/FirewallRuleList - synthetic test with schema defaul
         $testRuleName = 'DSC-WindowsFirewall-SchemaDefault-Test'
 
         # Ensure a known rule exists for testing
-        $existing = Get-NetFirewallRule -Name $testRuleName -ErrorAction SilentlyContinue
+        $existing = Get-NetFirewallRule -Name $testRuleName -ErrorAction Ignore
         if (-not $existing) {
             New-NetFirewallRule -Name $testRuleName -DisplayName $testRuleName `
                 -Direction Inbound -Action Allow -Protocol TCP -LocalPort 32921 `
@@ -25,10 +23,10 @@ Describe 'Microsoft.Windows/FirewallRuleList - synthetic test with schema defaul
     }
 
     AfterAll {
-        Remove-NetFirewallRule -Name $testRuleName -ErrorAction SilentlyContinue
+        Remove-NetFirewallRule -Name $testRuleName -ErrorAction Ignore
     }
 
-    It 'unspecifiedRulesAction set to default "ignore" does not report as differing' -Skip:(!$isElevated) {
+    It 'unspecifiedRulesAction set to default "ignore" does not report as differing' {
         $json = @{
             unspecifiedRulesAction = 'ignore'
             rules = @(@{
@@ -48,7 +46,7 @@ Describe 'Microsoft.Windows/FirewallRuleList - synthetic test with schema defaul
         $result.differingProperties | Should -Not -Contain 'unspecifiedRulesAction'
     }
 
-    It 'unspecifiedRulesAction omitted does not report as differing' -Skip:(!$isElevated) {
+    It 'unspecifiedRulesAction omitted does not report as differing' {
         $json = @{
             rules = @(@{
                 name = $testRuleName
@@ -67,7 +65,7 @@ Describe 'Microsoft.Windows/FirewallRuleList - synthetic test with schema defaul
         $result.differingProperties | Should -Not -Contain 'unspecifiedRulesAction'
     }
 
-    It 'non-default unspecifiedRulesAction "disable" is reported as differing' -Skip:(!$isElevated) {
+    It 'non-default unspecifiedRulesAction "disable" is reported as differing' {
         $json = @{
             unspecifiedRulesAction = 'disable'
             rules = @(@{
@@ -86,7 +84,7 @@ Describe 'Microsoft.Windows/FirewallRuleList - synthetic test with schema defaul
         $result.differingProperties | Should -Contain 'unspecifiedRulesAction'
     }
 
-    It 'non-default unspecifiedRulesAction "remove" is reported as differing' -Skip:(!$isElevated) {
+    It 'non-default unspecifiedRulesAction "remove" is reported as differing' {
         $json = @{
             unspecifiedRulesAction = 'remove'
             rules = @(@{
