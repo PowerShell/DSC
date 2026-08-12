@@ -282,6 +282,45 @@
     },
     {
       "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/SchemaDefault",
+      "version": "0.1.0",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "schema-default",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ]
+      },
+      "schema": {
+        "embedded": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": ["name"],
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "The name of the resource instance."
+            },
+            "enabled": {
+              "type": "boolean",
+              "description": "Whether the resource is enabled.",
+              "default": true
+            },
+            "count": {
+              "type": "integer",
+              "description": "The count value.",
+              "default": 5
+            }
+          }
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
       "type": "Test/InDesiredState",
       "version": "0.1.0",
       "test": {

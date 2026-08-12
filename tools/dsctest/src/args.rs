@@ -20,6 +20,7 @@ pub enum Schemas {
     Operation,
     RefreshEnv,
     RestartRequired,
+    SchemaDefault,
     Set,
     Sleep,
     StateAndDiff,
@@ -154,6 +155,12 @@ pub enum SubCommand {
     #[clap(name = "restart-required", about = "Check if a restart is required based on the input")]
     RestartRequired {
         #[clap(name = "input", short, long, help = "The input to the restart required command as JSON")]
+        input: String,
+    },
+
+    #[clap(name = "schema-default", about = "Test resource for schema default values in synthetic test")]
+    SchemaDefault {
+        #[clap(name = "input", short, long, help = "The input to the schema-default command as JSON")]
         input: String,
     },
 
