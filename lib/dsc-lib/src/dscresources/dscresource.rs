@@ -726,8 +726,7 @@ pub(crate) fn get_diff_with_schema(expected: &Value, actual: &Value, schema: Opt
                         }
                     } else {
                         // Property not in actual - check schema for a default value
-                        let schema_default = get_schema_default(schema, key);
-                        if let Some(default_value) = schema_default {
+                        if let Some(default_value) = get_schema_default(schema, key) {
                             if value != &default_value {
                                 info!("{}", t!("dscresources.dscresource.diffKeyMissing", key = key));
                                 diff_properties.push(key.to_string());
