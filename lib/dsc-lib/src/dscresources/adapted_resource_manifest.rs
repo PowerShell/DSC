@@ -25,7 +25,7 @@ pub enum AdaptedPathOrContent {
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 #[dsc_repo_schema(
     base_name = "manifest",
-    folder_path = "resource",
+    folder_path = "adaptedresource",
     should_bundle = true,
     schema_field(
         name = schema_version,
@@ -36,7 +36,7 @@ pub enum AdaptedPathOrContent {
 pub struct AdaptedDscResourceManifest {
     /// The version of the resource manifest schema.
     #[serde(rename = "$schema")]
-    #[schemars(schema_with = "ResourceManifest::recognized_schema_uris_subschema")]
+    #[schemars(schema_with = "AdaptedDscResourceManifest::recognized_schema_uris_union_subschema")]
     pub schema_version: String,
     /// The namespaced name of the resource.
     #[serde(rename="type")]
@@ -63,4 +63,17 @@ pub struct AdaptedDscResourceManifest {
     pub require_adapter: FullyQualifiedTypeName,
     /// The JSON Schema of the resource.
     pub schema: Map<String, Value>,
+}
+
+impl AdaptedDscResourceManifest {
+    fn recognized_schema_uris_union_subschema(generator: &mut schemars::SchemaGenerator) -> schemars::Schema {
+        let mut subschema = <Self as DscRepoSchema>::recognized_schema_uris_subschema(generator);
+        let uris: Vec<Value> = Self::recognized_schema_uris()
+            .into_iter()
+            .chain(ResourceManifest::recognized_schema_uris())
+            .map(Value::String)
+            .collect();
+        subschema.insert("enum".to_string(), Value::Array(uris));
+        subschema
+    }
 }
