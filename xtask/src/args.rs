@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 use clap::{Parser, Subcommand};
+use dsc_lib::schemas::dsc_repo::RecognizedSchemaVersion;
 use rust_i18n::t;
 
 #[derive(Debug, Parser)]
@@ -24,5 +25,12 @@ pub enum SubCommand {
 #[derive(Debug, PartialEq, Eq, Subcommand)]
 pub enum SchemaSubCommand {
     #[clap(name = "export", about = t!("args.schemaExportAbout").to_string())]
-    Export
+    Export {
+        /// The schema version folder(s) to export. Repeatable. Defaults to `vNext`.
+        #[clap(long = "schema-version", help = t!("args.schemaExportVersionHelp").to_string())]
+        schema_versions: Vec<RecognizedSchemaVersion>,
+        /// A release version that expands to its patch, minor, and major version folders.
+        #[clap(long = "release", conflicts_with = "schema_versions", help = t!("args.schemaExportReleaseHelp").to_string())]
+        release: Option<String>,
+    }
 }

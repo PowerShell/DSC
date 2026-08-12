@@ -14,6 +14,7 @@ pub use crate::schema_i18n;
 
 mod recognized_schema_version;
 pub use recognized_schema_version::RecognizedSchemaVersion;
+pub use recognized_schema_version::UnrecognizedSchemaVersion;
 
 mod schema_form;
 pub use schema_form::SchemaForm;

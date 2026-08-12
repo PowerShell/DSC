@@ -41,6 +41,7 @@ use dsc_lib::{
         extension_manifest::ExtensionManifest,
     },
     functions::FunctionDefinition,
+    schemas::dsc_repo::{DscRepoSchema, RecognizedSchemaVersion, SchemaForm, SchemaUriPrefix},
     util::{
         get_setting,
         parse_input_to_json,
@@ -164,37 +165,37 @@ pub fn add_fields_to_json(json: &str, fields_to_add: &HashMap<String, String>) -
 pub fn get_schema(schema: SchemaType) -> Schema {
     match schema {
         SchemaType::AdaptedDscResourceManifest => {
-            schema_for!(AdaptedDscResourceManifest)
+            repo_schema::<AdaptedDscResourceManifest>()
         },
         SchemaType::Configuration => {
-            schema_for!(Configuration)
+            repo_schema::<Configuration>()
         },
         SchemaType::ConfigurationExportResult => {
-            schema_for!(ConfigurationExportResult)
+            repo_schema::<ConfigurationExportResult>()
         },
         SchemaType::ConfigurationGetResult => {
-            schema_for!(ConfigurationGetResult)
+            repo_schema::<ConfigurationGetResult>()
         },
         SchemaType::ConfigurationSetResult => {
-            schema_for!(ConfigurationSetResult)
+            repo_schema::<ConfigurationSetResult>()
         },
         SchemaType::ConfigurationTestResult => {
-            schema_for!(ConfigurationTestResult)
+            repo_schema::<ConfigurationTestResult>()
         },
         SchemaType::DscResource => {
-            schema_for!(DscResource)
+            repo_schema::<DscResource>()
         },
         SchemaType::ExtensionDiscoverResult => {
-            schema_for!(DiscoverResult)
+            repo_schema::<DiscoverResult>()
         },
         SchemaType::ExtensionManifest => {
-            schema_for!(ExtensionManifest)
+            repo_schema::<ExtensionManifest>()
         },
         SchemaType::FunctionDefinition => {
-            schema_for!(FunctionDefinition)
+            repo_schema::<FunctionDefinition>()
         },
         SchemaType::GetResult => {
-            schema_for!(GetResult)
+            repo_schema::<GetResult>()
         },
         SchemaType::Include => {
             schema_for!(Include)
@@ -203,33 +204,46 @@ pub fn get_schema(schema: SchemaType) -> Schema {
             schema_for!(ManifestList)
         },
         SchemaType::ResolveResult => {
-            schema_for!(ResolveResult)
+            repo_schema::<ResolveResult>()
         },
         SchemaType::Resource => {
-            schema_for!(Resource)
+            repo_schema::<Resource>()
         },
         SchemaType::ResourceGetResult => {
-            schema_for!(ResourceGetResult)
+            repo_schema::<ResourceGetResult>()
         },
         SchemaType::ResourceSetResult => {
-            schema_for!(ResourceSetResult)
+            repo_schema::<ResourceSetResult>()
         },
         SchemaType::ResourceTestResult => {
-            schema_for!(ResourceTestResult)
+            repo_schema::<ResourceTestResult>()
         },
         SchemaType::ResourceManifest => {
-            schema_for!(ResourceManifest)
+            repo_schema::<ResourceManifest>()
         },
         SchemaType::RestartRequired => {
-            schema_for!(RestartRequired)
+            repo_schema::<RestartRequired>()
         },
         SchemaType::SetResult => {
-            schema_for!(SetResult)
+            repo_schema::<SetResult>()
         },
         SchemaType::TestResult => {
-            schema_for!(TestResult)
+            repo_schema::<TestResult>()
         },
     }
+}
+
+fn repo_schema<T: DscRepoSchema>() -> Schema {
+    let schema_form = if T::SCHEMA_SHOULD_BUNDLE {
+        SchemaForm::Bundled
+    } else {
+        SchemaForm::Canonical
+    };
+    T::generate_schema(
+        RecognizedSchemaVersion::default(),
+        schema_form,
+        SchemaUriPrefix::AkaDotMs
+    )
 }
 
 /// Write the JSON object to the console
