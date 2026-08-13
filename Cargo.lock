@@ -1068,6 +1068,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "environment_variable"
+version = "0.1.0"
+dependencies = [
+ "dsc-lib-registry",
+ "dsc-lib-security_context",
+ "rust-i18n",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "equivalent"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
