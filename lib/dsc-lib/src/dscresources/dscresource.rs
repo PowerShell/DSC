@@ -11,7 +11,7 @@ use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use tracing::{debug, info, trace, warn};
 
@@ -769,16 +769,40 @@ fn get_schema_default(schema: Option<&Value>, property_name: &str) -> Option<Val
     property_schema.get("default").cloned()
 }
 
-/// Returns whether a property's JSON Schema sets `writeOnly` to `true`.
+/// Returns whether a property's JSON Schema sets `writeOnly` to `true`, directly or
+/// through a local JSON Pointer reference.
 fn is_schema_write_only(schema: Option<&Value>, property_name: &str) -> bool {
-    schema
-        .and_then(|schema| schema.get("properties"))
+    let Some(schema) = schema else {
+        return false;
+    };
+    let Some(mut property_schema) = schema
+        .get("properties")
         .and_then(Value::as_object)
         .and_then(|properties| properties.get(property_name))
-        .and_then(Value::as_object)
-        .and_then(|property_schema| property_schema.get("writeOnly"))
-        .and_then(Value::as_bool)
-        .unwrap_or(false)
+    else {
+        return false;
+    };
+    let mut visited_references = HashSet::new();
+
+    loop {
+        if property_schema.get("writeOnly").and_then(Value::as_bool) == Some(true) {
+            return true;
+        }
+
+        let Some(reference) = property_schema.get("$ref").and_then(Value::as_str) else {
+            return false;
+        };
+        let Some(pointer) = reference.strip_prefix('#') else {
+            return false;
+        };
+        if !visited_references.insert(pointer) {
+            return false;
+        }
+        let Some(resolved_schema) = schema.pointer(pointer) else {
+            return false;
+        };
+        property_schema = resolved_schema;
+    }
 }
 
 /// Validates the properties of a resource against its schema.
@@ -1070,6 +1094,25 @@ fn diff_with_schema_write_only_ignores_missing_property() {
     });
     let diff = get_diff_with_schema(&expected, &actual, Some(&schema));
     assert!(diff.is_empty(), "Expected write-only property to be ignored, got: {diff:?}");
+}
+
+#[test]
+fn diff_with_schema_write_only_local_ref_ignores_missing_property() {
+    use serde_json::json;
+    let expected = json!({"name": "test", "action": "remove"});
+    let actual = json!({"name": "test"});
+    let schema = json!({
+        "type": "object",
+        "properties": {
+            "name": { "type": "string" },
+            "action": { "$ref": "#/$defs/action" }
+        },
+        "$defs": {
+            "action": { "type": "string", "writeOnly": true }
+        }
+    });
+    let diff = get_diff_with_schema(&expected, &actual, Some(&schema));
+    assert!(diff.is_empty(), "Expected referenced write-only property to be ignored, got: {diff:?}");
 }
 
 #[test]
