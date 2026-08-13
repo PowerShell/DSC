@@ -25,7 +25,7 @@ pub enum AdaptedPathOrContent {
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 #[dsc_repo_schema(
     base_name = "manifest",
-    folder_path = "adaptedresource",
+    folder_path = "resource/adapted",
     should_bundle = true,
     schema_field(
         name = schema_version,
