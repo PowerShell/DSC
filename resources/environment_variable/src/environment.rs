@@ -16,6 +16,15 @@ pub enum EnvironmentError {
     Resource(String),
 }
 
+#[derive(Clone, Copy)]
+enum OperationError {
+    Registry,
+    GetRead,
+    SetRead,
+    SetWrite,
+    SetRemove,
+}
+
 impl EnvironmentError {
     pub fn is_elevation_required(&self) -> bool {
         matches!(self, Self::ElevationRequired)
@@ -65,7 +74,7 @@ pub fn set_variables(
         if !variable.exist.unwrap_or(true) {
             helper
                 .remove()
-                .map_err(|error| operation_error("set.removeError", variable, &error))?;
+                .map_err(|error| operation_error(OperationError::SetRemove, variable, &error))?;
             environment_variables.push(EnvironmentVariable {
                 scope: variable.scope,
                 name: variable.name.clone(),
@@ -79,13 +88,13 @@ pub fn set_variables(
 
         let current_data = helper
             .get()
-            .map_err(|error| operation_error("set.readError", variable, &error))?
+            .map_err(|error| operation_error(OperationError::SetRead, variable, &error))?
             .value_data;
         let desired_value = desired_value(variable, current_data.as_ref());
         let value_data = registry_data(&desired_value, current_data.as_ref());
         registry_helper(variable, Some(value_data))?
             .set()
-            .map_err(|error| operation_error("set.writeError", variable, &error))?;
+            .map_err(|error| operation_error(OperationError::SetWrite, variable, &error))?;
         environment_variables.push(get_variable(variable)?);
     }
 
@@ -97,7 +106,7 @@ pub fn set_variables(
 fn get_variable(variable: &EnvironmentVariable) -> Result<EnvironmentVariable, EnvironmentError> {
     let state = registry_helper(variable, None)?
         .get()
-        .map_err(|error| operation_error("get.readError", variable, &error))?;
+        .map_err(|error| operation_error(OperationError::GetRead, variable, &error))?;
 
     if state.exist == Some(false) {
         return Ok(EnvironmentVariable {
@@ -150,7 +159,7 @@ fn registry_helper(
         Some(variable.name.clone()),
         value_data,
     )
-    .map_err(|error| operation_error("main.registryError", variable, &error))
+    .map_err(|error| operation_error(OperationError::Registry, variable, &error))
 }
 
 fn key_path(scope: Scope) -> &'static str {
@@ -219,19 +228,28 @@ fn merge_path(existing: &[String], desired: &[String], action: PathAction) -> Ve
 }
 
 fn operation_error(
-    key: &str,
+    operation: OperationError,
     variable: &EnvironmentVariable,
     error: &impl std::fmt::Display,
 ) -> EnvironmentError {
-    EnvironmentError::Resource(
-        t!(
-            key,
-            name = variable.name.as_str(),
-            scope = variable.scope.to_string(),
-            error = error.to_string()
-        )
-        .to_string(),
-    )
+    let name = variable.name.as_str();
+    let scope = variable.scope.to_string();
+    let error = error.to_string();
+    let message = match operation {
+        OperationError::Registry => t!(
+            "main.registryError",
+            name = name,
+            scope = scope,
+            error = error
+        ),
+        OperationError::GetRead => t!("get.readError", name = name, scope = scope, error = error),
+        OperationError::SetRead => t!("set.readError", name = name, scope = scope, error = error),
+        OperationError::SetWrite => t!("set.writeError", name = name, scope = scope, error = error),
+        OperationError::SetRemove => {
+            t!("set.removeError", name = name, scope = scope, error = error)
+        }
+    };
+    EnvironmentError::Resource(message.to_string())
 }
 
 #[cfg(test)]
