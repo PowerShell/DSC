@@ -657,14 +657,15 @@ pub fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
 
 #[must_use]
 /// Performs a comparison of two JSON Values using an optional JSON Schema.
-/// If a property exists in `expected` but not in `actual`, the schema's `default` value
-/// for that property is used for comparison when available.
+/// Properties whose schema sets `writeOnly` to `true` are ignored. If a property exists
+/// in `expected` but not in `actual`, the schema's `default` value for that property is
+/// used for comparison when available.
 ///
 /// # Arguments
 ///
 /// * `expected` - The expected value
 /// * `actual` - The actual value
-/// * `schema` - Optional JSON Schema to look up default values for missing properties
+/// * `schema` - Optional JSON Schema to identify write-only properties and default values
 ///
 /// # Returns
 ///
@@ -691,6 +692,10 @@ pub(crate) fn get_diff_with_schema(expected: &Value, actual: &Value, schema: Opt
         }
 
         for (key, value) in &*map {
+            if is_schema_write_only(schema, key) {
+                continue;
+            }
+
             if is_secure_value(value) {
                 // skip secure values as they are not comparable
                 continue;
@@ -762,6 +767,18 @@ fn get_schema_default(schema: Option<&Value>, property_name: &str) -> Option<Val
     let properties = schema.get("properties")?.as_object()?;
     let property_schema = properties.get(property_name)?.as_object()?;
     property_schema.get("default").cloned()
+}
+
+/// Returns whether a property's JSON Schema sets `writeOnly` to `true`.
+fn is_schema_write_only(schema: Option<&Value>, property_name: &str) -> bool {
+    schema
+        .and_then(|schema| schema.get("properties"))
+        .and_then(Value::as_object)
+        .and_then(|properties| properties.get(property_name))
+        .and_then(Value::as_object)
+        .and_then(|property_schema| property_schema.get("writeOnly"))
+        .and_then(Value::as_bool)
+        .unwrap_or(false)
 }
 
 /// Validates the properties of a resource against its schema.
@@ -1021,6 +1038,54 @@ fn diff_with_schema_no_default_reports_missing_property() {
     });
     let diff = get_diff_with_schema(&expected, &actual, Some(&schema));
     assert_eq!(diff, vec!["enabled".to_string()]);
+}
+
+#[test]
+fn diff_with_schema_write_only_ignores_differing_property() {
+    use serde_json::json;
+    let expected = json!({"name": "test", "action": "remove"});
+    let actual = json!({"name": "test", "action": "ignore"});
+    let schema = json!({
+        "type": "object",
+        "properties": {
+            "name": { "type": "string" },
+            "action": { "type": "string", "writeOnly": true }
+        }
+    });
+    let diff = get_diff_with_schema(&expected, &actual, Some(&schema));
+    assert!(diff.is_empty(), "Expected write-only property to be ignored, got: {diff:?}");
+}
+
+#[test]
+fn diff_with_schema_write_only_ignores_missing_property() {
+    use serde_json::json;
+    let expected = json!({"name": "test", "action": "remove"});
+    let actual = json!({"name": "test"});
+    let schema = json!({
+        "type": "object",
+        "properties": {
+            "name": { "type": "string" },
+            "action": { "type": "string", "writeOnly": true }
+        }
+    });
+    let diff = get_diff_with_schema(&expected, &actual, Some(&schema));
+    assert!(diff.is_empty(), "Expected write-only property to be ignored, got: {diff:?}");
+}
+
+#[test]
+fn diff_with_schema_write_only_false_reports_missing_property() {
+    use serde_json::json;
+    let expected = json!({"name": "test", "action": "remove"});
+    let actual = json!({"name": "test"});
+    let schema = json!({
+        "type": "object",
+        "properties": {
+            "name": { "type": "string" },
+            "action": { "type": "string", "writeOnly": false }
+        }
+    });
+    let diff = get_diff_with_schema(&expected, &actual, Some(&schema));
+    assert_eq!(diff, vec!["action".to_string()]);
 }
 
 #[test]
