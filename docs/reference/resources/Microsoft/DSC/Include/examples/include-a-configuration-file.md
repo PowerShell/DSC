@@ -87,7 +87,7 @@ results:
         $id: https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json
         family: macOS
         version: 15.5.0
-        bitness: '64'
+        bitness: 64
         architecture: arm64
 messages: []
 hadErrors: false

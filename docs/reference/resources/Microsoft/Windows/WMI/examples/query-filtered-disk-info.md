@@ -14,7 +14,7 @@ specific drives using a configuration document.
 
 ## Definition
 
-The configuration document for this example defines one instances of the `Win32_LogicalDisk` resource.
+The configuration document for this example defines one instance of the `Win32_LogicalDisk` resource.
 
 The instance defines the properties to return in the output.
 
