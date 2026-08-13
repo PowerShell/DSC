@@ -1,0 +1,169 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
+use rust_i18n::t;
+use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
+
+#[derive(Debug, Clone, Copy)]
+pub enum Operation {
+    Get,
+    Set,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum Scope {
+    AllUsers,
+    #[default]
+    CurrentUser,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum PathAction {
+    Prepend,
+    Append,
+    #[default]
+    Clobber,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct EnvironmentVariableList {
+    pub environment_variables: Vec<EnvironmentVariable>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct EnvironmentVariable {
+    #[serde(default)]
+    pub scope: Scope,
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub value: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub path_value: Option<Vec<String>>,
+    #[serde(default, skip_serializing)]
+    pub path_action: Option<PathAction>,
+    #[serde(rename = "_exist", skip_serializing_if = "Option::is_none")]
+    pub exist: Option<bool>,
+}
+
+impl EnvironmentVariableList {
+    pub fn validate(&self, operation: Operation) -> Result<(), String> {
+        if self.environment_variables.is_empty() {
+            return Err(t!("validation.emptyList").to_string());
+        }
+
+        let mut identities = HashSet::new();
+        for variable in &self.environment_variables {
+            variable.validate(operation)?;
+            let identity = (variable.scope, variable.name.to_lowercase());
+            if !identities.insert(identity) {
+                return Err(t!(
+                    "validation.duplicate",
+                    name = variable.name.as_str(),
+                    scope = variable.scope.to_string()
+                )
+                .to_string());
+            }
+        }
+
+        Ok(())
+    }
+}
+
+impl EnvironmentVariable {
+    fn validate(&self, operation: Operation) -> Result<(), String> {
+        if self.name.is_empty() {
+            return Err(t!("validation.emptyName").to_string());
+        }
+        if self.name.contains('\0') {
+            return Err(t!("validation.invalidName", name = self.name.as_str()).to_string());
+        }
+        if self.value.is_some() && self.path_value.is_some() {
+            return Err(t!("validation.valueConflict", name = self.name.as_str()).to_string());
+        }
+        if self.path_action.is_some() && self.path_value.is_none() {
+            return Err(t!(
+                "validation.pathActionWithoutValue",
+                name = self.name.as_str()
+            )
+            .to_string());
+        }
+        if let Some(entries) = &self.path_value
+            && entries
+                .iter()
+                .any(|entry| entry.is_empty() || entry.contains(';') || entry.contains('\0'))
+        {
+            return Err(t!("validation.invalidPathEntry", name = self.name.as_str()).to_string());
+        }
+        if matches!(operation, Operation::Set)
+            && self.exist.unwrap_or(true)
+            && self.value.is_none()
+            && self.path_value.is_none()
+        {
+            return Err(t!("validation.missingValue", name = self.name.as_str()).to_string());
+        }
+
+        Ok(())
+    }
+}
+
+impl std::fmt::Display for Scope {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::AllUsers => write!(formatter, "AllUsers"),
+            Self::CurrentUser => write!(formatter, "CurrentUser"),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{EnvironmentVariable, EnvironmentVariableList, Operation, PathAction, Scope};
+
+    fn variable(name: &str) -> EnvironmentVariable {
+        EnvironmentVariable {
+            scope: Scope::CurrentUser,
+            name: name.to_string(),
+            value: Some("value".to_string()),
+            path_value: None,
+            path_action: None,
+            exist: None,
+        }
+    }
+
+    #[test]
+    fn rejects_duplicate_identity_case_insensitively() {
+        let mut second = variable("TEST_NAME");
+        second.scope = Scope::CurrentUser;
+        let list = EnvironmentVariableList {
+            environment_variables: vec![variable("Test_Name"), second],
+        };
+
+        assert!(list.validate(Operation::Set).is_err());
+    }
+
+    #[test]
+    fn allows_same_name_in_different_scopes() {
+        let mut second = variable("Test_Name");
+        second.scope = Scope::AllUsers;
+        let list = EnvironmentVariableList {
+            environment_variables: vec![variable("Test_Name"), second],
+        };
+
+        assert!(list.validate(Operation::Set).is_ok());
+    }
+
+    #[test]
+    fn rejects_path_action_without_path_value() {
+        let mut input = variable("Test_Name");
+        input.path_action = Some(PathAction::Append);
+        let list = EnvironmentVariableList {
+            environment_variables: vec![input],
+        };
+
+        assert!(list.validate(Operation::Set).is_err());
+    }
+}
