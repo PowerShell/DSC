@@ -1,0 +1,13 @@
+[package]
+name    = "dsc-lib-telemetry"
+version = "0.0.0"
+edition = "2024"
+
+[lib]
+doctest = false # Disable doc tests by default for compilation speed
+
+[dependencies]
+thiserror            = { workspace = true }
+tracing              = { workspace = true }
+tracing-indicatif    = { workspace = true }
+tracing-subscriber   = { workspace = true }

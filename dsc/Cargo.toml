@@ -37,3 +37,4 @@ tracing-subscriber = { workspace = true }
 tracing-indicatif = { workspace = true }
 # workspace crate dependencies
 dsc-lib = { workspace = true }
+dsc-lib-telemetry = { workspace = true }

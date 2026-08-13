@@ -749,6 +749,7 @@ dependencies = [
  "crossterm",
  "ctrlc",
  "dsc-lib",
+ "dsc-lib-telemetry",
  "indicatif",
  "jsonschema",
  "path-absolutize",
@@ -906,6 +907,16 @@ version = "0.1.0"
 dependencies = [
  "is_elevated",
  "nix",
+]
+
+[[package]]
+name = "dsc-lib-telemetry"
+version = "0.0.0"
+dependencies = [
+ "thiserror 2.0.19",
+ "tracing",
+ "tracing-indicatif",
+ "tracing-subscriber",
 ]
 
 [[package]]

@@ -16,6 +16,7 @@ mod operation;
 mod adapter;
 mod refresh_env;
 mod restart_required;
+mod schema_default;
 mod set;
 mod sleep;
 mod state_and_diff;
@@ -41,6 +42,7 @@ use crate::metadata::Metadata;
 use crate::operation::Operation;
 use crate::refresh_env::RefreshEnv;
 use crate::restart_required::RestartRequired;
+use crate::schema_default::SchemaDefault;
 use crate::set::{Set, invoke_set};
 use crate::sleep::Sleep;
 use crate::state_and_diff::StateAndDiff;
@@ -288,6 +290,18 @@ fn main() {
             };
             serde_json::to_string(&restart_required).unwrap()
         },
+        SubCommand::SchemaDefault { input } => {
+            let schema_default = match serde_json::from_str::<SchemaDefault>(&input) {
+                Ok(sd) => sd,
+                Err(err) => {
+                    eprintln!("Error JSON does not match schema: {err}");
+                    std::process::exit(1);
+                }
+            };
+            // Only return 'name' in the output - omit 'enabled' and 'count'
+            // to test schema default comparison
+            serde_json::json!({"name": schema_default.name}).to_string()
+        },
         SubCommand::Schema { subcommand } => {
             let schema = match subcommand {
                 Schemas::Adapter => {
@@ -334,6 +348,9 @@ fn main() {
                 },
                 Schemas::RestartRequired => {
                     schema_for!(RestartRequired)
+                },
+                Schemas::SchemaDefault => {
+                    schema_for!(SchemaDefault)
                 },
                 Schemas::Set => {
                     schema_for!(Set)

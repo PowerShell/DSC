@@ -40,7 +40,7 @@ MinimumDSCVersion:  3.2.0
   properties: # adapted resource properties
     <property name>: <property value>
   directives:
-    requireAdapter: Microsoft.Adapter/WindowsPowerShell
+    requireAdapter: Microsoft.Adapter/PowerShell
 ```
 
 ## Description

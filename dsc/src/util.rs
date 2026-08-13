@@ -46,6 +46,7 @@ use dsc_lib::{
         parse_input_to_json,
     },
 };
+use dsc_lib_telemetry::{StderrFormat, basic::{BasicTracingOptions}};
 use path_absolutize::Absolutize;
 use rust_i18n::t;
 use schemars::{Schema, schema_for};
@@ -62,8 +63,6 @@ use syntect::{
     util::{as_24_bit_terminal_escaped, LinesWithEndings}
 };
 use tracing::{Level, debug, error, info, warn, trace};
-use tracing_subscriber::{filter::EnvFilter, layer::SubscriberExt, Layer};
-use tracing_indicatif::IndicatifLayer;
 
 pub const EXIT_SUCCESS: i32 = 0;
 pub const EXIT_INVALID_ARGS: i32 = 1;
@@ -327,22 +326,10 @@ pub fn write_object(json: &str, format: Option<&OutputFormat>, include_separator
 
 #[allow(clippy::too_many_lines)]
 pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Option<&TraceFormat>) {
-
     let mut policy_is_used = false;
     let mut tracing_setting = TracingSetting::default();
 
-    let default_filter = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("warn"))
-        .unwrap_or_default()
-        .add_directive(Level::WARN.into());
-    let default_indicatif_layer = IndicatifLayer::new();
-    let default_layer = tracing_subscriber::fmt::Layer::default().with_writer(default_indicatif_layer.get_stderr_writer());
-    let default_fmt = default_layer
-                .with_ansi(true)
-                .with_level(true)
-                .boxed();
-    let default_subscriber = tracing_subscriber::Registry::default().with(default_fmt).with(default_filter).with(default_indicatif_layer);
-    let default_guard = tracing::subscriber::set_default(default_subscriber);
+    let default_guard = dsc_lib_telemetry::basic::BasicTracingOptions::init_default_guard();
 
     // read setting/policy from files
     if let Ok(v) = get_setting("tracing") {
@@ -399,44 +386,18 @@ pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Op
         TraceLevel::Debug => Level::DEBUG,
         TraceLevel::Trace => Level::TRACE,
     };
-
-    // enable tracing
-    let filter = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("warn"))
-        .unwrap_or_default()
-        .add_directive(tracing_level.into());
-    let indicatif_layer = IndicatifLayer::new();
-    let layer = tracing_subscriber::fmt::Layer::default().with_writer(indicatif_layer.get_stderr_writer());
-    let with_source = tracing_level == Level::DEBUG || tracing_level == Level::TRACE;
-    let fmt = match tracing_setting.format {
-        TraceFormat::Default => {
-            layer
-                .with_ansi(true)
-                .with_level(true)
-                .with_target(with_source)
-                .with_line_number(with_source)
-                .boxed()
-        },
-        TraceFormat::Plaintext => {
-            layer
-                .with_ansi(false)
-                .with_level(true)
-                .with_target(with_source)
-                .with_line_number(with_source)
-                .boxed()
-        },
-        TraceFormat::Json | TraceFormat::PassThrough => {
-            layer
-                .with_ansi(false)
-                .with_level(true)
-                .with_target(with_source)
-                .with_line_number(with_source)
-                .json()
-                .boxed()
-        },
+    // convert to 'dsc-lib-telemetry' crate type
+    let stderr_format = match tracing_setting.format {
+        TraceFormat::Default => StderrFormat::Default,
+        TraceFormat::Plaintext => StderrFormat::Plaintext,
+        TraceFormat::Json | TraceFormat::PassThrough => StderrFormat::Json,
     };
 
-    let subscriber = tracing_subscriber::Registry::default().with(fmt).with(filter).with(indicatif_layer);
+    // enable tracing
+    let subscriber = BasicTracingOptions {
+        tracing_level,
+        stderr_format
+    }.init_subscriber();
 
     drop(default_guard);
     if tracing::subscriber::set_global_default(subscriber).is_err() {
