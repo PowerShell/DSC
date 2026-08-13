@@ -79,25 +79,26 @@ pub fn test(input: &FileContent) -> Result<FileState, String> {
 
 pub fn export(input: &FileContent) -> Result<ExportState, String> {
     validate_input(input)?;
-    let state = read_state(&input.path)?;
-    if !state.exist {
-        return Ok(ExportState {
-            path: state.path,
-            content: None,
-            sha256: None,
-            sha512: None,
-            exist: false,
-        });
-    }
-
-    let bytes = fs::read(&input.path).map_err(|error| {
-        t!(
-            "export.readError",
-            path = input.path.as_str(),
-            error = error.to_string()
-        )
-        .to_string()
-    })?;
+    let bytes = match fs::read(&input.path) {
+        Ok(bytes) => bytes,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            return Ok(ExportState {
+                path: input.path.clone(),
+                content: None,
+                sha256: None,
+                sha512: None,
+                exist: false,
+            });
+        }
+        Err(error) => {
+            return Err(t!(
+                "export.readError",
+                path = input.path.as_str(),
+                error = error.to_string()
+            )
+            .to_string());
+        }
+    };
     let content = String::from_utf8(bytes).map_err(|error| {
         t!(
             "export.readError",
@@ -109,7 +110,7 @@ pub fn export(input: &FileContent) -> Result<ExportState, String> {
     let (sha256, sha512) = hash_bytes(content.as_bytes());
 
     Ok(ExportState {
-        path: state.path,
+        path: input.path.clone(),
         content: Some(content),
         sha256: Some(sha256),
         sha512: Some(sha512),

@@ -36,4 +36,19 @@ Describe 'FileContent get tests' {
         $actual.PSObject.Properties.Name | Should -Not -Contain 'sha256'
         $actual.PSObject.Properties.Name | Should -Not -Contain 'sha512'
     }
+
+    It 'Accepts the short input argument' {
+        $json = @{ path = $filePath } | ConvertTo-Json -Compress
+        $actual = filecontent get -i $json 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+
+        $actual._exist | Should -BeTrue
+    }
+
+    It 'Reports a missing input value' {
+        $null = filecontent get --input 2>$TestDrive/error.log
+
+        $LASTEXITCODE | Should -Be 1
+        (Get-Content -Raw $TestDrive/error.log) | Should -Match 'Missing value for --input argument'
+    }
 }

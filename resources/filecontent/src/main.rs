@@ -41,8 +41,11 @@ fn main() {
 fn parse_input_arg(args: &[String]) -> Option<&str> {
     let mut index = 0;
     while index < args.len() {
-        if args[index] == "--input" {
-            return args.get(index + 1).map(String::as_str);
+        if args[index] == "--input" || args[index] == "-i" {
+            let Some(input) = args.get(index + 1) else {
+                fail(EXIT_INVALID_ARGS, &t!("main.missingInputValue"));
+            };
+            return Some(input);
         }
         index += 1;
     }

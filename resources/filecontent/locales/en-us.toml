@@ -4,6 +4,7 @@ _version = 1
 missingOperation = "Missing operation. Usage: filecontent <get|set|test|export> --input <json>"
 unknownOperation = "Unknown operation: '%{operation}'. Expected: get, set, test, or export"
 missingInput = "Missing --input argument"
+missingInputValue = "Missing value for --input argument"
 invalidJson = "Invalid JSON input: %{error}"
 serializeError = "Failed to serialize output: %{error}"
 
