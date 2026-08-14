@@ -66,12 +66,6 @@ pub struct AdaptedDscResourceManifest {
 }
 
 impl AdaptedDscResourceManifest {
-    /// Generates the subschema validating the `$schema` property for this type.
-    ///
-    /// Before the adapted resource manifest schema had its own URIs, instances declared the
-    /// resource manifest schema URIs instead. Those URIs remain accepted so existing manifests
-    /// stay valid, but are marked as deprecated so tooling can prompt authors to update to this
-    /// type's own URIs.
     fn recognized_schema_uris_with_deprecated_subschema(generator: &mut schemars::SchemaGenerator) -> schemars::Schema {
         let mut subschema = <Self as DscRepoSchema>::recognized_schema_uris_subschema(generator);
         subschema.remove("enum");
