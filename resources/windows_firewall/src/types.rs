@@ -23,17 +23,29 @@ pub enum RuleAction {
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
-pub enum UnspecifiedRulesAction {
+pub enum UnspecifiedRuleAction {
     Ignore,
     Disable,
     Remove,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct UnspecifiedRules {
+    pub action: UnspecifiedRuleAction,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub direction: Option<RuleDirection>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub profiles: Option<Vec<String>>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct FirewallRuleList {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub unspecified_rules_action: Option<UnspecifiedRulesAction>,
+    pub unspecified_rules: Option<UnspecifiedRules>,
     pub rules: Vec<FirewallRule>,
 }
 
@@ -135,6 +147,22 @@ impl From<String> for FirewallError {
 #[cfg(windows)]
 impl From<windows::core::Error> for FirewallError {
     fn from(error: windows::core::Error) -> Self {
-        Self { message: error.to_string() }
+        Self {
+            message: error.to_string(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::FirewallRuleList;
+
+    #[test]
+    fn unspecified_rules_requires_action() {
+        let result = serde_json::from_str::<FirewallRuleList>(
+            r#"{"unspecifiedRules":{"direction":"Inbound"},"rules":[]}"#,
+        );
+
+        assert!(result.is_err());
     }
 }
