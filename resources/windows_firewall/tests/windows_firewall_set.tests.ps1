@@ -59,6 +59,19 @@ Describe 'Microsoft.Windows/FirewallRuleList - set operation' -Skip:(!$isElevate
         ($out | ConvertFrom-Json).afterState.rules | Should -BeNullOrEmpty
     }
 
+    It 'does not return unspecifiedRules in the after state' -Skip:(!$isElevated) {
+        $json = @{
+            rules = @()
+            unspecifiedRules = @{
+                action = 'ignore'
+            }
+        } | ConvertTo-Json -Compress -Depth 5
+        $out = $json | dsc resource set -r $resourceType -f - 2>$testdrive/error.log
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
+
+        ($out | ConvertFrom-Json).afterState.PSObject.Properties.Name | Should -Not -Contain 'unspecifiedRules'
+    }
+
     It 'updates an existing rule' -Skip:(!$isElevated) {
         Initialize-TestFirewallRule
         $json = @{ rules = @(@{ name = $testRuleName; description = 'Updated by DSC test'; enabled = $false }) } | ConvertTo-Json -Compress -Depth 5
