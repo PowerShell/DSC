@@ -36,7 +36,7 @@ pub enum AdaptedPathOrContent {
 pub struct AdaptedDscResourceManifest {
     /// The version of the resource manifest schema.
     #[serde(rename = "$schema")]
-    #[schemars(schema_with = "AdaptedDscResourceManifest::recognized_schema_uris_union_subschema")]
+    #[schemars(schema_with = "AdaptedDscResourceManifest::recognized_schema_uris_with_deprecated_subschema")]
     pub schema_version: String,
     /// The namespaced name of the resource.
     #[serde(rename="type")]
@@ -66,14 +66,36 @@ pub struct AdaptedDscResourceManifest {
 }
 
 impl AdaptedDscResourceManifest {
-    fn recognized_schema_uris_union_subschema(generator: &mut schemars::SchemaGenerator) -> schemars::Schema {
+    /// Generates the subschema validating the `$schema` property for this type.
+    ///
+    /// Before the adapted resource manifest schema had its own URIs, instances declared the
+    /// resource manifest schema URIs instead. Those URIs remain accepted so existing manifests
+    /// stay valid, but are marked as deprecated so tooling can prompt authors to update to this
+    /// type's own URIs.
+    fn recognized_schema_uris_with_deprecated_subschema(generator: &mut schemars::SchemaGenerator) -> schemars::Schema {
         let mut subschema = <Self as DscRepoSchema>::recognized_schema_uris_subschema(generator);
-        let uris: Vec<Value> = Self::recognized_schema_uris()
+        subschema.remove("enum");
+        let recognized_uris: Vec<Value> = Self::recognized_schema_uris()
             .into_iter()
-            .chain(ResourceManifest::recognized_schema_uris())
             .map(Value::String)
             .collect();
-        subschema.insert("enum".to_string(), Value::Array(uris));
+        let deprecated_uris: Vec<Value> = ResourceManifest::recognized_schema_uris()
+            .into_iter()
+            .map(Value::String)
+            .collect();
+        subschema.insert("oneOf".to_string(), serde_json::json!([
+            {
+                "enum": recognized_uris,
+            },
+            {
+                "enum": deprecated_uris,
+                "deprecated": true,
+                "deprecationMessage": t!(
+                    "dscresources.resource_manifest.adaptedResourceManifestDeprecatedSchemaUri",
+                    uri = Self::default_schema_id_uri()
+                ),
+            },
+        ]));
         subschema
     }
 }

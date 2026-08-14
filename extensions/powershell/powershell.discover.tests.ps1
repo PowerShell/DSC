@@ -22,7 +22,7 @@ BeforeAll {
     $fakeManifest | ConvertTo-Json -Depth 10 | Set-Content -Path $manifestPath
 
     $fakeAdaptedManifest = @{
-        '$schema'      = "https://aka.ms/dsc/schemas/v3/bundled/adaptedresource/manifest.json"
+        '$schema'      = "https://aka.ms/dsc/schemas/v3/bundled/resource/adapted/manifest.json"
         type           = "Test/FakeAdaptedResource"
         kind           = "resource"
         version        = "0.1.0"
