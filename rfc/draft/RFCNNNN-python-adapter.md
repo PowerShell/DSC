@@ -62,8 +62,7 @@ the capability protocols they need:
 ```python
 from dataclasses import dataclass, field
 from collections.abc import Iterator
-from ms_dsc import DscResource, dsc_resource, SetResult, TestResult
-from ms_dsc.metadata import SetReturn, TestReturn
+from ms_dsc import DscResource, dsc_resource
 from ms_dsc.schema import DataclassSchemaProvider
 
 @dataclass
@@ -76,8 +75,6 @@ class GreetingSchema:
     version="1.0.0",
     description="A resource that manages greeting messages.",
     tags=["example"],
-    set_return=SetReturn.STATE_AND_DIFF,
-    test_return=TestReturn.STATE_AND_DIFF,
 )
 class GreetingResource(DscResource[GreetingSchema]):
     schema_provider = DataclassSchemaProvider(GreetingSchema)
@@ -85,15 +82,14 @@ class GreetingResource(DscResource[GreetingSchema]):
     def get(self, instance: GreetingSchema) -> GreetingSchema:
         return GreetingSchema(name=instance.name, message=f"Hello, {instance.name}!")
 
-    def set(self, instance: GreetingSchema) -> SetResult[GreetingSchema]:
+    def set(self, instance: GreetingSchema) -> GreetingSchema:
         actual = self.get(instance)
-        changed = [f for f in ("message",) if getattr(actual, f) != getattr(instance, f)]
-        return SetResult(actual_state=actual, changed_properties=changed)
+        # Apply desired state and return actual state
+        return actual
 
-    def test(self, instance: GreetingSchema) -> TestResult[GreetingSchema]:
-        actual = self.get(instance)
-        diffs = [f for f in ("message",) if getattr(actual, f) != getattr(instance, f)]
-        return TestResult(actual_state=actual, differing_properties=diffs)
+    def test(self, instance: GreetingSchema) -> GreetingSchema:
+        # Return the actual state
+        return self.get(instance)
 
     def export(self, instance: GreetingSchema | None) -> Iterator[GreetingSchema]:
         for name in ("Alice", "Bob"):
@@ -160,8 +156,8 @@ and `dsc-gen` use `isinstance()` to detect which capabilities a resource class i
 | Protocol | Method signature | DSC capability |
 |----------|-----------------|----------------|
 | `Gettable` | `get(self, instance: T) -> T` | `get` |
-| `Settable` | `set(self, instance: T) -> SetResult[T]` | `set` |
-| `Testable` | `test(self, instance: T) -> TestResult[T]` | `test` |
+| `Settable` | `set(self, instance: T) -> T` | `set` |
+| `Testable` | `test(self, instance: T) -> T` | `test` |
 | `Deletable` | `delete(self, instance: T) -> None` | `delete` |
 | `Exportable` | `export(self, instance: T \| None) -> Iterator[T]` | `export` |
 
@@ -180,23 +176,7 @@ metadata:
     version="1.0.0",              # Required: semver string
     description="...",            # Optional: resource description
     tags=["tag1", "tag2"],        # Optional: list of tags for discovery filtering
-    set_return=SetReturn.STATE,   # Optional: STATE (default) or STATE_AND_DIFF
-    test_return=TestReturn.STATE, # Optional: STATE (default) or STATE_AND_DIFF
 )
-```
-
-#### Return types
-
-```python
-@dataclass
-class SetResult(Generic[T]):
-    actual_state: T
-    changed_properties: list[str]  # Required when set_return=STATE_AND_DIFF
-
-@dataclass
-class TestResult(Generic[T]):
-    actual_state: T
-    differing_properties: list[str]  # Required when test_return=STATE_AND_DIFF
 ```
 
 #### Schema providers
@@ -545,3 +525,44 @@ Rejected in favor of the package-based adapter structure.
 Pydantic provides excellent runtime validation. Rejected as a hard requirement
 because many resources are simple and don't need Pydantic's overhead. Pydantic
 remains an optional, fully-supported schema backend.
+
+### Protocol Evolution Strategy (Future Consideration)
+
+In future versions, adapters may support adapted resources specifying enhanced return
+types for operations like `set()` and `test()` (e.g., `state` vs. `state_and_diff`).
+Python's structural typing with `@runtime_checkable` protocols enables this without
+breaking existing resources:
+
+**Multi-protocol support:** New protocol versions can be defined alongside old ones.
+The adapter detects which protocol a resource implements using `isinstance()` and
+invokes it accordingly:
+
+```python
+from typing import Protocol, runtime_checkable
+
+@runtime_checkable
+class Testable(Protocol):
+    """Returns state only"""
+    def test(self, instance: T) -> T: ...
+
+@runtime_checkable
+class TestableWithDetails(Protocol):
+    """Returns state and additional details"""
+    def test(self, instance: T) -> TestDetails[T]: ...
+
+# Adapter detects which version the resource implements
+if isinstance(resource, TestableWithDetails):
+    result = resource.test(instance)
+    # Extract both state and details from TestDetails
+elif isinstance(resource, Testable):
+    actual_state = resource.test(instance)
+    # Treat as state-only return
+```
+
+The adapter's `isinstance()` protocol detection eliminates the need for explicit
+decorator parameters to specify return types. Resources that implement `TestableWithDetails`
+automatically return state and details; those implementing `Testable` return state only.
+Each operation (`test`, `set`, etc.) can have its own details type (`TestDetails`, `SetDetails`,
+etc.), allowing different operations to provide operation-specific information. This approach
+allows enhanced return types to be adopted incrementally and optionally by resource authors
+without affecting existing resources.
