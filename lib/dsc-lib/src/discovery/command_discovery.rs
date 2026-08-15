@@ -867,7 +867,7 @@ pub fn load_adapted_resource_manifest(path: &Path, manifest: &AdaptedDscResource
         ));
     }
 
-    if ResourceManifest::is_recognized_schema_uri(&manifest.schema_version) {
+    if AdaptedDscResourceManifest::is_deprecated_schema_uri(&manifest.schema_version) {
         warn!("{}", t!(
             "discovery.commandDiscovery.adaptedResourceDeprecatedSchemaUri",
             path = path.to_string_lossy(),
