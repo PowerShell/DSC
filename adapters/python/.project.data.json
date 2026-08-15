@@ -1,0 +1,24 @@
+{
+    "Name": "python-adapter",
+    "Kind": "Adapter",
+    "CopyFiles": {
+        "All": [
+            "pyadapter/__init__.py",
+            "pyadapter/__main__.py",
+            "pyadapter/cli.py",
+            "pyadapter/cache.py",
+            "pyadapter/discovery.py",
+            "pyadapter/schema.py",
+            "pyadapter/router.py"
+        ],
+        "Windows": [
+            "python.dsc.resource.json"
+        ],
+        "Linux": [
+            "python3.dsc.resource.json"
+        ],
+        "macOS": [
+            "python3.dsc.resource.json"
+        ]
+    }
+}

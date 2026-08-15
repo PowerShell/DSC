@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dsc-test-resource"
+version = "0.1.0"
+description = "Test fixture DSC resources for the Python adapter test suite."
+requires-python = ">=3.11"
+dependencies = [
+    "ms-dsc @ file:../../ms-dsc",
+]
+
+[project.entry-points."microsoft.dsc.resources"]
+"DscTest/Get"       = "dsc_test_resource.resources:GetResource"
+"DscTest/ReadWrite" = "dsc_test_resource.resources:ReadWriteResource"
+"DscTest/Export"    = "dsc_test_resource.resources:ExportResource"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["dsc_test_resource*"]
+
+[tool.setuptools.package-data]
+dsc_test_resource = ["dsc/*.json"]
