@@ -66,6 +66,13 @@ pub struct AdaptedDscResourceManifest {
 }
 
 impl AdaptedDscResourceManifest {
+    pub const LEGACY_SHIPPED_SCHEMA_URI: &'static str = "https://aka.ms/dsc/schemas/v3/bundled/adaptedresource/manifest.json";
+
+    #[must_use]
+    pub fn is_deprecated_schema_uri(uri: &String) -> bool {
+        uri.as_str() == Self::LEGACY_SHIPPED_SCHEMA_URI || ResourceManifest::is_recognized_schema_uri(uri)
+    }
+
     fn recognized_schema_uris_with_deprecated_subschema(generator: &mut schemars::SchemaGenerator) -> schemars::Schema {
         let mut subschema = <Self as DscRepoSchema>::recognized_schema_uris_subschema(generator);
         subschema.remove("enum");
@@ -75,6 +82,7 @@ impl AdaptedDscResourceManifest {
             .collect();
         let deprecated_uris: Vec<Value> = ResourceManifest::recognized_schema_uris()
             .into_iter()
+            .chain([Self::LEGACY_SHIPPED_SCHEMA_URI.to_string()])
             .map(Value::String)
             .collect();
         subschema.insert("oneOf".to_string(), serde_json::json!([
