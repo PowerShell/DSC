@@ -63,6 +63,7 @@
                     "type": "object",
                     "title": "Unspecified rules",
                     "description": "Defines the action and optional scope for firewall rules not explicitly listed in the rules array. When both direction and profiles are specified, a rule must match both filters.",
+                    "writeOnly": true,
                     "additionalProperties": false,
                     "required": [
                         "action"

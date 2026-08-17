@@ -26,9 +26,11 @@ Describe 'Microsoft.Windows/FirewallRuleList - synthetic test with schema defaul
         Remove-NetFirewallRule -Name $testRuleName -ErrorAction Ignore
     }
 
-    It 'unspecifiedRulesAction set to default "ignore" does not report as differing' {
+    It 'unspecifiedRules action "ignore" does not report as differing' {
         $json = @{
-            unspecifiedRulesAction = 'ignore'
+            unspecifiedRules = @{
+                action = 'ignore'
+            }
             rules = @(@{
                 name = $testRuleName
                 direction = 'Inbound'
@@ -43,10 +45,10 @@ Describe 'Microsoft.Windows/FirewallRuleList - synthetic test with schema defaul
 
         $result = $out | ConvertFrom-Json
         $result.inDesiredState | Should -Be $true
-        $result.differingProperties | Should -Not -Contain 'unspecifiedRulesAction'
+        $result.differingProperties | Should -Not -Contain 'unspecifiedRules'
     }
 
-    It 'unspecifiedRulesAction omitted does not report as differing' {
+    It 'unspecifiedRules omitted does not report as differing' {
         $json = @{
             rules = @(@{
                 name = $testRuleName
@@ -62,12 +64,14 @@ Describe 'Microsoft.Windows/FirewallRuleList - synthetic test with schema defaul
 
         $result = $out | ConvertFrom-Json
         $result.inDesiredState | Should -Be $true
-        $result.differingProperties | Should -Not -Contain 'unspecifiedRulesAction'
+        $result.differingProperties | Should -Not -Contain 'unspecifiedRules'
     }
 
-    It 'non-default unspecifiedRulesAction "disable" is reported as differing' {
+    It 'unspecifiedRules action "disable" is ignored for comparison' {
         $json = @{
-            unspecifiedRulesAction = 'disable'
+            unspecifiedRules = @{
+                action = 'disable'
+            }
             rules = @(@{
                 name = $testRuleName
                 direction = 'Inbound'
@@ -81,12 +85,15 @@ Describe 'Microsoft.Windows/FirewallRuleList - synthetic test with schema defaul
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
 
         $result = $out | ConvertFrom-Json
-        $result.differingProperties | Should -Contain 'unspecifiedRulesAction'
+        $result.inDesiredState | Should -Be $true
+        $result.differingProperties | Should -Not -Contain 'unspecifiedRules'
     }
 
-    It 'non-default unspecifiedRulesAction "remove" is reported as differing' {
+    It 'unspecifiedRules action "remove" is ignored for comparison' {
         $json = @{
-            unspecifiedRulesAction = 'remove'
+            unspecifiedRules = @{
+                action = 'remove'
+            }
             rules = @(@{
                 name = $testRuleName
                 direction = 'Inbound'
@@ -100,6 +107,7 @@ Describe 'Microsoft.Windows/FirewallRuleList - synthetic test with schema defaul
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
 
         $result = $out | ConvertFrom-Json
-        $result.differingProperties | Should -Contain 'unspecifiedRulesAction'
+        $result.inDesiredState | Should -Be $true
+        $result.differingProperties | Should -Not -Contain 'unspecifiedRules'
     }
 }
