@@ -194,7 +194,7 @@ failure.
 <!-- Link references -->
 [01]: ../WindowsPowerShell/index.md
 [02]: ../../DSC/PowerShell/index.md
-[03]: ../../../../schemas/config/resource.md#requireAdapter
+[03]: ../../../../schemas/config/resource.md#requireadapter
 [04]: /powershell/scripting/install/installing-powershell
 [05]: examples/invoke-a-resource.md
 [06]: examples/configure-a-machine.md
