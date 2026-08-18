@@ -298,9 +298,14 @@ fn main() {
                     std::process::exit(1);
                 }
             };
-            // Only return 'name' in the output - omit 'enabled' and 'count'
-            // to test schema default comparison
-            serde_json::json!({"name": schema_default.name}).to_string()
+            let mut actual = serde_json::json!({"name": schema_default.name});
+            if schema_default.nested.is_some() {
+                actual["nested"] = serde_json::json!({"value": "actual"});
+            }
+            if schema_default.referenced_nested.is_some() {
+                actual["referencedNested"] = serde_json::json!({"value": "actual"});
+            }
+            actual.to_string()
         },
         SubCommand::Schema { subcommand } => {
             let schema = match subcommand {
