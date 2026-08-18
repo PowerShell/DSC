@@ -304,11 +304,16 @@ jobs:
 
   coverage-report:
     if: github.event_name == 'pull_request'
-    # Use Linux coverage only: merging all platforms inflates total line count
-    # because each platform has platform-specific source files (Windows adds ~4500
-    # lines from registry/service/DISM resources). Single-platform coverage matches
-    # local `build.ps1 -codecoverage` results and avoids misleadingly low percentages.
-    needs: [linux-build, linux-pester]
+    # Use all platforms for changed-code coverage so platform-specific files are
+    # included. Keep full-codebase coverage Linux-only to avoid inflating its
+    # denominator with platform-specific sources.
+    needs:
+      - linux-build
+      - linux-pester
+      - macos-build
+      - macos-pester
+      - windows-build
+      - windows-pester
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -321,7 +326,7 @@ jobs:
       - name: Download coverage artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: 'linux*coverage'
+          pattern: '*coverage'
           path: coverage-data
 
       - name: Consolidate coverage data
@@ -339,21 +344,33 @@ jobs:
               $baseSha = $mergeBase
           }
 
-          # Find all available lcov.info files from coverage artifacts
+          # Changed-code coverage uses every platform so platform-specific Rust
+          # files are analyzed. Full-codebase coverage remains Linux-only to
+          # avoid inflating its denominator with platform-specific sources.
           $lcovFiles = Get-ChildItem -Path 'coverage-data' -Filter 'lcov.info' -Recurse
           $pesterLcovFiles = Get-ChildItem -Path 'coverage-data' -Filter 'pester-lcov.info' -Recurse
           $allLcovFiles = @($lcovFiles) + @($pesterLcovFiles) | Where-Object { $_ }
+          $linuxLcovFiles = @($allLcovFiles | Where-Object {
+              ($_.FullName -match '[/\\]linux-[^/\\]+-coverage[/\\]') -or
+              ($_.FullName -match '[/\\]linux-coverage[/\\]')
+          })
 
           if ($allLcovFiles.Count -eq 0) {
               Write-Warning 'No coverage data found from any platform.'
               "coverage_failed=true" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
               return
           }
+          if ($linuxLcovFiles.Count -eq 0) {
+              Write-Warning 'No Linux coverage data found for the full-codebase report.'
+              "coverage_failed=true" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
+              return
+          }
           "coverage_failed=false" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
 
-          Write-Verbose -Verbose "Found $($allLcovFiles.Count) LCOV file(s) to merge"
+          Write-Verbose -Verbose "Found $($allLcovFiles.Count) cross-platform LCOV file(s)"
+          Write-Verbose -Verbose "Found $($linuxLcovFiles.Count) Linux LCOV file(s)"
 
-          # Merge all LCOV files into a single consolidated report
+          # Merge all platforms for changed-code coverage.
           $mergedLcovPath = Join-Path $PWD 'merged-lcov.info'
           if ($allLcovFiles.Count -eq 1) {
               Copy-Item -Path $allLcovFiles[0].FullName -Destination $mergedLcovPath
@@ -361,8 +378,15 @@ jobs:
               Merge-LcovFile -Path ($allLcovFiles | ForEach-Object { $_.FullName }) -OutputPath $mergedLcovPath -Verbose
           }
 
-          # Full codebase coverage report (always computed)
-          $fullReport = Get-FullCodeCoverageReport -LcovPath $mergedLcovPath -Verbose
+          # Merge Linux coverage separately for the full-codebase report.
+          $linuxMergedLcovPath = Join-Path $PWD 'linux-merged-lcov.info'
+          if ($linuxLcovFiles.Count -eq 1) {
+              Copy-Item -Path $linuxLcovFiles[0].FullName -Destination $linuxMergedLcovPath
+          } else {
+              Merge-LcovFile -Path ($linuxLcovFiles | ForEach-Object { $_.FullName }) -OutputPath $linuxMergedLcovPath -Verbose
+          }
+
+          $fullReport = Get-FullCodeCoverageReport -LcovPath $linuxMergedLcovPath -Verbose
 
           "full_percentage=$($fullReport.Percentage)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
           "full_covered=$($fullReport.CoveredLines)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
