@@ -702,7 +702,30 @@ pub(crate) fn get_diff_with_schema(expected: &Value, actual: &Value, schema: Opt
             }
 
             if value.is_object() {
-                let sub_diff = get_diff(value, &actual[key]);
+                // When comparing nested objects, pass the corresponding nested schema so that
+                // nested `writeOnly` properties and nested defaults are handled correctly.
+                let sub_schema = schema.and_then(|schema| {
+                    let mut property_schema = schema
+                        .get("properties")
+                        .and_then(Value::as_object)
+                        .and_then(|properties| properties.get(key))?;
+                    // Resolve local refs so nested comparisons can still see `properties`, `default`, and `writeOnly`.
+                    let mut visited_references = HashSet::<String>::new();
+                    while let Some(reference) = property_schema.get("$ref").and_then(Value::as_str) {
+                        let Some(pointer) = reference.strip_prefix('#') else {
+                            break;
+                        };
+                        if !visited_references.insert(pointer.to_string()) {
+                            break;
+                        }
+                        let Some(resolved_schema) = schema.pointer(pointer) else {
+                            break;
+                        };
+                        property_schema = resolved_schema;
+                    }
+                    Some(property_schema)
+                });
+                let sub_diff = get_diff_with_schema(value, &actual[key], sub_schema);
                 if !sub_diff.is_empty() {
                     debug!("{}", t!("dscresources.dscresource.subDiff", key = key));
                     diff_properties.push(key.to_string());
