@@ -1139,6 +1139,55 @@ fn diff_with_schema_write_only_local_ref_ignores_missing_property() {
 }
 
 #[test]
+fn diff_with_schema_nested_external_ref_falls_back_to_normal_comparison() {
+    use serde_json::json;
+    let expected = json!({"nested": {"value": "expected"}});
+    let actual = json!({"nested": {"value": "actual"}});
+    let schema = json!({
+        "type": "object",
+        "properties": {
+            "nested": { "$ref": "https://example.com/nested.schema.json" }
+        }
+    });
+    let diff = get_diff_with_schema(&expected, &actual, Some(&schema));
+    assert_eq!(diff, vec!["nested".to_string()]);
+}
+
+#[test]
+fn diff_with_schema_nested_cyclic_ref_falls_back_to_normal_comparison() {
+    use serde_json::json;
+    let expected = json!({"nested": {"value": "expected"}});
+    let actual = json!({"nested": {"value": "actual"}});
+    let schema = json!({
+        "type": "object",
+        "properties": {
+            "nested": { "$ref": "#/$defs/first" }
+        },
+        "$defs": {
+            "first": { "$ref": "#/$defs/second" },
+            "second": { "$ref": "#/$defs/first" }
+        }
+    });
+    let diff = get_diff_with_schema(&expected, &actual, Some(&schema));
+    assert_eq!(diff, vec!["nested".to_string()]);
+}
+
+#[test]
+fn diff_with_schema_nested_missing_ref_falls_back_to_normal_comparison() {
+    use serde_json::json;
+    let expected = json!({"nested": {"value": "expected"}});
+    let actual = json!({"nested": {"value": "actual"}});
+    let schema = json!({
+        "type": "object",
+        "properties": {
+            "nested": { "$ref": "#/$defs/missing" }
+        }
+    });
+    let diff = get_diff_with_schema(&expected, &actual, Some(&schema));
+    assert_eq!(diff, vec!["nested".to_string()]);
+}
+
+#[test]
 fn diff_with_schema_write_only_false_reports_missing_property() {
     use serde_json::json;
     let expected = json!({"name": "test", "action": "remove"});

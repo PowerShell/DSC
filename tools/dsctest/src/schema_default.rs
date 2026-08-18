@@ -39,3 +39,14 @@ fn default_enabled() -> Option<bool> {
 fn default_count() -> Option<i32> {
     Some(5)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{default_count, default_enabled};
+
+    #[test]
+    fn schema_defaults_match_embedded_manifest() {
+        assert_eq!(default_enabled(), Some(true));
+        assert_eq!(default_count(), Some(5));
+    }
+}
