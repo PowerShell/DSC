@@ -702,7 +702,30 @@ pub(crate) fn get_diff_with_schema(expected: &Value, actual: &Value, schema: Opt
             }
 
             if value.is_object() {
-                let sub_diff = get_diff(value, &actual[key]);
+                // When comparing nested objects, pass the corresponding nested schema so that
+                // nested `writeOnly` properties and nested defaults are handled correctly.
+                let sub_schema = schema.and_then(|schema| {
+                    let mut property_schema = schema
+                        .get("properties")
+                        .and_then(Value::as_object)
+                        .and_then(|properties| properties.get(key))?;
+                    // Resolve local refs so nested comparisons can still see `properties`, `default`, and `writeOnly`.
+                    let mut visited_references = HashSet::<String>::new();
+                    while let Some(reference) = property_schema.get("$ref").and_then(Value::as_str) {
+                        let Some(pointer) = reference.strip_prefix('#') else {
+                            break;
+                        };
+                        if !visited_references.insert(pointer.to_string()) {
+                            break;
+                        }
+                        let Some(resolved_schema) = schema.pointer(pointer) else {
+                            break;
+                        };
+                        property_schema = resolved_schema;
+                    }
+                    Some(property_schema)
+                });
+                let sub_diff = get_diff_with_schema(value, &actual[key], sub_schema);
                 if !sub_diff.is_empty() {
                     debug!("{}", t!("dscresources.dscresource.subDiff", key = key));
                     diff_properties.push(key.to_string());
@@ -1113,6 +1136,55 @@ fn diff_with_schema_write_only_local_ref_ignores_missing_property() {
     });
     let diff = get_diff_with_schema(&expected, &actual, Some(&schema));
     assert!(diff.is_empty(), "Expected referenced write-only property to be ignored, got: {diff:?}");
+}
+
+#[test]
+fn diff_with_schema_nested_external_ref_falls_back_to_normal_comparison() {
+    use serde_json::json;
+    let expected = json!({"nested": {"value": "expected"}});
+    let actual = json!({"nested": {"value": "actual"}});
+    let schema = json!({
+        "type": "object",
+        "properties": {
+            "nested": { "$ref": "https://example.com/nested.schema.json" }
+        }
+    });
+    let diff = get_diff_with_schema(&expected, &actual, Some(&schema));
+    assert_eq!(diff, vec!["nested".to_string()]);
+}
+
+#[test]
+fn diff_with_schema_nested_cyclic_ref_falls_back_to_normal_comparison() {
+    use serde_json::json;
+    let expected = json!({"nested": {"value": "expected"}});
+    let actual = json!({"nested": {"value": "actual"}});
+    let schema = json!({
+        "type": "object",
+        "properties": {
+            "nested": { "$ref": "#/$defs/first" }
+        },
+        "$defs": {
+            "first": { "$ref": "#/$defs/second" },
+            "second": { "$ref": "#/$defs/first" }
+        }
+    });
+    let diff = get_diff_with_schema(&expected, &actual, Some(&schema));
+    assert_eq!(diff, vec!["nested".to_string()]);
+}
+
+#[test]
+fn diff_with_schema_nested_missing_ref_falls_back_to_normal_comparison() {
+    use serde_json::json;
+    let expected = json!({"nested": {"value": "expected"}});
+    let actual = json!({"nested": {"value": "actual"}});
+    let schema = json!({
+        "type": "object",
+        "properties": {
+            "nested": { "$ref": "#/$defs/missing" }
+        }
+    });
+    let diff = get_diff_with_schema(&expected, &actual, Some(&schema));
+    assert_eq!(diff, vec!["nested".to_string()]);
 }
 
 #[test]
