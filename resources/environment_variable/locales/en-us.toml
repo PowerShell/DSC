@@ -1,8 +1,8 @@
 _version = 1
 
 [main]
-missingOperation = "Missing operation. Usage: environment_variable get --input <json> | set --input <json>"
-unknownOperation = "Unknown operation: '%{operation}'. Expected: get or set"
+missingOperation = "Missing operation. Usage: environment_variable get --input <json> | set --input <json> | test --input <json>"
+unknownOperation = "Unknown operation: '%{operation}'. Expected: get, set, or test"
 missingInput = "Missing --input argument"
 missingInputValue = "Missing value for --input argument"
 invalidJson = "Invalid JSON input: %{error}"

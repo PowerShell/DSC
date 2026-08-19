@@ -9,9 +9,11 @@ use std::collections::HashSet;
 pub enum Operation {
     Get,
     Set,
+    Test,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum Scope {
     AllUsers,
     #[default]
@@ -31,6 +33,8 @@ pub enum PathAction {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct EnvironmentVariableList {
     pub environment_variables: Vec<EnvironmentVariable>,
+    #[serde(rename = "_inDesiredState", skip_serializing_if = "Option::is_none")]
+    pub in_desired_state: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -98,7 +102,7 @@ impl EnvironmentVariable {
         {
             return Err(t!("validation.invalidPathEntry", name = self.name.as_str()).to_string());
         }
-        if matches!(operation, Operation::Set)
+        if matches!(operation, Operation::Set | Operation::Test)
             && self.exist.unwrap_or(true)
             && self.value.is_none()
             && self.path_value.is_none()
@@ -113,8 +117,8 @@ impl EnvironmentVariable {
 impl std::fmt::Display for Scope {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::AllUsers => write!(formatter, "AllUsers"),
-            Self::CurrentUser => write!(formatter, "CurrentUser"),
+            Self::AllUsers => write!(formatter, "allUsers"),
+            Self::CurrentUser => write!(formatter, "currentUser"),
         }
     }
 }
@@ -140,6 +144,7 @@ mod tests {
         second.scope = Scope::CurrentUser;
         let list = EnvironmentVariableList {
             environment_variables: vec![variable("Test_Name"), second],
+            in_desired_state: None,
         };
 
         assert!(list.validate(Operation::Set).is_err());
@@ -151,6 +156,7 @@ mod tests {
         second.scope = Scope::AllUsers;
         let list = EnvironmentVariableList {
             environment_variables: vec![variable("Test_Name"), second],
+            in_desired_state: None,
         };
 
         assert!(list.validate(Operation::Set).is_ok());
@@ -162,6 +168,7 @@ mod tests {
         input.path_action = Some(PathAction::Append);
         let list = EnvironmentVariableList {
             environment_variables: vec![input],
+            in_desired_state: None,
         };
 
         assert!(list.validate(Operation::Set).is_err());

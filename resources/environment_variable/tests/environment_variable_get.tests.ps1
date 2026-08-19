@@ -6,17 +6,11 @@ Describe 'Microsoft.Windows/EnvironmentVariableList get operation' -Skip:(!$IsWi
         $resourceType = 'Microsoft.Windows/EnvironmentVariableList'
         $testName = "DSC_Environment_Get_$([guid]::NewGuid().ToString('N'))"
         $testValue = 'C:\DSC\First;C:\DSC\Second'
-        [Environment]::SetEnvironmentVariable(
-            $testName,
-            $testValue,
-            [EnvironmentVariableTarget]::User)
+        Set-ItemProperty -Path 'HKCU:\Environment' -Name $testName -Value $testValue -Type String
     }
 
     AfterAll {
-        [Environment]::SetEnvironmentVariable(
-            $testName,
-            $null,
-            [EnvironmentVariableTarget]::User)
+        Remove-ItemProperty -Path 'HKCU:\Environment' -Name $testName -ErrorAction Ignore
     }
 
     It 'Gets a CurrentUser variable using the default scope' {
@@ -30,7 +24,7 @@ Describe 'Microsoft.Windows/EnvironmentVariableList get operation' -Skip:(!$IsWi
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
         $result = ($out | ConvertFrom-Json).actualState.environmentVariables[0]
 
-        $result.scope | Should -BeExactly 'CurrentUser'
+        $result.scope | Should -BeExactly 'currentUser'
         $result.name | Should -BeExactly $testName
         $result.value | Should -BeExactly $testValue
         $result._exist | Should -BeTrue
