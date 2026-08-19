@@ -53,6 +53,39 @@ pub fn get_variables(
 
     Ok(EnvironmentVariableList {
         environment_variables,
+        in_desired_state: None,
+    })
+}
+
+pub fn test_variables(
+    input: &EnvironmentVariableList,
+) -> Result<EnvironmentVariableList, EnvironmentError> {
+    let mut in_desired_state = true;
+    let mut environment_variables = Vec::with_capacity(input.environment_variables.len());
+
+    for variable in &input.environment_variables {
+        let state = registry_helper(variable, None)?
+            .get()
+            .map_err(|error| operation_error(OperationError::GetRead, variable, &error))?;
+        let exists = state.exist != Some(false);
+        let should_exist = variable.exist.unwrap_or(true);
+
+        if exists != should_exist {
+            in_desired_state = false;
+        } else if exists {
+            let current_data = state.value_data.as_ref();
+            let current_value = registry_string(variable, current_data)?;
+            if !value_in_desired_state(variable, &current_value, current_data) {
+                in_desired_state = false;
+            }
+        }
+
+        environment_variables.push(get_variable(variable)?);
+    }
+
+    Ok(EnvironmentVariableList {
+        environment_variables,
+        in_desired_state: Some(in_desired_state),
     })
 }
 
@@ -100,6 +133,7 @@ pub fn set_variables(
 
     Ok(EnvironmentVariableList {
         environment_variables,
+        in_desired_state: None,
     })
 }
 
@@ -196,6 +230,44 @@ fn registry_data(value: &str, current_data: Option<&RegistryValueData>) -> Regis
     }
 }
 
+fn registry_string(
+    variable: &EnvironmentVariable,
+    current_data: Option<&RegistryValueData>,
+) -> Result<String, EnvironmentError> {
+    match current_data {
+        Some(RegistryValueData::String(value) | RegistryValueData::ExpandString(value)) => {
+            Ok(value.clone())
+        }
+        Some(_) => Err(EnvironmentError::Resource(
+            t!(
+                "get.unsupportedType",
+                name = variable.name.as_str(),
+                scope = variable.scope.to_string()
+            )
+            .to_string(),
+        )),
+        None => Ok(String::new()),
+    }
+}
+
+fn value_in_desired_state(
+    variable: &EnvironmentVariable,
+    current_value: &str,
+    current_data: Option<&RegistryValueData>,
+) -> bool {
+    if let Some(value) = &variable.value {
+        return current_value == value;
+    }
+
+    let projected = desired_value(variable, current_data);
+    split_path(current_value)
+        .iter()
+        .map(|entry| entry.to_lowercase())
+        .eq(split_path(&projected)
+            .iter()
+            .map(|entry| entry.to_lowercase()))
+}
+
 fn split_path(value: &str) -> Vec<String> {
     value
         .split(';')
@@ -254,8 +326,9 @@ fn operation_error(
 
 #[cfg(test)]
 mod tests {
-    use super::{merge_path, split_path};
-    use crate::types::PathAction;
+    use super::{merge_path, split_path, value_in_desired_state};
+    use crate::types::{EnvironmentVariable, PathAction, Scope};
+    use dsc_lib_registry::config::RegistryValueData;
 
     #[test]
     fn prepends_and_deduplicates_case_insensitively() {
@@ -292,5 +365,43 @@ mod tests {
     #[test]
     fn splitting_omits_empty_path_segments() {
         assert_eq!(split_path("C:\\One;;C:\\Two;"), vec!["C:\\One", "C:\\Two"]);
+    }
+
+    #[test]
+    fn prepend_is_in_desired_state_after_projecting_same_value() {
+        let variable = EnvironmentVariable {
+            scope: Scope::CurrentUser,
+            name: "Path".to_string(),
+            value: None,
+            path_value: Some(vec!["c:\\shared".to_string(), "C:\\New".to_string()]),
+            path_action: Some(PathAction::Prepend),
+            exist: None,
+        };
+        let current = RegistryValueData::String("c:\\shared;C:\\New;C:\\Existing".to_string());
+
+        assert!(value_in_desired_state(
+            &variable,
+            "c:\\shared;C:\\New;C:\\Existing",
+            Some(&current)
+        ));
+    }
+
+    #[test]
+    fn prepend_is_not_in_desired_state_before_projection() {
+        let variable = EnvironmentVariable {
+            scope: Scope::CurrentUser,
+            name: "Path".to_string(),
+            value: None,
+            path_value: Some(vec!["C:\\New".to_string()]),
+            path_action: Some(PathAction::Prepend),
+            exist: None,
+        };
+        let current = RegistryValueData::String("C:\\Existing".to_string());
+
+        assert!(!value_in_desired_state(
+            &variable,
+            "C:\\Existing",
+            Some(&current)
+        ));
     }
 }

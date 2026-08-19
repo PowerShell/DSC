@@ -26,10 +26,7 @@ Describe 'Microsoft.Windows/EnvironmentVariableList set operation' -Skip:(!$IsWi
 
     AfterEach {
         foreach ($name in $testNames) {
-            [Environment]::SetEnvironmentVariable(
-                $name,
-                $null,
-                [EnvironmentVariableTarget]::User)
+            Remove-ItemProperty -Path 'HKCU:\Environment' -Name $name -ErrorAction Ignore
         }
     }
 
@@ -47,7 +44,7 @@ Describe 'Microsoft.Windows/EnvironmentVariableList set operation' -Skip:(!$IsWi
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
         $result = ($out | ConvertFrom-Json).afterState.environmentVariables[0]
 
-        $result.scope | Should -BeExactly 'CurrentUser'
+        $result.scope | Should -BeExactly 'currentUser'
         $result.value | Should -BeExactly 'DSC scalar value'
         $result._exist | Should -BeTrue
         [Environment]::GetEnvironmentVariable(
@@ -56,10 +53,7 @@ Describe 'Microsoft.Windows/EnvironmentVariableList set operation' -Skip:(!$IsWi
     }
 
     It 'Clobbers a path value by default and removes duplicate entries case-insensitively' {
-        [Environment]::SetEnvironmentVariable(
-            $testNames[1],
-            'C:\Old',
-            [EnvironmentVariableTarget]::User)
+        Set-ItemProperty -Path 'HKCU:\Environment' -Name $testNames[1] -Value 'C:\Old' -Type String
         $json = @{
             environmentVariables = @(
                 @{
@@ -81,10 +75,8 @@ Describe 'Microsoft.Windows/EnvironmentVariableList set operation' -Skip:(!$IsWi
     }
 
     It 'Prepends path entries and moves an existing duplicate to the front' {
-        [Environment]::SetEnvironmentVariable(
-            $testNames[1],
-            'C:\Existing;C:\Shared',
-            [EnvironmentVariableTarget]::User)
+        Set-ItemProperty -Path 'HKCU:\Environment' -Name $testNames[1] `
+            -Value 'C:\Existing;C:\Shared' -Type String
         $json = @{
             environmentVariables = @(
                 @{
@@ -104,10 +96,8 @@ Describe 'Microsoft.Windows/EnvironmentVariableList set operation' -Skip:(!$IsWi
     }
 
     It 'Appends path entries and moves an existing duplicate to the end' {
-        [Environment]::SetEnvironmentVariable(
-            $testNames[1],
-            'C:\Shared;C:\Existing',
-            [EnvironmentVariableTarget]::User)
+        Set-ItemProperty -Path 'HKCU:\Environment' -Name $testNames[1] `
+            -Value 'C:\Shared;C:\Existing' -Type String
         $json = @{
             environmentVariables = @(
                 @{
@@ -127,10 +117,7 @@ Describe 'Microsoft.Windows/EnvironmentVariableList set operation' -Skip:(!$IsWi
     }
 
     It 'Removes a variable when _exist is false' {
-        [Environment]::SetEnvironmentVariable(
-            $testNames[0],
-            'remove me',
-            [EnvironmentVariableTarget]::User)
+        Set-ItemProperty -Path 'HKCU:\Environment' -Name $testNames[0] -Value 'remove me' -Type String
         $json = @{
             environmentVariables = @(
                 @{
@@ -194,7 +181,7 @@ Describe 'Microsoft.Windows/EnvironmentVariableList set operation' -Skip:(!$IsWi
         $json = @{
             environmentVariables = @(
                 @{
-                    scope = 'AllUsers'
+                    scope = 'allUsers'
                     name  = $machineName
                     value = 'requires elevation'
                 }

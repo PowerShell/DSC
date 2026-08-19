@@ -30,6 +30,17 @@
         "handlesExist": true,
         "return": "state"
     },
+    "test": {
+        "executable": "environment_variable",
+        "args": [
+            "test",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ],
+        "return": "state"
+    },
     "exitCodes": {
         "0": "Success",
         "1": "Invalid arguments",
@@ -39,7 +50,7 @@
     },
     "schema": {
         "embedded": {
-            "$schema": "http://json-schema.org/draft-07/schema#",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
             "title": "Windows Environment Variable List",
             "description": "Manage user and machine environment variables stored in the Windows registry.",
             "type": "object",
@@ -59,9 +70,24 @@
                         "required": [
                             "name"
                         ],
-                        "not": {
-                            "required": [
-                                "value",
+                        "dependentSchemas": {
+                            "value": {
+                                "not": {
+                                    "required": [
+                                        "pathValue"
+                                    ]
+                                }
+                            },
+                            "pathValue": {
+                                "not": {
+                                    "required": [
+                                        "value"
+                                    ]
+                                }
+                            }
+                        },
+                        "dependentRequired": {
+                            "pathAction": [
                                 "pathValue"
                             ]
                         },
@@ -70,10 +96,10 @@
                                 "type": "string",
                                 "title": "Scope",
                                 "description": "The registry scope for the environment variable.",
-                                "default": "CurrentUser",
+                                "default": "currentUser",
                                 "enum": [
-                                    "AllUsers",
-                                    "CurrentUser"
+                                    "allUsers",
+                                    "currentUser"
                                 ]
                             },
                             "name": {
@@ -117,6 +143,12 @@
                             }
                         }
                     }
+                },
+                "_inDesiredState": {
+                    "type": "boolean",
+                    "title": "In desired state",
+                    "description": "Whether all environment variables are in the desired state. Returned only by the test operation.",
+                    "readOnly": true
                 }
             }
         }

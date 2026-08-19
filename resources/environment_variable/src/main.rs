@@ -74,6 +74,7 @@ fn main() {
     let result = match operation {
         "get" => environment::get_variables(&require_input(input_json, Operation::Get)),
         "set" => environment::set_variables(&require_input(input_json, Operation::Set)),
+        "test" => environment::test_variables(&require_input(input_json, Operation::Test)),
         _ => {
             write_error(&t!("main.unknownOperation", operation = operation));
             exit(EXIT_INVALID_ARGS);
