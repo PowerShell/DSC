@@ -53,6 +53,15 @@ pub struct EnvironmentVariable {
     pub exist: Option<bool>,
 }
 
+impl From<EnvironmentVariable> for EnvironmentVariableList {
+    fn from(variable: EnvironmentVariable) -> Self {
+        Self {
+            environment_variables: vec![variable],
+            in_desired_state: None,
+        }
+    }
+}
+
 impl EnvironmentVariableList {
     pub fn validate(&self, operation: Operation) -> Result<(), String> {
         if self.environment_variables.is_empty() {
@@ -233,5 +242,14 @@ mod tests {
     fn formats_scope_values_as_camel_case() {
         assert_eq!(Scope::AllUsers.to_string(), "allUsers");
         assert_eq!(Scope::CurrentUser.to_string(), "currentUser");
+    }
+
+    #[test]
+    fn wraps_single_variable_in_list() {
+        let list = EnvironmentVariableList::from(variable("Test_Name"));
+
+        assert_eq!(list.environment_variables.len(), 1);
+        assert_eq!(list.environment_variables[0].name, "Test_Name");
+        assert_eq!(list.in_desired_state, None);
     }
 }

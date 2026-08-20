@@ -8,7 +8,7 @@
     ],
     "CopyFiles": {
         "Windows": [
-            "environment_variable.dsc.resource.json"
+            "environment_variable.dsc.manifests.json"
         ]
     }
 }
