@@ -440,7 +440,8 @@ fn get_desired_state(actual: &Value) -> Result<Option<bool>, DscError> {
     Ok(in_desired_state)
 }
 
-fn invoke_synthetic_test(resource: &DscResource, expected: &str, target_resource: Option<&DscResource>) -> Result<TestResult, DscError> {    let get_result = invoke_get(resource, expected, target_resource)?;
+fn invoke_synthetic_test(resource: &DscResource, expected: &str, target_resource: Option<&DscResource>) -> Result<TestResult, DscError> {
+    let get_result = invoke_get(resource, expected, target_resource)?;
     let actual_state = match get_result {
         GetResult::Group(results) => {
             let mut result_array: Vec<Value> = Vec::new();

@@ -29,7 +29,7 @@
                 "whatIfArg": "--what-if"
             }
         ],
-        "implementsPretest": false,
+        "implementsPretest": true,
         "handlesExist": true,
         "return": "state",
         "whatIfReturns": "state",
