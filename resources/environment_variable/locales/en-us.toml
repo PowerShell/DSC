@@ -7,7 +7,8 @@ missingInput = "Missing --input argument"
 missingInputValue = "Missing value for --input argument"
 invalidJson = "Invalid JSON input: %{error}"
 serializeError = "Failed to serialize resource output: %{error}"
-windowsOnly = "The Microsoft.Windows/EnvironmentVariableList resource is only supported on Windows"
+missingState = "The environment variable operation returned no state"
+windowsOnly = "The Microsoft.Windows environment variable resources are only supported on Windows"
 registryError = "Failed to access environment variable '%{name}' in scope '%{scope}': %{error}"
 
 [validation]

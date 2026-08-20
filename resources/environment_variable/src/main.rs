@@ -8,7 +8,7 @@ mod environment;
 
 use rust_i18n::t;
 use std::process::exit;
-use types::{EnvironmentVariableList, Operation};
+use types::{EnvironmentVariable, EnvironmentVariableList, Operation};
 
 rust_i18n::i18n!("locales", fallback = "en-us");
 
@@ -32,13 +32,21 @@ fn print_json(value: &impl serde::Serialize) {
     }
 }
 
-fn require_input(input_json: Option<String>, operation: Operation) -> EnvironmentVariableList {
+fn require_input(
+    input_json: Option<String>,
+    operation: Operation,
+    is_list: bool,
+) -> EnvironmentVariableList {
     let Some(json) = input_json else {
         write_error(&t!("main.missingInput"));
         exit(EXIT_INVALID_ARGS);
     };
 
-    let input: EnvironmentVariableList = match serde_json::from_str(&json) {
+    let input = match if is_list {
+        serde_json::from_str::<EnvironmentVariableList>(&json)
+    } else {
+        serde_json::from_str::<EnvironmentVariable>(&json).map(EnvironmentVariableList::from)
+    } {
         Ok(value) => value,
         Err(error) => {
             write_error(&t!("main.invalidJson", error = error.to_string()));
@@ -52,6 +60,29 @@ fn require_input(input_json: Option<String>, operation: Operation) -> Environmen
     }
 
     input
+}
+
+fn print_result(mut value: EnvironmentVariableList, is_list: bool) {
+    if is_list {
+        print_json(&value);
+        return;
+    }
+
+    let Some(variable) = value.environment_variables.pop() else {
+        write_error(&t!("main.missingState"));
+        exit(EXIT_RESOURCE_ERROR);
+    };
+    let mut output = match serde_json::to_value(variable) {
+        Ok(value) => value,
+        Err(error) => {
+            write_error(&t!("main.serializeError", error = error.to_string()));
+            exit(EXIT_RESOURCE_ERROR);
+        }
+    };
+    if let Some(in_desired_state) = value.in_desired_state {
+        output["_inDesiredState"] = serde_json::Value::Bool(in_desired_state);
+    }
+    print_json(&output);
 }
 
 #[cfg(not(windows))]
@@ -70,11 +101,12 @@ fn main() {
 
     let operation = args[1].as_str();
     let input_json = parse_input_arg(&args);
+    let is_list = args.iter().any(|arg| arg == "--list");
 
     let result = match operation {
-        "get" => environment::get_variables(&require_input(input_json, Operation::Get)),
-        "set" => environment::set_variables(&require_input(input_json, Operation::Set)),
-        "test" => environment::test_variables(&require_input(input_json, Operation::Test)),
+        "get" => environment::get_variables(&require_input(input_json, Operation::Get, is_list)),
+        "set" => environment::set_variables(&require_input(input_json, Operation::Set, is_list)),
+        "test" => environment::test_variables(&require_input(input_json, Operation::Test, is_list)),
         _ => {
             write_error(&t!("main.unknownOperation", operation = operation));
             exit(EXIT_INVALID_ARGS);
@@ -83,7 +115,7 @@ fn main() {
 
     match result {
         Ok(value) => {
-            print_json(&value);
+            print_result(value, is_list);
             exit(EXIT_SUCCESS);
         }
         Err(error) => {
