@@ -173,4 +173,65 @@ mod tests {
 
         assert!(list.validate(Operation::Set).is_err());
     }
+
+    #[test]
+    fn rejects_invalid_inputs() {
+        let empty = EnvironmentVariableList {
+            environment_variables: Vec::new(),
+            in_desired_state: None,
+        };
+        assert!(empty.validate(Operation::Get).is_err());
+
+        for name in ["", "invalid\0name"] {
+            assert!(
+                EnvironmentVariableList {
+                    environment_variables: vec![variable(name)],
+                    in_desired_state: None,
+                }
+                .validate(Operation::Get)
+                .is_err()
+            );
+        }
+
+        let mut conflicting = variable("Test_Name");
+        conflicting.path_value = Some(vec!["C:\\Path".to_string()]);
+        assert!(
+            EnvironmentVariableList {
+                environment_variables: vec![conflicting],
+                in_desired_state: None,
+            }
+            .validate(Operation::Set)
+            .is_err()
+        );
+
+        for entry in ["", "C:\\One;C:\\Two", "invalid\0path"] {
+            let mut invalid_path = variable("Test_Name");
+            invalid_path.value = None;
+            invalid_path.path_value = Some(vec![entry.to_string()]);
+            assert!(
+                EnvironmentVariableList {
+                    environment_variables: vec![invalid_path],
+                    in_desired_state: None,
+                }
+                .validate(Operation::Set)
+                .is_err()
+            );
+        }
+
+        let mut missing_value = variable("Test_Name");
+        missing_value.value = None;
+        let list = EnvironmentVariableList {
+            environment_variables: vec![missing_value],
+            in_desired_state: None,
+        };
+        assert!(list.validate(Operation::Set).is_err());
+        assert!(list.validate(Operation::Test).is_err());
+        assert!(list.validate(Operation::Get).is_ok());
+    }
+
+    #[test]
+    fn formats_scope_values_as_camel_case() {
+        assert_eq!(Scope::AllUsers.to_string(), "allUsers");
+        assert_eq!(Scope::CurrentUser.to_string(), "currentUser");
+    }
 }

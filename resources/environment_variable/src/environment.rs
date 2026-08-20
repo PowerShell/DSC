@@ -326,9 +326,175 @@ fn operation_error(
 
 #[cfg(test)]
 mod tests {
-    use super::{merge_path, split_path, value_in_desired_state};
-    use crate::types::{EnvironmentVariable, PathAction, Scope};
+    use super::{
+        CURRENT_USER_KEY, EnvironmentError, OperationError, get_variables, key_path, merge_path,
+        operation_error, set_variables, split_path, test_variables, value_in_desired_state,
+    };
+    use crate::types::{EnvironmentVariable, EnvironmentVariableList, PathAction, Scope};
+    use dsc_lib_registry::RegistryHelper;
     use dsc_lib_registry::config::RegistryValueData;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    static TEST_ID: AtomicUsize = AtomicUsize::new(0);
+
+    struct RegistryValueGuard {
+        name: String,
+    }
+
+    impl RegistryValueGuard {
+        fn new() -> Self {
+            let id = TEST_ID.fetch_add(1, Ordering::Relaxed);
+            Self {
+                name: format!("DSC_Environment_RustTest_{}_{id}", std::process::id()),
+            }
+        }
+
+        fn set(&self, data: RegistryValueData) {
+            RegistryHelper::new(CURRENT_USER_KEY, Some(self.name.clone()), Some(data))
+                .unwrap()
+                .set()
+                .unwrap();
+        }
+    }
+
+    impl Drop for RegistryValueGuard {
+        fn drop(&mut self) {
+            RegistryHelper::new(CURRENT_USER_KEY, Some(self.name.clone()), None)
+                .unwrap()
+                .remove()
+                .unwrap();
+        }
+    }
+
+    fn variable(name: &str) -> EnvironmentVariable {
+        EnvironmentVariable {
+            scope: Scope::CurrentUser,
+            name: name.to_string(),
+            value: Some("expected".to_string()),
+            path_value: None,
+            path_action: None,
+            exist: None,
+        }
+    }
+
+    fn list(variable: EnvironmentVariable) -> EnvironmentVariableList {
+        EnvironmentVariableList {
+            environment_variables: vec![variable],
+            in_desired_state: None,
+        }
+    }
+
+    #[test]
+    fn registry_operations_round_trip_scalar_and_removal() {
+        let guard = RegistryValueGuard::new();
+        let input = list(variable(&guard.name));
+
+        let set = set_variables(&input).unwrap();
+        assert_eq!(
+            set.environment_variables[0].value.as_deref(),
+            Some("expected")
+        );
+
+        let get = get_variables(&input).unwrap();
+        assert_eq!(
+            get.environment_variables[0].value.as_deref(),
+            Some("expected")
+        );
+
+        let test = test_variables(&input).unwrap();
+        assert_eq!(test.in_desired_state, Some(true));
+
+        let mut different = variable(&guard.name);
+        different.value = Some("different".to_string());
+        assert_eq!(
+            test_variables(&list(different)).unwrap().in_desired_state,
+            Some(false)
+        );
+
+        let mut remove = variable(&guard.name);
+        remove.value = None;
+        remove.exist = Some(false);
+        let removed = set_variables(&list(remove.clone())).unwrap();
+        assert_eq!(removed.environment_variables[0].exist, Some(false));
+        assert_eq!(
+            test_variables(&list(remove)).unwrap().in_desired_state,
+            Some(true)
+        );
+    }
+
+    #[test]
+    fn path_operations_preserve_expand_string_type() {
+        let guard = RegistryValueGuard::new();
+        guard.set(RegistryValueData::ExpandString(
+            r"%SystemRoot%\Existing".to_string(),
+        ));
+        let input = list(EnvironmentVariable {
+            scope: Scope::CurrentUser,
+            name: guard.name.clone(),
+            value: None,
+            path_value: Some(vec![r"C:\New".to_string()]),
+            path_action: Some(PathAction::Append),
+            exist: None,
+        });
+
+        let set = set_variables(&input).unwrap();
+        assert_eq!(
+            set.environment_variables[0].path_value.as_deref(),
+            Some([r"%SystemRoot%\Existing".to_string(), r"C:\New".to_string()].as_slice())
+        );
+        assert_eq!(test_variables(&input).unwrap().in_desired_state, Some(true));
+
+        let stored = RegistryHelper::new(CURRENT_USER_KEY, Some(guard.name.clone()), None)
+            .unwrap()
+            .get()
+            .unwrap();
+        assert!(matches!(
+            stored.value_data,
+            Some(RegistryValueData::ExpandString(_))
+        ));
+    }
+
+    #[test]
+    fn unsupported_registry_type_returns_resource_error() {
+        let guard = RegistryValueGuard::new();
+        guard.set(RegistryValueData::DWord(42));
+        let input = list(variable(&guard.name));
+
+        let get_error = get_variables(&input).unwrap_err();
+        assert!(get_error.to_string().contains(&guard.name));
+
+        let test_error = test_variables(&input).unwrap_err();
+        assert!(test_error.to_string().contains(&guard.name));
+    }
+
+    #[test]
+    fn formats_error_variants_and_scope_paths() {
+        let variable = variable("TestName");
+        let elevation = EnvironmentError::ElevationRequired;
+        assert!(elevation.is_elevation_required());
+        assert!(!elevation.to_string().is_empty());
+
+        let resource = EnvironmentError::Resource("message".to_string());
+        assert!(!resource.is_elevation_required());
+        assert_eq!(resource.to_string(), "message");
+
+        assert_eq!(key_path(Scope::CurrentUser), CURRENT_USER_KEY);
+        assert!(key_path(Scope::AllUsers).starts_with("HKLM\\"));
+
+        for operation in [
+            OperationError::Registry,
+            OperationError::GetRead,
+            OperationError::SetRead,
+            OperationError::SetWrite,
+            OperationError::SetRemove,
+        ] {
+            assert!(
+                operation_error(operation, &variable, &"failure")
+                    .to_string()
+                    .contains("failure")
+            );
+        }
+    }
 
     #[test]
     fn prepends_and_deduplicates_case_insensitively() {
