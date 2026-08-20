@@ -10,7 +10,10 @@ use windows::Win32::System::Com::{CLSCTX_INPROC_SERVER, CoCreateInstance, CoInit
 use windows::Win32::System::Ole::IEnumVARIANT;
 use windows::Win32::System::Variant::{VARIANT, VariantClear};
 
-use crate::types::{FirewallError, FirewallRule, FirewallRuleList, Metadata, RuleAction, RuleDirection, UnspecifiedRulesAction};
+use crate::types::{
+    FirewallError, FirewallRule, FirewallRuleList, Metadata, RuleAction, RuleDirection,
+    UnspecifiedRuleAction, UnspecifiedRules,
+};
 
 /// RAII wrapper for VARIANT that automatically calls VariantClear on drop
 struct SafeVariant(VARIANT);
@@ -32,7 +35,13 @@ impl SafeVariant {
 impl Drop for SafeVariant {
     fn drop(&mut self) {
         if let Err(e) = unsafe { VariantClear(&mut self.0) } {
-            crate::write_error(&format!("Warning: VariantClear failed with HRESULT: {:#010x}", e.code().0 as u32));
+            crate::write_error(
+                t!(
+                    "firewall.variantClearFailed",
+                    hresult = format!("{:#010x}", e.code().0 as u32)
+                )
+                .as_ref(),
+            );
         }
     }
 }
@@ -212,6 +221,30 @@ fn profiles_to_mask(values: &[String]) -> Result<i32, FirewallError> {
     Ok(mask)
 }
 
+fn rule_matches_unspecified_scope(
+    rule: &FirewallRule,
+    unspecified_rules: &UnspecifiedRules,
+) -> Result<bool, FirewallError> {
+    if let Some(direction) = unspecified_rules.direction.as_ref()
+        && rule.direction.as_ref() != Some(direction)
+    {
+        return Ok(false);
+    }
+
+    if let Some(profiles) = unspecified_rules.profiles.as_ref() {
+        if profiles.is_empty() {
+            return Err(t!("firewall.emptyUnspecifiedProfiles").to_string().into());
+        }
+        let requested_mask = profiles_to_mask(profiles)?;
+        let rule_mask = profiles_to_mask(rule.profiles.as_deref().unwrap_or_default())?;
+        if requested_mask & rule_mask == 0 {
+            return Ok(false);
+        }
+    }
+
+    Ok(true)
+}
+
 fn split_csv(value: Option<String>) -> Option<Vec<String>> {
     value.map(|raw| {
         raw.split(',')
@@ -381,10 +414,6 @@ fn apply_rule_properties(rule: &INetFwRule, desired: &FirewallRule, existing_pro
 }
 
 pub fn get_rules(input: &FirewallRuleList) -> Result<FirewallRuleList, FirewallError> {
-    if input.rules.is_empty() {
-        return Err(t!("get.rulesArrayEmpty").to_string().into());
-    }
-
     let store = FirewallStore::open()?;
     let mut results = Vec::new();
 
@@ -399,7 +428,7 @@ pub fn get_rules(input: &FirewallRuleList) -> Result<FirewallRuleList, FirewallE
         }
     }
 
-    Ok(FirewallRuleList { rules: results, unspecified_rules_action: None })
+    Ok(FirewallRuleList { rules: results, unspecified_rules: None })
 }
 
 fn project_rule(current: &FirewallRule, desired: &FirewallRule) -> FirewallRule {
@@ -426,10 +455,6 @@ fn project_rule(current: &FirewallRule, desired: &FirewallRule) -> FirewallRule 
 }
 
 pub fn set_rules(input: &FirewallRuleList, what_if: bool) -> Result<FirewallRuleList, FirewallError> {
-    if input.rules.is_empty() {
-        return Err(t!("set.rulesArrayEmpty").to_string().into());
-    }
-
     let store = FirewallStore::open()?;
     let mut results = Vec::new();
 
@@ -496,10 +521,14 @@ pub fn set_rules(input: &FirewallRuleList, what_if: bool) -> Result<FirewallRule
         }
     }
 
-    // Handle unspecified_rules_action: Disable or Remove rules not explicitly listed
-    match &input.unspecified_rules_action {
-        Some(UnspecifiedRulesAction::Disable) | Some(UnspecifiedRulesAction::Remove) => {
-            let is_remove = matches!(&input.unspecified_rules_action, Some(UnspecifiedRulesAction::Remove));
+    // Disable or remove rules that aren't explicitly listed and match the requested scope.
+    match &input.unspecified_rules {
+        Some(unspecified_rules) if matches!(
+            unspecified_rules.action,
+            UnspecifiedRuleAction::Disable | UnspecifiedRuleAction::Remove
+        ) =>
+        {
+            let is_remove = unspecified_rules.action == UnspecifiedRuleAction::Remove;
             let specified_names: std::collections::HashSet<String> = input.rules.iter()
                 .filter_map(|r| r.selector_name().map(|n| n.to_ascii_lowercase()))
                 .collect();
@@ -516,8 +545,12 @@ pub fn set_rules(input: &FirewallRuleList, what_if: bool) -> Result<FirewallRule
                 if rule_name.starts_with("ms-resource://") {
                     continue;
                 }
-                
+
                 if specified_names.contains(&rule_name.to_ascii_lowercase()) {
+                    continue;
+                }
+
+                if !rule_matches_unspecified_scope(&model, unspecified_rules)? {
                     continue;
                 }
 
@@ -551,10 +584,10 @@ pub fn set_rules(input: &FirewallRuleList, what_if: bool) -> Result<FirewallRule
                 }
             }
         }
-        _ => {} // None or Ignore — no additional action
+        _ => {} // None or Ignore: no additional action.
     }
 
-    Ok(FirewallRuleList { rules: results, unspecified_rules_action: input.unspecified_rules_action.clone() })
+    Ok(FirewallRuleList { rules: results, unspecified_rules: None })
 }
 
 pub fn export_rules() -> Result<FirewallRuleList, FirewallError> {
@@ -566,5 +599,74 @@ pub fn export_rules() -> Result<FirewallRuleList, FirewallError> {
         results.push(rule_to_model(&rule)?);
     }
 
-    Ok(FirewallRuleList { rules: results, unspecified_rules_action: None })
+    Ok(FirewallRuleList { rules: results, unspecified_rules: None })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn rule(direction: RuleDirection, profiles: &[&str]) -> FirewallRule {
+        FirewallRule {
+            direction: Some(direction),
+            profiles: Some(
+                profiles
+                    .iter()
+                    .map(|profile| (*profile).to_string())
+                    .collect(),
+            ),
+            ..FirewallRule::default()
+        }
+    }
+
+    fn scope(direction: Option<RuleDirection>, profiles: Option<&[&str]>) -> UnspecifiedRules {
+        UnspecifiedRules {
+            action: UnspecifiedRuleAction::Disable,
+            direction,
+            profiles: profiles.map(|values| {
+                values
+                    .iter()
+                    .map(|profile| (*profile).to_string())
+                    .collect()
+            }),
+        }
+    }
+
+    #[test]
+    fn unspecified_rule_scope_combines_direction_and_profiles() {
+        let filter = scope(Some(RuleDirection::Inbound), Some(&["Domain"]));
+
+        assert!(
+            rule_matches_unspecified_scope(&rule(RuleDirection::Inbound, &["Domain"]), &filter)
+                .unwrap()
+        );
+        assert!(
+            !rule_matches_unspecified_scope(&rule(RuleDirection::Outbound, &["Domain"]), &filter)
+                .unwrap()
+        );
+        assert!(
+            !rule_matches_unspecified_scope(&rule(RuleDirection::Inbound, &["Private"]), &filter)
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn unspecified_rule_profile_scope_intersects_all_profiles() {
+        let filter = scope(None, Some(&["Domain"]));
+
+        assert!(
+            rule_matches_unspecified_scope(&rule(RuleDirection::Inbound, &["All"]), &filter)
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn unspecified_rule_profile_scope_rejects_empty_filter() {
+        let filter = scope(None, Some(&[]));
+
+        assert!(
+            rule_matches_unspecified_scope(&rule(RuleDirection::Inbound, &["Domain"]), &filter)
+                .is_err()
+        );
+    }
 }

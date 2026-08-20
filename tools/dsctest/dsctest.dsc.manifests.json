@@ -314,6 +314,53 @@
               "type": "integer",
               "description": "The count value.",
               "default": 5
+            },
+            "nested": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["value"],
+              "properties": {
+                "value": {
+                  "type": "string"
+                },
+                "secret": {
+                  "type": "object",
+                  "writeOnly": true,
+                  "additionalProperties": false,
+                  "required": ["token"],
+                  "properties": {
+                    "token": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "referencedNested": {
+              "$ref": "#/$defs/nested"
+            }
+          },
+          "$defs": {
+            "nested": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["value"],
+              "properties": {
+                "value": {
+                  "type": "string"
+                },
+                "secret": {
+                  "type": "object",
+                  "writeOnly": true,
+                  "additionalProperties": false,
+                  "required": ["token"],
+                  "properties": {
+                    "token": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
             }
           }
         }

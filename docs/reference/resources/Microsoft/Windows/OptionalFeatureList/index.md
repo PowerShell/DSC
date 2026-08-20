@@ -1,6 +1,6 @@
 ---
 description: Microsoft.Windows/OptionalFeatureList resource reference documentation
-ms.date:     04/21/2026
+ms.date:     08/13/2026
 ms.topic:    reference
 title:       Microsoft.Windows/OptionalFeatureList
 ---
@@ -364,4 +364,4 @@ Common causes include:
 [04]: ./examples/export-optional-features.md
 [05]: ../../../../../concepts/resources/properties.md#read-only-resource-properties
 [06]: ../FeatureOnDemandList/index.md
-[07]: /windows-server/administration/windows-commands/dism/dism-operating-system-package-servicing-command-line-options
+[07]: /windows-hardware/manufacture/desktop/dism-operating-system-package-servicing-command-line-options
