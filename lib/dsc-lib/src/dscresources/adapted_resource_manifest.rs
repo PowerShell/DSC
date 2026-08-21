@@ -25,7 +25,7 @@ pub enum AdaptedPathOrContent {
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 #[dsc_repo_schema(
     base_name = "manifest",
-    folder_path = "resource",
+    folder_path = "resource/adapted",
     should_bundle = true,
     schema_field(
         name = schema_version,
@@ -36,7 +36,7 @@ pub enum AdaptedPathOrContent {
 pub struct AdaptedDscResourceManifest {
     /// The version of the resource manifest schema.
     #[serde(rename = "$schema")]
-    #[schemars(schema_with = "ResourceManifest::recognized_schema_uris_subschema")]
+    #[schemars(schema_with = "AdaptedDscResourceManifest::recognized_schema_uris_with_deprecated_subschema")]
     pub schema_version: String,
     /// The namespaced name of the resource.
     #[serde(rename="type")]
@@ -63,4 +63,41 @@ pub struct AdaptedDscResourceManifest {
     pub require_adapter: FullyQualifiedTypeName,
     /// The JSON Schema of the resource.
     pub schema: Map<String, Value>,
+}
+
+impl AdaptedDscResourceManifest {
+    pub const LEGACY_SHIPPED_SCHEMA_URI: &'static str = "https://aka.ms/dsc/schemas/v3/bundled/adaptedresource/manifest.json";
+
+    #[must_use]
+    pub fn is_deprecated_schema_uri(uri: &String) -> bool {
+        uri.as_str() == Self::LEGACY_SHIPPED_SCHEMA_URI || ResourceManifest::is_recognized_schema_uri(uri)
+    }
+
+    fn recognized_schema_uris_with_deprecated_subschema(generator: &mut schemars::SchemaGenerator) -> schemars::Schema {
+        let mut subschema = <Self as DscRepoSchema>::recognized_schema_uris_subschema(generator);
+        subschema.remove("enum");
+        let recognized_uris: Vec<Value> = Self::recognized_schema_uris()
+            .into_iter()
+            .map(Value::String)
+            .collect();
+        let deprecated_uris: Vec<Value> = ResourceManifest::recognized_schema_uris()
+            .into_iter()
+            .chain([Self::LEGACY_SHIPPED_SCHEMA_URI.to_string()])
+            .map(Value::String)
+            .collect();
+        subschema.insert("oneOf".to_string(), serde_json::json!([
+            {
+                "enum": recognized_uris,
+            },
+            {
+                "enum": deprecated_uris,
+                "deprecated": true,
+                "deprecationMessage": t!(
+                    "dscresources.resource_manifest.adaptedResourceManifestDeprecatedSchemaUri",
+                    uri = Self::default_schema_id_uri()
+                ),
+            },
+        ]));
+        subschema
+    }
 }

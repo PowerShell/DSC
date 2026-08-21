@@ -327,8 +327,8 @@ pub trait DscRepoSchema : JsonSchema {
     /// # Errors
     ///
     /// If the value for the schema field isn't a recognized schema, the method should raise the
-    /// [`UnrecognizedSchemaUri`] error.
-    fn validate_schema_uri(&self) -> Result<(), UnrecognizedSchemaUri> {
+    /// [`UnrecognizedSchemaUriError`] error.
+    fn validate_schema_uri(&self) -> Result<(), UnrecognizedSchemaUriError> {
         Ok(())
     }
 
@@ -355,8 +355,8 @@ pub trait DscRepoSchema : JsonSchema {
     /// 
     /// # Errors
     /// 
-    /// Returns a [`DscRepoSchemaMissingTranslation`] error if the translation key doesn't exist.
-    fn schema_i18n(suffix: &str) -> Result<String, DscRepoSchemaMissingTranslation>;
+    /// Returns a [`DscRepoSchemaMissingTranslationError`] error if the translation key doesn't exist.
+    fn schema_i18n(suffix: &str) -> Result<String, DscRepoSchemaMissingTranslationError>;
 }
 
 /// Defines the error when a user-defined JSON Schema references an unrecognized schema URI.
@@ -366,13 +366,13 @@ pub trait DscRepoSchema : JsonSchema {
     t = t!("dsc_repo.dsc_repo_schema.unrecognizedSchemaUri"),
     t2 = t!("dsc_repo.dsc_repo_schema.validSchemaUrisAre")
 )]
-pub struct UnrecognizedSchemaUri(pub String, pub Vec<String>);
+pub struct UnrecognizedSchemaUriError(pub String, pub Vec<String>);
 
 #[derive(Error, Debug, Clone, PartialEq)]
 #[error("{t}", t = t!(
     "dsc_repo.dsc_repo_schema.missingTranslation",
     "key" => i18n_key
 ))]
-pub struct DscRepoSchemaMissingTranslation {
+pub struct DscRepoSchemaMissingTranslationError {
     pub i18n_key: String
 }

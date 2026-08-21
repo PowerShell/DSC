@@ -256,7 +256,7 @@ macro_rules! testing_title {
                 dsc_repo::{
                     DscRepoSchema,
                     RecognizedSchemaVersion,
-                    UnrecognizedSchemaUri,
+                    UnrecognizedSchemaUriError,
                     schema_i18n
                 },
                 schema_utility_extensions::SchemaUtilityExtensions
@@ -411,7 +411,7 @@ macro_rules! testing_title {
 
                 assert_eq!(
                     invalid_instance.validate_schema_uri(),
-                    Err(UnrecognizedSchemaUri(invalid_uri, Example::recognized_schema_uris()))
+                    Err(UnrecognizedSchemaUriError(invalid_uri, Example::recognized_schema_uris()))
                 )
             }
 
@@ -575,7 +575,7 @@ macro_rules! testing_title {
                 dsc_repo::{
                     DscRepoSchema,
                     RecognizedSchemaVersion,
-                    UnrecognizedSchemaUri,
+                    UnrecognizedSchemaUriError,
                     schema_i18n
                 },
                 schema_utility_extensions::SchemaUtilityExtensions
@@ -731,7 +731,7 @@ macro_rules! testing_title {
 
                 assert_eq!(
                     invalid_instance.validate_schema_uri(),
-                    Err(UnrecognizedSchemaUri(invalid_uri, Example::recognized_schema_uris()))
+                    Err(UnrecognizedSchemaUriError(invalid_uri, Example::recognized_schema_uris()))
                 )
             }
 
