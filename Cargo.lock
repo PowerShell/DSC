@@ -1364,6 +1364,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "group_policy_template"
+version = "0.1.0"
+dependencies = [
+ "dsc-lib-registry",
+ "roxmltree",
+ "rust-i18n",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.19",
+ "windows 0.62.2",
+]
+
+[[package]]
 name = "h2"
 version = "0.4.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2801,6 +2814,12 @@ dependencies = [
  "serde_json",
  "syn 2.0.119",
 ]
+
+[[package]]
+name = "roxmltree"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c20b6793b5c2fa6553b250154b78d6d0db37e72700ae35fad9387a46f487c97"
 
 [[package]]
 name = "rt-format"
