@@ -363,7 +363,7 @@ pub trait DscRepoSchema : JsonSchema {
 #[derive(Error, Debug, Clone, PartialEq)]
 #[error(
     "{t}: {0}. {t2}: {1:?}",
-    t = t!("dsc_repo.dsc_repo_schema.UnrecognizedSchemaUriError"),
+    t = t!("dsc_repo.dsc_repo_schema.unrecognizedSchemaUri"),
     t2 = t!("dsc_repo.dsc_repo_schema.validSchemaUrisAre")
 )]
 pub struct UnrecognizedSchemaUriError(pub String, pub Vec<String>);
