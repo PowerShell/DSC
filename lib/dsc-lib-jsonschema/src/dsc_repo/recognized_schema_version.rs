@@ -18,17 +18,17 @@ include!(concat!(env!("OUT_DIR"), "/recognized_schema_version.rs"));
     t = t!("dsc_repo.recognized_schema_version.unrecognizedVersion"),
     t2 = t!("dsc_repo.recognized_schema_version.validVersionsAre")
 )]
-pub struct UnrecognizedSchemaVersion(pub String, pub Vec<String>);
+pub struct UnrecognizedSchemaVersionError(pub String, pub Vec<String>);
 
 impl std::str::FromStr for RecognizedSchemaVersion {
-    type Err = UnrecognizedSchemaVersion;
+    type Err = UnrecognizedSchemaVersionError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let candidate = s.trim();
         Self::all()
             .into_iter()
             .find(|version| version.to_string().eq_ignore_ascii_case(candidate))
-            .ok_or_else(|| UnrecognizedSchemaVersion(
+            .ok_or_else(|| UnrecognizedSchemaVersionError(
                 candidate.to_string(),
                 Self::all().iter().map(ToString::to_string).collect()
             ))

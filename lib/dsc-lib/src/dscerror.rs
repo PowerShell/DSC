@@ -177,7 +177,7 @@ pub enum DscError {
     },
 
     #[error(transparent)]
-    UnrecognizedSchemaUri(#[from] crate::schemas::dsc_repo::UnrecognizedSchemaUri),
+    UnrecognizedSchemaUri(#[from] crate::schemas::dsc_repo::UnrecognizedSchemaUriError),
 
     #[error("{t} '{0}' {t2} '{1}'", t = t!("dscerror.extension"), t2 = t!("dscerror.unsupportedCapability"))]
     UnsupportedCapability(String, String),

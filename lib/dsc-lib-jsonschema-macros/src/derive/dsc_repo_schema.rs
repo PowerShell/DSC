@@ -153,11 +153,11 @@ fn generate_with_schema_field(
 
             #schema_property_metadata
 
-            fn validate_schema_uri(&self) -> Result<(), dsc_lib_jsonschema::dsc_repo::UnrecognizedSchemaUri> {
+            fn validate_schema_uri(&self) -> Result<(), dsc_lib_jsonschema::dsc_repo::UnrecognizedSchemaUriError> {
                 if Self::is_recognized_schema_uri(&self.#field) {
                     Ok(())
                 } else {
-                    Err(dsc_lib_jsonschema::dsc_repo::UnrecognizedSchemaUri(
+                    Err(dsc_lib_jsonschema::dsc_repo::UnrecognizedSchemaUriError(
                         self.#field.clone(),
                         Self::recognized_schema_uris(),
                     ))
@@ -196,12 +196,12 @@ fn generate_schema_property_metadata_fn(schema_field: &DscRepoSchemaField) -> pr
 /// required to ensure that the translations use the correct locale definitions.
 fn generate_schema_i18n_fn() -> proc_macro2::TokenStream {
     quote! {
-        fn schema_i18n(suffix: &str) -> Result<String, dsc_lib_jsonschema::dsc_repo::DscRepoSchemaMissingTranslation> {
+        fn schema_i18n(suffix: &str) -> Result<String, dsc_lib_jsonschema::dsc_repo::DscRepoSchemaMissingTranslationError> {
             let i18n_key = format!("{}.{}", Self::SCHEMA_I18N_ROOT_KEY, suffix);
             if let Some(translated) = crate::_rust_i18n_try_translate(&rust_i18n::locale(), &i18n_key) {
                 Ok(translated.into())
             } else {
-                Err(dsc_lib_jsonschema::dsc_repo::DscRepoSchemaMissingTranslation { i18n_key })
+                Err(dsc_lib_jsonschema::dsc_repo::DscRepoSchemaMissingTranslationError { i18n_key })
             }
         }
     }
