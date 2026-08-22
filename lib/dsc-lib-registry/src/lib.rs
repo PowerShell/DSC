@@ -790,6 +790,17 @@ fn encode_multi_sz(strings: &[String]) -> Vec<u8> {
 }
 
 #[test]
+fn decode_utf16_bytes_ignores_incomplete_code_unit() {
+    assert_eq!(decode_utf16_bytes(&[b'A', 0, 0xff]), "A");
+}
+
+#[test]
+fn decode_multi_sz_ignores_incomplete_code_unit() {
+    let data = [b'A', 0, 0, 0, 0, 0, 0xff];
+    assert_eq!(decode_multi_sz(&data), vec!["A"]);
+}
+
+#[test]
 fn get_hklm_key() {
     let reg_helper = RegistryHelper::new_from_json(r#"{"keyPath":"HKEY_LOCAL_MACHINE"}"#).unwrap();
     let reg_config = reg_helper.get().unwrap();
