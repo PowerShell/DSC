@@ -38,8 +38,10 @@ Describe 'Microsoft.Adapter/GroupPolicyTemplate tests' -Skip:(!$IsWindows) {
         $LASTEXITCODE | Should -Be 0
         $admxFiles.Count | Should -BeGreaterThan 0
         $resources.Count | Should -BeGreaterThan 0
-        $resources.requireAdapter | Should -Contain $adapterType
-        $resources.path | ForEach-Object { $_ | Should -Exist }
+        $resources | ForEach-Object {
+            $_.requireAdapter | Should -BeExactly $adapterType
+            $_.path | Should -Exist
+        }
     }
 
     Context 'Current user policy state' -Skip:(!$isAdmin) {

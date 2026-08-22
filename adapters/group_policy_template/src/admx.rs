@@ -141,7 +141,16 @@ pub fn list_resources() -> Result<Vec<String>, AdapterError> {
 
     for entry in entries {
         let path = entry
-            .map_err(|error| AdapterError::Resource(error.to_string()))?
+            .map_err(|error| {
+                AdapterError::Resource(
+                    t!(
+                        "admx.readDirectory",
+                        path = policy_definitions.display(),
+                        error = error
+                    )
+                    .to_string(),
+                )
+            })?
             .path();
         if !path
             .extension()

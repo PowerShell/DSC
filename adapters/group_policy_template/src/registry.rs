@@ -109,6 +109,8 @@ fn read_enabled(policy: &Policy, scope: &str) -> Result<Option<bool>, AdapterErr
         Ok(Some(true))
     } else if state_matches(policy, scope, false)? {
         Ok(Some(false))
+    } else if policy_values_are_absent(policy, scope)? {
+        Ok(None)
     } else {
         Err(AdapterError::Resource(
             t!(
@@ -119,6 +121,34 @@ fn read_enabled(policy: &Policy, scope: &str) -> Result<Option<bool>, AdapterErr
             .to_string(),
         ))
     }
+}
+
+fn policy_values_are_absent(policy: &Policy, scope: &str) -> Result<bool, AdapterError> {
+    let mut values = Vec::new();
+    if let Some(value_name) = &policy.value_name {
+        values.push((policy.key.as_str(), value_name.as_str()));
+    }
+    for setting in policy.enabled_list.iter().chain(&policy.disabled_list) {
+        values.push((
+            setting.key.as_deref().unwrap_or(&policy.key),
+            setting.value_name.as_str(),
+        ));
+    }
+    if values.is_empty() {
+        return Ok(false);
+    }
+
+    for (key, value_name) in values {
+        let actual = RegistryHelper::new(&key_path(scope, key), Some(value_name.to_string()), None)
+            .map_err(registry_error)?
+            .get()
+            .map_err(registry_error)?
+            .value_data;
+        if actual.is_some() {
+            return Ok(false);
+        }
+    }
+    Ok(true)
 }
 
 fn write_policy(policy: &Policy, scope: &str, input: &Value) -> Result<(), AdapterError> {
