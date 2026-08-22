@@ -1,0 +1,111 @@
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "type": "Microsoft/FileContent",
+    "description": "Manage the UTF-8 content of a local file.",
+    "tags": [
+        "file",
+        "linux",
+        "macos",
+        "windows"
+    ],
+    "version": "0.1.0",
+    "get": {
+        "executable": "filecontent",
+        "args": [
+            "get",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ]
+    },
+    "set": {
+        "executable": "filecontent",
+        "args": [
+            "set",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ],
+        "implementsPretest": false,
+        "return": "state"
+    },
+    "test": {
+        "executable": "filecontent",
+        "args": [
+            "test",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ],
+        "return": "state"
+    },
+    "export": {
+        "executable": "filecontent",
+        "args": [
+            "export",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ],
+        "supportsFiltering": true
+    },
+    "exitCodes": {
+        "0": "Success",
+        "1": "Invalid arguments",
+        "2": "Invalid input",
+        "3": "File operation error"
+    },
+    "schema": {
+        "embedded": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "File Content",
+            "description": "Manage the UTF-8 content of a local file.",
+            "type": "object",
+            "required": [
+                "path"
+            ],
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "title": "Content",
+                    "description": "The UTF-8 content of the file.",
+                    "writeOnly": true
+                },
+                "sha256": {
+                    "type": "string",
+                    "title": "SHA-256",
+                    "description": "The SHA-256 hash of the file content.",
+                    "pattern": "^[A-Fa-f0-9]{64}$"
+                },
+                "sha512": {
+                    "type": "string",
+                    "title": "SHA-512",
+                    "description": "The SHA-512 hash of the file content.",
+                    "pattern": "^[A-Fa-f0-9]{128}$"
+                },
+                "path": {
+                    "type": "string",
+                    "title": "Path",
+                    "description": "The path to the local file.",
+                    "minLength": 1
+                },
+                "_exist": {
+                    "type": "boolean",
+                    "title": "Exists",
+                    "description": "Indicates whether the file should exist. Set to false to remove the file."
+                },
+                "_inDesiredState": {
+                    "type": "boolean",
+                    "title": "In desired state",
+                    "description": "Indicates whether the file is in the desired state. Only returned by test.",
+                    "readOnly": true
+                }
+            },
+            "additionalProperties": false
+        }
+    }
+}
