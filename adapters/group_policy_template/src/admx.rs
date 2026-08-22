@@ -256,11 +256,7 @@ fn parse_template(path: &Path, locale: &str) -> Result<Vec<CategoryResource>, Ad
             .unwrap_or_else(|| (category_name.clone(), None));
         let parent_name = parent.as_deref().unwrap_or(&category_name);
         resources.push(CategoryResource {
-            type_name: format!(
-                "GPO.{}/{}",
-                resource_name_segment(parent_name),
-                resource_name_segment(&display_name)
-            ),
+            type_name: resource_type_name(parent_name, &category_name),
             display_name,
             description: template_description.clone(),
             policies,
@@ -723,6 +719,14 @@ fn resource_name_segment(value: &str) -> String {
         .collect()
 }
 
+fn resource_type_name(parent_category: &str, category: &str) -> String {
+    format!(
+        "GPO.{}/{}",
+        resource_name_segment(parent_category),
+        resource_name_segment(category)
+    )
+}
+
 fn child<'a>(node: Node<'a, 'a>, name: &str) -> Option<Node<'a, 'a>> {
     node.children().find(|child| child.has_tag_name(name))
 }
@@ -791,7 +795,7 @@ fn read_xml(path: &Path) -> Result<String, std::io::Error> {
 
 #[cfg(test)]
 mod tests {
-    use super::{parse_binary, reference_name, resource_name_segment};
+    use super::{parse_binary, reference_name, resource_name_segment, resource_type_name};
 
     #[test]
     fn normalizes_resource_name_parts() {
@@ -804,6 +808,10 @@ mod tests {
             "Windows_PowerShell"
         );
         assert_eq!(resource_name_segment("App-V (Client)"), "App_V__Client_");
+        assert_eq!(
+            resource_type_name("WindowsComponents", "PowerShell"),
+            "GPO.WindowsComponents/PowerShell"
+        );
     }
 
     #[test]
