@@ -25,7 +25,7 @@ Describe 'Microsoft.Adapter/GroupPolicyTemplate tests' -Skip:(!$IsWindows) {
             $json = @{
                 NoAddPage = $Enabled
             } | ConvertTo-Json -Compress
-            $out = $json | dsc resource get -r $resourceType --adapter $adapterType -f - 2>$TestDrive/error.log
+            $out = $json | dsc resource get -r $resourceType -f - 2>$TestDrive/error.log
             $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
             return ($out | ConvertFrom-Json).actualState
         }
@@ -86,7 +86,7 @@ Describe 'Microsoft.Adapter/GroupPolicyTemplate tests' -Skip:(!$IsWindows) {
             $json = @{
                 NoAddPage = $true
             } | ConvertTo-Json -Compress
-            $out = $json | dsc resource set -r $resourceType --adapter $adapterType -f - 2>$TestDrive/error.log
+            $out = $json | dsc resource set -r $resourceType -f - 2>$TestDrive/error.log
 
             $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
             ($out | ConvertFrom-Json).afterState.scope | Should -BeExactly 'currentUser'
