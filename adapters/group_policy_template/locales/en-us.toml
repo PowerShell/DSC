@@ -14,7 +14,6 @@ serializeResource = "Failed to serialize an adapted resource: %{error}"
 skipTemplate = "Skipped policy template '%{path}': %{error}"
 resourceNotFound = "Adapted resource '%{resource}' was not found in '%{path}'."
 missingPolicyAttribute = "Policy '%{policy}' is missing required attribute '%{attribute}'."
-missingPolicyValue = "Policy '%{policy}' is missing '%{value}'."
 emptyPolicyValue = "A policy value does not contain a registry value."
 unsupportedValueType = "Unsupported ADMX registry value type '%{value_type}'."
 missingElementId = "A policy element is missing its required id."
@@ -26,6 +25,7 @@ admlNotFound = "No ADML file was found for template '%{template}' and locale '%{
 systemRootNotFound = "The SystemRoot environment variable is not defined."
 invalidNumber = "Invalid numeric policy value '%{value}': %{error}"
 invalidBinary = "Invalid binary policy value '%{value}': %{error}"
+invalidUtf16Length = "The UTF-16 XML file '%{path}' has an odd number of bytes."
 
 [schema]
 scopeTitle = "Scope"

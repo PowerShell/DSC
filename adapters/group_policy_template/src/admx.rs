@@ -756,16 +756,30 @@ fn parse_binary(value: &str) -> Result<Vec<u8>, AdapterError> {
 fn read_xml(path: &Path) -> Result<String, std::io::Error> {
     let bytes = fs::read(path)?;
     if bytes.starts_with(&[0xff, 0xfe]) {
-        let words = bytes[2..]
-            .chunks_exact(2)
+        let (chunks, remainder) = bytes[2..].as_chunks::<2>();
+        if !remainder.is_empty() {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                t!("admx.invalidUtf16Length", path = path.display()).to_string(),
+            ));
+        }
+        let words = chunks
+            .iter()
             .map(|chunk| u16::from_le_bytes([chunk[0], chunk[1]]))
             .collect::<Vec<_>>();
         return String::from_utf16(&words)
             .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error));
     }
     if bytes.starts_with(&[0xfe, 0xff]) {
-        let words = bytes[2..]
-            .chunks_exact(2)
+        let (chunks, remainder) = bytes[2..].as_chunks::<2>();
+        if !remainder.is_empty() {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                t!("admx.invalidUtf16Length", path = path.display()).to_string(),
+            ));
+        }
+        let words = chunks
+            .iter()
             .map(|chunk| u16::from_be_bytes([chunk[0], chunk[1]]))
             .collect::<Vec<_>>();
         return String::from_utf16(&words)
