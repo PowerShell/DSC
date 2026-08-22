@@ -1,0 +1,10 @@
+{
+    "Name": "python-adapter",
+    "Kind": "Adapter",
+    "CopyFiles": {
+        "All": [
+            "pyDscAdapter/*",
+            "pythonadapter.dsc.resource.json"
+        ]
+    }
+}
