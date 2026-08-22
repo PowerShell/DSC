@@ -745,7 +745,7 @@ fn convert_value_data_to_offline(value_data: &RegistryValueData) -> Result<(u32,
 
 /// Decode a null-terminated UTF-16LE byte slice to a String.
 fn decode_utf16_bytes(data: &[u8]) -> String {
-    let u16_slice: Vec<u16> = data.chunks_exact(2)
+    let u16_slice: Vec<u16> = data.as_chunks::<2>().0.iter()
         .map(|chunk| u16::from_le_bytes([chunk[0], chunk[1]]))
         .collect();
     // Strip trailing null
@@ -761,7 +761,7 @@ fn encode_utf16_bytes(s: &str) -> Vec<u8> {
 
 /// Decode REG_MULTI_SZ: double-null-terminated list of null-terminated UTF-16LE strings.
 fn decode_multi_sz(data: &[u8]) -> Vec<String> {
-    let u16_slice: Vec<u16> = data.chunks_exact(2)
+    let u16_slice: Vec<u16> = data.as_chunks::<2>().0.iter()
         .map(|chunk| u16::from_le_bytes([chunk[0], chunk[1]]))
         .collect();
     let mut strings = Vec::new();

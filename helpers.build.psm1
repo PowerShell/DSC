@@ -388,9 +388,9 @@ function Get-RustUp {
             Write-Verbose -Verbose "Using msrustup"
             $rustup = 'msrustup'
             $channel = 'ms-prod-1.95'
-            if ($architecture -eq 'current') {
-                $env:MSRUSTUP_TOOLCHAIN = "$architecture"
-            }
+            # if ($architecture -ne 'current') {
+            #     $env:MSRUSTUP_TOOLCHAIN = "$architecture"
+            # }
         } elseif ($null -ne (Get-Command rustup -CommandType Application -ErrorAction Ignore)) {
                 $rustup = 'rustup'
                 $env:TESTING_FUNCTION_ENV = "lolwhat"
