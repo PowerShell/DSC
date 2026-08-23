@@ -38,10 +38,6 @@ fn main() {
     let result = match operation {
         "list" => admx::list_resources(),
         "get" | "set" => {
-            let Some(input) = argument_value(&args, "--input") else {
-                write_error(&t!("main.missingArgument", argument = "--input"));
-                exit(EXIT_INVALID_ARGS);
-            };
             let Some(resource_type) = argument_value(&args, "--resource-type") else {
                 write_error(&t!("main.missingArgument", argument = "--resource-type"));
                 exit(EXIT_INVALID_ARGS);
@@ -51,8 +47,13 @@ fn main() {
                 exit(EXIT_INVALID_ARGS);
             };
             if operation == "get" {
+                let input = argument_value(&args, "--input").unwrap_or_default();
                 registry::get(input, resource_type, resource_path)
             } else {
+                let Some(input) = argument_value(&args, "--input") else {
+                    write_error(&t!("main.missingArgument", argument = "--input"));
+                    exit(EXIT_INVALID_ARGS);
+                };
                 registry::set(input, resource_type, resource_path)
             }
         }

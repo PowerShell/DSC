@@ -23,7 +23,7 @@
             "get",
             {
                 "jsonInputArg": "--input",
-                "mandatory": true
+                "mandatory": false
             },
             {
                 "resourceTypeArg": "--resource-type"

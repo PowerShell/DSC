@@ -44,6 +44,19 @@ Describe 'Microsoft.Adapter/GroupPolicyTemplate tests' -Skip:(!$IsWindows) {
         }
     }
 
+    It 'Gets all current user values without input' {
+        $resources = @(dsc resource list 'GPO.WindowsComponents/PowerShell' --adapter $adapterType | ConvertFrom-Json)
+        if ($resources.Count -eq 0) {
+            Set-ItResult -Skipped -Because 'PowerShellExecutionPolicy.admx is not installed.'
+            return
+        }
+
+        $out = dsc resource get -r 'GPO.WindowsComponents/PowerShell' 2>$TestDrive/error.log
+
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+        ($out | ConvertFrom-Json).actualState.scope | Should -BeExactly 'currentUser'
+    }
+
     Context 'Current user policy state' -Skip:(!$isAdmin) {
         BeforeAll {
             $script:originalKeyExists = Test-Path -LiteralPath $keyPath

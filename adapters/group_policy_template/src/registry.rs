@@ -17,7 +17,7 @@ pub fn get(
     resource_type: &str,
     resource_path: &str,
 ) -> Result<Vec<String>, AdapterError> {
-    let input = parse_input(input)?;
+    let input = parse_get_input(input)?;
     let scope = parse_scope(&input)?;
     let resource = load_resource(Path::new(resource_path), resource_type)?;
     let include_all = input.keys().all(|key| key == "scope");
@@ -540,6 +540,14 @@ fn parse_input(input: &str) -> Result<Map<String, Value>, AdapterError> {
     })
 }
 
+fn parse_get_input(input: &str) -> Result<Map<String, Value>, AdapterError> {
+    if input.trim().is_empty() {
+        Ok(Map::new())
+    } else {
+        parse_input(input)
+    }
+}
+
 fn parse_scope(input: &Map<String, Value>) -> Result<&str, AdapterError> {
     match input.get("scope") {
         None => Ok(DEFAULT_SCOPE),
@@ -575,8 +583,8 @@ fn serialize_result(result: &Map<String, Value>) -> Result<Vec<String>, AdapterE
 mod tests {
     use super::{
         apply_value, element_data_to_json, get, input_to_string, json_to_element_data, key_path,
-        parse_input, parse_scope, policy_values_are_absent, read_policy, scope_is_supported,
-        serialize_result, set, state_matches, validate_scope, write_policy,
+        parse_get_input, parse_input, parse_scope, policy_values_are_absent, read_policy,
+        scope_is_supported, serialize_result, set, state_matches, validate_scope, write_policy,
     };
     use crate::admx::{ElementKind, EnumItem, Policy, PolicyClass, PolicyElement, PolicyValue};
     use dsc_lib_registry::{
@@ -625,6 +633,9 @@ mod tests {
     #[test]
     fn parses_input_scope_and_serializes_results() {
         let input = parse_input(r#"{"scope":"allUsers","Policy":true}"#).unwrap();
+        assert!(parse_get_input("").unwrap().is_empty());
+        assert!(parse_get_input("  ").unwrap().is_empty());
+        assert!(parse_get_input("not json").is_err());
         assert_eq!(parse_scope(&input).unwrap(), "allUsers");
         assert_eq!(parse_scope(&Map::new()).unwrap(), "currentUser");
         assert!(parse_scope(&Map::from_iter([("scope".to_string(), json!("invalid"))])).is_err());
