@@ -63,6 +63,7 @@ Describe 'Microsoft.Adapter/GroupPolicyTemplate tests' -Skip:(!$IsWindows) {
         $actualState.psobject.Properties.Name | Should -Contain 'ModuleLogging'
         $actualState.psobject.Properties.Name | Should -Not -Contain 'EnableModuleLogging'
         $actualState.psobject.Properties.Name | Should -Not -Contain 'EnabledModuleLogging'
+        $actualState.ModuleLogging.Listbox_ModuleNames.GetType().IsArray | Should -BeTrue
         foreach ($property in $actualState.psobject.Properties | Where-Object Name -NE 'scope') {
             $state = if ($property.Value -is [string]) {
                 $property.Value
@@ -143,86 +144,86 @@ Describe 'Microsoft.Adapter/GroupPolicyTemplate tests' -Skip:(!$IsWindows) {
         }
 
         It 'Gets all configured values for a policy list without input' {
-                $resources = @(dsc resource list 'GPO.WindowsComponents/PowerShell' --adapter $adapterType | ConvertFrom-Json)
-                if ($resources.Count -eq 0) {
-                    Set-ItResult -Skipped -Because 'PowerShellExecutionPolicy.admx is not installed.'
-                    return
+            $resources = @(dsc resource list 'GPO.WindowsComponents/PowerShell' --adapter $adapterType | ConvertFrom-Json)
+            if ($resources.Count -eq 0) {
+                Set-ItResult -Skipped -Because 'PowerShellExecutionPolicy.admx is not installed.'
+                return
+            }
+
+            $stateKeyExisted = Test-Path -LiteralPath $moduleStateKeyPath
+            $listKeyExisted = Test-Path -LiteralPath $moduleListKeyPath
+            $stateValueExisted = $false
+            $stateValue = $null
+            $stateValueKind = $null
+            $listValueExisted = $false
+            $listValue = $null
+            $listValueKind = $null
+
+            if ($stateKeyExisted) {
+                $stateKey = Get-Item -LiteralPath $moduleStateKeyPath
+                if ($stateKey.GetValueNames() -contains $moduleStateValueName) {
+                    $stateValueExisted = $true
+                    $stateValue = $stateKey.GetValue($moduleStateValueName, $null, 'DoNotExpandEnvironmentNames')
+                    $stateValueKind = $stateKey.GetValueKind($moduleStateValueName)
                 }
+            }
+            if ($listKeyExisted) {
+                $listKey = Get-Item -LiteralPath $moduleListKeyPath
+                if ($listKey.GetValueNames() -contains $testModuleName) {
+                    $listValueExisted = $true
+                    $listValue = $listKey.GetValue($testModuleName, $null, 'DoNotExpandEnvironmentNames')
+                    $listValueKind = $listKey.GetValueKind($testModuleName)
+                }
+            }
 
-                $stateKeyExisted = Test-Path -LiteralPath $moduleStateKeyPath
-                $listKeyExisted = Test-Path -LiteralPath $moduleListKeyPath
-                $stateValueExisted = $false
-                $stateValue = $null
-                $stateValueKind = $null
-                $listValueExisted = $false
-                $listValue = $null
-                $listValueKind = $null
-
-                if ($stateKeyExisted) {
-                    $stateKey = Get-Item -LiteralPath $moduleStateKeyPath
-                    if ($stateKey.GetValueNames() -contains $moduleStateValueName) {
-                        $stateValueExisted = $true
-                        $stateValue = $stateKey.GetValue($moduleStateValueName, $null, 'DoNotExpandEnvironmentNames')
-                        $stateValueKind = $stateKey.GetValueKind($moduleStateValueName)
+            try {
+                $json = @{
+                    ModuleLogging = @{
+                        state = 'Enabled'
+                        Listbox_ModuleNames = @($testModuleName)
                     }
+                } | ConvertTo-Json -Depth 5 -Compress
+                $json | dsc resource set -r 'GPO.WindowsComponents/PowerShell' -f - 2>$TestDrive/error.log | Out-Null
+                $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+
+                $out = dsc resource get -r 'GPO.WindowsComponents/PowerShell' 2>$TestDrive/error.log
+
+                $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+                $actualState = ($out | ConvertFrom-Json).actualState
+                $actualState.ModuleLogging.Listbox_ModuleNames | Should -Contain $testModuleName
+                $actualState.ModuleLogging.Listbox_ModuleNames | ForEach-Object {
+                    $_ | Should -BeOfType [string]
                 }
-                if ($listKeyExisted) {
+            }
+            finally {
+                if ($listValueExisted) {
+                    (Get-Item -LiteralPath $moduleListKeyPath).SetValue(
+                        $testModuleName,
+                        $listValue,
+                        $listValueKind)
+                }
+                else {
+                    Remove-ItemProperty -LiteralPath $moduleListKeyPath -Name $testModuleName -ErrorAction Ignore
+                }
+                if ($stateValueExisted) {
+                    (Get-Item -LiteralPath $moduleStateKeyPath).SetValue(
+                        $moduleStateValueName,
+                        $stateValue,
+                        $stateValueKind)
+                }
+                else {
+                    Remove-ItemProperty -LiteralPath $moduleStateKeyPath -Name $moduleStateValueName -ErrorAction Ignore
+                }
+                if (!$listKeyExisted -and (Test-Path -LiteralPath $moduleListKeyPath)) {
                     $listKey = Get-Item -LiteralPath $moduleListKeyPath
-                    if ($listKey.GetValueNames() -contains $testModuleName) {
-                        $listValueExisted = $true
-                        $listValue = $listKey.GetValue($testModuleName, $null, 'DoNotExpandEnvironmentNames')
-                        $listValueKind = $listKey.GetValueKind($testModuleName)
+                    if ($listKey.ValueCount -eq 0 -and $listKey.SubKeyCount -eq 0) {
+                        Remove-Item -LiteralPath $moduleListKeyPath
                     }
                 }
-
-                try {
-                    $json = @{
-                        ModuleLogging = @{
-                            state = 'Enabled'
-                            Listbox_ModuleNames = @{
-                                $testModuleName = 'PSResourceGet'
-                            }
-                        }
-                    } | ConvertTo-Json -Depth 5 -Compress
-                    $json | dsc resource set -r 'GPO.WindowsComponents/PowerShell' -f - 2>$TestDrive/error.log | Out-Null
-                    $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
-
-                    $out = dsc resource get -r 'GPO.WindowsComponents/PowerShell' 2>$TestDrive/error.log
-
-                    $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
-                    $actualState = ($out | ConvertFrom-Json).actualState
-                    $actualState.ModuleLogging.Listbox_ModuleNames.$testModuleName |
-                        Should -BeExactly 'PSResourceGet'
-                }
-                finally {
-                    if ($listValueExisted) {
-                        (Get-Item -LiteralPath $moduleListKeyPath).SetValue(
-                            $testModuleName,
-                            $listValue,
-                            $listValueKind)
-                    }
-                    else {
-                        Remove-ItemProperty -LiteralPath $moduleListKeyPath -Name $testModuleName -ErrorAction Ignore
-                    }
-                    if ($stateValueExisted) {
-                        (Get-Item -LiteralPath $moduleStateKeyPath).SetValue(
-                            $moduleStateValueName,
-                            $stateValue,
-                            $stateValueKind)
-                    }
-                    else {
-                        Remove-ItemProperty -LiteralPath $moduleStateKeyPath -Name $moduleStateValueName -ErrorAction Ignore
-                    }
-                    if (!$listKeyExisted -and (Test-Path -LiteralPath $moduleListKeyPath)) {
-                        $listKey = Get-Item -LiteralPath $moduleListKeyPath
-                        if ($listKey.ValueCount -eq 0 -and $listKey.SubKeyCount -eq 0) {
-                            Remove-Item -LiteralPath $moduleListKeyPath
-                        }
-                    }
-                    if (!$stateKeyExisted -and (Test-Path -LiteralPath $moduleStateKeyPath)) {
-                        $stateKey = Get-Item -LiteralPath $moduleStateKeyPath
-                        if ($stateKey.ValueCount -eq 0 -and $stateKey.SubKeyCount -eq 0) {
-                            Remove-Item -LiteralPath $moduleStateKeyPath
+                if (!$stateKeyExisted -and (Test-Path -LiteralPath $moduleStateKeyPath)) {
+                    $stateKey = Get-Item -LiteralPath $moduleStateKeyPath
+                    if ($stateKey.ValueCount -eq 0 -and $stateKey.SubKeyCount -eq 0) {
+                        Remove-Item -LiteralPath $moduleStateKeyPath
                     }
                 }
             }

@@ -116,7 +116,7 @@ fn read_policy(
     };
     if !policy.elements.is_empty() {
         let mut result = Map::new();
-        let empty_list_request = Value::Object(Map::new());
+        let empty_list_request = Value::Array(Vec::new());
         result.insert(
             "state".to_string(),
             Value::String(state.as_str().to_string()),
@@ -326,30 +326,22 @@ fn read_element(
 ) -> Result<Option<Value>, AdapterError> {
     let element_key = element.key.as_deref().unwrap_or(&policy.key);
     if matches!(element.kind, ElementKind::List) {
-        let requested_values = requested.as_object().ok_or_else(|| {
-            AdapterError::Input(t!("registry.listNotObject", element = element.id).to_string())
+        requested.as_array().ok_or_else(|| {
+            AdapterError::Input(t!("registry.listNotArray", element = element.id).to_string())
         })?;
-        let mut result = Map::new();
-        if requested_values.is_empty() {
-            let helper = RegistryHelper::new(&key_path(scope, element_key), None, None)
-                .map_err(registry_error)?;
-            for (value_name, data) in helper.get_values().map_err(registry_error)? {
-                result.insert(value_name, registry_value_to_json(&data));
-            }
-            return Ok(Some(Value::Object(result)));
-        }
-        for value_name in requested_values.keys() {
-            let helper = RegistryHelper::new(
-                &key_path(scope, element_key),
-                Some(value_name.clone()),
-                None,
-            )
+        let helper = RegistryHelper::new(&key_path(scope, element_key), None, None)
             .map_err(registry_error)?;
-            if let Some(data) = helper.get().map_err(registry_error)?.value_data {
-                result.insert(value_name.clone(), registry_value_to_json(&data));
+        let mut values = helper.get_values().map_err(registry_error)?;
+        values.sort_by(|left, right| left.0.cmp(&right.0));
+        let mut result = Vec::new();
+        for (_, data) in values {
+            let value = registry_value_to_json(&data);
+            if !value.is_string() {
+                return Err(invalid_element_value(element));
             }
+            result.push(value);
         }
-        return Ok(Some(Value::Object(result)));
+        return Ok(Some(Value::Array(result)));
     }
     let value_name = element.value_name.as_ref().ok_or_else(|| {
         AdapterError::Resource(
@@ -376,23 +368,19 @@ fn write_element(
 ) -> Result<(), AdapterError> {
     let element_key = element.key.as_deref().unwrap_or(&policy.key);
     if matches!(element.kind, ElementKind::List) {
-        let values = value.as_object().ok_or_else(|| {
-            AdapterError::Input(t!("registry.listNotObject", element = element.id).to_string())
+        let values = value.as_array().ok_or_else(|| {
+            AdapterError::Input(t!("registry.listNotArray", element = element.id).to_string())
         })?;
-        for (value_name, value) in values {
-            let data = RegistryValueData::String(
-                value
-                    .as_str()
-                    .ok_or_else(|| {
-                        AdapterError::Input(
-                            t!("registry.listValueNotString", element = element.id).to_string(),
-                        )
-                    })?
-                    .to_string(),
-            );
+        for value in values {
+            let value = value.as_str().ok_or_else(|| {
+                AdapterError::Input(
+                    t!("registry.listValueNotString", element = element.id).to_string(),
+                )
+            })?;
+            let data = RegistryValueData::String(value.to_string());
             RegistryHelper::new(
                 &key_path(scope, element_key),
-                Some(value_name.clone()),
+                Some(value.to_string()),
                 Some(data),
             )
             .map_err(registry_error)?
@@ -746,10 +734,7 @@ mod tests {
             "Enum": "choice",
             "Multi": ["one", "two"],
             "Text": "value",
-            "List": {
-                "ListOne": "first",
-                "ListTwo": "second"
-            }
+            "List": ["first", "second"]
         });
 
         let result = (|| {
@@ -759,13 +744,7 @@ mod tests {
             let actual = read_policy(&registry_policy, "currentUser", Some(&desired))?.unwrap();
             assert_eq!(actual, desired);
             let actual = read_policy(&registry_policy, "currentUser", None)?.unwrap();
-            assert_eq!(
-                actual["List"],
-                json!({
-                    "ListOne": "first",
-                    "ListTwo": "second"
-                })
-            );
+            assert_eq!(actual["List"], json!(["first", "second"]));
 
             write_policy(&registry_policy, "currentUser", &json!("Disabled"))?;
             assert_eq!(
@@ -784,7 +763,7 @@ mod tests {
             apply_value("currentUser", &key, value_name, &PolicyValue::Delete).unwrap();
         }
         let list_key = format!("{key}\\List");
-        for value_name in ["ListOne", "ListTwo"] {
+        for value_name in ["first", "second"] {
             apply_value("currentUser", &list_key, value_name, &PolicyValue::Delete).unwrap();
         }
         RegistryHelper::new_from_registry(&Registry {

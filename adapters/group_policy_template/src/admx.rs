@@ -559,9 +559,10 @@ fn element_schema(element: &PolicyElement) -> Value {
             })).collect::<Vec<_>>()
         }),
         ElementKind::List => json!({
-            "type": "object",
+            "type": "array",
             "title": element.id,
-            "additionalProperties": { "type": "string" }
+            "items": { "type": "string" },
+            "uniqueItems": true
         }),
         ElementKind::MultiText => json!({
             "type": "array",
@@ -1008,6 +1009,15 @@ mod tests {
             listed.schema["embedded"]["properties"]["ComplexPolicy"]["properties"]["EnumValue"]["oneOf"]
                 [1]["title"],
             "Second choice"
+        );
+        assert_eq!(
+            listed.schema["embedded"]["properties"]["ComplexPolicy"]["properties"]["ListValue"],
+            json!({
+                "type": "array",
+                "title": "ListValue",
+                "items": { "type": "string" },
+                "uniqueItems": true
+            })
         );
         assert_eq!(
             listed.schema["embedded"]["properties"]["SimplePolicy"]["enum"],
