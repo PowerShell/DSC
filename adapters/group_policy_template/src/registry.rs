@@ -31,11 +31,30 @@ impl PolicyState {
         }
     }
 
+    fn parse_simple(value: &Value, policy: &Policy) -> Result<Self, AdapterError> {
+        match value.as_str() {
+            Some("enabled") => Ok(Self::Enabled),
+            Some("disabled") => Ok(Self::Disabled),
+            Some("notConfigured") => Ok(Self::NotConfigured),
+            _ => Err(AdapterError::Input(
+                t!("registry.invalidSimplePolicyState", policy = policy.name).to_string(),
+            )),
+        }
+    }
+
     const fn as_str(self) -> &'static str {
         match self {
             Self::Enabled => "Enabled",
             Self::Disabled => "Disabled",
             Self::NotConfigured => "NotConfigured",
+        }
+    }
+
+    const fn as_simple_str(self) -> &'static str {
+        match self {
+            Self::Enabled => "enabled",
+            Self::Disabled => "disabled",
+            Self::NotConfigured => "notConfigured",
         }
     }
 }
@@ -142,7 +161,7 @@ fn read_policy(
         }
         return Ok(Some(Value::Object(result)));
     }
-    Ok(Some(Value::String(state.as_str().to_string())))
+    Ok(Some(Value::String(state.as_simple_str().to_string())))
 }
 
 fn read_state(policy: &Policy, scope: &str) -> Result<PolicyState, AdapterError> {
@@ -157,7 +176,12 @@ fn read_state(policy: &Policy, scope: &str) -> Result<PolicyState, AdapterError>
 
 fn write_policy(policy: &Policy, scope: &str, input: &Value) -> Result<(), AdapterError> {
     if input.is_string() {
-        return write_state(policy, scope, PolicyState::parse(input, policy)?);
+        let state = if policy.elements.is_empty() {
+            PolicyState::parse_simple(input, policy)?
+        } else {
+            PolicyState::parse(input, policy)?
+        };
+        return write_state(policy, scope, state);
     }
     let object = input.as_object().ok_or_else(|| {
         AdapterError::Input(t!("registry.invalidPolicyValue", policy = policy.name).to_string())
@@ -596,8 +620,8 @@ fn serialize_result(result: &Map<String, Value>) -> Result<Vec<String>, AdapterE
 #[cfg(test)]
 mod tests {
     use super::{
-        apply_value, element_data_to_json, get, input_to_string, json_to_element_data, key_path,
-        parse_get_input, parse_input, parse_scope, read_policy, scope_is_supported,
+        PolicyState, apply_value, element_data_to_json, get, input_to_string, json_to_element_data,
+        key_path, parse_get_input, parse_input, parse_scope, read_policy, scope_is_supported,
         serialize_result, set, state_matches, validate_scope, write_policy,
     };
     use crate::admx::{ElementKind, EnumItem, Policy, PolicyClass, PolicyElement, PolicyValue};
@@ -645,6 +669,19 @@ mod tests {
     }
 
     #[test]
+    fn uses_lower_camel_case_for_simple_policy_states() {
+        let simple = policy(PolicyClass::Both);
+        assert_eq!(
+            PolicyState::parse_simple(&json!("enabled"), &simple).unwrap(),
+            PolicyState::Enabled
+        );
+        assert_eq!(PolicyState::Disabled.as_simple_str(), "disabled");
+        assert_eq!(PolicyState::NotConfigured.as_simple_str(), "notConfigured");
+        assert!(PolicyState::parse_simple(&json!("Enabled"), &simple).is_err());
+        assert!(PolicyState::parse(&json!("enabled"), &simple).is_err());
+    }
+
+    #[test]
     fn parses_input_scope_and_serializes_results() {
         let input = parse_input(r#"{"scope":"allUsers","Policy":true}"#).unwrap();
         assert!(parse_get_input("").unwrap().is_empty());
@@ -679,7 +716,7 @@ mod tests {
         assert!(validate_scope(&machine, "currentUser").is_err());
         assert_eq!(
             read_policy(&machine, "currentUser", None).unwrap(),
-            Some(json!("NotConfigured"))
+            Some(json!("notConfigured"))
         );
     }
 

@@ -65,13 +65,12 @@ Describe 'Microsoft.Adapter/GroupPolicyTemplate tests' -Skip:(!$IsWindows) {
         $actualState.psobject.Properties.Name | Should -Not -Contain 'EnabledModuleLogging'
         $actualState.ModuleLogging.Listbox_ModuleNames.GetType().IsArray | Should -BeTrue
         foreach ($property in $actualState.psobject.Properties | Where-Object Name -NE 'scope') {
-            $state = if ($property.Value -is [string]) {
-                $property.Value
+            if ($property.Value -is [string]) {
+                $property.Value | Should -BeIn 'enabled', 'disabled', 'notConfigured'
             }
             else {
-                $property.Value.state
+                $property.Value.state | Should -BeIn 'Enabled', 'Disabled', 'NotConfigured'
             }
-            $state | Should -BeIn 'Enabled', 'Disabled', 'NotConfigured'
         }
     }
 
@@ -115,23 +114,23 @@ Describe 'Microsoft.Adapter/GroupPolicyTemplate tests' -Skip:(!$IsWindows) {
             }
 
             $json = @{
-                NoAddPage = 'Enabled'
+                NoAddPage = 'enabled'
             } | ConvertTo-Json -Compress
             $out = $json | dsc resource set -r $resourceType -f - 2>$TestDrive/error.log
 
             $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
             ($out | ConvertFrom-Json).afterState.scope | Should -BeExactly 'currentUser'
-            ($out | ConvertFrom-Json).afterState.NoAddPage | Should -BeExactly 'Enabled'
-            (Invoke-GroupPolicyGet -State 'Enabled').NoAddPage | Should -BeExactly 'Enabled'
+            ($out | ConvertFrom-Json).afterState.NoAddPage | Should -BeExactly 'enabled'
+            (Invoke-GroupPolicyGet -State 'enabled').NoAddPage | Should -BeExactly 'enabled'
 
             $out = dsc resource get -r $resourceType 2>$TestDrive/error.log
 
             $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
             $actualState = ($out | ConvertFrom-Json).actualState
             $actualState.scope | Should -BeExactly 'currentUser'
-            $actualState.NoAddPage | Should -BeExactly 'Enabled'
+            $actualState.NoAddPage | Should -BeExactly 'enabled'
 
-            foreach ($state in 'Disabled', 'NotConfigured') {
+            foreach ($state in 'disabled', 'notConfigured') {
                 $json = @{
                     NoAddPage = $state
                 } | ConvertTo-Json -Compress

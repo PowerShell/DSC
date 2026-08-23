@@ -483,7 +483,7 @@ fn create_listed_resource(resource: &CategoryResource, path: &Path) -> ListedRes
                 "type": "string",
                 "title": policy.display_name,
                 "description": policy.description,
-                "enum": ["Enabled", "Disabled", "NotConfigured"]
+                "enum": ["enabled", "disabled", "notConfigured"]
             })
         } else {
             let mut element_properties = Map::new();
@@ -1021,7 +1021,7 @@ mod tests {
         );
         assert_eq!(
             listed.schema["embedded"]["properties"]["SimplePolicy"]["enum"],
-            json!(["Enabled", "Disabled", "NotConfigured"])
+            json!(["enabled", "disabled", "notConfigured"])
         );
     }
 
