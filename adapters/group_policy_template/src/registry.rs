@@ -12,6 +12,34 @@ use std::path::Path;
 
 const DEFAULT_SCOPE: &str = "currentUser";
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PolicyState {
+    Enabled,
+    Disabled,
+    NotConfigured,
+}
+
+impl PolicyState {
+    fn parse(value: &Value, policy: &Policy) -> Result<Self, AdapterError> {
+        match value.as_str() {
+            Some("Enabled") => Ok(Self::Enabled),
+            Some("Disabled") => Ok(Self::Disabled),
+            Some("NotConfigured") => Ok(Self::NotConfigured),
+            _ => Err(AdapterError::Input(
+                t!("registry.invalidPolicyState", policy = policy.name).to_string(),
+            )),
+        }
+    }
+
+    const fn as_str(self) -> &'static str {
+        match self {
+            Self::Enabled => "Enabled",
+            Self::Disabled => "Disabled",
+            Self::NotConfigured => "NotConfigured",
+        }
+    }
+}
+
 pub fn get(
     input: &str,
     resource_type: &str,
@@ -26,9 +54,6 @@ pub fn get(
 
     for policy in &resource.policies {
         if !include_all && !input.contains_key(&policy.name) {
-            continue;
-        }
-        if include_all && !scope_is_supported(policy, scope) {
             continue;
         }
         let requested = input.get(&policy.name);
@@ -83,17 +108,33 @@ fn read_policy(
     scope: &str,
     requested: Option<&Value>,
 ) -> Result<Option<Value>, AdapterError> {
-    validate_scope(policy, scope)?;
-    if let Some(Value::Object(requested_elements)) = requested {
+    let scope_supported = scope_is_supported(policy, scope);
+    let state = if scope_supported {
+        read_state(policy, scope)?
+    } else {
+        PolicyState::NotConfigured
+    };
+    if !policy.elements.is_empty() {
         let mut result = Map::new();
-        if requested_elements.contains_key("enabled")
-            && let Some(enabled) = read_enabled(policy, scope)?
-        {
-            result.insert("enabled".to_string(), Value::Bool(enabled));
+        let empty_list_request = Value::Object(Map::new());
+        result.insert(
+            "state".to_string(),
+            Value::String(state.as_str().to_string()),
+        );
+        if !scope_supported {
+            return Ok(Some(Value::Object(result)));
         }
         for element in &policy.elements {
-            let Some(requested_value) = requested_elements.get(&element.id) else {
-                continue;
+            let requested_value = match requested {
+                Some(Value::Object(requested_elements)) => {
+                    let Some(value) = requested_elements.get(&element.id) else {
+                        continue;
+                    };
+                    value
+                }
+                Some(_) => continue,
+                None if matches!(element.kind, ElementKind::List) => &empty_list_request,
+                None => &Value::Null,
             };
             if let Some(value) = read_element(policy, element, scope, requested_value)? {
                 result.insert(element.id.clone(), value);
@@ -101,76 +142,31 @@ fn read_policy(
         }
         return Ok(Some(Value::Object(result)));
     }
-    read_enabled(policy, scope).map(|value| value.map(Value::Bool))
+    Ok(Some(Value::String(state.as_str().to_string())))
 }
 
-fn read_enabled(policy: &Policy, scope: &str) -> Result<Option<bool>, AdapterError> {
+fn read_state(policy: &Policy, scope: &str) -> Result<PolicyState, AdapterError> {
     if state_matches(policy, scope, true)? {
-        Ok(Some(true))
+        Ok(PolicyState::Enabled)
     } else if state_matches(policy, scope, false)? {
-        Ok(Some(false))
-    } else if policy_values_are_absent(policy, scope)? {
-        Ok(None)
+        Ok(PolicyState::Disabled)
     } else {
-        Err(AdapterError::Resource(
-            t!(
-                "registry.unrecognizedValue",
-                key = policy.key,
-                value_name = policy.value_name.as_deref().unwrap_or_default()
-            )
-            .to_string(),
-        ))
+        Ok(PolicyState::NotConfigured)
     }
-}
-
-fn policy_values_are_absent(policy: &Policy, scope: &str) -> Result<bool, AdapterError> {
-    let mut values = Vec::new();
-    if let Some(value_name) = &policy.value_name {
-        values.push((policy.key.as_str(), value_name.as_str()));
-    }
-    for setting in policy.enabled_list.iter().chain(&policy.disabled_list) {
-        values.push((
-            setting.key.as_deref().unwrap_or(&policy.key),
-            setting.value_name.as_str(),
-        ));
-    }
-    if values.is_empty() {
-        return Ok(false);
-    }
-
-    for (key, value_name) in values {
-        let actual = RegistryHelper::new(&key_path(scope, key), Some(value_name.to_string()), None)
-            .map_err(registry_error)?
-            .get()
-            .map_err(registry_error)?
-            .value_data;
-        if actual.is_some() {
-            return Ok(false);
-        }
-    }
-    Ok(true)
 }
 
 fn write_policy(policy: &Policy, scope: &str, input: &Value) -> Result<(), AdapterError> {
-    if let Some(enabled) = input.as_bool() {
-        return write_enabled(policy, scope, enabled);
+    if input.is_string() {
+        return write_state(policy, scope, PolicyState::parse(input, policy)?);
     }
     let object = input.as_object().ok_or_else(|| {
         AdapterError::Input(t!("registry.invalidPolicyValue", policy = policy.name).to_string())
     })?;
-    if let Some(enabled) = object.get("enabled") {
-        write_enabled(
-            policy,
-            scope,
-            enabled.as_bool().ok_or_else(|| {
-                AdapterError::Input(
-                    t!("registry.policyNotBoolean", policy = policy.name).to_string(),
-                )
-            })?,
-        )?;
+    if let Some(state) = object.get("state") {
+        write_state(policy, scope, PolicyState::parse(state, policy)?)?;
     }
     for (name, value) in object {
-        if name == "enabled" {
+        if name == "state" {
             continue;
         }
         let element = policy
@@ -192,7 +188,11 @@ fn write_policy(policy: &Policy, scope: &str, input: &Value) -> Result<(), Adapt
     Ok(())
 }
 
-fn write_enabled(policy: &Policy, scope: &str, enabled: bool) -> Result<(), AdapterError> {
+fn write_state(policy: &Policy, scope: &str, state: PolicyState) -> Result<(), AdapterError> {
+    if state == PolicyState::NotConfigured {
+        return write_not_configured(policy, scope);
+    }
+    let enabled = state == PolicyState::Enabled;
     let value = if enabled {
         policy.enabled.as_ref()
     } else {
@@ -217,6 +217,21 @@ fn write_enabled(policy: &Policy, scope: &str, enabled: bool) -> Result<(), Adap
             setting.key.as_deref().unwrap_or(&policy.key),
             &setting.value_name,
             &setting.value,
+        )?;
+    }
+    Ok(())
+}
+
+fn write_not_configured(policy: &Policy, scope: &str) -> Result<(), AdapterError> {
+    if let Some(value_name) = &policy.value_name {
+        apply_value(scope, &policy.key, value_name, &PolicyValue::Delete)?;
+    }
+    for setting in policy.enabled_list.iter().chain(&policy.disabled_list) {
+        apply_value(
+            scope,
+            setting.key.as_deref().unwrap_or(&policy.key),
+            &setting.value_name,
+            &PolicyValue::Delete,
         )?;
     }
     Ok(())
@@ -262,6 +277,9 @@ fn state_matches(policy: &Policy, scope: &str, enabled: bool) -> Result<bool, Ad
         &policy.disabled_list
     };
     if value.is_none() && list.is_empty() {
+        return Ok(false);
+    }
+    if matches!(value, Some(PolicyValue::Delete)) && list.is_empty() {
         return Ok(false);
     }
     if let (Some(value_name), Some(value)) = (&policy.value_name, value)
@@ -583,8 +601,8 @@ fn serialize_result(result: &Map<String, Value>) -> Result<Vec<String>, AdapterE
 mod tests {
     use super::{
         apply_value, element_data_to_json, get, input_to_string, json_to_element_data, key_path,
-        parse_get_input, parse_input, parse_scope, policy_values_are_absent, read_policy,
-        scope_is_supported, serialize_result, set, state_matches, validate_scope, write_policy,
+        parse_get_input, parse_input, parse_scope, read_policy, scope_is_supported,
+        serialize_result, set, state_matches, validate_scope, write_policy,
     };
     use crate::admx::{ElementKind, EnumItem, Policy, PolicyClass, PolicyElement, PolicyValue};
     use dsc_lib_registry::{
@@ -663,7 +681,10 @@ mod tests {
         assert!(!scope_is_supported(&user, "allUsers"));
         assert!(validate_scope(&machine, "allUsers").is_ok());
         assert!(validate_scope(&machine, "currentUser").is_err());
-        assert!(read_policy(&machine, "currentUser", None).is_err());
+        assert_eq!(
+            read_policy(&machine, "currentUser", None).unwrap(),
+            Some(json!("NotConfigured"))
+        );
     }
 
     #[test]
@@ -676,7 +697,7 @@ mod tests {
         registry_policy.key = key.clone();
         registry_policy.value_name = Some("State".to_string());
         registry_policy.enabled = Some(PolicyValue::Data(RegistryValueData::DWord(1)));
-        registry_policy.disabled = Some(PolicyValue::Delete);
+        registry_policy.disabled = Some(PolicyValue::Data(RegistryValueData::DWord(0)));
         registry_policy.elements = vec![
             element(
                 "Boolean",
@@ -711,7 +732,7 @@ mod tests {
         ];
 
         let desired = json!({
-            "enabled": true,
+            "state": "Enabled",
             "Boolean": true,
             "Decimal": 42,
             "Enum": "choice",
@@ -726,15 +747,19 @@ mod tests {
         let result = (|| {
             write_policy(&registry_policy, "currentUser", &desired)?;
             assert!(state_matches(&registry_policy, "currentUser", true)?);
-            assert!(!policy_values_are_absent(&registry_policy, "currentUser")?);
 
             let actual = read_policy(&registry_policy, "currentUser", Some(&desired))?.unwrap();
             assert_eq!(actual, desired);
 
-            write_policy(&registry_policy, "currentUser", &json!(false))?;
+            write_policy(&registry_policy, "currentUser", &json!("Disabled"))?;
             assert_eq!(
-                read_policy(&registry_policy, "currentUser", None)?,
-                Some(Value::Bool(false))
+                read_policy(&registry_policy, "currentUser", None)?.unwrap()["state"],
+                "Disabled"
+            );
+            write_policy(&registry_policy, "currentUser", &json!("NotConfigured"))?;
+            assert_eq!(
+                read_policy(&registry_policy, "currentUser", None)?.unwrap()["state"],
+                "NotConfigured"
             );
             Ok::<(), crate::admx::AdapterError>(())
         })();
@@ -925,10 +950,9 @@ mod tests {
         let mut value_policy = policy(PolicyClass::Both);
         assert!(write_policy(&value_policy, "currentUser", &json!("invalid")).is_err());
         assert!(write_policy(&value_policy, "currentUser", &json!(true)).is_err());
-        assert!(write_policy(&value_policy, "currentUser", &json!({"enabled": "true"})).is_err());
+        assert!(write_policy(&value_policy, "currentUser", &json!({"state": "invalid"})).is_err());
         assert!(write_policy(&value_policy, "currentUser", &json!({"Unknown": true})).is_err());
         assert!(!state_matches(&value_policy, "currentUser", true).unwrap());
-        assert!(!policy_values_are_absent(&value_policy, "currentUser").unwrap());
 
         value_policy.elements.push(PolicyElement {
             id: "MissingValueName".to_string(),

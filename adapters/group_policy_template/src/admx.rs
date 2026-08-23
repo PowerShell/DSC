@@ -295,7 +295,11 @@ fn parse_policy(
     let disabled = child(node, "disabledValue")
         .map(parse_policy_value)
         .transpose()?
-        .or_else(|| value_name.as_ref().map(|_| PolicyValue::Delete));
+        .or_else(|| {
+            value_name
+                .as_ref()
+                .map(|_| PolicyValue::Data(RegistryValueData::DWord(0)))
+        });
     let elements = child(node, "elements")
         .map(|elements| {
             elements
@@ -318,7 +322,7 @@ fn parse_policy(
     };
 
     Ok(Policy {
-        name: required_attribute("name")?.to_string(),
+        name: policy_property_name(required_attribute("name")?),
         display_name: resolve_reference(required_attribute("displayName")?, strings),
         description: node
             .attribute("explainText")
@@ -469,50 +473,31 @@ fn create_listed_resource(resource: &CategoryResource, path: &Path) -> ListedRes
         }),
     );
     for policy in &resource.policies {
-        let boolean_schema = policy
-            .enabled
-            .as_ref()
-            .zip(policy.disabled.as_ref())
-            .map(|_| {
-                json!({
-                    "type": "boolean",
-                    "title": policy.display_name,
-                    "description": policy.description
-                })
-            });
-        let object_schema = if policy.elements.is_empty() {
-            None
+        let state_schema = json!({
+            "type": "string",
+            "title": t!("schema.stateTitle"),
+            "enum": ["Enabled", "Disabled", "NotConfigured"]
+        });
+        let property = if policy.elements.is_empty() {
+            json!({
+                "type": "string",
+                "title": policy.display_name,
+                "description": policy.description,
+                "enum": ["Enabled", "Disabled", "NotConfigured"]
+            })
         } else {
             let mut element_properties = Map::new();
-            if boolean_schema.is_some() {
-                element_properties.insert(
-                    "enabled".to_string(),
-                    json!({
-                        "type": "boolean",
-                        "title": t!("schema.enabledTitle")
-                    }),
-                );
-            }
+            element_properties.insert("state".to_string(), state_schema);
             for element in &policy.elements {
                 element_properties.insert(element.id.clone(), element_schema(element));
             }
-            Some(json!({
+            json!({
                 "type": "object",
                 "title": policy.display_name,
                 "description": policy.description,
                 "additionalProperties": false,
                 "properties": element_properties
-            }))
-        };
-        let property = match (boolean_schema, object_schema) {
-            (Some(boolean), Some(object)) => json!({ "oneOf": [boolean, object] }),
-            (Some(boolean), None) => boolean,
-            (None, Some(object)) => object,
-            (None, None) => json!({
-                "type": "boolean",
-                "title": policy.display_name,
-                "description": policy.description
-            }),
+            })
         };
         properties.insert(policy.name.clone(), property);
     }
@@ -727,6 +712,14 @@ fn resource_type_name(parent_category: &str, category: &str) -> String {
     )
 }
 
+fn policy_property_name(name: &str) -> String {
+    name.strip_prefix("Enabled")
+        .or_else(|| name.strip_prefix("Enable"))
+        .filter(|name| !name.is_empty())
+        .unwrap_or(name)
+        .to_string()
+}
+
 fn child<'a>(node: Node<'a, 'a>, name: &str) -> Option<Node<'a, 'a>> {
     node.children().find(|child| child.has_tag_name(name))
 }
@@ -797,8 +790,9 @@ fn read_xml(path: &Path) -> Result<String, std::io::Error> {
 mod tests {
     use super::{
         AdapterError, ElementKind, PolicyClass, PolicyValue, adml_path, create_listed_resource,
-        parse_binary, parse_template, policy_value_to_json, read_xml, reference_name,
-        registry_value_to_json, resolve_reference, resource_name_segment, resource_type_name,
+        parse_binary, parse_template, policy_property_name, policy_value_to_json, read_xml,
+        reference_name, registry_value_to_json, resolve_reference, resource_name_segment,
+        resource_type_name,
     };
     use dsc_lib_registry::config::RegistryValueData;
     use serde_json::json;
@@ -921,6 +915,9 @@ mod tests {
             resource_type_name("WindowsComponents", "PowerShell"),
             "GPO.WindowsComponents/PowerShell"
         );
+        assert_eq!(policy_property_name("EnableModuleLogging"), "ModuleLogging");
+        assert_eq!(policy_property_name("EnabledFeature"), "Feature");
+        assert_eq!(policy_property_name("NoAddPage"), "NoAddPage");
     }
 
     #[test]
@@ -990,7 +987,10 @@ mod tests {
             simple.enabled,
             Some(PolicyValue::Data(RegistryValueData::DWord(1)))
         );
-        assert_eq!(simple.disabled, Some(PolicyValue::Delete));
+        assert_eq!(
+            simple.disabled,
+            Some(PolicyValue::Data(RegistryValueData::DWord(0)))
+        );
 
         let listed = create_listed_resource(resource, &fixture.admx);
         assert_eq!(listed.type_name, resource.type_name);
@@ -1001,18 +1001,17 @@ mod tests {
             "currentUser"
         );
         assert_eq!(
-            listed.schema["embedded"]["properties"]["ComplexPolicy"]["oneOf"][1]["properties"]["NumberValue"]
-                ["minimum"],
+            listed.schema["embedded"]["properties"]["ComplexPolicy"]["properties"]["NumberValue"]["minimum"],
             1
         );
         assert_eq!(
-            listed.schema["embedded"]["properties"]["ComplexPolicy"]["oneOf"][1]["properties"]["EnumValue"]
-                ["oneOf"][1]["title"],
+            listed.schema["embedded"]["properties"]["ComplexPolicy"]["properties"]["EnumValue"]["oneOf"]
+                [1]["title"],
             "Second choice"
         );
         assert_eq!(
-            listed.schema["embedded"]["properties"]["SimplePolicy"]["type"],
-            "boolean"
+            listed.schema["embedded"]["properties"]["SimplePolicy"]["enum"],
+            json!(["Enabled", "Disabled", "NotConfigured"])
         );
     }
 

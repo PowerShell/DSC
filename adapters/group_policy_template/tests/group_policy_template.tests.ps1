@@ -20,10 +20,10 @@ Describe 'Microsoft.Adapter/GroupPolicyTemplate tests' -Skip:(!$IsWindows) {
         $valueName = 'NoAddPage'
 
         function Invoke-GroupPolicyGet {
-            param([bool]$Enabled)
+            param([string]$State)
 
             $json = @{
-                NoAddPage = $Enabled
+                NoAddPage = $State
             } | ConvertTo-Json -Compress
             $out = $json | dsc resource get -r $resourceType -f - 2>$TestDrive/error.log
             $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
@@ -54,7 +54,20 @@ Describe 'Microsoft.Adapter/GroupPolicyTemplate tests' -Skip:(!$IsWindows) {
         $out = dsc resource get -r 'GPO.WindowsComponents/PowerShell' 2>$TestDrive/error.log
 
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
-        ($out | ConvertFrom-Json).actualState.scope | Should -BeExactly 'currentUser'
+        $actualState = ($out | ConvertFrom-Json).actualState
+        $actualState.scope | Should -BeExactly 'currentUser'
+        $actualState.psobject.Properties.Name | Should -Contain 'ModuleLogging'
+        $actualState.psobject.Properties.Name | Should -Not -Contain 'EnableModuleLogging'
+        $actualState.psobject.Properties.Name | Should -Not -Contain 'EnabledModuleLogging'
+        foreach ($property in $actualState.psobject.Properties | Where-Object Name -NE 'scope') {
+            $state = if ($property.Value -is [string]) {
+                $property.Value
+            }
+            else {
+                $property.Value.state
+            }
+            $state | Should -BeIn 'Enabled', 'Disabled', 'NotConfigured'
+        }
     }
 
     Context 'Current user policy state' -Skip:(!$isAdmin) {
@@ -97,21 +110,32 @@ Describe 'Microsoft.Adapter/GroupPolicyTemplate tests' -Skip:(!$IsWindows) {
             }
 
             $json = @{
-                NoAddPage = $true
+                NoAddPage = 'Enabled'
             } | ConvertTo-Json -Compress
             $out = $json | dsc resource set -r $resourceType -f - 2>$TestDrive/error.log
 
             $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
             ($out | ConvertFrom-Json).afterState.scope | Should -BeExactly 'currentUser'
-            ($out | ConvertFrom-Json).afterState.NoAddPage | Should -BeTrue
-            (Invoke-GroupPolicyGet -Enabled $true).NoAddPage | Should -BeTrue
+            ($out | ConvertFrom-Json).afterState.NoAddPage | Should -BeExactly 'Enabled'
+            (Invoke-GroupPolicyGet -State 'Enabled').NoAddPage | Should -BeExactly 'Enabled'
 
             $out = dsc resource get -r $resourceType 2>$TestDrive/error.log
 
             $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
             $actualState = ($out | ConvertFrom-Json).actualState
             $actualState.scope | Should -BeExactly 'currentUser'
-            $actualState.NoAddPage | Should -BeTrue
+            $actualState.NoAddPage | Should -BeExactly 'Enabled'
+
+            foreach ($state in 'Disabled', 'NotConfigured') {
+                $json = @{
+                    NoAddPage = $state
+                } | ConvertTo-Json -Compress
+                $out = $json | dsc resource set -r $resourceType -f - 2>$TestDrive/error.log
+
+                $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+                ($out | ConvertFrom-Json).afterState.NoAddPage | Should -BeExactly $state
+                (Invoke-GroupPolicyGet -State $state).NoAddPage | Should -BeExactly $state
+            }
         }
     }
 }
