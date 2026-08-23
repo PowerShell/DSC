@@ -330,6 +330,14 @@ fn read_element(
             AdapterError::Input(t!("registry.listNotObject", element = element.id).to_string())
         })?;
         let mut result = Map::new();
+        if requested_values.is_empty() {
+            let helper = RegistryHelper::new(&key_path(scope, element_key), None, None)
+                .map_err(registry_error)?;
+            for (value_name, data) in helper.get_values().map_err(registry_error)? {
+                result.insert(value_name, registry_value_to_json(&data));
+            }
+            return Ok(Some(Value::Object(result)));
+        }
         for value_name in requested_values.keys() {
             let helper = RegistryHelper::new(
                 &key_path(scope, element_key),
@@ -725,7 +733,7 @@ mod tests {
             element("Text", ElementKind::Text { expandable: false }),
             PolicyElement {
                 id: "List".to_string(),
-                key: None,
+                key: Some(format!("{key}\\List")),
                 value_name: None,
                 kind: ElementKind::List,
             },
@@ -750,6 +758,14 @@ mod tests {
 
             let actual = read_policy(&registry_policy, "currentUser", Some(&desired))?.unwrap();
             assert_eq!(actual, desired);
+            let actual = read_policy(&registry_policy, "currentUser", None)?.unwrap();
+            assert_eq!(
+                actual["List"],
+                json!({
+                    "ListOne": "first",
+                    "ListTwo": "second"
+                })
+            );
 
             write_policy(&registry_policy, "currentUser", &json!("Disabled"))?;
             assert_eq!(
@@ -764,10 +780,12 @@ mod tests {
             Ok::<(), crate::admx::AdapterError>(())
         })();
 
-        for value_name in [
-            "State", "Boolean", "Decimal", "Enum", "Multi", "Text", "ListOne", "ListTwo",
-        ] {
+        for value_name in ["State", "Boolean", "Decimal", "Enum", "Multi", "Text"] {
             apply_value("currentUser", &key, value_name, &PolicyValue::Delete).unwrap();
+        }
+        let list_key = format!("{key}\\List");
+        for value_name in ["ListOne", "ListTwo"] {
+            apply_value("currentUser", &list_key, value_name, &PolicyValue::Delete).unwrap();
         }
         RegistryHelper::new_from_registry(&Registry {
             key_path: key_path("currentUser", &key),
