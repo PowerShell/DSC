@@ -105,6 +105,13 @@ Describe 'Microsoft.Adapter/GroupPolicyTemplate tests' -Skip:(!$IsWindows) {
             ($out | ConvertFrom-Json).afterState.scope | Should -BeExactly 'currentUser'
             ($out | ConvertFrom-Json).afterState.NoAddPage | Should -BeTrue
             (Invoke-GroupPolicyGet -Enabled $true).NoAddPage | Should -BeTrue
+
+            $out = dsc resource get -r $resourceType 2>$TestDrive/error.log
+
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+            $actualState = ($out | ConvertFrom-Json).actualState
+            $actualState.scope | Should -BeExactly 'currentUser'
+            $actualState.NoAddPage | Should -BeTrue
         }
     }
 }
