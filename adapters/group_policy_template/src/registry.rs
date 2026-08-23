@@ -573,7 +573,42 @@ fn serialize_result(result: &Map<String, Value>) -> Result<Vec<String>, AdapterE
 
 #[cfg(test)]
 mod tests {
-    use super::key_path;
+    use super::{
+        apply_value, element_data_to_json, get, input_to_string, json_to_element_data, key_path,
+        parse_input, parse_scope, policy_values_are_absent, read_policy, scope_is_supported,
+        serialize_result, set, state_matches, validate_scope, write_policy,
+    };
+    use crate::admx::{ElementKind, EnumItem, Policy, PolicyClass, PolicyElement, PolicyValue};
+    use dsc_lib_registry::{
+        RegistryHelper,
+        config::{Registry, RegistryValueData},
+    };
+    use serde_json::{Map, Value, json};
+
+    fn element(id: &str, kind: ElementKind) -> PolicyElement {
+        PolicyElement {
+            id: id.to_string(),
+            key: None,
+            value_name: Some(id.to_string()),
+            kind,
+        }
+    }
+
+    fn policy(class: PolicyClass) -> Policy {
+        Policy {
+            name: "Policy".to_string(),
+            display_name: "Policy".to_string(),
+            description: None,
+            class,
+            key: "Software\\Fixture".to_string(),
+            value_name: None,
+            enabled: None,
+            disabled: None,
+            elements: Vec::new(),
+            enabled_list: Vec::new(),
+            disabled_list: Vec::new(),
+        }
+    }
 
     #[test]
     fn maps_scope_to_registry_hive() {
@@ -584,6 +619,319 @@ mod tests {
         assert_eq!(
             key_path("allUsers", "Software\\Policies"),
             "HKLM\\Software\\Policies"
+        );
+    }
+
+    #[test]
+    fn parses_input_scope_and_serializes_results() {
+        let input = parse_input(r#"{"scope":"allUsers","Policy":true}"#).unwrap();
+        assert_eq!(parse_scope(&input).unwrap(), "allUsers");
+        assert_eq!(parse_scope(&Map::new()).unwrap(), "currentUser");
+        assert!(parse_scope(&Map::from_iter([("scope".to_string(), json!("invalid"))])).is_err());
+        assert!(parse_input("not json").is_err());
+        assert_eq!(
+            serde_json::from_str::<Value>(&input_to_string(&input).unwrap()).unwrap(),
+            json!({"Policy": true, "scope": "allUsers"})
+        );
+        assert_eq!(
+            serialize_result(&Map::from_iter([("value".to_string(), json!(1))])).unwrap(),
+            vec![r#"{"value":1}"#]
+        );
+    }
+
+    #[test]
+    fn validates_policy_scope() {
+        let both = policy(PolicyClass::Both);
+        let machine = policy(PolicyClass::Machine);
+        let user = policy(PolicyClass::User);
+        assert!(scope_is_supported(&both, "currentUser"));
+        assert!(scope_is_supported(&both, "allUsers"));
+        assert!(scope_is_supported(&machine, "allUsers"));
+        assert!(!scope_is_supported(&machine, "currentUser"));
+        assert!(scope_is_supported(&user, "currentUser"));
+        assert!(!scope_is_supported(&user, "allUsers"));
+        assert!(validate_scope(&machine, "allUsers").is_ok());
+        assert!(validate_scope(&machine, "currentUser").is_err());
+        assert!(read_policy(&machine, "currentUser", None).is_err());
+    }
+
+    #[test]
+    fn round_trips_policy_state_in_current_user_registry() {
+        let key = format!(
+            "Software\\Microsoft\\DSC\\GroupPolicyTemplateTests\\{}",
+            std::process::id()
+        );
+        let mut registry_policy = policy(PolicyClass::User);
+        registry_policy.key = key.clone();
+        registry_policy.value_name = Some("State".to_string());
+        registry_policy.enabled = Some(PolicyValue::Data(RegistryValueData::DWord(1)));
+        registry_policy.disabled = Some(PolicyValue::Delete);
+        registry_policy.elements = vec![
+            element(
+                "Boolean",
+                ElementKind::Boolean {
+                    true_value: PolicyValue::Data(RegistryValueData::DWord(1)),
+                    false_value: PolicyValue::Data(RegistryValueData::DWord(0)),
+                },
+            ),
+            element(
+                "Decimal",
+                ElementKind::Decimal {
+                    minimum: None,
+                    maximum: None,
+                    store_as_text: false,
+                },
+            ),
+            element(
+                "Enum",
+                ElementKind::Enum(vec![EnumItem {
+                    title: "Choice".to_string(),
+                    value: PolicyValue::Data(RegistryValueData::String("choice".to_string())),
+                }]),
+            ),
+            element("Multi", ElementKind::MultiText),
+            element("Text", ElementKind::Text { expandable: false }),
+            PolicyElement {
+                id: "List".to_string(),
+                key: None,
+                value_name: None,
+                kind: ElementKind::List,
+            },
+        ];
+
+        let desired = json!({
+            "enabled": true,
+            "Boolean": true,
+            "Decimal": 42,
+            "Enum": "choice",
+            "Multi": ["one", "two"],
+            "Text": "value",
+            "List": {
+                "ListOne": "first",
+                "ListTwo": "second"
+            }
+        });
+
+        let result = (|| {
+            write_policy(&registry_policy, "currentUser", &desired)?;
+            assert!(state_matches(&registry_policy, "currentUser", true)?);
+            assert!(!policy_values_are_absent(&registry_policy, "currentUser")?);
+
+            let actual = read_policy(&registry_policy, "currentUser", Some(&desired))?.unwrap();
+            assert_eq!(actual, desired);
+
+            write_policy(&registry_policy, "currentUser", &json!(false))?;
+            assert_eq!(
+                read_policy(&registry_policy, "currentUser", None)?,
+                Some(Value::Bool(false))
+            );
+            Ok::<(), crate::admx::AdapterError>(())
+        })();
+
+        for value_name in [
+            "State", "Boolean", "Decimal", "Enum", "Multi", "Text", "ListOne", "ListTwo",
+        ] {
+            apply_value("currentUser", &key, value_name, &PolicyValue::Delete).unwrap();
+        }
+        RegistryHelper::new_from_registry(&Registry {
+            key_path: key_path("currentUser", &key),
+            exist: Some(false),
+            ..Default::default()
+        })
+        .unwrap()
+        .remove()
+        .unwrap();
+        result.unwrap();
+    }
+
+    #[test]
+    fn public_operations_reject_invalid_input_before_loading_resources() {
+        assert!(get("not json", "GPO.Parent/Category", "missing.admx").is_err());
+        assert!(set("not json", "GPO.Parent/Category", "missing.admx").is_err());
+    }
+
+    #[test]
+    fn converts_json_to_every_element_type() {
+        let boolean = element(
+            "Boolean",
+            ElementKind::Boolean {
+                true_value: PolicyValue::Data(RegistryValueData::DWord(10)),
+                false_value: PolicyValue::Delete,
+            },
+        );
+        assert_eq!(
+            json_to_element_data(&boolean, &json!(true)).unwrap(),
+            PolicyValue::Data(RegistryValueData::DWord(10))
+        );
+        assert_eq!(
+            json_to_element_data(&boolean, &json!(false)).unwrap(),
+            PolicyValue::Delete
+        );
+        assert!(json_to_element_data(&boolean, &json!("true")).is_err());
+
+        let decimal = element(
+            "Decimal",
+            ElementKind::Decimal {
+                minimum: None,
+                maximum: None,
+                store_as_text: false,
+            },
+        );
+        assert_eq!(
+            json_to_element_data(&decimal, &json!(42)).unwrap(),
+            PolicyValue::Data(RegistryValueData::DWord(42))
+        );
+        assert!(json_to_element_data(&decimal, &json!(u64::from(u32::MAX) + 1)).is_err());
+
+        let text_decimal = element(
+            "TextDecimal",
+            ElementKind::Decimal {
+                minimum: None,
+                maximum: None,
+                store_as_text: true,
+            },
+        );
+        assert_eq!(
+            json_to_element_data(&text_decimal, &json!(42)).unwrap(),
+            PolicyValue::Data(RegistryValueData::String("42".to_string()))
+        );
+
+        let choice = PolicyValue::Data(RegistryValueData::String("choice".to_string()));
+        let enumeration = element(
+            "Enum",
+            ElementKind::Enum(vec![EnumItem {
+                title: "Choice".to_string(),
+                value: choice.clone(),
+            }]),
+        );
+        assert_eq!(
+            json_to_element_data(&enumeration, &json!("choice")).unwrap(),
+            choice
+        );
+        assert!(json_to_element_data(&enumeration, &json!("other")).is_err());
+
+        let multi = element("Multi", ElementKind::MultiText);
+        assert_eq!(
+            json_to_element_data(&multi, &json!(["one", "two"])).unwrap(),
+            PolicyValue::Data(RegistryValueData::MultiString(vec![
+                "one".to_string(),
+                "two".to_string()
+            ]))
+        );
+        assert!(json_to_element_data(&multi, &json!([1])).is_err());
+
+        for expandable in [false, true] {
+            let text = element("Text", ElementKind::Text { expandable });
+            let expected = if expandable {
+                RegistryValueData::ExpandString("value".to_string())
+            } else {
+                RegistryValueData::String("value".to_string())
+            };
+            assert_eq!(
+                json_to_element_data(&text, &json!("value")).unwrap(),
+                PolicyValue::Data(expected)
+            );
+            assert!(json_to_element_data(&text, &json!(1)).is_err());
+        }
+
+        let list = element("List", ElementKind::List);
+        assert!(json_to_element_data(&list, &json!({})).is_err());
+    }
+
+    #[test]
+    fn converts_registry_data_for_every_element_type() {
+        let boolean = element(
+            "Boolean",
+            ElementKind::Boolean {
+                true_value: PolicyValue::Data(RegistryValueData::DWord(1)),
+                false_value: PolicyValue::Data(RegistryValueData::DWord(0)),
+            },
+        );
+        assert_eq!(
+            element_data_to_json(&boolean, &RegistryValueData::DWord(1)).unwrap(),
+            Value::Bool(true)
+        );
+        assert_eq!(
+            element_data_to_json(&boolean, &RegistryValueData::DWord(0)).unwrap(),
+            Value::Bool(false)
+        );
+        assert!(element_data_to_json(&boolean, &RegistryValueData::DWord(2)).is_err());
+
+        let enumeration = element(
+            "Enum",
+            ElementKind::Enum(vec![EnumItem {
+                title: "One".to_string(),
+                value: PolicyValue::Data(RegistryValueData::DWord(1)),
+            }]),
+        );
+        assert_eq!(
+            element_data_to_json(&enumeration, &RegistryValueData::DWord(1)).unwrap(),
+            json!(1)
+        );
+        assert!(element_data_to_json(&enumeration, &RegistryValueData::DWord(2)).is_err());
+
+        let text_decimal = element(
+            "TextDecimal",
+            ElementKind::Decimal {
+                minimum: None,
+                maximum: None,
+                store_as_text: true,
+            },
+        );
+        assert_eq!(
+            element_data_to_json(&text_decimal, &RegistryValueData::String("42".to_string()))
+                .unwrap(),
+            json!(42)
+        );
+        assert!(
+            element_data_to_json(
+                &text_decimal,
+                &RegistryValueData::String("invalid".to_string())
+            )
+            .is_err()
+        );
+
+        for kind in [
+            ElementKind::Decimal {
+                minimum: None,
+                maximum: None,
+                store_as_text: false,
+            },
+            ElementKind::MultiText,
+            ElementKind::Text { expandable: false },
+            ElementKind::List,
+        ] {
+            assert_eq!(
+                element_data_to_json(&element("Value", kind), &RegistryValueData::DWord(7))
+                    .unwrap(),
+                json!(7)
+            );
+        }
+    }
+
+    #[test]
+    fn rejects_invalid_policy_objects_without_registry_access() {
+        let mut value_policy = policy(PolicyClass::Both);
+        assert!(write_policy(&value_policy, "currentUser", &json!("invalid")).is_err());
+        assert!(write_policy(&value_policy, "currentUser", &json!(true)).is_err());
+        assert!(write_policy(&value_policy, "currentUser", &json!({"enabled": "true"})).is_err());
+        assert!(write_policy(&value_policy, "currentUser", &json!({"Unknown": true})).is_err());
+        assert!(!state_matches(&value_policy, "currentUser", true).unwrap());
+        assert!(!policy_values_are_absent(&value_policy, "currentUser").unwrap());
+
+        value_policy.elements.push(PolicyElement {
+            id: "MissingValueName".to_string(),
+            key: None,
+            value_name: None,
+            kind: ElementKind::Text { expandable: false },
+        });
+        assert!(
+            write_policy(
+                &value_policy,
+                "currentUser",
+                &json!({"MissingValueName": "value"})
+            )
+            .is_err()
         );
     }
 }

@@ -795,7 +795,116 @@ fn read_xml(path: &Path) -> Result<String, std::io::Error> {
 
 #[cfg(test)]
 mod tests {
-    use super::{parse_binary, reference_name, resource_name_segment, resource_type_name};
+    use super::{
+        AdapterError, ElementKind, PolicyClass, PolicyValue, adml_path, create_listed_resource,
+        parse_binary, parse_template, policy_value_to_json, read_xml, reference_name,
+        registry_value_to_json, resolve_reference, resource_name_segment, resource_type_name,
+    };
+    use dsc_lib_registry::config::RegistryValueData;
+    use serde_json::json;
+    use std::fs;
+    use std::path::{Path, PathBuf};
+    use std::sync::atomic::{AtomicU64, Ordering};
+
+    static FIXTURE_ID: AtomicU64 = AtomicU64::new(0);
+
+    struct Fixture {
+        system_root: PathBuf,
+        root: PathBuf,
+        admx: PathBuf,
+    }
+
+    impl Fixture {
+        fn new(admx: &str, adml: &str) -> Self {
+            let id = FIXTURE_ID.fetch_add(1, Ordering::Relaxed);
+            let system_root = std::env::temp_dir().join(format!(
+                "group_policy_template_{}_{}",
+                std::process::id(),
+                id
+            ));
+            let root = system_root.join("PolicyDefinitions");
+            let locale = root.join("en-US");
+            fs::create_dir_all(&locale).unwrap();
+            let admx_path = root.join("fixture.admx");
+            fs::write(&admx_path, admx).unwrap();
+            fs::write(locale.join("fixture.adml"), adml).unwrap();
+            Self {
+                system_root,
+                root,
+                admx: admx_path,
+            }
+        }
+    }
+
+    impl Drop for Fixture {
+        fn drop(&mut self) {
+            fs::remove_dir_all(&self.system_root).unwrap();
+        }
+    }
+
+    const ADML: &str = r#"<?xml version="1.0" encoding="utf-8"?>
+<policyDefinitionResources>
+  <displayName>Fixture policies</displayName>
+  <description>Localized template description</description>
+  <resources>
+    <stringTable>
+      <string id="Category">Localized Category</string>
+      <string id="Complex">Complex Policy</string>
+      <string id="ComplexHelp">Localized policy help</string>
+      <string id="ChoiceOne">First choice</string>
+      <string id="ChoiceTwo">Second choice</string>
+      <string id="Simple">Simple Policy</string>
+    </stringTable>
+  </resources>
+</policyDefinitionResources>"#;
+
+    const ADMX: &str = r#"<?xml version="1.0" encoding="utf-8"?>
+<policyDefinitions>
+  <categories>
+    <category name="Parent" displayName="$(string.Parent)" />
+    <category name="StableCategory" displayName="$(string.Category)">
+      <parentCategory ref="windows:WindowsComponents" />
+    </category>
+  </categories>
+  <policies>
+    <policy name="ComplexPolicy" class="Both" displayName="$(string.Complex)"
+            explainText="$(string.ComplexHelp)" key="Software\Fixture" valueName="State">
+      <parentCategory ref="StableCategory" />
+      <enabledValue><decimal value="7" /></enabledValue>
+      <disabledValue><delete /></disabledValue>
+      <elements>
+        <boolean id="BooleanValue" valueName="Boolean">
+          <trueValue><string>yes</string></trueValue>
+          <falseValue><string>no</string></falseValue>
+        </boolean>
+        <decimal id="NumberValue" valueName="Number" minValue="1" maxValue="10" />
+        <decimal id="TextNumber" valueName="TextNumber" storeAsText="true" />
+        <enum id="EnumValue" valueName="Enum">
+          <item displayName="$(string.ChoiceOne)"><value><decimal value="1" /></value></item>
+          <item displayName="$(string.ChoiceTwo)"><value><string>two</string></value></item>
+        </enum>
+        <list id="ListValue" key="Software\Fixture\List" />
+        <multiText id="MultiValue" valueName="Multi" />
+        <text id="TextValue" valueName="Text" />
+        <text id="ExpandableValue" valueName="Expandable" expandable="true" />
+      </elements>
+      <enabledList>
+        <item valueName="EnabledString"><value><expandableString>%TEMP%</expandableString></value></item>
+        <item key="Software\Fixture\Other" valueName="EnabledMulti">
+          <value><multiString><string>one</string><string>two</string></multiString></value>
+        </item>
+      </enabledList>
+      <disabledList>
+        <item valueName="DisabledBinary"><value><binary>01, ff, 0A</binary></value></item>
+        <item valueName="DisabledQword"><value><longDecimal value="4294967296" /></value></item>
+      </disabledList>
+    </policy>
+    <policy name="SimplePolicy" class="Machine" displayName="$(string.Simple)"
+            key="Software\Fixture" valueName="Simple">
+      <parentCategory ref="StableCategory" />
+    </policy>
+  </policies>
+</policyDefinitions>"#;
 
     #[test]
     fn normalizes_resource_name_parts() {
@@ -817,5 +926,239 @@ mod tests {
     #[test]
     fn parses_binary_values() {
         assert_eq!(parse_binary("01, ff, 0A").unwrap(), vec![1, 255, 10]);
+        assert!(parse_binary("invalid").is_err());
+    }
+
+    #[test]
+    fn parses_template_and_generates_localized_schema() {
+        let fixture = Fixture::new(ADMX, ADML);
+        let resources = parse_template(&fixture.admx, "fr-FR").unwrap();
+        assert_eq!(resources.len(), 1);
+
+        let resource = &resources[0];
+        assert_eq!(resource.type_name, "GPO.WindowsComponents/StableCategory");
+        assert_eq!(resource.display_name, "Localized Category");
+        assert_eq!(resource.description, "Localized template description");
+        assert_eq!(resource.policies.len(), 2);
+
+        let complex = resource
+            .policies
+            .iter()
+            .find(|policy| policy.name == "ComplexPolicy")
+            .unwrap();
+        assert_eq!(complex.display_name, "Complex Policy");
+        assert_eq!(
+            complex.description.as_deref(),
+            Some("Localized policy help")
+        );
+        assert_eq!(complex.class, PolicyClass::Both);
+        assert_eq!(
+            complex.enabled,
+            Some(PolicyValue::Data(RegistryValueData::DWord(7)))
+        );
+        assert_eq!(complex.disabled, Some(PolicyValue::Delete));
+        assert_eq!(complex.elements.len(), 8);
+        assert_eq!(complex.enabled_list.len(), 2);
+        assert_eq!(complex.disabled_list.len(), 2);
+        assert!(matches!(
+            complex.elements[0].kind,
+            ElementKind::Boolean { .. }
+        ));
+        assert!(matches!(
+            complex.elements[1].kind,
+            ElementKind::Decimal {
+                minimum: Some(1),
+                maximum: Some(10),
+                store_as_text: false
+            }
+        ));
+        assert!(matches!(complex.elements[3].kind, ElementKind::Enum(_)));
+        assert!(matches!(complex.elements[4].kind, ElementKind::List));
+        assert!(matches!(complex.elements[5].kind, ElementKind::MultiText));
+        assert!(matches!(
+            complex.elements[7].kind,
+            ElementKind::Text { expandable: true }
+        ));
+
+        let simple = resource
+            .policies
+            .iter()
+            .find(|policy| policy.name == "SimplePolicy")
+            .unwrap();
+        assert_eq!(simple.class, PolicyClass::Machine);
+        assert_eq!(
+            simple.enabled,
+            Some(PolicyValue::Data(RegistryValueData::DWord(1)))
+        );
+        assert_eq!(simple.disabled, Some(PolicyValue::Delete));
+
+        let listed = create_listed_resource(resource, &fixture.admx);
+        assert_eq!(listed.type_name, resource.type_name);
+        assert_eq!(listed.require_adapter, super::ADAPTER_TYPE);
+        assert_eq!(listed.capabilities, ["get", "set"]);
+        assert_eq!(
+            listed.schema["embedded"]["properties"]["scope"]["default"],
+            "currentUser"
+        );
+        assert_eq!(
+            listed.schema["embedded"]["properties"]["ComplexPolicy"]["oneOf"][1]["properties"]["NumberValue"]
+                ["minimum"],
+            1
+        );
+        assert_eq!(
+            listed.schema["embedded"]["properties"]["ComplexPolicy"]["oneOf"][1]["properties"]["EnumValue"]
+                ["oneOf"][1]["title"],
+            "Second choice"
+        );
+        assert_eq!(
+            listed.schema["embedded"]["properties"]["SimplePolicy"]["type"],
+            "boolean"
+        );
+    }
+
+    #[test]
+    fn lists_resources_from_policy_definitions() {
+        let fixture = Fixture::new(ADMX, ADML);
+        let original_system_root = std::env::var_os("SystemRoot");
+        // SAFETY: This test restores the process environment before returning, and no
+        // other adapter test reads SystemRoot.
+        unsafe { std::env::set_var("SystemRoot", &fixture.system_root) };
+        let result = super::list_resources();
+        if let Some(original) = original_system_root {
+            // SAFETY: Restores the value captured immediately before this test.
+            unsafe { std::env::set_var("SystemRoot", original) };
+        } else {
+            // SAFETY: Restores the absence of the variable captured before this test.
+            unsafe { std::env::remove_var("SystemRoot") };
+        }
+
+        let resources = result.unwrap();
+        assert_eq!(resources.len(), 1);
+        let resource: serde_json::Value = serde_json::from_str(&resources[0]).unwrap();
+        assert_eq!(resource["type"], "GPO.WindowsComponents/StableCategory");
+        assert_eq!(
+            resource["requireAdapter"],
+            "Microsoft.Adapter/GroupPolicyTemplate"
+        );
+    }
+
+    #[test]
+    fn converts_every_registry_value_to_json() {
+        assert_eq!(
+            registry_value_to_json(&RegistryValueData::String("value".to_string())),
+            json!("value")
+        );
+        assert_eq!(
+            registry_value_to_json(&RegistryValueData::ExpandString("%TEMP%".to_string())),
+            json!("%TEMP%")
+        );
+        assert_eq!(
+            registry_value_to_json(&RegistryValueData::DWord(42)),
+            json!(42)
+        );
+        assert_eq!(
+            registry_value_to_json(&RegistryValueData::QWord(4_294_967_296)),
+            json!(4_294_967_296_u64)
+        );
+        assert_eq!(
+            registry_value_to_json(&RegistryValueData::Binary(vec![1, 2])),
+            json!([1, 2])
+        );
+        assert_eq!(
+            registry_value_to_json(&RegistryValueData::MultiString(vec![
+                "one".to_string(),
+                "two".to_string()
+            ])),
+            json!(["one", "two"])
+        );
+        assert_eq!(
+            registry_value_to_json(&RegistryValueData::None),
+            json!(null)
+        );
+        assert_eq!(policy_value_to_json(&PolicyValue::Delete), json!(null));
+    }
+
+    #[test]
+    fn reads_utf8_utf16_and_rejects_malformed_utf16() {
+        let fixture = Fixture::new(ADMX, ADML);
+        assert_eq!(read_xml(&fixture.admx).unwrap(), ADMX);
+
+        let le = fixture.root.join("le.xml");
+        let be = fixture.root.join("be.xml");
+        let malformed = fixture.root.join("malformed.xml");
+        let text = "<root>value</root>";
+        let words: Vec<u16> = text.encode_utf16().collect();
+        let mut le_bytes = vec![0xff, 0xfe];
+        le_bytes.extend(words.iter().flat_map(|word| word.to_le_bytes()));
+        let mut be_bytes = vec![0xfe, 0xff];
+        be_bytes.extend(words.iter().flat_map(|word| word.to_be_bytes()));
+        fs::write(&le, le_bytes).unwrap();
+        fs::write(&be, be_bytes).unwrap();
+        fs::write(&malformed, [0xff, 0xfe, 0x01]).unwrap();
+
+        assert_eq!(read_xml(&le).unwrap(), text);
+        assert_eq!(read_xml(&be).unwrap(), text);
+        assert!(read_xml(&malformed).is_err());
+    }
+
+    #[test]
+    fn handles_localization_and_template_errors() {
+        let fixture = Fixture::new(ADMX, ADML);
+        assert!(
+            adml_path(&fixture.admx, "fr-FR")
+                .unwrap()
+                .ends_with(Path::new("en-US").join("fixture").with_extension("adml"))
+        );
+        assert_eq!(
+            resolve_reference(
+                "$(string.Category)",
+                &std::collections::HashMap::from([(
+                    "Category".to_string(),
+                    "Localized".to_string()
+                )])
+            ),
+            "Localized"
+        );
+        assert_eq!(
+            resolve_reference("$(string.Missing)", &std::collections::HashMap::new()),
+            "$(string.Missing)"
+        );
+        assert!(matches!(
+            AdapterError::Input("input".to_string()),
+            error if error.is_input_error()
+        ));
+        assert!(!AdapterError::Resource("resource".to_string()).is_input_error());
+
+        let invalid_class = ADMX.replace("class=\"Both\"", "class=\"Invalid\"");
+        let invalid = Fixture::new(&invalid_class, ADML);
+        assert!(
+            parse_template(&invalid.admx, "en-US")
+                .unwrap_err()
+                .to_string()
+                .contains("Invalid")
+        );
+
+        let unsupported = ADMX.replace(
+            "<text id=\"TextValue\" valueName=\"Text\" />",
+            "<unsupported id=\"TextValue\" valueName=\"Text\" />",
+        );
+        let invalid = Fixture::new(&unsupported, ADML);
+        assert!(
+            parse_template(&invalid.admx, "en-US")
+                .unwrap_err()
+                .to_string()
+                .contains("unsupported")
+        );
+
+        for invalid_admx in [
+            ADMX.replace(" id=\"BooleanValue\"", ""),
+            ADMX.replace("<decimal value=\"7\" />", "<unsupported>7</unsupported>"),
+            ADMX.replace(" minValue=\"1\"", " minValue=\"invalid\""),
+            ADMX.replace(" valueName=\"DisabledBinary\"", ""),
+            ADMX.replace("<value><binary>01, ff, 0A</binary></value>", "<value />"),
+        ] {
+            let invalid = Fixture::new(&invalid_admx, ADML);
+            assert!(parse_template(&invalid.admx, "en-US").is_err());
+        }
     }
 }

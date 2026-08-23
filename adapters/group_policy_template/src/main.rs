@@ -87,3 +87,25 @@ fn argument_value<'a>(args: &'a [String], name: &str) -> Option<&'a str> {
         .find(|pair| pair[0] == name)
         .map(|pair| pair[1].as_str())
 }
+
+#[cfg(all(test, windows))]
+mod tests {
+    use super::argument_value;
+
+    #[test]
+    fn finds_named_argument_values() {
+        let args = vec![
+            "get".to_string(),
+            "--input".to_string(),
+            "{}".to_string(),
+            "--resource-type".to_string(),
+            "GPO.Parent/Category".to_string(),
+        ];
+        assert_eq!(argument_value(&args, "--input"), Some("{}"));
+        assert_eq!(
+            argument_value(&args, "--resource-type"),
+            Some("GPO.Parent/Category")
+        );
+        assert_eq!(argument_value(&args, "--missing"), None);
+    }
+}
