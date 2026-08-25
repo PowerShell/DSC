@@ -184,7 +184,6 @@ pub struct ResolveResult {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
-#[serde(deny_unknown_fields)]
 #[dsc_repo_schema(base_name = "delete", folder_path = "outputs/resource")]
 pub struct DeleteResult {
     /// The return from the resource by the Delete method with what-if simulation.

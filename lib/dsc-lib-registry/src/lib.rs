@@ -316,6 +316,9 @@ impl RegistryHelper {
             return self.remove_offline();
         }
 
+        // Accumulate what-if metadata like set()
+        let mut what_if_metadata: Vec<String> = Vec::new();
+
         // For deleting a value, we need SetValue permission (KEY_SET_VALUE).
         // Try to open with the minimal required permission.
         // If that fails due to permission, try with AllAccess as a fallback.
@@ -323,6 +326,14 @@ impl RegistryHelper {
             Ok(reg_key) => reg_key,
             // handle NotFound error
             Err(RegistryError::RegistryKeyNotFound(_)) => {
+                if self.what_if {
+                    what_if_metadata.push(t!("registry_helper.whatIfDeleteNonexistingKey", subkey = &self.config.key_path).to_string());
+                    return Ok(Some(Registry {
+                        key_path: self.config.key_path.clone(),
+                        metadata: Some(Metadata { what_if: Some(what_if_metadata) }),
+                        ..Default::default()
+                    }));
+                }
                 return Ok(None);
             },
             Err(RegistryError::RegistryKey(key::Error::PermissionDenied(_, _))) => {
@@ -333,9 +344,6 @@ impl RegistryHelper {
             },
             Err(e) => return self.handle_error_or_what_if(e),
         };
-
-        // Accumulate what-if metadata like set()
-        let mut what_if_metadata: Vec<String> = Vec::new();
 
         if let Some(value_name) = &self.config.value_name {
             if self.what_if {
@@ -385,6 +393,7 @@ impl RegistryHelper {
                 Err(e) => return self.handle_error_or_what_if(RegistryError::RegistryKey(e)),
             }
         }
+
         Ok(None)
     }
 
