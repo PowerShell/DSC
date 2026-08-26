@@ -7,11 +7,11 @@ use clap_complete::generate;
 use dsc_lib::{progress::ProgressFormat, util::DSC_IGNORE_SETTINGS_FILE};
 use server::start_server;
 use rust_i18n::{i18n, t};
-use std::{env::set_var, io, process::exit};
+use std::{env::set_var, io, process::ExitCode};
 use sysinfo::{Process, RefreshKind, System, get_current_pid, ProcessRefreshKind};
 use tracing::{error, info, warn, debug};
 
-use crate::util::{EXIT_INVALID_INPUT, get_input};
+use crate::util::get_input;
 
 #[cfg(debug_assertions)]
 use crossterm::event;
@@ -28,7 +28,7 @@ pub mod util;
 
 i18n!("locales", fallback = "en-us");
 
-fn main() {
+fn main() -> ExitCode {
     #[cfg(windows)]
     {
         let handle = match std::thread::Builder::new()
@@ -39,22 +39,25 @@ fn main() {
             Ok(handle) => handle,
             Err(err) => {
                 error!("{}", t!("main.failedToSpawnMain", error = err));
-                exit(util::EXIT_DSC_ERROR);
+                return ExitCode::from(util::EXIT_DSC_ERROR);
             }
         };
 
         if let Err(err) = handle.join() {
             error!("{}", t!("main.failedToJoinMain", error = err : {:?}));
-            exit(util::EXIT_DSC_ERROR);
+            return ExitCode::from(util::EXIT_DSC_ERROR);
         }
     }
     #[cfg(not(windows))]
     {
-        dsc_main();
+        match dsc_main() {
+            Ok(_) => ExitCode::from(util::EXIT_SUCCESS),
+            Err(code) => code,
+        }
     }
 }
 
-fn dsc_main() {
+fn dsc_main() -> Result<(), ExitCode> {
     #[cfg(debug_assertions)]
     check_debug();
 
@@ -87,7 +90,9 @@ fn dsc_main() {
             generate(shell, &mut cmd, "dsc", &mut io::stdout());
         },
         SubCommand::Config { subcommand, parameters, parameters_file, system_root, as_group, as_assert, as_include } => {
-            let params = get_input(None, parameters_file.as_ref());
+            let Ok(params) = get_input(None, parameters_file.as_ref()) else {
+                return Err(ExitCode::from(util::EXIT_INVALID_INPUT));
+            };
             let file_params = if params.is_empty() {
                 None
             } else {
@@ -101,7 +106,7 @@ fn dsc_main() {
                         Ok(merged) => Some(merged),
                         Err(err) => {
                             error!("{}: {err}", t!("main.failedMergingParameters"));
-                            exit(EXIT_INVALID_INPUT);
+                            return Err(ExitCode::from(util::EXIT_INVALID_INPUT))    ;
                         }
                     }
                 },
@@ -110,23 +115,23 @@ fn dsc_main() {
                 (None, None) => None,
             };
 
-            subcommand::config(&subcommand, &merged_parameters, system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format);
+            subcommand::config(&subcommand, &merged_parameters, system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format)?;
         },
         SubCommand::Extension { subcommand } => {
-            subcommand::extension(&subcommand, progress_format);
+            subcommand::extension(&subcommand, progress_format)?;
         },
         SubCommand::Function { subcommand } => {
-            subcommand::function(&subcommand);
+            subcommand::function(&subcommand)?;
         },
         SubCommand::Server => {
             if let Err(err) = start_server() {
                 error!("{}", t!("main.failedToStartServer", error = err));
-                exit(util::EXIT_SERVER_FAILED);
+                return Err(ExitCode::from(util::EXIT_SERVER_FAILED));
             }
-            exit(util::EXIT_SUCCESS);
+            return Ok(());
         }
         SubCommand::Resource { subcommand } => {
-            subcommand::resource(&subcommand, progress_format);
+            subcommand::resource(&subcommand, progress_format)?;
         },
         SubCommand::Schema { dsc_type , output_format } => {
             let schema = util::get_schema(dsc_type);
@@ -134,17 +139,18 @@ fn dsc_main() {
                 Ok(json) => json,
                 Err(err) => {
                     error!("JSON: {err}");
-                    exit(util::EXIT_JSON_ERROR);
+                    return Err(ExitCode::from(util::EXIT_JSON_ERROR));
                 }
             };
-            util::write_object(&json, output_format.as_ref(), false);
+            util::write_object(&json, output_format.as_ref(), false)?;
         },
     }
 
-    exit(util::EXIT_SUCCESS);
+    Ok(())
 }
 
 fn ctrlc_handler() {
+    use std::process::exit;
     warn!("{}", t!("main.ctrlCReceived"));
 
     // get process tree for current process and terminate all processes
@@ -152,16 +158,16 @@ fn ctrlc_handler() {
     info!("{}: {}", t!("main.foundProcesses"), sys.processes().len());
     let Ok(current_pid) = get_current_pid() else {
         error!("{}", t!("main.failedToGetPid"));
-        exit(util::EXIT_CTRL_C);
+        exit(i32::from(util::EXIT_CTRL_C));
     };
     info!("{}: {}", t!("main.currentPid"), current_pid);
     let Some(current_process) = sys.process(current_pid) else {
         error!("{}", t!("main.failedToGetProcess"));
-        exit(util::EXIT_CTRL_C);
+        exit(i32::from(util::EXIT_CTRL_C));
     };
 
     terminate_subprocesses(&sys, current_process);
-    exit(util::EXIT_CTRL_C);
+    exit(i32::from(util::EXIT_CTRL_C));
 }
 
 fn terminate_subprocesses(sys: &System, process: &Process) {
@@ -200,24 +206,24 @@ fn check_debug() {
 
 // Check if the dsc binary parent process is WinStore.App or Explorer.exe
 #[cfg(windows)]
-fn check_store() {
+fn check_store() -> Result<(), ExitCode> {
     use std::io::Read;
 
     let sys = System::new_with_specifics(RefreshKind::nothing().with_processes(ProcessRefreshKind::everything()));
     // get current process
     let Ok(current_pid) = get_current_pid() else {
-        return;
+        return Ok();
     };
 
     // get parent process
     let Some(current_process) = sys.process(current_pid) else {
-        return;
+        return Ok(());
     };
     let Some(parent_process_pid) = current_process.parent() else {
-        return;
+        return Ok(());
     };
     let Some(parent_process) = sys.process(parent_process_pid) else {
-        return;
+        return Ok(());
     };
 
     // MS Store runs app using `sihost.exe`
@@ -225,7 +231,7 @@ fn check_store() {
         eprintln!("{}", t!("main.storeMessage"));
         // wait for keypress
         let _ = io::stdin().read(&mut [0u8]).unwrap();
-        exit(util::EXIT_INVALID_ARGS);
+        return Err(ExitCode::from(util::EXIT_INVALID_ARGS));
     }
 }
 

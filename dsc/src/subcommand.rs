@@ -35,16 +35,15 @@ use dsc_lib::{
 use regex::RegexBuilder;
 use rust_i18n::t;
 use core::convert::AsRef;
+use std::process::ExitCode;
 use std::{
     collections::HashMap,
     io::{self, IsTerminal},
-    path::Path,
-    process::exit
+    path::Path
 };
 use tracing::{debug, error, trace};
 
-pub fn config_get(configurator: &mut Configurator, format: Option<&OutputFormat>, as_group: &bool)
-{
+pub fn config_get(configurator: &mut Configurator, format: Option<&OutputFormat>, as_group: &bool) -> Result<(), ExitCode> {
     match configurator.invoke_get() {
         Ok(result) => {
             if *as_group {
@@ -52,34 +51,34 @@ pub fn config_get(configurator: &mut Configurator, format: Option<&OutputFormat>
                     Ok(json) => json,
                     Err(err) => {
                         error!("JSON Error: {err}");
-                        exit(EXIT_JSON_ERROR);
+                        return Err(ExitCode::from(EXIT_JSON_ERROR));
                     }
                 };
-                write_object(&json, format, false);
+                write_object(&json, format, false)?;
             }
             else {
                 let json = match serde_json::to_string(&result) {
                     Ok(json) => json,
                     Err(err) => {
                         error!("JSON Error: {err}");
-                        exit(EXIT_JSON_ERROR);
+                        return Err(ExitCode::from(EXIT_JSON_ERROR));
                     }
                 };
-                write_object(&json, format, false);
+                write_object(&json, format, false)?;
                 if result.had_errors {
-                    exit(EXIT_DSC_ERROR);
+                    return Err(ExitCode::from(EXIT_DSC_ERROR));
                 }
             }
         },
         Err(err) => {
             error!("{err}");
-            exit(EXIT_DSC_ERROR);
+            return Err(ExitCode::from(EXIT_DSC_ERROR));
         }
     }
+    Ok(())
 }
 
-pub fn config_set(configurator: &mut Configurator, format: Option<&OutputFormat>, as_group: &bool)
-{
+pub fn config_set(configurator: &mut Configurator, format: Option<&OutputFormat>, as_group: &bool) -> Result<(), ExitCode> {
     match configurator.invoke_set(false) {
         Ok(result) => {
             if *as_group {
@@ -87,34 +86,34 @@ pub fn config_set(configurator: &mut Configurator, format: Option<&OutputFormat>
                     Ok(json) => json,
                     Err(err) => {
                         error!("JSON Error: {err}");
-                        exit(EXIT_JSON_ERROR);
+                        return Err(ExitCode::from(EXIT_JSON_ERROR));
                     }
                 };
-                write_object(&json, format, false);
+                write_object(&json, format, false)?;
             }
             else {
                 let json = match serde_json::to_string(&result) {
                     Ok(json) => json,
                     Err(err) => {
                         error!("JSON Error: {err}");
-                        exit(EXIT_JSON_ERROR);
+                        return Err(ExitCode::from(EXIT_JSON_ERROR));
                     }
                 };
-                write_object(&json, format, false);
+                write_object(&json, format, false)?;
                 if result.had_errors {
-                    exit(EXIT_DSC_ERROR);
+                    return Err(ExitCode::from(EXIT_DSC_ERROR));
                 }
             }
         },
         Err(err) => {
             error!("Error: {err}");
-            exit(EXIT_DSC_ERROR);
+            return Err(ExitCode::from(EXIT_DSC_ERROR));
         }
     }
+    Ok(())
 }
 
-pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat>, as_group: &bool, as_get: &bool, as_config: &bool, as_assert: &bool)
-{
+pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat>, as_group: &bool, as_get: &bool, as_config: &bool, as_assert: &bool) -> Result<(), ExitCode> {
     match configurator.invoke_test() {
         Ok(result) => {
             if *as_group {
@@ -124,7 +123,7 @@ pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat
                     for test_result in result.results {
                         if *as_assert && !in_desired_state(&test_result) {
                             error!("{}", t!("subcommand.assertionFailed", resource_type = test_result.resource_type));
-                            exit(EXIT_DSC_ASSERTION_FAILED);
+                            return Err(ExitCode::from(EXIT_DSC_ASSERTION_FAILED));
                         }
                         let properties = match test_result.result {
                             TestResult::Resource(test_response) => {
@@ -153,7 +152,7 @@ pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat
                         Ok(json) => json,
                         Err(err) => {
                             error!("JSON: {err}");
-                            exit(EXIT_JSON_ERROR);
+                            return Err(ExitCode::from(EXIT_JSON_ERROR));
                         }
                     }
                 }
@@ -162,7 +161,7 @@ pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat
                     for test_result in result.results {
                         if *as_assert && !in_desired_state(&test_result) {
                             error!("{}", t!("subcommand.assertionFailed", resource_type = test_result.resource_type));
-                            exit(EXIT_DSC_ASSERTION_FAILED);
+                            return Err(ExitCode::from(EXIT_DSC_ASSERTION_FAILED));
                         }
                         group_result.push(test_result.into());
                     }
@@ -170,7 +169,7 @@ pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat
                         Ok(json) => json,
                         Err(err) => {
                             error!("JSON: {err}");
-                            exit(EXIT_JSON_ERROR);
+                            return Err(ExitCode::from(EXIT_JSON_ERROR));
                         }
                     }
                 }
@@ -179,7 +178,7 @@ pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat
                         for test_result in &result.results {
                             if !in_desired_state(test_result) {
                                 error!("{}", t!("subcommand.assertionFailed", resource_type = test_result.resource_type));
-                                exit(EXIT_DSC_ASSERTION_FAILED);
+                                return Err(ExitCode::from(EXIT_DSC_ASSERTION_FAILED));
                             }
                         }
                     }
@@ -187,45 +186,45 @@ pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat
                         Ok(json) => json,
                         Err(err) => {
                             error!("JSON: {err}");
-                            exit(EXIT_JSON_ERROR);
+                            return Err(ExitCode::from(EXIT_JSON_ERROR));
                         }
                     }
                 };
-                write_object(&json, format, false);
+                write_object(&json, format, false)?;
             }
             else {
                 let json = match serde_json::to_string(&result) {
                     Ok(json) => json,
                     Err(err) => {
                         error!("JSON: {err}");
-                        exit(EXIT_JSON_ERROR);
+                        return Err(ExitCode::from(EXIT_JSON_ERROR));
                     }
                 };
-                write_object(&json, format, false);
+                write_object(&json, format, false)?;
                 if result.had_errors {
-                    exit(EXIT_DSC_ERROR);
+                    return Err(ExitCode::from(EXIT_DSC_ERROR));
                 }
             }
         },
         Err(err) => {
             error!("{err}");
-            exit(EXIT_DSC_ERROR);
+            return Err(ExitCode::from(EXIT_DSC_ERROR));
         }
     }
+    Ok(())
 }
 
-pub fn config_export(configurator: &mut Configurator, format: Option<&OutputFormat>)
-{
+pub fn config_export(configurator: &mut Configurator, format: Option<&OutputFormat>) -> Result<(), ExitCode> {
     match configurator.invoke_export() {
         Ok(result) => {
             let json = match serde_json::to_string(&result.result) {
                 Ok(json) => json,
                 Err(err) => {
                     error!("JSON: {err}");
-                    exit(EXIT_JSON_ERROR);
+                    return Err(ExitCode::from(EXIT_JSON_ERROR));
                 }
             };
-            write_object(&json, format, false);
+            write_object(&json, format, false)?;
             if result.had_errors {
 
                 for msg in result.messages
@@ -233,22 +232,23 @@ pub fn config_export(configurator: &mut Configurator, format: Option<&OutputForm
                     error!("{:?} {} {}", msg.level, t!("subcommand.message"), msg.message);
                 };
 
-                exit(EXIT_DSC_ERROR);
+                return Err(ExitCode::from(EXIT_DSC_ERROR));
             }
         },
         Err(err) => {
             error!("{err}");
-            exit(EXIT_DSC_ERROR);
+            return Err(ExitCode::from(EXIT_DSC_ERROR));
         }
     }
+    Ok(())
 }
 
-fn initialize_config_root(path: Option<&String>) -> Option<String> {
+fn initialize_config_root(path: Option<&String>) -> Result<Option<String>, ExitCode> {
     // code that calls this pass in either None, Some("-"), or Some(path)
     // in the case of `-` we treat it as None, but need to pass it back as subsequent processing needs to handle it
     let use_stdin = if let Some(specified_path) = path {
         if specified_path != "-" {
-            return Some(set_dscconfigroot(specified_path));
+            return Ok(Some(set_dscconfigroot(specified_path)?));
         }
 
         true
@@ -262,34 +262,34 @@ fn initialize_config_root(path: Option<&String>) -> Option<String> {
     } else {
         let current_directory = std::env::current_dir().unwrap_or_default();
         debug!("DSC_CONFIG_ROOT = {} '{current_directory:?}'", t!("subcommand.currentDirectory"));
-        set_dscconfigroot(current_directory.to_str().unwrap_or_default());
+        set_dscconfigroot(current_directory.to_str().unwrap_or_default())?;
     }
 
     // if the path is "-", we need to return it so later processing can handle it correctly
     if use_stdin {
-        return Some("-".to_string());
+        return Ok(Some("-".to_string()));
     }
 
-    None
+    Ok(None)
 }
 
 #[allow(clippy::too_many_lines)]
 #[allow(clippy::too_many_arguments)]
-pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounted_path: Option<&String>, as_group: &bool, as_assert: &bool, as_include: &bool, progress_format: ProgressFormat) {
+pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounted_path: Option<&String>, as_group: &bool, as_assert: &bool, as_include: &bool, progress_format: ProgressFormat) -> Result<(), ExitCode> {
     let (new_parameters, json_string) = match subcommand {
         ConfigSubCommand::Get { input, file, .. } |
         ConfigSubCommand::Set { input, file, .. } |
         ConfigSubCommand::Test { input, file, .. } |
         ConfigSubCommand::Validate { input, file, .. } |
         ConfigSubCommand::Export { input, file, .. } => {
-            let new_path = initialize_config_root(file.as_ref());
-            let document = get_input(input.as_ref(), new_path.as_ref());
+            let new_path = initialize_config_root(file.as_ref())?;
+            let document = get_input(input.as_ref(), new_path.as_ref())?;
             if *as_include {
                 let (new_parameters, config_json) = match get_contents(&document) {
                     Ok((parameters, config_json)) => (parameters, config_json),
                     Err(err) => {
                         error!("{err}");
-                        exit(EXIT_DSC_ERROR);
+                        return Err(ExitCode::from(EXIT_DSC_ERROR));
                     }
                 };
                 (new_parameters, config_json)
@@ -298,13 +298,13 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
             }
         },
         ConfigSubCommand::Resolve { input, file, .. } => {
-            let new_path = initialize_config_root(file.as_ref());
-            let document = get_input(input.as_ref(), new_path.as_ref());
+            let new_path = initialize_config_root(file.as_ref())?;
+            let document = get_input(input.as_ref(), new_path.as_ref())?;
             let (new_parameters, config_json) = match get_contents(&document) {
                 Ok((parameters, config_json)) => (parameters, config_json),
                 Err(err) => {
                     error!("{err}");
-                    exit(EXIT_DSC_ERROR);
+                    return Err(ExitCode::from(EXIT_DSC_ERROR));
                 }
             };
             (new_parameters, config_json)
@@ -315,7 +315,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
         Ok(configurator) => configurator,
         Err(err) => {
             error!("Error: {err}");
-            exit(EXIT_DSC_ERROR);
+            return Err(ExitCode::from(EXIT_DSC_ERROR));
         }
     };
 
@@ -345,13 +345,13 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
                                 Ok(json) => Some(json),
                                 Err(err) => {
                                     error!("{}: {err}", t!("subcommand.failedConvertJson"));
-                                    exit(EXIT_DSC_ERROR);
+                                    return Err(ExitCode::from(EXIT_DSC_ERROR));
                                 }
                             }
                         },
                         Err(err) => {
                             error!("{}: {err}", t!("subcommand.invalidParameters"));
-                            exit(EXIT_INVALID_INPUT);
+                            return Err(ExitCode::from(EXIT_INVALID_INPUT));
                         }
                     }
                 }
@@ -362,7 +362,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
     if let Some(path) = mounted_path {
         if !Path::new(&path).exists() {
             error!("{}: '{path}'", t!("subcommand.invalidPath"));
-            exit(EXIT_INVALID_ARGS);
+            return Err(ExitCode::from(EXIT_INVALID_ARGS));
         }
 
         // make sure path has a trailing separator if it's a drive letter
@@ -375,18 +375,18 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
 
     if let Err(err) = configurator.set_context(parameters.as_ref()) {
         error!("{}: {err}", t!("subcommand.failedSetParameters"));
-        exit(EXIT_INVALID_INPUT);
+        return Err(ExitCode::from(EXIT_INVALID_INPUT));
     }
 
     match subcommand {
         ConfigSubCommand::Get { output_format, .. } => {
-            config_get(&mut configurator, output_format.as_ref(), as_group);
+            config_get(&mut configurator, output_format.as_ref(), as_group)?;
         },
         ConfigSubCommand::Set { output_format, .. } => {
-            config_set(&mut configurator, output_format.as_ref(), as_group);
+            config_set(&mut configurator, output_format.as_ref(), as_group)?;
         },
         ConfigSubCommand::Test { output_format, as_get, as_config, .. } => {
-            config_test(&mut configurator, output_format.as_ref(), as_group, as_get, as_config, as_assert);
+            config_test(&mut configurator, output_format.as_ref(), as_group, as_get, as_config, as_assert)?;
         },
         ConfigSubCommand::Validate { input, file, output_format} => {
             let mut result = ValidateResult {
@@ -394,8 +394,8 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
                 reason: None,
             };
             if *as_include {
-                let new_path = initialize_config_root(file.as_ref());
-                let input = get_input(input.as_ref(), new_path.as_ref());
+                let new_path = initialize_config_root(file.as_ref())?;
+                let input = get_input(input.as_ref(), new_path.as_ref())?;
                 match serde_json::from_str::<Include>(&input) {
                     Ok(_) => {
                         // valid, so do nothing
@@ -419,20 +419,20 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
 
             let Ok(json) = serde_json::to_string(&result) else {
                 error!("{}", t!("subcommand.failedSerialize"));
-                exit(EXIT_JSON_ERROR);
+                return Err(ExitCode::from(EXIT_JSON_ERROR));
             };
 
-            write_object(&json, output_format.as_ref(), false);
+            write_object(&json, output_format.as_ref(), false)?;
         },
         ConfigSubCommand::Export { output_format, .. } => {
-            config_export(&mut configurator, output_format.as_ref());
+            config_export(&mut configurator, output_format.as_ref())?;
         },
         ConfigSubCommand::Resolve { output_format, .. } => {
             let configuration = match serde_json::from_str(&json_string) {
                 Ok(json) => json,
                 Err(err) => {
                     error!("{}: {err}", t!("subcommand.invalidConfiguration"));
-                    exit(EXIT_DSC_ERROR);
+                    return Err(ExitCode::from(EXIT_DSC_ERROR));
                 }
             };
             // get the parameters out of the configurator
@@ -453,12 +453,13 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
                 Ok(json) => json,
                 Err(err) => {
                     error!("{}: {err}", t!("subcommand.failedSerializeResolve"));
-                    exit(EXIT_JSON_ERROR);
+                    return Err(ExitCode::from(EXIT_JSON_ERROR));
                 }
             };
-            write_object(&json_string, output_format.as_ref(), false);
+            write_object(&json_string, output_format.as_ref(), false)?;
         },
     }
+    Ok(())
 }
 
 /// Validate configuration.
@@ -528,90 +529,93 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
     Ok(())
 }
 
-pub fn extension(subcommand: &ExtensionSubCommand, progress_format: ProgressFormat) {
+pub fn extension(subcommand: &ExtensionSubCommand, progress_format: ProgressFormat) -> Result<(), ExitCode> {
     let mut dsc = DscManager::new();
 
     match subcommand {
         ExtensionSubCommand::List{extension_name, output_format} => {
-            list_extensions(&mut dsc, extension_name, output_format.as_ref(), progress_format);
+            list_extensions(&mut dsc, extension_name, output_format.as_ref(), progress_format)?;
         },
     }
+    Ok(())
 }
 
-pub fn function(subcommand: &FunctionSubCommand) {
+pub fn function(subcommand: &FunctionSubCommand) -> Result<(), ExitCode> {
     let functions = FunctionDispatcher::new();
     match subcommand {
         FunctionSubCommand::List { function_name, category, description, output_format } => {
-            list_functions(&functions, function_name.as_ref(), category, description.as_ref(), output_format.as_ref());
+            list_functions(&functions, function_name.as_ref(), category, description.as_ref(), output_format.as_ref())?;
         },
     }
+    Ok(())
 }
 
 #[allow(clippy::too_many_lines)]
-pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat) {
+pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat) -> Result<(), ExitCode> {
     let mut dsc = DscManager::new();
 
     match subcommand {
         ResourceSubCommand::List { resource_name, adapter_name, description, tags, output_format } => {
-            list_resources(&mut dsc, resource_name, adapter_name.as_ref(), description.as_ref(), tags.as_ref(), output_format.as_ref(), progress_format);
+            list_resources(&mut dsc, resource_name, adapter_name.as_ref(), description.as_ref(), tags.as_ref(), output_format.as_ref(), progress_format)?;
         },
         ResourceSubCommand::Schema { resource, required_version: version, output_format } => {
             if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone(), None)], progress_format) {
                 error!("{}: {err}", t!("subcommand.failedDiscoverResource"));
-                exit(EXIT_DSC_ERROR);
+                return Err(ExitCode::from(EXIT_DSC_ERROR));
             }
-            resource_command::schema(&mut dsc, resource, version.as_ref(), output_format.as_ref());
+            resource_command::schema(&mut dsc, resource, version.as_ref(), output_format.as_ref())?;
         },
         ResourceSubCommand::Export { resource, required_version: version, input, file, output_format } => {
             if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone(), None)], progress_format) {
                 error!("{}: {err}", t!("subcommand.failedDiscoverResource"));
-                exit(EXIT_DSC_ERROR);
+                return Err(ExitCode::from(EXIT_DSC_ERROR));
             }
-            let parsed_input = get_input(input.as_ref(), file.as_ref());
-            resource_command::export(&mut dsc, resource, version.as_ref(), &parsed_input, output_format.as_ref());
+            let parsed_input = get_input(input.as_ref(), file.as_ref())?;
+            resource_command::export(&mut dsc, resource, version.as_ref(), &parsed_input, output_format.as_ref())?;
         },
         ResourceSubCommand::Get { resource, required_version: version, input, file: path, all, output_format } => {
             if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone(), None)], progress_format) {
                 error!("{}: {err}", t!("subcommand.failedDiscoverResource"));
-                exit(EXIT_DSC_ERROR);
+                return Err(ExitCode::from(EXIT_DSC_ERROR));
             }
             if *all {
-                resource_command::get_all(&mut dsc, resource, version.as_ref(), output_format.as_ref());
+                resource_command::get_all(&mut dsc, resource, version.as_ref(), output_format.as_ref())?;
             }
             else {
                 if *output_format == Some(GetOutputFormat::JsonArray) {
                     error!("{}", t!("subcommand.jsonArrayNotSupported"));
-                    exit(EXIT_INVALID_ARGS);
+                    return Err(ExitCode::from(EXIT_INVALID_ARGS));
                 }
-                let parsed_input = get_input(input.as_ref(), path.as_ref());
-                resource_command::get(&mut dsc, resource, version.as_ref(), &parsed_input, output_format.as_ref());
+                let parsed_input = get_input(input.as_ref(), path.as_ref())?;
+                resource_command::get(&mut dsc, resource, version.as_ref(), &parsed_input, output_format.as_ref())?;
             }
         },
         ResourceSubCommand::Set { resource, required_version: version, input, file: path, output_format, what_if } => {
             if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone(), None)], progress_format) {
                 error!("{}: {err}", t!("subcommand.failedDiscoverResource"));
-                exit(EXIT_DSC_ERROR);
+                return Err(ExitCode::from(EXIT_DSC_ERROR));
             }
-            let parsed_input = get_input(input.as_ref(), path.as_ref());
-            resource_command::set(&mut dsc, resource, version.as_ref(), &parsed_input, output_format.as_ref(), *what_if);
+            let parsed_input = get_input(input.as_ref(), path.as_ref())?;
+            resource_command::set(&mut dsc, resource, version.as_ref(), &parsed_input, output_format.as_ref(), *what_if)?;
         },
         ResourceSubCommand::Test { resource, required_version: version, input, file: path, output_format } => {
             if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone(), None)], progress_format) {
                 error!("{}: {err}", t!("subcommand.failedDiscoverResource"));
-                exit(EXIT_DSC_ERROR);
+                return Err(ExitCode::from(EXIT_DSC_ERROR));
             }
-            let parsed_input = get_input(input.as_ref(), path.as_ref());
-            resource_command::test(&mut dsc, resource, version.as_ref(), &parsed_input, output_format.as_ref());
+            let parsed_input = get_input(input.as_ref(), path.as_ref())?;
+            resource_command::test(&mut dsc, resource, version.as_ref(), &parsed_input, output_format.as_ref())?;
         },
         ResourceSubCommand::Delete { resource, required_version: version, input, file: path, output_format, what_if } => {
             if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone(), None)], progress_format) {
                 error!("{}: {err}", t!("subcommand.failedDiscoverResource"));
-                exit(EXIT_DSC_ERROR);
+                return Err(ExitCode::from(EXIT_DSC_ERROR));
             }
-            let parsed_input = get_input(input.as_ref(), path.as_ref());
-            resource_command::delete(&mut dsc, resource, version.as_ref(), &parsed_input, output_format.as_ref(), *what_if);
+            let parsed_input = get_input(input.as_ref(), path.as_ref())?;
+            resource_command::delete(&mut dsc, resource, version.as_ref(), &parsed_input, output_format.as_ref(), *what_if)?;
         },
     }
+    Ok(())
 }
 
 /// Indicates whether to emit a table based on the output format and whether stdout is a terminal.
@@ -625,7 +629,7 @@ fn should_write_table(format: Option<&ListOutputFormat>) -> bool {
     }
 }
 
-fn list_extensions(dsc: &mut DscManager, extension_name: &TypeNameFilter, format: Option<&ListOutputFormat>, progress_format: ProgressFormat) {
+fn list_extensions(dsc: &mut DscManager, extension_name: &TypeNameFilter, format: Option<&ListOutputFormat>, progress_format: ProgressFormat) -> Result<(), ExitCode> {
     let write_table = should_write_table(format);
 
     let mut table = Table::new(&[
@@ -666,7 +670,7 @@ fn list_extensions(dsc: &mut DscManager, extension_name: &TypeNameFilter, format
                     Ok(json) => json,
                     Err(err) => {
                         error!("JSON: {err}");
-                        exit(EXIT_JSON_ERROR);
+                        return Err(ExitCode::from(EXIT_JSON_ERROR));
                     }
                 };
                 let format = match format {
@@ -675,7 +679,7 @@ fn list_extensions(dsc: &mut DscManager, extension_name: &TypeNameFilter, format
                     Some(ListOutputFormat::Yaml) => Some(OutputFormat::Yaml),
                     _ => None,
                 };
-                write_object(&json, format.as_ref(), include_separator);
+                write_object(&json, format.as_ref(), include_separator)?;
                 include_separator = true;
                 // insert newline separating instances if writing to console
                 if io::stdout().is_terminal() { println!(); }
@@ -687,9 +691,10 @@ fn list_extensions(dsc: &mut DscManager, extension_name: &TypeNameFilter, format
         let truncate = format != Some(&ListOutputFormat::TableNoTruncate);
         table.print(truncate);
     }
+    Ok(())
 }
 
-fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>, category: &[FunctionCategory], description: Option<&String>, output_format: Option<&ListOutputFormat>) {
+fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>, category: &[FunctionCategory], description: Option<&String>, output_format: Option<&ListOutputFormat>) -> Result<(), ExitCode> {
     let write_table = should_write_table(output_format);
     let mut table = Table::new(&[
         t!("subcommand.tableHeader_functionCategory").to_string().as_ref(),
@@ -706,21 +711,25 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
     regex_builder.case_insensitive(true);
     let Ok(regex) = regex_builder.build() else {
         error!("{}: {}", t!("subcommand.invalidFunctionFilter"), regex_str);
-        exit(EXIT_INVALID_ARGS);
+        return Err(ExitCode::from(EXIT_INVALID_ARGS));
     };
 
-    let description_regex = description.map(|description| {
+    let description_regex = if let Some(description) = description {
         let regex_str = convert_wildcard_to_regex(description);
         // strip the `^` and `$` anchors so the filter searches within the description text
         let regex_str = &regex_str[1..regex_str.len() - 1];
         let mut regex_builder = RegexBuilder::new(regex_str);
         regex_builder.case_insensitive(true);
-        let Ok(regex) = regex_builder.build() else {
-            error!("{}: {}", t!("subcommand.invalidFunctionDescriptionFilter"), regex_str);
-            exit(EXIT_INVALID_ARGS);
-        };
-        regex
-    });
+        match regex_builder.build() {
+            Ok(description_regex) => Some(description_regex),
+            Err(_) => {
+                error!("{}: {}", t!("subcommand.invalidFunctionDescriptionFilter"), regex_str);
+                return Err(ExitCode::from(EXIT_INVALID_ARGS));
+            }
+        }
+    } else {
+        None
+    };
 
     let mut functions_list = functions.list();
     functions_list.sort();
@@ -752,7 +761,7 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
                 Ok(json) => json,
                 Err(err) => {
                     error!("JSON: {err}");
-                    exit(EXIT_JSON_ERROR);
+                    return Err(ExitCode::from(EXIT_JSON_ERROR));
                 }
             };
             let format = match output_format {
@@ -761,7 +770,7 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
                 Some(ListOutputFormat::Yaml) => Some(OutputFormat::Yaml),
                 _ => None,
             };
-            write_object(&json, format.as_ref(), include_separator);
+            write_object(&json, format.as_ref(), include_separator)?;
             include_separator = true;
             // insert newline separating instances if writing to console
             if io::stdout().is_terminal() { println!(); }
@@ -772,6 +781,7 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
         let truncate = output_format != Some(&ListOutputFormat::TableNoTruncate);
         table.print(truncate);
     }
+    Ok(())
 }
 
 pub fn list_resources(
@@ -782,7 +792,7 @@ pub fn list_resources(
     tags: Option<&Vec<String>>,
     format: Option<&ListOutputFormat>,
     progress_format: ProgressFormat
-) {
+) -> Result<(), ExitCode> {
     let mut write_table = false;
     let mut table = Table::new(&[
         t!("subcommand.tableHeader_type").to_string().as_ref(),
@@ -864,7 +874,7 @@ pub fn list_resources(
                     Ok(json) => json,
                     Err(err) => {
                         error!("JSON: {err}");
-                        exit(EXIT_JSON_ERROR);
+                        return Err(ExitCode::from(EXIT_JSON_ERROR));
                     }
                 };
                 let format = match format {
@@ -873,7 +883,7 @@ pub fn list_resources(
                     Some(ListOutputFormat::Yaml) => Some(OutputFormat::Yaml),
                     _ => None,
                 };
-                write_object(&json, format.as_ref(), include_separator);
+                write_object(&json, format.as_ref(), include_separator)?;
                 include_separator = true;
                 // insert newline separating instances if writing to console
                 if io::stdout().is_terminal() { println!(); }
@@ -885,4 +895,5 @@ pub fn list_resources(
         let truncate = format != Some(&ListOutputFormat::TableNoTruncate);
         table.print(truncate);
     }
+    Ok(())
 }
