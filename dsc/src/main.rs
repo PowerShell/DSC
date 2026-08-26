@@ -47,6 +47,7 @@ fn main() -> ExitCode {
             error!("{}", t!("main.failedToJoinMain", error = err : {:?}));
             return ExitCode::from(util::EXIT_DSC_ERROR);
         }
+        ExitCode::from(util::EXIT_SUCCESS)
     }
     #[cfg(not(windows))]
     {
@@ -62,7 +63,7 @@ fn dsc_main() -> Result<(), ExitCode> {
     check_debug();
 
     #[cfg(windows)]
-    check_store();
+    check_store()?;
 
     if ctrlc::set_handler(ctrlc_handler).is_err() {
         error!("{}", t!("main.failedCtrlCHandler"));
@@ -212,7 +213,7 @@ fn check_store() -> Result<(), ExitCode> {
     let sys = System::new_with_specifics(RefreshKind::nothing().with_processes(ProcessRefreshKind::everything()));
     // get current process
     let Ok(current_pid) = get_current_pid() else {
-        return Ok();
+        return Ok(());
     };
 
     // get parent process
@@ -233,5 +234,7 @@ fn check_store() -> Result<(), ExitCode> {
         let _ = io::stdin().read(&mut [0u8]).unwrap();
         return Err(ExitCode::from(util::EXIT_INVALID_ARGS));
     }
+
+    Ok(())
 }
 

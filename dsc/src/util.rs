@@ -109,7 +109,6 @@ impl Default for TracingSetting {
 /// # Returns
 ///
 /// * `String` - The JSON as a string
-#[must_use]
 pub fn serde_json_value_to_string(json: &serde_json::Value) -> Result<String, ExitCode>
 {
     match serde_json::to_string(&json) {
@@ -486,7 +485,7 @@ pub fn get_input(input: Option<&String>, file: Option<&String>) -> Result<String
         Ok(json) => Ok(json),
         Err(err) => {
             error!("{}: {err}", t!("util.failedToParseInput"));
-            return Err(ExitCode::from(EXIT_INVALID_INPUT));
+            Err(ExitCode::from(EXIT_INVALID_INPUT))
         }
     }
 }
