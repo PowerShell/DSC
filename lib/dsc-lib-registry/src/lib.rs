@@ -330,6 +330,7 @@ impl RegistryHelper {
                     what_if_metadata.push(t!("registry_helper.whatIfDeleteNonexistingKey", subkey = &self.config.key_path).to_string());
                     return Ok(Some(Registry {
                         key_path: self.config.key_path.clone(),
+                        value_name: self.config.value_name.clone(),
                         metadata: Some(Metadata { what_if: Some(what_if_metadata) }),
                         ..Default::default()
                     }));
