@@ -43,9 +43,16 @@ fn main() -> ExitCode {
             }
         };
 
-        if let Err(err) = handle.join() {
-            error!("{}", t!("main.failedToJoinMain", error = err : {:?}));
-            return ExitCode::from(util::EXIT_DSC_ERROR);
+        match handle.join() {
+            Ok(result) => {
+                if let Err(code) = result {
+                    return code;
+                }
+            },
+            Err(err) => {
+                error!("{}", t!("main.failedToJoinMain", error = err : {:?}));
+                return ExitCode::from(util::EXIT_DSC_ERROR);
+            }
         }
     }
     #[cfg(not(windows))]

@@ -34,7 +34,6 @@ use dsc_lib::{
 };
 use regex::RegexBuilder;
 use rust_i18n::t;
-use core::convert::AsRef;
 use std::process::ExitCode;
 use std::{
     collections::HashMap,
