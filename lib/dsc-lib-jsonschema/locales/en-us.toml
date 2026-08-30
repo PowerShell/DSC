@@ -5,6 +5,10 @@ unrecognizedSchemaUri = "Unrecognized $schema URI"
 validSchemaUrisAre = "Valid schema URIs are"
 missingTranslation = "unable to retrieve translation for undefined key '#{key}'"
 
+[dsc_repo.recognized_schema_version]
+unrecognizedVersion = "Unrecognized schema version folder"
+validVersionsAre = "Valid schema version folders are"
+
 [transforms.idiomaticize_externally_tagged_enum]
 applies_to = "invalid application of idiomaticize_externally_tagged_enum; missing 'oneOf' keyword in transforming schema: %{transforming_schema}"
 oneOf_array = "invalid application of idiomaticize_externally_tagged_enum; 'oneOf' isn't an array in transforming schema: %{transforming_schema}"

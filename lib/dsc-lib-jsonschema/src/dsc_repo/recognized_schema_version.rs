@@ -6,4 +6,31 @@
 //! checks the git tags for non-prerelease versions of DSC to generate the enum type with all of the
 //! correct values. The enum can be used transparently throughout the rest of the libraries.
 
+use rust_i18n::t;
+use thiserror::Error;
+
 include!(concat!(env!("OUT_DIR"), "/recognized_schema_version.rs"));
+
+/// Defines the error when parsing a string that isn't a recognized schema version folder.
+#[derive(Error, Debug, Clone, PartialEq)]
+#[error(
+    "{t}: {0}. {t2}: {1:?}",
+    t = t!("dsc_repo.recognized_schema_version.unrecognizedVersion"),
+    t2 = t!("dsc_repo.recognized_schema_version.validVersionsAre")
+)]
+pub struct UnrecognizedSchemaVersionError(pub String, pub Vec<String>);
+
+impl std::str::FromStr for RecognizedSchemaVersion {
+    type Err = UnrecognizedSchemaVersionError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let candidate = s.trim();
+        Self::all()
+            .into_iter()
+            .find(|version| version.to_string().eq_ignore_ascii_case(candidate))
+            .ok_or_else(|| UnrecognizedSchemaVersionError(
+                candidate.to_string(),
+                Self::all().iter().map(ToString::to_string).collect()
+            ))
+    }
+}

@@ -12,6 +12,7 @@ use crate::dscerror::DscError;
 use crate::extensions::dscextension::{self, DscExtension, Capability as ExtensionCapability};
 use crate::extensions::extension_manifest::ExtensionManifest;
 use crate::progress::{ProgressBar, ProgressFormat};
+use crate::schemas::dsc_repo::DscRepoSchema;
 use crate::schemas::transforms::idiomaticize_externally_tagged_enum;
 use rust_i18n::t;
 use schemars::JsonSchema;
@@ -863,6 +864,15 @@ pub fn load_adapted_resource_manifest(path: &Path, manifest: &AdaptedDscResource
             "discovery.commandDiscovery.invalidManifestVersion",
             path = path.to_string_lossy(),
             version = manifest.version
+        ));
+    }
+
+    if AdaptedDscResourceManifest::is_deprecated_schema_uri(&manifest.schema_version) {
+        warn!("{}", t!(
+            "discovery.commandDiscovery.adaptedResourceDeprecatedSchemaUri",
+            path = path.to_string_lossy(),
+            uri = manifest.schema_version,
+            default_uri = AdaptedDscResourceManifest::default_schema_id_uri()
         ));
     }
 
