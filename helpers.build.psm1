@@ -3024,6 +3024,11 @@ function Test-PythonAdapterWithPytest {
             
             # Resolve to absolute paths
             $pythonAdapterAbsPath = (Resolve-Path $pythonAdapterRoot).Path
+            $pythonSdkPath = Join-Path $pythonAdapterRoot 'ms-dsc'
+            if (-not (Test-Path $pythonSdkPath)) {
+                throw "Python SDK package directory not found at $pythonSdkPath"
+            }
+            $pythonSdkAbsPath = (Resolve-Path $pythonSdkPath).Path
             $fixtureAbsPath = (Resolve-Path $fixtureDir).Path
             
             # Create a virtual environment for testing to avoid PEP 668 externally-managed-environment errors
@@ -3049,8 +3054,8 @@ function Test-PythonAdapterWithPytest {
             Write-Verbose "Using virtual environment Python: $venvPythonCmd"
             
             # Install ms-dsc package first so it's available as a dependency for the fixture
-            Write-Verbose "Installing ms-dsc package from: $pythonAdapterAbsPath"
-            & $venvPythonCmd -m pip install -e "$pythonAdapterAbsPath" -q --disable-pip-version-check
+            Write-Verbose "Installing ms-dsc package from: $pythonSdkAbsPath"
+            & $venvPythonCmd -m pip install -e "$pythonSdkAbsPath" -q --disable-pip-version-check
             if ($LASTEXITCODE -ne 0) {
                 throw "Python ms-dsc package install failed with exit code $LASTEXITCODE"
             }
@@ -3060,6 +3065,12 @@ function Test-PythonAdapterWithPytest {
             & $venvPythonCmd -m pip install -e "$fixtureAbsPath" -q --disable-pip-version-check
             if ($LASTEXITCODE -ne 0) {
                 throw "Python fixture install failed with exit code $LASTEXITCODE"
+            }
+
+            Write-Verbose "Installing pytest dependencies in test virtual environment"
+            & $venvPythonCmd -m pip install pytest pytest-cov -q --disable-pip-version-check
+            if ($LASTEXITCODE -ne 0) {
+                throw "Python pytest install failed with exit code $LASTEXITCODE"
             }
             
             Write-Verbose "Running pytest with coverage"
