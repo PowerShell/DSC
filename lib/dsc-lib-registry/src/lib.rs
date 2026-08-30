@@ -746,7 +746,7 @@ fn convert_value_data_to_offline(value_data: &RegistryValueData) -> Result<(u32,
 /// Decode a null-terminated UTF-16LE byte slice to a String.
 fn decode_utf16_bytes(data: &[u8]) -> String {
     let u16_slice: Vec<u16> = data.as_chunks::<2>().0.iter()
-        .map(|&chunk| u16::from_le_bytes(chunk))
+        .map(|chunk| u16::from_le_bytes([chunk[0], chunk[1]]))
         .collect();
     // Strip trailing null
     let len = u16_slice.iter().position(|&c| c == 0).unwrap_or(u16_slice.len());
@@ -762,7 +762,7 @@ fn encode_utf16_bytes(s: &str) -> Vec<u8> {
 /// Decode REG_MULTI_SZ: double-null-terminated list of null-terminated UTF-16LE strings.
 fn decode_multi_sz(data: &[u8]) -> Vec<String> {
     let u16_slice: Vec<u16> = data.as_chunks::<2>().0.iter()
-        .map(|&chunk| u16::from_le_bytes(chunk))
+        .map(|chunk| u16::from_le_bytes([chunk[0], chunk[1]]))
         .collect();
     let mut strings = Vec::new();
     let mut start = 0;
@@ -787,6 +787,17 @@ fn encode_multi_sz(strings: &[String]) -> Vec<u8> {
     }
     result.push(0); // final null terminator
     result.iter().flat_map(|&c| c.to_le_bytes()).collect()
+}
+
+#[test]
+fn decode_utf16_bytes_ignores_incomplete_code_unit() {
+    assert_eq!(decode_utf16_bytes(&[b'A', 0, 0xff]), "A");
+}
+
+#[test]
+fn decode_multi_sz_ignores_incomplete_code_unit() {
+    let data = [b'A', 0, 0, 0, 0, 0, 0xff];
+    assert_eq!(decode_multi_sz(&data), vec!["A"]);
 }
 
 #[test]
