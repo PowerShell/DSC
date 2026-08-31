@@ -15,7 +15,11 @@ use crate::{
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
-#[schemars(transform = idiomaticize_string_enum)]
+#[schemars(
+    transform = idiomaticize_string_enum,
+    transform = Kind::transform_export_schema_uris,
+    transform = Kind::transform_schema_docs,
+)]
 #[dsc_repo_schema(base_name = "resourceKind", folder_path = "definitions")]
 pub enum Kind {
     Adapter,
@@ -27,6 +31,10 @@ pub enum Kind {
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
+#[schemars(
+    transform = ResourceManifest::transform_export_schema_uris,
+    transform = ResourceManifest::transform_schema_docs,
+)]
 #[dsc_repo_schema(
     base_name = "manifest",
     folder_path = "resource",
@@ -100,6 +108,10 @@ pub struct ResourceManifest {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(untagged)]
+#[schemars(
+    transform = GetArgKind::transform_export_schema_uris,
+    transform = GetArgKind::transform_schema_docs,
+)]
 #[dsc_repo_schema(base_name = "commandArgs.get", folder_path = "definitions")]
 pub enum GetArgKind {
     /// The argument is a string.
@@ -138,6 +150,10 @@ pub enum GetArgKind {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(untagged)]
+#[schemars(
+    transform = SetDeleteArgKind::transform_export_schema_uris,
+    transform = SetDeleteArgKind::transform_schema_docs,
+)]
 #[dsc_repo_schema(base_name = "commandArgs.setDelete", folder_path = "definitions")]
 pub enum SetDeleteArgKind {
     /// The argument is a string.
@@ -182,6 +198,10 @@ pub enum SetDeleteArgKind {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(untagged)]
+#[schemars(
+    transform = SchemaArgKind::transform_export_schema_uris,
+    transform = SchemaArgKind::transform_schema_docs,
+)]
 #[dsc_repo_schema(base_name = "commandArgs.schema", folder_path = "definitions")]
 pub enum SchemaArgKind {
     /// The argument is a string.
@@ -199,7 +219,11 @@ pub enum SchemaArgKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
-#[schemars(transform = idiomaticize_string_enum)]
+#[schemars(
+    transform = idiomaticize_string_enum,
+    transform = InputKind::transform_schema_docs,
+    transform = InputKind::transform_export_schema_uris,
+)]
 #[dsc_repo_schema(base_name = "inputKind", folder_path = "definitions")]
 pub enum InputKind {
     /// The input is accepted as environmental variables.
@@ -211,6 +235,10 @@ pub enum InputKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[schemars(
+    transform = SchemaKind::transform_export_schema_uris,
+    transform = SchemaKind::transform_schema_docs,
+)]
 #[dsc_repo_schema(base_name = "manifest.schema", folder_path = "resource")]
 pub enum SchemaKind {
     /// The schema is returned by running a command.
@@ -224,6 +252,10 @@ pub enum SchemaKind {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[dsc_repo_schema(base_name = "manifest.exportSchema", folder_path = "definitions")]
 #[serde(rename_all = "camelCase")]
+#[schemars(
+    transform = ExportSchemaKind::transform_export_schema_uris,
+    transform = ExportSchemaKind::transform_schema_docs,
+)]
 pub enum ExportSchemaKind {
     /// The export schema is returned by running a command.
     Command(SchemaCommand),
@@ -232,6 +264,7 @@ pub enum ExportSchemaKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[schemars(inline)]
 pub struct SchemaCommand {
     /// The command to run to get the schema.
     pub executable: String,
@@ -240,7 +273,11 @@ pub struct SchemaCommand {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
-#[schemars(transform = idiomaticize_string_enum)]
+#[schemars(
+    transform = idiomaticize_string_enum,
+    transform = ReturnKind::transform_schema_docs,
+    transform = ReturnKind::transform_export_schema_uris,
+)]
 #[dsc_repo_schema(base_name = "returnKind", folder_path = "definitions")]
 pub enum ReturnKind {
     /// The return JSON is the state of the resource.
@@ -253,6 +290,10 @@ pub enum ReturnKind {
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[dsc_repo_schema(base_name = "manifest.get", folder_path = "resource")]
+#[schemars(
+    transform = GetMethod::transform_export_schema_uris,
+    transform = GetMethod::transform_schema_docs,
+)]
 pub struct GetMethod {
     /// The command to run to get the state of the resource.
     pub executable: String,
@@ -268,6 +309,10 @@ pub struct GetMethod {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[dsc_repo_schema(base_name = "manifest.set", folder_path = "resource")]
+#[schemars(
+    transform = SetMethod::transform_export_schema_uris,
+    transform = SetMethod::transform_schema_docs,
+)]
 pub struct SetMethod {
     /// The command to run to set the state of the resource.
     pub executable: String,
@@ -294,6 +339,10 @@ pub struct SetMethod {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[dsc_repo_schema(base_name = "manifest.test", folder_path = "resource")]
+#[schemars(
+    transform = TestMethod::transform_export_schema_uris,
+    transform = TestMethod::transform_schema_docs,
+)]
 pub struct TestMethod {
     /// The command to run to test the state of the resource.
     pub executable: String,
@@ -311,6 +360,10 @@ pub struct TestMethod {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[dsc_repo_schema(base_name = "manifest.delete", folder_path = "resource")]
+#[schemars(
+    transform = DeleteMethod::transform_export_schema_uris,
+    transform = DeleteMethod::transform_schema_docs,
+)]
 pub struct DeleteMethod {
     /// The command to run to delete the state of the resource.
     pub executable: String,
@@ -325,6 +378,10 @@ pub struct DeleteMethod {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[dsc_repo_schema(base_name = "manifest.validate", folder_path = "resource")]
+#[schemars(
+    transform = ValidateMethod::transform_export_schema_uris,
+    transform = ValidateMethod::transform_schema_docs,
+)]
 pub struct ValidateMethod { // TODO: enable validation via schema or command
     /// The command to run to validate the state of the resource.
     pub executable: String,
@@ -336,6 +393,7 @@ pub struct ValidateMethod { // TODO: enable validation via schema or command
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
+#[schemars(inline)]
 pub enum ExportSchemaOrFiltering {
     Schema(ExportSchemaKind),
     SupportsFiltering(bool),
@@ -343,6 +401,10 @@ pub enum ExportSchemaOrFiltering {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[dsc_repo_schema(base_name = "manifest.export", folder_path = "resource")]
+#[schemars(
+    transform = ExportMethod::transform_export_schema_uris,
+    transform = ExportMethod::transform_schema_docs,
+)]
 pub struct ExportMethod {
     /// The command to run to enumerate instances of the resource.
     pub executable: String,
@@ -359,6 +421,10 @@ pub struct ExportMethod {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[dsc_repo_schema(base_name = "manifest.resolve", folder_path = "resource")]
+#[schemars(
+    transform = ResolveMethod::transform_export_schema_uris,
+    transform = ResolveMethod::transform_schema_docs,
+)]
 pub struct ResolveMethod {
     /// The command to run to enumerate instances of the resource.
     pub executable: String,
@@ -370,6 +436,10 @@ pub struct ResolveMethod {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[dsc_repo_schema(base_name = "manifest.adapter", folder_path = "resource")]
+#[schemars(
+    transform = Adapter::transform_export_schema_uris,
+    transform = Adapter::transform_schema_docs,
+)]
 pub struct Adapter {
     /// The way to list adapter supported resources.
     pub list: Option<ListMethod>,
@@ -379,7 +449,7 @@ pub struct Adapter {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
-#[schemars(transform = idiomaticize_string_enum)]
+#[schemars(inline, transform = idiomaticize_string_enum)]
 pub enum AdapterInputKind {
     /// The adapter accepts full unprocessed configuration.
     #[serde(rename = "full")]
@@ -393,6 +463,7 @@ pub enum AdapterInputKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[schemars(inline)]
 pub struct ListMethod {
     /// The command to run to list resources supported by a group resource.
     pub executable: String,

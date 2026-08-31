@@ -18,7 +18,11 @@ use crate::{
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
-#[schemars(transform = idiomaticize_string_enum)]
+#[schemars(
+    transform = idiomaticize_string_enum,
+    transform = SecurityContextKind::transform_export_schema_uris,
+    transform = SecurityContextKind::transform_schema_docs
+)]
 #[dsc_repo_schema(base_name = "securityContext", folder_path = "executionInformation")]
 pub enum SecurityContextKind {
     Current,
@@ -39,7 +43,11 @@ impl Display for SecurityContextKind {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
-#[schemars(transform = idiomaticize_string_enum)]
+#[schemars(
+    transform = idiomaticize_string_enum,
+    transform = Operation::transform_export_schema_uris,
+    transform = Operation::transform_schema_docs
+)]
 #[dsc_repo_schema(base_name = "operation", folder_path = "executionInformation")]
 pub enum Operation {
     Get,
@@ -62,7 +70,11 @@ impl Display for Operation {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
-#[schemars(transform = idiomaticize_string_enum)]
+#[schemars(
+    transform = idiomaticize_string_enum,
+    transform = ExecutionKind::transform_export_schema_uris,
+    transform = ExecutionKind::transform_schema_docs
+)]
 #[dsc_repo_schema(base_name = "executionType", folder_path = "executionInformation")]
 pub enum ExecutionKind {
     Actual,
@@ -78,7 +90,11 @@ pub struct Process {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
-#[schemars(transform = idiomaticize_externally_tagged_enum)]
+#[schemars(
+    transform = idiomaticize_externally_tagged_enum,
+    transform = RestartRequired::transform_export_schema_uris,
+    transform = RestartRequired::transform_schema_docs
+)]
 #[dsc_repo_schema(base_name = "restartRequired", folder_path = "executionInformation")]
 pub enum RestartRequired {
     System(String),
@@ -88,6 +104,11 @@ pub enum RestartRequired {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
+#[schemars(
+    transform = idiomaticize_string_enum,
+    transform = ResourceDiscoveryMode::transform_export_schema_uris,
+    transform = ResourceDiscoveryMode::transform_schema_docs
+)]
 #[dsc_repo_schema(base_name = "resourceDiscovery", folder_path = "directive")]
 pub enum ResourceDiscoveryMode {
     PreDeployment,
@@ -158,6 +179,10 @@ impl MicrosoftDscMetadata {
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
+#[schemars(
+    transform = ExecutionInformation::transform_export_schema_uris,
+    transform = ExecutionInformation::transform_schema_docs
+)]
 #[dsc_repo_schema(base_name = "executionInformation", folder_path = "config")]
 pub struct ExecutionInformation {
     /// The duration of the configuration operation
@@ -219,6 +244,10 @@ impl ExecutionInformation {
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
+#[schemars(
+    transform = ConfigDirective::transform_export_schema_uris,
+    transform = ConfigDirective::transform_schema_docs
+)]
 #[dsc_repo_schema(base_name = "directive", folder_path = "config")]
 pub struct ConfigDirective {
     /// Indicates if resources are discovered pre-deployment or during deployment
@@ -234,6 +263,10 @@ pub struct ConfigDirective {
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
+#[schemars(
+    transform = ResourceDirective::transform_export_schema_uris,
+    transform = ResourceDirective::transform_schema_docs
+)]
 #[dsc_repo_schema(base_name = "directive", folder_path = "resource")]
 pub struct ResourceDirective {
     /// Specify specific adapter type used for implicit operations
@@ -245,6 +278,10 @@ pub struct ResourceDirective {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[schemars(
+    transform = Metadata::transform_export_schema_uris,
+    transform = Metadata::transform_schema_docs
+)]
 #[dsc_repo_schema(base_name = "document.metadata", folder_path = "config")]
 pub struct Metadata {
     #[serde(rename = "Microsoft.DSC", skip_serializing_if = "Option::is_none")]
@@ -254,6 +291,10 @@ pub struct Metadata {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[schemars(
+    transform = UserFunction::transform_export_schema_uris,
+    transform = UserFunction::transform_schema_docs
+)]
 #[dsc_repo_schema(base_name = "document.function", folder_path = "config")]
 pub struct UserFunction {
     pub namespace: String,
@@ -261,6 +302,10 @@ pub struct UserFunction {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[schemars(
+    transform = UserFunctionDefinition::transform_export_schema_uris,
+    transform = UserFunctionDefinition::transform_schema_docs
+)]
 #[dsc_repo_schema(base_name = "definition", folder_path = "definitions/functions/user")]
 pub struct UserFunctionDefinition {
     pub parameters: Option<Vec<UserFunctionParameter>>,
@@ -268,6 +313,10 @@ pub struct UserFunctionDefinition {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[schemars(
+    transform = UserFunctionParameter::transform_export_schema_uris,
+    transform = UserFunctionParameter::transform_schema_docs
+)]
 #[dsc_repo_schema(base_name = "parameter", folder_path = "definitions/functions/user")]
 pub struct UserFunctionParameter {
     pub name: String,
@@ -275,6 +324,10 @@ pub struct UserFunctionParameter {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[schemars(
+    transform = UserFunctionOutput::transform_export_schema_uris,
+    transform = UserFunctionOutput::transform_schema_docs
+)]
 #[dsc_repo_schema(base_name = "output", folder_path = "definitions/functions/user")]
 pub struct UserFunctionOutput {
     pub r#type: DataType,
@@ -290,6 +343,10 @@ pub enum ValueOrCopy {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
+#[schemars(
+    transform = Output::transform_export_schema_uris,
+    transform = Output::transform_schema_docs
+)]
 #[dsc_repo_schema(base_name = "document.output", folder_path = "config")]
 pub struct Output {
     pub condition: Option<String>,
@@ -300,6 +357,10 @@ pub struct Output {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
+#[schemars(
+    transform = Configuration::transform_export_schema_uris,
+    transform = Configuration::transform_schema_docs
+)]
 #[dsc_repo_schema(
     base_name = "document",
     folder_path = "config",
@@ -334,6 +395,10 @@ pub struct Configuration {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
+#[schemars(
+    transform = Parameter::transform_export_schema_uris,
+    transform = Parameter::transform_schema_docs
+)]
 #[dsc_repo_schema(base_name = "document.parameter", folder_path = "config")]
 pub struct Parameter {
     #[serde(rename = "type")]
@@ -357,7 +422,11 @@ pub struct Parameter {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
-#[schemars(transform = idiomaticize_string_enum)]
+#[schemars(
+    transform = idiomaticize_string_enum,
+    transform = DataType::transform_export_schema_uris,
+    transform = DataType::transform_schema_docs
+)]
 #[dsc_repo_schema(base_name = "dataTypes", folder_path = "definitions/parameters")]
 pub enum DataType {
     #[serde(rename = "string")]
@@ -429,6 +498,10 @@ pub struct Copy {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
+#[schemars(
+    transform = Resource::transform_export_schema_uris,
+    transform = Resource::transform_schema_docs
+)]
 #[dsc_repo_schema(base_name = "document.resource", folder_path = "config")]
 pub struct Resource {
     #[serde(skip_serializing_if = "Option::is_none")]
