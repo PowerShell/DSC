@@ -4,7 +4,7 @@
 use crate::server::mcp_server::McpServer;
 use dsc_lib::{
     configure::{
-        config_doc::Configuration,
+        config_doc::{Configuration, ExecutionKind},
         config_result::{
             ConfigurationExportResult, ConfigurationGetResult, ConfigurationSetResult,
             ConfigurationTestResult,
@@ -52,14 +52,19 @@ pub struct InvokeDscConfigRequest {
         description = "Optional parameters to pass to the configuration as a YAML string"
     )]
     pub parameters: Option<String>,
+    #[schemars(
+        description = "When true and operation is 'set', simulate the change (what-if / dry-run) instead of applying it. The result includes 'metadata.Microsoft.DSC.executionType' = 'whatIf'. Only valid with the 'set' operation."
+    )]
+    #[serde(default)]
+    pub what_if: Option<bool>,
 }
 
 #[tool_router(router = invoke_dsc_config_router, vis = "pub")]
 impl McpServer {
     #[tool(
-        description = "Invoke a DSC configuration operation (Get, Set, Test, Export) with optional parameters",
+        description = "Invoke a DSC configuration operation (Get, Set, Test, Export) with optional parameters. Set 'what_if' to true to preview a Set without applying changes.",
         annotations(
-            title = "Invoke a DSC configuration operation (Get, Set, Test, Export) with optional parameters",
+            title = "Invoke a DSC configuration operation (Get, Set, Test, Export) with optional parameters and what-if support",
             read_only_hint = false,
             destructive_hint = true,
             idempotent_hint = true,
@@ -72,6 +77,7 @@ impl McpServer {
             operation,
             configuration,
             parameters,
+            what_if,
         }): Parameters<InvokeDscConfigRequest>,
     ) -> Result<Json<InvokeDscConfigResponse>, McpError> {
         let result = task::spawn_blocking(move || {
@@ -126,6 +132,16 @@ impl McpServer {
             };
 
             configurator.context.dsc_version = Some(env!("CARGO_PKG_VERSION").to_string());
+
+            if what_if.unwrap_or(false) {
+                if !matches!(operation, ConfigOperation::Set) {
+                    return Err(McpError::invalid_params(
+                        t!("server.invoke_dsc_config.whatIfOnlySet"),
+                        None,
+                    ));
+                }
+                configurator.context.execution_type = ExecutionKind::WhatIf;
+            }
 
             let parameters_value: Option<serde_json::Value> = if let Some(params_str) = parameters {
                 let params_json = match serde_yaml::from_str::<serde_yaml::Value>(&params_str) {

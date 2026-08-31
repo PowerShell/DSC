@@ -429,6 +429,153 @@ Describe 'Tests for DSC server' {
         $response.result.structuredContent.result.success | Should -Be $true -Because $because
     }
 
+    It 'Calling invoke_dsc_resource for set operation with what_if uses native what-if' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 30
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_resource"
+                arguments = @{
+                    operation       = 'set'
+                    resource_type   = 'Test/WhatIfArgKind'
+                    properties_json = (@{ executionType = 'Actual' } | ConvertTo-Json -Depth 20)
+                    what_if         = $true
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 30
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        $response.error | Should -BeNullOrEmpty -Because $because
+        $response.result.structuredContent.result.afterState.executionType | Should -BeExactly 'WhatIf' -Because $because
+    }
+
+    It 'Calling invoke_dsc_resource for set operation without what_if performs actual execution' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 31
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_resource"
+                arguments = @{
+                    operation       = 'set'
+                    resource_type   = 'Test/WhatIfArgKind'
+                    properties_json = (@{ executionType = 'Actual' } | ConvertTo-Json -Depth 20)
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 31
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        $response.error | Should -BeNullOrEmpty -Because $because
+        $response.result.structuredContent.result.afterState.executionType | Should -BeExactly 'Actual' -Because $because
+    }
+
+    It 'Calling invoke_dsc_resource for set operation with what_if uses synthetic what-if' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 32
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_resource"
+                arguments = @{
+                    operation       = 'set'
+                    resource_type   = 'Microsoft.DSC.Debug/Echo'
+                    properties_json = (@{ output = 'what-if test' } | ConvertTo-Json -Depth 20)
+                    what_if         = $true
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 32
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        $response.error | Should -BeNullOrEmpty -Because $because
+        $response.result.structuredContent.result.beforeState | Should -Not -BeNullOrEmpty -Because $because
+        $response.result.structuredContent.result.afterState.output | Should -BeExactly 'what-if test' -Because $because
+    }
+
+    It 'Calling invoke_dsc_resource for delete operation with what_if returns native what-if metadata' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 33
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_resource"
+                arguments = @{
+                    operation       = 'delete'
+                    resource_type   = 'Test/WhatIfDelete'
+                    properties_json = (@{ _exist = $false } | ConvertTo-Json -Depth 20)
+                    what_if         = $true
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 33
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        $response.error | Should -BeNullOrEmpty -Because $because
+        $response.result.structuredContent.result.success | Should -BeNullOrEmpty -Because $because
+        $response.result.structuredContent.result._metadata.whatIf | Should -Contain 'Delete what-if message 1' -Because $because
+        $response.result.structuredContent.result._metadata.whatIf | Should -Contain 'Delete what-if message 2' -Because $because
+    }
+
+    It 'Calling invoke_dsc_resource for delete operation with what_if returns synthetic what-if test result' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 34
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_resource"
+                arguments = @{
+                    operation       = 'delete'
+                    resource_type   = 'Test/Delete'
+                    properties_json = (@{ _exist = $false } | ConvertTo-Json -Depth 20)
+                    what_if         = $true
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 34
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        $response.error | Should -BeNullOrEmpty -Because $because
+        $response.result.structuredContent.result.success | Should -BeNullOrEmpty -Because $because
+        $response.result.structuredContent.result.desiredState._exist | Should -BeFalse -Because $because
+        $response.result.structuredContent.result.actualState | Should -Not -BeNullOrEmpty -Because $because
+    }
+
+    It 'Calling invoke_dsc_resource with what_if for unsupported operation: <operation>' -TestCases @(
+        @{ operation = 'get' }
+        @{ operation = 'test' }
+        @{ operation = 'export' }
+    ) {
+        param($operation)
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 35
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_resource"
+                arguments = @{
+                    operation       = $operation
+                    resource_type   = 'Test/Operation'
+                    properties_json = (@{ hello = 'World'; action = $operation } | ConvertTo-Json -Depth 20)
+                    what_if         = $true
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 35
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        $response.error.code | Should -Be -32602 -Because $because
+        $response.error.message | Should -Match 'what_if' -Because $because
+    }
+
     It 'Calling invoke_dsc_config for operation: <operation>' -TestCases @(
         @{ operation = 'get' }
         @{ operation = 'set' }
@@ -469,6 +616,129 @@ Describe 'Tests for DSC server' {
         $response.result.structuredContent.result.results | Should -Not -BeNullOrEmpty -Because $because
         $response.result.structuredContent.result.results.Count | Should -Be 1 -Because $because
         $response.result.structuredContent.result.results[0].name | Should -Be 'TestOperation' -Because $because
+    }
+
+    It 'Calling invoke_dsc_config for set operation with what_if: <what_if>' -TestCases @(
+        @{ what_if = $true;  expectedExecutionType = 'whatIf'; expectedState = 'WhatIf' }
+        @{ what_if = $false; expectedExecutionType = 'actual'; expectedState = 'Actual' }
+    ) {
+        param($what_if, $expectedExecutionType, $expectedState)
+
+        $config = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+            resources = @(
+                @{
+                    name       = 'WhatIf'
+                    type       = 'Test/WhatIf'
+                    properties = @{
+                        executionType = 'Actual'
+                    }
+                }
+            )
+        }
+
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 36
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_config"
+                arguments = @{
+                    operation     = 'set'
+                    configuration = ($config | ConvertTo-Json -Depth 20)
+                    what_if       = $what_if
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 36
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        $response.error | Should -BeNullOrEmpty -Because $because
+        $response.result.structuredContent.result.hadErrors | Should -BeFalse -Because $because
+        $response.result.structuredContent.result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly $expectedExecutionType -Because $because
+        $response.result.structuredContent.result.results.Count | Should -Be 1 -Because $because
+        $response.result.structuredContent.result.results[0].result.afterState.executionType | Should -BeExactly $expectedState -Because $because
+    }
+
+    It 'Calling invoke_dsc_config for set operation with what_if surfaces delete what-if metadata' {
+        $config = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+            resources = @(
+                @{
+                    name       = 'WhatIfDelete'
+                    type       = 'Test/WhatIfDelete'
+                    properties = @{
+                        _exist = $false
+                    }
+                }
+            )
+        }
+
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 37
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_config"
+                arguments = @{
+                    operation     = 'set'
+                    configuration = ($config | ConvertTo-Json -Depth 20)
+                    what_if       = $true
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 37
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        $response.error | Should -BeNullOrEmpty -Because $because
+        $response.result.structuredContent.result.hadErrors | Should -BeFalse -Because $because
+        $response.result.structuredContent.result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'whatIf' -Because $because
+        $response.result.structuredContent.result.results[0].metadata.whatIf[0] | Should -BeExactly 'Delete what-if message 1' -Because $because
+        $response.result.structuredContent.result.results[0].executionInformation.whatIf[1] | Should -BeExactly 'Delete what-if message 2' -Because $because
+    }
+
+    It 'Calling invoke_dsc_config with what_if for unsupported operation: <operation>' -TestCases @(
+        @{ operation = 'get' }
+        @{ operation = 'test' }
+        @{ operation = 'export' }
+    ) {
+        param($operation)
+
+        $config = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+            resources = @(
+                @{
+                    name       = 'TestOperation'
+                    type       = 'Test/Operation'
+                    properties = @{
+                        hello  = 'Hello from config'
+                        action = $operation
+                    }
+                }
+            )
+        }
+
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 38
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_config"
+                arguments = @{
+                    operation     = $operation
+                    configuration = ($config | ConvertTo-Json -Depth 20)
+                    what_if       = $true
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 38
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        $response.error.code | Should -Be -32602 -Because $because
+        $response.error.message | Should -Match 'what_if' -Because $because
     }
 
     It 'Calling invoke_dsc_config for export operation' {

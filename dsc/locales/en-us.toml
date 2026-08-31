@@ -102,6 +102,7 @@ invalidParameters = "Invalid parameters"
 failedConvertJson = "Failed to convert to JSON"
 failedSerialize = "Failed to serialize configuration"
 failedSetParameters = "Failed to set parameters"
+whatIfOnlySet = "what_if is only supported for the 'set' operation"
 
 [server.invoke_dsc_expression]
 parserInitializationFailed = "Failed to initialize parser: %{error}"
@@ -113,6 +114,7 @@ functionInvocationFailed = "Function '%{function}' invocation failed: %{error}"
 
 [server.invoke_dsc_resource]
 resourceNotFound = "Resource type '%{resource}' does not exist"
+whatIfNotSupported = "what_if is only supported for the 'set' and 'delete' operations"
 
 [server.list_dsc_functions]
 invalidNamePattern = "Invalid function name pattern '%{pattern}'"
