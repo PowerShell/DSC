@@ -161,11 +161,8 @@ use crate::{
 #[serde(untagged, try_from = "String", into = "String")]
 #[schemars(!try_from, !into)]
 #[schemars(
-    title = schema_i18n!("title"),
-    description = schema_i18n!("description"),
-    extend(
-        "markdownDescription" = schema_i18n!("markdownDescription")
-    )
+    transform = ResourceVersion::transform_export_schema_uris,
+    transform = ResourceVersion::transform_schema_docs_strict,
 )]
 pub enum ResourceVersion {
     /// Defines the resource's version as a semantic version, containing an inner [`SemanticVersion`].
