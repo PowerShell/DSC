@@ -75,6 +75,15 @@ changes since the last release, see the [diff on GitHub][unreleased].
     for the `v3.0.0.0-alpha.5` release. Leave the release links under the release section.
 -->
 
+### Added
+
+- Added what-if support to the MCP server tools. The `invoke_dsc_config` tool now accepts a
+  `what_if` option for the `set` operation, and the `invoke_dsc_resource` tool accepts `what_if`
+  for the `set` and `delete` operations. This mirrors the `--what-if` flag on the `dsc config set`,
+  `dsc resource set`, and `dsc resource delete` commands, enabling AI agents to preview changes
+  before applying them. Passing `what_if` with an operation that doesn't support it returns an
+  invalid parameters error.
+
 ## [v3.2.2][release-v3.2.2] - 2026-06-16
 
 This section includes a summary of changes for the `3.2.2` release. For the full list of changes
