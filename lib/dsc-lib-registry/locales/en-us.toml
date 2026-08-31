@@ -18,6 +18,7 @@ unsupportedValueDataType = "Unsupported registry value data type"
 whatIfCreateKey = "Key '%{subkey}' not found, would create it"
 whatIfDeleteValue = "Would delete value '%{value_name}'"
 whatIfDeleteSubkey = "Would delete subkey '%{subkey_name}'"
+whatIfDeleteNonexistingKey = "Key '%{subkey}' not found, would do nothing"
 
 [offreg]
 loadFailed = "Failed to load offreg.dll"
