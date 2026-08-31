@@ -480,9 +480,10 @@ pub trait DscRepoSchema : JsonSchema {
             Err(e) => missing_translation_errors.push(e),
         }
 
-        if !missing_translation_errors.is_empty() {
-            panic!("missing translation errors: {:?}", missing_translation_errors);
-        }
+        assert!(
+            missing_translation_errors.is_empty(),
+            "missing translation errors: {missing_translation_errors:?}"
+        );
     }
 }
 
