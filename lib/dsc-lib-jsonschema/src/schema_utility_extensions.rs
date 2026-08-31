@@ -1785,6 +1785,88 @@ pub trait SchemaUtilityExtensions {
     /// assert_eq!(actual, expected);
     /// ```
     fn canonicalize_refs_and_defs_for_bundled_resources(&mut self);
+    //************************ title keyword functions ***********************//
+    /// Retrieves the value of the `title` keyword from the schema, if it exists.
+    /// 
+    /// # Returns
+    /// 
+    /// An [`Option<&str>`] containing the value of the `title` keyword if it exists, or [`None`]
+    /// otherwise.
+    fn get_title(&self) -> Option<&str>;
+    /// Sets the value of the `title` keyword in the schema.
+    /// 
+    /// This function sets the value of the `title` keyword in the schema and returns the previous
+    /// value as a [`String`], if it was already defined.
+    /// 
+    /// # Arguments
+    /// 
+    /// - `title` - The value to set for the `title` keyword.
+    /// 
+    /// # Returns
+    /// 
+    /// An [`Option<String>`] containing the previous value of the `title` keyword if it was
+    /// already defined, or [`None`] otherwise.
+    /// 
+    /// # Example
+    /// 
+    /// This example shows how you can use this method to define and override the `title` keyword
+    /// in a schema.
+    /// 
+    /// ```
+    /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
+    /// use schemars::json_schema;
+    /// 
+    /// let ref mut schema = json_schema!({"type": "string"});
+    /// assert_eq!(schema.set_title("Example Title"), None);
+    /// assert_eq!(schema.set_title("New example title"), Some("Example Title".to_string()));
+    /// ```
+    fn set_title(&mut self, title: &str) -> Option<String>;
+    //********************* description keyword functions ********************//
+    /// Retrieves the value of the `description` keyword from the schema, if it exists.
+    /// 
+    /// # Returns
+    /// 
+    /// An [`Option<&str>`] containing the value of the `description` keyword if it exists, or
+    /// [`None`] otherwise.
+    /// 
+    /// # Example
+    /// 
+    /// This example shows how you can use this method to retrieve the `description` keyword from a
+    /// schema.
+    /// 
+    /// ```
+    /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
+    /// use schemars::json_schema;
+    /// 
+    /// let schema = json_schema!({"type": "string", "description": "An example description"});
+    /// assert_eq!(schema.get_description(), Some("An example description"));
+    /// ```
+    fn get_description(&self) -> Option<&str>;
+    /// Sets the value of the `description` keyword in the schema.
+    /// 
+    /// # Arguments
+    /// 
+    /// - `description` - The value to set for the `description` keyword.
+    /// 
+    /// # Returns
+    /// 
+    /// An [`Option<String>`] containing the previous value of the `description` keyword if it was
+    /// already defined, or [`None`] otherwise.
+    /// 
+    /// # Example
+    /// 
+    /// This example shows how you can use this method to define and override the `description`
+    /// keyword in a schema.
+    /// 
+    /// ```
+    /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
+    /// use schemars::json_schema;
+    /// 
+    /// let ref mut schema = json_schema!({"type": "string"});
+    /// assert_eq!(schema.set_description("An example description"), None);
+    /// assert_eq!(schema.set_description("A new description"), Some("An example description".to_string()));
+    /// ```
+    fn set_description(&mut self, description: &str) -> Option<String>;
 }
 
 impl SchemaUtilityExtensions for Schema {
@@ -2250,5 +2332,20 @@ impl SchemaUtilityExtensions for Schema {
             }
             self.rename_defs_subschema_for_reference(&reference_lookup, bundled_id);
         }
+    }
+    fn get_title(&self) -> Option<&str> {
+        self.get_keyword_as_str("title")
+    }
+    fn set_title(&mut self, title: &str) -> Option<String> {
+        self
+            .insert("title".to_string(), Value::String(title.to_string()))
+            .and_then(|v| v.as_str().map(std::string::ToString::to_string))
+    }
+    fn get_description(&self) -> Option<&str> {
+        self.get_keyword_as_str("description")
+    }
+    fn set_description(&mut self, description: &str) -> Option<String> {
+        self.insert("description".to_string(), Value::String(description.to_string()))
+            .and_then(|v| v.as_str().map(std::string::ToString::to_string))
     }
 }
