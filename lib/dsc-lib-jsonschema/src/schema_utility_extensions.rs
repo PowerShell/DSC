@@ -839,6 +839,105 @@ pub trait SchemaUtilityExtensions {
     /// ```
     fn set_id(&mut self, id_uri: &str) -> Option<String>;
 
+    //********************** $schema keyword functions ***********************//
+    /// Retrieves the `$schema` keyword and returns it as a string if it exists.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use schemars::json_schema;
+    /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
+    ///
+    /// let ref schema = json_schema!({
+    ///     "$schema": "https://json-schema.org/draft/2020-12/schema"
+    /// });
+    ///
+    /// assert_eq!(
+    ///     schema.get_meta_schema(),
+    ///     Some("https://json-schema.org/draft/2020-12/schema")
+    /// );
+    /// ```
+    fn get_meta_schema(&self) -> Option<&str>;
+    /// Retrieves the `$schema` keyword and returns it as a [`Url`] if it exists.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use schemars::json_schema;
+    /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
+    /// use url::Url;
+    ///
+    /// let ref schema = json_schema!({
+    ///     "$schema": "https://json-schema.org/draft/2020-12/schema",
+    ///     "type": "string"
+    /// });
+    ///
+    /// assert_eq!(
+    ///     schema.get_meta_schema_as_url(),
+    ///     Some(Url::parse("https://json-schema.org/draft/2020-12/schema").unwrap())
+    /// );
+    /// ```
+    /// 
+    /// ```rust
+    /// use schemars::json_schema;
+    /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
+    ///
+    /// let ref schema = json_schema!({ "type": "string" });
+    ///
+    /// assert_eq!(
+    ///     schema.get_meta_schema_as_url(),
+    ///     None)
+    /// );
+    /// ```
+    fn get_meta_schema_as_url(&self) -> Option<Url>;
+    /// Checks if the `$schema` keyword is present in the schema.
+    /// 
+    /// # Examples
+    ///
+    /// ```rust
+    /// use schemars::json_schema;
+    /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
+    ///
+    /// let ref schema = json_schema!({
+    ///     "$schema": "https://json-schema.org/draft/2020-12/schema",
+    ///     "type": "string"
+    /// });
+    ///
+    /// assert_eq!(
+    ///     schema.has_meta_schema_keyword(),
+    ///     true
+    /// );
+    /// ```
+    /// 
+    /// ```rust
+    /// # use schemars::json_schema;
+    /// # use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
+    ///
+    /// let ref schema = json_schema!({"type": "string"});
+    ///
+    /// assert_eq!(
+    ///     schema.has_meta_schema_keyword(),
+    ///     false
+    /// );
+    /// ```
+    fn has_meta_schema_keyword(&self) -> bool;
+    /// Sets the `$schema` keyword to the provided URI and returns the previous value if it existed.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use schemars::json_schema;
+    /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
+    ///
+    /// let mut schema = json_schema!({ "type": "string" });
+    /// let previous = schema.set_meta_schema("https://json-schema.org/draft/2020-12/schema");
+    /// assert_eq!(previous, None);
+    /// assert_eq!(
+    ///     schema.get_meta_schema_as_url(),
+    ///     Some(url::Url::parse("https://json-schema.org/draft/2020-12/schema").unwrap())
+    /// );
+    /// ```
+    fn set_meta_schema(&mut self, meta_schema_uri: &str) -> Option<String>;
     //*********************** $defs keyword functions ************************//
     /// Retrieves the `$defs` keyword and returns the object if it exists.
     ///
@@ -2148,6 +2247,19 @@ impl SchemaUtilityExtensions for Schema {
 
         self.insert("$id".to_string(), Value::String(id_uri.to_string()))
             .and(old_id)
+    }
+    fn get_meta_schema(&self) -> Option<&str> {
+        self.get_keyword_as_str("$schema")
+    }
+    fn get_meta_schema_as_url(&self) -> Option<Url> {
+        self.get_meta_schema().and_then(|s| Url::parse(s).ok())
+    }
+    fn has_meta_schema_keyword(&self) -> bool {
+        self.get("$schema").is_some()
+    }
+    fn set_meta_schema(&mut self, meta_schema_uri: &str) -> Option<String> {
+        self.insert("$schema".to_string(), Value::String(meta_schema_uri.to_string()))
+            .and_then(|v| v.as_str().map(std::string::ToString::to_string))
     }
     fn get_properties(&self) -> Option<&Map<String, Value>> {
         self.get_keyword_as_object("properties")
