@@ -886,7 +886,7 @@ pub trait SchemaUtilityExtensions {
     ///
     /// assert_eq!(
     ///     schema.get_meta_schema_as_url(),
-    ///     None)
+    ///     None
     /// );
     /// ```
     fn get_meta_schema_as_url(&self) -> Option<Url>;

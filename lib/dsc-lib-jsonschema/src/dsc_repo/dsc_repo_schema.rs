@@ -372,10 +372,8 @@ pub trait DscRepoSchema : JsonSchema {
     /// The first definition shows how you must manually define the `$schema` and `$id` fields
     /// without this transformer.
     /// 
-    /// ```
-    /// # use schemars::JsonSchema;
-    /// # use dsc_lib_jsonschema::dsc_repo::DscRepoSchema;
-    /// 
+    /// ```ignore
+    /// # // Ignore the example because derive doesn't work in the crate doc tests
     /// #[derive(Debug, Clone, JsonSchema, DscRepoSchema)]
     /// #[dsc_repo_schema(base_name = "struct", folder_path = "examples")]
     /// #[schemars(
@@ -387,30 +385,18 @@ pub trait DscRepoSchema : JsonSchema {
     /// struct ExampleStruct {
     ///     pub field: String,
     /// }
-    /// 
-    /// let schema = schema_for!(ExampleStruct);
-    /// 
-    /// assert_eq!(schema.get_meta_schema(), Some(ExampleStruct::default_export_meta_schema_uri()));
-    /// assert_eq!(schema.get_id(), Some(ExampleStruct::default_export_schema_id_uri()));
     /// ```
     /// 
     /// With this transform, the definition is much shorter:
     /// 
-    /// ```
-    /// # use schemars::JsonSchema;
-    /// # use dsc_lib_jsonschema::dsc_repo::DscRepoSchema;
-    /// 
+    /// ```ignore
+    /// # // Ignore the example because derive doesn't work in the crate doc tests
     /// #[derive(Debug, Clone, JsonSchema, DscRepoSchema)]
     /// #[dsc_repo_schema(base_name = "struct", folder_path = "examples")]
     /// #[schemars(transform = "ExampleStruct::transform_export_schema_uris")]
     /// struct ExampleStruct {
     ///     pub field: String,
     /// }
-    /// 
-    /// let schema = schema_for!(ExampleStruct);
-    /// 
-    /// assert_eq!(schema.get_meta_schema(), Some(ExampleStruct::default_export_meta_schema_uri()));
-    /// assert_eq!(schema.get_id(), Some(ExampleStruct::default_export_schema_id_uri()));
     /// ```
     fn transform_export_schema_uris(schema: &mut schemars::Schema) {
         schema.set_meta_schema(&Self::default_export_meta_schema_uri());
