@@ -8,7 +8,7 @@ use rust_i18n::t;
 use serde::Deserialize;
 use serde_json::{Map, Value};
 use std::{collections::HashMap, env, path::Path, process::Stdio};
-use crate::{configure::{config_doc::{ExecutionKind, SecurityContextKind}, config_result::{ResourceGetResult, ResourceTestResult}, schema_cache::{get_resource_schema, RESOURCE_SCHEMAS}}, dscresources::resource_manifest::{ExportSchemaKind, ExportSchemaOrFiltering, SchemaArgKind}, types::ExitCodesMap, util::canonicalize_which};
+use crate::{configure::{config_doc::{ExecutionKind, SecurityContextKind}, config_result::{ResourceGetResult, ResourceTestResult}, schema_cache::{RESOURCE_SCHEMAS, get_resource_schema}}, dscresources::{dscresource::Operation, resource_manifest::{ExportSchemaKind, ExportSchemaOrFiltering, SchemaArgKind}}, types::ExitCodesMap, util::canonicalize_which};
 use crate::dscerror::DscError;
 use crate::locked_insert;
 use super::{
@@ -31,8 +31,9 @@ pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
 ///
 /// # Arguments
 ///
-/// * `resource` - The resource manifest
+/// * `resource` - The resource
 /// * `filter` - The filter to apply to the resource in JSON
+/// * `target_resource` - The target resource, if applicable
 ///
 /// # Errors
 ///
@@ -50,7 +51,7 @@ pub fn invoke_get(resource: &DscResource, filter: &str, target_resource: Option<
         Some(target) => target,
         None => resource
     };
-    validate_security_context(&get.require_security_context, &command_resource.type_name, "get")?;
+    validate_security_context(target_resource, &get.require_security_context, &command_resource.type_name, &Operation::Get)?;
     let args = process_get_args(get.args.as_ref(), filter, command_resource);
     if !filter.is_empty() {
         verify_json_from_manifest(resource, filter, target_resource)?;
@@ -86,9 +87,11 @@ pub fn invoke_get(resource: &DscResource, filter: &str, target_resource: Option<
 ///
 /// # Arguments
 ///
-/// * `resource` - The resource manifest
+/// * `resource` - The resource
 /// * `desired` - The desired state of the resource in JSON
 /// * `skip_test` - If true, skip the test and directly invoke the set operation
+/// * `execution_type` - Whether this is an actual set or what-if
+/// * `target_resource` - The target resource, if applicable
 ///
 /// # Errors
 ///
@@ -137,7 +140,7 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, execut
     let Some(set) = set_method.as_ref() else {
         return Err(DscError::NotImplemented("set".to_string()));
     };
-    validate_security_context(&set.require_security_context, &command_resource.type_name, "set")?;
+    validate_security_context(target_resource, &set.require_security_context, &command_resource.type_name, &Operation::Set)?;
     verify_json_from_manifest(resource, desired, target_resource)?;
 
     // if resource doesn't implement a pre-test, we execute test first to see if a set is needed
@@ -182,7 +185,7 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, execut
         Some(r) => r,
         None => resource,
     };
-    validate_security_context(&get.require_security_context, &command_resource.type_name, "get")?;
+    validate_security_context(target_resource, &get.require_security_context, &command_resource.type_name, &Operation::Get)?;
     let args = process_get_args(get.args.as_ref(), desired, command_resource);
     let command_input = get_command_input(get.input.as_ref(), desired)?;
 
@@ -317,6 +320,7 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, execut
 ///
 /// * `resource` - The resource manifest for the command resource.
 /// * `expected` - The expected state of the resource in JSON.
+/// * `target_resource` - The target resource, if applicable.
 ///
 /// # Errors
 ///
@@ -337,7 +341,7 @@ pub fn invoke_test(resource: &DscResource, expected: &str, target_resource: Opti
         Some(r) => r,
         None => resource,
     };
-    validate_security_context(&test.require_security_context, &command_resource.type_name, "test")?;
+    validate_security_context(target_resource, &test.require_security_context, &command_resource.type_name, &Operation::Test)?;
     let args = process_get_args(test.args.as_ref(), expected, command_resource);
     let command_input = get_command_input(test.input.as_ref(), expected)?;
 
@@ -487,6 +491,7 @@ fn invoke_synthetic_test(resource: &DscResource, expected: &str, target_resource
 /// * `resource` - The resource manifest for the command resource.
 /// * `cwd` - The current working directory.
 /// * `filter` - The filter to apply to the resource in JSON.
+/// * `target_resource` - The target resource, if applicable.
 /// * `execution_type` - Whether this is an actual delete or what-if.
 ///
 /// # Errors
@@ -506,7 +511,7 @@ pub fn invoke_delete(resource: &DscResource, filter: &str, target_resource: Opti
         Some(r) => r,
         None => resource,
     };
-    validate_security_context(&delete.require_security_context, &command_resource.type_name, "delete")?;
+    validate_security_context(target_resource, &delete.require_security_context, &command_resource.type_name, &Operation::Delete)?;
     let (args, supports_whatif) = process_set_delete_args(delete.args.as_ref(), filter, command_resource, execution_type);
     if execution_type == &ExecutionKind::WhatIf && !supports_whatif {
         // perform a synthetic what-if by calling test and wrapping the TestResult in DeleteResultKind::SyntheticWhatIf
@@ -533,6 +538,7 @@ pub fn invoke_delete(resource: &DscResource, filter: &str, target_resource: Opti
 /// * `resource` - The resource manifest for the command resource.
 /// * `cwd` - The current working directory.
 /// * `config` - The configuration to validate in JSON.
+/// * `target_resource` - The target resource, if applicable.
 ///
 /// # Returns
 ///
@@ -569,6 +575,7 @@ pub fn invoke_validate(resource: &DscResource, config: &str, target_resource: Op
 /// # Arguments
 ///
 /// * `resource` - The resource manifest
+/// * `target_resource` - The target resource, if applicable
 ///
 /// # Errors
 ///
@@ -679,7 +686,8 @@ fn verify_with_export_schema(input: &str, resource: &DscResource, target_resourc
 /// * `resource` - The resource manifest
 /// * `cwd` - The current working directory
 /// * `input` - Input to the command
-///
+/// * `target_resource` - The target resource, if applicable
+/// 
 /// # Returns
 ///
 /// * `ExportResult` - The result of the export operation
@@ -721,7 +729,7 @@ pub fn invoke_export(resource: &DscResource, input: Option<&str>, target_resourc
         Some(r) => r,
         None => resource,
     };
-    validate_security_context(&export.require_security_context, &command_resource.type_name, "export")?;
+    validate_security_context(target_resource, &export.require_security_context, &command_resource.type_name, &Operation::Export)?;
 
     if let Some(input) = input {
         if !input.is_empty() {
@@ -1326,7 +1334,47 @@ pub fn log_stderr_line<'a>(process_id: &u32, trace_line: &'a str) -> &'a str
     ""
 }
 
-fn validate_security_context(required_security_context: &Option<SecurityContextKind>, resource_type: &str, operation: &str) -> Result<(), DscError> {
+fn validate_security_context(target_resource: Option<&DscResource>, required_security_context: &Option<SecurityContextKind>, resource_type: &str, operation: &Operation) -> Result<(), DscError> {
+    if let Some(resource) = target_resource && let Some(adapted_manifest) = &resource.adapted_manifest {
+        let require_security_context = match operation {
+            Operation::Get => {
+                if let Some(get) = &adapted_manifest.get {
+                    &get.require_security_context
+                } else {
+                    return Ok(()); // if get is not defined, no security context validation needed
+                }
+            },
+            Operation::Set => {
+                if let Some(set) = &adapted_manifest.set {
+                    &set.require_security_context
+                } else {
+                    return Ok(()); // if set is not defined, no security context validation needed
+                }
+            },
+            Operation::Delete => {
+                if let Some(delete) = &adapted_manifest.delete {
+                    &delete.require_security_context
+                } else {
+                    return Ok(()); // if delete is not defined, no security context validation needed
+                }
+            },
+            Operation::Test => {
+                if let Some(test) = &adapted_manifest.test {
+                    &test.require_security_context
+                } else {
+                    return Ok(()); // if test is not defined, no security context validation needed
+                }
+            },
+            Operation::Export => {
+                if let Some(export) = &adapted_manifest.export {
+                    &export.require_security_context
+                } else {
+                    return Ok(()); // if export is not defined, no security context validation needed
+                }
+            },
+        };
+        validate_security_context(None, &require_security_context, &resource.type_name, operation)?;
+    }
     match required_security_context {
         Some(SecurityContextKind::Elevated) => {
             if get_security_context() != SecurityContext::Admin {

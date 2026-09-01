@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}, context::ProcessMode, parameters::{SECURE_VALUE_REDACTED, is_secure_value}, schema_cache::get_resource_schema}, dscresources::resource_manifest::{AdapterInputKind, Kind}, types::{FullyQualifiedTypeName, ResourceVersion}};
+use crate::{configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}, context::ProcessMode, parameters::{SECURE_VALUE_REDACTED, is_secure_value}, schema_cache::get_resource_schema}, dscresources::{adapted_resource_manifest::AdaptedDscResourceManifest, resource_manifest::{AdapterInputKind, Kind}}, types::{FullyQualifiedTypeName, ResourceVersion}};
 use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse};
 use crate::schemas::transforms::idiomaticize_string_enum;
@@ -12,6 +12,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::collections::{HashMap, HashSet};
+use std::fmt::Display;
 use std::path::PathBuf;
 use tracing::{debug, info, trace, warn};
 
@@ -61,8 +62,30 @@ pub struct DscResource {
     pub target_resource: Option<Box<DscResource>>,
     /// The manifest of the resource.
     pub manifest: Option<ResourceManifest>,
+    /// The adapted manifest of the resource, if available.
+    pub adapted_manifest: Option<AdaptedDscResourceManifest>,
     /// The content of the adapted resource, if available.
     pub adapted_content: Option<Map<String, Value>>,
+}
+
+pub(crate) enum Operation {
+    Get,
+    Set,
+    Test,
+    Delete,
+    Export,
+}
+
+impl Display for Operation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Operation::Get => write!(f, "get"),
+            Operation::Set => write!(f, "set"),
+            Operation::Test => write!(f, "test"),
+            Operation::Delete => write!(f, "delete"),
+            Operation::Export => write!(f, "export"),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema, Ord, PartialOrd)]
@@ -118,6 +141,7 @@ impl DscResource {
             schema: None,
             target_resource: None,
             manifest: None,
+            adapted_manifest: None,
             adapted_content: None,
         }
     }

@@ -125,6 +125,30 @@ pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation, res
                     };
                     Ok(serde_json::to_string(&adapted_deprecated).unwrap())
                 },
+                "Adapted/SecurityContextElevated" => {
+                    let adapted_security_context_elevated = AdaptedOne {
+                        one: "elevated".to_string(),
+                        name: None,
+                        path: resource_path.clone(),
+                    };
+                    Ok(serde_json::to_string(&adapted_security_context_elevated).unwrap())
+                },
+                "Adapted/SecurityContextRestricted" => {
+                    let adapted_security_context_restricted = AdaptedOne {
+                        one: "restricted".to_string(),
+                        name: None,
+                        path: resource_path.clone(),
+                    };
+                    Ok(serde_json::to_string(&adapted_security_context_restricted).unwrap())
+                },
+                "Adapted/SecurityContextCurrent" => {
+                    let adapted_security_context_current = AdaptedOne {
+                        one: "current".to_string(),
+                        name: None,
+                        path: resource_path.clone(),
+                    };
+                    Ok(serde_json::to_string(&adapted_security_context_current).unwrap())
+                },
                 _ => Err(format!("Unknown resource type: {resource_type}")),
             }
         },
@@ -151,7 +175,41 @@ pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation, res
                         .map_err(|e| format!("Failed to parse input for Adapted/Three: {e}"))?;
                     Ok(serde_json::to_string(&adapted_three).unwrap())
                 },
+                "Adapted/SecurityContextElevated" => {
+                    let adapted_security_context_elevated: AdaptedOne = serde_json::from_str(input)
+                        .map_err(|e| format!("Failed to parse input for Adapted/SecurityContextElevated: {e}"))?;
+                    Ok(serde_json::to_string(&adapted_security_context_elevated).unwrap())
+                },
+                "Adapted/SecurityContextRestricted" => {
+                    let adapted_security_context_restricted: AdaptedOne = serde_json::from_str(input)
+                        .map_err(|e| format!("Failed to parse input for Adapted/SecurityContextRestricted: {e}"))?;
+                    Ok(serde_json::to_string(&adapted_security_context_restricted).unwrap())
+                },
+                "Adapted/SecurityContextCurrent" => {
+                    let adapted_security_context_current: AdaptedOne = serde_json::from_str(input)
+                        .map_err(|e| format!("Failed to parse input for Adapted/SecurityContextCurrent: {e}"))?;
+                    Ok(serde_json::to_string(&adapted_security_context_current).unwrap())
+                },
                 _ => Err(format!("Unknown resource type: {resource_type}")),
+            }
+        },
+        AdapterOperation::Delete => {
+            match resource_type {
+                "Adapted/One" => {
+                    if let Some(version) = resource_version && version != ADAPTED_ONE_VERSION {
+                        return Err(format!("Unsupported version for {resource_type}: {version}"));
+                    }
+                    Ok(String::new())
+                },
+                "Adapted/Two" => {
+                    if let Some(version) = resource_version && version != ADAPTED_TWO_VERSION {
+                        return Err(format!("Unsupported version for {resource_type}: {version}"));
+                    }
+                    Ok(String::new())
+                },
+                _ => {
+                    Ok(String::new())
+                },
             }
         },
         AdapterOperation::Export => {
@@ -207,6 +265,30 @@ pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation, res
                     println!("{}", serde_json::to_string(&adapted_three).unwrap());
                     std::process::exit(0);
                 },
+                "Adapted/SecurityContextElevated" => {
+                    let adapted_security_context_elevated = AdaptedOne {
+                        one: "elevated".to_string(),
+                        name: None,
+                        path: resource_path.clone(),
+                    };
+                    Ok(serde_json::to_string(&adapted_security_context_elevated).unwrap())
+                },
+                "Adapted/SecurityContextRestricted" => {
+                    let adapted_security_context_restricted = AdaptedOne {
+                        one: "restricted".to_string(),
+                        name: None,
+                        path: resource_path.clone(),
+                    };
+                    Ok(serde_json::to_string(&adapted_security_context_restricted).unwrap())
+                },
+                "Adapted/SecurityContextCurrent" => {
+                    let adapted_security_context_current = AdaptedOne {
+                        one: "current".to_string(),
+                        name: None,
+                        path: resource_path.clone(),
+                    };
+                    Ok(serde_json::to_string(&adapted_security_context_current).unwrap())
+                },
                 _ => Err(format!("Unknown resource type: {resource_type}")),
             }
         },
@@ -220,11 +302,10 @@ pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation, res
                     let schema = schemars::schema_for!(AdaptedTwo);
                     Ok(serde_json::to_string(&schema).unwrap())
                 },
-                "Adapted/Three" => {
+                _ => {
                     let schema = schemars::schema_for!(AdaptedOne);
                     Ok(serde_json::to_string(&schema).unwrap())
                 },
-                _ => Err(format!("Unknown resource type: {resource_type}")),
             }
         },
         AdapterOperation::Validate => {
