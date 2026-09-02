@@ -222,12 +222,13 @@ Returns the parsed JSON value. The type depends on the JSON content:
 - Null for JSON null
 
 ```yaml
-Type: object | array | string | number | boolean
+Type: object | array | string | number | boolean | null
 ```
 
 > [!NOTE]
-> The declared return types for `json()` don't include null. Parsing the JSON literal `null`
-> still returns a null value, so `[json('null')]` evaluates to `null`.
+> The function metadata that the `dsc function list` command reports for `json()` doesn't include
+> null in the return types. Parsing the JSON literal `null` still returns a null value, so
+> `[json('null')]` evaluates to `null`.
 
 ## Related functions
 
