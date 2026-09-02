@@ -84,10 +84,10 @@ hadErrors: false
 
 ## Output
 
-The `systemRoot()` function returns the system root of the current host, or the value overriden
+The `systemRoot()` function returns the system root of the current host, or the value overridden
 using the [`--system-root` command line flag][01].
 
-This is usually `C:\` on Windows system and `/` on Unix systems.
+This is usually `C:\` on Windows systems and `/` on Unix systems.
 
 ```yaml
 Type: string
