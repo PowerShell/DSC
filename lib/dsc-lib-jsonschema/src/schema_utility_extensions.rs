@@ -1874,8 +1874,7 @@ pub trait SchemaUtilityExtensions {
 impl SchemaUtilityExtensions for Schema {
     fn get_defined_keywords(&self) -> Vec<String> {
         self.as_object()
-            .map(|obj| obj.keys().cloned().collect::<Vec<String>>())
-            .unwrap_or_else(Vec::new)
+            .map_or_else(Vec::new, |obj| obj.keys().cloned().collect::<Vec<String>>())
     }
     fn get_keyword_as_array(&self, key: &str) -> Option<&Vec<Value>> {
         self.get(key)
@@ -2174,18 +2173,16 @@ impl SchemaUtilityExtensions for Schema {
     }
     fn get_properties_keys(&self) -> Vec<String> {
         self.get_properties()
-            .map(|obj| obj.keys().cloned().collect::<Vec<String>>())
-            .unwrap_or_else(Vec::new)
+            .map_or_else(Vec::new, |obj| obj.keys().cloned().collect::<Vec<String>>())
     }
     fn get_required_property_names(&self) -> Vec<String> {
         self.get_keyword_as_array("required")
-            .map(|arr| {
+            .map_or_else(Vec::new, |arr| {
                 arr.iter()
                     .filter_map(Value::as_str)
                     .map(String::from)
                     .collect::<Vec<String>>()
             })
-            .unwrap_or_else(Vec::new)
     }
     fn get_references(&self) -> HashSet<&str> {
         let mut references: HashSet<&str> = HashSet::new();

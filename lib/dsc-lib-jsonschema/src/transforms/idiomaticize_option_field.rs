@@ -8,6 +8,17 @@ use crate::schema_utility_extensions::SchemaUtilityExtensions;
 
 /// Transforms the default generated schema for optional fields into a more idiomatic representation.
 ///
+/// This transform only applies to `struct` types that define one or more fields as [`Option<T>`].
+/// It iterates over every field in the `properties` keyword, skipping any fields that are defined
+/// in the `required` keyword.
+/// 
+/// # Panics
+/// 
+/// This transform panics if any apparently optional field doesn't define either:
+/// 
+/// - `type` as an array where one value is `"null"`
+/// - `anyOf` with exactly two subschemas, one of which is just `{ "type": "null" }`
+/// 
 /// # Example
 ///
 /// ```rust
@@ -69,24 +80,22 @@ pub fn idiomaticize_option_field(schema: &mut Schema) {
     // First, handle the case where the schema defines `type` with two values, one of which is
     // `"null"`. This is emitted by schemars for `Option<T>` fields where `T` is a type that
     // schemars implemented `JsonSchema` for, like `String` or `i32`.
-    if let Some(types) = lookup_schema.get_keyword_as_array("type") {
-        if types.len() == 2 && types.contains(&json!("null")) {
+    if let Some(types) = lookup_schema.get_keyword_as_array("type")
+        && types.len() == 2 && types.contains(&json!("null")) {
             let actual_type = types.iter().find(|t| t != &&serde_json::json!("null"));
             schema.insert("type".to_string(), actual_type.unwrap().clone());
 
             munged_schema = true;
-        }
     }
     
     // Handle `null` in `enum` keyword - remove if needed.
-    if let Some(enum_values) = lookup_schema.get_keyword_as_array("enum") {
-        if enum_values.contains(&json!(null)) {
+    if let Some(enum_values) = lookup_schema.get_keyword_as_array("enum") 
+        && enum_values.contains(&json!(null)) {
             let mut new_enum_values = enum_values.clone();
             new_enum_values.retain(|v| v != &json!(null));
             schema.insert("enum".to_string(), json!(new_enum_values));
 
             munged_schema = true;
-        }
     }
 
     // If we munged the schema for type/enum, return early. The remaining code handles cases where
@@ -121,7 +130,7 @@ pub fn idiomaticize_option_field(schema: &mut Schema) {
 
     let null_schema = any_ofs
         .iter()
-        .find(|s| s.get("type").map(|t| t == "null").unwrap_or(false));
+        .find(|s| s.get("type").is_some_and(|t| t == "null"));
     if null_schema.is_none() {
         panic_t!(
             "transforms.idiomaticize_option_field.null_schema_missing",
@@ -130,7 +139,7 @@ pub fn idiomaticize_option_field(schema: &mut Schema) {
     }
     let actual_schema = any_ofs
         .iter()
-        .find(|s| s.get("type").map(|t| t != "null").unwrap_or(true));
+        .find(|s| s.get("type").is_none_or(|t| t != "null"));
     if actual_schema.is_none() {
         panic_t!(
             "transforms.idiomaticize_option_field.actual_schema_missing",
