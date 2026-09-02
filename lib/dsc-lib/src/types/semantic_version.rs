@@ -455,7 +455,7 @@ impl SemanticVersion {
 
 impl JsonSchema for SemanticVersion {
     fn schema_name() -> std::borrow::Cow<'static, str> {
-        Self::default_export_schema_id_uri().into()
+        "SemanticVersion".into()
     }
     fn json_schema(_: &mut schemars::SchemaGenerator) -> schemars::Schema {
         json_schema!({

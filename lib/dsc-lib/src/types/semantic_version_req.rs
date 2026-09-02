@@ -963,7 +963,7 @@ impl SemanticVersionReq {
 
 impl JsonSchema for SemanticVersionReq {
     fn schema_name() -> std::borrow::Cow<'static, str> {
-        Self::default_export_schema_id_uri().into()
+        "SemanticVersionReq".into()
     }
     fn json_schema(_: &mut schemars::SchemaGenerator) -> schemars::Schema {
         json_schema!({
