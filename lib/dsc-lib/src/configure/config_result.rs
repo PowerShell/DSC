@@ -12,7 +12,7 @@ use crate::types::FullyQualifiedTypeName;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-#[schemars(transform = idiomaticize_string_enum)]
+#[schemars(inline, transform = idiomaticize_string_enum)]
 pub enum MessageLevel {
     Error,
     Warning,
@@ -150,6 +150,7 @@ impl From<ResourceTestResult> for ResourceSetResult {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
+#[schemars(inline)]
 pub struct GroupResourceSetResult {
     pub results: Vec<ResourceSetResult>,
 }
@@ -226,6 +227,7 @@ pub struct ResourceTestResult {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
+#[schemars(inline)]
 pub struct GroupResourceTestResult {
     pub results: Vec<ResourceTestResult>,
 }
