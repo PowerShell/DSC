@@ -83,6 +83,7 @@ pub enum ExecutionKind {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
+#[schemars(inline)]
 pub struct Process {
     pub name: String,
     pub id: u32,
@@ -127,6 +128,7 @@ impl Display for ResourceDiscoveryMode {
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
+#[schemars(inline)]
 pub struct MicrosoftDscMetadata {
     /// The duration of the configuration operation
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -336,6 +338,7 @@ pub struct UserFunctionOutput {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
+#[schemars(inline)]
 pub enum ValueOrCopy {
     Value(String),
     Copy(Copy),
@@ -462,6 +465,7 @@ impl Display for DataType {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[schemars(transform = idiomaticize_string_enum)]
+#[schemars(inline)]
 pub enum CopyMode {
     #[serde(rename = "serial")]
     Serial,
@@ -471,6 +475,7 @@ pub enum CopyMode {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(untagged)]
+#[schemars(inline)]
 pub enum IntOrExpression {
     Int(i64),
     Expression(String),
@@ -487,6 +492,7 @@ impl Display for IntOrExpression {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
+#[schemars(inline)]
 pub struct Copy {
     pub name: String,
     pub count: IntOrExpression,

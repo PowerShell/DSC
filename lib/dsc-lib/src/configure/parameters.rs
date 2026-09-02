@@ -10,6 +10,7 @@ use std::{collections::HashMap, fmt::Display};
 use tracing::trace;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, JsonSchema)]
+#[schemars(inline)]
 pub struct SimpleInput {
     pub parameters: HashMap<String, Value>,
 }
@@ -27,6 +28,7 @@ pub struct InputObject {
 pub const SECURE_VALUE_REDACTED: &str = "<secureValue>";
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[schemars(inline)]
 pub struct SecureString {
     #[serde(rename = "secureString")]
     pub secure_string: String,
@@ -39,6 +41,7 @@ impl Display for SecureString {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[schemars(inline)]
 pub struct SecureObject {
     #[serde(rename = "secureObject")]
     pub secure_object: Value,
@@ -72,6 +75,7 @@ pub fn is_secure_value(value: &Value) -> bool {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields, untagged)]
+#[schemars(inline)]
 pub enum SecureKind {
     #[serde(rename = "secureString")]
     SecureString(SecureString),
