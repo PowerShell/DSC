@@ -1341,39 +1341,46 @@ fn validate_security_context(target_resource: Option<&DscResource>, required_sec
                 if let Some(get) = &adapted_manifest.get {
                     &get.require_security_context
                 } else {
-                    return Ok(()); // if get is not defined, no security context validation needed
+                    // if adapted manifest does not have get, fall back to original manifest
+                    &None
                 }
             },
             Operation::Set => {
                 if let Some(set) = &adapted_manifest.set {
                     &set.require_security_context
                 } else {
-                    return Ok(()); // if set is not defined, no security context validation needed
+                    // if adapted manifest does not have get, fall back to original manifest
+                    &None
                 }
             },
             Operation::Delete => {
                 if let Some(delete) = &adapted_manifest.delete {
                     &delete.require_security_context
                 } else {
-                    return Ok(()); // if delete is not defined, no security context validation needed
+                    // if adapted manifest does not have get, fall back to original manifest
+                    &None
                 }
             },
             Operation::Test => {
                 if let Some(test) = &adapted_manifest.test {
                     &test.require_security_context
                 } else {
-                    return Ok(()); // if test is not defined, no security context validation needed
+                    // if adapted manifest does not have get, fall back to original manifest
+                    &None
                 }
             },
             Operation::Export => {
                 if let Some(export) = &adapted_manifest.export {
                     &export.require_security_context
                 } else {
-                    return Ok(()); // if export is not defined, no security context validation needed
+                    // if adapted manifest does not have get, fall back to original manifest
+                    &None
                 }
             },
         };
-        validate_security_context(None, require_security_context, &resource.type_name, operation)?;
+        if require_security_context.is_some() {
+            return validate_security_context(None, require_security_context, &resource.type_name, operation);
+        }
     }
     match required_security_context {
         Some(SecurityContextKind::Elevated) => {

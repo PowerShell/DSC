@@ -85,6 +85,7 @@
       "capabilities": [
         "get",
         "set",
+        "delete",
         "test",
         "export"
       ],
@@ -117,10 +118,10 @@
           "required": [],
           "additionalProperties": false,
           "properties": {
-            "two": {
+            "one": {
               "type": "string",
-              "title": "Property Two",
-              "description": "This is property two of the adapted resource."
+              "title": "Property One",
+              "description": "This is property one of the adapted resource."
             },
             "name": {
               "type": "string",

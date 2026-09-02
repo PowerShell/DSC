@@ -207,9 +207,10 @@ pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation, res
                     }
                     Ok(String::new())
                 },
-                _ => {
+                "Adapted/SecurityContextElevated" | "Adapted/SecurityContextRestricted" | "Adapted/SecurityContextCurrent" => {
                     Ok(String::new())
                 },
+                _ => Err(format!("Unknown resource type: {resource_type}")),
             }
         },
         AdapterOperation::Export => {
@@ -302,10 +303,11 @@ pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation, res
                     let schema = schemars::schema_for!(AdaptedTwo);
                     Ok(serde_json::to_string(&schema).unwrap())
                 },
-                _ => {
+                "Adapted/SecurityContextElevated" | "Adapted/SecurityContextRestricted" | "Adapted/SecurityContextCurrent" => {
                     let schema = schemars::schema_for!(AdaptedOne);
                     Ok(serde_json::to_string(&schema).unwrap())
                 },
+                _ => Err(format!("Unknown resource type: {resource_type}")),
             }
         },
         AdapterOperation::Validate => {
