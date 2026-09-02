@@ -482,7 +482,7 @@ impl DateVersion {
 
 impl JsonSchema for DateVersion {
     fn schema_name() -> std::borrow::Cow<'static, str> {
-        Self::default_export_schema_id_uri().into()
+        "DateVersion".into()
     }
     fn json_schema(_: &mut schemars::SchemaGenerator) -> schemars::Schema {
         json_schema!({

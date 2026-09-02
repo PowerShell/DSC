@@ -96,7 +96,7 @@ impl Default for ExitCodesMap {
 
 impl JsonSchema for ExitCodesMap {
     fn schema_name() -> std::borrow::Cow<'static, str> {
-        Self::default_export_schema_id_uri().into()
+        "ExitCodesMap".into()
     }
 
     fn json_schema(_: &mut schemars::SchemaGenerator) -> schemars::Schema {
