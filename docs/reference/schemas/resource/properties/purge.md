@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for the '_purge' canonical DSC Resource property.
-ms.date:     07/03/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       DSC Resource _purge property schema
 ---
@@ -47,5 +47,3 @@ snippet:
   "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/purge.json"
 }
 ```
-
-<!-- TODO: Enumerate the other available URIs and describe which to select and why -->

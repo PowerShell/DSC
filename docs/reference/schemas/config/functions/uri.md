@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'uri' DSC configuration document function
-ms.date:     01/10/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       uri
 ---
@@ -155,7 +155,9 @@ resources:
   properties:
     output:
       oldEndpoint: "[concat('https://api.example.com/', parameters('currentVersion'))]"
-      newEndpoint: "[uri(concat('https://api.example.com/', parameters('currentVersion')), parameters('newVersion'))]"
+      newEndpoint: >-
+        [uri(concat('https://api.example.com/', parameters('currentVersion')),
+        parameters('newVersion'))]
 ```
 
 ```bash

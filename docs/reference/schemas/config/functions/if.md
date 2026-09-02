@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'if' DSC configuration document function
-ms.date:     07/02/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       if
 ---
@@ -21,6 +21,10 @@ if(<condition>, <trueValue>, <falseValue>)
 
 The `if()` function returns a value based on whether a condition is true or false. You can use this
 function to conditionally use different values in a configuration document.
+
+The values to return must be strings, integers, objects, or arrays. The function doesn't accept
+boolean or null values for `trueValue` or `falseValue`. For more information, see
+[Error conditions](#error-conditions).
 
 ## Examples
 
@@ -76,10 +80,11 @@ MaximumCount: 1
 
 The `if()` function expects the second parameter to be the value to return when the `condition`
 parameter evaluates to `true`. This parameter may be a literal value or an expression that
-evaluates to a string, integer, boolean, object, or array value.
+evaluates to a string, integer, object, or array value. Boolean and null values aren't
+accepted for this parameter.
 
 ```yaml
-Type:         [string, int, bool, object, array]
+Type:         [string, int, object, array]
 Required:     true
 MinimumCount: 1
 MaximumCount: 1
@@ -89,10 +94,11 @@ MaximumCount: 1
 
 The `if()` function expects the third parameter to be the value to return when the `condition`
 parameter evaluates to `false`. This parameter may be a literal value or an expression that
-evaluates to a string, integer, boolean, object, or array value.
+evaluates to a string, integer, object, or array value. Boolean and null values aren't
+accepted for this parameter.
 
 ```yaml
-Type:         [string, int, bool, object, array]
+Type:         [string, int, object, array]
 Required:     true
 MinimumCount: 1
 MaximumCount: 1
@@ -104,7 +110,17 @@ The function returns either the `trueValue` or `falseValue` depending on whether
 parameter evaluates to `true` or `false`.
 
 ```yaml
-Type: [string, int, bool, object, array]
+Type: [string, int, object, array]
 ```
+
+## Error conditions
+
+DSC raises an error when the `trueValue` or `falseValue` parameter is a boolean or null value.
+For example, the expression `[if(true(), true(), false())]` fails with the error
+`Function 'if' does not accept boolean arguments, accepted types are: String, Number, Array,
+Object`.
+
+To return a boolean value based on a condition, use the condition expression directly instead of
+wrapping it in `if()`.
 
 <!-- Link reference definitions -->

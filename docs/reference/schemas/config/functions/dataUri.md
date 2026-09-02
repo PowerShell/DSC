@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'dataUri' DSC configuration document function
-ms.date:     12/20/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       dataUri
 ---
@@ -179,8 +179,8 @@ MaximumCount: 1
 ## Output
 
 The `dataUri()` function returns a data URI string in the format
-`data:application/json;charset=utf8;base64,<encoded-content>` where `<encoded-content>` is the base64
-representation of the **stringToConvert** value.
+`data:application/json;charset=utf8;base64,<encoded-content>` where `<encoded-content>` is the
+base64 representation of the **stringToConvert** value.
 
 ```yaml
 Type: string

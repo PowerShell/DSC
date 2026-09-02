@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'dataUriToString' DSC configuration document function
-ms.date:     12/20/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       dataUriToString
 ---
@@ -39,7 +39,8 @@ $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 parameters:
   encodedScript:
     type: string
-    defaultValue: "data:text/plain;charset=utf8;base64,V3JpdGUtSG9zdCAnSGVsbG8sIFdvcmxkISc="
+    defaultValue: "data:text/plain;charset=utf8;base64,\
+      V3JpdGUtSG9zdCAnSGVsbG8sIFdvcmxkISc="
 resources:
   - name: Decode and display script
     type: Microsoft.DSC.Debug/Echo

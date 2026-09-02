@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'systemRoot' DSC configuration document function
-ms.date:     06/04/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       systemRoot
 ---
@@ -94,5 +94,5 @@ Type: string
 ```
 
 <!-- Link reference definitions -->
-[01]: ../../../cli/config/index.md#--system-root
+[01]: ../../../cli/config/index.md#-r---system-root
 [02]: ./path.md
