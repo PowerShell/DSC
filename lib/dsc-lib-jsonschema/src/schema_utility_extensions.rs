@@ -20,6 +20,37 @@ use url::{Position, Url};
 
 /// Provides utility extension methods for [`schemars::Schema`].
 pub trait SchemaUtilityExtensions {
+    /// Returns a vector of every keyword defined at the top level of a schema.
+    /// 
+    /// # Returns
+    /// 
+    /// A vector containing every keyword defined at the top level of the
+    /// schema. If the schema is boolean the vector is empty.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// # use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
+    /// # use schemars::json_schema;
+    /// let schema = json_schema!({
+    ///     "type": "object",
+    ///     "properties": {
+    ///         "foo": { "type": "string" },
+    ///         "bar": { "type": "number" },
+    ///     },
+    ///     "required": ["foo"],
+    /// });
+    /// 
+    /// assert_eq!(
+    ///     schema.get_defined_keywords(),
+    ///     vec![
+    ///         "type".to_string(),
+    ///         "properties".to_string(),
+    ///         "required".to_string()
+    ///     ]
+    /// );
+    /// ```
+    fn get_defined_keywords(&self) -> Vec<String>;
     //********************** get_keyword_as_* functions **********************//
     /// Checks a JSON Schema for a given keyword and returns a reference to the value of that
     /// keyword, if it exists, as a [`Vec`].
@@ -1470,6 +1501,59 @@ pub trait SchemaUtilityExtensions {
     /// );
     /// ```
     fn get_property_subschema_mut(&mut self, property_name: &str) -> Option<&mut Schema>;
+    /// Returns the name of every property defined in the `properties` keyword.
+    /// 
+    /// # Returns
+    /// 
+    /// A vector containing every property name defined in the `properties` keyword. If the keyword
+    /// isn't defined, the vector is empty.
+    /// 
+    /// # Example
+    /// 
+    /// ```rust
+    /// # use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
+    /// # use schemars::json_schema;
+    /// let schema = json_schema!({
+    ///     "type": "object",
+    ///     "properties": {
+    ///         "foo": { "type": "string" },
+    ///         "bar": { "type": "number" },
+    ///     },
+    /// });
+    ///
+    /// assert_eq!(
+    ///     schema.get_properties_keys(),
+    ///     vec!["foo".to_string(), "bar".to_string()]
+    /// );
+    /// ```
+    fn get_properties_keys(&self) -> Vec<String>;
+    /// Returns a vector containing every property name in the `required` keyword.
+    /// 
+    /// # Returns
+    /// 
+    /// A vector containing every property name in the `required` keyword. If the keyword isn't
+    /// defined, the vector is empty.
+    /// 
+    /// # Example
+    /// 
+    /// ```rust
+    /// # use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
+    /// # use schemars::json_schema;
+    /// let schema = json_schema!({
+    ///     "type": "object",
+    ///     "required": ["foo"],
+    ///     "properties": {
+    ///         "foo": { "type": "string" },
+    ///         "bar": { "type": "number" },
+    ///     }
+    /// });
+    ///
+    /// assert_eq!(
+    ///     schema.get_required_property_names(),
+    ///     vec!["foo".to_string()]
+    /// );
+    /// ```
+    fn get_required_property_names(&self) -> Vec<String>;
 
     //************************ $ref keyword functions ************************//
     /// Retrieves the value for every `$ref` keyword from the [`Schema`] as a [`HashSet`] of
@@ -1788,6 +1872,11 @@ pub trait SchemaUtilityExtensions {
 }
 
 impl SchemaUtilityExtensions for Schema {
+    fn get_defined_keywords(&self) -> Vec<String> {
+        self.as_object()
+            .map(|obj| obj.keys().cloned().collect::<Vec<String>>())
+            .unwrap_or_else(Vec::new)
+    }
     fn get_keyword_as_array(&self, key: &str) -> Option<&Vec<Value>> {
         self.get(key)
             .and_then(Value::as_array)
@@ -2082,6 +2171,21 @@ impl SchemaUtilityExtensions for Schema {
         self.get_properties_mut()
             .and_then(|properties| properties.get_mut(property_name))
             .and_then(|v| <&mut Value as TryInto<&mut Schema>>::try_into(v).ok())
+    }
+    fn get_properties_keys(&self) -> Vec<String> {
+        self.get_properties()
+            .map(|obj| obj.keys().cloned().collect::<Vec<String>>())
+            .unwrap_or_else(Vec::new)
+    }
+    fn get_required_property_names(&self) -> Vec<String> {
+        self.get_keyword_as_array("required")
+            .map(|arr| {
+                arr.iter()
+                    .filter_map(Value::as_str)
+                    .map(String::from)
+                    .collect::<Vec<String>>()
+            })
+            .unwrap_or_else(Vec::new)
     }
     fn get_references(&self) -> HashSet<&str> {
         let mut references: HashSet<&str> = HashSet::new();

@@ -62,6 +62,13 @@ invalid item: %{invalid_item}
 transforming schema: %{transforming_schema}
 """
 
+[transforms.idiomaticize_option_field]
+applies_to = "invalid application of idiomaticize_option_field; expected an optional field with `anyOf` keyword in transforming schema: %{transforming_schema}"
+anyOf_array = "invalid application of idiomaticize_option_field; 'anyOf' isn't an array in transforming schema: %{transforming_schema}"
+anyOf_length_mismatch = "invalid application of idiomaticize_option_field; expected 'anyOf' to contain 2 items but had %{actual_length} items in transforming schema: %{transforming_schema}"
+null_schema_missing = "invalid application of idiomaticize_option_field; expected one of the 'anyOf' items to be `{\"type\": \"null\"}` in transforming schema: %{transforming_schema}"
+actual_schema_missing = "invalid application of idiomaticize_option_field; expected one of the 'anyOf' items to define the actual field schema in transforming schema: %{transforming_schema}"
+
 [transforms.idiomaticize_string_enum]
 applies_to = "invalid application of idiomaticize_string_enum; missing 'oneOf' keyword in transforming schema: %{transforming_schema}"
 oneOf_array = "invalid application of idiomaticize_string_enum; 'oneOf' isn't an array in transforming schema: %{transforming_schema}"
