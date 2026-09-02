@@ -1373,7 +1373,7 @@ fn validate_security_context(target_resource: Option<&DscResource>, required_sec
                 }
             },
         };
-        validate_security_context(None, &require_security_context, &resource.type_name, operation)?;
+        validate_security_context(None, require_security_context, &resource.type_name, operation)?;
     }
     match required_security_context {
         Some(SecurityContextKind::Elevated) => {
