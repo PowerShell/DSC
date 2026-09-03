@@ -7,5 +7,7 @@
 
 #[cfg(test)] mod canonicalize_refs_and_defs;
 #[cfg(test)] mod idiomaticize_externally_tagged_enum;
+#[cfg(test)] mod idiomaticize_option_field;
+#[cfg(test)] mod idiomaticize_optional_properties;
 #[cfg(test)] mod idiomaticize_string_enum;
 #[cfg(test)] mod remove_bundled_schema_resources;
