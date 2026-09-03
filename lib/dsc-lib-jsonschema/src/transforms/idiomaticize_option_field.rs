@@ -8,9 +8,9 @@ use crate::schema_utility_extensions::SchemaUtilityExtensions;
 
 /// Transforms the default generated schema for optional fields into a more idiomatic representation.
 ///
-/// This transform only applies to `struct` types that define one or more fields as [`Option<T>`].
-/// It iterates over every field in the `properties` keyword, skipping any fields that are defined
-/// in the `required` keyword.
+/// This transform is intended to be applied to the schema for a single `Option<T>` field.
+/// It removes the `null` branch that schemars adds (via `type: ["…", "null"]`, `enum: […, null]`, or `anyOf`).
+/// The field’s optionality should instead be expressed by omitting the property name from `required`.
 /// 
 /// # Panics
 /// 
