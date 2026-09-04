@@ -32,7 +32,13 @@
       "sshd_config.dsc.resource.json",
       "sshd-subsystem.dsc.resource.json",
       "sshd-subsystemList.dsc.resource.json",
-      "y2j"
+      "y2j",
+      "python3.dsc.resource.json",
+      "ms_dsc/",
+      "pyadapter/",
+      "python.dsc.extension.json",
+      "python3.dsc.extension.json",
+      "python.discover.py"
     ],
     "macOS": [
       "dsc",
@@ -62,7 +68,13 @@
       "sshd_config.dsc.resource.json",
       "sshd-subsystem.dsc.resource.json",
       "sshd-subsystemList.dsc.resource.json",
-      "y2j"
+      "y2j",
+      "python3.dsc.resource.json",
+      "ms_dsc/",
+      "pyadapter/",
+      "python.dsc.extension.json",
+      "python3.dsc.extension.json",
+      "python.discover.py"
     ],
     "Windows": [
       "appx.dsc.extension.json",
@@ -116,7 +128,12 @@
       "wmiAdapter.psm1",
       "windows_baseline.dsc.yaml",
       "windows_inventory.dsc.yaml",
-      "y2j.exe"
+      "y2j.exe",
+      "python.dsc.resource.json",
+      "ms_dsc/",
+      "pyadapter/",
+      "python.dsc.extension.json",
+      "python.discover.py"
     ]
   },
   "Projects": [
@@ -127,6 +144,42 @@
       "CopyFiles": {
         "All": [
           "NOTICE.txt"
+        ]
+      }
+    },
+    {
+      "Name": "python-adapter",
+      "Kind": "Adapter",
+      "RelativePath": "adapters/python",
+      "CopyFiles": {
+        "All": [
+          "pyadapter/__init__.py",
+          "pyadapter/__main__.py",
+          "pyadapter/cli.py",
+          "pyadapter/cache.py",
+          "pyadapter/discovery.py",
+          "pyadapter/schema.py",
+          "pyadapter/router.py"
+        ],
+        "Windows": [
+          "python.dsc.resource.json"
+        ],
+        "Linux": [
+          "python3.dsc.resource.json"
+        ],
+        "macOS": [
+          "python3.dsc.resource.json"
+        ]
+      }
+    },
+    {
+      "Name": "extensions/python",
+      "Kind": "Extension",
+      "RelativePath": "extensions/python",
+      "CopyFiles": {
+        "All": [
+          "python.discover.py",
+          "python.dsc.extension.json"
         ]
       }
     },
