@@ -16,3 +16,4 @@
 #[cfg(test)] mod command_resource;
 #[cfg(test)] mod schemas;
 #[cfg(test)] mod types;
+#[cfg(test)] mod settings;
