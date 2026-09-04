@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for the data returned by the 'dsc resource get' command.
-ms.date:     07/03/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       dsc resource get result schema reference
 ---
@@ -68,37 +68,39 @@ data is returned:
 
 ### Required properties
 
-- [metadata](#metadata-1)
 - [name](#name)
 - [type](#type)
 - [result](#result)
 
 ### Properties
 
-#### metadata
+#### executionInformation
 
-Defines metadata DSC returns for a configuration operation. The properties under the
-`Microsoft.DSC` property describe the context of the operation.
+Describes the context of the operation for the resource instance. The value is an object with the
+following properties:
 
 - [duration][01] defines the duration of a DSC operation against a configuration document or
   resource instance as a string following the format defined in [ISO8601 ABNF for `duration`][02].
   For example, `PT0.611216S` represents a duration of about `0.61` seconds.
+- [restartRequired][03] defines the list of restarts the resource reported as required. DSC only
+  includes this property when the resource reported a required restart.
 
 ```yaml
 Type:     object
-Required: true
+Required: false
 ```
 
-#### type
+#### metadata
 
-The `type` property identifies the instance's DSC Resource by its fully qualified type name.
-For more information about type names, see
-[DSC Resource fully qualified type name schema reference][03].
+Defines metadata DSC returns for a resource instance operation. The `Microsoft.DSC` property under
+this property includes the [duration][01] of the operation. DSC includes this property for
+backwards compatibility with tools and scripts that process DSC output. In DSC version 4.0.0, the
+output will no longer include this property. Prefer
+[executionInformation](#executioninformation) instead.
 
 ```yaml
-Type:     string
-Required: true
-Pattern:  ^\w+(\.\w+){0,2}\/\w+$
+Type:     object
+Required: false
 ```
 
 #### name
@@ -108,6 +110,18 @@ The `name` property identifies the instance by its short, unique, human-readable
 ```yaml
 Type:     string
 Required: true
+```
+
+#### type
+
+The `type` property identifies the instance's DSC Resource by its fully qualified type name.
+For more information about type names, see
+[DSC Resource fully qualified type name schema reference][04].
+
+```yaml
+Type:     string
+Required: true
+Pattern:  ^\w+(\.\w+)*\/\w+$
 ```
 
 #### result
@@ -126,4 +140,5 @@ Required: true
 <!-- Link reference definitions -->
 [01]: ../../metadata/Microsoft.DSC/properties.md#duration
 [02]: https://datatracker.ietf.org/doc/html/rfc3339#appendix-A
-[03]: ../../definitions/resourceType.md
+[03]: ../../metadata/Microsoft.DSC/properties.md#restartrequired
+[04]: ../../definitions/resourceType.md

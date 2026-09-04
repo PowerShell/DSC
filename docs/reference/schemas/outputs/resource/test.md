@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for the data returned by the 'dsc resource test' command.
-ms.date:     07/03/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       dsc resource test result schema reference
 ---
@@ -21,7 +21,7 @@ Type:          object
 
 ## Description
 
-Describes the return data for a DSC Resource instance from the `dsc resource get` command. The
+Describes the return data for a DSC Resource instance from the `dsc resource test` command. The
 return data is either a single object that describes the tested state of a non-nested instance or
 an array of objects that describe the tested state of the nested instances for a group or adapter
 resource.
@@ -40,6 +40,9 @@ resource type and instance name.
 The output always includes these properties:
 
 - [desiredState](#desiredstate)
+- [actualState](#actualstate)
+- [inDesiredState](#indesiredstate)
+- [differingProperties](#differingproperties)
 
 ### Properties
 
@@ -94,37 +97,39 @@ data is returned:
 
 ### Required properties
 
-- [metadata](#metadata-1)
 - [name](#name)
 - [type](#type)
 - [result](#result)
 
 ### Properties
 
-#### metadata
+#### executionInformation
 
-Defines metadata DSC returns for a configuration operation. The properties under the
-`Microsoft.DSC` property describe the context of the operation.
+Describes the context of the operation for the resource instance. The value is an object with the
+following properties:
 
 - [duration][01] defines the duration of a DSC operation against a configuration document or
   resource instance as a string following the format defined in [ISO8601 ABNF for `duration`][02].
   For example, `PT0.611216S` represents a duration of about `0.61` seconds.
+- [restartRequired][03] defines the list of restarts the resource reported as required. DSC only
+  includes this property when the resource reported a required restart.
 
 ```yaml
 Type:     object
-Required: true
+Required: false
 ```
 
-#### type
+#### metadata
 
-The `type` property identifies the instance's DSC Resource by its fully qualified type name.
-For more information about type names, see
-[DSC Resource fully qualified type name schema reference][03].
+Defines metadata DSC returns for a resource instance operation. The `Microsoft.DSC` property under
+this property includes the [duration][01] of the operation. DSC includes this property for
+backwards compatibility with tools and scripts that process DSC output. In DSC version 4.0.0, the
+output will no longer include this property. Prefer
+[executionInformation](#executioninformation) instead.
 
 ```yaml
-Type:     string
-Required: true
-Pattern:  ^\w+(\.\w+){0,2}\/\w+$
+Type:     object
+Required: false
 ```
 
 #### name
@@ -136,12 +141,24 @@ Type:     string
 Required: true
 ```
 
+#### type
+
+The `type` property identifies the instance's DSC Resource by its fully qualified type name.
+For more information about type names, see
+[DSC Resource fully qualified type name schema reference][04].
+
+```yaml
+Type:     string
+Required: true
+Pattern:  ^\w+(\.\w+)*\/\w+$
+```
+
 #### result
 
 The `result` property includes the validation state for the resource. This value is either:
 
 - The [simple test response](#simple-test-response) for the instance
-- An array of full get result objects for each nested instance, if the resource is a group or
+- An array of full test result objects for each nested instance, if the resource is a group or
   adapter resource.
 
 ```yaml
@@ -152,4 +169,5 @@ Required: true
 <!-- Link reference definitions -->
 [01]: ../../metadata/Microsoft.DSC/properties.md#duration
 [02]: https://datatracker.ietf.org/doc/html/rfc3339#appendix-A
-[03]: ../../definitions/resourceType.md
+[03]: ../../metadata/Microsoft.DSC/properties.md#restartrequired
+[04]: ../../definitions/resourceType.md
