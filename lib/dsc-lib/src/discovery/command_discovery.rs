@@ -40,9 +40,11 @@ static RESOURCES: LazyLock<RwLock<DiscoveryResourceCache>> = LazyLock::new(|| Rw
 static EXTENSIONS: LazyLock<RwLock<DiscoveryExtensionCache>> = LazyLock::new(|| RwLock::new(DiscoveryExtensionCache::new()));
 static ADAPTED_RESOURCES: LazyLock<RwLock<DiscoveryResourceCache>> = LazyLock::new(|| RwLock::new(DiscoveryResourceCache::new()));
 
-#[derive(Deserialize, JsonSchema)]
+#[derive(Deserialize, JsonSchema, DscRepoSchema)]
+#[dsc_repo_schema(base_name = "list", folder_path = "manifests")]
+#[schemars(transform = Self::transform_export_schema_uris, transform = Self::transform_schema_docs)]
+#[serde(rename_all = "camelCase")]
 pub struct ManifestList {
-    #[serde(rename = "adaptedResources")]
     pub adapted_resources: Option<Vec<AdaptedDscResourceManifest>>,
     pub resources: Option<Vec<ResourceManifest>>,
     pub extensions: Option<Vec<ExtensionManifest>>,
@@ -50,7 +52,7 @@ pub struct ManifestList {
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, Deserialize, JsonSchema)]
-#[schemars(transform = idiomaticize_externally_tagged_enum)]
+#[schemars(inline, transform = idiomaticize_externally_tagged_enum)]
 pub enum ImportedManifest {
     Resource(DscResource),
     Extension(DscExtension),
