@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for valid parameter data types in a configuration document.
-ms.date:     07/03/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       DSC configuration parameter data type schema reference
 ---
@@ -17,7 +17,7 @@ Defines valid data types for a DSC configuration parameter
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
 SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/definitions/parameters/dataTypes.json
 Type:          string
-ValidValues:   [array, bool, int, object, string, secureobject, securestring]
+ValidValues:   [array, bool, int, object, string, secureObject, secureString]
 ```
 
 ## Description
@@ -31,8 +31,11 @@ The valid data types for a parameter are:
 - `int` for integers
 - `object` for objects
 - `string` for strings
-- `secureobject` for secure objects
-- `securestring` for secure strings
+- `secureObject` for secure objects
+- `secureString` for secure strings
+
+The data type names are case-sensitive. For example, DSC raises an error for a parameter that
+defines its `type` as `securestring` instead of `secureString`.
 
 Access parameters in a configuration using this syntax:
 
@@ -244,9 +247,9 @@ secure object parameters.
 ```yaml
 parameters:
   password:
-    type: securestring
+    type: secureString
   sensitiveOptions:
-    type: secureobject
+    type: secureObject
 ```
 
 [01]: ../../config/document.md

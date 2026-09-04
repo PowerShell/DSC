@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for a structured message returned from a 'dsc config' command.
-ms.date:     07/03/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       Structured message schema reference
 ---
@@ -20,6 +20,11 @@ Type:          object
 ```
 
 ## Description
+
+When DSC invokes a resource during a `dsc config` command, it captures any messages the resource
+emits and returns them in the `messages` array of the command's output. Each message is an object
+that identifies the resource instance the message came from, the text of the message, and its
+severity.
 
 ## Required properties
 
@@ -50,7 +55,7 @@ type names, see [DSC Resource fully qualified type name schema reference][01].
 ```yaml
 Type:     string
 Required: true
-Pattern:  ^\w+(\.\w+){0,2}\/\w+$
+Pattern:  ^\w+(\.\w+)*\/\w+$
 ```
 
 ### message

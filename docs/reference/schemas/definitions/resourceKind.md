@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for resource kind
-ms.date:     07/03/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       DSC Resource kind schema reference
 ---
@@ -9,7 +9,8 @@ title:       DSC Resource kind schema reference
 
 ## Synopsis
 
-Identifies whether a resource is an adapter resource, a group resource, an importer resource, an exporter resource, or a normal resource.
+Identifies whether a resource is an adapter resource, a group resource, an importer resource, an
+exporter resource, or a normal resource.
 
 ## Metadata
 
@@ -35,7 +36,8 @@ the property. If the `adapter` property is defined in the resource manifest, DSC
 of `kind` as `adapter`. If the `adapter` property isn't defined, DSC infers the value of `kind` as
 `resource`. DSC can't infer whether a manifest is for a group, importer, or exporter resource.
 
-When defining a group, importer, or exporter resource with a resource manifest, always explicitly define `kind`.
+When defining a group, importer, or exporter resource with a resource manifest, always explicitly
+define `kind`.
 
 ### Adapter resources
 
@@ -172,13 +174,13 @@ The following examples show valid and invalid references and dependencies. The e
 This example configuration defines several valid references and dependencies. It also defines two
 instances of the `Microsoft.DSC/Group` resource, one nested inside the other.
 
-The top level instance of the `Microsoft.DSC.Debug/Echo` resource references and depends on the top-level instance
-of the `Microsoft/OSInfo` resource. The top-level instances of the `Microsoft.DSC.Debug/Echo` and
-`Microsoft/OSInfo` resources both depend on the top-level instance of the `Microsoft.DSC/Group`
-resource.
+The top level instance of the `Microsoft.DSC.Debug/Echo` resource references and depends on the
+top-level instance of the `Microsoft/OSInfo` resource. The top-level instances of the
+`Microsoft.DSC.Debug/Echo` and `Microsoft/OSInfo` resources both depend on the top-level instance
+of the `Microsoft.DSC/Group` resource.
 
 ```yaml
-# yaml-language-server: $schema=https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.vscode.json
+# yaml-language-server: $schema=https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json
 resources:
 # The top level echo references and depends on the top-level OSInfo.
 # It also depends on the top-level Group.
@@ -204,9 +206,10 @@ resources:
 ```
 
 The top-level instance of `Microsoft.DSC/Group` defines three nested resource instances:
-`Microsoft.DSC.Debug/Echo`, `Microsoft/OSInfo`, and `Microsoft.DSC/Group`. As at the top-level, the `Microsoft.DSC.Debug/Echo`
-instance references and depends on the adjacent nested`Microsoft/OSInfo` instance and that instance
-depends on the adjacent nested `Microsoft.DSC/Group` instance.
+`Microsoft.DSC.Debug/Echo`, `Microsoft/OSInfo`, and `Microsoft.DSC/Group`. As at the top-level, the
+`Microsoft.DSC.Debug/Echo` instance references and depends on the adjacent nested
+`Microsoft/OSInfo` instance and that instance depends on the adjacent nested `Microsoft.DSC/Group`
+instance.
 
 ```yaml
 # Other top-level instances snipped for brevity
@@ -235,8 +238,8 @@ depends on the adjacent nested `Microsoft.DSC/Group` instance.
 ```
 
 Finally, the nested instance of `Microsoft.DSC/Group` defines two nested instances. The deeply
-nested instance of `Microsoft.DSC.Debug/Echo` references and depends on the deeply nested instance of
-`Microsoft/OSInfo`.
+nested instance of `Microsoft.DSC.Debug/Echo` references and depends on the deeply nested instance
+of `Microsoft/OSInfo`.
 
 ```yaml
 - name: Top level group
@@ -262,7 +265,7 @@ nested instance of `Microsoft.DSC.Debug/Echo` references and depends on the deep
           dependsOn:
             - "[resourceId('Microsoft/OSInfo', 'Deeply nested OSInfo')]"
         - name: Deeply nested OSInfo
-          type: Microsoft.OSInfo
+          type: Microsoft/OSInfo
           properties: {}
 ```
 
@@ -275,7 +278,7 @@ nested instances in the same group.
 Putting the configuration together, you get this full document:
 
 ```yaml
-# yaml-language-server: $schema=https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.vscode.json
+# yaml-language-server: $schema=https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 # The top level echo references and depends on the top-level OSInfo.
@@ -330,18 +333,18 @@ resources:
           dependsOn:
             - "[resourceId('Microsoft/OSInfo', 'Deeply nested OSInfo')]"
         - name: Deeply nested OSInfo
-          type: Microsoft.OSInfo
+          type: Microsoft/OSInfo
           properties: {}
 ```
 
 #### Example 2 - Invalid reference and dependency on a nested instance
 
-This example configuration is invalid, because the top-level instance of the `Microsoft.DSC.Debug/Echo` resource
-references and depends on the nested `Microsoft/OSInfo` instance. The nested instance is external
-to the top-level instance, not adjacent.
+This example configuration is invalid, because the top-level instance of the
+`Microsoft.DSC.Debug/Echo` resource references and depends on the nested `Microsoft/OSInfo`
+instance. The nested instance is external to the top-level instance, not adjacent.
 
 ```yaml
-# yaml-language-server: $schema=https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.vscode.json
+# yaml-language-server: $schema=https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: Top level echo
@@ -365,12 +368,12 @@ resources:
 
 #### Example 3 - Invalid reference and dependency on an external instance
 
-This example configuration is invalid, because the nested instance of the `Microsoft.DSC.Debug/Echo` resource
-references and depends on the top-level `Microsoft/OSInfo` instance. The top-level instance is
-external to the nested instance, not adjacent.
+This example configuration is invalid, because the nested instance of the
+`Microsoft.DSC.Debug/Echo` resource references and depends on the top-level `Microsoft/OSInfo`
+instance. The top-level instance is external to the nested instance, not adjacent.
 
 ```yaml
-# yaml-language-server: $schema=https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.vscode.json
+# yaml-language-server: $schema=https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: Top level OSInfo
