@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for a parameter in a Desired State Configuration document.
-ms.date:     07/03/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       DSC Configuration document parameter schema
 ---
@@ -79,7 +79,7 @@ For more information about data types, see
 ```yaml
 Type:        string
 Required:    true
-ValidValues: [string, securestring, int, bool, object, secureobject, array]
+ValidValues: [string, secureString, int, bool, object, secureObject, array]
 ```
 
 ### defaultValue
@@ -116,7 +116,7 @@ a string is its character count. The length of an array is its item count.
 
 If the default value or runtime value for the parameter is shorter than this property, DSC raises
 an error. If this property is defined for parameters whose `type` isn't `array`, `string`, or
-`securestring`, DSC raises an error.
+`secureString`, DSC raises an error.
 
 If this property is defined with the `maxLength` property, this property must be less than
 `maxLength`. If it isn't, DSC raises an error.
@@ -134,7 +134,7 @@ a string is its character count. The length of an array is its item count.
 
 If the default value or runtime value for the parameter is longer than this property, DSC raises an
 error. If this property is defined for parameters whose `type` isn't `array`, `string`, or
-`securestring`, DSC raises an error.
+`secureString`, DSC raises an error.
 
 If this property is defined with the `minLength` property, this property must be greater than
 `minLength`. If it isn't, DSC raises an error.
