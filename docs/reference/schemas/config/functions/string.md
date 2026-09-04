@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'string' DSC configuration document function
-ms.date:     08/09/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       string
 ---
@@ -145,13 +145,16 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      deploymentInfo: "[concat('Deployment ', string(parameters('deploymentId')), ' running in ', if(parameters('isProduction'), 'production', 'development'), ' mode')]"
-      serverMessage: "[concat('Managing ', string(parameters('serverCount')), ' server(s)')]"
+      deploymentInfo: >-
+        [concat('Deployment ', string(parameters('deploymentId')), ' running in ',
+        if(parameters('isProduction'), 'production', 'development'), ' mode')]
+      serverMessage: >-
+        [concat('Managing ', string(parameters('serverCount')), ' server(s)')]
       statusFlag: "[concat('Production: ', string(parameters('isProduction')))]"
 ```
 
 ```bash
-dsc config get --file string.example.4.dsc.config.yaml
+dsc config get --file string.example.3.dsc.config.yaml
 ```
 
 ```yaml
@@ -193,11 +196,13 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      logEntry: "[concat('[', string(parameters('timestamp')), '] ERROR ', string(parameters('errorCode')), ': ', string(parameters('metadata')))]"
+      logEntry: >-
+        [concat('[', string(parameters('timestamp')), '] ERROR ',
+        string(parameters('errorCode')), ': ', string(parameters('metadata')))]
 ```
 
 ```bash
-dsc config get --file string.example.5.dsc.config.yaml
+dsc config get --file string.example.4.dsc.config.yaml
 ```
 
 ```yaml
@@ -207,7 +212,7 @@ results:
   result:
     actualState:
       output:
-        logEntry: '[1691596800] ERROR 404: {"level":"error","source":"api"}'
+        logEntry: '[1691596800] ERROR 404: {"source":"api","level":"error"}'
 messages: []
 hadErrors: false
 ```

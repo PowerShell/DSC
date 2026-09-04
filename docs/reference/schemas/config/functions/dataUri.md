@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'dataUri' DSC configuration document function
-ms.date:     12/20/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       dataUri
 ---
@@ -20,8 +20,7 @@ dataUri(<stringToConvert>)
 ## Description
 
 The `dataUri()` function converts a string value to a [data URI][01] format. The function encodes
-the input string as base64 and returns it as a data URI with the `application/json` media type and
-`utf8` charset.
+the input string as base64 and returns it as a data URI with the `application/json` media type.
 
 Data URIs are useful for embedding small text content directly in configuration documents,
 especially when the content needs to be passed through systems that expect URI-formatted data.
@@ -179,7 +178,7 @@ MaximumCount: 1
 ## Output
 
 The `dataUri()` function returns a data URI string in the format
-`data:application/json;charset=utf8;base64,<encoded-content>` where `<encoded-content>` is the base64
+`data:application/json;base64,<encoded-content>` where `<encoded-content>` is the base64
 representation of the **stringToConvert** value.
 
 ```yaml
