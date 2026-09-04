@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'cidrSubnet' DSC configuration document function
-ms.date:     11/03/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       cidrSubnet
 ---
@@ -96,7 +96,8 @@ resources:
         westus: "[cidrSubnet(parameters('baseNetwork'), parameters('newPrefix'), 1)]"
         northeurope: "[cidrSubnet(parameters('baseNetwork'), parameters('newPrefix'), 2)]"
         westeurope: "[cidrSubnet(parameters('baseNetwork'), parameters('newPrefix'), 3)]"
-        southeastasia: "[cidrSubnet(parameters('baseNetwork'), parameters('newPrefix'), 4)]"
+        southeastasia: >-
+          [cidrSubnet(parameters('baseNetwork'), parameters('newPrefix'), 4)]
 ```
 
 ```bash
@@ -142,9 +143,15 @@ resources:
       output:
         vnetAddressSpace: "[parameters('vnetCidr')]"
         subnetCidr: "[cidrSubnet(parameters('vnetCidr'), 24, parameters('subnetIndex'))]"
-        subnetDetails: "[parseCidr(cidrSubnet(parameters('vnetCidr'), 24, parameters('subnetIndex')))]"
-        gatewayIP: "[cidrHost(cidrSubnet(parameters('vnetCidr'), 24, parameters('subnetIndex')), 1)]"
-        loadBalancerIP: "[cidrHost(cidrSubnet(parameters('vnetCidr'), 24, parameters('subnetIndex')), 4)]"
+        subnetDetails: >-
+          [parseCidr(cidrSubnet(parameters('vnetCidr'), 24,
+          parameters('subnetIndex')))]
+        gatewayIP: >-
+          [cidrHost(cidrSubnet(parameters('vnetCidr'), 24,
+          parameters('subnetIndex')), 1)]
+        loadBalancerIP: >-
+          [cidrHost(cidrSubnet(parameters('vnetCidr'), 24,
+          parameters('subnetIndex')), 4)]
 ```
 
 ```bash
@@ -167,8 +174,8 @@ results:
           firstUsable: 172.16.42.1
           lastUsable: 172.16.42.254
           cidr: 24
-        gatewayIP: 172.16.42.1
-        loadBalancerIP: 172.16.42.4
+        gatewayIP: 172.16.42.2
+        loadBalancerIP: 172.16.42.5
 messages: []
 hadErrors: false
 ```
@@ -194,9 +201,12 @@ resources:
     properties:
       output:
         baseNetwork: "[parameters('ipv6BaseNetwork')]"
-        subnet0: "[cidrSubnet(parameters('ipv6BaseNetwork'), parameters('subnetPrefix'), 0)]"
-        subnet1: "[cidrSubnet(parameters('ipv6BaseNetwork'), parameters('subnetPrefix'), 1)]"
-        subnet10: "[cidrSubnet(parameters('ipv6BaseNetwork'), parameters('subnetPrefix'), 10)]"
+        subnet0: >-
+          [cidrSubnet(parameters('ipv6BaseNetwork'), parameters('subnetPrefix'), 0)]
+        subnet1: >-
+          [cidrSubnet(parameters('ipv6BaseNetwork'), parameters('subnetPrefix'), 1)]
+        subnet10: >-
+          [cidrSubnet(parameters('ipv6BaseNetwork'), parameters('subnetPrefix'), 10)]
 ```
 
 ```bash

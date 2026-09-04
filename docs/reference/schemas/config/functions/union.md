@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'union' DSC configuration document function
-ms.date:     08/08/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       union
 ---
@@ -62,7 +62,9 @@ resources:
   properties:
     output:
       allServers: "[union(parameters('serverGroup1'), parameters('serverGroup2'))]"
-      threeGroups: "[union(parameters('serverGroup1'), parameters('serverGroup2'), parameters('serverGroup3'))]"
+      threeGroups: >-
+        [union(parameters('serverGroup1'), parameters('serverGroup2'),
+        parameters('serverGroup3'))]
 ```
 
 ```bash
@@ -122,7 +124,9 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      finalConfig: "[union(parameters('defaultConfig'), parameters('userConfig'), parameters('envConfig'))]"
+      finalConfig: >-
+        [union(parameters('defaultConfig'), parameters('userConfig'),
+        parameters('envConfig'))]
 ```
 
 ```bash
@@ -229,7 +233,9 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      logEntry: "[string(union(parameters('baseLogData'), parameters('requestData'), parameters('responseData')))]"
+      logEntry: >-
+        [string(union(parameters('baseLogData'), parameters('requestData'),
+        parameters('responseData')))]
       logArray: "[union(createArray('timestamp'), createArray('level', 'requestId'))]"
 ```
 

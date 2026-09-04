@@ -1,9 +1,11 @@
 ---
 description: Reference for the 'json' DSC configuration document function
-ms.date:     10/11/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       json
 ---
+
+# json
 
 ## Synopsis
 
@@ -12,7 +14,7 @@ Converts a valid JSON string into a JSON data type.
 ## Syntax
 
 ```Syntax
-json(arg1)
+json(<arg1>)
 ```
 
 ## Description
@@ -100,7 +102,8 @@ resources:
 - name: Echo
   type: Microsoft.DSC.Debug/Echo
   properties:
-    output: "[json('{\"users\":[{\"name\":\"Alice\"},{\"name\":\"Bob\"}]}').users[0].name]"
+    output: >-
+      [json('{"users":[{"name":"Alice"},{"name":"Bob"}]}').users[0].name]
 ```
 
 ```bash
@@ -221,6 +224,11 @@ Returns the parsed JSON value. The type depends on the JSON content:
 ```yaml
 Type: object | array | string | number | boolean | null
 ```
+
+> [!NOTE]
+> The function metadata that the `dsc function list` command reports for `json()` doesn't include
+> null in the return types. Parsing the JSON literal `null` still returns a null value, so
+> `[json('null')]` evaluates to `null`.
 
 ## Related functions
 

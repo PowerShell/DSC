@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'coalesce' DSC configuration document function
-ms.date:     07/24/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       coalesce
 ---
@@ -38,7 +38,7 @@ resources:
 - name: Coalesce strings
   type: Microsoft.DSC.Debug/Echo
   properties:
-    output: 
+    output:
       firstNonNull:     "[coalesce(null(), 'DSC', 'landscape')]"
       allNull:          "[coalesce(null(), null(), null())]"
       noneNull:     "[coalesce('first', 'second', 'third')]"

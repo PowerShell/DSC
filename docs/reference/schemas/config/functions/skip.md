@@ -1,9 +1,11 @@
 ---
 description: Reference for the 'skip' DSC configuration document function
-ms.date:     08/29/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       skip
 ---
+
+# skip
 
 ## Synopsis
 
