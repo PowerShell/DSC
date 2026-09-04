@@ -1,0 +1,56 @@
+# Installs PowerShell 7 and OpenSSH Server
+# Enable PowerShell 7 remoting over SSH
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+directives:
+  resourceDiscovery: duringDeployment
+resources:
+- name: Install PowerShell 7
+  type: Microsoft.WinGet/Package
+  properties:
+    _exist: true
+    id: Microsoft.PowerShell
+- name: Install SSHD
+  type: Microsoft.Windows/FeatureOnDemandList
+  properties:
+    capabilities:
+    - identity: OpenSSH.Server~~~~0.0.1.0
+      state: Installed
+- name: Add PS7 SSH Subsystem
+  type: Microsoft.OpenSSH.SSHD/Subsystem
+  properties:
+    subsystem:
+      name: powershell
+      value: pwsh.exe -sshs
+# Restarting the service will be handled by Actions in the future
+- name: Stop SSHD Service
+  type: Microsoft.Windows/Service
+  properties:
+    name: sshd
+    status: Stopped
+- name: Start SSHD Service and set to Automatic
+  type: Microsoft.Windows/Service
+  properties:
+    name: sshd
+    status: Running
+    startType: Automatic
+- name: Open sshd firewall port
+  type: Microsoft.Windows/FirewallRuleList
+  properties:
+    rules:
+    - name: OpenSSH SSH Server (sshd)
+      description: Inbound rule for OpenSSH SSH Server (sshd)
+      applicationName: "[concat(systemRoot(), 'WINDOWS\\system32\\OpenSSH\\sshd.exe')]"
+      protocol: 6
+      localPorts: '22'
+      remotePorts: '*'
+      localAddresses: '*'
+      remoteAddresses: '*'
+      direction: Inbound
+      action: Allow
+      enabled: true
+      profiles:
+      - Private
+      grouping: OpenSSH Server
+      interfaceTypes:
+      - All
+      edgeTraversal: false
