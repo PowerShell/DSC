@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'base64ToString' DSC configuration document function
-ms.date:     09/30/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       base64ToString
 ---
@@ -70,7 +70,7 @@ resources:
 ```
 
 ```bash
-dsc config get --file base64ToString.example.2.dsc.config.yaml 
+dsc config get --file base64ToString.example.2.dsc.config.yaml
 ```
 
 ```yaml

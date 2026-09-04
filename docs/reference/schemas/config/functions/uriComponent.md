@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'uriComponent' DSC configuration document function
-ms.date:     01/10/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       uriComponent
 ---
@@ -51,7 +51,9 @@ resources:
     output:
       original: "[parameters('searchTerm')]"
       encoded: "[uriComponent(parameters('searchTerm'))]"
-      fullUrl: "[concat('https://example.com/search?q=', uriComponent(parameters('searchTerm')))]"
+      fullUrl: >-
+        [concat('https://example.com/search?q=',
+        uriComponent(parameters('searchTerm')))]
 ```
 
 ```bash

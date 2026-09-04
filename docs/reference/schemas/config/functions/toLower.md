@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'toLower' DSC configuration document function
-ms.date:     10/03/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       toLower
 ---
@@ -85,7 +85,9 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      filePath: "[concat('/etc/', toLower(parameters('fileName')), '.', toLower(parameters('extension')))]"
+      filePath: >-
+        [concat('/etc/', toLower(parameters('fileName')), '.',
+        toLower(parameters('extension')))]
 ```
 
 ```bash
@@ -124,7 +126,8 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      matches: "[equals(toLower(parameters('userInput')), toLower(parameters('expectedValue')))]"
+      matches: >-
+        [equals(toLower(parameters('userInput')), toLower(parameters('expectedValue')))]
 ```
 
 ```bash

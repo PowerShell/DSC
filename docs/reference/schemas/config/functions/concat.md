@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'concat' DSC configuration document function
-ms.date:     02/28/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       concat
 ---
@@ -60,7 +60,8 @@ hadErrors: false
 
 ### Example 2 - Concatenate arrays of strings
 
-The configuration uses the `concat()` function to return a combined array of strings from two arrays of strings. It uses YAML's folded multiline syntax to make the function more readable.
+The configuration uses the `concat()` function to return a combined array of strings from two
+arrays of strings. It uses YAML's folded multiline syntax to make the function more readable.
 
 ```yaml
 # concat.example.2.dsc.config.yaml

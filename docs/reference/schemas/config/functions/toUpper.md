@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'toUpper' DSC configuration document function
-ms.date:     10/03/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       toUpper
 ---
@@ -85,7 +85,9 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      configKey: "[concat(toUpper(parameters('environment')), '_', toUpper(parameters('component')), '_CONFIG')]"
+      configKey: >-
+        [concat(toUpper(parameters('environment')), '_',
+        toUpper(parameters('component')), '_CONFIG')]
 ```
 
 ```bash
@@ -124,7 +126,9 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      result: "[if(parameters('shouldCapitalize'), toUpper(parameters('text')), parameters('text'))]"
+      result: >-
+        [if(parameters('shouldCapitalize'), toUpper(parameters('text')),
+        parameters('text'))]
 ```
 
 ```bash

@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'indexOf' DSC configuration document function
-ms.date:     08/12/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       indexOf
 ---
@@ -27,7 +27,7 @@ in arrays or checking if an item exists without throwing errors.
 The function performs strict equality checking:
 
 - **Strings**: Case-sensitive exact match
-- **Numbers**: Numeric equality comparison  
+- **Numbers**: Numeric equality comparison
 - **Arrays**: Deep equality (same length, order, and element values)
 - **Objects**: Deep equality (same keys, values, and structure)
 
@@ -94,7 +94,8 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      hasFeature: "[indexOf(array(createObject('name','Beta')), createObject('name','Beta'))]"
+      hasFeature: >-
+        [indexOf(array(createObject('name','Beta')), createObject('name','Beta'))]
 ```
 
 ```bash

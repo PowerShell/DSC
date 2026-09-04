@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'path' DSC configuration document function
-ms.date:     06/04/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       path
 ---
@@ -20,13 +20,13 @@ path(<path>, <child_path>, ...)
 ## Description
 
 The `path()` function takes a base path and any number of child items to combine
-into a single path, accounting for duplicate `/` characters. 
+into a single path, accounting for duplicate `/` characters.
 
 ## Examples
 
 ### Example 1 - Construct with child path
 
-This configuration constructs a simple absolute path of two elements. 
+This configuration constructs a simple absolute path of two elements.
 
 ```yaml
 # parseChildPath.example.1.dsc.config.yaml
@@ -55,7 +55,7 @@ hadErrors: false
 
 ### Example 2 - Relative path with multiple elements
 
-This configuration constructs a simple relative path of three elements. 
+This configuration constructs a simple relative path of three elements.
 
 ```yaml
 # relativePath.example.2.dsc.config.yaml
@@ -84,7 +84,7 @@ hadErrors: false
 
 ### Example 3 - Relative element in path
 
-This configuration constructs a path with a double dot in that path. 
+This configuration constructs a path with a double dot in that path.
 
 The path is returned as-is and is not resolved to an absolute path.
 
@@ -129,6 +129,7 @@ Type:         string
 Required:     true
 Position:     1
 ```
+
 ### child
 
 Defines the child path segments the function appends to the base path. The function expects at
@@ -160,11 +161,12 @@ The output path for the same input depends on the operating systems:
 
 - The function uses the operating system's defined path separator for appending child path segments
   to the base path (`\` for Windows and `/` for Linux and macOS).
-  
-  For example, `[path('a', 'b', 'c')]` resolves to `a\b\c` on Windows and `a/b/c` on Linux and macOS.
+
+  For example, `[path('a', 'b', 'c')]` resolves to `a\b\c` on Windows and `a/b/c` on Linux and
+  macOS.
 - On Windows, specifying a child path segment that begins with a drive letter _replaces_ the
   constructed path instead of appending to it.
-  
+
   For example, `[path('./a', 'b', 'C:\', 'd')]` resolves to `C:\d` on Windows and `./a/b/C:\/d`
   on non-Windows systems.
 

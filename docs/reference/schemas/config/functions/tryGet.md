@@ -1,9 +1,11 @@
 ---
 description: Reference for the 'tryGet' DSC configuration document function
-ms.date:     01/29/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       tryGet
 ---
+
+# tryGet
 
 ## Synopsis
 
@@ -54,9 +56,14 @@ resources:
   properties:
     output:
       config: "[createObject('enableBeta', true, 'enableDebug', false)]"
-      betaEnabled: "[coalesce(tryGet(createObject('enableBeta', true, 'enableDebug', false), 'enableBeta'), false)]"
-      alphaEnabled: "[coalesce(tryGet(createObject('enableBeta', true, 'enableDebug', false), 'enableAlpha'), false)]"
-      debugEnabled: "[tryGet(createObject('enableBeta', true, 'enableDebug', false), 'enableDebug')]"
+      betaEnabled: >-
+        [coalesce(tryGet(createObject('enableBeta', true, 'enableDebug', false),
+        'enableBeta'), false)]
+      alphaEnabled: >-
+        [coalesce(tryGet(createObject('enableBeta', true, 'enableDebug', false),
+        'enableAlpha'), false)]
+      debugEnabled: >-
+        [tryGet(createObject('enableBeta', true, 'enableDebug', false), 'enableDebug')]
 ```
 
 ```bash
@@ -112,7 +119,8 @@ resources:
       productionEnv: "[tryGet(parameters('environments'), 'production')]"
       stagingEnv: "[tryGet(parameters('environments'), 'staging')]"
       developmentEnv: "[tryGet(parameters('environments'), 'development')]"
-      prodReplicas: "[tryGet(tryGet(parameters('environments'), 'production'), 'replicas')]"
+      prodReplicas: >-
+        [tryGet(tryGet(parameters('environments'), 'production'), 'replicas')]
       prodRegion: "[tryGet(tryGet(parameters('environments'), 'production'), 'region')]"
       stagingRegion: "[tryGet(tryGet(parameters('environments'), 'staging'), 'region')]"
 ```
@@ -212,10 +220,15 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      successResponse: "[createObject('status', 200, 'data', createObject('id', 123, 'name', 'example'))]"
+      successResponse: >-
+        [createObject('status', 200, 'data', createObject('id', 123, 'name', 'example'))]
       errorResponse: "[createObject('status', 404, 'error', 'Not Found')]"
-      successData: "[tryGet(createObject('status', 200, 'data', createObject('id', 123, 'name', 'example')), 'data')]"
-      successError: "[tryGet(createObject('status', 200, 'data', createObject('id', 123, 'name', 'example')), 'error')]"
+      successData: >-
+        [tryGet(createObject('status', 200, 'data',
+        createObject('id', 123, 'name', 'example')), 'data')]
+      successError: >-
+        [tryGet(createObject('status', 200, 'data',
+        createObject('id', 123, 'name', 'example')), 'error')]
       errorData: "[tryGet(createObject('status', 404, 'error', 'Not Found'), 'data')]"
       errorMessage: "[tryGet(createObject('status', 404, 'error', 'Not Found'), 'error')]"
 ```

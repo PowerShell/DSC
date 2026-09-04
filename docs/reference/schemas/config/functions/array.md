@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'array' DSC configuration document function
-ms.date:     08/12/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       array
 ---
@@ -153,7 +153,7 @@ The single value to wrap in the array.
 
 ```yaml
 Type:         string, number, array, or object
-Required:     false
+Required:     true
 MinimumCount: 1
 MaximumCount: 1
 ```
