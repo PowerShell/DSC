@@ -687,7 +687,7 @@ fn verify_with_export_schema(input: &str, resource: &DscResource, target_resourc
 /// * `cwd` - The current working directory
 /// * `input` - Input to the command
 /// * `target_resource` - The target resource, if applicable
-/// 
+///
 /// # Returns
 ///
 /// * `ExportResult` - The result of the export operation
@@ -1058,7 +1058,7 @@ pub fn process_get_args(args: Option<&Vec<GetArgKind>>, input: &str, resource: &
     Some(processed_args)
 }
 
-fn process_schema_args(args: Option<&Vec<SchemaArgKind>>, command_resource: &DscResource) -> Option<Vec<String>> {
+pub(crate) fn process_schema_args(args: Option<&Vec<SchemaArgKind>>, command_resource: &DscResource) -> Option<Vec<String>> {
     let Some(arg_values) = args else {
         debug!("{}", t!("dscresources.commandResource.noArgs"));
         return None;
