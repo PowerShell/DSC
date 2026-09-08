@@ -530,4 +530,6 @@ fn main() {
     println!("cargo::rerun-if-changed=build.rs");
     println!("cargo::rerun-if-changed=.versions.json");
     println!("cargo::rerun-if-changed=.versions.ps1");
+    // Always rebuild if translations are updated.
+    println!("cargo:rerun-if-changed=locales");
 }
