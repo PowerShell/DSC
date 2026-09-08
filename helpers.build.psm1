@@ -387,7 +387,7 @@ function Get-RustUp {
         if ($null -ne (Get-Command msrustup -CommandType Application -ErrorAction Ignore)) {
             Write-Verbose -Verbose "Using msrustup"
             $rustup = 'msrustup'
-            $channel = 'ms-prod-1.95'
+            $channel = 'ms-prod-1.97.1'
         } elseif ($null -ne (Get-Command rustup -CommandType Application -ErrorAction Ignore)) {
                 $rustup = 'rustup'
                 $env:TESTING_FUNCTION_ENV = "lolwhat"
