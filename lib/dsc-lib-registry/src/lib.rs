@@ -183,6 +183,37 @@ impl RegistryHelper {
         }
     }
 
+    /// Enumerate all named values under the configured registry key.
+    ///
+    /// A missing key is returned as an empty collection.
+    ///
+    /// # Errors
+    ///
+    /// * `RegistryError` - The error that occurred.
+    pub fn get_values(&self) -> Result<Vec<(String, RegistryValueData)>, RegistryError> {
+        if self.offline_hive.is_some() {
+            return Err(RegistryError::OfflineRegistry(
+                t!("error.offlineValueEnumeration").to_string(),
+            ));
+        }
+
+        let (reg_key, _) = match self.open(Security::Read) {
+            Ok(result) => result,
+            Err(RegistryError::RegistryKeyNotFound(_)) => return Ok(Vec::new()),
+            Err(error) => return Err(error),
+        };
+
+        let mut values = Vec::new();
+        for value in reg_key.values() {
+            let value = value.map_err(|error| RegistryError::Registry(error.into()))?;
+            if let Some(data) = convert_reg_value(value.data())? {
+                values.push((value.name().to_string_lossy(), data));
+            }
+        }
+
+        Ok(values)
+    }
+
     /// Set in registry.
     ///
     /// # Returns

@@ -1,0 +1,14 @@
+{
+    "Name": "group_policy_template",
+    "Kind": "Adapter",
+    "IsRust": true,
+    "SupportedPlatformOS": "Windows",
+    "Binaries": [
+        "group_policy_template"
+    ],
+    "CopyFiles": {
+        "Windows": [
+            "group_policy_template.dsc.resource.json"
+        ]
+    }
+}
