@@ -7,6 +7,7 @@ _version = 1
 invalidHive = "Invalid hive"
 json = "JSON"
 offlineRegistry = "Offline registry"
+offlineValueEnumeration = "Value enumeration is not supported for offline registries"
 registry = "Registry"
 registryKey = "Registry key"
 registryKeyNotFound = "Registry key not found"
