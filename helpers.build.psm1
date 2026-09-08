@@ -390,7 +390,6 @@ function Get-RustUp {
             $channel = 'ms-prod-1.97.1'
         } elseif ($null -ne (Get-Command rustup -CommandType Application -ErrorAction Ignore)) {
                 $rustup = 'rustup'
-                $env:TESTING_FUNCTION_ENV = "lolwhat"
         }
 
         return $rustup, $channel
