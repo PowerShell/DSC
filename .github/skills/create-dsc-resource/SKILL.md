@@ -20,6 +20,7 @@ Management tasks or operations are specific to the resource type, but may includ
 - **Resource manifest**: A JSON file that defines the resource type name, supported operations (including executable and arguments), and JSON schema for input parameters
 - **Dependency management**: All crates must be listed in Cargo.toml specifying to use workspace dependencies. The root level Cargo.toml should be updated to include the new crates or associated to the DSC resource project.
 - **Project files**: A `.project.data.json` file in the root of the project folder defines properties of the project and non-code files to include during build
+- **Release packaging**: Add every resource binary and manifest to the applicable platform list under `PackageFiles` in the root `data.build.json`. Project discovery alone does not include a resource in released packages.
 - **Localization**: For Rust-based resources, all user-facing strings must use `rust-i18n` for internationalization. For script-based resources (such as PowerShell), follow the existing localization and string-handling patterns used by those scripts or any repository-specific localization guidance.
 - **Copyright headers**: Every source file must start with the copyright header:
   ```
@@ -37,6 +38,7 @@ Management tasks or operations are specific to the resource type, but may includ
 - Create a resource manifest JSON file named `<resource_name>.dsc.resource.json` in the same directory using `./resources/windows_service/windows_service.dsc.resource.json` as an example
 - Create a `.project.data.json` file in the root of the resource project directory
 - Create a `locales/en-us.toml` file for localized strings
+- Add the resource executable and manifest to the applicable `PackageFiles` platform list in the root `data.build.json` (for example, `<resource_name>.exe` and `<resource_name>.dsc.resource.json` under `PackageFiles.Windows`)
 
 ### 2. .project.data.json
 
@@ -261,6 +263,7 @@ someError = "Failed to do something: %{error}"
 
 #### Build and Deployment
 
+- Verify the root `data.build.json` lists the resource binary and every manifest under each applicable `PackageFiles` platform. A `.project.data.json` entry controls building and copying artifacts but does not by itself add those files to a released package.
 - The resource should be built using `build.ps1 -project <resource_name>` from the root of the repository, which will handle building the Rust code and ensure it is found in PATH for testing
 
 ## What-If support
@@ -560,4 +563,3 @@ When asked to add what-if to a new resource, perform these steps in order:
 7. Add `whatIf*` localized strings under `[<resource>_helper]` and `args.configArgsWhatIfHelp` in `locales/en-us.toml`.
 8. Create `<resource>.config.whatif.tests.ps1` (and the list variant if applicable) following the test template; cover create, update, delete-via-`_exist`, and `delete -w`.
 9. Build with `./build.ps1 -project <resource_name>` and run the new Pester file.
-

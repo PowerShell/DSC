@@ -1,0 +1,14 @@
+{
+    "Name": "environment_variable",
+    "Kind": "Resource",
+    "IsRust": true,
+    "SupportedPlatformOS": "Windows",
+    "Binaries": [
+        "environment_variable"
+    ],
+    "CopyFiles": {
+        "Windows": [
+            "environment_variable.dsc.manifests.json"
+        ]
+    }
+}

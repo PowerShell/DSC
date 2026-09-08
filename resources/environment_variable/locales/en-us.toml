@@ -1,0 +1,32 @@
+_version = 1
+
+[main]
+missingOperation = "Missing operation. Usage: environment_variable get --input <json> | set --input <json> | test --input <json>"
+unknownOperation = "Unknown operation: '%{operation}'. Expected: get, set, or test"
+missingInput = "Missing --input argument"
+missingInputValue = "Missing value for --input argument"
+invalidJson = "Invalid JSON input: %{error}"
+serializeError = "Failed to serialize resource output: %{error}"
+missingState = "The environment variable operation returned no state"
+windowsOnly = "The Microsoft.Windows environment variable resources are only supported on Windows"
+registryError = "Failed to access environment variable '%{name}' in scope '%{scope}': %{error}"
+
+[validation]
+emptyList = "The environmentVariables array must contain at least one environment variable"
+emptyName = "Environment variable name must not be empty"
+invalidName = "Environment variable name '%{name}' contains an invalid null character"
+duplicate = "Environment variable '%{name}' is specified more than once in scope '%{scope}'"
+valueConflict = "Environment variable '%{name}' cannot specify both value and pathValue"
+pathActionWithoutValue = "Environment variable '%{name}' can only specify pathAction with pathValue"
+invalidPathEntry = "Environment variable '%{name}' has a pathValue entry that is empty or contains a semicolon or null character"
+missingValue = "Environment variable '%{name}' must specify value or pathValue when _exist is true"
+
+[get]
+readError = "Failed to read environment variable '%{name}' in scope '%{scope}': %{error}"
+unsupportedType = "Environment variable '%{name}' in scope '%{scope}' uses an unsupported registry value type; expected REG_SZ or REG_EXPAND_SZ"
+
+[set]
+elevationRequired = "Setting or removing AllUsers environment variables requires elevation. Run DSC from an elevated process."
+readError = "Failed to read environment variable '%{name}' in scope '%{scope}' before setting it: %{error}"
+writeError = "Failed to set environment variable '%{name}' in scope '%{scope}': %{error}"
+removeError = "Failed to remove environment variable '%{name}' in scope '%{scope}': %{error}"
