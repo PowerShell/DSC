@@ -3,7 +3,7 @@
 
 Describe 'FileContent test tests' {
     BeforeAll {
-        $resourceType = 'Microsoft/FileContent'
+        $resourceType = 'Microsoft.Filesystem.File/Content'
         $filePath = Join-Path $TestDrive 'test.txt'
         [System.IO.File]::WriteAllText(
             $filePath,
@@ -17,7 +17,9 @@ Describe 'FileContent test tests' {
         $out = $json | dsc resource test -r $resourceType -f - 2>$TestDrive/error.log
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
 
-        ($out | ConvertFrom-Json).inDesiredState | Should -BeTrue
+        $result = $out | ConvertFrom-Json
+        $result.inDesiredState | Should -BeTrue
+        $result.actualState.content | Should -BeExactly 'hello'
     }
 
     It 'Detects different content when content is the only desired value' {
@@ -25,7 +27,9 @@ Describe 'FileContent test tests' {
         $out = $json | dsc resource test -r $resourceType -f - 2>$TestDrive/error.log
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
 
-        ($out | ConvertFrom-Json).inDesiredState | Should -BeFalse
+        $result = $out | ConvertFrom-Json
+        $result.inDesiredState | Should -BeFalse
+        $result.actualState.content | Should -BeExactly 'hello'
     }
 
     It 'Compares supplied SHA-256 and SHA-512 hashes' {
@@ -37,7 +41,9 @@ Describe 'FileContent test tests' {
         $out = $json | dsc resource test -r $resourceType -f - 2>$TestDrive/error.log
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
 
-        ($out | ConvertFrom-Json).inDesiredState | Should -BeTrue
+        $result = $out | ConvertFrom-Json
+        $result.inDesiredState | Should -BeTrue
+        $result.actualState.content | Should -BeExactly 'hello'
     }
 
     It 'Reports desired state when an absent file should not exist' {

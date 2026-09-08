@@ -1,6 +1,6 @@
 {
     "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
-    "type": "Microsoft/FileContent",
+    "type": "Microsoft.Filesystem.File/Content",
     "description": "Manage the UTF-8 content of a local file.",
     "tags": [
         "file",
@@ -78,15 +78,13 @@
                     "type": "string",
                     "title": "SHA-256",
                     "description": "The SHA-256 hash of the file content.",
-                    "pattern": "^[A-Fa-f0-9]{64}$",
-                    "readOnly": true,
+                    "pattern": "^[A-Fa-f0-9]{64}$"
                 },
                 "sha512": {
                     "type": "string",
                     "title": "SHA-512",
                     "description": "The SHA-512 hash of the file content.",
-                    "pattern": "^[A-Fa-f0-9]{128}$",
-                    "readOnly": true
+                    "pattern": "^[A-Fa-f0-9]{128}$"
                 },
                 "path": {
                     "type": "string",
@@ -95,37 +93,17 @@
                     "minLength": 1
                 },
                 "_exist": {
-                    "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/exist.json",
+                    "type": "boolean",
+                    "title": "Exists",
+                    "description": "Indicates whether the file should exist. Set to false to remove the file."
                 },
                 "_inDesiredState": {
-                    "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/inDesiredState.json"
-                }
-            },
-            "$defs": {
-                "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/exist.json": {
-                    "$schema": "https://json-schema.org/draft/2020-12/schema",
-                    "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/exist.json",
-                    "title": "Instance should exist",
-                    "description": "Indicates whether the DSC resource instance should exist.",
                     "type": "boolean",
-                    "default": true,
-                    "enum": [
-                        false,
-                        true
-                    ]
-                },
-                "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/inDesiredState.json": {
-                    "$schema": "https://json-schema.org/draft/2020-12/schema",
-                    "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/inDesiredState.json",
-                    "title": "Instance is in the Desired State",
-                    "description": "Indicates whether the instance is in the desired state. This property is only returned by the `test` method.",
-                    "type": [
-                        "boolean",
-                        "null"
-                    ],
+                    "title": "In desired state",
+                    "description": "Indicates whether the file is in the desired state. Only returned by test.",
                     "readOnly": true
                 }
-            }
+            },
             "additionalProperties": false
         }
     }

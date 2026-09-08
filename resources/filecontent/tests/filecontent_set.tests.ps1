@@ -3,7 +3,7 @@
 
 Describe 'FileContent set tests' {
     BeforeAll {
-        $resourceType = 'Microsoft/FileContent'
+        $resourceType = 'Microsoft.Filesystem.File/Content'
     }
 
     BeforeEach {
@@ -21,9 +21,9 @@ Describe 'FileContent set tests' {
         $actual = ($out | ConvertFrom-Json).afterState
 
         [System.IO.File]::ReadAllText($filePath) | Should -BeExactly 'hello'
+        $actual.content | Should -BeExactly 'hello'
         $actual._exist | Should -BeTrue
         $actual.sha256 | Should -BeExactly '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824'
-        $actual.PSObject.Properties.Name | Should -Not -Contain 'content'
     }
 
     It 'Removes a file when _exist is false' {

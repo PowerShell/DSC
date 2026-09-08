@@ -3,7 +3,7 @@
 
 Describe 'FileContent export tests' {
     BeforeAll {
-        $resourceType = 'Microsoft/FileContent'
+        $resourceType = 'Microsoft.Filesystem.File/Content'
         $filePath = Join-Path $TestDrive 'export.txt'
         [System.IO.File]::WriteAllText(
             $filePath,

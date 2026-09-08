@@ -19,6 +19,8 @@ pub struct FileContent {
 pub struct FileState {
     pub path: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub content: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub sha256: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sha512: Option<String>,
