@@ -21,6 +21,3 @@ writeError = "Failed to write file '%{path}': %{error}"
 removeError = "Failed to remove file '%{path}': %{error}"
 sha256Mismatch = "The sha256 value does not match the content property"
 sha512Mismatch = "The sha512 value does not match the content property"
-
-[export]
-readError = "Failed to export file '%{path}' as UTF-8 content: %{error}"
