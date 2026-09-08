@@ -11,6 +11,7 @@ use dscerror::DscError;
 use dscresources::{dscresource::{DscResource, Invoke}, invoke_result::{GetResult, SetResult, TestResult}};
 use rust_i18n::i18n;
 
+pub mod actions;
 pub mod configure;
 pub mod discovery;
 pub mod dscerror;
