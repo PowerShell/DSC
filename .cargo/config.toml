@@ -1,7 +1,3 @@
-# CFS/ADO crate feed is currently only working with unstable features.
-[unstable]
-registry-auth = true
-
 [registries]
 DSCCargoMirror = { index = "sparse+https://pkgs.dev.azure.com/msazure/One/_packaging/DSCCargoMirror/Cargo/index/" }
 
