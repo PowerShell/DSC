@@ -71,9 +71,9 @@ pub struct DscResource {
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema, Ord, PartialOrd)]
 #[serde(rename_all = "camelCase")]
-#[schemars(transform = idiomaticize_string_enum)]
 #[dsc_repo_schema(base_name = "resourceCapabilities", folder_path = "definitions")]
 #[schemars(
+    transform = idiomaticize_string_enum,
     transform = Capability::transform_export_schema_uris,
     transform = Capability::transform_schema_docs
 )]
