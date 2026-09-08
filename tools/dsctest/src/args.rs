@@ -5,6 +5,8 @@ use clap::{Parser, Subcommand, ValueEnum};
 
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
 pub enum Schemas {
+    ActionInput,
+    ActionOutput,
     Adapter,
     CopyResource,
     Delete,
@@ -58,6 +60,12 @@ pub enum RefreshEnvOperation {
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
 pub enum SubCommand {
+    #[clap(name = "action", about = "Invoke action")]
+    Action {
+        #[clap(name = "input", short, long, help = "The input to the action command as JSON")]
+        input: String,
+    },
+
     #[clap(name = "adapter", about = "Resource adapter")]
     Adapter {
         #[clap(name = "input", short, long, help = "The input to the adapter command as JSON")]

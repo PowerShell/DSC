@@ -1029,7 +1029,7 @@ fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<
     Ok(extension)
 }
 
-fn verify_executable(resource: &str, operation: &str, executable: &str, directory: &Path) {
+pub fn verify_executable(resource: &str, operation: &str, executable: &str, directory: &Path) {
     if canonicalize_which(executable, Some(directory)).is_err() {
         info!("{}", t!("discovery.commandDiscovery.executableNotFound", resource = resource, operation = operation, executable = executable));
     }

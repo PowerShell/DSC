@@ -1,5 +1,9 @@
 _version = 1
 
+[action.action_manifest]
+actionManifestSchemaTitle = "Action manifest schema URI"
+actionManifestSchemaDescription = "Defines the JSON Schema the action manifest adheres to."
+
 [configure.config_doc]
 configurationDocumentSchemaTitle = "Configuration document schema URI"
 configurationDocumentSchemaDescription = "Defines the JSON Schema the configuration document adheres to."
