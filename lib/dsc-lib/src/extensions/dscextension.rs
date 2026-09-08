@@ -13,6 +13,10 @@ use std::path::PathBuf;
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
 #[dsc_repo_schema(base_name = "list", folder_path = "outputs/extension")]
+#[schemars(
+    transform = DscExtension::transform_export_schema_uris,
+    transform = DscExtension::transform_schema_docs
+)]
 pub struct DscExtension {
     /// The namespaced name of the extension.
     #[serde(rename="type")]
@@ -39,7 +43,11 @@ pub struct DscExtension {
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
-#[schemars(transform = idiomaticize_string_enum)]
+#[schemars(
+    transform = idiomaticize_string_enum,
+    transform = Capability::transform_export_schema_uris,
+    transform = Capability::transform_schema_docs,
+)]
 #[dsc_repo_schema(base_name = "extensionCapabilities", folder_path = "definitions")]
 pub enum Capability {
     /// The extension aids in discovering resources.

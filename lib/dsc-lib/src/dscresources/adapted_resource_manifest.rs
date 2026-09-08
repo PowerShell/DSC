@@ -16,6 +16,7 @@ use std::path::PathBuf;
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
+#[schemars(inline)]
 pub enum AdaptedPathOrContent {
     Path(PathBuf),
     Content(Map<String, Value>),
@@ -32,6 +33,10 @@ pub enum AdaptedPathOrContent {
         title = t!("dscresources.resource_manifest.adaptedResourceManifestSchemaTitle"),
         description = t!("dscresources.resource_manifest.adaptedResourceManifestSchemaDescription"),
     )
+)]
+#[schemars(
+    transform = AdaptedDscResourceManifest::transform_export_schema_uris,
+    transform = AdaptedDscResourceManifest::transform_schema_docs
 )]
 pub struct AdaptedDscResourceManifest {
     /// The version of the resource manifest schema.

@@ -357,6 +357,120 @@ pub trait DscRepoSchema : JsonSchema {
     /// 
     /// Returns a [`DscRepoSchemaMissingTranslationError`] error if the translation key doesn't exist.
     fn schema_i18n(suffix: &str) -> Result<String, DscRepoSchemaMissingTranslationError>;
+
+    /// Transforms the `$schema` and `$id` fields of the given schema to use the default export URIs.
+    /// 
+    /// This associated function modifies the given schema in-place to use the default export URIs for the `$schema`
+    /// and `$id` fields.
+    /// 
+    /// # Arguments
+    /// 
+    /// - `schema` - The mutable reference to the schema to be transformed.
+    /// 
+    /// # Example
+    ///
+    /// The first definition shows how you must manually define the `$schema` and `$id` fields
+    /// without this transformer.
+    /// 
+    /// ```ignore
+    /// # // Ignore the example because derive doesn't work in the crate doc tests
+    /// #[derive(Debug, Clone, JsonSchema, DscRepoSchema)]
+    /// #[dsc_repo_schema(base_name = "struct", folder_path = "examples")]
+    /// #[schemars(
+    ///     extend(
+    ///         "$schema" = ExampleStruct::default_export_meta_schema_uri(),
+    ///         "$id" = ExampleStruct::default_export_schema_id_uri(),
+    ///     )
+    /// )]
+    /// struct ExampleStruct {
+    ///     pub field: String,
+    /// }
+    /// ```
+    /// 
+    /// With this transform, the definition is much shorter:
+    /// 
+    /// ```ignore
+    /// # // Ignore the example because derive doesn't work in the crate doc tests
+    /// #[derive(Debug, Clone, JsonSchema, DscRepoSchema)]
+    /// #[dsc_repo_schema(base_name = "struct", folder_path = "examples")]
+    /// #[schemars(transform = "ExampleStruct::transform_export_schema_uris")]
+    /// struct ExampleStruct {
+    ///     pub field: String,
+    /// }
+    /// ```
+    fn transform_export_schema_uris(schema: &mut schemars::Schema) {
+        schema.set_meta_schema(&Self::default_export_meta_schema_uri());
+        schema.set_id(&Self::default_export_schema_id_uri());
+    }
+
+    /// Inserts the localized documentation (title, description, and markdown description) into the
+    /// schema if available.
+    /// 
+    /// This transform overrides the following keywords in the schema if the matching localized
+    /// documentation is available:
+    /// 
+    /// - `title`
+    /// - `description`
+    /// - `markdownDescription`
+    /// 
+    /// To panic on missing translations, use the [`transform_schema_docs_strict`] associated 
+    /// function instead.
+    /// 
+    /// [`transform_schema_docs_strict`]: Self::transform_schema_docs_strict
+    fn transform_schema_docs(schema: &mut schemars::Schema) {
+        use super::super::vscode::VSCodeSchemaExtensions;
+
+        if let Ok(title) = Self::schema_i18n("title") {
+            schema.set_title(&title);
+        }
+        if let Ok(description) = Self::schema_i18n("description") {
+            schema.set_description(&description);
+        }
+        if let Ok(markdown_description) = Self::schema_i18n("markdownDescription") {
+            schema.set_markdown_description(&markdown_description);
+        }
+    }
+
+    /// Inserts the localized documentation (title, description, and markdown description) into the
+    /// schema and panics if any translations are missing.
+    /// 
+    /// This transform overrides the following keywords in the schema if the matching localized
+    /// documentation is available:
+    /// 
+    /// - `title`
+    /// - `description`
+    /// - `markdownDescription`
+    /// 
+    /// To silently ignore missing translations, use the [`transform_schema_docs`] associated 
+    /// function instead.
+    /// 
+    /// # Panics
+    ///
+    /// This function will panic if any of the localized documentation translations are missing for
+    /// any of the keywords.
+    /// 
+    /// [`transform_schema_docs`]: Self::transform_schema_docs
+    fn transform_schema_docs_strict(schema: &mut schemars::Schema) {
+        use super::super::vscode::VSCodeSchemaExtensions;
+        let mut missing_translation_errors: Vec<DscRepoSchemaMissingTranslationError> = Vec::new();
+        match Self::schema_i18n("title") {
+            Ok(title) => { schema.set_title(&title); },
+            Err(e) => missing_translation_errors.push(e),
+        }
+        match Self::schema_i18n("description") {
+            Ok(description) => { schema.set_description(&description); },
+            Err(e) => missing_translation_errors.push(e),
+        }
+        match Self::schema_i18n("markdownDescription") {
+            Ok(markdown_description) => { schema.set_markdown_description(&markdown_description); },
+            Err(e) => missing_translation_errors.push(e),
+        }
+
+        assert!(
+            missing_translation_errors.is_empty(),
+            "missing translation errors: {missing_translation_errors:?}"
+        );
+    }
 }
 
 /// Defines the error when a user-defined JSON Schema references an unrecognized schema URI.

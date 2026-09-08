@@ -126,12 +126,13 @@ use crate::schemas::dsc_repo::{DscRepoSchema, schema_i18n};
 )]
 #[dsc_repo_schema(base_name = "resourceType", folder_path = "definitions")]
 #[schemars(
-    title = schema_i18n!("title"),
-    description = schema_i18n!("description"),
+    !try_from,
+    !into,
+    transform = FullyQualifiedTypeName::transform_export_schema_uris,
+    transform = FullyQualifiedTypeName::transform_schema_docs_strict,
     extend(
         "pattern" = FullyQualifiedTypeName::VALIDATING_PATTERN,
         "patternErrorMessage" = schema_i18n!("patternErrorMessage"),
-        "markdownDescription" = schema_i18n!("markdownDescription"),
     )
 )]
 #[serde(try_from = "String", into = "String")]

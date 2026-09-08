@@ -870,6 +870,105 @@ pub trait SchemaUtilityExtensions {
     /// ```
     fn set_id(&mut self, id_uri: &str) -> Option<String>;
 
+    //********************** $schema keyword functions ***********************//
+    /// Retrieves the `$schema` keyword and returns it as a string if it exists.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use schemars::json_schema;
+    /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
+    ///
+    /// let ref schema = json_schema!({
+    ///     "$schema": "https://json-schema.org/draft/2020-12/schema"
+    /// });
+    ///
+    /// assert_eq!(
+    ///     schema.get_meta_schema(),
+    ///     Some("https://json-schema.org/draft/2020-12/schema")
+    /// );
+    /// ```
+    fn get_meta_schema(&self) -> Option<&str>;
+    /// Retrieves the `$schema` keyword and returns it as a [`Url`] if it exists.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use schemars::json_schema;
+    /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
+    /// use url::Url;
+    ///
+    /// let ref schema = json_schema!({
+    ///     "$schema": "https://json-schema.org/draft/2020-12/schema",
+    ///     "type": "string"
+    /// });
+    ///
+    /// assert_eq!(
+    ///     schema.get_meta_schema_as_url(),
+    ///     Some(Url::parse("https://json-schema.org/draft/2020-12/schema").unwrap())
+    /// );
+    /// ```
+    /// 
+    /// ```rust
+    /// use schemars::json_schema;
+    /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
+    ///
+    /// let ref schema = json_schema!({ "type": "string" });
+    ///
+    /// assert_eq!(
+    ///     schema.get_meta_schema_as_url(),
+    ///     None
+    /// );
+    /// ```
+    fn get_meta_schema_as_url(&self) -> Option<Url>;
+    /// Checks if the `$schema` keyword is present in the schema.
+    /// 
+    /// # Examples
+    ///
+    /// ```rust
+    /// use schemars::json_schema;
+    /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
+    ///
+    /// let ref schema = json_schema!({
+    ///     "$schema": "https://json-schema.org/draft/2020-12/schema",
+    ///     "type": "string"
+    /// });
+    ///
+    /// assert_eq!(
+    ///     schema.has_meta_schema_keyword(),
+    ///     true
+    /// );
+    /// ```
+    /// 
+    /// ```rust
+    /// # use schemars::json_schema;
+    /// # use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
+    ///
+    /// let ref schema = json_schema!({"type": "string"});
+    ///
+    /// assert_eq!(
+    ///     schema.has_meta_schema_keyword(),
+    ///     false
+    /// );
+    /// ```
+    fn has_meta_schema_keyword(&self) -> bool;
+    /// Sets the `$schema` keyword to the provided URI and returns the previous value if it existed.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use schemars::json_schema;
+    /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
+    ///
+    /// let mut schema = json_schema!({ "type": "string" });
+    /// let previous = schema.set_meta_schema("https://json-schema.org/draft/2020-12/schema");
+    /// assert_eq!(previous, None);
+    /// assert_eq!(
+    ///     schema.get_meta_schema_as_url(),
+    ///     Some(url::Url::parse("https://json-schema.org/draft/2020-12/schema").unwrap())
+    /// );
+    /// ```
+    fn set_meta_schema(&mut self, meta_schema_uri: &str) -> Option<String>;
     //*********************** $defs keyword functions ************************//
     /// Retrieves the `$defs` keyword and returns the object if it exists.
     ///
@@ -1869,6 +1968,88 @@ pub trait SchemaUtilityExtensions {
     /// assert_eq!(actual, expected);
     /// ```
     fn canonicalize_refs_and_defs_for_bundled_resources(&mut self);
+    //************************ title keyword functions ***********************//
+    /// Retrieves the value of the `title` keyword from the schema, if it exists.
+    /// 
+    /// # Returns
+    /// 
+    /// An [`Option<&str>`] containing the value of the `title` keyword if it exists, or [`None`]
+    /// otherwise.
+    fn get_title(&self) -> Option<&str>;
+    /// Sets the value of the `title` keyword in the schema.
+    /// 
+    /// This function sets the value of the `title` keyword in the schema and returns the previous
+    /// value as a [`String`], if it was already defined.
+    /// 
+    /// # Arguments
+    /// 
+    /// - `title` - The value to set for the `title` keyword.
+    /// 
+    /// # Returns
+    /// 
+    /// An [`Option<String>`] containing the previous value of the `title` keyword if it was
+    /// already defined, or [`None`] otherwise.
+    /// 
+    /// # Example
+    /// 
+    /// This example shows how you can use this method to define and override the `title` keyword
+    /// in a schema.
+    /// 
+    /// ```
+    /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
+    /// use schemars::json_schema;
+    /// 
+    /// let ref mut schema = json_schema!({"type": "string"});
+    /// assert_eq!(schema.set_title("Example Title"), None);
+    /// assert_eq!(schema.set_title("New example title"), Some("Example Title".to_string()));
+    /// ```
+    fn set_title(&mut self, title: &str) -> Option<String>;
+    //********************* description keyword functions ********************//
+    /// Retrieves the value of the `description` keyword from the schema, if it exists.
+    /// 
+    /// # Returns
+    /// 
+    /// An [`Option<&str>`] containing the value of the `description` keyword if it exists, or
+    /// [`None`] otherwise.
+    /// 
+    /// # Example
+    /// 
+    /// This example shows how you can use this method to retrieve the `description` keyword from a
+    /// schema.
+    /// 
+    /// ```
+    /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
+    /// use schemars::json_schema;
+    /// 
+    /// let schema = json_schema!({"type": "string", "description": "An example description"});
+    /// assert_eq!(schema.get_description(), Some("An example description"));
+    /// ```
+    fn get_description(&self) -> Option<&str>;
+    /// Sets the value of the `description` keyword in the schema.
+    /// 
+    /// # Arguments
+    /// 
+    /// - `description` - The value to set for the `description` keyword.
+    /// 
+    /// # Returns
+    /// 
+    /// An [`Option<String>`] containing the previous value of the `description` keyword if it was
+    /// already defined, or [`None`] otherwise.
+    /// 
+    /// # Example
+    /// 
+    /// This example shows how you can use this method to define and override the `description`
+    /// keyword in a schema.
+    /// 
+    /// ```
+    /// use dsc_lib_jsonschema::schema_utility_extensions::SchemaUtilityExtensions;
+    /// use schemars::json_schema;
+    /// 
+    /// let ref mut schema = json_schema!({"type": "string"});
+    /// assert_eq!(schema.set_description("An example description"), None);
+    /// assert_eq!(schema.set_description("A new description"), Some("An example description".to_string()));
+    /// ```
+    fn set_description(&mut self, description: &str) -> Option<String>;
 }
 
 impl SchemaUtilityExtensions for Schema {
@@ -2155,6 +2336,19 @@ impl SchemaUtilityExtensions for Schema {
         self.insert("$id".to_string(), Value::String(id_uri.to_string()))
             .and(old_id)
     }
+    fn get_meta_schema(&self) -> Option<&str> {
+        self.get_keyword_as_str("$schema")
+    }
+    fn get_meta_schema_as_url(&self) -> Option<Url> {
+        self.get_meta_schema().and_then(|s| Url::parse(s).ok())
+    }
+    fn has_meta_schema_keyword(&self) -> bool {
+        self.get("$schema").is_some()
+    }
+    fn set_meta_schema(&mut self, meta_schema_uri: &str) -> Option<String> {
+        self.insert("$schema".to_string(), Value::String(meta_schema_uri.to_string()))
+            .and_then(|v| v.as_str().map(std::string::ToString::to_string))
+    }
     fn get_properties(&self) -> Option<&Map<String, Value>> {
         self.get_keyword_as_object("properties")
     }
@@ -2351,5 +2545,20 @@ impl SchemaUtilityExtensions for Schema {
             }
             self.rename_defs_subschema_for_reference(&reference_lookup, bundled_id);
         }
+    }
+    fn get_title(&self) -> Option<&str> {
+        self.get_keyword_as_str("title")
+    }
+    fn set_title(&mut self, title: &str) -> Option<String> {
+        self
+            .insert("title".to_string(), Value::String(title.to_string()))
+            .and_then(|v| v.as_str().map(std::string::ToString::to_string))
+    }
+    fn get_description(&self) -> Option<&str> {
+        self.get_keyword_as_str("description")
+    }
+    fn set_description(&mut self, description: &str) -> Option<String> {
+        self.insert("description".to_string(), Value::String(description.to_string()))
+            .and_then(|v| v.as_str().map(std::string::ToString::to_string))
     }
 }

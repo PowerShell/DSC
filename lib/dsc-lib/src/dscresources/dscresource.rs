@@ -29,6 +29,10 @@ use super::{
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 #[dsc_repo_schema(base_name = "list", folder_path = "outputs/resource")]
+#[schemars(
+    transform = DscResource::transform_export_schema_uris,
+    transform = DscResource::transform_schema_docs
+)]
 pub struct DscResource {
     /// The namespaced name of the resource.
     #[serde(rename="type")]
@@ -67,8 +71,12 @@ pub struct DscResource {
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema, Ord, PartialOrd)]
 #[serde(rename_all = "camelCase")]
-#[schemars(transform = idiomaticize_string_enum)]
 #[dsc_repo_schema(base_name = "resourceCapabilities", folder_path = "definitions")]
+#[schemars(
+    transform = idiomaticize_string_enum,
+    transform = Capability::transform_export_schema_uris,
+    transform = Capability::transform_schema_docs
+)]
 pub enum Capability {
     /// The resource supports retrieving configuration.
     Get,
@@ -92,6 +100,7 @@ pub enum Capability {
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(untagged)]
+#[schemars(inline)]
 pub enum ImplementedAs {
     /// A command line executable
     Command,
