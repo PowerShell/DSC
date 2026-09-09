@@ -1,18 +1,18 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::types::{ExportState, FileContent, FileState};
+use crate::types::FileContent;
 use rust_i18n::t;
 use sha2::{Digest, Sha256, Sha512};
 use std::fs;
 use std::path::Path;
 
-pub fn get(input: &FileContent) -> Result<FileState, String> {
+pub fn get(input: &FileContent) -> Result<FileContent, String> {
     validate_input(input)?;
     read_state(&input.path)
 }
 
-pub fn set(input: &FileContent) -> Result<FileState, String> {
+pub fn set(input: &FileContent) -> Result<FileContent, String> {
     validate_input(input)?;
     let path = Path::new(&input.path);
 
@@ -49,13 +49,13 @@ pub fn set(input: &FileContent) -> Result<FileState, String> {
     read_state(&input.path)
 }
 
-pub fn test(input: &FileContent) -> Result<FileState, String> {
+pub fn test(input: &FileContent) -> Result<FileContent, String> {
     validate_input(input)?;
     let mut actual = read_state(&input.path)?;
 
     let in_desired_state = if input.exist == Some(false) {
-        !actual.exist
-    } else if !actual.exist {
+        actual.exist == Some(false)
+    } else if actual.exist == Some(false) {
         false
     } else {
         desired_hashes(input)
@@ -76,17 +76,9 @@ pub fn test(input: &FileContent) -> Result<FileState, String> {
     Ok(actual)
 }
 
-pub fn export(input: &FileContent) -> Result<ExportState, String> {
+pub fn export(input: &FileContent) -> Result<FileContent, String> {
     validate_input(input)?;
-    let state = read_state(&input.path)?;
-
-    Ok(ExportState {
-        path: state.path,
-        content: state.content,
-        sha256: state.sha256,
-        sha512: state.sha512,
-        exist: state.exist,
-    })
+    read_state(&input.path)
 }
 
 #[derive(Clone, Copy)]
@@ -146,16 +138,16 @@ fn validate_hash(value: Option<&str>, length: usize, name: &str) -> Result<(), S
     Ok(())
 }
 
-fn read_state(path: &str) -> Result<FileState, String> {
+fn read_state(path: &str) -> Result<FileContent, String> {
     let bytes = match fs::read(path) {
         Ok(bytes) => bytes,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-            return Ok(FileState {
+            return Ok(FileContent {
                 path: path.to_string(),
                 content: None,
                 sha256: None,
                 sha512: None,
-                exist: false,
+                exist: Some(false),
                 in_desired_state: None,
             });
         }
@@ -167,12 +159,12 @@ fn read_state(path: &str) -> Result<FileState, String> {
     let content = String::from_utf8(bytes)
         .map_err(|error| t!("get.readError", path = path, error = error.to_string()).to_string())?;
     let (sha256, sha512) = hash_bytes(content.as_bytes());
-    Ok(FileState {
+    Ok(FileContent {
         path: path.to_string(),
         content: Some(content),
         sha256: Some(sha256),
         sha512: Some(sha512),
-        exist: true,
+        exist: Some(true),
         in_desired_state: None,
     })
 }
