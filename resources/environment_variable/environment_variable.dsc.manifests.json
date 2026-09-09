@@ -1,0 +1,304 @@
+{
+    "resources": [
+        {
+            "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+            "type": "Microsoft.Windows/EnvironmentVariable",
+            "description": "Manage a user or machine environment variable stored in the Windows registry.",
+            "tags": [
+                "Windows",
+                "Environment"
+            ],
+            "version": "0.1.0",
+            "get": {
+                "executable": "environment_variable",
+                "args": [
+                    "get",
+                    {
+                        "jsonInputArg": "--input",
+                        "mandatory": true
+                    }
+                ]
+            },
+            "set": {
+                "executable": "environment_variable",
+                "args": [
+                    "set",
+                    {
+                        "jsonInputArg": "--input",
+                        "mandatory": true
+                    }
+                ],
+                "implementsPretest": false,
+                "handlesExist": true,
+                "return": "state"
+            },
+            "test": {
+                "executable": "environment_variable",
+                "args": [
+                    "test",
+                    {
+                        "jsonInputArg": "--input",
+                        "mandatory": true
+                    }
+                ],
+                "return": "state"
+            },
+            "exitCodes": {
+                "0": "Success",
+                "1": "Invalid arguments",
+                "2": "Invalid input",
+                "3": "Environment variable resource error",
+                "4": "Elevation required: Setting or removing AllUsers environment variables requires an elevated process"
+            },
+            "schema": {
+                "embedded": {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "title": "Windows Environment Variable",
+                    "description": "Manage a user or machine environment variable stored in the Windows registry.",
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                        "name"
+                    ],
+                    "dependentSchemas": {
+                        "value": {
+                            "not": {
+                                "required": [
+                                    "pathValue"
+                                ]
+                            }
+                        },
+                        "pathValue": {
+                            "not": {
+                                "required": [
+                                    "value"
+                                ]
+                            }
+                        }
+                    },
+                    "dependentRequired": {
+                        "pathAction": [
+                            "pathValue"
+                        ]
+                    },
+                    "properties": {
+                        "scope": {
+                            "type": "string",
+                            "title": "Scope",
+                            "description": "The registry scope for the environment variable.",
+                            "default": "currentUser",
+                            "enum": [
+                                "allUsers",
+                                "currentUser"
+                            ]
+                        },
+                        "name": {
+                            "type": "string",
+                            "title": "Name",
+                            "description": "The environment variable name.",
+                            "minLength": 1
+                        },
+                        "value": {
+                            "type": "string",
+                            "title": "Value",
+                            "description": "The environment variable value."
+                        },
+                        "pathValue": {
+                            "type": "array",
+                            "title": "Path value",
+                            "description": "The semicolon-delimited environment variable value represented as path entries.",
+                            "items": {
+                                "type": "string",
+                                "minLength": 1,
+                                "pattern": "^[^;]+$"
+                            }
+                        },
+                        "pathAction": {
+                            "type": "string",
+                            "title": "Path action",
+                            "description": "How pathValue entries are combined with the current value.",
+                            "writeOnly": true,
+                            "default": "clobber",
+                            "enum": [
+                                "prepend",
+                                "append",
+                                "clobber"
+                            ]
+                        },
+                        "_exist": {
+                            "type": "boolean",
+                            "title": "Exists",
+                            "description": "Whether the environment variable should exist. Set to false to remove it.",
+                            "default": true
+                        },
+                        "_inDesiredState": {
+                            "type": "boolean",
+                            "title": "In desired state",
+                            "description": "Whether the environment variable is in the desired state. Returned only by the test operation.",
+                            "readOnly": true
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+            "type": "Microsoft.Windows/EnvironmentVariableList",
+            "description": "Manage user and machine environment variables stored in the Windows registry.",
+            "tags": [
+                "Windows",
+                "Environment"
+            ],
+            "version": "0.1.0",
+            "get": {
+                "executable": "environment_variable",
+                "args": [
+                    "get",
+                    "--list",
+                    {
+                        "jsonInputArg": "--input",
+                        "mandatory": true
+                    }
+                ]
+            },
+            "set": {
+                "executable": "environment_variable",
+                "args": [
+                    "set",
+                    "--list",
+                    {
+                        "jsonInputArg": "--input",
+                        "mandatory": true
+                    }
+                ],
+                "implementsPretest": false,
+                "handlesExist": true,
+                "return": "state"
+            },
+            "test": {
+                "executable": "environment_variable",
+                "args": [
+                    "test",
+                    "--list",
+                    {
+                        "jsonInputArg": "--input",
+                        "mandatory": true
+                    }
+                ],
+                "return": "state"
+            },
+            "exitCodes": {
+                "0": "Success",
+                "1": "Invalid arguments",
+                "2": "Invalid input",
+                "3": "Environment variable resource error",
+                "4": "Elevation required: Setting or removing AllUsers environment variables requires an elevated process"
+            },
+            "schema": {
+                "embedded": {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "title": "Windows Environment Variable List",
+                    "description": "Manage user and machine environment variables stored in the Windows registry.",
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                        "environmentVariables"
+                    ],
+                    "properties": {
+                        "environmentVariables": {
+                            "type": "array",
+                            "title": "Environment variables",
+                            "description": "The environment variables to get or set.",
+                            "minItems": 1,
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                    "name"
+                                ],
+                                "dependentSchemas": {
+                                    "value": {
+                                        "not": {
+                                            "required": [
+                                                "pathValue"
+                                            ]
+                                        }
+                                    },
+                                    "pathValue": {
+                                        "not": {
+                                            "required": [
+                                                "value"
+                                            ]
+                                        }
+                                    }
+                                },
+                                "dependentRequired": {
+                                    "pathAction": [
+                                        "pathValue"
+                                    ]
+                                },
+                                "properties": {
+                                    "scope": {
+                                        "type": "string",
+                                        "title": "Scope",
+                                        "description": "The registry scope for the environment variable.",
+                                        "default": "currentUser",
+                                        "enum": [
+                                            "allUsers",
+                                            "currentUser"
+                                        ]
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "title": "Name",
+                                        "description": "The environment variable name.",
+                                        "minLength": 1
+                                    },
+                                    "value": {
+                                        "type": "string",
+                                        "title": "Value",
+                                        "description": "The environment variable value."
+                                    },
+                                    "pathValue": {
+                                        "type": "array",
+                                        "title": "Path value",
+                                        "description": "The semicolon-delimited environment variable value represented as path entries.",
+                                        "items": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "pattern": "^[^;]+$"
+                                        }
+                                    },
+                                    "pathAction": {
+                                        "type": "string",
+                                        "title": "Path action",
+                                        "description": "How pathValue entries are combined with the current value.",
+                                        "writeOnly": true,
+                                        "default": "clobber",
+                                        "enum": [
+                                            "prepend",
+                                            "append",
+                                            "clobber"
+                                        ]
+                                    },
+                                    "_exist": {
+                                        "type": "boolean",
+                                        "title": "Exists",
+                                        "description": "Whether the environment variable should exist. Set to false to remove it.",
+                                        "default": true
+                                    }
+                                }
+                            }
+                        },
+                        "_inDesiredState": {
+                            "type": "boolean",
+                            "title": "In desired state",
+                            "description": "Whether all environment variables are in the desired state. Returned only by the test operation.",
+                            "readOnly": true
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}
