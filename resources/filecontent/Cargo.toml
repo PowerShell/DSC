@@ -1,0 +1,19 @@
+[package]
+name = "filecontent"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "filecontent"
+path = "src/main.rs"
+
+[package.metadata.i18n]
+available-locales = ["en-us"]
+default-locale = "en-us"
+load-path = "locales"
+
+[dependencies]
+rust-i18n = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }

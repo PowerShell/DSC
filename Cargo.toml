@@ -17,6 +17,7 @@ members = [
     "lib/dsc-lib",
     "resources/dism_dsc",
     "resources/dscecho",
+    "resources/filecontent",
     "resources/osinfo",
     "resources/process",
     "resources/registry",
@@ -51,6 +52,7 @@ default-members = [
     "lib/dsc-lib",
     "resources/dism_dsc",
     "resources/dscecho",
+    "resources/filecontent",
     "resources/osinfo",
     "resources/process",
     "resources/registry",
@@ -86,6 +88,7 @@ Windows = [
     "lib/dsc-lib",
     "resources/dism_dsc",
     "resources/dscecho",
+    "resources/filecontent",
     "resources/osinfo",
     "resources/process",
     "resources/registry",
@@ -113,6 +116,7 @@ macOS = [
     "lib/dsc-lib-telemetry",
     "lib/dsc-lib",
     "resources/dscecho",
+    "resources/filecontent",
     "resources/osinfo",
     "resources/process",
     "resources/runcommandonset",
@@ -134,6 +138,7 @@ Linux = [
     "lib/dsc-lib-telemetry",
     "lib/dsc-lib",
     "resources/dscecho",
+    "resources/filecontent",
     "resources/osinfo",
     "resources/process",
     "resources/runcommandonset",
@@ -231,6 +236,8 @@ semver = { version = "1.0.28" }
 serde = { version = "1.0.229", features = ["derive"] }
 # dsc, dsc-lib, dscecho, dsc-lib-osinfo, osinfo, process, registry, dsc-lib-registry, runcommandonset, sshdconfig, dsctest, test_group_resource, y2j
 serde_json = { version = "1.0.151", features = ["preserve_order"] }
+# filecontent
+sha2 = { version = "0.10.9" }
 # dsc, dsc-lib, y2j
 serde_yaml = { version = "0.9" }
 # dsc-lib-jsonschema-macros
