@@ -24,36 +24,36 @@ pub enum AdaptedPathOrContent {
     Content(Map<String, Value>),
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
-#[dsc_repo_schema(base_name = "manifest.get", folder_path = "resource/adapted")]
+#[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
+#[schemars(inline)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct GetOperation {
     pub require_security_context: Option<SecurityContextKind>,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
-#[dsc_repo_schema(base_name = "manifest.set", folder_path = "resource/adapted")]
+#[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
+#[schemars(inline)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct SetOperation {
     pub require_security_context: Option<SecurityContextKind>,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
-#[dsc_repo_schema(base_name = "manifest.delete", folder_path = "resource/adapted")]
+#[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
+#[schemars(inline)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct DeleteOperation {
     pub require_security_context: Option<SecurityContextKind>,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
-#[dsc_repo_schema(base_name = "manifest.test", folder_path = "resource/adapted")]
+#[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
+#[schemars(inline)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct TestOperation {
     pub require_security_context: Option<SecurityContextKind>,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
-#[dsc_repo_schema(base_name = "manifest.export", folder_path = "resource/adapted")]
+#[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
+#[schemars(inline)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct ExportOperation {
     pub require_security_context: Option<SecurityContextKind>,
