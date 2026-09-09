@@ -440,7 +440,8 @@ fn get_desired_state(actual: &Value) -> Result<Option<bool>, DscError> {
     Ok(in_desired_state)
 }
 
-fn invoke_synthetic_test(resource: &DscResource, expected: &str, target_resource: Option<&DscResource>) -> Result<TestResult, DscError> {    let get_result = invoke_get(resource, expected, target_resource)?;
+fn invoke_synthetic_test(resource: &DscResource, expected: &str, target_resource: Option<&DscResource>) -> Result<TestResult, DscError> {
+    let get_result = invoke_get(resource, expected, target_resource)?;
     let actual_state = match get_result {
         GetResult::Group(results) => {
             let mut result_array: Vec<Value> = Vec::new();
@@ -457,9 +458,18 @@ fn invoke_synthetic_test(resource: &DscResource, expected: &str, target_resource
     let cached_resource = target_resource.unwrap_or(resource);
     let schema: Option<Value> = get_resource_schema(&cached_resource.type_name, &cached_resource.version)
         .or_else(|| {
-            // Populate the cache on a miss, then read from cache
-            get_schema(resource, target_resource).ok();
-            get_resource_schema(&cached_resource.type_name, &cached_resource.version)
+            // Cache miss: parse and use the schema returned by get_schema. This covers cases
+            // where get_schema returns early (e.g. target_resource.schema) without caching.
+            let schema_str = get_schema(resource, target_resource).ok()?;
+            let schema_value: Value = serde_json::from_str(&schema_str).ok()?;
+            // Best-effort cache population for future callers.
+            locked_insert!(
+                RESOURCE_SCHEMAS,
+                cached_resource.type_name.clone(),
+                cached_resource.version.clone(),
+                schema_value.clone()
+            );
+            Some(schema_value)
         });
     let diff_properties = get_diff_with_schema(&expected_value, &actual_state, schema.as_ref());
     Ok(TestResult::Resource(ResourceTestResponse {

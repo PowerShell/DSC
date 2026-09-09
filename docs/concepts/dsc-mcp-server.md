@@ -20,10 +20,12 @@ This enhances the overall authoring experience by providing contextual informati
 local DSC environment directly to AI-powered tools.
 
 > [!IMPORTANT]
-> The DSC MCP server is focused on discovery and information retrieval. It does not
-> directly perform any configuration changes or resource modifications unless requested to do so.
-> The information it provides to AI agents can be used to generate configurations and commands
-> that, when executed, will impact your system. Always review and validate any generated
+> The DSC MCP server is primarily focused on discovery and information retrieval. It only
+> performs configuration changes or resource modifications when an agent explicitly invokes the
+> `invoke_dsc_config` or `invoke_dsc_resource` tools with the `set` or `delete` operation. Those
+> tools support a `what_if` option so agents can preview a change before applying it. The
+> information the server provides to AI agents can be used to generate configurations and
+> commands that, when executed, will impact your system. Always review and validate any generated
 > content before execution.
 
 ## What is Model Context Protocol (MCP)?
@@ -73,6 +75,24 @@ to help solve your specific needs:
 - **Agent provides**: Examples using the appropriate function for your use case
 
 This helps agents suggest the most suitable approach using your available DSC capabilities.
+
+### Previewing changes with what-if
+
+Before an agent applies a configuration or resource change, it can simulate the change to show
+you what would happen without modifying your system. The `invoke_dsc_config` tool accepts a
+`what_if` option for the `set` operation, and the `invoke_dsc_resource` tool accepts `what_if`
+for the `set` and `delete` operations. This is the same behavior as the `--what-if` flag on the
+`dsc config set`, `dsc resource set`, and `dsc resource delete` commands:
+
+- **You ask**: "Show me what would change if I applied this configuration"
+- **Agent invokes**: `invoke_dsc_config` with `operation: set` and `what_if: true`
+- **Agent provides**: The projected before and after state for each resource, with the result
+  metadata reporting `executionType` as `whatIf`
+
+Resources that natively support what-if run their simulation directly. For resources that don't,
+DSC generates a synthetic what-if result from the resource's `test` operation. When `what_if` is
+requested with an operation that doesn't support it, such as `get`, the tool returns an error
+instead of silently ignoring the option.
 
 > [!NOTE]
 > Additional MCP tools will become available in future releases to expand the capabilities
@@ -194,6 +214,7 @@ Example prompts that work well with DSC MCP integration:
 - "What DSC resources are available on this machine?"
 - "Show me the schema for the Microsoft.Windows/Registry resource"
 - "List all available DSC functions I can use in expressions"
+- "Preview what this configuration would change before applying it"
 
 :::image type="complex" source="media/dsc-mcp-server/dsc-mcp-usage-example.png" alt-text="Screenshot showing DSC MCP usage example in VS Code":::
    This screenshot demonstrates the DSC MCP integration in action, showing how AI agents use the MCP tools to provide contextual assistance with DSC-related tasks in VS Code.

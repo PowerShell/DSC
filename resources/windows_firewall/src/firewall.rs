@@ -587,7 +587,7 @@ pub fn set_rules(input: &FirewallRuleList, what_if: bool) -> Result<FirewallRule
         _ => {} // None or Ignore: no additional action.
     }
 
-    Ok(FirewallRuleList { rules: results, unspecified_rules: input.unspecified_rules.clone() })
+    Ok(FirewallRuleList { rules: results, unspecified_rules: None })
 }
 
 pub fn export_rules() -> Result<FirewallRuleList, FirewallError> {

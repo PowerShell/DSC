@@ -1,7 +1,7 @@
 {
   "adaptedResources": [
     {
-      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/adaptedresource/manifest.json",
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/adapted/manifest.json",
       "type": "Adapted/Two",
       "kind": "resource",
       "version": "2.0.0",
@@ -38,7 +38,7 @@
       }
     },
     {
-      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/adaptedresource/manifest.json",
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/adapted/manifest.json",
       "type": "Adapted/Four",
       "kind": "resource",
       "version": "1.0.0",
@@ -314,6 +314,53 @@
               "type": "integer",
               "description": "The count value.",
               "default": 5
+            },
+            "nested": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["value"],
+              "properties": {
+                "value": {
+                  "type": "string"
+                },
+                "secret": {
+                  "type": "object",
+                  "writeOnly": true,
+                  "additionalProperties": false,
+                  "required": ["token"],
+                  "properties": {
+                    "token": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "referencedNested": {
+              "$ref": "#/$defs/nested"
+            }
+          },
+          "$defs": {
+            "nested": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["value"],
+              "properties": {
+                "value": {
+                  "type": "string"
+                },
+                "secret": {
+                  "type": "object",
+                  "writeOnly": true,
+                  "additionalProperties": false,
+                  "required": ["token"],
+                  "properties": {
+                    "token": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
             }
           }
         }

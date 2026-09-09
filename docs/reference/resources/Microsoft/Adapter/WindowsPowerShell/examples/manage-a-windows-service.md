@@ -3,12 +3,12 @@ description: >
     Example showing how to manage a Windows service using the PSDesiredStateConfiguration module
     with the Microsoft.Adapter/WindowsPowerShell adapter in a DSC configuration document.
 
-ms.date: 03/23/2026
+ms.date: 08/13/2026
 ms.topic: reference
-title: Manage a Windows service
+title: Manage a Windows service with the Windows PowerShell adapter
 ---
 
-# Manage a Windows service
+# Manage a Windows service with the Windows PowerShell adapter
 
 This example shows how to use the `Microsoft.Adapter/WindowsPowerShell` adapter with the
 `PSDesiredStateConfiguration/Service` adapted PSDSC resource to manage a Windows service. These

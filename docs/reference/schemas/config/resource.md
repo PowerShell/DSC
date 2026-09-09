@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for a resource instance in a Desired State Configuration document.
-ms.date:     07/03/2025
+ms.date:     08/13/2026
 ms.topic:    reference
 title:       DSC Configuration document resource instance schema
 ---
@@ -141,6 +141,48 @@ Required:          false
 ItemsMustBeUnique: true
 ItemsType:         string
 ItemsPattern:      ^\[resourceId\(\s*'\w+(\.\w+){0,2}\/\w+'\s*,\s*'[a-zA-Z0-9 ]+'\s*\)\]$
+```
+
+### directives
+
+The `directives` property of a resource instance defines per-instance overrides for how DSC should
+process the resource. This property was added in DSC version 3.2.
+
+```yaml
+Type:     object
+Required: false
+```
+
+You can define the following directives for a resource instance:
+
+#### requireAdapter
+
+The `requireAdapter` directive indicates that DSC should use the specified adapter to invoke the
+adapted resource instance. The value for this directive must be the fully qualified type name of
+the adapter resource, like `Microsoft.Adapter/PowerShell`.
+
+When this directive isn't specified, DSC invokes the adapted resource through the first discovered
+adapter that indicates it can invoke the resource. This directive has no effect on nonadapted
+resource instances.
+
+```yaml
+Type:     string
+Required: false
+Pattern:  ^\w+(\.\w+){0,2}\/\w+$
+```
+
+#### securityContext
+
+The `securityContext` directive indicates that DSC should validate the current security context
+against this directive before invoking the resource. This value overrides the
+`metadata.Microsoft.DSC.securityContext` setting for the top level of the configuration document.
+This enables you to selectively require or forbid elevated security contexts for a specific
+resource instance.
+
+```yaml
+Type:        string
+Required:    false
+ValidValues: [Current, Elevated, Restricted]
 ```
 
 [01]: ../definitions/resourceType.md

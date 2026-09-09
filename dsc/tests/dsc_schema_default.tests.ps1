@@ -51,4 +51,57 @@ Describe 'Synthetic test uses schema defaults' {
         $out.inDesiredState | Should -Be $true
         $out.differingProperties | Should -BeNullOrEmpty
     }
+
+    It 'Nested writeOnly object is not reported as differing' {
+        $inputJson = @{
+            name = 'test'
+            nested = @{
+                value = 'actual'
+                secret = @{
+                    token = 'sensitive'
+                }
+            }
+        } | ConvertTo-Json -Compress -Depth 5
+
+        $out = $inputJson | dsc resource test -r Test/SchemaDefault -f - | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.actualState.nested.PSObject.Properties.Name | Should -Not -Contain 'secret'
+        $out.inDesiredState | Should -Be $true
+        $out.differingProperties | Should -BeNullOrEmpty
+    }
+
+    It 'Nested non-writeOnly property is reported as differing' {
+        $inputJson = @{
+            name = 'test'
+            nested = @{
+                value = 'expected'
+                secret = @{
+                    token = 'sensitive'
+                }
+            }
+        } | ConvertTo-Json -Compress -Depth 5
+
+        $out = $inputJson | dsc resource test -r Test/SchemaDefault -f - | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.inDesiredState | Should -Be $false
+        $out.differingProperties | Should -Be @('nested')
+    }
+
+    It 'Nested writeOnly object under a referenced schema is not reported as differing' {
+        $inputJson = @{
+            name = 'test'
+            referencedNested = @{
+                value = 'actual'
+                secret = @{
+                    token = 'sensitive'
+                }
+            }
+        } | ConvertTo-Json -Compress -Depth 5
+
+        $out = $inputJson | dsc resource test -r Test/SchemaDefault -f - | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.actualState.referencedNested.PSObject.Properties.Name | Should -Not -Contain 'secret'
+        $out.inDesiredState | Should -Be $true
+        $out.differingProperties | Should -BeNullOrEmpty
+    }
 }

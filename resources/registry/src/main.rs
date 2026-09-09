@@ -12,7 +12,7 @@ use clap::Parser;
 use dsc_lib_registry::{config::Registry, RegistryHelper};
 use rust_i18n::t;
 use schemars::schema_for;
-use std::process::exit;
+use std::process::ExitCode;
 use tracing::{error, trace};
 use tracing_subscriber::{filter::LevelFilter, prelude::__tracing_subscriber_SubscriberExt, EnvFilter, Layer};
 use types::RegistryList;
@@ -24,12 +24,12 @@ mod types;
 
 rust_i18n::i18n!("locales", fallback = "en-us");
 
-const EXIT_SUCCESS: i32 = 0;
-const EXIT_INVALID_INPUT: i32 = 2;
-const EXIT_REGISTRY_ERROR: i32 = 3;
+const EXIT_SUCCESS: u8 = 0;
+const EXIT_INVALID_INPUT: u8 = 2;
+const EXIT_REGISTRY_ERROR: u8 = 3;
 
 #[allow(clippy::too_many_lines)]
-fn main() {
+fn main() -> ExitCode {
     #[cfg(debug_assertions)]
     check_debug();
 
@@ -45,9 +45,9 @@ fn main() {
                 AdapterSubCommand::Set { input, adapted_resource } => {
                     if let Err(e) = adapter_set(&input, &adapted_resource) {
                         error!("{e}");
-                        exit(EXIT_REGISTRY_ERROR);
+                        return ExitCode::from(EXIT_REGISTRY_ERROR);
                     }
-                    exit(EXIT_SUCCESS);
+                    return ExitCode::from(EXIT_SUCCESS);
                 },
                 AdapterSubCommand::Export { input, adapted_resource } => {
                     adapter_export(&input, &adapted_resource)
@@ -55,7 +55,7 @@ fn main() {
                 AdapterSubCommand::Schema => {
                     let schema = schema_for!(AdaptedRegistryValue);
                     println!("{}", serde_json::to_string(&schema).unwrap());
-                    exit(EXIT_SUCCESS);
+                    return ExitCode::from(EXIT_SUCCESS);
                 }
             };
             match result {
@@ -64,7 +64,7 @@ fn main() {
                 },
                 Err(err) => {
                     error!("{err}");
-                    exit(EXIT_INVALID_INPUT);
+                    return ExitCode::from(EXIT_INVALID_INPUT);
                 }
             }
         },
@@ -85,13 +85,15 @@ fn main() {
                 ConfigSubCommand::Get{input, list} => {
                     trace!("Get input: {input}");
                     let mut output = RegistryList { registry_entries: vec![], registry_file_path: None };
-                    let reg_list = import_input(&input, list);
+                    let Ok(reg_list) = import_input(&input, list) else {
+                        return ExitCode::from(EXIT_INVALID_INPUT);
+                    };
                     for reg in reg_list.registry_entries {
                         let reg_helper = match RegistryHelper::new_from_registry(&reg) {
                             Ok(helper) => helper,
                             Err(err) => {
                                 error!("{err}");
-                                exit(EXIT_INVALID_INPUT);
+                                return ExitCode::from(EXIT_INVALID_INPUT);
                             }
                         };
                         match reg_helper.get() {
@@ -101,29 +103,31 @@ fn main() {
                                 } else {
                                     let json = serde_json::to_string(&reg_config).unwrap();
                                     println!("{json}");
-                                    exit(EXIT_SUCCESS);
+                                    return ExitCode::from(EXIT_SUCCESS);
                                 }
                             },
                             Err(err) => {
                                 error!("{err}");
-                                exit(EXIT_REGISTRY_ERROR);
+                                return ExitCode::from(EXIT_REGISTRY_ERROR);
                             }
                         }
                     }
                     let json = serde_json::to_string(&output).unwrap();
                     println!("{json}");
-                    exit(EXIT_SUCCESS);
+                    return ExitCode::from(EXIT_SUCCESS);
                 },
                 ConfigSubCommand::Set{input, list, what_if} => {
                     trace!("Set input: {input}, what_if: {what_if}");
                     let mut output = RegistryList { registry_entries: vec![], registry_file_path: None };
-                    let reg_list = import_input(&input, list);
+                    let Ok(reg_list) = import_input(&input, list) else {
+                        return ExitCode::from(EXIT_INVALID_INPUT);
+                    };
                     for reg in reg_list.registry_entries {
                         let mut reg_helper = match RegistryHelper::new_from_registry(&reg) {
                             Ok(helper) => helper,
                             Err(err) => {
                                 error!("{err}");
-                                exit(EXIT_INVALID_INPUT);
+                                return ExitCode::from(EXIT_INVALID_INPUT);
                             }
                         };
                         if what_if { reg_helper.enable_what_if(); }
@@ -136,14 +140,14 @@ fn main() {
                                             } else {
                                                 let json = serde_json::to_string(&reg_config).unwrap();
                                                 println!("{json}");
-                                                exit(EXIT_SUCCESS);
+                                                return ExitCode::from(EXIT_SUCCESS);
                                             }
                                         }
                                     },
                                     Ok(None) => {},
                                     Err(err) => {
                                         error!("{err}");
-                                        exit(EXIT_REGISTRY_ERROR);
+                                        return ExitCode::from(EXIT_REGISTRY_ERROR);
                                     }
                                 }
                                 continue;
@@ -156,16 +160,16 @@ fn main() {
                                     } else {
                                         let json = serde_json::to_string(&config).unwrap();
                                         println!("{json}");
-                                        exit(EXIT_SUCCESS);
+                                        return ExitCode::from(EXIT_SUCCESS);
                                     }
                                 }
                                 if !list {
-                                    exit(EXIT_SUCCESS);
+                                    return ExitCode::from(EXIT_SUCCESS);
                                 }
                             },
                             Err(err) => {
                                 error!("{err}");
-                                exit(EXIT_REGISTRY_ERROR);
+                                return ExitCode::from(EXIT_REGISTRY_ERROR);
                             }
                         }
                     }
@@ -173,7 +177,7 @@ fn main() {
                         let json = serde_json::to_string(&output).unwrap();
                         println!("{json}");
                     }
-                    exit(EXIT_SUCCESS);
+                    return ExitCode::from(EXIT_SUCCESS);
                 },
                 ConfigSubCommand::Delete{input, what_if} => {
                     trace!("Delete input: {input}, what_if: {what_if}");
@@ -181,7 +185,7 @@ fn main() {
                         Ok(reg_helper) => reg_helper,
                         Err(err) => {
                             error!("{err}");
-                            exit(EXIT_INVALID_INPUT);
+                            return ExitCode::from(EXIT_INVALID_INPUT);
                         }
                     };
                     if what_if { reg_helper.enable_what_if(); }
@@ -193,7 +197,7 @@ fn main() {
                         Ok(None) => {},
                         Err(err) => {
                             error!("{err}");
-                            exit(EXIT_REGISTRY_ERROR);
+                            return ExitCode::from(EXIT_REGISTRY_ERROR);
                         }
                     }
                 },
@@ -210,10 +214,10 @@ fn main() {
         },
     }
 
-    exit(EXIT_SUCCESS);
+    ExitCode::from(EXIT_SUCCESS)
 }
 
-fn import_input(input: &str, list: bool) -> RegistryList {
+fn import_input(input: &str, list: bool) -> Result<RegistryList, ExitCode> {
     if list {
         match serde_json::from_str::<RegistryList>(input) {
             Ok(mut reg_list) => {
@@ -225,19 +229,19 @@ fn import_input(input: &str, list: bool) -> RegistryList {
                         }
                     }
                 }
-                reg_list
+                Ok(reg_list)
             },
             Err(err) => {
                 error!("{err}");
-                exit(EXIT_INVALID_INPUT);
+                Err(ExitCode::from(EXIT_INVALID_INPUT))
             }
         }
     } else {
         match serde_json::from_str::<Registry>(input) {
-            Ok(reg) => RegistryList { registry_entries: vec![reg], registry_file_path: None },
+            Ok(reg) => Ok(RegistryList { registry_entries: vec![reg], registry_file_path: None }),
             Err(err) => {
                 error!("{err}");
-                exit(EXIT_INVALID_INPUT);
+                Err(ExitCode::from(EXIT_INVALID_INPUT))
             }
         }
     }

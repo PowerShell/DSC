@@ -183,6 +183,37 @@ impl RegistryHelper {
         }
     }
 
+    /// Enumerate all named values under the configured registry key.
+    ///
+    /// A missing key is returned as an empty collection.
+    ///
+    /// # Errors
+    ///
+    /// * `RegistryError` - The error that occurred.
+    pub fn get_values(&self) -> Result<Vec<(String, RegistryValueData)>, RegistryError> {
+        if self.offline_hive.is_some() {
+            return Err(RegistryError::OfflineRegistry(
+                t!("error.offlineValueEnumeration").to_string(),
+            ));
+        }
+
+        let (reg_key, _) = match self.open(Security::Read) {
+            Ok(result) => result,
+            Err(RegistryError::RegistryKeyNotFound(_)) => return Ok(Vec::new()),
+            Err(error) => return Err(error),
+        };
+
+        let mut values = Vec::new();
+        for value in reg_key.values() {
+            let value = value.map_err(|error| RegistryError::Registry(error.into()))?;
+            if let Some(data) = convert_reg_value(value.data())? {
+                values.push((value.name().to_string_lossy(), data));
+            }
+        }
+
+        Ok(values)
+    }
+
     /// Set in registry.
     ///
     /// # Returns
@@ -316,6 +347,9 @@ impl RegistryHelper {
             return self.remove_offline();
         }
 
+        // Accumulate what-if metadata like set()
+        let mut what_if_metadata: Vec<String> = Vec::new();
+
         // For deleting a value, we need SetValue permission (KEY_SET_VALUE).
         // Try to open with the minimal required permission.
         // If that fails due to permission, try with AllAccess as a fallback.
@@ -323,6 +357,15 @@ impl RegistryHelper {
             Ok(reg_key) => reg_key,
             // handle NotFound error
             Err(RegistryError::RegistryKeyNotFound(_)) => {
+                if self.what_if {
+                    what_if_metadata.push(t!("registry_helper.whatIfDeleteNonexistingKey", subkey = &self.config.key_path).to_string());
+                    return Ok(Some(Registry {
+                        key_path: self.config.key_path.clone(),
+                        value_name: self.config.value_name.clone(),
+                        metadata: Some(Metadata { what_if: Some(what_if_metadata) }),
+                        ..Default::default()
+                    }));
+                }
                 return Ok(None);
             },
             Err(RegistryError::RegistryKey(key::Error::PermissionDenied(_, _))) => {
@@ -333,9 +376,6 @@ impl RegistryHelper {
             },
             Err(e) => return self.handle_error_or_what_if(e),
         };
-
-        // Accumulate what-if metadata like set()
-        let mut what_if_metadata: Vec<String> = Vec::new();
 
         if let Some(value_name) = &self.config.value_name {
             if self.what_if {
@@ -385,6 +425,7 @@ impl RegistryHelper {
                 Err(e) => return self.handle_error_or_what_if(RegistryError::RegistryKey(e)),
             }
         }
+
         Ok(None)
     }
 
@@ -745,7 +786,7 @@ fn convert_value_data_to_offline(value_data: &RegistryValueData) -> Result<(u32,
 
 /// Decode a null-terminated UTF-16LE byte slice to a String.
 fn decode_utf16_bytes(data: &[u8]) -> String {
-    let u16_slice: Vec<u16> = data.chunks_exact(2)
+    let u16_slice: Vec<u16> = data.as_chunks::<2>().0.iter()
         .map(|chunk| u16::from_le_bytes([chunk[0], chunk[1]]))
         .collect();
     // Strip trailing null
@@ -761,7 +802,7 @@ fn encode_utf16_bytes(s: &str) -> Vec<u8> {
 
 /// Decode REG_MULTI_SZ: double-null-terminated list of null-terminated UTF-16LE strings.
 fn decode_multi_sz(data: &[u8]) -> Vec<String> {
-    let u16_slice: Vec<u16> = data.chunks_exact(2)
+    let u16_slice: Vec<u16> = data.as_chunks::<2>().0.iter()
         .map(|chunk| u16::from_le_bytes([chunk[0], chunk[1]]))
         .collect();
     let mut strings = Vec::new();
@@ -787,6 +828,17 @@ fn encode_multi_sz(strings: &[String]) -> Vec<u8> {
     }
     result.push(0); // final null terminator
     result.iter().flat_map(|&c| c.to_le_bytes()).collect()
+}
+
+#[test]
+fn decode_utf16_bytes_ignores_incomplete_code_unit() {
+    assert_eq!(decode_utf16_bytes(&[b'A', 0, 0xff]), "A");
+}
+
+#[test]
+fn decode_multi_sz_ignores_incomplete_code_unit() {
+    let data = [b'A', 0, 0, 0, 0, 0, 0xff];
+    assert_eq!(decode_multi_sz(&data), vec!["A"]);
 }
 
 #[test]

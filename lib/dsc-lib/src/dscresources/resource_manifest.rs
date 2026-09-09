@@ -420,7 +420,7 @@ pub fn validate_semver(version: &str) -> Result<(), semver::Error> {
 
 #[cfg(test)]
 mod test {
-    use crate::schemas::dsc_repo::{DscRepoSchema, UnrecognizedSchemaUri};
+    use crate::schemas::dsc_repo::{DscRepoSchema, UnrecognizedSchemaUriError};
 
     use crate::dscresources::resource_manifest::ResourceManifest;
 
@@ -440,7 +440,7 @@ mod test {
         assert!(result.as_ref().is_err());
 
         match result.as_ref().unwrap_err() {
-            UnrecognizedSchemaUri(actual, recognized) => {
+            UnrecognizedSchemaUriError(actual, recognized) => {
                 assert_eq!(actual, &invalid_uri);
                 assert_eq!(recognized, &ResourceManifest::recognized_schema_uris())
             },

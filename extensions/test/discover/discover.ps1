@@ -14,7 +14,7 @@ if ($Extensions) {
     foreach ($extension in $Extensions.Split(',')) {
         $resource = [pscustomobject]@{
             manifestContent = @{
-                '$schema' = "https://aka.ms/dsc/schemas/v3/bundled/adaptedresource/manifest.json"
+                '$schema' = "https://aka.ms/dsc/schemas/v3/bundled/resource/adapted/manifest.json"
                 type = "TestDiscover/$count"
                 kind = "resource"
                 version = "1.0.0"

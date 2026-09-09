@@ -41,6 +41,7 @@ use dsc_lib::{
         extension_manifest::ExtensionManifest,
     },
     functions::FunctionDefinition,
+    schemas::dsc_repo::{DscRepoSchema, RecognizedSchemaVersion, SchemaForm, SchemaUriPrefix},
     util::{
         get_setting,
         parse_input_to_json,
@@ -55,7 +56,7 @@ use std::collections::HashMap;
 use std::env;
 use std::io::{IsTerminal, Read, stdout, Write};
 use std::path::Path;
-use std::process::exit;
+use std::process::ExitCode;
 use syntect::{
     easy::HighlightLines,
     highlighting::ThemeSet,
@@ -64,17 +65,17 @@ use syntect::{
 };
 use tracing::{Level, debug, error, info, warn, trace};
 
-pub const EXIT_SUCCESS: i32 = 0;
-pub const EXIT_INVALID_ARGS: i32 = 1;
-pub const EXIT_DSC_ERROR: i32 = 2;
-pub const EXIT_JSON_ERROR: i32 = 3;
-pub const EXIT_INVALID_INPUT: i32 = 4;
-pub const EXIT_VALIDATION_FAILED: i32 = 5;
-pub const EXIT_CTRL_C: i32 = 6;
-pub const EXIT_DSC_RESOURCE_NOT_FOUND: i32 = 7;
-pub const EXIT_DSC_ASSERTION_FAILED: i32 = 8;
-pub const EXIT_SERVER_FAILED: i32 = 9;
-pub const EXIT_BICEP_FAILED: i32 = 10;
+pub const EXIT_SUCCESS: u8 = 0;
+pub const EXIT_INVALID_ARGS: u8 = 1;
+pub const EXIT_DSC_ERROR: u8 = 2;
+pub const EXIT_JSON_ERROR: u8 = 3;
+pub const EXIT_INVALID_INPUT: u8 = 4;
+pub const EXIT_VALIDATION_FAILED: u8 = 5;
+pub const EXIT_CTRL_C: u8 = 6;
+pub const EXIT_DSC_RESOURCE_NOT_FOUND: u8 = 7;
+pub const EXIT_DSC_ASSERTION_FAILED: u8 = 8;
+pub const EXIT_SERVER_FAILED: u8 = 9;
+pub const EXIT_BICEP_FAILED: u8 = 10;
 
 pub const DSC_CONFIG_ROOT: &str = "DSC_CONFIG_ROOT";
 pub const DSC_TRACE_LEVEL: &str = "DSC_TRACE_LEVEL";
@@ -109,14 +110,13 @@ impl Default for TracingSetting {
 /// # Returns
 ///
 /// * `String` - The JSON as a string
-#[must_use]
-pub fn serde_json_value_to_string(json: &serde_json::Value) -> String
+pub fn serde_json_value_to_string(json: &serde_json::Value) -> Result<String, ExitCode>
 {
     match serde_json::to_string(&json) {
-        Ok(json_string) => json_string,
+        Ok(json_string) => Ok(json_string),
         Err(err) => {
             error!("{}: {err}", t!("util.failedToConvertJsonToString"));
-            exit(EXIT_DSC_ERROR);
+            Err(ExitCode::from(EXIT_DSC_ERROR))
         }
     }
 }
@@ -163,37 +163,37 @@ pub fn add_fields_to_json(json: &str, fields_to_add: &HashMap<String, String>) -
 pub fn get_schema(schema: SchemaType) -> Schema {
     match schema {
         SchemaType::AdaptedDscResourceManifest => {
-            schema_for!(AdaptedDscResourceManifest)
+            repo_schema::<AdaptedDscResourceManifest>()
         },
         SchemaType::Configuration => {
-            schema_for!(Configuration)
+            repo_schema::<Configuration>()
         },
         SchemaType::ConfigurationExportResult => {
-            schema_for!(ConfigurationExportResult)
+            repo_schema::<ConfigurationExportResult>()
         },
         SchemaType::ConfigurationGetResult => {
-            schema_for!(ConfigurationGetResult)
+            repo_schema::<ConfigurationGetResult>()
         },
         SchemaType::ConfigurationSetResult => {
-            schema_for!(ConfigurationSetResult)
+            repo_schema::<ConfigurationSetResult>()
         },
         SchemaType::ConfigurationTestResult => {
-            schema_for!(ConfigurationTestResult)
+            repo_schema::<ConfigurationTestResult>()
         },
         SchemaType::DscResource => {
-            schema_for!(DscResource)
+            repo_schema::<DscResource>()
         },
         SchemaType::ExtensionDiscoverResult => {
-            schema_for!(DiscoverResult)
+            repo_schema::<DiscoverResult>()
         },
         SchemaType::ExtensionManifest => {
-            schema_for!(ExtensionManifest)
+            repo_schema::<ExtensionManifest>()
         },
         SchemaType::FunctionDefinition => {
-            schema_for!(FunctionDefinition)
+            repo_schema::<FunctionDefinition>()
         },
         SchemaType::GetResult => {
-            schema_for!(GetResult)
+            repo_schema::<GetResult>()
         },
         SchemaType::Include => {
             schema_for!(Include)
@@ -202,33 +202,46 @@ pub fn get_schema(schema: SchemaType) -> Schema {
             schema_for!(ManifestList)
         },
         SchemaType::ResolveResult => {
-            schema_for!(ResolveResult)
+            repo_schema::<ResolveResult>()
         },
         SchemaType::Resource => {
-            schema_for!(Resource)
+            repo_schema::<Resource>()
         },
         SchemaType::ResourceGetResult => {
-            schema_for!(ResourceGetResult)
+            repo_schema::<ResourceGetResult>()
         },
         SchemaType::ResourceSetResult => {
-            schema_for!(ResourceSetResult)
+            repo_schema::<ResourceSetResult>()
         },
         SchemaType::ResourceTestResult => {
-            schema_for!(ResourceTestResult)
+            repo_schema::<ResourceTestResult>()
         },
         SchemaType::ResourceManifest => {
-            schema_for!(ResourceManifest)
+            repo_schema::<ResourceManifest>()
         },
         SchemaType::RestartRequired => {
-            schema_for!(RestartRequired)
+            repo_schema::<RestartRequired>()
         },
         SchemaType::SetResult => {
-            schema_for!(SetResult)
+            repo_schema::<SetResult>()
         },
         SchemaType::TestResult => {
-            schema_for!(TestResult)
+            repo_schema::<TestResult>()
         },
     }
+}
+
+fn repo_schema<T: DscRepoSchema>() -> Schema {
+    let schema_form = if T::SCHEMA_SHOULD_BUNDLE {
+        SchemaForm::Bundled
+    } else {
+        SchemaForm::Canonical
+    };
+    T::generate_schema(
+        RecognizedSchemaVersion::default(),
+        schema_form,
+        SchemaUriPrefix::AkaDotMs
+    )
 }
 
 /// Write the JSON object to the console
@@ -238,7 +251,7 @@ pub fn get_schema(schema: SchemaType) -> Schema {
 /// * `json` - The JSON to write
 /// * `format` - The format to use
 /// * `include_separator` - Whether to include a separator for YAML before the object
-pub fn write_object(json: &str, format: Option<&OutputFormat>, include_separator: bool) {
+pub fn write_object(json: &str, format: Option<&OutputFormat>, include_separator: bool) -> Result<(), ExitCode> {
     let mut is_json = true;
     let mut output_format = format;
     let mut syntax_color = false;
@@ -259,14 +272,14 @@ pub fn write_object(json: &str, format: Option<&OutputFormat>, include_separator
                 Ok(value) => value,
                 Err(err) => {
                     error!("JSON: {err}");
-                    exit(EXIT_JSON_ERROR);
+                    return Err(ExitCode::from(EXIT_JSON_ERROR));
                 }
             };
             match serde_json::to_string_pretty(&value) {
                 Ok(json) => json,
                 Err(err) => {
                     error!("JSON: {err}");
-                    exit(EXIT_JSON_ERROR);
+                    return Err(ExitCode::from(EXIT_JSON_ERROR));
                 }
             }
         },
@@ -280,14 +293,14 @@ pub fn write_object(json: &str, format: Option<&OutputFormat>, include_separator
                 Ok(value) => value,
                 Err(err) => {
                     error!("JSON: {err}");
-                    exit(EXIT_JSON_ERROR);
+                    return Err(ExitCode::from(EXIT_JSON_ERROR));
                 }
             };
             match serde_yaml::to_string(&value) {
                 Ok(yaml) => yaml,
                 Err(err) => {
                     error!("YAML: {err}");
-                    exit(EXIT_JSON_ERROR);
+                    return Err(ExitCode::from(EXIT_JSON_ERROR));
                 }
             }
         }
@@ -302,7 +315,7 @@ pub fn write_object(json: &str, format: Option<&OutputFormat>, include_separator
             ps.find_syntax_by_extension("yaml")
         }) else {
             println!("{json}");
-            return;
+            return Ok(());
         };
 
         let mut h = HighlightLines::new(syntax, &ts.themes["base16-ocean.dark"]);
@@ -319,9 +332,11 @@ pub fn write_object(json: &str, format: Option<&OutputFormat>, include_separator
         let mut stdout_lock = stdout().lock();
         if writeln!(stdout_lock, "{output}").is_err() {
             // likely caused by a broken pipe (e.g. 'head' command closed early)
-            exit(EXIT_SUCCESS);
+            return Ok(());
         }
     }
+
+    Ok(())
 }
 
 #[allow(clippy::too_many_lines)]
@@ -411,7 +426,7 @@ pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Op
     info!("Trace-level is {:?}", tracing_setting.level);
 }
 
-pub fn get_input(input: Option<&String>, file: Option<&String>) -> String {
+pub fn get_input(input: Option<&String>, file: Option<&String>) -> Result<String, ExitCode> {
     trace!("Input: {input:?}, File: {file:?}");
     let value = if let Some(input) = input {
         debug!("{}", t!("util.readingInput"));
@@ -419,7 +434,7 @@ pub fn get_input(input: Option<&String>, file: Option<&String>) -> String {
         // see if user accidentally passed in a file path
         if Path::new(input).exists() {
             error!("{}", t!("util.inputIsFile"));
-            exit(EXIT_INVALID_INPUT);
+            return Err(ExitCode::from(EXIT_INVALID_INPUT));
         }
         input.clone()
     } else if let Some(path) = file {
@@ -436,13 +451,13 @@ pub fn get_input(input: Option<&String>, file: Option<&String>) -> String {
                         },
                         Err(err) => {
                             error!("{}: {err}", t!("util.invalidUtf8"));
-                            exit(EXIT_INVALID_INPUT);
+                            return Err(ExitCode::from(EXIT_INVALID_INPUT));
                         }
                     }
                 },
                 Err(err) => {
                     error!("{}: {err}", t!("util.failedToReadStdin"));
-                    exit(EXIT_INVALID_INPUT);
+                    return Err(ExitCode::from(EXIT_INVALID_INPUT));
                 }
             }
         } else {
@@ -451,7 +466,7 @@ pub fn get_input(input: Option<&String>, file: Option<&String>) -> String {
             let path_buf = Path::new(path);
             for extension in discovery.get_extensions(&Capability::Import) {
                 if let Ok(content) = extension.import(path_buf) {
-                    return content;
+                    return Ok(content);
                 }
             }
             match std::fs::read_to_string(path) {
@@ -466,25 +481,25 @@ pub fn get_input(input: Option<&String>, file: Option<&String>) -> String {
                 },
                 Err(err) => {
                     error!("{}: {err}", t!("util.failedToReadFile"));
-                    exit(EXIT_INVALID_INPUT);
+                    return Err(ExitCode::from(EXIT_INVALID_INPUT));
                 }
             }
         }
     } else {
         debug!("{}", t!("util.noInput"));
-        return String::new();
+        return Ok(String::new());
     };
 
     if value.trim().is_empty() {
         error!("{}", t!("util.emptyInput"));
-        exit(EXIT_INVALID_INPUT);
+        return Err(ExitCode::from(EXIT_INVALID_INPUT));
     }
 
     match parse_input_to_json(&value) {
-        Ok(json) => json,
+        Ok(json) => Ok(json),
         Err(err) => {
             error!("{}: {err}", t!("util.failedToParseInput"));
-            exit(EXIT_INVALID_INPUT);
+            Err(ExitCode::from(EXIT_INVALID_INPUT))
         }
     }
 }
@@ -499,21 +514,21 @@ pub fn get_input(input: Option<&String>, file: Option<&String>) -> String {
 ///
 /// Absolute full path to the config file.
 /// If a directory is provided, the path returned is the directory path.
-pub fn set_dscconfigroot(config_path: &str) -> String
+pub fn set_dscconfigroot(config_path: &str) -> Result<String, ExitCode>
 {
     let path = Path::new(config_path);
 
     // make path absolute
     let Ok(full_path) = path.absolutize() else {
             error!("{}", t!("util.failedToAbsolutizePath"));
-            exit(EXIT_DSC_ERROR);
+            return Err(ExitCode::from(EXIT_DSC_ERROR));
     };
 
     let config_root_path = if full_path.is_file() {
         let Some(config_root_path) = full_path.parent() else {
             // this should never happen because path was made absolute
             error!("{}", t!("util.failedToGetParentPath"));
-            exit(EXIT_DSC_ERROR);
+            return Err(ExitCode::from(EXIT_DSC_ERROR));
         };
         config_root_path.to_string_lossy().into_owned()
     } else {
@@ -531,7 +546,7 @@ pub fn set_dscconfigroot(config_path: &str) -> String
         env::set_var(DSC_CONFIG_ROOT, config_root_path);
     }
 
-    full_path.to_string_lossy().into_owned()
+    Ok(full_path.to_string_lossy().into_owned())
 }
 
 

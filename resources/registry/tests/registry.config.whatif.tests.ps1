@@ -200,4 +200,21 @@ Describe 'registry config whatif tests' {
         # For delete what-if, payload should only include keyPath (and optionally valueName when deleting a value)
         ($result.psobject.properties | Where-Object { $_.Name -ne '_metadata' } | Measure-Object).Count | Should -Be 1
     }
+
+
+    It 'Removing non-existing key' -Skip:(!$IsWindows) {
+        $after_config_yaml = @'
+            $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Reg 1
+              type: Microsoft.Windows/Registry
+              properties:
+                keyPath: HKCU\1\2\NonExisting
+                _exist: false
+'@
+        $out = dsc -l trace config set --what-if --input $after_config_yaml 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw)
+        $out.results.result[0].afterState.keyPath | Should -BeExactly 'HKCU\1\2\NonExisting'
+        $out.results.executionInformation.whatIf[0] | Should -Match "Key 'HKCU\\1\\2\\NonExisting' not found, would do nothing"
+    }    
 }

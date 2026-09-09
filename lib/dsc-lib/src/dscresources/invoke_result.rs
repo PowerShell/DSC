@@ -184,7 +184,6 @@ pub struct ResolveResult {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
-#[serde(deny_unknown_fields)]
 #[dsc_repo_schema(base_name = "delete", folder_path = "outputs/resource")]
 pub struct DeleteResult {
     /// The return from the resource by the Delete method with what-if simulation.
@@ -193,7 +192,7 @@ pub struct DeleteResult {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
-#[dsc_repo_schema(base_name = "delete", folder_path = "outputs/resource")]
+#[dsc_repo_schema(base_name = "delete.whatIf", folder_path = "outputs/resource")]
 #[serde(deny_unknown_fields)]
 pub struct DeleteWhatIfResult {
     #[serde(rename = "whatIf", skip_serializing_if = "Option::is_none")]

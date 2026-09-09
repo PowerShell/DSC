@@ -1,0 +1,50 @@
+_version = 1
+
+[main]
+windowsOnly = "The Group Policy Template adapter is only supported on Windows."
+missingOperation = "Missing operation. Expected list, get, or set."
+unknownOperation = "Unknown operation: '%{operation}'. Expected list, get, or set."
+missingArgument = "Missing required argument '%{argument}'."
+
+[admx]
+readDirectory = "Failed to read policy definitions directory '%{path}': %{error}"
+readFile = "Failed to read '%{path}': %{error}"
+parseFile = "Failed to parse '%{path}': %{error}"
+serializeResource = "Failed to serialize an adapted resource: %{error}"
+skipTemplate = "Skipped policy template '%{path}': %{error}"
+resourceNotFound = "Adapted resource '%{resource}' was not found in '%{path}'."
+missingPolicyAttribute = "Policy '%{policy}' is missing required attribute '%{attribute}'."
+emptyPolicyValue = "A policy value does not contain a registry value."
+unsupportedValueType = "Unsupported ADMX registry value type '%{value_type}'."
+missingElementId = "A policy element is missing its required id."
+unsupportedElementType = "Unsupported ADMX policy element type '%{element_type}'."
+invalidPolicyClass = "Unsupported ADMX policy class '%{class}'."
+missingValueName = "A registry value list item is missing its valueName."
+invalidPath = "The ADMX path is invalid."
+admlNotFound = "No ADML file was found for template '%{template}' and locale '%{locale}'."
+systemRootNotFound = "The SystemRoot environment variable is not defined."
+invalidNumber = "Invalid numeric policy value '%{value}': %{error}"
+invalidBinary = "Invalid binary policy value '%{value}': %{error}"
+invalidUtf16Length = "The UTF-16 XML file '%{path}' has an odd number of bytes."
+
+[schema]
+scopeTitle = "Scope"
+scopeDescription = "Specifies whether policy settings apply to all users through HKEY_LOCAL_MACHINE or the current user through HKEY_CURRENT_USER."
+stateTitle = "State"
+
+[registry]
+invalidInput = "Invalid JSON input: %{error}"
+invalidScope = "The scope must be either 'allUsers' or 'currentUser'."
+unknownPolicy = "Policy property '%{policy}' does not exist on adapted resource '%{resource}'."
+invalidPolicyState = "Policy property '%{policy}' must be 'Enabled', 'Disabled', or 'NotConfigured'."
+invalidSimplePolicyState = "Policy property '%{policy}' must be 'enabled', 'disabled', or 'notConfigured'."
+invalidPolicyValue = "Policy property '%{policy}' must be a state string or an object."
+policyHasNoToggle = "Policy '%{policy}' has no enabled or disabled registry value; configure its child settings instead."
+unknownElement = "Element '%{element}' does not exist on policy '%{policy}'."
+elementHasNoValueName = "Policy element '%{element}' does not define a registry value name."
+listNotArray = "List element '%{element}' must be an array."
+listValueNotString = "Every value in list element '%{element}' must be a string."
+invalidElementValue = "The value for policy element '%{element}' does not match its ADMX definition."
+scopeNotSupported = "Policy '%{policy}' does not support scope '%{scope}'."
+operationFailed = "Registry operation failed: %{error}"
+serializeResult = "Failed to serialize the resource state: %{error}"

@@ -1,7 +1,7 @@
 # Adapted Registry resource for personalization settings defined in:
 # https://learn.microsoft.com/en-us/windows/apps/develop/settings/settings-common#personalization---colors
 
-$schema: https://aka.ms/dsc/schemas/v3/bundled/adaptedresource/manifest.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/resource/adapted/manifest.json
 type: Microsoft.Windows/Personalization
 kind: resource
 version: 1.0.0

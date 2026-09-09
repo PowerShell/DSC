@@ -5,7 +5,7 @@ use schemars::{JsonSchema, Schema, json_schema};
 use serde::{Deserialize, Serialize};
 
 use crate::dsc_repo::{
-    DscRepoSchema, DscRepoSchemaMissingTranslation, RecognizedSchemaVersion, SchemaForm, SchemaUriPrefix, get_default_schema_uri, get_recognized_schema_uri
+    DscRepoSchema, DscRepoSchemaMissingTranslationError, RecognizedSchemaVersion, SchemaForm, SchemaUriPrefix, get_default_schema_uri, get_recognized_schema_uri
 };
 
 #[test]
@@ -52,12 +52,12 @@ fn test_dsc_repo_schema_bundled() {
         const SCHEMA_SHOULD_BUNDLE: bool = true;
         const SCHEMA_I18N_ROOT_KEY: &'static str = "example.schema";
 
-        fn schema_i18n(suffix: &str) -> Result<String, DscRepoSchemaMissingTranslation> {
+        fn schema_i18n(suffix: &str) -> Result<String, DscRepoSchemaMissingTranslationError> {
             let i18n_key = format!("{}.{}", Self::SCHEMA_I18N_ROOT_KEY, suffix);
             if let Some(translated) = crate::_rust_i18n_try_translate(&rust_i18n::locale(), &i18n_key) {
                 Ok(translated.into())
             } else {
-                Err(DscRepoSchemaMissingTranslation { i18n_key })
+                Err(DscRepoSchemaMissingTranslationError { i18n_key })
             }
         }
 
@@ -107,12 +107,12 @@ fn test_dsc_repo_schema_not_bundled() {
         const SCHEMA_SHOULD_BUNDLE: bool = false;
         const SCHEMA_I18N_ROOT_KEY: &'static str = "example.schema";
 
-        fn schema_i18n(suffix: &str) -> Result<String, DscRepoSchemaMissingTranslation> {
+        fn schema_i18n(suffix: &str) -> Result<String, DscRepoSchemaMissingTranslationError> {
             let i18n_key = format!("{}.{}", Self::SCHEMA_I18N_ROOT_KEY, suffix);
             if let Some(translated) = crate::_rust_i18n_try_translate(&rust_i18n::locale(), &i18n_key) {
                 Ok(translated.into())
             } else {
-                Err(DscRepoSchemaMissingTranslation { i18n_key })
+                Err(DscRepoSchemaMissingTranslationError { i18n_key })
             }
         }
 

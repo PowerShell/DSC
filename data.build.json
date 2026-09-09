@@ -80,6 +80,8 @@
       "echo.dsc.resource.json",
       "filecontent.exe",
       "filecontent.dsc.resource.json",
+      "environment_variable.exe",
+      "environment_variable.dsc.manifests.json",
       "assertion.dsc.resource.json",
       "featureondemand.dsc.resource.json",
       "group.dsc.resource.json",

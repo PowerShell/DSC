@@ -2,7 +2,14 @@
 about = "xtask provides build helpers for the DSC rust project."
 schemaAbout = "Commands for managing DSC repository schemas."
 schemaExportAbout = "Export DSC schemas to disk."
+schemaExportVersionHelp = "The schema version folder to export, like 'v3.2' or 'vNext'. May be specified multiple times. Defaults to 'vNext'."
+schemaExportReleaseHelp = "A release version like '3.3.0'. Exports the patch, minor, and major version folders for the release, like 'v3.3.0', 'v3.3', and 'v3'."
+
+[main]
+invalidReleaseVersion = "Invalid release version; expected a full version like '3.3.0'"
+unrecognizedReleaseFolder = "Schema version folder isn't recognized; if the release was just tagged, refresh 'lib/dsc-lib-jsonschema/.versions.json' by running '.versions.ps1' and rebuild"
 
 [schemas.export]
 serializationFailure = "Failed to serialize JSON Schema as string"
 ioError = "Failed to export JSON Schema, IO error"
+duplicatePath = "Multiple schemas export to the same path; check the `dsc_repo_schema` attributes for a `base_name`/`folder_path` collision"

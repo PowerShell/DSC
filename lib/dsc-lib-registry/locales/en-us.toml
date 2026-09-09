@@ -7,6 +7,7 @@ _version = 1
 invalidHive = "Invalid hive"
 json = "JSON"
 offlineRegistry = "Offline registry"
+offlineValueEnumeration = "Value enumeration is not supported for offline registries"
 registry = "Registry"
 registryKey = "Registry key"
 registryKeyNotFound = "Registry key not found"
@@ -18,6 +19,7 @@ unsupportedValueDataType = "Unsupported registry value data type"
 whatIfCreateKey = "Key '%{subkey}' not found, would create it"
 whatIfDeleteValue = "Would delete value '%{value_name}'"
 whatIfDeleteSubkey = "Would delete subkey '%{subkey_name}'"
+whatIfDeleteNonexistingKey = "Key '%{subkey}' not found, would do nothing"
 
 [offreg]
 loadFailed = "Failed to load offreg.dll"
