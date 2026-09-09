@@ -3,7 +3,6 @@
 
 Describe 'FileContent export tests' {
     BeforeAll {
-        $resourceType = 'Microsoft.Filesystem.File/Content'
         $filePath = Join-Path $TestDrive 'export.txt'
         [System.IO.File]::WriteAllText(
             $filePath,
@@ -14,9 +13,9 @@ Describe 'FileContent export tests' {
 
     It 'Returns content and hashes' {
         $json = @{ path = $filePath } | ConvertTo-Json -Compress
-        $out = $json | dsc resource export -r $resourceType -f - 2>$TestDrive/error.log
+        $out = filecontent export --input $json 2>$TestDrive/error.log
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
-        $properties = ($out | ConvertFrom-Json).resources[0].properties
+        $properties = $out | ConvertFrom-Json
 
         $properties.path | Should -BeExactly $filePath
         $properties.content | Should -BeExactly "hello`nworld"

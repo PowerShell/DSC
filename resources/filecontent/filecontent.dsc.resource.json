@@ -51,7 +51,7 @@
                 "mandatory": true
             }
         ],
-        "supportsFiltering": true
+        "supportsFiltering": false
     },
     "exitCodes": {
         "0": "Success",
