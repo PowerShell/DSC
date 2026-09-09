@@ -42,6 +42,7 @@ pub struct Args {
 pub enum AdapterOperation {
     Get,
     Set,
+    Delete,
     Test,
     List,
     Export,

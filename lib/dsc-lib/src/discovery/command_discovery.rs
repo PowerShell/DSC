@@ -902,6 +902,7 @@ pub fn load_adapted_resource_manifest(path: &Path, manifest: &AdaptedDscResource
     resource.require_adapter = Some(manifest.require_adapter.clone());
     resource.directory = directory.to_path_buf();
     resource.manifest = None;
+    resource.adapted_manifest = Some(manifest.clone());
     resource.schema = Some(manifest.schema.clone());
 
     Ok(resource)
