@@ -1,0 +1,10 @@
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+# Example: read the current greeting for a given name.
+#
+# Usage:
+#   dsc config get --document ensure-greeting.dsc.yaml
+resources:
+  - name: greet-world
+    type: Example/Greeting
+    properties:
+      name: World
