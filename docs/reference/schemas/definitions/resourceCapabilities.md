@@ -15,7 +15,7 @@ Defines the operations you can invoke for a resource and how the resource behave
 
 ```yaml
 SchemaDialect:     https://json-schema.org/draft/2020-12/schema
-SchemaID:          https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/definitions/resourceCapabilities.json
+SchemaID:          https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.0/definitions/resourceCapabilities.json
 Type:              array
 Required:          true
 ItemsMustBeUnique: true

@@ -46,7 +46,7 @@ For example, `PT0.611216S` represents a duration of about `0.61` seconds.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/metadata/Microsoft.DSC/duration.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.0/metadata/Microsoft.DSC/duration.json
 Type:          string
 Format:        duration
 ```
@@ -60,7 +60,7 @@ For example: `2024-04-14T08:49:51.395686600-07:00`
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/metadata/Microsoft.DSC/endDatetime.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.0/metadata/Microsoft.DSC/endDatetime.json
 Type:          string
 Format:        date-time
 ```
@@ -73,7 +73,7 @@ this value is `whatIf` when DSC is invoked with the `--what-if` argument.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/metadata/Microsoft.DSC/executionType.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.0/metadata/Microsoft.DSC/executionType.json
 Type:          string
 ValidValues:   [actual, whatIf]
 ```
@@ -85,7 +85,7 @@ Defines the operation that DSC applied to the configuration document: `get`, `se
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/metadata/Microsoft.DSC/operation.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.0/metadata/Microsoft.DSC/operation.json
 Type:          string
 ValidValues:   [get, set, test, export]
 ```
@@ -111,7 +111,7 @@ outputs of a configuration document.
 ```yaml
 Type:            array
 ItemsType:       object
-ValidItemSchema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/executionInformation/restartRequired.json
+ValidItemSchema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.0/executionInformation/restartRequired.json
 ```
 
 ### copyLoops
@@ -135,7 +135,7 @@ non-elevated session.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/metadata/Microsoft.DSC/securityContext.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.0/metadata/Microsoft.DSC/securityContext.json
 Type:          string
 ValidValues:   [current, elevated, restricted]
 ```
@@ -149,7 +149,7 @@ For example: `2024-04-14T08:49:51.395686600-07:00`
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/metadata/Microsoft.DSC/startDatetime.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.0/metadata/Microsoft.DSC/startDatetime.json
 Type:          string
 Format:        date-time
 ```
@@ -161,7 +161,7 @@ DSC command, like `3.0.0-preview.7`.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/metadata/Microsoft.DSC/version.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.0/metadata/Microsoft.DSC/version.json
 Type:          string
 ```
 

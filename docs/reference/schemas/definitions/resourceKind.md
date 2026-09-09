@@ -16,7 +16,7 @@ exporter resource, or a normal resource.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/definitions/resourceKind.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.0/definitions/resourceKind.json
 Type:          string
 ValidValues:  [resource, adapter, group, importer, exporter]
 ```
