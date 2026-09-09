@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for the 'schema' property in a DSC Resource manifest
-ms.date:     07/03/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       DSC Resource manifest schema property schema reference
 ---
@@ -21,8 +21,12 @@ Type:          object
 
 ## Description
 
-Every command-based DSC Resource must define the `schema` property in its manifest. This property
-defines how DSC can get the JSON schema it needs to validate instances of the resource.
+Every command-based DSC Resource that doesn't define the [validate][01] property should define the
+`schema` property in its manifest. This property defines how DSC can get the JSON schema it needs
+to validate instances of the resource. DSC validates the input for an operation against the schema
+before invoking the resource and, for resources with the `resource` [kind][02], validates the
+output the resource returns. When a manifest defines neither `schema` nor `validate`, DSC raises an
+error when it needs to validate an instance of the resource.
 
 The JSON schema can be defined dynamically with the [command](#command) property or statically with
 the [embedded](#embedded) property.
@@ -88,7 +92,31 @@ DSC uses to validate an instance of the resource.
 }
 ```
 
-## Required Properties
+### Example 3 - Get JSON schema for an adapted resource
+
+This example defines a schema command for a resource adapter that operates on a single adapted
+resource at a time. DSC passes the type name and version of the adapted resource to the command.
+
+```json
+"schema": {
+  "command": {
+    "executable": "my_adapter",
+    "args": [
+      "schema",
+      { "resourceTypeArg": "--type" },
+      { "resourceVersionArg": "--version" }
+    ]
+  }
+}
+```
+
+When DSC needs the schema for the adapted resource `Contoso/Example` version `1.0.0`, it runs:
+
+```sh
+my_adapter schema --type Contoso/Example --version 1.0.0
+```
+
+## Required properties
 
 The `schema` definition must include exactly one of these properties:
 
@@ -106,6 +134,9 @@ When publishing a manifest with the `command` property, Microsoft recommends pub
 schema to a publicly available URI that matches the `$id` property of the instance schema. This
 enables authoring tools and other integrating applications to validate instances without running
 the command locally.
+
+For more information about the expected output, see
+[DSC resource schema command stdout schema reference][03].
 
 ```yaml
 Type:               object
@@ -126,22 +157,77 @@ Required: true
 
 #### args
 
-The `args` property defines an array of strings to pass as arguments to the command. DSC passes the
-arguments to the command in the order they're specified.
+The `args` property defines the list of arguments to pass to the command. DSC passes the arguments
+to the command in the order they're specified. Each item in the array must be a string or an object
+that defines one of the following argument kinds:
+
+- [String arguments](#string-arguments) - A static argument, like `schema`.
+- [Resource type argument](#resource-type-argument) - The fully qualified type name of the resource
+  being invoked.
+- [Resource version argument](#resource-version-argument) - The version of the resource being
+  invoked.
+
+For every argument kind except string arguments, DSC passes the argument name followed by its value
+as two separate arguments.
 
 ```yaml
-Type:     array
-Required: false
-Default:  []
+Type:      array
+Required:  false
+Default:   []
+ItemsType: [string, object]
+```
+
+##### String arguments
+
+Any item in the argument array can be a string representing a static argument to pass to the
+command, like `schema` or `--format`.
+
+```yaml
+Type: string
+```
+
+##### Resource type argument
+
+Defines an argument for the command that accepts the fully qualified type name of the resource
+being invoked. For resource adapters, this is the type name of the adapted resource. Use this
+argument kind to implement an adapter that returns the schema for a single adapted resource.
+
+- `resourceTypeArg` (required) - The argument to pass the type name to for the command, like
+  `--type`.
+
+```yaml
+Type:               object
+RequiredProperties: [resourceTypeArg]
+```
+
+##### Resource version argument
+
+Defines an argument for the command that accepts the version of the resource being invoked. For
+resource adapters, this is the version of the adapted resource. This argument kind was added in
+DSC version 3.3.0.
+
+- `resourceVersionArg` (required) - The argument to pass the version to for the command, like
+  `--version`.
+
+```yaml
+Type:               object
+RequiredProperties: [resourceVersionArg]
 ```
 
 ### embedded
 
 The `embedded` property defines the full JSON schema for DSC to validate instances of the DSC
 Resource. The value for this property must be a valid JSON schema that defines the `$schema`,
-`type`, and `properties` keywords.
+`type`, and `properties` keywords. For more information, see
+[DSC Resource manifest embedded schema reference][04].
 
 ```yaml
 Type:                 object
 MinimumPropertyCount: 1
 ```
+
+<!-- Link reference definitions -->
+[01]: ../validate.md
+[02]: ../root.md#kind
+[03]: ../../stdout/schema.md
+[04]: embedded.md
