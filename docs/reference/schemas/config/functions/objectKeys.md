@@ -1,9 +1,11 @@
 ---
 description: Reference for the 'objectKeys' DSC configuration document function
-ms.date:     11/14/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       objectKeys
 ---
+
+# objectKeys
 
 ## Synopsis
 
@@ -44,7 +46,8 @@ resources:
 - name: Echo
   type: Microsoft.DSC.Debug/Echo
   properties:
-    output: "[objectKeys(createObject('firstName', 'John', 'lastName', 'Doe', 'age', 30))]"
+    output: >-
+      [objectKeys(createObject('firstName', 'John', 'lastName', 'Doe', 'age', 30))]
 ```
 
 ```bash
@@ -197,7 +200,9 @@ resources:
 - name: Echo
   type: Microsoft.DSC.Debug/Echo
   properties:
-    output: "[objectKeys(createObject('user', createObject('name', 'John', 'age', 30), 'role', 'admin'))]"
+    output: >-
+      [objectKeys(createObject('user', createObject('name', 'John', 'age', 30),
+      'role', 'admin'))]
 ```
 
 ```bash

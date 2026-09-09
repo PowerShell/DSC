@@ -1,9 +1,11 @@
 ---
 description: Reference for the 'createObject' DSC configuration document function
-ms.date:     07/28/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       createObject
 ---
+
+# createObject
 
 ## Synopsis
 
@@ -75,7 +77,9 @@ resources:
 - name: Mixed data types
   type: Microsoft.DSC.Debug/Echo
   properties:
-    output: "[createObject('string', 'hello', 'number', 123, 'boolean', true, 'nullValue', null())]"
+    output: >-
+      [createObject('string', 'hello', 'number', 123, 'boolean', true,
+      'nullValue', null())]
 ```
 
 ```bash
@@ -109,7 +113,8 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      nestedObject:   "[createObject('config', createObject('timeout', 30, 'enabled', true))]"
+      nestedObject: >-
+        [createObject('config', createObject('timeout', 30, 'enabled', true))]
       objectWithArray: "[createObject('items', createArray('foo', 'bar', 'baz'))]"
 ```
 
@@ -153,8 +158,11 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      userConfig:     "[createObject('user', parameters('userName'), 'role', coalesce(null(), 'default'))]"
-      fallbackObject: "[createObject('result', coalesce(null(), createObject('status', 'success')))]"
+      userConfig: >-
+        [createObject('user', parameters('userName'), 'role',
+        coalesce(null(), 'default'))]
+      fallbackObject: >-
+        [createObject('result', coalesce(null(), createObject('status', 'success')))]
 ```
 
 ```bash
@@ -203,7 +211,8 @@ Required: true (when providing values)
 
 #### value
 
-The object property value. Can be any valid JSON type including strings, numbers, booleans, null, arrays, or other objects.
+The object property value. Can be any valid JSON type including strings, numbers, booleans, null,
+arrays, or other objects.
 
 ```yaml
 Type:     [any]

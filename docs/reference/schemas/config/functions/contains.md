@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'contains' DSC configuration document function
-ms.date:     08/08/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       contains
 ---
@@ -23,11 +23,14 @@ contains(<collection>, <value>)
 The `contains()` function checks whether a collection (array, object, or
 string) contains a specific value, returning `true` if it does and `false`
 otherwise. For arrays, it checks if the value exists as an element. For
-objects, it checks if the value exists as a property key or value. For
-strings, it checks if the value exists as a substring.
+objects, it checks if the value exists as a property key. The function
+doesn't check object property values. For strings, it checks if the value
+exists as a substring.
 
 The function accepts string and number values for the search parameter when
-used with arrays, objects, or strings.
+used with arrays, objects, or strings. When the search value is a number and
+the collection is an object or a string, DSC compares the number by its
+string representation.
 
 ## Examples
 
@@ -76,10 +79,12 @@ messages: []
 hadErrors: false
 ```
 
-### Example 2 - Check object for keys and values
+### Example 2 - Check object for keys
 
-The following example shows how to check if an object contains specific keys
-or values.
+The following example shows how to check if an object contains specific keys.
+For objects, `contains()` only checks keys, not property values. To check the
+contents of a property value, access the property and check it as a string,
+like the `cityHasSeattle` output in this example.
 
 ```yaml
 # contains.example.2.dsc.config.yaml
@@ -96,10 +101,10 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      hasNameKey:      "[contains(parameters('myObject'), 'name')]"
-      hasEmailKey:     "[contains(parameters('myObject'), 'email')]"
-      hasSeattleValue: "[contains(parameters('myObject').city, 'Seattle')]"
-      hasAge30Value:   "[contains(parameters('myObject').age, 30)]"
+      hasNameKey:     "[contains(parameters('myObject'), 'name')]"
+      hasEmailKey:    "[contains(parameters('myObject'), 'email')]"
+      hasAgeKey:      "[contains(parameters('myObject'), 'age')]"
+      cityHasSeattle: "[contains(parameters('myObject').city, 'Seattle')]"
 ```
 
 ```bash
@@ -115,8 +120,8 @@ results:
       output:
         hasNameKey: true
         hasEmailKey: false
-        hasSeattleValue: true
-        hasAge30Value: true
+        hasAgeKey: true
+        cityHasSeattle: true
 messages: []
 hadErrors: false
 ```

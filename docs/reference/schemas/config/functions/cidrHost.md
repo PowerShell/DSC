@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'cidrHost' DSC configuration document function
-ms.date:     11/03/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       cidrHost
 ---
@@ -83,9 +83,15 @@ resources:
     properties:
       output:
         subnet: "[cidrSubnet(parameters('baseNetwork'), 24, parameters('subnetIndex'))]"
-        webServer1: "[cidrHost(cidrSubnet(parameters('baseNetwork'), 24, parameters('subnetIndex')), 10)]"
-        webServer2: "[cidrHost(cidrSubnet(parameters('baseNetwork'), 24, parameters('subnetIndex')), 11)]"
-        webServer3: "[cidrHost(cidrSubnet(parameters('baseNetwork'), 24, parameters('subnetIndex')), 12)]"
+        webServer1: >-
+          [cidrHost(cidrSubnet(parameters('baseNetwork'), 24,
+          parameters('subnetIndex')), 10)]
+        webServer2: >-
+          [cidrHost(cidrSubnet(parameters('baseNetwork'), 24,
+          parameters('subnetIndex')), 11)]
+        webServer3: >-
+          [cidrHost(cidrSubnet(parameters('baseNetwork'), 24,
+          parameters('subnetIndex')), 12)]
 ```
 
 ```bash
@@ -100,9 +106,9 @@ results:
     actualState:
       output:
         subnet: 172.16.10.0/24
-        webServer1: 172.16.10.10
-        webServer2: 172.16.10.11
-        webServer3: 172.16.10.12
+        webServer1: 172.16.10.11
+        webServer2: 172.16.10.12
+        webServer3: 172.16.10.13
 messages: []
 hadErrors: false
 ```

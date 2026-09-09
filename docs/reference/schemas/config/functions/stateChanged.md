@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'stateChanged' DSC configuration document function
-ms.date:     07/11/2026
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       stateChanged
 ---
@@ -53,7 +53,9 @@ resources:
 - name: Report change
   type: Microsoft.DSC.Debug/Echo
   properties:
-    output: "[stateChanged(resourceId('Microsoft.Windows/FeatureOnDemandList', 'Install OpenSSH Client'))]"
+    output: >-
+      [stateChanged(resourceId('Microsoft.Windows/FeatureOnDemandList',
+      'Install OpenSSH Client'))]
   dependsOn:
   - "[resourceId('Microsoft.Windows/FeatureOnDemandList', 'Install OpenSSH Client')]"
 ```

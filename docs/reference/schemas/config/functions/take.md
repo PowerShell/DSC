@@ -1,9 +1,11 @@
 ---
 description: Reference for the 'take' DSC configuration document function
-ms.date:     11/01/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       take
 ---
+
+# take
 
 ## Synopsis
 
@@ -113,7 +115,8 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      resources: "[createArray('prod-db-east-01', 'dev-api-west-02', 'test-cache-central')]"
+      resources: >-
+        [createArray('prod-db-east-01', 'dev-api-west-02', 'test-cache-central')]
       prodPrefix: "[take('prod-db-east-01', 4)]"
       devPrefix: "[take('dev-api-west-02', 3)]"
       testPrefix: "[take('test-cache-central', 4)]"

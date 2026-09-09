@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'div' DSC configuration document function
-ms.date:     02/28/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       div
 ---
@@ -90,9 +90,9 @@ hadErrors: false
 
 ### operands
 
-The `div()` function expects exactly two integers as input. The **operands** can be either an integer
-or the output of any configuration function that returns an integer. The function divides the
-first operand by the second operand. Separate the **operands** with a comma (`,`).
+The `div()` function expects exactly two integers as input. The **operands** can be either an
+integer or the output of any configuration function that returns an integer. The function divides
+the first operand by the second operand. Separate the **operands** with a comma (`,`).
 
 ```yaml
 Type:         integer

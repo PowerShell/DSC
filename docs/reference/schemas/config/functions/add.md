@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'add' DSC configuration document function
-ms.date:     02/28/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       add
 ---
@@ -39,7 +39,7 @@ resources:
 ```
 
 ```bash
-dsc config get --file add.example.1.dsc.config.yaml 
+dsc config get --file add.example.1.dsc.config.yaml
 ```
 
 ```yaml

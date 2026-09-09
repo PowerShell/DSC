@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'uniqueString' DSC configuration document function
-ms.date:     08/12/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       uniqueString
 ---
@@ -57,7 +57,8 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      name: "[uniqueString(parameters('env'), parameters('service'), parameters('region'))]"
+      name: >-
+        [uniqueString(parameters('env'), parameters('service'), parameters('region'))]
 ```
 
 ```bash
@@ -135,7 +136,8 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      resourceId: "[concat('res-', uniqueString(parameters('project'), parameters('zone')))]"
+      resourceId: >-
+        [concat('res-', uniqueString(parameters('project'), parameters('zone')))]
 ```
 
 ```bash
