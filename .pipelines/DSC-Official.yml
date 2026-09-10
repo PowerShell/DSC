@@ -32,7 +32,7 @@ variables:
   - name: PublishToStore
     value: ${{ parameters.PublishToStore }}
   - name: RustVersion
-    value: ms-prod-1.95
+    value: ms-prod-1.97.1
 
 resources:
   repositories:
