@@ -13,6 +13,8 @@ Use the path-based mapping below to determine which area instructions apply to t
 
 ## Area Routing
 
+Paths in this table are relative to the root of the repo, not this SKILL.md file.
+
 | Area | Paths | Instruction File |
 |------|-------|------------------|
 | Engine | `lib/dsc-lib/src/configure/`, `lib/dsc-lib/src/discovery/`, `lib/dsc-lib/src/dscresources/`, `lib/dsc-lib/src/functions/`, `lib/dsc-lib/src/settings/` | `skills/code-review/engine.instructions.md` |
