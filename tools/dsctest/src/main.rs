@@ -30,7 +30,7 @@ use args::{Args, RefreshEnvOperation, Schemas, SubCommand};
 use clap::Parser;
 use schemars::schema_for;
 use serde_json::Map;
-use crate::action::{ActionInput, ActionOutput, invoke_action};
+use crate::action::{ActionInput, ActionOutput};
 use crate::copy_resource::{CopyResource, copy_the_resource};
 use crate::delete::Delete;
 use crate::exist::{Exist, State};
