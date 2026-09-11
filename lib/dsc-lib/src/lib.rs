@@ -19,10 +19,12 @@ pub mod extensions;
 pub mod functions;
 pub mod parser;
 pub mod progress;
+pub mod settings;
 pub mod types;
 pub mod util;
 
 // Re-export the dependency crate to minimize dependency management.
+#[doc(inline)]
 pub use dsc_lib_jsonschema as schemas;
 
 i18n!("locales", fallback = "en-us");
