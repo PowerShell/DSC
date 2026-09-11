@@ -4,6 +4,7 @@
 pub mod command_discovery;
 pub mod discovery_trait;
 
+use crate::actions::dscaction::DscAction;
 use crate::configure::config_doc::ResourceDiscoveryMode;
 use crate::discovery::discovery_trait::{DiscoveryKind, ResourceDiscovery, DiscoveryFilter};
 use crate::dscerror::DscError;
@@ -16,6 +17,8 @@ use std::collections::BTreeMap;
 use command_discovery::{CommandDiscovery, ImportedManifest};
 use tracing::error;
 
+/// Defines the caching [`TreeMap`] for discovered DSC actions.
+type DiscoveryActionCache = BTreeMap<FullyQualifiedTypeName, Vec<DscAction>>;
 /// Defines the caching [`BTreeMap`] for discovered DSC extensions.
 type DiscoveryExtensionCache = BTreeMap<FullyQualifiedTypeName, DscExtension>;
 /// Defines the caching [`BTreeMap`] for discovered DSC manifests of any type.
@@ -26,6 +29,7 @@ type DiscoveryResourceCache = BTreeMap<FullyQualifiedTypeName, Vec<DscResource>>
 #[derive(Clone)]
 pub struct Discovery {
     pub resources: DiscoveryResourceCache,
+    pub actions: DiscoveryActionCache,
     pub extensions: DiscoveryExtensionCache,
     pub refresh_cache: bool,
 }
@@ -41,6 +45,7 @@ impl Discovery {
     pub fn new() -> Self {
         Self {
             resources: DiscoveryResourceCache::new(),
+            actions: DiscoveryActionCache::new(),
             extensions: DiscoveryExtensionCache::new(),
             refresh_cache: false,
         }
@@ -83,16 +88,23 @@ impl Discovery {
             for (_resource_name, found_resources) in discovered_resources {
                 for manifest in found_resources {
                     let key = match &manifest {
-                        ImportedManifest::Resource(resource) => {
-                            format!("{}@{}", resource.type_name.to_lowercase(), resource.version)
-                        },
+                        ImportedManifest::Action(action) => {
+                            format!("{}@{}", action.type_name.to_lowercase(), action.version)
+                        }
                         ImportedManifest::Extension(extension) => {
                             format!("{}@{}", extension.type_name.to_lowercase(), extension.version)
                         }
+                        ImportedManifest::Resource(resource) => {
+                            format!("{}@{}", resource.type_name.to_lowercase(), resource.version)
+                        },
                     };
                     resources.insert(key, manifest);
                 }
             };
+
+            if let Ok(actions) = discovery_type.get_actions() {
+                self.actions.extend(actions);
+            }
 
             if let Ok(extensions) = discovery_type.get_extensions() {
                 self.extensions.extend(extensions);

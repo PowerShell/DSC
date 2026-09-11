@@ -3,15 +3,21 @@
 
 use crate::{
     configure::config_doc::ResourceDiscoveryMode,
-    discovery::{DiscoveryExtensionCache, DiscoveryManifestCache, DiscoveryResourceCache},
+    discovery::{
+        DiscoveryActionCache,
+        DiscoveryExtensionCache,
+        DiscoveryManifestCache,
+        DiscoveryResourceCache
+    },
     dscerror::DscError,
     types::{FullyQualifiedTypeName, ResourceVersionReq, SemanticVersionReq, TypeNameFilter}
 };
 
 #[derive(Debug, PartialEq)]
 pub enum DiscoveryKind {
-    Resource,
+    Action,
     Extension,
+    Resource,
 }
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
@@ -166,6 +172,17 @@ pub trait ResourceDiscovery {
     ///
     /// This function will return an error if the underlying discovery fails.
     fn find_resources(&mut self, required_resource_types: &[DiscoveryFilter]) -> Result<DiscoveryResourceCache, DscError>;
+
+    /// Get the available actions.
+    ///
+    /// # Returns
+    ///
+    /// A result containing a map of action names to their corresponding `DscAction` instances.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the underlying discovery fails.
+    fn get_actions(&mut self) -> Result<DiscoveryActionCache, DscError>;
 
     /// Get the available extensions.
     ///

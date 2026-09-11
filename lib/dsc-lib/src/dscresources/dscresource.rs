@@ -78,6 +78,7 @@ pub(crate) enum Operation {
     Test,
     Delete,
     Export,
+    Invoke, // only used by actions
 }
 
 impl Display for Operation {
@@ -88,6 +89,7 @@ impl Display for Operation {
             Operation::Test => write!(f, "test"),
             Operation::Delete => write!(f, "delete"),
             Operation::Export => write!(f, "export"),
+            Operation::Invoke => write!(f, "invoke"),
         }
     }
 }
