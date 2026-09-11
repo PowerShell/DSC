@@ -2,15 +2,30 @@
 // Licensed under the MIT License.
 
 use crate::{
-    actions::action_manifest::{ActionManifest, InvokeMethod, SchemaKind},
+    actions::action_manifest::{
+        ActionManifest,
+        ArgKind,
+        InvokeMethod,
+        SchemaArgKind,
+        SchemaKind
+    },
     discovery::command_discovery::verify_executable,
     dscerror::DscError,
     dscresources::{
-        command_resource::process_schema_args,
+        command_resource::{
+            invoke_command,
+            validate_security_context
+        },
+        dscresource::Operation
     },
     schemas::dsc_repo::DscRepoSchema,
-    types::{FullyQualifiedTypeName, SemanticVersion},
+    types::{
+        ExitCodesMap,
+        FullyQualifiedTypeName,
+        SemanticVersion
+    },
 };
+use jsonschema::Validator;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -19,7 +34,7 @@ use std::path::{Path, PathBuf};
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
 #[dsc_repo_schema(base_name = "list", folder_path = "outputs/action")]
-pub(crate) struct DscAction {
+pub struct DscAction {
     /// The namespaced name of the extension.
     #[serde(rename="type")]
     pub type_name: FullyQualifiedTypeName,
@@ -57,29 +72,99 @@ impl DscAction {
         }
     }
 
-    pub fn invoke(&self, input: Option<Value>) -> Result<Value, DscError> {
-        // validate input against input_schema
+    pub(crate) fn invoke(&self, input: Option<&str>) -> Result<Value, DscError> {
         let manifest = serde_json::from_value::<ActionManifest>(self.manifest.clone())?;
-        let Some(schema_kind) = manifest.invoke.input_schema.as_ref() else {
+
+        if let Some(required_context) = &manifest.invoke.require_security_context {
+            validate_security_context(None, &Some(required_context.clone()), &manifest.type_name, &Operation::Invoke)?;
+        }
+
+        let Some(input_schema_kind) = manifest.invoke.input_schema.as_ref() else {
             return Err(DscError::SchemaNotAvailable(self.type_name.to_string()));
         };
-        let schema_value = match schema_kind {
-            SchemaKind::Command(command) => {
-                let args = process_schema_args(command.args.as_ref(), target_resource);
-                let (_exit_code, stdout, _stderr) = invoke_command(&command.executable, args, None, Some(&resource.directory), None, manifest.exit_codes.as_ref())?;
-                let schema_value: Value = serde_json::from_str(&stdout)?;
-                schema_value
-            },
-            SchemaKind::Embedded(schema) => {
-                schema.clone()
-            }
-        };
-        // validate input against schema_value
+        let input_schema = get_schema(input_schema_kind, &self.directory, manifest.exit_codes.as_ref())?;
         if let Some(input) = input {
-            validate_input(&input, &schema_value)?;
+            validate_json(&input, &input_schema)?;
         }
-        Ok(Value::Null)
+        let args = process_invoke_args(manifest.invoke.args.as_ref(), input.unwrap_or(""));
+        let (_exit_code, stdout, _stderr) = invoke_command(&manifest.invoke.executable, args, input, Some(&self.directory), None, manifest.exit_codes.as_ref())?;
+        let Some(output_schema_kind) = manifest.invoke.output_schema.as_ref() else {
+            return Err(DscError::SchemaNotAvailable(self.type_name.to_string()));
+        };
+        let output_schema = get_schema(output_schema_kind, &self.directory, manifest.exit_codes.as_ref())?;
+        validate_json(&stdout, &output_schema)?;
+
+        let output = serde_json::from_str(&stdout)?;
+        Ok(output)
     }
+}
+
+pub fn get_schema(schema_kind: &SchemaKind, directory: &Path, exit_codes: &ExitCodesMap) -> Result<Value, DscError> {
+    match schema_kind {
+        SchemaKind::Command(command) => {
+            let args = process_schema_args(command.args.as_ref());
+            let (_exit_code, stdout, _stderr) = invoke_command(&command.executable, args, None, Some(directory), None, exit_codes)?;
+            let schema_value: Value = serde_json::from_str(&stdout)?;
+            Ok(schema_value)
+        },
+        SchemaKind::Embedded(schema) => Ok(schema.clone()),
+    }
+}
+
+fn validate_json(input: &str, schema: &Value) -> Result<(), DscError> {
+    let compiled_schema = match Validator::new(&schema) {
+        Ok(schema) => schema,
+        Err(e) => {
+            return Err(DscError::Schema(e.to_string()));
+        },
+    };
+    let input_value = serde_json::from_str(input)?;
+    if let Err(err) = compiled_schema.validate(&input_value) {
+        return Err(DscError::Schema(err.to_string()));
+    }
+    Ok(())
+}
+
+fn process_invoke_args(args: Option<&Vec<ArgKind>>, input: &str) -> Option<Vec<String>> {
+    let Some(arg_values) = args else {
+        return None;
+    };
+
+    let mut processed_args = Vec::<String>::new();
+    for arg in arg_values {
+        match arg {
+            ArgKind::String(s) => {
+                processed_args.push(s.clone());
+            },
+            ArgKind::Json{ json_input_arg, mandatory } => {
+                if input.is_empty() && *mandatory != Some(true) {
+                    continue;
+                }
+
+                processed_args.push(json_input_arg.clone());
+                processed_args.push(input.to_string());
+            }
+        }
+    }
+
+    Some(processed_args)
+}
+
+fn process_schema_args(args: Option<&Vec<SchemaArgKind>>) -> Option<Vec<String>> {
+    let Some(arg_values) = args else {
+        return None;
+    };
+
+    let mut processed_args = Vec::<String>::new();
+    for arg in arg_values {
+        match arg {
+            SchemaArgKind::String(s) => {
+                processed_args.push(s.clone());
+            },
+        }
+    }
+
+    Some(processed_args)
 }
 
 pub(crate) fn load_action_manifest(path: &Path, manifest: &ActionManifest) -> Result<DscAction, DscError> {

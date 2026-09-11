@@ -1,7 +1,33 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{discovery::{DiscoveryExtensionCache, DiscoveryManifestCache, DiscoveryResourceCache, discovery_trait::{DiscoveryFilter, DiscoveryKind, ResourceDiscovery}, matches_adapter_requirement}, dscresources::{adapted_resource_manifest::AdaptedDscResourceManifest, resource_manifest::SetDeleteArgKind}, parser::Statement, types::{FullyQualifiedTypeName, TypeNameFilter}};
+use crate::{
+    actions::{
+        action_manifest::ActionManifest,
+        dscaction::DscAction,
+    },
+    discovery::{
+        DiscoveryActionCache,
+        DiscoveryExtensionCache,
+        DiscoveryManifestCache,
+        DiscoveryResourceCache,
+        discovery_trait::{
+            DiscoveryFilter,
+            DiscoveryKind,
+            ResourceDiscovery
+        },
+        matches_adapter_requirement
+    },
+    dscresources::{
+        adapted_resource_manifest::AdaptedDscResourceManifest,
+        resource_manifest::SetDeleteArgKind
+    },
+    parser::Statement,
+    types::{
+        FullyQualifiedTypeName,
+        TypeNameFilter
+    }
+};
 use crate::{locked_clear, locked_is_empty, locked_extend, locked_clone, locked_get};
 use crate::configure::{config_doc::ResourceDiscoveryMode, context::Context};
 use crate::dscresources::adapted_resource_manifest::AdaptedPathOrContent;
@@ -30,11 +56,13 @@ use crate::util::get_setting;
 use crate::util::{canonicalize_which, get_exe_path};
 
 // NOTE: if new types of file extensions are added, ensure they are added to `process_discover_args` in `lib/dsc-lib/src/extensions/discover.rs`
+pub const DSC_ACTION_EXTENSIONS: [&str; 3] = [".dsc.action.json", ".dsc.action.yaml", ".dsc.action.yml"];
 pub const DSC_ADAPTED_RESOURCE_EXTENSIONS: [&str; 3] = [".dsc.adaptedresource.json", ".dsc.adaptedresource.yaml", ".dsc.adaptedresource.yml"];
 pub const DSC_EXTENSION_EXTENSIONS: [&str; 3] = [".dsc.extension.json", ".dsc.extension.yaml", ".dsc.extension.yml"];
 pub const DSC_MANIFEST_LIST_EXTENSIONS: [&str; 3] = [".dsc.manifests.json", ".dsc.manifests.yaml", ".dsc.manifests.yml"];
 pub const DSC_RESOURCE_EXTENSIONS: [&str; 3] = [".dsc.resource.json", ".dsc.resource.yaml", ".dsc.resource.yml"];
 
+static ACTIONS: LazyLock<RwLock<DiscoveryActionCache>> = LazyLock::new(|| RwLock::new(DiscoveryActionCache::new()));
 static ADAPTERS: LazyLock<RwLock<DiscoveryResourceCache>> = LazyLock::new(|| RwLock::new(DiscoveryResourceCache::new()));
 static RESOURCES: LazyLock<RwLock<DiscoveryResourceCache>> = LazyLock::new(|| RwLock::new(DiscoveryResourceCache::new()));
 static EXTENSIONS: LazyLock<RwLock<DiscoveryExtensionCache>> = LazyLock::new(|| RwLock::new(DiscoveryExtensionCache::new()));
@@ -45,6 +73,7 @@ static ADAPTED_RESOURCES: LazyLock<RwLock<DiscoveryResourceCache>> = LazyLock::n
 #[schemars(transform = Self::transform_export_schema_uris, transform = Self::transform_schema_docs)]
 #[serde(rename_all = "camelCase")]
 pub struct ManifestList {
+    pub actions: Option<Vec<ActionManifest>>,
     pub adapted_resources: Option<Vec<AdaptedDscResourceManifest>>,
     pub resources: Option<Vec<ResourceManifest>>,
     pub extensions: Option<Vec<ExtensionManifest>>,
@@ -54,8 +83,9 @@ pub struct ManifestList {
 #[derive(Clone, Deserialize, JsonSchema)]
 #[schemars(inline, transform = idiomaticize_externally_tagged_enum)]
 pub enum ImportedManifest {
-    Resource(DscResource),
+    Action(DscAction),
     Extension(DscExtension),
+    Resource(DscResource),
 }
 
 
@@ -98,6 +128,9 @@ impl CommandDiscovery {
 
     #[must_use]
     pub fn get_extensions(&self) -> DiscoveryExtensionCache { locked_clone!(EXTENSIONS) }
+
+    #[must_use]
+    pub fn get_actions(&self) -> DiscoveryActionCache { locked_clone!(ACTIONS) }
 
     fn get_resource_path_setting() -> Result<ResourcePathSetting, DscError>
     {
@@ -229,8 +262,8 @@ impl ResourceDiscovery for CommandDiscovery {
         if self.discovery_mode == ResourceDiscoveryMode::PreDeployment && !locked_is_empty!(RESOURCES) {
             return Ok(());
         } else if self.discovery_mode == ResourceDiscoveryMode::DuringDeployment {
-            locked_clear!(RESOURCES);
             locked_clear!(ADAPTERS);
+            locked_clear!(RESOURCES);
         }
 
         // if kind is DscResource, we need to discover extensions first
@@ -243,14 +276,18 @@ impl ResourceDiscovery for CommandDiscovery {
         debug!("{}", t!("discovery.commandDiscovery.adapterNameFilterForDiscovery", filter = filter));
         let mut progress = ProgressBar::new(1, self.progress_format)?;
         match kind {
-            DiscoveryKind::Resource => {
-                progress.write_activity(t!("discovery.commandDiscovery.progressSearching").to_string().as_str());
-            },
+            DiscoveryKind::Action => {
+                progress.write_activity(t!("discovery.commandDiscovery.actionSearching").to_string().as_str());
+            }
             DiscoveryKind::Extension => {
                 progress.write_activity(t!("discovery.commandDiscovery.extensionSearching").to_string().as_str());
             }
+            DiscoveryKind::Resource => {
+                progress.write_activity(t!("discovery.commandDiscovery.progressSearching").to_string().as_str());
+            },
         }
 
+        let mut actions = DiscoveryActionCache::new();
         let mut adapters = DiscoveryResourceCache::new();
         let mut resources = DiscoveryResourceCache::new();
         let mut extensions = DiscoveryExtensionCache::new();
@@ -272,6 +309,7 @@ impl ResourceDiscovery for CommandDiscovery {
                             };
                             let file_name_lowercase = file_name.to_lowercase();
                             if DSC_MANIFEST_LIST_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)) ||
+                                (kind == &DiscoveryKind::Action && DSC_ACTION_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext))) ||
                                 (kind == &DiscoveryKind::Resource && (DSC_RESOURCE_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext))) || DSC_ADAPTED_RESOURCE_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext))) ||
                                 (kind == &DiscoveryKind::Extension && DSC_EXTENSION_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext))) {
                                 trace!("{}", t!("discovery.commandDiscovery.foundManifest", path = path.to_string_lossy()));
@@ -290,6 +328,12 @@ impl ResourceDiscovery for CommandDiscovery {
 
                                 for imported_manifest in imported_manifests {
                                     match imported_manifest {
+                                        ImportedManifest::Action(action) => {
+                                            if filter.is_match(&action.type_name) {
+                                                trace!("{}", t!("discovery.commandDiscovery.actionFound", action = action.type_name, version = action.version));
+                                                insert_action(&mut actions, &action);
+                                            }
+                                        },
                                         ImportedManifest::Extension(extension) => {
                                             if filter.is_match(&extension.type_name) {
                                                 trace!("{}", t!("discovery.commandDiscovery.extensionFound", extension = extension.type_name, version = extension.version));
@@ -332,6 +376,12 @@ impl ResourceDiscovery for CommandDiscovery {
         progress.write_increment(1);
 
         match kind {
+            DiscoveryKind::Action => {
+                locked_extend!(ACTIONS, actions);
+            }
+            DiscoveryKind::Extension => {
+                locked_extend!(EXTENSIONS, extensions);
+            }
             DiscoveryKind::Resource => {
                 // Now we need to call discover extensions and add those resource to the list of resources
                 for extension in locked_clone!(EXTENSIONS).values() {
@@ -356,9 +406,6 @@ impl ResourceDiscovery for CommandDiscovery {
                 locked_extend!(ADAPTERS, adapters);
                 locked_extend!(RESOURCES, resources);
             },
-            DiscoveryKind::Extension => {
-                locked_extend!(EXTENSIONS, extensions);
-            }
         }
 
         Ok(())
@@ -463,32 +510,41 @@ impl ResourceDiscovery for CommandDiscovery {
         adapter_name_filter: Option<&TypeNameFilter>
     ) -> Result<DiscoveryManifestCache, DscError> {
         let mut resources = DiscoveryManifestCache::new();
-        if *kind == DiscoveryKind::Resource {
-            if let Some(adapter_name_filter) = adapter_name_filter {
-                self.discover(kind, &TypeNameFilter::default())?;
-                self.discover_adapted_resources(type_name_filter, adapter_name_filter)?;
-
-                // add/update found adapted resources to the lookup_table
-                let adapted_resources = locked_clone!(ADAPTED_RESOURCES);
-                add_resources_to_lookup_table(&adapted_resources);
-
-                for (adapted_name, adapted_vec) in &adapted_resources {
-                    resources.insert(adapted_name.clone(), adapted_vec.iter().map(|r| ImportedManifest::Resource(r.clone())).collect());
-                }
-            } else {
+        match *kind {
+            DiscoveryKind::Action => {
                 self.discover(kind, type_name_filter)?;
-                for (resource_name, resources_vec) in &locked_clone!(RESOURCES) {
-                    resources.insert(resource_name.clone(), resources_vec.iter().map(|r| ImportedManifest::Resource(r.clone())).collect());
-                }
-                for (adapter_name, adapter_vec) in &locked_clone!(ADAPTERS) {
-                    resources.insert(adapter_name.clone(), adapter_vec.iter().map(|r| ImportedManifest::Resource(r.clone())).collect());
+                for (action_name, actions_vec) in &locked_clone!(ACTIONS) {
+                    resources.insert(action_name.clone(), actions_vec.iter().map(|a| ImportedManifest::Action(a.clone())).collect());
                 }
             }
-        } else {
-            self.discover(kind, type_name_filter)?;
-            for (extension_name, extension) in &locked_clone!(EXTENSIONS) {
-                resources.insert(extension_name.clone(), vec![ImportedManifest::Extension(extension.clone())]);
+            DiscoveryKind::Extension => {
+                self.discover(kind, type_name_filter)?;
+                for (extension_name, extension) in &locked_clone!(EXTENSIONS) {
+                    resources.insert(extension_name.clone(), vec![ImportedManifest::Extension(extension.clone())]);
+                }
             }
+            DiscoveryKind::Resource => {
+                if let Some(adapter_name_filter) = adapter_name_filter {
+                    self.discover(kind, &TypeNameFilter::default())?;
+                    self.discover_adapted_resources(type_name_filter, adapter_name_filter)?;
+
+                    // add/update found adapted resources to the lookup_table
+                    let adapted_resources = locked_clone!(ADAPTED_RESOURCES);
+                    add_resources_to_lookup_table(&adapted_resources);
+
+                    for (adapted_name, adapted_vec) in &adapted_resources {
+                        resources.insert(adapted_name.clone(), adapted_vec.iter().map(|r| ImportedManifest::Resource(r.clone())).collect());
+                    }
+                } else {
+                    self.discover(kind, type_name_filter)?;
+                    for (resource_name, resources_vec) in &locked_clone!(RESOURCES) {
+                        resources.insert(resource_name.clone(), resources_vec.iter().map(|r| ImportedManifest::Resource(r.clone())).collect());
+                    }
+                    for (adapter_name, adapter_vec) in &locked_clone!(ADAPTERS) {
+                        resources.insert(adapter_name.clone(), adapter_vec.iter().map(|r| ImportedManifest::Resource(r.clone())).collect());
+                    }
+                }
+            },
         }
 
         Ok(resources)
@@ -588,6 +644,13 @@ impl ResourceDiscovery for CommandDiscovery {
         Ok(found_resources)
     }
 
+    fn get_actions(&mut self) -> Result<DiscoveryActionCache, DscError> {
+        if locked_is_empty!(ACTIONS) {
+            self.discover(&DiscoveryKind::Action, &TypeNameFilter::default())?;
+        }
+        Ok(locked_clone!(ACTIONS))
+    }
+
     fn get_extensions(&mut self) -> Result<DiscoveryExtensionCache, DscError> {
         if locked_is_empty!(EXTENSIONS) {
             self.discover(&DiscoveryKind::Extension, &TypeNameFilter::default())?;
@@ -617,6 +680,22 @@ fn filter_resources(found_resources: &mut DiscoveryResourceCache, required_resou
         if required_resources.values().all(|&v| v) {
             return;
         }
+    }
+}
+
+fn insert_action(actions: &mut DiscoveryActionCache, action: &DscAction) {
+    if let Some(existing_actions) = actions.get_mut(&action.type_name) {
+        // compare the action versions and insert newest to oldest using semver
+        let mut insert_index = existing_actions.len();
+        for (index, action_instance) in existing_actions.iter().enumerate() {
+            if action_instance.version < action.version {
+                insert_index = index;
+                break;
+            }
+        }
+        existing_actions.insert(insert_index, action.clone());
+    } else {
+        actions.insert(action.type_name.clone(), vec![action.clone()]);
     }
 }
 
@@ -739,6 +818,29 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
         return Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.invalidManifestFileName", path = path.to_string_lossy()).to_string()));
     };
     let extension_is_json = path.extension().is_some_and(|ext| ext.eq_ignore_ascii_case("json"));
+    if DSC_ACTION_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)) {
+        let action = if extension_is_json {
+            match serde_json::from_str::<ActionManifest>(&contents) {
+                Ok(action) => action,
+                Err(err) => {
+                    return Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.invalidActionManifest", action = path.to_string_lossy(), err = err).to_string()));
+                }
+            }
+        } else {
+            match serde_yaml::from_str::<ActionManifest>(&contents) {
+                Ok(action) => action,
+                Err(err) => {
+                    return Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.invalidActionManifest", action = path.to_string_lossy(), err = err).to_string()));
+                }
+            }
+        };
+        if !evaluate_condition(action.condition.as_deref())? {
+            debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = path.to_string_lossy(), condition = action.condition.unwrap_or_default(), resource = action.type_name));
+            return Ok(vec![]);
+        }
+        let action = load_action_manifest(path, &action)?;
+        return Ok(vec![ImportedManifest::Action(action)]);
+    }
     if DSC_ADAPTED_RESOURCE_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)) {
         let resource = if extension_is_json {
             match serde_json::from_str::<AdaptedDscResourceManifest>(&contents) {
@@ -825,6 +927,16 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
                 }
             }
         };
+        if let Some(actions) = &manifest_list.actions {
+            for action in actions {
+                if !evaluate_condition(action.condition.as_deref())? {
+                    debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = path.to_string_lossy(), condition = action.condition.as_ref() : {:?}, resource = action.type_name));
+                    continue;
+                }
+                let action = load_action_manifest(path, action)?;
+                resources.push(ImportedManifest::Action(action));
+            }
+        }
         if let Some(adapted_resources) = &manifest_list.adapted_resources {
             for resource in adapted_resources {
                 if !evaluate_condition(resource.condition.as_deref())? {
@@ -858,6 +970,21 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
         return Ok(resources);
     }
     Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.invalidManifestFile", resource = path.to_string_lossy()).to_string()))
+}
+
+pub fn load_action_manifest(path: &Path, manifest: &ActionManifest) -> Result<DscAction, DscError> {
+    let mut action = DscAction::new();
+    action.author = manifest.author.clone();
+    action.invoke = manifest.invoke.clone();
+    action.path = path.to_path_buf();
+    action.type_name = manifest.type_name.clone();
+    action.deprecation_message = manifest.deprecation_message.clone();
+    action.description = manifest.description.clone();
+    action.version = manifest.version.clone();
+    action.directory = path.parent().unwrap().to_path_buf();
+    action.manifest = serde_json::to_value(manifest)?;
+
+    Ok(action)
 }
 
 pub fn load_adapted_resource_manifest(path: &Path, manifest: &AdaptedDscResourceManifest) -> Result<DscResource, DscError> {

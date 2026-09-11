@@ -1058,7 +1058,7 @@ pub fn process_get_args(args: Option<&Vec<GetArgKind>>, input: &str, resource: &
     Some(processed_args)
 }
 
-pub(crate) fn process_schema_args(args: Option<&Vec<SchemaArgKind>>, command_resource: &DscResource) -> Option<Vec<String>> {
+fn process_schema_args(args: Option<&Vec<SchemaArgKind>>, command_resource: &DscResource) -> Option<Vec<String>> {
     let Some(arg_values) = args else {
         debug!("{}", t!("dscresources.commandResource.noArgs"));
         return None;
@@ -1344,7 +1344,7 @@ pub fn log_stderr_line<'a>(process_id: &u32, trace_line: &'a str) -> &'a str
     ""
 }
 
-fn validate_security_context(target_resource: Option<&DscResource>, required_security_context: &Option<SecurityContextKind>, resource_type: &str, operation: &Operation) -> Result<(), DscError> {
+pub(crate)fn validate_security_context(target_resource: Option<&DscResource>, required_security_context: &Option<SecurityContextKind>, resource_type: &str, operation: &Operation) -> Result<(), DscError> {
     if let Some(resource) = target_resource && let Some(adapted_manifest) = &resource.adapted_manifest {
         let require_security_context = match operation {
             Operation::Get => {
@@ -1387,6 +1387,9 @@ fn validate_security_context(target_resource: Option<&DscResource>, required_sec
                     &None
                 }
             },
+            Operation::Invoke => {
+                return Err(DscError::NotSupported(t!("dscresources.commandResource.invokeNotSupportedForResources").to_string()));
+            }
         };
         if require_security_context.is_some() {
             return validate_security_context(None, require_security_context, &resource.type_name, operation);

@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::args::{ConfigSubCommand, SchemaType, ExtensionSubCommand, FunctionSubCommand, GetOutputFormat, ListOutputFormat, OutputFormat, ResourceSubCommand};
+use crate::args::{ConfigSubCommand, SchemaType, ActionSubCommand, ExtensionSubCommand, FunctionSubCommand, GetOutputFormat, ListOutputFormat, OutputFormat, ResourceSubCommand};
 use crate::resolve::{get_contents, Include};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
@@ -528,6 +528,17 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
     Ok(())
 }
 
+pub fn action(subcommand: &ActionSubCommand, progress_format: ProgressFormat) -> Result<(), ExitCode> {
+    let mut dsc = DscManager::new();
+
+    match subcommand {
+        ActionSubCommand::List { action_name, output_format } => {
+            list_actions(&mut dsc, action_name, output_format.as_ref(), progress_format)?;
+        },
+    }
+    Ok(())
+}
+
 pub fn extension(subcommand: &ExtensionSubCommand, progress_format: ProgressFormat) -> Result<(), ExitCode> {
     let mut dsc = DscManager::new();
 
@@ -626,6 +637,77 @@ fn should_write_table(format: Option<&ListOutputFormat>) -> bool {
         // write as table if format is not specified and interactive
         format.is_none() && io::stdout().is_terminal()
     }
+}
+
+fn list_actions(dsc: &mut DscManager, action_name: &TypeNameFilter, format: Option<&ListOutputFormat>, progress_format: ProgressFormat) -> Result<(), ExitCode> {
+    let write_table = should_write_table(format);
+
+    let mut table = Table::new(&[
+        t!("subcommand.tableHeader_type").to_string().as_ref(),
+        t!("subcommand.tableHeader_version").to_string().as_ref(),
+        t!("subcommand.tableHeader_action_hasInput").to_string().as_ref(),
+        t!("subcommand.tableHeader_action_hasOutput").to_string().as_ref(),
+        t!("subcommand.tableHeader_action_requireSecurityContext").to_string().as_ref(),
+        t!("subcommand.tableHeader_description").to_string().as_ref(),
+    ]);
+
+    let mut include_separator = false;
+
+    for manifest_resource in dsc.list_available(&DiscoveryKind::Action, action_name, None, progress_format) {
+        if let ImportedManifest::Action(action) = manifest_resource {
+            let has_input = if action.invoke.input_schema.is_some() {
+                "Yes"
+            } else {
+                "No"
+            };
+            let has_output = if action.invoke.output_schema.is_some() {
+                "Yes"
+            } else {
+                "No"
+            };
+
+            let require_security_context = match &action.invoke.require_security_context {
+                Some(security_context) => security_context.to_string(),
+                None => "None".to_string(),
+            };
+
+            if write_table {
+                table.add_row(vec![
+                    action.type_name.to_string(),
+                    action.version.to_string(),
+                    has_input.to_string(),
+                    has_output.to_string(),
+                    require_security_context,
+                    action.description.unwrap_or_default()
+                ]);
+            }
+            else {
+                // convert to json
+                let json = match serde_json::to_string(&action) {
+                    Ok(json) => json,
+                    Err(err) => {
+                        error!("JSON: {err}");
+                        return Err(ExitCode::from(EXIT_JSON_ERROR));
+                    }
+                };
+                let format = match format {
+                    Some(ListOutputFormat::Json) => Some(OutputFormat::Json),
+                    Some(ListOutputFormat::PrettyJson) => Some(OutputFormat::PrettyJson),
+                    Some(ListOutputFormat::Yaml) => Some(OutputFormat::Yaml),
+                    _ => None,
+                };
+                write_object(&json, format.as_ref(), include_separator)?;
+                include_separator = true;
+                // insert newline separating instances if writing to console
+                if io::stdout().is_terminal() { println!(); }            }
+        }
+    }
+
+    if write_table {
+        let truncate = format != Some(&ListOutputFormat::TableNoTruncate);
+        table.print(truncate);
+    }
+    Ok(())
 }
 
 fn list_extensions(dsc: &mut DscManager, extension_name: &TypeNameFilter, format: Option<&ListOutputFormat>, progress_format: ProgressFormat) -> Result<(), ExitCode> {
