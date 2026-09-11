@@ -2,14 +2,14 @@
 // Licensed under the MIT License.
 
 use crate::{
-    configure::config_doc::SecurityContextKind, dscresources::resource_manifest::SchemaCommand, schemas::dsc_repo::DscRepoSchema, types::{ExitCodesMap, FullyQualifiedTypeName, SemanticVersion, TagList},
+    configure::config_doc::SecurityContextKind, schemas::dsc_repo::DscRepoSchema, types::{ExitCodesMap, FullyQualifiedTypeName, SemanticVersion, TagList},
 };
 use rust_i18n::t;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use schemars::JsonSchema;
 
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, JsonSchema, DscRepoSchema)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 #[dsc_repo_schema(
     base_name = "manifest",
@@ -21,7 +21,7 @@ use schemars::JsonSchema;
         description = t!("actions.action_manifest.actionManifestSchemaDescription"),
     )
 )]
-pub(crate) struct ActionManifest {
+pub struct ActionManifest {
     /// The version of the action manifest schema.
     #[serde(rename = "$schema")]
     #[schemars(schema_with = "ActionManifest::recognized_schema_uris_subschema")]
@@ -42,7 +42,7 @@ pub(crate) struct ActionManifest {
     /// The description of the action.
     pub description: Option<String>,
     /// Tags for the action.
-    #[serde(skip_serializing_if = "TagList::is_empty")]
+    #[serde(default, skip_serializing_if = "TagList::is_empty")]
     pub tags: TagList,
     /// Details how to invoke this action.
     pub invoke: InvokeMethod,
@@ -52,8 +52,9 @@ pub(crate) struct ActionManifest {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 #[dsc_repo_schema(base_name = "manifest.invoke", folder_path = "action")]
-pub(crate) struct InvokeMethod {
+pub struct InvokeMethod {
     /// The executable to run on action invocation.
     pub executable: String,
     /// The arguments passed to the executable.
@@ -78,6 +79,23 @@ pub enum ArgKind {
         /// Indicates if argument is mandatory which will pass an empty string if no JSON input is provided.  Default is false.
         mandatory: Option<bool>,
     },
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[serde(untagged)]
+#[dsc_repo_schema(base_name = "commandArgs.action", folder_path = "definitions")]
+pub enum SchemaArgKind {
+    String(String),
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+#[dsc_repo_schema(base_name = "command.schema", folder_path = "definitions")]
+pub struct SchemaCommand {
+    /// The command to run to get the schema.
+    pub executable: String,
+    /// The arguments to pass to the command.
+    pub args: Option<Vec<SchemaArgKind>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]

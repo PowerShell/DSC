@@ -86,6 +86,11 @@ pub enum SubCommand {
         #[clap(long, hide = true)]
         as_include: bool,
     },
+    #[clap(name = "action", about = t!("args.actionAbout").to_string())]
+    Action {
+        #[clap(subcommand)]
+        subcommand: ActionSubCommand,
+    },
     #[clap(name = "extension", about = t!("args.extensionAbout").to_string())]
     Extension {
         #[clap(subcommand)]
@@ -176,6 +181,18 @@ pub enum ConfigSubCommand {
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
         output_format: Option<OutputFormat>,
     }
+}
+
+#[derive(Debug, PartialEq, Eq, Subcommand)]
+pub enum ActionSubCommand {
+    #[clap(name = "list", about = t!("args.listActionAbout").to_string())]
+    List {
+        /// Optional action name to filter the list
+        #[clap(default_value_t)]
+        action_name: TypeNameFilter,
+        #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
+        output_format: Option<ListOutputFormat>,
+    },
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
