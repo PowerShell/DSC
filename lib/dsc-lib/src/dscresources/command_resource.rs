@@ -865,7 +865,7 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
     let mut stderr_reader = BufReader::new(stderr).lines();
 
     if let Some(input) = input {
-        trace!("Writing to command STDIN: {input}");
+        trace!("{}", t!("dscresources.commandResource.writingStdin", input = input));
         let Some(mut stdin) = child.stdin.take() else {
             return Err(DscError::CommandOperation(t!("dscresources.commandResource.processChildStdin").to_string(), executable.to_string()));
         };
@@ -1286,9 +1286,19 @@ pub fn log_stderr_line<'a>(process_id: &u32, trace_line: &'a str) -> &'a str
                 0
             };
             let trace_message = if include_target {
-                format!("PID {process_id}: {target}: {line_number}: {}", trace_object.fields.message)
+                t!(
+                    "dscresources.commandResource.processTraceWithTarget",
+                    process_id = process_id,
+                    target = target,
+                    line_number = line_number,
+                    message = trace_object.fields.message
+                ).to_string()
             } else {
-                format!("PID {process_id}: {}", trace_object.fields.message)
+                t!(
+                    "dscresources.commandResource.processTrace",
+                    process_id = process_id,
+                    message = trace_object.fields.message
+                ).to_string()
             };
             match trace_object.level {
                 TraceLevel::Error => {
@@ -1310,23 +1320,23 @@ pub fn log_stderr_line<'a>(process_id: &u32, trace_line: &'a str) -> &'a str
         }
         else if let Ok(json_obj) = serde_json::from_str::<Value>(trace_line) {
             if let Some(msg) = json_obj.get("error") {
-                error!("PID {process_id}: {}", msg.as_str().unwrap_or_default());
+                error!("{}", t!("dscresources.commandResource.processTrace", process_id = process_id, message = msg.as_str().unwrap_or_default()));
             } else if let Some(msg) = json_obj.get("warn") {
-                warn!("PID {process_id}: {}", msg.as_str().unwrap_or_default());
+                warn!("{}", t!("dscresources.commandResource.processTrace", process_id = process_id, message = msg.as_str().unwrap_or_default()));
             } else if let Some(msg) = json_obj.get("info") {
-                info!("PID {process_id}: {}", msg.as_str().unwrap_or_default());
+                info!("{}", t!("dscresources.commandResource.processTrace", process_id = process_id, message = msg.as_str().unwrap_or_default()));
             } else if let Some(msg) = json_obj.get("debug") {
-                debug!("PID {process_id}: {}", msg.as_str().unwrap_or_default());
+                debug!("{}", t!("dscresources.commandResource.processTrace", process_id = process_id, message = msg.as_str().unwrap_or_default()));
             } else if let Some(msg) = json_obj.get("trace") {
-                trace!("PID {process_id}: {}", msg.as_str().unwrap_or_default());
+                trace!("{}", t!("dscresources.commandResource.processTrace", process_id = process_id, message = msg.as_str().unwrap_or_default()));
             } else {
                 // the line is a valid json, but not one of standard trace lines - return it as filtered stderr_line
-                trace!("PID {process_id}: {trace_line}");
+                trace!("{}", t!("dscresources.commandResource.processTrace", process_id = process_id, message = trace_line));
                 return trace_line;
             }
         } else {
             // the line is not a valid json - return it as filtered stderr_line
-            trace!("PID {process_id}: {}", trace_line);
+            trace!("{}", t!("dscresources.commandResource.processTrace", process_id = process_id, message = trace_line));
             return trace_line;
         }
     }

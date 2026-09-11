@@ -33,6 +33,7 @@ dependencyTypeMismatch = "'dependsOn' resource type '%{resource_type}' does not 
 resourceNotInOrder = "Resource not found in order"
 dependencyNotInOrder = "Dependency not found in order"
 circularDependency = "Circular dependency detected for resource named '%{resource}'"
+gettingInvocationOrder = "Getting resource invocation order"
 invocationOrder = "Resource invocation order"
 
 [configure.export_filter]
@@ -105,6 +106,10 @@ metadataRefreshEnvNoContext = "Resource returned '_refreshEnv' which indicates e
 copyDeprecated = "Copy for loop '%{name}' is deprecated and will be removed in a future release. See https://github.com/PowerShell/DSC/issues/1429 for more details."
 secureStringMustBeString = "Secure string parameter '%{name}' must be a string"
 secureObjectMustBeObject = "Secure object parameter '%{name}' must be an object"
+prefixUserPath = "Prefixing user PATH '%{value}' to system PATH '%{system_path}'"
+systemPathNotFound = "System PATH not found, using user PATH '%{value}' as PATH"
+resourceType = "resource_type %{resource_type}"
+validatingParameter = "Validating parameter '%{name}'"
 
 [configure.parameters]
 importingParametersFromComplexInput = "Importing parameters from complex input"
@@ -153,6 +158,20 @@ conditionNotMet = "Condition '%{condition}' not met, skipping manifest at '%{pat
 adaptedResourcePathNotFound = "Adapted resource '%{resource}' path not found: %{path}"
 invalidManifestFileName = "Invalid manifest file name '%{path}'"
 failedLoadManifest = "Failed to load manifest: %{err}"
+restrictedPath = "DSC_RESTRICTED_PATH: %{path}"
+resourcePath = "DSC_RESOURCE_PATH: %{path}"
+adapterNameFilter = "Using type name filter '%{filter}' as filter for adapter name"
+adapterNameFilterForDiscovery = "Using type name filter '%{filter}' for adapter name"
+resourceNameFilter = "Using type name filter '%{filter}' as filter for resource name"
+adapterListFailed = "Adapter failed to list resources with exit code %{exit_code}: %{stderr}"
+failedParseResource = "Failed to parse resource: %{line} -> %{err}"
+adapterListedResources = "Adapter '%{adapter}' listed %{count} resources"
+savingLookupTable = "Saving lookup table with %{count} items to %{path}"
+failedWriteLookupTable = "Unable to write lookup_table file %{path}"
+failedCreateLookupTableDirectory = "Unable to create parent directories of the lookup_table file %{path}"
+failedGetLookupTableDirectory = "Unable to get directory of the lookup_table file %{path}"
+failedSerializeLookupTable = "Unable to serialize lookup_table to json"
+readLookupTable = "Read %{count} items into lookup table from %{path}"
 
 [dscresources.commandResource]
 invokeGet = "Invoking get for '%{resource}'"
@@ -210,6 +229,9 @@ noAdaptedContent = "No adapted content available for resource '%{resource}'"
 invalidAdaptedContent = "Invalid adapted content for resource '%{resource}': %{error}"
 exportFilteringNotSupported = "Resource '%{resource}' does not support export filtering"
 retrievedSchemaFromCache = "Retrieved schema for resource '%{resource}' with version '%{version}' from cache"
+writingStdin = "Writing to command STDIN: %{input}"
+processTrace = "PID %{process_id}: %{message}"
+processTraceWithTarget = "PID %{process_id}: %{target}: %{line_number}: %{message}"
 
 [dscresources.dscresource]
 invokeGet = "Invoking get for '%{resource}'"
@@ -250,6 +272,9 @@ adapterDoesNotSupportDelete = "Adapter '%{adapter}' does not support delete oper
 validatingAgainstSchema = "Validating against resource schema"
 deprecationMessage = "Resource '%{resource}' is deprecated: %{message}"
 retrievedSchemaFromCache = "Retrieved schema for resource '%{resource}' with version '%{version}' from cache"
+exportResult = "Export result: %{result}"
+json = "JSON: %{json}"
+schema = "Schema: %{schema}"
 
 [dscresources.resource_manifest]
 resourceManifestSchemaTitle = "Resource manifest schema URI"
@@ -272,6 +297,7 @@ secretMultipleLinesReturned = "Extension '%{extension}' returned multiple lines 
 importProcessingOutput = "Processing output from extension '%{extension}'"
 deprecationMessage = "Extension '%{extension}' is deprecated: %{message}"
 failedLoadManifest = "Extension '%{extension}' failed to load manifest: %{err}"
+manifestImported = "Manifest imported from extension %{extension}"
 
 [extensions.extension_manifest]
 extensionManifestSchemaTitle = "Extension manifest schema URI"
@@ -575,6 +601,7 @@ syntax = "map( <array>, <lambda> )"
 
 [functions.max]
 description = "Returns the largest number from a list of numbers"
+invoked = "max function"
 syntax = "max( <number>, [number], ... )"
 emptyArray = "Array cannot be empty"
 integersOnly = "Array must contain only integers"
@@ -590,6 +617,7 @@ noMin = "Unable to find min value"
 
 [functions.mod]
 description = "Divides the first number by the second and returns the remainder"
+invoked = "mod function"
 syntax = "mod( <number>, <number> )"
 divideByZero = "Cannot divide by zero"
 
