@@ -293,7 +293,7 @@ impl DscResource {
         let mut export_result = ExportResult {
             actual_state: Vec::new(),
         };
-        debug!("Export result: {}", serde_json::to_string(&configuration)?);
+        debug!("{}", t!("dscresources.dscresource.exportResult", result = serde_json::to_string(&configuration)?));
         for resource in configuration.resources {
             let Some(properties) = resource.properties else {
                 return Err(DscError::Operation(t!("dscresources.dscresource.invokeExportReturnedNoResult", resource = self.type_name).to_string()));
@@ -913,8 +913,8 @@ pub fn validate_properties(resource: &DscResource, properties: &Value) -> Result
 /// * `DscError` - The JSON is invalid
 pub fn validate_json(source: &str, schema: &Value, json: &Value) -> Result<(), DscError> {
     debug!("{}: {source}", t!("dscresources.dscresource.validatingSchema"));
-    trace!("JSON: {json}");
-    trace!("Schema: {schema}");
+    trace!("{}", t!("dscresources.dscresource.json", json = json));
+    trace!("{}", t!("dscresources.dscresource.schema", schema = schema));
     let compiled_schema = match Validator::new(schema) {
         Ok(compiled_schema) => compiled_schema,
         Err(err) => {

@@ -28,7 +28,7 @@ impl Function for Max {
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
-        debug!("max function");
+        debug!("{}", t!("functions.max.invoked"));
         if args.len() == 1 {
             if let Some(array) = args[0].as_array() {
                 find_max(array)
