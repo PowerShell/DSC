@@ -7,6 +7,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Prevent this build script from rerunning unless the proto file or build script changes.
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=proto/bicep.proto");
+    // Always rebuild if translations are updated.
+    println!("cargo:rerun-if-changed=locales");
 
     let descriptor_path = PathBuf::from(env::var("OUT_DIR").unwrap()).join("bicep.bin");
 
