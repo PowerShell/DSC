@@ -15,6 +15,10 @@ firewall, SSH config, DISM features, etc.). They run as separate executables inv
 - **Schema/manifest version consistency**: When bumping a version in `Cargo.toml`, ensure the corresponding `.dsc.resource.json` manifest is also updated.
 - **`noFiltering` semantics**: Export input should be treated as empty when `noFiltering` is declared.
 - **Canonical property naming**: Leading underscore (`_`) is only for cross-resource canonical properties. Resource-specific properties use descriptive names (e.g., `sshd_config_filepath`).
+- **Canonical property definitions:** Always define a canonical property in the `properties` keyword with the `$ref` keyword pointing to the absolute URI for the canonical property schema. Always insert the canonical
+property schema in the `$defs` keyword with the absolute URI for the canonical property schema as the key and the schema as the value.
+- **Mark properties read-only as needed**: Define the `readOnly` keyword as `true` for properties that the resource can't directly use from user input but will return as part of the output representing the actual state of an instance. Don't define the keyword as `false` for any properties.
+- **Mark properties write-only as needed**: Define the `writeOnly` keyword as `true` for properties that the resource accepts from user input but doesn't return in the output. Always mark secret and credential properties as write-only.Don't define the keyword as `false` for any properties.
 
 ## Operation Consistency
 
