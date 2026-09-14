@@ -26,7 +26,7 @@ use tracing::{debug, warn};
 ///
 /// * `DscError::Validation` - The configuration is invalid
 pub fn get_resource_invocation_order(config: &Configuration, parser: &mut Statement, context: &mut Context) -> Result<Vec<Resource>, DscError> {
-    debug!("Getting resource invocation order");
+    debug!("{}", t!("configure.dependsOn.gettingInvocationOrder"));
     let mut order: Vec<Resource> = Vec::new();
     for resource in &config.resources {
         // validate that the resource isn't specified more than once in the config

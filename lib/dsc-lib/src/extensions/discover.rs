@@ -114,7 +114,7 @@ impl DscExtension {
                     match discover_result.path_or_content {
                         ManifestKind::ManifestContent(manifest_value) => {
                             let imported_manifests = load_manifest_content(&manifest_value)?;
-                            info!("Manifest imported from extension {}", self.type_name);
+                            info!("{}", t!("extensions.dscextension.manifestImported", extension = self.type_name));
                             for imported_manifest in imported_manifests {
                                 if let ImportedManifest::Resource(resource) = imported_manifest {
                                     resources.push(resource);

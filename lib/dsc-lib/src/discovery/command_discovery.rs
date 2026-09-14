@@ -139,7 +139,7 @@ impl CommandDiscovery {
         let dsc_restricted_path = env::var_os("DSC_RESTRICTED_PATH");
         let dsc_resource_path = env::var_os("DSC_RESOURCE_PATH");
         if resource_path_setting.allow_env_override && let Some(restricted_path) = &dsc_restricted_path {
-            debug!("DSC_RESTRICTED_PATH: {:?}", restricted_path.to_string_lossy());
+            debug!("{}", t!("discovery.commandDiscovery.restrictedPath", path = restricted_path.to_string_lossy() : {:?}));
             paths.append(&mut env::split_paths(&restricted_path).collect::<Vec<_>>());
 
             // when using restricted path, intent is to isolate the search of manifests and executables to the restricted path
@@ -152,7 +152,7 @@ impl CommandDiscovery {
                 return Err(DscError::Operation(t!("discovery.commandDiscovery.failedJoinRestrictedPath").to_string()));
             }
         } else if resource_path_setting.allow_env_override && let Some(resource_path) = &dsc_resource_path {
-            debug!("DSC_RESOURCE_PATH: {:?}", resource_path.to_string_lossy());
+            debug!("{}", t!("discovery.commandDiscovery.resourcePath", path = resource_path.to_string_lossy() : {:?}));
             paths.append(&mut env::split_paths(&resource_path).collect::<Vec<_>>());
 
             // just add exe home to PATH env var if not already in PATH env var
@@ -238,7 +238,7 @@ impl ResourceDiscovery for CommandDiscovery {
 
         info!("{}", t!("discovery.commandDiscovery.discoverResources", kind = kind : {:?}, filter = filter.to_string()));
 
-        debug!("Using type name filter '{filter}' for adapter name");
+        debug!("{}", t!("discovery.commandDiscovery.adapterNameFilterForDiscovery", filter = filter));
         let mut progress = ProgressBar::new(1, self.progress_format)?;
         match kind {
             DiscoveryKind::Resource => {
@@ -376,9 +376,9 @@ impl ResourceDiscovery for CommandDiscovery {
         }
 
         let adapters = locked_clone!(ADAPTERS);
-        debug!("Using type name filter '{adapter_filter}' as filter for adapter name");
+        debug!("{}", t!("discovery.commandDiscovery.adapterNameFilter", filter = adapter_filter));
 
-        debug!("Using type name filter '{name_filter}' as filter for resource name");
+        debug!("{}", t!("discovery.commandDiscovery.resourceNameFilter", filter = name_filter));
 
         let mut progress = ProgressBar::new(adapters.len() as u64, self.progress_format)?;
         progress.write_activity("Searching for adapted resources");
@@ -416,7 +416,7 @@ impl ResourceDiscovery for CommandDiscovery {
 
                     if exit_code != 0 {
                         // in case of failure, log and continue
-                        warn!("Adapter failed to list resources with exit code {exit_code}: {stderr}");
+                        warn!("{}", t!("discovery.commandDiscovery.adapterListFailed", exit_code = exit_code, stderr = stderr));
                         continue;
                     }
 
@@ -434,14 +434,14 @@ impl ResourceDiscovery for CommandDiscovery {
                                 }
                             },
                             Result::Err(err) => {
-                                warn!("Failed to parse resource: {line} -> {err}");
+                                warn!("{}", t!("discovery.commandDiscovery.failedParseResource", line = line, err = err));
                             }
                         }
                     }
                 }
 
                 adapter_progress.write_increment(1);
-                debug!("Adapter '{}' listed {} resources", adapter_name, adapter_resources_count);
+                debug!("{}", t!("discovery.commandDiscovery.adapterListedResources", adapter = adapter_name, count = adapter_resources_count));
             }
         }
 
@@ -1058,22 +1058,22 @@ fn save_adapted_resources_lookup_table(lookup_table: &HashMap<String, String>)
 {
     if let Ok(lookup_table_json) = serde_json::to_string(&lookup_table) {
         let file_path = get_lookup_table_file_path();
-        debug!("Saving lookup table with {} items to {:?}", lookup_table.len(), file_path);
+        debug!("{}", t!("discovery.commandDiscovery.savingLookupTable", count = lookup_table.len(), path = file_path : {:?}));
 
         let path = std::path::Path::new(&file_path);
         if let Some(prefix) = path.parent() {
             if create_dir_all(prefix).is_ok()  {
                 if write(file_path.clone(), lookup_table_json).is_err() {
-                    info!("Unable to write lookup_table file {file_path:?}");
+                    info!("{}", t!("discovery.commandDiscovery.failedWriteLookupTable", path = file_path : {:?}));
                 }
             } else {
-                info!("Unable to create parent directories of the lookup_table file {file_path:?}");
+                info!("{}", t!("discovery.commandDiscovery.failedCreateLookupTableDirectory", path = file_path : {:?}));
             }
         } else {
-            info!("Unable to get directory of the lookup_table file {file_path:?}");
+            info!("{}", t!("discovery.commandDiscovery.failedGetLookupTableDirectory", path = file_path : {:?}));
         }
     } else {
-        info!("Unable to serialize lookup_table to json");
+        info!("{}", t!("discovery.commandDiscovery.failedSerializeLookupTable"));
     }
 }
 
@@ -1086,7 +1086,7 @@ fn load_adapted_resources_lookup_table() -> HashMap<String, String>
         Err(_) => { HashMap::new() }
     };
 
-    debug!("Read {} items into lookup table from {:?}", lookup_table.len(), file_path);
+    debug!("{}", t!("discovery.commandDiscovery.readLookupTable", count = lookup_table.len(), path = file_path : {:?}));
     lookup_table
 }
 
