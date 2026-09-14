@@ -461,7 +461,7 @@ async fn run_server(
     }
 
     let Some(addr) = http else {
-        return Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, t!("bicep.transportNotSpecified").to_string())));
+        return Err(Box::new(std::io::Error::other(t!("bicep.transportNotSpecified").to_string())));
     };
     tracing::info!(
         "{}",
