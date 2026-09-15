@@ -303,7 +303,7 @@ jobs:
           if-no-files-found: ignore
 
   coverage-report:
-    if: github.event_name == 'pull_request'
+    if: ${{ always() && github.event_name == 'pull_request' }}
     # Use all platforms for changed-code coverage so platform-specific files are
     # included. Keep full-codebase coverage Linux-only to avoid inflating its
     # denominator with platform-specific sources.
