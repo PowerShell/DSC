@@ -8,24 +8,26 @@ description: 'Repository-specific code review guidance for DSC (Rust, PowerShell
 These instructions guide Copilot when performing code reviews on pull requests in this repository.
 Focus on high-confidence, actionable findings. Do not comment on style, formatting, or trivial issues.
 
-Detailed review guidance is split by contribution area in `.github/instructions/code-review/`.
+Detailed review guidance is split by contribution area in `.github/skills/code-review/`.
 Use the path-based mapping below to determine which area instructions apply to the files under review.
 
 ## Area Routing
 
+Paths in this table are relative to the root of the repo, not this SKILL.md file.
+
 | Area | Paths | Instruction File |
 |------|-------|------------------|
-| Engine | `lib/dsc-lib/src/configure/`, `lib/dsc-lib/src/discovery/`, `lib/dsc-lib/src/dscresources/`, `lib/dsc-lib/src/functions/`, `lib/dsc-lib/src/settings/` | `code-review/engine.instructions.md` |
-| Resources | `resources/` | `code-review/resource.instructions.md` |
-| Adapters | `adapters/` | `code-review/adapter.instructions.md` |
-| Extensions | `extensions/`, `lib/dsc-lib/src/extensions/` | `code-review/extension.instructions.md` |
-| CLI | `dsc/src/` | `code-review/cli.instructions.md` |
-| Tests | `**/*.tests.ps1`, `**/tests/`, `**/test/`, `**/Tests/` | `code-review/tests.instructions.md` |
-| Libraries | `lib/` | `code-review/library.instructions.md` |
-| Security | `lib/dsc-lib/src/util.rs`, `lib/dsc-lib-security_context/`, `lib/dsc-lib-registry/`, `resources/registry/`, `resources/windows_firewall/`, `resources/windows_service/`, `resources/dism_dsc/` | `code-review/security.instructions.md` |
-| Performance | Any `*.rs` file in hot paths | `code-review/performance.instructions.md` |
-| Windows | `resources/windows_*`, `resources/dism_dsc/`, `resources/registry/`, `lib/dsc-lib-registry/`, `lib/dsc-lib-pal/` | `code-review/windows.instructions.md` |
-| Linux/macOS | `resources/apt/`, `resources/sshdconfig/`, `resources/brew/`, `lib/dsc-lib-pal/` | `code-review/linux.instructions.md` |
+| Engine | `lib/dsc-lib/src/configure/`, `lib/dsc-lib/src/discovery/`, `lib/dsc-lib/src/dscresources/`, `lib/dsc-lib/src/functions/`, `lib/dsc-lib/src/settings/` | `skills/code-review/engine.instructions.md` |
+| Resources | `resources/` | `skills/code-review/resource.instructions.md` |
+| Adapters | `adapters/` | `skills/code-review/adapter.instructions.md` |
+| Extensions | `extensions/`, `lib/dsc-lib/src/extensions/` | `skills/code-review/extension.instructions.md` |
+| CLI | `dsc/src/` | `skills/code-review/cli.instructions.md` |
+| Tests | `**/*.tests.ps1`, `**/tests/`, `**/test/`, `**/Tests/` | `skills/code-review/tests.instructions.md` |
+| Libraries | `lib/` | `skills/code-review/library.instructions.md` |
+| Security | `lib/dsc-lib/src/util.rs`, `lib/dsc-lib-security_context/`, `lib/dsc-lib-registry/`, `resources/registry/`, `resources/windows_firewall/`, `resources/windows_service/`, `resources/dism_dsc/` | `skills/code-review/security.instructions.md` |
+| Performance | Any `*.rs` file in hot paths | `skills/code-review/performance.instructions.md` |
+| Windows | `resources/windows_*`, `resources/dism_dsc/`, `resources/registry/`, `lib/dsc-lib-registry/`, `lib/dsc-lib-pal/` | `skills/code-review/windows.instructions.md` |
+| Linux/macOS | `resources/apt/`, `resources/sshdconfig/`, `resources/brew/`, `lib/dsc-lib-pal/` | `skills/code-review/linux.instructions.md` |
 
 Multiple areas may apply to a single file. For example, `resources/windows_firewall/` triggers
 both the Resource, Windows, and Security instructions.
