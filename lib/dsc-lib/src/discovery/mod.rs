@@ -26,6 +26,11 @@ type DiscoveryManifestCache = BTreeMap<FullyQualifiedTypeName, Vec<ImportedManif
 /// Defines the caching [`BTreeMap`] for discovered DSC resources.
 type DiscoveryResourceCache = BTreeMap<FullyQualifiedTypeName, Vec<DscResource>>;
 
+pub enum DscResourceKind {
+    Action(&DscAction),
+    Resource(&DscResource),
+}
+
 #[derive(Clone)]
 pub struct Discovery {
     pub resources: DiscoveryResourceCache,
@@ -124,7 +129,7 @@ impl Discovery {
             .collect()
     }
 
-    pub fn find_resource(&mut self, filter: &DiscoveryFilter) -> Result<Option<&DscResource>, DscError> {
+    pub fn find_resource(&mut self, filter: &DiscoveryFilter) -> Result<Option<&DscResourceKind>, DscError> {
         if self.refresh_cache || self.resources.is_empty() {
             self.find_resources(std::slice::from_ref(filter), ProgressFormat::None)?;
         }
@@ -134,16 +139,27 @@ impl Discovery {
             if let Some(version_req) = filter.require_version() {
                 for resource in resources {
                     if version_req.matches(&resource.version) && matches_adapter_requirement(resource, filter) {
-                        return Ok(Some(resource));
+                        return Ok(Some(&DscResourceKind::Resource(resource)));
                     }
                 }
                 Ok(None)
             } else {
                 for resource in resources {
                     if matches_adapter_requirement(resource, filter) {
-                        return Ok(Some(resource));
+                        return Ok(Some(&DscResourceKind::Resource(resource)));
                     }
                 }
+                Ok(None)
+            }
+        } else if let Some(actions) = self.actions.get(type_name) {
+            if let Some(version_req) = filter.require_version() {
+                for action in actions {
+                    if version_req.matches(&action.version) {
+                        return Ok(Some(&DscResourceKind::Action(action)));
+                    }
+                }
+                Ok(None)
+            } else {
                 Ok(None)
             }
         } else {

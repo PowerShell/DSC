@@ -46,9 +46,21 @@ pub struct ActionManifest {
     pub tags: TagList,
     /// Details how to invoke this action.
     pub invoke: InvokeMethod,
+    /// The operations supported by this action.  If not specified, only `set` is assumed.
+    pub supported_operations: Option<Vec<SupportedOperations>>,
     /// Mapping of exit codes to descriptions.  Zero is always success and non-zero is always failure.
     #[serde(skip_serializing_if = "ExitCodesMap::is_empty_or_default", default)]
     pub exit_codes: ExitCodesMap,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[serde(rename_all = "camelCase")]
+#[dsc_repo_schema(base_name = "supportedOperations.action", folder_path = "definitions")]
+pub enum SupportedOperations {
+    Get,
+    Set,
+    Test,
+    Export,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
@@ -79,6 +91,12 @@ pub enum ArgKind {
         /// Indicates if argument is mandatory which will pass an empty string if no JSON input is provided.  Default is false.
         mandatory: Option<bool>,
     },
+    /// The argument is passed when the resource is invoked in what-if mode.
+    #[serde(rename_all = "camelCase")]
+    WhatIf {
+        /// The argument to pass when in what-if mode.
+        what_if_arg: String,
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
