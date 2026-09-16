@@ -3,23 +3,14 @@
 
 use crate::{
     actions::action_manifest::{
-        ActionManifest,
-        ArgKind,
-        InvokeMethod,
-        SchemaArgKind,
-        SchemaKind
-    },
-    discovery::command_discovery::verify_executable,
-    dscerror::DscError,
-    dscresources::{
+        ActionManifest, ArgKind, InvokeMethod, SchemaArgKind, SchemaKind, SupportedOperations
+    }, configure::config_doc::ExecutionKind, discovery::command_discovery::verify_executable, dscerror::DscError, dscresources::{
         command_resource::{
             invoke_command,
             validate_security_context
         },
         dscresource::Operation
-    },
-    schemas::dsc_repo::DscRepoSchema,
-    types::{
+    }, schemas::dsc_repo::DscRepoSchema, types::{
         ExitCodesMap,
         FullyQualifiedTypeName,
         SemanticVersion
@@ -52,6 +43,8 @@ pub struct DscAction {
     pub description: Option<String>,
     /// The directory path to the extension.
     pub directory: PathBuf,
+    /// The operations supported by the action.
+    pub supported_operations: Vec<SupportedOperations>,
     /// The manifest of the extension.
     pub manifest: Value,
 }
@@ -68,11 +61,12 @@ impl DscAction {
             deprecation_message: None,
             description: None,
             directory: PathBuf::new(),
+            supported_operations: Vec::new(),
             manifest: Value::Null,
         }
     }
 
-    pub(crate) fn invoke(&self, input: Option<&str>) -> Result<Value, DscError> {
+    pub(crate) fn invoke(&self, input: Option<&str>, execution_type: &ExecutionKind) -> Result<Value, DscError> {
         let manifest = serde_json::from_value::<ActionManifest>(self.manifest.clone())?;
 
         if let Some(required_context) = &manifest.invoke.require_security_context {
@@ -86,13 +80,19 @@ impl DscAction {
         if let Some(input) = input {
             validate_json(&input, &input_schema)?;
         }
-        let args = process_invoke_args(manifest.invoke.args.as_ref(), input.unwrap_or(""));
+        let (args, supports_whatif) = process_invoke_args(manifest.invoke.args.as_ref(), input.unwrap_or(""), execution_type);
+        if execution_type == &ExecutionKind::WhatIf && !supports_whatif {
+            return Err(DscError::WhatIfNotSupported(self.type_name.to_string()));
+        }
+
         let (_exit_code, stdout, _stderr) = invoke_command(&manifest.invoke.executable, args, input, Some(&self.directory), None, manifest.exit_codes.as_ref())?;
-        let Some(output_schema_kind) = manifest.invoke.output_schema.as_ref() else {
-            return Err(DscError::SchemaNotAvailable(self.type_name.to_string()));
-        };
-        let output_schema = get_schema(output_schema_kind, &self.directory, manifest.exit_codes.as_ref())?;
-        validate_json(&stdout, &output_schema)?;
+        if !stdout.is_empty() {
+            let Some(output_schema_kind) = manifest.invoke.output_schema.as_ref() else {
+                return Err(DscError::SchemaNotAvailable(self.type_name.to_string()));
+            };
+            let output_schema = get_schema(output_schema_kind, &self.directory, manifest.exit_codes.as_ref())?;
+            validate_json(&stdout, &output_schema)?;
+        }
 
         let output = serde_json::from_str(&stdout)?;
         Ok(output)
@@ -125,11 +125,12 @@ fn validate_json(input: &str, schema: &Value) -> Result<(), DscError> {
     Ok(())
 }
 
-fn process_invoke_args(args: Option<&Vec<ArgKind>>, input: &str) -> Option<Vec<String>> {
+fn process_invoke_args(args: Option<&Vec<ArgKind>>, input: &str, execution_type: &ExecutionKind) -> (Option<Vec<String>>, bool) {
     let Some(arg_values) = args else {
-        return None;
+        return (None, false);
     };
 
+    let mut supports_whatif = false;
     let mut processed_args = Vec::<String>::new();
     for arg in arg_values {
         match arg {
@@ -143,11 +144,17 @@ fn process_invoke_args(args: Option<&Vec<ArgKind>>, input: &str) -> Option<Vec<S
 
                 processed_args.push(json_input_arg.clone());
                 processed_args.push(input.to_string());
+            },
+            ArgKind::WhatIf { what_if_arg } => {
+                supports_whatif = true;
+                if execution_type == &ExecutionKind::WhatIf {
+                    processed_args.push(what_if_arg.clone());
+                }
             }
         }
     }
 
-    Some(processed_args)
+    (Some(processed_args), supports_whatif)
 }
 
 fn process_schema_args(args: Option<&Vec<SchemaArgKind>>) -> Option<Vec<String>> {
@@ -169,6 +176,12 @@ fn process_schema_args(args: Option<&Vec<SchemaArgKind>>) -> Option<Vec<String>>
 
 pub(crate) fn load_action_manifest(path: &Path, manifest: &ActionManifest) -> Result<DscAction, DscError> {
     verify_executable(&manifest.type_name, "invoke", &manifest.invoke.executable, path.parent().unwrap());
+    let mut supported_operations = Vec::new();
+    if let Some(operations) = &manifest.supported_operations {
+        supported_operations.extend(operations.clone());
+    } else {
+        supported_operations.push(SupportedOperations::Set);
+    }
     let action = DscAction {
         type_name: manifest.type_name.clone(),
         version: manifest.version.clone(),
@@ -178,6 +191,7 @@ pub(crate) fn load_action_manifest(path: &Path, manifest: &ActionManifest) -> Re
         deprecation_message: manifest.deprecation_message.clone(),
         description: manifest.description.clone(),
         directory: path.parent().unwrap().to_path_buf(),
+        supported_operations,
         manifest: serde_json::to_value(manifest)?,
     };
     Ok(action)

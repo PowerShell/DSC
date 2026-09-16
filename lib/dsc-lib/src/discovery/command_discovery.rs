@@ -4,7 +4,10 @@
 use crate::{
     actions::{
         action_manifest::ActionManifest,
-        dscaction::DscAction,
+        dscaction::{
+            DscAction,
+            load_action_manifest,
+        },
     },
     discovery::{
         DiscoveryActionCache,
@@ -970,21 +973,6 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
         return Ok(resources);
     }
     Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.invalidManifestFile", resource = path.to_string_lossy()).to_string()))
-}
-
-pub fn load_action_manifest(path: &Path, manifest: &ActionManifest) -> Result<DscAction, DscError> {
-    let mut action = DscAction::new();
-    action.author = manifest.author.clone();
-    action.invoke = manifest.invoke.clone();
-    action.path = path.to_path_buf();
-    action.type_name = manifest.type_name.clone();
-    action.deprecation_message = manifest.deprecation_message.clone();
-    action.description = manifest.description.clone();
-    action.version = manifest.version.clone();
-    action.directory = path.parent().unwrap().to_path_buf();
-    action.manifest = serde_json::to_value(manifest)?;
-
-    Ok(action)
 }
 
 pub fn load_adapted_resource_manifest(path: &Path, manifest: &AdaptedDscResourceManifest) -> Result<DscResource, DscError> {

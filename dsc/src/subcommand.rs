@@ -6,6 +6,7 @@ use crate::resolve::{get_contents, Include};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
 use crate::util::{get_input, get_schema, in_desired_state, set_dscconfigroot, write_object, DSC_CONFIG_ROOT, EXIT_DSC_ASSERTION_FAILED, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR};
+use dsc_lib::actions::action_manifest::{ActionManifest, SupportedOperations};
 use dsc_lib::types::{FullyQualifiedTypeName, ResourceVersionReq, TypeNameFilter};
 use dsc_lib::{
     configure::{
@@ -645,6 +646,7 @@ fn list_actions(dsc: &mut DscManager, action_name: &TypeNameFilter, format: Opti
     let mut table = Table::new(&[
         t!("subcommand.tableHeader_type").to_string().as_ref(),
         t!("subcommand.tableHeader_version").to_string().as_ref(),
+        t!("subcommand.tableHeader_action_operations").to_string().as_ref(),
         t!("subcommand.tableHeader_action_hasInput").to_string().as_ref(),
         t!("subcommand.tableHeader_action_hasOutput").to_string().as_ref(),
         t!("subcommand.tableHeader_action_requireSecurityContext").to_string().as_ref(),
@@ -652,9 +654,30 @@ fn list_actions(dsc: &mut DscManager, action_name: &TypeNameFilter, format: Opti
     ]);
 
     let mut include_separator = false;
+    let operation_types = [
+        (SupportedOperations::Get, "g"),
+        (SupportedOperations::Set, "s"),
+        (SupportedOperations::Test, "t"),
+        (SupportedOperations::Export, "e"),
+    ];
 
     for manifest_resource in dsc.list_available(&DiscoveryKind::Action, action_name, None, progress_format) {
         if let ImportedManifest::Action(action) = manifest_resource {
+            let Ok(manifest) = serde_json::from_value::<ActionManifest>(action.manifest.clone()) else {
+                return Err(ExitCode::from(EXIT_DSC_ERROR));
+            };
+            let mut operations_supported = "-".repeat(operation_types.len());
+            if let Some(supported_operations) = &manifest.supported_operations {
+                for (i, (operation, letter)) in operation_types.iter().enumerate() {
+                    if supported_operations.contains(operation) {
+                        operations_supported.replace_range(i..=i, letter);
+                    }
+                }
+            } else {
+                // if not specified, default is only `set` is supported
+                operations_supported = "-s--".to_string();
+            }
+
             let has_input = if action.invoke.input_schema.is_some() {
                 "Yes"
             } else {
@@ -675,6 +698,7 @@ fn list_actions(dsc: &mut DscManager, action_name: &TypeNameFilter, format: Opti
                 table.add_row(vec![
                     action.type_name.to_string(),
                     action.version.to_string(),
+                    operations_supported.to_string(),
                     has_input.to_string(),
                     has_output.to_string(),
                     require_security_context,
