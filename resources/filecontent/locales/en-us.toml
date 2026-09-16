@@ -1,8 +1,8 @@
 _version = 1
 
 [main]
-missingOperation = "Missing operation. Usage: filecontent <get|set|test|export> --input <json>"
-unknownOperation = "Unknown operation: '%{operation}'. Expected: get, set, test, or export"
+missingOperation = "Missing operation. Usage: filecontent <get|set|test> --input <json>"
+unknownOperation = "Unknown operation: '%{operation}'. Expected: get, set, or test"
 missingInput = "Missing --input argument"
 missingInputValue = "Missing value for --input argument"
 invalidJson = "Invalid JSON input: %{error}"
