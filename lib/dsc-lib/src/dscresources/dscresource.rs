@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}, context::ProcessMode, parameters::{SECURE_VALUE_REDACTED, is_secure_value}, schema_cache::get_resource_schema}, dscresources::{adapted_resource_manifest::AdaptedDscResourceManifest, resource_manifest::{AdapterInputKind, Kind}}, types::{FullyQualifiedTypeName, ResourceVersion}};
+use crate::{configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}, context::ProcessMode, parameters::{SECURE_VALUE_REDACTED, is_secure_value}, schema_cache::get_resource_schema}, discovery::DscResourceKind, dscresources::{adapted_resource_manifest::AdaptedDscResourceManifest, resource_manifest::{AdapterInputKind, Kind}}, types::{FullyQualifiedTypeName, ResourceVersion}};
 use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse};
 use crate::schemas::transforms::idiomaticize_string_enum;
@@ -335,7 +335,14 @@ impl DscResource {
 
     fn get_adapter_resource(configurator: &mut Configurator, adapter: &FullyQualifiedTypeName) -> Result<DscResource, DscError> {
         if let Some(adapter_resource) = configurator.discovery().find_resource(&DiscoveryFilter::new(adapter, None, None))? {
-            return Ok(adapter_resource.clone());
+            match *adapter_resource {
+                DscResourceKind::Action(_) => {
+                    return Err(DscError::Operation(t!("dscresources.dscresource.adapterResourceNotFound", adapter = adapter).to_string()))
+                }
+                DscResourceKind::Resource(adapter_resource ) => {
+                    return Ok(adapter_resource.clone());
+                }
+            }
         }
         Err(DscError::Operation(t!("dscresources.dscresource.adapterResourceNotFound", adapter = adapter).to_string()))
     }

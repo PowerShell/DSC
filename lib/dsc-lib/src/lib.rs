@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use crate::discovery::DscResourceKind;
 use crate::discovery::{command_discovery::ImportedManifest, discovery_trait::DiscoveryFilter};
 use crate::discovery::discovery_trait::DiscoveryKind;
 use crate::progress::ProgressFormat;
@@ -50,7 +51,7 @@ impl DscManager {
     ///
     /// * `name` - The name of the resource to find, can have wildcards.
     ///
-    pub fn find_resource(&mut self, filter: &DiscoveryFilter) -> Result<Option<&DscResource>, DscError> {
+    pub fn find_resource(&mut self, filter: &DiscoveryFilter) -> Result<Option<&DscResourceKind>, DscError> {
         self.discovery.find_resource(filter)
     }
 
