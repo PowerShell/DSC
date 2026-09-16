@@ -4,7 +4,7 @@
 mod file;
 mod types;
 
-use crate::file::{export, get, set, test};
+use crate::file::{get, set, test};
 use crate::types::FileContent;
 use rust_i18n::t;
 use serde::Serialize;
@@ -30,7 +30,6 @@ fn main() {
         "get" => handle_result(get(&require_input(input))),
         "set" => handle_result(set(&require_input(input))),
         "test" => handle_result(test(&require_input(input))),
-        "export" => handle_result(export(&require_input(input))),
         _ => fail(
             EXIT_INVALID_ARGS,
             &t!("main.unknownOperation", operation = operation),
