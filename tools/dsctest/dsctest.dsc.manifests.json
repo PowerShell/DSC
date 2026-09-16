@@ -11,6 +11,11 @@
         "action"
       ],
       "condition": "[true()]",
+      "supportedOperations": [
+        "get",
+        "set",
+        "test"
+      ],
       "invoke": {
         "executable": "dsctest",
         "args": [

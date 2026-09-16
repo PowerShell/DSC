@@ -114,6 +114,7 @@ prefixUserPath = "Prefixing user PATH '%{value}' to system PATH '%{system_path}'
 systemPathNotFound = "System PATH not found, using user PATH '%{value}' as PATH"
 resourceType = "resource_type %{resource_type}"
 validatingParameter = "Validating parameter '%{name}'"
+actionUnsupportedOperation = "Unsupported operation '%{operation}' for action '%{action}'"
 
 [configure.parameters]
 importingParametersFromComplexInput = "Importing parameters from complex input"
