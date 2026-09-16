@@ -16,8 +16,21 @@ macro_rules! test_schema_for {
 
     ($($module:ident ::)+ ; $type:ident) => {
             #[test] fn $type() {
-                use schemars::schema_for;
-                schema_for!($($module ::)+ $type);
+                let schema = dsc_lib::dsc_repo_schema_for!($($module ::)+ $type);
+                let meta_validation_result = jsonschema::meta::validate(schema.as_value());
+                assert!(
+                    meta_validation_result.is_ok(),
+                    "meta schema validation failed: {:?}",
+                    meta_validation_result.unwrap_err()
+                );
+                // Uncomment to print the schema when debugging
+                // eprintln!("schema: {}", serde_json::to_string_pretty(&schema).unwrap());
+                let compilation_result = jsonschema::validator_for(schema.as_value());
+                assert!(
+                    compilation_result.is_ok(),
+                    "schema compilation failed: {:?}",
+                    compilation_result.unwrap_err()
+                );
             }
     };
 
@@ -27,7 +40,7 @@ macro_rules! test_schema_for {
 }
 
 #[allow(non_snake_case)]
-#[cfg(test)] mod dsc_lib {
+#[cfg(test)] mod src {
     #[cfg(test)] mod configure {
         #[allow(unused_must_use)]
         #[cfg(test)] mod config_doc {

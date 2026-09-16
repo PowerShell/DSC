@@ -12,7 +12,7 @@ use crate::types::FullyQualifiedTypeName;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-#[schemars(transform = idiomaticize_string_enum)]
+#[schemars(inline, transform = idiomaticize_string_enum)]
 pub enum MessageLevel {
     Error,
     Warning,
@@ -22,6 +22,10 @@ pub enum MessageLevel {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
 #[dsc_repo_schema(base_name = "message", folder_path = "definitions")]
+#[schemars(
+    transform = ResourceMessage::transform_export_schema_uris,
+    transform = ResourceMessage::transform_schema_docs
+)]
 pub struct ResourceMessage {
     pub name: String,
     #[serde(rename="type")]
@@ -33,6 +37,10 @@ pub struct ResourceMessage {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
 #[dsc_repo_schema(base_name = "get.full", folder_path = "outputs/resource")]
+#[schemars(
+    transform = ResourceGetResult::transform_export_schema_uris,
+    transform = ResourceGetResult::transform_schema_docs
+)]
 pub struct ResourceGetResult {
     #[serde(rename = "executionInformation", skip_serializing_if = "Option::is_none")]
     pub execution_information: Option<ExecutionInformation>,
@@ -59,6 +67,10 @@ impl From<ResourceTestResult> for ResourceGetResult {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 #[dsc_repo_schema(base_name = "get", folder_path = "outputs/config")]
+#[schemars(
+    transform = ConfigurationGetResult::transform_export_schema_uris,
+    transform = ConfigurationGetResult::transform_schema_docs
+)]
 pub struct ConfigurationGetResult {
     pub execution_information: Option<ExecutionInformation>,
     pub metadata: Option<Metadata>,
@@ -109,6 +121,10 @@ impl From<ConfigurationTestResult> for ConfigurationGetResult {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
 #[dsc_repo_schema(base_name = "set.full", folder_path = "outputs/resource")]
+#[schemars(
+    transform = ResourceSetResult::transform_export_schema_uris,
+    transform = ResourceSetResult::transform_schema_docs
+)]
 pub struct ResourceSetResult {
     #[serde(rename = "executionInformation", skip_serializing_if = "Option::is_none")]
     pub execution_information: Option<ExecutionInformation>,
@@ -134,6 +150,7 @@ impl From<ResourceTestResult> for ResourceSetResult {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
+#[schemars(inline)]
 pub struct GroupResourceSetResult {
     pub results: Vec<ResourceSetResult>,
 }
@@ -156,6 +173,10 @@ impl Default for GroupResourceSetResult {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 #[dsc_repo_schema(base_name = "set", folder_path = "outputs/config")]
+#[schemars(
+    transform = ConfigurationSetResult::transform_export_schema_uris,
+    transform = ConfigurationSetResult::transform_schema_docs
+)]
 pub struct ConfigurationSetResult {
     pub execution_information: Option<ExecutionInformation>,
     pub metadata: Option<Metadata>,
@@ -189,6 +210,10 @@ impl Default for ConfigurationSetResult {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
 #[dsc_repo_schema(base_name = "test.full", folder_path = "outputs/resource")]
+#[schemars(
+    transform = ResourceTestResult::transform_export_schema_uris,
+    transform = ResourceTestResult::transform_schema_docs
+)]
 pub struct ResourceTestResult {
     #[serde(rename = "executionInformation", skip_serializing_if = "Option::is_none")]
     pub execution_information: Option<ExecutionInformation>,
@@ -202,6 +227,7 @@ pub struct ResourceTestResult {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
+#[schemars(inline)]
 pub struct GroupResourceTestResult {
     pub results: Vec<ResourceTestResult>,
 }
@@ -224,6 +250,10 @@ impl Default for GroupResourceTestResult {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 #[dsc_repo_schema(base_name = "test", folder_path = "outputs/config")]
+#[schemars(
+    transform = ConfigurationTestResult::transform_export_schema_uris,
+    transform = ConfigurationTestResult::transform_schema_docs
+)]
 pub struct ConfigurationTestResult {
     pub execution_information: Option<ExecutionInformation>,
     pub metadata: Option<Metadata>,
@@ -257,6 +287,10 @@ impl Default for ConfigurationTestResult {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 #[dsc_repo_schema(base_name = "export", folder_path = "outputs/config")]
+#[schemars(
+    transform = ConfigurationExportResult::transform_export_schema_uris,
+    transform = ConfigurationExportResult::transform_schema_docs
+)]
 pub struct ConfigurationExportResult {
     pub execution_information: Option<ExecutionInformation>,
     pub metadata: Option<Metadata>,

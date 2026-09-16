@@ -39,14 +39,12 @@ use crate::{dscerror::DscError, schemas::dsc_repo::{DscRepoSchema, schema_i18n}}
 #[dsc_repo_schema(base_name = "tag", folder_path = "definitions")]
 #[serde(try_from = "String")]
 #[schemars(
-    title = schema_i18n!("title"),
-    description = schema_i18n!("description"),
+    transform = Tag::transform_export_schema_uris,
+    transform = Tag::transform_schema_docs_strict,
     extend(
         "pattern" = Tag::VALIDATING_PATTERN,
         "patternErrorMessage" = schema_i18n!("patternErrorMessage"),
-        "markdownDescription" = schema_i18n!("markdownDescription"),
-    ),
-    inline
+    )
 )]
 pub struct Tag(String);
 
