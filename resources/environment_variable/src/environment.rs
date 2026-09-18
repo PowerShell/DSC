@@ -524,11 +524,75 @@ fn operation_error(
 #[cfg(test)]
 mod tests {
     use super::{
-        merge_path, matches_wildcard, path_filter_matches, scalar_filter_matches, split_path,
+        CURRENT_USER_KEY, EnvironmentError, OperationError, export_variables, get_variables,
+        key_path, matches_wildcard, merge_path, operation_error, path_filter_matches,
+        scalar_filter_matches, set_variables, split_path, test_variables, value_in_desired_state,
     };
     use crate::types::{
-        EnvironmentPathVariableFilter, EnvironmentVariableFilter, Scope, SetAction,
+        EnvironmentPathVariable, EnvironmentPathVariableFilter, EnvironmentVariable,
+        EnvironmentVariableFilter, EnvironmentVariableFilterItem, EnvironmentVariableFilterList,
+        EnvironmentVariableItem, EnvironmentVariableList, Scope, SetAction,
     };
+    use dsc_lib_registry::{RegistryHelper, config::RegistryValueData};
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    static TEST_ID: AtomicUsize = AtomicUsize::new(0);
+
+    struct RegistryValueGuard {
+        name: String,
+    }
+
+    impl RegistryValueGuard {
+        fn new() -> Self {
+            let id = TEST_ID.fetch_add(1, Ordering::Relaxed);
+            Self {
+                name: format!("DSC_Environment_RustTest_{}_{id}", std::process::id()),
+            }
+        }
+
+        fn set(&self, data: RegistryValueData) {
+            RegistryHelper::new(CURRENT_USER_KEY, Some(self.name.clone()), Some(data))
+                .unwrap()
+                .set()
+                .unwrap();
+        }
+    }
+
+    impl Drop for RegistryValueGuard {
+        fn drop(&mut self) {
+            RegistryHelper::new(CURRENT_USER_KEY, Some(self.name.clone()), None)
+                .unwrap()
+                .remove()
+                .unwrap();
+        }
+    }
+
+    fn scalar(name: &str, value: Option<&str>) -> EnvironmentVariableItem {
+        EnvironmentVariableItem::Scalar(EnvironmentVariable {
+            scope: Scope::CurrentUser,
+            name: name.to_string(),
+            value: value.map(str::to_string),
+            exist: None,
+        })
+    }
+
+    fn path(name: &str, values: &[&str], action: SetAction) -> EnvironmentVariableItem {
+        EnvironmentVariableItem::Path(EnvironmentPathVariable {
+            scope: Scope::CurrentUser,
+            name: name.to_string(),
+            value: Some(values.iter().map(|value| (*value).to_string()).collect()),
+            delimiter: ";".to_string(),
+            set_action: action,
+            exist: None,
+        })
+    }
+
+    fn list(variable: EnvironmentVariableItem) -> EnvironmentVariableList {
+        EnvironmentVariableList {
+            environment_variables: vec![variable],
+            in_desired_state: None,
+        }
+    }
 
     #[test]
     fn path_helpers_use_custom_delimiter_and_deduplicate() {
@@ -588,5 +652,181 @@ mod tests {
             "Path",
             "c:\\one;C:\\TWO"
         ));
+    }
+
+    #[test]
+    fn registry_operations_round_trip_scalar_and_removal() {
+        let guard = RegistryValueGuard::new();
+        let input = list(scalar(&guard.name, Some("expected")));
+
+        let set = set_variables(&input).unwrap();
+        let EnvironmentVariableItem::Scalar(set) = &set.environment_variables[0] else {
+            panic!("expected scalar state");
+        };
+        assert_eq!(set.value.as_deref(), Some("expected"));
+
+        let get = get_variables(&input).unwrap();
+        let EnvironmentVariableItem::Scalar(get) = &get.environment_variables[0] else {
+            panic!("expected scalar state");
+        };
+        assert_eq!(get.value.as_deref(), Some("expected"));
+        assert_eq!(test_variables(&input).unwrap().in_desired_state, Some(true));
+
+        assert_eq!(
+            test_variables(&list(scalar(&guard.name, Some("different"))))
+                .unwrap()
+                .in_desired_state,
+            Some(false)
+        );
+
+        let mut remove = scalar(&guard.name, None);
+        let EnvironmentVariableItem::Scalar(variable) = &mut remove else {
+            unreachable!();
+        };
+        variable.exist = Some(false);
+        let removed = set_variables(&list(remove.clone())).unwrap();
+        assert_eq!(removed.environment_variables[0].exist(), Some(false));
+        assert_eq!(
+            test_variables(&list(remove)).unwrap().in_desired_state,
+            Some(true)
+        );
+    }
+
+    #[test]
+    fn path_operations_preserve_expand_string_type() {
+        let guard = RegistryValueGuard::new();
+        guard.set(RegistryValueData::ExpandString(
+            r"%SystemRoot%\Existing".to_string(),
+        ));
+        let input = list(path(&guard.name, &[r"C:\New"], SetAction::Append));
+
+        let set = set_variables(&input).unwrap();
+        let EnvironmentVariableItem::Path(set) = &set.environment_variables[0] else {
+            panic!("expected path state");
+        };
+        assert_eq!(
+            set.value.as_deref(),
+            Some([r"%SystemRoot%\Existing".to_string(), r"C:\New".to_string()].as_slice())
+        );
+        assert_eq!(test_variables(&input).unwrap().in_desired_state, Some(true));
+
+        let stored = RegistryHelper::new(CURRENT_USER_KEY, Some(guard.name.clone()), None)
+            .unwrap()
+            .get()
+            .unwrap();
+        assert!(matches!(
+            stored.value_data,
+            Some(RegistryValueData::ExpandString(_))
+        ));
+    }
+
+    #[test]
+    fn exports_matching_registry_value_as_requested_shape() {
+        let guard = RegistryValueGuard::new();
+        guard.set(RegistryValueData::String("one::two".to_string()));
+        let filters = EnvironmentVariableFilterList {
+            environment_variables: vec![
+                EnvironmentVariableFilterItem::Scalar(EnvironmentVariableFilter {
+                    scope: Some(Scope::CurrentUser),
+                    name: Some(guard.name.clone()),
+                    value: None,
+                    exist: None,
+                }),
+                EnvironmentVariableFilterItem::Path(EnvironmentPathVariableFilter {
+                    scope: Some(Scope::CurrentUser),
+                    name: Some(guard.name.clone()),
+                    value: Some(Vec::new()),
+                    delimiter: Some("::".to_string()),
+                    _set_action: None,
+                    exist: None,
+                }),
+            ],
+        };
+
+        let exported = export_variables(&filters).unwrap();
+        assert_eq!(exported.environment_variables.len(), 1);
+        let EnvironmentVariableItem::Path(variable) = &exported.environment_variables[0] else {
+            panic!("path filter should control the exported shape");
+        };
+        assert_eq!(
+            variable.value.as_deref(),
+            Some(["one".to_string(), "two".to_string()].as_slice())
+        );
+    }
+
+    #[test]
+    fn unsupported_registry_type_returns_resource_error() {
+        let guard = RegistryValueGuard::new();
+        guard.set(RegistryValueData::DWord(42));
+        let input = list(scalar(&guard.name, Some("expected")));
+
+        assert!(
+            get_variables(&input)
+                .unwrap_err()
+                .to_string()
+                .contains(&guard.name)
+        );
+        assert!(
+            test_variables(&input)
+                .unwrap_err()
+                .to_string()
+                .contains(&guard.name)
+        );
+    }
+
+    #[test]
+    fn covers_path_projection_and_error_variants() {
+        let prepend = path("Path", &[r"c:\shared", r"C:\New"], SetAction::Prepend);
+        let current = RegistryValueData::String(r"c:\shared;C:\New;C:\Existing".to_string());
+        assert!(value_in_desired_state(
+            &prepend,
+            r"c:\shared;C:\New;C:\Existing",
+            Some(&current)
+        ));
+        assert!(!value_in_desired_state(
+            &path("Path", &[r"C:\New"], SetAction::Prepend),
+            r"C:\Existing",
+            Some(&RegistryValueData::String(r"C:\Existing".to_string()))
+        ));
+
+        let variable = scalar("TestName", Some("value"));
+        assert_eq!(key_path(Scope::CurrentUser), CURRENT_USER_KEY);
+        assert!(key_path(Scope::AllUsers).starts_with("HKLM\\"));
+        assert!(EnvironmentError::ElevationRequired.is_elevation_required());
+        assert!(!EnvironmentError::Resource("message".to_string()).is_elevation_required());
+        for operation in [
+            OperationError::GetRead,
+            OperationError::SetRead,
+            OperationError::SetWrite,
+            OperationError::SetRemove,
+        ] {
+            assert!(
+                operation_error(operation, &variable, &"failure")
+                    .to_string()
+                    .contains("failure")
+            );
+        }
+    }
+
+    #[test]
+    fn merge_path_covers_all_actions() {
+        let existing = vec![r"C:\Existing".to_string(), r"C:\Shared".to_string()];
+        let desired = vec![r"c:\shared".to_string(), r"C:\New".to_string()];
+        assert_eq!(
+            merge_path(&existing, &desired, SetAction::Prepend),
+            vec![r"c:\shared", r"C:\New", r"C:\Existing"]
+        );
+        assert_eq!(
+            merge_path(&existing, &desired, SetAction::Append),
+            vec![r"C:\Existing", r"c:\shared", r"C:\New"]
+        );
+        assert_eq!(
+            merge_path(
+                &[],
+                &[r"C:\One".to_string(), r"c:\one".to_string()],
+                SetAction::Clobber
+            ),
+            vec![r"C:\One"]
+        );
     }
 }
