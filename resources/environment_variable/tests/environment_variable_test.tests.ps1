@@ -58,8 +58,8 @@ Describe 'Microsoft.Windows/EnvironmentVariableList test operation' -Skip:(!$IsW
             environmentVariables = @(
                 @{
                     name       = $pathName
-                    pathValue  = @('c:\new')
-                    pathAction = 'prepend'
+                    value     = @('c:\new')
+                    setAction = 'prepend'
                 }
             )
         } | ConvertTo-Json -Compress -Depth 5
@@ -76,8 +76,8 @@ Describe 'Microsoft.Windows/EnvironmentVariableList test operation' -Skip:(!$IsW
             environmentVariables = @(
                 @{
                     name       = $pathName
-                    pathValue  = @('C:\New')
-                    pathAction = 'prepend'
+                    value     = @('C:\New')
+                    setAction = 'prepend'
                 }
             )
         } | ConvertTo-Json -Compress -Depth 5
@@ -95,8 +95,8 @@ Describe 'Microsoft.Windows/EnvironmentVariableList test operation' -Skip:(!$IsW
             environmentVariables = @(
                 @{
                     name       = $pathName
-                    pathValue  = @('C:\New')
-                    pathAction = 'append'
+                    value     = @('C:\New')
+                    setAction = 'append'
                 }
             )
         } | ConvertTo-Json -Compress -Depth 5
@@ -114,8 +114,8 @@ Describe 'Microsoft.Windows/EnvironmentVariableList test operation' -Skip:(!$IsW
             environmentVariables = @(
                 @{
                     name       = $pathName
-                    pathValue  = @('C:\Expected')
-                    pathAction = 'clobber'
+                    value     = @('C:\Expected')
+                    setAction = 'clobber'
                 }
             )
         } | ConvertTo-Json -Compress -Depth 5
