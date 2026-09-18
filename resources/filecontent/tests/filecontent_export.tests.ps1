@@ -13,9 +13,9 @@ Describe 'FileContent export tests' {
 
     It 'Returns content and hashes' {
         $json = @{ path = $filePath } | ConvertTo-Json -Compress
-        $out = filecontent export --input $json 2>$TestDrive/error.log
+        $out = dsc resource export -r Microsoft.FileSystem.File/Content --input $json 2>$TestDrive/error.log
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
-        $properties = $out | ConvertFrom-Json
+        $properties = ($out | ConvertFrom-Json).resources[0].properties
 
         $properties.path | Should -BeExactly $filePath
         $properties.content | Should -BeExactly "hello`nworld"

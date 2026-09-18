@@ -76,11 +76,6 @@ pub fn test(input: &FileContent) -> Result<FileContent, String> {
     Ok(actual)
 }
 
-pub fn export(input: &FileContent) -> Result<FileContent, String> {
-    validate_input(input)?;
-    read_state(&input.path)
-}
-
 #[derive(Clone, Copy)]
 enum HashAlgorithm {
     Sha256,
