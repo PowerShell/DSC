@@ -147,6 +147,12 @@ This would generate the following configuration document:
   - Functions in DSC that don't exist in PowerShell should be presented as cmdlets
   - Error is returned during parsing if a scriptblock cannot be transpiled to a DSC expression
 
+### Caching
+
+For performance reasons, it would not make sense to query `dsc` for available resources since they don't change frequently.
+There should be a local cache of the available resources used for tab completion.
+The cache should be refreshed on module import (as a background task) or manually using an `Update-DscResourceCache`.
+
 ## Alternate Proposals and Considerations
 
 There is an alternate proposal for a Pester-like experience although this would require significantly more work:
