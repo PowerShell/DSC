@@ -8,7 +8,10 @@ mod environment;
 
 use rust_i18n::t;
 use std::process::exit;
-use types::{EnvironmentVariable, EnvironmentVariableList, Operation};
+use types::{
+    EnvironmentPathVariable, EnvironmentVariable, EnvironmentVariableFilterList,
+    EnvironmentVariableList, Operation,
+};
 
 rust_i18n::i18n!("locales", fallback = "en-us");
 
@@ -17,6 +20,13 @@ const EXIT_INVALID_ARGS: i32 = 1;
 const EXIT_INVALID_INPUT: i32 = 2;
 const EXIT_RESOURCE_ERROR: i32 = 3;
 const EXIT_ELEVATION_REQUIRED: i32 = 4;
+
+#[derive(Clone, Copy)]
+enum InputKind {
+    Scalar,
+    Path,
+    List,
+}
 
 fn write_error(message: &str) {
     eprintln!("{}", serde_json::json!({ "error": message }));
@@ -32,21 +42,27 @@ fn print_json(value: &impl serde::Serialize) {
     }
 }
 
-fn require_input(
+fn parse_list(
     input_json: Option<String>,
     operation: Operation,
-    is_list: bool,
+    kind: InputKind,
 ) -> EnvironmentVariableList {
-    let Some(json) = input_json else {
-        write_error(&t!("main.missingInput"));
-        exit(EXIT_INVALID_ARGS);
+    let json = match input_json {
+        Some(json) => json,
+        None => {
+            write_error(&t!("main.missingInput"));
+            exit(EXIT_INVALID_ARGS);
+        }
     };
 
-    let input = match if is_list {
-        serde_json::from_str::<EnvironmentVariableList>(&json)
-    } else {
-        serde_json::from_str::<EnvironmentVariable>(&json).map(EnvironmentVariableList::from)
-    } {
+    let input = match kind {
+        InputKind::List => serde_json::from_str::<EnvironmentVariableList>(&json),
+        InputKind::Scalar => serde_json::from_str::<EnvironmentVariable>(&json)
+            .map(EnvironmentVariableList::from),
+        InputKind::Path => serde_json::from_str::<EnvironmentPathVariable>(&json)
+            .map(EnvironmentVariableList::from),
+    };
+    let input = match input {
         Ok(value) => value,
         Err(error) => {
             write_error(&t!("main.invalidJson", error = error.to_string()));
@@ -58,12 +74,29 @@ fn require_input(
         write_error(&error);
         exit(EXIT_INVALID_INPUT);
     }
-
     input
 }
 
-fn print_result(mut value: EnvironmentVariableList, is_list: bool) {
-    if is_list {
+fn parse_export_filters(input_json: Option<String>) -> EnvironmentVariableFilterList {
+    let Some(json) = input_json else {
+        return EnvironmentVariableFilterList::default();
+    };
+    let input = match serde_json::from_str::<EnvironmentVariableFilterList>(&json) {
+        Ok(value) => value,
+        Err(error) => {
+            write_error(&t!("main.invalidJson", error = error.to_string()));
+            exit(EXIT_INVALID_INPUT);
+        }
+    };
+    if let Err(error) = input.validate() {
+        write_error(&error);
+        exit(EXIT_INVALID_INPUT);
+    }
+    input
+}
+
+fn print_result(mut value: EnvironmentVariableList, kind: InputKind) {
+    if matches!(kind, InputKind::List) {
         print_json(&value);
         return;
     }
@@ -101,12 +134,21 @@ fn main() {
 
     let operation = args[1].as_str();
     let input_json = parse_input_arg(&args);
-    let is_list = args.iter().any(|arg| arg == "--list");
+    let kind = if args.iter().any(|arg| arg == "--list") {
+        InputKind::List
+    } else if args.iter().any(|arg| arg == "--path") {
+        InputKind::Path
+    } else {
+        InputKind::Scalar
+    };
 
     let result = match operation {
-        "get" => environment::get_variables(&require_input(input_json, Operation::Get, is_list)),
-        "set" => environment::set_variables(&require_input(input_json, Operation::Set, is_list)),
-        "test" => environment::test_variables(&require_input(input_json, Operation::Test, is_list)),
+        "get" => environment::get_variables(&parse_list(input_json, Operation::Get, kind)),
+        "set" => environment::set_variables(&parse_list(input_json, Operation::Set, kind)),
+        "test" => environment::test_variables(&parse_list(input_json, Operation::Test, kind)),
+        "export" if matches!(kind, InputKind::List) => {
+            environment::export_variables(&parse_export_filters(input_json))
+        }
         _ => {
             write_error(&t!("main.unknownOperation", operation = operation));
             exit(EXIT_INVALID_ARGS);
@@ -115,7 +157,7 @@ fn main() {
 
     match result {
         Ok(value) => {
-            print_result(value, is_list);
+            print_result(value, kind);
             exit(EXIT_SUCCESS);
         }
         Err(error) => {

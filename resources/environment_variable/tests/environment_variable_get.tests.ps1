@@ -28,15 +28,15 @@ Describe 'Microsoft.Windows/EnvironmentVariableList get operation' -Skip:(!$IsWi
         $result.name | Should -BeExactly $testName
         $result.value | Should -BeExactly $testValue
         $result._exist | Should -BeTrue
-        $result.PSObject.Properties.Name | Should -Not -Contain 'pathAction'
+        $result.PSObject.Properties.Name | Should -Not -Contain 'setAction'
     }
 
-    It 'Gets a variable as pathValue when pathValue is requested' {
+    It 'Gets a variable as a path when an array value is requested' {
         $json = @{
             environmentVariables = @(
                 @{
                     name      = $testName
-                    pathValue = @()
+                    value = @()
                 }
             )
         } | ConvertTo-Json -Compress -Depth 5
@@ -45,9 +45,9 @@ Describe 'Microsoft.Windows/EnvironmentVariableList get operation' -Skip:(!$IsWi
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
         $result = ($out | ConvertFrom-Json).actualState.environmentVariables[0]
 
-        ($result.pathValue | ConvertTo-Json -Compress) |
+        ($result.value | ConvertTo-Json -Compress) |
             Should -BeExactly '["C:\\DSC\\First","C:\\DSC\\Second"]'
-        $result.PSObject.Properties.Name | Should -Not -Contain 'value'
+        $result.PSObject.Properties.Name | Should -Not -Contain 'delimiter'
     }
 
     It 'Returns _exist false for a missing variable' {

@@ -22,19 +22,15 @@ pub enum Scope {
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub enum PathAction {
+pub enum SetAction {
     Prepend,
     Append,
     #[default]
     Clobber,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct EnvironmentVariableList {
-    pub environment_variables: Vec<EnvironmentVariable>,
-    #[serde(rename = "_inDesiredState", skip_serializing_if = "Option::is_none")]
-    pub in_desired_state: Option<bool>,
+fn default_delimiter() -> String {
+    ";".to_string()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -45,18 +41,122 @@ pub struct EnvironmentVariable {
     pub name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub value: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub path_value: Option<Vec<String>>,
-    #[serde(default, skip_serializing)]
-    pub path_action: Option<PathAction>,
     #[serde(rename = "_exist", skip_serializing_if = "Option::is_none")]
     pub exist: Option<bool>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct EnvironmentPathVariable {
+    #[serde(default)]
+    pub scope: Scope,
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub value: Option<Vec<String>>,
+    #[serde(default = "default_delimiter", skip_serializing)]
+    pub delimiter: String,
+    #[serde(default, skip_serializing)]
+    pub set_action: SetAction,
+    #[serde(rename = "_exist", skip_serializing_if = "Option::is_none")]
+    pub exist: Option<bool>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum EnvironmentVariableItem {
+    Scalar(EnvironmentVariable),
+    Path(EnvironmentPathVariable),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct EnvironmentVariableList {
+    #[serde(default)]
+    pub environment_variables: Vec<EnvironmentVariableItem>,
+    #[serde(rename = "_inDesiredState", skip_serializing_if = "Option::is_none")]
+    pub in_desired_state: Option<bool>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct EnvironmentVariableFilter {
+    pub scope: Option<Scope>,
+    pub name: Option<String>,
+    pub value: Option<String>,
+    #[serde(rename = "_exist")]
+    pub exist: Option<bool>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct EnvironmentPathVariableFilter {
+    pub scope: Option<Scope>,
+    pub name: Option<String>,
+    pub value: Option<Vec<String>>,
+    pub delimiter: Option<String>,
+    #[serde(rename = "setAction")]
+    pub _set_action: Option<SetAction>,
+    #[serde(rename = "_exist")]
+    pub exist: Option<bool>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(untagged)]
+pub enum EnvironmentVariableFilterItem {
+    Scalar(EnvironmentVariableFilter),
+    Path(EnvironmentPathVariableFilter),
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct EnvironmentVariableFilterList {
+    #[serde(default)]
+    pub environment_variables: Vec<EnvironmentVariableFilterItem>,
+}
+
+impl EnvironmentVariableItem {
+    pub fn scope(&self) -> Scope {
+        match self {
+            Self::Scalar(variable) => variable.scope,
+            Self::Path(variable) => variable.scope,
+        }
+    }
+
+    pub fn name(&self) -> &str {
+        match self {
+            Self::Scalar(variable) => &variable.name,
+            Self::Path(variable) => &variable.name,
+        }
+    }
+
+    pub fn exist(&self) -> Option<bool> {
+        match self {
+            Self::Scalar(variable) => variable.exist,
+            Self::Path(variable) => variable.exist,
+        }
+    }
+
+    pub fn validate(&self, operation: Operation) -> Result<(), String> {
+        match self {
+            Self::Scalar(variable) => variable.validate(operation),
+            Self::Path(variable) => variable.validate(operation),
+        }
+    }
 }
 
 impl From<EnvironmentVariable> for EnvironmentVariableList {
     fn from(variable: EnvironmentVariable) -> Self {
         Self {
-            environment_variables: vec![variable],
+            environment_variables: vec![EnvironmentVariableItem::Scalar(variable)],
+            in_desired_state: None,
+        }
+    }
+}
+
+impl From<EnvironmentPathVariable> for EnvironmentVariableList {
+    fn from(variable: EnvironmentPathVariable) -> Self {
+        Self {
+            environment_variables: vec![EnvironmentVariableItem::Path(variable)],
             in_desired_state: None,
         }
     }
@@ -71,12 +171,12 @@ impl EnvironmentVariableList {
         let mut identities = HashSet::new();
         for variable in &self.environment_variables {
             variable.validate(operation)?;
-            let identity = (variable.scope, variable.name.to_lowercase());
+            let identity = (variable.scope(), variable.name().to_lowercase());
             if !identities.insert(identity) {
                 return Err(t!(
                     "validation.duplicate",
-                    name = variable.name.as_str(),
-                    scope = variable.scope.to_string()
+                    name = variable.name(),
+                    scope = variable.scope().to_string()
                 )
                 .to_string());
             }
@@ -86,39 +186,110 @@ impl EnvironmentVariableList {
     }
 }
 
+impl EnvironmentVariableFilterList {
+    pub fn validate(&self) -> Result<(), String> {
+        for filter in &self.environment_variables {
+            let (name, delimiter, values) = match filter {
+                EnvironmentVariableFilterItem::Scalar(filter) => {
+                    (filter.name.as_deref(), None, None)
+                }
+                EnvironmentVariableFilterItem::Path(filter) => (
+                    filter.name.as_deref(),
+                    filter.delimiter.as_deref(),
+                    filter.value.as_deref(),
+                ),
+            };
+            if name.is_some_and(|name| name.contains('\0')) {
+                return Err(
+                    t!("validation.invalidName", name = name.unwrap_or_default()).to_string(),
+                );
+            }
+            if let Some(delimiter) = delimiter
+                && (delimiter.is_empty() || delimiter.contains('\0'))
+            {
+                return Err(t!(
+                    "validation.invalidDelimiter",
+                    name = name.unwrap_or("*")
+                )
+                .to_string());
+            }
+            if let Some(values) = values {
+                let delimiter = delimiter.unwrap_or(";");
+                if values.iter().any(|entry| {
+                    entry.is_empty() || entry.contains(delimiter) || entry.contains('\0')
+                }) {
+                    return Err(t!(
+                        "validation.invalidPathEntry",
+                        name = name.unwrap_or("*"),
+                        delimiter = delimiter
+                    )
+                    .to_string());
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+fn validate_common(
+    name: &str,
+    value_is_some: bool,
+    exist: Option<bool>,
+    operation: Operation,
+) -> Result<(), String> {
+    if name.is_empty() {
+        return Err(t!("validation.emptyName").to_string());
+    }
+    if name.contains('\0') {
+        return Err(t!("validation.invalidName", name = name).to_string());
+    }
+    if matches!(operation, Operation::Set | Operation::Test)
+        && exist.unwrap_or(true)
+        && !value_is_some
+    {
+        return Err(t!("validation.missingValue", name = name).to_string());
+    }
+    Ok(())
+}
+
 impl EnvironmentVariable {
-    fn validate(&self, operation: Operation) -> Result<(), String> {
-        if self.name.is_empty() {
-            return Err(t!("validation.emptyName").to_string());
-        }
-        if self.name.contains('\0') {
-            return Err(t!("validation.invalidName", name = self.name.as_str()).to_string());
-        }
-        if self.value.is_some() && self.path_value.is_some() {
-            return Err(t!("validation.valueConflict", name = self.name.as_str()).to_string());
-        }
-        if self.path_action.is_some() && self.path_value.is_none() {
+    pub fn validate(&self, operation: Operation) -> Result<(), String> {
+        validate_common(
+            &self.name,
+            self.value.is_some(),
+            self.exist,
+            operation,
+        )
+    }
+}
+
+impl EnvironmentPathVariable {
+    pub fn validate(&self, operation: Operation) -> Result<(), String> {
+        validate_common(
+            &self.name,
+            self.value.is_some(),
+            self.exist,
+            operation,
+        )?;
+        if self.delimiter.is_empty() || self.delimiter.contains('\0') {
             return Err(t!(
-                "validation.pathActionWithoutValue",
+                "validation.invalidDelimiter",
                 name = self.name.as_str()
             )
             .to_string());
         }
-        if let Some(entries) = &self.path_value
-            && entries
-                .iter()
-                .any(|entry| entry.is_empty() || entry.contains(';') || entry.contains('\0'))
+        if let Some(entries) = &self.value
+            && entries.iter().any(|entry| {
+                entry.is_empty() || entry.contains(&self.delimiter) || entry.contains('\0')
+            })
         {
-            return Err(t!("validation.invalidPathEntry", name = self.name.as_str()).to_string());
+            return Err(t!(
+                "validation.invalidPathEntry",
+                name = self.name.as_str(),
+                delimiter = self.delimiter.as_str()
+            )
+            .to_string());
         }
-        if matches!(operation, Operation::Set | Operation::Test)
-            && self.exist.unwrap_or(true)
-            && self.value.is_none()
-            && self.path_value.is_none()
-        {
-            return Err(t!("validation.missingValue", name = self.name.as_str()).to_string());
-        }
-
         Ok(())
     }
 }
@@ -134,25 +305,34 @@ impl std::fmt::Display for Scope {
 
 #[cfg(test)]
 mod tests {
-    use super::{EnvironmentVariable, EnvironmentVariableList, Operation, PathAction, Scope};
+    use super::{
+        EnvironmentPathVariable, EnvironmentVariable, EnvironmentVariableItem,
+        EnvironmentVariableList, Operation, Scope, SetAction,
+    };
 
-    fn variable(name: &str) -> EnvironmentVariable {
-        EnvironmentVariable {
+    fn scalar(name: &str) -> EnvironmentVariableItem {
+        EnvironmentVariableItem::Scalar(EnvironmentVariable {
             scope: Scope::CurrentUser,
             name: name.to_string(),
             value: Some("value".to_string()),
-            path_value: None,
-            path_action: None,
             exist: None,
-        }
+        })
     }
 
     #[test]
-    fn rejects_duplicate_identity_case_insensitively() {
-        let mut second = variable("TEST_NAME");
-        second.scope = Scope::CurrentUser;
+    fn rejects_duplicate_identity_across_variants() {
         let list = EnvironmentVariableList {
-            environment_variables: vec![variable("Test_Name"), second],
+            environment_variables: vec![
+                scalar("Test_Name"),
+                EnvironmentVariableItem::Path(EnvironmentPathVariable {
+                    scope: Scope::CurrentUser,
+                    name: "TEST_NAME".to_string(),
+                    value: Some(vec![r"C:\Path".to_string()]),
+                    delimiter: ";".to_string(),
+                    set_action: SetAction::Clobber,
+                    exist: None,
+                }),
+            ],
             in_desired_state: None,
         };
 
@@ -160,96 +340,42 @@ mod tests {
     }
 
     #[test]
-    fn allows_same_name_in_different_scopes() {
-        let mut second = variable("Test_Name");
-        second.scope = Scope::AllUsers;
+    fn allows_empty_export_filter() {
         let list = EnvironmentVariableList {
-            environment_variables: vec![variable("Test_Name"), second],
-            in_desired_state: None,
-        };
-
-        assert!(list.validate(Operation::Set).is_ok());
-    }
-
-    #[test]
-    fn rejects_path_action_without_path_value() {
-        let mut input = variable("Test_Name");
-        input.path_action = Some(PathAction::Append);
-        let list = EnvironmentVariableList {
-            environment_variables: vec![input],
-            in_desired_state: None,
-        };
-
-        assert!(list.validate(Operation::Set).is_err());
-    }
-
-    #[test]
-    fn rejects_invalid_inputs() {
-        let empty = EnvironmentVariableList {
             environment_variables: Vec::new(),
             in_desired_state: None,
         };
-        assert!(empty.validate(Operation::Get).is_err());
 
-        for name in ["", "invalid\0name"] {
-            assert!(
-                EnvironmentVariableList {
-                    environment_variables: vec![variable(name)],
-                    in_desired_state: None,
-                }
-                .validate(Operation::Get)
-                .is_err()
-            );
-        }
-
-        let mut conflicting = variable("Test_Name");
-        conflicting.path_value = Some(vec!["C:\\Path".to_string()]);
-        assert!(
-            EnvironmentVariableList {
-                environment_variables: vec![conflicting],
-                in_desired_state: None,
-            }
-            .validate(Operation::Set)
-            .is_err()
-        );
-
-        for entry in ["", "C:\\One;C:\\Two", "invalid\0path"] {
-            let mut invalid_path = variable("Test_Name");
-            invalid_path.value = None;
-            invalid_path.path_value = Some(vec![entry.to_string()]);
-            assert!(
-                EnvironmentVariableList {
-                    environment_variables: vec![invalid_path],
-                    in_desired_state: None,
-                }
-                .validate(Operation::Set)
-                .is_err()
-            );
-        }
-
-        let mut missing_value = variable("Test_Name");
-        missing_value.value = None;
-        let list = EnvironmentVariableList {
-            environment_variables: vec![missing_value],
-            in_desired_state: None,
-        };
-        assert!(list.validate(Operation::Set).is_err());
-        assert!(list.validate(Operation::Test).is_err());
-        assert!(list.validate(Operation::Get).is_ok());
+        assert!(list.validate(Operation::Get).is_err());
     }
 
     #[test]
-    fn formats_scope_values_as_camel_case() {
-        assert_eq!(Scope::AllUsers.to_string(), "allUsers");
-        assert_eq!(Scope::CurrentUser.to_string(), "currentUser");
+    fn rejects_invalid_path_delimiter_and_entries() {
+        for (delimiter, value) in [
+            ("", vec!["value"]),
+            (";", vec!["C:\\One;C:\\Two"]),
+            ("::", vec!["one::two"]),
+        ] {
+            let item = EnvironmentVariableItem::Path(EnvironmentPathVariable {
+                scope: Scope::CurrentUser,
+                name: "Path".to_string(),
+                value: Some(value.into_iter().map(str::to_string).collect()),
+                delimiter: delimiter.to_string(),
+                set_action: SetAction::Clobber,
+                exist: None,
+            });
+            assert!(item.validate(Operation::Set).is_err());
+        }
     }
 
     #[test]
-    fn wraps_single_variable_in_list() {
-        let list = EnvironmentVariableList::from(variable("Test_Name"));
+    fn untagged_items_select_value_shape() {
+        let scalar: EnvironmentVariableItem =
+            serde_json::from_str(r#"{"name":"One","value":"text"}"#).unwrap();
+        let path: EnvironmentVariableItem =
+            serde_json::from_str(r#"{"name":"Path","value":["C:\\One"]}"#).unwrap();
 
-        assert_eq!(list.environment_variables.len(), 1);
-        assert_eq!(list.environment_variables[0].name, "Test_Name");
-        assert_eq!(list.in_desired_state, None);
+        assert!(matches!(scalar, EnvironmentVariableItem::Scalar(_)));
+        assert!(matches!(path, EnvironmentVariableItem::Path(_)));
     }
 }

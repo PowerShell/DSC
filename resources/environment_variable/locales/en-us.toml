@@ -1,8 +1,8 @@
 _version = 1
 
 [main]
-missingOperation = "Missing operation. Usage: environment_variable get --input <json> | set --input <json> | test --input <json>"
-unknownOperation = "Unknown operation: '%{operation}'. Expected: get, set, or test"
+missingOperation = "Missing operation. Usage: environment_variable get|set|test|export [--path|--list] --input <json>"
+unknownOperation = "Unknown operation: '%{operation}'. Expected: get, set, test, or export"
 missingInput = "Missing --input argument"
 missingInputValue = "Missing value for --input argument"
 invalidJson = "Invalid JSON input: %{error}"
@@ -16,10 +16,9 @@ emptyList = "The environmentVariables array must contain at least one environmen
 emptyName = "Environment variable name must not be empty"
 invalidName = "Environment variable name '%{name}' contains an invalid null character"
 duplicate = "Environment variable '%{name}' is specified more than once in scope '%{scope}'"
-valueConflict = "Environment variable '%{name}' cannot specify both value and pathValue"
-pathActionWithoutValue = "Environment variable '%{name}' can only specify pathAction with pathValue"
-invalidPathEntry = "Environment variable '%{name}' has a pathValue entry that is empty or contains a semicolon or null character"
-missingValue = "Environment variable '%{name}' must specify value or pathValue when _exist is true"
+invalidDelimiter = "Environment path variable '%{name}' must specify a non-empty delimiter without null characters"
+invalidPathEntry = "Environment path variable '%{name}' has a value entry that is empty or contains the delimiter '%{delimiter}' or a null character"
+missingValue = "Environment variable '%{name}' must specify value when _exist is true"
 
 [get]
 readError = "Failed to read environment variable '%{name}' in scope '%{scope}': %{error}"
@@ -30,3 +29,7 @@ elevationRequired = "Setting or removing AllUsers environment variables requires
 readError = "Failed to read environment variable '%{name}' in scope '%{scope}' before setting it: %{error}"
 writeError = "Failed to set environment variable '%{name}' in scope '%{scope}': %{error}"
 removeError = "Failed to remove environment variable '%{name}' in scope '%{scope}': %{error}"
+
+[export]
+registryError = "Failed to open the environment variables in scope '%{scope}': %{error}"
+readError = "Failed to enumerate the environment variables in scope '%{scope}': %{error}"

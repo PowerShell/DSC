@@ -27,18 +27,16 @@ Describe 'Microsoft.Windows/EnvironmentVariable test operation' -Skip:(!$IsWindo
         $result.actualState.PSObject.Properties.Name | Should -Not -Contain 'environmentVariables'
     }
 
-    It 'Honors pathAction for one environment variable' {
-        Set-ItemProperty -Path 'HKCU:\Environment' -Name $testName `
-            -Value 'C:\Existing;C:\New' -Type String
+    It 'Reports a different scalar value outside desired state' {
+        Set-ItemProperty -Path 'HKCU:\Environment' -Name $testName -Value 'actual' -Type String
         $json = @{
-            name       = $testName
-            pathValue  = @('C:\New')
-            pathAction = 'append'
+            name  = $testName
+            value = 'expected'
         } | ConvertTo-Json -Compress
 
         $out = $json | dsc resource test -r $resourceType -f - 2>$testdrive/error.log
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
 
-        ($out | ConvertFrom-Json).inDesiredState | Should -BeTrue
+        ($out | ConvertFrom-Json).inDesiredState | Should -BeFalse
     }
 }

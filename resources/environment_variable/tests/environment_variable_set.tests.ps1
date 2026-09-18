@@ -58,7 +58,7 @@ Describe 'Microsoft.Windows/EnvironmentVariableList set operation' -Skip:(!$IsWi
             environmentVariables = @(
                 @{
                     name      = $testNames[1]
-                    pathValue = @('C:\One', 'c:\one', 'C:\Two')
+                    value = @('C:\One', 'c:\one', 'C:\Two')
                 }
             )
         } | ConvertTo-Json -Compress -Depth 5
@@ -67,7 +67,7 @@ Describe 'Microsoft.Windows/EnvironmentVariableList set operation' -Skip:(!$IsWi
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
         $result = ($out | ConvertFrom-Json).afterState.environmentVariables[0]
 
-        ($result.pathValue | ConvertTo-Json -Compress) |
+        ($result.value | ConvertTo-Json -Compress) |
             Should -BeExactly '["C:\\One","C:\\Two"]'
         [Environment]::GetEnvironmentVariable(
             $testNames[1],
@@ -81,8 +81,8 @@ Describe 'Microsoft.Windows/EnvironmentVariableList set operation' -Skip:(!$IsWi
             environmentVariables = @(
                 @{
                     name       = $testNames[1]
-                    pathValue  = @('c:\shared', 'C:\New')
-                    pathAction = 'prepend'
+                    value     = @('c:\shared', 'C:\New')
+                    setAction = 'prepend'
                 }
             )
         } | ConvertTo-Json -Compress -Depth 5
@@ -91,7 +91,7 @@ Describe 'Microsoft.Windows/EnvironmentVariableList set operation' -Skip:(!$IsWi
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
         $result = ($out | ConvertFrom-Json).afterState.environmentVariables[0]
 
-        ($result.pathValue | ConvertTo-Json -Compress) |
+        ($result.value | ConvertTo-Json -Compress) |
             Should -BeExactly '["c:\\shared","C:\\New","C:\\Existing"]'
     }
 
@@ -102,8 +102,8 @@ Describe 'Microsoft.Windows/EnvironmentVariableList set operation' -Skip:(!$IsWi
             environmentVariables = @(
                 @{
                     name       = $testNames[1]
-                    pathValue  = @('c:\shared', 'C:\New')
-                    pathAction = 'append'
+                    value     = @('c:\shared', 'C:\New')
+                    setAction = 'append'
                 }
             )
         } | ConvertTo-Json -Compress -Depth 5
@@ -112,7 +112,7 @@ Describe 'Microsoft.Windows/EnvironmentVariableList set operation' -Skip:(!$IsWi
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
         $result = ($out | ConvertFrom-Json).afterState.environmentVariables[0]
 
-        ($result.pathValue | ConvertTo-Json -Compress) |
+        ($result.value | ConvertTo-Json -Compress) |
             Should -BeExactly '["C:\\Existing","c:\\shared","C:\\New"]'
     }
 
@@ -160,20 +160,20 @@ Describe 'Microsoft.Windows/EnvironmentVariableList set operation' -Skip:(!$IsWi
         $result[1].value | Should -BeExactly 'second'
     }
 
-    It 'Rejects value and pathValue together' {
+    It 'Rejects path entries containing the selected delimiter' {
         $json = @{
             environmentVariables = @(
                 @{
                     name      = $testNames[0]
-                    value     = 'value'
-                    pathValue = @('C:\Path')
+                    value     = @('one::two')
+                    delimiter = '::'
                 }
             )
         } | ConvertTo-Json -Compress -Depth 5
 
-        $out = $json | dsc resource set -r $resourceType -f - 2>&1
+        $json | dsc resource set -r $resourceType -f - 2>$testdrive/error.log | Out-Null
         $LASTEXITCODE | Should -Not -Be 0
-        $out | Should -Match 'value.*pathValue'
+        Get-Content -Raw $testdrive/error.log | Should -Match 'delimiter'
     }
 
     It 'Returns an actionable elevation error for AllUsers' -Skip:$isAdmin {
@@ -188,10 +188,10 @@ Describe 'Microsoft.Windows/EnvironmentVariableList set operation' -Skip:(!$IsWi
             )
         } | ConvertTo-Json -Compress -Depth 5
 
-        $out = $json | dsc resource set -r $resourceType -f - 2>&1
+        $json | dsc resource set -r $resourceType -f - 2>$testdrive/error.log | Out-Null
 
         $LASTEXITCODE | Should -Not -Be 0
-        $out | Should -Match 'elevation'
+        Get-Content -Raw $testdrive/error.log | Should -Match 'elevation'
         [Environment]::GetEnvironmentVariable(
             $machineName,
             [EnvironmentVariableTarget]::Machine) | Should -BeNullOrEmpty
