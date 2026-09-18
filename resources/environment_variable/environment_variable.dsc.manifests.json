@@ -346,6 +346,9 @@
                         "scalar": {
                             "type": "object",
                             "additionalProperties": false,
+                            "required": [
+                                "name"
+                            ],
                             "properties": {
                                 "scope": {
                                     "$ref": "#/$defs/commonProperties/scope"
@@ -365,6 +368,9 @@
                         "path": {
                             "type": "object",
                             "additionalProperties": false,
+                            "required": [
+                                "name"
+                            ],
                             "properties": {
                                 "scope": {
                                     "$ref": "#/$defs/commonProperties/scope"
