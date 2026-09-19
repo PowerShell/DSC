@@ -9,7 +9,7 @@ use crate::configure::config_doc::ResourceDiscoveryMode;
 use crate::discovery::discovery_trait::{DiscoveryKind, ResourceDiscovery, DiscoveryFilter};
 use crate::dscerror::DscError;
 use crate::extensions::dscextension::{Capability, DscExtension};
-use crate::types::{FullyQualifiedTypeName, TypeNameFilter};
+use crate::types::{FullyQualifiedTypeName, ResourceVersion, TypeNameFilter};
 use crate::{dscresources::dscresource::DscResource, progress::ProgressFormat};
 use core::result::Result::Ok;
 use semver::Version;
@@ -27,8 +27,8 @@ type DiscoveryManifestCache = BTreeMap<FullyQualifiedTypeName, Vec<ImportedManif
 type DiscoveryResourceCache = BTreeMap<FullyQualifiedTypeName, Vec<DscResource>>;
 
 pub enum DscResourceKind {
-    Action(&DscAction),
-    Resource(&DscResource),
+    Action(DscAction),
+    Resource(DscResource),
 }
 
 #[derive(Clone)]
@@ -129,7 +129,7 @@ impl Discovery {
             .collect()
     }
 
-    pub fn find_resource(&mut self, filter: &DiscoveryFilter) -> Result<Option<&DscResourceKind>, DscError> {
+    pub fn find_resource(&mut self, filter: &DiscoveryFilter) -> Result<Option<DscResourceKind>, DscError> {
         if self.refresh_cache || self.resources.is_empty() {
             self.find_resources(std::slice::from_ref(filter), ProgressFormat::None)?;
         }
@@ -139,14 +139,14 @@ impl Discovery {
             if let Some(version_req) = filter.require_version() {
                 for resource in resources {
                     if version_req.matches(&resource.version) && matches_adapter_requirement(resource, filter) {
-                        return Ok(Some(&DscResourceKind::Resource(resource)));
+                        return Ok(Some(DscResourceKind::Resource(resource.clone())));
                     }
                 }
                 Ok(None)
             } else {
                 for resource in resources {
                     if matches_adapter_requirement(resource, filter) {
-                        return Ok(Some(&DscResourceKind::Resource(resource)));
+                        return Ok(Some(DscResourceKind::Resource(resource.clone())));
                     }
                 }
                 Ok(None)
@@ -154,8 +154,8 @@ impl Discovery {
         } else if let Some(actions) = self.actions.get(type_name) {
             if let Some(version_req) = filter.require_version() {
                 for action in actions {
-                    if version_req.matches(&action.version) {
-                        return Ok(Some(&DscResourceKind::Action(action)));
+                    if version_req.matches(&ResourceVersion::Semantic(action.version.clone())) {
+                        return Ok(Some(DscResourceKind::Action(action.clone())));
                     }
                 }
                 Ok(None)
