@@ -17,6 +17,7 @@ use crate::{
     },
 };
 use jsonschema::Validator;
+use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -82,7 +83,7 @@ impl DscAction {
         }
         let (args, supports_whatif) = process_invoke_args(manifest.invoke.args.as_ref(), input.unwrap_or(""), execution_type);
         if execution_type == &ExecutionKind::WhatIf && !supports_whatif {
-            return Err(DscError::WhatIfNotSupported(self.type_name.to_string()));
+            return Err(DscError::Operation(t!("actions.dscaction.whatIfNotSupported", type_name = self.type_name.to_string()).to_string()));
         }
 
         let (_exit_code, stdout, _stderr) = invoke_command(&manifest.invoke.executable, args, input, Some(&self.directory), None, manifest.exit_codes.as_ref())?;
