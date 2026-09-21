@@ -1,9 +1,11 @@
 ---
 description: Reference for the 'tryIndexFromEnd' DSC configuration document function
-ms.date:     01/29/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       tryIndexFromEnd
 ---
+
+# tryIndexFromEnd
 
 ## Synopsis
 
@@ -54,8 +56,10 @@ resources:
   properties:
     output:
       currentDeployment: "[last(createArray('v1.0.0', 'v1.1.0', 'v1.2.0'))]"
-      previousDeployment: "[tryIndexFromEnd(createArray('v1.0.0', 'v1.1.0', 'v1.2.0'), 2)]"
-      fallbackDeployment: "[tryIndexFromEnd(createArray('v1.0.0', 'v1.1.0', 'v1.2.0'), 10)]"
+      previousDeployment: >-
+        [tryIndexFromEnd(createArray('v1.0.0', 'v1.1.0', 'v1.2.0'), 2)]
+      fallbackDeployment: >-
+        [tryIndexFromEnd(createArray('v1.0.0', 'v1.1.0', 'v1.2.0'), 10)]
 ```
 
 ```bash
@@ -213,8 +217,11 @@ resources:
     output:
       primaryRegion: "[createArray('us-east-1', 'us-west-2', 'eu-west-1')]"
       secondaryRegion: "[createArray('us-west-1')]"
-      preferredPrimary: "[coalesce(tryIndexFromEnd(createArray('us-east-1', 'us-west-2', 'eu-west-1'), 2), 'us-east-1')]"
-      preferredSecondary: "[coalesce(tryIndexFromEnd(createArray('us-west-1'), 2), 'us-west-1')]"
+      preferredPrimary: >-
+        [coalesce(tryIndexFromEnd(createArray('us-east-1', 'us-west-2', 'eu-west-1'), 2),
+        'us-east-1')]
+      preferredSecondary: >-
+        [coalesce(tryIndexFromEnd(createArray('us-west-1'), 2), 'us-west-1')]
 ```
 
 ```bash

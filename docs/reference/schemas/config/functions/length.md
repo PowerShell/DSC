@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'length' DSC configuration document function
-ms.date:     08/08/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       length
 ---
@@ -136,7 +136,9 @@ parameters:
     defaultValue: "Hello DSC!"
   longText:
     type: string
-    defaultValue: "This is a longer string with more characters to demonstrate length calculation."
+    defaultValue: >-
+      This is a longer string with more characters to demonstrate length
+      calculation.
 resources:
 - name: Check string lengths
   type: Microsoft.DSC.Debug/Echo
@@ -160,7 +162,7 @@ results:
     actualState:
       output:
         messageLength: 10
-        longTextLength: 78
+        longTextLength: 79
         emptyStringLength: 0
         literalLength: 3
 messages: []

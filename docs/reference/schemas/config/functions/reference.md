@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'reference' DSC configuration document function
-ms.date:     02/28/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       reference
 ---
@@ -37,9 +37,10 @@ earlier instances. The instances don't need to be of the same type.
 
 ### Example 1 - Referencing a top-level instance
 
-In this example configuration, the `Microsoft.DSC.Debug/Echo` resource instance echoes the `bitness` property of
-the `Microsoft/OSInfo` resource. It uses the `reference()` function to retrieve the actual state of
-the resource and uses the dot-path notation to access the **bitness** property of that resource.
+In this example configuration, the `Microsoft.DSC.Debug/Echo` resource instance echoes the
+`bitness` property of the `Microsoft/OSInfo` resource. It uses the `reference()` function to
+retrieve the actual state of the resource and uses the dot-path notation to access the
+**bitness** property of that resource.
 
 ```yaml
 # reference.example.1.dsc.config.yaml
@@ -126,7 +127,8 @@ operation:
 - [Simple set response][08]
 
 You can use dot-notation to access the properties of the referenced instance, as in
-[Example 1](#example-1---referencing-a-top-level-instance).
+[Example 1](#example-1---referencing-a-top-level-instance). When you access a property this
+way, the function returns the value of that property, which can be any JSON type.
 
 > [!NOTE]
 > You can't reuse references to `actualState` for `get` and `test` operations in the `set`
@@ -135,7 +137,7 @@ You can use dot-notation to access the properties of the referenced instance, as
 > want to use a reference for all three operations.
 
 ```yaml
-Type: [Object, Array]
+Type: [array, boolean, number, object, string]
 ```
 
 <!-- Link reference definitions -->

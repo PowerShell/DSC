@@ -1,9 +1,11 @@
 ---
 description: Reference for the 'join' DSC configuration document function
-ms.date:     08/29/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       join
 ---
+
+# join
 
 ## Synopsis
 
@@ -12,17 +14,18 @@ Joins an array into a single string, separated using a delimiter.
 ## Syntax
 
 ```Syntax
-join(inputArray, delimiter)
+join(<inputArray>, <delimiter>)
 ```
 
 ## Description
 
 The `join()` function takes an array and a delimiter.
 
-- Each array element is converted to a string and concatenated with the
-  delimiter between elements.
+- Each string, number, or boolean element is converted to a string and
+  concatenated with the delimiter between elements.
+- DSC raises an error when an element is null, an array, or an object.
 
-The `delimiter` can be any value; it’s converted to a string.
+The `delimiter` must be a string.
 
 ## Examples
 
@@ -89,7 +92,7 @@ hadErrors: false
 
 ### Example 3 - Format a version string from numeric parts
 
-Convert version components (numbers) into a dotted version string. Non-string
+Convert version components (numbers) into a dotted version string. Number
 elements are converted to strings automatically.
 
 ```yaml
@@ -131,10 +134,10 @@ Position: 1
 
 ### delimiter
 
-Any value used between elements. Converted to a string.
+The string to insert between elements. DSC raises an error when the delimiter isn't a string.
 
 ```yaml
-Type:     any
+Type:     string
 Required: true
 Position: 2
 ```

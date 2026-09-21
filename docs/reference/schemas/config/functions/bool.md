@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'bool' DSC configuration document function
-ms.date:     01/19/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       bool
 ---
@@ -112,10 +112,12 @@ hadErrors: false
 The `bool()` function requires a single argument that is either a string or number.
 
 For strings, valid values are:
+
 - "true" (case-insensitive) - converts to `true`
 - "false" (case-insensitive) - converts to `false`
 
 For numbers:
+
 - 0 - converts to `false`
 - Any non-zero value - converts to `true`
 

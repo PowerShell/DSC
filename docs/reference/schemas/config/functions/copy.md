@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'copy' DSC configuration document resource loop
-ms.date:     02/28/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       copy
 ---
@@ -23,8 +23,16 @@ copy:
 
 The `copy` property enables you to create multiple instances of a resource in a
 DSC configuration. This is the equivalent implementation of the copy
-functionality from Azure Resource Manager (ARM) templates, but without support
-for variables and properties, which will be added in future releases.
+functionality from Azure Resource Manager (ARM) templates. DSC only supports
+copy loops on resource instances. Copy loops for variables and resource
+properties aren't supported. A configuration output can define `copy`, but DSC
+ignores that output and emits a warning that copy loops for outputs aren't
+supported.
+
+> [!IMPORTANT]
+> Copy loops are deprecated. When DSC expands a copy loop, it emits a warning
+> that the copy loop is deprecated and will be removed in a future release. For
+> more information, see [issue #1429][03] in the DSC repository.
 
 When you use `copy` on a resource, DSC creates multiple instances of that
 resource based on the specified count. You can use the [`copyIndex()`][01]
@@ -186,27 +194,32 @@ resources:
 ```
 
 ```bash
-dsc config get --file copy.example.4.dsc.config.yaml --parameters '{"instanceCount": 4}'
+params='{"parameters": {"instanceCount": 4}}'
+dsc config --parameters "$params" get --file copy.example.4.dsc.config.yaml
 ```
 
 ```yaml
 results:
-- metadata:
-    Microsoft.DSC:
-      duration: PT0.2173106S
-  name: Dynamic-0
+- name: Dynamic-0
   type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
-      output: Instance 0 of 2
-- metadata:
-    Microsoft.DSC:
-      duration: PT0.0161486S
-  name: Dynamic-1
+      output: Instance 0 of 4
+- name: Dynamic-1
   type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
-      output: Instance 1 of 2
+      output: Instance 1 of 4
+- name: Dynamic-2
+  type: Microsoft.DSC.Debug/Echo
+  result:
+    actualState:
+      output: Instance 2 of 4
+- name: Dynamic-3
+  type: Microsoft.DSC.Debug/Echo
+  result:
+    actualState:
+      output: Instance 3 of 4
 messages: []
 hadErrors: false
 ```
@@ -261,13 +274,16 @@ resources to create in each batch when using parallel mode.
 
 The current implementation has the following limitations:
 
-- **Variables and properties**: Copy loops for variables and properties are not
-  yet supported.
+- **Deprecation**: Copy loops are deprecated. DSC emits a warning when it
+  expands a copy loop. For more information, see [issue #1429][03].
+- **Resources only**: Copy loops are only supported on resource instances. Copy
+  loops for variables and resource properties aren't supported. DSC ignores a
+  `copy` definition on a configuration output and emits a warning.
 - **Mode control**: The `mode` property (serial/parallel) is not implemented.
 - **Batch processing**: The `batchSize` property is not implemented.
 - **Name expressions**: The resource name expression must evaluate to a string.
 
-## Related Functions
+## Related functions
 
 - [`copyIndex()`][01] - Returns the current iteration index of a copy loop.
 - [`parameters()`][02] - Returns the value of a configuration parameter.
@@ -275,3 +291,4 @@ The current implementation has the following limitations:
 <!-- Link reference definitions -->
 [01]: ./copyIndex.md
 [02]: ./parameters.md
+[03]: https://github.com/PowerShell/DSC/issues/1429
