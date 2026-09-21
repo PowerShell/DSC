@@ -155,7 +155,12 @@ fn validate_hash(value: Option<&str>, length: usize, name: &str) -> Result<(), S
 fn read_state(path: &str) -> Result<FileContent, String> {
     let bytes = match fs::read(path) {
         Ok(bytes) => bytes,
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+        Err(error)
+            if matches!(
+                error.kind(),
+                std::io::ErrorKind::NotFound | std::io::ErrorKind::NotADirectory
+            ) =>
+        {
             return Ok(FileContent {
                 path: path.to_string(),
                 content: None,
