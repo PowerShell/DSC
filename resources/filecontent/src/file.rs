@@ -3,6 +3,7 @@
 
 use crate::types::FileContent;
 use rust_i18n::t;
+use serde_json::json;
 use sha2::{Digest, Sha256, Sha512};
 use std::fs;
 use std::path::Path;
@@ -36,6 +37,24 @@ pub fn set(input: &FileContent) -> Result<FileContent, String> {
         return Err(t!("set.contentRequired").to_string());
     };
     validate_content_hashes(input, content)?;
+
+    if let Some(parent) = path.parent()
+        && !parent.as_os_str().is_empty()
+        && !parent.exists()
+    {
+        eprintln!(
+            "{}",
+            json!({ "info": t!("set.creatingParentDirectory", path = parent.display().to_string()) })
+        );
+        fs::create_dir_all(parent).map_err(|error| {
+            t!(
+                "set.createParentDirectoryError",
+                path = parent.display().to_string(),
+                error = error.to_string()
+            )
+            .to_string()
+        })?;
+    }
 
     fs::write(path, content.as_bytes()).map_err(|error| {
         t!(
