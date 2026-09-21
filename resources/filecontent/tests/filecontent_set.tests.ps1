@@ -48,7 +48,22 @@ Describe 'FileContent set tests' {
         [System.IO.File]::ReadAllText($nestedFilePath) | Should -BeExactly 'nested'
         $actual._exist | Should -BeTrue
         (Get-Content -Raw $stderrPath) |
-            Should -Match ([regex]::Escape("Creating parent directory '$nestedDirectory'"))
+            Should -BeLike "*INFO*Creating parent directory '$nestedDirectory'*"
+    }
+
+    It 'Reports an error when a file blocks parent directory creation' {
+        $blockingPath = Join-Path $testRoot 'blocked'
+        [System.IO.File]::WriteAllText($blockingPath, 'blocking file')
+        $blockedParent = Join-Path $blockingPath 'child'
+        $blockedFilePath = Join-Path $blockedParent 'file.txt'
+        $stderrPath = Join-Path $testRoot 'stderr.log'
+        $json = @{ path = $blockedFilePath; content = 'blocked' } | ConvertTo-Json -Compress
+
+        $null = $json | dsc resource set -r $resourceType -f - 2>$stderrPath
+
+        $LASTEXITCODE | Should -Not -Be 0
+        (Get-Content -Raw $stderrPath) |
+            Should -BeLike "*Failed to create parent directory '$blockedParent'*"
     }
 
     It 'Removes a file when _exist is false' {
