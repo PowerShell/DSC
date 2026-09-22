@@ -52,9 +52,8 @@ Describe 'FileContent set tests' {
     }
 
     It 'Reports an error when a file blocks parent directory creation' {
-        $blockingPath = Join-Path $testRoot 'blocked'
-        [System.IO.File]::WriteAllText($blockingPath, 'blocking file')
-        $blockedParent = Join-Path $blockingPath 'child'
+        $blockedParent = Join-Path $testRoot 'blocked'
+        [System.IO.File]::WriteAllText($blockedParent, 'blocking file')
         $blockedFilePath = Join-Path $blockedParent 'file.txt'
         $stderrPath = Join-Path $testRoot 'stderr.log'
         $json = @{ path = $blockedFilePath; content = 'blocked' } | ConvertTo-Json -Compress

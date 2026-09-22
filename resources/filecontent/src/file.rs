@@ -40,7 +40,7 @@ pub fn set(input: &FileContent) -> Result<FileContent, String> {
 
     if let Some(parent) = path.parent()
         && !parent.as_os_str().is_empty()
-        && !parent.exists()
+        && !parent.is_dir()
     {
         eprintln!(
             "{}",
