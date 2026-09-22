@@ -32,8 +32,11 @@ Describe 'FileContent set tests' {
         @{ existSetting = 'true'; includeExist = $true }
         @{ existSetting = 'omitted'; includeExist = $false }
     ) {
-        $nestedDirectory = Join-Path (Join-Path $testRoot 'first') 'second'
-        $nestedFilePath = Join-Path $nestedDirectory 'file.txt'
+        $existingDirectory = Join-Path $testRoot 'a'
+        $null = New-Item -ItemType Directory -Path $existingDirectory
+        $firstMissingDirectory = Join-Path $existingDirectory 'b'
+        $secondMissingDirectory = Join-Path $firstMissingDirectory 'c'
+        $nestedFilePath = Join-Path $secondMissingDirectory 'file.txt'
         $stderrPath = Join-Path $testRoot 'stderr.log'
         $inputState = @{ path = $nestedFilePath; content = 'nested' }
         if ($includeExist) {
@@ -46,14 +49,19 @@ Describe 'FileContent set tests' {
         $actual = ($out | ConvertFrom-Json).afterState
 
         [System.IO.File]::ReadAllText($nestedFilePath) | Should -BeExactly 'nested'
+        $firstMissingDirectory | Should -Exist
+        $secondMissingDirectory | Should -Exist
         $actual._exist | Should -BeTrue
         (Get-Content -Raw $stderrPath) |
-            Should -BeLike "*INFO*Creating parent directory '$nestedDirectory'*"
+            Should -BeLike "*INFO*Creating parent directory '$secondMissingDirectory'*"
     }
 
-    It 'Reports an error when a file blocks parent directory creation' {
-        $blockedParent = Join-Path $testRoot 'blocked'
-        [System.IO.File]::WriteAllText($blockedParent, 'blocking file')
+    It 'Reports an error when an intermediate parent path is a file' {
+        $existingDirectory = Join-Path $testRoot 'a'
+        $null = New-Item -ItemType Directory -Path $existingDirectory
+        $blockingPath = Join-Path $existingDirectory 'b'
+        [System.IO.File]::WriteAllText($blockingPath, 'blocking file')
+        $blockedParent = Join-Path $blockingPath 'c'
         $blockedFilePath = Join-Path $blockedParent 'file.txt'
         $stderrPath = Join-Path $testRoot 'stderr.log'
         $json = @{ path = $blockedFilePath; content = 'blocked' } | ConvertTo-Json -Compress
