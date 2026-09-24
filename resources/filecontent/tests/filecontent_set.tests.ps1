@@ -28,6 +28,48 @@ Describe 'FileContent set tests' {
         $actual.sha256 | Should -BeExactly '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824'
     }
 
+    It 'Creates a file from configuration with multiline content starting with an escaped bracket' {
+        $configYaml = @"
+`$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+  - name: Certificate authority policy
+    type: $resourceType
+    properties:
+      path: '$filePath'
+      content: |
+        [[Version]
+        Signature="`$Windows NT`$"
+
+        [PolicyStatementExtension]
+        Policies=InternalPolicy
+
+        [InternalPolicy]
+        OID=1.2.3.4.1455.67.89.5
+        Notice="Legal Policy Statement"
+        URL=https://pki.corp.contoso.com/pki/cps.txt
+"@
+        $expectedContent = @(
+            '[Version]'
+            'Signature="$Windows NT$"'
+            ''
+            '[PolicyStatementExtension]'
+            'Policies=InternalPolicy'
+            ''
+            '[InternalPolicy]'
+            'OID=1.2.3.4.1455.67.89.5'
+            'Notice="Legal Policy Statement"'
+            'URL=https://pki.corp.contoso.com/pki/cps.txt'
+            ''
+        ) -join "`n"
+
+        $out = $configYaml | dsc config set -f - 2>$TestDrive/error.log
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+        $result = $out | ConvertFrom-Json
+
+        $result.hadErrors | Should -BeFalse
+        [System.IO.File]::ReadAllText($filePath) | Should -BeExactly $expectedContent
+    }
+
     It 'Creates missing parent directories and reports the creation when _exist is <existSetting>' -ForEach @(
         @{ existSetting = 'true'; includeExist = $true }
         @{ existSetting = 'omitted'; includeExist = $false }

@@ -19,7 +19,7 @@ export default grammar({
       $._expressionString,
       $.stringLiteral,
     ),
-    escapedStringLiteral: $ => token(prec(PREC.ESCAPEDSTRING, seq('[[', /.*/))),
+    escapedStringLiteral: $ => token(prec(PREC.ESCAPEDSTRING, seq('[[', /[\s\S]*/))),
     _expressionString: $ => prec(PREC.EXPRESSIONSTRING, seq('[', $.expression, ']')),
     expression: $ => seq(field('function', $.function), optional(field('accessor',$.accessor))),
     stringLiteral: $ => token(prec(PREC.STRINGLITERAL, /[^\[][\s\S]*/)),
@@ -34,7 +34,7 @@ export default grammar({
 
     _quotedString: $ => seq('\'', $.string, '\''),
     // ARM strings are not allowed to contain single-quote characters unless escaped
-    string: $ => /([^']|'')*/,
+    string: $ => /([^']|''|\n)*/,
     number: $ => /-?\d+/,
     boolean: $ => prec(PREC.BOOLEAN, $._booleanLiteral),
     _booleanLiteral: $ => choice('true', 'false'),

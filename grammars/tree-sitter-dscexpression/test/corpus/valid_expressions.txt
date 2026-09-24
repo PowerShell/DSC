@@ -329,6 +329,36 @@ string
   (stringLiteral))
 
 =====
+Multi-line escaped string
+=====
+[[Version]
+Signature="$Windows NT$"
+
+[PolicyStatementExtension]
+Policies=InternalPolicy
+---
+
+(statement
+  (escapedStringLiteral))
+
+=====
+Multi-line quoted string
+=====
+[myFunction('This
+is
+a
+multiline
+string')]
+---
+
+(statement
+  (expression
+    (function
+      (functionName)
+      (arguments
+        (string)))))
+
+=====
 Escaped single-quotes
 =====
 [myFunction('this ''is'' a string')]
