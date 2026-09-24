@@ -1,0 +1,224 @@
+{
+	"adaptedResources": [
+		{
+			"$schema": "https://aka.ms/dsc/schemas/v3/bundled/adaptedresource/manifest.json",
+			"type": "PythonTest/Get",
+			"kind": "resource",
+			"version": "1.0.0",
+			"capabilities": [
+				"get"
+			],
+			"description": "An adapted resource for testing Python Adapter.",
+			"author": "DSC Python Team",
+			"requireAdapter": "Microsoft.DSC.Adapters/Python",
+			"path": "get.py",
+			"schema": {
+				"embedded": {
+					"$schema": "http://json-schema.org/draft-07/schema#",
+					"$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/resources/PythonTests/Get/v0.1.0/schema.json",
+					"title": "PythonTest/Get",
+					"description": "An adapted resource for testing Python Adapter.",
+					"type": "object",
+					"required": [],
+					"additionalProperties": false,
+					"properties": {
+						"name": {
+							"type": "string",
+							"title": "Name",
+							"description": "Name of the package."
+						},
+						"version": {
+							"type": "string",
+							"title": "Version",
+							"description": "Specific version of the package to install."
+						},
+						"_exist": {
+							"type": "boolean",
+							"title": "Exist",
+							"description": "Whether the package should exist (installed) or not."
+						},
+						"source": {
+							"type": "string",
+							"title": "Source",
+							"description": "Source repository for the package."
+						},
+						"dependencies": {
+							"type": "array",
+							"title": "Dependencies",
+							"items": {
+								"type": "string"
+							},
+							"description": "List of dependent packages.",
+							"readOnly": true
+						}
+					}
+				}
+			}
+		},
+		{
+			"$schema": "https://aka.ms/dsc/schemas/v3/bundled/adaptedresource/manifest.json",
+			"type": "PythonTest/Set",
+			"kind": "resource",
+			"version": "1.0.0",
+			"capabilities": [
+				"set"
+			],
+			"description": "An adapted resource for testing Python Adapter.",
+			"author": "DSC Python Team",
+			"requireAdapter": "Microsoft.DSC.Adapters/Python",
+			"path": "set.py",
+			"schema": {
+				"embedded": {
+					"$schema": "http://json-schema.org/draft-07/schema#",
+					"$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/resources/PythonTests/Set/v0.1.0/schema.json",
+					"title": "PythonTest/Set",
+					"description": "An adapted resource for testing Python Adapter.",
+					"type": "object",
+					"required": [],
+					"additionalProperties": false,
+					"properties": {
+						"name": {
+							"type": "string",
+							"title": "Name",
+							"description": "Name of the package."
+						},
+						"version": {
+							"type": "string",
+							"title": "Version",
+							"description": "Specific version of the package to install."
+						},
+						"_exist": {
+							"type": "boolean",
+							"title": "Exist",
+							"description": "Whether the package should exist (installed) or not."
+						},
+						"source": {
+							"type": "string",
+							"title": "Source",
+							"description": "Source repository for the package."
+						},
+						"dependencies": {
+							"type": "array",
+							"title": "Dependencies",
+							"items": {
+								"type": "string"
+							},
+							"description": "List of dependent packages.",
+							"readOnly": true
+						}
+					}
+				}
+			}
+		},
+		{
+			"$schema": "https://aka.ms/dsc/schemas/v3/bundled/adaptedresource/manifest.json",
+			"type": "PythonTest/Test",
+			"kind": "resource",
+			"version": "1.0.0",
+			"capabilities": [
+				"test"
+			],
+			"description": "An adapted resource for testing Python Adapter.",
+			"author": "DSC Python Team",
+			"requireAdapter": "Microsoft.DSC.Adapters/Python",
+			"path": "test.py",
+			"schema": {
+				"embedded": {
+					"$schema": "http://json-schema.org/draft-07/schema#",
+					"$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/resources/PythonTests/Test/v0.1.0/schema.json",
+					"title": "PythonTest/Test",
+					"description": "An adapted resource for testing Python Adapter.",
+					"type": "object",
+					"required": [],
+					"additionalProperties": false,
+					"properties": {
+						"name": {
+							"type": "string",
+							"title": "Name",
+							"description": "Name of the package."
+						},
+						"version": {
+							"type": "string",
+							"title": "Version",
+							"description": "Specific version of the package to install."
+						},
+						"_exist": {
+							"type": "boolean",
+							"title": "Exist",
+							"description": "Whether the package should exist (installed) or not."
+						},
+						"source": {
+							"type": "string",
+							"title": "Source",
+							"description": "Source repository for the package."
+						},
+						"dependencies": {
+							"type": "array",
+							"title": "Dependencies",
+							"items": {
+								"type": "string"
+							},
+							"description": "List of dependent packages.",
+							"readOnly": true
+						}
+					}
+				}
+			}
+		},
+		{
+			"$schema": "https://aka.ms/dsc/schemas/v3/bundled/adaptedresource/manifest.json",
+			"type": "PythonTest/Export",
+			"kind": "resource",
+			"version": "1.0.0",
+			"capabilities": [
+				"export"
+			],
+			"description": "An adapted resource for testing Python Adapter.",
+			"author": "DSC Python Team",
+			"requireAdapter": "Microsoft.DSC.Adapters/Python",
+			"path": "export.py",
+			"schema": {
+				"embedded": {
+					"$schema": "http://json-schema.org/draft-07/schema#",
+					"$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/resources/PythonTests/Export/v0.1.0/schema.json",
+					"title": "PythonTest/Export",
+					"description": "An adapted resource for testing Python Adapter.",
+					"type": "object",
+					"required": [],
+					"additionalProperties": false,
+					"properties": {
+						"name": {
+							"type": "string",
+							"title": "Name",
+							"description": "Name of the package."
+						},
+						"version": {
+							"type": "string",
+							"title": "Version",
+							"description": "Specific version of the package to install."
+						},
+						"_exist": {
+							"type": "boolean",
+							"title": "Exist",
+							"description": "Whether the package should exist (installed) or not."
+						},
+						"source": {
+							"type": "string",
+							"title": "Source",
+							"description": "Source repository for the package."
+						},
+						"dependencies": {
+							"type": "array",
+							"title": "Dependencies",
+							"items": {
+								"type": "string"
+							},
+							"description": "List of dependent packages.",
+							"readOnly": true
+						}
+					}
+				}
+			}
+		}
+	]
+}
