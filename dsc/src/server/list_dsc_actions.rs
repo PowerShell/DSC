@@ -8,19 +8,17 @@ use dsc_lib::{
         dscaction::get_schema,
     }, configure::config_doc::SecurityContextKind, discovery::{
         command_discovery::ImportedManifest,
-        discovery_trait::{
-            DiscoveryFilter,
-            DiscoveryKind
-        },
-    }, dscresources::resource_manifest::Kind, progress::ProgressFormat, types::{
+        discovery_trait::DiscoveryKind,
+    },
+    progress::ProgressFormat,
+    types::{
         FullyQualifiedTypeName,
         TypeNameFilter
     }
 };
-use rmcp::{ErrorData as McpError, Json, tool, tool_router, handler::server::wrapper::Parameters};
-use rust_i18n::t;
+use rmcp::{ErrorData as McpError, Json, tool, tool_router};
 use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use serde_json::Value;
 use tokio::task;
 
@@ -39,12 +37,6 @@ pub struct ActionSummary {
     pub description: Option<String>,
 }
 
-#[derive(Deserialize, JsonSchema)]
-pub struct ListResourcesRequest {
-    #[schemars(description = "Filter adapted resources to only those requiring the specified adapter type.  If not specified, all non-adapted resources are returned.")]
-    pub adapter: Option<FullyQualifiedTypeName>,
-}
-
 #[tool_router(router = list_dsc_actions_router, vis = "pub")]
 impl McpServer {
     #[tool(
@@ -57,24 +49,11 @@ impl McpServer {
             open_world_hint = true,
         )
     )]
-    pub async fn list_dsc_actions(&self, Parameters(ListResourcesRequest { adapter }): Parameters<ListResourcesRequest>) -> Result<Json<ActionListResult>, McpError> {
+    pub async fn list_dsc_actions(&self) -> Result<Json<ActionListResult>, McpError> {
         let result = task::spawn_blocking(move || {
             let mut dsc = DscManager::new();
-            let adapter_filter = match adapter {
-                Some(adapter) => {
-                    if let Some(resource) = dsc.find_resource(&DiscoveryFilter::new(&adapter, None, None)).unwrap_or(None) {
-                        if resource.kind != Kind::Adapter {
-                            return Err(McpError::invalid_params(t!("server.list_dsc_resources.resourceNotAdapter", adapter = adapter), None));
-                        }
-                        Some(&TypeNameFilter::Literal(resource.type_name.clone()))
-                    } else {
-                        return Err(McpError::invalid_params(t!("server.list_dsc_resources.adapterNotFound", adapter = adapter), None));
-                    }
-                },
-                None => None,
-            };
             let mut actions = Vec::<ActionSummary>::new();
-            for action in dsc.list_available(&DiscoveryKind::Action, &TypeNameFilter::default(), adapter_filter, ProgressFormat::None) {
+            for action in dsc.list_available(&DiscoveryKind::Action, &TypeNameFilter::default(), None, ProgressFormat::None) {
                 if let ImportedManifest::Action(action) = action {
                     let manifest = match serde_json::from_value::<ActionManifest>(action.manifest.clone()) {
                         Ok(manifest) => manifest,
@@ -97,8 +76,8 @@ impl McpServer {
 
                     let summary = ActionSummary {
                         r#type: action.type_name.clone(),
-                        input_schema: input_schema,
-                        output_schema: output_schema,
+                        input_schema,
+                        output_schema,
                         require_security_context: action.invoke.require_security_context.clone(),
                         description: action.description.clone(),
                     };

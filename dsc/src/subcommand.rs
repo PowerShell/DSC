@@ -7,6 +7,7 @@ use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
 use crate::util::{get_input, get_schema, in_desired_state, set_dscconfigroot, write_object, DSC_CONFIG_ROOT, EXIT_DSC_ASSERTION_FAILED, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR};
 use dsc_lib::actions::action_manifest::{ActionManifest, SupportedOperations};
+use dsc_lib::discovery::DscResourceKind;
 use dsc_lib::types::{FullyQualifiedTypeName, ResourceVersionReq, TypeNameFilter};
 use dsc_lib::{
     configure::{
@@ -27,12 +28,13 @@ use dsc_lib::{
         TestResult,
         ValidateResult,
     },
-    dscresources::dscresource::{Capability, ImplementedAs, validate_json, validate_properties},
+    dscresources::dscresource::{Capability, validate_json, validate_properties},
     extensions::dscextension::Capability as ExtensionCapability,
     functions::{FunctionCategory, FunctionDispatcher},
     progress::ProgressFormat,
     util::convert_wildcard_to_regex,
 };
+use jsonschema::Validator;
 use regex::RegexBuilder;
 use rust_i18n::t;
 use std::process::ExitCode;
@@ -520,9 +522,23 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
             return Err(DscError::Validation(format!("{}: '{type_name}'", t!("subcommand.resourceNotFound"))));
         };
 
-        // see if the resource is command based
-        if resource.implemented_as == Some(ImplementedAs::Command) {
-            validate_properties(resource, &resource_block["properties"])?;
+        match resource {
+            DscResourceKind::Action(action) => {
+                if let Some(input_schema) = &action.input_schema && resource_block["properties"] != serde_json::Value::Null {
+                    let compiled_schema = match Validator::new(input_schema) {
+                        Ok(schema) => schema,
+                        Err(e) => {
+                            return Err(DscError::Schema(e.to_string()));
+                        },
+                    };
+                    if let Err(err) = compiled_schema.validate(&resource_block["properties"]) {
+                        return Err(DscError::Schema(err.to_string()));
+                    }
+                }
+            }
+            DscResourceKind::Resource(resource) => {
+                validate_properties(&resource, &resource_block["properties"])?;
+            }
         }
     }
 
