@@ -4,11 +4,12 @@
 pub mod command_discovery;
 pub mod discovery_trait;
 
+use crate::actions::dscaction::DscAction;
 use crate::configure::config_doc::ResourceDiscoveryMode;
 use crate::discovery::discovery_trait::{DiscoveryKind, ResourceDiscovery, DiscoveryFilter};
 use crate::dscerror::DscError;
 use crate::extensions::dscextension::{Capability, DscExtension};
-use crate::types::{FullyQualifiedTypeName, TypeNameFilter};
+use crate::types::{FullyQualifiedTypeName, ResourceVersion, TypeNameFilter};
 use crate::{dscresources::dscresource::DscResource, progress::ProgressFormat};
 use core::result::Result::Ok;
 use semver::Version;
@@ -16,6 +17,8 @@ use std::collections::BTreeMap;
 use command_discovery::{CommandDiscovery, ImportedManifest};
 use tracing::error;
 
+/// Defines the caching [`TreeMap`] for discovered DSC actions.
+type DiscoveryActionCache = BTreeMap<FullyQualifiedTypeName, Vec<DscAction>>;
 /// Defines the caching [`BTreeMap`] for discovered DSC extensions.
 type DiscoveryExtensionCache = BTreeMap<FullyQualifiedTypeName, DscExtension>;
 /// Defines the caching [`BTreeMap`] for discovered DSC manifests of any type.
@@ -23,9 +26,15 @@ type DiscoveryManifestCache = BTreeMap<FullyQualifiedTypeName, Vec<ImportedManif
 /// Defines the caching [`BTreeMap`] for discovered DSC resources.
 type DiscoveryResourceCache = BTreeMap<FullyQualifiedTypeName, Vec<DscResource>>;
 
+pub enum DscResourceKind {
+    Action(Box<DscAction>),
+    Resource(Box<DscResource>),
+}
+
 #[derive(Clone)]
 pub struct Discovery {
     pub resources: DiscoveryResourceCache,
+    pub actions: DiscoveryActionCache,
     pub extensions: DiscoveryExtensionCache,
     pub refresh_cache: bool,
 }
@@ -41,6 +50,7 @@ impl Discovery {
     pub fn new() -> Self {
         Self {
             resources: DiscoveryResourceCache::new(),
+            actions: DiscoveryActionCache::new(),
             extensions: DiscoveryExtensionCache::new(),
             refresh_cache: false,
         }
@@ -83,16 +93,23 @@ impl Discovery {
             for (_resource_name, found_resources) in discovered_resources {
                 for manifest in found_resources {
                     let key = match &manifest {
-                        ImportedManifest::Resource(resource) => {
-                            format!("{}@{}", resource.type_name.to_lowercase(), resource.version)
-                        },
+                        ImportedManifest::Action(action) => {
+                            format!("{}@{}", action.type_name.to_lowercase(), action.version)
+                        }
                         ImportedManifest::Extension(extension) => {
                             format!("{}@{}", extension.type_name.to_lowercase(), extension.version)
                         }
+                        ImportedManifest::Resource(resource) => {
+                            format!("{}@{}", resource.type_name.to_lowercase(), resource.version)
+                        },
                     };
                     resources.insert(key, manifest);
                 }
             };
+
+            if let Ok(actions) = discovery_type.get_actions() {
+                self.actions.extend(actions);
+            }
 
             if let Ok(extensions) = discovery_type.get_extensions() {
                 self.extensions.extend(extensions);
@@ -112,7 +129,7 @@ impl Discovery {
             .collect()
     }
 
-    pub fn find_resource(&mut self, filter: &DiscoveryFilter) -> Result<Option<&DscResource>, DscError> {
+    pub fn find_resource(&mut self, filter: &DiscoveryFilter) -> Result<Option<DscResourceKind>, DscError> {
         if self.refresh_cache || self.resources.is_empty() {
             self.find_resources(std::slice::from_ref(filter), ProgressFormat::None)?;
         }
@@ -122,17 +139,28 @@ impl Discovery {
             if let Some(version_req) = filter.require_version() {
                 for resource in resources {
                     if version_req.matches(&resource.version) && matches_adapter_requirement(resource, filter) {
-                        return Ok(Some(resource));
+                        return Ok(Some(DscResourceKind::Resource(Box::new(resource.clone()))));
                     }
                 }
                 Ok(None)
             } else {
                 for resource in resources {
                     if matches_adapter_requirement(resource, filter) {
-                        return Ok(Some(resource));
+                        return Ok(Some(DscResourceKind::Resource(Box::new(resource.clone()))));
                     }
                 }
                 Ok(None)
+            }
+        } else if let Some(actions) = self.actions.get(type_name) {
+            if let Some(version_req) = filter.require_version() {
+                for action in actions {
+                    if version_req.matches(&ResourceVersion::Semantic(action.version.clone())) {
+                        return Ok(Some(DscResourceKind::Action(Box::new(action.clone()))));
+                    }
+                }
+                Ok(None)
+            } else {
+                Ok(Some(DscResourceKind::Action(Box::new(actions[0].clone()))))
             }
         } else {
             Ok(None)
@@ -152,6 +180,7 @@ impl Discovery {
 
         let mut command_discovery = CommandDiscovery::new(progress_format);
         if self.refresh_cache {
+            self.actions.clear();
             self.resources.clear();
             self.extensions.clear();
             command_discovery.set_discovery_mode(&ResourceDiscoveryMode::DuringDeployment);
@@ -161,6 +190,10 @@ impl Discovery {
         ];
         for mut discovery_type in discovery_types {
 
+            let discovered_actions = discovery_type.find_actions(required_resource_types)?;
+            for (action_name, actions) in discovered_actions {
+                self.actions.entry(action_name).or_default().extend(actions);
+            }
             let discovered_resources = discovery_type.find_resources(required_resource_types)?;
             for (resource_name, resources) in discovered_resources {
                 self.resources.entry(resource_name).or_default().extend(resources);

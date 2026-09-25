@@ -1,4 +1,91 @@
 {
+  "actions": [
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/action/manifest.json",
+      "type": "Test/Action",
+      "version": "0.1.0",
+      "description": "An action for testing.",
+      "author": "DSC Team",
+      "tags": [
+        "test",
+        "action"
+      ],
+      "condition": "[true()]",
+      "supportedOperations": [
+        "get",
+        "set",
+        "test"
+      ],
+      "invoke": {
+        "executable": "dsctest",
+        "args": [
+          "action",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ],
+        "requireSecurityContext": "current",
+        "inputSchema": {
+          "command": {
+            "executable": "dsctest",
+            "args": [
+              "schema",
+              "-s",
+              "action-input"
+            ]
+          }
+        },
+        "outputSchema": {
+          "command": {
+            "executable": "dsctest",
+            "args": [
+              "schema",
+              "-s",
+              "action-output"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/action/manifest.json",
+      "type": "Test/ActionFalse",
+      "version": "0.1.0",
+      "description": "An action for testing.",
+      "condition": "[false()]",
+      "invoke": {
+        "executable": "dsctest",
+        "args": [
+          "action",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          }
+        ],
+        "inputSchema": {
+          "command": {
+            "executable": "dsctest",
+            "args": [
+              "schema",
+              "-s",
+              "action-input"
+            ]
+          }
+        },
+        "outputSchema": {
+          "command": {
+            "executable": "dsctest",
+            "args": [
+              "schema",
+              "-s",
+              "action-output"
+            ]
+          }
+        }
+      }
+    }
+  ],
   "adaptedResources": [
     {
       "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/adapted/manifest.json",

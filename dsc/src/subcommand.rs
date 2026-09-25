@@ -1,11 +1,13 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::args::{ConfigSubCommand, SchemaType, ExtensionSubCommand, FunctionSubCommand, GetOutputFormat, ListOutputFormat, OutputFormat, ResourceSubCommand};
+use crate::args::{ConfigSubCommand, SchemaType, ActionSubCommand, ExtensionSubCommand, FunctionSubCommand, GetOutputFormat, ListOutputFormat, OutputFormat, ResourceSubCommand};
 use crate::resolve::{get_contents, Include};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
 use crate::util::{get_input, get_schema, in_desired_state, set_dscconfigroot, write_object, DSC_CONFIG_ROOT, EXIT_DSC_ASSERTION_FAILED, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR};
+use dsc_lib::actions::action_manifest::{ActionManifest, SupportedOperations};
+use dsc_lib::discovery::DscResourceKind;
 use dsc_lib::types::{FullyQualifiedTypeName, ResourceVersionReq, TypeNameFilter};
 use dsc_lib::{
     configure::{
@@ -26,12 +28,13 @@ use dsc_lib::{
         TestResult,
         ValidateResult,
     },
-    dscresources::dscresource::{Capability, ImplementedAs, validate_json, validate_properties},
+    dscresources::dscresource::{Capability, validate_json, validate_properties},
     extensions::dscextension::Capability as ExtensionCapability,
     functions::{FunctionCategory, FunctionDispatcher},
     progress::ProgressFormat,
     util::convert_wildcard_to_regex,
 };
+use jsonschema::Validator;
 use regex::RegexBuilder;
 use rust_i18n::t;
 use std::process::ExitCode;
@@ -519,12 +522,37 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
             return Err(DscError::Validation(format!("{}: '{type_name}'", t!("subcommand.resourceNotFound"))));
         };
 
-        // see if the resource is command based
-        if resource.implemented_as == Some(ImplementedAs::Command) {
-            validate_properties(resource, &resource_block["properties"])?;
+        match resource {
+            DscResourceKind::Action(action) => {
+                if let Some(input_schema) = &action.input_schema && resource_block["properties"] != serde_json::Value::Null {
+                    let compiled_schema = match Validator::new(input_schema) {
+                        Ok(schema) => schema,
+                        Err(e) => {
+                            return Err(DscError::Schema(e.to_string()));
+                        },
+                    };
+                    if let Err(err) = compiled_schema.validate(&resource_block["properties"]) {
+                        return Err(DscError::Schema(err.to_string()));
+                    }
+                }
+            }
+            DscResourceKind::Resource(resource) => {
+                validate_properties(&resource, &resource_block["properties"])?;
+            }
         }
     }
 
+    Ok(())
+}
+
+pub fn action(subcommand: &ActionSubCommand, progress_format: ProgressFormat) -> Result<(), ExitCode> {
+    let mut dsc = DscManager::new();
+
+    match subcommand {
+        ActionSubCommand::List { action_name, output_format } => {
+            list_actions(&mut dsc, action_name, output_format.as_ref(), progress_format)?;
+        },
+    }
     Ok(())
 }
 
@@ -626,6 +654,100 @@ fn should_write_table(format: Option<&ListOutputFormat>) -> bool {
         // write as table if format is not specified and interactive
         format.is_none() && io::stdout().is_terminal()
     }
+}
+
+fn list_actions(dsc: &mut DscManager, action_name: &TypeNameFilter, format: Option<&ListOutputFormat>, progress_format: ProgressFormat) -> Result<(), ExitCode> {
+    let write_table = should_write_table(format);
+
+    let mut table = Table::new(&[
+        t!("subcommand.tableHeader_type").to_string().as_ref(),
+        t!("subcommand.tableHeader_version").to_string().as_ref(),
+        t!("subcommand.tableHeader_action_operations").to_string().as_ref(),
+        t!("subcommand.tableHeader_action_hasInput").to_string().as_ref(),
+        t!("subcommand.tableHeader_action_hasOutput").to_string().as_ref(),
+        t!("subcommand.tableHeader_action_requireSecurityContext").to_string().as_ref(),
+        t!("subcommand.tableHeader_description").to_string().as_ref(),
+    ]);
+
+    let mut include_separator = false;
+    let operation_types = [
+        (SupportedOperations::Get, "g"),
+        (SupportedOperations::Set, "s"),
+        (SupportedOperations::Test, "t"),
+        (SupportedOperations::Export, "e"),
+    ];
+
+    for manifest_resource in dsc.list_available(&DiscoveryKind::Action, action_name, None, progress_format) {
+        if let ImportedManifest::Action(action) = manifest_resource {
+            let Ok(manifest) = serde_json::from_value::<ActionManifest>(action.manifest.clone()) else {
+                return Err(ExitCode::from(EXIT_DSC_ERROR));
+            };
+            let mut operations_supported = "-".repeat(operation_types.len());
+            if let Some(supported_operations) = &manifest.supported_operations {
+                for (i, (operation, letter)) in operation_types.iter().enumerate() {
+                    if supported_operations.contains(operation) {
+                        operations_supported.replace_range(i..=i, letter);
+                    }
+                }
+            } else {
+                // if not specified, default is only `set` is supported
+                operations_supported = "-s--".to_string();
+            }
+
+            let has_input = if action.invoke.input_schema.is_some() {
+                "Yes"
+            } else {
+                "No"
+            };
+            let has_output = if action.invoke.output_schema.is_some() {
+                "Yes"
+            } else {
+                "No"
+            };
+
+            let require_security_context = match &action.invoke.require_security_context {
+                Some(security_context) => security_context.to_string(),
+                None => "None".to_string(),
+            };
+
+            if write_table {
+                table.add_row(vec![
+                    action.type_name.to_string(),
+                    action.version.to_string(),
+                    operations_supported.to_string(),
+                    has_input.to_string(),
+                    has_output.to_string(),
+                    require_security_context,
+                    action.description.unwrap_or_default()
+                ]);
+            }
+            else {
+                // convert to json
+                let json = match serde_json::to_string(&action) {
+                    Ok(json) => json,
+                    Err(err) => {
+                        error!("JSON: {err}");
+                        return Err(ExitCode::from(EXIT_JSON_ERROR));
+                    }
+                };
+                let format = match format {
+                    Some(ListOutputFormat::Json) => Some(OutputFormat::Json),
+                    Some(ListOutputFormat::PrettyJson) => Some(OutputFormat::PrettyJson),
+                    Some(ListOutputFormat::Yaml) => Some(OutputFormat::Yaml),
+                    _ => None,
+                };
+                write_object(&json, format.as_ref(), include_separator)?;
+                include_separator = true;
+                // insert newline separating instances if writing to console
+                if io::stdout().is_terminal() { println!(); }            }
+        }
+    }
+
+    if write_table {
+        let truncate = format != Some(&ListOutputFormat::TableNoTruncate);
+        table.print(truncate);
+    }
+    Ok(())
 }
 
 fn list_extensions(dsc: &mut DscManager, extension_name: &TypeNameFilter, format: Option<&ListOutputFormat>, progress_format: ProgressFormat) -> Result<(), ExitCode> {
