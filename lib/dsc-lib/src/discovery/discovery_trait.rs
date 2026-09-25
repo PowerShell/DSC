@@ -173,6 +173,23 @@ pub trait ResourceDiscovery {
     /// This function will return an error if the underlying discovery fails.
     fn find_resources(&mut self, required_resource_types: &[DiscoveryFilter]) -> Result<DiscoveryResourceCache, DscError>;
 
+    /// Find actions based on the required action types.
+    /// This is not applicable for extensions.
+    ///
+    /// # Arguments
+    ///
+    /// - `required_action_types` - A slice of `DiscoveryFilter` instances representing the
+    ///   required action types.
+    ///
+    /// # Returns
+    ///
+    /// A result containing a map of action names to their corresponding `DscAction` instances.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the underlying discovery fails.
+    fn find_actions(&mut self, required_action_types: &[DiscoveryFilter]) -> Result<DiscoveryActionCache, DscError>;
+
     /// Get the available actions.
     ///
     /// # Returns
