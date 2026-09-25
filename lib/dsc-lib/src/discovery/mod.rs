@@ -27,8 +27,8 @@ type DiscoveryManifestCache = BTreeMap<FullyQualifiedTypeName, Vec<ImportedManif
 type DiscoveryResourceCache = BTreeMap<FullyQualifiedTypeName, Vec<DscResource>>;
 
 pub enum DscResourceKind {
-    Action(DscAction),
-    Resource(DscResource),
+    Action(Box<DscAction>),
+    Resource(Box<DscResource>),
 }
 
 #[derive(Clone)]
@@ -139,14 +139,14 @@ impl Discovery {
             if let Some(version_req) = filter.require_version() {
                 for resource in resources {
                     if version_req.matches(&resource.version) && matches_adapter_requirement(resource, filter) {
-                        return Ok(Some(DscResourceKind::Resource(resource.clone())));
+                        return Ok(Some(DscResourceKind::Resource(Box::new(resource.clone()))));
                     }
                 }
                 Ok(None)
             } else {
                 for resource in resources {
                     if matches_adapter_requirement(resource, filter) {
-                        return Ok(Some(DscResourceKind::Resource(resource.clone())));
+                        return Ok(Some(DscResourceKind::Resource(Box::new(resource.clone()))));
                     }
                 }
                 Ok(None)
@@ -155,12 +155,12 @@ impl Discovery {
             if let Some(version_req) = filter.require_version() {
                 for action in actions {
                     if version_req.matches(&ResourceVersion::Semantic(action.version.clone())) {
-                        return Ok(Some(DscResourceKind::Action(action.clone())));
+                        return Ok(Some(DscResourceKind::Action(Box::new(action.clone()))));
                     }
                 }
                 Ok(None)
             } else {
-                Ok(None)
+                Ok(Some(DscResourceKind::Action(Box::new(actions[0].clone()))))
             }
         } else {
             Ok(None)
@@ -180,6 +180,7 @@ impl Discovery {
 
         let mut command_discovery = CommandDiscovery::new(progress_format);
         if self.refresh_cache {
+            self.actions.clear();
             self.resources.clear();
             self.extensions.clear();
             command_discovery.set_discovery_mode(&ResourceDiscoveryMode::DuringDeployment);
@@ -189,6 +190,10 @@ impl Discovery {
         ];
         for mut discovery_type in discovery_types {
 
+            let discovered_actions = discovery_type.find_actions(required_resource_types)?;
+            for (action_name, actions) in discovered_actions {
+                self.actions.entry(action_name).or_default().extend(actions);
+            }
             let discovered_resources = discovery_type.find_resources(required_resource_types)?;
             for (resource_name, resources) in discovered_resources {
                 self.resources.entry(resource_name).or_default().extend(resources);
