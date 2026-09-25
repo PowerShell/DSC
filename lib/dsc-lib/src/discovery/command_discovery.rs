@@ -262,15 +262,16 @@ impl ResourceDiscovery for CommandDiscovery {
 
     #[allow(clippy::too_many_lines)]
     fn discover(&mut self, kind: &DiscoveryKind, filter: &TypeNameFilter) -> Result<(), DscError> {
-        if self.discovery_mode == ResourceDiscoveryMode::PreDeployment && !locked_is_empty!(RESOURCES) {
+        if self.discovery_mode == ResourceDiscoveryMode::PreDeployment && kind == &DiscoveryKind::Resource && (!locked_is_empty!(RESOURCES) || !locked_is_empty!(ACTIONS)) {
             return Ok(());
         } else if self.discovery_mode == ResourceDiscoveryMode::DuringDeployment {
+            locked_clear!(ACTIONS);
             locked_clear!(ADAPTERS);
             locked_clear!(RESOURCES);
         }
 
-        // if kind is DscResource, we need to discover extensions first
-        if *kind == DiscoveryKind::Resource && (self.discovery_mode == ResourceDiscoveryMode::DuringDeployment || locked_is_empty!(EXTENSIONS)){
+        // if kind is Resource or Action, we need to discover extensions first
+        if (*kind == DiscoveryKind::Resource || *kind == DiscoveryKind::Action) && (self.discovery_mode == ResourceDiscoveryMode::DuringDeployment || locked_is_empty!(EXTENSIONS)){
             self.discover(&DiscoveryKind::Extension, &TypeNameFilter::default())?;
         }
 
@@ -553,6 +554,32 @@ impl ResourceDiscovery for CommandDiscovery {
         Ok(resources)
     }
 
+    fn find_actions(&mut self, required_action_types: &[DiscoveryFilter]) -> Result<DiscoveryActionCache, DscError> {
+        if self.discovery_mode == ResourceDiscoveryMode::DuringDeployment || locked_is_empty!(ACTIONS) {
+            self.discover(&DiscoveryKind::Action, &TypeNameFilter::default())?;
+        }
+        let mut found_actions = DiscoveryActionCache::new();
+        let mut required_actions = HashMap::<DiscoveryFilter, bool>::new();
+        for filter in required_action_types {
+            required_actions.insert(filter.clone(), false);
+        }
+
+        for filter in required_action_types {
+            if let Some(actions) = locked_get!(ACTIONS, filter.resource_type()) {
+                filter_actions(&mut found_actions, &mut required_actions, &actions, filter);
+            }
+            if required_actions.values().all(|&v| v) {
+                break;
+            }
+        }
+
+        if required_actions.values().all(|&v| v) {
+            return Ok(found_actions);
+        }
+
+        Ok(found_actions)
+    }
+
     fn find_resources(&mut self, required_resource_types: &[DiscoveryFilter]) -> Result<DiscoveryResourceCache, DscError> {
         debug!("{}", t!("discovery.commandDiscovery.searchingForResources", resources = required_resource_types : {:?}));
         if self.discovery_mode == ResourceDiscoveryMode::DuringDeployment || locked_is_empty!(RESOURCES) {
@@ -677,6 +704,26 @@ fn filter_resources(found_resources: &mut DiscoveryResourceCache, required_resou
             }
         } else if matches_adapter_requirement(resource, filter) {
             found_resources.entry(filter.resource_type().clone()).or_default().push(resource.clone());
+            required_resources.insert(filter.clone(), true);
+            break;
+        }
+        if required_resources.values().all(|&v| v) {
+            return;
+        }
+    }
+}
+
+fn filter_actions(found_actions: &mut DiscoveryActionCache, required_resources: &mut HashMap<DiscoveryFilter, bool>, actions: &[DscAction], filter: &DiscoveryFilter) {
+    for action in actions {
+        if let Some(required_version) = filter.require_version() {
+            if required_version.matches(&crate::types::ResourceVersion::Semantic(action.version.clone())) {
+                found_actions.entry(filter.resource_type().clone()).or_default().push(action.clone());
+                required_resources.insert(filter.clone(), true);
+                debug!("{}", t!("discovery.commandDiscovery.foundActionWithVersion", resource = action.type_name, version = action.version));
+                break;
+            }
+        } else {
+            found_actions.entry(filter.resource_type().clone()).or_default().push(action.clone());
             required_resources.insert(filter.clone(), true);
             break;
         }
