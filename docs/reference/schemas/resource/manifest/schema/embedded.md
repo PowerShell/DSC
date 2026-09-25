@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for the embedded instance schema in a DSC Resource manifest
-ms.date:     07/03/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       DSC Resource manifest embedded schema reference
 ---
@@ -25,7 +25,7 @@ The `embedded` subproperty defines a full JSON schema for a DSC Resource's insta
 JSON schema to validate every instance of the resource before calling the resource's commands and
 after receiving an instance as output from the resource.
 
-Embedded JSON schemas are also used by integrating and authoring tools like Visual Studio Code to 
+Embedded JSON schemas are also used by integrating and authoring tools like Visual Studio Code to
 validate resource instances and provide IntelliSense.
 
 ## Required keywords
@@ -110,7 +110,7 @@ If defined, this property must be a reference to the schema for the canonical pr
 }
 ```
 
-For more information, see [DSC Resource _ensure property schema][01].
+For more information, see [DSC Resource _exist property schema][01].
 
 #### _inDesiredState
 
@@ -144,7 +144,8 @@ If defined, this property must be a reference to the schema for the canonical pr
 
 For more information, see [DSC Resource _purge property schema][04].
 
-[01]: ../../properties/ensure.md
+<!-- Link reference definitions -->
+[01]: ../../properties/exist.md
 [02]: ../test.md
 [03]: ../../properties/inDesiredState.md
 [04]: ../../properties/purge.md

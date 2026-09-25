@@ -2,7 +2,7 @@
 description: >-
   Information about the list of canonical DSC Resource properties, including their purpose and how
   to add them to a resource's manifest.
-ms.date:     02/28/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       DSC canonical properties
 ---
@@ -38,8 +38,29 @@ DSC.
 
 For more information, see [DSC Resource _purge property schema][05].
 
+## _restartRequired
+
+The read-only `_restartRequired` property indicates that the machine, specific services, or
+specific processes need to be restarted after the resource enforces the desired state. When a
+resource includes this property in the output of a set operation, DSC records the restart
+requirements in the execution information for the operation and makes them available to the
+[restartRequired()][06] configuration function.
+
+The value of this property must be an array of objects. Each object defines exactly one of the
+following properties:
+
+- `system` - A string describing why the system needs to be restarted.
+- `service` - The name of a service that needs to be restarted.
+- `process` - An object with the `name` and `id` properties identifying a process that needs to be
+  restarted.
+
+This property replaces the `_rebootRequested` property, which earlier schemas defined but DSC
+never processed.
+
+<!-- Link reference definitions -->
 [01]: exist.md
 [02]: ../manifest/test.md
 [03]: ../manifest/root.md
 [04]: inDesiredState.md
 [05]: purge.md
+[06]: ../../config/functions/restartRequired.md

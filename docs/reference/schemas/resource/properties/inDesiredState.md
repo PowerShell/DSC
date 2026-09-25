@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for the '_inDesiredState' canonical DSC Resource property.
-ms.date:     07/03/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       DSC Resource _inDesiredState property schema
 ---
@@ -47,7 +47,6 @@ snippet:
 }
 ```
 
-<!-- TODO: Enumerate the other available URIs and describe which to select and why -->
-
+<!-- Link reference definitions -->
 [01]: ../manifest/root.md
 [02]: ../manifest/test.md

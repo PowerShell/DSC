@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for the '_ensure' well-known DSC Resource property.
-ms.date:     01/17/2024
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       DSC Resource _ensure property schema
 ---
@@ -26,6 +26,10 @@ ValidValues:   [Absent, Present]
 > Starting with DSC v3.0.0-alpha.4 and schema version `2023/10` this well-known property is removed
 > from the schema. It's replaced by the [_exist][01] property. Microsoft recommends migrating
 > resources to use the `_exist` keyword instead.
+>
+> This page describes a legacy property and is retained for reference only. No released version
+> of DSC v3 recognizes `_ensure` as a canonical property, DSC doesn't publish a schema for it under
+> the `v3` schema folders, and the [canonical properties overview][02] doesn't list it.
 
 The `_ensure` property indicates that the resource can enforce whether instances exist using the
 shared present and absent semantics.
@@ -60,4 +64,6 @@ specifically a file, or exists as a symlink. In that case, the resource would de
 }
 ```
 
+<!-- Link reference definitions -->
 [01]: exist.md
+[02]: overview.md
