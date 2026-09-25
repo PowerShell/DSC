@@ -1,0 +1,37 @@
+{
+  "$schema": "https://aka.ms/dsc/schemas/v3/bundled/adaptedresource/manifest.json",
+  "type": "Example/Greeting",
+  "kind": "resource",
+  "version": "1.0.0",
+  "capabilities": [
+    "get"
+  ],
+  "requireAdapter": "Microsoft.Adapter/Python",
+  "content": {
+    "module": "dsc_example_resource.resources",
+    "class": "GreetingResource"
+  },
+  "description": "Returns a greeting message for the given name. Read-only.",
+  "schema": {
+    "embedded": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name to greet.",
+          "title": "Name"
+        },
+        "message": {
+          "type": "string",
+          "description": "Generated greeting message (read-only).",
+          "title": "Message"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ]
+    }
+  }
+}

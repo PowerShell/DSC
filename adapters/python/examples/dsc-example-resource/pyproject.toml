@@ -1,0 +1,26 @@
+[build-system]
+requires = ["hatchling", "ms-dsc"]
+build-backend = "hatchling.build"
+
+[project]
+name = "dsc-example-resource"
+version = "1.0.0"
+description = "Demo DSC resources for the Microsoft.Adapter/Python Python adapter."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = []
+
+[project.entry-points."microsoft.dsc.resources"]
+"Example/Greeting" = "dsc_example_resource.resources:GreetingResource"
+"Example/Counter"  = "dsc_example_resource.resources:CounterResource"
+"Example/EnvVar"   = "dsc_example_resource.resources:EnvVarResource"
+
+[project.urls]
+Homepage = "https://github.com/PowerShell/DSC"
+
+[tool.hatch.build.targets.wheel]
+packages = ["dsc_example_resource"]
+
+[tool.hatch.build.hooks.dsc]
+# Regenerates dsc_example_resource/dsc/*.dsc.adaptedResource.json at wheel-build time.
