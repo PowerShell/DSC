@@ -3,9 +3,7 @@
 
 use crate::server::mcp_server::McpServer;
 use dsc_lib::{
-    DscManager,
-    discovery::discovery_trait::DiscoveryFilter,
-    dscresources::{
+    DscManager, discovery::{DscResourceKind, discovery_trait::DiscoveryFilter}, dscresources::{
         dscresource::{Capability, Invoke},
         resource_manifest::Kind
     }, types::{FullyQualifiedTypeName, ResourceVersion},
@@ -24,8 +22,7 @@ fn nullable_json_object_schema(_: &mut schemars::SchemaGenerator) -> schemars::S
 #[derive(Serialize, JsonSchema)]
 pub struct DscResource {
     /// The namespaced name of the resource.
-    #[serde(rename="type")]
-    pub type_name: FullyQualifiedTypeName,
+    pub r#type: FullyQualifiedTypeName,
     /// The kind of resource.
     pub kind: Kind,
     /// The version of the resource.
@@ -67,12 +64,16 @@ impl McpServer {
             let Some(resource) = dsc.find_resource(&DiscoveryFilter::new(&r#type, None, None)).unwrap_or(None) else {
                 return Err(McpError::invalid_params(t!("server.show_dsc_resource.resourceNotFound", type_name = r#type), None))
             };
+            let resource = match resource {
+                DscResourceKind::Resource(res) => res,
+                DscResourceKind::Action(_) => return Err(McpError::invalid_params(t!("server.show_dsc_resource.actionNotSupported", type_name = r#type), None)),
+            };
             let schema = match resource.schema() {
                 Ok(schema_str) => serde_json::from_str(&schema_str).ok(),
                 Err(_) => None,
             };
             Ok(DscResource {
-                type_name: resource.type_name.clone(),
+                r#type: resource.type_name.clone(),
                 kind: resource.kind.clone(),
                 version: resource.version.clone(),
                 capabilities: resource.capabilities.clone(),

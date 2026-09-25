@@ -647,11 +647,7 @@ impl Configurator {
             let (get_result, execution_information, metadata) = match dsc_resource {
                 DscResourceKind::Action(dsc_action) => {
                     let result = if dsc_action.supported_operations.contains(&SupportedOperations::Get) {
-                        let filter = if let Some(properties_json) = serde_json::to_string(&properties).ok() {
-                            Some(properties_json)
-                        } else {
-                            None
-                        };
+                        let filter = serde_json::to_string(&properties).ok();
                         match dsc_action.invoke(filter.as_deref(), &self.context.execution_type) {
                             Ok(result) => result,
                             Err(e) => {
@@ -661,7 +657,7 @@ impl Configurator {
                             },
                         }
                     } else {
-                        info!("{}", t!("configured.mod.actionUnsupportedOperation", operation = "get", action = &dsc_action.type_name));
+                        info!("{}", t!("configure.mod.actionUnsupportedOperation", operation = "get", action = &dsc_action.type_name));
                         Value::Null
                     };
                     let get_result_response = ResourceGetResponse {
@@ -777,11 +773,7 @@ impl Configurator {
             let (set_result, execution_information, metadata) = match dsc_resource {
                 DscResourceKind::Action(dsc_action) => {
                     let result = if dsc_action.supported_operations.contains(&SupportedOperations::Set) {
-                        let filter = if let Some(properties_json) = serde_json::to_string(&properties).ok() {
-                            Some(properties_json)
-                        } else {
-                            None
-                        };
+                        let filter = serde_json::to_string(&properties).ok();
                         match dsc_action.invoke(filter.as_deref(), &self.context.execution_type) {
                             Ok(result) => result,
                             Err(e) => {
@@ -791,7 +783,7 @@ impl Configurator {
                             },
                         }
                     } else {
-                        info!("{}", t!("configured.mod.actionUnsupportedOperation", operation = "set", action = &dsc_action.type_name));
+                        info!("{}", t!("configure.mod.actionUnsupportedOperation", operation = "set", action = &dsc_action.type_name));
                         Value::Null
                     };
                     let end_datetime = chrono::Local::now();
@@ -1006,11 +998,7 @@ impl Configurator {
             let (test_result, execution_information, metadata) = match dsc_resource {
                 DscResourceKind::Action(dsc_action) => {
                     let result = if dsc_action.supported_operations.contains(&SupportedOperations::Set) {
-                        let filter = if let Some(properties_json) = serde_json::to_string(&properties).ok() {
-                            Some(properties_json)
-                        } else {
-                            None
-                        };
+                        let filter = serde_json::to_string(&properties).ok();
                         match dsc_action.invoke(filter.as_deref(), &self.context.execution_type) {
                             Ok(result) => result,
                             Err(e) => {
@@ -1137,11 +1125,7 @@ impl Configurator {
             let export_result = match dsc_resource {
                 DscResourceKind::Action(dsc_action) => {
                     let result = if dsc_action.supported_operations.contains(&SupportedOperations::Export) {
-                        let filter = if let Some(properties_json) = serde_json::to_string(&properties).ok() {
-                            Some(properties_json)
-                        } else {
-                            None
-                        };
+                        let filter = serde_json::to_string(&properties).ok();
                         match dsc_action.invoke(filter.as_deref(), &self.context.execution_type) {
                             Ok(result) => result,
                             Err(e) => {
@@ -1154,9 +1138,7 @@ impl Configurator {
                         info!("{}", t!("configure.mod.actionUnsupportedOperation", operation = "export", action = &dsc_action.type_name));
                         Value::Null
                     };
-                    let mut actual_state = Vec::new();
-                    actual_state.push(result.clone());
-                    ExportResult { actual_state }
+                    ExportResult { actual_state: vec![result.clone()] }
                 }
                 DscResourceKind::Resource(dsc_resource) => {
                     let input = add_metadata(&dsc_resource, properties, resource.metadata.clone())?;

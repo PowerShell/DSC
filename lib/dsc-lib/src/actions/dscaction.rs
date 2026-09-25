@@ -22,9 +22,10 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::path::{Path, PathBuf};
+use tracing::error;
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
-#[serde(deny_unknown_fields)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 #[dsc_repo_schema(base_name = "list", folder_path = "outputs/action")]
 pub struct DscAction {
     /// The namespaced name of the extension.
@@ -34,6 +35,10 @@ pub struct DscAction {
     pub version: SemanticVersion,
     /// The invoke specifics.
     pub invoke: InvokeMethod,
+    /// The input schema for the action.  If not defined, then the action does not expect input.
+    pub input_schema: Option<Value>,
+    /// The output schema for the action.  If not defined, then the action does not produce output.
+    pub output_schema: Option<Value>,
     /// The file path to the extension.
     pub path: PathBuf,
     /// The author of the extension.
@@ -50,6 +55,12 @@ pub struct DscAction {
     pub manifest: Value,
 }
 
+impl Default for DscAction {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DscAction {
     #[must_use]
     pub fn new() -> Self {
@@ -57,6 +68,8 @@ impl DscAction {
             type_name: FullyQualifiedTypeName::default(),
             version: SemanticVersion::default(),
             invoke: InvokeMethod::default(),
+            input_schema: None,
+            output_schema: None,
             path: PathBuf::new(),
             author: None,
             deprecation_message: None,
@@ -67,19 +80,20 @@ impl DscAction {
         }
     }
 
-    pub(crate) fn invoke(&self, input: Option<&str>, execution_type: &ExecutionKind) -> Result<Value, DscError> {
+    pub fn invoke(&self, input: Option<&str>, execution_type: &ExecutionKind) -> Result<Value, DscError> {
         let manifest = serde_json::from_value::<ActionManifest>(self.manifest.clone())?;
 
         if let Some(required_context) = &manifest.invoke.require_security_context {
             validate_security_context(None, &Some(required_context.clone()), &manifest.type_name, &Operation::Invoke)?;
         }
 
-        let Some(input_schema_kind) = manifest.invoke.input_schema.as_ref() else {
-            return Err(DscError::SchemaNotAvailable(self.type_name.to_string()));
-        };
-        let input_schema = get_schema(input_schema_kind, &self.directory, manifest.exit_codes.as_ref())?;
         if let Some(input) = input {
-            validate_json(&input, &input_schema)?;
+            let Some(input_schema) = &self.input_schema else {
+                error!("{}", t!("actions.dscaction.inputSchemaNotAvailable", type_name = self.type_name.to_string()));
+                return Err(DscError::SchemaNotAvailable(self.type_name.to_string()));
+            };
+
+            validate_json(input, input_schema)?;
         }
         let (args, supports_whatif) = process_invoke_args(manifest.invoke.args.as_ref(), input.unwrap_or(""), execution_type);
         if execution_type == &ExecutionKind::WhatIf && !supports_whatif {
@@ -88,11 +102,12 @@ impl DscAction {
 
         let (_exit_code, stdout, _stderr) = invoke_command(&manifest.invoke.executable, args, input, Some(&self.directory), None, manifest.exit_codes.as_ref())?;
         if !stdout.is_empty() {
-            let Some(output_schema_kind) = manifest.invoke.output_schema.as_ref() else {
+            if let Some(output_schema) = &self.output_schema {
+                validate_json(&stdout, output_schema)?;
+            } else {
+                error!("{}", t!("actions.dscaction.outputSchemaNotAvailable", type_name = self.type_name.to_string()));
                 return Err(DscError::SchemaNotAvailable(self.type_name.to_string()));
-            };
-            let output_schema = get_schema(output_schema_kind, &self.directory, manifest.exit_codes.as_ref())?;
-            validate_json(&stdout, &output_schema)?;
+            }
         }
 
         let output = serde_json::from_str(&stdout)?;
@@ -113,7 +128,7 @@ pub fn get_schema(schema_kind: &SchemaKind, directory: &Path, exit_codes: &ExitC
 }
 
 fn validate_json(input: &str, schema: &Value) -> Result<(), DscError> {
-    let compiled_schema = match Validator::new(&schema) {
+    let compiled_schema = match Validator::new(schema) {
         Ok(schema) => schema,
         Err(e) => {
             return Err(DscError::Schema(e.to_string()));
@@ -159,9 +174,7 @@ fn process_invoke_args(args: Option<&Vec<ArgKind>>, input: &str, execution_type:
 }
 
 fn process_schema_args(args: Option<&Vec<SchemaArgKind>>) -> Option<Vec<String>> {
-    let Some(arg_values) = args else {
-        return None;
-    };
+    let arg_values = args?;
 
     let mut processed_args = Vec::<String>::new();
     for arg in arg_values {
@@ -183,10 +196,23 @@ pub(crate) fn load_action_manifest(path: &Path, manifest: &ActionManifest) -> Re
     } else {
         supported_operations.push(SupportedOperations::Set);
     }
+    let input_schema = if let Some(input_schema_kind) = manifest.invoke.input_schema.as_ref() {
+        Some(get_schema(input_schema_kind, path.parent().unwrap(), manifest.exit_codes.as_ref())?)
+    } else {
+        None
+    };
+    let output_schema = if let Some(output_schema_kind) = manifest.invoke.output_schema.as_ref() {
+        Some(get_schema(output_schema_kind, path.parent().unwrap(), manifest.exit_codes.as_ref())?)
+    } else {
+        None
+    };
+
     let action = DscAction {
         type_name: manifest.type_name.clone(),
         version: manifest.version.clone(),
         invoke: manifest.invoke.clone(),
+        input_schema,
+        output_schema,
         path: path.to_path_buf(),
         author: manifest.author.clone(),
         deprecation_message: manifest.deprecation_message.clone(),

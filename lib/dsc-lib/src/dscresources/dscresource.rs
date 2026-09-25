@@ -340,7 +340,7 @@ impl DscResource {
                     return Err(DscError::Operation(t!("dscresources.dscresource.adapterResourceNotFound", adapter = adapter).to_string()))
                 }
                 DscResourceKind::Resource(adapter_resource ) => {
-                    return Ok(adapter_resource.clone());
+                    return Ok((*adapter_resource).clone());
                 }
             }
         }
