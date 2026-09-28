@@ -37,6 +37,7 @@ pub struct Discovery {
     pub actions: DiscoveryActionCache,
     pub extensions: DiscoveryExtensionCache,
     pub refresh_cache: bool,
+    pub discovery_completed: bool,
 }
 
 impl Discovery {
@@ -53,6 +54,7 @@ impl Discovery {
             actions: DiscoveryActionCache::new(),
             extensions: DiscoveryExtensionCache::new(),
             refresh_cache: false,
+            discovery_completed: false,
         }
     }
 
@@ -130,7 +132,7 @@ impl Discovery {
     }
 
     pub fn find_resource(&mut self, filter: &DiscoveryFilter) -> Result<Option<DscResourceKind>, DscError> {
-        if self.refresh_cache || self.resources.is_empty() {
+        if self.refresh_cache || !self.discovery_completed {
             self.find_resources(std::slice::from_ref(filter), ProgressFormat::None)?;
         }
 
@@ -173,8 +175,7 @@ impl Discovery {
     ///
     /// * `required_resource_types` - The required resource types.
     pub fn find_resources(&mut self, required_resource_types: &[DiscoveryFilter], progress_format: ProgressFormat) -> Result<(), DscError> {
-        if !self.refresh_cache && !self.resources.is_empty() {
-            // If resources are already discovered, no need to re-discover.
+        if !self.refresh_cache && self.discovery_completed {
             return Ok(());
         }
 
@@ -203,6 +204,7 @@ impl Discovery {
                 self.extensions.extend(extensions);
             }
         }
+        self.discovery_completed = true;
         Ok(())
     }
 }

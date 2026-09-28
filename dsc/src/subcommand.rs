@@ -695,14 +695,14 @@ fn list_actions(dsc: &mut DscManager, action_name: &TypeNameFilter, format: Opti
             }
 
             let has_input = if action.invoke.input_schema.is_some() {
-                "Yes"
+                t!("subcommand.yes")
             } else {
-                "No"
+                t!("subcommand.no")
             };
             let has_output = if action.invoke.output_schema.is_some() {
-                "Yes"
+                t!("subcommand.yes")
             } else {
-                "No"
+                t!("subcommand.no")
             };
 
             let require_security_context = match &action.invoke.require_security_context {
