@@ -262,7 +262,7 @@ impl ResourceDiscovery for CommandDiscovery {
 
     #[allow(clippy::too_many_lines)]
     fn discover(&mut self, kind: &DiscoveryKind, filter: &TypeNameFilter) -> Result<(), DscError> {
-        if self.discovery_mode == ResourceDiscoveryMode::PreDeployment && kind == &DiscoveryKind::Resource && (!locked_is_empty!(RESOURCES) || !locked_is_empty!(ACTIONS)) {
+if self.discovery_mode == ResourceDiscoveryMode::PreDeployment && kind == &DiscoveryKind::Resource && !locked_is_empty!(RESOURCES) {
             return Ok(());
         } else if self.discovery_mode == ResourceDiscoveryMode::DuringDeployment {
             locked_clear!(ACTIONS);

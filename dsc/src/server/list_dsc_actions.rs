@@ -40,9 +40,9 @@ pub struct ActionSummary {
 #[tool_router(router = list_dsc_actions_router, vis = "pub")]
 impl McpServer {
     #[tool(
-        description = "List summary of all DSC resources available on the local machine",
+description = "List summary of all DSC actions available on the local machine",
         annotations(
-            title = "Enumerate all available DSC resources on the local machine returning name, kind, and description.",
+            title = "Enumerate all available DSC actions on the local machine returning name and description.",
             read_only_hint = true,
             destructive_hint = false,
             idempotent_hint = true,

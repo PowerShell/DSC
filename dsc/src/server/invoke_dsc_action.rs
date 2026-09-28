@@ -36,9 +36,9 @@ pub struct InvokeDscActionRequest {
 #[tool_router(router = invoke_dsc_action_router, vis = "pub")]
 impl McpServer {
     #[tool(
-        description = "Invoke a DSC action operation (Get, Set, Test, Export, Delete) with specified properties in JSON format. Set 'what_if' to true to preview a Set or Delete without applying changes.",
+description = "Invoke a DSC action with specified properties in JSON format. Set 'what_if' to true to request what-if execution when supported.",
         annotations(
-            title = "Invoke a DSC action operation (Get, Set, Test, Export, Delete) with specified properties in JSON format and what-if support",
+            title = "Invoke a DSC action with specified properties and optional what-if execution",
             read_only_hint = false,
             destructive_hint = true,
             idempotent_hint = true,
