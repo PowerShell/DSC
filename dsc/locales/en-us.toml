@@ -167,6 +167,8 @@ invalidFunctionDescriptionFilter = "Invalid function description filter"
 maxInt = "maxInt"
 invalidManifest = "Error in manifest for"
 jsonArrayNotSupported = "JSON array output format is only supported for `--all'"
+yes = "Yes"
+no = "No"
 
 [util]
 failedToConvertJsonToString = "Failed to convert JSON to string"
