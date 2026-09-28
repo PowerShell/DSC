@@ -956,7 +956,7 @@ impl Configurator {
             let start_datetime = chrono::Local::now();
             let (test_result, execution_information, metadata) = match dsc_resource {
                 DscResourceKind::Action(dsc_action) => {
-                    let result = if dsc_action.supported_operations.contains(&SupportedOperations::Set) {
+let result = if dsc_action.supported_operations.contains(&SupportedOperations::Test) {
                         let filter = serde_json::to_string(&properties).ok();
                         match dsc_action.invoke(filter.as_deref(), &self.context.execution_type) {
                             Ok(result) => result,

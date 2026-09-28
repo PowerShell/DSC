@@ -87,13 +87,11 @@ impl DscAction {
             validate_security_context(None, &Some(required_context.clone()), &manifest.type_name, &Operation::Invoke)?;
         }
 
-        if let Some(input) = input {
-            let Some(input_schema) = &self.input_schema else {
-                error!("{}", t!("actions.dscaction.inputSchemaNotAvailable", type_name = self.type_name.to_string()));
-                return Err(DscError::SchemaNotAvailable(self.type_name.to_string()));
-            };
-
-            validate_json(input, input_schema)?;
+if let Some(input_schema) = &self.input_schema {
+            validate_json(input.unwrap_or("null"), input_schema)?;
+        } else if input.is_some() {
+            error!("{}", t!("actions.dscaction.inputSchemaNotAvailable", type_name = self.type_name.to_string()));
+            return Err(DscError::SchemaNotAvailable(self.type_name.to_string()));
         }
         let (args, supports_whatif) = process_invoke_args(manifest.invoke.args.as_ref(), input.unwrap_or(""), execution_type);
         if execution_type == &ExecutionKind::WhatIf && !supports_whatif {
