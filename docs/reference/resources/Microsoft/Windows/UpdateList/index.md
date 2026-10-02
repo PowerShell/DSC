@@ -119,10 +119,10 @@ IsReadOnly : false
 </details>
 
 An array of update entries. For **Get** and **Set**, each entry must specify at least one of
-`title`, `id`, `isInstalled`, `kbArticleIds`, `updateType`, or `msrcSeverity`. For **Export**, the
-array can be empty. Each filter can specify any supported filter property, and an empty filter
-matches all updates. Separate filters are combined with OR. The `updates` property itself is
-always required in a resource instance.
+`title`, `id`, `isInstalled`, `kbArticleIds`, `updateType`, or `msrcSeverity`. For **Export**, an
+empty input or `updates: [{}]` matches all updates; an empty `updates` array returns no updates.
+Each filter can specify any supported filter property. Separate filters are combined with OR. The
+`updates` property itself is always required in a resource instance.
 
 Each entry can contain the following properties:
 
