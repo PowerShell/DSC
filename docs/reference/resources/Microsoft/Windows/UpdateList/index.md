@@ -329,6 +329,10 @@ validating schema only includes schema keywords that affect how the instance is 
   "required": ["updates"],
   "additionalProperties": false,
   "properties": {
+    "_restartRequired": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
     "updates": {
       "type": "array",
       "items": {
