@@ -48,7 +48,7 @@ results:
 Remove `--what-if` to download and install the matching update:
 
 ```powershell
-dsc resource set --file install-update.config.dsc.yaml
+dsc config set --file install-update.config.dsc.yaml
 ```
 ```yaml
 

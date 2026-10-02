@@ -13,10 +13,10 @@ This example shows how to retrieve an update by its exact title with the
 ## Query an update
 
 The `title` criterion is case-insensitive and must identify one update. Use the [dsc resource
-get][01] command with the configuration in [get-update.config.dsc.yaml][02].
+get][01] command with the instance properties in [get-update.config.dsc.yaml][02].
 
 ```powershell
-dsc resource get --file get-update.config.dsc.yaml
+dsc resource get --resource Microsoft.Windows/UpdateList --file get-update.config.dsc.yaml
 ```
 
 The result includes details such as the update ID, installation status, KB article IDs, severity,

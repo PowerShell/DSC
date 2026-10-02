@@ -125,7 +125,6 @@ resources:
       isUninstallable: false
       kbArticleIds:
       - '2267602'
-t your computer.
       id: c802a52d-8518-45c9-a0e7-1bc968ad4643
       installationBehavior: CanRequestReboot
       isInstalled: false
@@ -156,23 +155,18 @@ Use [export-updates.config.dsc.yaml][02] to filter for installed updates with a 
 Important MSRC severity:
 
 ```powershell
-dsc resource export --file export-updates.config.dsc.yaml
+dsc resource export --resource Microsoft.Windows/UpdateList --file export-updates.config.dsc.yaml
 ```
 
 The resource combines criteria in one filter with AND. Separate entries in the `updates` array are
 combined with OR, and duplicate updates are returned only once.
 
 ```yaml
-$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
-
-resources:
-- name: Filter Windows Updates
-  type: Microsoft.Windows/UpdateList
-  properties:
-    updates:
-    - title: '*Security*'
-      isInstalled: false
-      updateType: 'Software'
+updates:
+- isInstalled: true
+  msrcSeverity: Critical
+- isInstalled: true
+  msrcSeverity: Important
 ```
 
 Title and description filters support case-insensitive `*` wildcards. Other useful filters include

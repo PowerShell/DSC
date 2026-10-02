@@ -1,8 +1,2 @@
-$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
-
-resources:
-- name: Query Windows Update
-  type: Microsoft.Windows/UpdateList
-  properties:
-    updates:
-    - title: PowerShell v7.6.6 (x64)
+updates:
+- title: PowerShell v7.6.6 (x64)
