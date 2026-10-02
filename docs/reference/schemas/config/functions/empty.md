@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'empty' DSC configuration document function
-ms.date:     08/08/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       empty
 ---
@@ -170,7 +170,9 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      message: "[if(empty(parameters('serverList')), 'No servers to configure', concat('Configuring ', string(length(parameters('serverList'))), ' servers'))]"
+      message: >-
+        [if(empty(parameters('serverList')), 'No servers to configure',
+        concat('Configuring ', string(length(parameters('serverList'))), ' servers'))]
 ```
 
 ```bash
@@ -184,7 +186,7 @@ results:
   result:
     actualState:
       output:
-        message: "No servers to configure"
+        message: No servers to configure
 messages: []
 hadErrors: false
 ```

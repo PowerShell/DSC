@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'endsWith' DSC configuration document function
-ms.date:     08/12/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       endsWith
 ---
@@ -78,7 +78,9 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      classification: "[if(endsWith(parameters('environment'), '-prod'), 'Production', 'Non-production')]"
+      classification: >-
+        [if(endsWith(parameters('environment'), '-prod'), 'Production',
+        'Non-production')]
 ```
 
 ```bash

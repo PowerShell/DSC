@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'greater' DSC configuration document function
-ms.date:     07/24/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       greater
 ---
@@ -24,7 +24,8 @@ returning `true` if it is and otherwise `false`. You can use this function to co
 values of the same data type. If the values are different types, like a string and an
 integer, DSC returns an error for this function.
 
-For strings, the comparison is case-sensitive and uses lexicographic ordering based on character codes.
+For strings, the comparison is case-sensitive and uses lexicographic ordering based on character
+codes.
 
 ## Examples
 
@@ -39,7 +40,7 @@ resources:
 - name: Compare numbers
   type: Microsoft.DSC.Debug/Echo
   properties:
-    output: 
+    output:
       firstGreater:     "[greater(5, 3)]"
       secondGreater:    "[greater(3, 5)]"
       equalNumbers:     "[greater(5, 5)]"

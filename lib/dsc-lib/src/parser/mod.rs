@@ -124,6 +124,17 @@ mod tests {
     }
 
     #[test]
+    fn multiline_bracket_string() {
+        let mut parser = Statement::new().unwrap();
+        let statement = "[[Version]\nSignature=\"$Windows NT$\"\n\n[PolicyStatementExtension]\nPolicies=InternalPolicy\n";
+        let result = parser.parse_and_execute(statement, &Context::new()).unwrap();
+        assert_eq!(
+            result,
+            "[Version]\nSignature=\"$Windows NT$\"\n\n[PolicyStatementExtension]\nPolicies=InternalPolicy\n"
+        );
+    }
+
+    #[test]
     fn bracket_in_string() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[this] is a string", &Context::new());

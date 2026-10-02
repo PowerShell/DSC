@@ -1,8 +1,8 @@
 ---
 description: Reference for the 'uriComponentToString' DSC configuration document function
-ms.date: 10/10/2025
-ms.topic: reference
-title: uriComponentToString function
+ms.date:     09/01/2026
+ms.topic:    reference
+title:       uriComponentToString
 ---
 
 # uriComponentToString
@@ -13,7 +13,7 @@ Returns a decoded string from a URI-encoded value.
 
 ## Syntax
 
-```yaml
+```Syntax
 uriComponentToString(<uriEncodedString>)
 ```
 
@@ -33,7 +33,7 @@ such as query parameters, path segments, or other URI parts.
 This example decodes a URI-encoded query parameter value back to its original string.
 
 ```yaml
-# example1.dsc.yaml
+# uriComponentToString.example.1.dsc.config.yaml
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
   - name: Echo decoded value
@@ -43,7 +43,7 @@ resources:
 ```
 
 ```bash
-dsc config get --document example1.dsc.yaml config get
+dsc config get --file uriComponentToString.example.1.dsc.config.yaml
 ```
 
 ```yaml
@@ -60,7 +60,7 @@ results:
 This example decodes a URI-encoded email address with special characters.
 
 ```yaml
-# example2.dsc.yaml
+# uriComponentToString.example.2.dsc.config.yaml
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
   - name: Echo decoded email
@@ -70,7 +70,7 @@ resources:
 ```
 
 ```bash
-dsc config get --document example2.dsc.yaml config get
+dsc config get --file uriComponentToString.example.2.dsc.config.yaml
 ```
 
 ```yaml
@@ -87,17 +87,18 @@ results:
 This example decodes a completely URI-encoded URL back to its readable form.
 
 ```yaml
-# example3.dsc.yaml
+# uriComponentToString.example.3.dsc.config.yaml
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
   - name: Echo decoded URL
     type: Microsoft.DSC.Debug/Echo
     properties:
-      output: "[uriComponentToString('https%3A%2F%2Fapi.example.com%2Fusers%3Fstatus%3Dactive')]"
+      output: >-
+        [uriComponentToString('https%3A%2F%2Fapi.example.com%2Fusers%3Fstatus%3Dactive')]
 ```
 
 ```bash
-dsc config get --document example3.dsc.yaml config get
+dsc config get --file uriComponentToString.example.3.dsc.config.yaml
 ```
 
 ```yaml
@@ -115,7 +116,7 @@ This example demonstrates encoding a string with [`uriComponent()`][01] and then
 back with `uriComponentToString()`, showing that they are inverse operations.
 
 ```yaml
-# example4.dsc.yaml
+# uriComponentToString.example.4.dsc.config.yaml
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
   - name: Echo round-trip result
@@ -125,7 +126,7 @@ resources:
 ```
 
 ```bash
-dsc config get --document example4.dsc.yaml config get
+dsc config get --file uriComponentToString.example.4.dsc.config.yaml
 ```
 
 ```yaml
@@ -142,7 +143,7 @@ results:
 This example decodes a URI-encoded string containing UTF-8 encoded Unicode characters.
 
 ```yaml
-# example5.dsc.yaml
+# uriComponentToString.example.5.dsc.config.yaml
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
   - name: Echo decoded Unicode
@@ -152,7 +153,7 @@ resources:
 ```
 
 ```bash
-dsc config get --document example5.dsc.yaml config get
+dsc config get --file uriComponentToString.example.5.dsc.config.yaml
 ```
 
 ```yaml

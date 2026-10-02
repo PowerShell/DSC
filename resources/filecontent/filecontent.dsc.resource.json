@@ -84,7 +84,7 @@
                 "_exist": {
                     "type": "boolean",
                     "title": "Exists",
-                    "description": "Indicates whether the file should exist. Set to false to remove the file."
+                    "description": "Indicates whether the file should exist. Set to true or omit to create or update the file and any missing parent directories. Set to false to remove the file."
                 },
                 "_inDesiredState": {
                     "type": "boolean",

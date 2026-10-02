@@ -1,9 +1,11 @@
 ---
 description: Reference for the 'tryWhich' DSC configuration document function
-ms.date:     11/19/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       tryWhich
 ---
+
+# tryWhich
 
 ## Synopsis
 
@@ -41,8 +43,8 @@ gracefully returns `null`, making it ideal for conditional logic with [`if()`][0
 
 ### Example 1 - Check if tool exists before using it
 
-The following example uses `tryWhich()` with [`if()`][00] to conditionally set a property
-based on whether the `git` command is available.
+The following example uses `tryWhich()` with [`not()`][06] and [`equals()`][03] to set a
+property based on whether the `git` command is available.
 
 ```yaml
 # tryWhich.example.1.dsc.config.yaml
@@ -53,12 +55,7 @@ resources:
   properties:
     output:
       gitPath: "[tryWhich('git')]"
-      hasGit: >-
-        [if(
-          equals(tryWhich('git'), null()),
-          false(),
-          true()
-        )]
+      hasGit: "[not(equals(tryWhich('git'), null()))]"
 ```
 
 ```bash
@@ -72,14 +69,14 @@ results:
   result:
     actualState:
       output:
-        gitPath: /usr/bin/git
+        gitPath: C:\Program Files\Git\cmd\git.exe
         hasGit: true
 messages: []
 hadErrors: false
 ```
 
-If `git` wasn't discoverable in the `PATH` environmental variable, `gitPath` would be `null` and `hasGit`
-would be `false`.
+If `git` wasn't discoverable in the `PATH` environmental variable, `gitPath` would be `null` and
+`hasGit` would be `false`.
 
 ### Example 2 - Provide fallback paths with coalesce
 

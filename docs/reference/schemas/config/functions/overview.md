@@ -1,6 +1,6 @@
 ---
 description: Reference for available functions in a Desired State Configuration document.
-ms.date:     02/28/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       DSC Configuration document functions reference
 ---
@@ -183,10 +183,10 @@ hadErrors: false
 ### Example 3 - Using nested functions
 
 The following configuration document shows how you can nest functions. The first two resource
-instances use the output of the [concat()][concat] function as input to the [base64()][base64] function.
-The third resource instance uses the output of the nested functions from the first two instances
-as input to the `concat()` function. The last resource instance converts the output of the deeply
-nested functions shown in the third instance to base64.
+instances use the output of the [concat()][concat] function as input to the [base64()][base64]
+function. The third resource instance uses the output of the nested functions from the first two
+instances as input to the `concat()` function. The last resource instance converts the output of
+the deeply nested functions shown in the third instance to base64.
 
 ```yaml
 # overview.example.3.dsc.config.yaml
@@ -296,8 +296,8 @@ parameters:
       - name: Nested third
 ```
 
-The first configuration document defines an instance of the `Microsoft.DSC.Debug/Echo` resource to show how you
-can access an object's properties in a configuration document.
+The first configuration document defines an instance of the `Microsoft.DSC.Debug/Echo` resource
+to show how you can access an object's properties in a configuration document.
 
 ```yaml
 # overview.example.4.properties.dsc.config.yaml
@@ -433,7 +433,7 @@ resources:
 ```sh
 $params=overview.example.4.dsc.parameters.yaml
 $config=overview.example.4.items.dsc.config.yaml
-dsc config --parameters-file $params get --path $config
+dsc config --parameters-file $params get --file $config
 ```
 
 ```yaml
@@ -541,135 +541,184 @@ dsc config --parameters-file $params get --file $config
 ```
 
 ```yaml
-$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
-# Minimal definition of the parameters
-parameters:
-  data: { type: object }
-  list: { type: array }
-
-resources:
-  - name: Access values in complex objects and arrays
-    type: Microsoft.DSC.Debug/Echo
-    properties:
+results:
+- metadata:
+    Microsoft.DSC:
+      duration: PT0.0437158S
+  name: Access values in complex objects and arrays
+  type: Microsoft.DSC.Debug/Echo
+  result:
+    actualState:
       output:
-        # Accessing array items of an object property
-        data.services[0]: "[parameters('data').services[0]]"
-        data.services[1]: "[parameters('data').services[1]]"
-        data.services[2]: "[parameters('data').services[2]]"
-        # Accessing properties of an object in an array
-        list[2].name:  "[parameters('list')[2].name]"
-        list[2].value: "[parameters('list')[2].value]"
-        # Accessing the property of an object in a nested array
-        list[3][2].name: "[parameters('list')[3][2].name]"
+        data.services[0]: web
+        data.services[1]: database
+        data.services[2]: application
+        list[2].name: third
+        list[2].value: 3
+        list[3][2].name: Nested third
 ```
 
 ## Functions
 
-The following sections include the available DSC configuration functions by purpose and input type.
+The following sections list the available functions grouped by category. The categories are the ones
+that the [dsc function list][04] command reports for each function. A function that belongs to more
+than one category, like `contains()`, appears in every category it belongs to.
 
-### Array and collection functions
+### Array functions
 
-The following list of functions operate on arrays and collections:
+The following functions operate on arrays:
 
 - [array()][array] - Convert a value into an array containing that value.
-- [concat()][concat] - Combine multiple arrays of strings into a single array of strings.
+- [concat()][concat] - Combine multiple strings into a single string, or multiple arrays into a
+  single array.
 - [contains()][contains] - Check if an array contains a value or an object contains a key.
 - [createArray()][createArray] - Create an array of a given type from zero or more values of the
   same type.
 - [empty()][empty] - Check if a value (string, array, or object) is empty.
+- [filter()][filter] - Return a new array containing only the elements of an array for which a
+  lambda function returns true.
 - [first()][first] - Return the first element of an array or the first character of a string.
 - [indexOf()][indexOf] - Return the zero-based index of the first occurrence of a value in an array.
-- [intersection()][intersection] - Return a single array or object with the common elements from the parameters.
-- [items()][items] - Convert an object into an array of key-value pair objects.
-- [join()][join] - Combine array elements into a single string with a specified delimiter.
+- [intersection()][intersection] - Return a single array or object with the common elements from the
+  parameters.
 - [last()][last] - Return the last element of an array or the last character of a string.
-- [lastIndexOf()][lastIndexOf] - Return the zero-based index of the last occurrence of a value in an array.
-- [length()][length] - Return the number of elements in an array, characters in a string, or top-level properties in an object.
-- [max()][max] - Return the largest integer value from an array of integers.
-- [min()][min] - Return the smallest integer value from an array of integers.
+- [lastIndexOf()][lastIndexOf] - Return the zero-based index of the last occurrence of a value in an
+  array.
+- [length()][length] - Return the number of elements in an array, characters in a string, or
+  top-level properties in an object.
+- [map()][map] - Transform every element of an array with a lambda function and return the results
+  as a new array.
 - [range()][range] - Create an array of integers within a specified range.
 - [skip()][skip] - Return an array or string with elements skipped from the beginning.
 - [take()][take] - Return an array or string with the specified number of elements from the start.
-- [tryGet()][tryGet] - Safely retrieve a value from an array by index or an object by key without throwing an error.
-- [tryIndexFromEnd()][tryIndexFromEnd] - Safely retrieve a value from an array by counting backward from the end.
+- [tryGet()][tryGet] - Safely retrieve a value from an array by index or an object by key without
+  throwing an error.
+- [tryIndexFromEnd()][tryIndexFromEnd] - Safely retrieve a value from an array by counting backward
+  from the end.
 - [union()][union] - Return a single array or object with all unique elements from the parameters.
+
+### CIDR functions
+
+The following functions parse and calculate IP address ranges in CIDR notation:
+
+- [cidrHost()][cidrHost] - Return the usable IP address of the host at a given index within an IP
+  address range in CIDR notation.
+- [cidrSubnet()][cidrSubnet] - Split an IP address range in CIDR notation into subnets and return
+  the subnet at a given index.
+- [parseCidr()][parseCidr] - Parse an IP address range in CIDR notation and return its network
+  properties.
 
 ### Comparison functions
 
-The following list of functions compare values:
+The following functions compare values:
 
+- [coalesce()][coalesce] - Return the first non-null value from the provided arguments.
 - [equals()][equals] - Check if two values are equal.
 - [greater()][greater] - Check if the first value is greater than the second value.
-- [greaterOrEquals()][greaterOrEquals] - Check if the first value is greater than or equal to the second value.
+- [greaterOrEquals()][greaterOrEquals] - Check if the first value is greater than or equal to the
+  second value.
 - [less()][less] - Check if the first value is less than the second value.
-- [lessOrEquals()][lessOrEquals] - Check if the first value is less than or equal to the second value.
+- [lessOrEquals()][lessOrEquals] - Check if the first value is less than or equal to the second
+  value.
 
-### Data functions
+### Date functions
 
-The following list of functions operate on data outside of a resource instance:
+The following functions work with dates and times:
+
+- [utcNow()][utcNow] - Return the current UTC datetime in a specified format.
+
+### Deployment functions
+
+The following functions return data about the configuration document and the environment DSC is
+processing it in, like parameters, variables, and secrets:
 
 - [context()][context] - Return contextual information about the system and execution environment.
-- [envvar()][envvar] - Return the value of a specified environment variable.
 - [parameters()][parameters] - Return the value of a specified configuration parameter.
 - [secret()][secret] - Retrieve a secret value from a secure store.
 - [variables()][variables] - Return the value of a specified configuration variable.
 
+### Lambda functions
+
+The following functions create and use lambda functions, which DSC evaluates once for each element
+of an array:
+
+- [filter()][filter] - Return a new array containing only the elements of an array for which a
+  lambda function returns true.
+- [lambda()][lambda] - Create a lambda function with named parameters and a body expression for use
+  with `map()` and `filter()`.
+- [lambdaVariables()][lambdaVariables] - Return the value bound to a named parameter of the lambda
+  function currently being evaluated.
+- [map()][map] - Transform every element of an array with a lambda function and return the results
+  as a new array.
+
 ### Logical functions
 
-The following list of functions perform logical operations:
+The following functions perform logical operations:
 
 - [and()][and] - Return true if all boolean values are true.
 - [bool()][bool] - Convert a value to a boolean.
 - [false()][false] - Return the boolean value false.
 - [if()][if] - Return one of two values based on a boolean condition.
 - [not()][not] - Return the logical negation of a boolean value.
-- [null()][null] - Return a null value.
 - [or()][or] - Return true if any boolean value is true.
 - [true()][true] - Return the boolean value true.
 
-### Mathematics functions
+### Numeric functions
 
-The following list of functions operate on integer values or arrays of integer values:
+The following functions operate on integer values:
 
 - [add()][add] - Return the sum of two integers.
+- [copyIndex()][copyIndex] - Return the current iteration index of a copy loop.
 - [div()][div] - Return the dividend of two integers as an integer, dropping the remainder of the
   result, if any.
 - [int()][int] - Convert a string or number with a fractional part into an integer.
-- [max()][max] - Return the largest value from an array of integers.
-- [min()][min] - Return the smallest value from an array of integers.
+- [max()][max] - Return the largest integer value from an array of integers.
+- [min()][min] - Return the smallest integer value from an array of integers.
 - [mod()][mod] - Return the remainder from the division of two integers.
 - [mul()][mul] - Return the product from multiplying two integers.
 - [sub()][sub] - Return the difference from subtracting one integer from another.
 
+The `copyIndex()` function is only meaningful inside a resource that defines the `copy` property.
+The `copy` property isn't a function, but it works together with `copyIndex()` to create multiple
+instances of a resource. For more information, see [copy][copy].
+
 ### Object functions
 
-The following list of functions operate on objects:
+The following functions operate on objects:
 
-- [coalesce()][coalesce] - Return the first non-null value from the provided arguments.
 - [contains()][contains] - Check if an array contains a value or an object contains a key.
 - [createObject()][createObject] - Create an object from key-value pairs.
 - [empty()][empty] - Check if a value (string, array, or object) is empty.
+- [intersection()][intersection] - Return a single array or object with the common elements from the
+  parameters.
 - [items()][items] - Convert an object into an array of key-value pair objects.
 - [json()][json] - Parse a JSON string and return the resulting value.
-- [tryGet()][tryGet] - Safely retrieve a value from an array by index or an object by key without throwing an error.
+- [length()][length] - Return the number of elements in an array, characters in a string, or
+  top-level properties in an object.
+- [null()][null] - Return a null value.
+- [objectKeys()][objectKeys] - Return an array of the top-level keys of an object.
+- [shallowMerge()][shallowMerge] - Combine an array of objects into a single object, merging only
+  the top-level properties.
+- [tryGet()][tryGet] - Safely retrieve a value from an array by index or an object by key without
+  throwing an error.
+- [union()][union] - Return a single array or object with all unique elements from the parameters.
 
 ### Resource functions
 
-The following list of functions operate on resource instances:
+The following functions operate on resource instances:
 
-- [copyIndex()][copyIndex] - Return the current iteration index of a copy loop.
 - [reference()][reference] - Return the result data for another resource instance.
-- [resourceId()][resourceId] - Return the ID of another resource instance to reference or depend
-  on.
+- [resourceId()][resourceId] - Return the ID of another resource instance to reference or depend on.
 
 ### String functions
 
-The following list of functions are for manipulating strings:
+The following functions manipulate strings:
 
 - [base64()][base64] - Return the base64 representation of a string.
-- [base64ToString()][base64ToString] - Decode a base64-encoded string and return the original string.
-- [concat()][concat] - Return a combined string where the input strings are concatenated in the
-  order they're specified.
+- [base64ToString()][base64ToString] - Decode a base64-encoded string and return the original
+  string.
+- [concat()][concat] - Combine multiple strings into a single string, or multiple arrays into a
+  single array.
 - [contains()][contains] - Check if an array contains a value or an object contains a key.
 - [dataUri()][dataUri] - Convert a value to a data URI.
 - [dataUriToString()][dataUriToString] - Convert a data URI formatted value to a string.
@@ -677,14 +726,19 @@ The following list of functions are for manipulating strings:
 - [endsWith()][endsWith] - Check if a string ends with a specified suffix.
 - [first()][first] - Return the first element of an array or the first character of a string.
 - [format()][format] - Create a formatted string from input values.
+- [indexOf()][indexOf] - Return the zero-based index of the first occurrence of a value in an array.
 - [join()][join] - Combine array elements into a single string with a specified delimiter.
 - [last()][last] - Return the last element of an array or the last character of a string.
-- [length()][length] - Return the number of elements in an array, characters in a string, or top-level properties in an object.
+- [lastIndexOf()][lastIndexOf] - Return the zero-based index of the last occurrence of a value in an
+  array.
+- [length()][length] - Return the number of elements in an array, characters in a string, or
+  top-level properties in an object.
+- [path()][path] - Construct a file system path from one or more path segments.
 - [skip()][skip] - Return an array or string with elements skipped from the beginning.
 - [startsWith()][startsWith] - Check if a string starts with a specified prefix.
-- [take()][take] - Return an array or string with the specified number of elements from the start.
 - [string()][string] - Convert a value to its string representation.
 - [substring()][substring] - Extract a portion of a string starting at a specified position.
+- [take()][take] - Return an array or string with the specified number of elements from the start.
 - [toLower()][toLower] - Convert a string to lowercase.
 - [toUpper()][toUpper] - Convert a string to uppercase.
 - [trim()][trim] - Remove leading and trailing whitespace from a string.
@@ -695,32 +749,24 @@ The following list of functions are for manipulating strings:
 
 ### System functions
 
-The following list of functions provide system-level information:
+The following functions return information about the system or the current execution of DSC:
 
-- [path()][path] - Construct a file system path from one or more path segments.
+- [envvar()][envvar] - Return the value of a specified environment variable.
 - [restartRequired()][restartRequired] - Return whether a system, service, or process requires a
   restart.
-- [stateChanged()][stateChanged] - Return whether a resource instance changed state during a
-  `set` operation.
+- [stateChanged()][stateChanged] - Return whether a resource instance changed state during a `set`
+  operation.
+- [stdout()][stdout] - Return the standard output of an extension's `import` command for processing
+  in the manifest's `output` expression.
 - [systemRoot()][systemRoot] - Return the system root directory path.
-- [utcNow()][utcNow] - Return the current UTC datetime in a specified format.
-
-### Type functions
-
-The following list of functions create or convert values of a given type:
-
-- [array()][array] - Convert a value into an array containing that value.
-- [bool()][bool] - Convert a value to a boolean.
-- [createArray()][createArray] - Create an array of a given type from zero or more values of the
-  same type.
-- [createObject()][createObject] - Create an object from key-value pairs.
-- [int()][int] - Convert a string or number with a fractional part into an integer.
-- [string()][string] - Convert a value to its string representation.
+- [tryWhich()][tryWhich] - Return the full path to an executable found in the `PATH` environment
+  variable, or null if it isn't found.
 
 <!-- Link references -->
 [01]: https://yaml.org/spec/1.2.2/#folded-style
 [02]: https://yaml.org/spec/1.2.2/#literal-style
 [03]: https://yaml.org/spec/1.2.2/#block-chomping-indicator
+[04]: ../../../cli/function/list.md
 <!-- Function link references -->
 [add]:                  ./add.md
 [and]:                  ./and.md
@@ -728,10 +774,13 @@ The following list of functions create or convert values of a given type:
 [base64]:               ./base64.md
 [base64ToString]:       ./base64ToString.md
 [bool]:                 ./bool.md
+[cidrHost]:             ./cidrHost.md
+[cidrSubnet]:           ./cidrSubnet.md
 [coalesce]:             ./coalesce.md
 [concat]:               ./concat.md
 [contains]:             ./contains.md
 [context]:              ./context.md
+[copy]:                 ./copy.md
 [copyIndex]:            ./copyIndex.md
 [createArray]:          ./createArray.md
 [createObject]:         ./createObject.md
@@ -743,6 +792,7 @@ The following list of functions create or convert values of a given type:
 [envvar]:               ./envvar.md
 [equals]:               ./equals.md
 [false]:                ./false.md
+[filter]:               ./filter.md
 [first]:                ./first.md
 [format]:               ./format.md
 [greater]:              ./greater.md
@@ -754,39 +804,47 @@ The following list of functions create or convert values of a given type:
 [items]:                ./items.md
 [join]:                 ./join.md
 [json]:                 ./json.md
+[lambda]:               ./lambda.md
+[lambdaVariables]:      ./lambdaVariables.md
 [last]:                 ./last.md
 [lastIndexOf]:          ./lastIndexOf.md
 [length]:               ./length.md
 [less]:                 ./less.md
 [lessOrEquals]:         ./lessOrEquals.md
+[map]:                  ./map.md
 [max]:                  ./max.md
 [min]:                  ./min.md
 [mod]:                  ./mod.md
 [mul]:                  ./mul.md
 [not]:                  ./not.md
 [null]:                 ./null.md
+[objectKeys]:           ./objectKeys.md
 [or]:                   ./or.md
 [parameters]:           ./parameters.md
+[parseCidr]:            ./parseCidr.md
 [path]:                 ./path.md
 [range]:                ./range.md
 [reference]:            ./reference.md
 [resourceId]:           ./resourceId.md
 [restartRequired]:      ./restartRequired.md
 [secret]:               ./secret.md
+[shallowMerge]:         ./shallowMerge.md
 [skip]:                 ./skip.md
 [startsWith]:           ./startsWith.md
 [stateChanged]:         ./stateChanged.md
+[stdout]:               ./stdout.md
 [string]:               ./string.md
-[take]:                 ./take.md
 [sub]:                  ./sub.md
 [substring]:            ./substring.md
 [systemRoot]:           ./systemRoot.md
+[take]:                 ./take.md
 [toLower]:              ./toLower.md
 [toUpper]:              ./toUpper.md
 [trim]:                 ./trim.md
 [true]:                 ./true.md
 [tryGet]:               ./tryGet.md
 [tryIndexFromEnd]:      ./tryIndexFromEnd.md
+[tryWhich]:             ./tryWhich.md
 [union]:                ./union.md
 [uniqueString]:         ./uniqueString.md
 [uri]:                  ./uri.md

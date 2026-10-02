@@ -43,7 +43,7 @@ pub enum FunctionArg {
 ///
 /// Lambdas are created using the `lambda()` function syntax:
 /// ```text
-/// "[lambda(['item', 'index'], mul(variables('item'), 2))]"
+/// "[lambda('item', 'index', mul(lambdaVariables('item'), 2))]"
 /// ```
 ///
 /// The lambda is stored in the context and referenced by UUID:
@@ -53,7 +53,7 @@ pub enum FunctionArg {
 ///
 /// When used with `map()`, the lambda is invoked for each array element with bound parameters:
 /// ```text
-/// "[map(createArray(1, 2, 3), lambda(['item'], mul(variables('item'), 2)))]"
+/// "[map(createArray(1, 2, 3), lambda('item', mul(lambdaVariables('item'), 2)))]"
 /// ```
 ///
 /// # Lifetime

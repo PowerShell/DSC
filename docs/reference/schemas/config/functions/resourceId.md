@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'resourceId' DSC configuration document function
-ms.date:     02/28/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       resourceId
 ---
@@ -90,7 +90,7 @@ The value of the [type][03] property of the resource instance to reference. The 
 ```yaml
 Type:     string
 Required: true
-Position: 0
+Position: 1
 ```
 
 ### instanceName
@@ -100,7 +100,19 @@ The value of the [name][05] property of the resource instance to reference.
 ```yaml
 Type:     string
 Required: true
-Position: 0
+Position: 2
+```
+
+## Output
+
+The `resourceId()` function returns a string that uniquely identifies the resource instance. The
+string has the format `<resourceTypeName>:<instanceName>`. DSC percent-encodes the instance name,
+so spaces and other special characters are escaped. For example,
+`[resourceId('Microsoft.Windows/Registry', 'Tailspin Key')]` returns
+`Microsoft.Windows/Registry:Tailspin%20Key`.
+
+```yaml
+Type: string
 ```
 
 <!-- Link reference definitions -->

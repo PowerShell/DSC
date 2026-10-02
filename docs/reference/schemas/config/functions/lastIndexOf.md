@@ -1,9 +1,11 @@
 ---
 description: Reference for the 'lastIndexOf' DSC configuration document function
-ms.date:     08/29/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       lastIndexOf
 ---
+
+# lastIndexOf
 
 ## Synopsis
 
@@ -47,8 +49,10 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      lastWebIndex: "[lastIndexOf(createArray('web01','db01','web02','cache01','web03'), 'web03')]"
-      lastWebFamilyIndex: "[lastIndexOf(createArray('web01','db01','web02','cache01','web02'), 'web02')]"
+      lastWebIndex: >-
+        [lastIndexOf(createArray('web01','db01','web02','cache01','web03'), 'web03')]
+      lastWebFamilyIndex: >-
+        [lastIndexOf(createArray('web01','db01','web02','cache01','web02'), 'web02')]
 ```
 
 ```bash
@@ -86,7 +90,10 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      lastBetaIndex: "[lastIndexOf(createArray(createObject('name','Beta'), createObject('name','Gamma'), createObject('name','Beta')), createObject('name','Beta'))]"
+      lastBetaIndex: >-
+        [lastIndexOf(createArray(createObject('name','Beta'),
+        createObject('name','Gamma'), createObject('name','Beta')),
+        createObject('name','Beta'))]
 ```
 
 ```bash
@@ -105,8 +112,9 @@ messages: []
 hadErrors: false
 ```
 
-Property order in objects doesn't matter. The following also returns `1` due to
-deep equality: `lastIndexOf(array(createObject('a',1,'b',2), createObject('b',2,'a',1)), createObject('a',1,'b',2))`.
+Property order in objects doesn't matter. The following also returns `1` due to deep equality:
+`lastIndexOf(array(createObject('a',1,'b',2), createObject('b',2,'a',1)),
+createObject('a',1,'b',2))`.
 
 ## Parameters
 

@@ -1,9 +1,11 @@
 ---
 description: Reference for the 'intersection' DSC configuration document function
-ms.date:     09/26/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       intersection
 ---
+
+# intersection
 
 ## Synopsis
 
@@ -47,8 +49,13 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      commonGroups: "[intersection(createArray('admin-access', 'monitoring', 'backup'), createArray('monitoring', 'backup', 'web-access'), createArray('backup', 'monitoring', 'database'))]"
-      twoEnvCommon: "[intersection(createArray('admin-access', 'monitoring'), createArray('monitoring', 'audit-log'))]"
+      commonGroups: >-
+        [intersection(createArray('admin-access', 'monitoring', 'backup'),
+        createArray('monitoring', 'backup', 'web-access'),
+        createArray('backup', 'monitoring', 'database'))]
+      twoEnvCommon: >-
+        [intersection(createArray('admin-access', 'monitoring'),
+        createArray('monitoring', 'audit-log'))]
 ```
 
 ```bash
@@ -86,7 +93,10 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      commonSettings: "[intersection(createObject('timeout', 30, 'retries', 3, 'region', 'us-east'), createObject('retries', 3, 'ssl', true, 'region', 'us-east'), createObject('region', 'us-east', 'retries', 3, 'logging', 'info'))]"
+      commonSettings: >-
+        [intersection(createObject('timeout', 30, 'retries', 3, 'region', 'us-east'),
+        createObject('retries', 3, 'ssl', true, 'region', 'us-east'),
+        createObject('region', 'us-east', 'retries', 3, 'logging', 'info'))]
 ```
 
 ```bash
@@ -101,8 +111,8 @@ results:
     actualState:
       output:
         commonSettings:
-          region: us-east
           retries: 3
+          region: us-east
 messages: []
 hadErrors: false
 ```
@@ -121,8 +131,12 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      noOverlap: "[intersection(createArray('windows-iis', 'dotnet-core'), createArray('linux-apache', 'php', 'mysql'))]"
-      someOverlap: "[intersection(createArray('docker', 'kubernetes', 'monitoring'), createArray('monitoring', 'logging', 'docker'))]"
+      noOverlap: >-
+        [intersection(createArray('windows-iis', 'dotnet-core'),
+        createArray('linux-apache', 'php', 'mysql'))]
+      someOverlap: >-
+        [intersection(createArray('docker', 'kubernetes', 'monitoring'),
+        createArray('monitoring', 'logging', 'docker'))]
 ```
 
 ```bash
@@ -158,7 +172,10 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      sharedCompliance: "[intersection(createObject('encryption', true, 'backup', 'daily', 'audit', true), createObject('audit', true, 'encryption', true, 'access', 'restricted'), createObject('encryption', true, 'audit', true, 'monitoring', 'enabled'))]"
+      sharedCompliance: >-
+        [intersection(createObject('encryption', true, 'backup', 'daily', 'audit', true),
+        createObject('audit', true, 'encryption', true, 'access', 'restricted'),
+        createObject('encryption', true, 'audit', true, 'monitoring', 'enabled'))]
 ```
 
 ```bash
@@ -173,8 +190,8 @@ results:
     actualState:
       output:
         sharedCompliance:
-          audit: true
           encryption: true
+          audit: true
 messages: []
 hadErrors: false
 ```
