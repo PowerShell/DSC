@@ -4,7 +4,7 @@
 use rmcp::{
     ErrorData as McpError,
     handler::server::tool::ToolRouter,
-    model::{InitializeResult, InitializeRequestParams, ServerCapabilities, ServerInfo},
+    model::{InitializeResult, InitializeRequestParams, ServerCapabilities, ServerConfig},
     service::{RequestContext, RoleServer},
     ServerHandler,
     tool_handler,
@@ -41,8 +41,8 @@ impl Default for McpServer {
 
 #[tool_handler(router = self.tool_router)]
 impl ServerHandler for McpServer {
-    fn get_info(&self) -> ServerInfo {
-        let mut info = ServerInfo::new(
+    fn get_info(&self) -> ServerConfig {
+        let mut info = ServerConfig::new(
             ServerCapabilities::builder()
                 .enable_tools()
                 .build()
