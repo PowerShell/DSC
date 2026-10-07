@@ -776,7 +776,13 @@ Describe 'Tests for DSC server' {
         $response.result.structuredContent.result.result.resources[0].name | Should -Be 'TestName' -Because $because
     }
 
-    It 'Calling invoke_dsc_config with parameters works' {
+    It 'Calling invoke_dsc_config with <format> JSON parameters works' -TestCases @(
+        @{ format = 'bare'; parameters = '{"message":"custom message"}' }
+        @{ format = 'wrapped'; parameters = '{"parameters":{"message":"custom message"}}' }
+        @{ format = 'wrapped value'; parameters = '{"parameters":{"message":{"value":"custom message"}}}' }
+    ) {
+        param($format, $parameters)
+
         $config = @{
             '$schema'  = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
             parameters = @{
@@ -797,10 +803,6 @@ Describe 'Tests for DSC server' {
             )
         }
 
-        $parameters = @{
-            message = 'custom message'
-        }
-
         $mcpRequest = @{
             jsonrpc = "2.0"
             id      = 14
@@ -810,7 +812,7 @@ Describe 'Tests for DSC server' {
                 arguments = @{
                     operation     = 'get'
                     configuration = ($config | ConvertTo-Json -Depth 20)
-                    parameters    = ($parameters | ConvertTo-Json -Depth 20)
+                    parameters    = $parameters
                 }
             }
         }
@@ -851,7 +853,13 @@ resources:
         $response.result.structuredContent.result.results[0].result.actualState.hello | Should -Be 'Hello from YAML' -Because $because
     }
 
-    It 'Calling invoke_dsc_config with YAML parameters works' {
+    It 'Calling invoke_dsc_config with <format> YAML parameters works' -TestCases @(
+        @{ format = 'bare'; parametersYaml = 'greeting: Hello from YAML parameters' }
+        @{ format = 'wrapped'; parametersYaml = "parameters:`n  greeting: Hello from YAML parameters" }
+        @{ format = 'wrapped value'; parametersYaml = "parameters:`n  greeting:`n    value: Hello from YAML parameters" }
+    ) {
+        param($format, $parametersYaml)
+
         $config = @{
             '$schema'  = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
             parameters = @{
@@ -870,10 +878,6 @@ resources:
                 }
             )
         }
-
-        $parametersYaml = @'
-greeting: Hello from YAML parameters
-'@
 
         $mcpRequest = @{
             jsonrpc = "2.0"

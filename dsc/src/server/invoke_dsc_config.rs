@@ -49,7 +49,7 @@ pub struct InvokeDscConfigRequest {
     #[schemars(description = "The DSC configuration document as a YAML string")]
     pub configuration: String,
     #[schemars(
-        description = "Optional parameters to pass to the configuration as a YAML string"
+        description = "Optional parameters to pass to the configuration as a JSON or YAML string, with or without a top-level 'parameters' wrapper"
     )]
     pub parameters: Option<String>,
     #[schemars(
@@ -168,10 +168,13 @@ impl McpServer {
                     }
                 };
 
-                // Wrap parameters in a "parameters" field for configurator.set_context()
-                Some(serde_json::json!({
-                    "parameters": params_json
-                }))
+                if params_json.get("parameters").is_some() {
+                    Some(params_json)
+                } else {
+                    Some(serde_json::json!({
+                        "parameters": params_json
+                    }))
+                }
             } else {
                 None
             };

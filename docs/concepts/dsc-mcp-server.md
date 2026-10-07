@@ -94,6 +94,25 @@ DSC generates a synthetic what-if result from the resource's `test` operation. W
 requested with an operation that doesn't support it, such as `get`, the tool returns an error
 instead of silently ignoring the option.
 
+### Passing configuration parameters
+
+The `invoke_dsc_config` tool accepts its optional `parameters` argument as a JSON or YAML string.
+You can provide parameter names and values directly:
+
+```yaml
+message: Hello from the dscd parameters file!
+```
+
+You can also include the top-level `parameters` wrapper used in configuration parameter files:
+
+```yaml
+parameters:
+  message: Hello from the dscd parameters file!
+```
+
+Both forms pass the same `message` value to the configuration. Wrapped parameter files that
+specify each parameter using a `value` property are also supported.
+
 > [!NOTE]
 > Additional MCP tools will become available in future releases to expand the capabilities
 > of the DSC MCP server integration. For the latest updates and feature announcements,
