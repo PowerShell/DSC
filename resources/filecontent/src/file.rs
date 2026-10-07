@@ -194,7 +194,7 @@ fn hash_bytes(bytes: &[u8]) -> (String, String) {
     sha256.update(bytes);
     sha512.update(bytes);
     (
-        format!("{:x}", sha256.finalize()),
-        format!("{:x}", sha512.finalize()),
+        base16ct::lower::encode_string(&sha256.finalize()),
+        base16ct::lower::encode_string(&sha512.finalize()),
     )
 }
