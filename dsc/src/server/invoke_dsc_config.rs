@@ -168,16 +168,16 @@ impl McpServer {
                     }
                 };
 
-if params_json
-    .get("parameters")
-    .is_some_and(serde_json::Value::is_object)
-{
-    Some(params_json)
-} else {
-    Some(serde_json::json!({
-        "parameters": params_json
-    }))
-}
+                if params_json
+                    .get("parameters")
+                    .is_some_and(serde_json::Value::is_object)
+                {
+                    Some(params_json)
+                } else {
+                    Some(serde_json::json!({
+                        "parameters": params_json
+                    }))
+                }
             } else {
                 None
             };
