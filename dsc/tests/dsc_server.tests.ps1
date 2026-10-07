@@ -776,11 +776,23 @@ Describe 'Tests for DSC server' {
         $response.result.structuredContent.result.result.resources[0].name | Should -Be 'TestName' -Because $because
     }
 
-    It 'Calling invoke_dsc_config with parameters works' {
+    It 'Calling invoke_dsc_config with <format> JSON parameters works' -TestCases @(
+        @{ format = 'bare'; parameters = '{"message":"custom message"}' }
+        @{ format = 'wrapped'; parameters = '{"parameters":{"message":"custom message"}}' }
+        @{ format = 'wrapped value'; parameters = '{"parameters":{"message":{"value":"custom message"}}}' }
+        @{
+            format = 'bare with a parameter named parameters'
+            parameters = '{"parameters":"value"}'
+            parameterName = 'parameters'
+            expected = 'value'
+        }
+    ) {
+        param($format, $parameters, $parameterName = 'message', $expected = 'custom message')
+
         $config = @{
             '$schema'  = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
             parameters = @{
-                message = @{
+                $parameterName = @{
                     type         = 'string'
                     defaultValue = 'default message'
                 }
@@ -790,15 +802,11 @@ Describe 'Tests for DSC server' {
                     name       = 'TestResource'
                     type       = 'Test/Operation'
                     properties = @{
-                        hello  = "[parameters('message')]"
+                        hello  = "[parameters('$parameterName')]"
                         action = 'get'
                     }
                 }
             )
-        }
-
-        $parameters = @{
-            message = 'custom message'
         }
 
         $mcpRequest = @{
@@ -810,7 +818,7 @@ Describe 'Tests for DSC server' {
                 arguments = @{
                     operation     = 'get'
                     configuration = ($config | ConvertTo-Json -Depth 20)
-                    parameters    = ($parameters | ConvertTo-Json -Depth 20)
+                    parameters    = $parameters
                 }
             }
         }
@@ -818,7 +826,7 @@ Describe 'Tests for DSC server' {
         $response = Send-McpRequest -request $mcpRequest
         $response.id | Should -Be 14
         $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
-        $response.result.structuredContent.result.results[0].result.actualState.hello | Should -Be 'custom message' -Because $because
+        $response.result.structuredContent.result.results[0].result.actualState.hello | Should -Be $expected -Because $because
     }
 
     It 'Calling invoke_dsc_config with YAML configuration works' {
@@ -851,7 +859,13 @@ resources:
         $response.result.structuredContent.result.results[0].result.actualState.hello | Should -Be 'Hello from YAML' -Because $because
     }
 
-    It 'Calling invoke_dsc_config with YAML parameters works' {
+    It 'Calling invoke_dsc_config with <format> YAML parameters works' -TestCases @(
+        @{ format = 'bare'; parametersYaml = 'greeting: Hello from YAML parameters' }
+        @{ format = 'wrapped'; parametersYaml = "parameters:`n  greeting: Hello from YAML parameters" }
+        @{ format = 'wrapped value'; parametersYaml = "parameters:`n  greeting:`n    value: Hello from YAML parameters" }
+    ) {
+        param($format, $parametersYaml)
+
         $config = @{
             '$schema'  = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
             parameters = @{
@@ -870,10 +884,6 @@ resources:
                 }
             )
         }
-
-        $parametersYaml = @'
-greeting: Hello from YAML parameters
-'@
 
         $mcpRequest = @{
             jsonrpc = "2.0"
