@@ -182,6 +182,9 @@ begin {
         $BuildData.Projects = $BuildData.Projects | Where-Object -FilterScript {
             $_.Name -in $Project
         }
+        if ($BuildData.Projects.Count -eq 0) {
+            throw "No projects matched the specified project names: $($Project -join ', ')"
+        }
     }
     $VerboseParam = @{}
     if ($VerbosePreference -eq 'Continue' -and -not $Quiet) {
