@@ -2882,15 +2882,21 @@ function Test-ProjectWithPester {
             Write-Verbose "Updated Pester module location:`n`t$((Get-Module -Name Pester -ListAvailable).Path)"
         }
         $pesterParams = @{
-            Output = 'Detailed'
+            Output      = 'Detailed'
             ErrorAction = 'Stop'
         }
         if ($Project) {
-            $pesterParams.ExcludePath = $Project.RelativePath | Where-Object -FilterScript {
-                $_.Name -notin $Project.Name
+            $projectPath = $Project.RelativePath
+            if ($Group) {
+                $projectPath = $projectPath | Where-Object -FilterScript {
+                    ($_ -split '[/\\]', 2)[0] -in $Group
+                }
             }
-        }
-        if ($Group) {
+            if ($projectPath.Count -eq 0) {
+                throw 'None of the selected projects are in the specified Pester test groups.'
+            }
+            $pesterParams.Path = $projectPath
+        } elseif ($Group) {
             $pesterParams.Path = $Group
         }
     }
