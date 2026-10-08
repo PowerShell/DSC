@@ -38,7 +38,7 @@ Describe 'Microsoft.Windows/FeatureOnDemandList - export operation' -Skip:(!$IsW
     }
 
     It 'exports all capabilities with no input' -Skip:(!$isElevated) {
-        $output = dsc.exe resource export -r Microsoft.Windows/FeatureOnDemandList | ConvertFrom-Json
+        $output = dsc resource export -r Microsoft.Windows/FeatureOnDemandList | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $capabilities = $output.resources[0].properties.capabilities
         $capabilities | Should -Not -BeNullOrEmpty
@@ -52,7 +52,7 @@ Describe 'Microsoft.Windows/FeatureOnDemandList - export operation' -Skip:(!$IsW
 
     It 'exports capabilities filtered by exact identity' -Skip:(!$isElevated) {
         $inputJson = '{"capabilities":[{"identity":"' + $knownCapabilityNameOne + '"}]}'
-        $output = dsc.exe resource export -r Microsoft.Windows/FeatureOnDemandList -i $inputJson | ConvertFrom-Json
+        $output = dsc resource export -r Microsoft.Windows/FeatureOnDemandList -i $inputJson | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $capabilities = $output.resources[0].properties.capabilities
         $capabilities | Should -Not -BeNullOrEmpty

@@ -18,7 +18,7 @@ Describe 'Microsoft.Windows/WindowsFeatureList - export operation' -Skip:(!$IsWi
     }
 
     It 'exports all features with no input filter' {
-        $output = dsc.exe resource export -r Microsoft.Windows/WindowsFeatureList | ConvertFrom-Json
+        $output = dsc resource export -r Microsoft.Windows/WindowsFeatureList | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $features = $output.resources[0].properties.features
         $features | Should -Not -BeNullOrEmpty
@@ -32,7 +32,7 @@ Describe 'Microsoft.Windows/WindowsFeatureList - export operation' -Skip:(!$IsWi
 
     It 'exports features filtered by exact featureName' {
         $inputJson = '{"features":[{"featureName":"' + $knownEnabledFeature + '"}]}'
-        $output = dsc.exe resource export -r Microsoft.Windows/WindowsFeatureList -i $inputJson | ConvertFrom-Json
+        $output = dsc resource export -r Microsoft.Windows/WindowsFeatureList -i $inputJson | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $features = $output.resources[0].properties.features
         $features | Should -Not -BeNullOrEmpty
