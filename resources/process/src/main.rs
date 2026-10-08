@@ -3,7 +3,7 @@
 
 mod process_info;
 use std::env;
-use std::process::exit;
+use std::process::ExitCode;
 use std::io::{self, Read};
 use sysinfo::{ProcessesToUpdate, System};
 use crate::process_info::ProcessInfo;
@@ -41,7 +41,7 @@ fn print_input() {
     println!("{}", input.unwrap());
 }
 
-fn main() {
+fn main() -> ExitCode {
     let args: Vec<String> = env::args().collect();
     if args.len() == 2 {
         // one argument passed
@@ -52,20 +52,20 @@ fn main() {
                     let json = serde_json::to_string(&p).unwrap();
                     println!("{json}");
                 }
-                exit(0);
+                ExitCode::SUCCESS
             },
             "get" | "set" | "test" => { // used for testing only
                 print_input();
-                exit(0);
+                ExitCode::SUCCESS
             },
             _ => {
                 help();
-                exit(1);
+                ExitCode::FAILURE
             },
         }
     }
     else {
         help();
-        exit(1);
+        ExitCode::FAILURE
     }
 }

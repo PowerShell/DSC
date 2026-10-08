@@ -7,7 +7,7 @@ mod types;
 mod service;
 
 use rust_i18n::t;
-use std::process::exit;
+use std::process::ExitCode;
 
 use types::WindowsService;
 
@@ -18,100 +18,118 @@ fn write_error(message: &str) {
 
 rust_i18n::i18n!("locales", fallback = "en-us");
 
-const EXIT_SUCCESS: i32 = 0;
-const EXIT_INVALID_ARGS: i32 = 1;
-const EXIT_INVALID_INPUT: i32 = 2;
-const EXIT_SERVICE_ERROR: i32 = 3;
+const EXIT_SUCCESS: u8 = 0;
+const EXIT_INVALID_ARGS: u8 = 1;
+const EXIT_INVALID_INPUT: u8 = 2;
+const EXIT_SERVICE_ERROR: u8 = 3;
 
 /// Deserialize the required JSON input into a `WindowsService`, or exit with an error.
-fn require_input(input_json: Option<String>) -> WindowsService {
+fn require_input(input_json: Option<String>) -> Result<WindowsService, ExitCode> {
     let json = match input_json {
         Some(j) => j,
         None => {
             write_error(&t!("main.missingInput"));
-            exit(EXIT_INVALID_ARGS);
+            return Err(ExitCode::from(EXIT_INVALID_ARGS));
         }
     };
     match serde_json::from_str(&json) {
-        Ok(v) => v,
+        Ok(v) => Ok(v),
         Err(e) => {
             write_error(&t!("main.invalidJson", error = e.to_string()));
-            exit(EXIT_INVALID_INPUT);
+            Err(ExitCode::from(EXIT_INVALID_INPUT))
         }
     }
 }
 
 /// Serialize a value to JSON and print it to stdout, or exit with an error.
-fn print_json(value: &impl serde::Serialize) {
+fn print_json(value: &impl serde::Serialize) -> Result<(), ExitCode> {
     match serde_json::to_string(value) {
-        Ok(json) => println!("{json}"),
+        Ok(json) => {
+            println!("{json}");
+            Ok(())
+        }
         Err(e) => {
             write_error(&t!("main.invalidJson", error = e.to_string()));
-            exit(EXIT_SERVICE_ERROR);
+            Err(ExitCode::from(EXIT_SERVICE_ERROR))
         }
     }
 }
 
 #[cfg(not(windows))]
-fn main() {
+fn main() -> ExitCode {
     write_error(&t!("main.windowsOnly"));
-    exit(EXIT_SERVICE_ERROR);
+    ExitCode::from(EXIT_SERVICE_ERROR)
 }
 
 #[cfg(windows)]
-fn main() {
+fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().collect();
 
     if args.len() < 2 {
         write_error(&t!("main.missingOperation"));
-        exit(EXIT_INVALID_ARGS);
+        return ExitCode::from(EXIT_INVALID_ARGS);
     }
 
     let operation = args[1].as_str();
-    let input_json = parse_input_arg(&args);
+    let input_json = match parse_input_arg(&args) {
+        Ok(input) => input,
+        Err(code) => return code,
+    };
     let what_if = parse_what_if_flag(&args);
 
     match operation {
         "get" => {
-            let input = require_input(input_json);
+            let input = match require_input(input_json) {
+                Ok(input) => input,
+                Err(code) => return code,
+            };
 
             match service::get_service(&input) {
                 Ok(result) => {
-                    print_json(&result);
-                    exit(EXIT_SUCCESS);
+                    if let Err(code) = print_json(&result) {
+                        return code;
+                    }
+                    ExitCode::from(EXIT_SUCCESS)
                 }
                 Err(e) => {
                     write_error(&e.to_string());
-                    exit(EXIT_SERVICE_ERROR);
+                    ExitCode::from(EXIT_SERVICE_ERROR)
                 }
             }
         }
         "set" => {
-            let input = require_input(input_json);
+            let input = match require_input(input_json) {
+                Ok(input) => input,
+                Err(code) => return code,
+            };
 
             // In what-if, if the desired state is _exist: false, route to delete
             // so the projected state and metadata describe a delete operation.
             if what_if && matches!(input.exist, Some(false)) {
                 match service::what_if_delete_service(&input) {
                     Ok(result) => {
-                        print_json(&result);
-                        exit(EXIT_SUCCESS);
+                        if let Err(code) = print_json(&result) {
+                            return code;
+                        }
+                        return ExitCode::from(EXIT_SUCCESS);
                     }
                     Err(e) => {
                         write_error(&e.to_string());
-                        exit(EXIT_SERVICE_ERROR);
+                        return ExitCode::from(EXIT_SERVICE_ERROR);
                     }
                 }
             }
 
             match service::set_service(&input, what_if) {
                 Ok(result) => {
-                    print_json(&result);
-                    exit(EXIT_SUCCESS);
+                    if let Err(code) = print_json(&result) {
+                        return code;
+                    }
+                    ExitCode::from(EXIT_SUCCESS)
                 }
                 Err(e) => {
                     write_error(&e.to_string());
-                    exit(EXIT_SERVICE_ERROR);
+                    ExitCode::from(EXIT_SERVICE_ERROR)
                 }
             }
         }
@@ -119,37 +137,39 @@ fn main() {
             match service::export_services() {
                 Ok(services) => {
                     for svc in &services {
-                        print_json(svc);
+                        if let Err(code) = print_json(svc) {
+                            return code;
+                        }
                     }
-                    exit(EXIT_SUCCESS);
+                    ExitCode::from(EXIT_SUCCESS)
                 }
                 Err(e) => {
                     write_error(&e.to_string());
-                    exit(EXIT_SERVICE_ERROR);
+                    ExitCode::from(EXIT_SERVICE_ERROR)
                 }
             }
         }
         _ => {
             write_error(&t!("main.unknownOperation", operation = operation));
-            exit(EXIT_INVALID_ARGS);
+            ExitCode::from(EXIT_INVALID_ARGS)
         }
     }
 }
 
 /// Parse the `--input <json>` argument from the command-line args.
-fn parse_input_arg(args: &[String]) -> Option<String> {
+fn parse_input_arg(args: &[String]) -> Result<Option<String>, ExitCode> {
     let mut i = 2; // skip binary name and operation
     while i < args.len() {
         if args[i] == "--input" || args[i] == "-i" {
             if i + 1 < args.len() {
-                return Some(args[i + 1].clone());
+                return Ok(Some(args[i + 1].clone()));
             }
             write_error(&t!("main.missingInputValue"));
-            exit(EXIT_INVALID_ARGS);
+            return Err(ExitCode::from(EXIT_INVALID_ARGS));
         }
         i += 1;
     }
-    None
+    Ok(None)
 }
 
 /// Parse the `--what-if` / `-w` flag from the command-line args.

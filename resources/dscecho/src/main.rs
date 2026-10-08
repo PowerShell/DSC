@@ -10,19 +10,20 @@ use rust_i18n::{i18n, t};
 use schemars::schema_for;
 use serde_json::{Map, Value};
 use crate::echo::{Echo, Output, SecureObject, SecureString};
+use std::process::ExitCode;
 
 i18n!("locales", fallback = "en-us");
 
 const SECURE_VALUE_REDACTED: &str = "<secureValue>";
 
-fn main() {
+fn main() -> ExitCode {
     let args = Args::parse();
     if let Some(input) = args.input {
         let mut echo = match serde_json::from_str::<Echo>(&input) {
             Ok(echo) => echo,
             Err(err) => {
                 eprintln!("{}: {err}", t!("main.invalidJson"));
-                std::process::exit(1);
+                return ExitCode::FAILURE;
             }
         };
         match echo.output {
@@ -53,12 +54,13 @@ fn main() {
         }
         let json = serde_json::to_string(&echo).unwrap();
         println!("{json}");
-        return;
+        return ExitCode::SUCCESS;
     }
 
     let schema = schema_for!(Echo);
     let json = serde_json::to_string_pretty(&schema).unwrap();
     println!("{json}");
+    ExitCode::SUCCESS
 }
 
 fn is_secure_value(value: &Value) -> bool {

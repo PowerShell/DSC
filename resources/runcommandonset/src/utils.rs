@@ -2,17 +2,17 @@
 // Licensed under the MIT License.
 
 use rust_i18n::t;
-use std::{io::Read, process::{Command, exit, Stdio}};
+use std::{io::Read, process::{Command, Stdio}};
 use tracing::{Level, error, debug, trace};
 use tracing_subscriber::{filter::EnvFilter, layer::SubscriberExt, Layer};
 
 use crate::args::{TraceFormat, TraceLevel};
 use crate::runcommand;
 
-pub const EXIT_INVALID_ARGS: i32 = 1;
-pub const EXIT_DSC_ERROR: i32 = 2;
+pub const EXIT_INVALID_ARGS: u8 = 1;
+pub const EXIT_DSC_ERROR: u8 = 2;
 pub const EXIT_CODE_MISMATCH: i32 = 3;
-pub const EXIT_INVALID_INPUT: i32 = 4;
+pub const EXIT_INVALID_INPUT: u8 = 4;
 pub const EXIT_PROCESS_TERMINATED: i32 = 5;
 
 /// Initialize `RunCommand` struct from input provided via stdin or via CLI arguments.
@@ -27,7 +27,7 @@ pub const EXIT_PROCESS_TERMINATED: i32 = 5;
 /// # Errors
 ///
 /// Error message then exit if the `RunCommand` struct cannot be initialized from the provided inputs.
-pub fn parse_input(arguments: Option<Vec<String>>, executable: Option<String>, exit_code: i32, stdin: Option<String>) -> runcommand::RunCommand {
+pub fn parse_input(arguments: Option<Vec<String>>, executable: Option<String>, exit_code: i32, stdin: Option<String>) -> Result<runcommand::RunCommand, u8> {
     let command: runcommand::RunCommand;
     if let Some(input) = stdin {
         debug!("Input: {}", input);
@@ -35,7 +35,7 @@ pub fn parse_input(arguments: Option<Vec<String>>, executable: Option<String>, e
             Ok(json) => json,
             Err(err) => {
                 error!("{}: {err}", t!("utils.invalidInput"));
-                exit(EXIT_INVALID_INPUT);
+                return Err(EXIT_INVALID_INPUT);
             }
         }
     } else if let Some(executable) = executable {
@@ -47,9 +47,9 @@ pub fn parse_input(arguments: Option<Vec<String>>, executable: Option<String>, e
     }
     else {
         error!("{}", t!("utils.executableRequired"));
-        exit(EXIT_INVALID_INPUT);
+        return Err(EXIT_INVALID_INPUT);
     }
-    command
+    Ok(command)
 }
 
 /// Setup tracing subscriber based on the provided trace level and format.
@@ -119,7 +119,7 @@ pub fn enable_tracing(trace_level: &TraceLevel, trace_format: &TraceFormat) {
 /// # Errors
 ///
 /// Error message then exit if the command fails to execute or stdin/stdout/stderr cannot be opened.
-pub fn invoke_command(executable: &str, args: Option<Vec<String>>) -> (i32, String, String) {
+pub fn invoke_command(executable: &str, args: Option<Vec<String>>) -> Result<(i32, String, String), u8> {
     // originally implemented in dsc_lib/src/dscresources/command_resource.rs
     trace!("Invoking command {} with args {:?}", executable, args);
     let mut command = Command::new(executable);
@@ -134,33 +134,33 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>) -> (i32, Stri
         Ok(child) => child,
         Err(e) => {
             error!("{} '{executable}': {e}", t!("utils.failedToExecute"));
-            exit(EXIT_DSC_ERROR);
+            return Err(EXIT_DSC_ERROR);
         }
     };
 
     let Some(mut child_stdout) = child.stdout.take() else {
         error!("{} {executable}", t!("utils.failedOpenStdout"));
-        exit(EXIT_DSC_ERROR);
+        return Err(EXIT_DSC_ERROR);
     };
     let mut stdout_buf = Vec::new();
     match child_stdout.read_to_end(&mut stdout_buf) {
         Ok(_) => (),
         Err(e) => {
             error!("{} '{executable}': {e}", t!("utils.failedReadStdout"));
-            exit(EXIT_DSC_ERROR);
+            return Err(EXIT_DSC_ERROR);
         }
     }
 
     let Some(mut child_stderr) = child.stderr.take() else {
         error!("{} {executable}", t!("utils.failedOpenStderr"));
-        exit(EXIT_DSC_ERROR);
+        return Err(EXIT_DSC_ERROR);
     };
     let mut stderr_buf = Vec::new();
     match child_stderr.read_to_end(&mut stderr_buf) {
         Ok(_) => (),
         Err(e) => {
             error!("{} '{executable}': {e}", t!("utils.failedReadStderr"));
-            exit(EXIT_DSC_ERROR);
+            return Err(EXIT_DSC_ERROR);
         }
     }
 
@@ -168,12 +168,12 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>) -> (i32, Stri
         Ok(exit_status) => exit_status,
         Err(e) => {
             error!("{} '{executable}': {e}", t!("utils.failedWait"));
-            exit(EXIT_DSC_ERROR);
+            return Err(EXIT_DSC_ERROR);
         }
     };
 
     let exit_code = exit_status.code().unwrap_or(EXIT_PROCESS_TERMINATED);
     let stdout = String::from_utf8_lossy(&stdout_buf).to_string();
     let stderr = String::from_utf8_lossy(&stderr_buf).to_string();
-    (exit_code, stdout, stderr)
+    Ok((exit_code, stdout, stderr))
 }

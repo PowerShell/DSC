@@ -7,7 +7,7 @@ mod types;
 mod environment;
 
 use rust_i18n::t;
-use std::process::exit;
+use std::process::ExitCode;
 use types::{
     EnvironmentPathVariable, EnvironmentVariable, EnvironmentVariableFilterList,
     EnvironmentVariableList, Operation,
@@ -15,11 +15,11 @@ use types::{
 
 rust_i18n::i18n!("locales", fallback = "en-us");
 
-const EXIT_SUCCESS: i32 = 0;
-const EXIT_INVALID_ARGS: i32 = 1;
-const EXIT_INVALID_INPUT: i32 = 2;
-const EXIT_RESOURCE_ERROR: i32 = 3;
-const EXIT_ELEVATION_REQUIRED: i32 = 4;
+const EXIT_SUCCESS: u8 = 0;
+const EXIT_INVALID_ARGS: u8 = 1;
+const EXIT_INVALID_INPUT: u8 = 2;
+const EXIT_RESOURCE_ERROR: u8 = 3;
+const EXIT_ELEVATION_REQUIRED: u8 = 4;
 
 #[derive(Clone, Copy)]
 enum InputKind {
@@ -32,12 +32,15 @@ fn write_error(message: &str) {
     eprintln!("{}", serde_json::json!({ "error": message }));
 }
 
-fn print_json(value: &impl serde::Serialize) {
+fn print_json(value: &impl serde::Serialize) -> Result<(), ExitCode> {
     match serde_json::to_string(value) {
-        Ok(json) => println!("{json}"),
+        Ok(json) => {
+            println!("{json}");
+            Ok(())
+        }
         Err(error) => {
             write_error(&t!("main.serializeError", error = error.to_string()));
-            exit(EXIT_RESOURCE_ERROR);
+            Err(ExitCode::from(EXIT_RESOURCE_ERROR))
         }
     }
 }
@@ -46,7 +49,7 @@ fn parse_list(
     input_json: Option<String>,
     operation: Operation,
     kind: InputKind,
-) -> Result<EnvironmentVariableList, (String, i32)> {
+) -> Result<EnvironmentVariableList, (String, u8)> {
     let json =
         input_json.ok_or_else(|| (t!("main.missingInput").to_string(), EXIT_INVALID_ARGS))?;
 
@@ -73,7 +76,7 @@ fn parse_list(
 
 fn parse_export_filters(
     input_json: Option<String>,
-) -> Result<EnvironmentVariableFilterList, (String, i32)> {
+) -> Result<EnvironmentVariableFilterList, (String, u8)> {
     let Some(json) = input_json else {
         return Ok(EnvironmentVariableFilterList::default());
     };
@@ -110,32 +113,35 @@ fn serialize_result(
     Ok(output)
 }
 
-fn print_result(value: EnvironmentVariableList, kind: InputKind) {
+fn print_result(value: EnvironmentVariableList, kind: InputKind) -> Result<(), ExitCode> {
     match serialize_result(value, kind) {
         Ok(output) => print_json(&output),
         Err(error) => {
             write_error(&error);
-            exit(EXIT_RESOURCE_ERROR);
+            Err(ExitCode::from(EXIT_RESOURCE_ERROR))
         }
     }
 }
 
 #[cfg(not(windows))]
-fn main() {
+fn main() -> ExitCode {
     write_error(&t!("main.windowsOnly"));
-    exit(EXIT_RESOURCE_ERROR);
+    ExitCode::from(EXIT_RESOURCE_ERROR)
 }
 
 #[cfg(windows)]
-fn main() {
+fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().collect();
     if args.len() < 2 {
         write_error(&t!("main.missingOperation"));
-        exit(EXIT_INVALID_ARGS);
+        return ExitCode::from(EXIT_INVALID_ARGS);
     }
 
     let operation = args[1].as_str();
-    let input_json = parse_input_arg(&args);
+    let input_json = match parse_input_arg(&args) {
+        Ok(input) => input,
+        Err(code) => return code,
+    };
     let kind = if args.iter().any(|arg| arg == "--list") {
         InputKind::List
     } else if args.iter().any(|arg| arg == "--path") {
@@ -156,46 +162,48 @@ fn main() {
         }
         _ => {
             write_error(&t!("main.unknownOperation", operation = operation));
-            exit(EXIT_INVALID_ARGS);
+            return ExitCode::from(EXIT_INVALID_ARGS);
         }
     };
     let result = match input {
         Ok(result) => result,
         Err((error, exit_code)) => {
             write_error(&error);
-            exit(exit_code);
+            return ExitCode::from(exit_code);
         }
     };
 
     match result {
         Ok(value) => {
-            print_result(value, kind);
-            exit(EXIT_SUCCESS);
+            if let Err(code) = print_result(value, kind) {
+                return code;
+            }
+            ExitCode::from(EXIT_SUCCESS)
         }
         Err(error) => {
             write_error(&error.to_string());
-            exit(if error.is_elevation_required() {
+            ExitCode::from(if error.is_elevation_required() {
                 EXIT_ELEVATION_REQUIRED
             } else {
                 EXIT_RESOURCE_ERROR
-            });
+            })
         }
     }
 }
 
-fn parse_input_arg(args: &[String]) -> Option<String> {
+fn parse_input_arg(args: &[String]) -> Result<Option<String>, ExitCode> {
     let mut index = 2;
     while index < args.len() {
         if args[index] == "--input" || args[index] == "-i" {
             if index + 1 < args.len() {
-                return Some(args[index + 1].clone());
+                return Ok(Some(args[index + 1].clone()));
             }
             write_error(&t!("main.missingInputValue"));
-            exit(EXIT_INVALID_ARGS);
+            return Err(ExitCode::from(EXIT_INVALID_ARGS));
         }
         index += 1;
     }
-    None
+    Ok(None)
 }
 
 #[cfg(test)]
