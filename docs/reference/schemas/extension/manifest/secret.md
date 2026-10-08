@@ -35,13 +35,14 @@ that extension.
 The `secret` definition must include these properties:
 
 - [executable](#executable)
+- [args](#args)
 
 ## Properties
 
 ### executable
 
 The `executable` property defines the name of the command to run. The value must be the name of a
-command secretable in the system's `PATH` environment variable or the full path to the command. A
+command discoverable in the system's `PATH` environment variable or the full path to the command. A
 file extension is only required when the command isn't recognizable by the operating system as an
 executable.
 
@@ -56,15 +57,22 @@ The `args` property defines the list of arguments to pass to the command. Each i
 can be a string representing a static argument, a [name argument](#name-argument) object, or a
 [vault argument](#vault-argument) object.
 
-The array should contain exactly one name argument. It may contain a single vault argument and any
+The array must contain exactly one name argument. It may contain at most one vault argument and any
 number of static string arguments.
 
-If the array doesn't define a name argument, DSC can't pass the secret name to the extension. If
-the array doesn't define a vault argument, DSC can't pass the vault name to the extension.
+Without a name argument, DSC can't pass the secret name to the extension, so the extension can't
+retrieve a specific secret. DSC doesn't load an extension manifest that defines the `secret`
+property without the `args` property, without a name argument, with more than one name argument,
+or with more than one vault argument. When DSC skips a manifest for one of these reasons, it logs
+an informational message that explains the problem. Use the `--trace-level info` option, like
+`dsc --trace-level info extension list`, to see the message.
+
+If the array doesn't define a vault argument, DSC can't pass the vault name to the extension, so
+the extension can't retrieve a secret from a specific vault.
 
 ```yaml
 Type:      array
-Required:  false
+Required:  true
 ItemsType: [string, object(Name or Vault argument)]
 ```
 
@@ -79,11 +87,12 @@ Type: string
 
 #### Name argument
 
-Defines an argument that receives the path to the file to import.
+Defines the argument that receives the name of the secret to retrieve.
 
-DSC passes the value of `nameArg` followed by the name of the secret to retrieve.
+DSC passes the value of `nameArg` followed by the name of the secret to retrieve. The `args` array
+must define this argument exactly once.
 
-A file argument is defined as a JSON object with the following properties:
+A name argument is defined as a JSON object with the following properties:
 
 - `nameArg` (required) - The argument to pass before the secret name, like `--secret-name`.
 
@@ -97,7 +106,8 @@ RequiredProperties: [nameArg]
 Defines an argument that receives the name of a specific vault to retrieve a secret from.
 
 DSC passes the value of `vaultArg` followed by the name of the vault when the `secret()` function
-specifies a vault. When the function doesn't specify a vault, DSC ignores the vault argument.
+specifies a vault. When the function doesn't specify a vault, DSC ignores the vault argument. The
+`args` array may define this argument at most once.
 
 A vault argument is defined as a JSON object with the following properties:
 
