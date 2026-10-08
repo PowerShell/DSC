@@ -44,6 +44,10 @@ using module ./helpers.build.psm1
     .PARAMETER Test
     Determines whether to run Rust and Pester tests for the project.
 
+    .PARAMETER Project
+    Specifies the projects to build. When used with `-Test`, only tests for the selected projects
+    are run.
+
     .PARAMETER CodeCoverage
     Enables code coverage instrumentation using cargo-llvm-cov. When specified, the build and
     tests run with coverage instrumentation enabled and an LCOV report is generated at the path
@@ -365,6 +369,9 @@ process {
             }
             $pesterParams = @{
                 UsingADO = $usingADO
+            }
+            if ($Project.Count -ge 1) {
+                $pesterParams.Project = $BuildData.Projects
             }
             if ($null -ne $PesterTestGroup) {
                 $pesterParams.Group = $PesterTestGroup
