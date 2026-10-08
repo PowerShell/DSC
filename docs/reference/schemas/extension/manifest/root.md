@@ -317,7 +317,10 @@ runtime. When this property is defined, the extension has the `secret` capabilit
 invoke the extension for the [secret()][05] configuration function.
 
 The value of this property must be an object. The object's `executable` property, defining the name
-of the command to call, is mandatory. The `args` property is optional. For more information, see
+of the command to call, and `args` property, defining the arguments to pass to the command, are
+both mandatory. The `args` property must define the secret name input argument exactly once and may
+define the vault input argument at most once. DSC doesn't load an extension manifest that defines
+the `secret` property without a secret name input argument. For more information, see
 [DSC extension manifest secret property schema reference][06].
 
 ```yaml

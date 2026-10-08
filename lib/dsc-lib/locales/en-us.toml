@@ -138,6 +138,7 @@ adaptedResourceFound = "Adapted resource '%{resource}' version %{version} found"
 executableNotFound = "Executable '%{executable}' not found for operation '%{operation}' for resource '%{resource}'"
 invalidResourceManifest = "Invalid manifest for resource '%{resource}': %{err}"
 invalidExtensionManifest = "Invalid manifest for extension '%{resource}': %{err}"
+invalidSecretExtensionManifest = "Invalid 'secret' definition for extension '%{extension}' in manifest '%{path}': %{err}"
 invalidAdaptedResourceManifest = "Invalid manifest for adapted resource '%{resource}': %{err}"
 invalidManifestList = "Invalid manifest list '%{resource}': %{err}"
 invalidManifestFile = "Invalid manifest file '%{resource}': %{err}"
@@ -302,6 +303,11 @@ manifestImported = "Manifest imported from extension %{extension}"
 [extensions.extension_manifest]
 extensionManifestSchemaTitle = "Extension manifest schema URI"
 extensionManifestSchemaDescription = "Defines the JSON Schema the extension manifest adheres to."
+
+[extensions.secret]
+missingNameArg = "The 'secret' command doesn't define the secret name input argument, so DSC can't pass the name of the secret to retrieve to the extension. Define exactly one argument in 'secret.args' as an object with the 'nameArg' property"
+multipleNameArgs = "The 'secret' command defines the secret name input argument %{count} times. Define exactly one argument in 'secret.args' as an object with the 'nameArg' property"
+multipleVaultArgs = "The 'secret' command defines the vault input argument %{count} times. Define at most one argument in 'secret.args' as an object with the 'vaultArg' property"
 
 [functions]
 invalidArgType = "Invalid argument type"

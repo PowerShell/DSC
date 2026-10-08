@@ -997,6 +997,9 @@ fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<
         capabilities.push(dscextension::Capability::Discover);
     }
     if let Some(secret) = &manifest.secret {
+        if let Err(err) = secret.validate_args() {
+            return Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.invalidSecretExtensionManifest", extension = manifest.r#type, path = path.to_string_lossy(), err = err).to_string()));
+        }
         verify_executable(&manifest.r#type, "secret", &secret.executable, path.parent().unwrap());
         capabilities.push(dscextension::Capability::Secret);
     }
