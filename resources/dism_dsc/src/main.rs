@@ -13,6 +13,7 @@ mod util;
 mod windows_feature;
 
 use rust_i18n::t;
+use std::process::ExitCode;
 
 rust_i18n::i18n!("locales", fallback = "en-us");
 
@@ -22,33 +23,33 @@ fn get_input(args: &[String]) -> &str {
         .map_or("", |pair| pair[1].as_str())
 }
 
-fn dispatch(input: &str, handler: impl FnOnce(&str) -> Result<String, String>) {
+fn dispatch(input: &str, handler: impl FnOnce(&str) -> Result<String, String>) -> ExitCode {
     match handler(input) {
         Ok(output) => {
             println!("{output}");
-            std::process::exit(0);
+            ExitCode::SUCCESS
         }
         Err(e) => {
             eprintln!("Error: {e}");
-            std::process::exit(1);
+            ExitCode::FAILURE
         }
     }
 }
 
 #[cfg(not(windows))]
-fn main() {
+fn main() -> ExitCode {
     eprintln!("Error: {}", t!("main.windowsOnly"));
-    std::process::exit(1);
+    ExitCode::FAILURE
 }
 
 #[cfg(windows)]
-fn main() {
+fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().collect();
 
     if args.len() < 3 {
         eprintln!("Error: {}", t!("main.missingArguments"));
         eprintln!("{}", t!("main.usage"));
-        std::process::exit(1);
+        return ExitCode::FAILURE;
     }
 
     let operation = args[1].as_str();
@@ -65,7 +66,7 @@ fn main() {
         ("get", "windows-feature") => dispatch(input, windows_feature::handle_get),
         ("set", "windows-feature") => {
             let what_if = args.iter().any(|arg| arg == "-w" || arg == "--what-if");
-            dispatch(input, |input| windows_feature::handle_set(input, what_if));
+            dispatch(input, |input| windows_feature::handle_set(input, what_if))
         }
         ("export", "windows-feature") => dispatch(input, windows_feature::handle_export),
         ("get" | "set" | "export", _) => {
@@ -74,12 +75,58 @@ fn main() {
                 t!("main.unknownResourceType", resource_type = resource_type)
             );
             eprintln!("{}", t!("main.usage"));
-            std::process::exit(1);
+            ExitCode::FAILURE
         }
         _ => {
             eprintln!("{}", t!("main.unknownOperation", operation = operation));
             eprintln!("{}", t!("main.usage"));
-            std::process::exit(1);
+            ExitCode::FAILURE
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{dispatch, get_input};
+    use std::process::ExitCode;
+
+    #[test]
+    fn input_argument_is_returned() {
+        let args = vec![
+            "dism_dsc".to_string(),
+            "get".to_string(),
+            "windows-feature".to_string(),
+            "--input".to_string(),
+            r#"{"features":[]}"#.to_string(),
+        ];
+
+        assert_eq!(get_input(&args), r#"{"features":[]}"#);
+    }
+
+    #[test]
+    fn missing_input_argument_returns_empty_string() {
+        let args = vec![
+            "dism_dsc".to_string(),
+            "export".to_string(),
+            "windows-feature".to_string(),
+        ];
+
+        assert_eq!(get_input(&args), "");
+    }
+
+    #[test]
+    fn dispatch_returns_success_for_handler_output() {
+        assert_eq!(
+            dispatch("input", |input| Ok(input.to_string())),
+            ExitCode::SUCCESS
+        );
+    }
+
+    #[test]
+    fn dispatch_returns_failure_for_handler_error() {
+        assert_eq!(
+            dispatch("input", |_| Err("failed".to_string())),
+            ExitCode::FAILURE
+        );
     }
 }
