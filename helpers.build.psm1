@@ -2886,11 +2886,26 @@ function Test-ProjectWithPester {
             ErrorAction = 'Stop'
         }
         if ($Project) {
-            $projectPath = $Project.RelativePath
+            $projectPath = @($Project.RelativePath)
             if ($Group) {
-                $projectPath = $projectPath | Where-Object -FilterScript {
-                    ($_ -split '[/\\]', 2)[0] -in $Group
-                }
+                $projectPath = @(
+                    foreach ($path in $projectPath) {
+                        $normalizedPath = $path -replace '\\', '/'
+                        foreach ($testGroup in $Group) {
+                            if ($normalizedPath -eq '.') {
+                                $testGroup
+                            } elseif (
+                                $normalizedPath -eq $testGroup -or
+                                $normalizedPath.StartsWith("$testGroup/")
+                            ) {
+                                $normalizedPath
+                            } elseif ($testGroup.StartsWith("$normalizedPath/")) {
+                                $testGroup
+                            }
+                        }
+                    }
+                ) | Select-Object -Unique
+                $projectPath = @($projectPath)
             }
             if ($projectPath.Count -eq 0) {
                 throw 'None of the selected projects are in the specified Pester test groups.'
