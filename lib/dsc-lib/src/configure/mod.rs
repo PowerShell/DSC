@@ -499,11 +499,34 @@ impl Configurator {
     ///
     /// This function will return an error if the configuration is invalid or the underlying discovery fails.
     pub fn new(json: &str, progress_format: ProgressFormat) -> Result<Configurator, DscError> {
+        Self::new_with_context(json, progress_format, Context::new())
+    }
+
+    /// Create a new `Configurator` instance for a specific version of DSC.
+    ///
+    /// The version is used to validate the `version` directive of the configuration and is
+    /// reported in the result metadata.
+    ///
+    /// # Arguments
+    ///
+    /// * `config` - The configuration to use in JSON.
+    /// * `dsc_version` - The semantic version of DSC that is processing the configuration.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the configuration is invalid or the underlying discovery fails.
+    pub fn new_with_dsc_version(json: &str, progress_format: ProgressFormat, dsc_version: &str) -> Result<Configurator, DscError> {
+        let mut context = Context::new();
+        context.dsc_version = Some(dsc_version.to_string());
+        Self::new_with_context(json, progress_format, context)
+    }
+
+    fn new_with_context(json: &str, progress_format: ProgressFormat, context: Context) -> Result<Configurator, DscError> {
         let discovery = Discovery::new();
         let mut config = Configurator {
             json: json.to_owned(),
             config: Configuration::new(),
-            context: Context::new(),
+            context,
             discovery: discovery.clone(),
             statement_parser: Statement::new()?,
             progress_format,
@@ -1296,9 +1319,16 @@ impl Configurator {
 
         if let Some(directives) = &config.directives
             && let Some(version_req) = &directives.version {
-                let dsc_version = SemanticVersion::parse(env!("CARGO_PKG_VERSION"))?;
+                let current_version = self.context.dsc_version.as_deref().unwrap_or(env!("CARGO_PKG_VERSION"));
+                let mut dsc_version = SemanticVersion::parse(current_version)?;
+                // A requirement without a prerelease segment never matches a prerelease version, so
+                // compare a prerelease build of DSC by its release version unless the requirement
+                // explicitly defines a prerelease segment.
+                if version_req.comparators.iter().all(|comparator| comparator.pre.is_empty()) {
+                    dsc_version = SemanticVersion::new(dsc_version.major, dsc_version.minor, dsc_version.patch);
+                }
                 if !version_req.matches(&dsc_version) {
-                    return Err(DscError::Validation(t!("configure.mod.versionNotSatisfied", required_version = version_req, current_version = env!("CARGO_PKG_VERSION")).to_string()));
+                    return Err(DscError::Validation(t!("configure.mod.versionNotSatisfied", required_version = version_req, current_version = current_version).to_string()));
                 }
             }
 
