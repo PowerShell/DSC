@@ -2,11 +2,10 @@ _version = 1
 
 [main]
 missingArguments = "Missing operation and resource type arguments"
-usage = "Usage: dism_dsc <get|set|export> <optional-feature|feature-on-demand|windows-feature>"
+usage = "Usage: dism_dsc <get|set|export> <optional-feature|feature-on-demand|windows-feature> [--input <JSON>]"
 windowsOnly = "This resource is only supported on Windows"
 unknownOperation = "Unknown operation '%{operation}'"
 unknownResourceType = "Unknown resource type '%{resource_type}'. Expected 'optional-feature', 'feature-on-demand', or 'windows-feature'"
-errorReadingInput = "Error reading input: %{err}"
 
 [get]
 failedParseInput = "Failed to parse input: %{err}"
