@@ -13,18 +13,24 @@
         "executable": "dism_dsc",
         "args": [
             "get",
-            "optional-feature"
+            "optional-feature",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
         ],
-        "input": "stdin",
         "requireSecurityContext": "elevated"
     },
     "set": {
         "executable": "dism_dsc",
         "args": [
             "set",
-            "optional-feature"
+            "optional-feature",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
         ],
-        "input": "stdin",
         "implementsPretest": false,
         "return": "state",
         "requireSecurityContext": "elevated"
@@ -33,9 +39,11 @@
         "executable": "dism_dsc",
         "args": [
             "export",
-            "optional-feature"
+            "optional-feature",
+            {
+                "jsonInputArg": "--input"
+            }
         ],
-        "input": "stdin",
         "requireSecurityContext": "elevated",
         "supportsFiltering": true
     },

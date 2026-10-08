@@ -13,31 +13,18 @@ mod util;
 mod windows_feature;
 
 use rust_i18n::t;
-use std::io::{self, IsTerminal, Read};
 use std::process::ExitCode;
 
 rust_i18n::i18n!("locales", fallback = "en-us");
 
-fn read_stdin() -> Result<String, String> {
-    let mut buffer = String::new();
-    if !io::stdin().is_terminal() {
-        io::stdin()
-            .read_to_string(&mut buffer)
-            .map_err(|e| t!("main.errorReadingInput", err = e).to_string())?;
-    }
-    Ok(buffer)
+fn get_input(args: &[String]) -> &str {
+    args.windows(2)
+        .find(|pair| pair[0] == "--input")
+        .map_or("", |pair| pair[1].as_str())
 }
 
-fn dispatch(handler: impl FnOnce(&str) -> Result<String, String>) -> ExitCode {
-    let buffer = match read_stdin() {
-        Ok(b) => b,
-        Err(e) => {
-            eprintln!("{e}");
-            return ExitCode::FAILURE;
-        }
-    };
-
-    match handler(&buffer) {
+fn dispatch(input: &str, handler: impl FnOnce(&str) -> Result<String, String>) -> ExitCode {
+    match handler(input) {
         Ok(output) => {
             println!("{output}");
             ExitCode::SUCCESS
@@ -67,20 +54,21 @@ fn main() -> ExitCode {
 
     let operation = args[1].as_str();
     let resource_type = args[2].as_str();
+    let input = get_input(&args);
 
     match (operation, resource_type) {
-        ("get", "optional-feature") => dispatch(optional_feature::handle_get),
-        ("set", "optional-feature") => dispatch(optional_feature::handle_set),
-        ("export", "optional-feature") => dispatch(optional_feature::handle_export),
-        ("get", "feature-on-demand") => dispatch(feature_on_demand::handle_get),
-        ("set", "feature-on-demand") => dispatch(feature_on_demand::handle_set),
-        ("export", "feature-on-demand") => dispatch(feature_on_demand::handle_export),
-        ("get", "windows-feature") => dispatch(windows_feature::handle_get),
+        ("get", "optional-feature") => dispatch(input, optional_feature::handle_get),
+        ("set", "optional-feature") => dispatch(input, optional_feature::handle_set),
+        ("export", "optional-feature") => dispatch(input, optional_feature::handle_export),
+        ("get", "feature-on-demand") => dispatch(input, feature_on_demand::handle_get),
+        ("set", "feature-on-demand") => dispatch(input, feature_on_demand::handle_set),
+        ("export", "feature-on-demand") => dispatch(input, feature_on_demand::handle_export),
+        ("get", "windows-feature") => dispatch(input, windows_feature::handle_get),
         ("set", "windows-feature") => {
             let what_if = args.iter().any(|arg| arg == "-w" || arg == "--what-if");
-            dispatch(|input| windows_feature::handle_set(input, what_if))
+            dispatch(input, |input| windows_feature::handle_set(input, what_if))
         }
-        ("export", "windows-feature") => dispatch(windows_feature::handle_export),
+        ("export", "windows-feature") => dispatch(input, windows_feature::handle_export),
         ("get" | "set" | "export", _) => {
             eprintln!(
                 "{}",
@@ -94,5 +82,51 @@ fn main() -> ExitCode {
             eprintln!("{}", t!("main.usage"));
             ExitCode::FAILURE
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{dispatch, get_input};
+    use std::process::ExitCode;
+
+    #[test]
+    fn input_argument_is_returned() {
+        let args = vec![
+            "dism_dsc".to_string(),
+            "get".to_string(),
+            "windows-feature".to_string(),
+            "--input".to_string(),
+            r#"{"features":[]}"#.to_string(),
+        ];
+
+        assert_eq!(get_input(&args), r#"{"features":[]}"#);
+    }
+
+    #[test]
+    fn missing_input_argument_returns_empty_string() {
+        let args = vec![
+            "dism_dsc".to_string(),
+            "export".to_string(),
+            "windows-feature".to_string(),
+        ];
+
+        assert_eq!(get_input(&args), "");
+    }
+
+    #[test]
+    fn dispatch_returns_success_for_handler_output() {
+        assert_eq!(
+            dispatch("input", |input| Ok(input.to_string())),
+            ExitCode::SUCCESS
+        );
+    }
+
+    #[test]
+    fn dispatch_returns_failure_for_handler_error() {
+        assert_eq!(
+            dispatch("input", |_| Err("failed".to_string())),
+            ExitCode::FAILURE
+        );
     }
 }
