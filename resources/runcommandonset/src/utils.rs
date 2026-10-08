@@ -26,7 +26,7 @@ pub const EXIT_PROCESS_TERMINATED: i32 = 5;
 ///
 /// # Errors
 ///
-/// Error message then exit if the `RunCommand` struct cannot be initialized from the provided inputs.
+/// Returns an exit code if the `RunCommand` struct cannot be initialized from the provided inputs.
 pub fn parse_input(arguments: Option<Vec<String>>, executable: Option<String>, exit_code: i32, stdin: Option<String>) -> Result<runcommand::RunCommand, u8> {
     let command: runcommand::RunCommand;
     if let Some(input) = stdin {
@@ -118,7 +118,7 @@ pub fn enable_tracing(trace_level: &TraceLevel, trace_format: &TraceFormat) {
 ///
 /// # Errors
 ///
-/// Error message then exit if the command fails to execute or stdin/stdout/stderr cannot be opened.
+/// Returns an exit code if the command fails to execute or stdin/stdout/stderr cannot be opened.
 pub fn invoke_command(executable: &str, args: Option<Vec<String>>) -> Result<(i32, String, String), u8> {
     // originally implemented in dsc_lib/src/dscresources/command_resource.rs
     trace!("Invoking command {} with args {:?}", executable, args);

@@ -23,7 +23,7 @@ const EXIT_INVALID_ARGS: u8 = 1;
 const EXIT_INVALID_INPUT: u8 = 2;
 const EXIT_SERVICE_ERROR: u8 = 3;
 
-/// Deserialize the required JSON input into a `WindowsService`, or exit with an error.
+/// Deserialize the required JSON input into a `WindowsService`, or return an exit code.
 fn require_input(input_json: Option<String>) -> Result<WindowsService, ExitCode> {
     let json = match input_json {
         Some(j) => j,
@@ -41,7 +41,7 @@ fn require_input(input_json: Option<String>) -> Result<WindowsService, ExitCode>
     }
 }
 
-/// Serialize a value to JSON and print it to stdout, or exit with an error.
+/// Serialize a value to JSON and print it to stdout, or return an exit code.
 fn print_json(value: &impl serde::Serialize) -> Result<(), ExitCode> {
     match serde_json::to_string(value) {
         Ok(json) => {

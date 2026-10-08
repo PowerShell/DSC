@@ -349,12 +349,13 @@ mod tests {
     fn finds_long_and_short_input_arguments() {
         assert_eq!(
             parse_input_arg(&["exe".into(), "get".into(), "--input".into(), "{}".into()]),
-            Some("{}".to_string())
+            Ok(Some("{}".to_string()))
         );
         assert_eq!(
             parse_input_arg(&["exe".into(), "get".into(), "-i".into(), "[]".into()]),
-            Some("[]".to_string())
+            Ok(Some("[]".to_string()))
         );
-        assert_eq!(parse_input_arg(&["exe".into(), "get".into()]), None);
+        assert_eq!(parse_input_arg(&["exe".into(), "get".into()]), Ok(None));
+        assert!(parse_input_arg(&["exe".into(), "get".into(), "--input".into()]).is_err());
     }
 }
