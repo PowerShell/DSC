@@ -13,30 +13,17 @@ mod util;
 mod windows_feature;
 
 use rust_i18n::t;
-use std::io::{self, IsTerminal, Read};
 
 rust_i18n::i18n!("locales", fallback = "en-us");
 
-fn read_stdin() -> Result<String, String> {
-    let mut buffer = String::new();
-    if !io::stdin().is_terminal() {
-        io::stdin()
-            .read_to_string(&mut buffer)
-            .map_err(|e| t!("main.errorReadingInput", err = e).to_string())?;
-    }
-    Ok(buffer)
+fn get_input(args: &[String]) -> &str {
+    args.windows(2)
+        .find(|pair| pair[0] == "--input")
+        .map_or("", |pair| pair[1].as_str())
 }
 
-fn dispatch(handler: impl FnOnce(&str) -> Result<String, String>) {
-    let buffer = match read_stdin() {
-        Ok(b) => b,
-        Err(e) => {
-            eprintln!("{e}");
-            std::process::exit(1);
-        }
-    };
-
-    match handler(&buffer) {
+fn dispatch(input: &str, handler: impl FnOnce(&str) -> Result<String, String>) {
+    match handler(input) {
         Ok(output) => {
             println!("{output}");
             std::process::exit(0);
@@ -66,20 +53,21 @@ fn main() {
 
     let operation = args[1].as_str();
     let resource_type = args[2].as_str();
+    let input = get_input(&args);
 
     match (operation, resource_type) {
-        ("get", "optional-feature") => dispatch(optional_feature::handle_get),
-        ("set", "optional-feature") => dispatch(optional_feature::handle_set),
-        ("export", "optional-feature") => dispatch(optional_feature::handle_export),
-        ("get", "feature-on-demand") => dispatch(feature_on_demand::handle_get),
-        ("set", "feature-on-demand") => dispatch(feature_on_demand::handle_set),
-        ("export", "feature-on-demand") => dispatch(feature_on_demand::handle_export),
-        ("get", "windows-feature") => dispatch(windows_feature::handle_get),
+        ("get", "optional-feature") => dispatch(input, optional_feature::handle_get),
+        ("set", "optional-feature") => dispatch(input, optional_feature::handle_set),
+        ("export", "optional-feature") => dispatch(input, optional_feature::handle_export),
+        ("get", "feature-on-demand") => dispatch(input, feature_on_demand::handle_get),
+        ("set", "feature-on-demand") => dispatch(input, feature_on_demand::handle_set),
+        ("export", "feature-on-demand") => dispatch(input, feature_on_demand::handle_export),
+        ("get", "windows-feature") => dispatch(input, windows_feature::handle_get),
         ("set", "windows-feature") => {
             let what_if = args.iter().any(|arg| arg == "-w" || arg == "--what-if");
-            dispatch(|input| windows_feature::handle_set(input, what_if));
+            dispatch(input, |input| windows_feature::handle_set(input, what_if));
         }
-        ("export", "windows-feature") => dispatch(windows_feature::handle_export),
+        ("export", "windows-feature") => dispatch(input, windows_feature::handle_export),
         ("get" | "set" | "export", _) => {
             eprintln!(
                 "{}",
