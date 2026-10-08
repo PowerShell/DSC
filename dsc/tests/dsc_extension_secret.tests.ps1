@@ -200,4 +200,66 @@ Describe 'Tests for the secret() function and extensions' {
         $env:DSC_RESTRICTED_PATH = $null
       }
     }
+
+    It 'Secret extension manifest <reason> is not loaded' -TestCases @(
+        @{ reason = 'without args'; secret = '{ "executable": "dsctest" }'; expectedError = 'missing field *args*' }
+        @{ reason = 'without a name argument'; secret = '{ "executable": "dsctest", "args": ["no-op"] }'; expectedError = "The 'secret' command doesn't define the secret name input argument" }
+        @{ reason = 'with multiple name arguments'; secret = '{ "executable": "dsctest", "args": ["no-op", { "nameArg": "--name" }, { "nameArg": "--secret" }] }'; expectedError = "The 'secret' command defines the secret name input argument 2 times" }
+        @{ reason = 'with multiple vault arguments'; secret = '{ "executable": "dsctest", "args": ["no-op", { "nameArg": "--name" }, { "vaultArg": "--vault" }, { "vaultArg": "--store" }] }'; expectedError = "The 'secret' command defines the vault input argument 2 times" }
+    ) {
+        param($secret, $expectedError)
+
+        $manifest = @"
+{
+    "`$schema": "https://aka.ms/dsc/schemas/v3/bundled/extension/manifest.json",
+        "type": "Test/SecretInvalid",
+        "version": "0.1.0",
+        "description": "Invalid secret extension for testing.",
+        "secret": $secret
+}
+"@
+
+        try {
+            $env:DSC_RESTRICTED_PATH = $TestDrive
+            Set-Content -Path "$TestDrive/secretInvalid.dsc.extension.json" -Value $manifest
+            $out = dsc -l info extension list 2> $TestDrive/error.log | ConvertFrom-Json
+            $errorLog = Get-Content -Raw -Path $TestDrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because $errorLog
+            @($out).type | Should -Not -Contain 'Test/SecretInvalid'
+            $errorLog | Should -BeLike "*INFO Failed to load manifest: *$expectedError*" -Because $errorLog
+        } finally {
+            $env:DSC_RESTRICTED_PATH = $null
+        }
+    }
+
+    It 'Secret extension manifest with a name argument and a vault argument is loaded' {
+        $manifest = @'
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/extension/manifest.json",
+    "type": "Test/SecretValid",
+    "version": "0.1.0",
+    "description": "Valid secret extension for testing.",
+    "secret": {
+        "executable": "dsctest",
+        "args": [
+            "no-op",
+            { "vaultArg": "--vault" },
+            { "nameArg": "--name" }
+        ]
+    }
+}
+'@
+
+        try {
+            $env:DSC_RESTRICTED_PATH = $TestDrive
+            Set-Content -Path "$TestDrive/secretValid.dsc.extension.json" -Value $manifest
+            $out = dsc extension list 2> $TestDrive/error.log | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw -Path $TestDrive/error.log)
+            @($out).Count | Should -Be 1
+            $out.type | Should -BeExactly 'Test/SecretValid'
+            $out.capabilities | Should -BeExactly @('secret')
+        } finally {
+            $env:DSC_RESTRICTED_PATH = $null
+        }
+    }
 }

@@ -135,7 +135,10 @@ pub enum SubCommand {
     },
 
     #[clap(name = "no-op", about = "Perform no operation, just return success")]
-    NoOp,
+    NoOp {
+        #[clap(name = "args", help = "Arguments that are ignored, allows testing manifests that pass input arguments", trailing_var_arg = true, allow_hyphen_values = true)]
+        args: Vec<String>,
+    },
 
     #[clap(name = "operation", about = "Perform an operation")]
     Operation {
