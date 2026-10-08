@@ -3,7 +3,7 @@
 
 use clap::Parser;
 use rust_i18n::{i18n, t};
-use std::{io::{self, Read, IsTerminal}, process::exit};
+use std::{io::{self, Read, IsTerminal}, process::ExitCode};
 use tracing::{error, warn, debug, trace};
 
 use args::{Arguments, SubCommand, TraceLevel};
@@ -16,7 +16,7 @@ pub mod utils;
 
 i18n!("locales", fallback = "en-us");
 
-fn main() {
+fn main() -> ExitCode {
     let args = Arguments::parse();
     let trace_level = match args.trace_level {
         Some(trace_level) => trace_level,
@@ -53,7 +53,7 @@ fn main() {
             Ok(stdin) => stdin,
             Err(e) => {
                 error!("{}: {e}", t!("main.invalidUtf8"));
-                exit(EXIT_INVALID_ARGS);
+                return ExitCode::from(EXIT_INVALID_ARGS);
             },
         };
         // parse_input expects at most 1 input, so wrapping Some(empty input) would throw it off
@@ -70,11 +70,20 @@ fn main() {
 
     match args.subcommand {
         SubCommand::Get { arguments, executable, exit_code } => {
-            command = parse_input(arguments, executable, exit_code, stdin);
+            command = match parse_input(arguments, executable, exit_code, stdin) {
+                Ok(command) => command,
+                Err(code) => return ExitCode::from(code),
+            };
         }
         SubCommand::Set { arguments, executable, exit_code } => {
-            command = parse_input(arguments, executable, exit_code, stdin);
-            let (exit_code, stdout, stderr) = invoke_command(command.executable.as_ref(), command.arguments.clone());
+            command = match parse_input(arguments, executable, exit_code, stdin) {
+                Ok(command) => command,
+                Err(code) => return ExitCode::from(code),
+            };
+            let (exit_code, stdout, stderr) = match invoke_command(command.executable.as_ref(), command.arguments.clone()) {
+                Ok(result) => result,
+                Err(code) => return ExitCode::from(code),
+            };
             trace!("Stdout: {stdout}");
             trace!("Stderr: {stderr}");
             command.exit_code = exit_code;
@@ -82,4 +91,5 @@ fn main() {
     }
 
     println!("{}", command.to_json());
+    ExitCode::SUCCESS
 }

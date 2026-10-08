@@ -34,7 +34,7 @@ pub struct ExportSchema {
     pub name: String,
 }
 
-pub fn invoke_export_schema(input: &str) -> String {
+pub fn invoke_export_schema(input: &str) -> Result<String, String> {
     let instances = vec![
         Schema {
             name: Names::Steve,
@@ -49,10 +49,7 @@ pub fn invoke_export_schema(input: &str) -> String {
     let filter: ExportSchema = if !input.is_empty() {
         match serde_json::from_str(input) {
             Ok(filter) => filter,
-            Err(err) => {
-                eprintln!("Error JSON does not match schema: {err}");
-                std::process::exit(1);
-            }
+            Err(err) => return Err(format!("Error JSON does not match schema: {err}")),
         }
     } else {
         ExportSchema {
@@ -82,5 +79,5 @@ pub fn invoke_export_schema(input: &str) -> String {
         }
         count -= 1;
     }
-    output
+    Ok(output)
 }
