@@ -310,15 +310,13 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
         }
     };
 
-    let mut configurator = match Configurator::new(&json_string, progress_format) {
+    let mut configurator = match Configurator::new_with_dsc_version(&json_string, progress_format, env!("CARGO_PKG_VERSION")) {
         Ok(configurator) => configurator,
         Err(err) => {
             error!("Error: {err}");
             return Err(ExitCode::from(EXIT_DSC_ERROR));
         }
     };
-
-    configurator.context.dsc_version = Some(env!("CARGO_PKG_VERSION").to_string());
 
     if let ConfigSubCommand::Set { what_if , .. } = subcommand && *what_if {
         configurator.context.execution_type = ExecutionKind::WhatIf;

@@ -126,12 +126,10 @@ impl McpServer {
                 }
             };
 
-            let mut configurator = match Configurator::new(&config_json, ProgressFormat::None) {
+            let mut configurator = match Configurator::new_with_dsc_version(&config_json, ProgressFormat::None, env!("CARGO_PKG_VERSION")) {
                 Ok(configurator) => configurator,
                 Err(e) => return Err(McpError::internal_error(e.to_string(), None)),
             };
-
-            configurator.context.dsc_version = Some(env!("CARGO_PKG_VERSION").to_string());
 
             if what_if.unwrap_or(false) {
                 if !matches!(operation, ConfigOperation::Set) {

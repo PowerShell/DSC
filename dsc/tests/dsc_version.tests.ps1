@@ -53,4 +53,65 @@ Describe 'tests for metadata versioning' {
         $result = $out | ConvertFrom-Json
         $result.results[0].result.actualState.output | Should -BeExactly 'Hello, World!' -Because $out
     }
+
+    It 'validates the version directive against the running DSC version' {
+        $dscVersion = (dsc --version).Split(" ")[1]
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            directives:
+              version: '=$dscVersion'
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: 'Hello, World!'
+"@
+        $out = $config_yaml | dsc config get -f - 2>$testdrive/error.log
+        $errorLog = Get-Content -Path $testdrive/error.log -Raw
+        $errorLog | Should -BeNullOrEmpty
+        $LASTEXITCODE | Should -Be 0
+        $result = $out | ConvertFrom-Json
+        $result.results[0].result.actualState.output | Should -BeExactly 'Hello, World!' -Because $out
+    }
+
+    It 'reports the running DSC version when the requirement is not satisfied' {
+        $dscVersion = (dsc --version).Split(" ")[1]
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            directives:
+              version: '<3.2.0'
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: 'Hello, World!'
+"@
+        $null = $config_yaml | dsc config get -f - 2>$testdrive/error.log
+        $errorLog = Get-Content -Path $testdrive/error.log -Raw
+        $errorLog | Should -BeLike "*Validation*Configuration requires DSC version '<3.2.0', but the current version is '$dscVersion'*"
+        $LASTEXITCODE | Should -Be 2
+    }
+
+    It 'compares a prerelease DSC version by its release version for requirement: <requirement>' -TestCases @(
+        @{ requirement = '={0}.{1}.{2}'; satisfied = $true }
+        @{ requirement = '>={0}.{1}.{2}'; satisfied = $true }
+        @{ requirement = '<{0}.{1}.{2}'; satisfied = $false }
+    ) {
+        param($requirement, $satisfied)
+
+        $dscVersion = (dsc --version).Split(" ")[1] -as [System.Management.Automation.SemanticVersion]
+        $versionReq = $requirement -f $dscVersion.Major, $dscVersion.Minor, $dscVersion.Patch
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            directives:
+              version: '$versionReq'
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: 'Hello, World!'
+"@
+        $null = $config_yaml | dsc config get -f - 2>$testdrive/error.log
+        $LASTEXITCODE | Should -Be ($satisfied ? 0 : 2) -Because (Get-Content -Path $testdrive/error.log -Raw)
+    }
 }
