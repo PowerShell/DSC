@@ -2451,7 +2451,9 @@ impl SchemaUtilityExtensions for Schema {
 
         if let Some(schema_id_url) = self.get_id_as_url() {
             let resource_id_url = url::Url::parse(resource_id)
-                .expect("$id keyword values should always parse as URLs");
+                .unwrap_or_else(|_| panic!(
+                    "$id keyword values should always parse as URLs - invalid ID '{resource_id}'"
+                ));
             if schema_id_url.host() == resource_id_url.host() {
                 matching_references.push(resource_id_url[Position::BeforePath..].to_string());
             }

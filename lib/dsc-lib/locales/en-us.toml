@@ -962,6 +962,52 @@ utf16Conversion = "Failed to convert UTF-16 bytes to string"
 [progress]
 failedToSerialize = "Failed to serialize progress JSON: %{json}"
 
+[settings.dsc_settings]
+debugLoadEnvStart = "attempting to load environment settings"
+debugLoadEnvSuccess = "loaded environment settings"
+debugLoadEnvNoneDefined = "no environment settings defined, skipping"
+debugLoadPreferenceStart = "attempting to load %{scope} preference settings from `%{path}`..."
+debugLoadPreferenceSuccess = "loaded %{scope} preference settings from `%{path}`"
+debugLoadPreferenceFileNotFound = "%{scope} preference settings file `%{path}` does not exist, skipping"
+debugLoadPolicyStart = "attempting to load policy settings from `%{path}`..."
+debugLoadPolicySuccess = "loaded policy settings from `%{path}`"
+debugLoadPolicyFileNotFound = "policy settings file `%{path}` does not exist, skipping"
+debugResolving = "resolving settings from loaded sources..."
+warnLoadScopeFailed = "failed to load %{scope} settings: %{error}"
+warnCliIgnoreSetting = "ignoring the command line argument `%{cli_arg}` because '%{policy_field}' is set to true"
+warnEnvIgnoreSetting = "ignoring the environment variable `%{env_var}` because '%{policy_field}' is set to true"
+warnPolicyIgnoreSetting = "ignoring the policy setting `%{ignore_settings_file}` because `%{forbid_ignore_settings_file}` is set to true"
+debugResolvingScope = "resolving settings for %{scope} scope..."
+debugResolved = "resolved settings from all loaded sources"
+debugResolvedScope = "resolved settings for %{scope} scope"
+debugSkippingScope = "skipping resolution for %{scope} scope - no settings defined and loaded for this scope"
+traceResolvedScope = "resolved settings after applying %{scope}: %{effective}"
+traceResolved = "resolved settings from all loaded sources: %{effective}"
+
+[settings.errors]
+invalidScope = "unable to case-insensitively parse '%{text}' as a valid DSC settings scope - valid scopes are: %{variant_list}, and %{variant_last}"
+invalidTracingLevel = "unable to case-insensitively parse '%{text}' as a valid DSC settings trace level - valid levels are: %{variant_list}, and %{variant_last}"
+invalidTracingFormat = "unable to case-insensitively parse '%{text}' as a valid DSC settings trace format - valid formats are: %{variant_list}, and %{variant_last}"
+dataFileEmpty = "unable to load the %{scope} data file at '%{file_path}' - file contains no text"
+dataFileReadError = "unable to read the %{scope} data file at '%{file_path}' - %{err}"
+dataFileUnparseable = "unable to parse the %{scope} data file at '%{file_path}' - %{err}"
+envVarUnparseableBoolean = "unable to parse the value `%{value}` as a boolean environment variable - expected %{expected_list}, or %{expected_last}"
+loadMultipleErrors = "failed to load settings due to one or more errors - %{err}"
+loadEnvironmentError = "failed to load environment variable `%{env_var}` for settings - %{err}"
+loadEnvironmentMultipleErrors = "failed to load environment variables for settings due to one or more errors - %{err}"
+
+[settings.sources.environment]
+debugLoadingVar = "trying to load `%{env_var}` for settings..."
+debugUndefinedVar = "skipping `%{env_var}` for settings - variable not defined"
+debugLoadedVar = "loaded `%{env_var}` for settings with effective value `%{value}`"
+warnIgnoreInvalidVar = "ignoring invalid environment variable `%{env_var}` for settings: %{err}"
+
+[settings.sources.policy_file]
+debugLoadingFile = "trying to load %{scope} file from '%{file_path}' for settings..."
+
+[settings.sources.preference_file]
+debugLoadingFile = "trying to load preference file for %{scope} scope from '%{file_path}' for settings..."
+
 [util]
 foundSetting = "Found setting '%{name}' in %{path}"
 notFoundSetting = "Setting '%{name}' not found in %{path}"
