@@ -19,7 +19,7 @@ mod from_file {
 
     use crate::settings::DscSettingsScope;
 
-use super::*;
+    use super::*;
 
     #[test]
     #[serial]

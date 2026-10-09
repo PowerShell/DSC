@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::settings::{DscSettings, DscSettingsError};
+use crate::settings::{DscSettings, DscSettingsError, set_test_policy_folder_is_secure};
 use crate::settings::fields::*;
 
 #[macro_use]
@@ -336,6 +336,7 @@ pub(super) mod macros {
                     ..Default::default()
                 }
             );
+            define_policy_file!(@define_folder);
         };
         (read_err: $err_kind:ident) => {
             define_policy_file!{
@@ -363,6 +364,7 @@ pub(super) mod macros {
                     ..Default::default()
                 }
             );
+            define_policy_file!(@define_folder);
         };
         (read_err: $err_msg:expr) => {
             define_policy_file! {
@@ -371,6 +373,16 @@ pub(super) mod macros {
                     msg: $err_msg
                 }
             }
+        };
+        (@define_folder) => {
+            $crate::tests::stubs::path::StubbedPathContextMap::add(
+                $crate::settings::POLICY_SETTINGS_FILE_PATH.as_path().parent().unwrap().to_string(),
+                $crate::tests::stubs::path::StubbedPathContext {
+                    should_exist: true,
+                    is_dir: true,
+                    ..Default::default()
+                }
+            );
         };
     }
 
@@ -570,6 +582,9 @@ pub(super) mod helpers {
         if let Ok(env_context) = crate::tests::stubs::env::StubbedEnvContext::get().lock() {
             context.insert(String::from("stubbed_env"), env_context.as_json());
         }
+        if let Ok(policy_folder_is_secure) = crate::settings::TEST_POLICY_FOLDER_IS_SECURE.get().unwrap().lock() {
+            context.insert(String::from("policy_folder_is_secure"), serde_json::to_value(*policy_folder_is_secure).unwrap());
+        }
 
         let context = serde_json::to_string_pretty(&context).unwrap();
         let thread = std::thread::current().name().unwrap_or("main").to_string();
@@ -603,6 +618,7 @@ mod load {
     #[serial]
     #[test]
     fn when_no_settings_defined() {
+        set_test_policy_folder_is_secure!(true);
         define_context!{}
 
         let mut actual = DscSettings::new();
@@ -619,6 +635,7 @@ mod load {
     #[serial]
     #[test]
     fn when_all_defined_valid() {
+        set_test_policy_folder_is_secure!(true);
         define_context! {
             policy: {
                 "forbidIgnoreSettingsFile": false,
@@ -709,7 +726,24 @@ mod load {
 
     #[test]
     #[serial]
+    fn when_policy_folder_is_not_secure() {
+        set_test_policy_folder_is_secure!(false);
+        define_context! {
+            policy: {
+                "forbidIgnoreSettingsFile": false,
+                "ignoreSettingsFile": false,
+            },
+        }
+        assert!(DscSettings::validate_policy_folder_security().is_err());
+        let mut settings = DscSettings::new();
+        settings.load();
+        assert_eq!(settings.policy, None);
+    }
+
+    #[test]
+    #[serial]
     fn when_all_defined_with_invalid_fields() {
+        set_test_policy_folder_is_secure!(true);
         define_context! {
             policy: {
                 "forbidIgnoreSettingsFile": "invalid",
@@ -759,6 +793,7 @@ mod try_load {
     #[serial]
     #[test]
     fn when_no_settings_defined() {
+        set_test_policy_folder_is_secure!(true);
         define_context!{}
 
         let mut actual = DscSettings::new();
@@ -775,6 +810,7 @@ mod try_load {
     #[serial]
     #[test]
     fn when_all_defined_valid() {
+        set_test_policy_folder_is_secure!(true);
         define_context! {
             policy: {
                 "forbidIgnoreSettingsFile": false,
@@ -865,7 +901,31 @@ mod try_load {
 
     #[test]
     #[serial]
+    fn when_policy_folder_is_not_secure() {
+        set_test_policy_folder_is_secure!(false);
+        define_context! {
+            policy: {
+                "forbidIgnoreSettingsFile": false,
+                "ignoreSettingsFile": false,
+            },
+        }
+
+        assert!(DscSettings::validate_policy_folder_security().is_err());
+        
+        let mut settings = DscSettings::new();
+        match settings.try_load().expect_err("expected an error due to invalid policy folder permissions") {
+            DscSettingsError::LoadMultipleErrors{ errors } => {
+                assert_eq!(errors.len(), 1);
+                assert!(matches!(errors.index(0), DscSettingsError::PolicyFolderNotSecure { .. }));
+            },
+            e => panic!("expected DscSettingsError::LoadMultipleErrors but got {:#?}", e),
+        }
+    }
+
+    #[test]
+    #[serial]
     fn when_all_defined_with_invalid_fields() {
+        set_test_policy_folder_is_secure!(true);
         define_context! {
             policy: {
                 "forbidIgnoreSettingsFile": "invalid",
@@ -897,10 +957,10 @@ mod try_load {
             DscSettingsError::LoadMultipleErrors{ errors } => {
                 assert_eq!(errors.len(), 5);
                 assert!(matches!(errors.index(0), DscSettingsError::DataFileUnparseable { .. }));
-                assert!(matches!(errors.index(1), DscSettingsError::DataFileUnparseable { .. }));
+                assert!(matches!(errors.index(1), DscSettingsError::LoadEnvironmentMultipleErrors { .. }));
                 assert!(matches!(errors.index(2), DscSettingsError::DataFileUnparseable { .. }));
                 assert!(matches!(errors.index(3), DscSettingsError::DataFileUnparseable { .. }));
-                assert!(matches!(errors.index(4), DscSettingsError::LoadEnvironmentMultipleErrors { .. }));
+                assert!(matches!(errors.index(4), DscSettingsError::DataFileUnparseable { .. }));
             },
             e => panic!("expected DscSettingsError::LoadMultipleErrors but got {:#?}", e),
         }
