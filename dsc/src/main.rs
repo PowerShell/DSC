@@ -125,6 +125,9 @@ fn dsc_main() -> Result<(), ExitCode> {
 
             subcommand::config(&subcommand, &merged_parameters, system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format)?;
         },
+        SubCommand::Action { subcommand } => {
+            subcommand::action(&subcommand, progress_format)?;
+        },
         SubCommand::Extension { subcommand } => {
             subcommand::extension(&subcommand, progress_format)?;
         },

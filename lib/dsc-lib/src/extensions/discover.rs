@@ -3,7 +3,14 @@
 
 use crate::{
     discovery::command_discovery::{
-        DSC_ADAPTED_RESOURCE_EXTENSIONS, DSC_EXTENSION_EXTENSIONS, DSC_MANIFEST_LIST_EXTENSIONS, DSC_RESOURCE_EXTENSIONS, ImportedManifest, load_manifest, load_manifest_content
+        DSC_ACTION_EXTENSIONS,
+        DSC_ADAPTED_RESOURCE_EXTENSIONS,
+        DSC_EXTENSION_EXTENSIONS,
+        DSC_MANIFEST_LIST_EXTENSIONS,
+        DSC_RESOURCE_EXTENSIONS,
+        ImportedManifest,
+        load_manifest,
+        load_manifest_content
     },
     dscerror::DscError,
     dscresources::{
@@ -65,7 +72,7 @@ pub struct DiscoverResult {
 #[schemars(inline)]
 pub enum DiscoverArgKind {
     String(String),
-    Extensions {
+    FileExtensions {
         /// The argument that accepts the extensions list.  The extensions list will be passed as a comma separated list of extensions.
         #[serde(rename = "extensionsArg")]
         extensions_arg: String,
@@ -174,9 +181,10 @@ fn process_discover_args(args: Option<&Vec<DiscoverArgKind>>) -> Result<Option<V
             DiscoverArgKind::String(s) => {
                 processed_args.push(s.clone());
             }
-            DiscoverArgKind::Extensions { extensions_arg, include_quotes } => {
+            DiscoverArgKind::FileExtensions { extensions_arg, include_quotes } => {
                 processed_args.push(extensions_arg.clone());
                 let mut extensions = Vec::<String>::new();
+                extensions.extend(DSC_ACTION_EXTENSIONS.iter().map(|s| s.to_string()));
                 extensions.extend(DSC_ADAPTED_RESOURCE_EXTENSIONS.iter().map(|s| s.to_string()));
                 extensions.extend(DSC_EXTENSION_EXTENSIONS.iter().map(|s| s.to_string()));
                 extensions.extend(DSC_MANIFEST_LIST_EXTENSIONS.iter().map(|s| s.to_string()));
