@@ -1,0 +1,46 @@
+{
+  "$schema": "https://aka.ms/dsc/schemas/v3/bundled/adaptedresource/manifest.json",
+  "type": "Example/ManagedFile",
+  "kind": "resource",
+  "version": "1.0.0",
+  "capabilities": [
+    "get",
+    "set",
+    "test",
+    "delete",
+    "export"
+  ],
+  "requireAdapter": "Microsoft.Adapter/Python",
+  "content": {
+    "module": "file_resource.resource",
+    "class": "ManagedFileResource"
+  },
+  "description": "Manages the existence and text content of a file. Discovered via a pre-built adapted resource manifest in the pip package.",
+  "schema": {
+    "embedded": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Absolute path of the file to manage.",
+          "title": "Path"
+        },
+        "content": {
+          "type": "string",
+          "description": "Text content of the file (UTF-8).  Ignored when _exist is false.",
+          "title": "Content"
+        },
+        "_exist": {
+          "type": "boolean",
+          "description": "Whether the file should exist.",
+          "title": "Exist"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  }
+}

@@ -1,0 +1,120 @@
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "type": "Microsoft.Adapter/Python",
+    "version": "0.1.0",
+    "kind": "adapter",
+    "description": "Adapter for DSC resources implemented in Python.",
+    "condition": "[not(equals(tryWhich('python'), null()))]",
+    "tags": [
+        "Python"
+    ],
+    "adapter": {
+        "list": {
+            "executable": "python",
+            "args": [
+                "-m",
+                "pyadapter.cli",
+                "list"
+            ]
+        },
+        "config": "single"
+    },
+    "get": {
+        "executable": "python",
+        "args": [
+            "-m",
+            "pyadapter.cli",
+            "get",
+            {
+                "resourceTypeArg": "--resource"
+            },
+            {
+                "adaptedContentArg": "--content"
+            }
+        ],
+        "input": "stdin"
+    },
+    "set": {
+        "executable": "python",
+        "args": [
+            "-m",
+            "pyadapter.cli",
+            "set",
+            {
+                "resourceTypeArg": "--resource"
+            },
+            {
+                "adaptedContentArg": "--content"
+            }
+        ],
+        "input": "stdin",
+        "return": "state"
+    },
+    "test": {
+        "executable": "python",
+        "args": [
+            "-m",
+            "pyadapter.cli",
+            "test",
+            {
+                "resourceTypeArg": "--resource"
+            },
+            {
+                "adaptedContentArg": "--content"
+            }
+        ],
+        "input": "stdin",
+        "return": "state"
+    },
+    "delete": {
+        "executable": "python",
+        "args": [
+            "-m",
+            "pyadapter.cli",
+            "delete",
+            {
+                "resourceTypeArg": "--resource"
+            },
+            {
+                "adaptedContentArg": "--content"
+            }
+        ],
+        "input": "stdin"
+    },
+    "export": {
+        "executable": "python",
+        "args": [
+            "-m",
+            "pyadapter.cli",
+            "export",
+            {
+                "resourceTypeArg": "--resource"
+            },
+            {
+                "adaptedContentArg": "--content"
+            }
+        ],
+        "input": "stdin",
+        "return": "state"
+    },
+    "validate": {
+        "executable": "python",
+        "args": [
+            "-m",
+            "pyadapter.cli",
+            "validate",
+            {
+                "resourceTypeArg": "--resource"
+            },
+            {
+                "adaptedContentArg": "--content"
+            }
+        ],
+        "input": "stdin"
+    },
+    "exitCodes": {
+        "0": "Success",
+        "1": "Error",
+        "2": "Invalid input or unknown resource type"
+    }
+}
