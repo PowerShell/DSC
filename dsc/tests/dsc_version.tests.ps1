@@ -1,6 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
+BeforeDiscovery {
+    $dscVersion = (dsc --version).Split(" ")[1] -as [System.Management.Automation.SemanticVersion]
+    $isPrerelease = -not [string]::IsNullOrEmpty($dscVersion.PreReleaseLabel)
+}
+
 Describe 'tests for metadata versioning' {
     It 'returns the correct dsc semantic version in metadata' {
         $config_yaml = @"
@@ -36,10 +41,18 @@ Describe 'tests for metadata versioning' {
     }
 
     It 'returns no error if DSC version satisfies configuration requirement' {
+        $dscVersion = (dsc --version).Split(" ")[1] -as [System.Management.Automation.SemanticVersion]
+        # A prerelease build only satisfies a requirement that defines a prerelease segment for the
+        # same release, so pin a prerelease build to its release cycle, like '^3.4.0-preview'.
+        $versionReq = if ($dscVersion.PreReleaseLabel) {
+            '^{0}.{1}.{2}-{3}' -f $dscVersion.Major, $dscVersion.Minor, $dscVersion.Patch, $dscVersion.PreReleaseLabel.Split('.')[0]
+        } else {
+            '>=3.1'
+        }
         $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             directives:
-              version: '>=3.1'
+              version: '$versionReq'
             resources:
             - name: Echo
               type: Microsoft.DSC.Debug/Echo
@@ -92,15 +105,17 @@ Describe 'tests for metadata versioning' {
         $LASTEXITCODE | Should -Be 2
     }
 
-    It 'compares a prerelease DSC version by its release version for requirement: <requirement>' -TestCases @(
-        @{ requirement = '={0}.{1}.{2}'; satisfied = $true }
-        @{ requirement = '>={0}.{1}.{2}'; satisfied = $true }
+    It 'requires a prerelease segment to match a prerelease DSC version for requirement: <requirement>' -Skip:(-not $isPrerelease) -TestCases @(
+        @{ requirement = '={0}.{1}.{2}'; satisfied = $false }
+        @{ requirement = '>={0}.{1}.{2}'; satisfied = $false }
         @{ requirement = '<{0}.{1}.{2}'; satisfied = $false }
+        @{ requirement = '^{0}.{1}.{2}-{3}'; satisfied = $true }
+        @{ requirement = '>={0}.{1}.{2}-{4}'; satisfied = $true }
     ) {
         param($requirement, $satisfied)
 
         $dscVersion = (dsc --version).Split(" ")[1] -as [System.Management.Automation.SemanticVersion]
-        $versionReq = $requirement -f $dscVersion.Major, $dscVersion.Minor, $dscVersion.Patch
+        $versionReq = $requirement -f $dscVersion.Major, $dscVersion.Minor, $dscVersion.Patch, $dscVersion.PreReleaseLabel.Split('.')[0], $dscVersion.PreReleaseLabel
         $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             directives:

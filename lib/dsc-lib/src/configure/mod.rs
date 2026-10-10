@@ -505,22 +505,40 @@ impl Configurator {
     /// Create a new `Configurator` instance for a specific version of DSC.
     ///
     /// The version is used to validate the `version` directive of the configuration and is
-    /// reported in the result metadata.
+    /// reported in the result metadata. Use this constructor when the host, like the `dsc` CLI,
+    /// knows its own version. [`Configurator::new`] uses the version of the `dsc-lib` crate instead.
     ///
     /// # Arguments
     ///
-    /// * `config` - The configuration to use in JSON.
+    /// * `json` - The configuration to use in JSON.
+    /// * `progress_format` - The format to report progress in.
     /// * `dsc_version` - The semantic version of DSC that is processing the configuration.
     ///
     /// # Errors
     ///
     /// This function will return an error if the configuration is invalid or the underlying discovery fails.
-    pub fn new_with_dsc_version(json: &str, progress_format: ProgressFormat, dsc_version: &str) -> Result<Configurator, DscError> {
+    pub fn new_with_dsc_version(json: &str, progress_format: ProgressFormat, dsc_version: SemanticVersion) -> Result<Configurator, DscError> {
         let mut context = Context::new();
-        context.dsc_version = Some(dsc_version.to_string());
+        context.dsc_version = dsc_version;
         Self::new_with_context(json, progress_format, context)
     }
 
+    /// Create a new `Configurator` instance with a prepared context.
+    ///
+    /// The public constructors prepare the context and delegate to this function. It validates
+    /// the configuration against the context, which must already define the values that
+    /// validation depends on, like the DSC version, and then registers the discovered extensions
+    /// on the context.
+    ///
+    /// # Arguments
+    ///
+    /// * `json` - The configuration to use in JSON.
+    /// * `progress_format` - The format to report progress in.
+    /// * `context` - The context to process the configuration with.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the configuration is invalid or the underlying discovery fails.
     fn new_with_context(json: &str, progress_format: ProgressFormat, context: Context) -> Result<Configurator, DscError> {
         let discovery = Discovery::new();
         let mut config = Configurator {
@@ -1273,11 +1291,6 @@ impl Configurator {
 
     fn get_result_metadata(&self, operation: Operation) -> Metadata {
         let end_datetime = chrono::Local::now();
-        let version = self
-            .context
-            .dsc_version
-            .clone()
-            .unwrap_or_else(|| env!("CARGO_PKG_VERSION").to_string());
         Metadata {
             microsoft: Some(
                 MicrosoftDscMetadata {
@@ -1288,7 +1301,7 @@ impl Configurator {
                     restart_required: self.context.restart_required.clone(),
                     security_context: Some(self.context.security_context.clone()),
                     start_datetime: Some(self.context.start_datetime.to_rfc3339()),
-                    version: Some(version),
+                    version: Some(self.context.dsc_version.to_string()),
                     copy_loops: None,
                 }
             ),
@@ -1301,7 +1314,7 @@ impl Configurator {
         execution_information.duration = Some(end_datetime.signed_duration_since(self.context.start_datetime).to_string());
         execution_information.end_datetime = Some(end_datetime.to_rfc3339());
         execution_information.start_datetime = Some(self.context.start_datetime.to_rfc3339());
-        execution_information.version = self.context.dsc_version.clone();
+        execution_information.version = Some(self.context.dsc_version.to_string());
         execution_information.execution_type = Some(self.context.execution_type.clone());
         execution_information.operation = Some(operation);
         execution_information.restart_required = self.context.restart_required.clone();
@@ -1318,18 +1331,9 @@ impl Configurator {
         check_security_context(config.metadata.as_ref(), config_security_context.as_ref())?;
 
         if let Some(directives) = &config.directives
-            && let Some(version_req) = &directives.version {
-                let current_version = self.context.dsc_version.as_deref().unwrap_or(env!("CARGO_PKG_VERSION"));
-                let mut dsc_version = SemanticVersion::parse(current_version)?;
-                // A requirement without a prerelease segment never matches a prerelease version, so
-                // compare a prerelease build of DSC by its release version unless the requirement
-                // explicitly defines a prerelease segment.
-                if version_req.comparators.iter().all(|comparator| comparator.pre.is_empty()) {
-                    dsc_version = SemanticVersion::new(dsc_version.major, dsc_version.minor, dsc_version.patch);
-                }
-                if !version_req.matches(&dsc_version) {
-                    return Err(DscError::Validation(t!("configure.mod.versionNotSatisfied", required_version = version_req, current_version = current_version).to_string()));
-                }
+            && let Some(version_req) = &directives.version
+            && !version_req.matches(&self.context.dsc_version) {
+                return Err(DscError::Validation(t!("configure.mod.versionNotSatisfied", required_version = version_req, current_version = self.context.dsc_version).to_string()));
             }
 
         let mut resource_discovery_mode = ResourceDiscoveryMode::PreDeployment;

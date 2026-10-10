@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::server::mcp_server::McpServer;
+use crate::util::current_dsc_version;
 use dsc_lib::{
     configure::{
         config_doc::{Configuration, ExecutionKind},
@@ -126,7 +127,7 @@ impl McpServer {
                 }
             };
 
-            let mut configurator = match Configurator::new_with_dsc_version(&config_json, ProgressFormat::None, env!("CARGO_PKG_VERSION")) {
+            let mut configurator = match Configurator::new_with_dsc_version(&config_json, ProgressFormat::None, current_dsc_version()) {
                 Ok(configurator) => configurator,
                 Err(e) => return Err(McpError::internal_error(e.to_string(), None)),
             };

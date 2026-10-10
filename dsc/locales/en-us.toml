@@ -184,3 +184,4 @@ dscConfigRootAlreadySet = "The current value of DSC_CONFIG_ROOT env var will be 
 settingDscConfigRoot = "Setting DSC_CONFIG_ROOT env var as"
 removingUtf8Bom = "Removing UTF-8 BOM from input"
 parametersNotObject = "Parameters must be an object"
+invalidDscVersion = "Unable to parse the DSC version from the cargo manifest: %{error}"
