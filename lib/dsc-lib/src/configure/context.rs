@@ -3,6 +3,7 @@
 
 use chrono::{DateTime, Local};
 use crate::{configure::config_doc::{ExecutionKind, Operation, UserFunctionDefinition}, extensions::dscextension::DscExtension};
+use crate::types::SemanticVersion;
 use dsc_lib_security_context::{get_security_context, SecurityContext};
 use serde_json::{Map, Value};
 use std::{collections::HashMap, path::PathBuf};
@@ -23,7 +24,12 @@ pub enum ProcessMode {
 pub struct Context {
     pub copy: HashMap<String, i64>,
     pub copy_current_loop_name: String,
-    pub dsc_version: Option<String>,
+    /// The semantic version of DSC that is processing the configuration.
+    ///
+    /// Defaults to the version of the `dsc-lib` crate. A host that knows its own version, like
+    /// the `dsc` CLI, sets it with
+    /// [`Configurator::new_with_dsc_version`](crate::configure::Configurator::new_with_dsc_version).
+    pub dsc_version: SemanticVersion,
     pub execution_type: ExecutionKind,
     pub extensions: Vec<DscExtension>,
     pub lambda_raw_args: std::cell::RefCell<Option<Vec<crate::parser::functions::FunctionArg>>>,
@@ -52,7 +58,7 @@ impl Context {
         Self {
             copy: HashMap::new(),
             copy_current_loop_name: String::new(),
-            dsc_version: None,
+            dsc_version: dsc_lib_version(),
             execution_type: ExecutionKind::Actual,
             extensions: Vec::new(),
             lambda_raw_args: std::cell::RefCell::new(None),
@@ -83,6 +89,22 @@ impl Context {
 impl Default for Context {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// Returns the version of the `dsc-lib` crate as a semantic version.
+///
+/// This is the default DSC version for a [`Context`] when the host doesn't provide its own.
+///
+/// # Panics
+///
+/// Panics if the version in the cargo manifest isn't a valid semantic version. Cargo rejects
+/// such a manifest at build time, so this can't happen for a built crate.
+fn dsc_lib_version() -> SemanticVersion {
+    let manifest_version = env!("CARGO_PKG_VERSION");
+    match SemanticVersion::parse(manifest_version) {
+        Ok(version) => version,
+        Err(err) => panic!("unable to parse '{manifest_version}' as a semantic version: {err}"),
     }
 }
 

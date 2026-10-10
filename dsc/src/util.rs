@@ -42,6 +42,7 @@ use dsc_lib::{
     },
     functions::FunctionDefinition,
     schemas::dsc_repo::{DscRepoSchema, RecognizedSchemaVersion, SchemaForm, SchemaUriPrefix},
+    types::SemanticVersion,
     util::{
         get_setting,
         parse_input_to_json,
@@ -98,6 +99,23 @@ impl Default for TracingSetting {
             format: TraceFormat::Default,
             allow_override: true,
         }
+    }
+}
+
+/// Returns the current version of DSC as a semantic version.
+///
+/// # Returns
+///
+/// * `SemanticVersion` - The version of DSC as defined in the cargo manifest.
+///
+/// # Panics
+///
+/// If the version defined in the cargo manifest isn't a valid semantic version, this function
+/// panics and reports the parse error.
+pub(crate) fn current_dsc_version() -> SemanticVersion {
+    match SemanticVersion::parse(env!("CARGO_PKG_VERSION")) {
+        Ok(version) => version,
+        Err(err) => panic!("{}", t!("util.invalidDscVersion", error = err)),
     }
 }
 
