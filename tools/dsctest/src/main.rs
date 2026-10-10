@@ -50,10 +50,19 @@ use crate::trace::Trace;
 use crate::version::Version;
 use crate::whatif::WhatIf;
 use crate::whatif_delete::WhatIfDelete;
+use std::process::ExitCode as ProcessExitCode;
 use std::{thread, time::Duration};
 
 #[allow(clippy::too_many_lines)]
-fn main() {
+fn main() -> ProcessExitCode {
+    match run() {
+        Ok(()) => ProcessExitCode::SUCCESS,
+        Err(code) => ProcessExitCode::from(code),
+    }
+}
+
+#[allow(clippy::too_many_lines)]
+fn run() -> Result<(), u8> {
     let args = Args::parse();
     let json = match args.subcommand {
         SubCommand::Adapter { input , resource_type, resource_path, resource_version, operation } => {
@@ -61,7 +70,7 @@ fn main() {
                 Ok(result) => result,
                 Err(err) => {
                     eprintln!("Error adapting resource: {err}");
-                    std::process::exit(1);
+                    return Err(1);
                 }
             }
         },
@@ -70,12 +79,12 @@ fn main() {
                 Ok(copy_resource) => copy_resource,
                 Err(err) => {
                     eprintln!("Error JSON does not match schema: {err}");
-                    std::process::exit(1);
+                    return Err(1);
                 }
             };
             if let Err(err) = copy_the_resource(&copy_resource.source_file, &copy_resource.type_name) {
                 eprintln!("Error copying resource: {err}");
-                std::process::exit(1);
+                return Err(1);
             }
             input
         },
@@ -84,7 +93,7 @@ fn main() {
                 Ok(delete) => delete,
                 Err(err) => {
                     eprintln!("Error JSON does not match schema: {err}");
-                    std::process::exit(1);
+                    return Err(1);
                 }
             };
             delete.delete_called = Some(true);
@@ -95,7 +104,7 @@ fn main() {
                 Ok(exist) => exist,
                 Err(err) => {
                     eprintln!("Error JSON does not match schema: {err}");
-                    std::process::exit(1);
+                    return Err(1);
                 }
             };
             if exist.exist {
@@ -111,12 +120,12 @@ fn main() {
                 Ok(exit_code) => exit_code,
                 Err(err) => {
                     eprintln!("Error JSON does not match schema: {err}");
-                    std::process::exit(1);
+                    return Err(1);
                 }
             };
             if exit_code.exit_code != 0 {
                 eprintln!("Exiting with code: {}", exit_code.exit_code);
-                std::process::exit(exit_code.exit_code);
+                return Err(exit_code.exit_code);
             }
             input
         },
@@ -125,7 +134,7 @@ fn main() {
                 Ok(export) => export,
                 Err(err) => {
                     eprintln!("Error JSON does not match schema: {err}");
-                    std::process::exit(1);
+                    return Err(1);
                 }
             };
             for i in 0..export.count {
@@ -140,14 +149,20 @@ fn main() {
             String::new()
         },
         SubCommand::ExportSchema { input } => {
-            invoke_export_schema(&input)
+            match invoke_export_schema(&input) {
+                Ok(output) => output,
+                Err(err) => {
+                    eprintln!("{err}");
+                    return Err(1);
+                }
+            }
         },
         SubCommand::Exporter { input } => {
             let exporter = match serde_json::from_str::<Exporter>(&input) {
                 Ok(exporter) => exporter,
                 Err(err) => {
                     eprintln!("Error JSON does not match schema: {err}");
-                    std::process::exit(1);
+                    return Err(1);
                 }
             };
             for type_name in exporter.type_names {
@@ -180,34 +195,38 @@ fn main() {
 
             let resource = if input.is_empty() {
                 // If neither name nor id is provided, return the first instance
-                instances.into_iter().next().unwrap_or_else(|| {
+                let Some(resource) = instances.into_iter().next() else {
                     eprintln!("No instances found");
-                    std::process::exit(1);
-                })
+                    return Err(1);
+                };
+                resource
             } else {
                 let get = match serde_json::from_str::<Get>(&input) {
                     Ok(get) => get,
                     Err(err) => {
                         eprintln!("Error JSON does not match schema: {err}");
-                        std::process::exit(1);
+                        return Err(1);
                     }
                 };
                 // depending on the input, return the appropriate instance whether it is name or id or both
                 if let Some(name) = get.name {
-                    instances.into_iter().find(|i| i.name.as_ref() == Some(&name)).unwrap_or_else(|| {
+                    let Some(resource) = instances.into_iter().find(|i| i.name.as_ref() == Some(&name)) else {
                         eprintln!("No instance found with name: {name}");
-                        std::process::exit(1);
-                    })
+                        return Err(1);
+                    };
+                    resource
                 } else if let Some(id) = get.id {
-                    instances.into_iter().find(|i| i.id == Some(id)).unwrap_or_else(|| {
+                    let Some(resource) = instances.into_iter().find(|i| i.id == Some(id)) else {
                         eprintln!("No instance found with id: {id}");
-                        std::process::exit(1);
-                    })
+                        return Err(1);
+                    };
+                    resource
                 } else {
-                    instances.into_iter().next().unwrap_or_else(|| {
+                    let Some(resource) = instances.into_iter().next() else {
                         eprintln!("No instances found");
-                        std::process::exit(1);
-                    })
+                        return Err(1);
+                    };
+                    resource
                 }
             };
             serde_json::to_string(&resource).unwrap()
@@ -217,7 +236,7 @@ fn main() {
                 Ok(in_desired_state) => in_desired_state,
                 Err(err) => {
                     eprintln!("Error JSON does not match schema: {err}");
-                    std::process::exit(1);
+                    return Err(1);
                 }
             };
             in_desired_state.value_one = 1;
@@ -235,7 +254,7 @@ fn main() {
                     Ok(metadata) => metadata,
                     Err(err) => {
                         eprintln!("Error JSON does not match schema: {err}");
-                        std::process::exit(1);
+                        return Err(1);
                     }
                 };
                 metadata.name = Some(format!("Metadata example {}", i+1));
@@ -253,7 +272,7 @@ fn main() {
                 Ok(op) => op,
                 Err(err) => {
                     eprintln!("Error JSON does not match schema: {err}");
-                    std::process::exit(1);
+                    return Err(1);
                 }
             };
             operation_result.operation = Some(operation.to_lowercase());
@@ -264,7 +283,7 @@ fn main() {
                 Ok(re) => re,
                 Err(err) => {
                     eprintln!("Error JSON does not match schema: {err}");
-                    std::process::exit(1);
+                    return Err(1);
                 }
             };
             match operation {
@@ -285,7 +304,7 @@ fn main() {
                 Ok(rr) => rr,
                 Err(err) => {
                     eprintln!("Error JSON does not match schema: {err}");
-                    std::process::exit(1);
+                    return Err(1);
                 }
             };
             serde_json::to_string(&restart_required).unwrap()
@@ -295,7 +314,7 @@ fn main() {
                 Ok(sd) => sd,
                 Err(err) => {
                     eprintln!("Error JSON does not match schema: {err}");
-                    std::process::exit(1);
+                    return Err(1);
                 }
             };
             let mut actual = serde_json::json!({"name": schema_default.name});
@@ -389,7 +408,7 @@ fn main() {
                 Ok(sleep) => sleep,
                 Err(err) => {
                     eprintln!("Error JSON does not match schema: {err}");
-                    std::process::exit(1);
+                    return Err(1);
                 }
             };
             thread::sleep(Duration::from_secs(sleep.seconds));
@@ -400,7 +419,7 @@ fn main() {
                 Ok(s) => s,
                 Err(err) => {
                     eprintln!("Error JSON does not match schema: {err}");
-                    std::process::exit(1);
+                    return Err(1);
                 }
             };
             // Actual state always returns valueOne=1, valueTwo=2
@@ -501,4 +520,5 @@ fn main() {
     if !json.is_empty() {
         println!("{json}");
     }
+    Ok(())
 }

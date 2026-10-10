@@ -83,7 +83,7 @@ pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation, res
             };
             println!("{}", serde_json::to_string(&resource_one).unwrap());
             println!("{}", serde_json::to_string(&resource_two).unwrap());
-            std::process::exit(0);
+            Ok(String::new())
         },
         AdapterOperation::Get => {
             match resource_type {
@@ -231,7 +231,7 @@ pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation, res
                         path: None,
                     };
                     println!("{}", serde_json::to_string(&adapted_one).unwrap());
-                    std::process::exit(0);
+                    Ok(String::new())
                 },
                 "Adapted/Two" => {
                     if let Some(version) = resource_version && version != ADAPTED_TWO_VERSION {
@@ -249,7 +249,7 @@ pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation, res
                         path: None,
                     };
                     println!("{}", serde_json::to_string(&adapted_two).unwrap());
-                    std::process::exit(0);
+                    Ok(String::new())
                 },
                 "Adapted/Three" => {
                     let adapted_three = AdaptedOne {
@@ -264,7 +264,7 @@ pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation, res
                         path: None,
                     };
                     println!("{}", serde_json::to_string(&adapted_three).unwrap());
-                    std::process::exit(0);
+                    Ok(String::new())
                 },
                 "Adapted/SecurityContextElevated" => {
                     let adapted_security_context_elevated = AdaptedOne {

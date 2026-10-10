@@ -295,8 +295,11 @@ try {
     $releaseVersion = $metadataContent.ReleaseTag.TrimStart('v')
     $skipPublish = $metadataContent.SkipPublish
 
-    $channel = if ($releaseVersion.Contains('-')) { 'preview' } else { 'stable' }
-    $packageName = 'dsc'
+    ($packageName, $channel) = if ($releaseVersion.Contains('-')) { 
+        @('dsc-preview', 'preview') 
+    } else { 
+        @('dsc', 'stable') 
+    }
 
     Write-Verbose "Release version: $releaseVersion, Channel: $channel" -Verbose
 

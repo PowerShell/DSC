@@ -3,43 +3,41 @@
 
 use dsc_lib_osinfo::{perform_test, OsInfo};
 use std::io::Read;
+use std::process::ExitCode;
 
-fn main() {
+fn main() -> ExitCode {
+    match run() {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(error) => {
+            eprintln!("{error}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
+fn run() -> Result<(), String> {
     let args: Vec<String> = std::env::args().collect();
     match args.get(1).map(String::as_str) {
         Some("export") => {
-            let json = serde_json::to_string(&OsInfo::new(true)).unwrap_or_else(|e| {
-                eprintln!("Failed to serialize OS info as JSON: {e}");
-                std::process::exit(1);
-            });
+            let json = serde_json::to_string(&OsInfo::new(true))
+                .map_err(|e| format!("Failed to serialize OS info as JSON: {e}"))?;
             println!("{json}");
         },
         Some("test") => {
             let mut input = String::new();
-            if let Err(e) = std::io::stdin().read_to_string(&mut input) {
-                eprintln!("Failed to read stdin: {e}");
-                std::process::exit(1);
-            }
-            match perform_test(&input) {
-                Ok(result) => {
-                    let json = serde_json::to_string(&result).unwrap_or_else(|e| {
-                        eprintln!("Failed to serialize test result as JSON: {e}");
-                        std::process::exit(1);
-                    });
-                    println!("{json}");
-                },
-                Err(e) => {
-                    eprintln!("{e}");
-                    std::process::exit(1);
-                },
-            }
+            std::io::stdin()
+                .read_to_string(&mut input)
+                .map_err(|e| format!("Failed to read stdin: {e}"))?;
+            let result = perform_test(&input)?;
+            let json = serde_json::to_string(&result)
+                .map_err(|e| format!("Failed to serialize test result as JSON: {e}"))?;
+            println!("{json}");
         },
         _ => {
-            let json = serde_json::to_string(&OsInfo::new(false)).unwrap_or_else(|e| {
-                eprintln!("Failed to serialize OS info as JSON: {e}");
-                std::process::exit(1);
-            });
+            let json = serde_json::to_string(&OsInfo::new(false))
+                .map_err(|e| format!("Failed to serialize OS info as JSON: {e}"))?;
             println!("{json}");
         },
     }
+    Ok(())
 }

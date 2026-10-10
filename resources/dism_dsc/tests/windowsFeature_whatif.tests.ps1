@@ -3,6 +3,7 @@
 
 Describe 'WindowsFeatureList what-if tests' -Skip:(!$IsWindows) {
     BeforeAll {
+        $resourceType = 'Microsoft.Windows/WindowsFeatureList'
         $testFeature = 'TelnetClient'
     }
 
@@ -15,10 +16,10 @@ Describe 'WindowsFeatureList what-if tests' -Skip:(!$IsWindows) {
 }
 "@
         # Capture pre-state
-        $before = $json | dism_dsc get windows-feature 2>$null | ConvertFrom-Json
+        $before = (dsc resource get -r $resourceType -i $json 2>$null | ConvertFrom-Json).actualState
 
         # Run what-if
-        $result = $json | dism_dsc set windows-feature -w 2>$null | ConvertFrom-Json
+        $result = (dsc resource set -r $resourceType -i $json -w 2>$null | ConvertFrom-Json).afterState
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log -ErrorAction SilentlyContinue)
 
         # Projected state echoes back the requested feature name and state
@@ -29,7 +30,7 @@ Describe 'WindowsFeatureList what-if tests' -Skip:(!$IsWindows) {
         $result.features[0]._metadata.whatIf[0] | Should -Match "Would enable feature '$testFeature'"
 
         # No mutation occurred
-        $after = $json | dism_dsc get windows-feature 2>$null | ConvertFrom-Json
+        $after = (dsc resource get -r $resourceType -i $json 2>$null | ConvertFrom-Json).actualState
         $before | ConvertTo-Json -Depth 10 | Should -Be ($after | ConvertTo-Json -Depth 10)
     }
 
@@ -42,10 +43,10 @@ Describe 'WindowsFeatureList what-if tests' -Skip:(!$IsWindows) {
 }
 "@
         # Capture pre-state
-        $before = $json | dism_dsc get windows-feature 2>$null | ConvertFrom-Json
+        $before = (dsc resource get -r $resourceType -i $json 2>$null | ConvertFrom-Json).actualState
 
         # Run what-if
-        $result = $json | dism_dsc set windows-feature -w 2>$null | ConvertFrom-Json
+        $result = (dsc resource set -r $resourceType -i $json -w 2>$null | ConvertFrom-Json).afterState
         $LASTEXITCODE | Should -Be 0
 
         $result.features[0].featureName | Should -Be $testFeature
@@ -53,7 +54,7 @@ Describe 'WindowsFeatureList what-if tests' -Skip:(!$IsWindows) {
         $result.features[0]._metadata.whatIf[0] | Should -Match "Would disable feature '$testFeature'"
 
         # No mutation occurred
-        $after = $json | dism_dsc get windows-feature 2>$null | ConvertFrom-Json
+        $after = (dsc resource get -r $resourceType -i $json 2>$null | ConvertFrom-Json).actualState
         $before | ConvertTo-Json -Depth 10 | Should -Be ($after | ConvertTo-Json -Depth 10)
     }
 
@@ -66,10 +67,10 @@ Describe 'WindowsFeatureList what-if tests' -Skip:(!$IsWindows) {
 }
 "@
         # Capture pre-state
-        $before = $json | dism_dsc get windows-feature 2>$null | ConvertFrom-Json
+        $before = (dsc resource get -r $resourceType -i $json 2>$null | ConvertFrom-Json).actualState
 
         # Run what-if
-        $result = $json | dism_dsc set windows-feature -w 2>$null | ConvertFrom-Json
+        $result = (dsc resource set -r $resourceType -i $json -w 2>$null | ConvertFrom-Json).afterState
         $LASTEXITCODE | Should -Be 0
 
         $result.features[0].featureName | Should -Be $testFeature
@@ -77,7 +78,7 @@ Describe 'WindowsFeatureList what-if tests' -Skip:(!$IsWindows) {
         $result.features[0]._metadata.whatIf[0] | Should -Match "Would remove feature '$testFeature'"
 
         # No mutation occurred
-        $after = $json | dism_dsc get windows-feature 2>$null | ConvertFrom-Json
+        $after = (dsc resource get -r $resourceType -i $json 2>$null | ConvertFrom-Json).actualState
         $before | ConvertTo-Json -Depth 10 | Should -Be ($after | ConvertTo-Json -Depth 10)
     }
 
@@ -89,9 +90,9 @@ Describe 'WindowsFeatureList what-if tests' -Skip:(!$IsWindows) {
     ]
 }
 "@
-        $before = $json | dism_dsc get windows-feature 2>$null | ConvertFrom-Json
+        $before = (dsc resource get -r $resourceType -i $json 2>$null | ConvertFrom-Json).actualState
 
-        $result = $json | dism_dsc set windows-feature -w 2>$null | ConvertFrom-Json
+        $result = (dsc resource set -r $resourceType -i $json -w 2>$null | ConvertFrom-Json).afterState
         $LASTEXITCODE | Should -Be 0
 
         $result.features[0].featureName | Should -Be $testFeature
@@ -100,7 +101,7 @@ Describe 'WindowsFeatureList what-if tests' -Skip:(!$IsWindows) {
         $result.features[0].limitAccess | Should -BeTrue
         $result.features[0]._metadata.whatIf[0] | Should -Match "Would enable feature '$testFeature'"
 
-        $after = $json | dism_dsc get windows-feature 2>$null | ConvertFrom-Json
+        $after = (dsc resource get -r $resourceType -i $json 2>$null | ConvertFrom-Json).actualState
         $before | ConvertTo-Json -Depth 10 | Should -Be ($after | ConvertTo-Json -Depth 10)
     }
 
@@ -113,7 +114,7 @@ Describe 'WindowsFeatureList what-if tests' -Skip:(!$IsWindows) {
     ]
 }
 "@
-        $result = $json | dism_dsc set windows-feature -w 2>$null | ConvertFrom-Json
+        $result = (dsc resource set -r $resourceType -i $json -w 2>$null | ConvertFrom-Json).afterState
         $LASTEXITCODE | Should -Be 0
 
         $result.features | Should -HaveCount 2

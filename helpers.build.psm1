@@ -2977,7 +2977,8 @@ function Build-DscDebPackage{
         }
 
         Write-Verbose -Verbose "Building DEB package"
-        $debPackageName = "dsc_$productVersion-1_$debArch.deb"
+        $packageName = if ($productVersion.Contains('-')) { 'dsc-preview' } else { 'dsc' }
+        $debPackageName = "$($packageName)_$productVersion-1_$debArch.deb"
         $finalDebPath = Join-Path $artifactDirectory.BinRoot $debPackageName
     }
 
@@ -3301,7 +3302,8 @@ function Build-DscRpmPackage {
         }
 
         Write-Verbose -Verbose "Building RPM package"
-        $rpmPackageName = "dsc_$productVersion-1_$rpmArch.rpm"
+        $packageName = if ($productVersion.Contains('-')) { 'dsc-preview' } else { 'dsc' }
+        $rpmPackageName = "$($packageName)_$productVersion-1_$rpmArch.rpm"
         $finalRpmPath = Join-Path $artifactDirectory.BinRoot $rpmPackageName
     }
 

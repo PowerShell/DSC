@@ -8,31 +8,31 @@ mod registry;
 
 use rust_i18n::t;
 use serde_json::json;
-use std::process::exit;
+use std::process::ExitCode;
 
 rust_i18n::i18n!("locales", fallback = "en-us");
 
-const EXIT_SUCCESS: i32 = 0;
-const EXIT_INVALID_ARGS: i32 = 1;
-const EXIT_INVALID_INPUT: i32 = 2;
-const EXIT_RESOURCE_ERROR: i32 = 3;
+const EXIT_SUCCESS: u8 = 0;
+const EXIT_INVALID_ARGS: u8 = 1;
+const EXIT_INVALID_INPUT: u8 = 2;
+const EXIT_RESOURCE_ERROR: u8 = 3;
 
 fn write_error(message: &str) {
     eprintln!("{}", json!({ "error": message }));
 }
 
 #[cfg(not(windows))]
-fn main() {
+fn main() -> ExitCode {
     write_error(&t!("main.windowsOnly"));
-    exit(EXIT_RESOURCE_ERROR);
+    ExitCode::from(EXIT_RESOURCE_ERROR)
 }
 
 #[cfg(windows)]
-fn main() {
+fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let Some(operation) = args.first().map(String::as_str) else {
         write_error(&t!("main.missingOperation"));
-        exit(EXIT_INVALID_ARGS);
+        return ExitCode::from(EXIT_INVALID_ARGS);
     };
 
     let result = match operation {
@@ -40,11 +40,11 @@ fn main() {
         "get" | "set" => {
             let Some(resource_type) = argument_value(&args, "--resource-type") else {
                 write_error(&t!("main.missingArgument", argument = "--resource-type"));
-                exit(EXIT_INVALID_ARGS);
+                return ExitCode::from(EXIT_INVALID_ARGS);
             };
             let Some(resource_path) = argument_value(&args, "--resource-path") else {
                 write_error(&t!("main.missingArgument", argument = "--resource-path"));
-                exit(EXIT_INVALID_ARGS);
+                return ExitCode::from(EXIT_INVALID_ARGS);
             };
             if operation == "get" {
                 let input = argument_value(&args, "--input").unwrap_or_default();
@@ -52,14 +52,14 @@ fn main() {
             } else {
                 let Some(input) = argument_value(&args, "--input") else {
                     write_error(&t!("main.missingArgument", argument = "--input"));
-                    exit(EXIT_INVALID_ARGS);
+                    return ExitCode::from(EXIT_INVALID_ARGS);
                 };
                 registry::set(input, resource_type, resource_path)
             }
         }
         unknown => {
             write_error(&t!("main.unknownOperation", operation = unknown));
-            exit(EXIT_INVALID_ARGS);
+            return ExitCode::from(EXIT_INVALID_ARGS);
         }
     };
 
@@ -68,7 +68,7 @@ fn main() {
             for line in lines {
                 println!("{line}");
             }
-            exit(EXIT_SUCCESS);
+            ExitCode::from(EXIT_SUCCESS)
         }
         Err(error) => {
             write_error(&error.to_string());
@@ -77,7 +77,7 @@ fn main() {
             } else {
                 EXIT_RESOURCE_ERROR
             };
-            exit(code);
+            ExitCode::from(code)
         }
     }
 }

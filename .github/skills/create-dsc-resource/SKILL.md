@@ -142,30 +142,34 @@ Key fields:
 #### main.rs file
 
 - Initialize `rust-i18n` with `rust_i18n::i18n!("locales", fallback = "en-us");`
-- Define named exit code constants at the module level:
+- Import `std::process::ExitCode`, make `main` return `ExitCode`, and return normally from every code path. Never call `std::process::exit`; it bypasses normal process cleanup and prevents coverage data from being collected.
+- Define named `u8` exit code constants at the module level so they can be passed directly to `ExitCode::from`:
   ```rust
-  const EXIT_SUCCESS: i32 = 0;
-  const EXIT_INVALID_ARGS: i32 = 1;
-  const EXIT_INVALID_INPUT: i32 = 2;
-  const EXIT_RESOURCE_ERROR: i32 = 3;
+  const EXIT_SUCCESS: u8 = 0;
+  const EXIT_INVALID_ARGS: u8 = 1;
+  const EXIT_INVALID_INPUT: u8 = 2;
+  const EXIT_RESOURCE_ERROR: u8 = 3;
   ```
 - Implement common helper functions:
   - `write_error(message)` — writes `{"error": "<message>"}` to stderr
-  - `require_input(input_json)` — deserializes the JSON input or exits with an error
-  - `print_json(value)` — serializes and prints to stdout, or exits with an error
-  - `parse_input_arg(args)` — parses `--input <json>` from command-line arguments
+  - `require_input(input_json)` — deserializes the JSON input and returns `Result<T, ExitCode>`
+  - `print_json(value)` — serializes and prints to stdout, returning `Result<(), ExitCode>`
+  - `parse_input_arg(args)` — parses `--input <json>` and returns argument errors to `main`
 - Use `t!("key")` macro from `rust-i18n` for all user-facing strings (error messages, etc.)
 - For platform-specific resources, use conditional compilation:
   ```rust
+  use std::process::ExitCode;
+
   #[cfg(not(windows))]
-  fn main() {
+  fn main() -> ExitCode {
       write_error(&t!("main.windowsOnly"));
-      exit(EXIT_RESOURCE_ERROR);
+      ExitCode::from(EXIT_RESOURCE_ERROR)
   }
 
   #[cfg(windows)]
-  fn main() {
+  fn main() -> ExitCode {
       // ... actual implementation
+      ExitCode::from(EXIT_SUCCESS)
   }
   ```
 - Parse operations as the first positional argument (e.g., `get`, `set`, `export`), with `--input <json>` as the input argument
@@ -340,7 +344,10 @@ args::ConfigSubCommand::Set { input, what_if } => {
     trace!("Set input: {input}, what_if: {what_if}");
     let mut helper = match Helper::new_from_json(&input) {
         Ok(h) => h,
-        Err(err) => { error!("{err}"); exit(EXIT_INVALID_INPUT); }
+        Err(err) => {
+            error!("{err}");
+            return ExitCode::from(EXIT_INVALID_INPUT);
+        }
     };
     if what_if { helper.enable_what_if(); }
 
@@ -352,9 +359,12 @@ args::ConfigSubCommand::Set { input, what_if } => {
             println!("{json}");
         }
         Ok(None) => {}
-        Err(err) => { error!("{err}"); exit(EXIT_RESOURCE_ERROR); }
+        Err(err) => {
+            error!("{err}");
+            return ExitCode::from(EXIT_RESOURCE_ERROR);
+        }
     }
-    exit(EXIT_SUCCESS);
+    ExitCode::from(EXIT_SUCCESS)
 }
 ```
 

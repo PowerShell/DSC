@@ -8,5 +8,5 @@ use serde::{Deserialize, Serialize};
 #[serde(deny_unknown_fields)]
 pub struct ExitCode {
     #[serde(rename = "exitCode")]
-    pub exit_code: i32,
+    pub exit_code: u8,
 }

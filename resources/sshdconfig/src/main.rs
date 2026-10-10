@@ -5,7 +5,7 @@ use clap::Parser;
 use rust_i18n::{i18n, t};
 use schemars::schema_for;
 use serde_json::Map;
-use std::process::exit;
+use std::process::ExitCode;
 use tracing::{debug, error};
 
 use args::{Args, Command, DefaultShell, Setting};
@@ -31,10 +31,10 @@ mod util;
 
 i18n!("locales", fallback = "en-us");
 
-const EXIT_SUCCESS: i32 = 0;
-const EXIT_FAILURE: i32 = 1;
+const EXIT_SUCCESS: u8 = 0;
+const EXIT_FAILURE: u8 = 1;
 
-fn main() {
+fn main() -> ExitCode {
     let args = Args::parse();
 
     enable_tracing(args.trace_level.as_ref(), &args.trace_format);
@@ -81,15 +81,15 @@ fn main() {
                     Ok(json) => println!("{json}"),
                     Err(e) => {
                         error!("{}", e);
-                        exit(EXIT_FAILURE);
+                        return ExitCode::from(EXIT_FAILURE);
                     }
                 }
             }
-            exit(EXIT_SUCCESS);
+            ExitCode::from(EXIT_SUCCESS)
         }
         Err(e) => {
             error!("{}", e);
-            exit(EXIT_FAILURE);
+            ExitCode::from(EXIT_FAILURE)
         }
     }
 }
