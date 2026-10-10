@@ -6,16 +6,17 @@ mod windows_update;
 
 use rust_i18n::t;
 use std::io::{self, Read, IsTerminal};
+use std::process::ExitCode;
 
 rust_i18n::i18n!("locales", fallback = "en-us");
 
-fn main() {
+fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().collect();
     
     if args.len() < 2 {
         eprintln!("Error: {}", t!("main.missingOperation"));
         eprintln!("{}", t!("main.usage"));
-        std::process::exit(1);
+        return ExitCode::FAILURE;
     }
 
     let operation = args[1].as_str();
@@ -32,18 +33,18 @@ fn main() {
             match windows_update::handle_export(&buffer) {
                 Ok(output) => {
                     println!("{}", output);
-                    std::process::exit(0);
+                    ExitCode::SUCCESS
                 }
                 Err(e) => {
                     eprintln!("Error: {}", e);
-                    std::process::exit(1);
+                    ExitCode::FAILURE
                 }
             }
 
             #[cfg(not(windows))]
             {
                 eprintln!("Error: {}", t!("main.windowsUpdateOnlySupported"));
-                std::process::exit(1);
+                ExitCode::FAILURE
             }
         }
         "get" => {
@@ -51,25 +52,25 @@ fn main() {
             let mut buffer = String::new();
             if let Err(e) = io::stdin().read_to_string(&mut buffer) {
                 eprintln!("{}", t!("main.errorReadingInput", err = e));
-                std::process::exit(1);
+                return ExitCode::FAILURE;
             }
 
             #[cfg(windows)]
             match windows_update::handle_get(&buffer) {
                 Ok(output) => {
                     println!("{}", output);
-                    std::process::exit(0);
+                    ExitCode::SUCCESS
                 }
                 Err(e) => {
                     eprintln!("Error: {}", e);
-                    std::process::exit(1);
+                    ExitCode::FAILURE
                 }
             }
 
             #[cfg(not(windows))]
             {
                 eprintln!("Error: {}", t!("main.windowsUpdateOnlySupported"));
-                std::process::exit(1);
+                ExitCode::FAILURE
             }
         }
         "set" => {
@@ -77,31 +78,31 @@ fn main() {
             let mut buffer = String::new();
             if let Err(e) = io::stdin().read_to_string(&mut buffer) {
                 eprintln!("{}", t!("main.errorReadingInput", err = e));
-                std::process::exit(1);
+                return ExitCode::FAILURE;
             }
 
             #[cfg(windows)]
             match windows_update::handle_set(&buffer, parse_what_if_arg(&args)) {
                 Ok(output) => {
                     println!("{}", output);
-                    std::process::exit(0);
+                    ExitCode::SUCCESS
                 }
                 Err(e) => {
                     eprintln!("Error: {}", e);
-                    std::process::exit(1);
+                    ExitCode::FAILURE
                 }
             }
 
             #[cfg(not(windows))]
             {
                 eprintln!("Error: {}", t!("main.windowsUpdateOnlySupported"));
-                std::process::exit(1);
+                ExitCode::FAILURE
             }
         }
         _ => {
             eprintln!("{}", t!("main.unknownOperation", operation = operation));
             eprintln!("{}", t!("main.usage"));
-            std::process::exit(1);
+            ExitCode::FAILURE
         }
     }
 }
