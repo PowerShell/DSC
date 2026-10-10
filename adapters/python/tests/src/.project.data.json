@@ -1,0 +1,13 @@
+{
+  "Name": "python-test-resources",
+  "Kind": "Resource",
+  "TestOnly": true,
+  "CopyFiles": {
+    "All": [
+      "get.py",
+      "set.py",
+      "export.py",
+      "test.py"
+    ]
+  }
+}
