@@ -63,8 +63,9 @@ number of static string arguments.
 Without a name argument, DSC can't pass the secret name to the extension, so the extension can't
 retrieve a specific secret. DSC doesn't load an extension manifest that defines the `secret`
 property without the `args` property, without a name argument, with more than one name argument,
-or with more than one vault argument. When DSC skips a manifest for one of these reasons, it logs
-an informational message that explains the problem. Use the `--trace-level info` option, like
+with more than one vault argument, or with an item that isn't a string, a name argument, or a
+vault argument. When DSC skips a manifest for one of these reasons, it logs an informational
+message that explains the problem. Use the `--trace-level info` option, like
 `dsc --trace-level info extension list`, to see the message.
 
 If the array doesn't define a vault argument, DSC can't pass the vault name to the extension, so
@@ -96,9 +97,13 @@ A name argument is defined as a JSON object with the following properties:
 
 - `nameArg` (required) - The argument to pass before the secret name, like `--secret-name`.
 
+The object must not define any other properties. An object that defines both `nameArg` and
+`vaultArg` isn't a valid argument.
+
 ```yaml
-Type:               object
-RequiredProperties: [nameArg]
+Type:                 object
+RequiredProperties:   [nameArg]
+AdditionalProperties: false
 ```
 
 #### Vault argument
@@ -114,9 +119,12 @@ A vault argument is defined as a JSON object with the following properties:
 - `vaultArg` (required) - The argument to pass before the name of the vault to retrieve a secret
 from, like `--vault-name`.
 
+The object must not define any other properties.
+
 ```yaml
-Type:               object
-RequiredProperties: [vaultArg]
+Type:                 object
+RequiredProperties:   [vaultArg]
+AdditionalProperties: false
 ```
 
 <!-- Link reference definitions -->

@@ -1,0 +1,37 @@
+_version: 2
+schemas:
+  extension:
+    manifest:
+      secret:
+        args:
+          constraints:
+            nameArg:
+              title:
+                en-us: Secret name input argument
+              description:
+                en-us: >-
+                  The arguments must define exactly one object with the `nameArg` property.
+              markdownDescription:
+                en-us: |-
+                  The arguments must define exactly one object with the `nameArg` property. DSC passes
+                  the value of `nameArg` followed by the name of the secret to retrieve. Without this
+                  argument, DSC can't tell the extension which secret to retrieve.
+              errorMessage:
+                en-us: >-
+                  The `secret` command must define the secret name input argument exactly once. Define
+                  exactly one argument in `secret.args` as an object with the `nameArg` property.
+            vaultArg:
+              title:
+                en-us: Vault input argument
+              description:
+                en-us: >-
+                  The arguments may define at most one object with the `vaultArg` property.
+              markdownDescription:
+                en-us: |-
+                  The arguments may define at most one object with the `vaultArg` property. DSC passes
+                  the value of `vaultArg` followed by the name of the vault when the `secret()` function
+                  specifies a vault.
+              errorMessage:
+                en-us: >-
+                  The `secret` command defines the vault input argument more than once. Define at most
+                  one argument in `secret.args` as an object with the `vaultArg` property.
