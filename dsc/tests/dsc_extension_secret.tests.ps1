@@ -206,6 +206,7 @@ Describe 'Tests for the secret() function and extensions' {
         @{ reason = 'without a name argument'; secret = '{ "executable": "dsctest", "args": ["no-op"] }'; expectedError = "The 'secret' command doesn't define the secret name input argument" }
         @{ reason = 'with multiple name arguments'; secret = '{ "executable": "dsctest", "args": ["no-op", { "nameArg": "--name" }, { "nameArg": "--secret" }] }'; expectedError = "The 'secret' command defines the secret name input argument 2 times" }
         @{ reason = 'with multiple vault arguments'; secret = '{ "executable": "dsctest", "args": ["no-op", { "nameArg": "--name" }, { "vaultArg": "--vault" }, { "vaultArg": "--store" }] }'; expectedError = "The 'secret' command defines the vault input argument 2 times" }
+        @{ reason = 'with an argument that defines both nameArg and vaultArg'; secret = '{ "executable": "dsctest", "args": ["no-op", { "nameArg": "--name", "vaultArg": "--vault" }] }'; expectedError = "Argument 2 of the 'secret' command isn't valid" }
     ) {
         param($secret, $expectedError)
 
@@ -219,6 +220,7 @@ Describe 'Tests for the secret() function and extensions' {
 }
 "@
 
+        $oldRestrictedPath = $env:DSC_RESTRICTED_PATH
         try {
             $env:DSC_RESTRICTED_PATH = $TestDrive
             Set-Content -Path "$TestDrive/secretInvalid.dsc.extension.json" -Value $manifest
@@ -228,7 +230,7 @@ Describe 'Tests for the secret() function and extensions' {
             @($out).type | Should -Not -Contain 'Test/SecretInvalid'
             $errorLog | Should -BeLike "*INFO Failed to load manifest: *$expectedError*" -Because $errorLog
         } finally {
-            $env:DSC_RESTRICTED_PATH = $null
+            $env:DSC_RESTRICTED_PATH = $oldRestrictedPath
         }
     }
 
@@ -250,6 +252,7 @@ Describe 'Tests for the secret() function and extensions' {
 }
 '@
 
+        $oldRestrictedPath = $env:DSC_RESTRICTED_PATH
         try {
             $env:DSC_RESTRICTED_PATH = $TestDrive
             Set-Content -Path "$TestDrive/secretValid.dsc.extension.json" -Value $manifest
@@ -259,7 +262,7 @@ Describe 'Tests for the secret() function and extensions' {
             $out.type | Should -BeExactly 'Test/SecretValid'
             $out.capabilities | Should -BeExactly @('secret')
         } finally {
-            $env:DSC_RESTRICTED_PATH = $null
+            $env:DSC_RESTRICTED_PATH = $oldRestrictedPath
         }
     }
 }
