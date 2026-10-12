@@ -33,7 +33,7 @@ pub struct DscExtension {
     pub deprecation_message: Option<String>,
     /// The description of the extension.
     pub description: Option<String>,
-    // The directory path to the extension.
+    /// The directory path to the extension.
     pub directory: PathBuf,
     /// The author of the extension.
     pub author: Option<String>,

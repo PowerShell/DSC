@@ -687,7 +687,7 @@ fn verify_with_export_schema(input: &str, resource: &DscResource, target_resourc
 /// * `cwd` - The current working directory
 /// * `input` - Input to the command
 /// * `target_resource` - The target resource, if applicable
-/// 
+///
 /// # Returns
 ///
 /// * `ExportResult` - The result of the export operation
@@ -1344,7 +1344,7 @@ pub fn log_stderr_line<'a>(process_id: &u32, trace_line: &'a str) -> &'a str
     ""
 }
 
-fn validate_security_context(target_resource: Option<&DscResource>, required_security_context: &Option<SecurityContextKind>, resource_type: &str, operation: &Operation) -> Result<(), DscError> {
+pub(crate)fn validate_security_context(target_resource: Option<&DscResource>, required_security_context: &Option<SecurityContextKind>, resource_type: &str, operation: &Operation) -> Result<(), DscError> {
     if let Some(resource) = target_resource && let Some(adapted_manifest) = &resource.adapted_manifest {
         let require_security_context = match operation {
             Operation::Get => {
@@ -1387,6 +1387,9 @@ fn validate_security_context(target_resource: Option<&DscResource>, required_sec
                     &None
                 }
             },
+            Operation::Invoke => {
+                return Err(DscError::NotSupported(t!("dscresources.commandResource.invokeNotSupportedForResources").to_string()));
+            }
         };
         if require_security_context.is_some() {
             return validate_security_context(None, require_security_context, &resource.type_name, operation);
