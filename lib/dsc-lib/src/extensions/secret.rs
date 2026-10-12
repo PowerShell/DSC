@@ -17,14 +17,17 @@ use crate::{
     schemas::dsc_repo::{DscRepoSchema, schema_i18n}
 };
 
+use miette::Diagnostic;
 use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::fmt::{Display, Formatter};
 use std::ops::Deref;
+use thiserror::Error;
 use tracing::{debug, warn};
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize, JsonSchema)]
 #[serde(untagged, deny_unknown_fields)]
 #[schemars(inline)]
 pub enum SecretArgKind {
@@ -47,15 +50,92 @@ pub enum SecretArgKind {
     },
 }
 
+// Display the argument definition as it appears in a manifest, like `"get"` or
+// `{"nameArg":"--name"}`, so messages show the definition the author wrote.
+impl Display for SecretArgKind {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let json = serde_json::to_string(self).map_err(|_| std::fmt::Error)?;
+        f.write_str(&json)
+    }
+}
+
+/// Defines the errors that can occur when creating a [`SecretArgs`] instance.
+#[derive(Debug, Clone, PartialEq, Error, Diagnostic)]
+pub enum SecretArgsError {
+    /// Indicates that the arguments for the `secret` command are invalid for one or more reasons.
+    ///
+    /// The `errors` field lists every problem found in the arguments, like an argument definition
+    /// that isn't valid or a missing secret name input argument, so the manifest author can review
+    /// all of them at once instead of discovering them one at a time.
+    #[error("{t}", t = t!(
+        "extensions.secret.invalidArgs",
+        err = errors.iter().map(ToString::to_string).collect::<Vec<String>>().join("; ")
+    ))]
+    InvalidArgs {
+        /// The specific problems found in the arguments.
+        #[related]
+        errors: Vec<SecretArgsError>,
+    },
+
+    /// Indicates that an argument definition isn't a string, an object with only the `nameArg`
+    /// property, or an object with only the `vaultArg` property.
+    ///
+    /// Validation raises this error in the `errors` field of the main [`InvalidArgs`] error.
+    ///
+    /// [`InvalidArgs`]: Self::InvalidArgs
+    #[error("{t}", t = t!("extensions.secret.invalidArg", position = position, arg = value))]
+    InvalidArg {
+        /// The one-based position of the invalid argument in the `args` array.
+        position: usize,
+        /// The JSON value of the invalid argument.
+        value: Value,
+    },
+
+    /// Indicates that the arguments don't define the secret name input argument.
+    ///
+    /// Validation raises this error in the `errors` field of the main [`InvalidArgs`] error.
+    ///
+    /// [`InvalidArgs`]: Self::InvalidArgs
+    #[error("{t}", t = t!("extensions.secret.missingNameArg"))]
+    MissingNameArg,
+
+    /// Indicates that the arguments define the secret name input argument more than once.
+    ///
+    /// Validation raises this error in the `errors` field of the main [`InvalidArgs`] error.
+    ///
+    /// [`InvalidArgs`]: Self::InvalidArgs
+    #[error("{t}", t = t!("extensions.secret.multipleNameArgs", count = count))]
+    MultipleNameArgs {
+        /// The number of secret name input arguments the arguments define.
+        count: usize,
+    },
+
+    /// Indicates that the arguments define the vault input argument more than once.
+    ///
+    /// Validation raises this error in the `errors` field of the main [`InvalidArgs`] error.
+    ///
+    /// [`InvalidArgs`]: Self::InvalidArgs
+    #[error("{t}", t = t!("extensions.secret.multipleVaultArgs", count = count))]
+    MultipleVaultArgs {
+        /// The number of vault input arguments the arguments define.
+        count: usize,
+    },
+}
+
 /// Defines the arguments to pass to the `secret` command of an extension.
 ///
 /// The arguments must define the secret name input argument exactly once and may define the vault
 /// input argument at most once. Without the secret name input argument, DSC can't tell the
 /// extension which secret to retrieve, so the extension can't function as a secret provider.
 ///
-/// Deserializing arguments that break these rules fails, so a deserialized instance is always
-/// valid and DSC doesn't need to validate the arguments again before invoking the extension.
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+/// Every constructor validates these rules, and deserializing arguments that break them fails, so
+/// an instance is always valid and DSC doesn't need to validate the arguments again before
+/// invoking the extension. The type implements [`AsRef`], [`Deref`], and [`IntoIterator`] to
+/// enable ergonomically using an instance as the underlying vector, but not [`DerefMut`], because
+/// mutating the arguments could break the rules.
+///
+/// [`DerefMut`]: std::ops::DerefMut
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize, JsonSchema)]
 #[serde(try_from = "Vec<Value>")]
 #[schemars(inline, !try_from)]
 pub struct SecretArgs(Vec<SecretArgKind>);
@@ -69,11 +149,19 @@ impl SecretArgs {
     ///
     /// # Errors
     ///
-    /// Returns [`DscError::InvalidManifest`] when the arguments don't define the secret name input
-    /// argument, define it more than once, or define the vault input argument more than once.
-    pub fn new(args: Vec<SecretArgKind>) -> Result<Self, DscError> {
-        Self::validate(&args)?;
-        Ok(Self(args))
+    /// Returns [`SecretArgsError::InvalidArgs`] when the arguments break any of the rules. The
+    /// error lists every rule the arguments break:
+    ///
+    /// * [`SecretArgsError::MissingNameArg`] when the arguments don't define the secret name input
+    ///   argument.
+    /// * [`SecretArgsError::MultipleNameArgs`] when the arguments define the secret name input
+    ///   argument more than once.
+    /// * [`SecretArgsError::MultipleVaultArgs`] when the arguments define the vault input argument
+    ///   more than once.
+    pub fn from_args(args: Vec<SecretArgKind>) -> Result<Self, SecretArgsError> {
+        let mut errors = Vec::new();
+        Self::validate(&args, &mut errors);
+        Self::finish(args, errors)
     }
 
     /// Creates the arguments for the `secret` command from the JSON values of a manifest.
@@ -87,43 +175,97 @@ impl SecretArgs {
     ///
     /// # Errors
     ///
-    /// Returns [`DscError::InvalidManifest`] when a value isn't a valid argument definition or when
-    /// the arguments break the rules described for [`SecretArgs::new`].
-    pub fn from_values(values: Vec<Value>) -> Result<Self, DscError> {
+    /// Returns [`SecretArgsError::InvalidArgs`] when any value isn't a valid argument definition
+    /// or when the arguments break the rules described for [`SecretArgs::from_args`]. The error
+    /// lists a [`SecretArgsError::InvalidArg`] for every invalid value followed by every rule the
+    /// valid argument definitions break.
+    pub fn from_values(values: Vec<Value>) -> Result<Self, SecretArgsError> {
+        let mut errors = Vec::new();
         let mut args = Vec::with_capacity(values.len());
-        for (index, value) in values.iter().enumerate() {
-            match SecretArgKind::deserialize(value) {
+        for (index, value) in values.into_iter().enumerate() {
+            match SecretArgKind::deserialize(&value) {
                 Ok(arg) => args.push(arg),
-                Err(_) => {
-                    return Err(DscError::InvalidManifest(t!("extensions.secret.invalidArg", position = index + 1, arg = value).to_string()));
-                }
+                Err(_) => errors.push(SecretArgsError::InvalidArg { position: index + 1, value }),
             }
         }
-        Self::new(args)
+        Self::validate(&args, &mut errors);
+        Self::finish(args, errors)
     }
 
-    /// Validates that the arguments define the secret name input argument exactly once and the
-    /// vault input argument at most once.
-    fn validate(args: &[SecretArgKind]) -> Result<(), DscError> {
+    /// Resolves the argument definitions into the arguments to pass to the `secret` command.
+    ///
+    /// Static string arguments are passed as-is. The secret name input argument is followed by
+    /// `name`. The vault input argument is followed by the vault name when `vault` is defined and
+    /// omitted entirely otherwise.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name of the secret to retrieve.
+    /// * `vault` - The name of the vault to retrieve the secret from, if any.
+    #[must_use]
+    pub fn to_command_args(&self, name: &str, vault: Option<&str>) -> Vec<String> {
+        let mut command_args = Vec::<String>::with_capacity(self.0.len() + 2);
+        for arg in &self.0 {
+            match arg {
+                SecretArgKind::String(s) => {
+                    command_args.push(s.clone());
+                },
+                SecretArgKind::Name { name_arg } => {
+                    command_args.push(name_arg.clone());
+                    command_args.push(name.to_string());
+                },
+                SecretArgKind::Vault { vault_arg } => {
+                    if let Some(value) = vault {
+                        command_args.push(vault_arg.clone());
+                        command_args.push(value.to_string());
+                    }
+                },
+            }
+        }
+
+        command_args
+    }
+
+    /// Collects every rule the argument definitions break into `errors`.
+    ///
+    /// The arguments must define the secret name input argument exactly once and the vault input
+    /// argument at most once.
+    ///
+    /// # Arguments
+    ///
+    /// * `args` - The argument definitions to validate.
+    /// * `errors` - The vector to add the detected rule violations to.
+    fn validate(args: &[SecretArgKind], errors: &mut Vec<SecretArgsError>) {
         let name_arg_count = args.iter().filter(|arg| matches!(arg, SecretArgKind::Name { .. })).count();
         let vault_arg_count = args.iter().filter(|arg| matches!(arg, SecretArgKind::Vault { .. })).count();
 
-        if name_arg_count == 0 {
-            return Err(DscError::InvalidManifest(t!("extensions.secret.missingNameArg").to_string()));
-        }
-        if name_arg_count > 1 {
-            return Err(DscError::InvalidManifest(t!("extensions.secret.multipleNameArgs", count = name_arg_count).to_string()));
+        match name_arg_count {
+            0 => errors.push(SecretArgsError::MissingNameArg),
+            1 => {},
+            count => errors.push(SecretArgsError::MultipleNameArgs { count }),
         }
         if vault_arg_count > 1 {
-            return Err(DscError::InvalidManifest(t!("extensions.secret.multipleVaultArgs", count = vault_arg_count).to_string()));
+            errors.push(SecretArgsError::MultipleVaultArgs { count: vault_arg_count });
         }
+    }
 
-        Ok(())
+    /// Returns the arguments when no errors were collected and the collected errors otherwise.
+    ///
+    /// # Arguments
+    ///
+    /// * `args` - The validated argument definitions.
+    /// * `errors` - The rule violations collected while validating the arguments.
+    fn finish(args: Vec<SecretArgKind>, errors: Vec<SecretArgsError>) -> Result<Self, SecretArgsError> {
+        if errors.is_empty() {
+            Ok(Self(args))
+        } else {
+            Err(SecretArgsError::InvalidArgs { errors })
+        }
     }
 }
 
 impl TryFrom<Vec<Value>> for SecretArgs {
-    type Error = DscError;
+    type Error = SecretArgsError;
 
     fn try_from(values: Vec<Value>) -> Result<Self, Self::Error> {
         Self::from_values(values)
@@ -131,18 +273,74 @@ impl TryFrom<Vec<Value>> for SecretArgs {
 }
 
 impl TryFrom<Vec<SecretArgKind>> for SecretArgs {
-    type Error = DscError;
+    type Error = SecretArgsError;
 
     fn try_from(args: Vec<SecretArgKind>) -> Result<Self, Self::Error> {
-        Self::new(args)
+        Self::from_args(args)
     }
 }
 
+// Treat a reference to `SecretArgs` as a reference to the underlying `Vec`
+impl AsRef<Vec<SecretArgKind>> for SecretArgs {
+    fn as_ref(&self) -> &Vec<SecretArgKind> {
+        &self.0
+    }
+}
+
+// Enable using non-mutating `Vec` methods directly on `SecretArgs`
 impl Deref for SecretArgs {
-    type Target = [SecretArgKind];
+    type Target = Vec<SecretArgKind>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+// Enable iterating over the underlying `Vec` to use in ergonomic `for` loops
+impl IntoIterator for SecretArgs {
+    type Item = SecretArgKind;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
+// Enable iterating over references to the argument definitions without consuming the instance
+impl<'a> IntoIterator for &'a SecretArgs {
+    type Item = &'a SecretArgKind;
+    type IntoIter = std::slice::Iter<'a, SecretArgKind>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.iter()
+    }
+}
+
+// Enable comparing the newtype with the underlying `Vec` in either direction
+impl PartialEq<Vec<SecretArgKind>> for SecretArgs {
+    fn eq(&self, other: &Vec<SecretArgKind>) -> bool {
+        &self.0 == other
+    }
+}
+
+impl PartialEq<SecretArgs> for Vec<SecretArgKind> {
+    fn eq(&self, other: &SecretArgs) -> bool {
+        self == &other.0
+    }
+}
+
+// Enable infallibly converting the newtype into the underlying `Vec`
+impl From<SecretArgs> for Vec<SecretArgKind> {
+    fn from(args: SecretArgs) -> Self {
+        args.0
+    }
+}
+
+// Display the arguments as they appear in a manifest, like `["get",{"nameArg":"--name"}]`
+impl Display for SecretArgs {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let json = serde_json::to_string(self).map_err(|_| std::fmt::Error)?;
+        f.write_str(&json)
     }
 }
 
@@ -154,30 +352,40 @@ impl Deref for SecretArgs {
 #[dsc_repo_schema(base_name = "manifest.secret", folder_path = "extension")]
 pub struct SecretMethod {
     /// The command to run to retrieve a secret.
+    #[schemars(extend(
+        "title" = schema_i18n!("executable.title"),
+        "description" = schema_i18n!("executable.description"),
+        "markdownDescription" = schema_i18n!("executable.markdownDescription"),
+    ))]
     pub executable: String,
     /// The arguments to pass to the command to retrieve a secret. The arguments must define the
     /// secret name input argument exactly once and may define the vault input argument at most
     /// once.
-    #[schemars(extend("allOf" = [
-        {
-            "title": schema_i18n!("args.constraints.nameArg.title"),
-            "description": schema_i18n!("args.constraints.nameArg.description"),
-            "markdownDescription": schema_i18n!("args.constraints.nameArg.markdownDescription"),
-            "errorMessage": schema_i18n!("args.constraints.nameArg.errorMessage"),
-            "contains": { "type": "object", "required": ["nameArg"] },
-            "minContains": 1,
-            "maxContains": 1,
-        },
-        {
-            "title": schema_i18n!("args.constraints.vaultArg.title"),
-            "description": schema_i18n!("args.constraints.vaultArg.description"),
-            "markdownDescription": schema_i18n!("args.constraints.vaultArg.markdownDescription"),
-            "errorMessage": schema_i18n!("args.constraints.vaultArg.errorMessage"),
-            "contains": { "type": "object", "required": ["vaultArg"] },
-            "minContains": 0,
-            "maxContains": 1,
-        },
-    ]))]
+    #[schemars(extend(
+        "title" = schema_i18n!("args.title"),
+        "description" = schema_i18n!("args.description"),
+        "markdownDescription" = schema_i18n!("args.markdownDescription"),
+        "allOf" = [
+            {
+                "title": schema_i18n!("args.constraints.nameArg.title"),
+                "description": schema_i18n!("args.constraints.nameArg.description"),
+                "markdownDescription": schema_i18n!("args.constraints.nameArg.markdownDescription"),
+                "errorMessage": schema_i18n!("args.constraints.nameArg.errorMessage"),
+                "contains": { "type": "object", "required": ["nameArg"] },
+                "minContains": 1,
+                "maxContains": 1,
+            },
+            {
+                "title": schema_i18n!("args.constraints.vaultArg.title"),
+                "description": schema_i18n!("args.constraints.vaultArg.description"),
+                "markdownDescription": schema_i18n!("args.constraints.vaultArg.markdownDescription"),
+                "errorMessage": schema_i18n!("args.constraints.vaultArg.errorMessage"),
+                "contains": { "type": "object", "required": ["vaultArg"] },
+                "minContains": 0,
+                "maxContains": 1,
+            },
+        ],
+    ))]
     pub args: SecretArgs,
 }
 
@@ -208,7 +416,7 @@ impl DscExtension {
             let Some(secret) = extension.secret else {
                 return Err(DscError::UnsupportedCapability(self.type_name.to_string(), Capability::Secret.to_string()));
             };
-            let args = process_secret_args(&secret.args, name, vault);
+            let args = secret.args.to_command_args(name, vault);
             if let Some(deprecation_message) = extension.deprecation_message.as_ref() {
                 warn!("{}", t!("extensions.dscextension.deprecationMessage", extension = self.type_name, message = deprecation_message));
             }
@@ -243,208 +451,5 @@ impl DscExtension {
                 Capability::Secret.to_string()
             ))
         }
-    }
-}
-
-fn process_secret_args(args: &[SecretArgKind], name: &str, vault: Option<&str>) -> Vec<String> {
-    let mut processed_args = Vec::<String>::new();
-    for arg in args {
-        match arg {
-            SecretArgKind::String(s) => {
-                processed_args.push(s.clone());
-            },
-            SecretArgKind::Name { name_arg } => {
-                processed_args.push(name_arg.clone());
-                processed_args.push(name.to_string());
-            },
-            SecretArgKind::Vault { vault_arg } => {
-                if let Some(value) = vault {
-                    processed_args.push(vault_arg.clone());
-                    processed_args.push(value.to_string());
-                }
-            },
-        }
-    }
-
-    processed_args
-}
-
-#[cfg(test)]
-mod test {
-    use super::{SecretArgKind, SecretArgs, SecretMethod, process_secret_args};
-    use crate::dscerror::DscError;
-    use crate::extensions::extension_manifest::ExtensionManifest;
-    use crate::schemas::dsc_repo::DscRepoSchema;
-    use schemars::schema_for;
-    use serde_json::{Value, json};
-
-    fn name_arg() -> SecretArgKind {
-        SecretArgKind::Name { name_arg: "--name".to_string() }
-    }
-
-    fn vault_arg() -> SecretArgKind {
-        SecretArgKind::Vault { vault_arg: "--vault".to_string() }
-    }
-
-    fn manifest_with_secret(secret: Value) -> Value {
-        json!({
-            "$schema": ExtensionManifest::default_schema_id_uri(),
-            "type": "Test/Secret",
-            "version": "0.1.0",
-            "secret": secret
-        })
-    }
-
-    #[test]
-    fn new_accepts_single_name_arg() {
-        let args = SecretArgs::new(vec![SecretArgKind::String("get".to_string()), name_arg()]).unwrap();
-        assert_eq!(args.len(), 2);
-    }
-
-    #[test]
-    fn new_accepts_single_name_and_vault_arg() {
-        assert!(SecretArgs::new(vec![vault_arg(), name_arg()]).is_ok());
-    }
-
-    #[test]
-    fn new_rejects_missing_name_arg() {
-        let err = SecretArgs::new(vec![SecretArgKind::String("get".to_string()), vault_arg()]).unwrap_err();
-        assert!(matches!(err, DscError::InvalidManifest(_)));
-        assert!(err.to_string().contains("doesn't define the secret name input argument"), "{err}");
-    }
-
-    #[test]
-    fn new_rejects_empty_args() {
-        assert!(SecretArgs::new(vec![]).is_err());
-    }
-
-    #[test]
-    fn new_rejects_multiple_name_args() {
-        let err = SecretArgs::new(vec![name_arg(), name_arg()]).unwrap_err();
-        assert!(matches!(err, DscError::InvalidManifest(_)));
-        assert!(err.to_string().contains("defines the secret name input argument 2 times"), "{err}");
-    }
-
-    #[test]
-    fn new_rejects_multiple_vault_args() {
-        let err = SecretArgs::new(vec![name_arg(), vault_arg(), vault_arg()]).unwrap_err();
-        assert!(matches!(err, DscError::InvalidManifest(_)));
-        assert!(err.to_string().contains("defines the vault input argument 2 times"), "{err}");
-    }
-
-    #[test]
-    fn from_values_converts_each_argument_kind() {
-        let args = SecretArgs::from_values(vec![json!("get"), json!({ "nameArg": "--name" }), json!({ "vaultArg": "--vault" })]).unwrap();
-        assert_eq!(*args, [SecretArgKind::String("get".to_string()), name_arg(), vault_arg()]);
-    }
-
-    #[test]
-    fn from_values_rejects_object_with_name_and_vault_arg() {
-        let err = SecretArgs::from_values(vec![json!("get"), json!({ "nameArg": "--name", "vaultArg": "--vault" })]).unwrap_err();
-        assert!(matches!(err, DscError::InvalidManifest(_)));
-        assert!(err.to_string().contains("Argument 2 of the 'secret' command isn't valid"), "{err}");
-        assert!(err.to_string().contains(r#"{"nameArg":"--name","vaultArg":"--vault"}"#), "{err}");
-    }
-
-    #[test]
-    fn from_values_rejects_object_with_unknown_property() {
-        let err = SecretArgs::from_values(vec![json!({ "nameArg": "--name", "other": true })]).unwrap_err();
-        assert!(err.to_string().contains("Argument 1 of the 'secret' command isn't valid"), "{err}");
-    }
-
-    #[test]
-    fn from_values_rejects_non_string_scalar() {
-        let err = SecretArgs::from_values(vec![json!(5), json!({ "nameArg": "--name" })]).unwrap_err();
-        assert!(err.to_string().contains("Argument 1 of the 'secret' command isn't valid"), "{err}");
-    }
-
-    #[test]
-    fn process_secret_args_preserves_order_and_inserts_values() {
-        let args = vec![SecretArgKind::String("get".to_string()), vault_arg(), name_arg(), SecretArgKind::String("--quiet".to_string())];
-        let processed = process_secret_args(&args, "apiToken", Some("services"));
-        assert_eq!(processed, vec!["get", "--vault", "services", "--name", "apiToken", "--quiet"]);
-    }
-
-    #[test]
-    fn process_secret_args_omits_vault_arg_without_vault() {
-        let args = vec![SecretArgKind::String("get".to_string()), name_arg(), vault_arg()];
-        let processed = process_secret_args(&args, "apiToken", None);
-        assert_eq!(processed, vec!["get", "--name", "apiToken"]);
-    }
-
-    #[test]
-    fn manifest_without_secret_args_fails_to_deserialize() {
-        let manifest = manifest_with_secret(json!({ "executable": "secret" }));
-        let err = serde_json::from_value::<ExtensionManifest>(manifest).unwrap_err();
-        assert!(err.to_string().contains("missing field `args`"), "{err}");
-    }
-
-    #[test]
-    fn manifest_without_name_arg_fails_to_deserialize() {
-        let manifest = manifest_with_secret(json!({ "executable": "secret", "args": ["get"] }));
-        let err = serde_json::from_value::<ExtensionManifest>(manifest).unwrap_err();
-        assert!(err.to_string().contains("doesn't define the secret name input argument"), "{err}");
-    }
-
-    #[test]
-    fn manifest_with_multiple_name_args_fails_to_deserialize() {
-        let manifest = manifest_with_secret(json!({ "executable": "secret", "args": [{ "nameArg": "--name" }, { "nameArg": "--secret" }] }));
-        let err = serde_json::from_value::<ExtensionManifest>(manifest).unwrap_err();
-        assert!(err.to_string().contains("defines the secret name input argument 2 times"), "{err}");
-    }
-
-    #[test]
-    fn manifest_with_ambiguous_arg_fails_to_deserialize() {
-        let manifest = manifest_with_secret(json!({ "executable": "secret", "args": [{ "nameArg": "--name", "vaultArg": "--vault" }] }));
-        let err = serde_json::from_value::<ExtensionManifest>(manifest).unwrap_err();
-        assert!(err.to_string().contains("Argument 1 of the 'secret' command isn't valid"), "{err}");
-    }
-
-    #[test]
-    fn manifest_with_secret_args_round_trips() {
-        let args = json!(["get", { "nameArg": "--name" }, { "vaultArg": "--vault" }]);
-        let manifest = manifest_with_secret(json!({ "executable": "secret", "args": args }));
-        let manifest = serde_json::from_value::<ExtensionManifest>(manifest).unwrap();
-        let secret = manifest.secret.unwrap();
-        assert_eq!(*secret.args, [SecretArgKind::String("get".to_string()), name_arg(), vault_arg()]);
-        assert_eq!(serde_json::to_value(&secret).unwrap()["args"], args);
-    }
-
-    #[test]
-    fn schema_requires_args_and_constrains_input_arguments() {
-        let schema = schema_for!(SecretMethod).to_value();
-        let required = schema["required"].as_array().unwrap();
-        assert!(required.contains(&Value::String("executable".to_string())), "{schema}");
-        assert!(required.contains(&Value::String("args".to_string())), "{schema}");
-
-        let args = &schema["properties"]["args"];
-        assert_eq!(args["type"], json!("array"), "{schema}");
-        let constraints = args["allOf"].as_array().unwrap();
-        assert_eq!(constraints.len(), 2, "{schema}");
-        assert_eq!(constraints[0]["contains"]["required"], json!(["nameArg"]));
-        assert_eq!(constraints[0]["minContains"], json!(1));
-        assert_eq!(constraints[0]["maxContains"], json!(1));
-        assert_eq!(constraints[1]["contains"]["required"], json!(["vaultArg"]));
-        assert_eq!(constraints[1]["minContains"], json!(0));
-        assert_eq!(constraints[1]["maxContains"], json!(1));
-        for constraint in constraints {
-            for keyword in ["title", "description", "markdownDescription", "errorMessage"] {
-                assert!(constraint[keyword].is_string(), "{keyword} missing: {constraint}");
-            }
-        }
-    }
-
-    #[test]
-    fn schema_validates_input_argument_rules() {
-        let schema = schema_for!(SecretMethod).to_value();
-        let validator = jsonschema::validator_for(&schema).unwrap();
-
-        assert!(validator.is_valid(&json!({ "executable": "secret", "args": ["get", { "nameArg": "--name" }] })));
-        assert!(validator.is_valid(&json!({ "executable": "secret", "args": [{ "vaultArg": "--vault" }, { "nameArg": "--name" }] })));
-        assert!(!validator.is_valid(&json!({ "executable": "secret" })));
-        assert!(!validator.is_valid(&json!({ "executable": "secret", "args": ["get"] })));
-        assert!(!validator.is_valid(&json!({ "executable": "secret", "args": [{ "nameArg": "--name" }, { "nameArg": "--secret" }] })));
-        assert!(!validator.is_valid(&json!({ "executable": "secret", "args": [{ "nameArg": "--name" }, { "vaultArg": "--vault" }, { "vaultArg": "--store" }] })));
-        assert!(!validator.is_valid(&json!({ "executable": "secret", "args": [{ "nameArg": "--name", "vaultArg": "--vault" }] })));
     }
 }

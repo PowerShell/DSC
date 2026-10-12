@@ -179,6 +179,7 @@ Describe 'Tests for the secret() function and extensions' {
     }
 
     It 'Deprecated extension shows message' {
+      $oldRestrictedPath = $env:DSC_RESTRICTED_PATH
       try {
         $dscHome = Split-Path (Get-Command dsc).Source -Parent
         $env:DSC_RESTRICTED_PATH = (Join-Path -Path $dscHome -ChildPath 'deprecated') + [System.IO.Path]::PathSeparator + $dscHome
@@ -197,7 +198,7 @@ Describe 'Tests for the secret() function and extensions' {
         $LASTEXITCODE | Should -Be 4
         (Get-Content -Raw -Path "$TestDrive/error.log") | Should -Match "Extension 'Test/ExtensionDeprecated' is deprecated: This extension is deprecated" -Because (Get-Content -Raw -Path "$TestDrive/error.log")
       } finally {
-        $env:DSC_RESTRICTED_PATH = $null
+        $env:DSC_RESTRICTED_PATH = $oldRestrictedPath
       }
     }
 

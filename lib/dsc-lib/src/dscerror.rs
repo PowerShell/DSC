@@ -156,6 +156,9 @@ pub enum DscError {
     SecurityContext(String),
 
     #[error(transparent)]
+    SecretArgs(#[from] crate::extensions::secret::SecretArgsError),
+
+    #[error(transparent)]
     SemVer(#[from] crate::types::SemanticVersionError),
 
     #[error(transparent)]
