@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc function list' command
-ms.date:     07/20/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       dsc function list
 ---
@@ -49,16 +49,16 @@ dsc function list
 ```
 
 ```output
-Category               Function              MinArgs  MaxArgs  ReturnTypes  Description            
----------------------------------------------------------------------------------------------------
-Array                  array                 1        1        a-----       Convert the value to a…
-Array                  createArray           0        maxInt   a-----       Creates an array from …
-Array                  range                 2        2        a-----       Creates an array of in…
-Array                  tryIndexFromEnd       2        2        ab-nso       Retrieves a value from 
-Array, Lambda          filter                2        2        a-----       Filters an array with …
-Array, Lambda          map                   2        2        a-----       Transforms an array by 
-Array, Object          intersection          2        maxInt   a----o       Returns a single array 
-Array, Object          tryGet                2        2        ab-nso       Attempts to retrieve a 
+Category       Function         Syntax                               Description
+-----------------------------------------------------------------------------------------
+Array          array            array( <string | number | object …  Convert the value to…
+Array          createArray      createArray( [value], ... )          Creates an array fro…
+Array          range            range( <startIndex>, <count> )       Creates an array of …
+Array          tryIndexFromEnd  tryIndexFromEnd( <array>, <index> )  Retrieves a value fr…
+Array, Lambda  filter           filter( <array>, <lambda> )          Filters an array wit…
+Array, Lambda  map              map( <array>, <lambda> )             Transforms an array …
+Array, Object  intersection     intersection( <array | object>, <…   Returns a single arr…
+Array, Object  tryGet           tryGet( <array | object>, <key | …   Attempts to retrieve…
 // truncated
 ```
 
@@ -73,9 +73,9 @@ dsc function list resource*
 ```
 
 ```output
-Category Name       MinArgs MaxArgs ArgTypes Description
--------- ----       ------- ------- -------- -----------
-Resource resourceId 2       2       ---s-    Constructs a resource ID from the given type and name
+Category  Function    Syntax                        Description
+----------------------------------------------------------------------------------------
+Resource  resourceId  resourceId( <type>, <name> )  Constructs a resource ID from the gi…
 ```
 
 ### Example 3 - Get details for a specific function
@@ -90,23 +90,63 @@ dsc function list concat --output-format yaml
 
 ```yaml
 category:
-- Array
-- String
+- array
+- string
 name: concat
 description: Concatenates two or more strings or arrays
+syntax: concat( <string | array>, <string | array>, ... )
+constraints: All arguments must be of the same type (all strings or all arrays)
 minArgs: 2
 maxArgs: 18446744073709551615
 acceptedArgOrderedTypes:
-- - String
-  - Array
-- - String
-  - Array
+- - string
+  - array
+- - string
+  - array
 remainingArgAcceptedTypes:
-- String
-- Array
+- string
+- array
 returnTypes:
-- String
-- Array
+- string
+- array
+```
+
+### Example 4 - Filter functions by category
+
+<a id="example-4"></a>
+
+This command uses the `--category` option to list only the functions in the `lambda` category.
+
+```sh
+dsc function list --category lambda
+```
+
+```output
+Category       Function         Syntax                                     Description
+----------------------------------------------------------------------------------------
+Array, Lambda  filter           filter( <array>, <lambda> )                Filters an ar…
+Array, Lambda  map              map( <array>, <lambda> )                   Transforms an…
+Lambda         lambda           lambda( <param1>, [param2], ..., <body> )  Creates a lam…
+Lambda         lambdaVariables  lambdaVariables( <name> )                  Retrieves the…
+```
+
+### Example 5 - Filter functions by description
+
+<a id="example-5"></a>
+
+This command uses the `--description` option to list only the functions whose description
+matches a wildcard pattern.
+
+```sh
+dsc function list --description *CIDR*
+```
+
+```output
+Category  Function    Syntax                                          Description
+-----------------------------------------------------------------------------------------
+CIDR      cidrHost    cidrHost( <cidr>, <hostIndex> )                 Calculates the usab…
+CIDR      cidrSubnet  cidrSubnet( <cidr>, <newCidr>, <subnetIndex> )  Splits the specifie…
+CIDR      parseCidr   parseCidr( <cidr> )                             Parses an IP addres…
 ```
 
 ## Parameters
@@ -124,6 +164,39 @@ Position:  0
 ```
 
 ## Options
+
+### -c, --category
+
+<a id="-c"></a>
+<a id="--category"></a>
+
+The `--category` option filters the results by function category. You can specify the option more
+than once to filter for multiple categories. When you specify more than one category, DSC returns
+only the functions that belong to every specified category.
+
+```yaml
+Type:         string
+Mandatory:    false
+ValidValues:  [array, cidr, comparison, date, deployment, lambda, logical,
+               numeric, object, resource, string, system]
+LongSyntax:   --category <CATEGORY>
+ShortSyntax:  -c <CATEGORY>
+```
+
+### -d, --description
+
+<a id="-d"></a>
+<a id="--description"></a>
+
+The `--description` option filters the results by function description. You can use wildcard
+patterns in the value. DSC returns only the functions whose description matches the pattern.
+
+```yaml
+Type:         string
+Mandatory:    false
+LongSyntax:   --description <PATTERN>
+ShortSyntax:  -d <PATTERN>
+```
 
 ### -o, --output-format
 
@@ -183,29 +256,18 @@ ShortSyntax : -h
 
 ## Output
 
-This command returns a formatted array containing an object for each function that includes the
-function's type, version, manifest settings, and other metadata. For more information, see
-[dsc function list result schema reference][03].
+This command returns an object for each function that includes the function's name, categories,
+syntax, argument metadata, and return types. For more information, see
+[dsc function list result schema reference][03]. For more information about the [data types][04]
+used in the argument and return type metadata, see the linked schema reference.
 
 If the output of the command isn't captured or redirected, it displays in the console by default as
 a summary table for the returned functions. The summary table includes the following columns,
 displayed in the listed order:
 
-- **Category** - The category the function belongs to.
+- **Category** - The categories the function belongs to.
 - **Function** - The name of the function.
-- **MinArgs** - The minimum number of arguments the function accepts.
-- **MaxArgs** - The maximum number of arguments the function accepts.
-- **ReturnTypes** - The [data types][04] the function emits as flags. The valid return types are
-  displayed in the following order, using a `-` instead of the appropriate letter if the function
-  doesn't return that data type:
-
-  - `a` indicates that the function returns an array value.
-  - `b` indicates that the function returns a boolean value.
-  - `l` indicates that the function returns a lambda value.
-  - `n` indicates that the function returns a number value.
-  - `s` indicates that the function returns a string value.
-  - `o` indicates that the function returns an object value.
-
+- **Syntax** - The syntax for calling the function, showing its expected arguments.
 - **Description** - A synopsis of what the function does.
 
 For more information about the formatting of the output data, see the
