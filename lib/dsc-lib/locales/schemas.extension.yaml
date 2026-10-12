@@ -3,7 +3,60 @@ schemas:
   extension:
     manifest:
       secret:
+        title:
+          en-us: Secret command
+        description:
+          en-us: >-
+            Defines how to call the extension to retrieve a secret from a vault.
+        markdownDescription:
+          en-us: |-
+            Defines how to call the extension to retrieve a secret from a vault at runtime. When
+            this property is defined, the extension has the `secret` capability and DSC can invoke
+            the extension for the [`secret()`][01] configuration function.
+
+            When DSC invokes the `secret` command, it expects the extension to write the secret
+            value to stdout as a single line. If the extension writes more than one line to stdout,
+            DSC raises an error. If the extension writes nothing to stdout, DSC treats the secret as
+            not found for that extension.
+
+            For more information, see the [secret property reference][02].
+
+            [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/functions/secret
+            [02]: https://learn.microsoft.com/powershell/dsc/reference/schemas/extension/manifest/secret
+        executable:
+          title:
+            en-us: Executable
+          description:
+            en-us: >-
+              The name of the command to run to retrieve a secret.
+          markdownDescription:
+            en-us: |-
+              Defines the name of the command to run to retrieve a secret. The value must be the
+              name of a command discoverable in the system's `PATH` environment variable or the
+              full path to the command. A file extension is only required when the command isn't
+              recognizable by the operating system as an executable.
         args:
+          title:
+            en-us: Arguments
+          description:
+            en-us: >-
+              The arguments to pass to the command to retrieve a secret. The arguments must define
+              the secret name input argument exactly once and may define the vault input argument
+              at most once.
+          markdownDescription:
+            en-us: |-
+              Defines the list of arguments to pass to the command to retrieve a secret. Each item
+              can be a string representing a static argument, an object with the `nameArg` property,
+              or an object with the `vaultArg` property.
+
+              The arguments must define exactly one object with the `nameArg` property. DSC passes
+              the value of `nameArg` followed by the name of the secret to retrieve. Without this
+              argument, DSC can't tell the extension which secret to retrieve, so DSC doesn't load
+              the extension manifest.
+
+              The arguments may define at most one object with the `vaultArg` property. DSC passes
+              the value of `vaultArg` followed by the name of the vault when the `secret()` function
+              specifies a vault. When the function doesn't specify a vault, DSC omits this argument.
           constraints:
             nameArg:
               title:

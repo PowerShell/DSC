@@ -14,5 +14,6 @@
 //! Rust would generate numerous binaries to execute our tests.
 
 #[cfg(test)] mod command_resource;
+#[cfg(test)] mod extensions;
 #[cfg(test)] mod schemas;
 #[cfg(test)] mod types;
