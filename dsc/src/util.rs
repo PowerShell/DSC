@@ -58,6 +58,7 @@ use std::env;
 use std::io::{IsTerminal, Read, stdout, Write};
 use std::path::Path;
 use std::process::ExitCode;
+use std::sync::OnceLock;
 use syntect::{
     easy::HighlightLines,
     highlighting::ThemeSet,
@@ -104,20 +105,30 @@ impl Default for TracingSetting {
 
 /// Returns the current version of DSC as a semantic version.
 ///
+/// The version is parsed from the cargo manifest on the first call and cached in
+/// [`CURRENT_DSC_VERSION`], so later calls only clone the cached value.
+///
 /// # Returns
 ///
 /// * `SemanticVersion` - The version of DSC as defined in the cargo manifest.
 ///
 /// # Panics
 ///
-/// If the version defined in the cargo manifest isn't a valid semantic version, this function
-/// panics and reports the parse error.
+/// Panics if the version defined in the cargo manifest isn't a valid semantic version. Cargo
+/// rejects such a manifest at build time, so this can't happen for a built binary.
 pub(crate) fn current_dsc_version() -> SemanticVersion {
-    match SemanticVersion::parse(env!("CARGO_PKG_VERSION")) {
-        Ok(version) => version,
-        Err(err) => panic!("{}", t!("util.invalidDscVersion", error = err)),
-    }
+    CURRENT_DSC_VERSION.get_or_init(|| {
+        match SemanticVersion::parse(env!("CARGO_PKG_VERSION")) {
+            Ok(version) => version,
+            Err(err) => unreachable!("{}", t!("util.invalidDscVersion", error = err)),
+        }
+    }).clone()
 }
+
+/// Cached value for the current version of DSC as a [`SemanticVersion`].
+///
+/// Initialized by the first call to [`current_dsc_version`].
+static CURRENT_DSC_VERSION: OnceLock<SemanticVersion> = OnceLock::new();
 
 /// Get string representation of JSON value.
 ///

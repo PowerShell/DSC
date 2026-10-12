@@ -6,7 +6,7 @@ use crate::{configure::config_doc::{ExecutionKind, Operation, UserFunctionDefini
 use crate::types::SemanticVersion;
 use dsc_lib_security_context::{get_security_context, SecurityContext};
 use serde_json::{Map, Value};
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, path::PathBuf, sync::OnceLock};
 
 use super::config_doc::{DataType, RestartRequired, SecurityContextKind};
 
@@ -96,17 +96,27 @@ impl Default for Context {
 ///
 /// This is the default DSC version for a [`Context`] when the host doesn't provide its own.
 ///
+/// The version is parsed from the cargo manifest on the first call and cached in
+/// [`DSC_LIB_VERSION`], so later calls only clone the cached value.
+///
 /// # Panics
 ///
 /// Panics if the version in the cargo manifest isn't a valid semantic version. Cargo rejects
 /// such a manifest at build time, so this can't happen for a built crate.
 fn dsc_lib_version() -> SemanticVersion {
-    let manifest_version = env!("CARGO_PKG_VERSION");
-    match SemanticVersion::parse(manifest_version) {
-        Ok(version) => version,
-        Err(err) => panic!("unable to parse '{manifest_version}' as a semantic version: {err}"),
-    }
+    DSC_LIB_VERSION.get_or_init(|| {
+        let manifest_version = env!("CARGO_PKG_VERSION");
+        match SemanticVersion::parse(manifest_version) {
+            Ok(version) => version,
+            Err(err) => unreachable!("unable to parse '{manifest_version}' as a semantic version: {err}"),
+        }
+    }).clone()
 }
+
+/// Cached value for the version of the `dsc-lib` crate as a [`SemanticVersion`].
+///
+/// Initialized by the first call to [`dsc_lib_version`].
+static DSC_LIB_VERSION: OnceLock<SemanticVersion> = OnceLock::new();
 
 #[cfg(target_os = "windows")]
 fn get_default_os_system_root() -> PathBuf {
