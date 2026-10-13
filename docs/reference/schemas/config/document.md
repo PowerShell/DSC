@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for a Desired State Configuration document.
-ms.date:     09/01/2026
+ms.date:     10/13/2026
 ms.topic:    reference
 title:       DSC Configuration document schema reference
 ---
@@ -208,72 +208,16 @@ Required: false
 
 ### directives
 
-The `directives` property defines how DSC processes the configuration document as a whole. Every
+The `directives` property defines how DSC processes the configuration document as a whole, like
+the security context the document requires, the version of DSC it requires, and when DSC discovers
+resources. DSC validates and acts on the directives before it invokes any resource instance. Every
 directive is optional.
+
+For more information about the available directives, see
+[DSC Configuration document directives schema][03].
 
 ```yaml
 Type:     object
-Required: false
-```
-
-You can define the following directives for a configuration document:
-
-#### resourceDiscovery
-
-The `resourceDiscovery` directive controls when DSC raises an error for a resource that it can't
-find. When you don't define this directive or set it to `preDeployment`, DSC discovers resources
-and extensions before invoking any resource instance and raises an error if any instance in the
-document uses a resource that DSC didn't discover.
-
-Set this directive to `duringDeployment` to defer this check until DSC processes each instance.
-This is useful when the configuration document itself installs a resource that a later instance
-depends on. With this setting, DSC performs discovery again when it processes an instance whose
-resource wasn't initially discovered and only raises an error if the resource isn't available at
-that time.
-
-```yaml
-Type:        string
-Required:    false
-Default:     preDeployment
-ValidValues: [preDeployment, duringDeployment]
-```
-
-#### securityContext
-
-The `securityContext` directive defines the security context the configuration document requires.
-Before invoking any resource instances, DSC validates that it's running in the required security
-context and raises an error if it isn't:
-
-- `current` - DSC can process the document in any security context. This is the default.
-- `elevated` - DSC must be running as `root` (non-Windows) or in an elevated session with
-  Administrator privileges (Windows).
-- `restricted` - DSC must be running as a normal user or account in a non-elevated session.
-
-This directive replaces the deprecated `Microsoft.DSC.securityContext` property in the document's
-[metadata][02]. If you define both, the values must match or DSC raises an error. A resource
-instance can override this directive with its own `directives.securityContext` setting.
-
-```yaml
-Type:        string
-Required:    false
-Default:     current
-ValidValues: [current, elevated, restricted]
-```
-
-#### version
-
-The `version` directive defines a semantic version requirement for DSC itself. When you define this
-directive, DSC compares its own version to the requirement before invoking any resource instances
-and raises an error if its version doesn't satisfy the requirement. This enables you to prevent a
-configuration document from being processed by an incompatible version of DSC.
-
-The value must be one or more comparators separated by commas. Each comparator is an operator
-(`=`, `>`, `>=`, `<`, `<=`, `^`, or `~`) followed by a version, like `>=3.2.0, <4.0.0`. Build
-metadata isn't allowed in the version. The syntax is the same as for the `requireVersion` property
-of a resource instance. For more information, see [requireVersion][03].
-
-```yaml
-Type:     string
 Required: false
 ```
 
@@ -284,9 +228,8 @@ document. DSC adds this property to the document returned by the `dsc config exp
 schema accepts this property in any configuration document, but DSC ignores it when it processes
 the document.
 
-The value is an object with the same properties as the [Microsoft.DSC metadata][04] object that DSC
-returns in command output, plus an optional `whatIf` property that describes any what-if
-operations DSC performed.
+The value is an object with the same properties as the execution information that DSC returns in
+command output. For more information, see [DSC execution information schema reference][04].
 
 ```yaml
 Type:     object
@@ -297,46 +240,10 @@ Required: false
 
 The `functions` property defines user-defined functions that you can call in configuration
 expressions anywhere in the document. Each item in the list defines a namespace and the functions
-that belong to it:
+that belong to it. You call a user-defined function as `<namespace>.<name>()`.
 
-- `namespace` - Required. The name that groups the functions. You call a user-defined function as
-  `<namespace>.<name>()`.
-- `members` - Required. An object that maps each function name to its definition. Each definition
-  is an object with the following properties:
-
-  - `parameters` - Optional. A list of parameters for the function. Each parameter is an object
-    that defines the `name` and `type` of the parameter. The `type` must be one of the
-    [parameter data types][05]. When you call the function, DSC raises an error if the number of
-    arguments or their types don't match the parameters.
-  - `output` - Required. An object that defines the `type` of the value the function returns and
-    the `value` as a string. DSC evaluates the `value` as a configuration expression and raises an
-    error if the result doesn't match the declared `type`.
-
-In the `value` expression, use the [parameters()][06] function to access the function's own
-parameters. User-defined functions can't access the document's parameters or variables, can't use
-the `reference()` function, and can't call other user-defined functions.
-
-For example, this document defines the `contoso.greet()` function and calls it in a resource
-instance:
-
-```yaml
-$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
-functions:
-  - namespace: contoso
-    members:
-      greet:
-        parameters:
-          - name: name
-            type: string
-        output:
-          type: string
-          value: "[format('Hello, {0}!', parameters('name'))]"
-resources:
-  - name: Greeting
-    type: Microsoft.DSC.Debug/Echo
-    properties:
-      output: "[contoso.greet('World')]"
-```
+For more information about defining user-defined functions, see
+[DSC Configuration document user-defined function schema][05].
 
 ```yaml
 Type:      array
@@ -362,40 +269,10 @@ Required: false
 
 The `outputs` property defines values that DSC evaluates after it processes every resource instance
 in the document and returns in the `outputs` property of the command output. Each output is defined
-as a key-value pair. The key is the name of the output. The value is an object with the following
-properties:
+as a key-value pair. The key is the name of the output. The value is an object that defines the
+data type of the output and the expression that DSC evaluates to get its value.
 
-- `type` - Required. The [data type][05] of the output value. DSC raises an error if the evaluated
-  value doesn't match this type. DSC doesn't return outputs with the `secureString` or
-  `secureObject` types. Instead, it raises a warning and skips them.
-- `value` - Required. A string that DSC evaluates as a configuration expression. Use this property
-  to return data from resource results, parameters, variables, and functions, like
-  `"[reference(resourceId('Microsoft.DSC.Debug/Echo', 'echo')).output]"`.
-- `condition` - Optional. A string that DSC evaluates as a configuration expression. DSC only
-  returns the output when the condition evaluates to `true`. When it evaluates to any other value,
-  DSC skips the output.
-
-The schema also accepts a `copy` object in place of `value`, with the same shape as the `copy`
-property of a resource instance. DSC doesn't currently support copy loops for outputs. When an
-output defines `copy` instead of `value`, DSC raises a warning and skips the output.
-
-DSC doesn't evaluate outputs when you invoke the `dsc config set` command with the `--what-if`
-option.
-
-For example, this document returns the value that the `echo` instance reported:
-
-```yaml
-$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
-resources:
-  - name: echo
-    type: Microsoft.DSC.Debug/Echo
-    properties:
-      output: Hello World
-outputs:
-  echoOutput:
-    type: string
-    value: "[reference(resourceId('Microsoft.DSC.Debug/Echo', 'echo')).output]"
-```
+For more information about defining outputs, see [DSC Configuration document output schema][06].
 
 ```yaml
 Type:     object
@@ -464,10 +341,10 @@ Required: false
 [01]: functions/overview.md
 <!-- [01]: ../../../configurations/overview.md -->
 [02]: metadata.md
-[03]: resource.md#requireversion
-[04]: ../metadata/Microsoft.DSC/properties.md
-[05]: ../definitions/parameters/dataTypes.md
-[06]: functions/parameters.md
+[03]: directives.md
+[04]: executionInformation.md
+[05]: function.md
+[06]: output.md
 [07]: parameter.md
 <!-- [08]: ../../../configurations/parameters.md -->
 [09]: resource.md

@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for metadata in a Desired State Configuration document.
-ms.date:     09/01/2026
+ms.date:     10/13/2026
 ms.topic:    reference
 title:       DSC Configuration document metadata schema
 ---
@@ -98,4 +98,4 @@ ValidValues: [current, elevated, restricted]
 <!-- Link reference definitions -->
 [01]: resource.md#metadata-1
 [02]: ../metadata/Microsoft.DSC/properties.md
-[03]: document.md#securitycontext
+[03]: directives.md#securitycontext

@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for a resource instance in a Desired State Configuration document.
-ms.date:     09/01/2026
+ms.date:     10/13/2026
 ms.topic:    reference
 title:       DSC Configuration document resource instance schema
 ---
@@ -155,7 +155,7 @@ Pattern:  ^\w+(\.\w+)*\/\w+$
 
 The `securityContext` directive indicates that DSC should validate the current security context
 against this directive before invoking the resource. This value overrides the
-`directives.securityContext` setting for the top level of the configuration document. This enables
+[securityContext][09] directive for the top level of the configuration document. This enables
 you to selectively require or forbid elevated security contexts for a specific resource instance.
 
 ```yaml
@@ -171,9 +171,8 @@ adds this property to every instance in the configuration document returned by t
 `dsc config export` command. The schema accepts this property for any instance, but DSC ignores it
 when it processes a configuration document.
 
-The value is an object with the same properties as the [Microsoft.DSC metadata][03] object that DSC
-returns in command output, plus an optional `whatIf` property that describes any what-if
-operations DSC performed.
+The value is an object with the same properties as the execution information that DSC returns in
+command output. For more information, see [DSC execution information schema reference][03].
 
 ```yaml
 Type:     object
@@ -335,11 +334,12 @@ Required: false
 <!-- Link reference definitions -->
 [01]: ../definitions/resourceType.md
 [02]: functions/resourceId.md
-[03]: ../metadata/Microsoft.DSC/properties.md
+[03]: executionInformation.md
 [04]: functions/copyIndex.md
 [05]: ../../../glossary.md#nested-resource-instance
 [06]: functions/overview.md
 [07]: https://github.com/PowerShell/DSC/issues/1429
 [08]: metadata.md
+[09]: directives.md#securitycontext
 <!-- [aa]: ../../../resources/concepts/schemas.md -->
 <!-- [ab]: ../../../configurations/concepts/dependencies.md -->
