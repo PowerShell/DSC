@@ -433,10 +433,10 @@ fn get_metadata_from_result(mut context: Option<&mut Context>, properties: &mut 
                         for (key, value) in user_env_vars {
                             if key == "PATH" {
                                 if let Some(system_path) = env_vars.get(&key) {
-                                    trace!("Prefixing user PATH '{value}' to system PATH '{system_path}'");
+                                    trace!("{}", t!("configure.mod.prefixUserPath", value = value, system_path = system_path));
                                     env_vars.insert(key, format!("{};{}", value, system_path));
                                 } else {
-                                    trace!("System PATH not found, using user PATH '{value}' as PATH");
+                                    trace!("{}", t!("configure.mod.systemPathNotFound", value = value));
                                     env_vars.insert(key, value.to_string());
                                 }
                             } else {
@@ -684,7 +684,7 @@ impl Configurator {
             let adapter = get_require_adapter_from_directive(&resource.directives);
             find_resource_or_error!(dsc_resource, discovery, resource, adapter);
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
-            debug!("resource_type {}", &resource.resource_type);
+            debug!("{}", t!("configure.mod.resourceType", resource_type = &resource.resource_type));
             // see if the properties contains `_exist` and is false
             let exist = match &properties {
                 Some(property_map) => {
@@ -873,7 +873,7 @@ impl Configurator {
             let adapter = get_require_adapter_from_directive(&resource.directives);
             find_resource_or_error!(dsc_resource, discovery, resource, adapter);
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
-            debug!("resource_type {}", &resource.resource_type);
+            debug!("{}", t!("configure.mod.resourceType", resource_type = &resource.resource_type));
             let expected = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
             trace!("{}", t!("configure.mod.expectedState", state = expected));
             let start_datetime = chrono::Local::now();
@@ -963,7 +963,7 @@ impl Configurator {
             let adapter = get_require_adapter_from_directive(&resource.directives);
             find_resource_or_error!(dsc_resource, discovery, resource, adapter);
             let properties = self.get_properties(resource, &dsc_resource.kind)?;
-            debug!("resource_type {}", &resource.resource_type);
+            debug!("{}", t!("configure.mod.resourceType", resource_type = &resource.resource_type));
             let input = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
             trace!("{}", t!("configure.mod.exportInput", input = input));
             let export_result = match add_resource_export_results_to_configuration(
@@ -1100,7 +1100,7 @@ impl Configurator {
             let input_parameters: HashMap<String, Value> = import_parameters(parameters_input)?;
             for (name, value) in input_parameters {
                 if let Some(constraint) = parameters.get(&name) {
-                    debug!("Validating parameter '{name}'");
+                    debug!("{}", t!("configure.mod.validatingParameter", name = name));
                     check_length(&name, &value, constraint)?;
                     check_allowed_values(&name, &value, constraint)?;
                     check_number_limits(&name, &value, constraint)?;

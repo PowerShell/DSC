@@ -1,9 +1,11 @@
 ---
 description: Reference for the 'shallowMerge' DSC configuration document function
-ms.date:     11/19/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       shallowMerge
 ---
+
+# shallowMerge
 
 ## Synopsis
 
@@ -23,25 +25,25 @@ the value from the last object in the array with that property takes precedence.
 
 This is a _shallow merge_, which applies the following rules:
 
-- The first object in the array defines the base value for the merged object.  
-- The function processes each object in the array in the order they're defined.  
-- When processing each object, the function iterates over every top-level property defined for that  
-  object and:  
+- The first object in the array defines the base value for the merged object.
+- The function processes each object in the array in the order they're defined.
+- When processing each object, the function iterates over every top-level property defined for that
+  object and:
 
-  - If the merged object doesn't already have the property, the function adds that property to the  
-    merged object with the value from the current object.  
-  - If the merged object does have the property, the function _replaces_ the existing value with  
-    the value from the current object, even when the value is an object or array.  
+  - If the merged object doesn't already have the property, the function adds that property to the
+    merged object with the value from the current object.
+  - If the merged object does have the property, the function _replaces_ the existing value with
+    the value from the current object, even when the value is an object or array.
 
 This function is useful for:
 
-- Building composite configuration objects from multiple sources.  
-- Applying configuration overrides where later values take precedence.  
-- Combining default settings with user-specified customizations.  
+- Building composite configuration objects from multiple sources.
+- Applying configuration overrides where later values take precedence.
+- Combining default settings with user-specified customizations.
 - Merging environment-specific configurations.
 
-The shallow merge behavior differs from a deep merge (like [`union()`][00]) where nested  
-objects are recursively merged. The `shallowMerge()` function replaces nested structures  
+The shallow merge behavior differs from a deep merge (like [`union()`][00]) where nested
+objects are recursively merged. The `shallowMerge()` function replaces nested structures
 entirely with the value defined by the last object with that property in the input array.
 
 ## Examples
@@ -85,7 +87,7 @@ messages: []
 hadErrors: false
 ```
 
-In this example, the `port` value from the second object (`9000`) replaces the value from the first  
+In this example, the `port` value from the second object (`9000`) replaces the value from the first
 object (`8080`), while properties that only exist in one object (`host` and `ssl`) are preserved.
 
 ### Example 2 - Apply multiple configuration layers
@@ -115,13 +117,13 @@ resources:
 - name: Echo
   type: Microsoft.DSC.Debug/Echo
   properties:
-    output: >-  
-      [shallowMerge(  
-        createArray(  
-          parameters('defaults'),  
-          parameters('environment'),  
-          parameters('userPrefs')  
-        )  
+    output: >-
+      [shallowMerge(
+        createArray(
+          parameters('defaults'),
+          parameters('environment'),
+          parameters('userPrefs')
+        )
       )]
 ```
 
@@ -158,18 +160,18 @@ resources:
 - name: Echo
   type: Microsoft.DSC.Debug/Echo
   properties:
-    output: >-  
-      [shallowMerge(  
-        createArray(  
-          createObject(  
-            'database',  
-            createObject('host', 'localhost', 'port', 5432, 'ssl', true())  
-          ),  
-          createObject(  
-            'database',  
-            createObject('host', 'prod.db.local')  
-          )  
-        )  
+    output: >-
+      [shallowMerge(
+        createArray(
+          createObject(
+            'database',
+            createObject('host', 'localhost', 'port', 5432, 'ssl', true())
+          ),
+          createObject(
+            'database',
+            createObject('host', 'prod.db.local')
+          )
+        )
       )]
 ```
 
@@ -204,13 +206,13 @@ resources:
 - name: Echo
   type: Microsoft.DSC.Debug/Echo
   properties:
-    output: >-  
-      [shallowMerge(  
-        createArray(  
-          createObject('name', 'Service1', 'enabled', true()),  
-          createObject(),  
-          createObject('version', '2.0')  
-        )  
+    output: >-
+      [shallowMerge(
+        createArray(
+          createObject('name', 'Service1', 'enabled', true()),
+          createObject(),
+          createObject('version', '2.0')
+        )
       )]
 ```
 
@@ -246,12 +248,12 @@ resources:
 - name: Echo
   type: Microsoft.DSC.Debug/Echo
   properties:
-    output: >-  
-      [shallowMerge(  
-        createArray(  
-          createObject('newUI', false(), 'darkMode', true(), 'beta', false()),  
-          createObject('newUI', true()), createObject('beta', true())  
-        )  
+    output: >-
+      [shallowMerge(
+        createArray(
+          createObject('newUI', false(), 'darkMode', true(), 'beta', false()),
+          createObject('newUI', true()), createObject('beta', true())
+        )
       )]
 ```
 
@@ -344,33 +346,33 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      merged: >-  
-        [shallowMerge(  
-          createArray(  
-            parameters('baseConfig'),  
-            parameters('overrides')  
-          )  
-        )]  
-      keys: >-  
-        [objectKeys(  
-          shallowMerge(  
-            createArray(  
-              parameters('baseConfig'),  
-              parameters('overrides')  
-            )  
-          )  
-        )]  
-      hasRetries: >-  
-        [contains(  
-          objectKeys(  
-            shallowMerge(  
-              createArray(  
-                parameters('baseConfig'),  
-                parameters('overrides')  
-              )  
-            )  
-          ),  
-          'retries'  
+      merged: >-
+        [shallowMerge(
+          createArray(
+            parameters('baseConfig'),
+            parameters('overrides')
+          )
+        )]
+      keys: >-
+        [objectKeys(
+          shallowMerge(
+            createArray(
+              parameters('baseConfig'),
+              parameters('overrides')
+            )
+          )
+        )]
+      hasRetries: >-
+        [contains(
+          objectKeys(
+            shallowMerge(
+              createArray(
+                parameters('baseConfig'),
+                parameters('overrides')
+              )
+            )
+          ),
+          'retries'
         )]
 ```
 
@@ -448,8 +450,8 @@ Position: 1
 
 ## Output
 
-Returns a single object containing all properties from the input objects. When the same property  
-appears in multiple objects, the value from the last object in the array with that property is  
+Returns a single object containing all properties from the input objects. When the same property
+appears in multiple objects, the value from the last object in the array with that property is
 retained, replacing all prior values for the property.
 
 ```yaml
@@ -465,13 +467,13 @@ The function will return an error in the following cases:
 ## Notes
 
 - This function performs a _shallow merge_ - the function replaces nested objects, it doesn't merge
-  them recursively.  
-- The function replaces the value for properties defined by earlier objects in the input array with  
-  the value from objects later in the array.  
-- The function ignores empty objects in the input array.  
-- The function ignores non-object elements in the input array.  
-- The function returns an empty object when the input is an empty array.  
-- The function processes objects in array order, so the last object has highest precedence  
+  them recursively.
+- The function replaces the value for properties defined by earlier objects in the input array with
+  the value from objects later in the array.
+- The function ignores empty objects in the input array.
+- The function ignores non-object elements in the input array.
+- The function returns an empty object when the input is an empty array.
+- The function processes objects in array order, so the last object has highest precedence
 - For recursive/deep merging of nested objects, consider using [`union()`][00] instead.
 
 ## Related functions

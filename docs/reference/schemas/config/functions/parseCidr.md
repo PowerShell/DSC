@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'parseCidr' DSC configuration document function
-ms.date:     11/03/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       parseCidr
 ---
@@ -88,7 +88,9 @@ resources:
   - name: Calculate subnet details
     type: Microsoft.DSC.Debug/Echo
     properties:
-      output: "[parseCidr(cidrSubnet(parameters('baseNetwork'), parameters('subnetPrefix'), parameters('subnetIndex')))]"
+      output: >-
+        [parseCidr(cidrSubnet(parameters('baseNetwork'), parameters('subnetPrefix'),
+        parameters('subnetIndex')))]
 ```
 
 ```bash

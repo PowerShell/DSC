@@ -12,9 +12,12 @@
         "executable": "dism_dsc",
         "args": [
             "get",
-            "windows-feature"
-        ],
-        "input": "stdin"
+            "windows-feature",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ]
     },
     "set": {
         "executable": "dism_dsc",
@@ -22,10 +25,13 @@
             "set",
             "windows-feature",
             {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            },
+            {
                 "whatIfArg": "--what-if"
             }
         ],
-        "input": "stdin",
         "implementsPretest": false,
         "return": "state",
         "whatIfReturns": "state",
@@ -35,9 +41,11 @@
         "executable": "dism_dsc",
         "args": [
             "export",
-            "windows-feature"
+            "windows-feature",
+            {
+                "jsonInputArg": "--input"
+            }
         ],
-        "input": "stdin",
         "supportsFiltering": true
     },
     "exitCodes": {

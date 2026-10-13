@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'null' DSC configuration document function
-ms.date:     07/28/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       null
 ---
@@ -136,7 +136,8 @@ Type: null
 - The `null()` function is particularly useful when working with other functions that handle null
   values, such as `coalesce()`.
 - Unlike undefined or missing values, `null()` explicitly represents the JSON null value.
-- When used in object creation with `createObject()`, null properties are included in the resulting object.
+- When used in object creation with `createObject()`, null properties are included in the
+  resulting object.
 - The function takes no arguments and will return an error if any arguments are provided.
 
 ## Related functions

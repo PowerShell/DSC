@@ -1,0 +1,61 @@
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "type": "Microsoft.Adapter/GroupPolicyTemplate",
+    "version": "0.1.0",
+    "kind": "adapter",
+    "description": "Adapts Windows Group Policy ADMX templates into DSC resources.",
+    "tags": [
+        "Windows",
+        "GroupPolicy"
+    ],
+    "adapter": {
+        "list": {
+            "executable": "group_policy_template",
+            "args": [
+                "list"
+            ]
+        },
+        "inputKind": "single"
+    },
+    "get": {
+        "executable": "group_policy_template",
+        "args": [
+            "get",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": false
+            },
+            {
+                "resourceTypeArg": "--resource-type"
+            },
+            {
+                "resourcePathArg": "--resource-path"
+            }
+        ]
+    },
+    "set": {
+        "executable": "group_policy_template",
+        "args": [
+            "set",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            },
+            {
+                "resourceTypeArg": "--resource-type"
+            },
+            {
+                "resourcePathArg": "--resource-path"
+            }
+        ],
+        "implementsPretest": false,
+        "return": "state",
+        "requireSecurityContext": "elevated"
+    },
+    "exitCodes": {
+        "0": "Success",
+        "1": "Invalid arguments",
+        "2": "Invalid input",
+        "3": "ADMX, ADML, or registry operation failed"
+    }
+}

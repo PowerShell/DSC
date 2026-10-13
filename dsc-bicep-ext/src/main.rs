@@ -460,8 +460,9 @@ async fn run_server(
         return Ok(());
     }
 
-    // Default to HTTP server on [::1]:50051 if no transport specified
-    let addr = http.unwrap_or_else(|| "[::1]:50051".to_string());
+    let Some(addr) = http else {
+        return Err(Box::new(std::io::Error::other(t!("bicep.transportNotSpecified").to_string())));
+    };
     tracing::info!(
         "{}",
         t!(

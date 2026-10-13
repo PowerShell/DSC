@@ -6,7 +6,7 @@ use std::{borrow::Borrow, collections::HashSet, ops::{Deref, DerefMut}};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::{schemas::dsc_repo::{DscRepoSchema, schema_i18n}, types::Tag};
+use crate::{schemas::dsc_repo::DscRepoSchema, types::Tag};
 
 /// Wraps a [`HashSet`] of [`Tag`] instances to enable defining a reusable canonical JSON Schema for
 /// manifests, resources, and extensions.
@@ -17,11 +17,8 @@ use crate::{schemas::dsc_repo::{DscRepoSchema, schema_i18n}, types::Tag};
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema, DscRepoSchema)]
 #[dsc_repo_schema(base_name = "tags", folder_path = "definitions")]
 #[schemars(
-    title = schema_i18n!("title"),
-    description = schema_i18n!("description"),
-    extend(
-        "markdownDescription" = schema_i18n!("markdownDescription"),
-    )
+    transform = TagList::transform_export_schema_uris,
+    transform = TagList::transform_schema_docs_strict
 )]
 #[serde(into = "Vec<Tag>")]
 pub struct TagList(HashSet<Tag>);

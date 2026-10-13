@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'mul' DSC configuration document function
-ms.date:     02/28/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       mul
 ---
@@ -19,8 +19,8 @@ mul(<operands>)
 
 ## Description
 
-The `mul()` function returns the product of multiplying two integers. It multiplies the first operand
-by the second operand. You can nest calls to `mul()` to multiply more than two integers.
+The `mul()` function returns the product of multiplying two integers. It multiplies the first
+operand by the second operand. You can nest calls to `mul()` to multiply more than two integers.
 
 ## Examples
 
@@ -35,11 +35,11 @@ resources:
 - name: Multiplying integers
   type: Microsoft.DSC.Debug/Echo
   properties:
-  output: "[mul(3, 5)]"
+    output: "[mul(3, 5)]"
 ```
 
 ```bash
-dsc config get --file mul.example.1.dsc.config.yaml config get
+dsc config get --file mul.example.1.dsc.config.yaml
 ```
 
 ```yaml
@@ -86,9 +86,9 @@ hadErrors: false
 
 ### operands
 
-The `mul()` function expects exactly two integers as input. The **operands** can be either an integer
-or the output of any configuration function that returns an integer. The function divides the first
-operand by the second operand. Separate the **operands** with a comma (`,`).
+The `mul()` function expects exactly two integers as input. The **operands** can be either an
+integer or the output of any configuration function that returns an integer. The function
+multiplies the first operand by the second operand. Separate the **operands** with a comma (`,`).
 
 ```yaml
 Type:         integer

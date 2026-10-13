@@ -1,9 +1,11 @@
 ---
 description: Reference for the 'range' DSC configuration document function
-ms.date:     09/26/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       range
 ---
+
+# range
 
 ## Synopsis
 

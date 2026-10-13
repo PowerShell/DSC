@@ -1,0 +1,35 @@
+_version = 1
+
+[main]
+missingOperation = "Missing operation. Usage: environment_variable get|set|test|export [--path|--list] --input <json>"
+unknownOperation = "Unknown operation: '%{operation}'. Expected: get, set, test, or export"
+missingInput = "Missing --input argument"
+missingInputValue = "Missing value for --input argument"
+invalidJson = "Invalid JSON input: %{error}"
+serializeError = "Failed to serialize resource output: %{error}"
+missingState = "The environment variable operation returned no state"
+windowsOnly = "The Microsoft.Windows environment variable resources are only supported on Windows"
+registryError = "Failed to access environment variable '%{name}' in scope '%{scope}': %{error}"
+
+[validation]
+emptyList = "The environmentVariables array must contain at least one environment variable"
+emptyName = "Environment variable name must not be empty"
+invalidName = "Environment variable name '%{name}' contains an invalid null character"
+duplicate = "Environment variable '%{name}' is specified more than once in scope '%{scope}'"
+invalidDelimiter = "Environment path variable '%{name}' must specify a non-empty delimiter without null characters"
+invalidPathEntry = "Environment path variable '%{name}' has a value entry that is empty or contains the delimiter '%{delimiter}' or a null character"
+missingValue = "Environment variable '%{name}' must specify value when _exist is true"
+
+[get]
+readError = "Failed to read environment variable '%{name}' in scope '%{scope}': %{error}"
+unsupportedType = "Environment variable '%{name}' in scope '%{scope}' uses an unsupported registry value type; expected REG_SZ or REG_EXPAND_SZ"
+
+[set]
+elevationRequired = "Setting or removing AllUsers environment variables requires elevation. Run DSC from an elevated process."
+readError = "Failed to read environment variable '%{name}' in scope '%{scope}' before setting it: %{error}"
+writeError = "Failed to set environment variable '%{name}' in scope '%{scope}': %{error}"
+removeError = "Failed to remove environment variable '%{name}' in scope '%{scope}': %{error}"
+
+[export]
+registryError = "Failed to open the environment variables in scope '%{scope}': %{error}"
+readError = "Failed to enumerate the environment variables in scope '%{scope}': %{error}"

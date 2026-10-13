@@ -21,6 +21,10 @@ use std::path::Path;
 use tracing::{debug, info, warn};
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[schemars(
+    transform = ImportMethod::transform_export_schema_uris,
+    transform = ImportMethod::transform_schema_docs
+)]
 #[dsc_repo_schema(base_name = "manifest.import", folder_path = "extension")]
 pub struct ImportMethod {
     /// The extensions to import.
@@ -36,6 +40,7 @@ pub struct ImportMethod {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(untagged)]
+#[schemars(inline)]
 pub enum ImportArgKind {
     /// The argument is a string.
     String(String),

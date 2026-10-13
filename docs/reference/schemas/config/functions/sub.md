@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'sub' DSC configuration document function
-ms.date:     02/28/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       sub
 ---
@@ -19,8 +19,8 @@ sub(<operands>)
 
 ## Description
 
-The `sub()` function returns the difference of two integers. It subtracts the second operand from the
-first operand. You can nest calls to `sub()` to subtract more than two integers.
+The `sub()` function returns the difference of two integers. It subtracts the second operand from
+the first operand. You can nest calls to `sub()` to subtract more than two integers.
 
 ## Examples
 

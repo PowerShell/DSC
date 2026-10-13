@@ -387,10 +387,9 @@ function Get-RustUp {
         if ($null -ne (Get-Command msrustup -CommandType Application -ErrorAction Ignore)) {
             Write-Verbose -Verbose "Using msrustup"
             $rustup = 'msrustup'
-            $channel = 'ms-prod-1.95'
+            $channel = 'ms-prod-1.97.1'
         } elseif ($null -ne (Get-Command rustup -CommandType Application -ErrorAction Ignore)) {
                 $rustup = 'rustup'
-                $env:TESTING_FUNCTION_ENV = "lolwhat"
         }
 
         return $rustup, $channel
@@ -2883,15 +2882,36 @@ function Test-ProjectWithPester {
             Write-Verbose "Updated Pester module location:`n`t$((Get-Module -Name Pester -ListAvailable).Path)"
         }
         $pesterParams = @{
-            Output = 'Detailed'
+            Output      = 'Detailed'
             ErrorAction = 'Stop'
         }
         if ($Project) {
-            $pesterParams.ExcludePath = $Project.RelativePath | Where-Object -FilterScript {
-                $_.Name -notin $Project.Name
+            $projectPath = @($Project.RelativePath)
+            if ($Group) {
+                $projectPath = @(
+                    foreach ($path in $projectPath) {
+                        $normalizedPath = $path -replace '\\', '/'
+                        foreach ($testGroup in $Group) {
+                            if ($normalizedPath -eq '.') {
+                                $testGroup
+                            } elseif (
+                                $normalizedPath -eq $testGroup -or
+                                $normalizedPath.StartsWith("$testGroup/")
+                            ) {
+                                $normalizedPath
+                            } elseif ($testGroup.StartsWith("$normalizedPath/")) {
+                                $testGroup
+                            }
+                        }
+                    }
+                ) | Select-Object -Unique
+                $projectPath = @($projectPath)
             }
-        }
-        if ($Group) {
+            if ($projectPath.Count -eq 0) {
+                throw 'None of the selected projects are in the specified Pester test groups.'
+            }
+            $pesterParams.Path = $projectPath
+        } elseif ($Group) {
             $pesterParams.Path = $Group
         }
     }
@@ -2978,7 +2998,8 @@ function Build-DscDebPackage{
         }
 
         Write-Verbose -Verbose "Building DEB package"
-        $debPackageName = "dsc_$productVersion-1_$debArch.deb"
+        $packageName = if ($productVersion.Contains('-')) { 'dsc-preview' } else { 'dsc' }
+        $debPackageName = "$($packageName)_$productVersion-1_$debArch.deb"
         $finalDebPath = Join-Path $artifactDirectory.BinRoot $debPackageName
     }
 
@@ -3302,7 +3323,8 @@ function Build-DscRpmPackage {
         }
 
         Write-Verbose -Verbose "Building RPM package"
-        $rpmPackageName = "dsc_$productVersion-1_$rpmArch.rpm"
+        $packageName = if ($productVersion.Contains('-')) { 'dsc-preview' } else { 'dsc' }
+        $rpmPackageName = "$($packageName)_$productVersion-1_$rpmArch.rpm"
         $finalRpmPath = Join-Path $artifactDirectory.BinRoot $rpmPackageName
     }
 

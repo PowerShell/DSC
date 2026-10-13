@@ -1,9 +1,12 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{dscresources::{
-    dscresource::Capability, resource_manifest::{Kind, ResourceManifest}
-}, types::ResourceVersion};
+use crate::{
+    configure::config_doc::SecurityContextKind,
+    dscresources::{
+        dscresource::Capability, resource_manifest::{Kind, ResourceManifest}
+    }, 
+    types::ResourceVersion};
 use crate::{
     schemas::dsc_repo::DscRepoSchema,
     types::FullyQualifiedTypeName,
@@ -16,10 +19,47 @@ use std::path::PathBuf;
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
+#[schemars(inline)]
 pub enum AdaptedPathOrContent {
     Path(PathBuf),
     Content(Map<String, Value>),
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
+#[schemars(inline)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct GetOperation {
+    pub require_security_context: Option<SecurityContextKind>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
+#[schemars(inline)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct SetOperation {
+    pub require_security_context: Option<SecurityContextKind>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
+#[schemars(inline)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct DeleteOperation {
+    pub require_security_context: Option<SecurityContextKind>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
+#[schemars(inline)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct TestOperation {
+    pub require_security_context: Option<SecurityContextKind>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
+#[schemars(inline)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct ExportOperation {
+    pub require_security_context: Option<SecurityContextKind>,
+}
+
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -32,6 +72,10 @@ pub enum AdaptedPathOrContent {
         title = t!("dscresources.resource_manifest.adaptedResourceManifestSchemaTitle"),
         description = t!("dscresources.resource_manifest.adaptedResourceManifestSchemaDescription"),
     )
+)]
+#[schemars(
+    transform = AdaptedDscResourceManifest::transform_export_schema_uris,
+    transform = AdaptedDscResourceManifest::transform_schema_docs
 )]
 pub struct AdaptedDscResourceManifest {
     /// The version of the resource manifest schema.
@@ -47,6 +91,16 @@ pub struct AdaptedDscResourceManifest {
     pub version: ResourceVersion,
     /// The capabilities of the resource.
     pub capabilities: Vec<Capability>,
+    /// Properties of the Get operation for the resource.
+    pub get: Option<GetOperation>,
+    /// Properties of the Set operation for the resource.
+    pub set: Option<SetOperation>,
+    /// Properties of the Delete operation for the resource.
+    pub delete: Option<DeleteOperation>,
+    /// Properties of the Test operation for the resource.
+    pub test: Option<TestOperation>,
+    /// Properties of the Export operation for the resource.
+    pub export: Option<ExportOperation>,
     /// An optional condition for the resource to be active.
     pub condition: Option<String>,
     /// An optional message indicating the resource is deprecated.  If provided, the message will be shown when the resource is used.

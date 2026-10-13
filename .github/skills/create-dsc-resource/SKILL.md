@@ -20,6 +20,7 @@ Management tasks or operations are specific to the resource type, but may includ
 - **Resource manifest**: A JSON file that defines the resource type name, supported operations (including executable and arguments), and JSON schema for input parameters
 - **Dependency management**: All crates must be listed in Cargo.toml specifying to use workspace dependencies. The root level Cargo.toml should be updated to include the new crates or associated to the DSC resource project.
 - **Project files**: A `.project.data.json` file in the root of the project folder defines properties of the project and non-code files to include during build
+- **Release packaging**: Add every resource binary and manifest to the applicable platform list under `PackageFiles` in the root `data.build.json`. Project discovery alone does not include a resource in released packages.
 - **Localization**: For Rust-based resources, all user-facing strings must use `rust-i18n` for internationalization. For script-based resources (such as PowerShell), follow the existing localization and string-handling patterns used by those scripts or any repository-specific localization guidance.
 - **Copyright headers**: Every source file must start with the copyright header:
   ```
@@ -37,6 +38,7 @@ Management tasks or operations are specific to the resource type, but may includ
 - Create a resource manifest JSON file named `<resource_name>.dsc.resource.json` in the same directory using `./resources/windows_service/windows_service.dsc.resource.json` as an example
 - Create a `.project.data.json` file in the root of the resource project directory
 - Create a `locales/en-us.toml` file for localized strings
+- Add the resource executable and manifest to the applicable `PackageFiles` platform list in the root `data.build.json` (for example, `<resource_name>.exe` and `<resource_name>.dsc.resource.json` under `PackageFiles.Windows`)
 
 ### 2. .project.data.json
 
@@ -140,30 +142,34 @@ Key fields:
 #### main.rs file
 
 - Initialize `rust-i18n` with `rust_i18n::i18n!("locales", fallback = "en-us");`
-- Define named exit code constants at the module level:
+- Import `std::process::ExitCode`, make `main` return `ExitCode`, and return normally from every code path. Never call `std::process::exit`; it bypasses normal process cleanup and prevents coverage data from being collected.
+- Define named `u8` exit code constants at the module level so they can be passed directly to `ExitCode::from`:
   ```rust
-  const EXIT_SUCCESS: i32 = 0;
-  const EXIT_INVALID_ARGS: i32 = 1;
-  const EXIT_INVALID_INPUT: i32 = 2;
-  const EXIT_RESOURCE_ERROR: i32 = 3;
+  const EXIT_SUCCESS: u8 = 0;
+  const EXIT_INVALID_ARGS: u8 = 1;
+  const EXIT_INVALID_INPUT: u8 = 2;
+  const EXIT_RESOURCE_ERROR: u8 = 3;
   ```
 - Implement common helper functions:
   - `write_error(message)` — writes `{"error": "<message>"}` to stderr
-  - `require_input(input_json)` — deserializes the JSON input or exits with an error
-  - `print_json(value)` — serializes and prints to stdout, or exits with an error
-  - `parse_input_arg(args)` — parses `--input <json>` from command-line arguments
+  - `require_input(input_json)` — deserializes the JSON input and returns `Result<T, ExitCode>`
+  - `print_json(value)` — serializes and prints to stdout, returning `Result<(), ExitCode>`
+  - `parse_input_arg(args)` — parses `--input <json>` and returns argument errors to `main`
 - Use `t!("key")` macro from `rust-i18n` for all user-facing strings (error messages, etc.)
 - For platform-specific resources, use conditional compilation:
   ```rust
+  use std::process::ExitCode;
+
   #[cfg(not(windows))]
-  fn main() {
+  fn main() -> ExitCode {
       write_error(&t!("main.windowsOnly"));
-      exit(EXIT_RESOURCE_ERROR);
+      ExitCode::from(EXIT_RESOURCE_ERROR)
   }
 
   #[cfg(windows)]
-  fn main() {
+  fn main() -> ExitCode {
       // ... actual implementation
+      ExitCode::from(EXIT_SUCCESS)
   }
   ```
 - Parse operations as the first positional argument (e.g., `get`, `set`, `export`), with `--input <json>` as the input argument
@@ -261,6 +267,7 @@ someError = "Failed to do something: %{error}"
 
 #### Build and Deployment
 
+- Verify the root `data.build.json` lists the resource binary and every manifest under each applicable `PackageFiles` platform. A `.project.data.json` entry controls building and copying artifacts but does not by itself add those files to a released package.
 - The resource should be built using `build.ps1 -project <resource_name>` from the root of the repository, which will handle building the Rust code and ensure it is found in PATH for testing
 
 ## What-If support
@@ -337,7 +344,10 @@ args::ConfigSubCommand::Set { input, what_if } => {
     trace!("Set input: {input}, what_if: {what_if}");
     let mut helper = match Helper::new_from_json(&input) {
         Ok(h) => h,
-        Err(err) => { error!("{err}"); exit(EXIT_INVALID_INPUT); }
+        Err(err) => {
+            error!("{err}");
+            return ExitCode::from(EXIT_INVALID_INPUT);
+        }
     };
     if what_if { helper.enable_what_if(); }
 
@@ -349,9 +359,12 @@ args::ConfigSubCommand::Set { input, what_if } => {
             println!("{json}");
         }
         Ok(None) => {}
-        Err(err) => { error!("{err}"); exit(EXIT_RESOURCE_ERROR); }
+        Err(err) => {
+            error!("{err}");
+            return ExitCode::from(EXIT_RESOURCE_ERROR);
+        }
     }
-    exit(EXIT_SUCCESS);
+    ExitCode::from(EXIT_SUCCESS)
 }
 ```
 
@@ -560,4 +573,3 @@ When asked to add what-if to a new resource, perform these steps in order:
 7. Add `whatIf*` localized strings under `[<resource>_helper]` and `args.configArgsWhatIfHelp` in `locales/en-us.toml`.
 8. Create `<resource>.config.whatif.tests.ps1` (and the list variant if applicable) following the test template; cover create, update, delete-via-`_exist`, and `delete -w`.
 9. Build with `./build.ps1 -project <resource_name>` and run the new Pester file.
-

@@ -14,6 +14,10 @@ use crate::types::{ExitCodesMap, FullyQualifiedTypeName, SemanticVersion, TagLis
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
+#[schemars(
+    transform = ExtensionManifest::transform_export_schema_uris,
+    transform = ExtensionManifest::transform_schema_docs
+)]
 #[dsc_repo_schema(
     base_name = "manifest",
     folder_path = "extension",

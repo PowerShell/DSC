@@ -93,6 +93,17 @@ pub trait VSCodeSchemaExtensions {
     /// If the schema doesn't define the keyword, or defines the keyword with an invalid value,
     /// this method returns [`None`]. Otherwise, this method returns the description string.
     fn get_markdown_description(&self) -> Option<&str>;
+    /// Sets the value for the [`MarkdownDescriptionKeyword`] (`markdownDescription`) in the schema.
+    /// 
+    /// # Arguments
+    /// 
+    /// - `description` - The new value for the `markdownDescription` keyword.
+    /// 
+    /// # Returns
+    /// 
+    /// Returns the previous value of the `markdownDescription` keyword if it was defined in the
+    /// schema and otherwise [`None`].
+    fn set_markdown_description(&mut self, description: &str) -> Option<String>;
     /// Retrieves the value for the [`MarkdownEnumDescriptionsKeyword`] (`markdownEnumDescriptions`)
     /// if it's defined in the schema.
     /// 
@@ -155,6 +166,12 @@ pub trait VSCodeSchemaExtensions {
 impl VSCodeSchemaExtensions for Schema {
     fn get_markdown_description(&self) -> Option<&str> {
         self.get_keyword_as_str(MarkdownDescriptionKeyword::KEYWORD_NAME)
+    }
+    fn set_markdown_description(&mut self, description: &str) -> Option<String> {
+        self.insert(
+            MarkdownDescriptionKeyword::KEYWORD_NAME.to_string(),
+            serde_json::Value::String(description.to_string())
+        ).and_then(|v| v.as_str().map(std::string::ToString::to_string))
     }
     fn get_markdown_enum_descriptions(&self) -> Option<Vec<&str>> {
         match self.get_keyword_as_array(MarkdownEnumDescriptionsKeyword::KEYWORD_NAME) {

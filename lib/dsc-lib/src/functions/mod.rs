@@ -7,6 +7,7 @@ use crate::DscError;
 use crate::configure::context::{Context, ProcessMode};
 use crate::functions::user_function::invoke_user_function;
 use crate::schemas::dsc_repo::DscRepoSchema;
+use dsc_lib_jsonschema::transforms::idiomaticize_string_enum;
 use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -103,6 +104,11 @@ pub mod try_which;
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Serialize, JsonSchema, DscRepoSchema)]
 #[dsc_repo_schema(base_name = "argKind", folder_path = "definitions/functions/builtin")]
 #[serde(rename_all = "camelCase")]
+#[schemars(
+    transform = idiomaticize_string_enum,
+    transform = FunctionArgKind::transform_schema_docs,
+    transform = FunctionArgKind::transform_export_schema_uris,
+)]
 pub enum FunctionArgKind {
     Array,
     Boolean,
@@ -374,6 +380,10 @@ impl Default for FunctionDispatcher {
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
 #[dsc_repo_schema(base_name = "list", folder_path = "outputs/function")]
+#[schemars(
+    transform = FunctionDefinition::transform_export_schema_uris,
+    transform = FunctionDefinition::transform_schema_docs,
+)]
 pub struct FunctionDefinition {
     pub category: Vec<FunctionCategory>,
     pub name: String,
@@ -395,6 +405,11 @@ pub struct FunctionDefinition {
 #[derive(Clone, Debug, Deserialize, Ord, PartialOrd, Eq, PartialEq, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 #[dsc_repo_schema(base_name = "category", folder_path = "definitions/functions/builtin")]
+#[schemars(
+    transform = idiomaticize_string_enum,
+    transform = FunctionCategory::transform_export_schema_uris,
+    transform = FunctionCategory::transform_schema_docs,
+)]
 pub enum FunctionCategory {
     Array,
     Cidr,

@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}, context::ProcessMode, parameters::{SECURE_VALUE_REDACTED, is_secure_value}, schema_cache::get_resource_schema}, dscresources::resource_manifest::{AdapterInputKind, Kind}, types::{FullyQualifiedTypeName, ResourceVersion}};
+use crate::{configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}, context::ProcessMode, parameters::{SECURE_VALUE_REDACTED, is_secure_value}, schema_cache::get_resource_schema}, dscresources::{adapted_resource_manifest::AdaptedDscResourceManifest, resource_manifest::{AdapterInputKind, Kind}}, types::{FullyQualifiedTypeName, ResourceVersion}};
 use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse};
 use crate::schemas::transforms::idiomaticize_string_enum;
@@ -12,6 +12,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::collections::{HashMap, HashSet};
+use std::fmt::Display;
 use std::path::PathBuf;
 use tracing::{debug, info, trace, warn};
 
@@ -29,6 +30,10 @@ use super::{
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 #[dsc_repo_schema(base_name = "list", folder_path = "outputs/resource")]
+#[schemars(
+    transform = DscResource::transform_export_schema_uris,
+    transform = DscResource::transform_schema_docs
+)]
 pub struct DscResource {
     /// The namespaced name of the resource.
     #[serde(rename="type")]
@@ -61,14 +66,40 @@ pub struct DscResource {
     pub target_resource: Option<Box<DscResource>>,
     /// The manifest of the resource.
     pub manifest: Option<ResourceManifest>,
+    /// The adapted manifest of the resource, if available.
+    pub adapted_manifest: Option<AdaptedDscResourceManifest>,
     /// The content of the adapted resource, if available.
     pub adapted_content: Option<Map<String, Value>>,
 }
 
+pub(crate) enum Operation {
+    Get,
+    Set,
+    Test,
+    Delete,
+    Export,
+}
+
+impl Display for Operation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Operation::Get => write!(f, "get"),
+            Operation::Set => write!(f, "set"),
+            Operation::Test => write!(f, "test"),
+            Operation::Delete => write!(f, "delete"),
+            Operation::Export => write!(f, "export"),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema, Ord, PartialOrd)]
 #[serde(rename_all = "camelCase")]
-#[schemars(transform = idiomaticize_string_enum)]
 #[dsc_repo_schema(base_name = "resourceCapabilities", folder_path = "definitions")]
+#[schemars(
+    transform = idiomaticize_string_enum,
+    transform = Capability::transform_export_schema_uris,
+    transform = Capability::transform_schema_docs
+)]
 pub enum Capability {
     /// The resource supports retrieving configuration.
     Get,
@@ -92,6 +123,7 @@ pub enum Capability {
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(untagged)]
+#[schemars(inline)]
 pub enum ImplementedAs {
     /// A command line executable
     Command,
@@ -118,6 +150,7 @@ impl DscResource {
             schema: None,
             target_resource: None,
             manifest: None,
+            adapted_manifest: None,
             adapted_content: None,
         }
     }
@@ -269,7 +302,7 @@ impl DscResource {
         let mut export_result = ExportResult {
             actual_state: Vec::new(),
         };
-        debug!("Export result: {}", serde_json::to_string(&configuration)?);
+        debug!("{}", t!("dscresources.dscresource.exportResult", result = serde_json::to_string(&configuration)?));
         for resource in configuration.resources {
             let Some(properties) = resource.properties else {
                 return Err(DscError::Operation(t!("dscresources.dscresource.invokeExportReturnedNoResult", resource = self.type_name).to_string()));
@@ -889,8 +922,8 @@ pub fn validate_properties(resource: &DscResource, properties: &Value) -> Result
 /// * `DscError` - The JSON is invalid
 pub fn validate_json(source: &str, schema: &Value, json: &Value) -> Result<(), DscError> {
     debug!("{}: {source}", t!("dscresources.dscresource.validatingSchema"));
-    trace!("JSON: {json}");
-    trace!("Schema: {schema}");
+    trace!("{}", t!("dscresources.dscresource.json", json = json));
+    trace!("{}", t!("dscresources.dscresource.schema", schema = schema));
     let compiled_schema = match Validator::new(schema) {
         Ok(compiled_schema) => compiled_schema,
         Err(err) => {

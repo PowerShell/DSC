@@ -20,7 +20,7 @@ variables:
   - name: PublishToPMC
     value: ${{ parameters.PublishToPMC }}
   - name: RustVersion
-    value: ms-prod-1.95
+    value: ms-prod-1.97.1
   - name: LinuxContainerImage
     value: 'onebranch.azurecr.io/linux/ubuntu-2204:latest'
   - name: RepoRoot

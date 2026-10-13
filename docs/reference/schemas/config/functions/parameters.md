@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'parameters' DSC configuration document function
-ms.date:     02/28/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       parameters
 ---
@@ -91,7 +91,8 @@ hadErrors: false
 
 The `parameters()` function expects a single string as input, representing the name of the
 parameter to return. If no parameter with the specified name is defined in the configuration
-document, DSC raises an error during validation.
+document, DSC raises an error during validation. If the parameter is defined without a default
+value and you don't provide a value for it, DSC raises an error when it evaluates the function.
 
 ```yaml
 Type:         string
@@ -105,10 +106,10 @@ MaximumCount: 1
 The `parameters()` function returns the value of the specified parameter.
 
 ```yaml
-Type: [string, int, bool, object, array]
+Type: [string, int, bool, object, array, null]
 ```
 
 <!-- Link reference definitions -->
 [01]: ../parameter.md
-[02]: ../../../cli/config/index.md#--parameters
-[03]: ../../../cli/config/index.md#--parameters-file
+[02]: ../../../cli/config/index.md#-p---parameters
+[03]: ../../../cli/config/index.md#-f---parameters-file

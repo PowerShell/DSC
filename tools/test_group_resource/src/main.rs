@@ -42,6 +42,7 @@ fn main() {
                     }),
                     ..Default::default()
                 }),
+                adapted_manifest: None,
             };
             let resource2 = DscResource {
                 type_name: "Test/TestResource2".parse().unwrap(),
@@ -71,6 +72,7 @@ fn main() {
                     }),
                     ..Default::default()
                 }),
+                adapted_manifest: None,
             };
             println!("{}", serde_json::to_string(&resource1).unwrap());
             println!("{}", serde_json::to_string(&resource2).unwrap());
@@ -92,6 +94,7 @@ fn main() {
                 adapted_content: None,
                 target_resource: None,
                 manifest: None,
+                adapted_manifest: None,
                 schema: None,
             };
             println!("{}", serde_json::to_string(&resource1).unwrap());

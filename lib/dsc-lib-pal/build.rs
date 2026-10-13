@@ -10,27 +10,27 @@ use cc::windows_registry;
 
 fn main() {
     // Make import libs for API sets that are not in the SDK.
-    println!("cargo:rustc-link-search={}", env::var("OUT_DIR").unwrap());
+    println!("cargo::rustc-link-search={}", env::var("OUT_DIR").unwrap());
 
     let lib = "ext-ms-win-cng-rng-l1-1-0";
     make_import_lib(lib);
-    println!("cargo:rustc-link-lib={lib}");
+    println!("cargo::rustc-link-lib={lib}");
 }
 
 // Gets the path to the tool for building '.lib' file from the environment variable, if it's set.
 fn get_tool_var(name: &str) -> Option<String> {
     let target = env::var("TARGET").unwrap().replace('-', "_");
     let var = format!("{name}_{target}");
-    println!("cargo:rerun-if-env-changed={var}");
+    println!("cargo::rerun-if-env-changed={var}");
     env::var(var)
         .or_else(|_| {
-            println!("cargo:rerun-if-env-changed={name}");
+            println!("cargo::rerun-if-env-changed={name}");
             env::var(name)
         }).ok()
 }
 
 fn make_import_lib(name: &str) {
-    println!("cargo:rerun-if-changed={name}.def");
+    println!("cargo::rerun-if-changed={name}.def");
 
     if let Some(dlltool) = get_tool_var("DLLTOOL") {
         let mut dlltool = Command::new(dlltool);

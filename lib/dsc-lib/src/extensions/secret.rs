@@ -24,6 +24,7 @@ use tracing::{debug, warn};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(untagged)]
+#[schemars(inline)]
 pub enum SecretArgKind {
     /// The argument is a string.
     String(String),
@@ -42,6 +43,10 @@ pub enum SecretArgKind {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[schemars(
+    transform = SecretMethod::transform_export_schema_uris,
+    transform = SecretMethod::transform_schema_docs
+)]
 #[dsc_repo_schema(base_name = "manifest.secret", folder_path = "extension")]
 pub struct SecretMethod {
     /// The command to run to get the state of the resource.

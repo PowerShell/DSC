@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'lessOrEquals' DSC configuration document function
-ms.date:     07/24/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       lessOrEquals
 ---
@@ -41,7 +41,7 @@ resources:
 - name: Compare numbers
   type: Microsoft.DSC.Debug/Echo
   properties:
-    output: 
+    output:
       firstLess:        "[lessOrEquals(3, 5)]"
       secondLess:       "[lessOrEquals(5, 3)]"
       equalNumbers:     "[lessOrEquals(5, 5)]"

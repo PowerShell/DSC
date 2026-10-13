@@ -72,7 +72,10 @@ For a quick build and test on your current platform:
 
 ## Building the Project
 
-The main build script is `build.ps1`, which orchestrates the entire build process.
+The main build script is `build.ps1`, which orchestrates the entire build process. Always use
+`./build.ps1` from the repository root to build or compile the project. Do not invoke Cargo
+directly for build validation, including `cargo build` or `cargo check`. For targeted builds,
+use `./build.ps1 -Project <project-name>`.
 
 ### Basic Build
 

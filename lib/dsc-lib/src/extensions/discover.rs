@@ -28,6 +28,10 @@ use tracing::{info, trace, warn};
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[dsc_repo_schema(base_name = "manifest.discover", folder_path = "extension")]
+#[schemars(
+    transform = DiscoverMethod::transform_export_schema_uris,
+    transform = DiscoverMethod::transform_schema_docs
+)]
 pub struct DiscoverMethod {
     /// The command to run to get the state of the resource.
     pub executable: String,
@@ -37,6 +41,7 @@ pub struct DiscoverMethod {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
+#[schemars(inline)]
 pub enum ManifestKind {
     /// The path to the resource manifest, must be absolute.
     ManifestPath(PathBuf),
@@ -46,6 +51,10 @@ pub enum ManifestKind {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[dsc_repo_schema(base_name = "discover", folder_path = "extension/stdout")]
+#[schemars(
+    transform = DiscoverResult::transform_export_schema_uris,
+    transform = DiscoverResult::transform_schema_docs
+)]
 pub struct DiscoverResult {
     #[serde(flatten)]
     pub path_or_content: ManifestKind,
@@ -53,6 +62,7 @@ pub struct DiscoverResult {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(untagged)]
+#[schemars(inline)]
 pub enum DiscoverArgKind {
     String(String),
     Extensions {
@@ -114,7 +124,7 @@ impl DscExtension {
                     match discover_result.path_or_content {
                         ManifestKind::ManifestContent(manifest_value) => {
                             let imported_manifests = load_manifest_content(&manifest_value)?;
-                            info!("Manifest imported from extension {}", self.type_name);
+                            info!("{}", t!("extensions.dscextension.manifestImported", extension = self.type_name));
                             for imported_manifest in imported_manifests {
                                 if let ImportedManifest::Resource(resource) = imported_manifest {
                                     resources.push(resource);
