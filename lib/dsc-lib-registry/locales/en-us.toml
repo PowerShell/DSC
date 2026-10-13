@@ -18,6 +18,7 @@ registryValue = "Registry value"
 saclUnsupported = "System ACLs (SACLs) are not supported"
 utf16Conversion = "UTF-16 conversion failed due to interior NULL values for"
 unsupportedValueDataType = "Unsupported registry value data type"
+win32 = "%{operation} failed with error code %{code}"
 
 [registry_helper]
 whatIfCreateKey = "Key '%{subkey}' not found, would create it"

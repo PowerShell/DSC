@@ -3,21 +3,27 @@
 
 use core::ffi::c_void;
 
-use windows::Win32::Foundation::{ERROR_INSUFFICIENT_BUFFER, ERROR_SUCCESS, HLOCAL, LocalFree};
+use windows::Win32::Foundation::{
+    ERROR_FILE_NOT_FOUND, ERROR_INSUFFICIENT_BUFFER, ERROR_PATH_NOT_FOUND, ERROR_SUCCESS, HLOCAL,
+    LocalFree,
+};
 use windows::Win32::Security::Authorization::{
     ConvertSecurityDescriptorToStringSecurityDescriptorW,
     ConvertStringSecurityDescriptorToSecurityDescriptorW,
 };
 use windows::Win32::Security::{
-    DACL_SECURITY_INFORMATION, GROUP_SECURITY_INFORMATION, OBJECT_SECURITY_INFORMATION,
-    OWNER_SECURITY_INFORMATION, PSECURITY_DESCRIPTOR, SACL_SECURITY_INFORMATION,
+    ACL, DACL_SECURITY_INFORMATION, GROUP_SECURITY_INFORMATION, GetSecurityDescriptorControl,
+    GetSecurityDescriptorDacl, GetSecurityDescriptorGroup, GetSecurityDescriptorOwner,
+    GetSecurityDescriptorSacl, OBJECT_SECURITY_INFORMATION, OWNER_SECURITY_INFORMATION,
+    PROTECTED_DACL_SECURITY_INFORMATION, PSECURITY_DESCRIPTOR, PSID, SE_DACL_PROTECTED,
+    UNPROTECTED_DACL_SECURITY_INFORMATION,
 };
 use windows::Win32::System::Registry::{
     HKEY, HKEY_CLASSES_ROOT, HKEY_CURRENT_CONFIG, HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE,
     HKEY_USERS, KEY_READ, REG_SAM_FLAGS, RegCloseKey, RegGetKeySecurity, RegOpenKeyExW,
     RegSetKeySecurity,
 };
-use windows::core::{HSTRING, PCWSTR, PWSTR};
+use windows::core::{BOOL, HSTRING, PCWSTR, PWSTR};
 
 use crate::error::RegistryError;
 use rust_i18n::t;
@@ -47,7 +53,8 @@ impl Drop for LocalAllocation {
 }
 
 pub fn get(path: &str, requested_sddl: &str) -> Result<String, RegistryError> {
-    let (security_information, _) = permissions(requested_sddl)?;
+    let descriptor = SecurityDescriptor::from_sddl(requested_sddl)?;
+    let (security_information, _) = descriptor.permissions(false)?;
     let key = open(path, KEY_READ)?;
     let mut size = 0;
 
@@ -93,48 +100,19 @@ pub fn get(path: &str, requested_sddl: &str) -> Result<String, RegistryError> {
 }
 
 pub fn validate(sddl: &str) -> Result<(), RegistryError> {
-    permissions(sddl)?;
-    let sddl = HSTRING::from(sddl);
-    let mut descriptor = PSECURITY_DESCRIPTOR::default();
-
-    // SAFETY: The input is a valid null-terminated HSTRING. The returned descriptor is released by
-    // LocalAllocation.
-    unsafe {
-        ConvertStringSecurityDescriptorToSecurityDescriptorW(
-            PCWSTR(sddl.as_ptr()),
-            SDDL_REVISION_1,
-            &mut descriptor,
-            None,
-        )
-        .map_err(|error| RegistryError::Acl(error.to_string()))?;
-    }
-    drop(LocalAllocation(HLOCAL(descriptor.0)));
+    SecurityDescriptor::from_sddl(sddl)?.permissions(false)?;
     Ok(())
 }
 
 pub fn set(path: &str, sddl: &str) -> Result<(), RegistryError> {
-    let (security_information, access) = permissions(sddl)?;
+    let descriptor = SecurityDescriptor::from_sddl(sddl)?;
+    let (security_information, access) = descriptor.permissions(true)?;
     let key = open(path, access)?;
-    let sddl = HSTRING::from(sddl);
-    let mut descriptor = PSECURITY_DESCRIPTOR::default();
-
-    // SAFETY: The input is a valid null-terminated HSTRING. The returned descriptor is released by
-    // LocalAllocation.
-    unsafe {
-        ConvertStringSecurityDescriptorToSecurityDescriptorW(
-            PCWSTR(sddl.as_ptr()),
-            SDDL_REVISION_1,
-            &mut descriptor,
-            None,
-        )
-        .map_err(|error| RegistryError::Acl(error.to_string()))?;
-    }
-    let allocation = LocalAllocation(HLOCAL(descriptor.0));
 
     // SAFETY: The descriptor was returned by the SDDL conversion API and remains allocated for the
     // duration of this call.
-    let status = unsafe { RegSetKeySecurity(key.0, security_information, descriptor) };
-    drop(allocation);
+    let status =
+        unsafe { RegSetKeySecurity(key.0, security_information, descriptor.descriptor) };
     if status != ERROR_SUCCESS {
         return Err(win32_error("RegSetKeySecurity", status.0));
     }
@@ -142,40 +120,118 @@ pub fn set(path: &str, sddl: &str) -> Result<(), RegistryError> {
     Ok(())
 }
 
-fn permissions(sddl: &str) -> Result<(OBJECT_SECURITY_INFORMATION, REG_SAM_FLAGS), RegistryError> {
-    let mut information = OBJECT_SECURITY_INFORMATION(0);
-    let mut access = 0;
-    let mut depth = 0_u32;
-    let mut chars = sddl.chars().peekable();
-    while let Some(character) = chars.next() {
-        match character {
-            '(' => depth += 1,
-            ')' => depth = depth.saturating_sub(1),
-            'O' if depth == 0 && chars.peek() == Some(&':') => {
-                information |= OWNER_SECURITY_INFORMATION;
-                access |= 0x0008_0000; // WRITE_OWNER
-            }
-            'G' if depth == 0 && chars.peek() == Some(&':') => {
-                information |= GROUP_SECURITY_INFORMATION;
-                access |= 0x0008_0000; // WRITE_OWNER
-            }
-            'D' if depth == 0 && chars.peek() == Some(&':') => {
-                information |= DACL_SECURITY_INFORMATION;
-                access |= 0x0004_0000; // WRITE_DAC
-            }
-            'S' if depth == 0 && chars.peek() == Some(&':') => {
-                information |= SACL_SECURITY_INFORMATION;
-            }
-            _ => {}
+pub fn can_set(path: &str, sddl: &str) -> Result<bool, RegistryError> {
+    let descriptor = SecurityDescriptor::from_sddl(sddl)?;
+    let (_, access) = descriptor.permissions(true)?;
+    match open(path, access) {
+        Ok(_) => Ok(true),
+        Err(RegistryError::RegistryKeyNotFound(_)) => Ok(false),
+        Err(error) => Err(error),
+    }
+}
+
+struct SecurityDescriptor {
+    descriptor: PSECURITY_DESCRIPTOR,
+    _allocation: LocalAllocation,
+}
+
+impl SecurityDescriptor {
+    fn from_sddl(sddl: &str) -> Result<Self, RegistryError> {
+        let sddl = HSTRING::from(sddl);
+        let mut descriptor = PSECURITY_DESCRIPTOR::default();
+
+        // SAFETY: The input is a valid null-terminated HSTRING. The returned descriptor is owned by
+        // the LocalAllocation field.
+        unsafe {
+            ConvertStringSecurityDescriptorToSecurityDescriptorW(
+                PCWSTR(sddl.as_ptr()),
+                SDDL_REVISION_1,
+                &mut descriptor,
+                None,
+            )
+            .map_err(|error| RegistryError::Acl(error.to_string()))?;
         }
+        Ok(Self {
+            descriptor,
+            _allocation: LocalAllocation(HLOCAL(descriptor.0)),
+        })
     }
-    if information.0 & SACL_SECURITY_INFORMATION.0 != 0 {
-        return Err(RegistryError::Acl(t!("error.saclUnsupported").to_string()));
+
+    fn permissions(
+        &self,
+        include_dacl_protection: bool,
+    ) -> Result<(OBJECT_SECURITY_INFORMATION, REG_SAM_FLAGS), RegistryError> {
+        let mut information = OBJECT_SECURITY_INFORMATION(0);
+        let mut access = 0;
+        let mut defaulted = BOOL::default();
+        let mut owner = PSID::default();
+        let mut group = PSID::default();
+        let mut dacl = std::ptr::null_mut::<ACL>();
+        let mut sacl = std::ptr::null_mut::<ACL>();
+        let mut dacl_present = BOOL::default();
+        let mut sacl_present = BOOL::default();
+
+        // SAFETY: The descriptor is valid for the lifetime of self, and all output pointers are
+        // writable local variables.
+        unsafe {
+            GetSecurityDescriptorOwner(self.descriptor, &mut owner, &mut defaulted)
+                .map_err(|error| RegistryError::Acl(error.to_string()))?;
+            GetSecurityDescriptorGroup(self.descriptor, &mut group, &mut defaulted)
+                .map_err(|error| RegistryError::Acl(error.to_string()))?;
+            GetSecurityDescriptorDacl(
+                self.descriptor,
+                &mut dacl_present,
+                &mut dacl,
+                &mut defaulted,
+            )
+            .map_err(|error| RegistryError::Acl(error.to_string()))?;
+            GetSecurityDescriptorSacl(
+                self.descriptor,
+                &mut sacl_present,
+                &mut sacl,
+                &mut defaulted,
+            )
+            .map_err(|error| RegistryError::Acl(error.to_string()))?;
+        }
+
+        if sacl_present.as_bool() {
+            return Err(RegistryError::Acl(t!("error.saclUnsupported").to_string()));
+        }
+        if !owner.0.is_null() {
+            information |= OWNER_SECURITY_INFORMATION;
+            access |= 0x0008_0000; // WRITE_OWNER
+        }
+        if !group.0.is_null() {
+            information |= GROUP_SECURITY_INFORMATION;
+            access |= 0x0008_0000; // WRITE_OWNER
+        }
+        if dacl_present.as_bool() {
+            information |= DACL_SECURITY_INFORMATION;
+            access |= 0x0004_0000; // WRITE_DAC
+            if include_dacl_protection {
+                let mut control = 0_u16;
+                let mut revision = 0_u32;
+                // SAFETY: The descriptor is valid and both output pointers are writable.
+                unsafe {
+                    GetSecurityDescriptorControl(
+                        self.descriptor,
+                        &mut control,
+                        &mut revision,
+                    )
+                    .map_err(|error| RegistryError::Acl(error.to_string()))?;
+                }
+                if control & SE_DACL_PROTECTED.0 != 0 {
+                    information |= PROTECTED_DACL_SECURITY_INFORMATION;
+                } else {
+                    information |= UNPROTECTED_DACL_SECURITY_INFORMATION;
+                }
+            }
+        }
+        if information == OBJECT_SECURITY_INFORMATION(0) {
+            return Err(RegistryError::Acl(t!("error.invalidAcl").to_string()));
+        }
+        Ok((information, REG_SAM_FLAGS(access)))
     }
-    if information == OBJECT_SECURITY_INFORMATION(0) {
-        return Err(RegistryError::Acl(t!("error.invalidAcl").to_string()));
-    }
-    Ok((information, REG_SAM_FLAGS(access)))
 }
 
 fn open(
@@ -188,6 +244,9 @@ fn open(
 
     // SAFETY: root is a predefined HKEY, subkey is a null-terminated HSTRING, and key is writable.
     let status = unsafe { RegOpenKeyExW(root, PCWSTR(subkey.as_ptr()), Some(0), access, &mut key) };
+    if status == ERROR_FILE_NOT_FOUND || status == ERROR_PATH_NOT_FOUND {
+        return Err(RegistryError::RegistryKeyNotFound(path.to_string()));
+    }
     if status != ERROR_SUCCESS {
         return Err(win32_error("RegOpenKeyExW", status.0));
     }
@@ -211,7 +270,7 @@ fn split_path(path: &str) -> Result<(HKEY, &str), RegistryError> {
 }
 
 fn win32_error(operation: &str, code: u32) -> RegistryError {
-    RegistryError::Acl(format!("{operation} failed with error code {code}"))
+    RegistryError::Acl(t!("error.win32", operation = operation, code = code).to_string())
 }
 
 #[cfg(test)]
@@ -220,7 +279,8 @@ mod tests {
 
     #[test]
     fn permissions_detects_requested_sections() {
-        let (information, access) = permissions("O:SYG:BAD:(A;;KA;;;SY)").unwrap();
+        let descriptor = SecurityDescriptor::from_sddl("O:SYG:BAD:(A;;KA;;;SY)").unwrap();
+        let (information, access) = descriptor.permissions(false).unwrap();
 
         assert_eq!(
             information.0,
@@ -232,9 +292,23 @@ mod tests {
     }
 
     #[test]
-    fn permissions_ignores_component_markers_inside_aces() {
-        let (information, access) =
-            permissions(r#"D:(XA;;KR;;;WD;(@User.Title == "O:operator"))"#).unwrap();
+    fn permissions_preserves_dacl_protection() {
+        let descriptor = SecurityDescriptor::from_sddl("D:P(A;;KA;;;SY)").unwrap();
+        let (information, access) = descriptor.permissions(true).unwrap();
+
+        assert_eq!(
+            information,
+            DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION
+        );
+        assert_eq!(access.0, 0x0004_0000);
+    }
+
+    #[test]
+    fn permissions_ignores_component_markers_inside_conditional_aces() {
+        let descriptor =
+            SecurityDescriptor::from_sddl(r#"D:(XA;;KR;;;WD;(@User.Title == "O:operator"))"#)
+                .unwrap();
+        let (information, access) = descriptor.permissions(false).unwrap();
 
         assert_eq!(information, DACL_SECURITY_INFORMATION);
         assert_eq!(access.0, 0x0004_0000);
@@ -242,7 +316,8 @@ mod tests {
 
     #[test]
     fn permissions_rejects_sacl() {
-        let error = permissions("S:(AU;SA;KA;;;WD)").unwrap_err();
+        let descriptor = SecurityDescriptor::from_sddl("S:(AU;SA;KA;;;WD)").unwrap();
+        let error = descriptor.permissions(false).unwrap_err();
 
         assert!(matches!(error, RegistryError::Acl(_)));
     }

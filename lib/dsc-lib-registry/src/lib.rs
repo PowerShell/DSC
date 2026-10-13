@@ -246,12 +246,26 @@ impl RegistryHelper {
         }
 
         let mut what_if_metadata: Vec<String> = Vec::new();
-        let open_permission = if self.config.value_name.is_none() && self.config.acl.is_some() {
-            Security::Read
-        } else {
-            Security::Write
-        };
-        let reg_key = match self.open(open_permission) {
+        if self.config.value_name.is_none()
+            && let Some(config_acl) = &self.config.acl
+            && acl::can_set(&self.config.key_path, config_acl)?
+        {
+            if self.what_if {
+                what_if_metadata.push(
+                    t!("registry_helper.whatIfSetAcl", key_path = &self.config.key_path).to_string(),
+                );
+                return Ok(Some(Registry {
+                    key_path: self.config.key_path.clone(),
+                    acl: Some(config_acl.clone()),
+                    metadata: Some(Metadata { what_if: Some(what_if_metadata) }),
+                    ..Default::default()
+                }));
+            }
+            acl::set(&self.config.key_path, config_acl)?;
+            return Ok(None);
+        }
+
+        let reg_key = match self.open(Security::Write) {
             Ok((reg_key, _subkey)) => Some(reg_key),
             // handle NotFound error
             Err(RegistryError::RegistryKeyNotFound(_)) => {

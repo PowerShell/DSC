@@ -120,6 +120,20 @@ Describe 'registry config set tests' {
         $result = registry config get --input $json 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw)
         $result.acl | Should -BeExactly $desiredAcl
+
+        $registryAcl = Get-Acl -Path 'HKCU:\1\AclSet'
+        $registryAcl.SetAccessRuleProtection($false, $true)
+        $desiredAcl = $registryAcl.GetSecurityDescriptorSddlForm(
+            [System.Security.AccessControl.AccessControlSections]::Access)
+        $json = @{
+            keyPath = 'HKCU\1\AclSet'
+            acl = $desiredAcl
+        } | ConvertTo-Json -Compress
+
+        registry config set --input $json 2>$TestDrive/error.log
+
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw)
+        (Get-Acl -Path 'HKCU:\1\AclSet').AreAccessRulesProtected | Should -BeFalse
     }
 
     It 'Should succeed when _exist is false and value does not exist' -Skip:(!$IsWindows) {
