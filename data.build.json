@@ -11,7 +11,7 @@
       "dsc-bicep-ext",
       "dscecho",
       "echo.dsc.resource.json",
-      "filecontent",
+      "file_dsc",
       "filecontent.dsc.resource.json",
       "assertion.dsc.resource.json",
       "apt.dsc.resource.json",
@@ -43,7 +43,7 @@
       "dsc-bicep-ext",
       "dscecho",
       "echo.dsc.resource.json",
-      "filecontent",
+      "file_dsc",
       "filecontent.dsc.resource.json",
       "assertion.dsc.resource.json",
       "brew.dsc.resource.json",
@@ -78,8 +78,9 @@
       "dsc-bicep-ext.exe",
       "dscecho.exe",
       "echo.dsc.resource.json",
-      "filecontent.exe",
+      "file_dsc.exe",
       "filecontent.dsc.resource.json",
+      "filesystem_acl.dsc.resource.json",
       "environment_variable.exe",
       "environment_variable.dsc.manifests.json",
       "assertion.dsc.resource.json",
@@ -344,16 +345,19 @@
       }
     },
     {
-      "Name": "filecontent",
+      "Name": "file_dsc",
       "Kind": "Resource",
       "RelativePath": "resources/filecontent",
       "IsRust": true,
       "Binaries": [
-        "filecontent"
+        "file_dsc"
       ],
       "CopyFiles": {
         "All": [
           "filecontent.dsc.resource.json"
+        ],
+        "Windows": [
+          "filesystem_acl.dsc.resource.json"
         ]
       }
     },

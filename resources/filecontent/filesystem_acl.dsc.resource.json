@@ -1,0 +1,87 @@
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "type": "Microsoft.Filesystem/ACL",
+    "description": "Manage the discretionary access control list of a local file or folder.",
+    "tags": [
+        "file",
+        "folder",
+        "windows"
+    ],
+    "version": "0.1.0",
+    "get": {
+        "executable": "file_dsc",
+        "args": [
+            "acl",
+            "get",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ]
+    },
+    "set": {
+        "executable": "file_dsc",
+        "args": [
+            "acl",
+            "set",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ],
+        "implementsPretest": false,
+        "return": "state"
+    },
+    "test": {
+        "executable": "file_dsc",
+        "args": [
+            "acl",
+            "test",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ],
+        "return": "state"
+    },
+    "exitCodes": {
+        "0": "Success",
+        "1": "Invalid arguments",
+        "2": "Invalid input",
+        "3": "Filesystem ACL operation error"
+    },
+    "schema": {
+        "embedded": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Filesystem ACL",
+            "description": "Manage the discretionary access control list of a local file or folder.",
+            "type": "object",
+            "required": [
+                "path",
+                "SDDL"
+            ],
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "title": "Path",
+                    "description": "The path to the local file or folder.",
+                    "minLength": 1,
+                    "x-dsc-key": true
+                },
+                "SDDL": {
+                    "type": "string",
+                    "title": "Security descriptor definition language",
+                    "description": "The discretionary access control list in SDDL form.",
+                    "minLength": 1
+                },
+                "_inDesiredState": {
+                    "type": "boolean",
+                    "title": "In desired state",
+                    "description": "Indicates whether the ACL is in the desired state. Only returned by test.",
+                    "readOnly": true
+                }
+            },
+            "additionalProperties": false
+        }
+    }
+}

@@ -1,11 +1,13 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+#[cfg(windows)]
+mod acl;
 mod file;
 mod types;
 
 use crate::file::{get, set, test};
-use crate::types::FileContent;
+use crate::types::{FileContent, FilesystemAcl};
 use rust_i18n::t;
 use serde::Serialize;
 use serde_json::json;
@@ -24,6 +26,10 @@ fn main() -> ExitCode {
     let Some(operation) = args.first() else {
         return fail(EXIT_INVALID_ARGS, &t!("main.missingOperation"));
     };
+
+    if operation == "acl" {
+        return handle_acl(&args[1..]);
+    }
 
     let input = match parse_input_arg(&args[1..]) {
         Ok(input) => input,
@@ -49,6 +55,39 @@ fn main() -> ExitCode {
     }
 }
 
+fn handle_acl(args: &[String]) -> ExitCode {
+    let Some(operation) = args.first() else {
+        return fail(EXIT_INVALID_ARGS, &t!("acl.missingOperation"));
+    };
+    let input = match parse_input_arg(&args[1..]) {
+        Ok(input) => input,
+        Err(code) => return code,
+    };
+    let input = match require_acl_input(input) {
+        Ok(input) => input,
+        Err(code) => return code,
+    };
+
+    #[cfg(windows)]
+    {
+        match operation.as_str() {
+            "get" => handle_result(acl::get(&input)),
+            "set" => handle_result(acl::set(&input)),
+            "test" => handle_result(acl::test(&input)),
+            _ => fail(
+                EXIT_INVALID_ARGS,
+                &t!("acl.unknownOperation", operation = operation),
+            ),
+        }
+    }
+
+    #[cfg(not(windows))]
+    {
+        let _ = (operation, input);
+        fail(EXIT_RESOURCE_ERROR, &t!("acl.windowsOnly"))
+    }
+}
+
 fn parse_input_arg(args: &[String]) -> Result<Option<&str>, ExitCode> {
     let mut index = 0;
     while index < args.len() {
@@ -64,6 +103,19 @@ fn parse_input_arg(args: &[String]) -> Result<Option<&str>, ExitCode> {
 }
 
 fn require_input(input: Option<&str>) -> Result<FileContent, ExitCode> {
+    let Some(input) = input else {
+        return Err(fail(EXIT_INVALID_ARGS, &t!("main.missingInput")));
+    };
+
+    serde_json::from_str(input).map_err(|error| {
+        fail(
+            EXIT_INVALID_INPUT,
+            &t!("main.invalidJson", error = error.to_string()),
+        )
+    })
+}
+
+fn require_acl_input(input: Option<&str>) -> Result<FilesystemAcl, ExitCode> {
     let Some(input) = input else {
         return Err(fail(EXIT_INVALID_ARGS, &t!("main.missingInput")));
     };

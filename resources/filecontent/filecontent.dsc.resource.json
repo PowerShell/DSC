@@ -10,7 +10,7 @@
     ],
     "version": "0.1.0",
     "get": {
-        "executable": "filecontent",
+        "executable": "file_dsc",
         "args": [
             "get",
             {
@@ -20,7 +20,7 @@
         ]
     },
     "set": {
-        "executable": "filecontent",
+        "executable": "file_dsc",
         "args": [
             "set",
             {
@@ -32,7 +32,7 @@
         "return": "state"
     },
     "test": {
-        "executable": "filecontent",
+        "executable": "file_dsc",
         "args": [
             "test",
             {

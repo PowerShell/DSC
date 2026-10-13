@@ -1,13 +1,16 @@
 {
-    "Name": "filecontent",
+    "Name": "file_dsc",
     "Kind": "Resource",
     "IsRust": true,
     "Binaries": [
-        "filecontent"
+        "file_dsc"
     ],
     "CopyFiles": {
         "All": [
             "filecontent.dsc.resource.json"
+        ],
+        "Windows": [
+            "filesystem_acl.dsc.resource.json"
         ]
     }
 }
