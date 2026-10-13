@@ -347,7 +347,7 @@
     {
       "Name": "file_dsc",
       "Kind": "Resource",
-      "RelativePath": "resources/filecontent",
+      "RelativePath": "resources/file_dsc",
       "IsRust": true,
       "Binaries": [
         "file_dsc"

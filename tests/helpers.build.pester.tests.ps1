@@ -6,7 +6,7 @@ Describe 'Test-ProjectWithPester' {
         Import-Module (Join-Path $PSScriptRoot '..' 'helpers.build.psm1') -Force
         $buildData = Import-DscBuildData -RefreshProjects
         $dscProject = $buildData.Projects | Where-Object -Property Name -EQ 'dsc'
-        $fileContentProject = $buildData.Projects | Where-Object -Property Name -EQ 'filecontent'
+        $fileContentProject = $buildData.Projects | Where-Object -Property Name -EQ 'file_dsc'
     }
 
     BeforeEach {
@@ -24,7 +24,7 @@ Describe 'Test-ProjectWithPester' {
         Should -Invoke Invoke-Pester -ModuleName helpers.build -Exactly 1 -ParameterFilter {
             $Path.Count -eq 2 -and
             $Path -contains 'dsc' -and
-            $Path -contains 'resources/filecontent'
+            $Path -contains 'resources/file_dsc'
         }
     }
 
@@ -43,7 +43,7 @@ Describe 'Test-ProjectWithPester' {
         Test-ProjectWithPester -Project @($dscProject, $fileContentProject) -Group 'resources'
 
         Should -Invoke Invoke-Pester -ModuleName helpers.build -Exactly 1 -ParameterFilter {
-            $Path.Count -eq 1 -and $Path -contains 'resources/filecontent'
+            $Path.Count -eq 1 -and $Path -contains 'resources/file_dsc'
         }
     }
 
