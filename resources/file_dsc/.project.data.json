@@ -7,10 +7,7 @@
     ],
     "CopyFiles": {
         "All": [
-            "filecontent.dsc.resource.json"
-        ],
-        "Windows": [
-            "filesystem_acl.dsc.resource.json"
+            "file_dsc.dsc.manifests.json"
         ]
     }
 }

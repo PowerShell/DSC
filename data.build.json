@@ -12,7 +12,7 @@
       "dscecho",
       "echo.dsc.resource.json",
       "file_dsc",
-      "filecontent.dsc.resource.json",
+      "file_dsc.dsc.manifests.json",
       "assertion.dsc.resource.json",
       "apt.dsc.resource.json",
       "apt.dsc.resource.sh",
@@ -44,7 +44,7 @@
       "dscecho",
       "echo.dsc.resource.json",
       "file_dsc",
-      "filecontent.dsc.resource.json",
+      "file_dsc.dsc.manifests.json",
       "assertion.dsc.resource.json",
       "brew.dsc.resource.json",
       "brew.dsc.resource.sh",
@@ -79,8 +79,7 @@
       "dscecho.exe",
       "echo.dsc.resource.json",
       "file_dsc.exe",
-      "filecontent.dsc.resource.json",
-      "filesystem_acl.dsc.resource.json",
+      "file_dsc.dsc.manifests.json",
       "environment_variable.exe",
       "environment_variable.dsc.manifests.json",
       "assertion.dsc.resource.json",
@@ -354,10 +353,7 @@
       ],
       "CopyFiles": {
         "All": [
-          "filecontent.dsc.resource.json"
-        ],
-        "Windows": [
-          "filesystem_acl.dsc.resource.json"
+          "file_dsc.dsc.manifests.json"
         ]
       }
     },
