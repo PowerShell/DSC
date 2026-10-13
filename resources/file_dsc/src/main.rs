@@ -59,6 +59,12 @@ fn handle_acl(args: &[String]) -> ExitCode {
     let Some(operation) = args.first() else {
         return fail(EXIT_INVALID_ARGS, &t!("acl.missingOperation"));
     };
+    if !matches!(operation.as_str(), "get" | "set" | "test") {
+        return fail(
+            EXIT_INVALID_ARGS,
+            &t!("acl.unknownOperation", operation = operation),
+        );
+    }
     let input = match parse_input_arg(&args[1..]) {
         Ok(input) => input,
         Err(code) => return code,
@@ -74,10 +80,7 @@ fn handle_acl(args: &[String]) -> ExitCode {
             "get" => handle_result(acl::get(&input)),
             "set" => handle_result(acl::set(&input)),
             "test" => handle_result(acl::test(&input)),
-            _ => fail(
-                EXIT_INVALID_ARGS,
-                &t!("acl.unknownOperation", operation = operation),
-            ),
+            _ => unreachable!(),
         }
     }
 

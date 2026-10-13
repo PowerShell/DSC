@@ -73,8 +73,19 @@ fn validate_input(input: &FilesystemAcl) -> Result<(), String> {
     {
         return Err(t!("acl.unsupportedSddlComponent").to_string());
     }
-    if !std::path::Path::new(&input.path).exists() {
-        return Err(t!("acl.pathNotFound", path = input.path.as_str()).to_string());
+    match std::path::Path::new(&input.path).try_exists() {
+        Ok(true) => {}
+        Ok(false) => {
+            return Err(t!("acl.pathNotFound", path = input.path.as_str()).to_string());
+        }
+        Err(error) => {
+            return Err(t!(
+                "acl.pathCheckError",
+                path = input.path.as_str(),
+                error = error.to_string()
+            )
+            .to_string());
+        }
     }
     Ok(())
 }

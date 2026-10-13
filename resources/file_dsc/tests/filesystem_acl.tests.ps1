@@ -114,4 +114,17 @@ Describe 'Microsoft.Filesystem/ACL tests' -Skip:(!$IsWindows) {
         (Get-Content -Raw $TestDrive/error.log) |
             Should -Match 'must contain only a discretionary ACL'
     }
+
+    It 'Reports path inspection errors without claiming the path is absent' {
+        $json = @{
+            path = "invalid$([char]0)path"
+            SDDL = $desiredSddl
+        } | ConvertTo-Json -Compress
+
+        $null = $json | dsc resource get -r $resourceType -f - 2>$TestDrive/error.log
+
+        $LASTEXITCODE | Should -Not -Be 0
+        (Get-Content -Raw $TestDrive/error.log) | Should -Match 'Failed to inspect the path'
+        (Get-Content -Raw $TestDrive/error.log) | Should -Not -Match 'does not exist'
+    }
 }

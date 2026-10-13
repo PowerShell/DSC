@@ -75,6 +75,13 @@ Describe 'Rust resource executable error handling' {
         (Get-Content -Raw $TestDrive/error.log) | Should -Match 'Invalid JSON input'
     }
 
+    It 'Returns an unknown operation error before parsing ACL input' {
+        $null = file_dsc acl unknown --input '{invalid' 2>$TestDrive/error.log
+
+        $LASTEXITCODE | Should -Be 1
+        (Get-Content -Raw $TestDrive/error.log) | Should -Match "Unknown ACL operation: 'unknown'"
+    }
+
     It 'Returns failure when DSC Echo input is invalid JSON' {
         $null = dscecho --input '{invalid' 2>$TestDrive/error.log
 
