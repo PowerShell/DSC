@@ -1,0 +1,13 @@
+{
+    "Name": "filecontent",
+    "Kind": "Resource",
+    "IsRust": true,
+    "Binaries": [
+        "filecontent"
+    ],
+    "CopyFiles": {
+        "All": [
+            "filecontent.dsc.resource.json"
+        ]
+    }
+}

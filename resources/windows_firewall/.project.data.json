@@ -1,0 +1,14 @@
+{
+    "Name": "windows_firewall",
+    "Kind": "Resource",
+    "IsRust": true,
+    "SupportedPlatformOS": "Windows",
+    "Binaries": [
+        "windows_firewall"
+    ],
+    "CopyFiles": {
+        "Windows": [
+            "windows_firewall.dsc.resource.json"
+        ]
+    }
+}

@@ -12,7 +12,7 @@ title:       Microsoft.Windows/RebootPending
 Checks if a Windows system has a pending reboot.
 
 > [!IMPORTANT]
-> The `Microsoft.Windows/RebootPending` resource are a proof-of-concept example
+> The `Microsoft.Windows/RebootPending` resource is a proof-of-concept example
 > for use with DSC. Don't use it in production.
 
 ## Metadata

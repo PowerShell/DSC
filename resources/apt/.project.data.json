@@ -1,0 +1,11 @@
+{
+    "Name": "resources/apt",
+    "Kind": "Resource",
+    "SupportedPlatformOS": "Linux",
+    "CopyFiles": {
+        "Linux": [
+            "apt.dsc.resource.sh",
+            "apt.dsc.resource.json"
+        ]
+    }
+}

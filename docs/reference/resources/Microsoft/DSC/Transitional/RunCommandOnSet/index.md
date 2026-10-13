@@ -175,6 +175,6 @@ The following snippet contains the JSON Schema that validates an instance of the
 - [Microsoft.DSC.PowerShell](../../PowerShell/index.md)
 - [Microsoft.Windows.WindowsPowerShell](../../../../Microsoft/Windows/WindowsPowerShell/index.md)
 
-[00]: ../../../../concepts/dsc/resource-capabilities.md
+[00]: ../../../../../../concepts/resources/capabilities.md
 [01]: ./examples/run-a-simple-command.md
 [02]: ./examples/run-powershell-command.md

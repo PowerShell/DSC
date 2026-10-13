@@ -29,7 +29,7 @@ DSC supports several kinds of resources:
   resource instances and processes them. Group resources can apply special handling to their nested
   resource instances, like changing the user the resources run as.
 - An _adapter resource_ is a group resource that enables the use of noncommand resources with DSC.
-  For example, the `Microsoft.DSC/PowerShell` and `Microsoft.Windows/WindowsPowerShell` adapter
+  For example, the `Microsoft.Adapter/PowerShell` and `Microsoft.Adapter/WindowsPowerShell` adapter
   resources enable the use of PowerShell DSC (PSDSC) resources in DSC, invoking the resources in
   PowerShell and Windows PowerShell respectively.
 
@@ -138,7 +138,7 @@ Every resource implements the **Get** operation, which retrieves the actual stat
 instance. Use the `dsc resource get` command to invoke the operation.
 
 For example, you can use the `Microsoft.Windows/Registry` resource to get the actual state for a
-registry key value:
+registry key-value:
 
 ```powershell
 dsc resource get --resource Microsoft.Windows/Registry --input '{
@@ -264,6 +264,12 @@ Use the `dsc resource export` command to invoke the operation. When you invoke t
 operation, DSC returns an array of resources instance definitions you can copy into a configuration
 document.
 
+You can specify an input instance for the **Export** operation to filter the exported instances. If
+a resource doesn't implement **Export**, you can still invoke the `dsc resource export` command.
+When you invoke the **Export** operation for a resource that doesn't implement **Export**, DSC
+provides a _synthetic export_. When using DSC's synthetic export feature, you must provide a
+filtering instance of the resource. For more information, see [Synthetic export][04].
+
 ## Declaring resource instances
 
 DSC configuration documents enable managing more than one resource or resource instance at a time.
@@ -298,14 +304,15 @@ resources:
 
 ## See also
 
-- [Anatomy of a DSC command resource][04] to learn about authoring resources in your language
+- [Anatomy of a DSC command resource][05] to learn about authoring resources in your language
   of choice.
-- [DSC configuration documents][05] to learn about using resources in a configuration document.
-- [Command line reference for the 'dsc resource' command][06]
+- [DSC configuration documents][06] to learn about using resources in a configuration document.
+- [Command line reference for the 'dsc resource' command][07]
 
 [01]: ../../reference/schemas/definitions/resourceType.md
 [02]: ../../reference/schemas/resource/properties/overview.md
 [03]: ../../reference/cli/resource/list.md
-[04]: ./anatomy.md
-[05]: ../configuration-documents/overview.md
-[06]: ../../reference/cli/resource/index.md
+[04]: capabilities.md#synthetic-export
+[05]: ./anatomy.md
+[06]: ../configuration-documents/overview.md
+[07]: ../../reference/cli/resource/index.md

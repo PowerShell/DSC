@@ -1,0 +1,6 @@
+{
+    "Name": "dsc-lib-pal",
+    "Kind": "Library",
+    "IsRust": true,
+    "SupportedPlatformOS": "Windows"
+}

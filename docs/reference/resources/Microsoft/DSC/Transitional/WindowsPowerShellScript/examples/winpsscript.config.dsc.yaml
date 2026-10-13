@@ -1,0 +1,105 @@
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json
+
+parameters:
+  motd:
+    type: string
+    defaultValue: "Hello, friend!"
+    minLength: 1
+    maxLength: 100
+
+resources:
+- type: Microsoft.DSC.Transitional/WindowsPowerShellScript
+  name: Report processor info
+  properties:
+    getScript: |-
+      $count = [System.Environment]::ProcessorCount
+      $arch  = [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture
+
+      [ordered]@{
+          processorCount        = $count
+          processorArchitecture = $arch.ToString()
+      }
+    setScript: |-
+      $count = [System.Environment]::ProcessorCount
+      $arch  = [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture
+
+      [ordered]@{
+          processorCount        = $count
+          processorArchitecture = $arch.ToString()
+      }
+- type: Microsoft.DSC.Transitional/WindowsPowerShellScript
+  name: Message of the Day
+  properties:
+    input: "[parameters('motd')]"
+    getScript: |
+      param($motd)
+      
+      $filePath = 'Temp:/example.motd'
+      
+      Write-Verbose "Checking for MOTD file at '$filePath'"
+      $result = [ordered]@{
+          filePath = $filePath
+          exists   = Test-Path -Path $filePath
+      }
+
+      if ($result.exists) {
+          Write-Verbose "MOTD file found at '$filePath', retrieving content and last updated time"
+          $result.motd        = (Get-Content -Path $filePath -Raw).TrimEnd("`r", "`n")
+          $result.lastUpdated = (Get-Item -Path $filePath).LastWriteTime
+      } else {
+          Write-Verbose "MOTD file not found at '$filePath'"
+      }
+
+      $result
+    setScript: |-
+      param($motd)
+
+      $filePath = 'Temp:/example.motd'
+      $result = [ordered]@{
+          filePath = $filePath
+          exists   = $true
+          motd     = $motd
+      }
+      
+      if (-not (Test-Path -Path $filePath)) {
+          Write-Verbose "MOTD file not found at '$filePath', creating new file"
+          New-Item -Path $filePath -ItemType File -Force | Out-Null
+          Write-Verbose "MOTD file created at '$filePath', setting content"
+          $motd | Set-Content -Path $filePath -Force
+      } else {
+          Write-Verbose "MOTD file found at '$filePath', checking content"
+          $currentMotd = (Get-Content -Path $filePath -Raw).TrimEnd("`r", "`n")
+          if ($currentMotd -ne $motd) {
+              Write-Verbose "MOTD content differs from desired value, updating file"
+              $motd | Set-Content -Path $filePath -Force
+          } else {
+              Write-Verbose "MOTD content matches desired value, no update needed"
+          }
+      }
+
+      $result.lastUpdated = (Get-Item -Path $filePath).LastWriteTime
+
+      $result
+    testScript: |-
+      param($motd)
+    
+        $filePath = 'Temp:/example.motd'
+    
+        Write-Verbose "Checking for MOTD file at '$filePath'"
+        if (-not (Test-Path -Path $filePath)) {
+            Write-Verbose "MOTD file not found at '$filePath'"
+            return $false
+        }
+
+        Write-Verbose "MOTD file found at '$filePath', retrieving content"
+        $currentMotd = Get-Content -Path $filePath -Raw
+        if ([string]::IsNullOrEmpty($currentMotd)) {
+            Write-Verbose "MOTD file at '$filePath' is empty"
+            return $false
+        } elseif ($currentMotd -ne $motd) {
+            Write-Verbose "Expected MOTD content '$motd' does not match actual content '$currentMotd'"
+            return $false
+        }
+            
+        Write-Verbose "MOTD content is the expected value '$motd'"
+        $true

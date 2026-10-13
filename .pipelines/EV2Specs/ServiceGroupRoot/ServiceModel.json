@@ -1,0 +1,51 @@
+{
+  "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/serviceModel.json",
+  "contentVersion": "1.0.0.0",
+  "serviceMetadata": {
+    "serviceGroup": "OneBranch-DSC-PMC",
+    "environment": "Test"
+  },
+  "serviceResourceGroupDefinitions": [
+    {
+      "name": "OneBranch-DSC-PMC-RGDef",
+      "serviceResourceDefinitions": [
+        {
+          "name": "OneBranch-DSC-PMC.Shell-SRDef",
+          "composedOf": {
+            "extension": {
+              "shell": [
+                {
+                  "type": "Run",
+                  "properties": {
+                    "imageName": "adm-azurelinux-30-l",
+                    "imageVersion": "v2"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "serviceResourceGroups": [
+    {
+      "azureResourceGroupName": "default",
+      "location": "West US 3",
+      "instanceOf": "OneBranch-DSC-PMC-RGDef",
+      "azureSubscriptionId": "default",
+      "scopeTags": [
+        {
+          "name": "Global"
+        }
+      ],
+      "serviceResources": [
+        {
+          "Name": "LinuxPackageUpload",
+          "InstanceOf": "OneBranch-DSC-PMC.Shell-SRDef",
+          "RolloutParametersPath": "UploadLinux.Rollout.json"
+        }
+      ]
+    }
+  ]
+}

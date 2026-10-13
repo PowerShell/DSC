@@ -1,0 +1,16 @@
+{
+    "Name": "dsctest",
+    "Kind": "Resource",
+    "IsRust": true,
+    "TestOnly": true,
+    "Binaries": [
+        "dsctest"
+    ],
+    "CopyFiles": {
+        "All": [
+            "adaptedTest.dsc.adaptedResource.json",
+            "dsctest.dsc.manifests.json",
+            "deprecated/deprecated.dsc.manifests.json"
+        ]
+    }
+}

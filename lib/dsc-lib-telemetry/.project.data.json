@@ -1,0 +1,5 @@
+{
+    "Name": "dsc-lib-telemetry",
+    "Kind": "Library",
+    "IsRust": true
+}

@@ -459,6 +459,8 @@ properties:
         characters are permitted.
   discover:
     $ref: /<PREFIX>/<VERSION>/extension/manifest.discover.yaml
+  secret:
+    $ref: /<PREFIX>/<VERSION>/extension/manifest.secret.yaml
   exitCodes:
     # This setting in the root of the schema implies exit codes must have the
     # same meaning across all executions. What about implementations that

@@ -145,14 +145,14 @@ adds the returned list of adapted resources to the discovered resource list. DSC
 further filters specified with the command after this enumeration.
 
 ```sh
-dsc resource list --adapter Microsoft.Windows/WindowsPowerShell
+dsc resource list --adapter Microsoft.Adapter/WindowsPowerShell
 ```
 
 This next command specifies the resource name filter `*Windows*`, limiting the list of returned
 resources:
 
 ```sh
-dsc resource list --adapter Microsoft.Windows/WindowsPowerShell *Windows*
+dsc resource list --adapter Microsoft.Adapter/WindowsPowerShell *Windows*
 ```
 
 ## Arguments

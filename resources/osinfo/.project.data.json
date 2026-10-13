@@ -1,0 +1,14 @@
+{
+    "Name": "osinfo",
+    "Kind": "Resource",
+    "IsRust": true,
+    "RustPackageName": "dsc-resource-osinfo",
+    "Binaries": [
+        "osinfo"
+    ],
+    "CopyFiles": {
+        "All": [
+            "osinfo.dsc.resource.json"
+        ]
+    }
+}

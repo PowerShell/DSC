@@ -25,7 +25,7 @@ get_apt() {
             echo $line | awk '{
                 split($0, a, " ");
 		split(a[1], pn, "/");
-                printf("{ \"_exist\": \"%s\", \"packageName\": \"%s\", \"version\": \"%s\", \"source\": \"%s\" }\n", ENVIRON["exist"], pn[1], a[2], pn[2]);
+                printf("{ \"_exist\": %s, \"packageName\": \"%s\", \"version\": \"%s\", \"source\": \"%s\" }\n", ENVIRON["exist"], pn[1], a[2], pn[2]);
             }'
         fi
     done

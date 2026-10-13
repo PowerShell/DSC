@@ -1,0 +1,9 @@
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+
+resources:
+- name: Filter Windows Updates
+  type: Microsoft.Windows/UpdateList
+  properties:
+    updates:
+    - title: '*Security Update*'
+      isInstalled: true

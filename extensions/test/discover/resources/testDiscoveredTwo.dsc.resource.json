@@ -21,7 +21,7 @@
             "description": "Second discovered resource",
             "type": "object",
             "required": [],
-            "additionalProperties": false
+            "additionalProperties": true
         }
     },
     "exitCodes": {

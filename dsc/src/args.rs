@@ -4,8 +4,11 @@
 use clap::{Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
 use dsc_lib::dscresources::command_resource::TraceLevel;
+use dsc_lib::functions::FunctionCategory;
 use dsc_lib::progress::ProgressFormat;
+use dsc_lib::types::{FullyQualifiedTypeName, ResourceVersionReq, TypeNameFilter};
 use rust_i18n::t;
+use schemars::JsonSchema;
 use serde::Deserialize;
 
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
@@ -53,6 +56,8 @@ pub struct Args {
     pub trace_format: Option<TraceFormat>,
     #[clap(short = 'p', long, help = t!("args.progressFormat").to_string(), value_enum)]
     pub progress_format: Option<ProgressFormat>,
+    #[clap(long, help = t!("args.ignoreSettingsFile").to_string())]
+    pub ignore_settings_file: bool,
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
@@ -66,9 +71,9 @@ pub enum SubCommand {
     Config {
         #[clap(subcommand)]
         subcommand: ConfigSubCommand,
-        #[clap(short, long, help = t!("args.parameters").to_string(), conflicts_with = "parameters_file")]
+        #[clap(short, long, help = t!("args.parameters").to_string())]
         parameters: Option<String>,
-        #[clap(short = 'f', long, help = t!("args.parametersFile").to_string(), conflicts_with = "parameters")]
+        #[clap(short = 'f', long, help = t!("args.parametersFile").to_string())]
         parameters_file: Option<String>,
         #[clap(short = 'r', long, help = t!("args.systemRoot").to_string())]
         system_root: Option<String>,
@@ -91,8 +96,8 @@ pub enum SubCommand {
         #[clap(subcommand)]
         subcommand: FunctionSubCommand,
     },
-    #[clap(name = "mcp", about = t!("args.mcpAbout").to_string())]
-    Mcp,
+    #[clap(name = "server", alias = "mcp", about = t!("args.serverAbout").to_string())]
+    Server,
     #[clap(name = "resource", about = t!("args.resourceAbout").to_string())]
     Resource {
         #[clap(subcommand)]
@@ -178,7 +183,8 @@ pub enum ExtensionSubCommand {
     #[clap(name = "list", about = t!("args.listExtensionAbout").to_string())]
     List {
         /// Optional extension name to filter the list
-        extension_name: Option<String>,
+        #[clap(default_value_t)]
+        extension_name: TypeNameFilter,
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
         output_format: Option<ListOutputFormat>,
     },
@@ -190,6 +196,10 @@ pub enum FunctionSubCommand {
     List {
         /// Optional function name to filter the list
         function_name: Option<String>,
+        #[clap(short = 'c', long = "category", help = t!("args.functionCategory").to_string())]
+        category: Vec<FunctionCategory>,
+        #[clap(short, long, help = t!("args.functionDescription").to_string())]
+        description: Option<String>,
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
         output_format: Option<ListOutputFormat>,
     },
@@ -200,10 +210,11 @@ pub enum ResourceSubCommand {
     #[clap(name = "list", about = t!("args.listAbout").to_string())]
     List {
         /// Optional resource name to filter the list
-        resource_name: Option<String>,
+        #[clap(default_value_t)]
+        resource_name: TypeNameFilter,
         /// Optional adapter filter to apply to the list of resources
         #[clap(short = 'a', long = "adapter", help = t!("args.adapter").to_string())]
-        adapter_name: Option<String>,
+        adapter_name: Option<TypeNameFilter>,
         #[clap(short, long, help = t!("args.description").to_string())]
         description: Option<String>,
         #[clap(short, long, help = t!("args.tags").to_string())]
@@ -216,9 +227,9 @@ pub enum ResourceSubCommand {
         #[clap(short, long, help = t!("args.getAll").to_string())]
         all: bool,
         #[clap(short, long, help = t!("args.resource").to_string())]
-        resource: String,
-        #[clap(short, long, help = t!("args.version").to_string())]
-        version: Option<String>,
+        resource: FullyQualifiedTypeName,
+        #[clap(short = 'v', long, alias = "version", help = t!("args.version").to_string())]
+        required_version: Option<ResourceVersionReq>,
         #[clap(short, long, help = t!("args.input").to_string(), conflicts_with = "file")]
         input: Option<String>,
         #[clap(short = 'f', long, help = t!("args.file").to_string(), conflicts_with = "input")]
@@ -229,22 +240,24 @@ pub enum ResourceSubCommand {
     #[clap(name = "set", about = "Invoke the set operation to a resource", arg_required_else_help = true)]
     Set {
         #[clap(short, long, help = t!("args.resource").to_string())]
-        resource: String,
-        #[clap(short, long, help = t!("args.version").to_string())]
-        version: Option<String>,
+        resource: FullyQualifiedTypeName,
+        #[clap(short = 'v', long, alias = "version", help = t!("args.version").to_string())]
+        required_version: Option<ResourceVersionReq>,
         #[clap(short, long, help = t!("args.input").to_string(), conflicts_with = "file")]
         input: Option<String>,
         #[clap(short = 'f', long, help = t!("args.file").to_string(), conflicts_with = "input")]
         file: Option<String>,
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
         output_format: Option<OutputFormat>,
+        #[clap(short = 'w', long, visible_aliases = ["dry-run", "noop"], help = t!("args.whatIf").to_string())]
+        what_if: bool,
     },
     #[clap(name = "test", about = "Invoke the test operation to a resource", arg_required_else_help = true)]
     Test {
         #[clap(short, long, help = t!("args.resource").to_string())]
-        resource: String,
-        #[clap(short, long, help = t!("args.version").to_string())]
-        version: Option<String>,
+        resource: FullyQualifiedTypeName,
+        #[clap(short = 'v', long, alias = "version", help = t!("args.version").to_string())]
+        required_version: Option<ResourceVersionReq>,
         #[clap(short, long, help = t!("args.input").to_string(), conflicts_with = "file")]
         input: Option<String>,
         #[clap(short = 'f', long, help = t!("args.file").to_string(), conflicts_with = "input")]
@@ -255,29 +268,33 @@ pub enum ResourceSubCommand {
     #[clap(name = "delete", about = "Invoke the delete operation to a resource", arg_required_else_help = true)]
     Delete {
         #[clap(short, long, help = t!("args.resource").to_string())]
-        resource: String,
-        #[clap(short, long, help = t!("args.version").to_string())]
-        version: Option<String>,
+        resource: FullyQualifiedTypeName,
+        #[clap(short = 'v', long, alias = "version", help = t!("args.version").to_string())]
+        required_version: Option<ResourceVersionReq>,
         #[clap(short, long, help = t!("args.input").to_string(), conflicts_with = "file")]
         input: Option<String>,
         #[clap(short = 'f', long, help = t!("args.file").to_string(), conflicts_with = "input")]
         file: Option<String>,
+        #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
+        output_format: Option<OutputFormat>,
+        #[clap(short = 'w', long, visible_aliases = ["dry-run", "noop"], help = t!("args.whatIf").to_string())]
+        what_if: bool,
     },
     #[clap(name = "schema", about = "Get the JSON schema for a resource", arg_required_else_help = true)]
     Schema {
         #[clap(short, long, help = t!("args.resource").to_string())]
-        resource: String,
-        #[clap(short, long, help = t!("args.version").to_string())]
-        version: Option<String>,
+        resource: FullyQualifiedTypeName,
+        #[clap(short = 'v', long, alias = "version", help = t!("args.version").to_string())]
+        required_version: Option<ResourceVersionReq>,
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
         output_format: Option<OutputFormat>,
     },
     #[clap(name = "export", about = "Retrieve all resource instances", arg_required_else_help = true)]
     Export {
         #[clap(short, long, help = t!("args.resource").to_string())]
-        resource: String,
-        #[clap(short, long, help = t!("args.version").to_string())]
-        version: Option<String>,
+        resource: FullyQualifiedTypeName,
+        #[clap(short = 'v', long, alias = "version", help = t!("args.version").to_string())]
+        required_version: Option<ResourceVersionReq>,
         #[clap(short, long, help = t!("args.input").to_string(), conflicts_with = "file")]
         input: Option<String>,
         #[clap(short = 'f', long, help = t!("args.file").to_string(), conflicts_with = "input")]
@@ -287,22 +304,28 @@ pub enum ResourceSubCommand {
     },
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+#[derive(Debug, Deserialize, Clone, Copy, JsonSchema, PartialEq, Eq, ValueEnum)]
 pub enum SchemaType {
-    GetResult,
-    SetResult,
-    TestResult,
-    ResolveResult,
-    DscResource,
-    Resource,
-    ResourceManifest,
-    Include,
+    AdaptedDscResourceManifest,
     Configuration,
+    ConfigurationExportResult,
     ConfigurationGetResult,
     ConfigurationSetResult,
     ConfigurationTestResult,
-    ExtensionManifest,
+    DscResource,
     ExtensionDiscoverResult,
+    ExtensionManifest,
     FunctionDefinition,
-    RestartRequired
+    GetResult,
+    Include,
+    ManifestList,
+    ResolveResult,
+    Resource,
+    ResourceGetResult,
+    ResourceSetResult,
+    ResourceTestResult,
+    ResourceManifest,
+    RestartRequired,
+    SetResult,
+    TestResult,
 }

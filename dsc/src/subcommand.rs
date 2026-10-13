@@ -6,7 +6,7 @@ use crate::resolve::{get_contents, Include};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
 use crate::util::{get_input, get_schema, in_desired_state, set_dscconfigroot, write_object, DSC_CONFIG_ROOT, EXIT_DSC_ASSERTION_FAILED, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR};
-use dsc_lib::functions::FunctionArgKind;
+use dsc_lib::types::{FullyQualifiedTypeName, ResourceVersionReq, TypeNameFilter};
 use dsc_lib::{
     configure::{
         config_doc::{
@@ -27,25 +27,22 @@ use dsc_lib::{
         ValidateResult,
     },
     dscresources::dscresource::{Capability, ImplementedAs, validate_json, validate_properties},
-    dscresources::resource_manifest::import_manifest,
     extensions::dscextension::Capability as ExtensionCapability,
-    functions::FunctionDispatcher,
+    functions::{FunctionCategory, FunctionDispatcher},
     progress::ProgressFormat,
     util::convert_wildcard_to_regex,
 };
 use regex::RegexBuilder;
 use rust_i18n::t;
-use core::convert::AsRef;
+use std::process::ExitCode;
 use std::{
     collections::HashMap,
     io::{self, IsTerminal},
-    path::Path,
-    process::exit
+    path::Path
 };
 use tracing::{debug, error, trace};
 
-pub fn config_get(configurator: &mut Configurator, format: Option<&OutputFormat>, as_group: &bool)
-{
+pub fn config_get(configurator: &mut Configurator, format: Option<&OutputFormat>, as_group: &bool) -> Result<(), ExitCode> {
     match configurator.invoke_get() {
         Ok(result) => {
             if *as_group {
@@ -53,34 +50,34 @@ pub fn config_get(configurator: &mut Configurator, format: Option<&OutputFormat>
                     Ok(json) => json,
                     Err(err) => {
                         error!("JSON Error: {err}");
-                        exit(EXIT_JSON_ERROR);
+                        return Err(ExitCode::from(EXIT_JSON_ERROR));
                     }
                 };
-                write_object(&json, format, false);
+                write_object(&json, format, false)?;
             }
             else {
                 let json = match serde_json::to_string(&result) {
                     Ok(json) => json,
                     Err(err) => {
                         error!("JSON Error: {err}");
-                        exit(EXIT_JSON_ERROR);
+                        return Err(ExitCode::from(EXIT_JSON_ERROR));
                     }
                 };
-                write_object(&json, format, false);
+                write_object(&json, format, false)?;
                 if result.had_errors {
-                    exit(EXIT_DSC_ERROR);
+                    return Err(ExitCode::from(EXIT_DSC_ERROR));
                 }
             }
         },
         Err(err) => {
             error!("{err}");
-            exit(EXIT_DSC_ERROR);
+            return Err(ExitCode::from(EXIT_DSC_ERROR));
         }
     }
+    Ok(())
 }
 
-pub fn config_set(configurator: &mut Configurator, format: Option<&OutputFormat>, as_group: &bool)
-{
+pub fn config_set(configurator: &mut Configurator, format: Option<&OutputFormat>, as_group: &bool) -> Result<(), ExitCode> {
     match configurator.invoke_set(false) {
         Ok(result) => {
             if *as_group {
@@ -88,34 +85,34 @@ pub fn config_set(configurator: &mut Configurator, format: Option<&OutputFormat>
                     Ok(json) => json,
                     Err(err) => {
                         error!("JSON Error: {err}");
-                        exit(EXIT_JSON_ERROR);
+                        return Err(ExitCode::from(EXIT_JSON_ERROR));
                     }
                 };
-                write_object(&json, format, false);
+                write_object(&json, format, false)?;
             }
             else {
                 let json = match serde_json::to_string(&result) {
                     Ok(json) => json,
                     Err(err) => {
                         error!("JSON Error: {err}");
-                        exit(EXIT_JSON_ERROR);
+                        return Err(ExitCode::from(EXIT_JSON_ERROR));
                     }
                 };
-                write_object(&json, format, false);
+                write_object(&json, format, false)?;
                 if result.had_errors {
-                    exit(EXIT_DSC_ERROR);
+                    return Err(ExitCode::from(EXIT_DSC_ERROR));
                 }
             }
         },
         Err(err) => {
             error!("Error: {err}");
-            exit(EXIT_DSC_ERROR);
+            return Err(ExitCode::from(EXIT_DSC_ERROR));
         }
     }
+    Ok(())
 }
 
-pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat>, as_group: &bool, as_get: &bool, as_config: &bool, as_assert: &bool)
-{
+pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat>, as_group: &bool, as_get: &bool, as_config: &bool, as_assert: &bool) -> Result<(), ExitCode> {
     match configurator.invoke_test() {
         Ok(result) => {
             if *as_group {
@@ -125,7 +122,7 @@ pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat
                     for test_result in result.results {
                         if *as_assert && !in_desired_state(&test_result) {
                             error!("{}", t!("subcommand.assertionFailed", resource_type = test_result.resource_type));
-                            exit(EXIT_DSC_ASSERTION_FAILED);
+                            return Err(ExitCode::from(EXIT_DSC_ASSERTION_FAILED));
                         }
                         let properties = match test_result.result {
                             TestResult::Resource(test_response) => {
@@ -154,7 +151,7 @@ pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat
                         Ok(json) => json,
                         Err(err) => {
                             error!("JSON: {err}");
-                            exit(EXIT_JSON_ERROR);
+                            return Err(ExitCode::from(EXIT_JSON_ERROR));
                         }
                     }
                 }
@@ -163,7 +160,7 @@ pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat
                     for test_result in result.results {
                         if *as_assert && !in_desired_state(&test_result) {
                             error!("{}", t!("subcommand.assertionFailed", resource_type = test_result.resource_type));
-                            exit(EXIT_DSC_ASSERTION_FAILED);
+                            return Err(ExitCode::from(EXIT_DSC_ASSERTION_FAILED));
                         }
                         group_result.push(test_result.into());
                     }
@@ -171,7 +168,7 @@ pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat
                         Ok(json) => json,
                         Err(err) => {
                             error!("JSON: {err}");
-                            exit(EXIT_JSON_ERROR);
+                            return Err(ExitCode::from(EXIT_JSON_ERROR));
                         }
                     }
                 }
@@ -180,7 +177,7 @@ pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat
                         for test_result in &result.results {
                             if !in_desired_state(test_result) {
                                 error!("{}", t!("subcommand.assertionFailed", resource_type = test_result.resource_type));
-                                exit(EXIT_DSC_ASSERTION_FAILED);
+                                return Err(ExitCode::from(EXIT_DSC_ASSERTION_FAILED));
                             }
                         }
                     }
@@ -188,45 +185,45 @@ pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat
                         Ok(json) => json,
                         Err(err) => {
                             error!("JSON: {err}");
-                            exit(EXIT_JSON_ERROR);
+                            return Err(ExitCode::from(EXIT_JSON_ERROR));
                         }
                     }
                 };
-                write_object(&json, format, false);
+                write_object(&json, format, false)?;
             }
             else {
                 let json = match serde_json::to_string(&result) {
                     Ok(json) => json,
                     Err(err) => {
                         error!("JSON: {err}");
-                        exit(EXIT_JSON_ERROR);
+                        return Err(ExitCode::from(EXIT_JSON_ERROR));
                     }
                 };
-                write_object(&json, format, false);
+                write_object(&json, format, false)?;
                 if result.had_errors {
-                    exit(EXIT_DSC_ERROR);
+                    return Err(ExitCode::from(EXIT_DSC_ERROR));
                 }
             }
         },
         Err(err) => {
             error!("{err}");
-            exit(EXIT_DSC_ERROR);
+            return Err(ExitCode::from(EXIT_DSC_ERROR));
         }
     }
+    Ok(())
 }
 
-pub fn config_export(configurator: &mut Configurator, format: Option<&OutputFormat>)
-{
+pub fn config_export(configurator: &mut Configurator, format: Option<&OutputFormat>) -> Result<(), ExitCode> {
     match configurator.invoke_export() {
         Ok(result) => {
             let json = match serde_json::to_string(&result.result) {
                 Ok(json) => json,
                 Err(err) => {
                     error!("JSON: {err}");
-                    exit(EXIT_JSON_ERROR);
+                    return Err(ExitCode::from(EXIT_JSON_ERROR));
                 }
             };
-            write_object(&json, format, false);
+            write_object(&json, format, false)?;
             if result.had_errors {
 
                 for msg in result.messages
@@ -234,22 +231,23 @@ pub fn config_export(configurator: &mut Configurator, format: Option<&OutputForm
                     error!("{:?} {} {}", msg.level, t!("subcommand.message"), msg.message);
                 };
 
-                exit(EXIT_DSC_ERROR);
+                return Err(ExitCode::from(EXIT_DSC_ERROR));
             }
         },
         Err(err) => {
             error!("{err}");
-            exit(EXIT_DSC_ERROR);
+            return Err(ExitCode::from(EXIT_DSC_ERROR));
         }
     }
+    Ok(())
 }
 
-fn initialize_config_root(path: Option<&String>) -> Option<String> {
+fn initialize_config_root(path: Option<&String>) -> Result<Option<String>, ExitCode> {
     // code that calls this pass in either None, Some("-"), or Some(path)
     // in the case of `-` we treat it as None, but need to pass it back as subsequent processing needs to handle it
     let use_stdin = if let Some(specified_path) = path {
         if specified_path != "-" {
-            return Some(set_dscconfigroot(specified_path));
+            return Ok(Some(set_dscconfigroot(specified_path)?));
         }
 
         true
@@ -263,34 +261,34 @@ fn initialize_config_root(path: Option<&String>) -> Option<String> {
     } else {
         let current_directory = std::env::current_dir().unwrap_or_default();
         debug!("DSC_CONFIG_ROOT = {} '{current_directory:?}'", t!("subcommand.currentDirectory"));
-        set_dscconfigroot(&current_directory.to_string_lossy());
+        set_dscconfigroot(current_directory.to_str().unwrap_or_default())?;
     }
 
     // if the path is "-", we need to return it so later processing can handle it correctly
     if use_stdin {
-        return Some("-".to_string());
+        return Ok(Some("-".to_string()));
     }
 
-    None
+    Ok(None)
 }
 
 #[allow(clippy::too_many_lines)]
 #[allow(clippy::too_many_arguments)]
-pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parameters_from_stdin: bool, mounted_path: Option<&String>, as_group: &bool, as_assert: &bool, as_include: &bool, progress_format: ProgressFormat) {
+pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounted_path: Option<&String>, as_group: &bool, as_assert: &bool, as_include: &bool, progress_format: ProgressFormat) -> Result<(), ExitCode> {
     let (new_parameters, json_string) = match subcommand {
         ConfigSubCommand::Get { input, file, .. } |
         ConfigSubCommand::Set { input, file, .. } |
         ConfigSubCommand::Test { input, file, .. } |
         ConfigSubCommand::Validate { input, file, .. } |
         ConfigSubCommand::Export { input, file, .. } => {
-            let new_path = initialize_config_root(file.as_ref());
-            let document = get_input(input.as_ref(), new_path.as_ref(), parameters_from_stdin);
+            let new_path = initialize_config_root(file.as_ref())?;
+            let document = get_input(input.as_ref(), new_path.as_ref())?;
             if *as_include {
                 let (new_parameters, config_json) = match get_contents(&document) {
                     Ok((parameters, config_json)) => (parameters, config_json),
                     Err(err) => {
                         error!("{err}");
-                        exit(EXIT_DSC_ERROR);
+                        return Err(ExitCode::from(EXIT_DSC_ERROR));
                     }
                 };
                 (new_parameters, config_json)
@@ -299,13 +297,13 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parame
             }
         },
         ConfigSubCommand::Resolve { input, file, .. } => {
-            let new_path = initialize_config_root(file.as_ref());
-            let document = get_input(input.as_ref(), new_path.as_ref(), parameters_from_stdin);
+            let new_path = initialize_config_root(file.as_ref())?;
+            let document = get_input(input.as_ref(), new_path.as_ref())?;
             let (new_parameters, config_json) = match get_contents(&document) {
                 Ok((parameters, config_json)) => (parameters, config_json),
                 Err(err) => {
                     error!("{err}");
-                    exit(EXIT_DSC_ERROR);
+                    return Err(ExitCode::from(EXIT_DSC_ERROR));
                 }
             };
             (new_parameters, config_json)
@@ -316,16 +314,14 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parame
         Ok(configurator) => configurator,
         Err(err) => {
             error!("Error: {err}");
-            exit(EXIT_DSC_ERROR);
+            return Err(ExitCode::from(EXIT_DSC_ERROR));
         }
     };
 
     configurator.context.dsc_version = Some(env!("CARGO_PKG_VERSION").to_string());
 
-    if let ConfigSubCommand::Set { what_if , .. } = subcommand {
-        if *what_if {
-            configurator.context.execution_type = ExecutionKind::WhatIf;
-        }
+    if let ConfigSubCommand::Set { what_if , .. } = subcommand && *what_if {
+        configurator.context.execution_type = ExecutionKind::WhatIf;
     }
 
     let parameters: Option<serde_json::Value> = match if new_parameters.is_some() {
@@ -348,13 +344,13 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parame
                                 Ok(json) => Some(json),
                                 Err(err) => {
                                     error!("{}: {err}", t!("subcommand.failedConvertJson"));
-                                    exit(EXIT_DSC_ERROR);
+                                    return Err(ExitCode::from(EXIT_DSC_ERROR));
                                 }
                             }
                         },
                         Err(err) => {
                             error!("{}: {err}", t!("subcommand.invalidParameters"));
-                            exit(EXIT_INVALID_INPUT);
+                            return Err(ExitCode::from(EXIT_INVALID_INPUT));
                         }
                     }
                 }
@@ -365,7 +361,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parame
     if let Some(path) = mounted_path {
         if !Path::new(&path).exists() {
             error!("{}: '{path}'", t!("subcommand.invalidPath"));
-            exit(EXIT_INVALID_ARGS);
+            return Err(ExitCode::from(EXIT_INVALID_ARGS));
         }
 
         // make sure path has a trailing separator if it's a drive letter
@@ -378,18 +374,18 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parame
 
     if let Err(err) = configurator.set_context(parameters.as_ref()) {
         error!("{}: {err}", t!("subcommand.failedSetParameters"));
-        exit(EXIT_INVALID_INPUT);
+        return Err(ExitCode::from(EXIT_INVALID_INPUT));
     }
 
     match subcommand {
         ConfigSubCommand::Get { output_format, .. } => {
-            config_get(&mut configurator, output_format.as_ref(), as_group);
+            config_get(&mut configurator, output_format.as_ref(), as_group)?;
         },
         ConfigSubCommand::Set { output_format, .. } => {
-            config_set(&mut configurator, output_format.as_ref(), as_group);
+            config_set(&mut configurator, output_format.as_ref(), as_group)?;
         },
         ConfigSubCommand::Test { output_format, as_get, as_config, .. } => {
-            config_test(&mut configurator, output_format.as_ref(), as_group, as_get, as_config, as_assert);
+            config_test(&mut configurator, output_format.as_ref(), as_group, as_get, as_config, as_assert)?;
         },
         ConfigSubCommand::Validate { input, file, output_format} => {
             let mut result = ValidateResult {
@@ -397,8 +393,8 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parame
                 reason: None,
             };
             if *as_include {
-                let new_path = initialize_config_root(file.as_ref());
-                let input = get_input(input.as_ref(), new_path.as_ref(), parameters_from_stdin);
+                let new_path = initialize_config_root(file.as_ref())?;
+                let input = get_input(input.as_ref(), new_path.as_ref())?;
                 match serde_json::from_str::<Include>(&input) {
                     Ok(_) => {
                         // valid, so do nothing
@@ -422,20 +418,20 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parame
 
             let Ok(json) = serde_json::to_string(&result) else {
                 error!("{}", t!("subcommand.failedSerialize"));
-                exit(EXIT_JSON_ERROR);
+                return Err(ExitCode::from(EXIT_JSON_ERROR));
             };
 
-            write_object(&json, output_format.as_ref(), false);
+            write_object(&json, output_format.as_ref(), false)?;
         },
         ConfigSubCommand::Export { output_format, .. } => {
-            config_export(&mut configurator, output_format.as_ref());
+            config_export(&mut configurator, output_format.as_ref())?;
         },
         ConfigSubCommand::Resolve { output_format, .. } => {
             let configuration = match serde_json::from_str(&json_string) {
                 Ok(json) => json,
                 Err(err) => {
                     error!("{}: {err}", t!("subcommand.invalidConfiguration"));
-                    exit(EXIT_DSC_ERROR);
+                    return Err(ExitCode::from(EXIT_DSC_ERROR));
                 }
             };
             // get the parameters out of the configurator
@@ -456,12 +452,13 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parame
                 Ok(json) => json,
                 Err(err) => {
                     error!("{}: {err}", t!("subcommand.failedSerializeResolve"));
-                    exit(EXIT_JSON_ERROR);
+                    return Err(ExitCode::from(EXIT_JSON_ERROR));
                 }
             };
-            write_object(&json_string, output_format.as_ref(), false);
+            write_object(&json_string, output_format.as_ref(), false)?;
         },
     }
+    Ok(())
 }
 
 /// Validate configuration.
@@ -496,24 +493,34 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
         let Some(type_name) = resource_block["type"].as_str() else {
             return Err(DscError::Validation(t!("subcommand.resourceTypeNotSpecified").to_string()));
         };
-        resource_types.push(DiscoveryFilter::new(type_name, resource_block["api_version"].as_str().map(std::string::ToString::to_string)));
+        let type_name = &FullyQualifiedTypeName::parse(type_name)?;
+        let require_version = resource_block["requireVersion"]
+            .as_str()
+            .map(ResourceVersionReq::parse)
+            .transpose()?;
+        resource_types.push(DiscoveryFilter::new(type_name, require_version, None));
     }
-    dsc.find_resources(&resource_types, progress_format);
+    dsc.find_resources(&resource_types, progress_format)?;
 
     for resource_block in resources {
         let Some(type_name) = resource_block["type"].as_str() else {
             return Err(DscError::Validation(t!("subcommand.resourceTypeNotSpecified").to_string()));
         };
+        let type_name = &FullyQualifiedTypeName::parse(type_name)?;
+        let require_version = resource_block["requireVersion"]
+            .as_str()
+            .map(ResourceVersionReq::parse)
+            .transpose()?;
 
         trace!("{} '{}'", t!("subcommand.validatingResource"), resource_block["name"].as_str().unwrap_or_default());
 
         // get the actual resource
-        let Some(resource) = get_resource(&mut dsc, type_name, resource_block["api_version"].as_str()) else {
+        let Some(resource) = get_resource(&mut dsc, type_name, require_version.as_ref()) else {
             return Err(DscError::Validation(format!("{}: '{type_name}'", t!("subcommand.resourceNotFound"))));
         };
 
         // see if the resource is command based
-        if resource.implemented_as == ImplementedAs::Command {
+        if resource.implemented_as == Some(ImplementedAs::Command) {
             validate_properties(resource, &resource_block["properties"])?;
         }
     }
@@ -521,92 +528,124 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
     Ok(())
 }
 
-pub fn extension(subcommand: &ExtensionSubCommand, progress_format: ProgressFormat) {
+pub fn extension(subcommand: &ExtensionSubCommand, progress_format: ProgressFormat) -> Result<(), ExitCode> {
     let mut dsc = DscManager::new();
 
     match subcommand {
         ExtensionSubCommand::List{extension_name, output_format} => {
-            list_extensions(&mut dsc, extension_name.as_ref(), output_format.as_ref(), progress_format);
+            list_extensions(&mut dsc, extension_name, output_format.as_ref(), progress_format)?;
         },
     }
+    Ok(())
 }
 
-pub fn function(subcommand: &FunctionSubCommand) {
+pub fn function(subcommand: &FunctionSubCommand) -> Result<(), ExitCode> {
     let functions = FunctionDispatcher::new();
     match subcommand {
-        FunctionSubCommand::List { function_name, output_format } => {
-            list_functions(&functions, function_name.as_ref(), output_format.as_ref());
+        FunctionSubCommand::List { function_name, category, description, output_format } => {
+            list_functions(&functions, function_name.as_ref(), category, description.as_ref(), output_format.as_ref())?;
         },
     }
+    Ok(())
 }
 
 #[allow(clippy::too_many_lines)]
-pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat) {
+pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat) -> Result<(), ExitCode> {
     let mut dsc = DscManager::new();
 
     match subcommand {
         ResourceSubCommand::List { resource_name, adapter_name, description, tags, output_format } => {
-            list_resources(&mut dsc, resource_name.as_ref(), adapter_name.as_ref(), description.as_ref(), tags.as_ref(), output_format.as_ref(), progress_format);
+            list_resources(&mut dsc, resource_name, adapter_name.as_ref(), description.as_ref(), tags.as_ref(), output_format.as_ref(), progress_format)?;
         },
-        ResourceSubCommand::Schema { resource , version, output_format } => {
-            dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
-            resource_command::schema(&mut dsc, resource, version.as_deref(), output_format.as_ref());
+        ResourceSubCommand::Schema { resource, required_version: version, output_format } => {
+            if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone(), None)], progress_format) {
+                error!("{}: {err}", t!("subcommand.failedDiscoverResource"));
+                return Err(ExitCode::from(EXIT_DSC_ERROR));
+            }
+            resource_command::schema(&mut dsc, resource, version.as_ref(), output_format.as_ref())?;
         },
-        ResourceSubCommand::Export { resource, version, input, file, output_format } => {
-            dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
-            let parsed_input = get_input(input.as_ref(), file.as_ref(), false);
-            resource_command::export(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref());
+        ResourceSubCommand::Export { resource, required_version: version, input, file, output_format } => {
+            if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone(), None)], progress_format) {
+                error!("{}: {err}", t!("subcommand.failedDiscoverResource"));
+                return Err(ExitCode::from(EXIT_DSC_ERROR));
+            }
+            let parsed_input = get_input(input.as_ref(), file.as_ref())?;
+            resource_command::export(&mut dsc, resource, version.as_ref(), &parsed_input, output_format.as_ref())?;
         },
-        ResourceSubCommand::Get { resource, version, input, file: path, all, output_format } => {
-            dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
+        ResourceSubCommand::Get { resource, required_version: version, input, file: path, all, output_format } => {
+            if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone(), None)], progress_format) {
+                error!("{}: {err}", t!("subcommand.failedDiscoverResource"));
+                return Err(ExitCode::from(EXIT_DSC_ERROR));
+            }
             if *all {
-                resource_command::get_all(&mut dsc, resource, version.as_deref(), output_format.as_ref());
+                resource_command::get_all(&mut dsc, resource, version.as_ref(), output_format.as_ref())?;
             }
             else {
                 if *output_format == Some(GetOutputFormat::JsonArray) {
                     error!("{}", t!("subcommand.jsonArrayNotSupported"));
-                    exit(EXIT_INVALID_ARGS);
+                    return Err(ExitCode::from(EXIT_INVALID_ARGS));
                 }
-                let parsed_input = get_input(input.as_ref(), path.as_ref(), false);
-                resource_command::get(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref());
+                let parsed_input = get_input(input.as_ref(), path.as_ref())?;
+                resource_command::get(&mut dsc, resource, version.as_ref(), &parsed_input, output_format.as_ref())?;
             }
         },
-        ResourceSubCommand::Set { resource, version, input, file: path, output_format } => {
-            dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
-            let parsed_input = get_input(input.as_ref(), path.as_ref(), false);
-            resource_command::set(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref());
+        ResourceSubCommand::Set { resource, required_version: version, input, file: path, output_format, what_if } => {
+            if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone(), None)], progress_format) {
+                error!("{}: {err}", t!("subcommand.failedDiscoverResource"));
+                return Err(ExitCode::from(EXIT_DSC_ERROR));
+            }
+            let parsed_input = get_input(input.as_ref(), path.as_ref())?;
+            resource_command::set(&mut dsc, resource, version.as_ref(), &parsed_input, output_format.as_ref(), *what_if)?;
         },
-        ResourceSubCommand::Test { resource, version, input, file: path, output_format } => {
-            dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
-            let parsed_input = get_input(input.as_ref(), path.as_ref(), false);
-            resource_command::test(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref());
+        ResourceSubCommand::Test { resource, required_version: version, input, file: path, output_format } => {
+            if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone(), None)], progress_format) {
+                error!("{}: {err}", t!("subcommand.failedDiscoverResource"));
+                return Err(ExitCode::from(EXIT_DSC_ERROR));
+            }
+            let parsed_input = get_input(input.as_ref(), path.as_ref())?;
+            resource_command::test(&mut dsc, resource, version.as_ref(), &parsed_input, output_format.as_ref())?;
         },
-        ResourceSubCommand::Delete { resource, version, input, file: path } => {
-            dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
-            let parsed_input = get_input(input.as_ref(), path.as_ref(), false);
-            resource_command::delete(&mut dsc, resource, version.as_deref(), &parsed_input);
+        ResourceSubCommand::Delete { resource, required_version: version, input, file: path, output_format, what_if } => {
+            if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone(), None)], progress_format) {
+                error!("{}: {err}", t!("subcommand.failedDiscoverResource"));
+                return Err(ExitCode::from(EXIT_DSC_ERROR));
+            }
+            let parsed_input = get_input(input.as_ref(), path.as_ref())?;
+            resource_command::delete(&mut dsc, resource, version.as_ref(), &parsed_input, output_format.as_ref(), *what_if)?;
         },
+    }
+    Ok(())
+}
+
+/// Indicates whether to emit a table based on the output format and whether stdout is a terminal.
+fn should_write_table(format: Option<&ListOutputFormat>) -> bool {
+    if matches!(format, Some(ListOutputFormat::TableNoTruncate)) {
+        // write as table if user specified the table format
+        true
+    } else {
+        // write as table if format is not specified and interactive
+        format.is_none() && io::stdout().is_terminal()
     }
 }
 
-fn list_extensions(dsc: &mut DscManager, extension_name: Option<&String>, format: Option<&ListOutputFormat>, progress_format: ProgressFormat) {
-    let mut write_table = false;
+fn list_extensions(dsc: &mut DscManager, extension_name: &TypeNameFilter, format: Option<&ListOutputFormat>, progress_format: ProgressFormat) -> Result<(), ExitCode> {
+    let write_table = should_write_table(format);
+
     let mut table = Table::new(&[
         t!("subcommand.tableHeader_type").to_string().as_ref(),
         t!("subcommand.tableHeader_version").to_string().as_ref(),
         t!("subcommand.tableHeader_capabilities").to_string().as_ref(),
         t!("subcommand.tableHeader_description").to_string().as_ref(),
     ]);
-    if format.is_none() && io::stdout().is_terminal() {
-        // write as table if format is not specified and interactive
-        write_table = true;
-    }
+
     let mut include_separator = false;
-    for manifest_resource in dsc.list_available(&DiscoveryKind::Extension, extension_name.unwrap_or(&String::from("*")), "", progress_format) {
+
+    for manifest_resource in dsc.list_available(&DiscoveryKind::Extension, extension_name, None, progress_format) {
         if let ImportedManifest::Extension(extension) = manifest_resource {
             let capability_types = [
                 (ExtensionCapability::Discover, "d"),
                 (ExtensionCapability::Secret, "s"),
+                (ExtensionCapability::Import, "i"),
             ];
             let mut capabilities = "-".repeat(capability_types.len());
 
@@ -618,8 +657,8 @@ fn list_extensions(dsc: &mut DscManager, extension_name: Option<&String>, format
 
             if write_table {
                 table.add_row(vec![
-                    extension.type_name,
-                    extension.version,
+                    extension.type_name.to_string(),
+                    extension.version.to_string(),
                     capabilities,
                     extension.description.unwrap_or_default()
                 ]);
@@ -630,7 +669,7 @@ fn list_extensions(dsc: &mut DscManager, extension_name: Option<&String>, format
                     Ok(json) => json,
                     Err(err) => {
                         error!("JSON: {err}");
-                        exit(EXIT_JSON_ERROR);
+                        return Err(ExitCode::from(EXIT_JSON_ERROR));
                     }
                 };
                 let format = match format {
@@ -639,7 +678,7 @@ fn list_extensions(dsc: &mut DscManager, extension_name: Option<&String>, format
                     Some(ListOutputFormat::Yaml) => Some(OutputFormat::Yaml),
                     _ => None,
                 };
-                write_object(&json, format.as_ref(), include_separator);
+                write_object(&json, format.as_ref(), include_separator)?;
                 include_separator = true;
                 // insert newline separating instances if writing to console
                 if io::stdout().is_terminal() { println!(); }
@@ -651,31 +690,19 @@ fn list_extensions(dsc: &mut DscManager, extension_name: Option<&String>, format
         let truncate = format != Some(&ListOutputFormat::TableNoTruncate);
         table.print(truncate);
     }
+    Ok(())
 }
 
-fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>, output_format: Option<&ListOutputFormat>) {
-    let mut write_table = false;
+fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>, category: &[FunctionCategory], description: Option<&String>, output_format: Option<&ListOutputFormat>) -> Result<(), ExitCode> {
+    let write_table = should_write_table(output_format);
     let mut table = Table::new(&[
         t!("subcommand.tableHeader_functionCategory").to_string().as_ref(),
         t!("subcommand.tableHeader_functionName").to_string().as_ref(),
-        t!("subcommand.tableHeader_minArgs").to_string().as_ref(),
-        t!("subcommand.tableHeader_maxArgs").to_string().as_ref(),
-        t!("subcommand.tableHeader_argTypes").to_string().as_ref(),
+        t!("subcommand.tableHeader_syntax").to_string().as_ref(),
         t!("subcommand.tableHeader_description").to_string().as_ref(),
     ]);
-    if output_format.is_none() && io::stdout().is_terminal() {
-        // write as table if format is not specified and interactive
-        write_table = true;
-    }
-    let mut include_separator = false;
-    let returned_types= [
-        (FunctionArgKind::Array, "a"),
-        (FunctionArgKind::Boolean, "b"),
-        (FunctionArgKind::Number, "n"),
-        (FunctionArgKind::String, "s"),
-        (FunctionArgKind::Object, "o"),
-    ];
 
+    let mut include_separator = false;
     let asterisks = String::from("*");
     let name = function_name.unwrap_or(&asterisks);
     let regex_str = convert_wildcard_to_regex(name);
@@ -683,7 +710,24 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
     regex_builder.case_insensitive(true);
     let Ok(regex) = regex_builder.build() else {
         error!("{}: {}", t!("subcommand.invalidFunctionFilter"), regex_str);
-        exit(EXIT_INVALID_ARGS);
+        return Err(ExitCode::from(EXIT_INVALID_ARGS));
+    };
+
+    let description_regex = if let Some(description) = description {
+        let regex_str = convert_wildcard_to_regex(description);
+        // strip the `^` and `$` anchors so the filter searches within the description text
+        let regex_str = &regex_str[1..regex_str.len() - 1];
+        let mut regex_builder = RegexBuilder::new(regex_str);
+        regex_builder.case_insensitive(true);
+        match regex_builder.build() {
+            Ok(description_regex) => Some(description_regex),
+            Err(_) => {
+                error!("{}: {}", t!("subcommand.invalidFunctionDescriptionFilter"), regex_str);
+                return Err(ExitCode::from(EXIT_INVALID_ARGS));
+            }
+        }
+    } else {
+        None
     };
 
     let mut functions_list = functions.list();
@@ -693,27 +737,21 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
             continue;
         }
 
+        // all specified categories must be present on the function (AND filter)
+        if !category.iter().all(|c| function.category.contains(c)) {
+            continue;
+        }
+
+        if let Some(ref description_regex) = description_regex
+            && !description_regex.is_match(&function.description) {
+            continue;
+        }
+
         if write_table {
-            // construct arg_types from '-' times number of accepted_arg_types
-            let mut arg_types = "-".repeat(returned_types.len());
-            for (i, (arg_type, letter)) in returned_types.iter().enumerate() {
-                if function.return_types.contains(arg_type) {
-                    arg_types.replace_range(i..=i, letter);
-                }
-            }
-
-            let max_args = if function.max_args == usize::MAX {
-                t!("subcommand.maxInt").to_string()
-            } else {
-                function.max_args.to_string()
-            };
-
             table.add_row(vec![
-                function.category.to_string(),
+                function.category.iter().map(std::string::ToString::to_string).collect::<Vec<String>>().join(", "),
                 function.name,
-                function.min_args.to_string(),
-                max_args,
-                arg_types,
+                function.syntax,
                 function.description
             ]);
         }
@@ -722,7 +760,7 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
                 Ok(json) => json,
                 Err(err) => {
                     error!("JSON: {err}");
-                    exit(EXIT_JSON_ERROR);
+                    return Err(ExitCode::from(EXIT_JSON_ERROR));
                 }
             };
             let format = match output_format {
@@ -731,7 +769,7 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
                 Some(ListOutputFormat::Yaml) => Some(OutputFormat::Yaml),
                 _ => None,
             };
-            write_object(&json, format.as_ref(), include_separator);
+            write_object(&json, format.as_ref(), include_separator)?;
             include_separator = true;
             // insert newline separating instances if writing to console
             if io::stdout().is_terminal() { println!(); }
@@ -742,9 +780,18 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
         let truncate = output_format != Some(&ListOutputFormat::TableNoTruncate);
         table.print(truncate);
     }
+    Ok(())
 }
 
-pub fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_name: Option<&String>, description: Option<&String>, tags: Option<&Vec<String>>, format: Option<&ListOutputFormat>, progress_format: ProgressFormat) {
+pub fn list_resources(
+    dsc: &mut DscManager,
+    resource_name: &TypeNameFilter,
+    adapter_name: Option<&TypeNameFilter>,
+    description: Option<&String>,
+    tags: Option<&Vec<String>>,
+    format: Option<&ListOutputFormat>,
+    progress_format: ProgressFormat
+) -> Result<(), ExitCode> {
     let mut write_table = false;
     let mut table = Table::new(&[
         t!("subcommand.tableHeader_type").to_string().as_ref(),
@@ -759,15 +806,17 @@ pub fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adap
         write_table = true;
     }
     let mut include_separator = false;
-    for manifest_resource in dsc.list_available(&DiscoveryKind::Resource, resource_name.unwrap_or(&String::from("*")), adapter_name.unwrap_or(&String::new()), progress_format) {
+
+    for manifest_resource in dsc.list_available(&DiscoveryKind::Resource, resource_name, adapter_name, progress_format) {
         if let ImportedManifest::Resource(resource) = manifest_resource {
             let capability_types = [
                 (Capability::Get, "g"),
                 (Capability::Set, "s"),
+                (Capability::SetWhatIf, "w"),
                 (Capability::SetHandlesExist, "x"),
-                (Capability::WhatIf, "w"),
                 (Capability::Test, "t"),
                 (Capability::Delete, "d"),
+                (Capability::DeleteWhatIf, "W"),
                 (Capability::Export, "e"),
                 (Capability::Resolve, "r"),
             ];
@@ -780,29 +829,20 @@ pub fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adap
             }
 
             // if description, tags, or write_table is specified, pull resource manifest if it exists
-            if let Some(ref resource_manifest) = resource.manifest {
-                let manifest = match import_manifest(resource_manifest.clone()) {
-                    Ok(resource_manifest) => resource_manifest,
-                    Err(err) => {
-                        error!("{} {}: {err}", t!("subcommand.invalidManifest"), resource.type_name);
-                        continue;
-                    }
-                };
-
+            if let Some(ref manifest) = resource.manifest {
                 // if description is specified, skip if resource description does not contain it
-                if description.is_some() &&
-                    (manifest.description.is_none() | !manifest.description.unwrap_or_default().to_lowercase().contains(&description.unwrap_or(&String::new()).to_lowercase())) {
+                if description.is_some() && (manifest.description.is_none() | !manifest.description.clone().unwrap_or_default().to_lowercase().contains(&description.unwrap_or(&String::new()).to_lowercase())) {
                     continue;
                 }
 
                 // if tags is specified, skip if resource tags do not contain the tags
                 if let Some(tags) = tags {
-                    let Some(manifest_tags) = manifest.tags else { continue; };
+                    if manifest.tags.is_empty() { continue; }
 
                     let mut found = false;
                     for tag_to_find in tags {
-                        for tag in &manifest_tags {
-                            if tag.to_lowercase() == tag_to_find.to_lowercase() {
+                        for tag in manifest.tags.as_ref() {
+                            if tag == tag_to_find {
                                 found = true;
                                 break;
                             }
@@ -819,11 +859,11 @@ pub fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adap
 
             if write_table {
                 table.add_row(vec![
-                    resource.type_name,
+                    resource.type_name.to_string(),
                     format!("{:?}", resource.kind),
-                    resource.version,
+                    resource.version.to_string(),
                     capabilities,
-                    resource.require_adapter.unwrap_or_default(),
+                    resource.require_adapter.unwrap_or_default().to_string(),
                     resource.description.unwrap_or_default()
                 ]);
             }
@@ -833,7 +873,7 @@ pub fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adap
                     Ok(json) => json,
                     Err(err) => {
                         error!("JSON: {err}");
-                        exit(EXIT_JSON_ERROR);
+                        return Err(ExitCode::from(EXIT_JSON_ERROR));
                     }
                 };
                 let format = match format {
@@ -842,7 +882,7 @@ pub fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adap
                     Some(ListOutputFormat::Yaml) => Some(OutputFormat::Yaml),
                     _ => None,
                 };
-                write_object(&json, format.as_ref(), include_separator);
+                write_object(&json, format.as_ref(), include_separator)?;
                 include_separator = true;
                 // insert newline separating instances if writing to console
                 if io::stdout().is_terminal() { println!(); }
@@ -854,4 +894,5 @@ pub fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adap
         let truncate = format != Some(&ListOutputFormat::TableNoTruncate);
         table.print(truncate);
     }
+    Ok(())
 }

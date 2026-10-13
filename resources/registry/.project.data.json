@@ -1,0 +1,15 @@
+{
+    "Name": "registry",
+    "Kind": "Resource",
+    "IsRust": true,
+    "RustPackageName": "dsc-resource-registry",
+    "SupportedPlatformOS": "Windows",
+    "Binaries": [
+        "registry"
+    ],
+    "CopyFiles": {
+        "Windows": [
+            "registry.dsc.manifests.json"
+        ]
+    }
+}

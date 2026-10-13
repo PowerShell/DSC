@@ -12,7 +12,11 @@
             "Bypass",
             "-NoProfile",
             "-Command",
-            "./appx-discover.ps1"
-            ]
+            "./appx-discover.ps1",
+            {
+                "extensionsArg": "-extensions",
+                "includeQuotes": true
+            }
+        ]
     }
 }

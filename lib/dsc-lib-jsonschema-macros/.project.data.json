@@ -1,0 +1,5 @@
+{
+    "Name": "dsc-lib-jsonschema-macros",
+    "Kind": "Library",
+    "IsRust": true
+}

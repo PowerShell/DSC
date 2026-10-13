@@ -251,4 +251,4 @@ When the resource returns this exit code, it also emits an error message with de
 
 <!-- Link definitions -->
 [01]: ./examples/manage-a-windows-service.md
-[02]: ../../../../schemas/config/type.md
+[02]: ../../../../schemas/definitions/resourceType.md

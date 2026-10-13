@@ -1,0 +1,25 @@
+_version = 1
+
+[main]
+missingOperation = "Missing operation. Usage: filecontent <get|set|test> --input <json>"
+unknownOperation = "Unknown operation: '%{operation}'. Expected: get, set, or test"
+missingInput = "Missing --input argument"
+missingInputValue = "Missing value for --input argument"
+invalidJson = "Invalid JSON input: %{error}"
+serializeError = "Failed to serialize output: %{error}"
+
+[input]
+emptyPath = "The path must not be empty"
+invalidHash = "%{name} must contain exactly %{length} hexadecimal characters"
+
+[get]
+readError = "Failed to read file '%{path}': %{error}"
+
+[set]
+contentRequired = "The content property is required when setting a file"
+creatingParentDirectory = "Creating parent directory '%{path}'"
+createParentDirectoryError = "Failed to create parent directory '%{path}': %{error}"
+writeError = "Failed to write file '%{path}': %{error}"
+removeError = "Failed to remove file '%{path}': %{error}"
+sha256Mismatch = "The sha256 value does not match the content property"
+sha512Mismatch = "The sha512 value does not match the content property"

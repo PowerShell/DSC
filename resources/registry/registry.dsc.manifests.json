@@ -1,0 +1,184 @@
+{
+    "resources": [
+        {
+            "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+            "type": "Microsoft.Windows/Registry",
+            "description": "Manage Windows Registry keys and values",
+            "tags": [
+                "Windows"
+            ],
+            "version": "1.0.0",
+            "get": {
+                "executable": "registry",
+                "args": [
+                    "config",
+                    "get",
+                    {
+                        "jsonInputArg": "--input",
+                        "mandatory": true
+                    }
+                ]
+            },
+            "set": {
+                "executable": "registry",
+                "args": [
+                    "config",
+                    "set",
+                    {
+                        "jsonInputArg": "--input",
+                        "mandatory": true
+                    },
+                    {
+                        "whatIfArg": "-w"
+                    }
+                ],
+                "whatIfReturns": "state"
+            },
+            "delete": {
+                "executable": "registry",
+                "args": [
+                    "config",
+                    "delete",
+                    {
+                        "jsonInputArg": "--input",
+                        "mandatory": true
+                    },
+                    {
+                        "whatIfArg": "-w"
+                    }
+                ]
+            },
+            "exitCodes": {
+                "0": "Success",
+                "1": "Invalid parameter",
+                "2": "Invalid input",
+                "3": "Registry error",
+                "4": "JSON serialization failed"
+            },
+            "schema": {
+                "command": {
+                    "executable": "registry",
+                    "args": [
+                        "schema"
+                    ]
+                }
+            }
+        },
+        {
+            "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+            "type": "Microsoft.Windows/RegistryList",
+            "description": "Manage multiple Windows Registry keys and values",
+            "tags": [
+                "Windows"
+            ],
+            "version": "1.0.0",
+            "get": {
+                "executable": "registry",
+                "args": [
+                    "config",
+                    "get",
+                    "--list",
+                    {
+                        "jsonInputArg": "--input",
+                        "mandatory": true
+                    }
+                ]
+            },
+            "set": {
+                "executable": "registry",
+                "args": [
+                    "config",
+                    "set",
+                    "--list",
+                    {
+                        "jsonInputArg": "--input",
+                        "mandatory": true
+                    },
+                    {
+                        "whatIfArg": "-w"
+                    }
+                ],
+                "whatIfReturns": "state",
+                "handlesExist": true
+            },
+            "exitCodes": {
+                "0": "Success",
+                "1": "Invalid parameter",
+                "2": "Invalid input",
+                "3": "Registry error",
+                "4": "JSON serialization failed"
+            },
+            "schema": {
+                "command": {
+                    "executable": "registry",
+                    "args": [
+                        "schema",
+                        "--list"
+                    ]
+                }
+            }
+        },
+        {
+            "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+            "type": "Microsoft.Windows.Adapter/Registry",
+            "kind": "adapter",
+            "description": "Adapter for registry based resources",
+            "tags": [
+                "Windows"
+            ],
+            "version": "0.1.0",
+            "adapter": {
+                "inputKind": "single"
+            },
+            "get": {
+                "executable": "registry",
+                "args": [
+                    "adapter",
+                    "get",
+                    {
+                        "jsonInputArg": "--input",
+                        "mandatory": true
+                    },
+                    {
+                        "adaptedContentArg": "--adapted-resource"
+                    }
+                ]
+            },
+            "set": {
+                "executable": "registry",
+                "args": [
+                    "adapter",
+                    "set",
+                    {
+                        "jsonInputArg": "--input",
+                        "mandatory": true
+                    },
+                    {
+                        "adaptedContentArg": "--adapted-resource"
+                    }
+                ]
+            },
+            "export": {
+                "executable": "registry",
+                "args": [
+                    "adapter",
+                    "export",
+                    {
+                        "jsonInputArg": "--input",
+                        "mandatory": true
+                    },
+                    {
+                        "adaptedContentArg": "--adapted-resource"
+                    }
+                ]
+            },
+            "exitCodes": {
+                "0": "Success",
+                "1": "Invalid parameter",
+                "2": "Invalid input",
+                "3": "Registry error",
+                "4": "JSON serialization failed"
+            }
+        }
+    ]
+}

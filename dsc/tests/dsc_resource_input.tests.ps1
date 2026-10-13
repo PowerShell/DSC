@@ -16,7 +16,7 @@ Describe 'tests for resource input' {
                 "-NonInteractive",
                 "-NoProfile",
                 "-Command",
-                "\"{ `\"Hello`\": `\"$env:Hello`\", `\"World`\": `\"$env:World`\", `\"Boolean`\": `\"$env:Boolean`\", `\"StringArray`\": `\"$env:StringArray`\", `\"NumberArray`\": `\"$env:NumberArray`\" }\""
+                "\"{ `\"Hello`\": `\"$env:Hello`\", `\"World`\": $env:World, `\"Boolean`\": $env:Boolean, `\"StringArray`\": `\"$env:StringArray`\", `\"NumberArray`\": `\"$env:NumberArray`\" }\""
             ]
         },
         "set": {
@@ -27,7 +27,7 @@ Describe 'tests for resource input' {
                 "-NonInteractive",
                 "-NoProfile",
                 "-Command",
-                "\"{ `\"Hello`\": `\"$env:Hello`\", `\"World`\": `\"$env:World`\", `\"Boolean`\": `\"$env:Boolean`\", `\"StringArray`\": `\"$env:StringArray`\", `\"NumberArray`\": `\"$env:NumberArray`\" }\""
+                "\"{ `\"Hello`\": `\"$env:Hello`\", `\"World`\": $env:World, `\"Boolean`\": $env:Boolean, `\"StringArray`\": `\"$env:StringArray`\", `\"NumberArray`\": `\"$env:NumberArray`\" }\""
             ],
             "return": "state",
             "implementsPretest": true
@@ -40,7 +40,7 @@ Describe 'tests for resource input' {
                 "-NonInteractive",
                 "-NoProfile",
                 "-Command",
-                "\"{ `\"Hello`\": `\"$env:Hello`\", `\"World`\": `\"$env:World`\", `\"Boolean`\": `\"$env:Boolean`\", `\"StringArray`\": `\"$env:StringArray`\", `\"NumberArray`\": `\"$env:NumberArray`\" }\""
+                "\"{ `\"Hello`\": `\"$env:Hello`\", `\"World`\": $env:World, `\"Boolean`\": $env:Boolean, `\"StringArray`\": `\"$env:StringArray`\", `\"NumberArray`\": `\"$env:NumberArray`\" }\""
             ]
         },
         "schema": {
@@ -66,14 +66,14 @@ Describe 'tests for resource input' {
                         "description": "test"
                     },
                     "StringArray": {
-                        "type": "array",
+                        "type": ["array", "string"],
                         "description": "test",
                         "items": {
                             "type": "string"
                         }
                     },
                     "NumberArray": {
-                        "type": "array",
+                        "type": ["array", "string"],
                         "description": "test",
                         "items": {
                             "type": "number"
@@ -84,13 +84,13 @@ Describe 'tests for resource input' {
         }
     }
 '@
-        $oldPath = $env:DSC_RESOURCE_PATH
-        $env:DSC_RESOURCE_PATH = $TestDrive + [System.IO.Path]::PathSeparator + $env:PATH
+        $oldPath = $env:DSC_RESTRICTED_PATH
+        $env:DSC_RESTRICTED_PATH = $TestDrive + [System.IO.Path]::PathSeparator + $env:PATH
         Set-Content $TestDrive/EnvVarInput.dsc.resource.json -Value $manifest
     }
 
     AfterAll {
-        $env:DSC_RESOURCE_PATH = $oldPath
+        $env:DSC_RESTRICTED_PATH = $oldPath
     }
 
     It 'Input can be sent to the resource for: <operation>' -TestCases @(
@@ -110,8 +110,10 @@ Describe 'tests for resource input' {
         }
 "@
 
-        $result = $json | dsc resource $operation -r Test/EnvVarInput -f - | ConvertFrom-Json
-        $result.$member.Hello | Should -BeExactly 'foo'
+        $out = dsc -l trace resource $operation -r Test/EnvVarInput -i $json 2>$TestDrive/error.log
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+        $result = $out | ConvertFrom-Json
+        $result.$member.Hello | Should -BeExactly 'foo' -Because $out
         $result.$member.World | Should -Be 2
         $result.$member.Boolean | Should -Be 'true'
         $result.$member.StringArray | Should -BeExactly 'foo,bar'

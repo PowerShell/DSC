@@ -1,0 +1,47 @@
+_version = 1
+
+[main]
+missingOperation = "Missing operation. Usage: windows_service get --input <json> | set [--what-if] --input <json> | export [--input <json>]"
+unknownOperation = "Unknown operation: '%{operation}'. Expected: get, set, or export"
+missingInput = "Missing --input argument"
+missingInputValue = "Missing value for --input argument"
+invalidJson = "Invalid JSON input: %{error}"
+windowsOnly = "This resource is only supported on Windows"
+
+[get]
+nameOrDisplayNameRequired = "At least one of 'name' or 'displayName' must be provided"
+openScmFailed = "Failed to open Service Control Manager: %{error}"
+queryConfigFailed = "Failed to query service configuration: %{error}"
+queryStatusFailed = "Failed to query service status: %{error}"
+openServiceFailed = "Failed to open service: %{error}"
+getKeyNameFailed = "Failed to resolve service name from display name: %{error}"
+
+[export]
+enumServicesFailed = "Failed to enumerate services: %{error}"
+openServiceFailed = "Failed to open service '%{name}': %{error}"
+
+[set]
+nameRequired = "'name' is required for the set operation"
+openScmFailed = "Failed to open Service Control Manager: %{error}"
+openServiceFailed = "Failed to open service: %{error}"
+changeConfigFailed = "Failed to change service configuration: %{error}"
+changeConfig2Failed = "Failed to change service extended configuration: %{error}"
+startFailed = "Failed to start service: %{error}"
+stopFailed = "Failed to stop service: %{error}"
+pauseFailed = "Failed to pause service: %{error}"
+continueFailed = "Failed to continue service: %{error}"
+unsupportedTransition = "Unsupported status transition from '%{current}' to '%{desired}'"
+unsupportedLogonAccount = "Unsupported logon account '%{account}'; only built-in service accounts are supported (LocalSystem, NT AUTHORITY\\LocalService, NT AUTHORITY\\NetworkService)"
+unsupportedStatus = "Cannot set service to status '%{status}'; only Running, Stopped, and Paused are supported"
+statusTimeout = "Timed out waiting for service to reach status '%{expected}'; current status is '%{actual}'"
+whatIfServiceNotFound = "Service '%{name}' does not exist; cannot set"
+whatIfChangeDisplayName = "Would change displayName from '%{current}' to '%{desired}'"
+whatIfChangeDescription = "Would change description from '%{current}' to '%{desired}'"
+whatIfChangeStartType = "Would change startType from '%{current}' to '%{desired}'"
+whatIfChangeExecutablePath = "Would change executablePath from '%{current}' to '%{desired}'"
+whatIfChangeLogonAccount = "Would change logonAccount from '%{current}' to '%{desired}'"
+whatIfChangeErrorControl = "Would change errorControl from '%{current}' to '%{desired}'"
+whatIfChangeDependencies = "Would set dependencies to '%{desired}'"
+whatIfChangeStatus = "Would change status from '%{current}' to '%{desired}'"
+whatIfDeleteService = "Would delete service '%{name}'"
+whatIfDeleteServiceNotFound = "Service '%{name}' does not exist; no delete needed"

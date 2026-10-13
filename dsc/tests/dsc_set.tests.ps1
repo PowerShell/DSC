@@ -77,8 +77,7 @@ Describe 'resource set tests' {
         }
     }
 
-    # test pending changes in engine to call delete if _exist is not handled directly
-    It 'can set and remove a registry value' -Pending {
+    It 'can set and remove a registry value' -Skip:(!$IsWindows) {
         $json = @'
         {
             "keyPath": "HKCU\\1\\2\\3",
@@ -145,29 +144,29 @@ changedProperties:
     ) {
         param($format, $expected)
 
-        $oldPath = $env:DSC_RESOURCE_PATH
+        $oldPath = $env:DSC_RESTRICTED_PATH
         try {
-            $env:DSC_RESOURCE_PATH = $TestDrive + [System.IO.Path]::PathSeparator + $env:PATH
+            $env:DSC_RESTRICTED_PATH = $TestDrive + [System.IO.Path]::PathSeparator + $env:PATH
             $out = '{ "test": true }' | dsc resource set -r Test/SetNoTest -f - --output-format $format | Out-String
             $LASTEXITCODE | Should -Be 0
             $out.Trim() | Should -BeExactly $expected
         }
         finally {
-            $env:DSC_RESOURCE_PATH = $oldPath
+            $env:DSC_RESTRICTED_PATH = $oldPath
         }
     }
 
     It 'set can be used on a resource that does not implement test' {
-        $oldPath = $env:DSC_RESOURCE_PATH
+        $oldPath = $env:DSC_RESTRICTED_PATH
         try {
-            $env:DSC_RESOURCE_PATH = $TestDrive + [System.IO.Path]::PathSeparator + $env:PATH
+            $env:DSC_RESTRICTED_PATH = $TestDrive + [System.IO.Path]::PathSeparator + $env:PATH
             $out = '{ "test": true }' | dsc resource set -r Test/SetNoTest -f - | ConvertFrom-Json
             $LASTEXITCODE | Should -Be 0
             $out.BeforeState.test | Should -Be $true
             $out.AfterState.test | Should -Be $false
         }
         finally {
-            $env:DSC_RESOURCE_PATH = $oldPath
+            $env:DSC_RESTRICTED_PATH = $oldPath
         }
     }
 }

@@ -2,47 +2,98 @@
 // Licensed under the MIT License.
 
 mod args;
+mod copy_resource;
 mod delete;
 mod exist;
 mod exit_code;
 mod export;
+mod export_schema;
 mod exporter;
 mod get;
 mod in_desired_state;
 mod metadata;
+mod operation;
+mod adapter;
+mod refresh_env;
+mod restart_required;
+mod schema_default;
+mod set;
 mod sleep;
+mod state_and_diff;
 mod trace;
 mod version;
 mod whatif;
+mod whatif_delete;
 
-use args::{Args, Schemas, SubCommand};
+use args::{Args, RefreshEnvOperation, Schemas, SubCommand};
 use clap::Parser;
 use schemars::schema_for;
 use serde_json::Map;
+use crate::copy_resource::{CopyResource, copy_the_resource};
 use crate::delete::Delete;
 use crate::exist::{Exist, State};
 use crate::exit_code::ExitCode;
 use crate::export::Export;
+use crate::export_schema::{ExportSchema, invoke_export_schema};
 use crate::exporter::{Exporter, Resource};
 use crate::get::Get;
 use crate::in_desired_state::InDesiredState;
 use crate::metadata::Metadata;
+use crate::operation::Operation;
+use crate::refresh_env::RefreshEnv;
+use crate::restart_required::RestartRequired;
+use crate::schema_default::SchemaDefault;
+use crate::set::{Set, invoke_set};
 use crate::sleep::Sleep;
+use crate::state_and_diff::StateAndDiff;
 use crate::trace::Trace;
 use crate::version::Version;
 use crate::whatif::WhatIf;
+use crate::whatif_delete::WhatIfDelete;
+use std::process::ExitCode as ProcessExitCode;
 use std::{thread, time::Duration};
 
 #[allow(clippy::too_many_lines)]
-fn main() {
+fn main() -> ProcessExitCode {
+    match run() {
+        Ok(()) => ProcessExitCode::SUCCESS,
+        Err(code) => ProcessExitCode::from(code),
+    }
+}
+
+#[allow(clippy::too_many_lines)]
+fn run() -> Result<(), u8> {
     let args = Args::parse();
     let json = match args.subcommand {
+        SubCommand::Adapter { input , resource_type, resource_path, resource_version, operation } => {
+            match adapter::adapt(&resource_type, &input, &operation, &resource_path, &resource_version) {
+                Ok(result) => result,
+                Err(err) => {
+                    eprintln!("Error adapting resource: {err}");
+                    return Err(1);
+                }
+            }
+        },
+        SubCommand::CopyResource { input } => {
+            let copy_resource = match serde_json::from_str::<CopyResource>(&input) {
+                Ok(copy_resource) => copy_resource,
+                Err(err) => {
+                    eprintln!("Error JSON does not match schema: {err}");
+                    return Err(1);
+                }
+            };
+            if let Err(err) = copy_the_resource(&copy_resource.source_file, &copy_resource.type_name) {
+                eprintln!("Error copying resource: {err}");
+                return Err(1);
+            }
+            input
+        },
         SubCommand::Delete { input } => {
             let mut delete = match serde_json::from_str::<Delete>(&input) {
                 Ok(delete) => delete,
                 Err(err) => {
                     eprintln!("Error JSON does not match schema: {err}");
-                    std::process::exit(1);
+                    return Err(1);
                 }
             };
             delete.delete_called = Some(true);
@@ -53,7 +104,7 @@ fn main() {
                 Ok(exist) => exist,
                 Err(err) => {
                     eprintln!("Error JSON does not match schema: {err}");
-                    std::process::exit(1);
+                    return Err(1);
                 }
             };
             if exist.exist {
@@ -69,12 +120,12 @@ fn main() {
                 Ok(exit_code) => exit_code,
                 Err(err) => {
                     eprintln!("Error JSON does not match schema: {err}");
-                    std::process::exit(1);
+                    return Err(1);
                 }
             };
             if exit_code.exit_code != 0 {
                 eprintln!("Exiting with code: {}", exit_code.exit_code);
-                std::process::exit(exit_code.exit_code);
+                return Err(exit_code.exit_code);
             }
             input
         },
@@ -83,13 +134,13 @@ fn main() {
                 Ok(export) => export,
                 Err(err) => {
                     eprintln!("Error JSON does not match schema: {err}");
-                    std::process::exit(1);
+                    return Err(1);
                 }
             };
             for i in 0..export.count {
                 let instance = Export {
                     count: i,
-                    _kind: Some("TestKind".to_string()),
+                    name: Some(format!("Instance{i}")),
                     _name: Some("TestName".to_string()),
                     _security_context: Some("elevated".to_string()),
                 };
@@ -97,12 +148,21 @@ fn main() {
             }
             String::new()
         },
+        SubCommand::ExportSchema { input } => {
+            match invoke_export_schema(&input) {
+                Ok(output) => output,
+                Err(err) => {
+                    eprintln!("{err}");
+                    return Err(1);
+                }
+            }
+        },
         SubCommand::Exporter { input } => {
             let exporter = match serde_json::from_str::<Exporter>(&input) {
                 Ok(exporter) => exporter,
                 Err(err) => {
                     eprintln!("Error JSON does not match schema: {err}");
-                    std::process::exit(1);
+                    return Err(1);
                 }
             };
             for type_name in exporter.type_names {
@@ -135,34 +195,38 @@ fn main() {
 
             let resource = if input.is_empty() {
                 // If neither name nor id is provided, return the first instance
-                instances.into_iter().next().unwrap_or_else(|| {
+                let Some(resource) = instances.into_iter().next() else {
                     eprintln!("No instances found");
-                    std::process::exit(1);
-                })
+                    return Err(1);
+                };
+                resource
             } else {
                 let get = match serde_json::from_str::<Get>(&input) {
                     Ok(get) => get,
                     Err(err) => {
                         eprintln!("Error JSON does not match schema: {err}");
-                        std::process::exit(1);
+                        return Err(1);
                     }
                 };
                 // depending on the input, return the appropriate instance whether it is name or id or both
                 if let Some(name) = get.name {
-                    instances.into_iter().find(|i| i.name.as_ref() == Some(&name)).unwrap_or_else(|| {
+                    let Some(resource) = instances.into_iter().find(|i| i.name.as_ref() == Some(&name)) else {
                         eprintln!("No instance found with name: {name}");
-                        std::process::exit(1);
-                    })
+                        return Err(1);
+                    };
+                    resource
                 } else if let Some(id) = get.id {
-                    instances.into_iter().find(|i| i.id == Some(id)).unwrap_or_else(|| {
+                    let Some(resource) = instances.into_iter().find(|i| i.id == Some(id)) else {
                         eprintln!("No instance found with id: {id}");
-                        std::process::exit(1);
-                    })
+                        return Err(1);
+                    };
+                    resource
                 } else {
-                    instances.into_iter().next().unwrap_or_else(|| {
+                    let Some(resource) = instances.into_iter().next() else {
                         eprintln!("No instances found");
-                        std::process::exit(1);
-                    })  
+                        return Err(1);
+                    };
+                    resource
                 }
             };
             serde_json::to_string(&resource).unwrap()
@@ -172,7 +236,7 @@ fn main() {
                 Ok(in_desired_state) => in_desired_state,
                 Err(err) => {
                     eprintln!("Error JSON does not match schema: {err}");
-                    std::process::exit(1);
+                    return Err(1);
                 }
             };
             in_desired_state.value_one = 1;
@@ -190,7 +254,7 @@ fn main() {
                     Ok(metadata) => metadata,
                     Err(err) => {
                         eprintln!("Error JSON does not match schema: {err}");
-                        std::process::exit(1);
+                        return Err(1);
                     }
                 };
                 metadata.name = Some(format!("Metadata example {}", i+1));
@@ -199,8 +263,77 @@ fn main() {
             }
             String::new()
         },
+        SubCommand::NoOp => {
+            // do nothing and just return success
+            String::new()
+        },
+        SubCommand::Operation { operation, input } => {
+            let mut operation_result = match serde_json::from_str::<Operation>(&input) {
+                Ok(op) => op,
+                Err(err) => {
+                    eprintln!("Error JSON does not match schema: {err}");
+                    return Err(1);
+                }
+            };
+            operation_result.operation = Some(operation.to_lowercase());
+            serde_json::to_string(&operation_result).unwrap()
+        },
+        SubCommand::RefreshEnv { operation, input } => {
+            let mut refresh_env = match serde_json::from_str::<refresh_env::RefreshEnv>(&input) {
+                Ok(re) => re,
+                Err(err) => {
+                    eprintln!("Error JSON does not match schema: {err}");
+                    return Err(1);
+                }
+            };
+            match operation {
+                RefreshEnvOperation::Get => {
+                    let mut result = refresh_env.get();
+                    result.metadata.get_or_insert(Map::new()).insert("_refreshEnv".to_string(), serde_json::Value::Bool(true));
+                    serde_json::to_string(&result).unwrap()
+                },
+                RefreshEnvOperation::Set => {
+                    refresh_env.set();
+                    refresh_env.metadata.get_or_insert(Map::new()).insert("_refreshEnv".to_string(), serde_json::Value::Bool(true));
+                    serde_json::to_string(&refresh_env).unwrap()
+                }
+            }
+        },
+        SubCommand::RestartRequired { input } => {
+            let restart_required = match serde_json::from_str::<RestartRequired>(&input) {
+                Ok(rr) => rr,
+                Err(err) => {
+                    eprintln!("Error JSON does not match schema: {err}");
+                    return Err(1);
+                }
+            };
+            serde_json::to_string(&restart_required).unwrap()
+        },
+        SubCommand::SchemaDefault { input } => {
+            let schema_default = match serde_json::from_str::<SchemaDefault>(&input) {
+                Ok(sd) => sd,
+                Err(err) => {
+                    eprintln!("Error JSON does not match schema: {err}");
+                    return Err(1);
+                }
+            };
+            let mut actual = serde_json::json!({"name": schema_default.name});
+            if schema_default.nested.is_some() {
+                actual["nested"] = serde_json::json!({"value": "actual"});
+            }
+            if schema_default.referenced_nested.is_some() {
+                actual["referencedNested"] = serde_json::json!({"value": "actual"});
+            }
+            actual.to_string()
+        },
         SubCommand::Schema { subcommand } => {
             let schema = match subcommand {
+                Schemas::Adapter => {
+                    schema_for!(adapter::DscResource)
+                },
+                Schemas::CopyResource => {
+                    schema_for!(CopyResource)
+                },
                 Schemas::Delete => {
                     schema_for!(Delete)
                 },
@@ -212,6 +345,12 @@ fn main() {
                 },
                 Schemas::Export => {
                     schema_for!(Export)
+                },
+                Schemas::ExportGetSchema => {
+                    schema_for!(export_schema::Schema)
+                },
+                Schemas::ExportSchema => {
+                    schema_for!(ExportSchema)
                 },
                 Schemas::Exporter => {
                     schema_for!(Exporter)
@@ -225,8 +364,26 @@ fn main() {
                 Schemas::Metadata => {
                     schema_for!(Metadata)
                 },
+                Schemas::Operation => {
+                    schema_for!(Operation)
+                },
+                Schemas::RefreshEnv => {
+                    schema_for!(RefreshEnv)
+                },
+                Schemas::RestartRequired => {
+                    schema_for!(RestartRequired)
+                },
+                Schemas::SchemaDefault => {
+                    schema_for!(SchemaDefault)
+                },
+                Schemas::Set => {
+                    schema_for!(Set)
+                },
                 Schemas::Sleep => {
                     schema_for!(Sleep)
+                },
+                Schemas::StateAndDiff => {
+                    schema_for!(StateAndDiff)
                 },
                 Schemas::Trace => {
                     schema_for!(Trace)
@@ -237,19 +394,59 @@ fn main() {
                 Schemas::WhatIf => {
                     schema_for!(WhatIf)
                 },
+                Schemas::WhatIfDelete => {
+                    schema_for!(WhatIfDelete)
+                }
             };
             serde_json::to_string(&schema).unwrap()
+        },
+        SubCommand::Set { get, input } => {
+            invoke_set( get, input )
         },
         SubCommand::Sleep { input } => {
             let sleep = match serde_json::from_str::<Sleep>(&input) {
                 Ok(sleep) => sleep,
                 Err(err) => {
                     eprintln!("Error JSON does not match schema: {err}");
-                    std::process::exit(1);
+                    return Err(1);
                 }
             };
             thread::sleep(Duration::from_secs(sleep.seconds));
             serde_json::to_string(&sleep).unwrap()
+        },
+        SubCommand::StateAndDiff { input, state_only } => {
+            let mut state_and_diff = match serde_json::from_str::<StateAndDiff>(&input) {
+                Ok(s) => s,
+                Err(err) => {
+                    eprintln!("Error JSON does not match schema: {err}");
+                    return Err(1);
+                }
+            };
+            // Actual state always returns valueOne=1, valueTwo=2
+            let desired_one = state_and_diff.value_one;
+            let desired_two = state_and_diff.value_two;
+            state_and_diff.value_one = 1;
+            state_and_diff.value_two = 2;
+            // Compute diff properties
+            let mut diff: Vec<String> = Vec::new();
+            if desired_one != 1 {
+                diff.push("valueOne".to_string());
+            }
+            if desired_two != 2 {
+                diff.push("valueTwo".to_string());
+            }
+            state_and_diff.in_desired_state = Some(diff.is_empty());
+            let state_json = serde_json::to_string(&state_and_diff).unwrap();
+            if state_only {
+                // For get operations: output only the state JSON
+                println!("{state_json}");
+            } else {
+                // For set/test operations: output state JSON line, then diff array JSON line
+                let diff_json = serde_json::to_string(&diff).unwrap();
+                println!("{state_json}");
+                println!("{diff_json}");
+            }
+            String::new()
         },
         SubCommand::Trace => {
             // get level from DSC_TRACE_LEVEL env var
@@ -268,17 +465,60 @@ fn main() {
             };
             serde_json::to_string(&version).unwrap()
         },
-        SubCommand::WhatIf { what_if } => {
+        SubCommand::WhatIf { what_if, state_and_diff } => {
             let result: WhatIf = if what_if {
-                WhatIf { execution_type: "WhatIf".to_string() }
+                if state_and_diff {
+                    WhatIf {
+                        execution_type: "WhatIf".to_string(),
+                        exist: None,
+                        from_resource: Some("ResourceProvidedDiff".to_string())
+                    }
+                } else {
+                    WhatIf {
+                        execution_type: "WhatIf".to_string(),
+                        exist: None,
+                        from_resource: None
+                    }
+                }
             } else {
-                WhatIf { execution_type: "Actual".to_string() }
+                WhatIf {
+                    execution_type: "Actual".to_string(),
+                    exist: None,
+                    from_resource: None
+                }
+            };
+
+            // Output state as first line
+            let state_json = serde_json::to_string(&result).unwrap();
+            println!("{state_json}");
+
+            // If state_and_diff is requested and it's a what-if operation, output diff on second line
+            if state_and_diff && what_if {
+                let diff = vec!["fromResource"];
+                let diff_json = serde_json::to_string(&diff).unwrap();
+                println!("{diff_json}");
+            }
+
+            // Return empty string since we already printed
+            String::new()
+        },
+        SubCommand::WhatIfDelete { what_if } => {
+            let result = if what_if {
+                let mut map = Map::<String, serde_json::Value>::new();
+                map.insert("whatIf".to_string(), serde_json::Value::Array(vec![
+                    serde_json::Value::String("Delete what-if message 1".to_string()),
+                    serde_json::Value::String("Delete what-if message 2".to_string()),
+                ]));
+                WhatIfDelete { exist: None, metadata: Some(map) }
+            } else {
+                WhatIfDelete { exist: Some(false), metadata: None }
             };
             serde_json::to_string(&result).unwrap()
-        },
+        }
     };
 
     if !json.is_empty() {
         println!("{json}");
     }
+    Ok(())
 }

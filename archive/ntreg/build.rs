@@ -7,11 +7,9 @@ fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rustc-link-lib=onecore_apiset");
     println!("cargo:rustc-link-lib=onecoreuap_apiset");
-    static_vcruntime::metabuild();
 }
 
 #[cfg(not(onecore))]
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
-    static_vcruntime::metabuild();
 }

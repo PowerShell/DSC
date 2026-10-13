@@ -2,7 +2,7 @@
 description: >
   Validate operating system information with the Microsoft/OSInfo DSC Resource
   and the dsc resource commands.
-ms.date: 03/25/2025
+ms.date: 07/12/2026
 ms.topic: reference
 title: Validate operating system information with dsc resource
 ---
@@ -32,11 +32,10 @@ dsc resource get -r Microsoft/OSInfo
 
 ```yaml
 actualState:
-  $id: https://developer.microsoft.com/json-schemas/dsc/os_info/20230303/Microsoft.Dsc.OS_Info.schema.json
   family: Linux
   version: '20.04'
   codename: focal
-  bitness: '64'
+  bitness: 64
   architecture: x86_64
 ```
 
@@ -49,10 +48,9 @@ dsc resource get -r Microsoft/OSInfo
 
 ```yaml
 actualState:
-  $id: https://developer.microsoft.com/json-schemas/dsc/os_info/20230303/Microsoft.Dsc.OS_Info.schema.json
-  family: MacOS
+  family: macOS
   version: 13.5.0
-  bitness: '64'
+  bitness: 64
   architecture: arm64
 ```
 
@@ -64,11 +62,11 @@ dsc resource get --resource Microsoft/OSInfo
 
 ```yaml
 actualState:
-  $id: https://developer.microsoft.com/json-schemas/dsc/os_info/20230303/Microsoft.Dsc.OS_Info.schema.json
   family: Windows
   version: 10.0.22621
   edition: Windows 11 Enterprise
-  bitness: '64'
+  bitness: 64
+  architecture: x86_64
 ```
 
 ---
@@ -79,10 +77,13 @@ DSC can use the resource to validate the operating system information. When you 
 [dsc resource test][02] command, input JSON representing the desired state of the instance is
 required. The JSON must define at least one instance property to validate.
 
-The resource doesn't implement the [test operation][03]. It relies on the synthetic testing feature
-of DSC instead. The synthetic test uses a case-sensitive equivalency comparison between the actual
-state of the instance properties and the desired state. If any property value isn't an exact match,
-DSC considers the instance to be out of the desired state.
+The resource implements the [test operation][03]. The command passes the desired state to the
+resource over stdin and the resource returns the actual operating system information with an
+`_inDesiredState` value. DSC returns that value as `inDesiredState` in the test result.
+
+All properties except `version` use case-sensitive equality comparison. For `version`, you can use
+an exact version or a constraint with `>`, `<`, `=`, `>=`, or `<=`. For more information, see the
+[version property][04] reference.
 
 # [Linux](#tab/linux)
 
@@ -90,49 +91,46 @@ This test checks whether the `family` property for the instance is `Linux`. It p
 state for the instance to the command from stdin with the `--file` (`-f`) option.
 
 ```bash
-invalid_instance='{"family": "Linux"}'
-echo $invalid_instance | dsc resource test -r "${resource}" -f -
+valid_instance='{"family": "Linux", "version": ">= 20.04"}'
+echo $valid_instance | dsc resource test -r Microsoft/OSInfo -f -
+```
+
+```yaml
+desiredState:
+  family: Linux
+  version: '>= 20.04'
+actualState:
+  family: Linux
+  version: '20.04'
+  codename: focal
+  bitness: 64
+  architecture: x86_64
+  _inDesiredState: true
+inDesiredState: true
+differingProperties: []
+```
+
+The result shows that the resource evaluated both the family and version constraint successfully.
+The next test demonstrates a case-sensitive mismatch.
+
+```bash
+invalid_instance='{ "family": "linux" }'
+dsc resource test -r Microsoft/OSInfo -i $invalid_instance
 ```
 
 ```yaml
 desiredState:
   family: linux
 actualState:
-  $id: https://developer.microsoft.com/json-schemas/dsc/os_info/20230303/Microsoft.Dsc.OS_Info.schema.json
   family: Linux
   version: '20.04'
   codename: focal
-  bitness: '64'
+  bitness: 64
   architecture: x86_64
+  _inDesiredState: false
 inDesiredState: false
 differingProperties:
 - family
-```
-
-The result shows that the resource is out of the desired state because the actual state of the
-`family` property wasn't case-sensitively equal to the desired state.
-
-The next test validates that the operating system is a 64-bit Linux operating system. It passes
-the desired state for the instance to the command with the `--input` (`-i`) option.
-
-```bash
-valid_instance='{ "family": "Linux", "bitness": "64" }'
-echo $valid_instance | dsc resource test -r Microsoft/OSInfo -i $valid_instance
-```
-
-```yaml
-desiredState:
-  family: Linux
-  bitness: '64'
-actualState:
-  $id: https://developer.microsoft.com/json-schemas/dsc/os_info/20230303/Microsoft.Dsc.OS_Info.schema.json
-  family: Linux
-  version: '20.04'
-  codename: focal
-  bitness: '64'
-  architecture: x86_64
-inDesiredState: true
-differingProperties: []
 ```
 
 # [macOS](#tab/macos)
@@ -141,100 +139,94 @@ This test checks whether the `family` property for the instance is `macOS`. It p
 state for the instance to the command from stdin with the `--file` (`-f`) option.
 
 ```zsh
-invalid_instance='{"family": "macOS"}'
-echo $invalid_instance | dsc resource test -r Microsoft/OSInfo -f -
+valid_instance='{"family": "macOS", "version": ">= 13.0"}'
+echo $valid_instance | dsc resource test -r Microsoft/OSInfo -f -
 ```
 
 ```yaml
 desiredState:
   family: macOS
+  version: '>= 13.0'
 actualState:
-  $id: https://developer.microsoft.com/json-schemas/dsc/os_info/20230303/Microsoft.Dsc.OS_Info.schema.json
-  family: MacOS
+  family: macOS
   version: 13.5.0
-  bitness: '64'
+  bitness: 64
   architecture: arm64
-inDesiredState: false
-differingProperties:
-- family
+  _inDesiredState: true
+inDesiredState: true
+differingProperties: []
 ```
 
-The result shows that the resource is out of the desired state because the actual state of the
-`family` property wasn't case-sensitively equal to the desired state.
-
-The next test validates that the operating system is a 64-bit macOS operating system. It passes the
-desired state for the instance to the command with the `--input` (`-i`) option.
+The result shows that the resource evaluates the version constraint in addition to the family.
+The next test demonstrates a case-sensitive mismatch.
 
 ```zsh
-valid_instance='{ "family": "MacOS", "bitness": "64" }'
-dsc resource test -r Microsoft/OSInfo -i $valid_instance
+invalid_instance='{ "family": "MacOS" }'
+dsc resource test -r Microsoft/OSInfo -i $invalid_instance
 ```
 
 ```yaml
 desiredState:
   family: MacOS
-  bitness: '64'
 actualState:
-  $id: https://developer.microsoft.com/json-schemas/dsc/os_info/20230303/Microsoft.Dsc.OS_Info.schema.json
-  family: MacOS
+  family: macOS
   version: 13.5.0
-  bitness: '64'
+  bitness: 64
   architecture: arm64
-inDesiredState: true
-differingProperties: []
+  _inDesiredState: false
+inDesiredState: false
+differingProperties:
+- family
 ```
 
 # [Windows](#tab/windows)
 
-This test checks whether the `family` property for the instance is `windows`. It passes the desired
-state for the instance to the command from stdin with the `--file` (`-f`) option.
+This test checks whether the `family` property for the instance is `Windows` and whether the
+operating system version is at least `10.0`. It passes the desired state for the instance to the
+command from stdin with the `--file` (`-f`) option.
+
+```powershell
+$validInstance = @{ family = 'Windows'; version = '>= 10.0' } | ConvertTo-JSON
+$validInstance | dsc resource test --resource Microsoft/OSInfo --file -
+```
+
+```yaml
+desiredState:
+  family: Windows
+  version: '>= 10.0'
+actualState:
+  family: Windows
+  version: 10.0.22621
+  edition: Windows 11 Enterprise
+  bitness: 64
+  architecture: x86_64
+  _inDesiredState: true
+inDesiredState: true
+differingProperties: []
+```
+
+The result shows that the resource evaluated both the family and version constraint successfully.
+The next test demonstrates a case-sensitive mismatch.
 
 ```powershell
 $invalidInstance = @{ family = 'windows' } | ConvertTo-JSON
-$invalidInstance | dsc resource test --resource Microsoft/OSInfo --file -
+
+dsc resource test --resource Microsoft/OSInfo --input $invalidInstance
 ```
 
 ```yaml
 desiredState:
   family: windows
 actualState:
-  $id: https://developer.microsoft.com/json-schemas/dsc/os_info/20230303/Microsoft.Dsc.OS_Info.schema.json
   family: Windows
   version: 10.0.22621
   edition: Windows 11 Enterprise
-  bitness: "64"
+  bitness: 64
+  architecture: x86_64
+  _inDesiredState: false
 inDesiredState: false
 differingProperties:
 - family
-```
-
-The result shows that the resource is out of the desired state because the actual state of the
-`family` property wasn't case-sensitively equal to the desired state.
-
-The next test validates that the operating system is a 64-bit Windows operating system. It passes
-the desired state for the instance to the command with the `--input` (`-i`) option.
-
-```powershell
-$validInstance = @{
-    family  = 'Windows'
-    bitness = '64'
-} | ConvertTo-JSON
-
-dsc resource test --resource Microsoft/OSInfo --input $validInstance
-```
-
-```yaml
-desiredState:
-  family: Windows
-  bitness: '64'
-actualState:
-  $id: https://developer.microsoft.com/json-schemas/dsc/os_info/20230303/Microsoft.Dsc.OS_Info.schema.json
-  family: Windows
-  version: 10.0.22621
-  edition: Windows 11 Enterprise
-  bitness: "64"
-inDesiredState: true
-differingProperties: []
 ```
 
 ---
@@ -243,3 +235,4 @@ differingProperties: []
 [01]: ../../../../cli/resource/get.md
 [02]: ../../../../cli/resource/test.md
 [03]: ../../../../../concepts/resources/overview.md#test-operations
+[04]: ../index.md#version

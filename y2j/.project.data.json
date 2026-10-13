@@ -1,0 +1,8 @@
+{
+    "Name": "y2j",
+    "Kind": "CLI",
+    "IsRust": true,
+    "Binaries": [
+        "y2j"
+    ]
+}

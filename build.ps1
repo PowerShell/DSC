@@ -2,931 +2,483 @@
 
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
+using module ./helpers.build.psm1
 
 <#
-.SYNOPSIS
-    Builds, tests, and packages the DSC executable for multiple platforms/architectures.
+    .SYNOPSIS
+    DSC project build script
 
-.DESCRIPTION
-    The .build.ps1 script performs the following tasks:
+    .DESCRIPTION
 
-    - Bootstraps required toolchains (Rust, Node.js, and optionally MSVC/Windows SDK).
-    - Builds all component crates and tools in dependency order using Cargo.
-    - Copies outputs into bin/<architecture>/<configuration>.
-    - Optionally runs static analysis (Clippy) and tests (Cargo/Pester).
-    - Creates distributable packages (MSIX/MSIXBundle/ZIP/TAR.GZ).
-    - Supports lockfile updates and dependency security auditing.
+    .PARAMETER Release
+    Determines whether to compile the Rust projects with the release profile. The release profile
+    uses significant optimizations for runtime size and speed but compiles much more slowly.
 
-.PARAMETER Release
-    Builds with the Release configuration (default is Debug).
+    .PARAMETER Architecture
+    Determines which platform architecture to compile for. The default architecture is `current`,
+    meaning the current operating system. You can specify an alternate architecture to compile for,
+    as Rust supports cross-compilation.
 
-.PARAMETER architecture
-    Targets the platform to build and package for. Supported values:
+    Valid values are:
 
-    - current
-    - aarch64-pc-windows-msvc
-    - x86_64-pc-windows-msvc
-    - aarch64-apple-darwin
-    - x86_64-apple-darwin
-    - aarch64-unknown-linux-gnu
-    - aarch64-unknown-linux-musl
-    - x86_64-unknown-linux-gnu
-    - x86_64-unknown-linux-musl
+    - `current` (default) - The platform matching the current operating system.
+    - `aarch64-pc-windows-msvc` - Windows on ARM with MSVC build chain.
+    - `x86_64-pc-windows-msvc` - Windows on x86 with MSVC build chain.
+    - `aarch64-apple-darwin` - macOS on ARM.
+    - `x86_64-apple-darwin` - macOS on x86.
+    - `aarch64-unknown-linux-gnu` - Linux on ARM with the glibc build chain.
+    - `aarch64-unknown-linux-musl` - Linux on ARM with the musl build chain.
+    - `x86_64-unknown-linux-gnu` - Linux on x86 with the glibc build chain.
+    - `x86_64-unknown-linux-musl` - Linux on x86 with the musl build chain.
 
-    Defaults to 'current'.
+    When packaging, you _must_ specify a specific architecture.
 
-.PARAMETER Clippy
-    Run cargo clippy instead of building artifacts.
+    .PARAMETER Clippy
+    Determines whether to lint the Rust projects with Clippy. When you specify this parameter, the
+    build script lints the Rust projects before building them. Unlike the legacy script, it still
+    produces build artifacts unless a crate fails the linting.
 
-.PARAMETER SkipBuild
-    Skip building artifacts. Useful when you only want to package already-built outputs.
+    .PARAMETER SkipBuild
+    Determines whether to skip building the project.
 
-.PARAMETER packageType
-    Create a package from existing build outputs. One of: msix, msix-private, msixbundle, tgz, zip.
-    Note: When provided, the script will skip building; run a build first in a separate invocation.
+    .PARAMETER Test
+    Determines whether to run Rust and Pester tests for the project.
 
-.PARAMETER Test
-    Run tests after building. Executes cargo test per project and then Pester end-to-end tests.
+    .PARAMETER Project
+    Specifies the projects to build. When used with `-Test`, only tests for the selected projects
+    are run.
 
-.PARAMETER GetPackageVersion
-    Simply retrieves the current package version
+    .PARAMETER CodeCoverage
+    Enables code coverage instrumentation using cargo-llvm-cov. When specified, the build and
+    tests run with coverage instrumentation enabled and an LCOV report is generated at the path
+    specified by `-CodeCoverageOutputPath` (defaults to `lcov.info` in the repository root).
+    Installs cargo-llvm-cov and the llvm-tools-preview rustup component automatically if not present.
 
-.PARAMETER SkipLinkCheck
-    On Windows, skip checking/bootstrapping link.exe and C++ build tools.
+    When `-CodeCoverageBaseSha` and `-CodeCoverageHeadSha` are provided, the script first checks
+    whether any `.rs` files were changed between those commits. If no Rust files were changed,
+    coverage is skipped entirely and the script exits early.
 
-.PARAMETER UseX64MakeAppx
-    On Arm64 Windows packaging, force use of x64 makeappx.exe.
+    .PARAMETER CodeCoverageOutputPath
+    Specifies the output path for the LCOV code coverage report. Only used when `-CodeCoverage`
+    is specified. Defaults to `lcov.info` in the repository root.
 
-.PARAMETER UseCratesIO
-    Use crates.io as the cargo registry (disables CFS source replacement).
+    .PARAMETER CodeCoverageBaseSha
+    The base commit SHA to compare against when detecting changed Rust files. When specified
+    along with `-CodeCoverageHeadSha`, coverage is skipped if no `.rs` files were modified.
 
-.PARAMETER UpdateLockFile
-    Regenerate Cargo.lock files for projects that support it.
+    .PARAMETER CodeCoverageHeadSha
+    The head commit SHA to compare when detecting changed Rust files. When specified along with
+    `-CodeCoverageBaseSha`, coverage is skipped if no `.rs` files were modified.
 
-.PARAMETER Audit
-    Run cargo-audit (with automatic fixes when possible) before building.
+    .PARAMETER CodeCoverageShowFiles
+    When specified, displays a file-by-file coverage breakdown sorted by coverage percentage
+    (lowest first) after the summary. Use with `-CodeCoverage`.
 
-.PARAMETER UseCFSAuth
-    Use Azure CLI to acquire an auth token for the CFS registry (requires az and az login).
+    .PARAMETER CodeCoverageShowUncoveredLines
+    When specified, displays the actual uncovered source lines for files below the threshold
+    set by `-CodeCoverageUncoveredThreshold`. Implies file-level display. Use with `-CodeCoverage`.
 
-.PARAMETER Clean
-    Run cargo clean in each project before building.
+    .PARAMETER CodeCoverageUncoveredThreshold
+    Files with coverage at or below this percentage will have uncovered lines shown when
+    `-CodeCoverageShowUncoveredLines` is specified. Defaults to 80.
 
-.EXAMPLE
-    PS> .\build.ps1 -UseCratesIO
-    Use crates.io as the cargo registry (disables CFS source replacement).
+    .PARAMETER CodeCoverageTopFiles
+    Limits the file-by-file display to the N files with the lowest coverage. Defaults to 0
+    (show all files). Use with `-CodeCoverageShowFiles` or `-CodeCoverageShowUncoveredLines`.
 
-.EXAMPLE
-    PS> .\build.ps1 -Release
-    Build Release for the current host architecture and copy artifacts to bin\\release.
+    .PARAMETER GetPackageVersion
+    Short circuits the build to return the current version of the DSC CLI crate.
 
-.EXAMPLE
-    PS> .\build.ps1 -Test
-    Build and run cargo tests for each project; then run Pester tests. Installs Pester and dependencies as needed.
+    .PARAMETER PackageType
+    Determines which package type to create. Must specify a single package type at a time. Valid
+    package types are:
 
-.EXAMPLE
-    PS> .\build.ps1 -Release -architecture x86_64-pc-windows-msvc
-    PS> .\build.ps1 -packageType zip -architecture x86_64-pc-windows-msvc
-    Two-step Windows packaging: first build Release, then create a ZIP from existing outputs. Packaging skips building.
-
-.EXAMPLE
-    PS> .\build.ps1 -GetPackageVersion
-    Print the current version
+    - `msix` - MSIX package, requires a specific architecture.
+    - `msix-private` - MSIX private package, requires a specific architecture.
+    - `msixbundle` - MSIX bundle package, builds for both Windows targets.
+    - `tgz` - Packages the project as a `.tar.gz` file, only for Linux/macOS.
+    - `deb` - Packages the project as a `.deb` file, only for Linux.
+    - `rpm` - Packages the project as a `.rpm` file, only for Linux.
+    - `zip` - Packages the project as a `.zip` file, only for Windows.
 #>
 [CmdletBinding()]
 param(
     [switch]$Release,
-    [ValidateSet('current','aarch64-pc-windows-msvc','x86_64-pc-windows-msvc','aarch64-apple-darwin','x86_64-apple-darwin','aarch64-unknown-linux-gnu','aarch64-unknown-linux-musl','x86_64-unknown-linux-gnu','x86_64-unknown-linux-musl')]
-    $architecture = 'current',
+    [ValidateSet(
+        'current',
+        'aarch64-pc-windows-msvc',
+        'x86_64-pc-windows-msvc',
+        'aarch64-apple-darwin',
+        'x86_64-apple-darwin',
+        'aarch64-unknown-linux-gnu',
+        'aarch64-unknown-linux-musl',
+        'x86_64-unknown-linux-gnu',
+        'x86_64-unknown-linux-musl'
+    )]
+    $Architecture = 'current',
     [switch]$Clippy,
     [switch]$SkipBuild,
-    [ValidateSet('msix','msix-private','msixbundle','tgz','zip')]
-    $packageType,
+    [ValidateSet(
+        'deb',
+        'msix',
+        'msix-private',
+        'msixbundle',
+        'rpm',
+        'tgz',
+        'zip'
+    )]
+    $PackageType,
     [switch]$Test,
+    [switch]$CodeCoverage,
+    [string]$CodeCoverageOutputPath = (Join-Path $PSScriptRoot 'lcov.info'),
+    [string]$CodeCoverageBaseSha,
+    [string]$CodeCoverageHeadSha,
+    [switch]$CodeCoverageShowFiles,
+    [switch]$CodeCoverageShowUncoveredLines,
+    [int]$CodeCoverageUncoveredThreshold = 80,
+    [int]$CodeCoverageTopFiles = 0,
+    [string[]]$Project,
+    [switch]$ExcludeRustTests,
+    [string]$RustTestFilter,
+    [switch]$ExcludePesterTests,
+    [ValidateSet("dsc", "adapters", "extensions", "grammars", "resources")]
+    [string[]]$PesterTestGroup,
     [switch]$GetPackageVersion,
     [switch]$SkipLinkCheck,
     [switch]$UseX64MakeAppx,
     [switch]$UseCFS,
     [switch]$UpdateLockFile,
     [switch]$Audit,
-    [switch]$UseCFSAuth,
-    [switch]$Clean
+    [switch]$Clean,
+    [switch]$CacheRustBuild,
+    [switch]$RustDocs,
+    [switch]$Quiet
 )
 
-trap {
-    Write-Error "An error occurred: $($_ | Out-String)"
-    exit 1
-}
-
-$env:RUSTC_LOG=$null
-$env:RUSTFLAGS='-Dwarnings'
-$usingADO = ($null -ne $env:TF_BUILD)
-if ($usingADO -or $UseCFSAuth) {
-    $UseCFS = $true
-}
-
-if ($Verbose) {
-    $env:RUSTC_LOG='rustc_codegen_ssa::back::link=info'
-}
-
-if ($GetPackageVersion) {
-    $match = Select-String -Path $PSScriptRoot/dsc/Cargo.toml -Pattern '^version\s*=\s*"(?<ver>.*?)"$'
-    if ($null -eq $match) {
-        throw 'Unable to find version in Cargo.toml'
-    }
-
-    return $match.Matches.Groups[1].Value
-}
-
-$filesForWindowsPackage = @(
-    'appx.dsc.extension.json',
-    'appx-discover.ps1',
-    'bicep.dsc.extension.json',
-    'dsc.exe',
-    'dsc_default.settings.json',
-    'dsc.settings.json',
-    'dscecho.exe',
-    'echo.dsc.resource.json',
-    'assertion.dsc.resource.json',
-    'group.dsc.resource.json',
-    'include.dsc.resource.json',
-    'NOTICE.txt',
-    'osinfo.exe',
-    'osinfo.dsc.resource.json',
-    'powershell.dsc.resource.json',
-    'psDscAdapter/',
-    'psscript.ps1',
-    'psscript.dsc.resource.json',
-    'winpsscript.dsc.resource.json',
-    'reboot_pending.dsc.resource.json',
-    'reboot_pending.resource.ps1',
-    'registry.dsc.resource.json',
-    'registry.exe',
-    'RunCommandOnSet.dsc.resource.json',
-    'RunCommandOnSet.exe',
-    'sshdconfig.exe',
-    'sshd-windows.dsc.resource.json',
-    'sshd_config.dsc.resource.json',
-    'windowspowershell.dsc.resource.json',
-    'wmi.dsc.resource.json',
-    'wmi.resource.ps1',
-    'wmiAdapter.psd1',
-    'wmiAdapter.psm1',
-    'windows_baseline.dsc.yaml',
-    'windows_inventory.dsc.yaml'
-)
-
-$filesForLinuxPackage = @(
-    'bicep.dsc.extension.json',
-    'dsc',
-    'dsc_default.settings.json',
-    'dsc.settings.json'
-    'dscecho',
-    'echo.dsc.resource.json',
-    'assertion.dsc.resource.json',
-    'apt.dsc.resource.json',
-    'apt.dsc.resource.sh',
-    'group.dsc.resource.json',
-    'include.dsc.resource.json',
-    'NOTICE.txt',
-    'osinfo',
-    'osinfo.dsc.resource.json',
-    'powershell.dsc.resource.json',
-    'psDscAdapter/',
-    'psscript.ps1',
-    'psscript.dsc.resource.json',
-    'RunCommandOnSet.dsc.resource.json',
-    'runcommandonset',
-    'sshdconfig',
-    'sshd_config.dsc.resource.json'
-)
-
-$filesForMacPackage = @(
-    'bicep.dsc.extension.json',
-    'dsc',
-    'dsc_default.settings.json',
-    'dsc.settings.json'
-    'dscecho',
-    'echo.dsc.resource.json',
-    'assertion.dsc.resource.json',
-    'brew.dsc.resource.json',
-    'brew.dsc.resource.sh',
-    'group.dsc.resource.json',
-    'include.dsc.resource.json',
-    'NOTICE.txt',
-    'osinfo',
-    'osinfo.dsc.resource.json',
-    'powershell.dsc.resource.json',
-    'psDscAdapter/',
-    'psscript.ps1',
-    'psscript.dsc.resource.json',
-    'RunCommandOnSet.dsc.resource.json',
-    'runcommandonset',
-    'sshdconfig',
-    'sshd_config.dsc.resource.json'
-)
-
-# the list of files other than the binaries which need to be executable
-$filesToBeExecutable = @(
-    'apt.dsc.resource.sh',
-    'brew.dsc.resource.sh'
-)
-
-function Find-LinkExe {
-    try {
-        # this helper may not be needed anymore, but keeping in case the install doesn't work for everyone
-        Write-Verbose "Finding link.exe"
-        Push-Location $BuildToolsPath
-        Set-Location "$(Get-ChildItem -Directory | Sort-Object name -Descending | Select-Object -First 1)\bin\Host$($env:PROCESSOR_ARCHITECTURE)\x64" -ErrorAction Stop
-        $linkexe = (Get-Location).Path
-        Write-Verbose "Using $linkexe"
-        $linkexe
-    }
-    finally {
-        Pop-Location
-    }
-}
-
-$channel = 'stable'
-if ($null -ne (Get-Command msrustup -CommandType Application -ErrorAction Ignore)) {
-    Write-Verbose -Verbose "Using msrustup"
-    $rustup = 'msrustup'
-    $channel = 'ms-stable'
-    if ($architecture -eq 'current') {
-        $env:MSRUSTUP_TOOLCHAIN = "$architecture"
-    }
-} elseif ($null -ne (Get-Command rustup -CommandType Application -ErrorAction Ignore)) {
-        $rustup = 'rustup'
-}
-
-if ($null -ne $packageType) {
-    $SkipBuild = $true
-} else {
-    if ($UseCFS) {
-        Write-Host "Using CFS for cargo source replacement"
-        ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = $null
-        $env:CARGO_REGISTRIES_CRATESIO_INDEX = $null
-
-        if ($UseCFSAuth) {
-            if ($null -eq (Get-Command 'az' -ErrorAction Ignore)) {
-                throw "Azure CLI not found"
-            }
-
-            if ($null -ne (Get-Command az -ErrorAction Ignore)) {
-                Write-Host "Getting token"
-                $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
-                if ($LASTEXITCODE -ne 0) {
-                    Write-Warning "Failed to get access token, use 'az login' first, or use '-useCratesIO' to use crates.io.  Proceeding with anonymous access."
-                } else {
-                    $header = "Bearer $accessToken"
-                    $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
-                    $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
-                    $env:CARGO_REGISTRIES_POWERSHELL_INDEX = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell~force-auth/Cargo/index/"
-                }
-            }
-            else {
-                Write-Warning "Azure CLI not found, proceeding with anonymous access."
-            }
-        }
+begin {
+    if ($Quiet) {
+        $VerbosePreference = 'SilentlyContinue'
+        $InformationPreference = 'SilentlyContinue'
+        $ProgressPreference = 'Continue'
     } else {
-        # this will override the config.toml
-        Write-Host "Setting CARGO_SOURCE_crates-io_REPLACE_WITH to 'crates-io'"
-        ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = 'CRATESIO'
-        $env:CARGO_REGISTRIES_CRATESIO_INDEX = 'sparse+https://index.crates.io/'
+        $InformationPreference = 'Continue'
+        $ProgressPreference = 'SilentlyContinue'
     }
 
-    ## Test if Rust is installed
-    if (!(Get-Command 'cargo' -ErrorAction Ignore)) {
-        Write-Verbose "Rust not found, installing..."
-        if (!$IsWindows) {
-            curl https://sh.rustup.rs -sSf | sh -s -- -y
-            $env:PATH += ":$env:HOME/.cargo/bin"
+    $progressParams = @{
+        Activity = "Executing build script"
+        Quiet    = $Quiet
+    }
+
+    Import-Module ./helpers.build.psm1 -Force -Verbose:$false
+    $usingADO = ($null -ne $env:TF_BUILD)
+    if ($usingADO) {
+        $UseCFS = $true
+    }
+    # Import the build data
+    $BuildData = Import-DscBuildData -RefreshProjects
+    # Filter projects if needed.
+    if ($Project.Count -ge 1) {
+        $BuildData.Projects = $BuildData.Projects | Where-Object -FilterScript {
+            $_.Name -in $Project
         }
-        else {
-            Invoke-WebRequest 'https://static.rust-lang.org/rustup/dist/i686-pc-windows-gnu/rustup-init.exe' -OutFile 'temp:/rustup-init.exe'
-            Write-Verbose "Use the default settings to ensure build works"
-            & 'temp:/rustup-init.exe' -y
-            $env:PATH += ";$env:USERPROFILE\.cargo\bin"
-            Remove-Item temp:/rustup-init.exe -ErrorAction Ignore
-        }
-        if ($LASTEXITCODE -ne 0) {
-            throw "Failed to install Rust"
+        if ($BuildData.Projects.Count -eq 0) {
+            throw "No projects matched the specified project names: $($Project -join ', ')"
         }
     }
-    else  {
-        Write-Verbose "Rust found, updating..."
-        & $rustup update
+    $VerboseParam = @{}
+    if ($VerbosePreference -eq 'Continue' -and -not $Quiet) {
+        $VerboseParam.Verbose = $true
     }
 
-    if ($IsWindows) {
-        $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
-    }
+    function Write-BuildProgress {
+        [cmdletbinding()]
+        param(
+            [string]$Activity,
+            [string]$Status,
+            [switch]$Completed,
+            [switch]$Quiet
+        )
 
-    if (!$usingADO) {
-        & $rustup default stable
-    }
-
-    ## Test if Node is installed
-    ## Skipping upgrade as users may have a specific version they want to use
-    if (!(Get-Command 'node' -ErrorAction Ignore)) {
-        Write-Verbose "Node.js not found, installing..."
-        if (!$IsWindows) {
-            if (Get-Command 'brew' -ErrorAction Ignore) {
-                brew install node@24
+        process {
+            if ($Quiet) {
+                $params = [hashtable]$PSBoundParameters
+                $params.Remove('Quiet') > $null
+                Write-Progress @params
+            } elseif ($Completed) {
+                Write-Host "Finished build script" -ForegroundColor Green
             } else {
-                Write-Warning "Homebrew not found, please install Node.js manually"
+                $message = "BUILD:   $Activity"
+                if (-not [string]::IsNullOrEmpty($Status)) {
+                    $message += "::$Status"
+                }
+                Write-Host $message -ForegroundColor Cyan
             }
-        }
-        else {
-            if (Get-Command 'winget' -ErrorAction Ignore) {
-                Write-Verbose "Using winget to install Node.js"
-                winget install OpenJS.NodeJS --accept-source-agreements --accept-package-agreements --source winget --silent
-            } else {
-                Write-Warning "winget not found, please install Node.js manually"
-            }
-        }
-        if ($LASTEXITCODE -ne 0) {
-            throw "Failed to install Node.js"
-        }
-    }
-
-    ## Test if tree-sitter is installed
-    if ($null -eq (Get-Command tree-sitter -ErrorAction Ignore)) {
-        Write-Verbose -Verbose "tree-sitter not found, installing..."
-        if ($UseCFS) {
-            cargo install tree-sitter-cli --config .cargo/config.toml
-        } else {
-            cargo install tree-sitter-cli
-        }
-        if ($LASTEXITCODE -ne 0) {
-            throw "Failed to install tree-sitter-cli"
         }
     }
 }
 
-if (!$SkipBuild -and !$SkipLinkCheck -and $IsWindows -and !(Get-Command 'link.exe' -ErrorAction Ignore)) {
-    if (!(Test-Path $BuildToolsPath)) {
-        Write-Verbose "link.exe not found, installing C++ build tools"
-        Invoke-WebRequest 'https://aka.ms/vs/17/release/vs_BuildTools.exe' -OutFile 'temp:/vs_buildtools.exe'
-        $arg = @('--passive','--add','Microsoft.VisualStudio.Workload.VCTools','--includerecommended')
-        if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') {
-            $arg += '--add','Microsoft.VisualStudio.Component.VC.Tools.ARM64'
-        }
-        Start-Process -FilePath 'temp:/vs_buildtools.exe' -ArgumentList $arg -Wait
-        Remove-Item temp:/vs_installer.exe -ErrorAction Ignore
-        Write-Verbose "Updating env vars"
-        $machineEnv = [environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::Machine).Split(';')
-        $userEnv = [environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::User).Split(';')
-        $pathEnv = ($env:PATH).Split(';')
-        foreach ($env in $machineEnv) {
-            if ($pathEnv -notcontains $env) {
-                $pathEnv += $env
-            }
-        }
-        foreach ($env in $userEnv) {
-            if ($pathEnv -notcontains $env) {
-                $pathEnv += $env
-            }
-        }
-        $env:PATH = $pathEnv -join ';'
-    }
-
-    #$linkexe = Find-LinkExe
-    #$env:PATH += ";$linkexe"
-}
-
-$configuration = $Release ? 'release' : 'debug'
-$flags = @($Release ? '-r' : $null)
-if ($architecture -eq 'current') {
-    $path = ".\target\$configuration"
-    $target = Join-Path $PSScriptRoot 'bin' $configuration
-}
-else {
-    $flags += '--target'
-    $flags += $architecture
-    $path = ".\target\$architecture\$configuration"
-    $target = Join-Path $PSScriptRoot 'bin' $architecture $configuration
-}
-
-if (!$SkipBuild) {
-    if ($architecture -ne 'Current' -and !$usingADO) {
-        & $rustup target add --toolchain $channel $architecture
-    }
-
-    if (Test-Path $target) {
-        Remove-Item $target -Recurse -ErrorAction Ignore
-    }
-    New-Item -ItemType Directory $target -ErrorAction Ignore > $null
-
-    # make sure dependencies are built first so clippy runs correctly
-    $windows_projects = @("pal", "registry_lib", "registry", "reboot_pending", "wmi-adapter", "configurations/windows", 'extensions/appx')
-    $macOS_projects = @("resources/brew")
-    $linux_projects = @("resources/apt")
-
-    # projects are in dependency order
-    $projects = @(
-        ".",
-        "tree-sitter-dscexpression",
-        "tree-sitter-ssh-server-config",
-        "security_context_lib",
-        "lib/osinfo_lib",
-        "dsc_lib",
-        "dsc",
-        "dscecho",
-        "extensions/bicep",
-        "osinfo",
-        "powershell-adapter",
-        'resources/PSScript',
-        "process",
-        "runcommandonset",
-        "sshdconfig",
-        "tools/dsctest",
-        "tools/test_group_resource",
-        "y2j"
-    )
-    $pedantic_unclean_projects = @()
-    $clippy_unclean_projects = @("tree-sitter-dscexpression", "tree-sitter-ssh-server-config")
-    $skip_test_projects_on_windows = @("tree-sitter-dscexpression", "tree-sitter-ssh-server-config")
-
-    if ($IsWindows) {
-        $projects += $windows_projects
-    }
-
-    if ($IsMacOS) {
-        $projects += $macOS_projects
-    }
-
-    if ($IsLinux) {
-        $projects += $linux_projects
-    }
-
-    $failed = $false
-    foreach ($project in $projects) {
-        ## Build format_json
-        Write-Host -ForegroundColor Cyan "Building '$project' for $architecture"
-        try {
-            Push-Location "$PSScriptRoot/$project" -ErrorAction Stop
-            Write-Verbose -Verbose "Current directory is $(Get-Location)"
-
-            # check if the project is either tree-sitter-dscexpression or tree-sitter-ssh-server-config
-            if (($project -eq 'tree-sitter-dscexpression') -or ($project -eq 'tree-sitter-ssh-server-config')) {
-                if ($UpdateLockFile) {
-                    cargo generate-lockfile
-                }
-                else {
-                    if ($Audit) {
-                        if ($null -eq (Get-Command cargo-audit -ErrorAction Ignore)) {
-                            if ($UseCFS) {
-                                cargo install cargo-audit --features=fix --config .cargo/config.toml
-                            } else {
-                                cargo install cargo-audit --features=fix
-                            }
-                        }
-
-                        cargo audit fix
-                    }
-
-                    Write-Verbose -Verbose "Running build.ps1 for $project"
-                    ./build.ps1
-                }
-            }
-
-            if (Test-Path "./Cargo.toml")
-            {
-                if ($Clippy) {
-                    if ($clippy_unclean_projects -contains $project) {
-                        Write-Verbose "Skipping clippy for $project"
-                    }
-                    elseif ($pedantic_unclean_projects -contains $project) {
-                        Write-Verbose "Running clippy for $project"
-                        cargo clippy @flags -- -Dwarnings
-                    }
-                    else {
-                        Write-Verbose "Running clippy with pedantic for $project"
-                        cargo clippy @flags --% -- -Dwarnings -Dclippy::pedantic
-                    }
-                }
-                else {
-                    if ($UpdateLockFile) {
-                        cargo generate-lockfile
-                    }
-                    else {
-                        if ($Audit) {
-                            if ($null -eq (Get-Command cargo-audit -ErrorAction Ignore)) {
-                                if ($UseCFS) {
-                                    cargo install cargo-audit --features=fix --config .cargo/config.toml
-                                } else {
-                                    cargo install cargo-audit --features=fix
-                                }
-                            }
-
-                            cargo audit fix
-                        }
-
-                        if ($Clean) {
-                            cargo clean
-                        }
-
-                        Write-Verbose -Verbose "Building $project"
-                        cargo build @flags
-                    }
-                }
-            }
-
-            if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
-                Write-Error "Last exit code is $LASTEXITCODE, build failed for '$project'"
-                $failed = $true
-                break
-            }
-
-            $binary = Split-Path $project -Leaf
-
-            if ($IsWindows) {
-                Copy-Item "$path/$binary.exe" $target -ErrorAction Ignore -Verbose
-                Copy-Item "$path/$binary.pdb" $target -ErrorAction Ignore -Verbose
-            }
-            else {
-                Copy-Item "$path/$binary" $target -ErrorAction Ignore -Verbose
-            }
-
-            if (Test-Path "./copy_files.txt") {
-                Get-Content "./copy_files.txt" | ForEach-Object {
-                    # if the line contains a '\' character, throw an error
-                    if ($_ -match '\\') {
-                        throw "copy_files.txt should use '/' as the path separator"
-                    }
-                    # copy the file to the target directory, creating the directory path if needed
-                    $fileCopyPath = $_.split('/')
-                    if ($fileCopyPath.Length -gt 1) {
-                        $fileCopyPath = $fileCopyPath[0..($fileCopyPath.Length - 2)]
-                        $fileCopyPath = $fileCopyPath -join '/'
-                        New-Item -ItemType Directory -Path "$target/$fileCopyPath" -Force -ErrorAction Ignore | Out-Null
-                    }
-                    Copy-Item $_ "$target/$_" -Force -ErrorAction Ignore
-                }
-            }
-
-            if ($IsWindows) {
-                Copy-Item "*.dsc.resource.json" $target -Force -ErrorAction Ignore
-            }
-            else { # don't copy WindowsPowerShell resource manifest
-                $exclude = @('windowspowershell.dsc.resource.json', 'winpsscript.dsc.resource.json')
-                Copy-Item "*.dsc.resource.json" $target -Exclude $exclude -Force -ErrorAction Ignore
-            }
-
-            # be sure that the files that should be executable are executable
-            if ($IsLinux -or $IsMacOS) {
-                foreach ($exeFile in $filesToBeExecutable) {
-                    $exePath = "$target/$exeFile"
-                    if (test-path $exePath) {
-                        chmod +x $exePath
-                    }
-                }
-            }
-        } catch {
-            Write-Error "Failed to build $project : $($_ | Out-String)"
-            $failed = $true
-            break
-        } finally {
-            Pop-Location
-        }
-    }
-
-    if ($failed) {
-        Write-Host -ForegroundColor Red "Build failed"
+process {
+    trap {
+        Write-Error "An error occurred: $($_ | Out-String)"
         exit 1
     }
-}
 
-if (!$Clippy -and !$SkipBuild) {
-    $relative = Resolve-Path $target -Relative
-    Write-Host -ForegroundColor Green "`nEXE's are copied to $target ($relative)"
-
-    # remove the other target in case switching between them
-    $dirSeparator = [System.IO.Path]::DirectorySeparatorChar
-    if ($Release) {
-        $oldTarget = $target.Replace($dirSeparator + 'release', $dirSeparator + 'debug')
+    if ($GetPackageVersion) {
+        return Get-DscCliVersion @VerboseParam
     }
-    else {
-        $oldTarget = $target.Replace($dirSeparator + 'debug', $dirSeparator + 'release')
-    }
-    $env:PATH = $env:PATH.Replace($oldTarget, '')
+    Write-BuildProgress @progressParams
 
-    $paths = $env:PATH.Split([System.IO.Path]::PathSeparator)
-    $found = $false
-    foreach ($path in $paths) {
-        if ($path -eq $target) {
-            $found = $true
-            break
+    #region    Setup
+    $progressParams.Activity = 'Performing setup steps'
+    Write-BuildProgress @progressParams
+    Write-BuildProgress @progressParams -Status "Determining rustup info"
+    $rustup, $channel = Get-RustUp @VerboseParam
+
+    if ($null -ne $PackageType) {
+        $SkipBuild = $true
+    } else {
+        Write-BuildProgress @progressParams -Status 'Configuring Rust environment'
+        [hashtable]$priorRustEnvironment = Set-RustEnvironment -CacheRustBuild:$CacheRustBuild @VerboseParam
+        Write-BuildProgress @progressParams -Status 'Configuring Cargo environment'
+        Set-CargoEnvironment -UseCFS:$UseCFS @VerboseParam
+
+        # Install or update rust
+        if (!$usingADO) {
+            Write-BuildProgress @progressParams -Status 'Ensuring Rust is up-to-date'
+            Update-Rust @VerboseParam
+        }
+
+        if ($Clippy) {
+            Write-BuildProgress @progressParams -Status 'Ensuring Clippy is available and updated'
+            Install-Clippy -UseCFS:$UseCFS -Architecture $Architecture @VerboseParam
+        }
+
+        if (!$SkipBuild -and !$SkipLinkCheck -and $IsWindows) {
+            Write-BuildProgress @progressParams -Status "Ensuring Windows C++ build tools are available"
+            Install-WindowsCPlusPlusBuildTools @VerboseParam
+        }
+
+        if (-not ($SkipBuild -and $Test -and $ExcludeRustTests)) {
+            Write-BuildProgress @progressParams -Status 'Ensuring Protobuf is available'
+            Install-Protobuf @VerboseParam
+
+            Write-BuildProgress @progressParams -Status 'Ensuring Node.JS is available'
+            Install-NodeJS @VerboseParam
+
+            Write-BuildProgress @progressParams -Status 'Ensuring tree-sitter is available'
+            Install-TreeSitter -UseCFS:$UseCFS @VerboseParam
         }
     }
 
-    # remove empty entries from path
-    $env:PATH = [string]::Join([System.IO.Path]::PathSeparator, $env:PATH.Split([System.IO.Path]::PathSeparator, [StringSplitOptions]::RemoveEmptyEntries))
+    #endregion Setup
 
-    if (!$found) {
-        Write-Host -ForegroundCOlor Yellow "Adding $target to `$env:PATH"
-        $env:PATH = $target + [System.IO.Path]::PathSeparator + $env:PATH
-    }
-}
+    #region    Code coverage instrumentation
+    if ($CodeCoverage) {
+        # Code coverage requires tests to run
+        $Test = $true
+        $progressParams.Activity = 'Setting up code coverage'
+        Write-BuildProgress @progressParams
 
-if ($Test) {
-    $failed = $false
-    $repository = 'PSGallery'
-
-    if ($usingADO) {
-        $repository = 'CFS'
-        if ($null -eq (Get-PSResourceRepository -Name CFS -ErrorAction Ignore)) {
-            "Registering CFS repository"
-            Register-PSResourceRepository -uri 'https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/nuget/v2' -Name CFS -Trusted
-        }
-    }
-
-    if ($IsWindows) {
-        # PSDesiredStateConfiguration module is needed for Microsoft.Windows/WindowsPowerShell adapter
-        $FullyQualifiedName = @{ModuleName="PSDesiredStateConfiguration";ModuleVersion="2.0.7"}
-        if (-not(Get-Module -ListAvailable -FullyQualifiedName $FullyQualifiedName))
-        {
-            Install-PSResource -Name PSDesiredStateConfiguration -Version 2.0.7 -Repository $repository -TrustRepository
-        }
-    }
-
-    if (-not(Get-Module -ListAvailable -Name Pester))
-    {   "Installing module Pester"
-        Install-PSResource Pester -WarningAction Ignore -Repository $repository -TrustRepository
-    }
-
-    foreach ($project in $projects) {
-        if ($IsWindows -and $skip_test_projects_on_windows -contains $project) {
-            Write-Verbose "Skipping test for $project on Windows"
-            continue
-        }
-
-        Write-Host -ForegroundColor Cyan "Testing $project ..."
-        try {
-            Push-Location "$PSScriptRoot/$project"
-            if (Test-Path "./Cargo.toml")
-            {
-                cargo test
-
-                if ($LASTEXITCODE -ne 0) {
-                    $failed = $true
-                }
+        if ($CodeCoverageBaseSha -and $CodeCoverageHeadSha) {
+            Write-BuildProgress @progressParams -Status 'Checking for changed Rust files'
+            $changedRustFiles = Get-ChangedRustFile -BaseSha $CodeCoverageBaseSha -HeadSha $CodeCoverageHeadSha @VerboseParam
+            if ($changedRustFiles.Count -eq 0) {
+                Write-Warning 'No Rust files changed between the specified commits. Skipping code coverage.'
+                return
             }
-        } finally {
-            Pop-Location
+        }
+
+        Write-BuildProgress @progressParams -Status 'Configuring cargo-llvm-cov environment'
+        Remove-Item $CodeCoverageOutputPath -Force -ErrorAction Ignore
+        Initialize-CodeCoverage -UseCFS:$UseCFS @VerboseParam
+
+        Write-BuildProgress @progressParams -Status 'Setting llvm-cov environment variables'
+        $priorLlvmCovEnv = Set-LlvmCovEnvironment @VerboseParam
+    }
+    #endregion Code coverage instrumentation
+
+    if (!$SkipBuild) {
+        if ($UpdateLockFile) {
+            $lockFile = Join-Path $PSScriptRoot "Cargo.lock"
+            Remove-Item $lockFile -Force
+        }
+
+        $progressParams.Activity = 'Building the projects'
+        Write-BuildProgress @progressParams
+        Write-BuildProgress @progressParams -Status 'Generating grammar bindings'
+        Export-GrammarBinding -Project $BuildData.Projects @VerboseParam
+
+        if ($RustDocs) {
+            $progressParams.Activity = 'Generating Rust documentation'
+            Write-BuildProgress @progressParams
+
+            $docsParams = @{
+                Project      = $BuildData.Projects
+                Architecture = $Architecture
+                Release      = $Release
+            }
+            Export-RustDocs @docsParams @VerboseParam
+        } else {
+            $buildParams = @{
+                Project      = $BuildData.Projects
+                Architecture = $Architecture
+                Release      = $Release
+                Clean        = $Clean
+            }
+            Write-BuildProgress @progressParams -Status 'Compiling Rust'
+            Build-RustProject @buildParams -Audit:$Audit -Clippy:$Clippy @VerboseParam
+            Write-BuildProgress @progressParams -Status "Copying build artifacts"
+            Copy-BuildArtifact @buildParams -ExecutableFile $BuildData.PackageFiles.Executable @VerboseParam
         }
     }
 
-    if ($failed) {
-        throw "Test failed"
+    # Ensure PATH includes the output artifacts after building and before testing.
+    if ((!$Clippy -and !$SkipBuild) -or $Test) {
+        $progressParams.Activity = 'Updating environment variables'
+        Write-BuildProgress @progressParams
+        Update-PathEnvironment -Architecture $Architecture -Release:$Release @VerboseParam
     }
 
-    "PSModulePath is:"
-    $env:PSModulePath
-    "Pester module located in:"
-    (Get-Module -Name Pester -ListAvailable).Path
+    if ($Test) {
+        $progressParams.Activity = 'Testing projects'
+        Write-BuildProgress @progressParams
 
-    # On Windows disable duplicated WinPS resources that break PSDesiredStateConfiguration module
-    if ($IsWindows) {
-        $a = $env:PSModulePath -split ";" | ? { $_ -notmatch 'WindowsPowerShell' }
-        $env:PSModulePath = $a -join ';'
+        if (-not $ExcludeRustTests) {
+            $rustTestParams = @{
+                Project      = $BuildData.Projects
+                Architecture = $Architecture
+                Release      = $Release
+            }
+            if (-not [string]::IsNullOrEmpty($RustTestFilter)) {
+                $rustTestParams.TestFilter = $RustTestFilter
+            }
+            Write-BuildProgress @progressParams -Status "Testing Rust projects"
+            Test-RustProject @rustTestParams @VerboseParam
+        }
+        if ($RustDocs) {
+            $docTestParams = @{
+                Project      = $BuildData.Projects
+                Architecture = $Architecture
+                Release      = $Release
+                Docs         = $true
+            }
+            Write-BuildProgress @progressParams -Status "Testing documentation for Rust projects"
+            Test-RustProject @docTestParams @VerboseParam
+        }
+        if (-not $ExcludePesterTests) {
+            $installParams = @{
+                UsingADO = $usingADO
+            }
+            $pesterParams = @{
+                UsingADO = $usingADO
+            }
+            if ($Project.Count -ge 1) {
+                $pesterParams.Project = $BuildData.Projects
+            }
+            if ($null -ne $PesterTestGroup) {
+                $pesterParams.Group = $PesterTestGroup
+            }
+            Write-BuildProgress @progressParams -Status "Installing PowerShell test prerequisites"
+            Install-PowerShellTestPrerequisite @installParams @VerboseParam
+            Write-BuildProgress @progressParams -Status "Invoking pester"
+            Test-ProjectWithPester @pesterParams @VerboseParam
+        }
+    }
 
-        "Updated PSModulePath is:"
-        $env:PSModulePath
+    #region    Code coverage report
+    if ($CodeCoverage) {
+        $progressParams.Activity = 'Generating code coverage report'
+        Write-BuildProgress @progressParams
+        Write-BuildProgress @progressParams -Status "Writing LCOV report to $CodeCoverageOutputPath"
+        Export-CodeCoverageReport -OutputPath $CodeCoverageOutputPath @VerboseParam
 
-        if (-not(Get-Module -ListAvailable -Name Pester))
-        {   "Installing module Pester"
-            $InstallTargetDir = ($env:PSModulePath -split ";")[0]
-            Find-PSResource -Name 'Pester' -Repository $repository | Save-PSResource -Path $InstallTargetDir -TrustRepository
+        Write-BuildProgress @progressParams -Status 'Restoring environment variables'
+        Reset-LlvmCovEnvironment -PriorValues $priorLlvmCovEnv @VerboseParam
+
+        # Full codebase coverage summary
+        $progressParams.Activity = 'Analyzing code coverage'
+        Write-BuildProgress @progressParams -Status 'Computing full codebase coverage'
+        $fullReport = Get-FullCodeCoverageReport -LcovPath $CodeCoverageOutputPath @VerboseParam
+        Write-Host ""
+        Write-Host "$($PSStyle.Bold)Full Codebase Coverage: $($fullReport.Percentage)% ($($fullReport.Label))$($PSStyle.BoldOff)"
+        Write-Host "  Total executable lines: $($fullReport.TotalLines) | Lines covered: $($fullReport.CoveredLines)"
+
+        # File-by-file breakdown and line-level detail
+        if ($CodeCoverageShowFiles -or $CodeCoverageShowUncoveredLines) {
+            $showParams = @{
+                LcovPath = $CodeCoverageOutputPath
+            }
+            if ($CodeCoverageShowUncoveredLines) {
+                $showParams.ShowUncoveredLines = $true
+                $showParams.UncoveredThreshold = $CodeCoverageUncoveredThreshold
+            }
+            if ($CodeCoverageTopFiles -gt 0) {
+                $showParams.Top = $CodeCoverageTopFiles
+            }
+            Show-FullCodeCoverageReport @showParams
         }
 
-        "Updated Pester module location:"
-        (Get-Module -Name Pester -ListAvailable).Path
-    }
+        # Determine base and head SHAs for changed-code analysis
+        $baseSha = $CodeCoverageBaseSha
+        $headSha = $CodeCoverageHeadSha
 
-    Invoke-Pester -Output Detailed -ErrorAction Stop
+        if (-not $baseSha -or -not $headSha) {
+            # Try to discover from current branch vs its upstream/default
+            $currentBranch = git rev-parse --abbrev-ref HEAD 2>$null
+            $defaultBranch = git rev-parse --abbrev-ref origin/HEAD 2>$null
+            if (-not $defaultBranch) {
+                $defaultBranch = 'origin/main'
+            }
+            $discoveredBase = git merge-base $defaultBranch $currentBranch 2>$null
+            $discoveredHead = git rev-parse HEAD 2>$null
+
+            if ($discoveredBase -and $discoveredHead -and $discoveredBase -ne $discoveredHead) {
+                $baseSha = $discoveredBase
+                $headSha = $discoveredHead
+                Write-Verbose -Verbose "Discovered coverage comparison: $baseSha...$headSha"
+            }
+        }
+
+        if ($baseSha -and $headSha) {
+            Write-BuildProgress @progressParams -Status 'Analyzing changed code coverage'
+            $report = Get-CodeCoverageReport -LcovPath $CodeCoverageOutputPath -BaseSha $baseSha -HeadSha $headSha @VerboseParam
+            Write-Host ""
+            Write-Host "$($PSStyle.Bold)Changed Code Coverage: $($report.Percentage)% ($($report.Label))$($PSStyle.BoldOff)"
+            Write-Host "  Changed lines analyzed: $($report.TotalLines) | Lines covered: $($report.CoveredLines)"
+        } else {
+            Write-Host ""
+            Write-Host "No base branch detected for changed-code analysis. Showing full report only."
+            Write-Host "Use -CodeCoverageBaseSha and -CodeCoverageHeadSha for changed-code coverage."
+        }
+
+        Write-Host ""
+        Write-Host "LCOV report: $CodeCoverageOutputPath"
+    }
+    #endregion Code coverage report
+
+    if (-not [string]::IsNullOrEmpty($PackageType)) {
+        $progressParams.Activity = "Packaging"
+        $packageParams = @{
+            BuildData      = $BuildData
+            PackageType    = $PackageType
+            Architecture   = $Architecture
+            Release        = $Release
+            UseX64MakeAppx = $UseX64MakeAppx
+        }
+        Write-BuildProgress @progressParams
+        Build-DscPackage @packageParams @VerboseParam
+    }
 }
 
-function Find-MakeAppx() {
-    $makeappx = Get-Command makeappx -CommandType Application -ErrorAction Ignore
-    if ($null -eq $makeappx) {
-        # try to find
-        if (!$UseX64MakeAppx -and $architecture -eq 'aarch64-pc-windows-msvc') {
-            $arch = 'arm64'
-        }
-        else {
-            $arch = 'x64'
-        }
+clean {
+    $progressParams.Activity = 'Cleaning up'
+    Write-BuildProgress @progressParams
 
-        $makeappx = Get-ChildItem -Recurse -Path (Join-Path ${env:ProgramFiles(x86)} 'Windows Kits\10\bin\*\' $arch) -Filter makeappx.exe | Sort-Object FullName -Descending | Select-Object -First 1
-        if ($null -eq $makeappx) {
-            throw "makeappx not found, please install Windows SDK"
-        }
+    if ($null -ne $priorRustEnvironment) {
+        Write-BuildProgress @progressParams -Status "Restoring rust environment"
+        Reset-RustEnvironment -PriorEnvironment $priorRustEnvironment @VerboseParam
     }
 
-    $makeappx
+    Write-BuildProgress -Completed
 }
-
-$productVersion = (((Get-Content $PSScriptRoot/dsc/Cargo.toml) -match '^version\s*=\s*') -replace 'version\s*=\s*"(.*?)"', '$1').Trim()
-
-if ($packageType -eq 'msixbundle') {
-    if (!$IsWindows) {
-        throw "MsixBundle is only supported on Windows"
-    }
-
-    $packageName = "DSC-$productVersion-Win"
-    $makeappx = Find-MakeAppx
-    $msixPath = Join-Path $PSScriptRoot 'bin' 'msix'
-    & $makeappx bundle /d $msixPath /p "$PSScriptRoot\bin\$packageName.msixbundle"
-    return
-} elseif ($packageType -eq 'msix' -or $packageType -eq 'msix-private') {
-    if (!$IsWindows) {
-        throw "MSIX is only supported on Windows"
-    }
-
-    if ($architecture -eq 'current') {
-        throw 'MSIX requires a specific architecture'
-    }
-
-    $isPrivate = $packageType -eq 'msix-private'
-
-    $makeappx = Find-MakeAppx
-    $makepri = Get-Item (Join-Path $makeappx.Directory "makepri.exe") -ErrorAction Stop
-    $displayName = "DesiredStateConfiguration"
-    $isPreview = $productVersion -like '*-*'
-    $productName = "DesiredStateConfiguration"
-    if ($isPreview) {
-        Write-Verbose "Preview version detected"
-        if ($isPrivate) {
-            $productName += "-Private"
-        }
-        else {
-            $productName += "-Preview"
-        }
-        # save preview number
-        $previewNumber = [int]($productVersion -replace '.*?-[a-z]+\.([0-9]+)', '$1' | Out-String)
-        $productLabel = $productVersion.Split('-')[1]
-        if ($productLabel.StartsWith('rc')) {
-            # if RC, we increment by 100 to ensure it's newer than the last preview
-            $previewNumber += 100
-        }
-        # remove label from version
-        $productVersion = $productVersion.Split('-')[0]
-        # replace revision number with preview number
-        $productVersion = $productVersion -replace '(\d+)$', "$previewNumber.0"
-
-        if ($isPrivate) {
-            $displayName += "-Private"
-        }
-        else {
-            $displayName += "-Preview"
-        }
-    }
-    else {
-        # appx requires a version in the format of major.minor.build.revision with revision being 0
-        $productVersion += ".0"
-    }
-
-    Write-Verbose "Product version is $productVersion"
-    $arch = if ($architecture -eq 'aarch64-pc-windows-msvc') { 'arm64' } else { 'x64' }
-
-    # Appx manifest needs to be in root of source path, but the embedded version needs to be updated
-    # cp-459155 is 'CN=Microsoft Windows Store Publisher (Store EKU), O=Microsoft Corporation, L=Redmond, S=Washington, C=US'
-    # authenticodeFormer is 'CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US'
-    $releasePublisher = 'CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US'
-
-    $appxManifest = Get-Content "$PSScriptRoot\packaging\msix\AppxManifest.xml" -Raw
-    $appxManifest = $appxManifest.Replace('$VERSION$', $ProductVersion).Replace('$ARCH$', $Arch).Replace('$PRODUCTNAME$', $productName).Replace('$DISPLAYNAME$', $displayName).Replace('$PUBLISHER$', $releasePublisher)
-    $msixTarget = Join-Path $PSScriptRoot 'bin' $architecture 'msix'
-    if (Test-Path $msixTarget) {
-        Remove-Item $msixTarget -Recurse -ErrorAction Stop -Force
-    }
-
-    New-Item -ItemType Directory $msixTarget > $null
-    Set-Content -Path "$msixTarget\AppxManifest.xml" -Value $appxManifest -Force
-
-    foreach ($file in $filesForWindowsPackage) {
-        if ((Get-Item "$target\$file") -is [System.IO.DirectoryInfo]) {
-            Copy-Item "$target\$file" "$msixTarget\$file" -Recurse -ErrorAction Stop
-        } else {
-            Copy-Item "$target\$file" $msixTarget -ErrorAction Stop
-        }
-    }
-
-    # Necessary image assets need to be in source assets folder
-    $assets = @(
-        'Square150x150Logo'
-        'Square64x64Logo'
-        'Square44x44Logo'
-        'Square44x44Logo.targetsize-48'
-        'Square44x44Logo.targetsize-48_altform-unplated'
-        'StoreLogo'
-    )
-
-    New-Item -ItemType Directory "$msixTarget\assets" > $null
-    foreach ($asset in $assets) {
-        Copy-Item "$PSScriptRoot\packaging\assets\$asset.png" "$msixTarget\assets" -ErrorAction Stop
-    }
-
-    Write-Verbose "Creating priconfig.xml"
-    & $makepri createconfig /o /cf (Join-Path $msixTarget "priconfig.xml") /dq en-US
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to create priconfig.xml"
-    }
-
-    Write-Verbose "Creating resources.pri"
-    Push-Location $msixTarget
-    & $makepri new /v /o /pr $msixTarget /cf (Join-Path $msixTarget "priconfig.xml")
-    Pop-Location
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to create resources.pri"
-    }
-
-    Write-Verbose "Creating msix package"
-
-    $targetFolder = Join-Path $PSScriptRoot 'bin' 'msix'
-    if (Test-Path $targetFolder) {
-        Remove-Item $targetFolder -Recurse -ErrorAction Stop -Force
-    } else {
-        New-Item -ItemType Directory $targetFolder > $null
-    }
-
-    $packageName = Join-Path $targetFolder "$productName-$productVersion-$arch.msix"
-    & $makeappx pack /o /v /h SHA256 /d $msixTarget /p $packageName
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to create msix package"
-    }
-
-    Write-Verbose "`nMSIX package is created at $packageName"
-} elseif ($packageType -eq 'zip') {
-    $zipTarget = Join-Path $PSScriptRoot 'bin' $architecture 'zip'
-    if (Test-Path $zipTarget) {
-        Remove-Item $zipTarget -Recurse -ErrorAction Stop -Force
-    }
-
-    New-Item -ItemType Directory $zipTarget > $null
-
-    foreach ($file in $filesForWindowsPackage) {
-        if ((Get-Item "$target\$file") -is [System.IO.DirectoryInfo]) {
-            Copy-Item "$target\$file" "$zipTarget\$file" -Recurse -ErrorAction Stop
-        } else {
-            Copy-Item "$target\$file" $zipTarget -ErrorAction Stop
-        }
-    }
-
-    $packageName = "DSC-$productVersion-$architecture.zip"
-    $zipFile = Join-Path $PSScriptRoot 'bin' $packageName
-    Compress-Archive -Path "$zipTarget/*" -DestinationPath $zipFile -Force
-    Write-Host -ForegroundColor Green "`nZip file is created at $zipFile"
-} elseif ($packageType -eq 'tgz') {
-    $tgzTarget = Join-Path $PSScriptRoot 'bin' $architecture 'tgz'
-    if (Test-Path $tgzTarget) {
-        Remove-Item $tgzTarget -Recurse -ErrorAction Stop -Force
-    }
-
-    New-Item -ItemType Directory $tgzTarget > $null
-
-    if ($IsLinux) {
-        $filesForPackage = $filesForLinuxPackage
-    } elseif ($IsMacOS) {
-        $filesForPackage = $filesForMacPackage
-    } else {
-        Write-Error "Unsupported platform for tgz package"
-    }
-
-    foreach ($file in $filesForPackage) {
-        if ((Get-Item "$target\$file") -is [System.IO.DirectoryInfo]) {
-            Copy-Item "$target\$file" "$tgzTarget\$file" -Recurse -ErrorAction Stop
-        } else {
-            Copy-Item "$target\$file" $tgzTarget -ErrorAction Stop
-        }
-    }
-
-    # for Linux, we only build musl as its statically linked, so we remove the musl suffix
-    $productArchitecture = if ($architecture -eq 'aarch64-unknown-linux-musl') {
-        'aarch64-linux'
-    } elseif ($architecture -eq 'x86_64-unknown-linux-musl') {
-        'x86_64-linux'
-    } else {
-        $architecture
-    }
-
-    Write-Verbose "Creating tar.gz file"
-    $packageName = "DSC-$productVersion-$productArchitecture.tar.gz"
-    $tarFile = Join-Path $PSScriptRoot 'bin' $packageName
-    tar -czvf $tarFile -C $tgzTarget .
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to create tar.gz file"
-    }
-
-    # check it's valid
-    $out = file $tarFile
-    if ($out -notmatch 'gzip compressed data') {
-        throw "Invalid tar.gz file"
-    }
-
-    Write-Host -ForegroundColor Green "`ntar.gz file is created at $tarFile"
-}
-
-$env:RUST_BACKTRACE=1

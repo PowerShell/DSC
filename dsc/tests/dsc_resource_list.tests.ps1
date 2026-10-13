@@ -11,7 +11,7 @@ BeforeDiscovery {
 
 Describe 'Tests for listing resources' {
     It 'dsc resource list' {
-        $resources = dsc resource list | ConvertFrom-Json -Depth 10
+        $resources = dsc resource list | ConvertFrom-Json -Depth 15
         $LASTEXITCODE | Should -Be 0
         $resources | Should -Not -BeNullOrEmpty
         $resources.Count | Should -BeGreaterThan 0
@@ -25,10 +25,10 @@ Describe 'Tests for listing resources' {
 
     It 'dsc resource list --tags "<tags>" and --description "<description> work' -TestCases @(
         if ($IsLinux) {
-            @{ tags = 'linux'; description = $null; expectedCount = 2; expectedType = @('DSC.PackageManagement/Apt', 'Microsoft/OSInfo') }
+            @{ tags = 'linux'; description = $null; expectedCount = 3; expectedType = @('DSC.PackageManagement/Apt', 'Microsoft.Filesystem.File/Content', 'Microsoft/OSInfo') }
         }
         else {
-            @{ tags = 'linux'; description = $null; expectedCount = 1; expectedType = 'Microsoft/OSInfo' }
+            @{ tags = 'linux'; description = $null; expectedCount = 2; expectedType = @('Microsoft.Filesystem.File/Content', 'Microsoft/OSInfo') }
         }
         @{ tags = $null; description = 'operating system'; expectedCount = 1; expectedType = 'Microsoft/OSInfo' }
         @{ tags = 'linux'; description = 'operating system'; expectedCount = 1; expectedType = 'Microsoft/OSInfo' }
@@ -38,20 +38,28 @@ Describe 'Tests for listing resources' {
     ) {
         param($tags, $description, $expectedCount, $expectedType)
 
-        if ($tags -and $description) {
-            $resources = dsc resource list --tags $tags --description $description | ConvertFrom-Json
-        }
-        elseif ($tags) {
-            $resources = dsc resource list --tags $tags | ConvertFrom-Json
-        }
-        else {
-            $resources = dsc resource list --description $description | ConvertFrom-Json
-        }
+        $oldPath = $env:DSC_RESTRICTED_PATH
+        try {
+            # Need to restrict the search as more resources are being added like from PS7
+            $env:DSC_RESTRICTED_PATH = Split-Path (Get-Command dsc).Source -Parent
 
-        $LASTEXITCODE | Should -Be 0
-        $resources.Count | Should -Be $expectedCount
-        if ($expectedCount -gt 0) {
-            $resources.type | Should -BeExactly $expectedType
+            if ($tags -and $description) {
+                $resources = dsc resource list --tags $tags --description $description | ConvertFrom-Json
+            }
+            elseif ($tags) {
+                $resources = dsc resource list --tags $tags | ConvertFrom-Json
+            }
+            else {
+                $resources = dsc resource list --description $description | ConvertFrom-Json
+            }
+
+            $LASTEXITCODE | Should -Be 0
+            $resources.Count | Should -Be $expectedCount
+            if ($expectedCount -gt 0) {
+                $resources.type | Should -BeExactly $expectedType
+            }
+        } finally {
+            $env:DSC_RESTRICTED_PATH = $oldPath
         }
     }
 
@@ -110,5 +118,61 @@ Describe 'Tests for listing resources' {
             }
         }
         $foundWideLine | Should -BeTrue
+    }
+
+    It 'No duplicates based on type name and version are returned' {
+        $resource_manifest = @'
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "type": "Microsoft.DSC.Debug/EchoDupe",
+    "version": "1.2.3",
+    "description": "A duplicate resource for testing",
+    "get": {
+        "executable": "dscecho",
+        "args": [
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ]
+    },
+    "schema": {
+        "command": {
+            "executable": "dscecho"
+        }
+    }
+}
+'@
+        $manifestPath = Join-Path $TestDrive "echoDupeManifest.dsc.resource.json"
+        $manifestDupePath = Join-Path $TestDrive "echoDupeManifestDuplicate.dsc.resource.json"
+        Set-Content -Path $manifestPath -Value $resource_manifest
+        Set-Content -Path $manifestDupePath -Value $resource_manifest
+
+        $oldPath = $env:DSC_RESTRICTED_PATH
+        try {
+            $env:DSC_RESTRICTED_PATH = $TestDrive + [System.IO.Path]::PathSeparator + $env:PATH
+            $resources = dsc resource list | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $resourceGroups = $resources | Group-Object -Property type, version
+            foreach ($group in $resourceGroups) {
+                $group.Count | Should -Be 1 -Because ($resources | ConvertTo-Json -Depth 20)
+            }
+        } finally {
+            $env:DSC_RESTRICTED_PATH = $oldPath
+        }
+    }
+
+    It 'What-if capability is added for resources supporting it for: <resource>' -TestCases @(
+        @{ resource = 'Test/WhatIf'; capability = 'SetWhatIf' }
+        @{ resource = 'Test/WhatIfArgKind'; capability = 'SetWhatIf' }
+        @{ resource = 'Test/WhatIfDelete'; capability = 'DeleteWhatIf' }
+        @{ resource = 'Test/WhatIfReturnDiff'; capability = 'SetWhatIf' }
+    ) {
+        param($resource, $capability)
+
+        $out = dsc resource list $resource | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.Count | Should -Be 1
+        $out.capabilities | Should -Contain $capability
     }
 }

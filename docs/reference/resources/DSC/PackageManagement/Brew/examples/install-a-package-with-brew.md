@@ -9,12 +9,12 @@ title:       Install a package with Brew
 # Install a package with Brew
 
 This example demonstrates how to use the `DSC.PackageManagement/Brew` resource to install a package
-on MacOS systems using Brew.
+on macOS systems using Brew.
 
 ## Test if package is installed
 
 The following snippet shows how you can use the resource with the [dsc resource test][00] command
-to check whether the `node` package exists.
+to check whether the `node` package is installed.
 
 ```bash
 dsc resource test --resource DSC.PackageManagement/Brew --input '{"packageName":"node"}'

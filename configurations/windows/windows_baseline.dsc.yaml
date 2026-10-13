@@ -50,7 +50,7 @@ resources:
           valueName: Start
           valueData:
             DWord: 4 # Disabled
-      - name: Scan Removeable Drives
+      - name: Scan Removable Drives
         type: Microsoft.Windows/Registry
         metadata:
           area: Services

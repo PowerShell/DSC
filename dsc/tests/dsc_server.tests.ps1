@@ -1,0 +1,1111 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
+Describe 'Tests for DSC server' {
+    BeforeAll {
+        $processStartInfo = [System.Diagnostics.ProcessStartInfo]::new()
+        $processStartInfo.FileName = "dsc"
+        $processStartInfo.Arguments = "--trace-format plaintext server"
+        $processStartInfo.UseShellExecute = $false
+        $processStartInfo.RedirectStandardError = $true
+        $processStartInfo.RedirectStandardOutput = $true
+        $processStartInfo.RedirectStandardInput = $true
+        $mcp = [System.Diagnostics.Process]::Start($processStartInfo)
+
+        function Send-McpRequest($request, [switch]$notify) {
+            $request = $request | ConvertTo-Json -Compress -Depth 10
+            $mcp.StandardInput.WriteLine($request)
+            $mcp.StandardInput.Flush()
+            if (!$notify) {
+                while ($mcp.StandardOutput.Peek() -eq -1) {
+                    Start-Sleep -Milliseconds 100
+                }
+                $stdout = $mcp.StandardOutput.ReadLine()
+                return ($stdout | ConvertFrom-Json -Depth 30)
+            }
+        }
+    }
+
+    AfterAll {
+        $mcp.StandardInput.Close()
+        $mcp.WaitForExit()
+    }
+
+    It 'Initialization works' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 1
+            method  = "initialize"
+            params  = @{
+                protocolVersion = "2024-11-05"
+                capabilities    = @{
+                    tools = @{}
+                }
+                clientInfo      = @{
+                    name    = "Test Client"
+                    version = "1.0.0"
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+
+        $response.id | Should -Be 1
+        $response.result.capabilities.tools | Should -Not -Be $null
+        $response.result.instructions | Should -Not -BeNullOrEmpty
+
+        $notifyInitialized = @{
+            jsonrpc = "2.0"
+            method  = "notifications/initialized"
+        }
+
+        Send-McpRequest -request $notifyInitialized -notify
+    }
+
+    It 'Tools/List works' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 2
+            method  = "tools/list"
+            params  = @{}
+        }
+
+        $tools = @{
+            'invoke_dsc_config'     = $false
+            'invoke_dsc_expression' = $false
+            'invoke_dsc_function'   = $false
+            'invoke_dsc_resource'   = $false
+            'list_dsc_functions'    = $false
+            'list_dsc_resources'    = $false
+            'show_dsc_resource'     = $false
+            'show_dsc_schema'       = $false
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 2
+        $response.result.tools.Count | Should -Be $tools.Count
+        foreach ($tool in $response.result.tools) {
+            $tools.ContainsKey($tool.name) | Should -Be $true
+            $tools[$tool.name] = $true
+            $tool.description | Should -Not -BeNullOrEmpty
+        }
+        foreach ($tool in $tools.GetEnumerator()) {
+            $tool.Value | Should -Be $true -Because "Tool '$($tool.Key)' was not found in the list of tools"
+        }
+    }
+
+    It 'Calling list_dsc_resources works' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 3
+            method  = "tools/call"
+            params  = @{
+                name      = "list_dsc_resources"
+                arguments = @{}
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -BeGreaterOrEqual 3
+        $resources = dsc resource list | ConvertFrom-Json -Depth 20 | Select-Object type, kind, description
+        $response.result.structuredContent.resources.Count | Should -Be $resources.Count -Because "MCP:`n$($response.result.structuredContent.resources | Format-Table | Out-String)`nDSC:`n$($resources | Format-Table | Out-String)"
+        for ($i = 0; $i -lt $resources.Count; $i++) {
+            ($response.result.structuredContent.resources[$i].psobject.properties | Measure-Object).Count | Should -BeGreaterOrEqual 3
+            $response.result.structuredContent.resources[$i].type | Should -BeExactly $resources[$i].type -Because ($response.result.structuredContent | ConvertTo-Json -Depth 20 | Out-String)
+            $response.result.structuredContent.resources[$i].kind | Should -BeExactly $resources[$i].kind -Because ($response.result.structuredContent | ConvertTo-Json -Depth 20 | Out-String)
+            $response.result.structuredContent.resources[$i].description | Should -BeExactly $resources[$i].description -Because ($response.result.structuredContent | ConvertTo-Json -Depth 20 | Out-String)
+        }
+    }
+
+    It 'Calling list_dsc_resources with adapter works' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 4
+            method  = "tools/call"
+            params  = @{
+                name      = "list_dsc_resources"
+                arguments = @{
+                    adapter = "Microsoft.DSC/PowerShell"
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 4
+        $resources = dsc resource list --adapter Microsoft.DSC/PowerShell | ConvertFrom-Json -Depth 20
+        $response.result.structuredContent.resources.Count | Should -Be $resources.Count
+        for ($i = 0; $i -lt $resources.Count; $i++) {
+            ($response.result.structuredContent.resources[$i].psobject.properties | Measure-Object).Count | Should -Be 4
+            $response.result.structuredContent.resources[$i].type | Should -BeExactly $resources[$i].type -Because ($response.result.structuredContent | ConvertTo-Json -Depth 20 | Out-String)
+            $response.result.structuredContent.resources[$i].require_adapter | Should -BeExactly $resources[$i].require_adapter -Because ($response.result.structuredContent | ConvertTo-Json -Depth 20 | Out-String)
+            $response.result.structuredContent.resources[$i].description | Should -BeExactly $resources[$i].description -Because ($response.result.structuredContent | ConvertTo-Json -Depth 20 | Out-String)
+        }
+    }
+
+    It 'Calling list_dsc_resources with <adapter> returns error' -TestCases @(
+        @{"adapter" = "Non.Existent/Adapter" },
+        @{"adapter" = "Microsoft.DSC.Debug/Echo" }
+    ) {
+        param($adapter)
+
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 5
+            method  = "tools/call"
+            params  = @{
+                name      = "list_dsc_resources"
+                arguments = @{
+                    adapter = $adapter
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 5
+        $response.error.code | Should -Be -32602
+        $response.error.message | Should -Not -BeNullOrEmpty
+    }
+
+    It 'Calling show_dsc_resource works' {
+        $resource = (dsc resource list 'Microsoft/OSInfo' | ConvertFrom-Json -Depth 20)
+
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 6
+            method  = "tools/call"
+            params  = @{
+                name      = "show_dsc_resource"
+                arguments = @{
+                    type = $resource.type
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 6
+        ($response.result.structuredContent.psobject.properties | Measure-Object).Count | Should -BeGreaterOrEqual 4
+        $because = ($response.result.structuredContent | ConvertTo-Json -Depth 20 | Out-String)
+        $response.result.structuredContent.type | Should -BeExactly $resource.type -Because $because
+        $response.result.structuredContent.kind | Should -BeExactly $resource.kind -Because $because
+        $response.result.structuredContent.version | Should -Be $resource.version -Because $because
+        $response.result.structuredContent.capabilities | Should -Be $resource.capabilities -Because $because
+        $response.result.structuredContent.description | Should -Be $resource.description -Because $because
+        $schema = (dsc resource schema --resource $resource.type | ConvertFrom-Json -Depth 20)
+        $response.result.structuredContent.schema.'$id' | Should -Be $schema.'$id' -Because $because
+        $response.result.structuredContent.schema.type | Should -Be $schema.type -Because $because
+        $response.result.structuredContent.schema.properties.keys | Should -Be $schema.properties.keys -Because $because
+    }
+
+    It 'Calling show_dsc_resource with non-existent resource returns error' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 7
+            method  = "tools/call"
+            params  = @{
+                name      = "show_dsc_resource"
+                arguments = @{
+                    type = "Non.Existent/Resource"
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 7
+        $response.error.code | Should -Be -32602
+        $response.error.message | Should -Not -BeNullOrEmpty
+    }
+
+    It 'Calling list_dsc_functions works' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 8
+            method  = "tools/call"
+            params  = @{
+                name      = "list_dsc_functions"
+                arguments = @{}
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 8
+        $functions = dsc function list --output-format json | ConvertFrom-Json
+        $response.result.structuredContent.functions.Count | Should -Be $functions.Count
+
+        $mcpFunctions = $response.result.structuredContent.functions | Sort-Object name
+        $dscFunctions = $functions | Sort-Object name
+
+        for ($i = 0; $i -lt $dscFunctions.Count; $i++) {
+            ($mcpFunctions[$i].psobject.properties | Measure-Object).Count | Should -BeGreaterOrEqual 8
+            $mcpFunctions[$i].name | Should -BeExactly $dscFunctions[$i].name -Because ($response.result.structuredContent | ConvertTo-Json -Depth 10 | Out-String)
+            $mcpFunctions[$i].category | Should -BeExactly $dscFunctions[$i].category -Because ($response.result.structuredContent | ConvertTo-Json -Depth 10 | Out-String)
+            $mcpFunctions[$i].description | Should -BeExactly $dscFunctions[$i].description -Because ($response.result.structuredContent | ConvertTo-Json -Depth 10 | Out-String)
+        }
+    }
+
+    It 'Calling list_dsc_functions with function_filter filter works' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 9
+            method  = "tools/call"
+            params  = @{
+                name      = "list_dsc_functions"
+                arguments = @{
+                    function_filter = "array"
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 9
+        $response.result.structuredContent.functions.Count | Should -Be 1
+        $response.result.structuredContent.functions[0].name | Should -BeExactly "array"
+        $response.result.structuredContent.functions[0].category | Should -BeExactly "array"
+    }
+
+    It 'Calling list_dsc_functions with wildcard pattern works' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 10
+            method  = "tools/call"
+            params  = @{
+                name      = "list_dsc_functions"
+                arguments = @{
+                    function_filter = "*Array*"
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 10
+        $arrayFunctions = dsc function list --output-format json | ConvertFrom-Json -Depth 20 | Where-Object { $_.name -like "*Array*" }
+        $response.result.structuredContent.functions.Count | Should -Be $arrayFunctions.Count
+        foreach ($func in $response.result.structuredContent.functions) {
+            $func.name | Should -Match "Array" -Because "Function name should contain 'Array'"
+        }
+    }
+
+    It 'Calling list_dsc_functions with category_filter works' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 11
+            method  = "tools/call"
+            params  = @{
+                name      = "list_dsc_functions"
+                arguments = @{
+                    category_filter = @("string")
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 11
+        $expectedFunctions = dsc function list --category String --output-format json | ConvertFrom-Json
+        $response.result.structuredContent.functions.Count | Should -Be $expectedFunctions.Count
+        foreach ($func in $response.result.structuredContent.functions) {
+            $func.category | Should -Contain "string"
+        }
+    }
+
+    It 'Calling list_dsc_functions with description_filter works' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 12
+            method  = "tools/call"
+            params  = @{
+                name      = "list_dsc_functions"
+                arguments = @{
+                    description_filter = "*base64*"
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 12
+        $expectedFunctions = dsc function list --description "*base64*" --output-format json | ConvertFrom-Json
+        $response.result.structuredContent.functions.Count | Should -Be $expectedFunctions.Count
+        foreach ($func in $response.result.structuredContent.functions) {
+            $func.description | Should -Match "(?i)base64"
+        }
+    }
+
+    It 'Calling list_dsc_functions combines all filters' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 13
+            method  = "tools/call"
+            params  = @{
+                name      = "list_dsc_functions"
+                arguments = @{
+                    function_filter    = "base64"
+                    category_filter    = @("string")
+                    description_filter = "*base64*"
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 13
+        $response.result.structuredContent.functions.Count | Should -Be 1
+        $response.result.structuredContent.functions[0].name | Should -BeExactly "base64"
+    }
+
+    # dont check for error as dsc function list returns empty list for invalid patterns
+    It 'Calling list_dsc_functions with invalid pattern returns empty result' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 11
+            method  = "tools/call"
+            params  = @{
+                name      = "list_dsc_functions"
+                arguments = @{
+                    function_filter = "[invalid]"
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 11
+        $response.result.structuredContent.functions.Count | Should -Be 0
+        $response.result.structuredContent.functions | Should -BeNullOrEmpty
+    }
+
+    It 'Calling invoke_dsc_resource for operation: <operation>' -TestCases @(
+        @{ operation = 'get'; property = 'actualState' }
+        @{ operation = 'set'; property = 'beforeState' }
+        @{ operation = 'test'; property = 'desiredState' }
+        @{ operation = 'export'; property = 'actualState' }
+    ) {
+        param($operation, $property)
+
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 12
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_resource"
+                arguments = @{
+                    type            = 'Test/Operation'
+                    operation       = $operation
+                    resource_type   = 'Test/Operation'
+                    properties_json = (@{
+                            hello  = "World"
+                            action = $operation
+                        } | ConvertTo-Json -Depth 20)
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 12
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        ($response.result.structuredContent.psobject.properties | Measure-Object).Count | Should -Be 1 -Because $because
+        $response.result.structuredContent.result.$property.action | Should -BeExactly $operation -Because $because
+        $response.result.structuredContent.result.$property.hello | Should -BeExactly "World" -Because $because
+    }
+
+    It 'Calling invoke_dsc_resource for delete operation' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 12
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_resource"
+                arguments = @{
+                    type            = 'Test/Operation'
+                    operation       = 'delete'
+                    resource_type   = 'Test/Operation'
+                    properties_json = (@{
+                            hello  = "World"
+                            action = 'delete'
+                        } | ConvertTo-Json -Depth 20)
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 12
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        ($response.result.structuredContent.psobject.properties | Measure-Object).Count | Should -Be 1 -Because $because
+        $response.result.structuredContent.result.success | Should -Be $true -Because $because
+    }
+
+    It 'Calling invoke_dsc_resource for set operation with what_if uses native what-if' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 30
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_resource"
+                arguments = @{
+                    operation       = 'set'
+                    resource_type   = 'Test/WhatIfArgKind'
+                    properties_json = (@{ executionType = 'Actual' } | ConvertTo-Json -Depth 20)
+                    what_if         = $true
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 30
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        $response.error | Should -BeNullOrEmpty -Because $because
+        $response.result.structuredContent.result.afterState.executionType | Should -BeExactly 'WhatIf' -Because $because
+    }
+
+    It 'Calling invoke_dsc_resource for set operation without what_if performs actual execution' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 31
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_resource"
+                arguments = @{
+                    operation       = 'set'
+                    resource_type   = 'Test/WhatIfArgKind'
+                    properties_json = (@{ executionType = 'Actual' } | ConvertTo-Json -Depth 20)
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 31
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        $response.error | Should -BeNullOrEmpty -Because $because
+        $response.result.structuredContent.result.afterState.executionType | Should -BeExactly 'Actual' -Because $because
+    }
+
+    It 'Calling invoke_dsc_resource for set operation with what_if uses synthetic what-if' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 32
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_resource"
+                arguments = @{
+                    operation       = 'set'
+                    resource_type   = 'Microsoft.DSC.Debug/Echo'
+                    properties_json = (@{ output = 'what-if test' } | ConvertTo-Json -Depth 20)
+                    what_if         = $true
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 32
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        $response.error | Should -BeNullOrEmpty -Because $because
+        $response.result.structuredContent.result.beforeState | Should -Not -BeNullOrEmpty -Because $because
+        $response.result.structuredContent.result.afterState.output | Should -BeExactly 'what-if test' -Because $because
+    }
+
+    It 'Calling invoke_dsc_resource for delete operation with what_if returns native what-if metadata' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 33
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_resource"
+                arguments = @{
+                    operation       = 'delete'
+                    resource_type   = 'Test/WhatIfDelete'
+                    properties_json = (@{ _exist = $false } | ConvertTo-Json -Depth 20)
+                    what_if         = $true
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 33
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        $response.error | Should -BeNullOrEmpty -Because $because
+        $response.result.structuredContent.result.success | Should -BeNullOrEmpty -Because $because
+        $response.result.structuredContent.result._metadata.whatIf | Should -Contain 'Delete what-if message 1' -Because $because
+        $response.result.structuredContent.result._metadata.whatIf | Should -Contain 'Delete what-if message 2' -Because $because
+    }
+
+    It 'Calling invoke_dsc_resource for delete operation with what_if returns synthetic what-if test result' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 34
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_resource"
+                arguments = @{
+                    operation       = 'delete'
+                    resource_type   = 'Test/Delete'
+                    properties_json = (@{ _exist = $false } | ConvertTo-Json -Depth 20)
+                    what_if         = $true
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 34
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        $response.error | Should -BeNullOrEmpty -Because $because
+        $response.result.structuredContent.result.success | Should -BeNullOrEmpty -Because $because
+        $response.result.structuredContent.result.desiredState._exist | Should -BeFalse -Because $because
+        $response.result.structuredContent.result.actualState | Should -Not -BeNullOrEmpty -Because $because
+    }
+
+    It 'Calling invoke_dsc_resource with what_if for unsupported operation: <operation>' -TestCases @(
+        @{ operation = 'get' }
+        @{ operation = 'test' }
+        @{ operation = 'export' }
+    ) {
+        param($operation)
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 35
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_resource"
+                arguments = @{
+                    operation       = $operation
+                    resource_type   = 'Test/Operation'
+                    properties_json = (@{ hello = 'World'; action = $operation } | ConvertTo-Json -Depth 20)
+                    what_if         = $true
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 35
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        $response.error.code | Should -Be -32602 -Because $because
+        $response.error.message | Should -Match 'what_if' -Because $because
+    }
+
+    It 'Calling invoke_dsc_config for operation: <operation>' -TestCases @(
+        @{ operation = 'get' }
+        @{ operation = 'set' }
+        @{ operation = 'test' }
+    ) {
+        param($operation)
+
+        $config = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+            resources = @(
+                @{
+                    name       = 'TestOperation'
+                    type       = 'Test/Operation'
+                    properties = @{
+                        hello  = 'Hello from config'
+                        action = $operation
+                    }
+                }
+            )
+        }
+
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 13
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_config"
+                arguments = @{
+                    operation     = $operation
+                    configuration = ($config | ConvertTo-Json -Depth 20)
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 13
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        $response.result.structuredContent.result.results | Should -Not -BeNullOrEmpty -Because $because
+        $response.result.structuredContent.result.results.Count | Should -Be 1 -Because $because
+        $response.result.structuredContent.result.results[0].name | Should -Be 'TestOperation' -Because $because
+    }
+
+    It 'Calling invoke_dsc_config for set operation with what_if: <what_if>' -TestCases @(
+        @{ what_if = $true;  expectedExecutionType = 'whatIf'; expectedState = 'WhatIf' }
+        @{ what_if = $false; expectedExecutionType = 'actual'; expectedState = 'Actual' }
+    ) {
+        param($what_if, $expectedExecutionType, $expectedState)
+
+        $config = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+            resources = @(
+                @{
+                    name       = 'WhatIf'
+                    type       = 'Test/WhatIf'
+                    properties = @{
+                        executionType = 'Actual'
+                    }
+                }
+            )
+        }
+
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 36
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_config"
+                arguments = @{
+                    operation     = 'set'
+                    configuration = ($config | ConvertTo-Json -Depth 20)
+                    what_if       = $what_if
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 36
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        $response.error | Should -BeNullOrEmpty -Because $because
+        $response.result.structuredContent.result.hadErrors | Should -BeFalse -Because $because
+        $response.result.structuredContent.result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly $expectedExecutionType -Because $because
+        $response.result.structuredContent.result.results.Count | Should -Be 1 -Because $because
+        $response.result.structuredContent.result.results[0].result.afterState.executionType | Should -BeExactly $expectedState -Because $because
+    }
+
+    It 'Calling invoke_dsc_config for set operation with what_if surfaces delete what-if metadata' {
+        $config = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+            resources = @(
+                @{
+                    name       = 'WhatIfDelete'
+                    type       = 'Test/WhatIfDelete'
+                    properties = @{
+                        _exist = $false
+                    }
+                }
+            )
+        }
+
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 37
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_config"
+                arguments = @{
+                    operation     = 'set'
+                    configuration = ($config | ConvertTo-Json -Depth 20)
+                    what_if       = $true
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 37
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        $response.error | Should -BeNullOrEmpty -Because $because
+        $response.result.structuredContent.result.hadErrors | Should -BeFalse -Because $because
+        $response.result.structuredContent.result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'whatIf' -Because $because
+        $response.result.structuredContent.result.results[0].metadata.whatIf[0] | Should -BeExactly 'Delete what-if message 1' -Because $because
+        $response.result.structuredContent.result.results[0].executionInformation.whatIf[1] | Should -BeExactly 'Delete what-if message 2' -Because $because
+    }
+
+    It 'Calling invoke_dsc_config with what_if for unsupported operation: <operation>' -TestCases @(
+        @{ operation = 'get' }
+        @{ operation = 'test' }
+        @{ operation = 'export' }
+    ) {
+        param($operation)
+
+        $config = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+            resources = @(
+                @{
+                    name       = 'TestOperation'
+                    type       = 'Test/Operation'
+                    properties = @{
+                        hello  = 'Hello from config'
+                        action = $operation
+                    }
+                }
+            )
+        }
+
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 38
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_config"
+                arguments = @{
+                    operation     = $operation
+                    configuration = ($config | ConvertTo-Json -Depth 20)
+                    what_if       = $true
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 38
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        $response.error.code | Should -Be -32602 -Because $because
+        $response.error.message | Should -Match 'what_if' -Because $because
+    }
+
+    It 'Calling invoke_dsc_config for export operation' {
+        $config = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+            resources = @(
+                @{
+                    name       = 'TestExport'
+                    type       = 'Test/Export'
+                    properties = @{
+                        count = 2
+                    }
+                }
+            )
+        }
+
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 13
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_config"
+                arguments = @{
+                    operation     = 'export'
+                    configuration = ($config | ConvertTo-Json -Depth 20)
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 13
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        $response.result.structuredContent.result.result | Should -Not -BeNullOrEmpty -Because $because
+        $response.result.structuredContent.result.result.resources.Count | Should -Be 2 -Because $because
+        $response.result.structuredContent.result.result.resources[0].name | Should -Be 'TestName' -Because $because
+    }
+
+    It 'Calling invoke_dsc_config with <format> JSON parameters works' -TestCases @(
+        @{ format = 'bare'; parameters = '{"message":"custom message"}' }
+        @{ format = 'wrapped'; parameters = '{"parameters":{"message":"custom message"}}' }
+        @{ format = 'wrapped value'; parameters = '{"parameters":{"message":{"value":"custom message"}}}' }
+        @{
+            format = 'bare with a parameter named parameters'
+            parameters = '{"parameters":"value"}'
+            parameterName = 'parameters'
+            expected = 'value'
+        }
+    ) {
+        param($format, $parameters, $parameterName = 'message', $expected = 'custom message')
+
+        $config = @{
+            '$schema'  = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+            parameters = @{
+                $parameterName = @{
+                    type         = 'string'
+                    defaultValue = 'default message'
+                }
+            }
+            resources  = @(
+                @{
+                    name       = 'TestResource'
+                    type       = 'Test/Operation'
+                    properties = @{
+                        hello  = "[parameters('$parameterName')]"
+                        action = 'get'
+                    }
+                }
+            )
+        }
+
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 14
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_config"
+                arguments = @{
+                    operation     = 'get'
+                    configuration = ($config | ConvertTo-Json -Depth 20)
+                    parameters    = $parameters
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 14
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        $response.result.structuredContent.result.results[0].result.actualState.hello | Should -Be $expected -Because $because
+    }
+
+    It 'Calling invoke_dsc_config with YAML configuration works' {
+        $configYaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+  - name: TestResource
+    type: Test/Operation
+    properties:
+      hello: Hello from YAML
+      action: get
+'@
+
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 15
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_config"
+                arguments = @{
+                    operation     = 'get'
+                    configuration = $configYaml
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 15
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        $response.result.structuredContent.result.results[0].result.actualState.hello | Should -Be 'Hello from YAML' -Because $because
+    }
+
+    It 'Calling invoke_dsc_config with <format> YAML parameters works' -TestCases @(
+        @{ format = 'bare'; parametersYaml = 'greeting: Hello from YAML parameters' }
+        @{ format = 'wrapped'; parametersYaml = "parameters:`n  greeting: Hello from YAML parameters" }
+        @{ format = 'wrapped value'; parametersYaml = "parameters:`n  greeting:`n    value: Hello from YAML parameters" }
+    ) {
+        param($format, $parametersYaml)
+
+        $config = @{
+            '$schema'  = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+            parameters = @{
+                greeting = @{
+                    type = 'string'
+                }
+            }
+            resources  = @(
+                @{
+                    name       = 'TestResource'
+                    type       = 'Test/Operation'
+                    properties = @{
+                        hello  = "[parameters('greeting')]"
+                        action = 'get'
+                    }
+                }
+            )
+        }
+
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 16
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_config"
+                arguments = @{
+                    operation     = 'get'
+                    configuration = ($config | ConvertTo-Json -Depth 20)
+                    parameters    = $parametersYaml
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 16
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        $response.result.structuredContent.result.results[0].result.actualState.hello | Should -Be 'Hello from YAML parameters' -Because $because
+    }
+
+    It 'Calling invoke_dsc_config with invalid configuration returns error' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 17
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_config"
+                arguments = @{
+                    operation     = 'get'
+                    configuration = '{ invalid json }'
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 17
+        $response.error.code | Should -Be -32600
+        $response.error.message | Should -Match 'Invalid configuration'
+    }
+
+    It 'Calling invoke_dsc_config with invalid parameters returns error' {
+        $config = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+            resources = @(
+                @{
+                    name       = 'TestResource'
+                    type       = 'Test/Operation'
+                    properties = @{
+                        hello  = 'test'
+                        action = 'get'
+                    }
+                }
+            )
+        }
+
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 18
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_config"
+                arguments = @{
+                    operation     = 'get'
+                    configuration = ($config | ConvertTo-Json -Depth 20)
+                    parameters    = '{[invalid'
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 18
+        $response.error.code | Should -Be -32600
+        $response.error.message | Should -Match 'Invalid parameters'
+    }
+
+    It 'Calling show_dsc_schema works' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 19
+            method  = "tools/call"
+            params  = @{
+                name      = "show_dsc_schema"
+                arguments = @{
+                    type = "AdaptedDscResourceManifest"
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 19
+        $response.result.structuredContent | Should -Not -BeNullOrEmpty
+        $response.result.structuredContent.schema | Should -Not -BeNullOrEmpty
+        $schema = dsc schema --type adapted-dsc-resource-manifest | ConvertFrom-Json -Depth 20
+        $response.result.structuredContent.schema.'$schema' | Should -Be $schema.'$schema' -Because ($response.result.structuredContent | ConvertTo-Json -Depth 20 | Out-String)
+        $response.result.structuredContent.schema.title | Should -BeExactly $schema.title -Because ($response.result.structuredContent | ConvertTo-Json -Depth 20 | Out-String)
+    }
+
+    It 'Calling invoke_dsc_expression works: <expression>' -TestCases @(
+        @{ expression = "[concat('Hello', ' ', 'World')]"; expected = "Hello World" }
+        @{ expression = "[add(2, 4)]"; expected = 6 }
+        @{ expression = "[empty(createArray(1,2))]"; expected = $false }
+        @{ expression = "[createArray(1,2,3)]"; expected = @(1,2,3) }
+        @{ expression = "[createObject('key1', 'value1', 'key2', 2)]"; expected = [pscustomobject]@{ key1 = 'value1'; key2 = 2 } }
+        @{ expression = "[createArray('hello', 'world')]"; expected = @('hello', 'world') }
+        @{ expression = "[tryWhich('nonexistent')]"; expected = $null }
+        @{ expression = "bareWord"; expected = "bareWord" }
+    ) {
+        param($expression, $expected)
+
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 20
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_expression"
+                arguments = @{
+                    expression = $expression
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 20
+        if ($expected -is [pscustomobject] -or $expected -is [array]) {
+            $result = $response.result.structuredContent.result | ConvertTo-Json -Depth 10
+            $expectedJson = $expected | ConvertTo-Json -Depth 10
+            $result | Should -Be $expectedJson -Because ($response | ConvertTo-Json -Depth 20 | Out-String)
+        } else {
+            $response.result.structuredContent.result | Should -Be $expected -Because ($response | ConvertTo-Json -Depth 20 | Out-String)
+        }
+    }
+
+    It 'Calling invoke_dsc_expression with invalid expression returns error' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 21
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_expression"
+                arguments = @{
+                    expression = "[invalid expression]"
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 21
+        $response.error.code | Should -Be -32600
+        $response.error.message | Should -BeExactly "Failed to evaluate expression '[invalid expression]': Parser: Unable to parse statement root: [invalid expression]"
+    }
+
+    It 'Calling invoke_dsc_function works: <function>' -TestCases @(
+        @{ function = "concat"; parameters = @("Hello", " ", "World"); expected = "Hello World" }
+        @{ function = "add"; parameters = @(2, 4); expected = 6 }
+        @{ function = "empty"; parameters = @( "hello" ); expected = $false }
+        @{ function = "createArray"; parameters = @(1,2,3); expected = @(1,2,3) }
+        @{ function = "createObject"; parameters = @('key1', 'value1', 'key2', 2); expected = [pscustomobject]@{ key1 = 'value1'; key2 = 2 } }
+        @{ function = "tryWhich"; parameters = @('nonexistent'); expected = $null }
+    ) {
+        param($function, $parameters, $expected)
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 22
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_function"
+                arguments = @{
+                    function   = $function
+                    parameters = $parameters
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 22
+        if ($expected -is [pscustomobject] -or $expected -is [array]) {
+            $result = $response.result.structuredContent.result | ConvertTo-Json -Depth 10
+            $expectedJson = $expected | ConvertTo-Json -Depth 10
+            $result | Should -Be $expectedJson -Because ($response | ConvertTo-Json -Depth 20 | Out-String)
+        } else {
+            $response.result.structuredContent.result | Should -Be $expected -Because ($response | ConvertTo-Json -Depth 20 | Out-String)
+        }
+    }
+
+    It 'Calling invoke_dsc_function with invalid function returns error' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 23
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_function"
+                arguments = @{
+                    function   = "nonexistentFunction"
+                    parameters = @()
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 23
+        $response.error.code | Should -Be -32600
+        $response.error.message | Should -BeExactly "Function 'nonexistentFunction' invocation failed: Parser: Unknown function 'nonexistentFunction'"
+    }
+
+    It 'Calling invoke_dsc_function with invalid function parameters returns error' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 24
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_function"
+                arguments = @{
+                    function   = "add"
+                    parameters = @("not a number", 4)
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 24
+        $response.error.code | Should -Be -32600
+        $response.error.message | Should -BeExactly "Function 'add' invocation failed: Parser: Function 'add' does not accept string arguments, accepted types are: Number"
+    }
+}

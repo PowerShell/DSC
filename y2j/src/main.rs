@@ -1,29 +1,31 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use std::{io::{self, Read, IsTerminal}, process::exit};
+use std::{io::{self, Read, IsTerminal}, process::ExitCode};
 use syntect::easy::HighlightLines;
 use syntect::parsing::SyntaxSet;
 use syntect::highlighting::{ThemeSet, Style};
 use syntect::util::{as_24_bit_terminal_escaped, LinesWithEndings};
 
-const EXIT_SUCCESS: i32 = 0;
-const EXIT_INVALID_INPUT: i32 = 1;
+const EXIT_INVALID_INPUT: u8 = 1;
 
-fn main() {
+fn main() -> ExitCode {
+    match run() {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(message) => {
+            eprintln!("{message}");
+            ExitCode::from(EXIT_INVALID_INPUT)
+        }
+    }
+}
+
+fn run() -> Result<(), String> {
     let input: String = if std::io::stdin().is_terminal() {
-        eprintln!("Error: Input JSON/YAML via STDIN is required.");
-        exit(EXIT_INVALID_INPUT);
+        return Err("Error: Input JSON/YAML via STDIN is required.".to_string());
     } else {
         let mut buffer: Vec<u8> = Vec::new();
         io::stdin().read_to_end(&mut buffer).unwrap();
-        match String::from_utf8(buffer) {
-            Ok(input) => input,
-            Err(e) => {
-                eprintln!("Invalid UTF-8 sequence: {e}");
-                exit(EXIT_INVALID_INPUT);
-            }
-        }
+        String::from_utf8(buffer).map_err(|e| format!("Invalid UTF-8 sequence: {e}"))?
     };
 
     let mut is_json = true;
@@ -31,10 +33,7 @@ fn main() {
         is_json = false;
         match serde_yaml::from_str(&input) {
             Ok(yaml) => yaml,
-            Err(err) => {
-                eprintln!("Error: Input is not valid JSON or YAML: {err}");
-                exit(EXIT_INVALID_INPUT);
-            }
+            Err(err) => return Err(format!("Error: Input is not valid JSON or YAML: {err}")),
         }
     };
 
@@ -65,5 +64,5 @@ fn main() {
         println!("{output}");
     }
 
-    exit(EXIT_SUCCESS);
+    Ok(())
 }

@@ -1,0 +1,10 @@
+{
+    "Name": "dism_dsc",
+    "Kind": "Resource",
+    "IsRust": true,
+    "SupportedPlatformOS": "Windows",
+    "Binaries": ["dism_dsc"],
+    "CopyFiles": {
+        "Windows": ["optionalfeature.dsc.resource.json", "featureondemand.dsc.resource.json", "windows_feature.dsc.resource.json"]
+    }
+}

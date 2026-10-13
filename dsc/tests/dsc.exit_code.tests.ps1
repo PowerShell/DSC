@@ -15,4 +15,9 @@ Describe 'exit code tests' {
         $result.actualState.exitCode | Should -Be 0
         $LASTEXITCODE | Should -Be 0
     }
+    It 'Exiting early due to broken pipe is a success' {
+        $out = dsc resource list | Select-Object -First 1 | ConvertFrom-Json
+        $out.Count | Should -Be 1
+        $LASTEXITCODE | Should -Be 0
+    }
 }

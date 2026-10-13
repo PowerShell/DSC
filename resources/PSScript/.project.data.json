@@ -1,0 +1,13 @@
+{
+    "Name": "PSScript",
+    "Kind": "Resource",
+    "CopyFiles": {
+        "All": [
+            "psscript.ps1",
+            "psscript.dsc.resource.json"
+        ],
+        "Windows": [
+            "winpsscript.dsc.resource.json"
+        ]
+    }
+}

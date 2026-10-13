@@ -138,17 +138,32 @@ try {
     $asyncResult = $ps.BeginInvoke()
     while (-not $asyncResult.IsCompleted) {
         Write-TraceQueue
-    
+
         Start-Sleep -Milliseconds 100
     }
+
+    if ($ps.InvocationStateInfo.State -eq 'Failed') {
+        $record  = $ps.InvocationStateInfo.Reason.ErrorRecord
+        $message = if ($null -ne $record) {
+            "Script failed with terminating error at line {0} for statement ``{1}`` - {2}" -f @(
+                $record.InvocationInfo.ScriptLineNumber,
+                $record.InvocationInfo.Line,
+                $record.Exception.ToString()
+            )
+        } else {
+            "Script failed with terminating error: $($ps.InvocationStateInfo.Reason)"
+        }
+        Write-TraceQueue
+        Write-DscTrace -Now -Level Error -Message $message
+        exit 1
+    }
+
     $outputCollection = $ps.EndInvoke($asyncResult)
     Write-TraceQueue
 
 
     if ($ps.HadErrors) {
-        # If there are any errors, we will exit with an error code
-        Write-DscTrace -Now -Level Error -Message 'Errors occurred during script execution.'
-        exit 1
+        Write-DscTrace -Now -Level Debug -Message 'Non-terminating errors occurred during script execution.'
     }
 
     foreach ($output in $outputCollection) {
@@ -156,7 +171,8 @@ try {
     }
 }
 catch {
-    Write-DscTrace -Now -Level Error -Message $_
+    Write-TraceQueue
+    Write-DscTrace -Now -Level Error -Message ($_ | Format-List -Force * | Out-String)
     exit 1
 }
 finally {
@@ -173,5 +189,22 @@ if ($Operation -eq 'Test') {
         exit 1
     }
 } else {
-    @{ output = $outputObjects } | ConvertTo-Json -Compress -Depth 10
+    $outputData = @{}
+    if ($outputObjects.Count -eq 1) {
+        $outputData.output = $outputObjects[0]
+    } elseif ($outputObjects.Count -gt 1) {
+        $outputData.output = $outputObjects
+    }
+
+    $toJsonParams = @{
+        Compress = $true
+        Depth    = 10
+    }
+    # For PowerShell, use `-EnumsAsStrings` to ensure that enum values are serialized as strings instead of integers.
+    # No equivalent option for Windows PowerShell, so this is a limitation of the WindowsPowerShellScript resource.
+    if ($PSVersionTable.PSVersion -ge [Version]'6.0') {
+        $toJsonParams['EnumsAsStrings'] = $true
+    }
+
+    $outputData | ConvertTo-Json @toJsonParams
 }

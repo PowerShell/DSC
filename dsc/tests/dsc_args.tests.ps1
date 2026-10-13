@@ -39,9 +39,9 @@ Describe 'config argument tests' {
 '@
 
         Set-Content -Path "$TestDrive/Hello.dsc.resource.json" -Value $manifest
-        $oldPath = $env:DSC_RESOURCE_PATH
+        $oldPath = $env:DSC_RESTRICTED_PATH
         $sep = [System.IO.Path]::PathSeparator
-        $env:DSC_RESOURCE_PATH = $env:PATH + $sep + $TestDrive
+        $env:DSC_RESTRICTED_PATH = $env:PATH + $sep + $TestDrive
     }
 
     AfterEach {
@@ -51,7 +51,7 @@ Describe 'config argument tests' {
     }
 
     AfterAll {
-        $env:DSC_RESOURCE_PATH = $oldPath
+        $env:DSC_RESTRICTED_PATH = $oldPath
     }
 
     It 'input is <type>' -TestCases @(
@@ -210,9 +210,6 @@ resources:
             $a_obj = $a[$_] | ConvertFrom-Json
             $b_obj = $b[$_] | ConvertFrom-Json
             $a_obj.type | Should -Be $b_obj.type
-            # adapter-based resources should Not be in the results
-            $a_obj.requireAdapter | Should -BeNullOrEmpty
-            $b_obj.requireAdapter | Should -BeNullOrEmpty
         }
     }
 

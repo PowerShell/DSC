@@ -11,6 +11,8 @@ param(
     [string]$Vault
 )
 
+$ErrorActionPreference = 'Ignore'
+
 $secretsOne = @{
     Vault1 = @{
         MySecret = 'Hello'

@@ -16,6 +16,12 @@ bundle_schemas:
     OutputDirectory: bundled/resource
     OutputFormat:    ['Json', 'JsonVSCode']
 
+  # Adapted resource manifest bundle
+  - ConfigFilePath:  adaptedresource/manifest.json
+    Name:            manifest
+    OutputDirectory: bundled/adaptedresource
+    OutputFormat:    ['Json', 'JsonVSCode']
+
   # Configuration document bundle
   - ConfigFilePath:  config/document.json
     Name:            document

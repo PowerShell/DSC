@@ -1,0 +1,11 @@
+{
+    "Name": "reboot_pending",
+    "Kind": "Resource",
+    "SupportedPlatformOS": "Windows",
+    "CopyFiles": {
+        "Windows": [
+            "reboot_pending.resource.ps1",
+            "reboot_pending.dsc.resource.json"
+        ]
+    }
+}

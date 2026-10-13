@@ -1,0 +1,70 @@
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "type": "Microsoft.OpenSSH.SSHD/Subsystem",
+    "description": "Manage SSH Server Subsystem keyword (single entry)",
+    "version": "0.2.0",
+    "condition": "[not(equals(tryWhich('sshd'), null()))]",
+    "get": {
+        "executable": "sshdconfig",
+        "args": [
+            "export",
+            "-c",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ]
+    },
+    "set": {
+        "executable": "sshdconfig",
+        "args": [
+            "set",
+            "-s",
+            "sshd-config-repeat",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            },
+            {
+                "whatIfArg": "--what-if"
+            }
+        ],
+        "whatIfReturns": "state",
+        "handlesExist": true
+    },
+    "schema": {
+        "embedded": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "sshdconfig.subsystem",
+            "type": "object",
+            "properties": {
+                "_exist": {
+                    "type": "boolean",
+                    "description": "Whether the specified subsystem entry should exist (true) or be removed (false)",
+                    "default": true
+                },
+                "sshd_config_filepath": {
+                    "type": "string",
+                    "description": "Path to the sshd_config file to be processed. If not specified, the default path for the OS is used."
+                },
+                "subsystem": {
+                    "type": "object",
+                    "description": "Subsystem definition with name (subsystem identifier) and value (command path and arguments)",
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "description": "The subsystem name (e.g., 'sftp', 'powershell')"
+                        },
+                        "value": {
+                            "type": "string",
+                            "description": "The subsystem command path and arguments (e.g., '/usr/bin/sftp' or 'c:/progra~1/powershell/7/pwsh.exe -sshs -NoLogo')"
+                        }
+                    },
+                    "required": ["name"],
+                    "additionalProperties": false
+                }
+            },
+            "additionalProperties": false
+        }
+    }
+}

@@ -202,10 +202,10 @@ The resource uses the following exit codes to report success and errors:
 
 ## See also
 
-- [Microsoft.Windows/WindowsPowerShell](../../windows/windowspowershell/resource.md)
+- [Microsoft.Windows/WindowsPowerShell](../../../Microsoft/Windows/WindowsPowerShell/index.md)
 
 <!-- Link references -->
-[01]: ../../../concepts/resources.md#test-operations
-[02]: examples/validate-with-dsc-resource.md
-[03]: examples/validate-in-a-configuration.md
+[01]: ../../../../schemas/definitions/resourceType.md
+[02]: ./examples/invoke-a-resource.md
+[03]: ./examples/configure-a-machine.md
 [04]: cli/osinfo.md

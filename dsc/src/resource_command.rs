@@ -5,51 +5,54 @@ use crate::args::{GetOutputFormat, OutputFormat};
 use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_JSON_ERROR, EXIT_DSC_RESOURCE_NOT_FOUND, write_object};
 use dsc_lib::configure::config_doc::{Configuration, ExecutionKind};
 use dsc_lib::configure::add_resource_export_results_to_configuration;
-use dsc_lib::dscresources::{resource_manifest::Kind, invoke_result::{GetResult, ResourceGetResponse}};
+use dsc_lib::discovery::discovery_trait::DiscoveryFilter;
+use dsc_lib::dscresources::{resource_manifest::Kind, invoke_result::{DeleteResultKind, GetResult, ResourceGetResponse, ResourceSetResponse, SetResult}};
+use dsc_lib::dscresources::dscresource::{Capability, get_diff};
 use dsc_lib::dscerror::DscError;
+use dsc_lib::types::{FullyQualifiedTypeName, ResourceVersionReq};
 use rust_i18n::t;
-use tracing::{error, debug};
+use serde_json::Value;
+use std::process::ExitCode;
+use tracing::{debug, error, info};
 
 use dsc_lib::{
     dscresources::dscresource::{Invoke, DscResource},
     DscManager
 };
-use std::process::exit;
 
-pub fn get(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, input: &str, format: Option<&GetOutputFormat>) {
+pub fn get(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, version: Option<&ResourceVersionReq>, input: &str, format: Option<&GetOutputFormat>) -> Result<(), ExitCode> {
     let Some(resource) = get_resource(dsc, resource_type, version) else {
-        error!("{}", DscError::ResourceNotFound(resource_type.to_string(), version.unwrap_or("").to_string()).to_string());
-        exit(EXIT_DSC_RESOURCE_NOT_FOUND);
+        error!("{}", DscError::ResourceNotFound(resource_type.to_string(), version.map_or(String::new(), |v| v.to_string())));
+        return Err(ExitCode::from(EXIT_DSC_RESOURCE_NOT_FOUND));
     };
 
     debug!("{} {} {:?}", resource.type_name, t!("resource_command.implementedAs"), resource.implemented_as);
     if resource.kind == Kind::Adapter {
         error!("{}: {}", t!("resource_command.invalidOperationOnAdapter"), resource.type_name);
-        exit(EXIT_DSC_ERROR);
+        return Err(ExitCode::from(EXIT_DSC_ERROR));
     }
 
     match resource.get(input) {
         Ok(result) => {
-            if let GetResult::Resource(response) = &result {
-                if format == Some(&GetOutputFormat::PassThrough) {
+            if let GetResult::Resource(response) = &result
+                && format == Some(&GetOutputFormat::PassThrough) {
                     let json = match serde_json::to_string(&response.actual_state) {
                         Ok(json) => json,
                         Err(err) => {
                             error!("{}", t!("resource_command.jsonError", err = err));
-                            exit(EXIT_JSON_ERROR);
+                            return Err(ExitCode::from(EXIT_JSON_ERROR));
                         }
                     };
-                    write_object(&json, Some(&OutputFormat::Json), false);
-                    return;
+                    write_object(&json, Some(&OutputFormat::Json), false)?;
+                    return Ok(());
                 }
-            }
 
             // convert to json
             let json = match serde_json::to_string(&result) {
                 Ok(json) => json,
                 Err(err) => {
                     error!("{}", t!("resource_command.jsonError", err = err));
-                    exit(EXIT_JSON_ERROR);
+                    return Err(ExitCode::from(EXIT_JSON_ERROR));
                 }
             };
             let format = match format {
@@ -58,33 +61,34 @@ pub fn get(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, inp
                 None => None,
                 _ => Some(&OutputFormat::Json),
             };
-            write_object(&json, format, false);
+            write_object(&json, format, false)?;
         }
         Err(err) => {
             error!("{err}");
-            exit(EXIT_DSC_ERROR);
+            return Err(ExitCode::from(EXIT_DSC_ERROR));
         }
     }
+    Ok(())
 }
 
-pub fn get_all(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, format: Option<&GetOutputFormat>) {
+pub fn get_all(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, version: Option<&ResourceVersionReq>, format: Option<&GetOutputFormat>) -> Result<(), ExitCode> {
     let input = String::new();
     let Some(resource) = get_resource(dsc, resource_type, version) else {
-        error!("{}", DscError::ResourceNotFound(resource_type.to_string(), version.unwrap_or("").to_string()).to_string());
-        exit(EXIT_DSC_RESOURCE_NOT_FOUND);
+        error!("{}", DscError::ResourceNotFound(resource_type.to_string(), version.map_or(String::new(), |r| r.to_string())));
+        return Err(ExitCode::from(EXIT_DSC_RESOURCE_NOT_FOUND));
     };
 
     debug!("{} {} {:?}", resource.type_name, t!("resource_command.implementedAs"), resource.implemented_as);
     if resource.kind == Kind::Adapter {
         error!("{}: {}", t!("resource_command.invalidOperationOnAdapter"), resource.type_name);
-        exit(EXIT_DSC_ERROR);
+        return Err(ExitCode::from(EXIT_DSC_ERROR));
     }
 
     let export_result = match resource.export(&input) {
         Ok(export) => { export }
         Err(err) => {
             error!("{err}");
-            exit(EXIT_DSC_ERROR);
+            return Err(ExitCode::from(EXIT_DSC_ERROR));
         }
     };
 
@@ -93,11 +97,11 @@ pub fn get_all(dsc: &mut DscManager, resource_type: &str, version: Option<&str>,
             Ok(json) => json,
             Err(err) => {
                 error!("{}", t!("resource_command.jsonError", err = err));
-                exit(EXIT_JSON_ERROR);
+                return Err(ExitCode::from(EXIT_JSON_ERROR));
             }
         };
-        write_object(&json, Some(&OutputFormat::Json), false);
-        return;
+        write_object(&json, Some(&OutputFormat::Json), false)?;
+        return Ok(());
     }
 
     let mut include_separator = false;
@@ -111,7 +115,7 @@ pub fn get_all(dsc: &mut DscManager, resource_type: &str, version: Option<&str>,
             Ok(json) => json,
             Err(err) => {
                 error!("{}", t!("resource_command.jsonError", err = err));
-                exit(EXIT_JSON_ERROR);
+                return Err(ExitCode::from(EXIT_JSON_ERROR));
             }
         };
         let format = match format {
@@ -120,62 +124,122 @@ pub fn get_all(dsc: &mut DscManager, resource_type: &str, version: Option<&str>,
             None => None,
             _ => Some(&OutputFormat::Json),
         };
-        write_object(&json, format, include_separator);
+        write_object(&json, format, include_separator)?;
         include_separator = true;
     }
+    Ok(())
 }
 
-pub fn set(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, input: &str, format: Option<&OutputFormat>) {
+pub fn set(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, version: Option<&ResourceVersionReq>, input: &str, format: Option<&OutputFormat>, what_if: bool) -> Result<(), ExitCode> {
     if input.is_empty() {
         error!("{}", t!("resource_command.setInputEmpty"));
-        exit(EXIT_INVALID_ARGS);
+        return Err(ExitCode::from(EXIT_INVALID_ARGS));
     }
 
     let Some(resource) = get_resource(dsc, resource_type, version) else {
-        error!("{}", DscError::ResourceNotFound(resource_type.to_string(), version.unwrap_or("").to_string()).to_string());
-        exit(EXIT_DSC_RESOURCE_NOT_FOUND);
+        error!("{}", DscError::ResourceNotFound(resource_type.to_string(), version.map_or(String::new(), |v| v.to_string())));
+        return Err(ExitCode::from(EXIT_DSC_RESOURCE_NOT_FOUND));
     };
 
     debug!("{} {} {:?}", resource.type_name, t!("resource_command.implementedAs"), resource.implemented_as);
     if resource.kind == Kind::Adapter {
         error!("{}: {}", t!("resource_command.invalidOperationOnAdapter"), resource.type_name);
-        exit(EXIT_DSC_ERROR);
+        return Err(ExitCode::from(EXIT_DSC_ERROR));
     }
 
-    match resource.set(input, true, &ExecutionKind::Actual) {
+    let execution_kind = if what_if { ExecutionKind::WhatIf } else { ExecutionKind::Actual };
+
+    let exist = match serde_json::from_str::<Value>(input) {
+        Ok(v) => {
+            if let Some(exist_value) = v.get("_exist") {
+                !matches!(exist_value, Value::Bool(false))
+            } else {
+                true
+            }
+        },
+        Err(_) => true,
+    };
+
+    if !exist && resource.capabilities.contains(&Capability::Delete) && !resource.capabilities.contains(&Capability::SetHandlesExist) {
+        debug!("{}", t!("resource_command.routingToDelete"));
+
+        let before_state = match resource.get(input) {
+            Ok(GetResult::Resource(response)) => response.actual_state,
+            Ok(_) => unreachable!(),
+            Err(err) => {
+                error!("{err}");
+                return Err(ExitCode::from(EXIT_DSC_ERROR));
+            }
+        };
+
+        if let Err(err) = resource.delete(input, &ExecutionKind::Actual) {
+            error!("{err}");
+            return Err(ExitCode::from(EXIT_DSC_ERROR));
+        }
+
+        let after_state = match resource.get(input) {
+            Ok(GetResult::Resource(response)) => response.actual_state,
+            Ok(_) => unreachable!(),
+            Err(err) => {
+                error!("{err}");
+                return Err(ExitCode::from(EXIT_DSC_ERROR));
+            }
+        };
+
+        let diff = get_diff(&before_state, &after_state);
+
+        let result = SetResult::Resource(ResourceSetResponse {
+            before_state,
+            after_state,
+            changed_properties: Some(diff),
+        });
+
+        let json = match serde_json::to_string(&result) {
+            Ok(json) => json,
+            Err(err) => {
+                error!("{}", t!("resource_command.jsonError", err = err));
+                return Err(ExitCode::from(EXIT_JSON_ERROR));
+            }
+        };
+        write_object(&json, format, false)?;
+        return Ok(());
+    }
+
+    match resource.set(input, true, &execution_kind) {
         Ok(result) => {
             // convert to json
             let json = match serde_json::to_string(&result) {
                 Ok(json) => json,
                 Err(err) => {
                     error!("{}", t!("resource_command.jsonError", err = err));
-                    exit(EXIT_JSON_ERROR);
+                    return Err(ExitCode::from(EXIT_JSON_ERROR));
                 }
             };
-            write_object(&json, format, false);
+            write_object(&json, format, false)?;
         }
         Err(err) => {
             error!("{err}");
-            exit(EXIT_DSC_ERROR);
+            return Err(ExitCode::from(EXIT_DSC_ERROR));
         }
     }
+    Ok(())
 }
 
-pub fn test(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, input: &str, format: Option<&OutputFormat>) {
+pub fn test(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, version: Option<&ResourceVersionReq>, input: &str, format: Option<&OutputFormat>) -> Result<(), ExitCode> {
     if input.is_empty() {
         error!("{}", t!("resource_command.testInputEmpty"));
-        exit(EXIT_INVALID_ARGS);
+        return Err(ExitCode::from(EXIT_INVALID_ARGS));
     }
 
     let Some(resource) = get_resource(dsc, resource_type, version) else {
-        error!("{}", DscError::ResourceNotFound(resource_type.to_string(), version.unwrap_or("").to_string()).to_string());
-        exit(EXIT_DSC_RESOURCE_NOT_FOUND);
+        error!("{}", DscError::ResourceNotFound(resource_type.to_string(), version.map_or(String::new(), |v| v.to_string())));
+        return Err(ExitCode::from(EXIT_DSC_RESOURCE_NOT_FOUND));
     };
 
     debug!("{} {} {:?}", resource.type_name, t!("resource_command.implementedAs"), resource.implemented_as);
     if resource.kind == Kind::Adapter {
         error!("{}: {}", t!("resource_command.invalidOperationOnAdapter"), resource.type_name);
-        exit(EXIT_DSC_ERROR);
+        return Err(ExitCode::from(EXIT_DSC_ERROR));
     }
 
     match resource.test(input) {
@@ -185,47 +249,68 @@ pub fn test(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, in
                 Ok(json) => json,
                 Err(err) => {
                     error!("JSON: {err}");
-                    exit(EXIT_JSON_ERROR);
+                    return Err(ExitCode::from(EXIT_JSON_ERROR));
                 }
             };
-            write_object(&json, format, false);
+            write_object(&json, format, false)?;
         }
         Err(err) => {
             error!("{err}");
-            exit(EXIT_DSC_ERROR);
+            return Err(ExitCode::from(EXIT_DSC_ERROR));
         }
     }
+    Ok(())
 }
 
-pub fn delete(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, input: &str) {
+pub fn delete(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, version: Option<&ResourceVersionReq>, input: &str, format: Option<&OutputFormat>, what_if: bool) -> Result<(), ExitCode> {
     let Some(resource) = get_resource(dsc, resource_type, version) else {
-        error!("{}", DscError::ResourceNotFound(resource_type.to_string(), version.unwrap_or("").to_string()).to_string());
-        exit(EXIT_DSC_RESOURCE_NOT_FOUND);
+        error!("{}", DscError::ResourceNotFound(resource_type.to_string(), version.map_or(String::new(), |v| v.to_string())));
+        return Err(ExitCode::from(EXIT_DSC_RESOURCE_NOT_FOUND));
     };
 
     debug!("{} {} {:?}", resource.type_name, t!("resource_command.implementedAs"), resource.implemented_as);
     if resource.kind == Kind::Adapter {
         error!("{}: {}", t!("resource_command.invalidOperationOnAdapter"), resource.type_name);
-        exit(EXIT_DSC_ERROR);
+        return Err(ExitCode::from(EXIT_DSC_ERROR));
     }
 
-    match resource.delete(input) {
-        Ok(()) => {}
+    let execution_kind = if what_if { ExecutionKind::WhatIf } else { ExecutionKind::Actual };
+
+    match resource.delete(input, &execution_kind) {
+        Ok(result) => {
+            match result {
+                DeleteResultKind::ResourceActual => {
+                },
+                DeleteResultKind::ResourceWhatIf(delete_result) => {
+                    match serde_json::to_string(&delete_result) {
+                        Ok(json) => write_object(&json, format, false)?,
+                        Err(err) => {
+                            error!("JSON: {err}");
+                            return Err(ExitCode::from(EXIT_JSON_ERROR));
+                        }
+                    }
+                },
+                DeleteResultKind::SyntheticWhatIf(_) => {
+                    info!("{} {}", resource.type_name, t!("resource_command.syntheticWhatIf"));
+                }
+            }
+        },
         Err(err) => {
             error!("{err}");
-            exit(EXIT_DSC_ERROR);
+            return Err(ExitCode::from(EXIT_DSC_ERROR));
         }
     }
+    Ok(())
 }
 
-pub fn schema(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, format: Option<&OutputFormat>) {
+pub fn schema(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, version: Option<&ResourceVersionReq>, format: Option<&OutputFormat>) -> Result<(), ExitCode> {
     let Some(resource) = get_resource(dsc, resource_type, version) else {
-        error!("{}", DscError::ResourceNotFound(resource_type.to_string(), version.unwrap_or("").to_string()).to_string());
-        exit(EXIT_DSC_RESOURCE_NOT_FOUND);
+        error!("{}", DscError::ResourceNotFound(resource_type.to_string(), version.map_or(String::new(), |v| v.to_string())));
+        return Err(ExitCode::from(EXIT_DSC_RESOURCE_NOT_FOUND));
     };
     if resource.kind == Kind::Adapter {
         error!("{}: {}", t!("resource_command.invalidOperationOnAdapter"), resource.type_name);
-        exit(EXIT_DSC_ERROR);
+        return Err(ExitCode::from(EXIT_DSC_ERROR));
     }
 
     match resource.schema() {
@@ -235,47 +320,49 @@ pub fn schema(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, 
                 Ok(_) => (),
                 Err(err) => {
                     error!("{err}");
-                    exit(EXIT_JSON_ERROR);
+                    return Err(ExitCode::from(EXIT_JSON_ERROR));
                 }
             }
-            write_object(&json, format, false);
+            write_object(&json, format, false)?;
         }
         Err(err) => {
             error!("{err}");
-            exit(EXIT_DSC_ERROR);
+            return Err(ExitCode::from(EXIT_DSC_ERROR));
         }
     }
+    Ok(())
 }
 
-pub fn export(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, input: &str, format: Option<&OutputFormat>) {
+pub fn export(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, version: Option<&ResourceVersionReq>, input: &str, format: Option<&OutputFormat>) -> Result<(), ExitCode> {
     let Some(dsc_resource) = get_resource(dsc, resource_type, version) else {
-        error!("{}", DscError::ResourceNotFound(resource_type.to_string(), version.unwrap_or("").to_string()).to_string());
-        exit(EXIT_DSC_RESOURCE_NOT_FOUND);
+        error!("{}", DscError::ResourceNotFound(resource_type.to_string(), version.map_or(String::new(), |v| v.to_string())).to_string());
+        return Err(ExitCode::from(EXIT_DSC_RESOURCE_NOT_FOUND));
     };
 
     if dsc_resource.kind == Kind::Adapter {
         error!("{}: {}", t!("resource_command.invalidOperationOnAdapter"), dsc_resource.type_name);
-        exit(EXIT_DSC_ERROR);
+        return Err(ExitCode::from(EXIT_DSC_ERROR));
     }
 
     let mut conf = Configuration::new();
     if let Err(err) = add_resource_export_results_to_configuration(dsc_resource, &mut conf, input) {
         error!("{err}");
-        exit(EXIT_DSC_ERROR);
+        return Err(ExitCode::from(EXIT_DSC_ERROR));
     }
 
     let json = match serde_json::to_string(&conf) {
         Ok(json) => json,
         Err(err) => {
             error!("JSON: {err}");
-            exit(EXIT_JSON_ERROR);
+            return Err(ExitCode::from(EXIT_JSON_ERROR));
         }
     };
-    write_object(&json, format, false);
+    write_object(&json, format, false)?;
+    Ok(())
 }
 
 #[must_use]
-pub fn get_resource<'a>(dsc: &'a mut DscManager, resource: &str, version: Option<&str>) -> Option<&'a DscResource> {
+pub fn get_resource<'a>(dsc: &'a mut DscManager, resource: &FullyQualifiedTypeName, version: Option<&ResourceVersionReq>) -> Option<&'a DscResource> {
     //TODO: add dynamically generated resource to dsc
-    dsc.find_resource(resource, version)
+    dsc.find_resource(&DiscoveryFilter::new(resource, version.cloned(), None)).unwrap_or(None)
 }

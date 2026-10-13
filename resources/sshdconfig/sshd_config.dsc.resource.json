@@ -1,0 +1,59 @@
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "type": "Microsoft.OpenSSH.SSHD/sshd_config",
+    "description": "Manage SSH Server Configuration",
+    "condition": "[not(equals(tryWhich('sshd'), null()))]",
+    "version": "0.2.0",
+        "get": {
+        "executable": "sshdconfig",
+        "args": [
+            "get",
+            "-s",
+            "sshd-config",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": false
+            }
+        ]
+    },
+    "set": {
+        "executable": "sshdconfig",
+        "args": [
+            "set",
+            "-s",
+            "sshd-config",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            },
+            {
+                "whatIfArg": "--what-if"
+            }
+        ],
+        "whatIfReturns": "state"
+    },
+    "export": {
+        "executable": "sshdconfig",
+        "args": [
+            "export",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": false
+            }
+        ]
+    },
+    "schema": {
+      "embedded": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "sshdconfig",
+        "type": "object",
+        "properties": {
+            "sshd_config_filepath": {
+                "type": "string",
+                "description": "Path to the sshd_config file to be processed. If not specified, the default path for the OS is used."
+            }
+        },
+        "additionalProperties": true
+      }
+    }
+}

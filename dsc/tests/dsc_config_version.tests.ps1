@@ -19,7 +19,7 @@ Describe 'Tests for resource versioning' {
             resources:
             - name: Test Version
               type: Test/Version
-              apiVersion: $version
+              requireVersion: '=$version'
               properties:
                 version: $version
 "@
@@ -34,13 +34,12 @@ Describe 'Tests for resource versioning' {
         @{ req = '<1.3' ; expected = '1.1.3' }
         @{ req = '>1,<=2.0.0' ; expected = '2.0.0' }
         @{ req = '>1.0.0,<2.0.0' ; expected = '1.1.3' }
-        @{ req = '1'; expected = '1.1.3' }
-        @{ req = '1.1' ; expected = '1.1.3' }
+        @{ req = '=1'; expected = '1.1.3' }
+        @{ req = '=1.1' ; expected = '1.1.3' }
         @{ req = '^1.0' ; expected = '1.1.3' }
         @{ req = '~1.1' ; expected = '1.1.3' }
-        @{ req = '*' ; expected = '2.0.0' }
-        @{ req = '1.*' ; expected = '1.1.3' }
-        @{ req = '2.1.0-preview.2' ; expected = '2.1.0-preview.2' }
+        @{ req = '=1.*' ; expected = '1.1.3' }
+        @{ req = '=2.1.0-preview.2' ; expected = '2.1.0-preview.2' }
     ) {
         param($req, $expected)
         $config_yaml = @"
@@ -48,7 +47,7 @@ Describe 'Tests for resource versioning' {
             resources:
             - name: Test Version
               type: Test/Version
-              apiVersion: '$req'
+              requireVersion: '$req'
               properties:
                 version: $expected
 "@
@@ -63,18 +62,55 @@ Describe 'Tests for resource versioning' {
             resources:
             - name: Test Version 1
               type: Test/Version
-              apiVersion: '1.1.2'
+              requireVersion: '=1.1.2'
             - name: Test Version 2
               type: Test/Version
-              apiVersion: '1.1.0'
+              requireVersion: '=1.1.0'
             - name: Test Version 3
               type: Test/Version
-              apiVersion: '2'
+              requireVersion: '=2'
 "@
         $out = dsc -l trace config get -i $config_yaml 2> $TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
         $out.results[0].result.actualState.version | Should -BeExactly '1.1.2'
         $out.results[1].result.actualState.version | Should -BeExactly '1.1.0'
         $out.results[2].result.actualState.version | Should -BeExactly '2.0.0'
+    }
+
+    It 'apiVersion alias works' {
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Test Version
+              type: Test/Version
+              apiVersion: '=1.1.2'
+              properties:
+                version: '=1.1.2'
+"@
+        $out = dsc -l trace config get -i $config_yaml 2> $TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+        $out.results[0].result.actualState.version | Should -BeExactly '1.1.2'
+    }
+
+    It 'Skips adapter discovery when a native resource type version requirement cannot be satisfied' {
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Test Version
+              type: Test/Version
+              requireVersion: '=99.0.0'
+              properties:
+                version: '99.0.0'
+"@
+        $out = dsc -l trace config get -i $config_yaml 2> $TestDrive/error.log
+        $LASTEXITCODE | Should -Not -Be 0
+
+        $traces = Get-Content $TestDrive/error.log -Raw
+
+        $traces | Should -Match "Skipping adapter search for resource 'Test/Version'"
+        $traces | Should -Not -Match 'Searching for adapted resources'
+        $traces | Should -Not -Match 'Enumerating resources for adapter'
+        $traces | Should -Match "Test/Version"
+        $traces | Should -Match "=99.0.0"
     }
 }

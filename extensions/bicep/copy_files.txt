@@ -1,1 +1,0 @@
-bicep.dsc.extension.json

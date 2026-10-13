@@ -1,0 +1,14 @@
+{
+    "Name": "test_group_resource",
+    "Kind": "Resource",
+    "IsRust": true,
+    "TestOnly": true,
+    "Binaries": [
+        "test_group_resource"
+    ],
+    "CopyFiles": {
+        "All": [
+            "testGroup.dsc.resource.json"
+        ]
+    }
+}

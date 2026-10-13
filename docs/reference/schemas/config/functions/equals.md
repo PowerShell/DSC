@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'equals' DSC configuration document function
-ms.date:     07/02/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       equals
 ---
@@ -14,7 +14,7 @@ Checks whether two values are identical.
 ## Syntax
 
 ```Syntax
-equals(<inputValue>)
+equals(<inputValue>, <inputValue>)
 ```
 
 ## Description
@@ -36,7 +36,7 @@ resources:
 - name: Compare strings
   type: Microsoft.DSC.Debug/Echo
   properties:
-    output: 
+    output:
       sameCase:         "[equals('a', 'a')]"
       differentCase:    "[equals('a', 'A')]"
       differentLetters: "[equals('a', 'b')]"
@@ -89,9 +89,6 @@ results:
       output:
         sameInteger: true
         differentInteger: false
-        sameFloat: true
-        differentFloat: false
-        integerAndFloat: ?
 messages: []
 hadErrors: false
 ```
@@ -159,14 +156,17 @@ hadErrors: false
 
 ### inputValue
 
-The `equals()` function expects exactly two input values of the same type. Separate each value with
-a comma. If the type of the second input value is different from the first value, DSC returns an
-error for the function.
+The `equals()` function expects exactly two input values. Separate each value with a comma. If
+the type of the second input value is different from the first value, DSC returns `false` for
+the function.
 
 String comparisons are case-sensitive. Array comparisons are position-sensitive.
 
+The function doesn't accept boolean values. DSC raises an error when either input value is a
+boolean.
+
 ```yaml
-Type:         [integer, string, object, array]
+Type:         [null, integer, string, object, array]
 Required:     true
 MinimumCount: 2
 MaximumCount: 2

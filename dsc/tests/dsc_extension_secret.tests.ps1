@@ -19,6 +19,7 @@ Describe 'Tests for the secret() function and extensions' {
             - name: Echo
               type: Microsoft.DSC.Debug/Echo
               properties:
+                showSecrets: true
                 output: "[secret('MySecret')]"
 '@
         $out = dsc -l trace config get -i $configYaml 2> $TestDrive/error.log | ConvertFrom-Json
@@ -34,6 +35,7 @@ Describe 'Tests for the secret() function and extensions' {
             - name: Echo
               type: Microsoft.DSC.Debug/Echo
               properties:
+                showSecrets: true
                 output: "[secret('DifferentSecret', 'VaultA')]"
 '@
         $out = dsc -l trace config get -i $configYaml 2> $TestDrive/error.log | ConvertFrom-Json
@@ -49,6 +51,7 @@ Describe 'Tests for the secret() function and extensions' {
             - name: Echo
               type: Microsoft.DSC.Debug/Echo
               properties:
+                showSecrets: true
                 output: "[secret('NonExistentSecret')]"
 '@
         dsc -l trace config get -i $configYaml 2> $TestDrive/error.log | ConvertFrom-Json
@@ -64,6 +67,7 @@ Describe 'Tests for the secret() function and extensions' {
             - name: Echo
               type: Microsoft.DSC.Debug/Echo
               properties:
+                showSecrets: true
                 output: "[secret('MySecret', 'NonExistentVault')]"
 '@
         dsc -l trace config get -i $configYaml 2> $TestDrive/error.log | ConvertFrom-Json
@@ -79,6 +83,7 @@ Describe 'Tests for the secret() function and extensions' {
             - name: Echo
               type: Microsoft.DSC.Debug/Echo
               properties:
+                showSecrets: true
                 output: "[secret('DuplicateSecret')]"
 '@
         dsc -l trace config get -i $configYaml 2> $TestDrive/error.log | ConvertFrom-Json
@@ -94,6 +99,7 @@ Describe 'Tests for the secret() function and extensions' {
             - name: Echo
               type: Microsoft.DSC.Debug/Echo
               properties:
+                showSecrets: true
                 output: "[secret('DuplicateSecret', 'Vault1')]"
 '@
         $out = dsc -l trace config get -i $configYaml 2> $TestDrive/error.log | ConvertFrom-Json
@@ -109,6 +115,7 @@ Describe 'Tests for the secret() function and extensions' {
             - name: Echo
               type: Microsoft.DSC.Debug/Echo
               properties:
+                showSecrets: true
                 output: "[secret('DuplicateSame')]"
 '@
         $out = dsc -l trace config get -i $configYaml 2> $TestDrive/error.log | ConvertFrom-Json
@@ -124,6 +131,7 @@ Describe 'Tests for the secret() function and extensions' {
             - name: Echo
               type: Microsoft.DSC.Debug/Echo
               properties:
+                showSecrets: true
                 output: "[secret('MultiLine')]"
 '@
         dsc -l trace config get -i $configYaml 2> $TestDrive/error.log | ConvertFrom-Json
@@ -144,11 +152,12 @@ Describe 'Tests for the secret() function and extensions' {
             type: Microsoft.DSC.Debug/Echo
             properties:
               output: "[parameters('myString')]"
+              showSecrets: true
 '@
       $out = dsc -l trace config get -i $configYaml 2> $TestDrive/error.log | ConvertFrom-Json
-      $LASTEXITCODE | Should -Be 0
+      $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw -Path $TestDrive/error.log)
       $out.results.Count | Should -Be 1
-      $out.results[0].result.actualState.Output | Should -BeExactly 'Hello'
+      $out.results[0].result.actualState.Output | Should -BeExactly 'Hello' -Because (Get-Content -Raw -Path $TestDrive/error.log)
     }
 
     It 'Allows to pass in secret() through variables' {
@@ -161,10 +170,34 @@ Describe 'Tests for the secret() function and extensions' {
             type: Microsoft.DSC.Debug/Echo
             properties:
               output: "[variables('myString')]"
+              showSecrets: true
 '@
       $out = dsc -l trace config get -i $configYaml 2> $TestDrive/error.log | ConvertFrom-Json
       $LASTEXITCODE | Should -Be 0
       $out.results.Count | Should -Be 1
       $out.results[0].result.actualState.Output | Should -BeExactly 'Hello'
+    }
+
+    It 'Deprecated extension shows message' {
+      try {
+        $dscHome = Split-Path (Get-Command dsc).Source -Parent
+        $env:DSC_RESTRICTED_PATH = (Join-Path -Path $dscHome -ChildPath 'deprecated') + [System.IO.Path]::PathSeparator + $dscHome
+
+        $configYaml = @'
+          $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+          variables:
+            myString: "[secret('nonExisting')]"
+          resources:
+          - name: Database Connection
+            type: Microsoft.DSC.Debug/Echo
+            properties:
+              output: "[variables('myString')]"
+'@
+        dsc -l trace config get -i $configYaml 2> $TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 4
+        (Get-Content -Raw -Path "$TestDrive/error.log") | Should -Match "Extension 'Test/ExtensionDeprecated' is deprecated: This extension is deprecated" -Because (Get-Content -Raw -Path "$TestDrive/error.log")
+      } finally {
+        $env:DSC_RESTRICTED_PATH = $null
+      }
     }
 }

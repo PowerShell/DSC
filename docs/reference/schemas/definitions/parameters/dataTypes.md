@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for valid parameter data types in a configuration document.
-ms.date:     07/03/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       DSC configuration parameter data type schema reference
 ---
@@ -15,9 +15,9 @@ Defines valid data types for a DSC configuration parameter
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/definitions/parameters/dataTypes.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.0/definitions/parameters/dataTypes.json
 Type:          string
-ValidValues:   [array, bool, int, object, string, secureobject, securestring]
+ValidValues:   [array, bool, int, object, string, secureObject, secureString]
 ```
 
 ## Description
@@ -31,25 +31,28 @@ The valid data types for a parameter are:
 - `int` for integers
 - `object` for objects
 - `string` for strings
-- `secureobject` for secure objects
-- `securestring` for secure strings
+- `secureObject` for secure objects
+- `secureString` for secure strings
+
+The data type names are case-sensitive. For example, DSC raises an error for a parameter that
+defines its `type` as `securestring` instead of `secureString`.
 
 Access parameters in a configuration using this syntax:
 
 ```yaml
-"[parameter('<parameter-name>')]"
+"[parameters('<parameter-name>')]"
 ```
 
 In YAML, the parameter syntax needs to be enclosed in double-quotes when used as an inline value.
 If the syntax isn't quoted, YAML interprets the syntax as an array.
 
 ```yaml
-valid:  "[parameter('example')]"
+valid:  "[parameters('example')]"
 # This unquoted syntax:
-invalid: [parameter('example')]
+invalid: [parameters('example')]
 # Evaluates to this YAML:
 invalid:
-  - parameter('example')
+  - parameters('example')
 ```
 
 ## Arrays
@@ -77,7 +80,7 @@ Access items in an array can by their index. The first item in an array is index
 syntax to access an index in an array parameter:
 
 ```yaml
-"[parameter('<parameter-name>')[<index>]]"
+"[parameters('<parameter-name>')[<index>]]"
 ```
 
 ```yaml
@@ -94,14 +97,14 @@ resources:
     type: Example.Security/Group
     properties:
       groupName: operators
-      members: "[parameter('members')]"
+      members: "[parameters('members')]"
   # Use a single item in the array as the value for a resource property
   - name: Admin Group
     type: Example.Security/Group
     properties:
       groupName: admins
       members:
-        - "[parameter('members')[0]]"
+        - "[parameters('members')[0]]"
 ```
 
 ## Booleans
@@ -170,11 +173,11 @@ resources:
   # Use the base object for the property definition
   - name: TSToy
     type: TSToy.Example/gotstoy
-    properties: "[parameter('tstoy')]"
+    properties: "[parameters('tstoy')]"
   # Use dot-notation for the property definition
   - name: Windows Product Name
     type: Microsoft.Windows/Registry
-    properties: "[parameter('registryKeys').productName]"
+    properties: "[parameters('registryKeys').productName]"
   # Use dot-notation for each value in the property definition
   - name: Windows System Root
     type: Microsoft.Windows/Registry
@@ -244,9 +247,9 @@ secure object parameters.
 ```yaml
 parameters:
   password:
-    type: securestring
+    type: secureString
   sensitiveOptions:
-    type: secureobject
+    type: secureObject
 ```
 
 [01]: ../../config/document.md
