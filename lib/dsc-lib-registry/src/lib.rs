@@ -140,6 +140,28 @@ impl RegistryHelper {
             return self.get_offline();
         }
 
+        if self.config.value_name.is_none()
+            && let Some(requested_acl) = &self.config.acl
+        {
+            return match acl::get(&self.config.key_path, requested_acl) {
+                Ok(current_acl) => Ok(Registry {
+                    key_path: self.config.key_path.clone(),
+                    acl: Some(current_acl),
+                    ..Default::default()
+                }),
+                Err(RegistryError::RegistryKeyNotFound(_)) => Ok(Registry {
+                    key_path: self.config.key_path.clone(),
+                    exist: Some(false),
+                    ..Default::default()
+                }),
+                Err(error) => Err(error),
+            };
+        }
+
+        if let Some(requested_acl) = &self.config.acl {
+            acl::validate(requested_acl)?;
+        }
+
         let exist: bool;
         let (reg_key, _subkey) = match self.open(Security::Read) {
             Ok((reg_key, subkey)) => {

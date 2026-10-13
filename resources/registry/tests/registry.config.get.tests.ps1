@@ -56,6 +56,18 @@ Describe 'Registry config get tests' {
         $result.acl | Should -Match '^D:'
     }
 
+    It 'Rejects an invalid ACL when the registry key does not exist' -Skip:(!$IsWindows) {
+        $json = @{
+            keyPath = 'HKCU\1\MissingAclGet'
+            acl = 'invalid'
+        } | ConvertTo-Json -Compress
+
+        registry config get --input $json 2>$TestDrive/error.log
+
+        $LASTEXITCODE | Should -Not -Be 0
+        (Get-Content -Path $TestDrive/error.log -Raw) | Should -Match 'Registry ACL'
+    }
+
     It 'Traces should be JSON' -Skip:(!$IsWindows) {
         # keyPath should return Access Denied
         $json = @'

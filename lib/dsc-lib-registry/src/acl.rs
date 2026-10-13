@@ -20,7 +20,7 @@ use windows::Win32::Security::{
 };
 use windows::Win32::System::Registry::{
     HKEY, HKEY_CLASSES_ROOT, HKEY_CURRENT_CONFIG, HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE,
-    HKEY_USERS, KEY_READ, REG_SAM_FLAGS, RegCloseKey, RegGetKeySecurity, RegOpenKeyExW,
+    HKEY_USERS, REG_SAM_FLAGS, RegCloseKey, RegGetKeySecurity, RegOpenKeyExW,
     RegSetKeySecurity,
 };
 use windows::core::{BOOL, HSTRING, PCWSTR, PWSTR};
@@ -29,6 +29,7 @@ use crate::error::RegistryError;
 use rust_i18n::t;
 
 const SDDL_REVISION_1: u32 = 1;
+const READ_CONTROL_ACCESS: REG_SAM_FLAGS = REG_SAM_FLAGS(0x0002_0000);
 
 struct RegistryKey(HKEY);
 
@@ -55,7 +56,7 @@ impl Drop for LocalAllocation {
 pub fn get(path: &str, requested_sddl: &str) -> Result<String, RegistryError> {
     let descriptor = SecurityDescriptor::from_sddl(requested_sddl)?;
     let (security_information, _) = descriptor.permissions(false)?;
-    let key = open(path, KEY_READ)?;
+    let key = open(path, READ_CONTROL_ACCESS)?;
     let mut size = 0;
 
     // SAFETY: The first call intentionally supplies no buffer to obtain the required size.
