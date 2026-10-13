@@ -55,21 +55,21 @@ Describe 'Test resource executable error handling' {
 
 Describe 'Rust resource executable error handling' {
     It 'Returns failure when FileContent has no operation' {
-        $null = filecontent 2>$TestDrive/error.log
+        $null = file_dsc 2>$TestDrive/error.log
 
         $LASTEXITCODE | Should -Be 1
         (Get-Content -Raw $TestDrive/error.log) | Should -Match 'Missing operation'
     }
 
     It 'Returns failure when FileContent has no input' {
-        $null = filecontent get 2>$TestDrive/error.log
+        $null = file_dsc get 2>$TestDrive/error.log
 
         $LASTEXITCODE | Should -Be 1
         (Get-Content -Raw $TestDrive/error.log) | Should -Match 'Missing --input argument'
     }
 
     It 'Returns failure when FileContent input is invalid JSON' {
-        $null = filecontent get --input '{invalid' 2>$TestDrive/error.log
+        $null = file_dsc get --input '{invalid' 2>$TestDrive/error.log
 
         $LASTEXITCODE | Should -Be 2
         (Get-Content -Raw $TestDrive/error.log) | Should -Match 'Invalid JSON input'

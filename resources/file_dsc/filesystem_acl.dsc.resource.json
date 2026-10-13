@@ -52,7 +52,7 @@
     },
     "schema": {
         "embedded": {
-            "$schema": "http://json-schema.org/draft-07/schema#",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
             "title": "Filesystem ACL",
             "description": "Manage the discretionary access control list of a local file or folder.",
             "type": "object",
@@ -71,17 +71,27 @@
                 "SDDL": {
                     "type": "string",
                     "title": "Security descriptor definition language",
-                    "description": "The discretionary access control list in SDDL form.",
+                    "description": "The complete discretionary access control list in SDDL form. Setting this property replaces the existing DACL, including its protection state.",
                     "minLength": 1
                 },
                 "_inDesiredState": {
-                    "type": "boolean",
-                    "title": "In desired state",
-                    "description": "Indicates whether the ACL is in the desired state. Only returned by test.",
-                    "readOnly": true
+                    "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/inDesiredState.json"
                 }
             },
-            "additionalProperties": false
+            "additionalProperties": false,
+            "$defs": {
+                "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/inDesiredState.json": {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/inDesiredState.json",
+                    "title": "Instance is in the Desired State",
+                    "description": "Indicates whether the instance is in the desired state. This property is only returned by the `test` method.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ],
+                    "readOnly": true
+                }
+            }
         }
     }
 }

@@ -10,7 +10,9 @@ use windows::Win32::Security::Authorization::{
     ConvertStringSecurityDescriptorToSecurityDescriptorW, SDDL_REVISION_1,
 };
 use windows::Win32::Security::{
-    DACL_SECURITY_INFORMATION, GetFileSecurityW, PSECURITY_DESCRIPTOR, SetFileSecurityW,
+    DACL_SECURITY_INFORMATION, GetFileSecurityW, GetSecurityDescriptorControl,
+    OBJECT_SECURITY_INFORMATION, PROTECTED_DACL_SECURITY_INFORMATION, PSECURITY_DESCRIPTOR,
+    SE_DACL_PROTECTED, SetFileSecurityW, UNPROTECTED_DACL_SECURITY_INFORMATION,
 };
 use windows::core::{PCWSTR, PWSTR};
 
@@ -27,11 +29,12 @@ pub fn set(input: &FilesystemAcl) -> Result<FilesystemAcl, String> {
     validate_input(input)?;
     let security_descriptor = SecurityDescriptor::from_sddl(&input.sddl)?;
     let path = to_wide(&input.path);
+    let security_information = security_descriptor.dacl_security_information()?;
 
     unsafe {
         SetFileSecurityW(
             PCWSTR(path.as_ptr()),
-            DACL_SECURITY_INFORMATION,
+            security_information,
             security_descriptor.as_ptr(),
         )
     }
@@ -175,6 +178,20 @@ impl SecurityDescriptor {
 
     fn as_ptr(&self) -> PSECURITY_DESCRIPTOR {
         self.pointer
+    }
+
+    fn dacl_security_information(&self) -> Result<OBJECT_SECURITY_INFORMATION, String> {
+        let mut control = 0_u16;
+        let mut revision = 0_u32;
+        unsafe { GetSecurityDescriptorControl(self.pointer, &mut control, &mut revision) }
+            .map_err(|error| t!("acl.invalidSddl", error = error.to_string()).to_string())?;
+
+        let protection = if control & SE_DACL_PROTECTED.0 != 0 {
+            PROTECTED_DACL_SECURITY_INFORMATION
+        } else {
+            UNPROTECTED_DACL_SECURITY_INFORMATION
+        };
+        Ok(DACL_SECURITY_INFORMATION | protection)
     }
 
     fn to_sddl(&self) -> Result<String, String> {

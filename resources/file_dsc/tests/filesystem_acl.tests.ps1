@@ -68,6 +68,40 @@ Describe 'Microsoft.Filesystem/ACL tests' -Skip:(!$IsWindows) {
         ($testOutput | ConvertFrom-Json).inDesiredState | Should -BeTrue
     }
 
+    It 'Reports a mismatched valid DACL as not in the desired state' {
+        $path = New-Item -ItemType File -Path (Join-Path $testRoot 'mismatch.txt') |
+            Select-Object -ExpandProperty FullName
+        $json = @{ path = $path; SDDL = $desiredSddl } | ConvertTo-Json -Compress
+        $null = $json | dsc resource set -r $resourceType -f - 2>$TestDrive/error.log
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+
+        $mismatchedJson = @{
+            path = $path
+            SDDL = "D:(D;;FW;;;AN)(A;;FA;;;$currentSid)"
+        } | ConvertTo-Json -Compress
+        $testOutput = $mismatchedJson |
+            dsc resource test -r $resourceType -f - 2>$TestDrive/error.log
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+
+        ($testOutput | ConvertFrom-Json).inDesiredState | Should -BeFalse
+    }
+
+    It 'Applies and tests the DACL protection state' {
+        $path = New-Item -ItemType File -Path (Join-Path $testRoot 'protected.txt') |
+            Select-Object -ExpandProperty FullName
+        $protectedSddl = $desiredSddl.Replace('D:', 'D:P')
+        $json = @{ path = $path; SDDL = $protectedSddl } | ConvertTo-Json -Compress
+
+        $setOutput = $json | dsc resource set -r $resourceType -f - 2>$TestDrive/error.log
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+        $setState = ($setOutput | ConvertFrom-Json).afterState
+
+        $setState.SDDL | Should -Match '^D:P'
+        $testOutput = $json | dsc resource test -r $resourceType -f - 2>$TestDrive/error.log
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+        ($testOutput | ConvertFrom-Json).inDesiredState | Should -BeTrue
+    }
+
     It 'Rejects SDDL components that the resource does not manage' {
         $path = New-Item -ItemType File -Path (Join-Path $testRoot 'invalid.txt') |
             Select-Object -ExpandProperty FullName
