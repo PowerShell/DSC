@@ -12,6 +12,7 @@ rust_i18n::i18n!("locales", fallback = "en-us");
 pub mod error;
 pub mod config;
 pub mod offreg;
+mod acl;
 
 use std::ffi::OsStr;
 use std::os::windows::ffi::OsStrExt;
@@ -105,6 +106,7 @@ impl RegistryHelper {
             key_path: key_path.to_string(),
             value_name,
             value_data,
+            acl: None,
             metadata: None,
             exist: None,
             registry_file_path: None,
@@ -153,6 +155,10 @@ impl RegistryHelper {
             },
             Err(e) => return Err(e),
         };
+        let acl = match &self.config.acl {
+            Some(requested_acl) => Some(acl::get(&self.config.key_path, requested_acl)?),
+            None => None,
+        };
 
         if let Some(value_name) = &self.config.value_name {
             let value = match reg_key.value(value_name) {
@@ -162,6 +168,7 @@ impl RegistryHelper {
                     return Ok(Registry {
                         key_path: self.config.key_path.clone(),
                         value_name: Some(value_name.clone()),
+                        acl,
                         exist: Some(exist),
                         ..Default::default()
                     });
@@ -173,11 +180,13 @@ impl RegistryHelper {
                 key_path: self.config.key_path.clone(),
                 value_name: Some(value_name.clone()),
                 value_data: convert_reg_value(&value)?,
+                acl,
                 ..Default::default()
             })
         } else {
             Ok(Registry {
                 key_path: self.config.key_path.clone(),
+                acl,
                 ..Default::default()
             })
         }
@@ -225,11 +234,24 @@ impl RegistryHelper {
     /// * `RegistryError` - The error that occurred.
     pub fn set(&self) -> Result<Option<Registry>, RegistryError> {
         if self.offline_hive.is_some() {
+            if self.config.acl.is_some() {
+                return Err(RegistryError::OfflineRegistry(
+                    t!("error.offlineAcl").to_string(),
+                ));
+            }
             return self.set_offline();
+        }
+        if let Some(acl) = &self.config.acl {
+            acl::validate(acl)?;
         }
 
         let mut what_if_metadata: Vec<String> = Vec::new();
-        let reg_key = match self.open(Security::Write) {
+        let open_permission = if self.config.value_name.is_none() && self.config.acl.is_some() {
+            Security::Read
+        } else {
+            Security::Write
+        };
+        let reg_key = match self.open(open_permission) {
             Ok((reg_key, _subkey)) => Some(reg_key),
             // handle NotFound error
             Err(RegistryError::RegistryKeyNotFound(_)) => {
@@ -308,10 +330,16 @@ impl RegistryHelper {
             };
 
             if self.what_if {
+                if self.config.acl.is_some() {
+                    what_if_metadata.push(
+                        t!("registry_helper.whatIfSetAcl", key_path = &self.config.key_path).to_string(),
+                    );
+                }
                 return Ok(Some(Registry {
                     key_path: self.config.key_path.clone(),
                     value_data: convert_reg_value(&data)?,
                     value_name: self.config.value_name.clone(),
+                    acl: self.config.acl.clone(),
                     metadata: if what_if_metadata.is_empty() { None } else { Some(Metadata { what_if: Some(what_if_metadata) })},
                     ..Default::default()
                 }));
@@ -323,11 +351,21 @@ impl RegistryHelper {
         }
 
         if self.what_if {
+            if self.config.acl.is_some() {
+                what_if_metadata.push(
+                    t!("registry_helper.whatIfSetAcl", key_path = &self.config.key_path).to_string(),
+                );
+            }
             return Ok(Some(Registry {
                 key_path: self.config.key_path.clone(),
+                acl: self.config.acl.clone(),
                 metadata: if what_if_metadata.is_empty() { None } else { Some(Metadata { what_if: Some(what_if_metadata) })},
                 ..Default::default()
             }));
+        }
+
+        if let Some(acl) = &self.config.acl {
+            acl::set(&self.config.key_path, acl)?;
         }
 
         Ok(None)
@@ -436,6 +474,11 @@ impl RegistryHelper {
     // --- Offline registry implementations ---
 
     fn get_offline(&self) -> Result<Registry, RegistryError> {
+        if self.config.acl.is_some() {
+            return Err(RegistryError::OfflineRegistry(
+                t!("error.offlineAcl").to_string(),
+            ));
+        }
         let hive = self.offline_hive.as_ref().unwrap();
 
         // Check if the subkey exists

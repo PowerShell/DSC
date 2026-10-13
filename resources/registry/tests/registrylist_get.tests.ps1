@@ -2,6 +2,18 @@
 # Licensed under the MIT License.
 
 Describe 'Registry list get tests' {
+    BeforeAll {
+        if ($IsWindows) {
+            New-Item -Path 'HKCU:\1\AclListGet' -Force | Out-Null
+        }
+    }
+
+    AfterAll {
+        if ($IsWindows) {
+            Remove-Item -Path 'HKCU:\1' -Recurse -ErrorAction Ignore
+        }
+    }
+
     It 'Can get a registry list' -Skip:(!$IsWindows) {
         $config_yaml = @'
             $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
@@ -34,5 +46,21 @@ Describe 'Registry list get tests' {
         $out.results.result[0].actualState.registryEntries[3].keyPath | Should -BeExactly 'HKLM\Software\Microsoft\Windows\CurrentVersion'
         $out.results.result[0].actualState.registryEntries[3].valueName | Should -BeExactly 'NonExistentValue'
         $out.results.result[0].actualState.registryEntries[3]._exist | Should -BeFalse
+    }
+
+    It 'Can get ACLs in a registry list' -Skip:(!$IsWindows) {
+        $json = @{
+            registryEntries = @(
+                @{
+                    keyPath = 'HKCU\1\AclListGet'
+                    acl = 'D:'
+                }
+            )
+        } | ConvertTo-Json -Depth 5 -Compress
+
+        $result = registry config get --list --input $json 2>$TestDrive/error.log | ConvertFrom-Json
+
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw)
+        $result.registryEntries[0].acl | Should -Match '^D:'
     }
 }

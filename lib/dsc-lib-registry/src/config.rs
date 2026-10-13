@@ -30,6 +30,9 @@ pub struct Registry {
     /// The data of the registry value.
     #[serde(rename = "valueData", skip_serializing_if = "Option::is_none")]
     pub value_data: Option<RegistryValueData>,
+    /// The registry key access control list in Security Descriptor Definition Language (SDDL).
+    #[serde(rename = "acl", skip_serializing_if = "Option::is_none")]
+    pub acl: Option<String>,
     #[serde(rename = "_exist", skip_serializing_if = "Option::is_none")]
     pub exist: Option<bool>,
     /// Optional path to an offline registry hive file. When specified, operations

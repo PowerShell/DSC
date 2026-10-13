@@ -2,6 +2,18 @@
 # Licensed under the MIT License.
 
 Describe 'Registry config get tests' {
+    BeforeAll {
+        if ($IsWindows) {
+            New-Item -Path 'HKCU:\1\AclGet' -Force | Out-Null
+        }
+    }
+
+    AfterAll {
+        if ($IsWindows) {
+            Remove-Item -Path 'HKCU:\1' -Recurse -ErrorAction Ignore
+        }
+    }
+
     It 'Can get a registry key' -Skip:(!$IsWindows) {
         $json = @'
         {
@@ -29,6 +41,19 @@ Describe 'Registry config get tests' {
         $result.valueName | Should -Be 'ProgramFilesPath'
         $result.valueData.ExpandString | Should -Be '%ProgramFiles%'
         ($result.psobject.properties | Measure-Object).Count | Should -Be 3
+    }
+
+    It 'Can get a registry key ACL' -Skip:(!$IsWindows) {
+        $json = @{
+            keyPath = 'HKCU\1\AclGet'
+            acl = 'D:'
+        } | ConvertTo-Json -Compress
+
+        $result = registry config get --input $json 2>$TestDrive/error.log | ConvertFrom-Json
+
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw)
+        $result.keyPath | Should -BeExactly 'HKCU\1\AclGet'
+        $result.acl | Should -Match '^D:'
     }
 
     It 'Traces should be JSON' -Skip:(!$IsWindows) {

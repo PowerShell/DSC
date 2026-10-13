@@ -22,6 +22,7 @@ thiserror = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 utfx = { workspace = true }
+windows = { workspace = true }
 
 [build-dependencies]
 cc = { workspace = true }
