@@ -1,21 +1,45 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use dsc_lib::extensions::secret::SecretArgKind;
+pub(super) mod helpers {
+    //! Defines helper functions for creating variants of [`SecretArgKind`], valid [`SecretArgs`],
+    //! and extension manifests that define the `secret` capability.
 
-/// Returns a static string argument definition.
-fn string_arg(value: &str) -> SecretArgKind {
-    SecretArgKind::String(value.to_string())
-}
+    use dsc_lib::extensions::extension_manifest::ExtensionManifest;
+    use dsc_lib::extensions::secret::{SecretArgKind, SecretArgs};
+    use dsc_lib::schemas::dsc_repo::DscRepoSchema;
+    use serde_json::{json, Value};
 
-/// Returns the secret name input argument definition `--name`.
-fn name_arg() -> SecretArgKind {
-    SecretArgKind::Name { name_arg: "--name".to_string() }
-}
+    /// Returns a static string argument definition.
+    pub(super) fn string_arg(value: &str) -> SecretArgKind {
+        SecretArgKind::String(value.to_string())
+    }
 
-/// Returns the vault input argument definition `--vault`.
-fn vault_arg() -> SecretArgKind {
-    SecretArgKind::Vault { vault_arg: "--vault".to_string() }
+    /// Returns the secret name input argument definition `--name`.
+    pub(super) fn name_arg() -> SecretArgKind {
+        SecretArgKind::Name { name_arg: "--name".to_string() }
+    }
+
+    /// Returns the vault input argument definition `--vault`.
+    pub(super) fn vault_arg() -> SecretArgKind {
+        SecretArgKind::Vault { vault_arg: "--vault".to_string() }
+    }
+
+    /// Returns valid arguments that define every argument kind.
+    pub(super) fn args() -> SecretArgs {
+        SecretArgs::from_args(vec![string_arg("get"), name_arg(), vault_arg()])
+            .expect("arguments should be valid")
+    }
+
+    /// Returns an extension manifest that defines the `secret` capability with `secret`.
+    pub(super) fn manifest_with_secret(secret: Value) -> Value {
+        json!({
+            "$schema": ExtensionManifest::default_schema_id_uri(),
+            "type": "Test/Secret",
+            "version": "0.1.0",
+            "secret": secret
+        })
+    }
 }
 
 #[cfg(test)]
@@ -25,7 +49,7 @@ mod methods {
         use dsc_lib::extensions::secret::{SecretArgKind, SecretArgs, SecretArgsError};
         use test_case::test_case;
 
-        use super::super::{name_arg, string_arg, vault_arg};
+        use super::super::helpers::{name_arg, string_arg, vault_arg};
 
         #[test_case(vec![name_arg()]; "only name arg")]
         #[test_case(vec![string_arg("get"), name_arg()]; "string arg and name arg")]
@@ -84,7 +108,7 @@ mod methods {
         use serde_json::{json, Value};
         use test_case::test_case;
 
-        use super::super::{name_arg, string_arg, vault_arg};
+        use super::super::helpers::{name_arg, string_arg, vault_arg};
 
         #[test]
         fn converts_each_argument_kind() {
@@ -152,7 +176,7 @@ mod methods {
         use dsc_lib::extensions::secret::{SecretArgKind, SecretArgs};
         use test_case::test_case;
 
-        use super::super::{name_arg, string_arg, vault_arg};
+        use super::super::helpers::{name_arg, string_arg, vault_arg};
 
         #[test_case(
             vec![string_arg("get"), vault_arg(), name_arg(), string_arg("--quiet")], "apiToken", Some("services") =>
@@ -290,20 +314,10 @@ mod schema {
 mod serde {
     use dsc_lib::extensions::extension_manifest::ExtensionManifest;
     use dsc_lib::extensions::secret::SecretArgs;
-    use dsc_lib::schemas::dsc_repo::DscRepoSchema;
     use serde_json::{json, Value};
     use test_case::test_case;
 
-    use super::{name_arg, string_arg, vault_arg};
-
-    fn manifest_with_secret(secret: Value) -> Value {
-        json!({
-            "$schema": ExtensionManifest::default_schema_id_uri(),
-            "type": "Test/Secret",
-            "version": "0.1.0",
-            "secret": secret
-        })
-    }
+    use super::helpers::{manifest_with_secret, name_arg, string_arg, vault_arg};
 
     #[test]
     fn serializing() {
@@ -391,21 +405,11 @@ mod serde {
 
 #[cfg(test)]
 mod traits {
-    use dsc_lib::extensions::secret::SecretArgs;
-
-    use super::{name_arg, string_arg, vault_arg};
-
-    /// Returns valid arguments that define every argument kind.
-    fn args() -> SecretArgs {
-        SecretArgs::from_args(vec![string_arg("get"), name_arg(), vault_arg()])
-            .expect("arguments should be valid")
-    }
-
     #[cfg(test)]
     mod as_ref {
         use dsc_lib::extensions::secret::SecretArgKind;
 
-        use super::args;
+        use super::super::helpers::args;
 
         #[test]
         fn vec_secret_arg_kind() {
@@ -419,7 +423,7 @@ mod traits {
 
     #[cfg(test)]
     mod deref {
-        use super::{args, super::string_arg};
+        use super::super::helpers::{args, string_arg};
 
         #[test]
         fn vec_secret_arg_kind() {
@@ -436,7 +440,7 @@ mod traits {
         use dsc_lib::extensions::secret::SecretArgKind;
         use test_case::test_case;
 
-        use super::{args, super::{name_arg, string_arg, vault_arg}};
+        use super::super::helpers::{args, name_arg, string_arg, vault_arg};
 
         #[test_case(string_arg("get") => r#""get""#; "string arg displays as JSON string")]
         #[test_case(name_arg() => r#"{"nameArg":"--name"}"#; "name arg displays as JSON object")]
@@ -455,7 +459,7 @@ mod traits {
     mod from {
         use dsc_lib::extensions::secret::SecretArgKind;
 
-        use super::{args, super::{name_arg, string_arg, vault_arg}};
+        use super::super::helpers::{args, name_arg, string_arg, vault_arg};
 
         #[test]
         fn vec_secret_arg_kind() {
@@ -469,7 +473,7 @@ mod traits {
     mod into_iterator {
         use dsc_lib::extensions::secret::SecretArgKind;
 
-        use super::{args, super::{name_arg, string_arg, vault_arg}};
+        use super::super::helpers::{args, name_arg, string_arg, vault_arg};
 
         #[test]
         fn secret_arg_kind() {
@@ -496,7 +500,7 @@ mod traits {
 
     #[cfg(test)]
     mod partial_eq {
-        use super::{args, super::{name_arg, string_arg, vault_arg}};
+        use super::super::helpers::{args, name_arg, string_arg, vault_arg};
 
         #[test]
         fn secret_args_with_vec_secret_arg_kind() {
@@ -516,7 +520,7 @@ mod traits {
         use dsc_lib::extensions::secret::{SecretArgKind, SecretArgs, SecretArgsError};
         use serde_json::{json, Value};
 
-        use super::super::{name_arg, string_arg};
+        use super::super::helpers::{name_arg, string_arg};
 
         #[test]
         fn vec_secret_arg_kind() {
