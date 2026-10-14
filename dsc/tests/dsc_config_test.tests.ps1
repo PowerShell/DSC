@@ -85,4 +85,24 @@ Describe 'dsc config test tests' {
         $log = Get-Content "$TestDrive/trace.log" -Raw
         $log | Should -Match ".*Resource named 'MyTest' for type 'Microsoft.DSC.Debug/Echo' is specified more than once.*" -Because ($log | Out-String)
     }
+
+    It 'Schema validation failures return exit code 5' -Skip:(!$IsWindows) {
+        $configYaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: typo in property name
+  type: Microsoft.Windows/Registry
+  properties:
+    keyPath: HKCU\Software\DscExitCodeRepro
+    valuName: Example
+'@
+        $configPath = Join-Path $TestDrive 'invalid-registry-property.dsc.yaml'
+        $tracePath = Join-Path $TestDrive 'trace.log'
+        Set-Content -Path $configPath -Value $configYaml
+
+        $null = dsc config test --file $configPath 2> $tracePath
+        $LASTEXITCODE | Should -Be 5
+        $log = Get-Content -Path $tracePath -Raw
+        $log | Should -Match "'valuName' was unexpected"
+    }
 }
