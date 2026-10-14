@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for the data returned by the 'dsc config test' command.
-ms.date:     09/01/2026
+ms.date:     10/13/2026
 ms.topic:    reference
 title:       dsc config test result schema reference
 ---
@@ -64,6 +64,9 @@ configuration operation. The value is an object with the following properties:
 - [restartRequired][10] defines the list of restarts that resource instances reported as required
   during the operation. DSC only includes this property when at least one instance reported a
   required restart.
+
+For more information about these properties, see
+[DSC execution information schema reference][16].
 
 ```yaml
 Type:     object
@@ -181,7 +184,7 @@ Required: true
 Defines the values for the outputs that the configuration document defines. Each key is the name of
 an output and the value is the evaluated value for that output. DSC only includes this property
 when the document defines at least one output that DSC evaluated. For more information about
-defining outputs, see the [outputs][15] property in the configuration document schema.
+defining outputs, see [DSC Configuration document output schema][15].
 
 ```yaml
 Type:     object
@@ -189,18 +192,19 @@ Required: false
 ```
 
 <!-- Link reference definitions -->
-[01]: ../../metadata/Microsoft.DSC/properties.md#version
-[02]: ../../metadata/Microsoft.DSC/properties.md#operation
-[03]: ../../metadata/Microsoft.DSC/properties.md#executiontype
-[04]: ../../metadata/Microsoft.DSC/properties.md#startdatetime
+[01]: ../../config/executionInformation.md#version
+[02]: ../../config/executionInformation.md#operation
+[03]: ../../config/executionInformation.md#executiontype
+[04]: ../../config/executionInformation.md#startdatetime
 [05]: https://datatracker.ietf.org/doc/html/rfc3339#section-5.6
-[06]: ../../metadata/Microsoft.DSC/properties.md#enddatetime
-[07]: ../../metadata/Microsoft.DSC/properties.md#duration
+[06]: ../../config/executionInformation.md#enddatetime
+[07]: ../../config/executionInformation.md#duration
 [08]: https://datatracker.ietf.org/doc/html/rfc3339#appendix-A
-[09]: ../../metadata/Microsoft.DSC/properties.md#securitycontext
-[10]: ../../metadata/Microsoft.DSC/properties.md#restartrequired
+[09]: ../../config/executionInformation.md#securitycontext
+[10]: ../../config/executionInformation.md#restartrequired
 [11]: ../../metadata/Microsoft.DSC/properties.md
 [12]: ../../definitions/resourceType.md
 [13]: ../resource/test.md
 [14]: ../../definitions/message.md
-[15]: ../../config/document.md#outputs
+[15]: ../../config/output.md
+[16]: ../../config/executionInformation.md

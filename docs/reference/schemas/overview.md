@@ -2,7 +2,7 @@
 description: >-
     Overview of the reference documentation for the JSON schemas describing data types for
     Microsoft's Desired State Configuration platform.
-ms.date:     09/01/2026
+ms.date:     10/13/2026
 ms.topic:    reference
 title:       DSC JSON Schema reference overview
 ---
@@ -29,7 +29,10 @@ The article [DSC configuration document schema reference][03] describes the root
 configuration documents. The following articles describe the subschemas for the properties of a
 configuration document:
 
+- [DSC Configuration document directives schema][55]
+- [DSC Configuration document user-defined function schema][56]
 - [DSC Configuration document metadata schema][04]
+- [DSC Configuration document output schema][57]
 - [DSC Configuration document parameter schema][05]
 - [DSC configuration parameter data type schema reference][06]
 - [DSC Configuration document resource instance schema][07]
@@ -111,6 +114,8 @@ DSC returns for its commands:
 The following list defines the reference documentation for JSON schemas included as subschemas
 throughout DSC.
 
+- For more information about the execution information DSC returns for configuration operations,
+  see [DSC execution information schema reference][58].
 - For more information about the `Microsoft.DSC` metadata property, see
   [Microsoft.DSC metadata property schema reference][50].
 - For more information about the messages DSC emits, see [Structured message schema reference][51].
@@ -180,3 +185,7 @@ throughout DSC.
 [52]: ./definitions/resourceKind.md
 [53]: ./definitions/resourceType.md
 [54]: ./definitions/resourceCapabilities.md
+[55]: ./config/directives.md
+[56]: ./config/function.md
+[57]: ./config/output.md
+[58]: ./config/executionInformation.md
