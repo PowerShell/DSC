@@ -3,9 +3,10 @@
 
 use chrono::{DateTime, Local};
 use crate::{configure::config_doc::{ExecutionKind, Operation, UserFunctionDefinition}, extensions::dscextension::DscExtension};
+use crate::types::SemanticVersion;
 use dsc_lib_security_context::{get_security_context, SecurityContext};
 use serde_json::{Map, Value};
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, path::PathBuf, sync::OnceLock};
 
 use super::config_doc::{DataType, RestartRequired, SecurityContextKind};
 
@@ -23,7 +24,12 @@ pub enum ProcessMode {
 pub struct Context {
     pub copy: HashMap<String, i64>,
     pub copy_current_loop_name: String,
-    pub dsc_version: Option<String>,
+    /// The semantic version of DSC that is processing the configuration.
+    ///
+    /// Defaults to the version of the `dsc-lib` crate. A host that knows its own version, like
+    /// the `dsc` CLI, sets it with
+    /// [`Configurator::new_with_dsc_version`](crate::configure::Configurator::new_with_dsc_version).
+    pub dsc_version: SemanticVersion,
     pub execution_type: ExecutionKind,
     pub extensions: Vec<DscExtension>,
     pub lambda_raw_args: std::cell::RefCell<Option<Vec<crate::parser::functions::FunctionArg>>>,
@@ -52,7 +58,7 @@ impl Context {
         Self {
             copy: HashMap::new(),
             copy_current_loop_name: String::new(),
-            dsc_version: None,
+            dsc_version: dsc_lib_version(),
             execution_type: ExecutionKind::Actual,
             extensions: Vec::new(),
             lambda_raw_args: std::cell::RefCell::new(None),
@@ -85,6 +91,32 @@ impl Default for Context {
         Self::new()
     }
 }
+
+/// Returns the version of the `dsc-lib` crate as a semantic version.
+///
+/// This is the default DSC version for a [`Context`] when the host doesn't provide its own.
+///
+/// The version is parsed from the cargo manifest on the first call and cached in
+/// [`DSC_LIB_VERSION`], so later calls only clone the cached value.
+///
+/// # Panics
+///
+/// Panics if the version in the cargo manifest isn't a valid semantic version. Cargo rejects
+/// such a manifest at build time, so this can't happen for a built crate.
+fn dsc_lib_version() -> SemanticVersion {
+    DSC_LIB_VERSION.get_or_init(|| {
+        let manifest_version = env!("CARGO_PKG_VERSION");
+        match SemanticVersion::parse(manifest_version) {
+            Ok(version) => version,
+            Err(err) => unreachable!("unable to parse '{manifest_version}' as a semantic version: {err}"),
+        }
+    }).clone()
+}
+
+/// Cached value for the version of the `dsc-lib` crate as a [`SemanticVersion`].
+///
+/// Initialized by the first call to [`dsc_lib_version`].
+static DSC_LIB_VERSION: OnceLock<SemanticVersion> = OnceLock::new();
 
 #[cfg(target_os = "windows")]
 fn get_default_os_system_root() -> PathBuf {
