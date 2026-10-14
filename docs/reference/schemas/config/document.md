@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for a Desired State Configuration document.
-ms.date:     07/03/2025
+ms.date:     10/13/2026
 ms.topic:    reference
 title:       DSC Configuration document schema reference
 ---
@@ -93,7 +93,7 @@ For every version of the schema, there are three valid URLs:
   it includes additional definitions that provide contextual help and snippets that the others
   don't include.
 
-  This schema uses keywords that are only recognized by Visual Studio Code. While DSC can still validate the
+  This schema uses keywords that are only recognized by VS Code. While DSC can still validate the
   document when it uses this schema, other tools may error or behave in unexpected ways.
 
 ```yaml
@@ -104,9 +104,33 @@ ValidValues: [
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/config/document.json
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/config/document.json
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/config/document.vscode.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2/config/document.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2/bundled/config/document.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2/bundled/config/document.vscode.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.3/config/document.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.3/bundled/config/document.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.3/bundled/config/document.vscode.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.2/config/document.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.2/bundled/config/document.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.2/bundled/config/document.vscode.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.1/config/document.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.1/bundled/config/document.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.1/bundled/config/document.vscode.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.0/config/document.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.0/bundled/config/document.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.0/bundled/config/document.vscode.json
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/config/document.json
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/bundled/config/document.json
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/bundled/config/document.vscode.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.3/config/document.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.3/bundled/config/document.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.3/bundled/config/document.vscode.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.2/config/document.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.2/bundled/config/document.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.2/bundled/config/document.vscode.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.1/config/document.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.1/bundled/config/document.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.1/bundled/config/document.vscode.json
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/config/document.json
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/bundled/config/document.json
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/bundled/config/document.vscode.json
@@ -125,9 +149,33 @@ ValidValues: [
                https://aka.ms/dsc/schemas/v3/config/document.json
                https://aka.ms/dsc/schemas/v3/bundled/config/document.json
                https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json
+               https://aka.ms/dsc/schemas/v3.2/config/document.json
+               https://aka.ms/dsc/schemas/v3.2/bundled/config/document.json
+               https://aka.ms/dsc/schemas/v3.2/bundled/config/document.vscode.json
+               https://aka.ms/dsc/schemas/v3.2.3/config/document.json
+               https://aka.ms/dsc/schemas/v3.2.3/bundled/config/document.json
+               https://aka.ms/dsc/schemas/v3.2.3/bundled/config/document.vscode.json
+               https://aka.ms/dsc/schemas/v3.2.2/config/document.json
+               https://aka.ms/dsc/schemas/v3.2.2/bundled/config/document.json
+               https://aka.ms/dsc/schemas/v3.2.2/bundled/config/document.vscode.json
+               https://aka.ms/dsc/schemas/v3.2.1/config/document.json
+               https://aka.ms/dsc/schemas/v3.2.1/bundled/config/document.json
+               https://aka.ms/dsc/schemas/v3.2.1/bundled/config/document.vscode.json
+               https://aka.ms/dsc/schemas/v3.2.0/config/document.json
+               https://aka.ms/dsc/schemas/v3.2.0/bundled/config/document.json
+               https://aka.ms/dsc/schemas/v3.2.0/bundled/config/document.vscode.json
                https://aka.ms/dsc/schemas/v3.1/config/document.json
                https://aka.ms/dsc/schemas/v3.1/bundled/config/document.json
                https://aka.ms/dsc/schemas/v3.1/bundled/config/document.vscode.json
+               https://aka.ms/dsc/schemas/v3.1.3/config/document.json
+               https://aka.ms/dsc/schemas/v3.1.3/bundled/config/document.json
+               https://aka.ms/dsc/schemas/v3.1.3/bundled/config/document.vscode.json
+               https://aka.ms/dsc/schemas/v3.1.2/config/document.json
+               https://aka.ms/dsc/schemas/v3.1.2/bundled/config/document.json
+               https://aka.ms/dsc/schemas/v3.1.2/bundled/config/document.vscode.json
+               https://aka.ms/dsc/schemas/v3.1.1/config/document.json
+               https://aka.ms/dsc/schemas/v3.1.1/bundled/config/document.json
+               https://aka.ms/dsc/schemas/v3.1.1/bundled/config/document.vscode.json
                https://aka.ms/dsc/schemas/v3.1.0/config/document.json
                https://aka.ms/dsc/schemas/v3.1.0/bundled/config/document.json
                https://aka.ms/dsc/schemas/v3.1.0/bundled/config/document.vscode.json
@@ -146,11 +194,85 @@ ValidValues: [
              ]
 ```
 
+### contentVersion
+
+The `contentVersion` property defines a version string for the configuration document. You can use
+this property to track revisions of the document. DSC doesn't validate or use this value when
+processing a configuration document. The document that the `dsc config export` command returns
+always defines this property as `1.0.0`.
+
+```yaml
+Type:     string
+Required: false
+```
+
+### directives
+
+The `directives` property defines how DSC processes the configuration document as a whole, like
+the security context the document requires, the version of DSC it requires, and when DSC discovers
+resources. DSC validates and acts on the directives before it invokes any resource instance. Every
+directive is optional.
+
+For more information about the available directives, see
+[DSC Configuration document directives schema][03].
+
+```yaml
+Type:     object
+Required: false
+```
+
+### executionInformation
+
+The `executionInformation` property describes the DSC operation that produced a configuration
+document. DSC adds this property to the document returned by the `dsc config export` command. The
+schema accepts this property in any configuration document, but DSC ignores it when it processes
+the document.
+
+The value is an object with the same properties as the execution information that DSC returns in
+command output. For more information, see [DSC execution information schema reference][04].
+
+```yaml
+Type:     object
+Required: false
+```
+
+### functions
+
+The `functions` property defines user-defined functions that you can call in configuration
+expressions anywhere in the document. Each item in the list defines a namespace and the functions
+that belong to it. You call a user-defined function as `<namespace>.<name>()`.
+
+For more information about defining user-defined functions, see
+[DSC Configuration document user-defined function schema][05].
+
+```yaml
+Type:      array
+Required:  false
+ItemsType: object
+```
+
 ### metadata
 
-The `metadata` property defines a set of key-value pairs as annotations for the configuration. DSC
-doesn't validate the metadata. A configuration can include any arbitrary information in this
-property.
+The `metadata` property defines a set of key-value pairs as annotations for the configuration.
+Except for the `Microsoft.DSC` property, DSC doesn't validate the metadata. A configuration can
+include any arbitrary information in this property.
+
+The `Microsoft.DSC` property is reserved for DSC. For more information, see
+[DSC Configuration document metadata schema][02].
+
+```yaml
+Type:     object
+Required: false
+```
+
+### outputs
+
+The `outputs` property defines values that DSC evaluates after it processes every resource instance
+in the document and returns in the `outputs` property of the command output. Each output is defined
+as a key-value pair. The key is the name of the output. The value is an object that defines the
+data type of the output and the expression that DSC evaluates to get its value.
+
+For more information about defining outputs, see [DSC Configuration document output schema][06].
 
 ```yaml
 Type:     object
@@ -168,15 +290,33 @@ Parameters may be overridden at runtime, enabling re-use of the same configurati
 different contexts.
 
 For more information about defining parameters in a configuration, see
-[DSC Configuration document parameter schema][02].
+[DSC Configuration document parameter schema][07].
 
 <!-- For more information about using parameters in a configuration, see
-[DSC Configuration parameters][03] -->
+[DSC Configuration parameters][08] -->
 
 ```yaml
 Type:                object
 Required:            false
-ValidPropertySchema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/config/document.parameter.json
+ValidPropertySchema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/config/document.parameter.json
+```
+
+### resources
+
+The `resources` property defines a list of DSC Resource instances that the configuration manages.
+Instances may share the same DSC Resource type, but every instance must have a unique combination
+of `type` and `name`. If two instances share the same type and name, DSC raises an error.
+
+For more information about defining a valid resource instance in a configuration, see
+[DSC Configuration document resource schema][09].
+
+<!-- For more information about how DSC uses resources in a configuration, see
+[DSC Configuration resources][10] and [DSC Configuration resource groups][11]. -->
+
+```yaml
+Type:            array
+Required:        true
+ValidItemSchema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/config/document.resource.json
 ```
 
 ### variables
@@ -190,37 +330,24 @@ which makes the document easier to read and maintain. Unlike parameters, variabl
 defined in the configuration and can't be overridden at runtime.
 
 <!-- For more information about using variables in a configuration, see
-[DSC Configuration variables][04]. -->
+[DSC Configuration variables][12]. -->
 
 ```yaml
 Type:     object
 Required: false
 ```
 
-### resources
-
-The `resources` property defines a list of DSC Resource instances that the configuration manages.
-Every instance in the list must be unique, but instances may share the same DSC Resource type.
-
-For more information about defining a valid resource instance in a configuration, see
-[DSC Configuration document resource schema][05].
-
-<!-- For more information about how DSC uses resources in a configuration, see
-[DSC Configuration resources][06] and [DSC Configuration resource groups][07]. -->
-
-```yaml
-Type:             array
-Required:         true
-MinimumItemCount: 1
-ValidItemSchema:  https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/config/document.resource.json
-```
-
 <!-- Link reference definitions -->
-[01]: functions/resourceId.md
+[01]: functions/overview.md
 <!-- [01]: ../../../configurations/overview.md -->
-[02]: parameter.md
-<!-- [03]: ../../../configurations/parameters.md -->
-<!-- [04]: ../../../configurations/variables.md -->
-[05]: resource.md
-<!-- [06]: ../../../configurations/resources.md -->
-<!-- [07]: ../../../configurations/resource-groups.md -->
+[02]: metadata.md
+[03]: directives.md
+[04]: executionInformation.md
+[05]: function.md
+[06]: output.md
+[07]: parameter.md
+<!-- [08]: ../../../configurations/parameters.md -->
+[09]: resource.md
+<!-- [10]: ../../../configurations/resources.md -->
+<!-- [11]: ../../../configurations/resource-groups.md -->
+<!-- [12]: ../../../configurations/variables.md -->

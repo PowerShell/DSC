@@ -1,6 +1,6 @@
 ---
 description: Microsoft.Windows/Registry resource reference documentation
-ms.date:     03/25/2025
+ms.date:     10/13/2026
 ms.topic:    reference
 title:       Microsoft.Windows/Registry
 ---
@@ -35,6 +35,7 @@ resources:
       keyPath: string
       # Instance properties
       _exist:
+      acl:
       valueData:
       valueName:
 ```
@@ -46,6 +47,7 @@ values. The resource can:
 
 - Add and remove registry keys.
 - Add, update, and remove registry values.
+- Retrieve and configure registry key access control lists (ACLs).
 
 > [!NOTE]
 > This resource is installed with DSC itself on Windows systems.
@@ -106,6 +108,7 @@ The following list describes the properties for the resource.
   They define the desired state for an instance of the resource.
 
   - [_exist](#_exist) - Defines whether the registry key or value should exist.
+  - [acl](#acl) - Defines the registry key ACL in Security Descriptor Definition Language (SDDL).
   - [valueData](#valuedata) - The data for a registry value.
   - [valueName](#valuename) - The name of the registry value.
 
@@ -161,6 +164,28 @@ The `_exist` canonical resource property determines whether an instance should e
 value for `_exist` is `true`, the resource adds or creates the instance if it doesn't exist. When
 the value for `_exist` is `false`, the resource removes or deletes the instance if it does exist.
 The default value for this property when not specified for an instance is `true`.
+
+### acl
+
+<details><summary>Expand for <code>acl</code> property metadata</summary>
+
+```yaml
+Type             : string
+IsRequired       : false
+IsKey            : false
+IsReadOnly       : false
+IsWriteOnly      : false
+```
+
+</details>
+
+Defines the registry key ACL in Security Descriptor Definition Language (SDDL). For **Get**
+operations, include the owner (`O:`), group (`G:`), or discretionary access control list (`D:`)
+section in the input to retrieve those sections. For **Set** operations, the resource applies only
+the sections specified in the SDDL string. System access control lists (`S:`) aren't supported.
+
+This property applies to the key identified by `keyPath`, including when the instance also specifies
+a registry value. ACL operations aren't supported when using an offline registry hive.
 
 ### valueData
 
@@ -377,6 +402,9 @@ non validating keywords are omitted.
           }
         }
       }
+    },
+    "acl": {
+      "type": "string"
     },
     "keyPath": {
       "type": "string",

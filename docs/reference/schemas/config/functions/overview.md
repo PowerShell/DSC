@@ -1,6 +1,6 @@
 ---
 description: Reference for available functions in a Desired State Configuration document.
-ms.date:     09/01/2026
+ms.date:     10/13/2026
 ms.topic:    reference
 title:       DSC Configuration document functions reference
 ---
@@ -67,6 +67,11 @@ syntax.
     )
   )]
 ```
+
+DSC also supports user-defined functions. You define them in the `functions` property of the
+configuration document and call them with the same syntax as built-in functions, as
+`<namespace>.<name>()`. For more information, see
+[DSC Configuration document user-defined function schema][05].
 
 When the output of a function is an array or object, you can access the properties of the object or
 items in the array.
@@ -767,6 +772,7 @@ The following functions return information about the system or the current execu
 [02]: https://yaml.org/spec/1.2.2/#literal-style
 [03]: https://yaml.org/spec/1.2.2/#block-chomping-indicator
 [04]: ../../../cli/function/list.md
+[05]: ../function.md
 <!-- Function link references -->
 [add]:                  ./add.md
 [and]:                  ./and.md

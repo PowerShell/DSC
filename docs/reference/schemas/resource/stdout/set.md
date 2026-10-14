@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for the expected stdout from the set resource operation
-ms.date:     07/29/2025
+ms.date:     09/01/2026
 ms.topic:    reference
 title:       DSC resource set operation stdout schema reference
 ---
@@ -22,12 +22,14 @@ SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.
 
 Defines the JSON DSC expects a resource to emit to stdout for the **Set** operation.
 
-DSC expects this output for both actual **Set** operations and **Set** operations in `whatIf` mode.
-If the resource has the `whatIf` capability, the output should be the same for both modes.
+DSC expects this output for actual **Set** operations. For **Set** operations in what-if mode, see
+[DSC resource what-if operation stdout schema reference][04]. When the resource has the
+`setWhatIf` capability, DSC expects the same output shape in what-if mode unless the resource
+manifest defines [set.whatIfReturns][05].
 
 DSC expects different output from the command resource depending on the definition of
 [set.return][01] in the resource manifest:
-  
+
 - If the field isn't defined, DSC doesn't expect the resource to return any JSON to stdout.
   Instead, DSC invokes the **Get** operation on the resource after the **Set** operation concludes
   and synthesizes the **Set** result, including the after state of the resource and the list of
@@ -91,3 +93,5 @@ ItemsType:         string
 [01]: ../manifest/set.md#return
 [02]: ../manifest/schema/property.md
 [03]: ../manifest/schema/embedded.md
+[04]: ./whatIf.md
+[05]: ../manifest/set.md#whatifreturns

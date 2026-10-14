@@ -100,6 +100,42 @@ Describe 'registry config set tests' {
         Remove-Item -Path 'HKCU:\1' -Recurse -ErrorAction Ignore
     }
 
+    It 'Can set and retrieve a registry key ACL' -Skip:(!$IsWindows) {
+        New-Item -Path 'HKCU:\1\AclSet' -Force | Out-Null
+        $registryAcl = Get-Acl -Path 'HKCU:\1\AclSet'
+        $registryAcl.SetAccessRuleProtection($true, $true)
+        $desiredAcl = $registryAcl.GetSecurityDescriptorSddlForm(
+            [System.Security.AccessControl.AccessControlSections]::Access)
+        $json = @{
+            keyPath = 'HKCU\1\AclSet'
+            acl = $desiredAcl
+        } | ConvertTo-Json -Compress
+
+        $output = registry config set --input $json 2>$TestDrive/error.log
+
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw)
+        $output | Should -BeNullOrEmpty
+        (Get-Acl -Path 'HKCU:\1\AclSet').AreAccessRulesProtected | Should -BeTrue
+
+        $result = registry config get --input $json 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw)
+        $result.acl | Should -BeExactly $desiredAcl
+
+        $registryAcl = Get-Acl -Path 'HKCU:\1\AclSet'
+        $registryAcl.SetAccessRuleProtection($false, $true)
+        $desiredAcl = $registryAcl.GetSecurityDescriptorSddlForm(
+            [System.Security.AccessControl.AccessControlSections]::Access)
+        $json = @{
+            keyPath = 'HKCU\1\AclSet'
+            acl = $desiredAcl
+        } | ConvertTo-Json -Compress
+
+        registry config set --input $json 2>$TestDrive/error.log
+
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw)
+        (Get-Acl -Path 'HKCU:\1\AclSet').AreAccessRulesProtected | Should -BeFalse
+    }
+
     It 'Should succeed when _exist is false and value does not exist' -Skip:(!$IsWindows) {
         $config = @{
             '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'

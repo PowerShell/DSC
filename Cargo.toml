@@ -17,7 +17,7 @@ members = [
     "lib/dsc-lib",
     "resources/dism_dsc",
     "resources/dscecho",
-    "resources/filecontent",
+    "resources/file_dsc",
     "resources/osinfo",
     "resources/process",
     "resources/registry",
@@ -52,7 +52,7 @@ default-members = [
     "lib/dsc-lib",
     "resources/dism_dsc",
     "resources/dscecho",
-    "resources/filecontent",
+    "resources/file_dsc",
     "resources/osinfo",
     "resources/process",
     "resources/registry",
@@ -88,7 +88,7 @@ Windows = [
     "lib/dsc-lib",
     "resources/dism_dsc",
     "resources/dscecho",
-    "resources/filecontent",
+    "resources/file_dsc",
     "resources/osinfo",
     "resources/process",
     "resources/registry",
@@ -116,7 +116,7 @@ macOS = [
     "lib/dsc-lib-telemetry",
     "lib/dsc-lib",
     "resources/dscecho",
-    "resources/filecontent",
+    "resources/file_dsc",
     "resources/osinfo",
     "resources/process",
     "resources/runcommandonset",
@@ -138,7 +138,7 @@ Linux = [
     "lib/dsc-lib-telemetry",
     "lib/dsc-lib",
     "resources/dscecho",
-    "resources/filecontent",
+    "resources/file_dsc",
     "resources/osinfo",
     "resources/process",
     "resources/runcommandonset",
@@ -160,7 +160,7 @@ strip = "symbols"           # See split-debuginfo - allows us to drop the size b
 
 [workspace.dependencies]
 #external dependencies
-# filecontent
+# file_dsc
 base16ct = { version = "1.0.0", features = ["alloc"] }
 # dsc-lib
 base32 = { version = "0.5" }
@@ -238,7 +238,7 @@ semver = { version = "1.0.28" }
 serde = { version = "1.0.229", features = ["derive"] }
 # dsc, dsc-lib, dscecho, dsc-lib-osinfo, osinfo, process, registry, dsc-lib-registry, runcommandonset, sshdconfig, dsctest, test_group_resource, y2j
 serde_json = { version = "1.0.151", features = ["preserve_order"] }
-# filecontent
+# file_dsc
 sha2 = { version = "0.11.0" }
 # dsc, dsc-lib, y2j
 serde_yaml = { version = "0.9" }
@@ -290,7 +290,7 @@ urlencoding = { version = "2.1" }
 which = { version = "8.0.6" }
 # dsc-lib
 ipnetwork = { version = "0.21" }
-# WindowsUpdate, windows_service, dsc-lib (ACL checks)
+# WindowsUpdate, windows_service, dsc-lib (ACL checks), dsc-lib-registry
 windows = { version = "0.62", features = [
     "Win32_Foundation",
     "Win32_NetworkManagement_WindowsFirewall",
@@ -299,6 +299,7 @@ windows = { version = "0.62", features = [
     "Win32_System_Com",
     "Win32_System_Memory",
     "Win32_System_Ole",
+    "Win32_System_Registry",
     "Win32_System_Services",
     "Win32_System_Variant",
     "Win32_System_UpdateAgent",

@@ -7,6 +7,9 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 #[allow(clippy::module_name_repetitions)]
 pub enum RegistryError {
+    #[error("{t}: {0}", t = t!("error.acl"))]
+    Acl(String),
+
     #[error("{t}: {0}", t = t!("error.invalidHive"))]
     InvalidHive(String),
 

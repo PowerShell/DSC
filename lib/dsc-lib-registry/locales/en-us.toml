@@ -4,19 +4,25 @@ _version = 1
 # No localizable strings
 
 [error]
+acl = "Registry ACL"
+invalidAcl = "The SDDL must define an owner, group, or DACL"
 invalidHive = "Invalid hive"
 json = "JSON"
 offlineRegistry = "Offline registry"
+offlineAcl = "ACL operations are not supported for offline registries"
 offlineValueEnumeration = "Value enumeration is not supported for offline registries"
 registry = "Registry"
 registryKey = "Registry key"
 registryKeyNotFound = "Registry key not found"
 registryValue = "Registry value"
+saclUnsupported = "System ACLs (SACLs) are not supported"
 utf16Conversion = "UTF-16 conversion failed due to interior NULL values for"
 unsupportedValueDataType = "Unsupported registry value data type"
+win32 = "%{operation} failed with error code %{code}"
 
 [registry_helper]
 whatIfCreateKey = "Key '%{subkey}' not found, would create it"
+whatIfSetAcl = "Would set ACL on key '%{key_path}'"
 whatIfDeleteValue = "Would delete value '%{value_name}'"
 whatIfDeleteSubkey = "Would delete subkey '%{subkey_name}'"
 whatIfDeleteNonexistingKey = "Key '%{subkey}' not found, would do nothing"

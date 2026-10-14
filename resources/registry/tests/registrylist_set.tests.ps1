@@ -54,4 +54,27 @@ Describe 'Registry list set tests' -Skip:(!$IsWindows) {
         $out.results.result[0].afterState.registryEntries[3].valueData | Should -BeNullOrEmpty
         (Get-ItemProperty -Path 'HKCU:\1\2\6' -Name 'Hello4' -ErrorAction Ignore).Hello4 | Should -BeNullOrEmpty
     }
+
+    It 'Can set ACLs in a registry list' -Skip:(!$IsWindows) {
+        New-Item -Path 'HKCU:\1\AclListSet' -Force | Out-Null
+        $registryAcl = Get-Acl -Path 'HKCU:\1\AclListSet'
+        $registryAcl.SetAccessRuleProtection($true, $true)
+        $desiredAcl = $registryAcl.GetSecurityDescriptorSddlForm(
+            [System.Security.AccessControl.AccessControlSections]::Access)
+        $json = @{
+            registryEntries = @(
+                @{
+                    keyPath = 'HKCU\1\AclListSet'
+                    acl = $desiredAcl
+                }
+            )
+        } | ConvertTo-Json -Depth 5 -Compress
+
+        registry config set --list --input $json 2>$TestDrive/error.log
+
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw)
+        (Get-Acl -Path 'HKCU:\1\AclListSet').AreAccessRulesProtected | Should -BeTrue
+        $result = registry config get --list --input $json 2>$TestDrive/error.log | ConvertFrom-Json
+        $result.registryEntries[0].acl | Should -BeExactly $desiredAcl
+    }
 }
