@@ -11,8 +11,8 @@
       "dsc-bicep-ext",
       "dscecho",
       "echo.dsc.resource.json",
-      "filecontent",
-      "filecontent.dsc.resource.json",
+      "file_dsc",
+      "file_dsc.dsc.manifests.json",
       "assertion.dsc.resource.json",
       "apt.dsc.resource.json",
       "apt.dsc.resource.sh",
@@ -43,8 +43,8 @@
       "dsc-bicep-ext",
       "dscecho",
       "echo.dsc.resource.json",
-      "filecontent",
-      "filecontent.dsc.resource.json",
+      "file_dsc",
+      "file_dsc.dsc.manifests.json",
       "assertion.dsc.resource.json",
       "brew.dsc.resource.json",
       "brew.dsc.resource.sh",
@@ -78,8 +78,8 @@
       "dsc-bicep-ext.exe",
       "dscecho.exe",
       "echo.dsc.resource.json",
-      "filecontent.exe",
-      "filecontent.dsc.resource.json",
+      "file_dsc.exe",
+      "file_dsc.dsc.manifests.json",
       "environment_variable.exe",
       "environment_variable.dsc.manifests.json",
       "assertion.dsc.resource.json",
@@ -344,16 +344,16 @@
       }
     },
     {
-      "Name": "filecontent",
+      "Name": "file_dsc",
       "Kind": "Resource",
-      "RelativePath": "resources/filecontent",
+      "RelativePath": "resources/file_dsc",
       "IsRust": true,
       "Binaries": [
-        "filecontent"
+        "file_dsc"
       ],
       "CopyFiles": {
         "All": [
-          "filecontent.dsc.resource.json"
+          "file_dsc.dsc.manifests.json"
         ]
       }
     },

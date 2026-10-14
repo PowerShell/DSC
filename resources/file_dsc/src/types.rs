@@ -18,3 +18,13 @@ pub struct FileContent {
     #[serde(rename = "_inDesiredState", skip_serializing_if = "Option::is_none")]
     pub in_desired_state: Option<bool>,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FilesystemAcl {
+    pub path: String,
+    #[serde(rename = "SDDL")]
+    pub sddl: String,
+    #[serde(rename = "_inDesiredState", skip_serializing_if = "Option::is_none")]
+    pub in_desired_state: Option<bool>,
+}
