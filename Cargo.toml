@@ -290,7 +290,7 @@ urlencoding = { version = "2.1" }
 which = { version = "8.0.6" }
 # dsc-lib
 ipnetwork = { version = "0.21" }
-# WindowsUpdate, windows_service, dsc-lib (ACL checks)
+# WindowsUpdate, windows_service, dsc-lib (ACL checks), dsc-lib-registry
 windows = { version = "0.62", features = [
     "Win32_Foundation",
     "Win32_NetworkManagement_WindowsFirewall",
@@ -299,6 +299,7 @@ windows = { version = "0.62", features = [
     "Win32_System_Com",
     "Win32_System_Memory",
     "Win32_System_Ole",
+    "Win32_System_Registry",
     "Win32_System_Services",
     "Win32_System_Variant",
     "Win32_System_UpdateAgent",
