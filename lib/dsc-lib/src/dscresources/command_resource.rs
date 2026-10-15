@@ -1214,8 +1214,8 @@ fn verify_json_from_manifest(resource: &DscResource, json: &str, target_resource
     let json: Value = serde_json::from_str(json)?;
     if let Err(err) = compiled_schema.validate(&json) {
         let mut error_message = err.to_string();
-        // check if message contains a secureString or secureObject and redact it
-        if error_message.contains("secureString") || error_message.contains("secureObject") {
+        // check if message contains a "secureString" or "secureObject" and redact it
+        if error_message.contains("\"secureString\"") || error_message.contains("\"secureObject\"") {
             error_message = t!("dscresources.commandResource.redactedSchemaErrorMessage").to_string();
         }
         return Err(DscError::Schema(error_message));
