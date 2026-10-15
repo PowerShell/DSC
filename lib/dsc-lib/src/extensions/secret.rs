@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::{
-    configure::parameters::SecureString,
+    configure::parameters::{SecureString, SecureObject},
     dscerror::DscError,
     dscresources::{
         command_resource::invoke_command,
@@ -404,7 +404,7 @@ impl DscExtension {
     /// # Errors
     ///
     /// This function will return an error if the secret retrieval fails or if the extension does not support the secret capability.
-    pub fn secret(&self, name: &str, vault: Option<&str>) -> Result<Option<String>, DscError> {
+    pub(crate) fn secret(&self, name: &str, vault: Option<&str>) -> Result<Option<Value>, DscError> {
         if self.capabilities.contains(&Capability::Secret) {
             debug!("{}", t!("extensions.dscextension.retrievingSecretFromExtension", name = name, extension = self.type_name));
             let extension = match serde_json::from_value::<ExtensionManifest>(self.manifest.clone()) {
@@ -440,10 +440,17 @@ impl DscExtension {
                     // remove any trailing newline characters
                     stdout.trim_end_matches('\n').to_string()
                 };
+                // if the secret is a valid JSON object, we wrap it as a SecureObject
+                if let Ok(json_value) = serde_json::from_str::<Value>(&secret) && json_value.is_object() {
+                    let secure_object = SecureObject {
+                        secure_object: json_value.clone(),
+                    };
+                    return Ok(Some(serde_json::to_value(&secure_object)?));
+                }
                 let secure_string = SecureString {
                     secure_string: secret.clone(),
                 };
-                Ok(Some(serde_json::to_string(&secure_string)?))
+                Ok(Some(serde_json::to_value(&secure_string)?))
             }
         } else {
             Err(DscError::UnsupportedCapability(
