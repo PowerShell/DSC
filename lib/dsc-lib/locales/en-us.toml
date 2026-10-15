@@ -232,6 +232,7 @@ retrievedSchemaFromCache = "Retrieved schema for resource '%{resource}' with ver
 writingStdin = "Writing to command STDIN: %{input}"
 processTrace = "PID %{process_id}: %{message}"
 processTraceWithTarget = "PID %{process_id}: %{target}: %{line_number}: %{message}"
+redactedSchemaErrorMessage = "'secureString' and 'secureObject' values are not compatible with the schema, use '.secureString' or '.secureObject' in an expression to convert to string or object"
 
 [dscresources.dscresource]
 invokeGet = "Invoking get for '%{resource}'"
