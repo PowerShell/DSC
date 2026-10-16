@@ -721,7 +721,6 @@ multipleSecrets = "Multiple secrets with the same name '%{name}' and different v
 extensionReturnedError = "Extension '%{extension}': %{error}"
 noExtensions = "No extensions supporting secrets was found"
 secretNotFound = "Secret '%{name}' not found"
-invalidSecretFormat = "Invalid secret format returned for secret '%{name}'"
 
 [functions.shallowMerge]
 description = "Combines an array of objects where only the top-level objects are merged"
