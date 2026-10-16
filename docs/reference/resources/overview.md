@@ -24,6 +24,7 @@ This document lists the available resources and links to the reference documenta
 - [Microsoft.Windows/RebootPending](./Microsoft/Windows/RebootPending/index.md)
 - [Microsoft.Windows/Registry](./Microsoft/Windows/Registry/index.md)
 - [Microsoft.Windows/Service](./Microsoft/Windows/Service/index.md)
+- [Microsoft.Windows/UserRightsAssignment](./Microsoft/Windows/UserRightsAssignment/index.md)
 - [Microsoft.Windows/WindowsPowerShell](./Microsoft/Windows/WindowsPowerShell/index.md)
 - [Microsoft.Windows/WMI](./Microsoft/Windows/WMI/index.md)
 
@@ -66,6 +67,7 @@ The following built-in resources change the state of a machine directly:
 - [Microsoft.Windows/OptionalFeatureList](./Microsoft/Windows/OptionalFeatureList/index.md)
 - [Microsoft.Windows/Registry](./Microsoft/Windows/Registry/index.md)
 - [Microsoft.Windows/Service](./Microsoft/Windows/Service/index.md)
+- [Microsoft.Windows/UserRightsAssignment](./Microsoft/Windows/UserRightsAssignment/index.md)
 
 ## Built-in debugging resources
 

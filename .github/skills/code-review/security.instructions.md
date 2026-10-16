@@ -1,5 +1,5 @@
 ---
-applyTo: 'lib/dsc-lib/src/util.rs,lib/dsc-lib-security_context/**,lib/dsc-lib-registry/**,resources/registry/**,resources/windows_firewall/**,resources/windows_service/**,resources/dism_dsc/**'
+applyTo: 'lib/dsc-lib/src/util.rs,lib/dsc-lib-security_context/**,lib/dsc-lib-registry/**,resources/registry/**,resources/windows_firewall/**,resources/windows_service/**,resources/windows_security_policy/**,resources/dism_dsc/**'
 description: 'Code review guidance for security-sensitive code (ACLs, policy, credentials, elevated resources)'
 ---
 
