@@ -63,24 +63,13 @@ impl Display for SecureObject {
 ///
 /// `true` if the value is a secure value, `false` otherwise.
 #[must_use]
-pub fn is_secure_value(value: &Value) -> bool {
-    if let Some(obj) = value.as_object()
-        && obj.len() == 1
+pub(crate) fn is_secure_value(value: &Value) -> bool {
+    if let Some(obj) = value.as_object() && obj.len() == 1 
         && (obj.contains_key("secureString") || obj.contains_key("secureObject")) {
-            return true;
-        }
+        return true;
+    }
 
     false
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
-#[serde(deny_unknown_fields, untagged)]
-#[schemars(inline)]
-pub enum SecureKind {
-    #[serde(rename = "secureString")]
-    SecureString(SecureString),
-    #[serde(rename = "secureObject")]
-    SecureObject(SecureObject),
 }
 
 pub fn import_parameters(parameters: &Value) -> Result<HashMap<String, Value>, DscError> {
