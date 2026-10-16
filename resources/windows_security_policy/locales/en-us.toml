@@ -1,0 +1,36 @@
+_version = 1
+
+[main]
+missingOperation = "Missing operation. Usage: windows_security_policy <get|set|test|export> <user-right> [--input <json>] [--what-if]"
+unknownOperation = "Unknown operation: '%{operation}'. Expected: get, set, test, or export"
+missingTarget = "Missing resource target. Expected: user-right"
+unknownTarget = "Unknown resource target: '%{target}'. Expected: user-right"
+missingInput = "Missing --input argument"
+missingInputValue = "Missing value for --input argument"
+invalidJson = "Invalid JSON input: %{error}"
+serializeFailed = "Failed to serialize output: %{error}"
+windowsOnly = "This resource is only supported on Windows"
+elevationRequired = "Managing Windows user rights assignments requires elevation. Run DSC from an elevated process."
+
+[rights]
+unknownRight = "Unknown user right '%{right}'. Specify a user right constant such as 'SeServiceLogonRight'."
+
+[sid]
+emptyIdentity = "An entry in 'identity' is empty"
+invalidSid = "'%{identity}' is not a valid SID string"
+unknownAccount = "The account '%{identity}' could not be found. Specify 'DOMAIN\\Name', a well-known account name, or a SID string."
+lookupNameFailed = "Failed to look up the account '%{identity}': %{error}"
+lookupSidFailed = "Failed to look up the name for a SID: %{error}"
+sidToStringFailed = "Failed to convert a SID to a string: %{error}"
+
+[lsa]
+openPolicyFailed = "Failed to open the local security policy: %{error}"
+stringTooLong = "The value '%{value}' is too long for the Local Security Authority"
+enumerateFailed = "Failed to enumerate the accounts holding '%{right}': %{error}"
+addFailed = "Failed to grant '%{right}': %{error}"
+removeFailed = "Failed to revoke '%{right}': %{error}"
+
+[userRights]
+identityRequired = "'identity' is required for the set and test operations"
+whatIfGrant = "Would grant '%{right}' to '%{identity}'"
+whatIfRevoke = "Would revoke '%{right}' from '%{identity}'"

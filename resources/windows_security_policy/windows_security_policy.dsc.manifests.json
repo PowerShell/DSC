@@ -1,0 +1,182 @@
+{
+    "resources": [
+        {
+            "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+            "type": "Microsoft.Windows/UserRightsAssignment",
+            "description": "Manage which accounts hold a Windows user right or privilege (Local Security Policy > User Rights Assignment).",
+            "tags": [
+                "Windows",
+                "Security",
+                "UserRights"
+            ],
+            "version": "0.1.0",
+            "get": {
+                "executable": "windows_security_policy",
+                "args": [
+                    "get",
+                    "user-right",
+                    {
+                        "jsonInputArg": "--input",
+                        "mandatory": true
+                    }
+                ],
+                "requireSecurityContext": "elevated"
+            },
+            "set": {
+                "executable": "windows_security_policy",
+                "args": [
+                    "set",
+                    "user-right",
+                    {
+                        "jsonInputArg": "--input",
+                        "mandatory": true
+                    },
+                    {
+                        "whatIfArg": "--what-if"
+                    }
+                ],
+                "implementsPretest": false,
+                "return": "state",
+                "requireSecurityContext": "elevated",
+                "whatIfReturns": "state"
+            },
+            "test": {
+                "executable": "windows_security_policy",
+                "args": [
+                    "test",
+                    "user-right",
+                    {
+                        "jsonInputArg": "--input",
+                        "mandatory": true
+                    }
+                ],
+                "return": "state",
+                "requireSecurityContext": "elevated"
+            },
+            "export": {
+                "executable": "windows_security_policy",
+                "args": [
+                    "export",
+                    "user-right"
+                ],
+                "supportsFiltering": false,
+                "requireSecurityContext": "elevated"
+            },
+            "exitCodes": {
+                "0": "Success",
+                "1": "Invalid arguments",
+                "2": "Invalid input",
+                "3": "Security policy error",
+                "4": "Elevation required: Reading or changing user rights assignments requires an elevated process"
+            },
+            "schema": {
+                "embedded": {
+                    "$schema": "http://json-schema.org/draft-07/schema#",
+                    "title": "Windows User Rights Assignment",
+                    "description": "Manage which accounts hold a Windows user right or privilege.",
+                    "type": "object",
+                    "required": [
+                        "right"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "right": {
+                            "type": "string",
+                            "title": "User right",
+                            "description": "The user right or privilege constant, for example 'SeServiceLogonRight' (Log on as a service).",
+                            "enum": [
+                                "SeTrustedCredManAccessPrivilege",
+                                "SeNetworkLogonRight",
+                                "SeTcbPrivilege",
+                                "SeMachineAccountPrivilege",
+                                "SeIncreaseQuotaPrivilege",
+                                "SeInteractiveLogonRight",
+                                "SeRemoteInteractiveLogonRight",
+                                "SeBackupPrivilege",
+                                "SeChangeNotifyPrivilege",
+                                "SeSystemtimePrivilege",
+                                "SeTimeZonePrivilege",
+                                "SeCreatePagefilePrivilege",
+                                "SeCreateTokenPrivilege",
+                                "SeCreateGlobalPrivilege",
+                                "SeCreatePermanentPrivilege",
+                                "SeCreateSymbolicLinkPrivilege",
+                                "SeDebugPrivilege",
+                                "SeDenyNetworkLogonRight",
+                                "SeDenyBatchLogonRight",
+                                "SeDenyServiceLogonRight",
+                                "SeDenyInteractiveLogonRight",
+                                "SeDenyRemoteInteractiveLogonRight",
+                                "SeEnableDelegationPrivilege",
+                                "SeRemoteShutdownPrivilege",
+                                "SeAuditPrivilege",
+                                "SeImpersonatePrivilege",
+                                "SeIncreaseWorkingSetPrivilege",
+                                "SeIncreaseBasePriorityPrivilege",
+                                "SeLoadDriverPrivilege",
+                                "SeLockMemoryPrivilege",
+                                "SeBatchLogonRight",
+                                "SeServiceLogonRight",
+                                "SeSecurityPrivilege",
+                                "SeRelabelPrivilege",
+                                "SeSystemEnvironmentPrivilege",
+                                "SeDelegateSessionUserImpersonatePrivilege",
+                                "SeManageVolumePrivilege",
+                                "SeProfileSingleProcessPrivilege",
+                                "SeSystemProfilePrivilege",
+                                "SeUndockPrivilege",
+                                "SeAssignPrimaryTokenPrivilege",
+                                "SeRestorePrivilege",
+                                "SeShutdownPrivilege",
+                                "SeSyncAgentPrivilege",
+                                "SeTakeOwnershipPrivilege"
+                            ]
+                        },
+                        "identity": {
+                            "type": "array",
+                            "title": "Identities",
+                            "description": "The accounts that hold the right. Accepts 'DOMAIN\\Name', a bare account name, a well-known name such as 'Everyone', a SID string such as 'S-1-5-32-544', or the secedit form '*S-1-5-32-544'. Returned as the canonical 'DOMAIN\\Name', or as the SID string when the SID does not resolve to an account. An empty array means that no one holds the right. Required for set and test.",
+                            "items": {
+                                "type": "string",
+                                "minLength": 1
+                            },
+                            "uniqueItems": true
+                        },
+                        "setAction": {
+                            "type": "string",
+                            "title": "Set action",
+                            "description": "How 'identity' is applied: 'replace' makes the listed accounts the only holders of the right, 'add' grants the right to the listed accounts and keeps the other holders, 'remove' revokes the right from the listed accounts only.",
+                            "writeOnly": true,
+                            "default": "replace",
+                            "enum": [
+                                "replace",
+                                "add",
+                                "remove"
+                            ]
+                        },
+                        "_inDesiredState": {
+                            "type": "boolean",
+                            "title": "In desired state",
+                            "description": "Whether the current holders of the right satisfy 'identity' and 'setAction'. Returned by the test operation only.",
+                            "readOnly": true
+                        },
+                        "_metadata": {
+                            "type": "object",
+                            "title": "Metadata",
+                            "description": "Metadata returned by what-if operations describing the changes that would be applied.",
+                            "readOnly": true,
+                            "properties": {
+                                "whatIf": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}

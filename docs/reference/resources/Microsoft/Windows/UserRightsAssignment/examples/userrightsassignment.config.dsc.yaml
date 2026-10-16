@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+  - name: Deny batch logon to guests only
+    type: Microsoft.Windows/UserRightsAssignment
+    properties:
+      right: SeDenyBatchLogonRight
+      identity:
+        - BUILTIN\Guests
+  - name: Services may log on as a service
+    type: Microsoft.Windows/UserRightsAssignment
+    properties:
+      right: SeServiceLogonRight
+      identity:
+        - NT SERVICE\ALL SERVICES
+      setAction: add
+  - name: Guests may not log on locally
+    type: Microsoft.Windows/UserRightsAssignment
+    properties:
+      right: SeInteractiveLogonRight
+      identity:
+        - BUILTIN\Guests
+      setAction: remove
