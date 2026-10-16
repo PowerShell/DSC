@@ -1,0 +1,38 @@
+{
+    "string_enum_error": {
+        "prefix": "string_enum_error",
+        "scope": "rust",
+        "include": "**/dsc-lib/src/settings/errors.rs",
+        "body": [
+            "/// Indicates that an input string failed to parse case-insensitively into a valid variant",
+            "/// of [`${2:StringEnumFieldType}`].",
+            "#[error(\"{t}\", t = t!(",
+            "    concat!(\"settings.errors.\", \"${3:i18n_key}\"),",
+            "    text = text,",
+            "    variant_list = <${2:StringEnumFieldType}>::VARIANT_LIST,",
+            "    variant_last = <${2:StringEnumFieldType}>::VARIANT_LAST,",
+            "))]",
+            "${1:Variant} {",
+            "    text: String,",
+            "},",
+        ],
+        "description": "Insert a new error variant for an invalid string enum value"
+    },
+    "collected_errors": {
+        "prefix": "collected_errors",
+        "scope": "rust",
+        "include": "**/dsc-lib/src/settings/errors.rs",
+        "body": [
+            "#[error(\"{t}\", t = t!(",
+            "    concat!(\"settings.errors.\", \"${2:i18n_key}\"),",
+            "    err = DscSettingsError::collect_errors_for_message(&errors),",
+            "))]",
+            "${1:VariantPrefix}MultipleErrors {",
+            "    /// Collected errors encountered while ${3:<describe context>}.",
+            "    #[related]",
+            "    errors: Vec<DscSettingsError>,",
+            "},",
+        ],
+        "description": "Insert a new collected errors variant"
+    }
+}
