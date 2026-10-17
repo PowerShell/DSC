@@ -4486,6 +4486,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09ec2a7bb152e2252b53fa7803150007879548bc709c039df7627cabbd05d469"
 
 [[package]]
+name = "windows_audit_policy"
+version = "0.1.0"
+dependencies = [
+ "dsc-lib-registry",
+ "dsc-lib-security_context",
+ "rust-i18n",
+ "serde",
+ "serde_json",
+ "windows 0.62.2",
+]
+
+[[package]]
 name = "windows_firewall"
 version = "0.3.0"
 dependencies = [
