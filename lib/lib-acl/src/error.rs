@@ -50,11 +50,8 @@ pub enum AclError {
     )]
     UnrepresentableAccessMask(u32),
 
-    /// The discretionary or system access control list is NULL (absent), which Windows treats
-    /// as granting unrestricted access (for a DACL) or performing no auditing (for a SACL). This
-    /// is distinct from a present-but-empty access control list, which denies all access by
-    /// default; the two are never conflated, to avoid reporting (or comparing against) a more
-    /// permissive state as if it were the safe, empty one.
+    /// The discretionary access control list is NULL (absent), which grants unrestricted access.
+    /// This is distinct from a present-but-empty DACL, which denies all access by default.
     #[error(
         "The {0} access control list is NULL (absent), which Windows treats as unrestricted; \
          this is not supported as equivalent to an empty access control list"

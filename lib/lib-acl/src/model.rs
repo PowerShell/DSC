@@ -23,12 +23,23 @@ pub trait AccessMask: Sized + Copy + Clone + Eq + 'static {
 
     /// All known values, used to decompose a raw access mask back into a list of flags.
     fn all() -> &'static [Self];
+
+    /// Maps generic access rights in `bits` to the resource-specific rights Windows uses when
+    /// evaluating access. The default preserves every bit for resource types without a generic
+    /// mapping.
+    fn map_generic_bits(bits: u32) -> u32 {
+        bits
+    }
 }
 
 /// Combines a list of access mask values into a single raw bitmask.
 #[must_use]
 pub fn mask_to_bits<P: AccessMask>(values: &[P]) -> u32 {
     values.iter().fold(0_u32, |mask, value| mask | value.bits())
+}
+
+fn effective_mask_bits<P: AccessMask>(values: &[P]) -> u32 {
+    P::map_generic_bits(mask_to_bits(values))
 }
 
 /// Decomposes a raw bitmask into a list of access mask values. Candidates with more bits are
@@ -318,7 +329,7 @@ fn semantic_key<P: AccessMask>(entry: &AccessControlEntry<P>) -> AceSemanticKey 
     AceSemanticKey {
         principal: entry.principal.clone(),
         ace_type: entry.ace_type,
-        mask_bits: mask_to_bits(&entry.access_mask),
+        mask_bits: effective_mask_bits(&entry.access_mask),
         flags: normalized_flags(&entry.flags),
         audit_flags: normalized_audit_flags(&entry.audit_flags),
     }
@@ -335,7 +346,7 @@ fn entries_semantically_equal<P: AccessMask>(
 ) -> bool {
     a.principal == b.principal
         && a.ace_type == b.ace_type
-        && mask_to_bits(&a.access_mask) == mask_to_bits(&b.access_mask)
+        && effective_mask_bits(&a.access_mask) == effective_mask_bits(&b.access_mask)
         && normalized_flags(&a.flags) == normalized_flags(&b.flags)
         && normalized_audit_flags(&a.audit_flags) == normalized_audit_flags(&b.audit_flags)
 }
@@ -532,6 +543,7 @@ mod tests {
         Read,
         Write,
         FullControl,
+        GenericAll,
     }
 
     impl AccessMask for TestRight {
@@ -542,11 +554,20 @@ mod tests {
                 // Aliases the combination of Read and Write, the same way `fullControl` aliases
                 // several atomic rights for real resources.
                 Self::FullControl => 0x3,
+                Self::GenericAll => 0x100,
             }
         }
 
         fn all() -> &'static [Self] {
-            &[Self::Read, Self::Write, Self::FullControl]
+            &[Self::Read, Self::Write, Self::FullControl, Self::GenericAll]
+        }
+
+        fn map_generic_bits(bits: u32) -> u32 {
+            if bits & Self::GenericAll.bits() == 0 {
+                bits
+            } else {
+                (bits & !Self::GenericAll.bits()) | Self::FullControl.bits()
+            }
         }
     }
 
@@ -636,6 +657,24 @@ mod tests {
             "S-1-1-0",
             AceType::Allow,
             vec![TestRight::Read, TestRight::Write],
+        )];
+
+        let merged = merge_entries(&current, &requested);
+
+        assert_eq!(merged.len(), 1);
+    }
+
+    #[test]
+    fn merge_drops_duplicates_with_equivalent_generic_access_masks() {
+        let current = vec![entry(
+            "S-1-1-0",
+            AceType::Allow,
+            vec![TestRight::FullControl],
+        )];
+        let requested = vec![entry(
+            "S-1-1-0",
+            AceType::Allow,
+            vec![TestRight::GenericAll],
         )];
 
         let merged = merge_entries(&current, &requested);

@@ -65,6 +65,16 @@ pub fn validate(requested: &RegistryAccessControlList) -> Result<(), RegistryErr
     requested.validate().map_err(acl_error)
 }
 
+/// Validates an ACL request, resolves every principal, and enables any privilege required to
+/// access its sections. Call this before a larger operation begins mutating registry keys or
+/// values so ACL-specific failures cannot leave unrelated registry data partially updated.
+pub fn preflight(requested: &RegistryAccessControlList) -> Result<(), RegistryError> {
+    validate(requested)?;
+    ensure_privilege_for(requested)?;
+    normalize(requested).map_err(acl_error)?;
+    Ok(())
+}
+
 /// Enables the `SeSecurityPrivilege` privilege when `requested` manages the system access
 /// control list (SACL), since reading or writing a SACL -- or merely opening a key with the
 /// `ACCESS_SYSTEM_SECURITY` right, as [`can_set`] does to check whether a key can be written to

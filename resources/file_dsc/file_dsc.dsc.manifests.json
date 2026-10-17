@@ -57,7 +57,8 @@
           "description": "Manage the UTF-8 content of a local file.",
           "type": "object",
           "required": [
-            "path"
+            "path",
+            "accessControlList"
           ],
           "properties": {
             "content": {

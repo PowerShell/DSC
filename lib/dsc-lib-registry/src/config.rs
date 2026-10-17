@@ -106,6 +106,21 @@ impl AccessMask for RegistryAccessRight {
             Self::GenericAll,
         ]
     }
+
+    fn map_generic_bits(bits: u32) -> u32 {
+        let mut mapped = bits;
+        for (generic, specific) in [
+            (0x1000_0000, Self::FullControl.bits()),
+            (0x2000_0000, Self::Execute.bits()),
+            (0x4000_0000, Self::Write.bits()),
+            (0x8000_0000, Self::Read.bits()),
+        ] {
+            if mapped & generic != 0 {
+                mapped = (mapped & !generic) | specific;
+            }
+        }
+        mapped
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]

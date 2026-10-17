@@ -347,6 +347,19 @@ Describe 'Microsoft.Filesystem/AccessControlList tests' -Skip:(!$IsWindows) {
             # unrepresentable access mask) and that the resulting access is the expected, full
             # equivalent -- not that the literal `genericAll` value survives the round trip.
             $setState.accessControlList.discretionary[0].accessMask | Should -Contain 'fullControl'
+
+            $testOutput = $json | dsc resource test -r $resourceType -f - 2>$TestDrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+            ($testOutput | ConvertFrom-Json).inDesiredState | Should -BeTrue
+
+            $acl._purge = $false
+            $mergeJson = @{ path = $path; accessControlList = $acl } |
+                ConvertTo-Json -Depth 10 -Compress
+            $mergeOutput = $mergeJson |
+                dsc resource set -r $resourceType -f - 2>$TestDrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+            (($mergeOutput | ConvertFrom-Json).afterState.accessControlList.discretionary |
+                Where-Object principal -EQ $currentSid) | Should -HaveCount 1
         }
     }
 
@@ -424,6 +437,10 @@ Describe 'Microsoft.Filesystem/AccessControlList tests' -Skip:(!$IsWindows) {
                 )
             }
             $json = @{ path = $path; accessControlList = $acl } | ConvertTo-Json -Depth 10 -Compress
+
+            $testOutput = $json | dsc resource test -r $resourceType -f - 2>$TestDrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+            ($testOutput | ConvertFrom-Json).inDesiredState | Should -BeFalse
 
             $setOutput = $json | dsc resource set -r $resourceType -f - 2>$TestDrive/error.log
             $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)

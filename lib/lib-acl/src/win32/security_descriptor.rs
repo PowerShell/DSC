@@ -58,8 +58,7 @@ pub fn read_security_information(
 /// # Errors
 ///
 /// Returns [`AclError`] when the descriptor is malformed or contains an unsupported ACE type, or
-/// [`AclError::NullAcl`] when a requested section's underlying access control list is NULL
-/// (absent) rather than present-but-empty.
+/// [`AclError::NullAcl`] when a requested DACL is NULL (absent) rather than present-but-empty.
 pub unsafe fn read_access_control_list<P: AccessMask>(
     descriptor_bytes: &mut [u8],
     want_discretionary: bool,
@@ -133,15 +132,14 @@ unsafe fn read_acl_section<P: AccessMask>(
         code: error.code().0 as u32,
     })?;
 
-    // A NULL access control list (the list is marked present, but the pointer to it is NULL --
-    // or, more rarely, not marked present at all) means Windows applies no discretionary
-    // protection (DACL) or no auditing (SACL): a DACL-less object grants unrestricted access to
-    // everyone. This is a materially different, far more permissive state than a present but
-    // empty list (which denies all access by default), so it must never be reported as
-    // equivalent to one; doing so could make a desired-state comparison silently report a
-    // dangerously open object as satisfied by an empty-list request.
+    // A NULL DACL grants unrestricted access, unlike a present but empty DACL, which denies all
+    // access. A NULL SACL and an empty SACL both mean no auditing, so the portable model can
+    // safely represent an absent SACL as an empty system list.
     if !present.as_bool() || acl_ptr.is_null() {
-        return Err(AclError::NullAcl(if sacl { "system" } else { "discretionary" }));
+        if sacl {
+            return Ok((Vec::new(), control & SE_SACL_PROTECTED.0 != 0));
+        }
+        return Err(AclError::NullAcl("discretionary"));
     }
 
     // SAFETY: the caller guarantees descriptor (and therefore acl_ptr, which GetSecurityDescriptorDacl/
@@ -403,5 +401,17 @@ mod tests {
             .expect("a present, empty DACL must be read successfully, not rejected");
 
         assert_eq!(result.discretionary, Some(Vec::new()));
+    }
+
+    #[test]
+    fn read_access_control_list_treats_absent_sacl_as_empty() {
+        let mut bytes = build_descriptor_with_dacl(Some(&[]));
+
+        // SAFETY: bytes was just built above as a well-formed self-relative descriptor.
+        let result = unsafe { read_access_control_list::<TestRight>(&mut bytes, false, true) }
+            .expect("an absent SACL means no auditing and must be represented as an empty list");
+
+        assert_eq!(result.system, Some(Vec::new()));
+        assert_eq!(result.system_protected, Some(false));
     }
 }

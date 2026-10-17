@@ -508,4 +508,26 @@ Describe 'registry config set tests' {
         $result = $output | ConvertFrom-Json
         $result._metadata.whatIf | Should -Contain "Would set ACL on key 'HKCU\1\AclSaclWhatIf'"
     }
+
+    It 'Validates ACL principals before changing a registry value' -Skip:(!$IsWindows) {
+        $keyPath = 'HKCU:\1\AclPreflight'
+        $null = New-Item -Path $keyPath -Force
+        Set-ItemProperty -Path $keyPath -Name 'Data' -Value 'original'
+        $missingAccount = "DSC-Missing-$([guid]::NewGuid())"
+        $json = @{
+            keyPath           = 'HKCU\1\AclPreflight'
+            valueName         = 'Data'
+            valueData         = @{ String = 'changed' }
+            accessControlList = @{
+                discretionary = @(
+                    @{ principal = $missingAccount; type = 'allow'; accessMask = @('read') }
+                )
+            }
+        } | ConvertTo-Json -Depth 10 -Compress
+
+        registry config set --input $json 2>$TestDrive/error.log
+
+        $LASTEXITCODE | Should -Not -Be 0
+        (Get-ItemPropertyValue -Path $keyPath -Name 'Data') | Should -BeExactly 'original'
+    }
 }

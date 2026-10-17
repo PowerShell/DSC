@@ -265,7 +265,7 @@ impl RegistryHelper {
             return self.set_offline();
         }
         if let Some(acl) = &self.config.access_control_list {
-            acl::validate(acl)?;
+            acl::preflight(acl)?;
         }
 
         let mut what_if_metadata: Vec<String> = Vec::new();
