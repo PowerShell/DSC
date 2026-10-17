@@ -109,6 +109,35 @@ Describe 'Windows audit policy whatif tests' -Skip:(!$IsWindows) {
         }
     }
 
+    Context 'Argument validation' {
+        BeforeAll {
+            $optionJson = '{"name":"CrashOnAuditFail","enabled":true}'
+        }
+
+        It 'Rejects an unknown switch before --input without touching the registry' {
+            $rawBefore = Get-RawOptionValue -Name 'CrashOnAuditFail'
+            $null = windows_audit_policy set option --whatif --input $optionJson 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 1
+            Get-Content -Raw $testdrive/error.log | Should -Match "Unknown argument: '--whatif'"
+            Get-RawOptionValue -Name 'CrashOnAuditFail' | Should -Be $rawBefore
+        }
+
+        It 'Rejects an unknown switch after --input without touching the registry' {
+            $rawBefore = Get-RawOptionValue -Name 'CrashOnAuditFail'
+            $null = windows_audit_policy set option --input $optionJson --whatif 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 1
+            Get-Content -Raw $testdrive/error.log | Should -Match "Unknown argument: '--whatif'"
+            Get-RawOptionValue -Name 'CrashOnAuditFail' | Should -Be $rawBefore
+        }
+
+        It 'Rejects an unknown switch on the subcategory set' {
+            $json = @{ subcategory = $testSubcategory; success = $true } | ConvertTo-Json -Compress
+            $null = windows_audit_policy set subcategory --input $json --what-if --verbose 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 1
+            Get-Content -Raw $testdrive/error.log | Should -Match "Unknown argument: '--verbose'"
+        }
+    }
+
     Context 'Option what-if' -Skip:(!$isAdmin) {
         It 'Projects an option change without touching the registry' {
             $rawBefore = Get-RawOptionValue -Name 'AuditBaseObjects'

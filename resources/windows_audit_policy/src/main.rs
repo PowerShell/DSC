@@ -55,11 +55,10 @@ fn main() -> ExitCode {
         return ExitCode::from(EXIT_INVALID_ARGS);
     };
 
-    let input_json = match parse_input_arg(&args) {
-        Ok(input) => input,
+    let Arguments { input: input_json, what_if } = match parse_arguments(&args) {
+        Ok(arguments) => arguments,
         Err(code) => return code,
     };
-    let what_if = parse_what_if_flag(&args);
 
     match (operation, target.as_str()) {
         ("get", "subcategory") => match require_input::<AuditPolicy>(input_json) {
@@ -161,56 +160,107 @@ fn finish_many<T: serde::Serialize>(result: Result<Vec<T>, types::AuditError>) -
     }
 }
 
-/// Parse the `--input <json>` argument. Arguments 1 and 2 are the operation and the target.
+/// The options that may follow the operation and the target.
 #[cfg(windows)]
-fn parse_input_arg(args: &[String]) -> Result<Option<String>, ExitCode> {
-    let mut index = 3;
-    while index < args.len() {
-        if args[index] == "--input" || args[index] == "-i" {
-            if index + 1 < args.len() {
-                return Ok(Some(args[index + 1].clone()));
-            }
-            write_error(&t!("main.missingInputValue"));
-            return Err(ExitCode::from(EXIT_INVALID_ARGS));
-        }
-        index += 1;
-    }
-    Ok(None)
+#[derive(Debug, Default, PartialEq, Eq)]
+struct Arguments {
+    /// The JSON given with `--input` / `-i`.
+    input: Option<String>,
+    /// Whether `--what-if` / `-w` was given.
+    what_if: bool,
 }
 
-/// Parse the `--what-if` / `-w` flag. Arguments 1 and 2 are the operation and the target.
+/// Parse every argument after the operation and the target (arguments 1 and 2). Only
+/// `--input <json>` and `--what-if` are accepted; anything else is rejected before any operation
+/// is dispatched, so a misspelled preview flag can never turn into a real change.
+///
+/// # Errors
+///
+/// Returns the exit code to use when `--input` has no value or an argument is unknown.
 #[cfg(windows)]
-fn parse_what_if_flag(args: &[String]) -> bool {
-    args.iter().skip(3).any(|arg| arg == "--what-if" || arg == "-w")
+fn parse_arguments(args: &[String]) -> Result<Arguments, ExitCode> {
+    let mut arguments = Arguments::default();
+    let mut index = 3;
+    while index < args.len() {
+        match args[index].as_str() {
+            "--input" | "-i" => {
+                let Some(value) = args.get(index + 1) else {
+                    write_error(&t!("main.missingInputValue"));
+                    return Err(ExitCode::from(EXIT_INVALID_ARGS));
+                };
+                arguments.input = Some(value.clone());
+                index += 2;
+            }
+            "--what-if" | "-w" => {
+                arguments.what_if = true;
+                index += 1;
+            }
+            unknown => {
+                write_error(&t!("main.unknownArgument", argument = unknown));
+                return Err(ExitCode::from(EXIT_INVALID_ARGS));
+            }
+        }
+    }
+    Ok(arguments)
 }
 
 #[cfg(all(test, windows))]
 mod tests {
-    use super::{parse_input_arg, parse_what_if_flag};
+    use super::{Arguments, EXIT_INVALID_ARGS, parse_arguments};
+    use std::process::ExitCode;
 
     fn args(list: &[&str]) -> Vec<String> {
         list.iter().map(ToString::to_string).collect()
     }
 
+    fn parsed(input: Option<&str>, what_if: bool) -> Arguments {
+        Arguments {
+            input: input.map(ToString::to_string),
+            what_if,
+        }
+    }
+
     #[test]
     fn finds_long_and_short_input_arguments_after_the_target() {
         assert_eq!(
-            parse_input_arg(&args(&["exe", "get", "subcategory", "--input", "{}"])),
-            Ok(Some("{}".to_string()))
+            parse_arguments(&args(&["exe", "get", "subcategory", "--input", "{}"])),
+            Ok(parsed(Some("{}"), false))
         );
         assert_eq!(
-            parse_input_arg(&args(&["exe", "set", "option", "-w", "-i", "[]"])),
-            Ok(Some("[]".to_string()))
+            parse_arguments(&args(&["exe", "set", "option", "-w", "-i", "[]"])),
+            Ok(parsed(Some("[]"), true))
         );
-        assert_eq!(parse_input_arg(&args(&["exe", "export", "subcategory"])), Ok(None));
-        assert!(parse_input_arg(&args(&["exe", "get", "subcategory", "--input"])).is_err());
+        assert_eq!(parse_arguments(&args(&["exe", "export", "subcategory"])), Ok(parsed(None, false)));
+        assert_eq!(
+            parse_arguments(&args(&["exe", "get", "subcategory", "--input"])),
+            Err(ExitCode::from(EXIT_INVALID_ARGS))
+        );
     }
 
     #[test]
     fn finds_what_if_flag_after_the_target() {
-        assert!(parse_what_if_flag(&args(&["exe", "set", "subcategory", "--what-if", "--input", "{}"])));
-        assert!(parse_what_if_flag(&args(&["exe", "set", "option", "--input", "{}", "-w"])));
-        assert!(!parse_what_if_flag(&args(&["exe", "set", "subcategory", "--input", "{}"])));
-        assert!(!parse_what_if_flag(&args(&["exe", "-w", "subcategory"])));
+        assert_eq!(
+            parse_arguments(&args(&["exe", "set", "subcategory", "--what-if", "--input", "{}"])),
+            Ok(parsed(Some("{}"), true))
+        );
+        assert_eq!(
+            parse_arguments(&args(&["exe", "set", "option", "--input", "{}", "-w"])),
+            Ok(parsed(Some("{}"), true))
+        );
+        assert_eq!(
+            parse_arguments(&args(&["exe", "set", "subcategory", "--input", "{}"])),
+            Ok(parsed(Some("{}"), false))
+        );
+        // The operation and target positions are never read as flags.
+        assert_eq!(parse_arguments(&args(&["exe", "-w", "subcategory"])), Ok(parsed(None, false)));
+    }
+
+    #[test]
+    fn rejects_unknown_arguments_before_and_after_input() {
+        let invalid = Err(ExitCode::from(EXIT_INVALID_ARGS));
+        assert_eq!(parse_arguments(&args(&["exe", "set", "option", "--whatif", "--input", "{}"])), invalid);
+        assert_eq!(parse_arguments(&args(&["exe", "set", "option", "--input", "{}", "--whatif"])), invalid);
+        assert_eq!(parse_arguments(&args(&["exe", "set", "subcategory", "--input", "{}", "extra"])), invalid);
+        assert_eq!(parse_arguments(&args(&["exe", "get", "subcategory", "-x"])), invalid);
     }
 }

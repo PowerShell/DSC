@@ -11,7 +11,8 @@ Describe 'Windows audit policy set tests' -Skip:(!$IsWindows) {
         else {
             $false
         }
-        $isEnglish = (Get-Culture).Name -like 'en-*'
+        # auditpol localizes its output with the display (UI) language, not the regional format.
+        $isEnglish = (Get-UICulture).Name -like 'en-*'
     }
 
     BeforeAll {
@@ -70,8 +71,9 @@ Describe 'Windows audit policy set tests' -Skip:(!$IsWindows) {
         }
 
         It 'Enables failure auditing and leaves success unchanged' {
+            $before = Get-AuditPolicyState
             $result = (Set-AuditPolicyState -Properties @{ subcategory = $testSubcategory; failure = $true }).afterState
-            $result.success | Should -BeTrue
+            $result.success | Should -Be $before.success
             $result.failure | Should -BeTrue
         }
 
@@ -82,11 +84,14 @@ Describe 'Windows audit policy set tests' -Skip:(!$IsWindows) {
         }
 
         It 'Reports no auditing to auditpol after disabling both flags' -Skip:(!$isEnglish) {
+            $null = Set-AuditPolicyState -Properties @{ subcategory = $testSubcategory; success = $false; failure = $false }
             $row = auditpol /get /subcategory:"$testSubcategory" /r | Where-Object { $_ -match ',' } | ConvertFrom-Csv
             $row.'Inclusion Setting' | Should -BeExactly 'No Auditing'
         }
 
         It 'Is idempotent when already in the desired state' {
+            # Establish the desired state first so the asserted call is the one that changes nothing.
+            $null = Set-AuditPolicyState -Properties @{ subcategory = $testSubcategory; success = $false; failure = $false }
             $output = Set-AuditPolicyState -Properties @{ subcategory = $testSubcategory; success = $false; failure = $false }
             $output.afterState.success | Should -BeFalse
             $output.afterState.failure | Should -BeFalse

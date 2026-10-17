@@ -106,6 +106,14 @@ Describe 'Windows audit policy option tests' -Skip:(!$IsWindows) {
         BeforeAll {
             $script:originalAuditBaseObjects = Get-RawOptionValue -Name 'AuditBaseObjects'
             $script:originalFullPrivilegeAuditing = Get-RawOptionValue -Name 'FullPrivilegeAuditing'
+            # The resource preserves an existing value type and only creates a missing value as
+            # REG_BINARY, so the expected kind depends on the starting state.
+            $script:expectedFullPrivilegeAuditingKind = if ($null -eq $script:originalFullPrivilegeAuditing) {
+                [Microsoft.Win32.RegistryValueKind]::Binary
+            }
+            else {
+                (Get-Item -Path $lsaKey).GetValueKind('FullPrivilegeAuditing')
+            }
         }
 
         AfterAll {
@@ -127,18 +135,20 @@ Describe 'Windows audit policy option tests' -Skip:(!$IsWindows) {
         }
 
         It 'Is idempotent when already in the desired state' {
+            # Establish the desired state first so the asserted call is the one that changes nothing.
+            $null = Set-OptionState -Name 'AuditBaseObjects' -Enabled $false
             $output = Set-OptionState -Name 'AuditBaseObjects' -Enabled $false
             $output.afterState.enabled | Should -BeFalse
             $output.changedProperties | Should -BeNullOrEmpty
         }
 
-        It 'Enables FullPrivilegeAuditing as a REG_BINARY value' {
+        It 'Enables FullPrivilegeAuditing and preserves the registry value type' {
             $result = (Set-OptionState -Name 'FullPrivilegeAuditing' -Enabled $true).afterState
             $result.enabled | Should -BeTrue
             $raw = Get-RawOptionValue -Name 'FullPrivilegeAuditing'
             $raw | Should -Not -BeNullOrEmpty
-            $raw[0] | Should -Be 1
-            (Get-Item -Path $lsaKey).GetValueKind('FullPrivilegeAuditing') | Should -Be 'Binary'
+            ConvertTo-Enabled -Raw $raw | Should -BeTrue
+            (Get-Item -Path $lsaKey).GetValueKind('FullPrivilegeAuditing') | Should -Be $script:expectedFullPrivilegeAuditingKind
         }
 
         It 'Fails when enabled is missing' {

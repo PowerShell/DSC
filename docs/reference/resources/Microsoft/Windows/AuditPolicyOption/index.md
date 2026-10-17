@@ -49,8 +49,9 @@ is also where the corresponding **Security Options** of the Local Security Polic
 | `AuditBaseDirectories`  | Audit the access of global system directories (no Security Options policy)  | `REG_DWORD`         |
 
 The resource reports an option as enabled when its registry value is present and non-zero, and as
-disabled when the value is absent or zero. When the resource sets an option, it preserves the
-existing registry value type.
+disabled when the value is absent or zero. The value may be stored as `REG_DWORD`, `REG_QWORD`, or
+`REG_BINARY`. When the resource sets an option, it preserves the existing registry value type and
+only uses the type from the table when the value doesn't exist yet.
 
 > [!NOTE]
 > This resource is installed with DSC itself on Windows systems.

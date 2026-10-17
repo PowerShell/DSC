@@ -34,13 +34,15 @@ pub fn enabled_from_data(name: AuditOptionName, data: Option<&RegistryValueData>
     }
 }
 
-/// The registry data to write for an option. The existing value type is preserved; otherwise the
-/// canonical type for the option is used.
+/// The registry data to write for an option. An existing `REG_DWORD`, `REG_QWORD` or `REG_BINARY`
+/// value keeps its type (every type `enabled_from_data` accepts); otherwise the canonical type for
+/// the option is used.
 #[must_use]
 pub fn data_for(name: AuditOptionName, enabled: bool, current: Option<&RegistryValueData>) -> RegistryValueData {
     match current {
         Some(RegistryValueData::Binary(_)) => RegistryValueData::Binary(vec![u8::from(enabled)]),
         Some(RegistryValueData::DWord(_)) => RegistryValueData::DWord(u32::from(enabled)),
+        Some(RegistryValueData::QWord(_)) => RegistryValueData::QWord(u64::from(enabled)),
         _ if name.is_binary() => RegistryValueData::Binary(vec![u8::from(enabled)]),
         _ => RegistryValueData::DWord(u32::from(enabled)),
     }
@@ -153,10 +155,19 @@ mod tests {
     #[test]
     fn data_preserves_existing_type_or_uses_the_canonical_one() {
         let dword = RegistryValueData::DWord(0);
+        let qword = RegistryValueData::QWord(0);
         let binary = RegistryValueData::Binary(vec![0]);
         assert_eq!(
             data_for(AuditOptionName::AuditBaseObjects, true, Some(&dword)),
             RegistryValueData::DWord(1)
+        );
+        assert_eq!(
+            data_for(AuditOptionName::AuditBaseObjects, true, Some(&qword)),
+            RegistryValueData::QWord(1)
+        );
+        assert_eq!(
+            data_for(AuditOptionName::FullPrivilegeAuditing, false, Some(&qword)),
+            RegistryValueData::QWord(0)
         );
         assert_eq!(
             data_for(AuditOptionName::AuditBaseObjects, false, Some(&binary)),

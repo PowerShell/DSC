@@ -332,19 +332,9 @@ pub fn set_audit_policy(input: &AuditPolicy, what_if: bool) -> Result<AuditPolic
     enable_security_privilege()?;
     let resolved = resolve_subcategory(&input.subcategory)?;
 
-    let (info, current) = match query_one(&resolved, &input.subcategory) {
-        Ok(result) => result,
-        Err(error) if what_if => {
-            return Ok(AuditPolicy {
-                subcategory: input.subcategory.clone(),
-                success: input.success,
-                failure: input.failure,
-                metadata: Metadata::from_messages(vec![error.to_string()]),
-                ..AuditPolicy::default()
-            });
-        }
-        Err(error) => return Err(error),
-    };
+    // A failed query is an error in what-if mode too: set cannot create a subcategory, so there
+    // is no verified current state to project a change from.
+    let (info, current) = query_one(&resolved, &input.subcategory)?;
 
     let current_flags = AuditFlags::from_bits(info.AuditingInformation);
     let desired = AuditFlags {

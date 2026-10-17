@@ -11,7 +11,8 @@ Describe 'Windows audit policy get tests' -Skip:(!$IsWindows) {
         else {
             $false
         }
-        $isEnglish = (Get-Culture).Name -like 'en-*'
+        # auditpol localizes its output with the display (UI) language, not the regional format.
+        $isEnglish = (Get-UICulture).Name -like 'en-*'
     }
 
     BeforeAll {
