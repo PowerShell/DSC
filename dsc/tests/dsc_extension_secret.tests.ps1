@@ -266,4 +266,20 @@ Describe 'Tests for the secret() function and extensions' {
             $env:DSC_RESTRICTED_PATH = $oldRestrictedPath
         }
     }
+
+    It 'secureObject can be returned' {
+      $configYaml = @'
+          $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+          resources:
+          - name: Secure Object
+            type: Microsoft.DSC.Debug/Echo
+            properties:
+              output: "[secret('SecretObject', 'Vault2')]"
+              showSecrets: true
+'@
+      $out = dsc -l trace config get -i $configYaml 2> $TestDrive/error.log | ConvertFrom-Json
+      $LASTEXITCODE | Should -Be 0
+      $out.results.Count | Should -Be 1
+      $out.results[0].result.actualState.Output.Hello | Should -BeExactly 'World'
+    }
 }
