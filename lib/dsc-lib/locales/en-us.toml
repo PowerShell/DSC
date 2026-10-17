@@ -232,6 +232,7 @@ retrievedSchemaFromCache = "Retrieved schema for resource '%{resource}' with ver
 writingStdin = "Writing to command STDIN: %{input}"
 processTrace = "PID %{process_id}: %{message}"
 processTraceWithTarget = "PID %{process_id}: %{target}: %{line_number}: %{message}"
+redactedSchemaErrorMessage = "'secureString' and 'secureObject' values are not compatible with the schema, use '.secureString' or '.secureObject' in an expression to convert to string or object"
 
 [dscresources.dscresource]
 invokeGet = "Invoking get for '%{resource}'"
@@ -302,6 +303,13 @@ manifestImported = "Manifest imported from extension %{extension}"
 [extensions.extension_manifest]
 extensionManifestSchemaTitle = "Extension manifest schema URI"
 extensionManifestSchemaDescription = "Defines the JSON Schema the extension manifest adheres to."
+
+[extensions.secret]
+invalidArgs = "The arguments for the 'secret' command are invalid: %{err}"
+missingNameArg ="The 'secret' command doesn't define the secret name input argument, so DSC can't pass the name of the secret to retrieve to the extension. Define exactly one argument in 'secret.args' as an object with the 'nameArg' property"
+multipleNameArgs = "The 'secret' command defines the secret name input argument %{count} times. Define exactly one argument in 'secret.args' as an object with the 'nameArg' property"
+multipleVaultArgs = "The 'secret' command defines the vault input argument %{count} times. Define at most one argument in 'secret.args' as an object with the 'vaultArg' property"
+invalidArg = "Argument %{position} of the 'secret' command isn't valid. Each argument must be a string, an object with only the 'nameArg' property, or an object with only the 'vaultArg' property. Invalid argument: %{arg}"
 
 [functions]
 invalidArgType = "Invalid argument type"

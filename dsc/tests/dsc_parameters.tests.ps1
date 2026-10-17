@@ -287,19 +287,21 @@ Describe 'Parameters tests' {
       $out = dsc -l trace config -f $PSScriptRoot/../examples/secure_parameters.parameters.yaml $operation -f $PSScriptRoot/../examples/secure_parameters.dsc.yaml 2> $TestDrive/error.log | ConvertFrom-Json
       $LASTEXITCODE | Should -Be 0
       if ($operation -eq 'export') {
-        $out.resources.Count | Should -Be 4
+        $out.resources.Count | Should -Be 5
         $out.resources[0].properties.output | Should -BeExactly '<secureValue>'
         $out.resources[1].properties.output | Should -BeExactly '<secureValue>'
-        $out.resources[2].properties.output[0] | Should -BeExactly '<secureValue>'
-        $out.resources[2].properties.output[1] | Should -BeExactly '<secureValue>'
-        $out.resources[3].properties.output | Should -BeExactly '<secureValue>'
+        $out.resources[2].properties.output | Should -BeExactly 'mySecretProperty'
+        $out.resources[3].properties.output[0] | Should -BeExactly 'item1'
+        $out.resources[3].properties.output[1] | Should -BeExactly 'item2'
+        $out.resources[4].properties.output | Should -BeExactly 'item2'
       } else {
-        $out.results.Count | Should -Be 4 -Because ($out | ConvertTo-Json -Dep 10 | Out-String)
+        $out.results.Count | Should -Be 5 -Because ($out | ConvertTo-Json -Dep 10 | Out-String)
         $out.results[0].result.$property.output | Should -BeExactly '<secureValue>' -Because ($out | ConvertTo-Json -Dep 10 | Out-String)
         $out.results[1].result.$property.output | Should -BeExactly '<secureValue>'
-        $out.results[2].result.$property.output[0] | Should -BeExactly '<secureValue>'
-        $out.results[2].result.$property.output[1] | Should -BeExactly '<secureValue>'
-        $out.results[3].result.$property.output | Should -BeExactly '<secureValue>'
+        $out.results[2].result.$property.output | Should -BeExactly 'mySecretProperty'
+        $out.results[3].result.$property.output[0] | Should -BeExactly 'item1'
+        $out.results[3].result.$property.output[1] | Should -BeExactly 'item2'
+        $out.results[4].result.$property.output | Should -BeExactly 'item2'
       }
     }
 
@@ -315,19 +317,23 @@ Describe 'Parameters tests' {
       $out = dsc config -f $PSScriptRoot/../examples/secure_parameters_shown.parameters.yaml $operation -f $PSScriptRoot/../examples/secure_parameters.dsc.yaml | ConvertFrom-Json
       $LASTEXITCODE | Should -Be 0
       if ($operation -eq 'export') {
-        $out.resources.Count | Should -Be 4 -Because ($out | ConvertTo-Json -Dep 10 | Out-String)
+        $out.resources.Count | Should -Be 5 -Because ($out | ConvertTo-Json -Dep 10 | Out-String)
         $out.resources[0].properties.output | Should -BeExactly 'mySecret'
-        $out.resources[1].properties.output | Should -BeExactly 'mySecretProperty'
-        $out.resources[2].properties.output[0] | Should -BeExactly 'item1'
-        $out.resources[2].properties.output[1] | Should -BeExactly 'item2'
-        $out.resources[3].properties.output | Should -BeExactly 'item2'
+        $out.resources[1].properties.output.myProperty | Should -BeExactly  'mySecretProperty'
+        $out.resources[1].properties.output.myArray | Should -BeExactly @('item1', 'item2')
+        $out.resources[2].properties.output | Should -BeExactly 'mySecretProperty'
+        $out.resources[3].properties.output[0] | Should -BeExactly 'item1'
+        $out.resources[3].properties.output[1] | Should -BeExactly 'item2'
+        $out.resources[4].properties.output | Should -BeExactly 'item2'
       } else {
-        $out.results.Count | Should -Be 4
+        $out.results.Count | Should -Be 5
         $out.results[0].result.$property.output | Should -BeExactly 'mySecret' -Because ($out | ConvertTo-Json -Dep 10 | Out-String)
-        $out.results[1].result.$property.output | Should -BeExactly 'mySecretProperty'
-        $out.results[2].result.$property.output[0] | Should -BeExactly 'item1'
-        $out.results[2].result.$property.output[1] | Should -BeExactly 'item2'
-        $out.results[3].result.$property.output | Should -BeExactly 'item2'
+        $out.results[1].result.$property.output.myProperty | Should -BeExactly  'mySecretProperty'
+        $out.results[1].result.$property.output.myArray | Should -BeExactly @('item1', 'item2')
+        $out.results[2].result.$property.output | Should -BeExactly 'mySecretProperty'
+        $out.results[3].result.$property.output[0] | Should -BeExactly 'item1'
+        $out.results[3].result.$property.output[1] | Should -BeExactly 'item2'
+        $out.results[4].result.$property.output | Should -BeExactly 'item2'
       }
     }
 
@@ -901,5 +907,41 @@ parameters:
         $out = & {$config_yaml | dsc config --parameters-file $file_path --parameters $inlineParams get -f - 2>&1}
         $LASTEXITCODE | Should -Be 4
         $out | Should -Match 'Failed to merge parameters'
+    }
+
+    It 'Redacts secureString and secureObject values in error messages: <parameter>' -TestCases @(
+      @{ parameter = 'sString' }
+      @{ parameter = 'sObject' }
+    ){
+        param($parameter)
+
+        $config = @{
+          '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+          parameters = @{
+            sString = @{
+              type = 'secureString'
+              defaultValue = 'mySecret'
+            }
+            sObject = @{
+              type = 'secureObject'
+              defaultValue = @{ key = 'mySecret' }
+            }
+          }
+          resources = @(
+            @{
+              name = 'File'
+              type = 'Microsoft.FileSystem.File/Content'
+              properties = @{
+                path = "$TestDrive/test.txt"
+                content = "[parameters('$parameter')]"
+              }
+            }
+          )
+        }
+
+        $out = dsc config set -i ($config | ConvertTo-Json -Depth 5) 2>$TestDrive/error.log
+        $LASTEXITCODE | Should -Be 2
+        $out | Should -BeNullOrEmpty
+        Get-Content -Raw -Path $TestDrive/error.log | Should -BeLike "*Error*Schema*'secureString' and 'secureObject' values are not compatible with the schema, use '.secureString' or '.secureObject' in an expression to convert to string or object*"
     }
 }
