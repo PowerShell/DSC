@@ -45,10 +45,22 @@ pub fn read_security_information(
 /// Reads the requested sections of an existing, self-relative security descriptor buffer into
 /// the portable model.
 ///
+/// # Safety
+///
+/// `descriptor_bytes` must contain a single, complete, well-formed self-relative
+/// `SECURITY_DESCRIPTOR` (for example a buffer returned by `RegGetKeySecurity`,
+/// `GetFileSecurityW`, or [`build_self_relative_security_descriptor`]/`MakeSelfRelativeSD`), with
+/// every internal offset it encodes pointing within the bounds of `descriptor_bytes`. Passing
+/// arbitrary, truncated, or otherwise unvalidated bytes is undefined behavior: the Win32 APIs
+/// this function calls trust the descriptor's internal structure and offsets without further
+/// bounds checking.
+///
 /// # Errors
 ///
-/// Returns [`AclError`] when the descriptor is malformed or contains an unsupported ACE type.
-pub fn read_access_control_list<P: AccessMask>(
+/// Returns [`AclError`] when the descriptor is malformed or contains an unsupported ACE type, or
+/// [`AclError::NullAcl`] when a requested section's underlying access control list is NULL
+/// (absent) rather than present-but-empty.
+pub unsafe fn read_access_control_list<P: AccessMask>(
     descriptor_bytes: &mut [u8],
     want_discretionary: bool,
     want_system: bool,
@@ -56,7 +68,8 @@ pub fn read_access_control_list<P: AccessMask>(
     let descriptor = PSECURITY_DESCRIPTOR(descriptor_bytes.as_mut_ptr().cast::<c_void>());
     let mut control = 0_u16;
     let mut revision = 0_u32;
-    // SAFETY: descriptor points at a valid, self-relative security descriptor buffer.
+    // SAFETY: the caller guarantees descriptor_bytes is a valid, self-relative security
+    // descriptor buffer.
     unsafe { GetSecurityDescriptorControl(descriptor, &mut control, &mut revision) }.map_err(
         |error| AclError::Win32 {
             operation: "GetSecurityDescriptorControl",
@@ -73,12 +86,15 @@ pub fn read_access_control_list<P: AccessMask>(
     };
 
     if want_discretionary {
-        let (entries, protected) = read_acl_section(descriptor, control, false)?;
+        // SAFETY: the caller guarantees descriptor_bytes is a valid, self-relative security
+        // descriptor buffer.
+        let (entries, protected) = unsafe { read_acl_section(descriptor, control, false) }?;
         result.discretionary = Some(entries);
         result.discretionary_protected = Some(protected);
     }
     if want_system {
-        let (entries, protected) = read_acl_section(descriptor, control, true)?;
+        // SAFETY: see above.
+        let (entries, protected) = unsafe { read_acl_section(descriptor, control, true) }?;
         result.system = Some(entries);
         result.system_protected = Some(protected);
     }
@@ -86,7 +102,12 @@ pub fn read_access_control_list<P: AccessMask>(
     Ok(result)
 }
 
-fn read_acl_section<P: AccessMask>(
+/// # Safety
+///
+/// `descriptor` must point at a valid, self-relative security descriptor (see
+/// [`read_access_control_list`]'s contract), and `control` must be the control word that
+/// `GetSecurityDescriptorControl` returned for that same descriptor.
+unsafe fn read_acl_section<P: AccessMask>(
     descriptor: PSECURITY_DESCRIPTOR,
     control: u16,
     sacl: bool,
@@ -96,8 +117,8 @@ fn read_acl_section<P: AccessMask>(
     let mut defaulted = BOOL::default();
     let mut acl_ptr = core::ptr::null_mut::<windows::Win32::Security::ACL>();
 
-    // SAFETY: descriptor is a valid security descriptor; the output pointers are writable
-    // locals.
+    // SAFETY: the caller guarantees descriptor is a valid security descriptor; the output
+    // pointers are writable locals.
     if sacl {
         unsafe { GetSecurityDescriptorSacl(descriptor, &mut present, &mut acl_ptr, &mut defaulted) }
     } else {
@@ -112,11 +133,20 @@ fn read_acl_section<P: AccessMask>(
         code: error.code().0 as u32,
     })?;
 
-    let entries = if present.as_bool() && !acl_ptr.is_null() {
-        parse_acl::<P>(acl_ptr)?
-    } else {
-        Vec::new()
-    };
+    // A NULL access control list (the list is marked present, but the pointer to it is NULL --
+    // or, more rarely, not marked present at all) means Windows applies no discretionary
+    // protection (DACL) or no auditing (SACL): a DACL-less object grants unrestricted access to
+    // everyone. This is a materially different, far more permissive state than a present but
+    // empty list (which denies all access by default), so it must never be reported as
+    // equivalent to one; doing so could make a desired-state comparison silently report a
+    // dangerously open object as satisfied by an empty-list request.
+    if !present.as_bool() || acl_ptr.is_null() {
+        return Err(AclError::NullAcl(if sacl { "system" } else { "discretionary" }));
+    }
+
+    // SAFETY: the caller guarantees descriptor (and therefore acl_ptr, which GetSecurityDescriptorDacl/
+    // Sacl just populated from it) is valid.
+    let entries = unsafe { parse_acl::<P>(acl_ptr) }?;
 
     let protected_bit = if sacl {
         SE_SACL_PROTECTED.0
@@ -299,11 +329,79 @@ fn normalize_entries<P: AccessMask>(
         .iter()
         .map(|entry| {
             let sid = resolve_principal(&entry.principal)?;
-            let principal = sid_to_string(sid.as_psid())?;
+            // SAFETY: sid was just produced by resolve_principal, which guarantees valid,
+            // well-formed SID bytes owned by `sid` for the duration of this call.
+            let principal = unsafe { sid_to_string(sid.as_psid()) }?;
             Ok(AccessControlEntry {
                 principal,
                 ..entry.clone()
             })
         })
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    enum TestRight {
+        Read,
+    }
+
+    impl AccessMask for TestRight {
+        fn bits(self) -> u32 {
+            match self {
+                Self::Read => 0x1,
+            }
+        }
+
+        fn all() -> &'static [Self] {
+            &[Self::Read]
+        }
+    }
+
+    /// Builds a self-relative security descriptor buffer with a DACL that is either absent
+    /// (`dacl: None`, a NULL DACL) or present (`dacl: Some(entries)`, possibly an empty slice
+    /// for a present-but-empty DACL).
+    fn build_descriptor_with_dacl(dacl: Option<&[AccessControlEntry<TestRight>]>) -> Vec<u8> {
+        let mut descriptor = SECURITY_DESCRIPTOR::default();
+        let descriptor_ptr = PSECURITY_DESCRIPTOR((&raw mut descriptor).cast::<c_void>());
+        // SAFETY: descriptor is a local, writable SECURITY_DESCRIPTOR.
+        unsafe { InitializeSecurityDescriptor(descriptor_ptr, SECURITY_DESCRIPTOR_REVISION) }
+            .unwrap();
+
+        let mut buffer = dacl.map(|entries| AclBuffer::build(entries).unwrap());
+        let dacl_ptr = buffer.as_mut().map(|buffer| buffer.as_ptr().cast_const());
+        // SAFETY: descriptor_ptr was just initialized above; when dacl_ptr is Some, its pointee
+        // (buffer) outlives this call and the conversion to self-relative form below.
+        unsafe { SetSecurityDescriptorDacl(descriptor_ptr, true, dacl_ptr, false) }.unwrap();
+
+        let bytes = to_self_relative(descriptor_ptr).unwrap();
+        drop(buffer);
+        bytes
+    }
+
+    #[test]
+    fn read_access_control_list_rejects_null_dacl() {
+        let mut bytes = build_descriptor_with_dacl(None);
+
+        // SAFETY: bytes was just built above as a well-formed self-relative descriptor.
+        let result = unsafe { read_access_control_list::<TestRight>(&mut bytes, true, false) };
+
+        // A NULL DACL must never be silently reported as an empty one: it means unrestricted
+        // access, the opposite of what an empty (deny-all) DACL means.
+        assert!(matches!(result, Err(AclError::NullAcl("discretionary"))));
+    }
+
+    #[test]
+    fn read_access_control_list_accepts_present_empty_dacl() {
+        let mut bytes = build_descriptor_with_dacl(Some(&[]));
+
+        // SAFETY: bytes was just built above as a well-formed self-relative descriptor.
+        let result = unsafe { read_access_control_list::<TestRight>(&mut bytes, true, false) }
+            .expect("a present, empty DACL must be read successfully, not rejected");
+
+        assert_eq!(result.discretionary, Some(Vec::new()));
+    }
 }

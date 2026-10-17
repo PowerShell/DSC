@@ -108,6 +108,71 @@ Describe 'registry config whatif tests' {
             Should -BeExactly ($before.discretionary | ConvertTo-Json -Depth 10 -Compress)
     }
 
+    It 'Can whatif setting a value and merging an ACL on an existing key, returning the effective merged ACL' -Skip:(!$IsWindows) {
+        New-Item -Path 'HKCU:\1\AclWhatIfValueName' -Force | Out-Null
+        $initial = @{
+            keyPath           = 'HKCU\1\AclWhatIfValueName'
+            accessControlList = @{
+                discretionary = @(
+                    @{ principal = $env:USERNAME; type = 'allow'; accessMask = @('fullControl') }
+                )
+            }
+        } | ConvertTo-Json -Depth 10 -Compress
+        registry config set --input $initial 2>$TestDrive/error.log
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw)
+
+        # The current user's SID, resolved so it can be compared against the merged output.
+        $currentUserSid = ([Security.Principal.NTAccount]::new($env:USERNAME)).Translate(
+            [Security.Principal.SecurityIdentifier]).Value
+        $anonymousSid = 'S-1-5-7'
+
+        $whatIfJson = @{
+            keyPath           = 'HKCU\1\AclWhatIfValueName'
+            valueName         = 'Hello'
+            valueData         = @{ String = 'World' }
+            accessControlList = @{
+                discretionary = @(
+                    @{ principal = $anonymousSid; type = 'deny'; accessMask = @('read') }
+                )
+                _purge        = $false
+            }
+        } | ConvertTo-Json -Depth 10 -Compress
+        $result = registry config set -w --input $whatIfJson 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw)
+
+        # Since the key already exists, the what-if preview must compute and return the same
+        # effective, normalized/merged ACL that an actual Set would apply -- both the
+        # pre-existing entry and the newly merged one -- not the raw, unmerged request.
+        $principals = $result.accessControlList.discretionary.principal
+        $principals | Should -Contain $currentUserSid
+        $principals | Should -Contain $anonymousSid
+
+        # What-if must not have actually written the value or changed the ACL.
+        $afterGet = registry config get --input $initial 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw)
+        $afterGet.accessControlList.discretionary.Count | Should -Be 1
+    }
+
+    It 'Can whatif setting a value and ACL on a missing key, returning the raw (unmerged) request' -Skip:(!$IsWindows) {
+        $whatIfJson = @{
+            keyPath           = 'HKCU\1\AclWhatIfMissingKey'
+            valueName         = 'Hello'
+            valueData         = @{ String = 'World' }
+            accessControlList = @{
+                discretionary = @(
+                    @{ principal = 'S-1-5-7'; type = 'deny'; accessMask = @('read') }
+                )
+            }
+        } | ConvertTo-Json -Depth 10 -Compress
+        $result = registry config set -w --input $whatIfJson 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw)
+
+        # The key doesn't exist, so the preview falls back to reporting the raw request rather
+        # than attempting (and failing) to read a nonexistent key's current ACL.
+        $result.accessControlList.discretionary.Count | Should -Be 1
+        $result.accessControlList.discretionary[0].principal | Should -BeExactly 'S-1-5-7'
+    }
+
     It 'Can whatif an existing deeply nested key and value' -Skip:(!$IsWindows) {
         $set_json = @'
         {

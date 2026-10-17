@@ -45,14 +45,41 @@ impl Drop for RegistryKey {
     }
 }
 
-/// Validates that `requested` is well-formed (for example that `audit` entries are only used in
-/// the system section) without touching the registry.
+/// Validates that `requested` is well-formed: that it specifies at least one of `discretionary`
+/// or `system` (an `accessControlList` with neither is never meaningful, since there would be
+/// nothing to read, write, or compare), and that every entry is well-formed for the section it
+/// belongs to (for example that `audit` entries are only used in the system section). Performs
+/// no registry access.
+///
+/// Called centrally by every operation ([`get`], [`set`] via [`effective`], and the registry
+/// resource's `test`) before any registry read, mutation, or what-if preview, so that an invalid
+/// `accessControlList: {}` is rejected consistently regardless of which operation is requested.
 ///
 /// # Errors
 ///
 /// Returns [`RegistryError::Acl`] when `requested` is not well-formed.
 pub fn validate(requested: &RegistryAccessControlList) -> Result<(), RegistryError> {
+    if requested.discretionary.is_none() && requested.system.is_none() {
+        return Err(RegistryError::Acl(t!("error.invalidAcl").to_string()));
+    }
     requested.validate().map_err(acl_error)
+}
+
+/// Enables the `SeSecurityPrivilege` privilege when `requested` manages the system access
+/// control list (SACL), since reading or writing a SACL -- or merely opening a key with the
+/// `ACCESS_SYSTEM_SECURITY` right, as [`can_set`] does to check whether a key can be written to
+/// -- requires it. Centralizes the check so every entry point ([`get`], [`set`], and [`can_set`],
+/// including when running in what-if mode) enables the privilege before its first SACL-touching
+/// Win32 call, rather than relying on each call site to remember to do so individually.
+///
+/// # Errors
+///
+/// Returns [`RegistryError::Acl`] when the privilege can't be enabled.
+fn ensure_privilege_for(requested: &RegistryAccessControlList) -> Result<(), RegistryError> {
+    if requested.system.is_some() {
+        enable_security_privilege().map_err(acl_error)?;
+    }
+    Ok(())
 }
 
 /// Reads the sections of `path`'s access control list that are requested (non-`None`) in
@@ -67,15 +94,11 @@ pub fn get(
     path: &str,
     requested: &RegistryAccessControlList,
 ) -> Result<RegistryAccessControlList, RegistryError> {
+    validate(requested)?;
     let want_discretionary = requested.discretionary.is_some();
     let want_system = requested.system.is_some();
-    if !want_discretionary && !want_system {
-        return Err(RegistryError::Acl(t!("error.invalidAcl").to_string()));
-    }
 
-    if want_system {
-        enable_security_privilege().map_err(acl_error)?;
-    }
+    ensure_privilege_for(requested)?;
 
     let key = open(path, read_access(requested))?;
     let security_information = read_security_information(want_discretionary, want_system);
@@ -96,18 +119,25 @@ pub fn get(
         return Err(win32_error("RegGetKeySecurity", status.0));
     }
 
-    read_access_control_list(&mut descriptor_bytes, want_discretionary, want_system)
+    // SAFETY: descriptor_bytes was just populated in-place by a successful RegGetKeySecurity
+    // call above, sized exactly to the `size` that same API reported; it is therefore a
+    // complete, well-formed self-relative security descriptor.
+    unsafe { read_access_control_list(&mut descriptor_bytes, want_discretionary, want_system) }
         .map_err(acl_error)
 }
 
 /// Returns whether `path` currently exists and could accept `requested` being applied via
-/// [`set`].
+/// [`set`]. Opening the key for this check alone requires the `SeSecurityPrivilege` privilege
+/// when `requested` manages the system access control list (SACL), since the check opens the key
+/// with the `ACCESS_SYSTEM_SECURITY` right; this function enables the privilege as needed
+/// (including when called to preview a what-if `set`, which never calls [`set`] itself).
 ///
 /// # Errors
 ///
 /// Returns [`RegistryError::Acl`] when a lower-level Win32 API call fails for a reason other
 /// than the key not existing.
 pub fn can_set(path: &str, requested: &RegistryAccessControlList) -> Result<bool, RegistryError> {
+    ensure_privilege_for(requested)?;
     match open(path, write_access(requested)) {
         Ok(_) => Ok(true),
         Err(RegistryError::RegistryKeyNotFound(_)) => Ok(false),
@@ -125,10 +155,8 @@ pub fn can_set(path: &str, requested: &RegistryAccessControlList) -> Result<bool
 /// [`RegistryError::Acl`] when `requested` is not well-formed or a lower-level Win32 API call
 /// fails.
 pub fn set(path: &str, requested: &RegistryAccessControlList) -> Result<(), RegistryError> {
-    requested.validate().map_err(acl_error)?;
-    if requested.system.is_some() {
-        enable_security_privilege().map_err(acl_error)?;
-    }
+    validate(requested)?;
+    ensure_privilege_for(requested)?;
 
     let to_write = effective(path, requested)?;
     let (mut descriptor_bytes, security_information) =
@@ -146,11 +174,12 @@ pub fn set(path: &str, requested: &RegistryAccessControlList) -> Result<(), Regi
 }
 
 /// Computes the effective access control list that should be written for `requested`, honoring
-/// its `_purge` setting: when `true` (the default), returns `requested` (normalized) as-is, so
-/// that [`set`] continues to replace each supplied section outright exactly as before. When
-/// `false`, reads `path`'s current state for the section(s) `requested` manages and merges
-/// `requested`'s entries into them (deduplicating semantic duplicates and ordering `deny`
-/// entries first in the discretionary section).
+/// its `_purge` setting: when `true` (the default), each supplied section is `requested`'s
+/// section (normalized) verbatim, and no registry read is needed to compute it -- a protection
+/// flag that is not explicitly supplied resolves to its effective `false` default rather than
+/// being left unresolved (see [`merge_access_control_list`]). When `false`, reads `path`'s
+/// current state for the section(s) `requested` manages and merges `requested`'s entries into
+/// them (deduplicating semantic duplicates and canonicalizing ACE order).
 ///
 /// # Errors
 ///
@@ -163,11 +192,33 @@ pub fn effective(
 ) -> Result<RegistryAccessControlList, RegistryError> {
     let normalized = normalize(requested).map_err(acl_error)?;
     if normalized.purge() {
-        return Ok(normalized);
+        // `merge_access_control_list`'s purge branch never consults `current`, so an empty
+        // placeholder avoids a registry read that isn't needed to compute the effective ACL --
+        // this also lets a purge write preview succeed even when `path` doesn't exist yet.
+        return Ok(merge_access_control_list(&RegistryAccessControlList::default(), &normalized));
     }
 
     let current = get(path, &normalized)?;
     Ok(merge_access_control_list(&current, &normalized))
+}
+
+/// Returns whether `actual` (as returned by [`get`] for the section(s) `requested` manages)
+/// already satisfies `requested`, honoring its `_purge` setting exactly as [`effective`] does
+/// when computing what a [`set`] would write, but without performing a registry read: the merge
+/// is computed directly against the already-available `actual`, which is what a purge-mode
+/// `_purge: true` write would need anyway and what a merge-mode `_purge: false` write would
+/// otherwise have to re-read from the registry.
+///
+/// # Errors
+///
+/// Returns [`RegistryError::Acl`] when a principal in `requested` cannot be resolved.
+pub fn is_satisfied(
+    requested: &RegistryAccessControlList,
+    actual: &RegistryAccessControlList,
+) -> Result<bool, RegistryError> {
+    let normalized = normalize(requested).map_err(acl_error)?;
+    let effective_desired = merge_access_control_list(actual, &normalized);
+    Ok(lib_acl::is_satisfied(&effective_desired, actual))
 }
 
 fn read_access(requested: &RegistryAccessControlList) -> REG_SAM_FLAGS {
@@ -340,5 +391,89 @@ mod tests {
         assert!(principals.contains(&"S-1-5-19"));
         // The current, pre-existing entries are still present alongside the newly requested one.
         assert!(merged.len() > 1);
+    }
+
+    #[test]
+    fn validate_rejects_access_control_list_with_no_sections() {
+        let requested = RegistryAccessControlList::default();
+        let error = validate(&requested).unwrap_err();
+        assert!(matches!(error, RegistryError::Acl(_)));
+    }
+
+    #[test]
+    fn effective_with_purge_true_defaults_protected_to_false_without_reading_current() {
+        let requested = RegistryAccessControlList {
+            discretionary: Some(vec![entry(AceType::Allow)]),
+            purge: Some(true),
+            ..Default::default()
+        };
+
+        // Succeeds (and resolves the omitted protection flag to its effective default) even
+        // though the key below doesn't exist, proving no registry read of "current" is needed
+        // to compute the effective ACL in purge mode.
+        let effective_acl =
+            effective(r"HKCU\DoesNotExist\AclPurgeProtectedDefault", &requested).unwrap();
+
+        assert_eq!(effective_acl.discretionary_protected, Some(false));
+    }
+
+    #[test]
+    fn is_satisfied_reports_true_when_actual_already_matches_requested() {
+        let actual = RegistryAccessControlList {
+            discretionary: Some(vec![entry(AceType::Allow)]),
+            discretionary_protected: Some(false),
+            ..Default::default()
+        };
+        let requested = RegistryAccessControlList {
+            discretionary: Some(vec![entry(AceType::Allow)]),
+            purge: Some(true),
+            ..Default::default()
+        };
+
+        assert!(is_satisfied(&requested, &actual).unwrap());
+    }
+
+    #[test]
+    fn is_satisfied_reports_false_when_actual_differs() {
+        let actual = RegistryAccessControlList {
+            discretionary: Some(vec![entry(AceType::Allow)]),
+            discretionary_protected: Some(false),
+            ..Default::default()
+        };
+        let mut different_entry = entry(AceType::Allow);
+        different_entry.principal = "S-1-5-19".to_string();
+        let requested = RegistryAccessControlList {
+            discretionary: Some(vec![different_entry]),
+            purge: Some(true),
+            ..Default::default()
+        };
+
+        assert!(!is_satisfied(&requested, &actual).unwrap());
+    }
+
+    #[test]
+    fn can_set_enables_privilege_before_checking_a_missing_key_with_system_acl() {
+        // This behavior can only be exercised when the test process actually holds
+        // `SeSecurityPrivilege` (even if not yet enabled); skip gracefully otherwise, mirroring
+        // how other SACL-touching tests in this codebase are conditioned on elevation.
+        if lib_acl::win32::enable_security_privilege().is_err() {
+            return;
+        }
+
+        // Requesting a `system` section means `can_set` must open the key with
+        // ACCESS_SYSTEM_SECURITY, which itself requires `SeSecurityPrivilege` to already be
+        // enabled; if `can_set` attempted to open the key before enabling the privilege, this
+        // would fail with a privilege error instead of gracefully reporting that the
+        // (non-existent) key can't be written to.
+        let mut audit_entry = entry(AceType::Audit);
+        audit_entry.audit_flags = vec![AuditFlag::Success];
+        let requested = RegistryAccessControlList {
+            system: Some(vec![audit_entry]),
+            ..Default::default()
+        };
+
+        let can_set_result = can_set(r"HKCU\DoesNotExist\AclCanSetSystem", &requested);
+
+        assert!(matches!(can_set_result, Ok(false)), "{can_set_result:?}");
     }
 }

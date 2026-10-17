@@ -121,6 +121,7 @@ fn inheritance_flags_to_bits(flags: &[AceFlag]) -> u32 {
     })
 }
 
+/// Decodes the subset of `AceFlags` bits this crate models back into [`AceFlag`] values.
 fn inheritance_flags_from_bits(bits: u32) -> Vec<AceFlag> {
     let mut flags = Vec::new();
     if bits & CONTAINER_INHERIT_ACE.0 != 0 {
@@ -157,17 +158,23 @@ fn audit_flags_from_bits(bits: u32) -> Vec<AuditFlag> {
 
 /// Parses an existing ACL into a list of access control entries.
 ///
+/// # Safety
+///
+/// `acl_ptr` must point to a single, valid, initialized `ACL` structure (for example one
+/// obtained from `GetSecurityDescriptorDacl`/`GetSecurityDescriptorSacl` on a valid security
+/// descriptor), valid for the duration of this call.
+///
 /// # Errors
 ///
 /// Returns [`AclError::UnsupportedAceType`] when the ACL contains an entry type this crate does
 /// not model (for example an object-specific or conditional ACE), or [`AclError`] when a
 /// lower-level Win32 API call fails.
-pub(crate) fn parse_acl<P: AccessMask>(
+pub(crate) unsafe fn parse_acl<P: AccessMask>(
     acl_ptr: *mut ACL,
 ) -> Result<Vec<AccessControlEntry<P>>, AclError> {
     let mut size_info = ACL_SIZE_INFORMATION::default();
-    // SAFETY: acl_ptr is a valid, initialized ACL pointer; size_info is a writable local
-    // variable of the correct size for AclSizeInformation.
+    // SAFETY: the caller guarantees acl_ptr is a valid, initialized ACL pointer; size_info is a
+    // writable local variable of the correct size for AclSizeInformation.
     unsafe {
         GetAclInformation(
             acl_ptr,
@@ -222,14 +229,17 @@ pub(crate) fn parse_acl<P: AccessMask>(
             return Err(AclError::UnsupportedAceType(header.AceType));
         };
 
-        let principal = sid_to_string(windows::Win32::Security::PSID(sid_ptr.cast_mut()))?;
+        // SAFETY: sid_ptr points at the SID embedded in the ACE that GetAce just returned,
+        // which is valid for as long as acl_ptr (borrowed by this function's caller) is valid;
+        // it is a real, Windows-populated SID, not externally supplied bytes.
+        let principal = unsafe { sid_to_string(windows::Win32::Security::PSID(sid_ptr.cast_mut())) }?;
         let flags = inheritance_flags_from_bits(ace_flags_bits);
         let audit_flags = if ace_type == AceType::Audit {
             audit_flags_from_bits(ace_flags_bits)
         } else {
             Vec::new()
         };
-        let access_mask = bits_to_mask::<P>(mask);
+        let access_mask = bits_to_mask::<P>(mask)?;
 
         entries.push(AccessControlEntry {
             principal,

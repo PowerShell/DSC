@@ -276,7 +276,80 @@ Describe 'Microsoft.Filesystem/AccessControlList tests' -Skip:(!$IsWindows) {
 
             ($testOutput | ConvertFrom-Json).inDesiredState | Should -BeFalse
         }
+
+        It 'Tests true with _purge true using an alias-equivalent access mask' {
+            $path = New-Item -ItemType File -Path (Join-Path $testRoot 'alias.txt') |
+                Select-Object -ExpandProperty FullName
+            # Individually, these rights are bit-for-bit identical to `fullControl`.
+            $decomposedMask = @(
+                'readData', 'writeData', 'appendData', 'readExtendedAttributes',
+                'writeExtendedAttributes', 'executeFile', 'deleteChild', 'readAttributes',
+                'writeAttributes', 'delete', 'readPermissions', 'changePermissions',
+                'takeOwnership', 'synchronize'
+            )
+            $acl = @{
+                discretionary          = @(
+                    @{ principal = $currentSid; type = 'allow'; accessMask = $decomposedMask }
+                )
+                discretionaryProtected = $false
+            }
+            $json = @{ path = $path; accessControlList = $acl } | ConvertTo-Json -Depth 10 -Compress
+            $null = $json | dsc resource set -r $resourceType -f - 2>$TestDrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+
+            # A real system read always reports the most comprehensive alias that fits exactly,
+            # so the actual entry now reports `fullControl`; a Test using the original,
+            # decomposed list must still report satisfied under `_purge: true` (the default)
+            # instead of comparing the access mask arrays for raw equality.
+            $testOutput = $json | dsc resource test -r $resourceType -f - 2>$TestDrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+            ($testOutput | ConvertFrom-Json).inDesiredState | Should -BeTrue
+        }
+
+        It 'Defaults discretionaryProtected to false when purging and the property is omitted' {
+            $path = New-Item -ItemType File -Path (Join-Path $testRoot 'purgeprotected.txt') |
+                Select-Object -ExpandProperty FullName
+            $protectedJson = @{ path = $path; accessControlList = (New-DesiredAcl -Protected $true) } |
+                ConvertTo-Json -Depth 10 -Compress
+            $null = $protectedJson | dsc resource set -r $resourceType -f - 2>$TestDrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+
+            # Purge (the default) again, without specifying discretionaryProtected this time.
+            $unspecifiedAcl = @{ discretionary = (New-DesiredAcl).discretionary }
+            $unspecifiedJson = @{ path = $path; accessControlList = $unspecifiedAcl } |
+                ConvertTo-Json -Depth 10 -Compress
+            $setOutput = $unspecifiedJson | dsc resource set -r $resourceType -f - 2>$TestDrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+            $setState = ($setOutput | ConvertFrom-Json).afterState
+
+            # Omitting the property during a purge write resets protection to false; it is not
+            # left unchanged from the previously protected state.
+            $setState.accessControlList.discretionaryProtected | Should -BeFalse
+        }
+
+        It 'Accepts a generic access mask value without rejecting or silently dropping it' {
+            $path = New-Item -ItemType File -Path (Join-Path $testRoot 'generic.txt') |
+                Select-Object -ExpandProperty FullName
+            $acl = @{
+                discretionary = @(
+                    @{ principal = $currentSid; type = 'allow'; accessMask = @('genericAll') }
+                )
+            }
+            $json = @{ path = $path; accessControlList = $acl } | ConvertTo-Json -Depth 10 -Compress
+            $setOutput = $json | dsc resource set -r $resourceType -f - 2>$TestDrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+            $setState = ($setOutput | ConvertFrom-Json).afterState
+
+            # NTFS maps `GENERIC_ALL` to the file-specific `fullControl`-equivalent rights when a
+            # security descriptor is actually applied to a real file, so the mask read back
+            # reports the mapped alias instead of the original raw generic bit. The important
+            # thing this test guards is that the request is accepted at all (not rejected as an
+            # unrepresentable access mask) and that the resulting access is the expected, full
+            # equivalent -- not that the literal `genericAll` value survives the round trip.
+            $setState.accessControlList.discretionary[0].accessMask | Should -Contain 'fullControl'
+        }
     }
+
 
     It 'Leaves the system access control list unread when it is not requested' {
         $path = New-Item -ItemType File -Path (Join-Path $testRoot 'partial.txt') |

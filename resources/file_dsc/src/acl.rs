@@ -33,13 +33,16 @@ pub fn set(input: &FileAccessControlList) -> Result<FileAccessControlList, Strin
     }
 
     // The Win32 ACL-writing APIs always replace a section outright, so a merge (`_purge: false`)
-    // is implemented by first computing the full, merged section(s) to write.
-    let to_write = if normalized.purge() {
-        normalized
+    // is implemented by first computing the full, merged section(s) to write. `purge` mode (the
+    // default) needs no current-state read, since `merge_access_control_list`'s purge branch
+    // never consults `current` -- it still resolves an omitted protection flag to its effective
+    // `false` default, so an empty placeholder stands in for `current` instead.
+    let current = if normalized.purge() {
+        FileAcl::default()
     } else {
-        let current = read_acl(&input.path, &normalized)?;
-        merge_access_control_list(&current, &normalized)
+        read_acl(&input.path, &normalized)?
     };
+    let to_write = merge_access_control_list(&current, &normalized);
 
     let (mut descriptor_bytes, security_information) =
         build_self_relative_security_descriptor(&to_write).map_err(acl_error)?;
@@ -135,7 +138,11 @@ fn read_acl(path: &str, requested: &FileAcl) -> Result<FileAcl, String> {
     .ok()
     .map_err(|error| t!("acl.getError", path = path, error = error.to_string()).to_string())?;
 
-    read_access_control_list(&mut buffer, want_discretionary, want_system).map_err(acl_error)
+    // SAFETY: buffer was just populated in-place by a successful GetFileSecurityW call above,
+    // sized exactly to the `required_length` that same API reported; it is therefore a
+    // complete, well-formed self-relative security descriptor.
+    unsafe { read_access_control_list(&mut buffer, want_discretionary, want_system) }
+        .map_err(acl_error)
 }
 
 /// Writes `security_information`'s sections (DACL and/or SACL) to `path`, including their

@@ -68,12 +68,15 @@ The resource has the following capabilities:
 
 - `get` - You can use the resource to retrieve the actual state of an instance.
 - `set` - You can use the resource to enforce the desired state for an instance.
+- `test` - You can use the resource to determine whether an instance is in the desired state.
 - `whatIf` - The resource is able to report how it would change system state during a **Set**
   operation in what-if mode.
 - `delete` - You can use the resource to directly remove an instance from the system.
 
-This resource uses the synthetic test functionality of DSC to determine whether an instance is in
-the desired state. For more information about resource capabilities, see
+The resource implements its own **Test** operation rather than relying on the synthetic test
+functionality of DSC, so that the `accessControlList` property is compared using access control
+list semantics (principal normalization, alias-aware access mask comparison, and `_purge`-aware
+entry matching) instead of raw JSON equality. For more information about resource capabilities, see
 [DSC resource capabilities][02].
 
 ## Examples
@@ -117,6 +120,8 @@ The following list describes the properties for the resource.
   properties, but they aren't configurable. For more information about read-only properties, see
   the "Read-only resource properties" section in [DSC resource properties][08].
 
+  - [_inDesiredState](#_indesiredstate) - Indicates whether the instance is in the desired state.
+    Only returned by a **Test** operation.
   - [_metadata](#_metadata) - Defines metadata returned by the resource.
 
 ### keyPath
@@ -241,9 +246,12 @@ Type : boolean
 
 </details>
 
-Defines whether the DACL is protected from inheriting entries from its parent key. Omit this
-property to leave the current protection state unchanged when `discretionary` isn't specified, or
-to request an unprotected (inheriting) DACL when it is specified without this property.
+Defines whether the DACL is protected from inheriting entries from its parent key. Only meaningful
+when `discretionary` is also specified. Omitting this property behaves according to `_purge`: when
+purging (the default), the DACL is written as unprotected (inheriting), since a purge write always
+stamps an explicit protection state; when merging (`_purge: false`), the current protection state
+is preserved unchanged. Set this explicitly to request a particular protection state regardless of
+`_purge`.
 
 #### system accessControlList
 
@@ -273,9 +281,11 @@ Type : boolean
 
 </details>
 
-Defines whether the SACL is protected from inheriting entries from its parent key. Omit this
-property to leave the current protection state unchanged when `system` isn't specified, or to
-request an unprotected (inheriting) SACL when it is specified without this property.
+Defines whether the SACL is protected from inheriting entries from its parent key. Only meaningful
+when `system` is also specified. Omitting this property behaves according to `_purge`: when purging
+(the default), the SACL is written as unprotected (inheriting), since a purge write always stamps an
+explicit protection state; when merging (`_purge: false`), the current protection state is preserved
+unchanged. Set this explicitly to request a particular protection state regardless of `_purge`.
 
 #### _purge accessControlList
 
@@ -291,18 +301,28 @@ Default : true
 Defines whether to replace (purge) each supplied section outright, or merge its entries into the
 section's current managed entries. Defaults to `true` (replace) when omitted, which is the
 historical full-replacement behavior: the `discretionary` and/or `system` entries supplied in a
-**Set** operation become the section's entire content.
+**Set** operation become the section's entire content. When a section is replaced outright and its
+corresponding `discretionaryProtected`/`systemProtected` property isn't specified, the protection
+state resets to unprotected (`false`) rather than being left unchanged, since a purge write always
+stamps an explicit protection state.
 
 When `false`, the entries supplied for a section are merged into that section's existing entries
 instead of replacing them: entries that already exist are left in place, newly supplied entries are
 appended, and semantic duplicates (the same normalized principal, ACE type, effective access mask,
 and inheritance/audit flags) aren't duplicated. After merging, the resulting `discretionary` section
-is canonicalized so that every `deny` entry precedes every `allow` entry. A section that isn't
-supplied in the request remains unmanaged regardless of this setting.
+is canonicalized into Windows' canonical access control entry order: every explicit `deny` entry,
+then every explicit `allow` entry, then every inherited entry, preserving the inherited entries'
+existing relative order. In particular, an inherited `deny` entry is never moved ahead of an
+explicit `allow` entry, since Windows always places every explicit entry before any inherited entry
+regardless of allow/deny. A section that isn't supplied in the request remains unmanaged, and its
+corresponding protection property (if any) is preserved unchanged, regardless of this setting.
 
 For a **Test** operation, `_purge: false` is satisfied when every requested entry is present
 (after normalization) in the actual access control list; extra entries already present in the
-actual ACL don't cause a mismatch. `_purge: true` (the default) requires an exact match.
+actual ACL don't cause a mismatch. `_purge: true` (the default) requires the same entries in the
+same order and count as `actual`, but each entry pair is compared semantically: an aliased
+permission name (for example `fullControl` versus the individual rights it implies) or a
+differently ordered `flags` list that is otherwise equivalent doesn't cause a mismatch.
 
 #### Access control entry object
 
@@ -315,9 +335,13 @@ Each item in the `discretionary` and `system` arrays is an object with the follo
   `allow`, `deny`, and `audit`.
 - **accessMask** (required) - The permissions granted, denied, or audited by this entry. Must
   specify at least one value. Valid values are `queryValue`, `setValue`, `createSubKey`,
-  `enumerateSubKeys`, `notify`, `createLink`, `wow6464Key`, `wow6432Key`, `delete`,
-  `readPermissions`, `changePermissions`, `takeOwnership`, `synchronize`, `read`, `write`,
-  `execute`, and `fullControl`.
+  `enumerateSubKeys`, `notify`, `createLink`, `delete`, `readPermissions`, `changePermissions`,
+  `takeOwnership`, `synchronize`, `read`, `write`, `execute`, `fullControl`, `genericRead`,
+  `genericWrite`, `genericExecute`, and `genericAll`. The `generic*` values represent the raw
+  `GENERIC_*` access mask bits; Windows maps them to the equivalent registry-specific rights (for
+  example `genericAll` to `fullControl`) and they're accepted so that an existing entry using them
+  can always be read back and represented, but there's normally no reason to specify them in a
+  request.
 - **flags** (optional) - Inheritance flags for the entry. Defaults to an empty array (no
   inheritance). Valid values are `containerInherit`, `objectInherit`, `noPropagateInherit`,
   `inheritOnly`, and `inherited`.
@@ -464,6 +488,23 @@ IsKey: false
 Defines the name of the value to manage for the registry key. This property is required when
 specifying the `valueData` property.
 
+### _inDesiredState
+
+<details><summary>Expand for <code>_inDesiredState</code> property metadata</summary>
+
+```yaml
+Type         : [boolean, 'null']
+IsRequired   : false
+IsKey        : false
+IsReadOnly   : true
+IsWriteOnly  : false
+```
+
+</details>
+
+Indicates whether the instance is in the desired state. This property is only returned by a
+**Test** operation.
+
 ### _metadata
 
 <details><summary>Expand for <code>_metadata</code> property metadata</summary>
@@ -527,6 +568,10 @@ non validating keywords are omitted.
       "type": "boolean",
       "default": true
     },
+    "_inDesiredState": {
+      "type": ["boolean", "null"],
+      "readOnly": true
+    },
     "_metadata": {
       "type": "object",
       "readOnly": true,
@@ -562,9 +607,10 @@ non validating keywords are omitted.
                 "items": {
                   "enum": [
                     "queryValue", "setValue", "createSubKey", "enumerateSubKeys", "notify",
-                    "createLink", "wow6464Key", "wow6432Key", "delete", "readPermissions",
+                    "createLink", "delete", "readPermissions",
                     "changePermissions", "takeOwnership", "synchronize", "read", "write",
-                    "execute", "fullControl"
+                    "execute", "fullControl", "genericRead", "genericWrite", "genericExecute",
+                    "genericAll"
                   ]
                 }
               },

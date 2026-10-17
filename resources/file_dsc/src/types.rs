@@ -78,6 +78,19 @@ pub enum FileAccessRight {
     Modify,
     /// `FILE_ALL_ACCESS`: a composite of every standard and file-specific right.
     FullControl,
+    /// `GENERIC_READ`: the generic read right. Windows maps this to [`Read`](Self::Read) for
+    /// file and folder objects, but the raw bit can still appear in an existing access control
+    /// entry's mask, so it must be representable rather than silently discarded when read back.
+    GenericRead,
+    /// `GENERIC_WRITE`: the generic write right, mapped by Windows to
+    /// [`Write`](Self::Write) for file and folder objects.
+    GenericWrite,
+    /// `GENERIC_EXECUTE`: the generic execute right, mapped by Windows to
+    /// [`ExecuteFile`](Self::ExecuteFile)-equivalent access for file and folder objects.
+    GenericExecute,
+    /// `GENERIC_ALL`: the generic all-access right, mapped by Windows to
+    /// [`FullControl`](Self::FullControl) for file and folder objects.
+    GenericAll,
 }
 
 impl AccessMask for FileAccessRight {
@@ -102,6 +115,10 @@ impl AccessMask for FileAccessRight {
             Self::ReadAndExecute => 0x0012_00A9,
             Self::Modify => 0x0013_01BF,
             Self::FullControl => 0x001F_01FF,
+            Self::GenericExecute => 0x2000_0000,
+            Self::GenericWrite => 0x4000_0000,
+            Self::GenericRead => 0x8000_0000,
+            Self::GenericAll => 0x1000_0000,
         }
     }
 
@@ -126,6 +143,10 @@ impl AccessMask for FileAccessRight {
             Self::ReadAndExecute,
             Self::Modify,
             Self::FullControl,
+            Self::GenericRead,
+            Self::GenericWrite,
+            Self::GenericExecute,
+            Self::GenericAll,
         ]
     }
 }

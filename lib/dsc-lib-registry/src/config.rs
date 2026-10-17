@@ -21,12 +21,6 @@ pub enum RegistryAccessRight {
     Notify,
     /// `KEY_CREATE_LINK`: Reserved for system use.
     CreateLink,
-    /// `KEY_WOW64_64KEY`: Indicates that an application on 64-bit Windows should operate on
-    /// the 64-bit registry view.
-    Wow6464Key,
-    /// `KEY_WOW64_32KEY`: Indicates that an application on 64-bit Windows should operate on
-    /// the 32-bit registry view.
-    Wow6432Key,
     /// `DELETE`: Required to delete the registry key.
     Delete,
     /// `READ_CONTROL`: Required to read the information in the registry key's security
@@ -50,6 +44,19 @@ pub enum RegistryAccessRight {
     Execute,
     /// `KEY_ALL_ACCESS`: A composite of every standard and registry-specific right.
     FullControl,
+    /// `GENERIC_READ`: the generic read right. Windows maps this to [`Read`](Self::Read) for
+    /// registry key objects, but the raw bit can still appear in an existing access control
+    /// entry's mask, so it must be representable rather than silently discarded when read back.
+    GenericRead,
+    /// `GENERIC_WRITE`: the generic write right, mapped by Windows to [`Write`](Self::Write)
+    /// for registry key objects.
+    GenericWrite,
+    /// `GENERIC_EXECUTE`: the generic execute right, mapped by Windows to
+    /// [`Execute`](Self::Execute) for registry key objects.
+    GenericExecute,
+    /// `GENERIC_ALL`: the generic all-access right, mapped by Windows to
+    /// [`FullControl`](Self::FullControl) for registry key objects.
+    GenericAll,
 }
 
 impl AccessMask for RegistryAccessRight {
@@ -61,8 +68,6 @@ impl AccessMask for RegistryAccessRight {
             Self::EnumerateSubKeys => 0x0000_0008,
             Self::Notify => 0x0000_0010,
             Self::CreateLink => 0x0000_0020,
-            Self::Wow6464Key => 0x0000_0100,
-            Self::Wow6432Key => 0x0000_0200,
             Self::Delete => 0x0001_0000,
             Self::ReadPermissions => 0x0002_0000,
             Self::ChangePermissions => 0x0004_0000,
@@ -71,6 +76,10 @@ impl AccessMask for RegistryAccessRight {
             Self::Read | Self::Execute => 0x0002_0019,
             Self::Write => 0x0002_0006,
             Self::FullControl => 0x000F_003F,
+            Self::GenericExecute => 0x2000_0000,
+            Self::GenericWrite => 0x4000_0000,
+            Self::GenericRead => 0x8000_0000,
+            Self::GenericAll => 0x1000_0000,
         }
     }
 
@@ -82,8 +91,6 @@ impl AccessMask for RegistryAccessRight {
             Self::EnumerateSubKeys,
             Self::Notify,
             Self::CreateLink,
-            Self::Wow6464Key,
-            Self::Wow6432Key,
             Self::Delete,
             Self::ReadPermissions,
             Self::ChangePermissions,
@@ -93,6 +100,10 @@ impl AccessMask for RegistryAccessRight {
             Self::Write,
             Self::Execute,
             Self::FullControl,
+            Self::GenericRead,
+            Self::GenericWrite,
+            Self::GenericExecute,
+            Self::GenericAll,
         ]
     }
 }
@@ -132,6 +143,9 @@ pub struct Registry {
     /// are performed against the offline hive instead of the live system registry.
     #[serde(rename = "registryFilePath", skip_serializing_if = "Option::is_none")]
     pub registry_file_path: Option<String>,
+    /// Whether the instance is in the desired state. Only returned by a `test` operation.
+    #[serde(rename = "_inDesiredState", skip_serializing_if = "Option::is_none")]
+    pub in_desired_state: Option<bool>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]

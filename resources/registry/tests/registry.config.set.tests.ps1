@@ -305,6 +305,75 @@ Describe 'registry config set tests' {
         $result.accessControlList.discretionary[0].type | Should -BeExactly 'deny'
     }
 
+    It 'Rejects an access control list request that specifies neither discretionary nor system' -Skip:(!$IsWindows) {
+        $json = @{
+            keyPath           = 'HKCU\1\AclEmptySet'
+            accessControlList = @{}
+        } | ConvertTo-Json -Depth 10 -Compress
+
+        registry config set --input $json 2>$TestDrive/error.log
+
+        $LASTEXITCODE | Should -Not -Be 0
+        (Get-Content -Path $TestDrive/error.log -Raw) | Should -Match 'Registry ACL'
+        Get-Item -Path 'HKCU:\1\AclEmptySet' -ErrorAction Ignore | Should -BeNullOrEmpty
+    }
+
+    It 'Rejects the removed wow6464Key/wow6432Key access mask values' -Skip:(!$IsWindows) {
+        $json = @{
+            keyPath           = 'HKCU\1\AclWow64Set'
+            accessControlList = @{
+                discretionary = @(
+                    @{ principal = $env:USERNAME; type = 'allow'; accessMask = @('wow6464Key') }
+                )
+            }
+        } | ConvertTo-Json -Depth 10 -Compress
+
+        registry config set --input $json 2>$TestDrive/error.log
+
+        # `wow6464Key`/`wow6432Key` are registry view selectors, not ACE permissions, and are no
+        # longer valid accessMask values.
+        $LASTEXITCODE | Should -Not -Be 0
+        Get-Item -Path 'HKCU:\1\AclWow64Set' -ErrorAction Ignore | Should -BeNullOrEmpty
+    }
+
+    It 'Defaults discretionaryProtected to false when purging and the property is omitted' -Skip:(!$IsWindows) {
+        New-Item -Path 'HKCU:\1\AclPurgeProtectedDefault' -Force | Out-Null
+        $protectedRequest = @{
+            keyPath           = 'HKCU\1\AclPurgeProtectedDefault'
+            accessControlList = @{
+                discretionary          = @(
+                    @{ principal = $env:USERNAME; type = 'allow'; accessMask = @('fullControl') }
+                )
+                discretionaryProtected = $true
+            }
+        } | ConvertTo-Json -Depth 10 -Compress
+        registry config set --input $protectedRequest 2>$TestDrive/error.log
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw)
+
+        # Purge (the default) again, this time without specifying discretionaryProtected.
+        $unspecifiedRequest = @{
+            keyPath           = 'HKCU\1\AclPurgeProtectedDefault'
+            accessControlList = @{
+                discretionary = @(
+                    @{ principal = $env:USERNAME; type = 'allow'; accessMask = @('fullControl') }
+                )
+            }
+        } | ConvertTo-Json -Depth 10 -Compress
+        registry config set --input $unspecifiedRequest 2>$TestDrive/error.log
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw)
+
+        $getJson = @{
+            keyPath           = 'HKCU\1\AclPurgeProtectedDefault'
+            accessControlList = @{ discretionary = @() }
+        } | ConvertTo-Json -Depth 10 -Compress
+        $result = registry config get --input $getJson 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw)
+
+        # Omitting the property during a purge write resets protection to false; it is not left
+        # unchanged from the previously protected state.
+        $result.accessControlList.discretionaryProtected | Should -BeFalse
+    }
+
     It 'Should succeed when _exist is false and value does not exist' -Skip:(!$IsWindows) {
         $config = @{
             '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
@@ -400,5 +469,43 @@ Describe 'registry config set tests' {
         $result = registry config get --input $getJson 2>$null | ConvertFrom-Json
         $result._exist | Should -Be $false
         $result.valueData | Should -BeNullOrEmpty
+    }
+
+    It 'Can whatif-set a system ACL on an existing key without a privilege error' -Skip:(!$IsWindows) {
+        # Requesting a `system` section means the resource must open the key with
+        # ACCESS_SYSTEM_SECURITY -- including during the `can_set` check that a what-if preview
+        # performs -- which itself requires the SeSecurityPrivilege privilege to already be
+        # enabled. If the privilege weren't enabled before that check, this would fail with a
+        # privilege error instead of returning a preview, even for a user who otherwise holds the
+        # privilege (for example an Administrator who hasn't elevated).
+        $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+        $isElevated = $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+
+        if (-not $isElevated) {
+            Set-ItResult -Skipped -Because 'Test requires elevated privileges'
+            return
+        }
+
+        New-Item -Path 'HKCU:\1\AclSaclWhatIf' -Force | Out-Null
+        $json = @{
+            keyPath           = 'HKCU\1\AclSaclWhatIf'
+            accessControlList = @{
+                system = @(
+                    @{
+                        principal  = $env:USERNAME
+                        type       = 'audit'
+                        accessMask = @('read')
+                        auditFlags = @('success', 'failure')
+                    }
+                )
+            }
+        } | ConvertTo-Json -Depth 10 -Compress
+
+        $output = registry config set -w --input $json 2>$TestDrive/error.log
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw)
+        (Get-Content -Path $TestDrive/error.log -Raw) | Should -Not -Match 'SeSecurityPrivilege'
+
+        $result = $output | ConvertFrom-Json
+        $result._metadata.whatIf | Should -Contain "Would set ACL on key 'HKCU\1\AclSaclWhatIf'"
     }
 }

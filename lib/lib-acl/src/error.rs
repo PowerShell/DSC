@@ -38,4 +38,26 @@ pub enum AclError {
     /// object-specific ACE) was encountered while reading an existing ACL.
     #[error("Access control entry type {0} is not supported")]
     UnsupportedAceType(u8),
+
+    /// An access mask read from an existing access control entry contains one or more bits that
+    /// don't correspond to any value in the resource's [`crate::model::AccessMask`] enum.
+    /// Returned instead of silently discarding the unrecognized bits, which would otherwise let
+    /// a subsequent merge-and-rewrite of the access control list narrow its effective access
+    /// mask without any indication that it had done so.
+    #[error(
+        "Access mask {0:#010x} includes one or more bits that are not recognized by this \
+         resource's permission set and would be silently discarded"
+    )]
+    UnrepresentableAccessMask(u32),
+
+    /// The discretionary or system access control list is NULL (absent), which Windows treats
+    /// as granting unrestricted access (for a DACL) or performing no auditing (for a SACL). This
+    /// is distinct from a present-but-empty access control list, which denies all access by
+    /// default; the two are never conflated, to avoid reporting (or comparing against) a more
+    /// permissive state as if it were the safe, empty one.
+    #[error(
+        "The {0} access control list is NULL (absent), which Windows treats as unrestricted; \
+         this is not supported as equivalent to an empty access control list"
+    )]
+    NullAcl(&'static str),
 }

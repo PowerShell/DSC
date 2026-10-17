@@ -33,14 +33,24 @@ pub fn mask_to_bits<P: AccessMask>(values: &[P]) -> u32 {
 
 /// Decomposes a raw bitmask into a list of access mask values. Candidates with more bits are
 /// preferred so that shorthand aliases (for example `FullControl`) are chosen over a long list
-/// of individual atomic rights when they fit exactly. Bits that do not correspond to any known
-/// value are dropped; round-tripping a mask through [`mask_to_bits`] and back is therefore not
-/// guaranteed to reproduce the original list, only an equivalent mask for the bits this resource
-/// understands.
-#[must_use]
-pub fn bits_to_mask<P: AccessMask>(bits: u32) -> Vec<P> {
+/// of individual atomic rights when they fit exactly.
+///
+/// Every bit in `bits` must be accounted for by the values this decomposition selects; bits that
+/// don't correspond to any known value are never silently discarded; see Errors below. When this
+/// function succeeds, the selected values' bits, recombined with [`mask_to_bits`], are guaranteed
+/// to reproduce `bits` exactly.
+///
+/// # Errors
+///
+/// Returns [`AclError::UnrepresentableAccessMask`] when `bits` contains one or more bits that
+/// don't correspond to any value in `P`. Silently dropping such bits would let a subsequent
+/// merge-and-rewrite of the access control list narrow its effective access mask without any
+/// indication that it had done so, so callers must surface this error (for example by failing
+/// the read, or the write it would otherwise feed into) rather than treat the decomposition as
+/// complete.
+pub fn bits_to_mask<P: AccessMask>(bits: u32) -> Result<Vec<P>, AclError> {
     if bits == 0 {
-        return Vec::new();
+        return Ok(Vec::new());
     }
 
     let mut candidates: Vec<P> = P::all().to_vec();
@@ -55,7 +65,10 @@ pub fn bits_to_mask<P: AccessMask>(bits: u32) -> Vec<P> {
             remaining &= !candidate_bits;
         }
     }
-    result
+    if remaining != 0 {
+        return Err(AclError::UnrepresentableAccessMask(remaining));
+    }
+    Ok(result)
 }
 
 /// The kind of access control entry.
@@ -189,17 +202,25 @@ pub struct AccessControlList<P> {
     /// The discretionary access control list (DACL) entries. Omit to leave the DACL unmanaged.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub discretionary: Option<Vec<AccessControlEntry<P>>>,
-    /// Whether the DACL is protected from inheriting entries from its parent. Omit to leave the
-    /// current protection state unchanged when `discretionary` is not provided, or to request
-    /// an unprotected (inheriting) DACL when it is.
+    /// Whether the DACL is protected from inheriting entries from its parent. Only meaningful
+    /// when `discretionary` is also provided; has no effect otherwise. Omitting this property
+    /// behaves according to `_purge`: when purging (the default), the DACL is written as
+    /// unprotected (inheriting), since a purge write always stamps an explicit protection state;
+    /// when merging (`_purge: false`), the current protection state is preserved unchanged, since
+    /// a merge leaves everything it doesn't explicitly touch alone. Set this explicitly to
+    /// request a particular protection state regardless of `_purge`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub discretionary_protected: Option<bool>,
     /// The system access control list (SACL) entries. Omit to leave the SACL unmanaged.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub system: Option<Vec<AccessControlEntry<P>>>,
-    /// Whether the SACL is protected from inheriting entries from its parent. Omit to leave the
-    /// current protection state unchanged when `system` is not provided, or to request an
-    /// unprotected (inheriting) SACL when it is.
+    /// Whether the SACL is protected from inheriting entries from its parent. Only meaningful
+    /// when `system` is also provided; has no effect otherwise. Omitting this property behaves
+    /// according to `_purge`: when purging (the default), the SACL is written as unprotected
+    /// (inheriting), since a purge write always stamps an explicit protection state; when
+    /// merging (`_purge: false`), the current protection state is preserved unchanged, since a
+    /// merge leaves everything it doesn't explicitly touch alone. Set this explicitly to request
+    /// a particular protection state regardless of `_purge`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub system_protected: Option<bool>,
     /// Whether to replace (purge) each supplied section outright, or merge its entries into the
@@ -207,9 +228,11 @@ pub struct AccessControlList<P> {
     /// preserves the historical full-replacement behavior. When `false`, the entries supplied
     /// for a section are merged into that section's existing entries: semantic duplicates (same
     /// normalized principal, ACE type, effective access mask, and inheritance/audit flags) are
-    /// not duplicated, and the resulting discretionary section is canonicalized with every
-    /// `deny` entry before every `allow` entry. A section that is omitted from the request
-    /// remains unmanaged regardless of this setting.
+    /// not duplicated, and the resulting discretionary section is canonicalized into Windows'
+    /// canonical ACE order: every explicit `deny` entry, then every explicit `allow` entry, then
+    /// every inherited entry (preserving its existing relative order) -- an inherited `deny`
+    /// entry is never moved ahead of an explicit `allow` entry. A section that is omitted from
+    /// the request remains unmanaged regardless of this setting.
     #[serde(rename = "_purge", skip_serializing_if = "Option::is_none")]
     #[schemars(default = "default_purge")]
     pub purge: Option<bool>,
@@ -262,8 +285,8 @@ impl<P: AccessMask> AccessControlList<P> {
 /// an equal principal (expected to already be normalized, for example a resolved SID string),
 /// an equal ACE type, an equal effective access mask (decomposed to its raw bits so that
 /// aliased permission names, such as a `fullControl` shorthand versus the individual rights it
-/// implies, still compare equal), equal inheritance flags (ignoring [`AceFlag::Inherited`],
-/// which reflects only provenance and is never meaningful in a request), and equal audit flags.
+/// implies, still compare equal), equal inheritance flags, and equal audit flags. Inherited and
+/// explicit entries remain distinct because Windows applies and orders them differently.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct AceSemanticKey {
     principal: String,
@@ -273,34 +296,75 @@ struct AceSemanticKey {
     audit_flags: Vec<AuditFlag>,
 }
 
-fn semantic_key<P: AccessMask>(entry: &AccessControlEntry<P>) -> AceSemanticKey {
-    let mut flags: Vec<AceFlag> = entry
-        .flags
-        .iter()
-        .copied()
-        .filter(|flag| *flag != AceFlag::Inherited)
-        .collect();
+/// Sorts and dedups a copy of `flags`, so that two flag lists that set the same flags compare
+/// equal regardless of the order they were specified or read back in.
+fn normalized_flags(flags: &[AceFlag]) -> Vec<AceFlag> {
+    let mut flags = flags.to_vec();
     flags.sort_unstable();
     flags.dedup();
+    flags
+}
 
-    let mut audit_flags = entry.audit_flags.clone();
-    audit_flags.sort_unstable();
-    audit_flags.dedup();
+/// Sorts and dedups a copy of `flags`, so that two audit flag lists that set the same flags
+/// compare equal regardless of the order they were specified or read back in.
+fn normalized_audit_flags(flags: &[AuditFlag]) -> Vec<AuditFlag> {
+    let mut flags = flags.to_vec();
+    flags.sort_unstable();
+    flags.dedup();
+    flags
+}
 
+fn semantic_key<P: AccessMask>(entry: &AccessControlEntry<P>) -> AceSemanticKey {
     AceSemanticKey {
         principal: entry.principal.clone(),
         ace_type: entry.ace_type,
         mask_bits: mask_to_bits(&entry.access_mask),
-        flags,
-        audit_flags,
+        flags: normalized_flags(&entry.flags),
+        audit_flags: normalized_audit_flags(&entry.audit_flags),
     }
+}
+
+/// Returns whether `a` and `b` are the same access control entry in substance: an equal
+/// principal, an equal ACE type, the same *effective* access mask (decomposed to raw bits, so
+/// that aliased permission names such as a `fullControl` shorthand compare equal to the
+/// individual rights it implies), and the same normalized (order-independent) sets of
+/// inheritance flags and audit flags.
+fn entries_semantically_equal<P: AccessMask>(
+    a: &AccessControlEntry<P>,
+    b: &AccessControlEntry<P>,
+) -> bool {
+    a.principal == b.principal
+        && a.ace_type == b.ace_type
+        && mask_to_bits(&a.access_mask) == mask_to_bits(&b.access_mask)
+        && normalized_flags(&a.flags) == normalized_flags(&b.flags)
+        && normalized_audit_flags(&a.audit_flags) == normalized_audit_flags(&b.audit_flags)
+}
+
+/// Returns whether `desired` and `actual` contain the same access control entries in the same
+/// order (see [`entries_semantically_equal`] for what "same" means for a single entry pair).
+/// Used to compare a `_purge: true` section, which (unlike a `_purge: false` merge) must match
+/// position-for-position: a purge write replaces the section outright, verbatim and in the
+/// order given, so convergence requires the same count, order, and inherited status throughout,
+/// not merely an equivalent unordered set of entries.
+fn entries_match_in_order<P: AccessMask>(
+    desired: &[AccessControlEntry<P>],
+    actual: &[AccessControlEntry<P>],
+) -> bool {
+    desired.len() == actual.len()
+        && desired
+            .iter()
+            .zip(actual.iter())
+            .all(|(desired, actual)| entries_semantically_equal(desired, actual))
 }
 
 /// Merges `requested` access control entries into `current`, dropping any requested entry that
 /// is a semantic duplicate (see [`AceSemanticKey`]) of an entry already present in `current` or
-/// earlier in `requested`, and then canonicalizing the result so that every `deny` entry
-/// precedes every `allow`/`audit` entry, preserving the relative order of entries within each
-/// group. Both inputs are expected to already have normalized (for example resolved-SID)
+/// earlier in `requested`, and then canonicalizing the result into Windows' canonical ACE order:
+/// every explicit (non-inherited) `deny` entry, then every explicit `allow`/`audit` entry, then
+/// every inherited entry, preserving the relative order of entries within each of those three
+/// groups. In particular, an inherited `deny` entry is never moved ahead of an explicit `allow`
+/// entry, since Windows always places explicit entries before inherited ones regardless of
+/// allow/deny. Both inputs are expected to already have normalized (for example resolved-SID)
 /// principals.
 #[must_use]
 pub fn merge_entries<P: AccessMask>(
@@ -314,10 +378,23 @@ pub fn merge_entries<P: AccessMask>(
             merged.push(entry.clone());
         }
     }
-    // `sort_by_key` is a stable sort, so entries within the `deny` group and within the
-    // `allow`/`audit` group keep their relative order.
-    merged.sort_by_key(|entry| entry.ace_type != AceType::Deny);
+    // `sort_by_key` is a stable sort, so entries within each of the three groups below keep
+    // their relative order.
+    merged.sort_by_key(|entry| canonical_ace_rank(entry));
     merged
+}
+
+/// The sort rank used by [`merge_entries`] to canonicalize ACE order: explicit `deny` entries
+/// sort first, explicit `allow`/`audit` entries second, and every inherited entry (`deny` or
+/// `allow`/`audit` alike) last, regardless of its own type.
+fn canonical_ace_rank<P: AccessMask>(entry: &AccessControlEntry<P>) -> u8 {
+    if entry.flags.contains(&AceFlag::Inherited) {
+        2
+    } else if entry.ace_type == AceType::Deny {
+        0
+    } else {
+        1
+    }
 }
 
 /// Computes the effective access control list that should be written (or compared against) for
@@ -326,9 +403,15 @@ pub fn merge_entries<P: AccessMask>(
 /// normalized (for example resolved-SID) principals.
 ///
 /// When `purge` is `true` (the default), each supplied section is replaced outright: the result
-/// is `requested`'s section verbatim. When `purge` is `false`, each supplied section is merged
-/// with the corresponding section of `current` (see [`merge_entries`]); a protection flag that
-/// is not explicitly supplied in `requested` preserves `current`'s value instead of resetting it.
+/// is `requested`'s section verbatim. A protection flag that is not explicitly supplied in
+/// `requested` defaults to `false` in this case, matching the real effect of writing a section
+/// with no protection state requested (see [`crate::win32::build_self_relative_security_descriptor`]):
+/// the write always stamps an explicit protected/unprotected state, so a desired-state comparison
+/// must not treat the omitted flag as "don't care" and silently accept a protected or unprotected
+/// `actual` state at random. When `purge` is `false`, each supplied section is merged with the
+/// corresponding section of `current` (see [`merge_entries`]); a protection flag that is not
+/// explicitly supplied in `requested` instead preserves `current`'s value, since a merge leaves
+/// everything it doesn't explicitly touch alone.
 ///
 /// A section that is not present (`None`) in `requested` is left unmanaged and is always `None`
 /// in the result, regardless of `current`.
@@ -348,8 +431,12 @@ pub fn merge_access_control_list<P: AccessMask>(
     });
     let discretionary_protected = requested.discretionary.as_ref().and_then(|_| {
         if purge {
-            requested.discretionary_protected
+            // A purge write always stamps an explicit protection state, so the omitted flag
+            // resolves to its effective `false` default rather than staying unresolved.
+            Some(requested.discretionary_protected.unwrap_or(false))
         } else {
+            // A merge leaves everything it doesn't explicitly touch alone: fall back to
+            // `current`'s value, which may itself be `None` (unknown) rather than `false`.
             requested
                 .discretionary_protected
                 .or(current.discretionary_protected)
@@ -365,8 +452,12 @@ pub fn merge_access_control_list<P: AccessMask>(
     });
     let system_protected = requested.system.as_ref().and_then(|_| {
         if purge {
-            requested.system_protected
+            // A purge write always stamps an explicit protection state, so the omitted flag
+            // resolves to its effective `false` default rather than staying unresolved.
+            Some(requested.system_protected.unwrap_or(false))
         } else {
+            // A merge leaves everything it doesn't explicitly touch alone: fall back to
+            // `current`'s value, which may itself be `None` (unknown) rather than `false`.
             requested.system_protected.or(current.system_protected)
         }
     });
@@ -383,11 +474,16 @@ pub fn merge_access_control_list<P: AccessMask>(
 /// Returns whether `actual` satisfies `desired`, an access control list that has already been
 /// passed through [`merge_access_control_list`] (so that, when `desired`'s
 /// [`purge`](AccessControlList::purge) is `false`, it reflects the full effective merge rather
-/// than only the partial, newly requested entries).
+/// than only the partial, newly requested entries, and a protection flag omitted from the
+/// original request has already been resolved to its effective value).
 ///
 /// A section that is `None` in `desired` is always satisfied (it is unmanaged). When `desired`'s
-/// `purge` is `true` (the default), a managed section must match `actual` exactly, including
-/// order, mirroring the full-replacement semantics used when writing it. When `false`, it is
+/// `purge` is `true` (the default), a managed section must match `actual` entry-for-entry, in
+/// the same order and with the same count and inherited status throughout (since a purge write
+/// replaces the section outright, verbatim and in the order given) -- but each entry pair is
+/// compared *semantically* (see [`entries_semantically_equal`]), so an aliased permission name
+/// (for example `fullControl` versus the individual rights it implies) or a differently ordered
+/// flag list that is otherwise equivalent does not cause a false mismatch. When `false`, it is
 /// enough for `actual` to contain a semantic duplicate (see [`AceSemanticKey`]) of every entry in
 /// `desired`; additional entries present only in `actual` do not cause a mismatch. A protection
 /// flag that is not explicitly supplied in `desired` is always considered satisfied.
@@ -412,7 +508,7 @@ fn section_satisfied<P: AccessMask>(
         return false;
     };
     if purge {
-        desired_entries == actual_entries
+        entries_match_in_order(desired_entries, actual_entries)
     } else {
         let desired_keys: HashSet<_> = desired_entries.iter().map(semantic_key).collect();
         let actual_keys: HashSet<_> = actual_entries.iter().map(semantic_key).collect();
@@ -548,18 +644,17 @@ mod tests {
     }
 
     #[test]
-    fn merge_drops_duplicates_differing_only_by_inherited_flag() {
+    fn merge_keeps_explicit_and_inherited_entries_distinct() {
         let mut inherited = entry("S-1-1-0", AceType::Allow, vec![TestRight::Read]);
         inherited.flags = vec![AceFlag::Inherited];
         let current = vec![inherited];
-        // The same entry, requested explicitly (never carries the Inherited flag).
         let requested = vec![entry("S-1-1-0", AceType::Allow, vec![TestRight::Read])];
 
         let merged = merge_entries(&current, &requested);
 
-        assert_eq!(merged.len(), 1);
-        // The existing, inherited entry is preserved rather than being replaced.
-        assert!(merged[0].flags.contains(&AceFlag::Inherited));
+        assert_eq!(merged.len(), 2);
+        assert!(!merged[0].flags.contains(&AceFlag::Inherited));
+        assert!(merged[1].flags.contains(&AceFlag::Inherited));
     }
 
     #[test]
@@ -673,5 +768,171 @@ mod tests {
         let effective = merge_access_control_list(&current, &requested);
 
         assert_eq!(effective.discretionary_protected, Some(false));
+    }
+
+    #[test]
+    fn purge_true_defaults_protected_to_false_when_omitted() {
+        // `current` is protected, but a purge write always stamps an explicit protection
+        // state, so omitting it in `requested` must reset the effective state to false rather
+        // than silently inheriting `current`'s protected state.
+        let current = AccessControlList {
+            discretionary: Some(vec![entry("S-1-1-0", AceType::Allow, vec![TestRight::Read])]),
+            discretionary_protected: Some(true),
+            ..Default::default()
+        };
+        let requested = AccessControlList {
+            discretionary: Some(vec![entry("S-1-1-1", AceType::Allow, vec![TestRight::Write])]),
+            purge: Some(true),
+            ..Default::default()
+        };
+
+        let effective = merge_access_control_list(&current, &requested);
+
+        assert_eq!(effective.discretionary_protected, Some(false));
+    }
+
+    #[test]
+    fn is_satisfied_is_false_when_purge_true_omits_protected_but_actual_is_protected() {
+        let actual = AccessControlList {
+            discretionary: Some(vec![entry("S-1-1-0", AceType::Allow, vec![TestRight::Read])]),
+            discretionary_protected: Some(true),
+            ..Default::default()
+        };
+        let desired = AccessControlList {
+            discretionary: Some(vec![entry("S-1-1-0", AceType::Allow, vec![TestRight::Read])]),
+            purge: Some(true),
+            ..Default::default()
+        };
+        let effective_desired = merge_access_control_list(&actual, &desired);
+
+        // The omitted protection flag defaults to false under purge, so a currently-protected
+        // actual state must not be reported as satisfied.
+        assert!(!is_satisfied(&effective_desired, &actual));
+    }
+
+    #[test]
+    fn merge_keeps_explicit_entries_before_inherited_entries_preserving_inherited_order() {
+        let mut inherited_allow = entry("S-1-1-0", AceType::Allow, vec![TestRight::Read]);
+        inherited_allow.flags = vec![AceFlag::Inherited];
+        let mut inherited_deny = entry("S-1-1-1", AceType::Deny, vec![TestRight::Write]);
+        inherited_deny.flags = vec![AceFlag::Inherited];
+        // `current` reflects the real, already-canonical order read from the system: the
+        // inherited allow entry happens to appear before the inherited deny entry.
+        let current = vec![inherited_allow, inherited_deny];
+        let requested = vec![entry("S-1-1-2", AceType::Allow, vec![TestRight::Read])];
+
+        let merged = merge_entries(&current, &requested);
+
+        let principals: Vec<&str> = merged.iter().map(|entry| entry.principal.as_str()).collect();
+        // The explicit allow entry comes first (explicit entries always precede inherited
+        // ones), and the two inherited entries keep their original relative order: the
+        // inherited deny is NOT moved ahead of the explicit allow, even though deny entries are
+        // otherwise ordered before allow entries among explicit entries.
+        assert_eq!(principals, vec!["S-1-1-2", "S-1-1-0", "S-1-1-1"]);
+    }
+
+    #[test]
+    fn bits_to_mask_errors_on_unrepresentable_bits() {
+        // 0x8 doesn't correspond to any `TestRight` value.
+        let result = bits_to_mask::<TestRight>(0x8);
+        assert!(matches!(result, Err(AclError::UnrepresentableAccessMask(0x8))));
+    }
+
+    #[test]
+    fn bits_to_mask_round_trips_known_bits() {
+        let decomposed = bits_to_mask::<TestRight>(0x3).unwrap();
+        assert_eq!(mask_to_bits(&decomposed), 0x3);
+    }
+
+    #[test]
+    fn is_satisfied_purge_true_treats_alias_and_decomposed_mask_as_equal() {
+        // `FullControl` (0x3) is the same effective mask as `Read` (0x1) + `Write` (0x2).
+        let desired = AccessControlList {
+            discretionary: Some(vec![entry(
+                "S-1-1-0",
+                AceType::Allow,
+                vec![TestRight::FullControl],
+            )]),
+            discretionary_protected: Some(false),
+            purge: Some(true),
+            ..Default::default()
+        };
+        let actual = AccessControlList {
+            discretionary: Some(vec![entry(
+                "S-1-1-0",
+                AceType::Allow,
+                vec![TestRight::Read, TestRight::Write],
+            )]),
+            discretionary_protected: Some(false),
+            ..Default::default()
+        };
+
+        assert!(is_satisfied(&desired, &actual));
+    }
+
+    #[test]
+    fn is_satisfied_purge_true_treats_differently_ordered_flags_as_equal() {
+        let mut desired_entry = entry("S-1-1-0", AceType::Allow, vec![TestRight::Read]);
+        desired_entry.flags = vec![AceFlag::ContainerInherit, AceFlag::ObjectInherit];
+        let mut actual_entry = entry("S-1-1-0", AceType::Allow, vec![TestRight::Read]);
+        actual_entry.flags = vec![AceFlag::ObjectInherit, AceFlag::ContainerInherit];
+        let desired = AccessControlList {
+            discretionary: Some(vec![desired_entry]),
+            discretionary_protected: Some(false),
+            purge: Some(true),
+            ..Default::default()
+        };
+        let actual = AccessControlList {
+            discretionary: Some(vec![actual_entry]),
+            discretionary_protected: Some(false),
+            ..Default::default()
+        };
+
+        assert!(is_satisfied(&desired, &actual));
+    }
+
+    #[test]
+    fn is_satisfied_purge_true_still_requires_matching_order_and_count() {
+        let allow = entry("S-1-1-0", AceType::Allow, vec![TestRight::Read]);
+        let deny = entry("S-1-1-1", AceType::Deny, vec![TestRight::Write]);
+        let desired = AccessControlList {
+            discretionary: Some(vec![allow.clone(), deny.clone()]),
+            discretionary_protected: Some(false),
+            purge: Some(true),
+            ..Default::default()
+        };
+        // Same two entries, but in a different order: a purge write would produce the exact
+        // order given, so a differently ordered `actual` is not an equivalent, converged state
+        // even though the same entries (by alias-aware comparison) are all present.
+        let actual = AccessControlList {
+            discretionary: Some(vec![deny, allow]),
+            discretionary_protected: Some(false),
+            ..Default::default()
+        };
+
+        assert!(!is_satisfied(&desired, &actual));
+    }
+
+    #[test]
+    fn is_satisfied_purge_true_distinguishes_inherited_status() {
+        let desired_entry = entry("S-1-1-0", AceType::Allow, vec![TestRight::Read]);
+        let mut actual_entry = entry("S-1-1-0", AceType::Allow, vec![TestRight::Read]);
+        actual_entry.flags = vec![AceFlag::Inherited];
+        let desired = AccessControlList {
+            discretionary: Some(vec![desired_entry]),
+            discretionary_protected: Some(false),
+            purge: Some(true),
+            ..Default::default()
+        };
+        let actual = AccessControlList {
+            discretionary: Some(vec![actual_entry]),
+            discretionary_protected: Some(false),
+            ..Default::default()
+        };
+
+        // A purge write never produces an inherited entry; an inherited `actual` entry does
+        // not satisfy a `desired` entry that isn't marked as inherited, even though every other
+        // aspect (principal, type, effective mask) matches.
+        assert!(!is_satisfied(&desired, &actual));
     }
 }

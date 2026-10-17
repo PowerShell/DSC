@@ -41,14 +41,21 @@ pub fn resolve_principal(principal: &str) -> Result<OwnedSid, AclError> {
 /// Converts a security identifier to its normalized string form (for example
 /// `S-1-5-32-544`).
 ///
+/// # Safety
+///
+/// `sid` must point to a valid, well-formed SID structure (for example one returned by
+/// [`resolve_principal`], embedded in an ACE that was read from a genuine Windows ACL, or
+/// otherwise populated by a Win32 API), readable for the entire length implied by its own
+/// header, for the duration of this call.
+///
 /// # Errors
 ///
 /// Returns [`AclError::Win32`] when the conversion fails, or [`AclError::InvalidSid`] when the
 /// converted string is not valid UTF-16.
-pub fn sid_to_string(sid: PSID) -> Result<String, AclError> {
+pub unsafe fn sid_to_string(sid: PSID) -> Result<String, AclError> {
     let mut pwstr = PWSTR::null();
-    // SAFETY: sid is a valid SID pointer for the duration of this call. The returned string is
-    // released via LocalFree below.
+    // SAFETY: the caller guarantees `sid` is a valid SID pointer for the duration of this call.
+    // The returned string is released via LocalFree below.
     unsafe { ConvertSidToStringSidW(sid, &mut pwstr) }.map_err(|error| AclError::Win32 {
         operation: "ConvertSidToStringSidW",
         code: error.code().0 as u32,
@@ -65,8 +72,53 @@ pub fn sid_to_string(sid: PSID) -> Result<String, AclError> {
     result
 }
 
+/// Returns whether `value` has the lexical shape of a SID string (for example `S-1-5-32-544`),
+/// so that [`resolve_principal`] attempts to parse it as one instead of looking it up as an
+/// account or group name. Only strings that actually match the SID grammar -- a case-insensitive
+/// `S`, then a hyphen-separated revision number, identifier authority, and zero or more
+/// subauthorities, each a decimal number (the identifier authority may alternatively be a
+/// `0x`-prefixed hexadecimal value) -- are treated as candidates. This intentionally excludes
+/// hyphenated account or group names that merely start with `S` (for example `Sales-Team` or
+/// `S-Corp-Admins`), which must go through account lookup instead.
 fn looks_like_sid(value: &str) -> bool {
-    value.len() > 1 && value.as_bytes()[0].eq_ignore_ascii_case(&b'S') && value.contains('-')
+    let Some(rest) = value.strip_prefix(['S', 's']) else {
+        return false;
+    };
+
+    let mut parts = rest.split('-');
+    // Every SID string has a hyphen immediately after the leading `S`; a hyphenated name
+    // instead has more letters there (for example "ales-Team" from "Sales-Team"), which fails
+    // this check.
+    if parts.next() != Some("") {
+        return false;
+    }
+
+    let is_decimal = |segment: &str| !segment.is_empty() && segment.bytes().all(|b| b.is_ascii_digit());
+    // The identifier authority may instead be a `0x`-prefixed hexadecimal value (up to 48 bits).
+    let is_authority = |segment: &str| {
+        is_decimal(segment)
+            || segment
+                .strip_prefix("0x")
+                .or_else(|| segment.strip_prefix("0X"))
+                .is_some_and(|hex| !hex.is_empty() && hex.bytes().all(|b| b.is_ascii_hexdigit()))
+    };
+
+    let Some(revision) = parts.next() else {
+        return false;
+    };
+    if !is_decimal(revision) {
+        return false;
+    }
+    let Some(authority) = parts.next() else {
+        return false;
+    };
+    if !is_authority(authority) {
+        return false;
+    }
+
+    // Zero or more subauthorities; bail out on the first remaining segment that isn't a plain
+    // decimal number (for example a trailing hyphenated word) rather than accepting it as a SID.
+    parts.all(is_decimal)
 }
 
 fn parse_sid(value: &str) -> Result<OwnedSid, AclError> {
@@ -136,4 +188,50 @@ fn lookup_account_name(name: &str) -> Result<OwnedSid, AclError> {
     })?;
 
     Ok(OwnedSid(sid_buffer))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn accepts_well_known_sid_strings() {
+        assert!(looks_like_sid("S-1-1-0"));
+        assert!(looks_like_sid("S-1-5-7"));
+        assert!(looks_like_sid("S-1-5-32-544"));
+        assert!(looks_like_sid("S-1-5-21-3623811015-3361044348-30300820-1013"));
+        // Case-insensitive leading `S`.
+        assert!(looks_like_sid("s-1-5-32-544"));
+        // Hexadecimal identifier authority.
+        assert!(looks_like_sid("S-1-0x206-1-2-3"));
+    }
+
+    #[test]
+    fn rejects_hyphenated_names_that_merely_start_with_s() {
+        // Account/group names that happen to start with `S` and contain hyphens must be
+        // resolved via account lookup, not parsed as if they were SID strings.
+        assert!(!looks_like_sid("Sales-Team"));
+        assert!(!looks_like_sid("S-Corp-Admins"));
+        assert!(!looks_like_sid("S-ales-Team"));
+        assert!(!looks_like_sid("Seattle-Users"));
+    }
+
+    #[test]
+    fn rejects_malformed_sid_like_strings() {
+        assert!(!looks_like_sid(""));
+        assert!(!looks_like_sid("S"));
+        assert!(!looks_like_sid("S-"));
+        assert!(!looks_like_sid("S-1"));
+        // Non-numeric revision/authority segments.
+        assert!(!looks_like_sid("S-a-5"));
+        assert!(!looks_like_sid("S-1-a"));
+        // A non-numeric trailing segment is not a valid subauthority.
+        assert!(!looks_like_sid("S-1-5-Team"));
+    }
+
+    #[test]
+    fn rejects_names_that_do_not_start_with_s() {
+        assert!(!looks_like_sid("DOMAIN\\User"));
+        assert!(!looks_like_sid("Administrators"));
+    }
 }
