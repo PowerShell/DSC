@@ -509,6 +509,48 @@ Describe 'registry config set tests' {
         $result._metadata.whatIf | Should -Contain "Would set ACL on key 'HKCU\1\AclSaclWhatIf'"
     }
 
+    It 'Round-trips a system ACL without changing the discretionary ACL' -Skip:(!$IsWindows) {
+        $principal = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
+        if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+            Set-ItResult -Skipped -Because 'Test requires elevated privileges'
+            return
+        }
+
+        $keyPath = 'HKCU:\1\AclSaclRoundTrip'
+        $null = New-Item -Path $keyPath -Force
+        $daclBefore = (Get-Acl -Path $keyPath).GetSecurityDescriptorSddlForm(
+            [Security.AccessControl.AccessControlSections]::Access)
+        $json = @{
+            keyPath           = 'HKCU\1\AclSaclRoundTrip'
+            accessControlList = @{
+                system          = @(
+                    @{
+                        principal  = $env:USERNAME
+                        type       = 'audit'
+                        accessMask = @('read')
+                        auditFlags = @('success', 'failure')
+                    }
+                )
+                systemProtected = $true
+            }
+        } | ConvertTo-Json -Depth 10 -Compress
+
+        registry config set --input $json 2>$TestDrive/error.log
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw)
+        $actual = registry config get --input $json 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw)
+        $tested = registry config test --input $json 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw)
+
+        $actual.accessControlList.systemProtected | Should -BeTrue
+        $actual.accessControlList.system[0].auditFlags | Should -Contain 'success'
+        $actual.accessControlList.system[0].auditFlags | Should -Contain 'failure'
+        $tested._inDesiredState | Should -BeTrue
+        $daclAfter = (Get-Acl -Path $keyPath).GetSecurityDescriptorSddlForm(
+            [Security.AccessControl.AccessControlSections]::Access)
+        $daclAfter | Should -BeExactly $daclBefore
+    }
+
     It 'Validates ACL principals before changing a registry value' -Skip:(!$IsWindows) {
         $keyPath = 'HKCU:\1\AclPreflight'
         $null = New-Item -Path $keyPath -Force

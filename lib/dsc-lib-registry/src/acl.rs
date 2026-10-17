@@ -297,6 +297,13 @@ fn win32_error(operation: &str, code: u32) -> RegistryError {
 mod tests {
     use super::*;
     use lib_acl::{AccessControlEntry, AceType, AuditFlag};
+    use windows::Win32::Foundation::{CloseHandle, HANDLE, LUID};
+    use windows::Win32::Security::{
+        AdjustTokenPrivileges, LUID_AND_ATTRIBUTES, LookupPrivilegeValueW,
+        TOKEN_ADJUST_PRIVILEGES, TOKEN_PRIVILEGES, TOKEN_QUERY,
+    };
+    use windows::Win32::System::Threading::{GetCurrentProcess, OpenProcessToken};
+    use windows::core::{HSTRING, PCWSTR};
 
     fn entry(ace_type: AceType) -> AccessControlEntry<RegistryAccessRight> {
         AccessControlEntry {
@@ -461,20 +468,81 @@ mod tests {
         assert!(!is_satisfied(&requested, &actual).unwrap());
     }
 
+    fn disable_security_privilege() {
+        let mut token = HANDLE::default();
+        // SAFETY: the current-process pseudo-handle is valid and token is a writable local.
+        unsafe {
+            OpenProcessToken(
+                GetCurrentProcess(),
+                TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,
+                &mut token,
+            )
+        }
+        .unwrap();
+
+        let name = HSTRING::from(lib_acl::win32::SE_SECURITY_NAME);
+        let mut luid = LUID::default();
+        // SAFETY: name is a valid null-terminated string and luid is writable.
+        unsafe { LookupPrivilegeValueW(PCWSTR::null(), PCWSTR(name.as_ptr()), &mut luid) }.unwrap();
+        let privileges = TOKEN_PRIVILEGES {
+            PrivilegeCount: 1,
+            Privileges: [LUID_AND_ATTRIBUTES {
+                Luid: luid,
+                Attributes: Default::default(),
+            }],
+        };
+        // SAFETY: token is valid and privileges describes one privilege to disable.
+        unsafe {
+            AdjustTokenPrivileges(
+                token,
+                false,
+                Some(&raw const privileges),
+                0,
+                None,
+                None,
+            )
+        }
+        .unwrap();
+        // SAFETY: token is owned by this helper.
+        unsafe {
+            let _ = CloseHandle(token);
+        }
+    }
+
     #[test]
-    fn can_set_enables_privilege_before_checking_a_missing_key_with_system_acl() {
-        // This behavior can only be exercised when the test process actually holds
-        // `SeSecurityPrivilege` (even if not yet enabled); skip gracefully otherwise, mirroring
-        // how other SACL-touching tests in this codebase are conditioned on elevation.
+    fn can_set_enables_privilege_in_an_isolated_process() {
+        let module = module_path!()
+            .strip_prefix(concat!(env!("CARGO_CRATE_NAME"), "::"))
+            .unwrap_or(module_path!());
+        let test_name =
+            format!("{module}::can_set_enables_privilege_in_an_isolated_process_child");
+        let status = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--ignored", "--exact", &test_name])
+            .env("DSC_ACL_PRIVILEGE_CHILD", "1")
+            .status()
+            .unwrap();
+
+        assert!(status.success());
+    }
+
+    #[test]
+    #[ignore = "launched by can_set_enables_privilege_in_an_isolated_process"]
+    fn can_set_enables_privilege_in_an_isolated_process_child() {
+        if std::env::var_os("DSC_ACL_PRIVILEGE_CHILD").is_none() {
+            return;
+        }
         if lib_acl::win32::enable_security_privilege().is_err() {
             return;
         }
 
-        // Requesting a `system` section means `can_set` must open the key with
-        // ACCESS_SYSTEM_SECURITY, which itself requires `SeSecurityPrivilege` to already be
-        // enabled; if `can_set` attempted to open the key before enabling the privilege, this
-        // would fail with a privilege error instead of gracefully reporting that the
-        // (non-existent) key can't be written to.
+        let key_path = format!(
+            r"HKCU\Software\DscAclPrivilegeTest-{}",
+            std::process::id()
+        );
+        let helper = crate::RegistryHelper::new(&key_path, None, None).unwrap();
+        helper.set().unwrap();
+        disable_security_privilege();
+
         let mut audit_entry = entry(AceType::Audit);
         audit_entry.audit_flags = vec![AuditFlag::Success];
         let requested = RegistryAccessControlList {
@@ -482,8 +550,9 @@ mod tests {
             ..Default::default()
         };
 
-        let can_set_result = can_set(r"HKCU\DoesNotExist\AclCanSetSystem", &requested);
+        let can_set_result = can_set(&key_path, &requested);
+        let _ = helper.remove();
 
-        assert!(matches!(can_set_result, Ok(false)), "{can_set_result:?}");
+        assert!(matches!(can_set_result, Ok(true)), "{can_set_result:?}");
     }
 }
