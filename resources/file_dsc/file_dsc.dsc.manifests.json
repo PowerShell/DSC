@@ -57,8 +57,7 @@
           "description": "Manage the UTF-8 content of a local file.",
           "type": "object",
           "required": [
-            "path",
-            "accessControlList"
+            "path"
           ],
           "properties": {
             "content": {
@@ -159,7 +158,8 @@
           "description": "Manage the discretionary and/or system access control list of a local file or folder.",
           "type": "object",
           "required": [
-            "path"
+            "path",
+            "accessControlList"
           ],
           "properties": {
             "path": {
