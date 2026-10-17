@@ -1,0 +1,5 @@
+{
+    "Name": "lib-acl",
+    "Kind": "Library",
+    "IsRust": true
+}

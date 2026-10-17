@@ -5,7 +5,7 @@ _version = 1
 
 [error]
 acl = "Registry ACL"
-invalidAcl = "The SDDL must define an owner, group, or DACL"
+invalidAcl = "At least one of accessControlList.discretionary or accessControlList.system must be specified"
 invalidHive = "Invalid hive"
 json = "JSON"
 offlineRegistry = "Offline registry"
@@ -15,7 +15,6 @@ registry = "Registry"
 registryKey = "Registry key"
 registryKeyNotFound = "Registry key not found"
 registryValue = "Registry value"
-saclUnsupported = "System ACLs (SACLs) are not supported"
 utf16Conversion = "UTF-16 conversion failed due to interior NULL values for"
 unsupportedValueDataType = "Unsupported registry value data type"
 win32 = "%{operation} failed with error code %{code}"

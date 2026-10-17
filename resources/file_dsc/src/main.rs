@@ -7,7 +7,7 @@ mod file;
 mod types;
 
 use crate::file::{get, set, test};
-use crate::types::{FileContent, FilesystemAcl};
+use crate::types::{FileAccessControlList, FileContent};
 use rust_i18n::t;
 use serde::Serialize;
 use serde_json::json;
@@ -118,7 +118,7 @@ fn require_input(input: Option<&str>) -> Result<FileContent, ExitCode> {
     })
 }
 
-fn require_acl_input(input: Option<&str>) -> Result<FilesystemAcl, ExitCode> {
+fn require_acl_input(input: Option<&str>) -> Result<FileAccessControlList, ExitCode> {
     let Some(input) = input else {
         return Err(fail(EXIT_INVALID_ARGS, &t!("main.missingInput")));
     };

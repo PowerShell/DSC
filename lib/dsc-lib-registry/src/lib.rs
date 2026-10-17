@@ -106,7 +106,7 @@ impl RegistryHelper {
             key_path: key_path.to_string(),
             value_name,
             value_data,
-            acl: None,
+            access_control_list: None,
             metadata: None,
             exist: None,
             registry_file_path: None,
@@ -141,12 +141,12 @@ impl RegistryHelper {
         }
 
         if self.config.value_name.is_none()
-            && let Some(requested_acl) = &self.config.acl
+            && let Some(requested_acl) = &self.config.access_control_list
         {
             return match acl::get(&self.config.key_path, requested_acl) {
                 Ok(current_acl) => Ok(Registry {
                     key_path: self.config.key_path.clone(),
-                    acl: Some(current_acl),
+                    access_control_list: Some(current_acl),
                     ..Default::default()
                 }),
                 Err(RegistryError::RegistryKeyNotFound(_)) => Ok(Registry {
@@ -158,7 +158,7 @@ impl RegistryHelper {
             };
         }
 
-        if let Some(requested_acl) = &self.config.acl {
+        if let Some(requested_acl) = &self.config.access_control_list {
             acl::validate(requested_acl)?;
         }
 
@@ -177,7 +177,7 @@ impl RegistryHelper {
             },
             Err(e) => return Err(e),
         };
-        let acl = match &self.config.acl {
+        let access_control_list = match &self.config.access_control_list {
             Some(requested_acl) => Some(acl::get(&self.config.key_path, requested_acl)?),
             None => None,
         };
@@ -190,7 +190,7 @@ impl RegistryHelper {
                     return Ok(Registry {
                         key_path: self.config.key_path.clone(),
                         value_name: Some(value_name.clone()),
-                        acl,
+                        access_control_list,
                         exist: Some(exist),
                         ..Default::default()
                     });
@@ -202,13 +202,13 @@ impl RegistryHelper {
                 key_path: self.config.key_path.clone(),
                 value_name: Some(value_name.clone()),
                 value_data: convert_reg_value(&value)?,
-                acl,
+                access_control_list,
                 ..Default::default()
             })
         } else {
             Ok(Registry {
                 key_path: self.config.key_path.clone(),
-                acl,
+                access_control_list,
                 ..Default::default()
             })
         }
@@ -256,29 +256,30 @@ impl RegistryHelper {
     /// * `RegistryError` - The error that occurred.
     pub fn set(&self) -> Result<Option<Registry>, RegistryError> {
         if self.offline_hive.is_some() {
-            if self.config.acl.is_some() {
+            if self.config.access_control_list.is_some() {
                 return Err(RegistryError::OfflineRegistry(
                     t!("error.offlineAcl").to_string(),
                 ));
             }
             return self.set_offline();
         }
-        if let Some(acl) = &self.config.acl {
+        if let Some(acl) = &self.config.access_control_list {
             acl::validate(acl)?;
         }
 
         let mut what_if_metadata: Vec<String> = Vec::new();
         if self.config.value_name.is_none()
-            && let Some(config_acl) = &self.config.acl
+            && let Some(config_acl) = &self.config.access_control_list
             && acl::can_set(&self.config.key_path, config_acl)?
         {
             if self.what_if {
                 what_if_metadata.push(
                     t!("registry_helper.whatIfSetAcl", key_path = &self.config.key_path).to_string(),
                 );
+                let effective_acl = acl::effective(&self.config.key_path, config_acl)?;
                 return Ok(Some(Registry {
                     key_path: self.config.key_path.clone(),
-                    acl: Some(config_acl.clone()),
+                    access_control_list: Some(effective_acl),
                     metadata: Some(Metadata { what_if: Some(what_if_metadata) }),
                     ..Default::default()
                 }));
@@ -366,7 +367,7 @@ impl RegistryHelper {
             };
 
             if self.what_if {
-                if self.config.acl.is_some() {
+                if self.config.access_control_list.is_some() {
                     what_if_metadata.push(
                         t!("registry_helper.whatIfSetAcl", key_path = &self.config.key_path).to_string(),
                     );
@@ -375,7 +376,7 @@ impl RegistryHelper {
                     key_path: self.config.key_path.clone(),
                     value_data: convert_reg_value(&data)?,
                     value_name: self.config.value_name.clone(),
-                    acl: self.config.acl.clone(),
+                    access_control_list: self.config.access_control_list.clone(),
                     metadata: if what_if_metadata.is_empty() { None } else { Some(Metadata { what_if: Some(what_if_metadata) })},
                     ..Default::default()
                 }));
@@ -387,20 +388,20 @@ impl RegistryHelper {
         }
 
         if self.what_if {
-            if self.config.acl.is_some() {
+            if self.config.access_control_list.is_some() {
                 what_if_metadata.push(
                     t!("registry_helper.whatIfSetAcl", key_path = &self.config.key_path).to_string(),
                 );
             }
             return Ok(Some(Registry {
                 key_path: self.config.key_path.clone(),
-                acl: self.config.acl.clone(),
+                access_control_list: self.config.access_control_list.clone(),
                 metadata: if what_if_metadata.is_empty() { None } else { Some(Metadata { what_if: Some(what_if_metadata) })},
                 ..Default::default()
             }));
         }
 
-        if let Some(acl) = &self.config.acl {
+        if let Some(acl) = &self.config.access_control_list {
             acl::set(&self.config.key_path, acl)?;
         }
 
@@ -510,7 +511,7 @@ impl RegistryHelper {
     // --- Offline registry implementations ---
 
     fn get_offline(&self) -> Result<Registry, RegistryError> {
-        if self.config.acl.is_some() {
+        if self.config.access_control_list.is_some() {
             return Err(RegistryError::OfflineRegistry(
                 t!("error.offlineAcl").to_string(),
             ));

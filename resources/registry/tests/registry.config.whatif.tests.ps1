@@ -72,24 +72,40 @@ Describe 'registry config whatif tests' {
         ($result.psobject.properties | Measure-Object).Count | Should -Be 3
     }
 
-    It 'Can whatif setting an ACL without changing it' -Skip:(!$IsWindows) {
+    It 'Can whatif setting an access control list without changing it' -Skip:(!$IsWindows) {
         New-Item -Path 'HKCU:\1\AclWhatIf' -Force | Out-Null
-        $before = (Get-Acl -Path 'HKCU:\1\AclWhatIf').Sddl
-        $registryAcl = Get-Acl -Path 'HKCU:\1\AclWhatIf'
-        $registryAcl.SetAccessRuleProtection($true, $true)
-        $desiredAcl = $registryAcl.GetSecurityDescriptorSddlForm(
-            [System.Security.AccessControl.AccessControlSections]::Access)
+        $getJson = @{
+            keyPath = 'HKCU\1\AclWhatIf'
+            accessControlList = @{ discretionary = @() }
+        } | ConvertTo-Json -Depth 10 -Compress
+        $before = (registry config get --input $getJson 2>$TestDrive/error.log |
+            ConvertFrom-Json).accessControlList
+
         $json = @{
             keyPath = 'HKCU\1\AclWhatIf'
-            acl = $desiredAcl
-        } | ConvertTo-Json -Compress
+            accessControlList = @{
+                discretionary          = @(
+                    @{
+                        principal  = $env:USERNAME
+                        type       = 'allow'
+                        accessMask = @('fullControl')
+                    }
+                )
+                discretionaryProtected = $true
+            }
+        } | ConvertTo-Json -Depth 10 -Compress
 
         $result = registry config set -w --input $json 2>$TestDrive/error.log | ConvertFrom-Json
 
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw)
-        $result.acl | Should -BeExactly $desiredAcl
+        $result.accessControlList.discretionaryProtected | Should -BeTrue
         $result._metadata.whatIf | Should -Contain "Would set ACL on key 'HKCU\1\AclWhatIf'"
-        (Get-Acl -Path 'HKCU:\1\AclWhatIf').Sddl | Should -BeExactly $before
+
+        $after = (registry config get --input $getJson 2>$TestDrive/error.log |
+            ConvertFrom-Json).accessControlList
+        $after.discretionaryProtected | Should -Be $before.discretionaryProtected
+        ($after.discretionary | ConvertTo-Json -Depth 10 -Compress) |
+            Should -BeExactly ($before.discretionary | ConvertTo-Json -Depth 10 -Compress)
     }
 
     It 'Can whatif an existing deeply nested key and value' -Skip:(!$IsWindows) {

@@ -286,6 +286,12 @@
       "IsRust": true
     },
     {
+      "Name": "lib-acl",
+      "Kind": "Library",
+      "RelativePath": "lib/lib-acl",
+      "IsRust": true
+    },
+    {
       "Name": "dsc-lib-pal",
       "Kind": "Library",
       "RelativePath": "lib/dsc-lib-pal",

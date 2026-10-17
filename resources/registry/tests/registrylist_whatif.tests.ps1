@@ -75,29 +75,49 @@ Describe 'Registry list set what-if tests' -Skip:(!$IsWindows) {
         $out.results.result[0].afterState.registryEntries[3].valueName | Should -BeExactly 'Hello4'
     }
 
-    It 'Can whatif setting ACLs without changing them' -Skip:(!$IsWindows) {
+    It 'Can whatif setting access control lists without changing them' -Skip:(!$IsWindows) {
         New-Item -Path 'HKCU:\1\AclListWhatIf' -Force | Out-Null
-        $before = (Get-Acl -Path 'HKCU:\1\AclListWhatIf').Sddl
-        $registryAcl = Get-Acl -Path 'HKCU:\1\AclListWhatIf'
-        $registryAcl.SetAccessRuleProtection($true, $true)
-        $desiredAcl = $registryAcl.GetSecurityDescriptorSddlForm(
-            [System.Security.AccessControl.AccessControlSections]::Access)
+        $getJson = @{
+            registryEntries = @(
+                @{
+                    keyPath = 'HKCU\1\AclListWhatIf'
+                    accessControlList = @{ discretionary = @() }
+                }
+            )
+        } | ConvertTo-Json -Depth 10 -Compress
+        $before = (registry config get --list --input $getJson 2>$TestDrive/error.log |
+            ConvertFrom-Json).registryEntries[0].accessControlList
+
         $json = @{
             registryEntries = @(
                 @{
                     keyPath = 'HKCU\1\AclListWhatIf'
-                    acl = $desiredAcl
+                    accessControlList = @{
+                        discretionary          = @(
+                            @{
+                                principal  = $env:USERNAME
+                                type       = 'allow'
+                                accessMask = @('fullControl')
+                            }
+                        )
+                        discretionaryProtected = $true
+                    }
                 }
             )
-        } | ConvertTo-Json -Depth 5 -Compress
+        } | ConvertTo-Json -Depth 10 -Compress
 
         $result = registry config set --list -w --input $json 2>$TestDrive/error.log |
             ConvertFrom-Json
 
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw)
-        $result.registryEntries[0].acl | Should -BeExactly $desiredAcl
+        $result.registryEntries[0].accessControlList.discretionaryProtected | Should -BeTrue
         $result.registryEntries[0]._metadata.whatIf |
             Should -Contain "Would set ACL on key 'HKCU\1\AclListWhatIf'"
-        (Get-Acl -Path 'HKCU:\1\AclListWhatIf').Sddl | Should -BeExactly $before
+
+        $after = (registry config get --list --input $getJson 2>$TestDrive/error.log |
+            ConvertFrom-Json).registryEntries[0].accessControlList
+        $after.discretionaryProtected | Should -Be $before.discretionaryProtected
+        ($after.discretionary | ConvertTo-Json -Depth 10 -Compress) |
+            Should -BeExactly ($before.discretionary | ConvertTo-Json -Depth 10 -Compress)
     }
 }
