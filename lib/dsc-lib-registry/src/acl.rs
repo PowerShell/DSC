@@ -12,7 +12,7 @@ use lib_acl::merge_access_control_list;
 use windows::Win32::Foundation::{
     ERROR_FILE_NOT_FOUND, ERROR_INSUFFICIENT_BUFFER, ERROR_PATH_NOT_FOUND, ERROR_SUCCESS,
 };
-use windows::Win32::Security::PSECURITY_DESCRIPTOR;
+use windows::Win32::Security::{OBJECT_SECURITY_INFORMATION, PSECURITY_DESCRIPTOR};
 use windows::Win32::System::Registry::{
     HKEY, HKEY_CLASSES_ROOT, HKEY_CURRENT_CONFIG, HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE,
     HKEY_USERS, REG_SAM_FLAGS, RegCloseKey, RegGetKeySecurity, RegOpenKeyExW, RegSetKeySecurity,
@@ -33,6 +33,18 @@ const WRITE_DAC: REG_SAM_FLAGS = REG_SAM_FLAGS(0x0004_0000);
 const ACCESS_SYSTEM_SECURITY: REG_SAM_FLAGS = REG_SAM_FLAGS(0x0100_0000);
 
 type RegistryAccessControlList = AccessControlList<RegistryAccessRight>;
+
+pub(crate) struct PreparedAccessControlList {
+    effective: RegistryAccessControlList,
+    descriptor_bytes: Vec<u8>,
+    security_information: OBJECT_SECURITY_INFORMATION,
+}
+
+impl PreparedAccessControlList {
+    pub(crate) fn effective(&self) -> &RegistryAccessControlList {
+        &self.effective
+    }
+}
 
 struct RegistryKey(HKEY);
 
@@ -168,14 +180,38 @@ pub fn set(path: &str, requested: &RegistryAccessControlList) -> Result<(), Regi
     validate(requested)?;
     ensure_privilege_for(requested)?;
 
-    let to_write = effective(path, requested)?;
-    let (mut descriptor_bytes, security_information) =
-        build_self_relative_security_descriptor(&to_write).map_err(acl_error)?;
-    let descriptor = PSECURITY_DESCRIPTOR(descriptor_bytes.as_mut_ptr().cast::<c_void>());
+    let mut prepared = prepare(path, requested)?;
+    set_prepared(path, &mut prepared)
+}
 
-    let key = open(path, write_access(requested))?;
+/// Reads, merges, normalizes, and builds the complete descriptor without changing the registry.
+pub(crate) fn prepare(
+    path: &str,
+    requested: &RegistryAccessControlList,
+) -> Result<PreparedAccessControlList, RegistryError> {
+    validate(requested)?;
+    ensure_privilege_for(requested)?;
+    let effective = effective(path, requested)?;
+    let (descriptor_bytes, security_information) =
+        build_self_relative_security_descriptor(&effective).map_err(acl_error)?;
+    Ok(PreparedAccessControlList {
+        effective,
+        descriptor_bytes,
+        security_information,
+    })
+}
+
+/// Writes a descriptor returned by [`prepare`] without rereading or rebuilding it.
+pub(crate) fn set_prepared(
+    path: &str,
+    prepared: &mut PreparedAccessControlList,
+) -> Result<(), RegistryError> {
+    let descriptor =
+        PSECURITY_DESCRIPTOR(prepared.descriptor_bytes.as_mut_ptr().cast::<c_void>());
+    let key = open(path, write_access(&prepared.effective))?;
     // SAFETY: descriptor_bytes remains alive for the duration of this call.
-    let status = unsafe { RegSetKeySecurity(key.0, security_information, descriptor) };
+    let status =
+        unsafe { RegSetKeySecurity(key.0, prepared.security_information, descriptor) };
     if status != ERROR_SUCCESS {
         return Err(win32_error("RegSetKeySecurity", status.0));
     }

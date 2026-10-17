@@ -422,6 +422,30 @@ Describe 'Microsoft.Filesystem/AccessControlList tests' -Skip:(!$IsWindows) {
         (Get-Content -Raw $TestDrive/error.log) | Should -Not -Match 'does not exist'
     }
 
+    It 'Rejects a principal containing an embedded NUL without changing the ACL' {
+        $path = New-Item -ItemType File -Path (Join-Path $testRoot 'invalid-principal.txt') |
+            Select-Object -ExpandProperty FullName
+        $before = (Get-Acl -Path $path).Sddl
+        $json = @{
+            path              = $path
+            accessControlList = @{
+                discretionary = @(
+                    @{
+                        principal  = "Everyone$([char]0)DSC-Invalid"
+                        type       = 'allow'
+                        accessMask = @('read')
+                    }
+                )
+            }
+        } | ConvertTo-Json -Depth 10 -Compress
+
+        $null = $json | dsc resource set -r $resourceType -f - 2>$TestDrive/error.log
+
+        $LASTEXITCODE | Should -Not -Be 0
+        (Get-Content -Raw $TestDrive/error.log) | Should -Match 'must not contain NUL'
+        (Get-Acl -Path $path).Sddl | Should -BeExactly $before
+    }
+
     Context 'System access control list (SACL)' -Skip:(!$isElevated) {
         It 'Sets and gets Audit ACEs on a file' {
             $path = New-Item -ItemType File -Path (Join-Path $testRoot 'audit.txt') |

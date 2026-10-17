@@ -32,6 +32,12 @@ impl OwnedSid {
 /// Returns [`AclError::InvalidSid`] when `principal` looks like a SID string but is not valid,
 /// or [`AclError::PrincipalResolution`] when the account/group name cannot be resolved.
 pub fn resolve_principal(principal: &str) -> Result<OwnedSid, AclError> {
+    if principal.contains('\0') {
+        return Err(AclError::PrincipalResolution {
+            principal: principal.to_string(),
+            reason: "principal names must not contain NUL characters".to_string(),
+        });
+    }
     if looks_like_sid(principal) {
         return parse_sid(principal);
     }
@@ -233,5 +239,16 @@ mod tests {
     fn rejects_names_that_do_not_start_with_s() {
         assert!(!looks_like_sid("DOMAIN\\User"));
         assert!(!looks_like_sid("Administrators"));
+    }
+
+    #[test]
+    fn rejects_principal_names_with_embedded_nul() {
+        let error = match resolve_principal("Everyone\0DSC-Invalid") {
+            Ok(_) => panic!("an embedded NUL must be rejected"),
+            Err(error) => error,
+        };
+
+        assert!(matches!(error, AclError::PrincipalResolution { .. }));
+        assert!(error.to_string().contains("must not contain NUL"));
     }
 }

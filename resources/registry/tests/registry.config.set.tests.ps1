@@ -555,7 +555,7 @@ Describe 'registry config set tests' {
         $keyPath = 'HKCU:\1\AclPreflight'
         $null = New-Item -Path $keyPath -Force
         Set-ItemProperty -Path $keyPath -Name 'Data' -Value 'original'
-        $missingAccount = "DSC-Missing-$([guid]::NewGuid())"
+        $missingAccount = "Everyone$([char]0)DSC-Invalid"
         $json = @{
             keyPath           = 'HKCU\1\AclPreflight'
             valueName         = 'Data'
@@ -570,6 +570,36 @@ Describe 'registry config set tests' {
         registry config set --input $json 2>$TestDrive/error.log
 
         $LASTEXITCODE | Should -Not -Be 0
+        (Get-ItemPropertyValue -Path $keyPath -Name 'Data') | Should -BeExactly 'original'
+    }
+
+    It 'Prepares a merged ACL before changing a registry value' -Skip:(!$IsWindows) {
+        $keyPath = 'HKCU:\1\AclMergePreflight'
+        $null = New-Item -Path $keyPath -Force
+        Set-ItemProperty -Path $keyPath -Name 'Data' -Value 'original'
+        $currentSid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+        $objectType = [guid]::NewGuid()
+        $security = [Security.AccessControl.RegistrySecurity]::new()
+        $security.SetSecurityDescriptorSddlForm(
+            "D:(A;;KA;;;$currentSid)(OA;;KR;$objectType;;WD)")
+        Set-Acl -Path $keyPath -AclObject $security
+        $json = @{
+            keyPath           = 'HKCU\1\AclMergePreflight'
+            valueName         = 'Data'
+            valueData         = @{ String = 'changed' }
+            accessControlList = @{
+                discretionary = @(
+                    @{ principal = $currentSid; type = 'allow'; accessMask = @('read') }
+                )
+                _purge        = $false
+            }
+        } | ConvertTo-Json -Depth 10 -Compress
+
+        registry config set --input $json 2>$TestDrive/error.log
+
+        $LASTEXITCODE | Should -Not -Be 0
+        (Get-Content -Path $TestDrive/error.log -Raw) |
+            Should -Match 'Access control entry type'
         (Get-ItemPropertyValue -Path $keyPath -Name 'Data') | Should -BeExactly 'original'
     }
 }

@@ -319,6 +319,12 @@ impl RegistryHelper {
             },
             Err(e) => return self.handle_error_or_what_if(e)
         };
+        // Prepare the complete descriptor before writing a value. In merge mode this reads and
+        // parses the existing ACL, so unsupported existing ACEs fail before registry data changes.
+        let mut prepared_acl = match (&self.config.access_control_list, reg_key.is_some()) {
+            (Some(requested), true) => Some(acl::prepare(&self.config.key_path, requested)?),
+            _ => None,
+        };
 
         if let Some(value_name) = &self.config.value_name {
             let value_data = match &self.config.value_data {
@@ -369,7 +375,7 @@ impl RegistryHelper {
 
             if self.what_if {
                 let mut what_if_acl = self.config.access_control_list.clone();
-                if let Some(config_acl) = &self.config.access_control_list {
+                if self.config.access_control_list.is_some() {
                     what_if_metadata.push(
                         t!("registry_helper.whatIfSetAcl", key_path = &self.config.key_path).to_string(),
                     );
@@ -380,8 +386,8 @@ impl RegistryHelper {
                     // unresolved. A key that's only being simulated for creation has no current
                     // state to merge with, so that simulation is kept separate and still returns
                     // the raw (normalized-at-write-time) request.
-                    if reg_key.is_some() {
-                        what_if_acl = Some(acl::effective(&self.config.key_path, config_acl)?);
+                    if let Some(effective_acl) = &prepared_acl {
+                        what_if_acl = Some(effective_acl.effective().clone());
                     }
                 }
                 return Ok(Some(Registry {
@@ -413,8 +419,10 @@ impl RegistryHelper {
             }));
         }
 
-        if let Some(acl) = &self.config.access_control_list {
-            acl::set(&self.config.key_path, acl)?;
+        if let Some(prepared) = &mut prepared_acl {
+            acl::set_prepared(&self.config.key_path, prepared)?;
+        } else if let Some(requested_acl) = &self.config.access_control_list {
+            acl::set(&self.config.key_path, requested_acl)?;
         }
 
         Ok(None)
