@@ -28,15 +28,14 @@ pub fn get(input: &FileAccessControlList) -> Result<FileAccessControlList, Strin
 pub fn set(input: &FileAccessControlList, what_if: bool) -> Result<FileAccessControlList, String> {
     let requested = validate_input(input)?;
     let normalized = normalize(requested).map_err(acl_error)?;
-    if normalized.system.is_some() {
+    if normalized.manages_system() {
         enable_security_privilege().map_err(acl_error)?;
     }
 
     // The Win32 ACL-writing APIs always replace a section outright, so a merge (`_purge: false`)
-    // is implemented by first computing the full, merged section(s) to write. `purge` mode (the
-    // default) needs no current-state read, since `merge_access_control_list`'s purge branch
-    // never consults `current` -- it still resolves an omitted protection flag to its effective
-    // `false` default, so an empty placeholder stands in for `current` instead.
+    // is implemented by first computing the full, merged section(s) to write. Replacement mode
+    // needs no current-state read, since `merge_access_control_list` never consults `current` for
+    // managed sections and resolves omitted protection flags to their effective `false` default.
     let current = if normalized.purge() {
         FileAcl::default()
     } else {
@@ -96,7 +95,10 @@ fn validate_input(input: &FileAccessControlList) -> Result<&FileAcl, String> {
     let Some(requested) = input.access_control_list.as_ref() else {
         return Err(t!("acl.missingAccessControlList").to_string());
     };
-    if requested.discretionary.is_none() && requested.system.is_none() {
+    if requested.discretionary.is_none()
+        && requested.system.is_none()
+        && requested.purge != Some(true)
+    {
         return Err(t!("acl.invalidAccessControlList").to_string());
     }
     requested.validate().map_err(acl_error)?;
@@ -104,8 +106,8 @@ fn validate_input(input: &FileAccessControlList) -> Result<&FileAcl, String> {
 }
 
 fn read_acl(path: &str, requested: &FileAcl) -> Result<FileAcl, String> {
-    let want_discretionary = requested.discretionary.is_some();
-    let want_system = requested.system.is_some();
+    let want_discretionary = requested.manages_discretionary();
+    let want_system = requested.manages_system();
     if want_system {
         enable_security_privilege().map_err(acl_error)?;
     }

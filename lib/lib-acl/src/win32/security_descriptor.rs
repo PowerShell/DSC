@@ -76,13 +76,7 @@ pub unsafe fn read_access_control_list<P: AccessMask>(
         },
     )?;
 
-    let mut result = AccessControlList {
-        // A raw read always reflects the actual, current state of the sections requested; report
-        // `purge: true` (the default) for consistency, since there is no partial/merge request to
-        // reflect here.
-        purge: Some(true),
-        ..Default::default()
-    };
+    let mut result = AccessControlList::default();
 
     if want_discretionary {
         // SAFETY: the caller guarantees descriptor_bytes is a valid, self-relative security

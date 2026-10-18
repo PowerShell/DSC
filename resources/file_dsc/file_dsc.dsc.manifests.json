@@ -185,12 +185,12 @@
             "accessControlList": {
               "type": "object",
               "title": "Access control list",
-              "description": "The discretionary (DACL) and/or system (SACL) access control list for the file or folder. Omitting a section leaves it unmanaged; at least one section must be present.",
+              "description": "The discretionary (DACL) and/or system (SACL) access control list for the file or folder. At least one section must be present unless '_purge' is explicitly true, which clears omitted sections.",
               "properties": {
                 "discretionary": {
                   "type": "array",
                   "title": "Discretionary access control entries",
-                  "description": "The discretionary access control list (DACL) entries. Omit to leave the DACL unmanaged.",
+                  "description": "The discretionary access control list (DACL) entries. Omit to leave the DACL unmanaged unless '_purge' is explicitly true, in which case omission clears the DACL.",
                   "items": {
                     "$ref": "#/$defs/accessControlEntry"
                   }
@@ -198,12 +198,12 @@
                 "discretionaryProtected": {
                   "type": "boolean",
                   "title": "Discretionary access control list is protected",
-                  "description": "Whether the DACL is protected from inheriting entries from its parent. Only meaningful when 'discretionary' is also provided. Omitting this property behaves according to '_purge': when purging (the default), the DACL is written as unprotected (inheriting), since a purge write always stamps an explicit protection state; when merging ('_purge': false), the current protection state is preserved unchanged. Set this explicitly to request a particular protection state regardless of '_purge'."
+                  "description": "Whether the DACL is protected from inheriting entries from its parent. This is meaningful when 'discretionary' is provided or '_purge' is explicitly true. For a managed DACL, omission uses false for replacement and preserves the current value for merge."
                 },
                 "system": {
                   "type": "array",
                   "title": "System access control entries",
-                  "description": "The system access control list (SACL) entries. Omit to leave the SACL unmanaged. Reading or writing this section requires the SeSecurityPrivilege privilege.",
+                  "description": "The system access control list (SACL) entries. Omit to leave the SACL unmanaged unless '_purge' is explicitly true, in which case omission clears the SACL. Reading or writing this section requires the SeSecurityPrivilege privilege.",
                   "items": {
                     "$ref": "#/$defs/accessControlEntry"
                   }
@@ -211,13 +211,12 @@
                 "systemProtected": {
                   "type": "boolean",
                   "title": "System access control list is protected",
-                  "description": "Whether the SACL is protected from inheriting entries from its parent. Only meaningful when 'system' is also provided. Omitting this property behaves according to '_purge': when purging (the default), the SACL is written as unprotected (inheriting), since a purge write always stamps an explicit protection state; when merging ('_purge': false), the current protection state is preserved unchanged. Set this explicitly to request a particular protection state regardless of '_purge'."
+                  "description": "Whether the SACL is protected from inheriting entries from its parent. This is meaningful when 'system' is provided or '_purge' is explicitly true. For a managed SACL, omission uses false for replacement and preserves the current value for merge."
                 },
                 "_purge": {
                   "type": "boolean",
-                  "title": "Purge supplied sections",
-                  "description": "Whether to replace (purge) each supplied section outright, or merge its entries into the section's current managed entries. Defaults to true (replace) when omitted. When false, the entries supplied for a section are merged into that section's existing entries: semantic duplicates (same normalized principal, ACE type, effective access mask, and inheritance/audit flags) are not duplicated, and the resulting discretionary section is canonicalized into Windows' canonical ACE order: every explicit 'deny' entry, then every explicit 'allow' entry, then every inherited entry (preserving its existing relative order) -- an inherited 'deny' entry is never moved ahead of an explicit 'allow' entry. A section that is omitted from the request remains unmanaged regardless of this setting. For a Test operation, '_purge': false is satisfied when every requested entry is present (after normalization) in the actual access control list; extra entries already present in the actual ACL don't cause a mismatch. '_purge': true (the default) requires the same entries in the same order and count as actual, but each entry pair is compared semantically: an aliased permission name (for example 'fullControl' versus the individual rights it implies) or a differently ordered 'flags' list that is otherwise equivalent doesn't cause a mismatch.",
-                  "default": true
+                  "title": "Purge access control lists",
+                  "description": "Controls replacement and merge behavior. When omitted, each supplied section is replaced and each omitted section remains unmanaged. Explicit true replaces both sections, clearing either section that is omitted. When false, supplied entries are merged into their corresponding current sections and omitted sections remain unmanaged."
                 }
               },
               "additionalProperties": false

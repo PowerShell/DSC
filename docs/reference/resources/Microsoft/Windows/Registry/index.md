@@ -215,8 +215,8 @@ registry hive. The resource doesn't manage the key's owner or primary group.
 - [system](#system-accesscontrollist) - The system access control list (SACL) entries.
 - [systemProtected](#systemprotected-accesscontrollist) - Whether the SACL is protected from
   inheriting entries from its parent.
-- [_purge](#_purge-accesscontrollist) - Whether to replace or merge the supplied section(s).
-  Defaults to `true`.
+- [_purge](#_purge-accesscontrollist) - Whether to replace supplied sections, purge both sections,
+  or merge supplied sections.
 
 #### discretionary accessControlList
 
@@ -232,9 +232,10 @@ ItemsMinimumCount : 0
 </details>
 
 Defines the discretionary access control list (DACL) entries for the key. Omit this property to
-leave the DACL unmanaged. Specify an empty array to request the current entries without changing
-them, or during a **Set** operation, to clear every explicit entry from the DACL. Each item is an
-[access control entry object](#access-control-entry-object).
+leave the DACL unmanaged unless `_purge` is explicitly `true`, in which case omission clears the
+DACL. Specify an empty array to request the current entries without changing them, or during a
+**Set** operation, to clear every explicit entry from the DACL. Each item is an [access control
+entry object](#access-control-entry-object).
 
 #### discretionaryProtected accessControlList
 
@@ -246,12 +247,9 @@ Type : boolean
 
 </details>
 
-Defines whether the DACL is protected from inheriting entries from its parent key. Only meaningful
-when `discretionary` is also specified. Omitting this property behaves according to `_purge`: when
-purging (the default), the DACL is written as unprotected (inheriting), since a purge write always
-stamps an explicit protection state; when merging (`_purge: false`), the current protection state
-is preserved unchanged. Set this explicitly to request a particular protection state regardless of
-`_purge`.
+Defines whether the DACL is protected from inheriting entries from its parent key. This is
+meaningful when `discretionary` is specified or `_purge` is explicitly `true`. For a managed DACL,
+omission uses `false` for replacement and preserves the current value for merge.
 
 #### system accessControlList
 
@@ -267,9 +265,10 @@ ItemsMinimumCount : 0
 </details>
 
 Defines the system access control list (SACL) entries for the key. Omit this property to leave the
-SACL unmanaged. Specify an empty array to request the current entries without changing them, or
-during a **Set** operation, to clear every explicit entry from the SACL. Every entry must have a
-`type` of `audit`. Each item is an [access control entry object](#access-control-entry-object).
+SACL unmanaged unless `_purge` is explicitly `true`, in which case omission clears the SACL.
+Specify an empty array to request the current entries without changing them, or during a **Set**
+operation, to clear every explicit entry from the SACL. Every entry must have a `type` of `audit`.
+Each item is an [access control entry object](#access-control-entry-object).
 
 #### systemProtected accessControlList
 
@@ -281,30 +280,24 @@ Type : boolean
 
 </details>
 
-Defines whether the SACL is protected from inheriting entries from its parent key. Only meaningful
-when `system` is also specified. Omitting this property behaves according to `_purge`: when purging
-(the default), the SACL is written as unprotected (inheriting), since a purge write always stamps an
-explicit protection state; when merging (`_purge: false`), the current protection state is preserved
-unchanged. Set this explicitly to request a particular protection state regardless of `_purge`.
+Defines whether the SACL is protected from inheriting entries from its parent key. This is
+meaningful when `system` is specified or `_purge` is explicitly `true`. For a managed SACL,
+omission uses `false` for replacement and preserves the current value for merge.
 
 #### _purge accessControlList
 
 <details><summary>Expand for <code>accessControlList._purge</code> subproperty metadata</summary>
 
 ```yaml
-Type    : boolean
-Default : true
+Type : boolean
 ```
 
 </details>
 
-Defines whether to replace (purge) each supplied section outright, or merge its entries into the
-section's current managed entries. Defaults to `true` (replace) when omitted, which is the
-historical full-replacement behavior: the `discretionary` and/or `system` entries supplied in a
-**Set** operation become the section's entire content. When a section is replaced outright and its
-corresponding `discretionaryProtected`/`systemProtected` property isn't specified, the protection
-state resets to unprotected (`false`) rather than being left unchanged, since a purge write always
-stamps an explicit protection state.
+When `_purge` is omitted, each supplied section replaces that section's entire content and each
+omitted section remains unmanaged. When `_purge` is explicitly `true`, both sections are replaced:
+an omitted `discretionary` or `system` property clears that section. A replaced section's omitted
+protection property resets to unprotected (`false`).
 
 When `false`, the entries supplied for a section are merged into that section's existing entries
 instead of replacing them: entries that already exist are left in place, newly supplied entries are
@@ -314,13 +307,13 @@ is canonicalized into Windows' canonical access control entry order: every expli
 then every explicit `allow` entry, then every inherited entry, preserving the inherited entries'
 existing relative order. In particular, an inherited `deny` entry is never moved ahead of an
 explicit `allow` entry, since Windows always places every explicit entry before any inherited entry
-regardless of allow/deny. A section that isn't supplied in the request remains unmanaged, and its
-corresponding protection property (if any) is preserved unchanged, regardless of this setting.
+regardless of allow/deny. A section that isn't supplied in a merge request remains unmanaged, and
+its corresponding protection property (if any) is preserved unchanged.
 
 For a **Test** operation, `_purge: false` is satisfied when every requested entry is present
 (after normalization) in the actual access control list; extra entries already present in the
-actual ACL don't cause a mismatch. `_purge: true` (the default) requires the same entries in the
-same order and count as `actual`, but each entry pair is compared semantically: an aliased
+actual ACL don't cause a mismatch. Replacement behavior requires the same entries in the same
+order and count as `actual`, but each entry pair is compared semantically: an aliased
 permission name (for example `fullControl` versus the individual rights it implies) or a
 differently ordered `flags` list that is otherwise equivalent doesn't cause a mismatch.
 
@@ -645,8 +638,7 @@ non validating keywords are omitted.
           "type": "boolean"
         },
         "_purge": {
-          "type": "boolean",
-          "default": true
+          "type": "boolean"
         }
       }
     },

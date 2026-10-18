@@ -2,6 +2,15 @@
 # Licensed under the MIT License.
 
 Describe 'registry config whatif tests' {
+    BeforeDiscovery {
+        $isElevated = if ($IsWindows) {
+            ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
+                [Security.Principal.WindowsBuiltInRole]::Administrator)
+        } else {
+            $false
+        }
+    }
+
     BeforeAll {
         Remove-Item -Path 'HKCU:\1' -Recurse -ErrorAction Ignore
     }
@@ -106,6 +115,22 @@ Describe 'registry config whatif tests' {
         $after.discretionaryProtected | Should -Be $before.discretionaryProtected
         ($after.discretionary | ConvertTo-Json -Depth 10 -Compress) |
             Should -BeExactly ($before.discretionary | ConvertTo-Json -Depth 10 -Compress)
+    }
+
+    It 'Returns empty DACL and SACL for explicit _purge true without changing the key' -Skip:(!$isElevated) {
+        New-Item -Path 'HKCU:\1\AclPurgeAllWhatIf' -Force | Out-Null
+        $before = (Get-Acl -Path 'HKCU:\1\AclPurgeAllWhatIf').Sddl
+        $json = @{
+            keyPath           = 'HKCU\1\AclPurgeAllWhatIf'
+            accessControlList = @{ _purge = $true }
+        } | ConvertTo-Json -Depth 10 -Compress
+
+        $result = registry config set -w --input $json 2>$TestDrive/error.log | ConvertFrom-Json
+
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw)
+        @($result.accessControlList.discretionary).Count | Should -Be 0
+        @($result.accessControlList.system).Count | Should -Be 0
+        (Get-Acl -Path 'HKCU:\1\AclPurgeAllWhatIf').Sddl | Should -BeExactly $before
     }
 
     It 'Can whatif setting a value and merging an ACL on an existing key, returning the effective merged ACL' -Skip:(!$IsWindows) {

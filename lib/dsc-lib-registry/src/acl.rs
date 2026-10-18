@@ -155,11 +155,9 @@ impl Drop for PrivateSecurityDescriptor {
     }
 }
 
-/// Validates that `requested` is well-formed: that it specifies at least one of `discretionary`
-/// or `system` (an `accessControlList` with neither is never meaningful, since there would be
-/// nothing to read, write, or compare), and that every entry is well-formed for the section it
-/// belongs to (for example that `audit` entries are only used in the system section). Performs
-/// no registry access.
+/// Validates that `requested` is well-formed: that it specifies at least one section unless
+/// `_purge` is explicitly true (which clears omitted sections), and that every entry is
+/// well-formed for the section it belongs to. Performs no registry access.
 ///
 /// Called centrally by every operation ([`get`], [`set`] via [`effective`], and the registry
 /// resource's `test`) before any registry read, mutation, or what-if preview, so that an invalid
@@ -169,7 +167,10 @@ impl Drop for PrivateSecurityDescriptor {
 ///
 /// Returns [`RegistryError::Acl`] when `requested` is not well-formed.
 pub fn validate(requested: &RegistryAccessControlList) -> Result<(), RegistryError> {
-    if requested.discretionary.is_none() && requested.system.is_none() {
+    if requested.discretionary.is_none()
+        && requested.system.is_none()
+        && requested.purge != Some(true)
+    {
         return Err(RegistryError::Acl(t!("error.invalidAcl").to_string()));
     }
     requested.validate().map_err(acl_error)
@@ -196,7 +197,7 @@ pub fn preflight(requested: &RegistryAccessControlList) -> Result<(), RegistryEr
 ///
 /// Returns [`RegistryError::Acl`] when the privilege can't be enabled.
 fn ensure_privilege_for(requested: &RegistryAccessControlList) -> Result<(), RegistryError> {
-    if requested.system.is_some() {
+    if requested.manages_system() {
         enable_security_privilege().map_err(acl_error)?;
     }
     Ok(())
@@ -215,8 +216,8 @@ pub fn get(
     requested: &RegistryAccessControlList,
 ) -> Result<RegistryAccessControlList, RegistryError> {
     validate(requested)?;
-    let want_discretionary = requested.discretionary.is_some();
-    let want_system = requested.system.is_some();
+    let want_discretionary = requested.manages_discretionary();
+    let want_system = requested.manages_system();
 
     let mut descriptor_bytes = read_descriptor(path, requested)?;
     // SAFETY: descriptor_bytes was populated by RegGetKeySecurity and is a complete, well-formed
@@ -231,8 +232,8 @@ fn read_descriptor(
 ) -> Result<Vec<u8>, RegistryError> {
     ensure_privilege_for(requested)?;
     let key = open(path, read_access(requested))?;
-    let want_discretionary = requested.discretionary.is_some();
-    let want_system = requested.system.is_some();
+    let want_discretionary = requested.manages_discretionary();
+    let want_system = requested.manages_system();
     let security_information = read_security_information(want_discretionary, want_system);
 
     let mut size = 0;
@@ -326,12 +327,11 @@ pub(crate) fn set_prepared(
 }
 
 /// Computes the effective access control list that should be written for `requested`, honoring
-/// its `_purge` setting: when `true` (the default), each supplied section is `requested`'s
-/// section (normalized) verbatim, and no registry read is needed to compute it -- a protection
-/// flag that is not explicitly supplied resolves to its effective `false` default rather than
-/// being left unresolved (see [`merge_access_control_list`]). When `false`, reads `path`'s
-/// current state for the section(s) `requested` manages and merges `requested`'s entries into
-/// them (deduplicating semantic duplicates and canonicalizing ACE order).
+/// its `_purge` setting: omitted `_purge` replaces supplied sections, explicit `true` replaces
+/// both sections and clears omitted sections, and neither replacement mode needs a registry read.
+/// A protection flag that is not explicitly supplied resolves to its effective `false` default
+/// (see [`merge_access_control_list`]). When `false`, reads `path`'s current state for the
+/// section(s) `requested` manages and merges `requested`'s entries into them.
 ///
 /// # Errors
 ///
@@ -393,8 +393,8 @@ pub fn effective_for_new(
     let mut current = unsafe {
         read_access_control_list(
             &mut inherited_bytes,
-            normalized.discretionary.is_some(),
-            normalized.system.is_some(),
+            normalized.manages_discretionary(),
+            normalized.manages_system(),
         )
     }
     .map_err(acl_error)?;
@@ -463,10 +463,10 @@ pub fn is_satisfied(
 
 fn read_access(requested: &RegistryAccessControlList) -> REG_SAM_FLAGS {
     let mut access = REG_SAM_FLAGS(0);
-    if requested.discretionary.is_some() {
+    if requested.manages_discretionary() {
         access |= READ_CONTROL;
     }
-    if requested.system.is_some() {
+    if requested.manages_system() {
         access |= ACCESS_SYSTEM_SECURITY;
     }
     access
@@ -474,10 +474,10 @@ fn read_access(requested: &RegistryAccessControlList) -> REG_SAM_FLAGS {
 
 fn write_access(requested: &RegistryAccessControlList) -> REG_SAM_FLAGS {
     let mut access = REG_SAM_FLAGS(0);
-    if requested.discretionary.is_some() {
+    if requested.manages_discretionary() {
         access |= WRITE_DAC;
     }
-    if requested.system.is_some() {
+    if requested.manages_system() {
         access |= ACCESS_SYSTEM_SECURITY;
     }
     access
@@ -555,6 +555,23 @@ mod tests {
     }
 
     #[test]
+    fn explicit_purge_true_requests_access_for_both_sections() {
+        let requested = RegistryAccessControlList {
+            purge: Some(true),
+            ..Default::default()
+        };
+
+        assert_eq!(
+            read_access(&requested),
+            READ_CONTROL | ACCESS_SYSTEM_SECURITY
+        );
+        assert_eq!(
+            write_access(&requested),
+            WRITE_DAC | ACCESS_SYSTEM_SECURITY
+        );
+    }
+
+    #[test]
     fn write_access_includes_system_security_for_sacl() {
         let mut audit_entry = entry(AceType::Audit);
         audit_entry.audit_flags = vec![AuditFlag::Success];
@@ -589,7 +606,7 @@ mod tests {
 
     #[test]
     fn effective_with_purge_true_does_not_require_the_key_to_exist() {
-        // `_purge: true` (the default) never needs to read the key's current state, so this
+        // Explicit `_purge: true` never needs to read the key's current state, so this
         // must succeed even though the key path below does not exist.
         let requested = RegistryAccessControlList {
             discretionary: Some(vec![entry(AceType::Allow)]),
@@ -644,7 +661,18 @@ mod tests {
     fn validate_rejects_access_control_list_with_no_sections() {
         let requested = RegistryAccessControlList::default();
         let error = validate(&requested).unwrap_err();
+
         assert!(matches!(error, RegistryError::Acl(_)));
+    }
+
+    #[test]
+    fn validate_accepts_access_control_list_with_no_sections_when_purge_is_true() {
+        let requested = RegistryAccessControlList {
+            purge: Some(true),
+            ..Default::default()
+        };
+
+        validate(&requested).unwrap();
     }
 
     #[test]
@@ -669,6 +697,8 @@ mod tests {
         let actual = RegistryAccessControlList {
             discretionary: Some(vec![entry(AceType::Allow)]),
             discretionary_protected: Some(false),
+            system: Some(Vec::new()),
+            system_protected: Some(false),
             ..Default::default()
         };
         let requested = RegistryAccessControlList {
@@ -685,6 +715,8 @@ mod tests {
         let actual = RegistryAccessControlList {
             discretionary: Some(vec![entry(AceType::Allow)]),
             discretionary_protected: Some(false),
+            system: Some(Vec::new()),
+            system_protected: Some(false),
             ..Default::default()
         };
         let mut different_entry = entry(AceType::Allow);

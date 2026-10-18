@@ -171,8 +171,8 @@ impl AccessMask for FileAccessRight {
 #[serde(deny_unknown_fields)]
 pub struct FileAccessControlList {
     pub path: String,
-    /// The discretionary and/or system access control list. Omitting a section leaves it
-    /// unmanaged; at least one section must be present.
+    /// The discretionary and/or system access control list. At least one section must be present
+    /// unless `_purge` is explicitly true, which clears omitted sections.
     #[serde(rename = "accessControlList", skip_serializing_if = "Option::is_none")]
     pub access_control_list: Option<AccessControlList<FileAccessRight>>,
     #[serde(rename = "_inDesiredState", skip_serializing_if = "Option::is_none")]

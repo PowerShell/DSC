@@ -1145,10 +1145,9 @@ fn test_satisfies_purge_true_acl_via_alias_equivalent_access_mask() {
     // the decomposed list below. A raw per-field/array comparison between the two
     // representations would (incorrectly) treat this as a mismatch.
     //
-    // The principal is the well-known "Everyone" SID rather than, say, LocalSystem: since this
-    // is a `_purge: true` (the default) write, it replaces the DACL outright with only this one
-    // entry, and the test process must remain able to read (and ultimately clean up) the key
-    // afterward.
+    // The principal is the well-known "Everyone" SID rather than, say, LocalSystem: replacement
+    // mode writes the DACL with only this one entry, and the test process must remain able to read
+    // (and ultimately clean up) the key afterward.
     let decomposed_json = r#"{"keyPath":"HKCU\\DSCTestNativeAlias","accessControlList":{"discretionary":[{"principal":"S-1-1-0","type":"allow","accessMask":["queryValue","setValue","createSubKey","enumerateSubKeys","notify","createLink","delete","readPermissions","changePermissions","takeOwnership"]}],"discretionaryProtected":false}}"#;
     RegistryHelper::new_from_json(decomposed_json).unwrap().set().unwrap();
 
@@ -1192,15 +1191,14 @@ fn registry_access_right_generic_variants_have_expected_bits() {
 }
 
 #[test]
-fn set_what_if_with_value_name_returns_effective_acl_for_all_purge_modes() {
+fn set_what_if_with_value_name_returns_effective_acl_for_omitted_and_false_purge() {
     // Note the doubled backslash: `key_path` is embedded directly into JSON string literals
     // below, so it must already be JSON-escaped.
     let key_path = r"HKCU\\DSCTestNativeWhatIfExisting";
     // Create the key (and an initial ACE) first, representing an "existing key" scenario. The
-    // principal is the well-known "Everyone" SID rather than, say, LocalSystem: this is a
-    // `_purge: true` (the default) write that replaces the DACL outright with only this one
-    // entry, and the test process must remain able to read (and ultimately clean up) the key
-    // afterward.
+    // principal is the well-known "Everyone" SID rather than, say, LocalSystem: replacement mode
+    // writes the DACL with only this one entry, and the test process must remain able to read (and
+    // ultimately clean up) the key afterward.
     let initial_json = format!(
         r#"{{"keyPath":"{key_path}","accessControlList":{{"discretionary":[{{"principal":"S-1-1-0","type":"allow","accessMask":["fullControl"]}}]}}}}"#
     );
@@ -1208,7 +1206,6 @@ fn set_what_if_with_value_name_returns_effective_acl_for_all_purge_modes() {
 
     for (purge_property, should_merge) in [
         ("", false),
-        (r#","_purge":true"#, false),
         (r#","_purge":false"#, true),
     ] {
         let what_if_json = format!(
@@ -1251,10 +1248,9 @@ fn set_what_if_with_value_name_returns_effective_acl_for_all_purge_modes() {
 }
 
 #[test]
-fn set_what_if_for_missing_key_returns_effective_acl_for_all_purge_modes() {
+fn set_what_if_for_missing_key_returns_effective_acl_for_omitted_and_false_purge() {
     for (purge_property, expected_count, expected_protection) in [
         ("", Some(3), Some(false)),
-        (r#","_purge":true"#, Some(3), Some(false)),
         (r#","_purge":false"#, None, Some(false)),
     ] {
         let what_if_json = format!(

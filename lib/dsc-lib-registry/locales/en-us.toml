@@ -5,7 +5,7 @@ _version = 1
 
 [error]
 acl = "Registry ACL"
-invalidAcl = "At least one of accessControlList.discretionary or accessControlList.system must be specified"
+invalidAcl = "At least one of accessControlList.discretionary or accessControlList.system must be specified unless _purge is explicitly true"
 invalidHive = "Invalid hive"
 json = "JSON"
 offlineRegistry = "Offline registry"

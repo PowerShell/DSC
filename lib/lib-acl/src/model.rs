@@ -203,55 +203,41 @@ impl<P: AccessMask> AccessControlEntry<P> {
 
 /// The access control list (ACL) for an object, expressed as arrays of access control entries.
 ///
-/// Both `discretionary` (DACL) and `system` (SACL) sections are optional so that callers can
-/// select which section(s) they want to manage; a section that is omitted is left untouched.
+/// Both `discretionary` (DACL) and `system` (SACL) sections are optional. When `_purge` is omitted
+/// or `false`, callers select which section(s) to manage and omitted sections are left untouched.
+/// Explicit `_purge: true` manages both sections and clears either section that is omitted.
 ///
 /// `P` is the resource-specific access mask permission enum (for example the set of rights
 /// understood by the filesystem or the registry).
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct AccessControlList<P> {
-    /// The discretionary access control list (DACL) entries. Omit to leave the DACL unmanaged.
+    /// The discretionary access control list (DACL) entries. Omit to leave the DACL unmanaged
+    /// unless `_purge` is explicitly `true`, in which case omission clears the DACL.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub discretionary: Option<Vec<AccessControlEntry<P>>>,
-    /// Whether the DACL is protected from inheriting entries from its parent. Only meaningful
-    /// when `discretionary` is also provided; has no effect otherwise. Omitting this property
-    /// behaves according to `_purge`: when purging (the default), the DACL is written as
-    /// unprotected (inheriting), since a purge write always stamps an explicit protection state;
-    /// when merging (`_purge: false`), the current protection state is preserved unchanged, since
-    /// a merge leaves everything it doesn't explicitly touch alone. Set this explicitly to
-    /// request a particular protection state regardless of `_purge`.
+    /// Whether the DACL is protected from inheriting entries from its parent. This is meaningful
+    /// when `discretionary` is provided or `_purge` is explicitly `true`. When a managed DACL's
+    /// protection state is omitted, replacement writes use `false` and merge writes preserve the
+    /// current value.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub discretionary_protected: Option<bool>,
-    /// The system access control list (SACL) entries. Omit to leave the SACL unmanaged.
+    /// The system access control list (SACL) entries. Omit to leave the SACL unmanaged unless
+    /// `_purge` is explicitly `true`, in which case omission clears the SACL.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub system: Option<Vec<AccessControlEntry<P>>>,
-    /// Whether the SACL is protected from inheriting entries from its parent. Only meaningful
-    /// when `system` is also provided; has no effect otherwise. Omitting this property behaves
-    /// according to `_purge`: when purging (the default), the SACL is written as unprotected
-    /// (inheriting), since a purge write always stamps an explicit protection state; when
-    /// merging (`_purge: false`), the current protection state is preserved unchanged, since a
-    /// merge leaves everything it doesn't explicitly touch alone. Set this explicitly to request
-    /// a particular protection state regardless of `_purge`.
+    /// Whether the SACL is protected from inheriting entries from its parent. This is meaningful
+    /// when `system` is provided or `_purge` is explicitly `true`. When a managed SACL's
+    /// protection state is omitted, replacement writes use `false` and merge writes preserve the
+    /// current value.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub system_protected: Option<bool>,
-    /// Whether to replace (purge) each supplied section outright, or merge its entries into the
-    /// section's current managed entries. Defaults to `true` (replace) when omitted, which
-    /// preserves the historical full-replacement behavior. When `false`, the entries supplied
-    /// for a section are merged into that section's existing entries: semantic duplicates (same
-    /// normalized principal, ACE type, effective access mask, and inheritance/audit flags) are
-    /// not duplicated, and the resulting discretionary section is canonicalized into Windows'
-    /// canonical ACE order: every explicit `deny` entry, then every explicit `allow` entry, then
-    /// every inherited entry (preserving its existing relative order) -- an inherited `deny`
-    /// entry is never moved ahead of an explicit `allow` entry. A section that is omitted from
-    /// the request remains unmanaged regardless of this setting.
+    /// Controls replacement and merge behavior. When omitted, each supplied section is replaced
+    /// and each omitted section remains unmanaged. Explicit `true` replaces both sections,
+    /// clearing either section that is omitted. When `false`, supplied entries are merged into
+    /// their corresponding current sections and omitted sections remain unmanaged.
     #[serde(rename = "_purge", skip_serializing_if = "Option::is_none")]
-    #[schemars(default = "default_purge")]
     pub purge: Option<bool>,
-}
-
-fn default_purge() -> Option<bool> {
-    Some(true)
 }
 
 impl<P> Default for AccessControlList<P> {
@@ -286,10 +272,22 @@ impl<P: AccessMask> AccessControlList<P> {
         Ok(())
     }
 
-    /// The effective value of `purge`: `true` (replace) when not explicitly specified.
+    /// Whether supplied sections use replacement semantics.
     #[must_use]
     pub fn purge(&self) -> bool {
         self.purge.unwrap_or(true)
+    }
+
+    /// Whether the DACL is managed by this request.
+    #[must_use]
+    pub fn manages_discretionary(&self) -> bool {
+        self.discretionary.is_some() || self.purge == Some(true)
+    }
+
+    /// Whether the SACL is managed by this request.
+    #[must_use]
+    pub fn manages_system(&self) -> bool {
+        self.system.is_some() || self.purge == Some(true)
     }
 }
 
@@ -414,9 +412,10 @@ fn canonical_ace_rank<P: AccessMask>(entry: &AccessControlEntry<P>) -> u8 {
 /// section(s) `requested` manages. Both `current` and `requested` are expected to already have
 /// normalized (for example resolved-SID) principals.
 ///
-/// When `purge` is `true` (the default), each supplied section is replaced outright: the result
-/// is `requested`'s section verbatim. A protection flag that is not explicitly supplied in
-/// `requested` defaults to `false` in this case, matching the real effect of writing a section
+/// When `_purge` is omitted, each supplied section is replaced outright and omitted sections are
+/// unmanaged. Explicit `_purge: true` also replaces supplied sections and clears omitted sections.
+/// A protection flag that is not explicitly supplied in `requested` defaults to `false` for a
+/// replacement write, matching the real effect of writing a section
 /// with no protection state requested (see [`crate::win32::build_self_relative_security_descriptor`]):
 /// the write always stamps an explicit protected/unprotected state, so a desired-state comparison
 /// must not treat the omitted flag as "don't care" and silently accept a protected or unprotected
@@ -425,54 +424,58 @@ fn canonical_ace_rank<P: AccessMask>(entry: &AccessControlEntry<P>) -> u8 {
 /// explicitly supplied in `requested` instead preserves `current`'s value, since a merge leaves
 /// everything it doesn't explicitly touch alone.
 ///
-/// A section that is not present (`None`) in `requested` is left unmanaged and is always `None`
-/// in the result, regardless of `current`.
+/// With omitted or false `_purge`, a section absent from `requested` is unmanaged and remains
+/// `None` in the result. With explicit `_purge: true`, an absent section becomes an empty list.
 #[must_use]
 pub fn merge_access_control_list<P: AccessMask>(
     current: &AccessControlList<P>,
     requested: &AccessControlList<P>,
 ) -> AccessControlList<P> {
     let purge = requested.purge();
+    let manages_discretionary = requested.manages_discretionary();
+    let manages_system = requested.manages_system();
 
-    let discretionary = requested.discretionary.as_ref().map(|entries| {
+    let discretionary = manages_discretionary.then(|| {
+        let entries = requested.discretionary.as_deref().unwrap_or(&[]);
         if purge {
-            entries.clone()
+            entries.to_vec()
         } else {
             merge_entries(current.discretionary.as_deref().unwrap_or(&[]), entries)
         }
     });
-    let discretionary_protected = requested.discretionary.as_ref().and_then(|_| {
-        if purge {
-            // A purge write always stamps an explicit protection state, so the omitted flag
-            // resolves to its effective `false` default rather than staying unresolved.
-            Some(requested.discretionary_protected.unwrap_or(false))
-        } else {
-            // A merge leaves everything it doesn't explicitly touch alone: fall back to
-            // `current`'s value, which may itself be `None` (unknown) rather than `false`.
-            requested
-                .discretionary_protected
-                .or(current.discretionary_protected)
-        }
-    });
+    let discretionary_protected = if !manages_discretionary {
+        None
+    } else if purge {
+        // A purge write always stamps an explicit protection state, so the omitted flag
+        // resolves to its effective `false` default rather than staying unresolved.
+        Some(requested.discretionary_protected.unwrap_or(false))
+    } else {
+        // A merge leaves everything it doesn't explicitly touch alone: fall back to
+        // `current`'s value, which may itself be `None` (unknown) rather than `false`.
+        requested
+            .discretionary_protected
+            .or(current.discretionary_protected)
+    };
 
-    let system = requested.system.as_ref().map(|entries| {
+    let system = manages_system.then(|| {
+        let entries = requested.system.as_deref().unwrap_or(&[]);
         if purge {
-            entries.clone()
+            entries.to_vec()
         } else {
             merge_entries(current.system.as_deref().unwrap_or(&[]), entries)
         }
     });
-    let system_protected = requested.system.as_ref().and_then(|_| {
-        if purge {
-            // A purge write always stamps an explicit protection state, so the omitted flag
-            // resolves to its effective `false` default rather than staying unresolved.
-            Some(requested.system_protected.unwrap_or(false))
-        } else {
-            // A merge leaves everything it doesn't explicitly touch alone: fall back to
-            // `current`'s value, which may itself be `None` (unknown) rather than `false`.
-            requested.system_protected.or(current.system_protected)
-        }
-    });
+    let system_protected = if !manages_system {
+        None
+    } else if purge {
+        // A purge write always stamps an explicit protection state, so the omitted flag
+        // resolves to its effective `false` default rather than staying unresolved.
+        Some(requested.system_protected.unwrap_or(false))
+    } else {
+        // A merge leaves everything it doesn't explicitly touch alone: fall back to
+        // `current`'s value, which may itself be `None` (unknown) rather than `false`.
+        requested.system_protected.or(current.system_protected)
+    };
 
     AccessControlList {
         discretionary,
@@ -489,8 +492,8 @@ pub fn merge_access_control_list<P: AccessMask>(
 /// than only the partial, newly requested entries, and a protection flag omitted from the
 /// original request has already been resolved to its effective value).
 ///
-/// A section that is `None` in `desired` is always satisfied (it is unmanaged). When `desired`'s
-/// `purge` is `true` (the default), a managed section must match `actual` entry-for-entry, in
+/// A section that is `None` in `desired` is always satisfied (it is unmanaged). Under replacement
+/// semantics, a managed section must match `actual` entry-for-entry, in
 /// the same order and with the same count and inherited status throughout (since a purge write
 /// replaces the section outright, verbatim and in the order given) -- but each entry pair is
 /// compared *semantically* (see [`entries_semantically_equal`]), so an aliased permission name
@@ -607,13 +610,36 @@ mod tests {
     }
 
     #[test]
-    fn purge_true_replaces_the_section_outright() {
+    fn omitted_purge_replaces_only_the_supplied_section() {
         let current = AccessControlList {
             discretionary: Some(vec![entry("S-1-1-0", AceType::Allow, vec![TestRight::Read])]),
+            system: Some(vec![entry("S-1-1-1", AceType::Audit, vec![TestRight::Write])]),
+            system_protected: Some(true),
             ..Default::default()
         };
         let requested = AccessControlList {
-            discretionary: Some(vec![entry("S-1-1-1", AceType::Allow, vec![TestRight::Write])]),
+            discretionary: Some(vec![entry("S-1-1-2", AceType::Allow, vec![TestRight::Write])]),
+            ..Default::default()
+        };
+
+        let effective = merge_access_control_list(&current, &requested);
+
+        assert_eq!(effective.discretionary, requested.discretionary);
+        assert_eq!(effective.discretionary_protected, Some(false));
+        assert!(effective.system.is_none());
+        assert!(effective.system_protected.is_none());
+    }
+
+    #[test]
+    fn purge_true_replaces_supplied_section_and_clears_omitted_section() {
+        let current = AccessControlList {
+            discretionary: Some(vec![entry("S-1-1-0", AceType::Allow, vec![TestRight::Read])]),
+            system: Some(vec![entry("S-1-1-1", AceType::Audit, vec![TestRight::Write])]),
+            system_protected: Some(true),
+            ..Default::default()
+        };
+        let requested = AccessControlList {
+            discretionary: Some(vec![entry("S-1-1-2", AceType::Allow, vec![TestRight::Write])]),
             purge: Some(true),
             ..Default::default()
         };
@@ -621,12 +647,35 @@ mod tests {
         let effective = merge_access_control_list(&current, &requested);
 
         assert_eq!(effective.discretionary, requested.discretionary);
+        assert_eq!(effective.system, Some(Vec::new()));
+        assert_eq!(effective.system_protected, Some(false));
     }
 
     #[test]
-    fn purge_false_merges_new_entries_with_current_ones() {
+    fn purge_true_with_no_sections_clears_both_sections() {
         let current = AccessControlList {
             discretionary: Some(vec![entry("S-1-1-0", AceType::Allow, vec![TestRight::Read])]),
+            system: Some(vec![entry("S-1-1-1", AceType::Audit, vec![TestRight::Write])]),
+            ..Default::default()
+        };
+        let requested = AccessControlList {
+            purge: Some(true),
+            ..Default::default()
+        };
+
+        let effective = merge_access_control_list(&current, &requested);
+
+        assert_eq!(effective.discretionary, Some(Vec::new()));
+        assert_eq!(effective.discretionary_protected, Some(false));
+        assert_eq!(effective.system, Some(Vec::new()));
+        assert_eq!(effective.system_protected, Some(false));
+    }
+
+    #[test]
+    fn purge_false_merges_supplied_section_and_leaves_omitted_section_unmanaged() {
+        let current = AccessControlList {
+            discretionary: Some(vec![entry("S-1-1-0", AceType::Allow, vec![TestRight::Read])]),
+            system: Some(vec![entry("S-1-1-2", AceType::Audit, vec![TestRight::Read])]),
             ..Default::default()
         };
         let requested = AccessControlList {
@@ -645,6 +694,8 @@ mod tests {
             .map(|entry| entry.principal.as_str())
             .collect();
         assert_eq!(principals, vec!["S-1-1-0", "S-1-1-1"]);
+        assert!(effective.system.is_none());
+        assert!(effective.system_protected.is_none());
     }
 
     #[test]

@@ -145,7 +145,7 @@ Describe 'registry config set tests' {
         $result.accessControlList.discretionaryProtected | Should -BeFalse
     }
 
-    It 'Replaces the discretionary section by default when _purge is omitted' -Skip:(!$IsWindows) {
+    It 'Replaces the discretionary section when _purge is omitted' -Skip:(!$IsWindows) {
         # Anonymous Logon's well-known SID. It never matches the test process's own token, so an
         # Allow/Deny entry for it can't accidentally lock the test process out of the key.
         $anonymousSid = 'S-1-5-7'
@@ -164,7 +164,7 @@ Describe 'registry config set tests' {
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw)
 
         # The replacement keeps the current user's own entry (so the key stays manageable) but
-        # omits the anonymous deny entry; with _purge omitted (default true) that entry must go.
+        # omits the anonymous deny entry; replacement semantics mean that entry must go.
         $replace = @{
             keyPath           = 'HKCU\1\AclPurgeDefault'
             accessControlList = @{
@@ -350,7 +350,7 @@ Describe 'registry config set tests' {
         registry config set --input $protectedRequest 2>$TestDrive/error.log
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw)
 
-        # Purge (the default) again, this time without specifying discretionaryProtected.
+        # Replace the DACL again, this time without specifying discretionaryProtected.
         $unspecifiedRequest = @{
             keyPath           = 'HKCU\1\AclPurgeProtectedDefault'
             accessControlList = @{

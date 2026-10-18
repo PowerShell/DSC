@@ -128,7 +128,6 @@ Describe 'Microsoft.Filesystem/AccessControlList tests' -Skip:(!$IsWindows) {
     Context '_purge behavior' {
         It 'What-if returns the resulting ACL without changing the file when _purge is <purgeMode>' -ForEach @(
             @{ purgeMode = 'omitted'; purge = $null; expectedCount = 1; expectExisting = $false }
-            @{ purgeMode = 'true'; purge = $true; expectedCount = 1; expectExisting = $false }
             @{ purgeMode = 'false'; purge = $false; expectedCount = 2; expectExisting = $true }
         ) {
             $path = New-Item -ItemType File -Path (Join-Path $testRoot "whatif-$purgeMode.txt") |
@@ -171,7 +170,7 @@ Describe 'Microsoft.Filesystem/AccessControlList tests' -Skip:(!$IsWindows) {
             $actualState.accessControlList.discretionary[0].principal | Should -BeExactly $currentSid
         }
 
-        It 'Replaces the discretionary section outright when _purge is omitted (default true)' {
+        It 'Replaces the discretionary section outright when _purge is omitted' {
             $path = New-Item -ItemType File -Path (Join-Path $testRoot 'replace.txt') |
                 Select-Object -ExpandProperty FullName
             $json = @{ path = $path; accessControlList = (New-DesiredAcl) } |
@@ -322,7 +321,7 @@ Describe 'Microsoft.Filesystem/AccessControlList tests' -Skip:(!$IsWindows) {
             ($testOutput | ConvertFrom-Json).inDesiredState | Should -BeFalse
         }
 
-        It 'Tests true with _purge true using an alias-equivalent access mask' {
+        It 'Tests true in replacement mode using an alias-equivalent access mask' {
             $path = New-Item -ItemType File -Path (Join-Path $testRoot 'alias.txt') |
                 Select-Object -ExpandProperty FullName
             # Individually, these rights are bit-for-bit identical to `fullControl`.
@@ -344,7 +343,7 @@ Describe 'Microsoft.Filesystem/AccessControlList tests' -Skip:(!$IsWindows) {
 
             # A real system read always reports the most comprehensive alias that fits exactly,
             # so the actual entry now reports `fullControl`; a Test using the original,
-            # decomposed list must still report satisfied under `_purge: true` (the default)
+            # decomposed list must still report satisfied under replacement semantics
             # instead of comparing the access mask arrays for raw equality.
             $testOutput = $json | dsc resource test -r $resourceType -f - 2>$TestDrive/error.log
             $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
@@ -359,7 +358,7 @@ Describe 'Microsoft.Filesystem/AccessControlList tests' -Skip:(!$IsWindows) {
             $null = $protectedJson | dsc resource set -r $resourceType -f - 2>$TestDrive/error.log
             $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
 
-            # Purge (the default) again, without specifying discretionaryProtected this time.
+            # Replace the DACL again, without specifying discretionaryProtected this time.
             $unspecifiedAcl = @{ discretionary = (New-DesiredAcl).discretionary }
             $unspecifiedJson = @{ path = $path; accessControlList = $unspecifiedAcl } |
                 ConvertTo-Json -Depth 10 -Compress
@@ -492,6 +491,25 @@ Describe 'Microsoft.Filesystem/AccessControlList tests' -Skip:(!$IsWindows) {
     }
 
     Context 'System access control list (SACL)' -Skip:(!$isElevated) {
+        It 'What-if with explicit _purge true clears omitted sections without changing the file' {
+            $path = New-Item -ItemType File -Path (Join-Path $testRoot 'purge-all-whatif.txt') |
+                Select-Object -ExpandProperty FullName
+            $before = (Get-Acl -LiteralPath $path).Sddl
+            $json = @{
+                path              = $path
+                accessControlList = @{ _purge = $true }
+            } | ConvertTo-Json -Depth 10 -Compress
+
+            $whatIfOutput = $json |
+                dsc resource set -r $resourceType -f - -w 2>$TestDrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+            $afterState = ($whatIfOutput | ConvertFrom-Json).afterState
+
+            @($afterState.accessControlList.discretionary).Count | Should -Be 0
+            @($afterState.accessControlList.system).Count | Should -Be 0
+            (Get-Acl -LiteralPath $path).Sddl | Should -BeExactly $before
+        }
+
         It 'Sets and gets Audit ACEs on a file' {
             $path = New-Item -ItemType File -Path (Join-Path $testRoot 'audit.txt') |
                 Select-Object -ExpandProperty FullName

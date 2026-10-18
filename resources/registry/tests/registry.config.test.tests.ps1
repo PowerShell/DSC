@@ -73,7 +73,7 @@ Describe 'registry config test tests' {
 
         # A real system read always reports the most comprehensive alias that fits exactly, so
         # the actual entry now reports `fullControl`; a Test using the original, decomposed list
-        # must still report satisfied under `_purge: true` (the default) instead of comparing the
+        # must still report satisfied under replacement semantics instead of comparing the
         # access mask arrays for raw equality.
         $result = registry config test --input $json 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw)
