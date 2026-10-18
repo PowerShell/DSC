@@ -7,6 +7,7 @@ missingTarget = "Missing resource target. Expected: user-right"
 unknownTarget = "Unknown resource target: '%{target}'. Expected: user-right"
 missingInput = "Missing --input argument"
 missingInputValue = "Missing value for --input argument"
+unknownOption = "Unknown option: '%{option}'. Expected: --input <json> or --what-if"
 invalidJson = "Invalid JSON input: %{error}"
 serializeFailed = "Failed to serialize output: %{error}"
 windowsOnly = "This resource is only supported on Windows"
@@ -17,6 +18,7 @@ unknownRight = "Unknown user right '%{right}'. Specify a user right constant suc
 
 [sid]
 emptyIdentity = "An entry in 'identity' is empty"
+embeddedNul = "An entry in 'identity' contains an embedded null character"
 invalidSid = "'%{identity}' is not a valid SID string"
 unknownAccount = "The account '%{identity}' could not be found. Specify 'DOMAIN\\Name', a well-known account name, or a SID string."
 lookupNameFailed = "Failed to look up the account '%{identity}': %{error}"

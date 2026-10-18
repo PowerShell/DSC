@@ -14,7 +14,7 @@ resources:
       identity:
         - NT SERVICE\ALL SERVICES
       setAction: add
-  - name: Guests may not log on locally
+  - name: Remove the direct local logon grant from Guests
     type: Microsoft.Windows/UserRightsAssignment
     properties:
       right: SeInteractiveLogonRight

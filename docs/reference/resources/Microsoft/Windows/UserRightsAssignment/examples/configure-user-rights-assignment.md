@@ -25,7 +25,16 @@ The configuration document for this example defines three instances of the
 The first instance makes `BUILTIN\Guests` the only account that is denied batch logon; because
 `setAction` isn't specified, it defaults to `replace`. The second instance ensures that
 `NT SERVICE\ALL SERVICES` can log on as a service without touching the other holders. The third
-instance ensures that `BUILTIN\Guests` can't log on locally, whoever else holds that right.
+instance removes the direct grant of `SeInteractiveLogonRight` from `BUILTIN\Guests` and keeps
+the other holders.
+
+> [!NOTE]
+> `setAction: remove` revokes only the direct assignment. Windows grants a right to a user when
+> any group the user belongs to holds it, so a member of `Guests` can still log on locally through
+> another group that holds `SeInteractiveLogonRight`. To make sure that guests can't log on
+> locally regardless of their other group memberships, add `BUILTIN\Guests` to
+> `SeDenyInteractiveLogonRight` instead; a deny right always takes precedence over the matching
+> allow right.
 
 :::code language="yaml" source="userrightsassignment.config.dsc.yaml":::
 
@@ -111,7 +120,7 @@ results:
   metadata:
     Microsoft.DSC:
       duration: PT0.0511306S
-  name: Guests may not log on locally
+  name: Remove the direct local logon grant from Guests
   type: Microsoft.Windows/UserRightsAssignment
   result:
     desiredState:
@@ -197,7 +206,7 @@ results:
   metadata:
     Microsoft.DSC:
       duration: PT0.0975219S
-  name: Guests may not log on locally
+  name: Remove the direct local logon grant from Guests
   type: Microsoft.Windows/UserRightsAssignment
   result:
     beforeState:
@@ -222,7 +231,7 @@ hadErrors: false
 ```
 
 DSC skipped the second instance because its test reported it in the desired state. The third
-instance only revoked the right from `Guests` and kept the other holders, because it uses
+instance only revoked the direct grant from `Guests` and kept the other holders, because it uses
 `setAction: remove`.
 
 ## Preview the changes

@@ -250,6 +250,12 @@ judges it. The following values are valid:
 With `replace`, an empty `identity` list revokes the right from everyone. With `add` or `remove`,
 an empty list changes nothing.
 
+`remove` revokes only the direct assignment of the listed accounts. Windows grants a right to a
+user when any group the user belongs to holds it, so removing a group doesn't prevent its members
+from obtaining the right through another holder. To deny a right regardless of group membership,
+assign the matching `SeDeny*` right instead; a deny right always takes precedence over the
+matching allow right.
+
 Because this property is write-only, DSC doesn't compare it and it never appears in the actual
 state. When you use `add` or `remove`, the `differingProperties` list that DSC reports may still
 name `identity` even though the resource reports the instance as in the desired state; rely on

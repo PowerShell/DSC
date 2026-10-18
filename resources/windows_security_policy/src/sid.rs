@@ -218,12 +218,16 @@ fn looks_like_sid(text: &str) -> bool {
 ///
 /// # Errors
 ///
-/// Returns `InvalidInput` for an empty entry, a malformed SID string or an unknown account name.
+/// Returns `InvalidInput` for an empty entry, an entry with an embedded NUL character, a
+/// malformed SID string or an unknown account name.
 pub fn resolve_identity(input: &str) -> Result<ResolvedIdentity, SecurityPolicyError> {
     let trimmed = input.trim();
     let text = trimmed.strip_prefix('*').unwrap_or(trimmed).trim();
     if text.is_empty() {
         return Err(SecurityPolicyError::InvalidInput(t!("sid.emptyIdentity").to_string()));
+    }
+    if text.contains('\0') {
+        return Err(SecurityPolicyError::InvalidInput(t!("sid.embeddedNul").to_string()));
     }
     let sid = if looks_like_sid(text) {
         // A well-formed SID with no matching account is accepted: the LSA keeps rights for
@@ -270,6 +274,7 @@ mod tests {
         assert_eq!(sid.0.len(), 16, "S-1-5-32-544 is 8 header bytes plus two sub-authorities");
         assert_eq!(sid_to_string(&sid).unwrap(), ADMINISTRATORS);
         assert!(parse_string_sid("S-1-X").is_err());
+        assert!(parse_string_sid("S-1-5-32-abc").is_err());
         assert!(parse_string_sid("Administrators").is_err());
     }
 
@@ -306,11 +311,28 @@ mod tests {
 
     #[test]
     fn invalid_identities_are_invalid_input() {
-        for input in ["", "   ", "*", "S-1-X", "NoSuchAccount_zz_12345"] {
+        for input in ["", "   ", "*", "S-1-X", "S-1-5-32-abc", "NoSuchAccount_zz_12345"] {
             assert!(
                 matches!(resolve_identity(input), Err(SecurityPolicyError::InvalidInput(_))),
                 "{input:?} should be invalid input"
             );
+        }
+    }
+
+    #[test]
+    fn malformed_sids_are_reported_as_invalid_sids_and_unknown_names_as_unknown_accounts() {
+        let error = resolve_identity("S-1-5-32-abc").unwrap_err().to_string();
+        assert_eq!(error, t!("sid.invalidSid", identity = "S-1-5-32-abc"));
+        let error = resolve_identity("S-1-X").unwrap_err().to_string();
+        assert_eq!(error, t!("sid.unknownAccount", identity = "S-1-X"));
+    }
+
+    #[test]
+    fn embedded_nul_characters_are_rejected_before_any_lookup() {
+        for input in ["S-1-5-32-544\0suffix", "Administrators\0suffix", "*S-1-5-32-544\0", "\0"] {
+            let error = resolve_identity(input).unwrap_err();
+            assert!(matches!(error, SecurityPolicyError::InvalidInput(_)), "{input:?} should be invalid input");
+            assert_eq!(error.to_string(), t!("sid.embeddedNul"), "{input:?}");
         }
     }
 

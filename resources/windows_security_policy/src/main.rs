@@ -57,16 +57,20 @@ fn main() -> ExitCode {
         return ExitCode::from(EXIT_INVALID_ARGS);
     };
 
-    let input_json = match parse_input_arg(&args) {
-        Ok(input) => input,
-        Err(code) => return code,
+    let options = match parse_options(&args) {
+        Ok(options) => options,
+        Err(error) => {
+            write_error(&error.to_string());
+            return ExitCode::from(EXIT_INVALID_ARGS);
+        }
     };
-    let what_if = parse_what_if_flag(&args);
 
     match (operation, target.as_str()) {
-        ("get", "user-right") => with_input(input_json, |input: UserRightsAssignment| user_rights::get(&input)),
-        ("set", "user-right") => with_input(input_json, |input: UserRightsAssignment| user_rights::set(&input, what_if)),
-        ("test", "user-right") => with_input(input_json, |input: UserRightsAssignment| user_rights::test(&input)),
+        ("get", "user-right") => with_input(options.input, |input: UserRightsAssignment| user_rights::get(&input)),
+        ("set", "user-right") => {
+            with_input(options.input, |input: UserRightsAssignment| user_rights::set(&input, options.what_if))
+        }
+        ("test", "user-right") => with_input(options.input, |input: UserRightsAssignment| user_rights::test(&input)),
         ("export", "user-right") => finish_many(user_rights::export()),
         (_, target) => {
             write_error(&t!("main.unknownTarget", target = target));
@@ -162,56 +166,97 @@ fn finish_many<T: serde::Serialize>(result: Result<Vec<T>, types::SecurityPolicy
     }
 }
 
-/// Parse the `--input <json>` argument. Arguments 1 and 2 are the operation and the target.
+/// The options that may follow the operation and the target.
 #[cfg(windows)]
-fn parse_input_arg(args: &[String]) -> Result<Option<String>, ExitCode> {
-    let mut index = 3;
-    while index < args.len() {
-        if args[index] == "--input" || args[index] == "-i" {
-            if index + 1 < args.len() {
-                return Ok(Some(args[index + 1].clone()));
-            }
-            write_error(&t!("main.missingInputValue"));
-            return Err(ExitCode::from(EXIT_INVALID_ARGS));
-        }
-        index += 1;
-    }
-    Ok(None)
+#[derive(Debug, Default, PartialEq, Eq)]
+struct Options {
+    /// The JSON given with `--input` / `-i`.
+    input: Option<String>,
+    /// Whether `--what-if` / `-w` was given.
+    what_if: bool,
 }
 
-/// Parse the `--what-if` / `-w` flag. Arguments 1 and 2 are the operation and the target.
+/// Why the argument list was rejected.
 #[cfg(windows)]
-fn parse_what_if_flag(args: &[String]) -> bool {
-    args.iter().skip(3).any(|arg| arg == "--what-if" || arg == "-w")
+#[derive(Debug, PartialEq, Eq)]
+enum ArgError {
+    /// `--input` was the last argument.
+    MissingInputValue,
+    /// An argument that is neither a known option nor the value of `--input`.
+    UnknownOption(String),
+}
+
+#[cfg(windows)]
+impl std::fmt::Display for ArgError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::MissingInputValue => f.write_str(&t!("main.missingInputValue")),
+            Self::UnknownOption(option) => f.write_str(&t!("main.unknownOption", option = option)),
+        }
+    }
+}
+
+/// Parse every argument after the operation and the target (arguments 1 and 2).
+///
+/// Only `--input <json>` / `-i <json>` and `--what-if` / `-w` are accepted, in any order. Every
+/// other argument is an error, so that a misspelled option can never be ignored.
+///
+/// # Errors
+///
+/// Returns `MissingInputValue` when `--input` has no value and `UnknownOption` for any argument
+/// that isn't a known option or the value of `--input`.
+#[cfg(windows)]
+fn parse_options(args: &[String]) -> Result<Options, ArgError> {
+    let mut options = Options::default();
+    let mut remaining = args.iter().skip(3);
+    while let Some(arg) = remaining.next() {
+        match arg.as_str() {
+            "--input" | "-i" => options.input = Some(remaining.next().ok_or(ArgError::MissingInputValue)?.clone()),
+            "--what-if" | "-w" => options.what_if = true,
+            unknown => return Err(ArgError::UnknownOption(unknown.to_string())),
+        }
+    }
+    Ok(options)
 }
 
 #[cfg(all(test, windows))]
 mod tests {
-    use super::{parse_input_arg, parse_what_if_flag};
+    use super::{ArgError, Options, parse_options};
 
-    fn args(list: &[&str]) -> Vec<String> {
-        list.iter().map(ToString::to_string).collect()
+    fn parse(list: &[&str]) -> Result<Options, ArgError> {
+        let args: Vec<String> = list.iter().map(ToString::to_string).collect();
+        parse_options(&args)
+    }
+
+    fn options(input: Option<&str>, what_if: bool) -> Options {
+        Options { input: input.map(ToString::to_string), what_if }
     }
 
     #[test]
-    fn finds_long_and_short_input_arguments_after_the_target() {
-        assert_eq!(
-            parse_input_arg(&args(&["exe", "get", "user-right", "--input", "{}"])),
-            Ok(Some("{}".to_string()))
-        );
-        assert_eq!(
-            parse_input_arg(&args(&["exe", "set", "user-right", "-w", "-i", "[]"])),
-            Ok(Some("[]".to_string()))
-        );
-        assert_eq!(parse_input_arg(&args(&["exe", "export", "user-right"])), Ok(None));
-        assert!(parse_input_arg(&args(&["exe", "get", "user-right", "--input"])).is_err());
+    fn accepts_input_and_what_if_in_any_order() {
+        assert_eq!(parse(&["exe", "get", "user-right", "--input", "{}"]), Ok(options(Some("{}"), false)));
+        assert_eq!(parse(&["exe", "set", "user-right", "-w", "-i", "[]"]), Ok(options(Some("[]"), true)));
+        assert_eq!(parse(&["exe", "set", "user-right", "--input", "{}", "--what-if"]), Ok(options(Some("{}"), true)));
+        assert_eq!(parse(&["exe", "export", "user-right"]), Ok(options(None, false)));
     }
 
     #[test]
-    fn finds_what_if_flag_after_the_target() {
-        assert!(parse_what_if_flag(&args(&["exe", "set", "user-right", "--what-if", "--input", "{}"])));
-        assert!(parse_what_if_flag(&args(&["exe", "set", "user-right", "--input", "{}", "-w"])));
-        assert!(!parse_what_if_flag(&args(&["exe", "set", "user-right", "--input", "{}"])));
-        assert!(!parse_what_if_flag(&args(&["exe", "-w", "user-right"])));
+    fn input_requires_a_value() {
+        assert_eq!(parse(&["exe", "get", "user-right", "--input"]), Err(ArgError::MissingInputValue));
+        assert_eq!(parse(&["exe", "set", "user-right", "-w", "-i"]), Err(ArgError::MissingInputValue));
+    }
+
+    #[test]
+    fn unknown_options_are_rejected_before_and_after_input() {
+        let unknown = |option: &str| Err(ArgError::UnknownOption(option.to_string()));
+        assert_eq!(parse(&["exe", "set", "user-right", "--whatif", "--input", "{}"]), unknown("--whatif"));
+        assert_eq!(parse(&["exe", "set", "user-right", "--input", "{}", "--whatif"]), unknown("--whatif"));
+        assert_eq!(parse(&["exe", "set", "user-right", "--input", "{}", "extra"]), unknown("extra"));
+        assert_eq!(parse(&["exe", "export", "user-right", "-x"]), unknown("-x"));
+    }
+
+    #[test]
+    fn the_value_of_input_is_never_read_as_an_option() {
+        assert_eq!(parse(&["exe", "set", "user-right", "--input", "--what-if"]), Ok(options(Some("--what-if"), false)));
     }
 }
