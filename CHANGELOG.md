@@ -87,6 +87,7 @@ changes since the last release, see the [diff on GitHub][unreleased].
   <details><summary>Related work items</summary>
 
   - Issues: [#1755][#1755]
+  - PRs: [#1759][#1759]
 
   </details>
 
@@ -96,6 +97,23 @@ changes since the last release, see the [diff on GitHub][unreleased].
   `dsc resource set`, and `dsc resource delete` commands, enabling AI agents to preview changes
   before applying them. Passing `what_if` with an operation that doesn't support it returns an
   invalid parameters error.
+
+### Changed
+
+- Extensions that implement the `secret` capability must now define the `args` property for the
+  `secret` command with exactly one secret name input argument (`nameArg`) and at most one vault
+  input argument (`vaultArg`). Previously, an extension could omit the secret name input argument,
+  which left DSC with no way to tell the extension which secret to retrieve. DSC no longer loads an
+  extension manifest that defines a nonfunctional `secret` command and logs an informational
+  message explaining the problem. The extension manifest JSON schema enforces the same
+  requirements.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#1729][#1729]
+  - PRs: _None_
+
+  </details>
 
 ## [v3.2.2][release-v3.2.2] - 2026-06-16
 
@@ -1995,5 +2013,7 @@ Version `3.0.0` is the first generally available release of DSC.
 [#1557]: https://github.com/PowerShell/DSC/issues/1557
 [#1558]: https://github.com/PowerShell/DSC/issues/1558
 [#1562]: https://github.com/PowerShell/DSC/issues/1562
+[#1729]: https://github.com/PowerShell/DSC/issues/1729
 [#1755]: https://github.com/PowerShell/DSC/issues/1755
+[#1759]: https://github.com/PowerShell/DSC/issues/1759
 

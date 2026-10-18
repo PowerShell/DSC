@@ -81,7 +81,6 @@ macro_rules! test_schema_for {
             test_schema_for!(dsc_lib::configure::parameters::SimpleInput);
             test_schema_for!(dsc_lib::configure::parameters::SecureString);
             test_schema_for!(dsc_lib::configure::parameters::SecureObject);
-            test_schema_for!(dsc_lib::configure::parameters::SecureKind);
         }
     }
     #[cfg(test)] mod discovery {
@@ -156,6 +155,7 @@ macro_rules! test_schema_for {
         #[allow(unused_must_use)]
         #[cfg(test)] mod secret {
             test_schema_for!(dsc_lib::extensions::secret::SecretArgKind);
+            test_schema_for!(dsc_lib::extensions::secret::SecretArgs);
             test_schema_for!(dsc_lib::extensions::secret::SecretMethod);
         }
     }

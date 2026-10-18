@@ -263,8 +263,8 @@ fn run() -> Result<(), u8> {
             }
             String::new()
         },
-        SubCommand::NoOp => {
-            // do nothing and just return success
+        SubCommand::NoOp { args: _args } => {
+            // do nothing and just return success, any arguments are ignored
             String::new()
         },
         SubCommand::Operation { operation, input } => {

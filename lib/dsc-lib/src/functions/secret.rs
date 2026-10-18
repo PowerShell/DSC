@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::DscError;
-use crate::configure::{context::Context, parameters::SecureString};
+use crate::configure::context::Context;
 use crate::extensions::dscextension::Capability;
 use crate::functions::{FunctionArgKind, FunctionCategory, FunctionMetadata};
 use rust_i18n::t;
@@ -48,7 +48,7 @@ impl Function for Secret {
             .filter(|ext| ext.capabilities.contains(&Capability::Secret))
             .collect::<Vec<_>>();
         let mut secret_returned = false;
-        let mut result: String = String::new();
+        let mut result: Value = Value::Null;
         if extensions.is_empty() {
             return Err(DscError::Function("secret".to_string(), t!("functions.secret.noExtensions").to_string()));
         }
@@ -69,8 +69,7 @@ impl Function for Secret {
             }
         }
         if secret_returned {
-            let secure_string = serde_json::from_str::<SecureString>(&result).map_err(|_err| DscError::Function("secret".to_string(), t!("functions.secret.invalidSecretFormat", name = secret_name.clone()).to_string()))?;
-            Ok(serde_json::to_value(secure_string)?)
+            Ok(result)
         } else {
             Err(DscError::Function("secret".to_string(), t!("functions.secret.secretNotFound", name = secret_name).to_string()))
         }
