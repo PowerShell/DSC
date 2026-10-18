@@ -248,6 +248,22 @@ pub fn effective(
     Ok(merge_access_control_list(&current, &normalized))
 }
 
+/// Computes the effective ACL preview for a target that does not exist yet. There is no current
+/// descriptor to merge, so merge mode starts from an empty managed ACL. This resolves principals
+/// for every mode and applies the same replacement or merge semantics as a write, including
+/// deduplication and canonical ordering in merge mode and effective protection defaults in
+/// replacement mode.
+pub fn effective_for_new(
+    requested: &RegistryAccessControlList,
+) -> Result<RegistryAccessControlList, RegistryError> {
+    validate(requested)?;
+    let normalized = normalize(requested).map_err(acl_error)?;
+    Ok(merge_access_control_list(
+        &RegistryAccessControlList::default(),
+        &normalized,
+    ))
+}
+
 /// Returns whether `actual` (as returned by [`get`] for the section(s) `requested` manages)
 /// already satisfies `requested`, honoring its `_purge` setting exactly as [`effective`] does
 /// when computing what a [`set`] would write, but without performing a registry read: the merge

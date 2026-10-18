@@ -128,10 +128,14 @@
           {
             "jsonInputArg": "--input",
             "mandatory": true
+          },
+          {
+            "whatIfArg": "--what-if"
           }
         ],
         "implementsPretest": false,
-        "return": "state"
+        "return": "state",
+        "whatIfReturns": "state"
       },
       "test": {
         "executable": "file_dsc",

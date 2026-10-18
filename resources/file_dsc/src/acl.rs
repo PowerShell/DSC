@@ -25,7 +25,7 @@ pub fn get(input: &FileAccessControlList) -> Result<FileAccessControlList, Strin
     })
 }
 
-pub fn set(input: &FileAccessControlList) -> Result<FileAccessControlList, String> {
+pub fn set(input: &FileAccessControlList, what_if: bool) -> Result<FileAccessControlList, String> {
     let requested = validate_input(input)?;
     let normalized = normalize(requested).map_err(acl_error)?;
     if normalized.system.is_some() {
@@ -43,6 +43,14 @@ pub fn set(input: &FileAccessControlList) -> Result<FileAccessControlList, Strin
         read_acl(&input.path, &normalized)?
     };
     let to_write = merge_access_control_list(&current, &normalized);
+
+    if what_if {
+        return Ok(FileAccessControlList {
+            path: input.path.clone(),
+            access_control_list: Some(to_write),
+            in_desired_state: None,
+        });
+    }
 
     let (mut descriptor_bytes, security_information) =
         build_self_relative_security_descriptor(&to_write).map_err(acl_error)?;

@@ -153,24 +153,23 @@ Describe 'registry config whatif tests' {
         $afterGet.accessControlList.discretionary.Count | Should -Be 1
     }
 
-    It 'Can whatif setting a value and ACL on a missing key, returning the raw (unmerged) request' -Skip:(!$IsWindows) {
+    It 'Can whatif setting a value and ACL on a missing key, returning the resulting ACL' -Skip:(!$IsWindows) {
         $whatIfJson = @{
             keyPath           = 'HKCU\1\AclWhatIfMissingKey'
             valueName         = 'Hello'
             valueData         = @{ String = 'World' }
             accessControlList = @{
                 discretionary = @(
-                    @{ principal = 'S-1-5-7'; type = 'deny'; accessMask = @('read') }
+                    @{ principal = $env:USERNAME; type = 'deny'; accessMask = @('read') }
                 )
             }
         } | ConvertTo-Json -Depth 10 -Compress
         $result = registry config set -w --input $whatIfJson 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw)
 
-        # The key doesn't exist, so the preview falls back to reporting the raw request rather
-        # than attempting (and failing) to read a nonexistent key's current ACL.
         $result.accessControlList.discretionary.Count | Should -Be 1
-        $result.accessControlList.discretionary[0].principal | Should -BeExactly 'S-1-5-7'
+        $result.accessControlList.discretionary[0].principal | Should -Match '^S-\d-'
+        $result.accessControlList.discretionaryProtected | Should -BeFalse
     }
 
     It 'Can whatif an existing deeply nested key and value' -Skip:(!$IsWindows) {

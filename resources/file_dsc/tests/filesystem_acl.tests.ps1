@@ -126,6 +126,51 @@ Describe 'Microsoft.Filesystem/AccessControlList tests' -Skip:(!$IsWindows) {
     }
 
     Context '_purge behavior' {
+        It 'What-if returns the resulting ACL without changing the file when _purge is <purgeMode>' -ForEach @(
+            @{ purgeMode = 'omitted'; purge = $null; expectedCount = 1; expectExisting = $false }
+            @{ purgeMode = 'true'; purge = $true; expectedCount = 1; expectExisting = $false }
+            @{ purgeMode = 'false'; purge = $false; expectedCount = 2; expectExisting = $true }
+        ) {
+            $path = New-Item -ItemType File -Path (Join-Path $testRoot "whatif-$purgeMode.txt") |
+                Select-Object -ExpandProperty FullName
+            $initialAcl = @{
+                discretionary = @(
+                    @{ principal = $currentSid; type = 'allow'; accessMask = @('fullControl') }
+                )
+            }
+            $initialJson = @{ path = $path; accessControlList = $initialAcl } |
+                ConvertTo-Json -Depth 10 -Compress
+            $null = $initialJson | dsc resource set -r $resourceType -f - 2>$TestDrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+
+            $requestedAcl = @{
+                discretionary = @(
+                    @{ principal = 'ANONYMOUS LOGON'; type = 'deny'; accessMask = @('read') }
+                )
+            }
+            if ($null -ne $purge) {
+                $requestedAcl._purge = $purge
+            }
+            $whatIfJson = @{ path = $path; accessControlList = $requestedAcl } |
+                ConvertTo-Json -Depth 10 -Compress
+
+            $whatIfOutput = $whatIfJson |
+                dsc resource set -r $resourceType -f - -w 2>$TestDrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+            $afterState = ($whatIfOutput | ConvertFrom-Json).afterState
+
+            @($afterState.accessControlList.discretionary).Count | Should -Be $expectedCount
+            $afterState.accessControlList.discretionary[0].principal | Should -BeExactly $anonymousSid
+            ($afterState.accessControlList.discretionary.principal -contains $currentSid) |
+                Should -Be $expectExisting
+
+            $actualState = ($initialJson |
+                dsc resource get -r $resourceType -f - 2>$TestDrive/error.log |
+                ConvertFrom-Json).actualState
+            @($actualState.accessControlList.discretionary).Count | Should -Be 1
+            $actualState.accessControlList.discretionary[0].principal | Should -BeExactly $currentSid
+        }
+
         It 'Replaces the discretionary section outright when _purge is omitted (default true)' {
             $path = New-Item -ItemType File -Path (Join-Path $testRoot 'replace.txt') |
                 Select-Object -ExpandProperty FullName

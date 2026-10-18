@@ -325,6 +325,17 @@ impl RegistryHelper {
             (Some(requested), true) => Some(acl::prepare(&self.config.key_path, requested)?),
             _ => None,
         };
+        let what_if_acl = if let Some(prepared) = &prepared_acl {
+            Some(prepared.effective().clone())
+        } else if self.what_if {
+            self.config
+                .access_control_list
+                .as_ref()
+                .map(acl::effective_for_new)
+                .transpose()?
+        } else {
+            None
+        };
 
         if let Some(value_name) = &self.config.value_name {
             let value_data = match &self.config.value_data {
@@ -374,21 +385,10 @@ impl RegistryHelper {
             };
 
             if self.what_if {
-                let mut what_if_acl = self.config.access_control_list.clone();
                 if self.config.access_control_list.is_some() {
                     what_if_metadata.push(
                         t!("registry_helper.whatIfSetAcl", key_path = &self.config.key_path).to_string(),
                     );
-                    // The key already exists (`reg_key` is `Some` whenever it was opened
-                    // rather than merely simulated for creation above), so the what-if preview
-                    // can -- and must -- compute the same effective, normalized/merged ACL that
-                    // an actual `set` would write, instead of echoing the raw request back
-                    // unresolved. A key that's only being simulated for creation has no current
-                    // state to merge with, so that simulation is kept separate and still returns
-                    // the raw (normalized-at-write-time) request.
-                    if let Some(effective_acl) = &prepared_acl {
-                        what_if_acl = Some(effective_acl.effective().clone());
-                    }
                 }
                 return Ok(Some(Registry {
                     key_path: self.config.key_path.clone(),
@@ -413,7 +413,7 @@ impl RegistryHelper {
             }
             return Ok(Some(Registry {
                 key_path: self.config.key_path.clone(),
-                access_control_list: self.config.access_control_list.clone(),
+                access_control_list: what_if_acl,
                 metadata: if what_if_metadata.is_empty() { None } else { Some(Metadata { what_if: Some(what_if_metadata) })},
                 ..Default::default()
             }));
@@ -1192,7 +1192,7 @@ fn registry_access_right_generic_variants_have_expected_bits() {
 }
 
 #[test]
-fn set_what_if_with_value_name_returns_effective_acl_for_existing_key() {
+fn set_what_if_with_value_name_returns_effective_acl_for_all_purge_modes() {
     // Note the doubled backslash: `key_path` is embedded directly into JSON string literals
     // below, so it must already be JSON-escaped.
     let key_path = r"HKCU\\DSCTestNativeWhatIfExisting";
@@ -1206,27 +1206,34 @@ fn set_what_if_with_value_name_returns_effective_acl_for_existing_key() {
     );
     RegistryHelper::new_from_json(&initial_json).unwrap().set().unwrap();
 
-    // What-if a Set that both writes a value AND merges in a new ACE (`_purge: false`); since
-    // the key already exists, the preview must report the full effective (merged) ACL -- just
-    // like an actual Set would compute and apply -- not the raw, unmerged request.
-    let what_if_json = format!(
-        r#"{{"keyPath":"{key_path}","valueName":"Hello","valueData":{{"String":"World"}},"accessControlList":{{"discretionary":[{{"principal":"S-1-5-19","type":"allow","accessMask":["read"]}}],"_purge":false}}}}"#
-    );
-    let mut helper = RegistryHelper::new_from_json(&what_if_json).unwrap();
-    helper.enable_what_if();
+    for (purge_property, should_merge) in [
+        ("", false),
+        (r#","_purge":true"#, false),
+        (r#","_purge":false"#, true),
+    ] {
+        let what_if_json = format!(
+            r#"{{"keyPath":"{key_path}","valueName":"Hello","valueData":{{"String":"World"}},"accessControlList":{{"discretionary":[{{"principal":"S-1-5-19","type":"allow","accessMask":["read"]}}]{purge_property}}}}}"#
+        );
+        let mut helper = RegistryHelper::new_from_json(&what_if_json).unwrap();
+        helper.enable_what_if();
 
-    let result = helper.set().unwrap().expect("what-if returns a preview");
+        let result = helper.set().unwrap().expect("what-if returns a preview");
+        let principals: Vec<String> = result
+            .access_control_list
+            .unwrap()
+            .discretionary
+            .unwrap()
+            .into_iter()
+            .map(|entry| entry.principal)
+            .collect();
 
-    let principals: Vec<String> = result
-        .access_control_list
-        .unwrap()
-        .discretionary
-        .unwrap()
-        .into_iter()
-        .map(|entry| entry.principal)
-        .collect();
-    assert!(principals.contains(&"S-1-1-0".to_string()), "{principals:?}");
-    assert!(principals.contains(&"S-1-5-19".to_string()), "{principals:?}");
+        assert_eq!(
+            principals.contains(&"S-1-1-0".to_string()),
+            should_merge,
+            "{principals:?}"
+        );
+        assert!(principals.contains(&"S-1-5-19".to_string()), "{principals:?}");
+    }
 
     // What-if must not have actually written the value.
     let actual = RegistryHelper::new_from_json(&format!(
@@ -1244,22 +1251,44 @@ fn set_what_if_with_value_name_returns_effective_acl_for_existing_key() {
 }
 
 #[test]
-fn set_what_if_with_value_name_returns_raw_acl_for_missing_key() {
-    let what_if_json = r#"{"keyPath":"HKCU\\DSCTestNativeWhatIfMissing","valueName":"Hello","valueData":{"String":"World"},"accessControlList":{"discretionary":[{"principal":"S-1-5-19","type":"allow","accessMask":["read"]}]}}"#;
-    let mut helper = RegistryHelper::new_from_json(what_if_json).unwrap();
+fn set_what_if_for_missing_key_returns_effective_acl_for_all_purge_modes() {
+    for (purge_property, expected_count, expected_protection) in [
+        ("", 3, Some(false)),
+        (r#","_purge":true"#, 3, Some(false)),
+        (r#","_purge":false"#, 2, None),
+    ] {
+        let what_if_json = format!(
+            r#"{{"keyPath":"HKCU\\DSCTestNativeWhatIfMissing","valueName":"Hello","valueData":{{"String":"World"}},"accessControlList":{{"discretionary":[{{"principal":"S-1-5-19","type":"allow","accessMask":["read"]}},{{"principal":"S-1-5-7","type":"deny","accessMask":["read"]}},{{"principal":"S-1-5-19","type":"allow","accessMask":["read"]}}]{purge_property}}}}}"#
+        );
+        let mut helper = RegistryHelper::new_from_json(&what_if_json).unwrap();
+        helper.enable_what_if();
+
+        let result = helper.set().unwrap().expect("what-if returns a preview");
+        let acl = result.access_control_list.unwrap();
+        let entries = acl.discretionary.unwrap();
+
+        assert_eq!(entries.len(), expected_count);
+        assert_eq!(acl.discretionary_protected, expected_protection);
+        if purge_property.contains("false") {
+            assert_eq!(entries[0].principal, "S-1-5-7");
+        }
+    }
+}
+
+#[test]
+fn set_what_if_without_value_name_returns_effective_acl_for_missing_key() {
+    let mut helper = RegistryHelper::new_from_json(
+        r#"{"keyPath":"HKCU\\DSCTestNativeWhatIfMissingAclOnly","accessControlList":{"discretionary":[{"principal":"S-1-5-19","type":"allow","accessMask":["read"]}]}}"#,
+    )
+    .unwrap();
     helper.enable_what_if();
 
     let result = helper.set().unwrap().expect("what-if returns a preview");
+    let acl = result.access_control_list.unwrap();
 
-    // The key doesn't exist, so there is no current state to merge with; the preview reports
-    // the raw request rather than attempting (and failing) to read a nonexistent key.
-    let principals: Vec<String> = result
-        .access_control_list
-        .unwrap()
-        .discretionary
-        .unwrap()
-        .into_iter()
-        .map(|entry| entry.principal)
-        .collect();
-    assert_eq!(principals, vec!["S-1-5-19".to_string()]);
+    assert_eq!(acl.discretionary_protected, Some(false));
+    assert_eq!(
+        acl.discretionary.unwrap()[0].principal,
+        "S-1-5-19".to_string()
+    );
 }

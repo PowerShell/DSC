@@ -73,12 +73,13 @@ fn handle_acl(args: &[String]) -> ExitCode {
         Ok(input) => input,
         Err(code) => return code,
     };
+    let what_if = args.iter().any(|arg| arg == "--what-if" || arg == "-w");
 
     #[cfg(windows)]
     {
         match operation.as_str() {
             "get" => handle_result(acl::get(&input)),
-            "set" => handle_result(acl::set(&input)),
+            "set" => handle_result(acl::set(&input, what_if)),
             "test" => handle_result(acl::test(&input)),
             _ => unreachable!(),
         }
@@ -86,7 +87,7 @@ fn handle_acl(args: &[String]) -> ExitCode {
 
     #[cfg(not(windows))]
     {
-        let _ = (operation, input);
+        let _ = (operation, input, what_if);
         fail(EXIT_RESOURCE_ERROR, &t!("acl.windowsOnly"))
     }
 }
