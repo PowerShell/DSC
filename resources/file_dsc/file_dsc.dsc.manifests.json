@@ -101,8 +101,8 @@
     },
     {
       "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
-      "type": "Microsoft.Filesystem/ACL",
-      "description": "Manage the discretionary access control list of a local file or folder.",
+      "type": "Microsoft.Filesystem/AccessControlList",
+      "description": "Manage the discretionary and/or system access control list of a local file or folder.",
       "tags": [
         "file",
         "folder",
@@ -128,10 +128,14 @@
           {
             "jsonInputArg": "--input",
             "mandatory": true
+          },
+          {
+            "whatIfArg": "--what-if"
           }
         ],
         "implementsPretest": false,
-        "return": "state"
+        "return": "state",
+        "whatIfReturns": "state"
       },
       "test": {
         "executable": "file_dsc",
@@ -149,17 +153,17 @@
         "0": "Success",
         "1": "Invalid arguments",
         "2": "Invalid input",
-        "3": "Filesystem ACL operation error"
+        "3": "Filesystem access control list operation error"
       },
       "schema": {
         "embedded": {
           "$schema": "https://json-schema.org/draft/2020-12/schema",
-          "title": "Filesystem ACL",
-          "description": "Manage the discretionary access control list of a local file or folder.",
+          "title": "Filesystem access control list",
+          "description": "Manage the discretionary and/or system access control list of a local file or folder.",
           "type": "object",
           "required": [
             "path",
-            "SDDL"
+            "accessControlList"
           ],
           "properties": {
             "path": {
@@ -169,11 +173,8 @@
               "minLength": 1,
               "x-dsc-key": true
             },
-            "SDDL": {
-              "type": "string",
-              "title": "Security descriptor definition language",
-              "description": "The complete discretionary access control list in SDDL form. Setting this property replaces the existing DACL, including its protection state.",
-              "minLength": 1
+            "accessControlList": {
+              "$ref": "#/$defs/accessControlList"
             },
             "_inDesiredState": {
               "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/inDesiredState.json"
@@ -181,6 +182,136 @@
           },
           "additionalProperties": false,
           "$defs": {
+            "accessControlList": {
+              "type": "object",
+              "title": "Access control list",
+              "description": "The discretionary (DACL) and/or system (SACL) access control list for the file or folder. Omitting a section leaves it unmanaged; at least one section must be present.",
+              "properties": {
+                "discretionary": {
+                  "type": "array",
+                  "title": "Discretionary access control entries",
+                  "description": "The discretionary access control list (DACL) entries. Omit to leave the DACL unmanaged.",
+                  "items": {
+                    "$ref": "#/$defs/accessControlEntry"
+                  }
+                },
+                "discretionaryProtected": {
+                  "type": "boolean",
+                  "title": "Discretionary access control list is protected",
+                  "description": "Whether the DACL is protected from inheriting entries from its parent. Only meaningful when 'discretionary' is also provided. Omitting this property behaves according to '_purge': when purging (the default), the DACL is written as unprotected (inheriting), since a purge write always stamps an explicit protection state; when merging ('_purge': false), the current protection state is preserved unchanged. Set this explicitly to request a particular protection state regardless of '_purge'."
+                },
+                "system": {
+                  "type": "array",
+                  "title": "System access control entries",
+                  "description": "The system access control list (SACL) entries. Omit to leave the SACL unmanaged. Reading or writing this section requires the SeSecurityPrivilege privilege.",
+                  "items": {
+                    "$ref": "#/$defs/accessControlEntry"
+                  }
+                },
+                "systemProtected": {
+                  "type": "boolean",
+                  "title": "System access control list is protected",
+                  "description": "Whether the SACL is protected from inheriting entries from its parent. Only meaningful when 'system' is also provided. Omitting this property behaves according to '_purge': when purging (the default), the SACL is written as unprotected (inheriting), since a purge write always stamps an explicit protection state; when merging ('_purge': false), the current protection state is preserved unchanged. Set this explicitly to request a particular protection state regardless of '_purge'."
+                },
+                "_purge": {
+                  "type": "boolean",
+                  "title": "Purge supplied sections",
+                  "description": "Whether to replace (purge) each supplied section outright, or merge its entries into the section's current managed entries. Defaults to true (replace) when omitted. When false, the entries supplied for a section are merged into that section's existing entries: semantic duplicates (same normalized principal, ACE type, effective access mask, and inheritance/audit flags) are not duplicated, and the resulting discretionary section is canonicalized into Windows' canonical ACE order: every explicit 'deny' entry, then every explicit 'allow' entry, then every inherited entry (preserving its existing relative order) -- an inherited 'deny' entry is never moved ahead of an explicit 'allow' entry. A section that is omitted from the request remains unmanaged regardless of this setting. For a Test operation, '_purge': false is satisfied when every requested entry is present (after normalization) in the actual access control list; extra entries already present in the actual ACL don't cause a mismatch. '_purge': true (the default) requires the same entries in the same order and count as actual, but each entry pair is compared semantically: an aliased permission name (for example 'fullControl' versus the individual rights it implies) or a differently ordered 'flags' list that is otherwise equivalent doesn't cause a mismatch.",
+                  "default": true
+                }
+              },
+              "additionalProperties": false
+            },
+            "accessControlEntry": {
+              "type": "object",
+              "title": "Access control entry",
+              "description": "A single access control entry (ACE).",
+              "required": [
+                "principal",
+                "type",
+                "accessMask"
+              ],
+              "properties": {
+                "principal": {
+                  "type": "string",
+                  "title": "Principal",
+                  "description": "The security principal the entry applies to. Accepts either a SID string (for example 'S-1-5-32-544') or an account or group name (for example 'DOMAIN\\User' or 'Administrators'). Names are resolved to a security identifier; output always reports the normalized SID string.",
+                  "minLength": 1
+                },
+                "type": {
+                  "type": "string",
+                  "title": "ACE type",
+                  "description": "Whether the entry allows, denies, or audits access. 'allow' and 'deny' are valid only in the discretionary list; 'audit' is valid only in the system list.",
+                  "enum": [
+                    "allow",
+                    "deny",
+                    "audit"
+                  ]
+                },
+                "accessMask": {
+                  "type": "array",
+                  "title": "Access mask",
+                  "description": "The permissions granted, denied, or audited by this entry. The 'generic*' values represent the raw GENERIC_* access mask bits; Windows maps them to the equivalent file-specific rights (for example 'genericAll' to 'fullControl') and they're accepted so that an existing entry using them can always be read back and represented, but there's normally no reason to specify them in a request.",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "readData",
+                      "writeData",
+                      "appendData",
+                      "readExtendedAttributes",
+                      "writeExtendedAttributes",
+                      "executeFile",
+                      "deleteChild",
+                      "readAttributes",
+                      "writeAttributes",
+                      "delete",
+                      "readPermissions",
+                      "changePermissions",
+                      "takeOwnership",
+                      "synchronize",
+                      "read",
+                      "write",
+                      "readAndExecute",
+                      "modify",
+                      "fullControl",
+                      "genericRead",
+                      "genericWrite",
+                      "genericExecute",
+                      "genericAll"
+                    ]
+                  }
+                },
+                "flags": {
+                  "type": "array",
+                  "title": "ACE flags",
+                  "description": "Inheritance flags for the entry. Defaults to an empty list (no inheritance).",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "containerInherit",
+                      "objectInherit",
+                      "noPropagateInherit",
+                      "inheritOnly",
+                      "inherited"
+                    ]
+                  }
+                },
+                "auditFlags": {
+                  "type": "array",
+                  "title": "Audit flags",
+                  "description": "The audit conditions for the entry. Required (and non-empty) when 'type' is 'audit'; must be empty otherwise.",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "success",
+                      "failure"
+                    ]
+                  }
+                }
+              },
+              "additionalProperties": false
+            },
             "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/inDesiredState.json": {
               "$schema": "https://json-schema.org/draft/2020-12/schema",
               "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/inDesiredState.json",

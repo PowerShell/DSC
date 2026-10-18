@@ -43,24 +43,25 @@ Describe 'Registry config get tests' {
         ($result.psobject.properties | Measure-Object).Count | Should -Be 3
     }
 
-    It 'Can get a registry key ACL' -Skip:(!$IsWindows) {
+    It 'Can get a registry key access control list' -Skip:(!$IsWindows) {
         $json = @{
             keyPath = 'HKCU\1\AclGet'
-            acl = 'D:'
-        } | ConvertTo-Json -Compress
+            accessControlList = @{ discretionary = @() }
+        } | ConvertTo-Json -Depth 10 -Compress
 
         $result = registry config get --input $json 2>$TestDrive/error.log | ConvertFrom-Json
 
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw)
         $result.keyPath | Should -BeExactly 'HKCU\1\AclGet'
-        $result.acl | Should -Match '^D:'
+        $result.accessControlList.discretionary.Count | Should -BeGreaterThan 0
+        $result.accessControlList.discretionary[0].principal | Should -Match '^S-1-'
     }
 
-    It 'Rejects an invalid ACL when the registry key does not exist' -Skip:(!$IsWindows) {
+    It 'Rejects an access control list request that specifies neither discretionary nor system' -Skip:(!$IsWindows) {
         $json = @{
             keyPath = 'HKCU\1\MissingAclGet'
-            acl = 'invalid'
-        } | ConvertTo-Json -Compress
+            accessControlList = @{}
+        } | ConvertTo-Json -Depth 10 -Compress
 
         registry config get --input $json 2>$TestDrive/error.log
 

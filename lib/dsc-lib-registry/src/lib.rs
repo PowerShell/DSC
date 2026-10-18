@@ -106,10 +106,11 @@ impl RegistryHelper {
             key_path: key_path.to_string(),
             value_name,
             value_data,
-            acl: None,
+            access_control_list: None,
             metadata: None,
             exist: None,
             registry_file_path: None,
+            in_desired_state: None,
         };
         Ok(
             Self {
@@ -141,12 +142,12 @@ impl RegistryHelper {
         }
 
         if self.config.value_name.is_none()
-            && let Some(requested_acl) = &self.config.acl
+            && let Some(requested_acl) = &self.config.access_control_list
         {
             return match acl::get(&self.config.key_path, requested_acl) {
                 Ok(current_acl) => Ok(Registry {
                     key_path: self.config.key_path.clone(),
-                    acl: Some(current_acl),
+                    access_control_list: Some(current_acl),
                     ..Default::default()
                 }),
                 Err(RegistryError::RegistryKeyNotFound(_)) => Ok(Registry {
@@ -158,7 +159,7 @@ impl RegistryHelper {
             };
         }
 
-        if let Some(requested_acl) = &self.config.acl {
+        if let Some(requested_acl) = &self.config.access_control_list {
             acl::validate(requested_acl)?;
         }
 
@@ -177,7 +178,7 @@ impl RegistryHelper {
             },
             Err(e) => return Err(e),
         };
-        let acl = match &self.config.acl {
+        let access_control_list = match &self.config.access_control_list {
             Some(requested_acl) => Some(acl::get(&self.config.key_path, requested_acl)?),
             None => None,
         };
@@ -190,7 +191,7 @@ impl RegistryHelper {
                     return Ok(Registry {
                         key_path: self.config.key_path.clone(),
                         value_name: Some(value_name.clone()),
-                        acl,
+                        access_control_list,
                         exist: Some(exist),
                         ..Default::default()
                     });
@@ -202,13 +203,13 @@ impl RegistryHelper {
                 key_path: self.config.key_path.clone(),
                 value_name: Some(value_name.clone()),
                 value_data: convert_reg_value(&value)?,
-                acl,
+                access_control_list,
                 ..Default::default()
             })
         } else {
             Ok(Registry {
                 key_path: self.config.key_path.clone(),
-                acl,
+                access_control_list,
                 ..Default::default()
             })
         }
@@ -256,29 +257,30 @@ impl RegistryHelper {
     /// * `RegistryError` - The error that occurred.
     pub fn set(&self) -> Result<Option<Registry>, RegistryError> {
         if self.offline_hive.is_some() {
-            if self.config.acl.is_some() {
+            if self.config.access_control_list.is_some() {
                 return Err(RegistryError::OfflineRegistry(
                     t!("error.offlineAcl").to_string(),
                 ));
             }
             return self.set_offline();
         }
-        if let Some(acl) = &self.config.acl {
-            acl::validate(acl)?;
+        if let Some(acl) = &self.config.access_control_list {
+            acl::preflight(acl)?;
         }
 
         let mut what_if_metadata: Vec<String> = Vec::new();
         if self.config.value_name.is_none()
-            && let Some(config_acl) = &self.config.acl
+            && let Some(config_acl) = &self.config.access_control_list
             && acl::can_set(&self.config.key_path, config_acl)?
         {
             if self.what_if {
                 what_if_metadata.push(
                     t!("registry_helper.whatIfSetAcl", key_path = &self.config.key_path).to_string(),
                 );
+                let effective_acl = acl::effective(&self.config.key_path, config_acl)?;
                 return Ok(Some(Registry {
                     key_path: self.config.key_path.clone(),
-                    acl: Some(config_acl.clone()),
+                    access_control_list: Some(effective_acl),
                     metadata: Some(Metadata { what_if: Some(what_if_metadata) }),
                     ..Default::default()
                 }));
@@ -316,6 +318,23 @@ impl RegistryHelper {
                 }
             },
             Err(e) => return self.handle_error_or_what_if(e)
+        };
+        // Prepare the complete descriptor before writing a value. In merge mode this reads and
+        // parses the existing ACL, so unsupported existing ACEs fail before registry data changes.
+        let mut prepared_acl = match (&self.config.access_control_list, reg_key.is_some()) {
+            (Some(requested), true) => Some(acl::prepare(&self.config.key_path, requested)?),
+            _ => None,
+        };
+        let what_if_acl = if let Some(prepared) = &prepared_acl {
+            Some(prepared.effective().clone())
+        } else if self.what_if {
+            self.config
+                .access_control_list
+                .as_ref()
+                .map(acl::effective_for_new)
+                .transpose()?
+        } else {
+            None
         };
 
         if let Some(value_name) = &self.config.value_name {
@@ -366,7 +385,7 @@ impl RegistryHelper {
             };
 
             if self.what_if {
-                if self.config.acl.is_some() {
+                if self.config.access_control_list.is_some() {
                     what_if_metadata.push(
                         t!("registry_helper.whatIfSetAcl", key_path = &self.config.key_path).to_string(),
                     );
@@ -375,7 +394,7 @@ impl RegistryHelper {
                     key_path: self.config.key_path.clone(),
                     value_data: convert_reg_value(&data)?,
                     value_name: self.config.value_name.clone(),
-                    acl: self.config.acl.clone(),
+                    access_control_list: what_if_acl,
                     metadata: if what_if_metadata.is_empty() { None } else { Some(Metadata { what_if: Some(what_if_metadata) })},
                     ..Default::default()
                 }));
@@ -387,24 +406,81 @@ impl RegistryHelper {
         }
 
         if self.what_if {
-            if self.config.acl.is_some() {
+            if self.config.access_control_list.is_some() {
                 what_if_metadata.push(
                     t!("registry_helper.whatIfSetAcl", key_path = &self.config.key_path).to_string(),
                 );
             }
             return Ok(Some(Registry {
                 key_path: self.config.key_path.clone(),
-                acl: self.config.acl.clone(),
+                access_control_list: what_if_acl,
                 metadata: if what_if_metadata.is_empty() { None } else { Some(Metadata { what_if: Some(what_if_metadata) })},
                 ..Default::default()
             }));
         }
 
-        if let Some(acl) = &self.config.acl {
-            acl::set(&self.config.key_path, acl)?;
+        if let Some(prepared) = &mut prepared_acl {
+            acl::set_prepared(&self.config.key_path, prepared)?;
+        } else if let Some(requested_acl) = &self.config.access_control_list {
+            acl::set(&self.config.key_path, requested_acl)?;
         }
 
         Ok(None)
+    }
+
+    /// Test whether the registry matches the desired state.
+    ///
+    /// Compares `_exist`, `valueData` (when `valueName` is specified), and `accessControlList`
+    /// (when specified) against the actual state returned by [`Self::get`]. The `accessControlList`
+    /// comparison uses the shared access control list satisfaction semantics (principal
+    /// normalization, alias-aware access mask comparison, and `_purge`-aware entry matching)
+    /// instead of raw JSON equality, so that, for example, a differently cased or
+    /// differently-named-but-equivalent principal, or an access mask expressed as an alias versus
+    /// its decomposed rights, doesn't produce a false drift report.
+    ///
+    /// # Returns
+    ///
+    /// * `Registry` - The registry struct with `_inDesiredState` populated.
+    ///
+    /// # Errors
+    ///
+    /// * `RegistryError` - The error that occurred.
+    pub fn test(&self) -> Result<Registry, RegistryError> {
+        if self.offline_hive.is_some() {
+            return self.test_offline();
+        }
+
+        // `get` performs the same accessControlList validation (for example rejecting
+        // `accessControlList: {}`) that `set` does, so there's no need to duplicate it here.
+        let actual = self.get()?;
+
+        let desired_exist = self.config.exist.unwrap_or(true);
+        let actual_exist = actual.exist.unwrap_or(true);
+        let mut in_desired_state = desired_exist == actual_exist;
+
+        // Value data and the access control list only matter when the instance is (and should
+        // be) present; when existence itself doesn't match, that alone determines compliance.
+        if desired_exist && actual_exist {
+            if self.config.value_name.is_some() {
+                let desired_value_data = self.config.value_data.clone().unwrap_or(RegistryValueData::None);
+                let actual_value_data = actual.value_data.clone().unwrap_or(RegistryValueData::None);
+                if desired_value_data != actual_value_data {
+                    in_desired_state = false;
+                }
+            }
+
+            if let Some(requested_acl) = &self.config.access_control_list {
+                let actual_acl = actual.access_control_list.clone().unwrap_or_default();
+                if !acl::is_satisfied(requested_acl, &actual_acl)? {
+                    in_desired_state = false;
+                }
+            }
+        }
+
+        Ok(Registry {
+            in_desired_state: Some(in_desired_state),
+            ..actual
+        })
     }
 
     /// Delete from registry.
@@ -510,7 +586,7 @@ impl RegistryHelper {
     // --- Offline registry implementations ---
 
     fn get_offline(&self) -> Result<Registry, RegistryError> {
-        if self.config.acl.is_some() {
+        if self.config.access_control_list.is_some() {
             return Err(RegistryError::OfflineRegistry(
                 t!("error.offlineAcl").to_string(),
             ));
@@ -558,6 +634,31 @@ impl RegistryHelper {
                 ..Default::default()
             })
         }
+    }
+
+    /// Test whether an offline registry hive matches the desired state. Access control lists
+    /// are never supported for offline hives, so [`Self::get_offline`] rejects a request that
+    /// specifies one; otherwise, only existence and (when `valueName` is specified) value data
+    /// are compared.
+    fn test_offline(&self) -> Result<Registry, RegistryError> {
+        let actual = self.get_offline()?;
+
+        let desired_exist = self.config.exist.unwrap_or(true);
+        let actual_exist = actual.exist.unwrap_or(true);
+        let mut in_desired_state = desired_exist == actual_exist;
+
+        if desired_exist && actual_exist && self.config.value_name.is_some() {
+            let desired_value_data = self.config.value_data.clone().unwrap_or(RegistryValueData::None);
+            let actual_value_data = actual.value_data.clone().unwrap_or(RegistryValueData::None);
+            if desired_value_data != actual_value_data {
+                in_desired_state = false;
+            }
+        }
+
+        Ok(Registry {
+            in_desired_state: Some(in_desired_state),
+            ..actual
+        })
     }
 
     fn set_offline(&self) -> Result<Option<Registry>, RegistryError> {
@@ -1000,4 +1101,194 @@ fn delete_tree() {
     assert_eq!(result.value_name, None);
     assert_eq!(result.value_data, None);
     assert_eq!(result.exist, Some(false));
+}
+
+#[test]
+fn test_reports_in_desired_state_when_value_matches() {
+    let helper = RegistryHelper::new_from_json(r#"{"keyPath":"HKCU\\DSCTestNative\\Value","valueName":"TestValue","valueData": { "String": "Hello"} }"#).unwrap();
+    helper.set().unwrap();
+
+    let result = helper.test().unwrap();
+
+    assert_eq!(result.in_desired_state, Some(true));
+
+    RegistryHelper::new_from_json(r#"{"keyPath":"HKCU\\DSCTestNative"}"#).unwrap().remove().unwrap();
+}
+
+#[test]
+fn test_reports_not_in_desired_state_when_value_differs() {
+    let helper = RegistryHelper::new_from_json(r#"{"keyPath":"HKCU\\DSCTestNative2\\Value","valueName":"TestValue","valueData": { "String": "Hello"} }"#).unwrap();
+    helper.set().unwrap();
+
+    let desired = RegistryHelper::new_from_json(r#"{"keyPath":"HKCU\\DSCTestNative2\\Value","valueName":"TestValue","valueData": { "String": "Goodbye"} }"#).unwrap();
+    let result = desired.test().unwrap();
+
+    assert_eq!(result.in_desired_state, Some(false));
+
+    RegistryHelper::new_from_json(r#"{"keyPath":"HKCU\\DSCTestNative2"}"#).unwrap().remove().unwrap();
+}
+
+#[test]
+fn test_reports_not_in_desired_state_when_exist_mismatches() {
+    let desired = RegistryHelper::new_from_json(r#"{"keyPath":"HKCU\\DSCTestNativeDoesNotExist"}"#).unwrap();
+
+    let result = desired.test().unwrap();
+
+    assert_eq!(result.in_desired_state, Some(false));
+}
+
+#[test]
+fn test_satisfies_purge_true_acl_via_alias_equivalent_access_mask() {
+    // The individual rights below, combined, are bit-for-bit identical to `fullControl`; a real
+    // system read always reports the most comprehensive alias that fits exactly, so a
+    // subsequent Get/Test will see `fullControl` for this entry even though it was set using
+    // the decomposed list below. A raw per-field/array comparison between the two
+    // representations would (incorrectly) treat this as a mismatch.
+    //
+    // The principal is the well-known "Everyone" SID rather than, say, LocalSystem: since this
+    // is a `_purge: true` (the default) write, it replaces the DACL outright with only this one
+    // entry, and the test process must remain able to read (and ultimately clean up) the key
+    // afterward.
+    let decomposed_json = r#"{"keyPath":"HKCU\\DSCTestNativeAlias","accessControlList":{"discretionary":[{"principal":"S-1-1-0","type":"allow","accessMask":["queryValue","setValue","createSubKey","enumerateSubKeys","notify","createLink","delete","readPermissions","changePermissions","takeOwnership"]}],"discretionaryProtected":false}}"#;
+    RegistryHelper::new_from_json(decomposed_json).unwrap().set().unwrap();
+
+    let result = RegistryHelper::new_from_json(decomposed_json).unwrap().test().unwrap();
+
+    assert_eq!(result.in_desired_state, Some(true), "{result:?}");
+
+    RegistryHelper::new_from_json(r#"{"keyPath":"HKCU\\DSCTestNativeAlias","_exist":false}"#).unwrap().remove().unwrap();
+}
+
+#[test]
+fn set_rejects_access_control_list_with_no_sections() {
+    let helper = RegistryHelper::new_from_json(r#"{"keyPath":"HKCU\\DSCTestNativeEmptyAcl","accessControlList":{}}"#).unwrap();
+
+    let error = helper.set().unwrap_err();
+
+    assert!(matches!(error, RegistryError::Acl(_)));
+}
+
+#[test]
+fn registry_access_right_rejects_removed_wow64_variants() {
+    // `wow6464Key`/`wow6432Key` are registry *view* selectors for `RegOpenKeyExW`'s
+    // `samDesired`, not ACE permissions, and must no longer be accepted as accessMask values.
+    let wow64_64: Result<crate::config::RegistryAccessRight, _> =
+        serde_json::from_str("\"wow6464Key\"");
+    let wow64_32: Result<crate::config::RegistryAccessRight, _> =
+        serde_json::from_str("\"wow6432Key\"");
+    assert!(wow64_64.is_err());
+    assert!(wow64_32.is_err());
+}
+
+#[test]
+fn registry_access_right_generic_variants_have_expected_bits() {
+    use crate::config::RegistryAccessRight;
+    use lib_acl::AccessMask;
+
+    assert_eq!(RegistryAccessRight::GenericRead.bits(), 0x8000_0000);
+    assert_eq!(RegistryAccessRight::GenericWrite.bits(), 0x4000_0000);
+    assert_eq!(RegistryAccessRight::GenericExecute.bits(), 0x2000_0000);
+    assert_eq!(RegistryAccessRight::GenericAll.bits(), 0x1000_0000);
+}
+
+#[test]
+fn set_what_if_with_value_name_returns_effective_acl_for_all_purge_modes() {
+    // Note the doubled backslash: `key_path` is embedded directly into JSON string literals
+    // below, so it must already be JSON-escaped.
+    let key_path = r"HKCU\\DSCTestNativeWhatIfExisting";
+    // Create the key (and an initial ACE) first, representing an "existing key" scenario. The
+    // principal is the well-known "Everyone" SID rather than, say, LocalSystem: this is a
+    // `_purge: true` (the default) write that replaces the DACL outright with only this one
+    // entry, and the test process must remain able to read (and ultimately clean up) the key
+    // afterward.
+    let initial_json = format!(
+        r#"{{"keyPath":"{key_path}","accessControlList":{{"discretionary":[{{"principal":"S-1-1-0","type":"allow","accessMask":["fullControl"]}}]}}}}"#
+    );
+    RegistryHelper::new_from_json(&initial_json).unwrap().set().unwrap();
+
+    for (purge_property, should_merge) in [
+        ("", false),
+        (r#","_purge":true"#, false),
+        (r#","_purge":false"#, true),
+    ] {
+        let what_if_json = format!(
+            r#"{{"keyPath":"{key_path}","valueName":"Hello","valueData":{{"String":"World"}},"accessControlList":{{"discretionary":[{{"principal":"S-1-5-19","type":"allow","accessMask":["read"]}}]{purge_property}}}}}"#
+        );
+        let mut helper = RegistryHelper::new_from_json(&what_if_json).unwrap();
+        helper.enable_what_if();
+
+        let result = helper.set().unwrap().expect("what-if returns a preview");
+        let principals: Vec<String> = result
+            .access_control_list
+            .unwrap()
+            .discretionary
+            .unwrap()
+            .into_iter()
+            .map(|entry| entry.principal)
+            .collect();
+
+        assert_eq!(
+            principals.contains(&"S-1-1-0".to_string()),
+            should_merge,
+            "{principals:?}"
+        );
+        assert!(principals.contains(&"S-1-5-19".to_string()), "{principals:?}");
+    }
+
+    // What-if must not have actually written the value.
+    let actual = RegistryHelper::new_from_json(&format!(
+        r#"{{"keyPath":"{key_path}","valueName":"Hello"}}"#
+    ))
+    .unwrap()
+    .get()
+    .unwrap();
+    assert_eq!(actual.exist, Some(false));
+
+    RegistryHelper::new_from_json(&format!(r#"{{"keyPath":"{key_path}"}}"#))
+        .unwrap()
+        .remove()
+        .unwrap();
+}
+
+#[test]
+fn set_what_if_for_missing_key_returns_effective_acl_for_all_purge_modes() {
+    for (purge_property, expected_count, expected_protection) in [
+        ("", 3, Some(false)),
+        (r#","_purge":true"#, 3, Some(false)),
+        (r#","_purge":false"#, 2, None),
+    ] {
+        let what_if_json = format!(
+            r#"{{"keyPath":"HKCU\\DSCTestNativeWhatIfMissing","valueName":"Hello","valueData":{{"String":"World"}},"accessControlList":{{"discretionary":[{{"principal":"S-1-5-19","type":"allow","accessMask":["read"]}},{{"principal":"S-1-5-7","type":"deny","accessMask":["read"]}},{{"principal":"S-1-5-19","type":"allow","accessMask":["read"]}}]{purge_property}}}}}"#
+        );
+        let mut helper = RegistryHelper::new_from_json(&what_if_json).unwrap();
+        helper.enable_what_if();
+
+        let result = helper.set().unwrap().expect("what-if returns a preview");
+        let acl = result.access_control_list.unwrap();
+        let entries = acl.discretionary.unwrap();
+
+        assert_eq!(entries.len(), expected_count);
+        assert_eq!(acl.discretionary_protected, expected_protection);
+        if purge_property.contains("false") {
+            assert_eq!(entries[0].principal, "S-1-5-7");
+        }
+    }
+}
+
+#[test]
+fn set_what_if_without_value_name_returns_effective_acl_for_missing_key() {
+    let mut helper = RegistryHelper::new_from_json(
+        r#"{"keyPath":"HKCU\\DSCTestNativeWhatIfMissingAclOnly","accessControlList":{"discretionary":[{"principal":"S-1-5-19","type":"allow","accessMask":["read"]}]}}"#,
+    )
+    .unwrap();
+    helper.enable_what_if();
+
+    let result = helper.set().unwrap().expect("what-if returns a preview");
+    let acl = result.access_control_list.unwrap();
+
+    assert_eq!(acl.discretionary_protected, Some(false));
+    assert_eq!(
+        acl.discretionary.unwrap()[0].principal,
+        "S-1-5-19".to_string()
+    );
 }
