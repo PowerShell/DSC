@@ -579,10 +579,11 @@ Describe 'registry config set tests' {
         Set-ItemProperty -Path $keyPath -Name 'Data' -Value 'original'
         $currentSid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
         $objectType = [guid]::NewGuid()
-        $security = [Security.AccessControl.RegistrySecurity]::new()
+        $security = Get-Acl -Path $keyPath
         $security.SetSecurityDescriptorSddlForm(
-            "D:(A;;KA;;;$currentSid)(OA;;KR;$objectType;;WD)")
-        Set-Acl -Path $keyPath -AclObject $security
+            "D:(A;;KA;;;$currentSid)(OA;;KR;$objectType;;WD)",
+            [Security.AccessControl.AccessControlSections]::Access)
+        Set-Acl -Path $keyPath -AclObject $security -ErrorAction Stop
         $json = @{
             keyPath           = 'HKCU\1\AclMergePreflight'
             valueName         = 'Data'

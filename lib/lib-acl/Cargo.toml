@@ -6,13 +6,18 @@ name = "lib-acl"
 version = "0.1.0"
 edition = "2024"
 
+[package.metadata.i18n]
+available-locales = ["en-us"]
+default-locale = "en-us"
+load-path = "locales"
+
 [lib]
 doctest = false
 
 [dependencies]
+rust-i18n = { workspace = true }
 schemars = { workspace = true }
 serde = { workspace = true }
-thiserror = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
 windows = { workspace = true }

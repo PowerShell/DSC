@@ -6,6 +6,7 @@
 
 use crate::error::AclError;
 use core::ffi::c_void;
+use rust_i18n::t;
 use windows::Win32::Foundation::{HLOCAL, LocalFree};
 use windows::Win32::Security::Authorization::{ConvertSidToStringSidW, ConvertStringSidToSidW};
 use windows::Win32::Security::{GetLengthSid, LookupAccountNameW, PSID, SID_NAME_USE};
@@ -35,7 +36,7 @@ pub fn resolve_principal(principal: &str) -> Result<OwnedSid, AclError> {
     if principal.contains('\0') {
         return Err(AclError::PrincipalResolution {
             principal: principal.to_string(),
-            reason: "principal names must not contain NUL characters".to_string(),
+            reason: t!("principal.nulCharacter").to_string(),
         });
     }
     if looks_like_sid(principal) {
@@ -168,7 +169,7 @@ fn lookup_account_name(name: &str) -> Result<OwnedSid, AclError> {
     if sid_size == 0 {
         return Err(AclError::PrincipalResolution {
             principal: name.to_string(),
-            reason: "the account or group name could not be found".to_string(),
+            reason: t!("principal.notFound").to_string(),
         });
     }
 

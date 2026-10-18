@@ -1923,9 +1923,9 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 name = "lib-acl"
 version = "0.1.0"
 dependencies = [
+ "rust-i18n",
  "schemars",
  "serde",
- "thiserror 2.0.21",
  "windows 0.62.2",
 ]
 

@@ -3,20 +3,26 @@
 
 use core::ffi::c_void;
 
-use lib_acl::AccessControlList;
+use lib_acl::{AccessControlList, AccessMask, AceFlag};
 use lib_acl::win32::{
     build_self_relative_security_descriptor, enable_security_privilege, normalize,
     read_access_control_list, read_security_information,
 };
 use lib_acl::merge_access_control_list;
 use windows::Win32::Foundation::{
-    ERROR_FILE_NOT_FOUND, ERROR_INSUFFICIENT_BUFFER, ERROR_PATH_NOT_FOUND, ERROR_SUCCESS,
+    CloseHandle, ERROR_FILE_NOT_FOUND, ERROR_INSUFFICIENT_BUFFER, ERROR_PATH_NOT_FOUND,
+    ERROR_SUCCESS, HANDLE,
 };
-use windows::Win32::Security::{OBJECT_SECURITY_INFORMATION, PSECURITY_DESCRIPTOR};
+use windows::Win32::Security::{
+    CreatePrivateObjectSecurityEx, DestroyPrivateObjectSecurity, GENERIC_MAPPING,
+    GetSecurityDescriptorLength, OBJECT_SECURITY_INFORMATION, PSECURITY_DESCRIPTOR,
+    SECURITY_AUTO_INHERIT_FLAGS, SEF_DACL_AUTO_INHERIT, SEF_SACL_AUTO_INHERIT, TOKEN_QUERY,
+};
 use windows::Win32::System::Registry::{
     HKEY, HKEY_CLASSES_ROOT, HKEY_CURRENT_CONFIG, HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE,
     HKEY_USERS, REG_SAM_FLAGS, RegCloseKey, RegGetKeySecurity, RegOpenKeyExW, RegSetKeySecurity,
 };
+use windows::Win32::System::Threading::{GetCurrentProcess, OpenProcessToken};
 use windows::core::{HSTRING, PCWSTR};
 
 use crate::config::RegistryAccessRight;
@@ -53,6 +59,98 @@ impl Drop for RegistryKey {
         // SAFETY: This handle was returned by RegOpenKeyExW and is owned by this wrapper.
         unsafe {
             let _ = RegCloseKey(self.0);
+        }
+    }
+}
+
+struct ProcessToken(HANDLE);
+
+impl ProcessToken {
+    fn open() -> Result<Self, RegistryError> {
+        let mut token = HANDLE::default();
+        // SAFETY: GetCurrentProcess returns a valid pseudo-handle, and token is writable.
+        unsafe { OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &mut token) }
+            .map_err(|error| win32_error("OpenProcessToken", error.code().0 as u32))?;
+        Ok(Self(token))
+    }
+}
+
+impl Drop for ProcessToken {
+    fn drop(&mut self) {
+        // SAFETY: This handle was returned by OpenProcessToken and is owned by this wrapper.
+        unsafe {
+            let _ = CloseHandle(self.0);
+        }
+    }
+}
+
+struct PrivateSecurityDescriptor(PSECURITY_DESCRIPTOR);
+
+impl PrivateSecurityDescriptor {
+    fn inherit_from(
+        parent: PSECURITY_DESCRIPTOR,
+        requested: &RegistryAccessControlList,
+        token: HANDLE,
+    ) -> Result<Self, RegistryError> {
+        let mut descriptor = PSECURITY_DESCRIPTOR::default();
+        let mut flags = SECURITY_AUTO_INHERIT_FLAGS(0);
+        if requested.discretionary.is_some() {
+            flags |= SEF_DACL_AUTO_INHERIT;
+        }
+        if requested.system.is_some() {
+            flags |= SEF_SACL_AUTO_INHERIT;
+        }
+        let mapping = GENERIC_MAPPING {
+            GenericRead: RegistryAccessRight::Read.bits(),
+            GenericWrite: RegistryAccessRight::Write.bits(),
+            GenericExecute: RegistryAccessRight::Execute.bits(),
+            GenericAll: RegistryAccessRight::FullControl.bits(),
+        };
+
+        // SAFETY: parent points to a valid self-relative descriptor, descriptor is writable,
+        // token is a valid queryable process token, and mapping lives for the duration of the call.
+        unsafe {
+            CreatePrivateObjectSecurityEx(
+                Some(parent),
+                None,
+                &mut descriptor,
+                None,
+                true,
+                flags,
+                Some(token),
+                &raw const mapping,
+            )
+        }
+        .map_err(|error| {
+            win32_error(
+                "CreatePrivateObjectSecurityEx",
+                error.code().0 as u32,
+            )
+        })?;
+        Ok(Self(descriptor))
+    }
+
+    fn as_ptr(&self) -> PSECURITY_DESCRIPTOR {
+        self.0
+    }
+
+    fn to_bytes(&self) -> Result<Vec<u8>, RegistryError> {
+        // SAFETY: self owns a valid descriptor returned by CreatePrivateObjectSecurityEx.
+        let length = unsafe { GetSecurityDescriptorLength(self.0) } as usize;
+        if length == 0 {
+            return Err(win32_error("GetSecurityDescriptorLength", 0));
+        }
+        // SAFETY: GetSecurityDescriptorLength returned the readable size of this descriptor.
+        Ok(unsafe { core::slice::from_raw_parts(self.0.0.cast::<u8>(), length) }.to_vec())
+    }
+}
+
+impl Drop for PrivateSecurityDescriptor {
+    fn drop(&mut self) {
+        // SAFETY: This descriptor was allocated by CreatePrivateObjectSecurityEx and is owned by
+        // this wrapper. DestroyPrivateObjectSecurity releases it and clears the pointer.
+        unsafe {
+            let _ = DestroyPrivateObjectSecurity(&raw const self.0);
         }
     }
 }
@@ -120,9 +218,21 @@ pub fn get(
     let want_discretionary = requested.discretionary.is_some();
     let want_system = requested.system.is_some();
 
-    ensure_privilege_for(requested)?;
+    let mut descriptor_bytes = read_descriptor(path, requested)?;
+    // SAFETY: descriptor_bytes was populated by RegGetKeySecurity and is a complete, well-formed
+    // self-relative security descriptor.
+    unsafe { read_access_control_list(&mut descriptor_bytes, want_discretionary, want_system) }
+        .map_err(acl_error)
+}
 
+fn read_descriptor(
+    path: &str,
+    requested: &RegistryAccessControlList,
+) -> Result<Vec<u8>, RegistryError> {
+    ensure_privilege_for(requested)?;
     let key = open(path, read_access(requested))?;
+    let want_discretionary = requested.discretionary.is_some();
+    let want_system = requested.system.is_some();
     let security_information = read_security_information(want_discretionary, want_system);
 
     let mut size = 0;
@@ -141,11 +251,7 @@ pub fn get(
         return Err(win32_error("RegGetKeySecurity", status.0));
     }
 
-    // SAFETY: descriptor_bytes was just populated in-place by a successful RegGetKeySecurity
-    // call above, sized exactly to the `size` that same API reported; it is therefore a
-    // complete, well-formed self-relative security descriptor.
-    unsafe { read_access_control_list(&mut descriptor_bytes, want_discretionary, want_system) }
-        .map_err(acl_error)
+    Ok(descriptor_bytes)
 }
 
 /// Returns whether `path` currently exists and could accept `requested` being applied via
@@ -248,20 +354,92 @@ pub fn effective(
     Ok(merge_access_control_list(&current, &normalized))
 }
 
-/// Computes the effective ACL preview for a target that does not exist yet. There is no current
-/// descriptor to merge, so merge mode starts from an empty managed ACL. This resolves principals
-/// for every mode and applies the same replacement or merge semantics as a write, including
-/// deduplication and canonical ordering in merge mode and effective protection defaults in
-/// replacement mode.
+/// Computes the effective ACL preview for a target that does not exist yet. Replacement mode does
+/// not depend on existing state. Merge mode finds the nearest existing parent and uses Windows'
+/// native inheritance algorithm for every missing path component before merging the requested
+/// entries, so the preview includes the entries that registry key creation will propagate.
 pub fn effective_for_new(
+    path: &str,
     requested: &RegistryAccessControlList,
 ) -> Result<RegistryAccessControlList, RegistryError> {
     validate(requested)?;
     let normalized = normalize(requested).map_err(acl_error)?;
-    Ok(merge_access_control_list(
-        &RegistryAccessControlList::default(),
-        &normalized,
-    ))
+    if normalized.purge() {
+        return Ok(merge_access_control_list(
+            &RegistryAccessControlList::default(),
+            &normalized,
+        ));
+    }
+
+    let (parent_path, missing_levels) = nearest_existing_parent(path, read_access(&normalized))?;
+    let mut parent_bytes = read_descriptor(&parent_path, &normalized)?;
+    let token = ProcessToken::open()?;
+    let mut inherited: Option<PrivateSecurityDescriptor> = None;
+    for _ in 0..missing_levels {
+        let parent = inherited.as_ref().map_or_else(
+            || PSECURITY_DESCRIPTOR(parent_bytes.as_mut_ptr().cast::<c_void>()),
+            PrivateSecurityDescriptor::as_ptr,
+        );
+        inherited = Some(PrivateSecurityDescriptor::inherit_from(
+            parent, &normalized, token.0,
+        )?);
+    }
+    let Some(inherited) = inherited else {
+        return effective(path, &normalized);
+    };
+    let mut inherited_bytes = inherited.to_bytes()?;
+    // SAFETY: inherited_bytes is a copy of the complete descriptor created by
+    // CreatePrivateObjectSecurityEx and remains alive for this call.
+    let mut current = unsafe {
+        read_access_control_list(
+            &mut inherited_bytes,
+            normalized.discretionary.is_some(),
+            normalized.system.is_some(),
+        )
+    }
+    .map_err(acl_error)?;
+    // Registry key creation copies inherited ACEs onto the new key without retaining the
+    // INHERITED_ACE marker. CreatePrivateObjectSecurityEx performs the same propagation rules but
+    // sets that marker, so remove it to match the descriptor RegCreateKeyExW actually produces.
+    for entries in [&mut current.discretionary, &mut current.system]
+        .into_iter()
+        .flatten()
+    {
+        for entry in entries {
+            entry.flags.retain(|flag| *flag != AceFlag::Inherited);
+        }
+    }
+
+    Ok(merge_access_control_list(&current, &normalized))
+}
+
+fn nearest_existing_parent(
+    path: &str,
+    access: REG_SAM_FLAGS,
+) -> Result<(String, usize), RegistryError> {
+    let (hive, subkey) = path
+        .split_once('\\')
+        .map_or((path, ""), |(hive, subkey)| (hive, subkey));
+    split_path(path)?;
+    let parts: Vec<&str> = subkey
+        .split('\\')
+        .filter(|part| !part.is_empty())
+        .collect();
+
+    for existing_count in (0..parts.len()).rev() {
+        let candidate = if existing_count == 0 {
+            hive.to_string()
+        } else {
+            format!("{hive}\\{}", parts[..existing_count].join("\\"))
+        };
+        match open(&candidate, access) {
+            Ok(_) => return Ok((candidate, parts.len() - existing_count)),
+            Err(RegistryError::RegistryKeyNotFound(_)) => {}
+            Err(error) => return Err(error),
+        }
+    }
+
+    Err(RegistryError::RegistryKeyNotFound(path.to_string()))
 }
 
 /// Returns whether `actual` (as returned by [`get`] for the section(s) `requested` manages)

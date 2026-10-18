@@ -8,6 +8,7 @@
 //! on Windows.
 
 use crate::error::AclError;
+use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -158,17 +159,17 @@ impl<P: AccessMask> AccessControlEntry<P> {
     pub fn validate_discretionary(&self) -> Result<(), AclError> {
         if !matches!(self.ace_type, AceType::Allow | AceType::Deny) {
             return Err(AclError::InvalidEntry(
-                "discretionary access control entries must have type 'allow' or 'deny'".to_string(),
+                t!("validation.discretionaryType").to_string(),
             ));
         }
         if !self.audit_flags.is_empty() {
             return Err(AclError::InvalidEntry(
-                "discretionary access control entries must not set auditFlags".to_string(),
+                t!("validation.discretionaryAuditFlags").to_string(),
             ));
         }
         if self.access_mask.is_empty() {
             return Err(AclError::InvalidEntry(
-                "an access control entry must specify at least one accessMask value".to_string(),
+                t!("validation.accessMaskRequired").to_string(),
             ));
         }
         Ok(())
@@ -183,17 +184,17 @@ impl<P: AccessMask> AccessControlEntry<P> {
     pub fn validate_system(&self) -> Result<(), AclError> {
         if self.ace_type != AceType::Audit {
             return Err(AclError::InvalidEntry(
-                "system access control entries must have type 'audit'".to_string(),
+                t!("validation.systemType").to_string(),
             ));
         }
         if self.audit_flags.is_empty() {
             return Err(AclError::InvalidEntry(
-                "system access control entries must set at least one auditFlags value".to_string(),
+                t!("validation.systemAuditFlags").to_string(),
             ));
         }
         if self.access_mask.is_empty() {
             return Err(AclError::InvalidEntry(
-                "an access control entry must specify at least one accessMask value".to_string(),
+                t!("validation.accessMaskRequired").to_string(),
             ));
         }
         Ok(())

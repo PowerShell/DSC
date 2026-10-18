@@ -331,7 +331,7 @@ impl RegistryHelper {
             self.config
                 .access_control_list
                 .as_ref()
-                .map(acl::effective_for_new)
+                .map(|requested| acl::effective_for_new(&self.config.key_path, requested))
                 .transpose()?
         } else {
             None
@@ -1253,9 +1253,9 @@ fn set_what_if_with_value_name_returns_effective_acl_for_all_purge_modes() {
 #[test]
 fn set_what_if_for_missing_key_returns_effective_acl_for_all_purge_modes() {
     for (purge_property, expected_count, expected_protection) in [
-        ("", 3, Some(false)),
-        (r#","_purge":true"#, 3, Some(false)),
-        (r#","_purge":false"#, 2, None),
+        ("", Some(3), Some(false)),
+        (r#","_purge":true"#, Some(3), Some(false)),
+        (r#","_purge":false"#, None, Some(false)),
     ] {
         let what_if_json = format!(
             r#"{{"keyPath":"HKCU\\DSCTestNativeWhatIfMissing","valueName":"Hello","valueData":{{"String":"World"}},"accessControlList":{{"discretionary":[{{"principal":"S-1-5-19","type":"allow","accessMask":["read"]}},{{"principal":"S-1-5-7","type":"deny","accessMask":["read"]}},{{"principal":"S-1-5-19","type":"allow","accessMask":["read"]}}]{purge_property}}}}}"#
@@ -1267,10 +1267,19 @@ fn set_what_if_for_missing_key_returns_effective_acl_for_all_purge_modes() {
         let acl = result.access_control_list.unwrap();
         let entries = acl.discretionary.unwrap();
 
-        assert_eq!(entries.len(), expected_count);
+        if let Some(expected_count) = expected_count {
+            assert_eq!(entries.len(), expected_count);
+        }
         assert_eq!(acl.discretionary_protected, expected_protection);
         if purge_property.contains("false") {
             assert_eq!(entries[0].principal, "S-1-5-7");
+            assert_eq!(
+                entries
+                    .iter()
+                    .filter(|entry| entry.principal == "S-1-5-19")
+                    .count(),
+                1
+            );
         }
     }
 }
@@ -1290,5 +1299,58 @@ fn set_what_if_without_value_name_returns_effective_acl_for_missing_key() {
     assert_eq!(
         acl.discretionary.unwrap()[0].principal,
         "S-1-5-19".to_string()
+    );
+}
+
+#[test]
+fn set_what_if_for_missing_key_includes_the_acl_set_will_inherit() {
+    let parent_path = r"HKCU\\DSCTestNativeWhatIfInheritance";
+    let target_path = format!(r"{parent_path}\\Child\\Grandchild");
+    let _ = RegistryHelper::new_from_json(&format!(r#"{{"keyPath":"{parent_path}"}}"#))
+        .unwrap()
+        .remove();
+
+    let parent_json = format!(
+        r#"{{"keyPath":"{parent_path}","accessControlList":{{"discretionary":[{{"principal":"S-1-1-0","type":"allow","accessMask":["fullControl"],"flags":["containerInherit"]}}]}}}}"#
+    );
+    RegistryHelper::new_from_json(&parent_json)
+        .unwrap()
+        .set()
+        .unwrap();
+
+    let request_json = format!(
+        r#"{{"keyPath":"{target_path}","valueName":"Value","valueData":{{"String":"Data"}},"accessControlList":{{"discretionary":[{{"principal":"S-1-5-19","type":"allow","accessMask":["read"]}}],"_purge":false}}}}"#
+    );
+    let mut what_if_helper = RegistryHelper::new_from_json(&request_json).unwrap();
+    what_if_helper.enable_what_if();
+    let preview = what_if_helper
+        .set()
+        .unwrap()
+        .expect("what-if returns a preview")
+        .access_control_list
+        .unwrap();
+
+    RegistryHelper::new_from_json(&request_json)
+        .unwrap()
+        .set()
+        .unwrap();
+    let actual = RegistryHelper::new_from_json(&format!(
+        r#"{{"keyPath":"{target_path}","accessControlList":{{"discretionary":[]}}}}"#
+    ))
+    .unwrap()
+    .get()
+    .unwrap()
+    .access_control_list
+    .unwrap();
+
+    RegistryHelper::new_from_json(&format!(r#"{{"keyPath":"{parent_path}"}}"#))
+        .unwrap()
+        .remove()
+        .unwrap();
+
+    assert_eq!(preview.discretionary, actual.discretionary);
+    assert_eq!(
+        preview.discretionary_protected,
+        actual.discretionary_protected
     );
 }

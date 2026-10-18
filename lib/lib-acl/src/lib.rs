@@ -8,6 +8,8 @@
 //! platform so that resources can share the JSON shape and schema regardless of the host OS.
 //! The [`win32`] module, which actually talks to Win32 APIs, is only compiled on Windows.
 
+rust_i18n::i18n!("locales", fallback = "en-us");
+
 pub mod error;
 pub mod model;
 
