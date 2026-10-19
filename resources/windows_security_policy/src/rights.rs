@@ -3,66 +3,84 @@
 
 //! Static table of the Windows user rights and privileges that can be assigned to accounts.
 
+use rust_i18n::t;
+use std::borrow::Cow;
+
 /// A user right or privilege.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug)]
 pub struct UserRight {
     /// The constant that the LSA, `secedit` and Group Policy use, e.g. `SeServiceLogonRight`.
     pub constant: &'static str,
-    /// The name shown in the Local Security Policy console, e.g. "Log on as a service".
-    pub display_name: &'static str,
+    /// Translates the name shown in the Local Security Policy console. See [`UserRight::display_name`].
+    display_name: fn() -> Cow<'static, str>,
 }
 
-const fn right(constant: &'static str, display_name: &'static str) -> UserRight {
+impl UserRight {
+    /// The localized name shown in the Local Security Policy console, e.g. "Log on as a service".
+    #[must_use]
+    pub fn display_name(&self) -> Cow<'static, str> {
+        (self.display_name)()
+    }
+}
+
+/// Build a table entry.
+///
+/// # Arguments
+///
+/// * `constant` - The user right constant.
+/// * `display_name` - Calls `t!` with the literal `rights.displayName.<constant>` key, so that the
+///   i18n tests can match every key in `locales/en-us.toml` to its use.
+const fn right(constant: &'static str, display_name: fn() -> Cow<'static, str>) -> UserRight {
     UserRight { constant, display_name }
 }
 
-/// Every user right, ordered by display name. This is also the order `export` reports them in.
+/// Every user right, ordered by English display name. This is also the order `export` reports them in.
 pub const USER_RIGHTS: [UserRight; 45] = [
-    right("SeTrustedCredManAccessPrivilege", "Access Credential Manager as a trusted caller"),
-    right("SeNetworkLogonRight", "Access this computer from the network"),
-    right("SeTcbPrivilege", "Act as part of the operating system"),
-    right("SeMachineAccountPrivilege", "Add workstations to domain"),
-    right("SeIncreaseQuotaPrivilege", "Adjust memory quotas for a process"),
-    right("SeInteractiveLogonRight", "Allow log on locally"),
-    right("SeRemoteInteractiveLogonRight", "Allow log on through Remote Desktop Services"),
-    right("SeBackupPrivilege", "Back up files and directories"),
-    right("SeChangeNotifyPrivilege", "Bypass traverse checking"),
-    right("SeSystemtimePrivilege", "Change the system time"),
-    right("SeTimeZonePrivilege", "Change the time zone"),
-    right("SeCreatePagefilePrivilege", "Create a pagefile"),
-    right("SeCreateTokenPrivilege", "Create a token object"),
-    right("SeCreateGlobalPrivilege", "Create global objects"),
-    right("SeCreatePermanentPrivilege", "Create permanent shared objects"),
-    right("SeCreateSymbolicLinkPrivilege", "Create symbolic links"),
-    right("SeDebugPrivilege", "Debug programs"),
-    right("SeDenyNetworkLogonRight", "Deny access to this computer from the network"),
-    right("SeDenyBatchLogonRight", "Deny log on as a batch job"),
-    right("SeDenyServiceLogonRight", "Deny log on as a service"),
-    right("SeDenyInteractiveLogonRight", "Deny log on locally"),
-    right("SeDenyRemoteInteractiveLogonRight", "Deny log on through Remote Desktop Services"),
-    right("SeEnableDelegationPrivilege", "Enable computer and user accounts to be trusted for delegation"),
-    right("SeRemoteShutdownPrivilege", "Force shutdown from a remote system"),
-    right("SeAuditPrivilege", "Generate security audits"),
-    right("SeImpersonatePrivilege", "Impersonate a client after authentication"),
-    right("SeIncreaseWorkingSetPrivilege", "Increase a process working set"),
-    right("SeIncreaseBasePriorityPrivilege", "Increase scheduling priority"),
-    right("SeLoadDriverPrivilege", "Load and unload device drivers"),
-    right("SeLockMemoryPrivilege", "Lock pages in memory"),
-    right("SeBatchLogonRight", "Log on as a batch job"),
-    right("SeServiceLogonRight", "Log on as a service"),
-    right("SeSecurityPrivilege", "Manage auditing and security log"),
-    right("SeRelabelPrivilege", "Modify an object label"),
-    right("SeSystemEnvironmentPrivilege", "Modify firmware environment values"),
-    right("SeDelegateSessionUserImpersonatePrivilege", "Obtain an impersonation token for another user in the same session"),
-    right("SeManageVolumePrivilege", "Perform volume maintenance tasks"),
-    right("SeProfileSingleProcessPrivilege", "Profile single process"),
-    right("SeSystemProfilePrivilege", "Profile system performance"),
-    right("SeUndockPrivilege", "Remove computer from docking station"),
-    right("SeAssignPrimaryTokenPrivilege", "Replace a process level token"),
-    right("SeRestorePrivilege", "Restore files and directories"),
-    right("SeShutdownPrivilege", "Shut down the system"),
-    right("SeSyncAgentPrivilege", "Synchronize directory service data"),
-    right("SeTakeOwnershipPrivilege", "Take ownership of files or other objects"),
+    right("SeTrustedCredManAccessPrivilege", || t!("rights.displayName.SeTrustedCredManAccessPrivilege")),
+    right("SeNetworkLogonRight", || t!("rights.displayName.SeNetworkLogonRight")),
+    right("SeTcbPrivilege", || t!("rights.displayName.SeTcbPrivilege")),
+    right("SeMachineAccountPrivilege", || t!("rights.displayName.SeMachineAccountPrivilege")),
+    right("SeIncreaseQuotaPrivilege", || t!("rights.displayName.SeIncreaseQuotaPrivilege")),
+    right("SeInteractiveLogonRight", || t!("rights.displayName.SeInteractiveLogonRight")),
+    right("SeRemoteInteractiveLogonRight", || t!("rights.displayName.SeRemoteInteractiveLogonRight")),
+    right("SeBackupPrivilege", || t!("rights.displayName.SeBackupPrivilege")),
+    right("SeChangeNotifyPrivilege", || t!("rights.displayName.SeChangeNotifyPrivilege")),
+    right("SeSystemtimePrivilege", || t!("rights.displayName.SeSystemtimePrivilege")),
+    right("SeTimeZonePrivilege", || t!("rights.displayName.SeTimeZonePrivilege")),
+    right("SeCreatePagefilePrivilege", || t!("rights.displayName.SeCreatePagefilePrivilege")),
+    right("SeCreateTokenPrivilege", || t!("rights.displayName.SeCreateTokenPrivilege")),
+    right("SeCreateGlobalPrivilege", || t!("rights.displayName.SeCreateGlobalPrivilege")),
+    right("SeCreatePermanentPrivilege", || t!("rights.displayName.SeCreatePermanentPrivilege")),
+    right("SeCreateSymbolicLinkPrivilege", || t!("rights.displayName.SeCreateSymbolicLinkPrivilege")),
+    right("SeDebugPrivilege", || t!("rights.displayName.SeDebugPrivilege")),
+    right("SeDenyNetworkLogonRight", || t!("rights.displayName.SeDenyNetworkLogonRight")),
+    right("SeDenyBatchLogonRight", || t!("rights.displayName.SeDenyBatchLogonRight")),
+    right("SeDenyServiceLogonRight", || t!("rights.displayName.SeDenyServiceLogonRight")),
+    right("SeDenyInteractiveLogonRight", || t!("rights.displayName.SeDenyInteractiveLogonRight")),
+    right("SeDenyRemoteInteractiveLogonRight", || t!("rights.displayName.SeDenyRemoteInteractiveLogonRight")),
+    right("SeEnableDelegationPrivilege", || t!("rights.displayName.SeEnableDelegationPrivilege")),
+    right("SeRemoteShutdownPrivilege", || t!("rights.displayName.SeRemoteShutdownPrivilege")),
+    right("SeAuditPrivilege", || t!("rights.displayName.SeAuditPrivilege")),
+    right("SeImpersonatePrivilege", || t!("rights.displayName.SeImpersonatePrivilege")),
+    right("SeIncreaseWorkingSetPrivilege", || t!("rights.displayName.SeIncreaseWorkingSetPrivilege")),
+    right("SeIncreaseBasePriorityPrivilege", || t!("rights.displayName.SeIncreaseBasePriorityPrivilege")),
+    right("SeLoadDriverPrivilege", || t!("rights.displayName.SeLoadDriverPrivilege")),
+    right("SeLockMemoryPrivilege", || t!("rights.displayName.SeLockMemoryPrivilege")),
+    right("SeBatchLogonRight", || t!("rights.displayName.SeBatchLogonRight")),
+    right("SeServiceLogonRight", || t!("rights.displayName.SeServiceLogonRight")),
+    right("SeSecurityPrivilege", || t!("rights.displayName.SeSecurityPrivilege")),
+    right("SeRelabelPrivilege", || t!("rights.displayName.SeRelabelPrivilege")),
+    right("SeSystemEnvironmentPrivilege", || t!("rights.displayName.SeSystemEnvironmentPrivilege")),
+    right("SeDelegateSessionUserImpersonatePrivilege", || t!("rights.displayName.SeDelegateSessionUserImpersonatePrivilege")),
+    right("SeManageVolumePrivilege", || t!("rights.displayName.SeManageVolumePrivilege")),
+    right("SeProfileSingleProcessPrivilege", || t!("rights.displayName.SeProfileSingleProcessPrivilege")),
+    right("SeSystemProfilePrivilege", || t!("rights.displayName.SeSystemProfilePrivilege")),
+    right("SeUndockPrivilege", || t!("rights.displayName.SeUndockPrivilege")),
+    right("SeAssignPrimaryTokenPrivilege", || t!("rights.displayName.SeAssignPrimaryTokenPrivilege")),
+    right("SeRestorePrivilege", || t!("rights.displayName.SeRestorePrivilege")),
+    right("SeShutdownPrivilege", || t!("rights.displayName.SeShutdownPrivilege")),
+    right("SeSyncAgentPrivilege", || t!("rights.displayName.SeSyncAgentPrivilege")),
+    right("SeTakeOwnershipPrivilege", || t!("rights.displayName.SeTakeOwnershipPrivilege")),
 ];
 
 /// Find a user right by its constant, ignoring case and surrounding whitespace.
@@ -82,7 +100,7 @@ mod tests {
         assert_eq!(USER_RIGHTS.len(), 45);
         let constants: HashSet<String> = USER_RIGHTS.iter().map(|r| r.constant.to_ascii_lowercase()).collect();
         assert_eq!(constants.len(), 45, "constants must be unique");
-        let names: HashSet<&str> = USER_RIGHTS.iter().map(|r| r.display_name).collect();
+        let names: HashSet<String> = USER_RIGHTS.iter().map(|r| r.display_name().into_owned()).collect();
         assert_eq!(names.len(), 45, "display names must be unique");
         for entry in &USER_RIGHTS {
             assert!(entry.constant.starts_with("Se"), "{}", entry.constant);
@@ -91,13 +109,22 @@ mod tests {
                 "{}",
                 entry.constant
             );
-            assert!(!entry.display_name.is_empty(), "{}", entry.constant);
+            let name = entry.display_name();
+            assert!(!name.is_empty(), "{}", entry.constant);
+            assert!(!name.contains("rights.displayName"), "{} has no translation", entry.constant);
         }
     }
 
     #[test]
+    fn display_names_are_translated() {
+        let right = find("SeServiceLogonRight").unwrap();
+        assert_eq!(right.display_name(), t!("rights.displayName.SeServiceLogonRight"));
+        assert_eq!(right.display_name(), "Log on as a service");
+    }
+
+    #[test]
     fn find_ignores_case_and_whitespace() {
-        assert_eq!(find("SeServiceLogonRight").map(|r| r.display_name), Some("Log on as a service"));
+        assert_eq!(find("SeServiceLogonRight").map(|r| r.constant), Some("SeServiceLogonRight"));
         assert_eq!(find("  seservicelogonright ").map(|r| r.constant), Some("SeServiceLogonRight"));
         assert!(find("SeBogusPrivilege").is_none());
         assert!(find("Log on as a service").is_none());

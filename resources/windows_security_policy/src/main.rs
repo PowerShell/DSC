@@ -29,6 +29,13 @@ fn write_error(message: &str) {
     eprintln!("{}", serde_json::json!({"error": message}));
 }
 
+/// Write a JSON informational message to stderr: `{"info":"<message>"}`. DSC logs it at the
+/// info level.
+#[cfg(windows)]
+fn write_info(message: &str) {
+    eprintln!("{}", serde_json::json!({"info": message}));
+}
+
 #[cfg(not(windows))]
 fn main() -> ExitCode {
     write_error(&t!("main.windowsOnly"));

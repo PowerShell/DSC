@@ -219,10 +219,13 @@ fn looks_like_sid(text: &str) -> bool {
 /// # Errors
 ///
 /// Returns `InvalidInput` for an empty entry, an entry with an embedded NUL character, a
-/// malformed SID string or an unknown account name.
+/// malformed SID string (including `*` followed by anything but a SID) or an unknown account name.
 pub fn resolve_identity(input: &str) -> Result<ResolvedIdentity, SecurityPolicyError> {
     let trimmed = input.trim();
-    let text = trimmed.strip_prefix('*').unwrap_or(trimmed).trim();
+    let (text, secedit_form) = match trimmed.strip_prefix('*') {
+        Some(rest) => (rest.trim(), true),
+        None => (trimmed, false),
+    };
     if text.is_empty() {
         return Err(SecurityPolicyError::InvalidInput(t!("sid.emptyIdentity").to_string()));
     }
@@ -233,6 +236,9 @@ pub fn resolve_identity(input: &str) -> Result<ResolvedIdentity, SecurityPolicyE
         // A well-formed SID with no matching account is accepted: the LSA keeps rights for
         // orphaned SIDs and `display_name` reports them as SID strings.
         parse_string_sid(text).map_err(|_| SecurityPolicyError::InvalidInput(t!("sid.invalidSid", identity = input).to_string()))?
+    } else if secedit_form {
+        // In a security template `*` only ever prefixes a SID string, never an account name.
+        return Err(SecurityPolicyError::InvalidInput(t!("sid.invalidSid", identity = input).to_string()));
     } else {
         lookup_account_name(text).map_err(|error| {
             if is_win32(&error, ERROR_NONE_MAPPED) {
@@ -246,6 +252,8 @@ pub fn resolve_identity(input: &str) -> Result<ResolvedIdentity, SecurityPolicyE
 }
 
 /// Resolve every entry, dropping duplicates that resolve to the same SID (first occurrence wins).
+/// Writes an informational message for every entry that isn't the canonical name of its account,
+/// because the resource reports holders by their canonical name and DSC compares `identity` as text.
 ///
 /// # Errors
 ///
@@ -255,11 +263,26 @@ pub fn resolve_identities(inputs: &[String]) -> Result<Vec<ResolvedIdentity>, Se
     let mut identities = Vec::with_capacity(inputs.len());
     for input in inputs {
         let identity = resolve_identity(input)?;
+        if let Some(message) = non_canonical_message(input, &identity) {
+            crate::write_info(&message);
+        }
         if seen.insert(identity.sid.clone()) {
             identities.push(identity);
         }
     }
     Ok(identities)
+}
+
+/// The informational message for an `identity` entry that differs from the name the resource
+/// reports for its account, such as `Administrators` or `S-1-5-32-544` for
+/// `BUILTIN\Administrators`. `None` when the entry is already canonical.
+///
+/// # Arguments
+///
+/// * `input` - The `identity` entry as given.
+/// * `identity` - The account that `input` resolves to.
+fn non_canonical_message(input: &str, identity: &ResolvedIdentity) -> Option<String> {
+    (input != identity.name).then(|| t!("sid.nonCanonical", identity = input, canonical = identity.name).to_string())
 }
 
 #[cfg(test)]
@@ -311,7 +334,7 @@ mod tests {
 
     #[test]
     fn invalid_identities_are_invalid_input() {
-        for input in ["", "   ", "*", "S-1-X", "S-1-5-32-abc", "NoSuchAccount_zz_12345"] {
+        for input in ["", "   ", "*", "S-1-X", "S-1-5-32-abc", "NoSuchAccount_zz_12345", "*Administrators"] {
             assert!(
                 matches!(resolve_identity(input), Err(SecurityPolicyError::InvalidInput(_))),
                 "{input:?} should be invalid input"
@@ -325,6 +348,8 @@ mod tests {
         assert_eq!(error, t!("sid.invalidSid", identity = "S-1-5-32-abc"));
         let error = resolve_identity("S-1-X").unwrap_err().to_string();
         assert_eq!(error, t!("sid.unknownAccount", identity = "S-1-X"));
+        let error = resolve_identity("*Administrators").unwrap_err().to_string();
+        assert_eq!(error, t!("sid.invalidSid", identity = "*Administrators"), "'*' marks a SID string, not an account name");
     }
 
     #[test]
@@ -346,6 +371,22 @@ mod tests {
         assert_eq!(resolved.len(), 2);
         assert_eq!(resolved[0].name, "BUILTIN\\Administrators");
         assert_eq!(resolved[1].name, "Everyone");
+    }
+
+    #[test]
+    fn only_non_canonical_entries_produce_a_message() {
+        let administrators = resolve_identity("BUILTIN\\Administrators").unwrap();
+        assert!(non_canonical_message("BUILTIN\\Administrators", &administrators).is_none());
+        for input in ["Administrators", "builtin\\administrators", ADMINISTRATORS, "*S-1-5-32-544", " BUILTIN\\Administrators "] {
+            let expected = t!("sid.nonCanonical", identity = input, canonical = "BUILTIN\\Administrators").to_string();
+            assert_eq!(non_canonical_message(input, &administrators), Some(expected), "{input:?}");
+        }
+
+        let everyone = resolve_identity("S-1-1-0").unwrap();
+        assert!(non_canonical_message("Everyone", &everyone).is_none(), "a well-known name without a domain is canonical");
+
+        let orphan = "S-1-5-21-1-2-3-4567";
+        assert!(non_canonical_message(orphan, &resolve_identity(orphan).unwrap()).is_none(), "an orphaned SID is canonical");
     }
 
     #[test]

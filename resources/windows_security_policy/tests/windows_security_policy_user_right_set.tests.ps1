@@ -151,11 +151,27 @@ Describe 'User rights assignment set tests' -Skip:(!$IsWindows) {
             Get-Content -Raw $testdrive/error.log | Should -Match 'could not be found'
         }
 
-        It 'Fails for a malformed SID' {
-            $json = @{ right = $testRight; identity = @('S-1-5-32-abc') } | ConvertTo-Json -Compress
+        It 'Fails for <kind>' -TestCases @(
+            @{ kind = 'a malformed SID'; identity = 'S-1-5-32-abc' }
+            @{ kind = 'an account name in the secedit SID form'; identity = '*Guests' }
+        ) {
+            # Called directly: through dsc, the schema rejects the input before the resource runs.
+            $json = @{ right = $testRight; identity = @($identity) } | ConvertTo-Json -Compress
+            $null = windows_security_policy set user-right --input $json 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 2
+            Get-Content -Raw $testdrive/error.log | Should -Match 'not a valid SID'
+        }
+
+        It 'Is refused by the resource schema for <kind> without changing the policy' -TestCases @(
+            @{ kind = 'a malformed SID'; identity = 'S-1-5-32-abc' }
+            @{ kind = 'an account name in the secedit SID form'; identity = '*Guests' }
+            @{ kind = 'a name with two domain separators'; identity = 'BUILTIN\Guests\Extra' }
+        ) {
+            $json = @{ right = $testRight; identity = @($identity, $anonymous) } | ConvertTo-Json -Compress
             $null = $json | dsc resource set -r $resourceType -f - 2>$testdrive/error.log
             $LASTEXITCODE | Should -Not -Be 0
-            Get-Content -Raw $testdrive/error.log | Should -Match 'not a valid SID'
+            Get-Content -Raw $testdrive/error.log | Should -Match 'oneOf'
+            @((Get-UserRightState).identity) | Should -Be @($guests)
         }
 
         It 'Rejects an embedded null character in a <kind> without changing the policy' -TestCases @(
@@ -163,9 +179,13 @@ Describe 'User rights assignment set tests' -Skip:(!$IsWindows) {
             @{ kind = 'account name'; identity = "Guests`0suffix" }
         ) {
             $json = @{ right = $testRight; identity = @($identity, $anonymous) } | ConvertTo-Json -Compress
+            $null = windows_security_policy set user-right --input $json 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 2
+            Get-Content -Raw $testdrive/error.log | Should -Match 'embedded null character'
+
+            # Through dsc, the schema refuses the SID form and the resource refuses the account name.
             $null = $json | dsc resource set -r $resourceType -f - 2>$testdrive/error.log
             $LASTEXITCODE | Should -Not -Be 0
-            Get-Content -Raw $testdrive/error.log | Should -Match 'embedded null character'
             @((Get-UserRightState).identity) | Should -Be @($guests)
         }
 

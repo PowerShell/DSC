@@ -2,7 +2,7 @@
 description: >
   Example showing how to use the Microsoft.Windows/UserRightsAssignment resource in a DSC
   configuration document to enforce user rights assignments.
-ms.date:     10/16/2026
+ms.date:     10/19/2026
 ms.topic:    reference
 title:       Configure user rights assignments
 ---
@@ -172,14 +172,12 @@ results:
     beforeState:
       right: SeDenyBatchLogonRight
       identity: []
-      _inDesiredState: false
     afterState:
       right: SeDenyBatchLogonRight
       identity:
       - BUILTIN\Guests
     changedProperties:
     - identity
-    - _inDesiredState
 - executionInformation:
     duration: PT0.0509873S
   metadata:
@@ -192,8 +190,7 @@ results:
       right: SeServiceLogonRight
       identity:
       - NT SERVICE\ALL SERVICES
-      - NT VIRTUAL MACHINE\Virtual Machines
-      _inDesiredState: true
+      setAction: add
     afterState:
       right: SeServiceLogonRight
       identity:
@@ -216,7 +213,6 @@ results:
       - BUILTIN\Backup Operators
       - BUILTIN\Guests
       - BUILTIN\Users
-      _inDesiredState: false
     afterState:
       right: SeInteractiveLogonRight
       identity:
@@ -225,48 +221,105 @@ results:
       - BUILTIN\Users
     changedProperties:
     - identity
-    - _inDesiredState
 messages: []
 hadErrors: false
 ```
 
-DSC skipped the second instance because its test reported it in the desired state. The third
-instance only revoked the direct grant from `Guests` and kept the other holders, because it uses
+DSC skipped the second instance because its test reported it in the desired state, so DSC reports
+the desired state as `beforeState` and the tested state as `afterState`. The third instance only
+revoked the direct grant from `Guests` and kept the other holders, because it uses
 `setAction: remove`.
 
 ## Preview the changes
 
 To see which accounts would be granted or revoked without applying the change, add the
-`--what-if` option. The resource reports the projected holders and describes each change under
-`_metadata.whatIf`.
+`--what-if` option. The resource projects the holders each instance would have under its own
+`setAction` and describes each change. DSC moves those descriptions from the resource output to
+the `whatIf` list in the instance's `metadata`.
 
 ```powershell
 dsc config set --file ./userrightsassignment.config.dsc.yaml --what-if
 ```
 
 ```yaml
-# Elided for brevity
+executionInformation:
+  # Elided for brevity
+metadata:
+  # Elided for brevity
 results:
-- name: Deny batch logon to guests only
+- executionInformation:
+    # Elided for brevity
+  metadata:
+    Microsoft.DSC:
+      # Elided for brevity
+    whatIf:
+    - Would grant 'SeDenyBatchLogonRight' (Deny log on as a batch job) to 'BUILTIN\Guests'
+  name: Deny batch logon to guests only
   type: Microsoft.Windows/UserRightsAssignment
   result:
     beforeState:
       right: SeDenyBatchLogonRight
       identity: []
-      _inDesiredState: false
     afterState:
       right: SeDenyBatchLogonRight
       identity:
       - BUILTIN\Guests
-      _metadata:
-        whatIf:
-        - Would grant 'SeDenyBatchLogonRight' to 'BUILTIN\Guests'
     changedProperties:
     - identity
-    - _inDesiredState
     - _metadata
-# Elided for brevity
+- executionInformation:
+    # Elided for brevity
+  metadata:
+    Microsoft.DSC:
+      # Elided for brevity
+  name: Services may log on as a service
+  type: Microsoft.Windows/UserRightsAssignment
+  result:
+    beforeState:
+      right: SeServiceLogonRight
+      identity:
+      - NT SERVICE\ALL SERVICES
+      - NT VIRTUAL MACHINE\Virtual Machines
+    afterState:
+      right: SeServiceLogonRight
+      identity:
+      - NT SERVICE\ALL SERVICES
+      - NT VIRTUAL MACHINE\Virtual Machines
+    changedProperties: []
+- executionInformation:
+    # Elided for brevity
+  metadata:
+    Microsoft.DSC:
+      # Elided for brevity
+    whatIf:
+    - Would revoke 'SeInteractiveLogonRight' (Allow log on locally) from 'BUILTIN\Guests'
+  name: Remove the direct local logon grant from Guests
+  type: Microsoft.Windows/UserRightsAssignment
+  result:
+    beforeState:
+      right: SeInteractiveLogonRight
+      identity:
+      - BUILTIN\Administrators
+      - BUILTIN\Backup Operators
+      - BUILTIN\Guests
+      - BUILTIN\Users
+    afterState:
+      right: SeInteractiveLogonRight
+      identity:
+      - BUILTIN\Administrators
+      - BUILTIN\Backup Operators
+      - BUILTIN\Users
+    changedProperties:
+    - identity
+    - _metadata
+messages: []
+hadErrors: false
 ```
+
+The first instance uses the default `replace`, so the preview lists `Guests` as the only holder.
+The second instance uses `add` and already holds the right, so the preview keeps both holders and
+describes no change. The third instance uses `remove`, so the preview revokes only `Guests` and
+keeps the other holders.
 
 <!-- Link definitions -->
 [01]: ../../../../../../cli/config/test.md

@@ -96,5 +96,26 @@ Describe 'User rights assignment test tests' -Skip:(!$IsWindows) {
             $null = windows_security_policy test user-right --input "{`"right`":`"$testRight`"}" 2>$testdrive/error.log
             $LASTEXITCODE | Should -Be 2
         }
+
+        It 'Writes an informational message when <spelling> is not the canonical name' -TestCases @(
+            @{ spelling = 'Guests' }
+            @{ spelling = 'builtin\guests' }
+            @{ spelling = 'S-1-5-32-546' }
+            @{ spelling = '*S-1-5-32-546' }
+        ) {
+            $json = @{ right = $testRight; identity = @($spelling) } | ConvertTo-Json -Compress
+            $null = windows_security_policy test user-right --input $json 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
+            $info = @(Get-Content $testdrive/error.log | ForEach-Object { ($_ | ConvertFrom-Json).info } | Where-Object { $_ })
+            $info.Count | Should -Be 1
+            $info[0] | Should -Match ([regex]::Escape("'$spelling' resolves to '$guests'"))
+        }
+
+        It 'Writes no informational message for the canonical name' {
+            $json = @{ right = $testRight; identity = @($guests) } | ConvertTo-Json -Compress
+            $null = windows_security_policy test user-right --input $json 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 0
+            Get-Content -Raw $testdrive/error.log | Should -BeNullOrEmpty
+        }
     }
 }

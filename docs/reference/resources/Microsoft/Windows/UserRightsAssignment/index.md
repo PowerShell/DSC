@@ -1,6 +1,6 @@
 ---
 description: Microsoft.Windows/UserRightsAssignment resource reference documentation
-ms.date:     10/16/2026
+ms.date:     10/19/2026
 ms.topic:    reference
 title:       Microsoft.Windows/UserRightsAssignment
 ---
@@ -134,7 +134,8 @@ The resource has the following capabilities:
 - `export` - You can use the resource to export the holders of every right on the system.
 - `whatIf` - You can use the resource with the `--what-if` option of the `dsc config set` and
   `dsc resource set` commands to see which accounts would be granted or revoked without applying
-  the change.
+  the change. The preview honours [setAction](#setaction), so with `add` or `remove` it keeps the
+  holders that you didn't list.
 
 For more information about resource capabilities, see [DSC resource capabilities][01].
 
@@ -206,21 +207,31 @@ IsWriteOnly       : false
 </details>
 
 The accounts that hold the right. This property is required for the **Set** and **Test**
-operations. Each entry can be any of the following:
+operations. Each entry must have one of the following forms:
 
-- An account name with its domain, such as `CONTOSO\svc-sql`, `BUILTIN\Administrators` or
-  `NT SERVICE\MSSQLSERVER`.
-- A bare account name that the local system can resolve, such as `Administrators`.
-- A well-known name, such as `Everyone` or `NT AUTHORITY\LOCAL SERVICE`.
-- A SID string, such as `S-1-5-32-544`, or the form that `secedit` exports, `*S-1-5-32-544`.
+- An account name with its domain, such as `CONTOSO\svc-sql`, `BUILTIN\Administrators`,
+  `NT SERVICE\MSSQLSERVER` or `NT AUTHORITY\LOCAL SERVICE`.
+- A bare account name that the local system can resolve, such as `Administrators`, or a
+  well-known name that has no domain, such as `Everyone`. Well-known names are localized, so use
+  the name in the language of the target system.
+- A SID string, such as `S-1-5-32-544`.
+- A SID string prefixed with `*`, the form that `secedit` exports, such as `*S-1-5-32-544`.
+
+The instance schema validates each entry against these forms, so DSC rejects entries such as
+`S-1-5-32-abc`, `*Administrators` or `BUILTIN\Guests\Extra` before it invokes the resource.
 
 The resource resolves every entry to a SID. An account name that doesn't exist is an error. A SID
 that doesn't resolve to an account is accepted, because Windows keeps rights assigned to deleted
 accounts. Entries that resolve to the same SID count once.
 
-On **Get** and **Export**, the resource returns each holder as `DOMAIN\Name`, as a bare name when
-the account has no domain (for example `Everyone`), or as the SID string when the SID no longer
-resolves to an account. An empty array means that no one holds the right.
+On **Get** and **Export**, the resource returns each holder by its canonical name: `DOMAIN\Name`,
+a bare name when the account has no domain (for example `Everyone`), or the SID string when the
+SID no longer resolves to an account. An empty array means that no one holds the right.
+
+The resource compares accounts by SID, but DSC compares the `identity` arrays as text. When an
+entry isn't the canonical name of its account, such as `Administrators` or `S-1-5-32-544` for
+`BUILTIN\Administrators`, the resource writes an informational message that names the canonical
+form. Specify the canonical name so that the desired state matches the actual state.
 
 ### setAction
 
@@ -266,7 +277,7 @@ name `identity` even though the resource reports the instance as in the desired 
 <details><summary>Expand for <code>_inDesiredState</code> property metadata</summary>
 
 ```yaml
-Type        : boolean
+Type        : [boolean, 'null']
 IsRequired  : false
 IsKey       : false
 IsReadOnly  : true
@@ -275,32 +286,41 @@ IsWriteOnly : false
 
 </details>
 
-Returned by the **Test** operation only. Indicates whether the current holders of the right
+This is the canonical `_inDesiredState` property. Returned by the **Test** operation only. Indicates whether the current holders of the right
 satisfy `identity` under the chosen `setAction`.
 
 ## Instance validating schema
 
 The following snippet contains the JSON Schema that validates an instance of the resource. The
 `enum` for `right` is abbreviated; it contains the 45 constants listed in the
-[Description](#description).
+[Description](#description). Annotations such as `title`, `description`, `markdownDescription`
+and `markdownEnumDescriptions` are omitted, and the canonical `_inDesiredState` definition is
+bundled under `$defs` in the manifest.
 
 ```json
 {
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "required": ["right"],
   "additionalProperties": false,
   "properties": {
     "right": {
       "type": "string",
+      "x-dsc-key": true,
       "enum": ["SeTrustedCredManAccessPrivilege", "SeNetworkLogonRight", "..."]
     },
     "identity": {
       "type": "array",
+      "uniqueItems": true,
       "items": {
         "type": "string",
-        "minLength": 1
-      },
-      "uniqueItems": true
+        "oneOf": [
+          { "pattern": "^[^\\\\*]+\\\\[^\\\\*]+$" },
+          { "pattern": "^[^\\\\*]+$", "not": { "pattern": "^[Ss]-1-[0-9]" } },
+          { "pattern": "^[Ss]-1-([0-9]+|0[Xx][0-9A-Fa-f]+)(-[0-9]+)*$" },
+          { "pattern": "^\\*[Ss]-1-([0-9]+|0[Xx][0-9A-Fa-f]+)(-[0-9]+)*$" }
+        ]
+      }
     },
     "setAction": {
       "type": "string",
@@ -309,8 +329,7 @@ The following snippet contains the JSON Schema that validates an instance of the
       "enum": ["replace", "add", "remove"]
     },
     "_inDesiredState": {
-      "type": "boolean",
-      "readOnly": true
+      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/inDesiredState.json"
     },
     "_metadata": {
       "type": "object",
@@ -351,7 +370,8 @@ name was not recognized.
 
 Indicates the resource operation failed because the JSON input could not be deserialized into a
 valid instance, the `right` isn't a known user right, an entry in `identity` isn't a valid SID or
-an existing account, or `identity` was omitted from a **Set** or **Test** operation.
+an existing account (including `*` followed by anything other than a SID string), or `identity`
+was omitted from a **Set** or **Test** operation.
 
 ### Exit code 3
 

@@ -2,7 +2,7 @@
 description: >
   Example showing how to use the Microsoft.Windows/UserRightsAssignment resource with the dsc
   resource commands to retrieve, test and export user rights assignments.
-ms.date:     10/16/2026
+ms.date:     10/19/2026
 ms.topic:    reference
 title:       Get user rights assignments
 ---
@@ -61,6 +61,10 @@ inDesiredState: false
 differingProperties:
 - identity
 ```
+
+Because `S-1-5-32-546` isn't the name that the resource reports for the account, the resource also
+writes an informational message that names the canonical form, `BUILTIN\Guests`. DSC shows the
+message when you run the command with `--trace-level info`.
 
 To check that an account holds a right regardless of the other holders, add `setAction: add`:
 

@@ -81,6 +81,42 @@ pub(crate) fn project(current: &[ResolvedIdentity], grant: &[&ResolvedIdentity],
     names
 }
 
+/// The what-if result of `set`: the holders `right` would have once `input.setAction` applies
+/// `desired` to `current`, with a `_metadata.whatIf` message for every account that would be
+/// granted or revoked. `add` and `remove` keep the holders that aren't listed; only `replace`
+/// revokes them. When nothing would change, the result is the current state without metadata.
+///
+/// # Arguments
+///
+/// * `input` - The requested state; supplies `right` as given and `setAction`.
+/// * `right` - The user right that `input.right` names.
+/// * `current` - The accounts that hold the right now.
+/// * `desired` - The resolved `identity` entries of `input`.
+pub(crate) fn preview(
+    input: &UserRightsAssignment,
+    right: &UserRight,
+    current: &[ResolvedIdentity],
+    desired: &[ResolvedIdentity],
+) -> UserRightsAssignment {
+    let (grant, revoke) = diff(current, desired, input.set_action);
+    let name = right.display_name();
+    let messages = grant
+        .iter()
+        .map(|identity| t!("userRights.whatIfGrant", right = right.constant, name = name, identity = identity.name).to_string())
+        .chain(
+            revoke
+                .iter()
+                .map(|identity| t!("userRights.whatIfRevoke", right = right.constant, name = name, identity = identity.name).to_string()),
+        )
+        .collect();
+    UserRightsAssignment {
+        right: input.right.clone(),
+        identity: Some(project(current, &grant, &revoke)),
+        metadata: Metadata::from_messages(messages),
+        ..UserRightsAssignment::default()
+    }
+}
+
 /// Get the accounts that hold a right.
 ///
 /// # Errors
@@ -113,7 +149,7 @@ pub fn test(input: &UserRightsAssignment) -> Result<UserRightsAssignment, Securi
 }
 
 /// Apply `identity` to a right under `setAction`. In what-if mode nothing is changed and the
-/// projected state carries `_metadata.whatIf`.
+/// result is the [`preview`] of the same `setAction`.
 ///
 /// # Errors
 ///
@@ -139,29 +175,13 @@ pub fn set(input: &UserRightsAssignment, what_if: bool) -> Result<UserRightsAssi
         Err(error) => return Err(error),
     };
 
+    if what_if {
+        return Ok(preview(input, right, &current, &desired));
+    }
+
     let (grant, revoke) = diff(&current, &desired, input.set_action);
     if grant.is_empty() && revoke.is_empty() {
         return Ok(state(&input.right, &current));
-    }
-
-    let mut messages = Vec::with_capacity(grant.len() + revoke.len());
-    messages.extend(
-        grant
-            .iter()
-            .map(|identity| t!("userRights.whatIfGrant", right = right.constant, identity = identity.name).to_string()),
-    );
-    messages.extend(
-        revoke
-            .iter()
-            .map(|identity| t!("userRights.whatIfRevoke", right = right.constant, identity = identity.name).to_string()),
-    );
-    if what_if {
-        return Ok(UserRightsAssignment {
-            right: input.right.clone(),
-            identity: Some(project(&current, &grant, &revoke)),
-            metadata: Metadata::from_messages(messages),
-            ..UserRightsAssignment::default()
-        });
     }
 
     // Grant before revoke so that a logon right never has zero holders part-way through.
@@ -256,6 +276,71 @@ mod tests {
         let revoked = identity("Zed", 1);
         assert_eq!(project(&current, &[&granted], &[&revoked]), ["alpha", "Mike"]);
         assert_eq!(project(&current, &[], &[]), ["alpha", "Zed"]);
+    }
+
+    fn what_if_request(set_action: SetAction) -> UserRightsAssignment {
+        UserRightsAssignment {
+            right: "sedenybatchlogonright".to_string(),
+            identity: Some(vec!["Guests".to_string(), "Anonymous".to_string()]),
+            set_action,
+            ..UserRightsAssignment::default()
+        }
+    }
+
+    fn grant_message(right: &UserRight, identity: &str) -> String {
+        t!("userRights.whatIfGrant", right = right.constant, name = right.display_name(), identity = identity).to_string()
+    }
+
+    fn revoke_message(right: &UserRight, identity: &str) -> String {
+        t!("userRights.whatIfRevoke", right = right.constant, name = right.display_name(), identity = identity).to_string()
+    }
+
+    fn what_if_messages(result: &UserRightsAssignment) -> Vec<String> {
+        result.metadata.as_ref().and_then(|metadata| metadata.what_if.clone()).unwrap_or_default()
+    }
+
+    #[test]
+    fn preview_honours_every_set_action() {
+        let right = rights::find("SeDenyBatchLogonRight").unwrap();
+        let current = [identity("Guests", 1), identity("Users", 2)];
+        let desired = [identity("Guests", 1), identity("Anonymous", 3)];
+
+        let replaced = preview(&what_if_request(SetAction::Replace), right, &current, &desired);
+        assert_eq!(replaced.right, "sedenybatchlogonright", "right is echoed as given");
+        assert_eq!(replaced.identity.as_deref(), Some(["Anonymous", "Guests"].map(String::from).as_slice()));
+        assert_eq!(what_if_messages(&replaced), [grant_message(right, "Anonymous"), revoke_message(right, "Users")]);
+
+        let added = preview(&what_if_request(SetAction::Add), right, &current, &desired);
+        assert_eq!(added.identity.as_deref(), Some(["Anonymous", "Guests", "Users"].map(String::from).as_slice()));
+        assert_eq!(what_if_messages(&added), [grant_message(right, "Anonymous")]);
+
+        let removed = preview(&what_if_request(SetAction::Remove), right, &current, &desired);
+        assert_eq!(removed.identity.as_deref(), Some(["Users"].map(String::from).as_slice()));
+        assert_eq!(what_if_messages(&removed), [revoke_message(right, "Guests")]);
+
+        for result in [&replaced, &added, &removed] {
+            assert!(result.in_desired_state.is_none());
+        }
+    }
+
+    #[test]
+    fn preview_without_changes_reports_the_current_state_without_metadata() {
+        let right = rights::find("SeDenyBatchLogonRight").unwrap();
+        let current = [identity("Guests", 1), identity("Users", 2)];
+        let (present, absent) = ([identity("Guests", 1)], [identity("Anonymous", 3)]);
+        for (action, desired) in [(SetAction::Replace, &current[..]), (SetAction::Add, &present[..]), (SetAction::Remove, &absent[..])] {
+            let result = preview(&what_if_request(action), right, &current, desired);
+            assert_eq!(result.identity.as_deref(), Some(["Guests", "Users"].map(String::from).as_slice()), "{action:?}");
+            assert!(result.metadata.is_none(), "{action:?}");
+        }
+    }
+
+    #[test]
+    fn what_if_messages_name_the_right_by_constant_and_display_name() {
+        let right = rights::find("SeServiceLogonRight").unwrap();
+        let message = grant_message(right, "NT SERVICE\\ALL SERVICES");
+        assert!(message.contains("SeServiceLogonRight"), "{message}");
+        assert!(message.contains(right.display_name().as_ref()), "{message}");
     }
 
     #[test]
