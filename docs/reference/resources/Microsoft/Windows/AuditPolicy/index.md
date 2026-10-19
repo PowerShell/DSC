@@ -1,6 +1,6 @@
 ---
 description: Microsoft.Windows/AuditPolicy resource reference documentation
-ms.date:     10/16/2026
+ms.date:     10/19/2026
 ms.topic:    reference
 title:       Microsoft.Windows/AuditPolicy
 ---
@@ -53,6 +53,11 @@ The resource can:
 You can identify a subcategory by its English name, regardless of the system language, or by its
 GUID. The resource always reports the English names, so configuration documents and exported
 state are portable between systems with different display languages.
+
+> [!TIP]
+> To manage many subcategories, such as an audit baseline, use the
+> [Microsoft.Windows/AuditPolicyList][08] resource. One instance of that resource lists every
+> subcategory and applies all the changes with a single call to the audit policy API.
 
 Windows defines the following categories and subcategories:
 
@@ -231,13 +236,15 @@ The following snippet contains the JSON Schema that validates an instance of the
 
 ```json
 {
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "required": ["subcategory"],
   "additionalProperties": false,
   "properties": {
     "subcategory": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "x-dsc-key": true
     },
     "success": {
       "type": "boolean"
@@ -305,6 +312,7 @@ the audit policy requires an elevated process.
 
 ## See also
 
+- [Microsoft.Windows/AuditPolicyList resource][08]
 - [Microsoft.Windows/AuditPolicyOption resource][06]
 - [DSC resource capabilities][01]
 - [DSC resource properties][07]
@@ -317,3 +325,4 @@ the audit policy requires an elevated process.
 [05]: ../../../../../concepts/resources/properties.md#read-only-resource-properties
 [06]: ../AuditPolicyOption/index.md
 [07]: ../../../../../concepts/resources/properties.md
+[08]: ../AuditPolicyList/index.md

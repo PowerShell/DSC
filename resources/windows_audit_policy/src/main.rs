@@ -35,7 +35,7 @@ fn main() -> ExitCode {
 
 #[cfg(windows)]
 fn main() -> ExitCode {
-    use types::{AuditPolicy, AuditPolicyOption};
+    use types::{AuditPolicy, AuditPolicyList, AuditPolicyOption};
 
     let args: Vec<String> = std::env::args().collect();
 
@@ -70,6 +70,15 @@ fn main() -> ExitCode {
             Err(code) => code,
         },
         ("export", "subcategory") => finish_many(audit::export_audit_policies()),
+        ("get", "subcategory-list") => match require_input::<AuditPolicyList>(input_json) {
+            Ok(input) => finish(audit::get_audit_policy_list(&input)),
+            Err(code) => code,
+        },
+        ("set", "subcategory-list") => match require_input::<AuditPolicyList>(input_json) {
+            Ok(input) => finish(audit::set_audit_policy_list(&input, what_if)),
+            Err(code) => code,
+        },
+        ("export", "subcategory-list") => finish(audit::export_audit_policy_list()),
         ("get", "option") => match require_input::<AuditPolicyOption>(input_json) {
             Ok(input) => finish(options::get_option(&input)),
             Err(code) => code,
@@ -174,9 +183,17 @@ struct Arguments {
 /// `--input <json>` and `--what-if` are accepted; anything else is rejected before any operation
 /// is dispatched, so a misspelled preview flag can never turn into a real change.
 ///
+/// The value of `--input` can't start with `-`, so a missing value never swallows the next flag
+/// (`--input --what-if`), and `--input` can only be given once, so a later `--input` can't
+/// replace the value that an earlier one was meant to have.
+///
+/// # Arguments
+///
+/// * `args` - The full command line, including the executable, the operation and the target.
+///
 /// # Errors
 ///
-/// Returns the exit code to use when `--input` has no value or an argument is unknown.
+/// Returns the exit code to use when `--input` has no value, is repeated, or an argument is unknown.
 #[cfg(windows)]
 fn parse_arguments(args: &[String]) -> Result<Arguments, ExitCode> {
     let mut arguments = Arguments::default();
@@ -184,10 +201,14 @@ fn parse_arguments(args: &[String]) -> Result<Arguments, ExitCode> {
     while index < args.len() {
         match args[index].as_str() {
             "--input" | "-i" => {
-                let Some(value) = args.get(index + 1) else {
+                let Some(value) = args.get(index + 1).filter(|value| !value.starts_with('-')) else {
                     write_error(&t!("main.missingInputValue"));
                     return Err(ExitCode::from(EXIT_INVALID_ARGS));
                 };
+                if arguments.input.is_some() {
+                    write_error(&t!("main.duplicateInput"));
+                    return Err(ExitCode::from(EXIT_INVALID_ARGS));
+                }
                 arguments.input = Some(value.clone());
                 index += 2;
             }
@@ -253,6 +274,23 @@ mod tests {
         );
         // The operation and target positions are never read as flags.
         assert_eq!(parse_arguments(&args(&["exe", "-w", "subcategory"])), Ok(parsed(None, false)));
+    }
+
+    #[test]
+    fn input_never_consumes_a_flag_as_its_value() {
+        let invalid = Err(ExitCode::from(EXIT_INVALID_ARGS));
+        let json = r#"{"name":"CrashOnAuditFail","enabled":true}"#;
+        for flag in ["--what-if", "-w", "--input", "-i", "--whatif"] {
+            assert_eq!(parse_arguments(&args(&["exe", "set", "option", "--input", flag, "--input", json])), invalid, "{flag}");
+            assert_eq!(parse_arguments(&args(&["exe", "set", "option", "-i", flag])), invalid, "{flag}");
+        }
+    }
+
+    #[test]
+    fn rejects_input_given_more_than_once() {
+        let invalid = Err(ExitCode::from(EXIT_INVALID_ARGS));
+        assert_eq!(parse_arguments(&args(&["exe", "set", "subcategory", "--input", "{}", "--input", "{}"])), invalid);
+        assert_eq!(parse_arguments(&args(&["exe", "set", "subcategory", "-i", "{}", "-w", "-i", "{}"])), invalid);
     }
 
     #[test]

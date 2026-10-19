@@ -32,6 +32,19 @@ pub struct AuditPolicy {
     pub metadata: Option<Metadata>,
 }
 
+/// Desired or actual state of several audit policy subcategories (`Microsoft.Windows/AuditPolicyList`).
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct AuditPolicyList {
+    /// One entry per subcategory, each with the same properties as an `AuditPolicy` instance.
+    /// `get` and `set` return the entries in the order given.
+    pub policies: Vec<AuditPolicy>,
+
+    /// Metadata returned by what-if operations describing the changes to every listed subcategory.
+    #[serde(rename = "_metadata", skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<Metadata>,
+}
+
 /// The audit policy options stored as values under `HKLM\SYSTEM\CurrentControlSet\Control\Lsa`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AuditOptionName {
@@ -230,6 +243,21 @@ mod tests {
         assert_eq!(policy.success, Some(true));
         assert_eq!(policy.failure, None);
         assert_eq!(serde_json::to_string(&policy).unwrap(), r#"{"subcategory":"Logon","success":true}"#);
+    }
+
+    #[test]
+    fn audit_policy_list_requires_policies_and_rejects_unknown_fields() {
+        assert!(serde_json::from_str::<AuditPolicyList>(r"{}").is_err());
+        assert!(serde_json::from_str::<AuditPolicyList>(r#"{"policies":[],"bogus":1}"#).is_err());
+        assert!(serde_json::from_str::<AuditPolicyList>(r#"{"policies":[{"subcategory":"Logon","bogus":1}]}"#).is_err());
+        let list: AuditPolicyList =
+            serde_json::from_str(r#"{"policies":[{"subcategory":"Logon","success":true},{"subcategory":"Logoff"}]}"#).unwrap();
+        assert_eq!(list.policies.len(), 2);
+        assert_eq!(list.policies[1].subcategory, "Logoff");
+        assert_eq!(
+            serde_json::to_string(&list).unwrap(),
+            r#"{"policies":[{"subcategory":"Logon","success":true},{"subcategory":"Logoff"}]}"#
+        );
     }
 
     #[test]

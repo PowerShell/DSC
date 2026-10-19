@@ -77,16 +77,19 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
 ### Added
 
-- Added the `Microsoft.Windows/AuditPolicy` and `Microsoft.Windows/AuditPolicyOption` built-in
-  resources for managing the Windows advanced audit policy natively, as a replacement for the
-  `AuditPolicyDsc` PowerShell module. `AuditPolicy` manages success and failure auditing per
-  subcategory (by English name or GUID) through the LSA audit APIs, and `AuditPolicyOption`
-  manages the `CrashOnAuditFail`, `FullPrivilegeAuditing`, `AuditBaseObjects`, and
-  `AuditBaseDirectories` options. Both resources support `get`, `set`, `export`, and `--what-if`.
+- Added the `Microsoft.Windows/AuditPolicy`, `Microsoft.Windows/AuditPolicyList`, and
+  `Microsoft.Windows/AuditPolicyOption` built-in resources for managing the Windows advanced audit
+  policy natively, as a replacement for the `AuditPolicyDsc` PowerShell module. `AuditPolicy`
+  manages success and failure auditing per subcategory (by English name or GUID) through the LSA
+  audit APIs, `AuditPolicyList` manages many subcategories in one instance and applies them with a
+  single API call, and `AuditPolicyOption` manages the `CrashOnAuditFail`,
+  `FullPrivilegeAuditing`, `AuditBaseObjects`, and `AuditBaseDirectories` options. All three
+  resources support `get`, `set`, `export`, and `--what-if`.
 
   <details><summary>Related work items</summary>
 
   - Issues: [#1755][#1755]
+  - PRs: [#1758][#1758]
 
   </details>
 
@@ -2012,5 +2015,6 @@ Version `3.0.0` is the first generally available release of DSC.
 [#1557]: https://github.com/PowerShell/DSC/issues/1557
 [#1558]: https://github.com/PowerShell/DSC/issues/1558
 [#1562]: https://github.com/PowerShell/DSC/issues/1562
-[#1755]: https://github.com/PowerShell/DSC/issues/1755
 [#1729]: https://github.com/PowerShell/DSC/issues/1729
+[#1755]: https://github.com/PowerShell/DSC/issues/1755
+[#1758]: https://github.com/PowerShell/DSC/issues/1758

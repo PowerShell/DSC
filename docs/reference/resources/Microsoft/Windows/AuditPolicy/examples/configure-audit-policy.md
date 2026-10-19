@@ -2,7 +2,7 @@
 description: >
   Example showing how to use the Microsoft.Windows/AuditPolicy resource in a DSC configuration
   document to enforce the auditing of audit policy subcategories.
-ms.date:     10/16/2026
+ms.date:     10/19/2026
 ms.topic:    reference
 title:       Configure audit policy
 ---
@@ -30,6 +30,11 @@ is, because the `success` property is omitted. The third instance disables audit
 :::code language="yaml" source="auditpolicy.config.dsc.yaml":::
 
 Copy the configuration document and save it as `auditpolicy.config.dsc.yaml`.
+
+> [!TIP]
+> A baseline usually sets many subcategories. Instead of one `AuditPolicy` instance per
+> subcategory, you can list them all in a single [Microsoft.Windows/AuditPolicyList][03] instance,
+> as shown in [Configure an audit policy baseline][04].
 
 ## Setup
 
@@ -217,17 +222,28 @@ changes because every instance is already in the desired state.
 ## Preview the changes
 
 To see which flags would change without applying them, add the `--what-if` option to the
-`dsc config set` command. The resource reports the projected state and describes each change
-under `_metadata.whatIf`.
+`dsc config set` command. The resource reports the projected state and describes each change.
+DSC moves those descriptions from the resource output to the `whatIf` list in the instance's
+`metadata`.
 
 ```powershell
 dsc config set --file ./auditpolicy.config.dsc.yaml --what-if
 ```
 
 ```yaml
-# Elided for brevity
+executionInformation:
+  # Elided for brevity
+metadata:
+  # Elided for brevity
 results:
-- name: Audit successful and failed logons
+- executionInformation:
+    # Elided for brevity
+  metadata:
+    Microsoft.DSC:
+      # Elided for brevity
+    whatIf:
+    - Would change failure auditing for subcategory 'Logon' from false to true
+  name: Audit successful and failed logons
   type: Microsoft.Windows/AuditPolicy
   result:
     beforeState:
@@ -242,9 +258,6 @@ results:
       failure: true
       guid: '{0CCE9215-69AE-11D9-BED3-505054503030}'
       category: Logon/Logoff
-      _metadata:
-        whatIf:
-        - Would change failure auditing for subcategory 'Logon' from false to true
     changedProperties:
     - failure
     - _metadata
@@ -254,3 +267,5 @@ results:
 <!-- Link definitions -->
 [01]: ../../../../../../cli/config/test.md
 [02]: ../../../../../../cli/config/set.md
+[03]: ../../AuditPolicyList/index.md
+[04]: ../../AuditPolicyList/examples/configure-audit-policy-list.md

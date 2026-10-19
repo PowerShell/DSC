@@ -1,6 +1,6 @@
 ---
 description: Microsoft.Windows/AuditPolicyOption resource reference documentation
-ms.date:     10/16/2026
+ms.date:     10/19/2026
 ms.topic:    reference
 title:       Microsoft.Windows/AuditPolicyOption
 ---
@@ -149,12 +149,14 @@ The following snippet contains the JSON Schema that validates an instance of the
 
 ```json
 {
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "required": ["name"],
   "additionalProperties": false,
   "properties": {
     "name": {
       "type": "string",
+      "x-dsc-key": true,
       "enum": [
         "CrashOnAuditFail",
         "FullPrivilegeAuditing",

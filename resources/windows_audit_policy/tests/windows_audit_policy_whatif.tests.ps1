@@ -130,6 +130,25 @@ Describe 'Windows audit policy whatif tests' -Skip:(!$IsWindows) {
             Get-RawOptionValue -Name 'CrashOnAuditFail' | Should -Be $rawBefore
         }
 
+        It 'Rejects <flag> as the value of --input without touching the registry' -TestCases @(
+            @{ flag = '--what-if' }
+            @{ flag = '-w' }
+        ) {
+            $rawBefore = Get-RawOptionValue -Name 'CrashOnAuditFail'
+            $null = windows_audit_policy set option --input $flag --input $optionJson 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 1
+            Get-Content -Raw $testdrive/error.log | Should -Match 'Missing value for --input'
+            Get-RawOptionValue -Name 'CrashOnAuditFail' | Should -Be $rawBefore
+        }
+
+        It 'Rejects --input given more than once without touching the registry' {
+            $rawBefore = Get-RawOptionValue -Name 'CrashOnAuditFail'
+            $null = windows_audit_policy set option --input $optionJson --what-if --input $optionJson 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 1
+            Get-Content -Raw $testdrive/error.log | Should -Match 'can only be given once'
+            Get-RawOptionValue -Name 'CrashOnAuditFail' | Should -Be $rawBefore
+        }
+
         It 'Rejects an unknown switch on the subcategory set' {
             $json = @{ subcategory = $testSubcategory; success = $true } | ConvertTo-Json -Compress
             $null = windows_audit_policy set subcategory --input $json --what-if --verbose 2>$testdrive/error.log

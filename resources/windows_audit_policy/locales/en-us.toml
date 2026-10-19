@@ -1,12 +1,13 @@
 _version = 1
 
 [main]
-missingOperation = "Missing operation. Usage: windows_audit_policy <get|set|export> <subcategory|option> [--input <json>] [--what-if]"
+missingOperation = "Missing operation. Usage: windows_audit_policy <get|set|export> <subcategory|subcategory-list|option> [--input <json>] [--what-if]"
 unknownOperation = "Unknown operation: '%{operation}'. Expected: get, set, or export"
-missingTarget = "Missing resource target. Expected: subcategory or option"
-unknownTarget = "Unknown resource target: '%{target}'. Expected: subcategory or option"
+missingTarget = "Missing resource target. Expected: subcategory, subcategory-list or option"
+unknownTarget = "Unknown resource target: '%{target}'. Expected: subcategory, subcategory-list or option"
 missingInput = "Missing --input argument"
 missingInputValue = "Missing value for --input argument"
+duplicateInput = "The --input argument can only be given once"
 unknownArgument = "Unknown argument: '%{argument}'. Expected: --input <json> and/or --what-if"
 invalidJson = "Invalid JSON input: %{error}"
 serializeFailed = "Failed to serialize output: %{error}"
@@ -16,13 +17,14 @@ elevationRequired = "Managing the Windows audit policy requires elevation. Run D
 [audit]
 privilegeFailed = "Failed to enable SeSecurityPrivilege: %{error}"
 unknownSubcategory = "Unknown audit policy subcategory '%{subcategory}'. Specify the English subcategory name or its GUID."
+duplicateSubcategory = "The audit policy subcategory '%{subcategory}' is listed more than once. List each subcategory once."
 enumerateCategoriesFailed = "Failed to enumerate audit policy categories: %{error}"
 enumerateSubcategoriesFailed = "Failed to enumerate audit policy subcategories: %{error}"
 lookupNameFailed = "Failed to look up the name for audit policy GUID '%{guid}': %{error}"
 queryFailed = "Failed to query the audit policy for subcategory '%{subcategory}': %{error}"
 queryCategoryFailed = "Failed to query the audit policy for category '%{category}': %{error}"
 queryEmpty = "no policy information was returned"
-setFailed = "Failed to set the audit policy for subcategory '%{subcategory}': %{error}"
+setFailed = "Failed to set the audit policy for %{subcategories}: %{error}"
 whatIfChangeSuccess = "Would change success auditing for subcategory '%{subcategory}' from %{current} to %{desired}"
 whatIfChangeFailure = "Would change failure auditing for subcategory '%{subcategory}' from %{current} to %{desired}"
 
