@@ -52,6 +52,24 @@ Save the configuration as `export-file-content.config.dsc.yaml`, then run:
 dsc config export --file ./export-file-content.config.dsc.yaml
 ```
 
+You can also pass the configuration document as JSON using `--input`:
+
+```powershell
+$instance = @{
+  resources = @(
+    @{
+      name       = 'Test File'
+      type       = 'Microsoft.Filesystem.File/Content'
+      properties = @{
+        path = 'D:\DSC\config\file-content\test.txt'
+      }
+    }
+  )
+} | ConvertTo-Json -Depth 10 -Compress
+
+dsc config export --input $instance
+```
+
 For the sample file containing `Hello World` and `Hello World 2`, the command returns a
 configuration with its current content and hashes:
 
