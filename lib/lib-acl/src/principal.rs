@@ -67,6 +67,7 @@ impl Principal {
         &self.sid
     }
 
+    #[cfg(windows)]
     fn reject_nul(text: &str) -> Result<(), AclError> {
         if text.contains('\0') {
             Err(AclError::UnresolvablePrincipal {
