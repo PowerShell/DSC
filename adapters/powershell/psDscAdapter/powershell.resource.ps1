@@ -430,8 +430,8 @@ try {
     $outputCollection = $ps.EndInvoke($asyncResult)
 }
 catch {
-    Write-DscTrace -Now -Operation Error -Message $_
     Write-TraceQueue
+    Write-DscTrace -Now -Operation Error -Message $_
     exit 1
 }
 

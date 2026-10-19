@@ -214,6 +214,7 @@ class StreamResource : BaseTestClass
     {
         Write-Verbose -Verbose "This is a Verbose message"
         Write-Debug -Debug "This is a Debug message"
+        $ErrorActionPreference = "Continue"
         Write-Error "This is an Error message"
     }
 
