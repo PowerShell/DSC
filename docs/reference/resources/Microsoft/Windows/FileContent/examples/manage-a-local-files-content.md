@@ -51,6 +51,20 @@ Save it as `file-content.config.dsc.yaml` and update `path` if needed.
 
 :::code language="yaml" source="file-content.config.dsc.yaml":::
 
+## Set a file with multiline content
+
+For files with multiple lines, use a YAML literal block (`|`) for the `content` property. This
+example creates the parent directories and writes a CA `.inf` file with the specified lines.
+
+:::code language="yaml" source="complex-file-content.config.dsc.yaml":::
+
+Save the configuration as `complex-file-content.config.dsc.yaml`, then apply it with
+[dsc config set][04]:
+
+```powershell
+dsc config set --file ./complex-file-content.config.dsc.yaml
+```
+
 ## Set the file content
 
 The configuration sets `_exist` to `true` and provides `content`. When you apply it with the

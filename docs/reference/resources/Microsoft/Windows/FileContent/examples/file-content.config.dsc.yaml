@@ -4,6 +4,6 @@ resources:
   - name: Test File
     type: Microsoft.Filesystem.File/Content
     properties:
-      path: 'D:\DSC\config\file-contaent\TestFile.txt'
+      path: 'D:\DSC\config\file-content\TestFile.txt'
       _exist: true
       content: 'This is a test file.'

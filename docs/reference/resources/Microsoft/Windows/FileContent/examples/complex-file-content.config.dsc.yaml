@@ -1,0 +1,33 @@
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+  - name: Configure CA INF file
+    type: Microsoft.Filesystem.File/Content
+    properties:
+      _exist: true
+      path: D:\DSC\config\file-content\CA.inf
+      content: | 
+        [Version]
+        Signature="$Windows NT$"
+
+        [PolicyStatementExtension]
+        Policies=InternalPolicy
+
+        [InternalPolicy]
+        OID=1.2.3.4.1455.67.89.5
+        Notice="Legal Policy Statement"
+        URL=https://pki.corp.contoso.com/pki/cps.txt
+
+        [Certsrv_Server]
+        RenewalKeyLength=2048
+        RenewalValidityPeriod=Years
+        RenewalValidityPeriodUnits=5
+        CRLPeriod=Weeks
+        CRLPeriodUnits=1
+        LoadDefaultTemplates=0
+        AlternateSignatureAlgorithm=1
+
+        [CRLDistributionPoint]
+        URL=http://pki.corp.contoso.com/cdp/WingtipToysRootCA.crl
+
+        [AuthorityInformationAccess]
+        URL=http://pki.corp.contoso.com/Public/myCA.crt
