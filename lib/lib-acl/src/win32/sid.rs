@@ -9,7 +9,9 @@ use core::ffi::c_void;
 use rust_i18n::t;
 use windows::Win32::Foundation::{HLOCAL, LocalFree};
 use windows::Win32::Security::Authorization::{ConvertSidToStringSidW, ConvertStringSidToSidW};
-use windows::Win32::Security::{GetLengthSid, LookupAccountNameW, PSID, SID_NAME_USE};
+use windows::Win32::Security::{
+    GetLengthSid, LookupAccountNameW, LookupAccountSidW, PSID, SID_NAME_USE,
+};
 use windows::core::{HSTRING, PCWSTR, PWSTR};
 
 /// Owned bytes for a security identifier (SID). Safe to pass as a [`PSID`] for the lifetime of
@@ -24,34 +26,13 @@ impl OwnedSid {
     }
 }
 
-/// Resolves a principal string to a security identifier. Accepts either a SID string (for
-/// example `S-1-5-32-544`) or an account/group name (for example `DOMAIN\User` or
-/// `Administrators`), which is resolved via [`LookupAccountNameW`].
-///
-/// # Errors
-///
-/// Returns [`AclError::InvalidSid`] when `principal` looks like a SID string but is not valid,
-/// or [`AclError::PrincipalResolution`] when the account/group name cannot be resolved.
-pub fn resolve_principal(principal: &str) -> Result<OwnedSid, AclError> {
-    if principal.contains('\0') {
-        return Err(AclError::PrincipalResolution {
-            principal: principal.to_string(),
-            reason: t!("principal.nulCharacter").to_string(),
-        });
-    }
-    if looks_like_sid(principal) {
-        return parse_sid(principal);
-    }
-    lookup_account_name(principal)
-}
-
 /// Converts a security identifier to its normalized string form (for example
 /// `S-1-5-32-544`).
 ///
 /// # Safety
 ///
 /// `sid` must point to a valid, well-formed SID structure (for example one returned by
-/// [`resolve_principal`], embedded in an ACE that was read from a genuine Windows ACL, or
+/// [`crate::Principal::from_sid`], embedded in an ACE that was read from a genuine Windows ACL, or
 /// otherwise populated by a Win32 API), readable for the entire length implied by its own
 /// header, for the duration of this call.
 ///
@@ -80,14 +61,14 @@ pub unsafe fn sid_to_string(sid: PSID) -> Result<String, AclError> {
 }
 
 /// Returns whether `value` has the lexical shape of a SID string (for example `S-1-5-32-544`),
-/// so that [`resolve_principal`] attempts to parse it as one instead of looking it up as an
+/// so that [`crate::Principal`] attempts to parse it as one instead of looking it up as an
 /// account or group name. Only strings that actually match the SID grammar -- a case-insensitive
 /// `S`, then a hyphen-separated revision number, identifier authority, and zero or more
 /// subauthorities, each a decimal number (the identifier authority may alternatively be a
 /// `0x`-prefixed hexadecimal value) -- are treated as candidates. This intentionally excludes
 /// hyphenated account or group names that merely start with `S` (for example `Sales-Team` or
 /// `S-Corp-Admins`), which must go through account lookup instead.
-fn looks_like_sid(value: &str) -> bool {
+pub(crate) fn looks_like_sid(value: &str) -> bool {
     let Some(rest) = value.strip_prefix(['S', 's']) else {
         return false;
     };
@@ -128,7 +109,7 @@ fn looks_like_sid(value: &str) -> bool {
     parts.all(is_decimal)
 }
 
-fn parse_sid(value: &str) -> Result<OwnedSid, AclError> {
+pub(crate) fn parse_sid(value: &str) -> Result<OwnedSid, AclError> {
     let wide = HSTRING::from(value);
     let mut psid = PSID::default();
     // SAFETY: wide is a valid null-terminated string for the duration of this call. psid is
@@ -147,7 +128,7 @@ fn parse_sid(value: &str) -> Result<OwnedSid, AclError> {
     Ok(OwnedSid(bytes))
 }
 
-fn lookup_account_name(name: &str) -> Result<OwnedSid, AclError> {
+pub(crate) fn lookup_account_name(name: &str) -> Result<OwnedSid, AclError> {
     let wide = HSTRING::from(name);
     let mut sid_size = 0_u32;
     let mut domain_size = 0_u32;
@@ -167,7 +148,7 @@ fn lookup_account_name(name: &str) -> Result<OwnedSid, AclError> {
         )
     };
     if sid_size == 0 {
-        return Err(AclError::PrincipalResolution {
+        return Err(AclError::UnresolvablePrincipal {
             principal: name.to_string(),
             reason: t!("principal.notFound").to_string(),
         });
@@ -189,12 +170,67 @@ fn lookup_account_name(name: &str) -> Result<OwnedSid, AclError> {
             &mut use_,
         )
     }
-    .map_err(|error| AclError::PrincipalResolution {
+    .map_err(|error| AclError::UnresolvablePrincipal {
         principal: name.to_string(),
         reason: error.to_string(),
     })?;
 
     Ok(OwnedSid(sid_buffer))
+}
+
+/// Resolves a SID to its canonical `DOMAIN\name` display form when available.
+///
+/// # Safety
+///
+/// `sid` must point to a valid SID for the duration of this call.
+pub(crate) unsafe fn sid_to_account_name(sid: PSID) -> Option<String> {
+    let mut name_size = 0_u32;
+    let mut domain_size = 0_u32;
+    let mut use_: SID_NAME_USE = SID_NAME_USE(0);
+    // SAFETY: the caller guarantees `sid` is valid. This sizing call intentionally omits buffers.
+    let _ = unsafe {
+        LookupAccountSidW(
+            PCWSTR::null(),
+            sid,
+            None,
+            &mut name_size,
+            None,
+            &mut domain_size,
+            &mut use_,
+        )
+    };
+    if name_size == 0 {
+        return None;
+    }
+
+    let mut name = vec![0_u16; name_size as usize];
+    let mut domain = vec![0_u16; domain_size as usize];
+    // SAFETY: both buffers use the exact sizes returned by the sizing call.
+    let domain_buffer = if domain.is_empty() {
+        None
+    } else {
+        Some(PWSTR(domain.as_mut_ptr()))
+    };
+    unsafe {
+        LookupAccountSidW(
+            PCWSTR::null(),
+            sid,
+            Some(PWSTR(name.as_mut_ptr())),
+            &mut name_size,
+            domain_buffer,
+            &mut domain_size,
+            &mut use_,
+        )
+    }
+    .ok()?;
+
+    let name = String::from_utf16(name.get(..name_size as usize)?).ok()?;
+    let domain = String::from_utf16(domain.get(..domain_size as usize)?).ok()?;
+    if domain.is_empty() {
+        Some(name)
+    } else {
+        Some(format!(r"{domain}\{name}"))
+    }
 }
 
 #[cfg(test)]
@@ -242,14 +278,4 @@ mod tests {
         assert!(!looks_like_sid("Administrators"));
     }
 
-    #[test]
-    fn rejects_principal_names_with_embedded_nul() {
-        let error = match resolve_principal("Everyone\0DSC-Invalid") {
-            Ok(_) => panic!("an embedded NUL must be rejected"),
-            Err(error) => error,
-        };
-
-        assert!(matches!(error, AclError::PrincipalResolution { .. }));
-        assert!(error.to_string().contains("must not contain NUL"));
-    }
 }

@@ -1221,7 +1221,7 @@ fn set_what_if_with_value_name_returns_effective_acl_for_omitted_and_false_purge
             .discretionary
             .unwrap()
             .into_iter()
-            .map(|entry| entry.principal)
+            .map(|entry| entry.principal.to_string())
             .collect();
 
         assert_eq!(
@@ -1294,7 +1294,7 @@ fn set_what_if_without_value_name_returns_effective_acl_for_missing_key() {
     assert_eq!(acl.discretionary_protected, Some(false));
     assert_eq!(
         acl.discretionary.unwrap()[0].principal,
-        "S-1-5-19".to_string()
+        "S-1-5-19"
     );
 }
 

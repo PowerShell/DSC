@@ -8,7 +8,8 @@ use crate::error::AclError;
 use crate::model::{
     AccessControlEntry, AccessMask, AceFlag, AceType, AuditFlag, bits_to_mask, mask_to_bits,
 };
-use crate::win32::sid::{OwnedSid, resolve_principal, sid_to_string};
+use crate::Principal;
+use crate::win32::sid::{OwnedSid, parse_sid};
 use core::ffi::c_void;
 use core::mem::size_of;
 use windows::Win32::Security::{
@@ -49,7 +50,7 @@ impl AclBuffer {
         // SID bytes, which are always DWORD-aligned, so no additional padding is required.
         let mut total_size = size_of::<ACL>();
         for entry in entries {
-            let sid = resolve_principal(&entry.principal)?;
+            let sid = parse_sid(entry.principal.as_str())?;
             total_size += 8 + sid_byte_len(&sid);
             resolved.push((entry, sid));
         }
@@ -232,7 +233,8 @@ pub(crate) unsafe fn parse_acl<P: AccessMask>(
         // SAFETY: sid_ptr points at the SID embedded in the ACE that GetAce just returned,
         // which is valid for as long as acl_ptr (borrowed by this function's caller) is valid;
         // it is a real, Windows-populated SID, not externally supplied bytes.
-        let principal = unsafe { sid_to_string(windows::Win32::Security::PSID(sid_ptr.cast_mut())) }?;
+        let principal =
+            unsafe { Principal::from_psid(windows::Win32::Security::PSID(sid_ptr.cast_mut())) }?;
         let flags = inheritance_flags_from_bits(ace_flags_bits);
         let audit_flags = if ace_type == AceType::Audit {
             audit_flags_from_bits(ace_flags_bits)

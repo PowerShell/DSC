@@ -14,4 +14,4 @@ pub use security_descriptor::{
     build_self_relative_security_descriptor, normalize, read_access_control_list,
     read_security_information,
 };
-pub use sid::{resolve_principal, sid_to_string};
+pub use sid::sid_to_string;

@@ -526,7 +526,7 @@ fn win32_error(operation: &str, code: u32) -> RegistryError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lib_acl::{AccessControlEntry, AceType, AuditFlag};
+    use lib_acl::{AccessControlEntry, AceType, AuditFlag, Principal};
     use windows::Win32::Foundation::{CloseHandle, HANDLE, LUID};
     use windows::Win32::Security::{
         AdjustTokenPrivileges, LUID_AND_ATTRIBUTES, LookupPrivilegeValueW,
@@ -537,7 +537,7 @@ mod tests {
 
     fn entry(ace_type: AceType) -> AccessControlEntry<RegistryAccessRight> {
         AccessControlEntry {
-            principal: "S-1-5-18".to_string(),
+            principal: Principal::from_sid("S-1-5-18").unwrap(),
             ace_type,
             access_mask: vec![RegistryAccessRight::Read],
             flags: Vec::new(),
@@ -641,7 +641,7 @@ mod tests {
         );
 
         let mut new_entry = entry(AceType::Allow);
-        new_entry.principal = "S-1-5-19".to_string(); // well-known LOCAL_SERVICE SID
+        new_entry.principal = Principal::from_sid("S-1-5-19").unwrap(); // LOCAL_SERVICE SID
         let requested = RegistryAccessControlList {
             discretionary: Some(vec![new_entry]),
             purge: Some(false),
@@ -720,7 +720,7 @@ mod tests {
             ..Default::default()
         };
         let mut different_entry = entry(AceType::Allow);
-        different_entry.principal = "S-1-5-19".to_string();
+        different_entry.principal = Principal::from_sid("S-1-5-19").unwrap();
         let requested = RegistryAccessControlList {
             discretionary: Some(vec![different_entry]),
             purge: Some(true),

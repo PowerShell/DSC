@@ -1,14 +1,11 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-//! Portable, resource-agnostic typed model for an access control list (ACL) expressed as
-//! arrays of access control entry (ACE) objects. This module has no Win32 dependency so that
-//! the shape of the model (and its JSON schema) is available on every platform; the Win32
-//! operations that actually read and write ACLs live in [`crate::win32`] and are only compiled
-//! on Windows.
+//! Resource-agnostic typed model for a Windows access control list (ACL), expressed as arrays of
+//! access control entry (ACE) objects.
 
-use crate::error::AclError;
-use rust_i18n::t;
+use crate::error::{AclError, InvalidEntryError};
+use crate::Principal;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -134,7 +131,7 @@ pub struct AccessControlEntry<P> {
     /// `S-1-5-32-544`) or an account or group name (for example `DOMAIN\User` or
     /// `Administrators`). Names are resolved to a security identifier; output always reports
     /// the normalized SID string.
-    pub principal: String,
+    pub principal: Principal,
     /// Whether the entry allows, denies, or audits access.
     #[serde(rename = "type")]
     pub ace_type: AceType,
@@ -150,6 +147,34 @@ pub struct AccessControlEntry<P> {
 }
 
 impl<P: AccessMask> AccessControlEntry<P> {
+    fn discretionary_errors(&self) -> Vec<InvalidEntryError> {
+        let mut errors = Vec::new();
+        if !matches!(self.ace_type, AceType::Allow | AceType::Deny) {
+            errors.push(InvalidEntryError::DiscretionaryType);
+        }
+        if !self.audit_flags.is_empty() {
+            errors.push(InvalidEntryError::DiscretionaryAuditFlags);
+        }
+        if self.access_mask.is_empty() {
+            errors.push(InvalidEntryError::MissingAccessMask);
+        }
+        errors
+    }
+
+    fn system_errors(&self) -> Vec<InvalidEntryError> {
+        let mut errors = Vec::new();
+        if self.ace_type != AceType::Audit {
+            errors.push(InvalidEntryError::SystemType);
+        }
+        if self.audit_flags.is_empty() {
+            errors.push(InvalidEntryError::SystemAuditFlags);
+        }
+        if self.access_mask.is_empty() {
+            errors.push(InvalidEntryError::MissingAccessMask);
+        }
+        errors
+    }
+
     /// Validates that this entry is well-formed for inclusion in a discretionary ACL (DACL).
     ///
     /// # Errors
@@ -157,22 +182,12 @@ impl<P: AccessMask> AccessControlEntry<P> {
     /// Returns [`AclError::InvalidEntry`] when the entry's type or flags are not valid for a
     /// discretionary ACL.
     pub fn validate_discretionary(&self) -> Result<(), AclError> {
-        if !matches!(self.ace_type, AceType::Allow | AceType::Deny) {
-            return Err(AclError::InvalidEntry(
-                t!("validation.discretionaryType").to_string(),
-            ));
+        let errors = self.discretionary_errors();
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(AclError::InvalidEntry { errors })
         }
-        if !self.audit_flags.is_empty() {
-            return Err(AclError::InvalidEntry(
-                t!("validation.discretionaryAuditFlags").to_string(),
-            ));
-        }
-        if self.access_mask.is_empty() {
-            return Err(AclError::InvalidEntry(
-                t!("validation.accessMaskRequired").to_string(),
-            ));
-        }
-        Ok(())
     }
 
     /// Validates that this entry is well-formed for inclusion in a system ACL (SACL).
@@ -182,22 +197,12 @@ impl<P: AccessMask> AccessControlEntry<P> {
     /// Returns [`AclError::InvalidEntry`] when the entry's type or flags are not valid for a
     /// system ACL.
     pub fn validate_system(&self) -> Result<(), AclError> {
-        if self.ace_type != AceType::Audit {
-            return Err(AclError::InvalidEntry(
-                t!("validation.systemType").to_string(),
-            ));
+        let errors = self.system_errors();
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(AclError::InvalidEntry { errors })
         }
-        if self.audit_flags.is_empty() {
-            return Err(AclError::InvalidEntry(
-                t!("validation.systemAuditFlags").to_string(),
-            ));
-        }
-        if self.access_mask.is_empty() {
-            return Err(AclError::InvalidEntry(
-                t!("validation.accessMaskRequired").to_string(),
-            ));
-        }
-        Ok(())
     }
 }
 
@@ -259,17 +264,22 @@ impl<P: AccessMask> AccessControlList<P> {
     ///
     /// Returns [`AclError::InvalidEntry`] when any entry is not valid for its section.
     pub fn validate(&self) -> Result<(), AclError> {
+        let mut errors = Vec::new();
         if let Some(entries) = &self.discretionary {
             for entry in entries {
-                entry.validate_discretionary()?;
+                errors.extend(entry.discretionary_errors());
             }
         }
         if let Some(entries) = &self.system {
             for entry in entries {
-                entry.validate_system()?;
+                errors.extend(entry.system_errors());
             }
         }
-        Ok(())
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(AclError::InvalidEntry { errors })
+        }
     }
 
     /// Whether supplied sections use replacement semantics.
@@ -299,7 +309,7 @@ impl<P: AccessMask> AccessControlList<P> {
 /// explicit entries remain distinct because Windows applies and orders them differently.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct AceSemanticKey {
-    principal: String,
+    principal: Principal,
     ace_type: AceType,
     mask_bits: u32,
     flags: Vec<AceFlag>,
@@ -538,7 +548,7 @@ fn protected_satisfied(desired: Option<bool>, actual: Option<bool>) -> bool {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, windows))]
 mod tests {
     use super::*;
 
@@ -581,7 +591,7 @@ mod tests {
         access_mask: Vec<TestRight>,
     ) -> AccessControlEntry<TestRight> {
         AccessControlEntry {
-            principal: principal.to_string(),
+            principal: Principal::try_from(principal).unwrap(),
             ace_type,
             access_mask,
             flags: Vec::new(),
@@ -607,6 +617,45 @@ mod tests {
             ..Default::default()
         };
         assert!(!acl.purge());
+    }
+
+    #[test]
+    fn validation_collects_all_entry_failures() {
+        let invalid_discretionary: AccessControlEntry<TestRight> = AccessControlEntry {
+            principal: Principal::from_sid("S-1-1-0").unwrap(),
+            ace_type: AceType::Audit,
+            access_mask: Vec::new(),
+            flags: Vec::new(),
+            audit_flags: vec![AuditFlag::Success],
+        };
+        let invalid_system: AccessControlEntry<TestRight> = AccessControlEntry {
+            principal: Principal::from_sid("S-1-1-0").unwrap(),
+            ace_type: AceType::Allow,
+            access_mask: Vec::new(),
+            flags: Vec::new(),
+            audit_flags: Vec::new(),
+        };
+        let acl = AccessControlList {
+            discretionary: Some(vec![invalid_discretionary]),
+            system: Some(vec![invalid_system]),
+            ..Default::default()
+        };
+
+        let AclError::InvalidEntry { errors } = acl.validate().unwrap_err() else {
+            panic!("expected invalid entry errors");
+        };
+
+        assert_eq!(
+            errors,
+            vec![
+                InvalidEntryError::DiscretionaryType,
+                InvalidEntryError::DiscretionaryAuditFlags,
+                InvalidEntryError::MissingAccessMask,
+                InvalidEntryError::SystemType,
+                InvalidEntryError::SystemAuditFlags,
+                InvalidEntryError::MissingAccessMask,
+            ]
+        );
     }
 
     #[test]

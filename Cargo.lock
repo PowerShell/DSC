@@ -1926,6 +1926,8 @@ dependencies = [
  "rust-i18n",
  "schemars",
  "serde",
+ "serde_json",
+ "thiserror 2.0.21",
  "windows 0.62.2",
 ]
 

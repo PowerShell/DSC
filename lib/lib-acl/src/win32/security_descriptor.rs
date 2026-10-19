@@ -9,7 +9,6 @@
 use crate::error::AclError;
 use crate::model::{AccessControlEntry, AccessControlList, AccessMask};
 use crate::win32::acl::{AclBuffer, parse_acl};
-use crate::win32::sid::{resolve_principal, sid_to_string};
 use core::ffi::c_void;
 use windows::Win32::Security::{
     DACL_SECURITY_INFORMATION, GetSecurityDescriptorControl, GetSecurityDescriptorDacl,
@@ -291,45 +290,10 @@ fn to_self_relative(descriptor: PSECURITY_DESCRIPTOR) -> Result<Vec<u8>, AclErro
     Ok(buffer)
 }
 
-/// Returns a copy of `acl` with every entry's `principal` normalized to its resolved SID string,
-/// so that a caller-supplied access control list (which may name principals by SID or by
-/// account/group name) can be compared directly, field-for-field, against the output of
-/// [`read_access_control_list`] (which always reports resolved SID strings), and so that
-/// entries which name the same principal differently are recognized as duplicates when merging.
-///
-/// # Errors
-///
-/// Returns [`AclError`] when a principal cannot be resolved to a SID.
+/// Returns a clone of `acl`. Principals are already validated and canonicalized during
+/// deserialization or explicit [`crate::Principal`] construction.
 pub fn normalize<P: AccessMask>(acl: &AccessControlList<P>) -> Result<AccessControlList<P>, AclError> {
-    Ok(AccessControlList {
-        discretionary: acl
-            .discretionary
-            .as_deref()
-            .map(normalize_entries)
-            .transpose()?,
-        discretionary_protected: acl.discretionary_protected,
-        system: acl.system.as_deref().map(normalize_entries).transpose()?,
-        system_protected: acl.system_protected,
-        purge: acl.purge,
-    })
-}
-
-fn normalize_entries<P: AccessMask>(
-    entries: &[AccessControlEntry<P>],
-) -> Result<Vec<AccessControlEntry<P>>, AclError> {
-    entries
-        .iter()
-        .map(|entry| {
-            let sid = resolve_principal(&entry.principal)?;
-            // SAFETY: sid was just produced by resolve_principal, which guarantees valid,
-            // well-formed SID bytes owned by `sid` for the duration of this call.
-            let principal = unsafe { sid_to_string(sid.as_psid()) }?;
-            Ok(AccessControlEntry {
-                principal,
-                ..entry.clone()
-            })
-        })
-        .collect()
+    Ok(acl.clone())
 }
 
 #[cfg(test)]
