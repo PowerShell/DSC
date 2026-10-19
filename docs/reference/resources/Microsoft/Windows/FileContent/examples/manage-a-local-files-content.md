@@ -38,11 +38,36 @@ actualState:
   _exist: true
 ```
 
-## Export file instances
+## Export the configured file
 
-The `Microsoft.Filesystem.File/Content` resource doesn't implement the `export` capability, so
-`dsc resource export --resource Microsoft.Filesystem.File/Content` isn't supported. Use **Get**
-with a specific `path` to retrieve that file's current state.
+Although the resource doesn't provide a resource-level export operation for discovering every
+file on the system, you can use [dsc config export][06] to export the current state of a file
+declared in a configuration document. The input configuration identifies the file by its `path`.
+
+:::code language="yaml" source="export-file-content.config.dsc.yaml":::
+
+Save the configuration as `export-file-content.config.dsc.yaml`, then run:
+
+```powershell
+dsc config export --file ./export-file-content.config.dsc.yaml
+```
+
+For the sample file containing `Hello World` and `Hello World 2`, the command returns a
+configuration with its current content and hashes:
+
+```yaml
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+contentVersion: 1.0.0
+resources:
+- type: Microsoft.Filesystem.File/Content
+  name: Content-0
+  properties:
+    path: C:\dsc\config\file-content\test.txt
+    content: "Hello World\r\nHello World 2"
+    sha256: 4cb711e6d67352a139c55c3ae57a7d8a84f454479bd48f031fbcc08f254a24da
+    sha512: 2ebbe8171d841341fa9c4d00414a385200ac9d1308fd53ec6b45322f9ca7f3ceb6fa6f1bf2ac578017a311c2730139718598c2c287d64f421a72e01f1217e6e6
+    _exist: true
+```
 
 ## Define the desired file content
 
@@ -152,3 +177,4 @@ dsc resource set --resource Microsoft.Filesystem.File/Content --input $cleanup
 [03]: ../../../../../cli/resource/get.md
 [04]: ../../../../../cli/config/set.md
 [05]: ../../../../../cli/config/test.md
+[06]: ../../../../../cli/config/export.md

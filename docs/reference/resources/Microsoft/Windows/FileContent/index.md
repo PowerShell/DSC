@@ -63,8 +63,9 @@ The resource has the following capabilities:
 - `set` - You can use the resource to enforce the desired state for an instance.
 - `test` - You can use the resource to test whether an instance is in the desired state.
 
-This resource doesn't have the `export` capability. You can't use it to discover and export every
-file instance.
+The resource doesn't provide a resource-level `export` operation for discovering every file on the
+system. You can use `dsc config export` with a configuration document that declares the file path
+to export that file's current state. For an example, see [Manage a local file's content][02].
 
 For more information about resource capabilities, see [DSC resource capabilities][01].
 
