@@ -6,7 +6,7 @@ resources:
       _exist: true
       path: D:\DSC\config\file-content\CA.inf
       content: | 
-        [Version]
+        [[Version]
         Signature="$Windows NT$"
 
         [PolicyStatementExtension]
