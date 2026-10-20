@@ -154,10 +154,13 @@ IsWriteOnly : false
 The subcategory to manage. Specify either the English name of the subcategory, such as `Logon`
 or `Credential Validation`, or its GUID, such as `{0CCE9215-69AE-11D9-BED3-505054503030}`. Names
 are matched case-insensitively and the braces around a GUID are optional. The resource returns the
-value exactly as you specified it. **Export** returns the English name.
+value exactly as you specified it. **Export** returns the English name, or the GUID for a
+subcategory that the resource doesn't know by an English name, so an exported document applies on
+a system with a different display language.
 
 If the subcategory isn't a known English name or GUID, the resource falls back to the names that
-the local system reports in its display language, so localized names are also accepted.
+the local system reports in its display language, so localized names are also accepted and matched
+case-insensitively.
 
 ### success
 

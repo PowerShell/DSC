@@ -128,6 +128,6 @@ resources:
 ```
 
 <!-- Link definitions -->
-[01]: ../../../../../../cli/resource/get.md
-[02]: ../../../../../../cli/resource/test.md
-[03]: ../../../../../../cli/resource/export.md
+[01]: ../../../../../cli/resource/get.md
+[02]: ../../../../../cli/resource/test.md
+[03]: ../../../../../cli/resource/export.md

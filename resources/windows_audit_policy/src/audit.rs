@@ -208,11 +208,13 @@ fn lookup_category_name(guid: &GUID) -> Result<String, AuditError> {
     Ok(AuditString(name).to_string_lossy())
 }
 
-/// English subcategory name from the static table, falling back to the LSA's localized name.
-fn subcategory_display_name(guid: &GUID) -> Result<String, AuditError> {
+/// English subcategory name from the static table, falling back to the formatted GUID. The LSA's
+/// localized name is not used here: an exported document must apply on a system with another
+/// display language, and `resolve_subcategory` only accepts the names that system reports.
+fn subcategory_display_name(guid: &GUID) -> String {
     match subcategories::find_by_guid(guid.to_u128()) {
-        Some(entry) => Ok(entry.name.to_string()),
-        None => lookup_subcategory_name(guid),
+        Some(entry) => entry.name.to_string(),
+        None => format_guid(guid.to_u128()),
     }
 }
 
@@ -222,6 +224,12 @@ fn category_display_name(guid: &GUID) -> Result<String, AuditError> {
         Some(name) => Ok(name.to_string()),
         None => lookup_category_name(guid),
     }
+}
+
+/// Whether two names are equal ignoring case. Localized names contain letters outside ASCII, so
+/// this folds the case of every character rather than only ASCII letters.
+fn names_match(a: &str, b: &str) -> bool {
+    a.to_lowercase() == b.to_lowercase()
 }
 
 /// Resolve the `subcategory` input (English name or GUID) to a subcategory GUID.
@@ -256,7 +264,7 @@ fn resolve_subcategory(input: &str) -> Result<Resolved, AuditError> {
     let all = enumerate_subcategories(None)?;
     for guid in all.as_slice() {
         let name = lookup_subcategory_name(guid)?;
-        if name.eq_ignore_ascii_case(wanted) {
+        if names_match(&name, wanted) {
             return Ok(Resolved { guid: *guid, name, category: None });
         }
     }
@@ -565,7 +573,7 @@ pub fn export_audit_policies() -> Result<Vec<AuditPolicy>, AuditError> {
             )
         })?;
         for info in buffer.as_slice() {
-            let name = subcategory_display_name(&info.AuditSubCategoryGuid)?;
+            let name = subcategory_display_name(&info.AuditSubCategoryGuid);
             policies.push(policy_from_info(info, name, Some(&category_name))?);
         }
     }
@@ -660,6 +668,22 @@ mod tests {
         assert!(matches!(resolve_subcategory(&format_guid(BOGUS_GUID)), Err(AuditError::InvalidInput(_))));
     }
 
+    #[test]
+    fn names_match_ignores_case_beyond_ascii() {
+        assert!(names_match("Logon", "LOGON"));
+        assert!(names_match("Ouverture de session", "OUVERTURE DE SESSION"));
+        assert!(names_match("Événement de connexion", "ÉVÉNEMENT DE CONNEXION"));
+        assert!(names_match("Änderung der Überwachungsrichtlinie", "änderung der überwachungsrichtlinie"));
+        assert!(!names_match("Logon", "Logoff"));
+        assert!(!names_match("Événement", "Evenement"));
+    }
+
+    #[test]
+    fn display_name_is_the_english_name_or_the_guid() {
+        assert_eq!(subcategory_display_name(&GUID::from_u128(LOGON_GUID)), "Logon");
+        assert_eq!(subcategory_display_name(&GUID::from_u128(BOGUS_GUID)), format_guid(BOGUS_GUID));
+    }
+
     fn entry(subcategory: &str, success: Option<bool>, failure: Option<bool>) -> AuditPolicy {
         AuditPolicy {
             subcategory: subcategory.to_string(),
@@ -739,7 +763,15 @@ mod tests {
             assert_eq!(names, ["Logon", "Logoff"]);
             let preview = set_audit_policy_list(&list, true).unwrap();
             assert!(preview.metadata.is_none(), "an entry without flags changes nothing");
-            assert_eq!(export_audit_policy_list().unwrap().policies.len(), export_audit_policies().unwrap().len());
+            let exported = export_audit_policies().unwrap();
+            assert_eq!(export_audit_policy_list().unwrap().policies.len(), exported.len());
+            for policy in &exported {
+                assert!(
+                    subcategories::find_by_name(&policy.subcategory).is_some() || parse_guid(&policy.subcategory).is_some(),
+                    "exported subcategory '{}' is neither an English name nor a GUID",
+                    policy.subcategory
+                );
+            }
         } else {
             assert!(matches!(privilege, Err(AuditError::ElevationRequired)));
             assert!(query.is_err());

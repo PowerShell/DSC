@@ -148,5 +148,5 @@ effect after a restart. The second instance was already in the desired state, so
 the **Set** operation for it.
 
 <!-- Link definitions -->
-[01]: ../../../../../../cli/config/test.md
-[02]: ../../../../../../cli/config/set.md
+[01]: ../../../../../cli/config/test.md
+[02]: ../../../../../cli/config/set.md

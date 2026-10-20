@@ -265,7 +265,7 @@ results:
 ```
 
 <!-- Link definitions -->
-[01]: ../../../../../../cli/config/test.md
-[02]: ../../../../../../cli/config/set.md
+[01]: ../../../../../cli/config/test.md
+[02]: ../../../../../cli/config/set.md
 [03]: ../../AuditPolicyList/index.md
 [04]: ../../AuditPolicyList/examples/configure-audit-policy-list.md

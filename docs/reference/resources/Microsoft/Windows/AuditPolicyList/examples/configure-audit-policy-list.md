@@ -224,5 +224,5 @@ hadErrors: false
 ```
 
 <!-- Link definitions -->
-[01]: ../../../../../../cli/config/test.md
-[02]: ../../../../../../cli/config/set.md
+[01]: ../../../../../cli/config/test.md
+[02]: ../../../../../cli/config/set.md
