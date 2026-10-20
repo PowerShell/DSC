@@ -132,6 +132,17 @@ macro_rules! test_schema_for {
         }
     }
 
+    #[cfg(test)] mod lint {
+        #[allow(unused_must_use)]
+        #[cfg(test)] mod diagnostic {
+            test_schema_for!(dsc_lib::lint::diagnostic::LintResult);
+        }
+        #[allow(unused_must_use)]
+        #[cfg(test)] mod rule {
+            test_schema_for!(dsc_lib::lint::rule::LintRuleInfo);
+        }
+    }
+
     #[cfg(test)] mod extensions {
         #[allow(unused_must_use)]
         #[cfg(test)] mod discover {

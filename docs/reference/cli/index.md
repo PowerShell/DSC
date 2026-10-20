@@ -42,6 +42,13 @@ The `function` command manages DSC functions. You can use it to:
 
 For more information, see [dsc function][03]
 
+### lint
+
+The `lint` command checks a configuration document for problems without applying it. It reports
+duplicate resources, invalid expressions, unresolved dependencies, invalid parameters, deprecated
+features, and, with resource discovery, resource types that aren't installed. For more
+information, see [dsc lint][07].
+
 ### mcp
 
 The `mcp` command starts DSC as a Model Context Protocol (MCP) server. For more information, see
@@ -252,3 +259,4 @@ file, ensure that the input is encoded as UTF-8.
 [04]: server/index.md
 [05]: resource/index.md
 [06]: schema/index.md
+[07]: lint/index.md

@@ -110,6 +110,9 @@ pub enum DscError {
     #[error("{t}: {0}", t = t!("dscerror.operation"))]
     Operation(String),
 
+    #[error(transparent)]
+    Lint(#[from] crate::lint::LintError),
+
     #[error("{t}: {0}", t = t!("dscerror.parser"))]
     Parser(String),
 

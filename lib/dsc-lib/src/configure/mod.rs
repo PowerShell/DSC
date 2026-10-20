@@ -331,7 +331,16 @@ fn add_metadata(dsc_resource: &DscResource, mut properties: Option<Map<String, V
     }
 }
 
-fn get_require_adapter_from_directive(resource_directives: &Option<ResourceDirective>) -> Option<FullyQualifiedTypeName> {
+/// Get the adapter a resource requires from its directives, if one is specified.
+///
+/// # Arguments
+///
+/// * `resource_directives` - The directives of the resource.
+///
+/// # Returns
+///
+/// The required adapter type name, or `None` when the directives don't require one.
+pub(crate) fn get_require_adapter_from_directive(resource_directives: &Option<ResourceDirective>) -> Option<FullyQualifiedTypeName> {
     if let Some(directives) = resource_directives
         && let Some(require_adapter) = &directives.require_adapter {
             return Some(require_adapter.clone());

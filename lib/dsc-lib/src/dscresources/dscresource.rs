@@ -938,6 +938,53 @@ pub fn validate_json(source: &str, schema: &Value, json: &Value) -> Result<(), D
     Ok(())
 }
 
+/// A single violation found when validating JSON against a schema.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SchemaViolation {
+    /// JSON pointer (RFC 6901) to the location in the instance that failed validation.
+    pub instance_path: String,
+    /// JSON pointer to the keyword in the schema that the instance violated.
+    pub schema_path: String,
+    /// The validation error message.
+    pub message: String,
+}
+
+/// Validate the JSON against the schema and return every violation.
+///
+/// Unlike [`validate_json`], which stops at the first error, this function collects all
+/// violations so callers can report each one with its location.
+///
+/// # Arguments
+///
+/// * `source` - The source of the JSON, used for logging
+/// * `schema` - The schema to validate against
+/// * `json` - The JSON to validate
+///
+/// # Returns
+///
+/// Every violation found; an empty list means the JSON is valid.
+///
+/// # Errors
+///
+/// * `DscError::Validation` - The schema failed to compile
+pub fn validate_json_all(source: &str, schema: &Value, json: &Value) -> Result<Vec<SchemaViolation>, DscError> {
+    debug!("{}: {source}", t!("dscresources.dscresource.validatingSchema"));
+    trace!("{}", t!("dscresources.dscresource.json", json = json));
+    trace!("{}", t!("dscresources.dscresource.schema", schema = schema));
+    let compiled_schema = match Validator::new(schema) {
+        Ok(compiled_schema) => compiled_schema,
+        Err(err) => {
+            return Err(DscError::Validation(format!("{}: {err}", t!("dscresources.dscresource.failedToCompileSchema"))));
+        }
+    };
+
+    Ok(compiled_schema.iter_errors(json).map(|error| SchemaViolation {
+        instance_path: error.instance_path().to_string(),
+        schema_path: error.schema_path().to_string(),
+        message: error.to_string(),
+    }).collect())
+}
+
 /// Compares two arrays independent of order
 fn is_same_array(expected: &Vec<Value>, actual: &Vec<Value>) -> bool {
     if expected.len() != actual.len() {

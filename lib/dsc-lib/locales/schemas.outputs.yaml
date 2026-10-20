@@ -1,0 +1,27 @@
+_version: 2
+schemas:
+  outputs:
+    lint:
+      result:
+        title:
+          en-us: dsc lint result
+        description:
+          en-us: >-
+            Describes the output of the `dsc lint` command.
+        markdownDescription:
+          en-us: |-
+            Describes the output of the `dsc lint` command: the diagnostics the lint rules
+            reported for the document, counts of the diagnostics by level, whether the document
+            is free of error-level diagnostics, and whether resource discovery ran.
+      rules:
+        title:
+          en-us: dsc lint rule
+        description:
+          en-us: >-
+            Describes a lint rule and the level it reports at, as listed by `dsc lint --list-rules`.
+        markdownDescription:
+          en-us: |-
+            Describes a lint rule and the level it reports at, as listed by
+            `dsc lint --list-rules`. The `defaultLevel` is the level the rule reports at unless
+            it is overridden; `level` is the level in effect after the settings file and any
+            `--rule` overrides are applied.

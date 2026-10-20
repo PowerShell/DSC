@@ -5,6 +5,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
 use dsc_lib::dscresources::command_resource::TraceLevel;
 use dsc_lib::functions::FunctionCategory;
+use dsc_lib::lint::{LintLevel, RuleLevelOverride};
 use dsc_lib::progress::ProgressFormat;
 use dsc_lib::types::{FullyQualifiedTypeName, ResourceVersionReq, TypeNameFilter};
 use rust_i18n::t;
@@ -95,6 +96,29 @@ pub enum SubCommand {
     Function {
         #[clap(subcommand)]
         subcommand: FunctionSubCommand,
+    },
+    #[clap(name = "lint", about = t!("args.lintAbout").to_string())]
+    Lint {
+        #[clap(short = 'i', long, help = t!("args.lintInput").to_string(), conflicts_with = "file")]
+        input: Option<String>,
+        #[clap(short = 'f', long, help = t!("args.lintFile").to_string(), conflicts_with = "input")]
+        file: Vec<String>,
+        #[clap(short = 'p', long, help = t!("args.parameters").to_string())]
+        parameters: Option<String>,
+        #[clap(long, help = t!("args.parametersFile").to_string())]
+        parameters_file: Option<String>,
+        #[clap(short = 'r', long, help = t!("args.systemRoot").to_string())]
+        system_root: Option<String>,
+        #[clap(long, help = t!("args.noDiscovery").to_string())]
+        no_discovery: bool,
+        #[clap(long, help = t!("args.failOn").to_string(), value_enum)]
+        fail_on: Option<LintLevel>,
+        #[clap(long = "rule", value_name = "RULE=LEVEL", help = t!("args.rule").to_string())]
+        rules: Vec<RuleLevelOverride>,
+        #[clap(long, help = t!("args.listRules").to_string(), conflicts_with_all = ["input", "file"])]
+        list_rules: bool,
+        #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
+        output_format: Option<OutputFormat>,
     },
     #[clap(name = "server", alias = "mcp", about = t!("args.serverAbout").to_string())]
     Server,
@@ -318,6 +342,8 @@ pub enum SchemaType {
     FunctionDefinition,
     GetResult,
     Include,
+    LintResult,
+    LintRules,
     ManifestList,
     ResolveResult,
     Resource,

@@ -41,6 +41,7 @@ use dsc_lib::{
         extension_manifest::ExtensionManifest,
     },
     functions::FunctionDefinition,
+    lint::{LintResult, LintRuleInfo},
     schemas::dsc_repo::{DscRepoSchema, RecognizedSchemaVersion, SchemaForm, SchemaUriPrefix},
     types::SemanticVersion,
     util::{
@@ -226,6 +227,12 @@ pub fn get_schema(schema: SchemaType) -> Schema {
         },
         SchemaType::Include => {
             schema_for!(Include)
+        },
+        SchemaType::LintResult => {
+            repo_schema::<LintResult>()
+        },
+        SchemaType::LintRules => {
+            repo_schema::<LintRuleInfo>()
         },
         SchemaType::ManifestList => {
             schema_for!(ManifestList)
@@ -455,7 +462,53 @@ pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Op
     info!("Trace-level is {:?}", tracing_setting.level);
 }
 
+/// Read an input document and convert it to a JSON string.
+///
+/// # Arguments
+///
+/// * `input` - The inline document, if provided.
+/// * `file` - The path to the document, or `-` to read it from STDIN.
+///
+/// # Returns
+///
+/// The document as JSON, or an empty string when neither argument is provided.
+///
+/// # Errors
+///
+/// Returns `EXIT_INVALID_INPUT` when the document can't be read (see [`read_input`]) or isn't
+/// valid JSON or YAML.
 pub fn get_input(input: Option<&String>, file: Option<&String>) -> Result<String, ExitCode> {
+    let value = read_input(input, file)?;
+    if value.is_empty() {
+        return Ok(value);
+    }
+
+    match parse_input_to_json(&value) {
+        Ok(json) => Ok(json),
+        Err(err) => {
+            error!("{}: {err}", t!("util.failedToParseInput"));
+            Err(ExitCode::from(EXIT_INVALID_INPUT))
+        }
+    }
+}
+
+/// Read an input document as text without parsing it.
+///
+/// # Arguments
+///
+/// * `input` - The inline document, if provided.
+/// * `file` - The path to the document, or `-` to read it from STDIN. Extensions with the
+///   `import` capability get the first chance to handle a file path.
+///
+/// # Returns
+///
+/// The document text, or an empty string when neither argument is provided.
+///
+/// # Errors
+///
+/// Returns `EXIT_INVALID_INPUT` when the inline input is actually a path to an existing file, the
+/// file can't be read, STDIN isn't valid UTF-8, or the document is empty.
+pub fn read_input(input: Option<&String>, file: Option<&String>) -> Result<String, ExitCode> {
     trace!("Input: {input:?}, File: {file:?}");
     let value = if let Some(input) = input {
         debug!("{}", t!("util.readingInput"));
@@ -524,13 +577,7 @@ pub fn get_input(input: Option<&String>, file: Option<&String>) -> Result<String
         return Err(ExitCode::from(EXIT_INVALID_INPUT));
     }
 
-    match parse_input_to_json(&value) {
-        Ok(json) => Ok(json),
-        Err(err) => {
-            error!("{}: {err}", t!("util.failedToParseInput"));
-            Err(ExitCode::from(EXIT_INVALID_INPUT))
-        }
-    }
+    Ok(value)
 }
 
 /// Sets `DSC_CONFIG_ROOT` env var and makes path absolute.

@@ -77,6 +77,25 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
 ### Added
 
+- Added the `dsc lint` command, which checks a configuration document for problems without
+  applying it. The command validates the document against the configuration document schema and
+  runs a set of rules that report duplicate resource names, unresolved and circular dependencies,
+  expressions that don't parse or call unknown functions, undeclared or unused parameters and
+  variables, invalid parameter constraints, deprecated features, and, with resource discovery,
+  resource types that aren't installed or literal properties that don't match a resource's schema.
+  You can change the level of a rule for a run with the `--rule` option or for every run in the
+  new `lint` section of the settings file, and control which level makes the command fail with
+  `--fail-on`. The `dsc schema` command exposes the new `lint-result` and `lint-rules` schemas.
+
+  <details><summary>Related work items</summary>
+
+  - Issues:
+    - [#591][#591]
+    - [#842][#842]
+  - PRs: _None_
+
+  </details>
+
 - Added what-if support to the MCP server tools. The `invoke_dsc_config` tool now accepts a
   `what_if` option for the `set` operation, and the `invoke_dsc_resource` tool accepts `what_if`
   for the `set` and `delete` operations. This mirrors the `--what-if` flag on the `dsc config set`,
@@ -1764,6 +1783,7 @@ Version `3.0.0` is the first generally available release of DSC.
 [#515]: https://github.com/PowerShell/DSC/issues/515
 [#543]: https://github.com/PowerShell/DSC/issues/543
 [#566]: https://github.com/PowerShell/DSC/issues/566
+[#591]: https://github.com/PowerShell/DSC/issues/591
 [#57]: https://github.com/PowerShell/DSC/issues/57
 [#598]: https://github.com/PowerShell/DSC/issues/598
 [#628]: https://github.com/PowerShell/DSC/issues/628
@@ -1828,6 +1848,7 @@ Version `3.0.0` is the first generally available release of DSC.
 [#832]: https://github.com/PowerShell/DSC/issues/832
 [#834]: https://github.com/PowerShell/DSC/issues/834
 [#841]: https://github.com/PowerShell/DSC/issues/841
+[#842]: https://github.com/PowerShell/DSC/issues/842
 [#843]: https://github.com/PowerShell/DSC/issues/843
 [#844]: https://github.com/PowerShell/DSC/issues/844
 [#845]: https://github.com/PowerShell/DSC/issues/845

@@ -149,6 +149,8 @@ pub(crate) fn export_schemas(
         dsc_lib::functions::FunctionArgKind,
         dsc_lib::functions::FunctionCategory,
         dsc_lib::functions::FunctionDefinition,
+        dsc_lib::lint::diagnostic::LintResult,
+        dsc_lib::lint::rule::LintRuleInfo,
         dsc_lib::types::DateVersion,
         dsc_lib::types::ExitCodesMap,
         dsc_lib::types::FullyQualifiedTypeName,

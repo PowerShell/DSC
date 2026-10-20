@@ -98,32 +98,23 @@ fn dsc_main() -> Result<(), ExitCode> {
             generate(shell, &mut cmd, "dsc", &mut io::stdout());
         },
         SubCommand::Config { subcommand, parameters, parameters_file, system_root, as_group, as_assert, as_include } => {
-            let Ok(params) = get_input(None, parameters_file.as_ref()) else {
-                return Err(ExitCode::from(util::EXIT_INVALID_INPUT));
-            };
-            let file_params = if params.is_empty() {
-                None
-            } else {
-                Some(params)
-            };
-
-            let merged_parameters = match (file_params, parameters) {
-                (Some(file_content), Some(inline_content)) => {
-                    info!("{}", t!("main.mergingParameters"));
-                    match util::merge_parameters(&file_content, &inline_content) {
-                        Ok(merged) => Some(merged),
-                        Err(err) => {
-                            error!("{}: {err}", t!("main.failedMergingParameters"));
-                            return Err(ExitCode::from(util::EXIT_INVALID_INPUT))    ;
-                        }
-                    }
-                },
-                (Some(file_content), None) => Some(file_content),
-                (None, Some(inline_content)) => Some(inline_content),
-                (None, None) => None,
-            };
-
+            let merged_parameters = merge_parameter_inputs(parameters, parameters_file.as_ref())?;
             subcommand::config(&subcommand, &merged_parameters, system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format)?;
+        },
+        SubCommand::Lint { input, file, parameters, parameters_file, system_root, no_discovery, fail_on, rules, list_rules, output_format } => {
+            let merged_parameters = merge_parameter_inputs(parameters, parameters_file.as_ref())?;
+            let args = subcommand::LintArgs {
+                input: input.as_ref(),
+                files: &file,
+                parameters: merged_parameters.as_ref(),
+                system_root: system_root.as_ref(),
+                no_discovery,
+                fail_on,
+                rules: &rules,
+                list_rules,
+                output_format: output_format.as_ref(),
+            };
+            subcommand::lint(&args, progress_format)?;
         },
         SubCommand::Extension { subcommand } => {
             subcommand::extension(&subcommand, progress_format)?;
@@ -155,6 +146,48 @@ fn dsc_main() -> Result<(), ExitCode> {
     }
 
     Ok(())
+}
+
+/// Combine the inline parameters with the parameters file, if either was given.
+///
+/// # Arguments
+///
+/// * `parameters` - The inline parameters, as JSON or YAML.
+/// * `parameters_file` - The path to a parameters file, or `-` to read it from STDIN.
+///
+/// # Returns
+///
+/// The merged parameters as JSON, or `None` when neither was given. Inline values take precedence
+/// over values from the file.
+///
+/// # Errors
+///
+/// Returns `EXIT_INVALID_INPUT` when the file can't be read or the two inputs can't be merged.
+fn merge_parameter_inputs(parameters: Option<String>, parameters_file: Option<&String>) -> Result<Option<String>, ExitCode> {
+    let Ok(file_params) = get_input(None, parameters_file) else {
+        return Err(ExitCode::from(util::EXIT_INVALID_INPUT));
+    };
+    let file_params = if file_params.is_empty() {
+        None
+    } else {
+        Some(file_params)
+    };
+
+    match (file_params, parameters) {
+        (Some(file_content), Some(inline_content)) => {
+            info!("{}", t!("main.mergingParameters"));
+            match util::merge_parameters(&file_content, &inline_content) {
+                Ok(merged) => Ok(Some(merged)),
+                Err(err) => {
+                    error!("{}: {err}", t!("main.failedMergingParameters"));
+                    Err(ExitCode::from(util::EXIT_INVALID_INPUT))
+                }
+            }
+        },
+        (Some(file_content), None) => Ok(Some(file_content)),
+        (None, Some(inline_content)) => Ok(Some(inline_content)),
+        (None, None) => Ok(None),
+    }
 }
 
 fn ctrlc_handler() {

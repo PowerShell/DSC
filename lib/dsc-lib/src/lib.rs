@@ -17,6 +17,7 @@ pub mod dscerror;
 pub mod dscresources;
 pub mod extensions;
 pub mod functions;
+pub mod lint;
 pub mod parser;
 pub mod progress;
 pub mod schemas;
