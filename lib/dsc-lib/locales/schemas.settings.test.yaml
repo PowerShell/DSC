@@ -1,0 +1,74 @@
+_version: 2
+schemas.settings.test:
+  container:
+    title:
+      en-us: Container title
+    description:
+      en-us: Container description
+    markdownDescription:
+      en-us: Container markdown description
+    fields:
+      foo:
+        title:
+          en-us: Container 'foo' field title
+        description:
+          en-us: Container 'foo' field description
+        markdownDescription:
+          en-us: Container 'foo' field markdown description
+      bar:
+        title:
+          en-us: Container 'bar' field title
+        description:
+          en-us: Container 'bar' field description
+        markdownDescription:
+          en-us: Container 'bar' field markdown description
+      baz:
+        title:
+          en-us: Container 'baz' field title
+        description:
+          en-us: Container 'baz' field description
+        markdownDescription:
+          en-us: Container 'baz' field markdown description
+
+  boolean:
+    title:
+      en-us: Boolean title
+    description:
+      en-us: Boolean description
+    markdownDescription:
+      en-us: Boolean markdown description
+    markdownEnumDescriptions:
+      'true':
+        en-us: Boolean markdown enum description for true
+      'false':
+        en-us: Boolean markdown enum description for false
+
+  string:
+    title:
+      en-us: String title
+    description:
+      en-us: String description
+    markdownDescription:
+      en-us: String markdown description
+    variants:
+      foo:
+        title:
+          en-us: String 'foo' variant title
+        description:
+          en-us: String 'foo' variant description
+        markdownDescription:
+          en-us: String 'foo' variant markdown description
+      bar:
+        title:
+          en-us: String 'bar' variant title
+        description:
+          en-us: String 'bar' variant description
+        markdownDescription:
+          en-us: String 'bar' variant markdown description
+      baz:
+        title:
+          en-us: String 'baz' variant title
+        description:
+          en-us: String 'baz' variant description
+        markdownDescription:
+          en-us: String 'baz' variant markdown description

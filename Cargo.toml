@@ -234,6 +234,8 @@ rust-i18n = { version = "4.2.4" }
 schemars = { version = "1.2.2", features = ["preserve_order"] }
 # dsc, dsc-lib
 semver = { version = "1.0.28" }
+# dsc-lib
+serial_test = { version = "4.0.1" }
 # dsc, dsc-lib, dscecho, dsc-lib-osinfo, process, registry, dsc-lib-registry, runcommandonset, sshdconfig, dsctest, test_group_resource
 serde = { version = "1.0.229", features = ["derive"] }
 # dsc, dsc-lib, dscecho, dsc-lib-osinfo, osinfo, process, registry, dsc-lib-registry, runcommandonset, sshdconfig, dsctest, test_group_resource, y2j
