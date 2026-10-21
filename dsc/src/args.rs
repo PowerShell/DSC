@@ -44,6 +44,18 @@ pub enum TraceFormat {
     PassThrough,
 }
 
+impl TryInto<dsc_lib::settings::fields::TracingFormatField> for TraceFormat {
+    type Error = ();
+    fn try_into(self) -> Result<dsc_lib::settings::fields::TracingFormatField, Self::Error> {
+        match self {
+            TraceFormat::Default => Ok(dsc_lib::settings::fields::TracingFormatField::Default),
+            TraceFormat::Plaintext => Ok(dsc_lib::settings::fields::TracingFormatField::Plaintext),
+            TraceFormat::Json => Ok(dsc_lib::settings::fields::TracingFormatField::Json),
+            TraceFormat::PassThrough => Err(()),
+        }
+    }
+}
+
 #[derive(Debug, Parser)]
 #[clap(name = "dsc", version = env!("CARGO_PKG_VERSION"), about = t!("args.about").to_string(), long_about = None)]
 pub struct Args {
@@ -56,8 +68,18 @@ pub struct Args {
     pub trace_format: Option<TraceFormat>,
     #[clap(short = 'p', long, help = t!("args.progressFormat").to_string(), value_enum)]
     pub progress_format: Option<ProgressFormat>,
-    #[clap(long, help = t!("args.ignoreSettingsFile").to_string())]
-    pub ignore_settings_file: bool,
+    #[clap(long, help = t!("args.ignoreSettingsFile").to_string(), num_args=0..=1, default_missing_value="true", require_equals = true)]
+    pub ignore_settings_file: Option<bool>,
+}
+
+impl From<&Args> for dsc_lib::settings::sources::CommandLineData {
+    fn from(value: &Args) -> Self {
+        Self {
+            trace_level: value.trace_level.clone().map(|v| v.into()),
+            trace_format: value.trace_format.clone().and_then(|v| v.try_into().ok()),
+            ignore_settings_file: value.ignore_settings_file.map(|v| v.into()),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
