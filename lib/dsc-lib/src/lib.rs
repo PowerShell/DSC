@@ -21,8 +21,14 @@ pub mod lint;
 pub mod parser;
 pub mod progress;
 pub mod schemas;
+pub mod settings;
 pub mod types;
 pub mod util;
+
+// Define module for unit tests and stubs
+#[cfg(test)]
+#[macro_use]
+pub(crate) mod tests;
 
 i18n!("locales", fallback = "en-us");
 

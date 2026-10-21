@@ -208,10 +208,33 @@ pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat
         },
         Err(err) => {
             error!("{err}");
-            return Err(ExitCode::from(EXIT_DSC_ERROR));
+            let exit_code = config_test_exit_code(&err);
+            return Err(ExitCode::from(exit_code));
         }
     }
     Ok(())
+}
+
+fn config_test_exit_code(error: &DscError) -> u8 {
+    match error {
+        DscError::Schema(_) => EXIT_VALIDATION_FAILED,
+        _ => EXIT_DSC_ERROR,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{config_test_exit_code, DscError, EXIT_DSC_ERROR, EXIT_VALIDATION_FAILED};
+
+    #[test]
+    fn schema_errors_use_validation_failed_exit_code() {
+        assert_eq!(config_test_exit_code(&DscError::Schema("invalid value".to_string())), EXIT_VALIDATION_FAILED);
+    }
+
+    #[test]
+    fn other_errors_keep_dsc_error_exit_code() {
+        assert_eq!(config_test_exit_code(&DscError::Operation("failed".to_string())), EXIT_DSC_ERROR);
+    }
 }
 
 pub fn config_export(configurator: &mut Configurator, format: Option<&OutputFormat>) -> Result<(), ExitCode> {

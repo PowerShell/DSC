@@ -135,6 +135,16 @@ BeforeDiscovery {
         }
     }
 
+    function Get-ContentWithoutComments {
+        param(
+            [Parameter(Mandatory)]
+            [string[]]$Path
+        )
+
+        $lines = Get-Content -Path $Path | Where-Object { $_ -notmatch '^\s*(//|///|//!)\s*' }
+        $lines -join "`n"
+    }
+
     function Get-TranslationKey {
         [cmdletbinding()]
         [OutputType([string[]])]
@@ -159,7 +169,7 @@ BeforeDiscovery {
 
             Get-ChildItem -Recurse -Path $ProjectDirectory -Include *.rs -File | ForEach-Object {
                 $file = $_
-                $content = Get-Content -Path $file -Raw
+                $content = Get-ContentWithoutComments -Path $file.FullName
                 foreach ($pattern in $patterns.keys) {
                     ($content | Select-String -Pattern $patterns[$pattern] -AllMatches).Matches | ForEach-Object {
                         if ($null -ne $_) {
