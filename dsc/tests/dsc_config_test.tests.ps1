@@ -96,11 +96,9 @@ resources:
     output: 1
     outpt: 2
 '@
-        $configPath = Join-Path $TestDrive 'invalid-echo-property.dsc.yaml'
         $tracePath = Join-Path $TestDrive 'trace.log'
-        Set-Content -Path $configPath -Value $configYaml
 
-        $null = dsc config test --file $configPath 2> $tracePath
+        $null = dsc config test --input $configYaml 2> $tracePath
         $LASTEXITCODE | Should -Be 5
         $log = Get-Content -Path $tracePath -Raw
         $log | Should -Match "'outpt' was unexpected"
