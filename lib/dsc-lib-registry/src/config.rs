@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use lib_acl::{AccessControlList, AccessMask};
+use dsc_lib_acl::{AccessControlList, AccessMask};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 

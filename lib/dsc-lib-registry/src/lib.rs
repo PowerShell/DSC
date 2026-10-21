@@ -1182,7 +1182,7 @@ fn registry_access_right_rejects_removed_wow64_variants() {
 #[test]
 fn registry_access_right_generic_variants_have_expected_bits() {
     use crate::config::RegistryAccessRight;
-    use lib_acl::AccessMask;
+    use dsc_lib_acl::AccessMask;
 
     assert_eq!(RegistryAccessRight::GenericRead.bits(), 0x8000_0000);
     assert_eq!(RegistryAccessRight::GenericWrite.bits(), 0x4000_0000);

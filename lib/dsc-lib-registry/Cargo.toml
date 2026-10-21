@@ -13,7 +13,7 @@ doctest = false
 
 [dependencies]
 crossterm = { workspace = true }
-lib-acl = { workspace = true }
+dsc-lib-acl = { workspace = true }
 registry = { workspace = true }
 rust-i18n = { workspace = true }
 schemars = { workspace = true }

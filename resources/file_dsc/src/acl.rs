@@ -2,11 +2,11 @@
 // Licensed under the MIT License.
 
 use crate::types::{FileAccessControlList, FileAccessRight};
-use lib_acl::win32::{
+use dsc_lib_acl::win32::{
     build_self_relative_security_descriptor, enable_security_privilege, normalize,
     read_access_control_list, read_security_information,
 };
-use lib_acl::{AccessControlList, AclError, is_satisfied, merge_access_control_list};
+use dsc_lib_acl::{AccessControlList, AclError, is_satisfied, merge_access_control_list};
 use rust_i18n::t;
 use windows::Win32::Security::{
     GetFileSecurityW, OBJECT_SECURITY_INFORMATION, PSECURITY_DESCRIPTOR, SetFileSecurityW,

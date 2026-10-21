@@ -286,9 +286,9 @@
       "IsRust": true
     },
     {
-      "Name": "lib-acl",
+      "Name": "dsc-lib-acl",
       "Kind": "Library",
-      "RelativePath": "lib/lib-acl",
+      "RelativePath": "lib/dsc-lib-acl",
       "IsRust": true
     },
     {

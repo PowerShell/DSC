@@ -2,7 +2,7 @@
 # Licensed under the MIT License.
 
 [package]
-name = "lib-acl"
+name = "dsc-lib-acl"
 version = "0.1.0"
 edition = "2024"
 

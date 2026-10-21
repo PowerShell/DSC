@@ -3,12 +3,12 @@
 
 use core::ffi::c_void;
 
-use lib_acl::{AccessControlList, AccessMask, AceFlag};
-use lib_acl::win32::{
+use dsc_lib_acl::{AccessControlList, AccessMask, AceFlag};
+use dsc_lib_acl::win32::{
     build_self_relative_security_descriptor, enable_security_privilege, normalize,
     read_access_control_list, read_security_information,
 };
-use lib_acl::merge_access_control_list;
+use dsc_lib_acl::merge_access_control_list;
 use windows::Win32::Foundation::{
     CloseHandle, ERROR_FILE_NOT_FOUND, ERROR_INSUFFICIENT_BUFFER, ERROR_PATH_NOT_FOUND,
     ERROR_SUCCESS, HANDLE,
@@ -458,7 +458,7 @@ pub fn is_satisfied(
 ) -> Result<bool, RegistryError> {
     let normalized = normalize(requested).map_err(acl_error)?;
     let effective_desired = merge_access_control_list(actual, &normalized);
-    Ok(lib_acl::is_satisfied(&effective_desired, actual))
+    Ok(dsc_lib_acl::is_satisfied(&effective_desired, actual))
 }
 
 fn read_access(requested: &RegistryAccessControlList) -> REG_SAM_FLAGS {
@@ -483,7 +483,7 @@ fn write_access(requested: &RegistryAccessControlList) -> REG_SAM_FLAGS {
     access
 }
 
-fn acl_error(error: lib_acl::AclError) -> RegistryError {
+fn acl_error(error: dsc_lib_acl::AclError) -> RegistryError {
     RegistryError::Acl(error.to_string())
 }
 
@@ -526,7 +526,7 @@ fn win32_error(operation: &str, code: u32) -> RegistryError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lib_acl::{AccessControlEntry, AceType, AuditFlag, Principal};
+    use dsc_lib_acl::{AccessControlEntry, AceType, AuditFlag, Principal};
     use windows::Win32::Foundation::{CloseHandle, HANDLE, LUID};
     use windows::Win32::Security::{
         AdjustTokenPrivileges, LUID_AND_ATTRIBUTES, LookupPrivilegeValueW,
@@ -742,7 +742,7 @@ mod tests {
         }
         .unwrap();
 
-        let name = HSTRING::from(lib_acl::win32::SE_SECURITY_NAME);
+        let name = HSTRING::from(dsc_lib_acl::win32::SE_SECURITY_NAME);
         let mut luid = LUID::default();
         // SAFETY: name is a valid null-terminated string and luid is writable.
         unsafe { LookupPrivilegeValueW(PCWSTR::null(), PCWSTR(name.as_ptr()), &mut luid) }.unwrap();
@@ -793,7 +793,7 @@ mod tests {
         if std::env::var_os("DSC_ACL_PRIVILEGE_CHILD").is_none() {
             return;
         }
-        if lib_acl::win32::enable_security_privilege().is_err() {
+        if dsc_lib_acl::win32::enable_security_privilege().is_err() {
             return;
         }
 
