@@ -336,6 +336,7 @@ pub use dsc_settings_scope::DscSettingsScope;
 #[cfg_attr(test, macro_use)] // Only enable macros for testing
 mod dsc_settings;
 pub use dsc_settings::*;
+pub mod global;
 mod resolved;
 pub use resolved::*;
 mod errors;
