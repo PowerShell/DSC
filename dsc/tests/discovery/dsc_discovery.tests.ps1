@@ -240,11 +240,12 @@ Describe 'tests for resource discovery' {
         $oldPath = $env:DSC_RESTRICTED_PATH
         try {
             $env:DSC_RESTRICTED_PATH = $testdrive
-            $out = dsc resource get -r 'Test/MyEcho' -i '{"output":"Custom"}' 2> "$testdrive/error.txt" | ConvertFrom-Json
-            $LASTEXITCODE | Should -Be 0
-            $out.actualState.output | Should -BeExactly 'Custom'
-            dsc resource get -r 'Microsoft.DSC.Debug/Echo' -i '{"output":"Custom"}' 2> "$testdrive/error.txt" | ConvertFrom-Json
-            $LASTEXITCODE | Should -Be 7
+            $out = dsc --trace-level info resource get -r 'Test/MyEcho' -i '{"output":"Custom"}' 2> "$testdrive/error.txt" | ConvertFrom-Json
+            $traceMessages = Get-Content -Raw -Path "$testdrive/error.txt"
+            $LASTEXITCODE | Should -Be 0 -Because $traceMessages
+            $out.actualState.output | Should -BeExactly 'Custom' -Because $traceMessages
+            dsc --trace-level info resource get -r 'Microsoft.DSC.Debug/Echo' -i '{"output":"Custom"}' 2> "$testdrive/error.txt" | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 7 -Because $traceMessages
             Get-Content -Raw -Path "$testdrive/error.txt" | Should -Match "ERROR.*?Resource not found"
         }
         finally {
@@ -253,8 +254,8 @@ Describe 'tests for resource discovery' {
     }
 
     It 'Resource manifest using relative path to exe: <path>' -TestCases @(
-        @{ path = '../dscecho'; success = $true }
-        @{ path = '../foo/dscecho'; success = $false }
+        @{ path = '../dscecho'; success = $false }
+        @{ path = '../foo/dscecho'; success = $true }
     ) {
         param($path, $success)
         $manifest = @"
@@ -281,21 +282,23 @@ Describe 'tests for resource discovery' {
 "@
         $dscEcho = Get-Command dscecho -ErrorAction Stop
         # copy to testdrive
-        Copy-Item -Path "$($dscEcho.Source)" -Destination $testdrive
+        $fooFolder = Join-Path -Path $testdrive -ChildPath 'foo'
+        New-Item -Path $fooFolder -ItemType Directory -Force | Out-Null
+        Copy-Item -Path "$($dscEcho.Source)" -Destination $fooFolder -Force
         # create manifest in subfolder
         $subfolder = Join-Path $testdrive 'subfolder'
         New-Item -Path $subfolder -ItemType Directory -Force | Out-Null
         Set-Content -Path (Join-Path $subfolder 'test.dsc.resource.json') -Value $manifest
 
         try {
-            $env:DSC_RESTRICTED_PATH = $subfolder
+            $env:DSC_RESTRICTED_PATH = @($subfolder, $fooFolder) -join [System.IO.Path]::PathSeparator
             $out = dsc resource get -r 'Microsoft.DSC.Debug/Echo' -i '{"output":"RelativePathTest"}' 2> "$testdrive/error.txt" | ConvertFrom-Json
             if ($success) {
                 $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw -Path "$testdrive/error.txt")
                 $out.actualState.output | Should -BeExactly 'RelativePathTest'
             } else {
                 $LASTEXITCODE | Should -Be 2 -Because (Get-Content -Raw -Path "$testdrive/error.txt")
-                (Get-Content -Raw -Path "$testdrive/error.txt") | Should -Match "ERROR.*?Executable '\.\./foo/dscecho(\.exe)?' not found"
+                (Get-Content -Raw -Path "$testdrive/error.txt") | Should -Match "ERROR.*?Executable '\.\./dscecho(\.exe)?' not found"
             }
         }
         finally {
