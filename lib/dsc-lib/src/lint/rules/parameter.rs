@@ -22,6 +22,7 @@ use crate::{
         pointer::JsonPointer,
         rule::{DiagnosticSink, Rule, RuleTier},
     },
+    parser::ParsedStatement,
 };
 
 /// Parameter names that suggest the value is a secret.
@@ -250,6 +251,9 @@ fn no_unused_variables(context: &LintContext, sink: &mut DiagnosticSink) {
 }
 
 /// Report literal default values that don't satisfy the parameter's type or constraints.
+///
+/// An escaped string default (`[[...`) is checked with the escape character removed, which is
+/// the value DSC uses.
 fn parameter_default_type(context: &LintContext, sink: &mut DiagnosticSink) {
     let Some(parameters) = &context.config.parameters else {
         return;
@@ -261,11 +265,13 @@ fn parameter_default_type(context: &LintContext, sink: &mut DiagnosticSink) {
         if value.as_str().is_some_and(LintContext::is_expression) {
             continue;
         }
-        if let Err(reason) = check_value(name, value, parameter) {
-            sink.report(
-                &parameter_pointer(name).push("defaultValue"),
-                t!("lint.rules.parameter.parameterDefaultType", name = name, reason = reason).to_string(),
-            );
+        let pointer = parameter_pointer(name).push("defaultValue");
+        let unescaped = match context.expressions.site_at(&pointer).map(|site| &site.parsed) {
+            Some(Ok(ParsedStatement::Escaped(text))) => Value::String(text.clone()),
+            _ => value.clone(),
+        };
+        if let Err(reason) = check_value(name, &unescaped, parameter) {
+            sink.report(&pointer, t!("lint.rules.parameter.parameterDefaultType", name = name, reason = reason).to_string());
         }
     }
 }
@@ -359,12 +365,15 @@ fn prefer_secure_type(context: &LintContext, sink: &mut DiagnosticSink) {
 }
 
 /// Report outputs whose value references a secure parameter or a secret.
+///
+/// Outputs declared as `secureString` or `secureObject` are skipped, because DSC withholds them
+/// from the result.
 fn secure_value_in_output(context: &LintContext, sink: &mut DiagnosticSink) {
     let Some(outputs) = &context.config.outputs else {
         return;
     };
     for (name, output) in outputs {
-        if !matches!(output.value_or_copy, ValueOrCopy::Value(_)) {
+        if !matches!(output.value_or_copy, ValueOrCopy::Value(_)) || matches!(output.r#type, DataType::SecureString | DataType::SecureObject) {
             continue;
         }
         let pointer = JsonPointer::root().push("outputs").push(name).push("value");
@@ -428,6 +437,27 @@ fn missing_parameter_value(context: &LintContext, sink: &mut DiagnosticSink) {
     }
 }
 
+/// Check a supplied value against a parameter's type and constraints.
+///
+/// Unlike a default value, a supplied `secureString` value must be a plain string; DSC wraps it
+/// itself and rejects the wrapped form.
+///
+/// # Arguments
+///
+/// * `name` - The parameter name.
+/// * `value` - The supplied value.
+/// * `parameter` - The parameter declaration.
+///
+/// # Errors
+///
+/// Returns the reason the value is invalid.
+fn check_supplied_value(name: &str, value: &Value, parameter: &Parameter) -> Result<(), String> {
+    if parameter.parameter_type == DataType::SecureString && !value.is_string() {
+        return Err(t!("lint.rules.parameter.secureStringNotPlain").to_string());
+    }
+    check_value(name, value, parameter)
+}
+
 /// Report supplied parameter values that don't satisfy the parameter's type or constraints.
 fn parameter_value_type(context: &LintContext, sink: &mut DiagnosticSink) {
     let Some(supplied) = &context.supplied_parameters else {
@@ -437,7 +467,7 @@ fn parameter_value_type(context: &LintContext, sink: &mut DiagnosticSink) {
         let Some(parameter) = context.declared_parameter(name) else {
             continue;
         };
-        if let Err(reason) = check_value(name, value, parameter) {
+        if let Err(reason) = check_supplied_value(name, value, parameter) {
             sink.report(&parameter_pointer(name), t!("lint.rules.parameter.parameterValueType", name = name, reason = reason).to_string());
         }
     }
@@ -516,6 +546,54 @@ resources: []
     }
 
     #[test]
+    fn checks_escaped_defaults_without_the_escape_character() {
+        let result = lint_yaml(r#"
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+parameters:
+  fits:
+    type: string
+    defaultValue: "[[x]"
+    maxLength: 3
+    allowedValues: ["[x]"]
+  tooLong:
+    type: string
+    defaultValue: "[[abc]"
+    maxLength: 4
+resources: []
+"#);
+        assert_eq!(rule_paths(&result, "parameter-default-type"), vec!["/parameters/tooLong/defaultValue"]);
+    }
+
+    #[test]
+    fn reports_wrapped_supplied_secure_strings() {
+        let options = LintOptions {
+            discovery: false,
+            use_settings: false,
+            parameters: Some(json!({"parameters": {"wrapped": {"secureString": "x"}, "plain": "x"}})),
+            ..Default::default()
+        };
+        let result = lint_with(r#"
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+parameters:
+  wrapped:
+    type: secureString
+  plain:
+    type: secureString
+  defaulted:
+    type: secureString
+    defaultValue:
+      secureString: "[[not a secret]"
+resources:
+- name: a
+  type: Microsoft.DSC.Debug/Echo
+  properties:
+    output: "[concat(parameters('wrapped'), parameters('plain'), parameters('defaulted'))]"
+"#, options);
+        assert_eq!(rule_paths(&result, "parameter-value-type"), vec!["/parameters/wrapped"]);
+        assert!(rule_paths(&result, "parameter-default-type").is_empty());
+    }
+
+    #[test]
     fn reports_invalid_constraints() {
         let result = lint_yaml(r#"
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
@@ -589,13 +667,16 @@ parameters:
 outputs:
   leaked:
     type: string
-    value: "[parameters('password')]"
+    value: "[parameters('password').secureString]"
   viaSecret:
     type: string
     value: "[secret('vault')]"
   fine:
     type: string
     value: "[parameters('plain')]"
+  withheld:
+    type: secureString
+    value: "[parameters('password')]"
 resources: []
 "#);
         assert_eq!(rule_paths(&result, "secure-value-in-output"), vec!["/outputs/leaked/value", "/outputs/viaSecret/value"]);

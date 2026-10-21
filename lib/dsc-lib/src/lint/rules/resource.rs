@@ -9,7 +9,7 @@ use serde_json::Value;
 
 use crate::{
     dscresources::{
-        dscresource::{validate_json_all, Capability, DscResource, ImplementedAs},
+        dscresource::{validate_json_all, Capability, DscResource, ImplementedAs, SchemaViolation},
         resource_manifest::{Kind, SchemaKind},
     },
     lint::{
@@ -20,6 +20,7 @@ use crate::{
         pointer::JsonPointer,
         rule::{DiagnosticSink, Rule, RuleTier},
     },
+    parser::ParsedStatement,
 };
 
 /// The rules in this module.
@@ -169,10 +170,85 @@ fn deprecated_resource(context: &LintContext, sink: &mut DiagnosticSink) {
     }
 }
 
+/// Keywords whose outcome depends only on the shape of a value (its type, member names, or
+/// length) and not on the values nested in it, so an expression nested in the value can't
+/// change it.
+const STRUCTURAL_KEYWORDS: [&str; 9] = [
+    "type",
+    "required",
+    "additionalProperties",
+    "propertyNames",
+    "minProperties",
+    "maxProperties",
+    "dependentRequired",
+    "minItems",
+    "maxItems",
+];
+
+/// The properties of a resource as DSC passes them to the resource, as far as that is known
+/// statically.
+///
+/// # Arguments
+///
+/// * `context` - The lint context.
+/// * `index` - The index of the resource in the context's resource list.
+/// * `properties` - The properties as written.
+///
+/// # Returns
+///
+/// The properties with escaped strings (`[[...`) replaced by their value, and the pointers of
+/// the expressions, whose values are only known at runtime.
+fn runtime_properties(context: &LintContext, index: usize, properties: &Value) -> (Value, Vec<JsonPointer>) {
+    let base = context.resources[index].pointer.push("properties");
+    let mut value = properties.clone();
+    let mut unknown = Vec::new();
+    for site in context.expressions.sites() {
+        if site.scope != ExpressionScope::Resource(index) || !site.pointer.starts_with(&base) {
+            continue;
+        }
+        match &site.parsed {
+            Ok(ParsedStatement::Escaped(text)) => {
+                let relative = &site.pointer.as_str()[base.as_str().len()..];
+                if let Some(slot) = value.pointer_mut(relative) {
+                    *slot = Value::String(text.clone());
+                }
+            },
+            Ok(ParsedStatement::Literal(_)) => {},
+            Ok(ParsedStatement::Expression(_)) | Err(_) => unknown.push(site.pointer.clone()),
+        }
+    }
+    (value, unknown)
+}
+
+/// Whether a violation holds whatever the expressions in the properties evaluate to.
+///
+/// A violation at or below an expression is unknown until runtime. Above an expression, only
+/// violations of a structural keyword are definite. A failed `anyOf` or `oneOf` is definite only
+/// when every subschema has a definite violation, because otherwise the runtime values could
+/// satisfy one of them.
+///
+/// # Arguments
+///
+/// * `violation` - The violation.
+/// * `base` - The pointer to the properties the violation paths are relative to.
+/// * `unknown` - The pointers of the expressions in the properties.
+fn is_definite(violation: &SchemaViolation, base: &JsonPointer, unknown: &[JsonPointer]) -> bool {
+    if !violation.alternatives.is_empty() {
+        return violation.alternatives.iter().all(|alternative| alternative.iter().any(|nested| is_definite(nested, base, unknown)));
+    }
+    let pointer = base.join(&violation.instance_path);
+    if unknown.iter().any(|expression| pointer.starts_with(expression)) {
+        return false;
+    }
+    let contains_expression = unknown.iter().any(|expression| expression.starts_with(&pointer));
+    !contains_expression || STRUCTURAL_KEYWORDS.contains(&violation.keyword.as_str())
+}
+
 /// Report property values that don't validate against the resource's embedded schema.
 ///
-/// Violations at or below a property that holds an expression are dropped, because the value
-/// is only known at runtime.
+/// The properties are validated as DSC passes them to the resource, with escaped strings
+/// unescaped. Violations that an expression's runtime value could resolve are dropped; see
+/// [`is_definite`].
 fn property_schema_mismatch(context: &LintContext, sink: &mut DiagnosticSink) {
     for (index, resolved) in resolved(context) {
         let Some(found) = &resolved.found else {
@@ -189,7 +265,8 @@ fn property_schema_mismatch(context: &LintContext, sink: &mut DiagnosticSink) {
         let Some(properties) = base.resolve(context.raw) else {
             continue;
         };
-        let violations = match validate_json_all(found.type_name.as_ref(), &schema, properties) {
+        let (properties, unknown) = runtime_properties(context, index, properties);
+        let violations = match validate_json_all(found.type_name.as_ref(), &schema, &properties) {
             Ok(violations) => violations,
             Err(err) => {
                 sink.report(
@@ -200,15 +277,11 @@ fn property_schema_mismatch(context: &LintContext, sink: &mut DiagnosticSink) {
             },
         };
         for violation in violations {
-            let pointer = base.join(&violation.instance_path);
-            let in_expression = context.expressions.sites().iter().any(|expression| {
-                expression.scope == ExpressionScope::Resource(index) && pointer.starts_with(&expression.pointer)
-            });
-            if in_expression {
+            if !is_definite(&violation, &base, &unknown) {
                 continue;
             }
             sink.report(
-                &pointer,
+                &base.join(&violation.instance_path),
                 t!("lint.rules.resource.propertySchemaMismatch", type_name = site.resource.resource_type, message = violation.message).to_string(),
             );
         }
@@ -399,6 +472,50 @@ resources:
             ResolvedResource { found: Some(echo(Kind::Resource, vec![Capability::Get], None)), type_exists: true },
         ];
         assert_eq!(paths(&run(DOCUMENT, discovered, "property-schema-mismatch")), vec!["/resources/0/properties/output"]);
+    }
+
+    #[test]
+    fn combinators_allow_expressions_but_keep_definite_errors() {
+        let document = r#"
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: a
+  type: Microsoft.DSC.Debug/Echo
+  properties:
+    items:
+    - name: dynamic
+      scope: "[parameters('scope')]"
+    - name: literal
+      scope: nowhere
+    - name: brokenSibling
+      scope: "[parameters('scope')]"
+      count: notAnInt
+    count: "[[5]"
+    mode: "[[x]"
+"#;
+        let branch = |scope: &str| json!({
+            "type": "object",
+            "properties": {
+                "name": { "type": "string" },
+                "scope": { "const": scope },
+                "count": { "type": "integer" }
+            }
+        });
+        let schema = json!({
+            "type": "object",
+            "properties": {
+                "items": { "type": "array", "items": { "anyOf": [branch("currentUser"), branch("machine")] } },
+                "count": { "type": "integer" },
+                "mode": { "enum": ["[x]"] }
+            }
+        });
+        let discovered = vec![
+            ResolvedResource { found: Some(echo(Kind::Resource, vec![Capability::Get], Some(schema))), type_exists: true },
+        ];
+        let diagnostics = run(document, discovered, "property-schema-mismatch");
+        let mut reported = paths(&diagnostics);
+        reported.sort_unstable();
+        assert_eq!(reported, vec!["/resources/0/properties/count", "/resources/0/properties/items/1", "/resources/0/properties/items/2"]);
     }
 
     #[test]

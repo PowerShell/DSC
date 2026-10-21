@@ -157,7 +157,8 @@ fn reference_targets(context: &LintContext, index: usize) -> Vec<(JsonPointer, R
         .collect()
 }
 
-/// Resolve a dependency key against a group of sibling resources.
+/// Resolve a dependency key against a group of sibling resources by their names as written,
+/// which is how DSC resolves `dependsOn`.
 ///
 /// # Arguments
 ///
@@ -165,7 +166,64 @@ fn reference_targets(context: &LintContext, index: usize) -> Vec<(JsonPointer, R
 /// * `group` - The indexes of the sibling resources.
 /// * `key` - The dependency key.
 fn resolve(context: &LintContext, group: &[usize], key: &ResourceKey) -> Resolution {
-    let by_name: Vec<usize> = group.iter().copied().filter(|&index| context.resources[index].resource.name == key.name).collect();
+    resolve_by(context, group, key, |index| Some(context.resources[index].resource.name.clone()))
+}
+
+/// Resolve a `reference()` key against a group of sibling resources by their evaluated names,
+/// which is how DSC resolves references.
+///
+/// # Arguments
+///
+/// * `context` - The lint context.
+/// * `group` - The indexes of the sibling resources.
+/// * `key` - The referenced key.
+///
+/// # Returns
+///
+/// The resolution, or `None` when the key isn't found and a sibling's name is an expression
+/// that could evaluate to it.
+fn resolve_reference(context: &LintContext, group: &[usize], key: &ResourceKey) -> Option<Resolution> {
+    let resolution = resolve_by(context, group, key, |index| evaluated_name(context, index));
+    let has_dynamic_name = group.iter().any(|&index| evaluated_name(context, index).is_none());
+    match resolution {
+        Resolution::Found(_) => Some(resolution),
+        _ if has_dynamic_name => None,
+        _ => Some(resolution),
+    }
+}
+
+/// The name a resource has at runtime, when it is known without evaluating an expression.
+///
+/// # Arguments
+///
+/// * `context` - The lint context.
+/// * `index` - The index of the resource in the context's resource list.
+///
+/// # Returns
+///
+/// The name as written, the name without the escape character when it starts with `[[`, or
+/// `None` when the name is an expression.
+fn evaluated_name(context: &LintContext, index: usize) -> Option<String> {
+    let name = &context.resources[index].resource.name;
+    if LintContext::is_expression(name) {
+        None
+    } else if let Some(unescaped) = name.strip_prefix('[') {
+        Some(unescaped.to_string())
+    } else {
+        Some(name.clone())
+    }
+}
+
+/// Resolve a dependency key against a group of sibling resources.
+///
+/// # Arguments
+///
+/// * `context` - The lint context.
+/// * `group` - The indexes of the sibling resources.
+/// * `key` - The dependency key.
+/// * `name_of` - The name to match for a sibling, or `None` when it isn't known.
+fn resolve_by(context: &LintContext, group: &[usize], key: &ResourceKey, name_of: impl Fn(usize) -> Option<String>) -> Resolution {
+    let by_name: Vec<usize> = group.iter().copied().filter(|&index| name_of(index).is_some_and(|name| name == key.name)).collect();
     if let Some(&index) = by_name.iter().find(|&&index| context.resources[index].resource.resource_type.as_ref().eq_ignore_ascii_case(&key.type_name)) {
         return Resolution::Found(index);
     }
@@ -178,7 +236,8 @@ fn resolve(context: &LintContext, group: &[usize], key: &ResourceKey) -> Resolut
 /// Report `dependsOn` entries and `reference()` calls whose target isn't a sibling resource.
 ///
 /// Resources in copy loops are skipped, and a missing target isn't reported when a sibling is
-/// a copy loop, because copy loops produce names that are only known at runtime.
+/// a copy loop, because copy loops produce names that are only known at runtime. For the same
+/// reason a `reference()` call isn't reported when a sibling's name is an expression.
 fn unresolved_dependency(context: &LintContext, sink: &mut DiagnosticSink) {
     for group in context.sibling_groups() {
         let has_copy = group.iter().any(|&index| context.resources[index].resource.copy.is_some());
@@ -187,8 +246,19 @@ fn unresolved_dependency(context: &LintContext, sink: &mut DiagnosticSink) {
             if site.resource.copy.is_some() {
                 continue;
             }
-            for (pointer, key) in literal_dependencies(context, index).into_iter().chain(reference_targets(context, index)) {
-                match resolve(context, &group, &key) {
+            let dependencies = literal_dependencies(context, index).into_iter().map(|(pointer, key)| {
+                let resolution = resolve(context, &group, &key);
+                (pointer, key, Some(resolution))
+            });
+            let references = reference_targets(context, index).into_iter().map(|(pointer, key)| {
+                let resolution = resolve_reference(context, &group, &key);
+                (pointer, key, resolution)
+            });
+            for (pointer, key, resolution) in dependencies.chain(references) {
+                let Some(resolution) = resolution else {
+                    continue;
+                };
+                match resolution {
                     Resolution::Found(_) => {},
                     Resolution::TypeMismatch(actual) => sink.report(
                         &pointer,
@@ -353,6 +423,41 @@ resources:
             vec!["/resources/1/dependsOn/1", "/resources/1/dependsOn/2", "/resources/1/properties/output"]
         );
         assert!(rule_messages(&result, "unresolved-dependency")[1].contains("Microsoft.DSC.Debug/Echo"));
+    }
+
+    #[test]
+    fn references_resolve_against_evaluated_names() {
+        let result = lint_yaml(r#"
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+parameters:
+  name:
+    type: string
+    defaultValue: source
+resources:
+- name: "[parameters('name')]"
+  type: Microsoft.DSC.Debug/Echo
+- name: consumer
+  type: Microsoft.DSC.Debug/Echo
+  dependsOn:
+  - "[resourceId('Microsoft.DSC.Debug/Echo', 'source')]"
+  properties:
+    output: "[reference(resourceId('Microsoft.DSC.Debug/Echo', 'source'))]"
+"#);
+        // dependsOn matches names as written, so only it is reported
+        assert_eq!(rule_paths(&result, "unresolved-dependency"), vec!["/resources/1/dependsOn/0"]);
+
+        let result = lint_yaml(r#"
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: "[[bracketed]"
+  type: Microsoft.DSC.Debug/Echo
+- name: consumer
+  type: Microsoft.DSC.Debug/Echo
+  properties:
+    found: "[reference(resourceId('Microsoft.DSC.Debug/Echo', '[bracketed]'))]"
+    missing: "[reference(resourceId('Microsoft.DSC.Debug/Echo', '[[bracketed]'))]"
+"#);
+        assert_eq!(rule_paths(&result, "unresolved-dependency"), vec!["/resources/1/properties/missing"]);
     }
 
     #[test]

@@ -130,10 +130,20 @@ enable it to require reproducible documents.
 
 ## Expression rules
 
+The expression rules check strings in the places DSC evaluates them: parameter default values,
+variables, output values and conditions, user-defined function bodies, and the name, condition,
+`dependsOn` entries, copy settings, and properties of each resource. A parameter default value or
+variable is only an expression when the whole value is a string; DSC uses object and array values
+as written, so strings nested in them aren't checked. The properties of a group resource, such as
+`Microsoft.DSC/Group`, hold an embedded configuration document that DSC evaluates separately, so
+they aren't checked against the outer document.
+
 ### invalid-expression
 
 Every string that starts with `[` is evaluated as an expression and must parse. To use a literal
-string that starts with a bracket, escape it with `[[`.
+string that starts with a bracket, escape it with `[[`. When the expression is the default value of
+a `secureString` or `secureObject` parameter, the diagnostic omits the expression and the parser
+error, because they can contain a secret.
 
 ```yaml
 properties:
@@ -184,7 +194,8 @@ Declared variables should be referenced by at least one expression.
 ### parameter-default-type
 
 A literal default value must satisfy the parameter's type, `allowedValues`, value limits, and
-length limits. Default values that are expressions aren't checked.
+length limits. Default values that are expressions aren't checked. An escaped string such as
+`"[[x]"` is checked as the value DSC uses, `"[x]"`.
 
 ### invalid-parameter-constraints
 
@@ -205,8 +216,11 @@ A `string` or `object` parameter whose name suggests a secret, such as `password
 
 ### secure-value-in-output
 
-Outputs shouldn't expose a secure parameter or a `secret()` value. DSC skips such outputs at
-runtime.
+Outputs shouldn't use a secure parameter or a `secret()` value. DSC only withholds outputs whose
+declared type is `secureString` or `secureObject`; it doesn't track where a value came from. An
+output of any other type that extracts a plain value, such as
+`[parameters('password').secureString]`, returns that value in the result. Outputs declared as
+`secureString` or `secureObject` aren't reported, because DSC never returns them.
 
 ### use-parameter-description
 
@@ -226,6 +240,8 @@ parameters on purpose.
 ### parameter-value-type
 
 When you pass parameters, every supplied value must satisfy the parameter's type and constraints.
+A `secureString` value must be supplied as a plain string, not in the wrapped
+`{"secureString": "..."}` form that a default value can use.
 
 ## Dependency rules
 
@@ -234,7 +250,9 @@ When you pass parameters, every supplied value must satisfy the parameter's type
 Every `dependsOn` entry and every `reference(resourceId(...))` call must point at a resource
 declared at the same level. The diagnostic distinguishes a missing resource from a resource whose
 type doesn't match. Resources in copy loops aren't checked, because their names are only known at
-runtime.
+runtime. `dependsOn` entries match resource names as written, the way DSC resolves them. A
+`reference()` call matches the name DSC evaluates, so it isn't reported when a resource at the same
+level has a name that is an expression.
 
 ```yaml
 resources:
@@ -326,9 +344,12 @@ includes the deprecation message from the manifest.
 
 ### property-schema-mismatch
 
-Literal property values must validate against the resource's embedded schema. Properties that hold
-expressions aren't checked, because their value is only known at runtime. The rule never invokes
-the resource to retrieve its schema.
+Literal property values must validate against the resource's embedded schema. Escaped strings such
+as `"[[x]"` are validated as the value DSC passes to the resource, `"[x]"`. Properties that hold
+expressions aren't checked, because their value is only known at runtime. When an expression sits
+inside an `anyOf` or `oneOf`, the rule only reports the failure if every alternative fails for a
+reason the expression can't change, such as a literal sibling with the wrong type. The rule never
+invokes the resource to retrieve its schema.
 
 ### nested-resources-unsupported
 

@@ -10,6 +10,7 @@ use crate::{
     dscerror::DscError,
     dscresources::dscresource::DscResource,
     functions::FunctionDispatcher,
+    schemas::dsc_repo::DscRepoSchema,
 };
 
 use super::{expression_index::ExpressionIndex, options::LintOptions, pointer::JsonPointer};
@@ -22,6 +23,29 @@ pub struct ResourceSite<'a> {
     pub resource: &'a Resource,
     /// The index of the resource that declares this one in its nested `resources`, if any.
     pub parent: Option<usize>,
+}
+
+/// The built-in group resources. They receive an embedded configuration document as their
+/// properties and evaluate its expressions themselves.
+const GROUP_RESOURCE_TYPES: [&str; 2] = ["Microsoft.DSC/Group", "Microsoft.DSC/Assertion"];
+
+impl ResourceSite<'_> {
+    /// Whether the resource's properties are an embedded configuration document, which DSC
+    /// passes to the resource without evaluating its expressions.
+    ///
+    /// Without discovery the resource kind isn't known, so this recognizes the built-in group
+    /// resources and any properties that declare a configuration document `$schema`.
+    #[must_use]
+    pub fn has_embedded_configuration(&self) -> bool {
+        let type_name: &str = self.resource.resource_type.as_ref();
+        if GROUP_RESOURCE_TYPES.iter().any(|group| group.eq_ignore_ascii_case(type_name)) {
+            return true;
+        }
+        self.resource.properties.as_ref()
+            .and_then(|properties| properties.get("$schema"))
+            .and_then(Value::as_str)
+            .is_some_and(|uri| Configuration::is_recognized_schema_uri(&uri.to_string()))
+    }
 }
 
 /// The outcome of discovering the resource type a declaration uses.

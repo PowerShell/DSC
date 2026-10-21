@@ -59,7 +59,10 @@ impl ExpressionIndex {
     ///
     /// Strings are walked in the places DSC evaluates expressions: parameter default values,
     /// variables, outputs, user-defined function bodies, and for each resource its name,
-    /// condition, `dependsOn` entries, copy counts, and properties.
+    /// condition, `dependsOn` entries, copy counts, and properties. Parameter default values and
+    /// variables are only expressions when the whole value is a string; DSC uses object and
+    /// array values as written. The properties of a resource that holds an embedded
+    /// configuration are skipped, because that configuration is evaluated on its own.
     ///
     /// # Arguments
     ///
@@ -78,7 +81,7 @@ impl ExpressionIndex {
             let base = root.push("parameters");
             for (name, parameter) in parameters {
                 if let Some(default_value) = parameter.get("defaultValue") {
-                    index.walk(default_value, &base.push(name).push("defaultValue"), &ExpressionScope::Parameter(name.clone()), parser);
+                    index.add_string(default_value, &base.push(name).push("defaultValue"), &ExpressionScope::Parameter(name.clone()), parser);
                 }
             }
         }
@@ -86,7 +89,7 @@ impl ExpressionIndex {
         if let Some(variables) = raw.get("variables").and_then(Value::as_object) {
             let base = root.push("variables");
             for (name, variable) in variables {
-                index.walk(variable, &base.push(name), &ExpressionScope::Variable(name.clone()), parser);
+                index.add_string(variable, &base.push(name), &ExpressionScope::Variable(name.clone()), parser);
             }
         }
 
@@ -123,6 +126,9 @@ impl ExpressionIndex {
             };
             let scope = ExpressionScope::Resource(position);
             for key in ["name", "condition", "dependsOn", "properties"] {
+                if key == "properties" && site.has_embedded_configuration() {
+                    continue;
+                }
                 if let Some(member) = resource.get(key) {
                     index.walk(member, &site.pointer.push(key), &scope, parser);
                 }
@@ -139,6 +145,27 @@ impl ExpressionIndex {
         index
     }
 
+    /// Parse a value when it is a string that starts with `[`, without looking inside objects
+    /// or arrays.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The value.
+    /// * `pointer` - The pointer to `value`.
+    /// * `scope` - The scope the expression belongs to.
+    /// * `parser` - The parser to parse expressions with.
+    fn add_string(&mut self, value: &Value, pointer: &JsonPointer, scope: &ExpressionScope, parser: &mut Statement) {
+        if let Value::String(text) = value && text.starts_with('[') {
+            self.by_pointer.insert(pointer.to_string(), self.sites.len());
+            self.sites.push(ExpressionSite {
+                pointer: pointer.clone(),
+                text: text.clone(),
+                scope: scope.clone(),
+                parsed: parser.parse(text),
+            });
+        }
+    }
+
     /// Walk a value, parsing every string that starts with `[`.
     ///
     /// # Arguments
@@ -149,15 +176,7 @@ impl ExpressionIndex {
     /// * `parser` - The parser to parse expressions with.
     fn walk(&mut self, value: &Value, pointer: &JsonPointer, scope: &ExpressionScope, parser: &mut Statement) {
         match value {
-            Value::String(text) if text.starts_with('[') => {
-                self.by_pointer.insert(pointer.to_string(), self.sites.len());
-                self.sites.push(ExpressionSite {
-                    pointer: pointer.clone(),
-                    text: text.clone(),
-                    scope: scope.clone(),
-                    parsed: parser.parse(text),
-                });
-            },
+            Value::String(_) => self.add_string(value, pointer, scope, parser),
             Value::Array(items) => {
                 for (position, item) in items.iter().enumerate() {
                     self.walk(item, &pointer.push_index(position), scope, parser);
@@ -362,5 +381,58 @@ resources:
         assert_eq!(index.sites().len(), 1);
         assert!(index.sites()[0].parsed.is_err());
         assert!(index.calls().is_empty());
+    }
+
+    #[test]
+    fn indexes_only_string_defaults_and_variables() {
+        let (_, index) = index_for(r#"
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+parameters:
+  p:
+    type: object
+    defaultValue:
+      nested: "[parameters('missing')]"
+variables:
+  literal:
+    nested: "[parameters('missing')]"
+  list:
+  - "[parameters('missing')]"
+  evaluated: "[parameters('p')]"
+resources: []
+"#);
+        let pointers: Vec<&str> = index.sites().iter().map(|site| site.pointer.as_str()).collect();
+        assert_eq!(pointers, vec!["/variables/evaluated"]);
+    }
+
+    #[test]
+    fn skips_embedded_configurations() {
+        let (_, index) = index_for(r#"
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: "[concat('group', '1')]"
+  type: Microsoft.DSC/Group
+  properties:
+    $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+    resources:
+    - name: inner
+      type: Microsoft.DSC.Debug/Echo
+      properties:
+        output: "[parameters('inner')]"
+- name: other
+  type: Third.Party/Group
+  properties:
+    $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+    resources: []
+    parameters:
+      x:
+        type: string
+        defaultValue: "[parameters('inner')]"
+- name: plain
+  type: Microsoft.DSC.Debug/Echo
+  properties:
+    output: "[parameters('outer')]"
+"#);
+        let pointers: Vec<&str> = index.sites().iter().map(|site| site.pointer.as_str()).collect();
+        assert_eq!(pointers, vec!["/resources/0/name", "/resources/2/properties/output"]);
     }
 }

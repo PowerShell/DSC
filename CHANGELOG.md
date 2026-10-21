@@ -85,14 +85,15 @@ changes since the last release, see the [diff on GitHub][unreleased].
   resource types that aren't installed or literal properties that don't match a resource's schema.
   You can change the level of a rule for a run with the `--rule` option or for every run in the
   new `lint` section of the settings file, and control which level makes the command fail with
-  `--fail-on`. The `dsc schema` command exposes the new `lint-result` and `lint-rules` schemas.
+  `--fail-on`. The `dsc schema` command exposes the new `lint-result` and `lint-rules` schemas,
+  and the MCP server exposes the linter as the `lint_dsc_config` tool.
 
   <details><summary>Related work items</summary>
 
   - Issues:
     - [#591][#591]
     - [#842][#842]
-  - PRs: _None_
+  - PRs: [#1768][#1768]
 
   </details>
 
@@ -2021,4 +2022,5 @@ Version `3.0.0` is the first generally available release of DSC.
 [#1558]: https://github.com/PowerShell/DSC/issues/1558
 [#1562]: https://github.com/PowerShell/DSC/issues/1562
 [#1729]: https://github.com/PowerShell/DSC/issues/1729
+[#1768]: https://github.com/PowerShell/DSC/issues/1768
 

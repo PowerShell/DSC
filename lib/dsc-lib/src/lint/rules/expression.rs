@@ -5,6 +5,7 @@
 
 use rust_i18n::t;
 
+use crate::configure::config_doc::DataType;
 use crate::lint::{
     context::LintContext,
     diagnostic::LintCategory,
@@ -99,19 +100,39 @@ fn is_checkable_builtin(context: &LintContext, call: &FunctionCall) -> bool {
     !name.contains('.') && !is_lambda(call) && context.functions.get_metadata(name).is_some()
 }
 
+/// The name of the secure parameter whose default value holds an expression, if any.
+///
+/// # Arguments
+///
+/// * `context` - The lint context.
+/// * `scope` - Where the expression appears.
+fn secure_parameter_scope<'a>(context: &LintContext, scope: &'a ExpressionScope) -> Option<&'a str> {
+    let ExpressionScope::Parameter(name) = scope else {
+        return None;
+    };
+    let secure = context.declared_parameter(name)
+        .is_some_and(|parameter| matches!(parameter.parameter_type, DataType::SecureString | DataType::SecureObject));
+    secure.then_some(name.as_str())
+}
+
 /// Report expressions that fail to parse.
+///
+/// The expression and the parser error, which repeats it, are left out of the message when the
+/// expression is the default value of a secure parameter, because it can hold a secret.
 fn invalid_expression(context: &LintContext, sink: &mut DiagnosticSink) {
     for site in context.expressions.sites() {
-        if let Err(err) = &site.parsed {
-            sink.report(
-                &site.pointer,
-                t!(
-                    "lint.rules.expression.invalidExpression",
-                    expression = site.text,
-                    error = LintContext::error_message(err)
-                ).to_string(),
-            );
-        }
+        let Err(err) = &site.parsed else {
+            continue;
+        };
+        let message = match secure_parameter_scope(context, &site.scope) {
+            Some(name) => t!("lint.rules.expression.invalidExpressionInSecureParameter", name = name),
+            None => t!(
+                "lint.rules.expression.invalidExpression",
+                expression = site.text,
+                error = LintContext::error_message(err)
+            ),
+        };
+        sink.report(&site.pointer, message.to_string());
     }
 }
 
@@ -235,6 +256,36 @@ resources:
     fine: "[[not an expression]"
 "#);
         assert_eq!(rule_paths(&result, "invalid-expression"), vec!["/resources/0/properties/output"]);
+    }
+
+    #[test]
+    fn redacts_invalid_expressions_in_secure_defaults() {
+        let result = lint_yaml(r#"
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+parameters:
+  password:
+    type: secureString
+    defaultValue: "[concat('hunter2', 'unterminated)]"
+  blob:
+    type: secureObject
+    defaultValue: "[createObject('key', 'hunter2'))]"
+  plain:
+    type: string
+    defaultValue: "[concat('visible', 'unterminated)]"
+resources:
+- name: a
+  type: Microsoft.DSC.Debug/Echo
+  properties:
+    output: "[concat(parameters('password'), parameters('blob'), parameters('plain'))]"
+"#);
+        assert_eq!(
+            rule_paths(&result, "invalid-expression"),
+            vec!["/parameters/blob/defaultValue", "/parameters/password/defaultValue", "/parameters/plain/defaultValue"]
+        );
+        let messages = rule_messages(&result, "invalid-expression");
+        assert!(messages[0].contains("'blob'") && !messages[0].contains("hunter2"), "{}", messages[0]);
+        assert!(messages[1].contains("'password'") && !messages[1].contains("hunter2"), "{}", messages[1]);
+        assert!(messages[2].contains("visible"), "{}", messages[2]);
     }
 
     #[test]

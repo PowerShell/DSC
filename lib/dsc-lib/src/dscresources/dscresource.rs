@@ -6,7 +6,7 @@ use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse};
 use crate::schemas::transforms::idiomaticize_string_enum;
 use dscerror::DscError;
-use jsonschema::Validator;
+use jsonschema::{error::ValidationErrorKind, ValidationError, Validator};
 use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -945,14 +945,44 @@ pub struct SchemaViolation {
     pub instance_path: String,
     /// JSON pointer to the keyword in the schema that the instance violated.
     pub schema_path: String,
+    /// The keyword that failed, such as `type` or `anyOf`.
+    pub keyword: String,
     /// The validation error message.
     pub message: String,
+    /// For a failed `anyOf`, or a `oneOf` that no subschema matched, the violations of each
+    /// subschema in order; empty for every other keyword.
+    pub alternatives: Vec<Vec<SchemaViolation>>,
+}
+
+impl SchemaViolation {
+    /// Convert a validation error, including the violations of each `anyOf` or `oneOf`
+    /// subschema.
+    ///
+    /// # Arguments
+    ///
+    /// * `error` - The validation error.
+    fn from_error(error: &ValidationError<'_>) -> Self {
+        let alternatives = match error.kind() {
+            ValidationErrorKind::AnyOf { context } | ValidationErrorKind::OneOfNotValid { context } => {
+                context.iter().map(|branch| branch.iter().map(Self::from_error).collect()).collect()
+            },
+            _ => Vec::new(),
+        };
+        Self {
+            instance_path: error.instance_path().to_string(),
+            schema_path: error.schema_path().to_string(),
+            keyword: error.kind().keyword().to_string(),
+            message: error.to_string(),
+            alternatives,
+        }
+    }
 }
 
 /// Validate the JSON against the schema and return every violation.
 ///
 /// Unlike [`validate_json`], which stops at the first error, this function collects all
-/// violations so callers can report each one with its location.
+/// violations so callers can report each one with its location. The JSON isn't traced because
+/// it can hold secure values.
 ///
 /// # Arguments
 ///
@@ -969,7 +999,6 @@ pub struct SchemaViolation {
 /// * `DscError::Validation` - The schema failed to compile
 pub fn validate_json_all(source: &str, schema: &Value, json: &Value) -> Result<Vec<SchemaViolation>, DscError> {
     debug!("{}: {source}", t!("dscresources.dscresource.validatingSchema"));
-    trace!("{}", t!("dscresources.dscresource.json", json = json));
     trace!("{}", t!("dscresources.dscresource.schema", schema = schema));
     let compiled_schema = match Validator::new(schema) {
         Ok(compiled_schema) => compiled_schema,
@@ -978,11 +1007,7 @@ pub fn validate_json_all(source: &str, schema: &Value, json: &Value) -> Result<V
         }
     };
 
-    Ok(compiled_schema.iter_errors(json).map(|error| SchemaViolation {
-        instance_path: error.instance_path().to_string(),
-        schema_path: error.schema_path().to_string(),
-        message: error.to_string(),
-    }).collect())
+    Ok(compiled_schema.iter_errors(json).map(|error| SchemaViolation::from_error(&error)).collect())
 }
 
 /// Compares two arrays independent of order
