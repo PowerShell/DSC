@@ -17,7 +17,7 @@ use serde_json::{self, json};
 ///
 /// This transformer returns the schema as a single string schema with each of the variants defined
 /// as an item in the `enum` keyword. It hoists the per-variant documentation to the extended
-/// keywords recognized by VS Code: `enumDescriptions` and `enumMarkdownDescriptions`. This is more
+/// keywords recognized by VS Code: `enumDescriptions` and `markdownEnumDescriptions`. This is more
 /// idiomatic, shorter to read and parse, easier to reason about, and matches the underlying data
 /// semantics more accurately.
 ///
@@ -117,7 +117,7 @@ use serde_json::{self, json};
 ///         "bar-description",
 ///         "baz-description",
 ///     ],
-///     "enumMarkdownDescriptions": [
+///     "markdownEnumDescriptions": [
 ///         "foo-description",
 ///         "bar-description",
 ///         "baz-description",
@@ -259,7 +259,7 @@ pub fn idiomaticize_string_enum(schema: &mut Schema) {
     }
     if enum_markdown_descriptions.iter().any(|e| !e.is_empty()) {
         schema.insert(
-            "enumMarkdownDescriptions".to_string(),
+            "markdownEnumDescriptions".to_string(),
             serde_json::to_value(enum_markdown_descriptions).unwrap()
         );
     }

@@ -95,7 +95,7 @@ enum StringEnum {
         "markdownDescription": "enum-markdown",
         "enum": ["foo", "bar", "baz"],
         "enumDescriptions": ["foo-description", "bar-description", "baz-description"],
-        "enumMarkdownDescriptions": ["foo-markdown", "bar-markdown", "baz-markdown"]
+        "markdownEnumDescriptions": ["foo-markdown", "bar-markdown", "baz-markdown"]
     });
     assert_pretty_eq!(
         serde_json::to_string_pretty(schema).unwrap(),
@@ -152,7 +152,7 @@ enum StringEnum {
         "type": "string",
         "enum": ["foo", "bar", "baz"],
         "enumDescriptions": ["Foo-description", "Bar-description", "Baz-description"],
-        "enumMarkdownDescriptions": ["Foo-description", "Bar-description", "Baz-description"],
+        "markdownEnumDescriptions": ["Foo-description", "Bar-description", "Baz-description"],
     });
     assert_pretty_eq!(
         serde_json::to_string_pretty(schema).unwrap(),
@@ -185,7 +185,7 @@ enum StringEnum {
         "type": "string",
         "enum": ["foo", "bar", "baz"],
         "enumDescriptions": ["Foo-description", "Bar-title", "Baz-title"],
-        "enumMarkdownDescriptions": ["Foo-markdown", "Bar-markdown", "Baz-title"],
+        "markdownEnumDescriptions": ["Foo-markdown", "Bar-markdown", "Baz-title"],
     });
     assert_pretty_eq!(
         serde_json::to_string_pretty(schema).unwrap(),
@@ -217,7 +217,7 @@ enum StringEnum {
         "type": "string",
         "enum": ["baz", "foo", "bar"],
         "enumDescriptions": ["", "Foo-description", "Bar-description"],
-        "enumMarkdownDescriptions": ["", "Foo-description", "Bar-description"],
+        "markdownEnumDescriptions": ["", "Foo-description", "Bar-description"],
     });
     assert_pretty_eq!(
         serde_json::to_string_pretty(schema).unwrap(),
