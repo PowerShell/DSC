@@ -1,10 +1,12 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::args::{SchemaType, OutputFormat, TraceFormat};
+use crate::args::{SchemaType, OutputFormat};
 use crate::resolve::Include;
 use dsc_lib::configure::config_result::{ConfigurationExportResult, ResourceGetResult, ResourceSetResult};
 use dsc_lib::dscresources::adapted_resource_manifest::AdaptedDscResourceManifest;
+use dsc_lib::settings::DscSettingsResolved;
+use dsc_lib::settings::fields::TracingFormatField;
 use dsc_lib::{
     configure::{
         config_doc::{
@@ -25,7 +27,6 @@ use dsc_lib::{
     },
     dscerror::DscError,
     dscresources::{
-        command_resource::TraceLevel,
         dscresource::DscResource,
         invoke_result::{
             GetResult,
@@ -44,7 +45,6 @@ use dsc_lib::{
     schemas::dsc_repo::{DscRepoSchema, RecognizedSchemaVersion, SchemaForm, SchemaUriPrefix},
     types::SemanticVersion,
     util::{
-        get_setting,
         parse_input_to_json,
     },
 };
@@ -52,7 +52,6 @@ use dsc_lib_telemetry::{StderrFormat, basic::{BasicTracingOptions}};
 use path_absolutize::Absolutize;
 use rust_i18n::t;
 use schemars::{Schema, schema_for};
-use serde::Deserialize;
 use std::collections::HashMap;
 use std::env;
 use std::io::{IsTerminal, Read, stdout, Write};
@@ -65,7 +64,7 @@ use syntect::{
     parsing::SyntaxSet,
     util::{as_24_bit_terminal_escaped, LinesWithEndings}
 };
-use tracing::{Level, debug, error, info, warn, trace};
+use tracing::{debug, error, info, warn, trace};
 
 pub const EXIT_SUCCESS: u8 = 0;
 pub const EXIT_INVALID_ARGS: u8 = 1;
@@ -80,28 +79,6 @@ pub const EXIT_SERVER_FAILED: u8 = 9;
 pub const EXIT_BICEP_FAILED: u8 = 10;
 
 pub const DSC_CONFIG_ROOT: &str = "DSC_CONFIG_ROOT";
-pub const DSC_TRACE_LEVEL: &str = "DSC_TRACE_LEVEL";
-
-#[derive(Deserialize)]
-pub struct TracingSetting {
-    /// Trace level to use - see pub enum `TraceLevel` in `dsc_lib\src\dscresources\command_resource.rs`
-    level:  TraceLevel,
-    /// Trace format to use - see pub enum `TraceFormat` in `dsc\src\args.rs`
-    format: TraceFormat,
-    /// Whether the 'level' can be overrridden by `DSC_TRACE_LEVEL` environment variable
-    #[serde(rename = "allowOverride")]
-    allow_override: bool
-}
-
-impl Default for TracingSetting {
-    fn default() -> TracingSetting {
-        TracingSetting {
-            level: TraceLevel::Warn,
-            format: TraceFormat::Default,
-            allow_override: true,
-        }
-    }
-}
 
 /// Returns the current version of DSC as a semantic version.
 ///
@@ -369,72 +346,18 @@ pub fn write_object(json: &str, format: Option<&OutputFormat>, include_separator
 }
 
 #[allow(clippy::too_many_lines)]
-pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Option<&TraceFormat>) {
-    let mut policy_is_used = false;
-    let mut tracing_setting = TracingSetting::default();
+pub fn enable_tracing(resolved_settings: &DscSettingsResolved) {
+    let tracing_setting = &resolved_settings.tracing;
 
     let default_guard = dsc_lib_telemetry::basic::BasicTracingOptions::init_default_guard();
 
-    // read setting/policy from files
-    if let Ok(v) = get_setting("tracing") {
-        if v.policy != serde_json::Value::Null {
-            match serde_json::from_value::<TracingSetting>(v.policy) {
-                Ok(v) => {
-                    tracing_setting = v;
-                    policy_is_used = true;
-                },
-                Err(e) => { error!("{e}"); }
-            }
-        } else if v.setting != serde_json::Value::Null {
-            match serde_json::from_value::<TracingSetting>(v.setting) {
-                Ok(v) => {
-                    tracing_setting = v;
-                },
-                Err(e) => { error!("{e}"); }
-            }
-        }
-    } else {
-        error!("{}", t!("util.failedToReadTracingSetting"));
-    }
-
-    // override with DSC_TRACE_LEVEL env var if permitted
-    if tracing_setting.allow_override && let Ok(level) = env::var(DSC_TRACE_LEVEL) {
-        tracing_setting.level = match level.to_ascii_uppercase().as_str() {
-            "ERROR" => TraceLevel::Error,
-            "WARN" => TraceLevel::Warn,
-            "INFO" => TraceLevel::Info,
-            "DEBUG" => TraceLevel::Debug,
-            "TRACE" => TraceLevel::Trace,
-            _ => {
-                warn!("{}: '{level}'", t!("util.invalidTraceLevel"));
-                TraceLevel::Warn
-            }
-        }
-    }
-
-    // command-line args override setting value, but not policy
-    if !policy_is_used {
-        if let Some(v) = trace_level_arg {
-            tracing_setting.level = v.clone();
-        }
-        if let Some(v) = trace_format_arg {
-            tracing_setting.format = v.clone();
-        }
-    }
-
     // convert to 'tracing' crate type
-    let tracing_level = match tracing_setting.level {
-        TraceLevel::Error => Level::ERROR,
-        TraceLevel::Warn => Level::WARN,
-        TraceLevel::Info => Level::INFO,
-        TraceLevel::Debug => Level::DEBUG,
-        TraceLevel::Trace => Level::TRACE,
-    };
+    let tracing_level = tracing_setting.level.value.clone().into();
     // convert to 'dsc-lib-telemetry' crate type
-    let stderr_format = match tracing_setting.format {
-        TraceFormat::Default => StderrFormat::Default,
-        TraceFormat::Plaintext => StderrFormat::Plaintext,
-        TraceFormat::Json | TraceFormat::PassThrough => StderrFormat::Json,
+    let stderr_format = match tracing_setting.format.value {
+        TracingFormatField::Default => StderrFormat::Default,
+        TracingFormatField::Plaintext => StderrFormat::Plaintext,
+        TracingFormatField::Json => StderrFormat::Json,
     };
 
     // enable tracing
@@ -448,11 +371,7 @@ pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Op
         eprintln!("{}", t!("util.failedToSetTracing"));
     }
 
-    // set DSC_TRACE_LEVEL for child processes
-    unsafe {
-        env::set_var(DSC_TRACE_LEVEL, tracing_level.to_string().to_ascii_lowercase());
-    }
-    info!("Trace-level is {:?}", tracing_setting.level);
+    info!("Trace-level is {:?}", tracing_setting.level.value);
 }
 
 pub fn get_input(input: Option<&String>, file: Option<&String>) -> Result<String, ExitCode> {

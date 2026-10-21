@@ -213,6 +213,30 @@ impl From<tracing::Level> for TracingLevelField {
     }
 }
 
+impl From<crate::dscresources::command_resource::TraceLevel> for TracingLevelField {
+    fn from(level: crate::dscresources::command_resource::TraceLevel) -> Self {
+        match level {
+            crate::dscresources::command_resource::TraceLevel::Error => TracingLevelField::Error,
+            crate::dscresources::command_resource::TraceLevel::Warn => TracingLevelField::Warn,
+            crate::dscresources::command_resource::TraceLevel::Info => TracingLevelField::Info,
+            crate::dscresources::command_resource::TraceLevel::Debug => TracingLevelField::Debug,
+            crate::dscresources::command_resource::TraceLevel::Trace => TracingLevelField::Trace,
+        }
+    }
+}
+
+impl From<TracingLevelField> for crate::dscresources::command_resource::TraceLevel {
+    fn from(level: TracingLevelField) -> Self {
+        match level {
+            TracingLevelField::Error => crate::dscresources::command_resource::TraceLevel::Error,
+            TracingLevelField::Warn => crate::dscresources::command_resource::TraceLevel::Warn,
+            TracingLevelField::Info => crate::dscresources::command_resource::TraceLevel::Info,
+            TracingLevelField::Debug => crate::dscresources::command_resource::TraceLevel::Debug,
+            TracingLevelField::Trace => crate::dscresources::command_resource::TraceLevel::Trace,
+        }
+    }
+}
+
 define_string_enum_field!{
     base_name: "format",
     folder_path: "settings/fields/tracing",

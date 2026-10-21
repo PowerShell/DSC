@@ -7,8 +7,9 @@ use jsonschema::Validator;
 use rust_i18n::t;
 use serde::Deserialize;
 use serde_json::{Map, Value};
-use std::{collections::HashMap, env, path::Path, process::Stdio};
-use crate::{configure::{config_doc::{ExecutionKind, SecurityContextKind}, config_result::{ResourceGetResult, ResourceTestResult}, schema_cache::{RESOURCE_SCHEMAS, get_resource_schema}}, dscresources::{dscresource::Operation, resource_manifest::{ExportSchemaKind, ExportSchemaOrFiltering, SchemaArgKind}}, types::ExitCodesMap, util::canonicalize_which};
+use std::{collections::HashMap, env, path::{Path, PathBuf}, process::Stdio};
+use crate::{configure::{config_doc::{ExecutionKind, SecurityContextKind}, config_result::{ResourceGetResult, ResourceTestResult}, schema_cache::{RESOURCE_SCHEMAS, get_resource_schema}}, dscresources::{dscresource::Operation, resource_manifest::{ExportSchemaKind, ExportSchemaOrFiltering, SchemaArgKind}}, settings::fields::ResourcePathResolvedSettings, types::ExitCodesMap, util::canonicalize_which};
+use crate::settings::global as global_settings;
 use crate::dscerror::DscError;
 use crate::locked_insert;
 use super::{
@@ -932,29 +933,59 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
     }
 }
 
+pub fn verify_executable_is_invokable(executable: &Path) -> Result<(), DscError> {
+    let ResourcePathResolvedSettings{
+        directories,
+        restricted,
+        ..
+    } = &global_settings::get_or_init().resolved().resource_path.clone();
+    if !restricted.value {
+        return Ok(())
+    }
+
+    let executable_folder = executable.parent().unwrap().to_path_buf();
+
+    if !directories.value.clone().contains(&executable_folder) {
+        return Err(DscError::CommandNotInRestrictedDirs {
+            exe_name: executable.file_name().unwrap().to_string_lossy().trim_end_matches(".exe").to_string(),
+            exe_folder: executable_folder,
+            restricted_dirs: directories.value.clone(),
+        });
+    }
+
+    Ok(())
+}
+
 /// Invoke a command and return the exit code, stdout, and stderr.
 ///
 /// # Arguments
 ///
-/// * `executable` - The command to execute
-/// * `args` - Optional arguments to pass to the command
-/// * `input` - Optional input to pass to the command
-/// * `cwd` - Optional working directory to execute the command in
-/// * `env` - Optional environment variable mappings to add or update
-/// * `exit_codes` - Descriptions of exit codes, either defined by the manifest or using the
+/// - `executable` - The command to execute
+/// - `args` - Optional arguments to pass to the command
+/// - `input` - Optional input to pass to the command
+/// - `cwd` - Optional working directory to execute the command in
+/// - `env` - Optional environment variable mappings to add or update
+/// - `exit_codes` - Descriptions of exit codes, either defined by the manifest or using the
 ///   default descriptions for success and failure.
 ///
 /// # Errors
 ///
-/// Error is returned if the command fails to execute or stdin/stdout/stderr cannot be opened.
+/// This function returns an error when:
+/// 
+/// - The command isn't discoverable
+/// - The DSC settings resolve with `resourcePath.restricted` as `true` and the executable isn't in
+///   the `resourcePath.directories` list
+/// - The command fails to execute
+/// - The function can't open stdin, stdout, or stderr for the command
 ///
 /// # Panics
 ///
-/// Will panic if tokio runtime can't be created.
+/// This function panics if it can't create a tokio runtime.
 ///
 #[allow(clippy::implicit_hasher)]
 pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&Path>, env: Option<HashMap<String, String>>, exit_codes: &ExitCodesMap) -> Result<(i32, String, String), DscError> {
     let executable = canonicalize_which(executable, cwd)?;
+    verify_executable_is_invokable(&PathBuf::from(&executable))?;
 
     let run_async = async {
         trace!("{}", t!("dscresources.commandResource.commandInvoke", executable = executable, args = args : {:?}));
