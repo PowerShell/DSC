@@ -85,4 +85,22 @@ Describe 'dsc config test tests' {
         $log = Get-Content "$TestDrive/trace.log" -Raw
         $log | Should -Match ".*Resource named 'MyTest' for type 'Microsoft.DSC.Debug/Echo' is specified more than once.*" -Because ($log | Out-String)
     }
+
+    It 'Schema validation failures return exit code 5' {
+        $configYaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: invalid Echo property
+  type: Microsoft.DSC.Debug/Echo
+  properties:
+    output: 1
+    outpt: 2
+'@
+        $tracePath = Join-Path $TestDrive 'trace.log'
+
+        $null = dsc config test --input $configYaml 2> $tracePath
+        $LASTEXITCODE | Should -Be 5
+        $log = Get-Content -Path $tracePath -Raw
+        $log | Should -Match "'outpt' was unexpected"
+    }
 }

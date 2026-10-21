@@ -5,7 +5,7 @@ use crate::args::{ConfigSubCommand, SchemaType, ExtensionSubCommand, FunctionSub
 use crate::resolve::{get_contents, Include};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
-use crate::util::{current_dsc_version, get_input, get_schema, in_desired_state, set_dscconfigroot, write_object, DSC_CONFIG_ROOT, EXIT_DSC_ASSERTION_FAILED, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR};
+use crate::util::{current_dsc_version, get_input, get_schema, in_desired_state, set_dscconfigroot, write_object, DSC_CONFIG_ROOT, EXIT_DSC_ASSERTION_FAILED, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_VALIDATION_FAILED};
 use dsc_lib::types::{FullyQualifiedTypeName, ResourceVersionReq, TypeNameFilter};
 use dsc_lib::{
     configure::{
@@ -207,10 +207,33 @@ pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat
         },
         Err(err) => {
             error!("{err}");
-            return Err(ExitCode::from(EXIT_DSC_ERROR));
+            let exit_code = config_test_exit_code(&err);
+            return Err(ExitCode::from(exit_code));
         }
     }
     Ok(())
+}
+
+fn config_test_exit_code(error: &DscError) -> u8 {
+    match error {
+        DscError::Schema(_) => EXIT_VALIDATION_FAILED,
+        _ => EXIT_DSC_ERROR,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{config_test_exit_code, DscError, EXIT_DSC_ERROR, EXIT_VALIDATION_FAILED};
+
+    #[test]
+    fn schema_errors_use_validation_failed_exit_code() {
+        assert_eq!(config_test_exit_code(&DscError::Schema("invalid value".to_string())), EXIT_VALIDATION_FAILED);
+    }
+
+    #[test]
+    fn other_errors_keep_dsc_error_exit_code() {
+        assert_eq!(config_test_exit_code(&DscError::Operation("failed".to_string())), EXIT_DSC_ERROR);
+    }
 }
 
 pub fn config_export(configurator: &mut Configurator, format: Option<&OutputFormat>) -> Result<(), ExitCode> {
