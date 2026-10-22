@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::discovery::DscResourceKind;
 use crate::discovery::{command_discovery::ImportedManifest, discovery_trait::DiscoveryFilter};
 use crate::discovery::discovery_trait::DiscoveryKind;
 use crate::progress::ProgressFormat;
@@ -9,7 +8,8 @@ use crate::types::TypeNameFilter;
 
 use configure::config_doc::ExecutionKind;
 use dscerror::DscError;
-use dscresources::{dscresource::{DscResource, Invoke}, invoke_result::{GetResult, SetResult, TestResult}};
+use dscresources::dscresource::DscResource;
+use resources::{invoke_result::{GetResult, SetResult, TestResult}, resource_invoke::ResourceInvoke};
 use rust_i18n::i18n;
 
 pub mod actions;
@@ -21,6 +21,7 @@ pub mod extensions;
 pub mod functions;
 pub mod parser;
 pub mod progress;
+pub mod resources;
 pub mod schemas;
 pub mod settings;
 pub mod types;
@@ -57,7 +58,7 @@ impl DscManager {
     ///
     /// * `name` - The name of the resource to find, can have wildcards.
     ///
-    pub fn find_resource(&mut self, filter: &DiscoveryFilter) -> Result<Option<DscResourceKind>, DscError> {
+    pub fn find_resource(&mut self, filter: &DiscoveryFilter) -> Result<Option<Box<dyn ResourceInvoke>>, DscError> {
         self.discovery.find_resource(filter)
     }
 

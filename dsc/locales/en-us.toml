@@ -82,7 +82,7 @@ noParameters = "No parameters specified"
 
 [resource_command]
 implementedAs = "implemented as"
-invalidOperationOnAdapter = "Can not perform this operation on the adapter itself"
+invalidOperation = "Can not perform this operation on %{resource}"
 setInputEmpty = "Desired input is empty"
 testInputEmpty = "Expected input is required"
 jsonError = "JSON: %{err}"
@@ -125,8 +125,12 @@ invalidDescriptionPattern = "Invalid function description pattern '%{pattern}'"
 resourceNotAdapter = "The resource '%{adapter}' is not a valid adapter"
 adapterNotFound = "Adapter '%{adapter}' does not exist"
 
+[server.show_dsc_action]
+actionManifestNotFound = "Action manifest for '%{type_name}' not found"
+
 [server.show_dsc_resource]
 resourceNotFound = "Resource type '%{type_name}' does not exist"
+resourceManifestNotFound = "Resource manifest for '%{type_name}' not found"
 
 [subcommand]
 actualStateNotObject = "actual_state is not an object"

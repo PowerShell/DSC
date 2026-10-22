@@ -3,17 +3,12 @@
 
 use crate::{
     configure::config_doc::ResourceDiscoveryMode,
-    discovery::{
-        DiscoveryActionCache,
-        DiscoveryExtensionCache,
-        DiscoveryManifestCache,
-        DiscoveryResourceCache
-    },
+    discovery::{DiscoveryExtensionCache, DiscoveryManifestCache, DiscoveryCache},
     dscerror::DscError,
     types::{FullyQualifiedTypeName, ResourceVersionReq, SemanticVersionReq, TypeNameFilter}
 };
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub enum DiscoveryKind {
     Action,
     Extension,
@@ -22,6 +17,7 @@ pub enum DiscoveryKind {
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub struct DiscoveryFilter {
+    kind: Option<DiscoveryKind>,
     require_adapter: Option<FullyQualifiedTypeName>,
     r#type: FullyQualifiedTypeName,
     require_version: Option<ResourceVersionReq>,
@@ -49,6 +45,7 @@ impl DiscoveryFilter {
         require_adapter: Option<FullyQualifiedTypeName>
     ) -> Self {
         Self {
+            kind: Some(DiscoveryKind::Resource),
             require_adapter,
             r#type: type_name.clone(),
             require_version,
@@ -75,6 +72,7 @@ impl DiscoveryFilter {
         require_version: Option<SemanticVersionReq>,
     ) -> Self {
         Self {
+            kind: Some(DiscoveryKind::Extension),
             require_adapter: None,
             r#type: type_name.clone(),
             require_version: require_version.map(|r| r.into()),
@@ -94,6 +92,11 @@ impl DiscoveryFilter {
     #[must_use]
     pub fn require_version(&self) -> Option<&ResourceVersionReq> {
         self.require_version.as_ref()
+    }
+
+    #[must_use]
+    pub fn kind(&self) -> Option<&DiscoveryKind> {
+        self.kind.as_ref()
     }
 }
 
@@ -171,35 +174,7 @@ pub trait ResourceDiscovery {
     /// # Errors
     ///
     /// This function will return an error if the underlying discovery fails.
-    fn find_resources(&mut self, required_resource_types: &[DiscoveryFilter]) -> Result<DiscoveryResourceCache, DscError>;
-
-    /// Find actions based on the required action types.
-    /// This is not applicable for extensions.
-    ///
-    /// # Arguments
-    ///
-    /// - `required_action_types` - A slice of `DiscoveryFilter` instances representing the
-    ///   required action types.
-    ///
-    /// # Returns
-    ///
-    /// A result containing a map of action names to their corresponding `DscAction` instances.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if the underlying discovery fails.
-    fn find_actions(&mut self, required_action_types: &[DiscoveryFilter]) -> Result<DiscoveryActionCache, DscError>;
-
-    /// Get the available actions.
-    ///
-    /// # Returns
-    ///
-    /// A result containing a map of action names to their corresponding `DscAction` instances.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if the underlying discovery fails.
-    fn get_actions(&mut self) -> Result<DiscoveryActionCache, DscError>;
+    fn find(&mut self, required_resource_types: &[DiscoveryFilter]) -> Result<DiscoveryCache, DscError>;
 
     /// Get the available extensions.
     ///
@@ -210,7 +185,7 @@ pub trait ResourceDiscovery {
     /// # Errors
     ///
     /// This function will return an error if the underlying discovery fails.
-    fn get_extensions(&mut self) -> Result<DiscoveryExtensionCache, DscError>;
+    fn extensions(&mut self) -> Result<DiscoveryExtensionCache, DscError>;
 
     /// Set the discovery mode.
     ///

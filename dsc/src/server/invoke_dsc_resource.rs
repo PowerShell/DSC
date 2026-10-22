@@ -6,10 +6,9 @@ use dsc_lib::{
     DscManager, configure::config_doc::ExecutionKind,
     discovery::{
         discovery_trait::DiscoveryFilter,
-        DscResourceKind,
+        ResourceKind,
     },
-    dscresources::{
-        dscresource::Invoke,
+    resources::{
         invoke_result::{
             DeleteResult,
             DeleteResultKind,
@@ -92,10 +91,9 @@ impl McpServer {
             let Some(resource) = dsc.find_resource(&DiscoveryFilter::new(&r#type, None, None)).unwrap_or(None) else {
                 return Err(McpError::invalid_request(t!("server.invoke_dsc_resource.resourceNotFound", resource = r#type), None));
             };
-            let resource = match resource {
-                DscResourceKind::Resource(res) => res,
-                DscResourceKind::Action(_) => return Err(McpError::invalid_request(t!("server.invoke_dsc_resource.actionNotSupported", resource = r#type), None)),
-            };
+            if resource.kind() != ResourceKind::Resource {
+                return Err(McpError::invalid_request(t!("server.invoke_dsc_resource.actionNotSupported", resource = r#type), None));
+            }
             match operation {
                 DscOperation::Get => {
                     let result = match resource.get(&properties_json) {

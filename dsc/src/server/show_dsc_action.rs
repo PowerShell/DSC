@@ -3,11 +3,7 @@
 
 use crate::server::mcp_server::McpServer;
 use dsc_lib::{
-    DscManager,
-    actions::action_manifest::SupportedOperations,
-    configure::config_doc::SecurityContextKind,
-    discovery::{DscResourceKind, discovery_trait::DiscoveryFilter},
-    types::{FullyQualifiedTypeName, SemanticVersion},
+    DscManager, actions::action_manifest::SupportedOperations, configure::config_doc::SecurityContextKind, discovery::discovery_trait::DiscoveryFilter, types::{FullyQualifiedTypeName, SemanticVersion},
 };
 use rmcp::{ErrorData as McpError, Json, tool, tool_router, handler::server::wrapper::Parameters};
 use rust_i18n::t;
@@ -72,16 +68,15 @@ impl McpServer {
             let Some(resource) = dsc.find_resource(&DiscoveryFilter::new(&r#type, None, None)).unwrap_or(None) else {
                 return Err(McpError::invalid_params(t!("server.show_dsc_action.actionNotFound", type_name = r#type), None))
             };
-            let action = match resource {
-                DscResourceKind::Action(action) => action,
-                DscResourceKind::Resource(_) => return Err(McpError::invalid_params(t!("server.show_dsc_action.resourceNotSupported", type_name = r#type), None)),
+            let Some(action) = resource.as_action() else {
+                return Err(McpError::invalid_params(t!("server.show_dsc_action.resourceNotSupported", type_name = r#type), None));
             };
             Ok(DscAction {
                 r#type: action.type_name.clone(),
                 version: action.version.clone(),
                 supported_operations: action.supported_operations.clone(),
-                description: action.description.clone(),
-                author: action.author.clone(),
+                description: action.manifest.description.clone(),
+                author: action.manifest.author.clone(),
                 input_schema: action.input_schema.clone(),
                 output_schema: action.output_schema.clone(),
                 require_security_context: action.invoke.require_security_context.clone(),
