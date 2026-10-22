@@ -3,10 +3,9 @@
 
 use clap::Parser;
 use dsc_lib::{
-    DscManager, configure::config_doc::ExecutionKind, discovery::{DscResourceKind, discovery_trait::DiscoveryFilter}, dscresources::{
-        dscresource::Invoke,
-        invoke_result::{GetResult, SetResult},
-    }, types::{FullyQualifiedTypeName, ResourceVersionReq},
+    DscManager, configure::config_doc::ExecutionKind, discovery::{discovery_trait::DiscoveryFilter},
+    resources::invoke_result::{GetResult, SetResult},
+    types::{FullyQualifiedTypeName, ResourceVersionReq},
 };
 use rust_i18n::{i18n, t};
 use std::{env, io, process};
@@ -72,15 +71,6 @@ impl BicepExtension for BicepExtensionService {
             ));
         };
 
-        let resource = match resource {
-            DscResourceKind::Action(_) => {
-                return Err(Status::unimplemented(
-                    t!("dscerror.notSupported").to_string(),
-                ));
-            }
-            DscResourceKind::Resource(resource) => resource,
-        };
-
         let SetResult::Resource(result) = resource
             .set(&properties, false, &ExecutionKind::Actual)
             .map_err(|e| Status::aborted(e.to_string()))?
@@ -141,15 +131,6 @@ impl BicepExtension for BicepExtensionService {
             return Err(Status::not_found(
                 t!("dscerror.resourceNotFound").to_string(),
             ));
-        };
-
-        let resource = match resource {
-            DscResourceKind::Action(_) => {
-                return Err(Status::unimplemented(
-                    t!("dscerror.notSupported").to_string(),
-                ));
-            }
-            DscResourceKind::Resource(resource) => resource,
         };
 
         let SetResult::Resource(result) = resource
@@ -214,15 +195,6 @@ impl BicepExtension for BicepExtensionService {
             ));
         };
 
-        let resource = match resource {
-            DscResourceKind::Action(_) => {
-                return Err(Status::unimplemented(
-                    t!("dscerror.notSupported").to_string(),
-                ));
-            }
-            DscResourceKind::Resource(resource) => resource,
-        };
-
         let GetResult::Resource(result) = resource
             .get(&identifiers)
             .map_err(|e| Status::aborted(e.to_string()))?
@@ -283,15 +255,6 @@ impl BicepExtension for BicepExtensionService {
             return Err(Status::not_found(
                 t!("dscerror.resourceNotFound").to_string(),
             ));
-        };
-
-        let resource = match resource {
-            DscResourceKind::Action(_) => {
-                return Err(Status::unimplemented(
-                    t!("dscerror.notSupported").to_string(),
-                ));
-            }
-            DscResourceKind::Resource(resource) => resource,
         };
 
         resource

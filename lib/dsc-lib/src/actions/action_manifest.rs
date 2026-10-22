@@ -8,6 +8,7 @@ use rust_i18n::t;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use schemars::JsonSchema;
+use std::fmt::Display;
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -61,6 +62,17 @@ pub enum SupportedOperations {
     Set,
     Test,
     Export,
+}
+
+impl Display for SupportedOperations {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SupportedOperations::Get => write!(f, "Get"),
+            SupportedOperations::Set => write!(f, "Set"),
+            SupportedOperations::Test => write!(f, "Test"),
+            SupportedOperations::Export => write!(f, "Export"),
+        }
+    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]

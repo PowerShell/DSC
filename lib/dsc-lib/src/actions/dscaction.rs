@@ -2,27 +2,25 @@
 // Licensed under the MIT License.
 
 use crate::{
-    actions::action_manifest::{
-        ActionManifest, ArgKind, InvokeMethod, SchemaArgKind, SchemaKind, SupportedOperations
-    }, configure::config_doc::ExecutionKind, discovery::command_discovery::verify_executable, dscerror::DscError, dscresources::{
-        command_resource::{
-            invoke_command,
-            validate_security_context
-        },
-        dscresource::Operation
-    }, schemas::dsc_repo::DscRepoSchema, types::{
-        ExitCodesMap,
-        FullyQualifiedTypeName,
-        SemanticVersion
+    actions::action_manifest::{ActionManifest, ArgKind, InvokeMethod, SchemaArgKind, SchemaKind, SupportedOperations},
+    configure::config_doc::{ExecutionKind, Operation},
+    discovery::{command_discovery::verify_executable, ResourceKind},
+    dscerror::DscError,
+    dscresources::{command_resource::{invoke_command, validate_security_context}, dscresource::DscResource},
+    resources::{
+        invoke_result::{DeleteResultKind, GetResult, SetResult, ExportResult, ResolveResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse, TestResult, ValidateResult},
+        ManifestKind, resource_invoke::{Capability, ResourceInvoke},
     },
+    schemas::dsc_repo::DscRepoSchema,
+    types::{ExitCodesMap, FullyQualifiedTypeName, ResourceVersion,SemanticVersion}
 };
 use jsonschema::Validator;
 use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{Map, Value};
 use std::path::{Path, PathBuf};
-use tracing::error;
+use tracing::{error, info};
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -52,7 +50,7 @@ pub struct DscAction {
     /// The operations supported by the action.
     pub supported_operations: Vec<SupportedOperations>,
     /// The manifest of the extension.
-    pub manifest: Value,
+    pub manifest: ActionManifest,
 }
 
 impl Default for DscAction {
@@ -76,40 +74,184 @@ impl DscAction {
             description: None,
             directory: PathBuf::new(),
             supported_operations: Vec::new(),
-            manifest: Value::Null,
+            manifest: ActionManifest::default(),
         }
     }
 
-    pub fn invoke(&self, input: Option<&str>, execution_type: &ExecutionKind) -> Result<Value, DscError> {
-        let manifest = serde_json::from_value::<ActionManifest>(self.manifest.clone())?;
-
-        if let Some(required_context) = &manifest.invoke.require_security_context {
-            validate_security_context(None, &Some(required_context.clone()), &manifest.type_name, &Operation::Invoke)?;
+    fn invoke_action(&self, input: &str, execution_type: &ExecutionKind) -> Result<Value, DscError> {
+        if let Some(required_context) = &self.manifest.invoke.require_security_context {
+            validate_security_context(None, &Some(required_context.clone()), &self.manifest.type_name, &Operation::Invoke)?;
         }
 
-if let Some(input_schema) = &self.input_schema {
-            validate_json(input.unwrap_or("null"), input_schema)?;
-        } else if input.is_some() {
-            error!("{}", t!("actions.dscaction.inputSchemaNotAvailable", type_name = self.type_name.to_string()));
+        if let Some(input_schema) = &self.input_schema {
+            validate_json(input, input_schema)?;
+        } else if !input.is_empty() {
+            error!("{}", t!("actions.dscaction.inputSchemaNotAvailable", type_name = self.type_name.to_string()).to_string());
             return Err(DscError::SchemaNotAvailable(self.type_name.to_string()));
         }
-        let (args, supports_whatif) = process_invoke_args(manifest.invoke.args.as_ref(), input.unwrap_or(""), execution_type);
+        let (args, supports_whatif) = process_invoke_args(self.manifest.invoke.args.as_ref(), input, execution_type);
         if execution_type == &ExecutionKind::WhatIf && !supports_whatif {
             return Err(DscError::Operation(t!("actions.dscaction.whatIfNotSupported", type_name = self.type_name.to_string()).to_string()));
         }
 
-        let (_exit_code, stdout, _stderr) = invoke_command(&manifest.invoke.executable, args, input, Some(&self.directory), None, manifest.exit_codes.as_ref())?;
+        let input = if input.is_empty() {
+            None
+        } else {
+            Some(input)
+        };
+
+        let (_exit_code, stdout, _stderr) = invoke_command(&self.manifest.invoke.executable, args, input, Some(&self.directory), None, self.manifest.exit_codes.as_ref())?;
         if !stdout.is_empty() {
             if let Some(output_schema) = &self.output_schema {
                 validate_json(&stdout, output_schema)?;
             } else {
-                error!("{}", t!("actions.dscaction.outputSchemaNotAvailable", type_name = self.type_name.to_string()));
+                error!("{}", t!("actions.dscaction.outputSchemaNotAvailable", type_name = self.type_name.to_string()).to_string());
                 return Err(DscError::SchemaNotAvailable(self.type_name.to_string()));
             }
         }
 
         let output = serde_json::from_str(&stdout)?;
         Ok(output)
+    }
+}
+
+impl ResourceInvoke for DscAction {
+    fn get(&self, filter: &str) -> Result<GetResult, DscError> {
+        let result = if self.supported_operations.contains(&SupportedOperations::Get) {
+            self.invoke_action(filter, &ExecutionKind::Actual)?
+        } else {
+            info!("{}", t!("actions.dscaction.actionUnsupportedOperation", operation = SupportedOperations::Get, action = &self.type_name).to_string());
+            Value::Null
+        };
+        let get_result_response = ResourceGetResponse {
+            actual_state: result.clone()
+        };
+        Ok(GetResult::Resource(get_result_response))
+    }
+
+    fn set(&self, desired: &str, _skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
+        let result = if self.supported_operations.contains(&SupportedOperations::Set) {
+            self.invoke_action(desired, execution_type)?
+        } else {
+            info!("{}", t!("actions.dscaction.actionUnsupportedOperation", operation = SupportedOperations::Set, action = &self.type_name).to_string());
+            Value::Null
+        };
+        let set_result_response = ResourceSetResponse {
+            before_state: result.clone(),
+            after_state: result.clone(),
+            changed_properties: None,
+        };
+        Ok(SetResult::Resource(set_result_response))
+    }
+
+    fn test(&self, expected: &str) -> Result<TestResult, DscError> {
+        let result = if self.supported_operations.contains(&SupportedOperations::Test) {
+            self.invoke_action(expected, &ExecutionKind::Actual)?
+        } else {
+            info!("{}", t!("actions.dscaction.actionUnsupportedOperation", operation = SupportedOperations::Test, action = &self.type_name).to_string());
+            Value::Null
+        };
+        let test_response = ResourceTestResponse {
+            desired_state: result.clone(),
+            actual_state: result.clone(),
+            in_desired_state: true,
+            diff_properties: Vec::new(),
+        };
+        Ok(TestResult::Resource(test_response))
+    }
+
+    fn export(&self, input: &str) -> Result<ExportResult, DscError> {
+        let result = if self.supported_operations.contains(&SupportedOperations::Export) {
+            self.invoke_action(input, &ExecutionKind::Actual)?
+        } else {
+            info!("{}", t!("actions.dscaction.actionUnsupportedOperation", operation = SupportedOperations::Export, action = &self.type_name).to_string());
+            Value::Null
+        };
+        Ok(ExportResult {
+            actual_state: vec![result.clone()]
+        })
+    }
+
+    fn invoke(&self, input: &str, execution_type: &ExecutionKind) -> Result<Value, DscError> {
+        self.invoke_action(input, execution_type)
+    }
+
+    fn delete(&self, _filter: &str, _execution_type: &ExecutionKind) -> Result<DeleteResultKind, DscError> {
+        Err(DscError::NotSupported(t!("actions.dscaction.unsupported").to_string()))
+    }
+
+    fn resolve(&self, _input: &str) -> Result<ResolveResult, DscError> {
+        Err(DscError::NotSupported(t!("actions.dscaction.unsupported").to_string()))
+    }
+
+    fn schema(&self) -> Result<String, DscError> {
+        Err(DscError::NotSupported(t!("actions.dscaction.unsupported").to_string()))
+    }
+
+    fn validate(&self, _config: &str) -> Result<ValidateResult, DscError> {
+        Err(DscError::NotSupported(t!("actions.dscaction.unsupported").to_string()))
+    }
+
+    fn kind(&self) -> crate::discovery::ResourceKind {
+        ResourceKind::Action
+    }
+
+    fn is_group(&self) -> bool {
+        false
+    }
+
+    fn capabilities(&self) -> Vec<Capability> {
+        // convert the supported_operations to capabilities
+        let mut capabilties = vec![];
+        for op in &self.supported_operations {
+            match op {
+                SupportedOperations::Get => capabilties.push(Capability::Get),
+                SupportedOperations::Set => capabilties.push(Capability::Set),
+                SupportedOperations::Test => capabilties.push(Capability::Test),
+                SupportedOperations::Export => capabilties.push(Capability::Export),
+            }
+        }
+        capabilties
+    }
+
+
+    fn type_name(&self) -> FullyQualifiedTypeName {
+        self.type_name.clone()
+    }
+
+    fn version(&self) -> ResourceVersion {
+        ResourceVersion::Semantic(self.version.clone())
+    }
+
+    fn manifest(&self) -> Option<ManifestKind> {
+        Some(ManifestKind::Action(Box::new(self.manifest.clone())))
+    }
+
+    fn schema_as_map(&self) -> Option<Map<String, Value>> {
+        // convert the input_schema as a Map<String, Value>
+        match &self.input_schema {
+            Some(value) => {
+                let map: Map<String, Value> = serde_json::from_value(value.clone()).ok()?;
+                Some(map)
+            },
+            None => None,
+        }
+    }
+
+    fn set_target_resource(&mut self, _target: Box<DscResource>) -> Result<(), DscError> {
+        Err(DscError::NotSupported(t!("actions.dscaction.unsupported").to_string()))
+    }
+
+    fn as_action(&self) -> Option<&DscAction> {
+        Some(self)
+    }
+
+    fn as_dsc_resource(&self) -> Option<&DscResource> {
+        None
+    }
+
+    fn clone_box(&self) -> Box<dyn ResourceInvoke> {
+        Box::new(self.clone())
     }
 }
 
@@ -217,7 +359,7 @@ pub(crate) fn load_action_manifest(path: &Path, manifest: &ActionManifest) -> Re
         description: manifest.description.clone(),
         directory: path.parent().unwrap().to_path_buf(),
         supported_operations,
-        manifest: serde_json::to_value(manifest)?,
+        manifest: manifest.clone(),
     };
     Ok(action)
 }

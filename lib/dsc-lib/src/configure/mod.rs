@@ -1,23 +1,23 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::actions::action_manifest::SupportedOperations;
 use crate::configure::config_doc::{ExecutionInformation, ResourceDirective};
 use crate::configure::context::{Context, ProcessMode};
 use crate::configure::parameters::{SecureObject, SecureString, import_parameters, is_secure_value};
 use crate::configure::{config_doc::{ExecutionKind, IntOrExpression, Metadata, Parameter, Resource, ResourceDiscoveryMode, RestartRequired, ValueOrCopy}};
 use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscerror::DscError;
-use crate::dscresources::invoke_result::{ResourceGetResponse, ResourceTestResponse};
 use crate::dscresources::{
-    {dscresource::{Capability, Invoke, get_diff, validate_properties, get_adapter_input_kind},
-    invoke_result::{DeleteResult, DeleteResultKind, GetResult, SetResult, TestResult, ExportResult, ResourceSetResponse}},
-    resource_manifest::{AdapterInputKind, ExportSchemaOrFiltering, Kind},
+    dscresource::{get_diff, validate_properties, get_adapter_input_kind},
+    resource_manifest::{AdapterInputKind, ExportSchemaOrFiltering},
 };
-use crate::DscResource;
-use crate::discovery::{Discovery, DscResourceKind};
+use crate::discovery::{Discovery, ResourceKind};
 use crate::parser::Statement;
 use crate::progress::{Failure, ProgressBar, ProgressFormat};
+use crate::resources::{
+    invoke_result::{DeleteResult, DeleteResultKind, GetResult, SetResult, TestResult, ExportResult, ResourceSetResponse},
+    resource_invoke::{Capability, ResourceInvoke},
+};
 use crate::types::{FullyQualifiedTypeName, SemanticVersion};
 use crate::util::resource_id;
 use self::config_doc::{Configuration, DataType, MicrosoftDscMetadata, Operation, SecurityContextKind};
@@ -119,7 +119,7 @@ macro_rules! find_resource_or_error {
 ///
 /// This function will return an error if the underlying resource fails.
 pub fn add_resource_export_results_to_configuration(
-    resource: &DscResource,
+    resource: &dyn ResourceInvoke,
     conf: &mut Configuration,
     input: &str,
 ) -> Result<ExportResult, DscError> {
@@ -128,7 +128,7 @@ pub fn add_resource_export_results_to_configuration(
     if !input.is_empty() && !resource_supports_export_filtering(resource) {
         input_filters = Some(parse_export_filter_input(input)?);
         resource_input = "";
-        info!("{}", t!("configure.mod.engineExportFiltering", resource = resource.type_name));
+        info!("{}", t!("configure.mod.engineExportFiltering", resource = resource.type_name()));
     }
 
     let start_datetime = chrono::Local::now();
@@ -139,7 +139,7 @@ pub fn add_resource_export_results_to_configuration(
         export_filter::apply_export_filter(&mut export_result.actual_state, filters);
     }
 
-    if resource.kind == Kind::Exporter {
+    if resource.kind() == ResourceKind::Exporter {
         for instance in &export_result.actual_state {
             let mut resource = serde_json::from_value::<Resource>(instance.clone())?;
             let execution_information = ExecutionInformation::new_with_duration(&start_datetime, &end_datetime);
@@ -149,17 +149,17 @@ pub fn add_resource_export_results_to_configuration(
     } else {
         for (i, instance) in export_result.actual_state.iter().enumerate() {
             let mut r: Resource = config_doc::Resource::new();
-            r.resource_type.clone_from(&resource.type_name);
+            r.resource_type.clone_from(&resource.type_name());
             let mut props: Map<String, Value> = serde_json::from_value(instance.clone())?;
             r.name = if let Some(name) = props.remove("_name") {
                 name.as_str()
                     .map(std::string::ToString::to_string)
                     .ok_or_else(|| DscError::Parser(t!("configure.mod.propertyNotString", name = "_name", value = name).to_string()))?
             } else {
-                let resource_type_short = if let Some(pos) = resource.type_name.find('/') {
-                    &resource.type_name[pos + 1..]
+                let resource_type_short = if let Some(pos) = resource.type_name().find('/') {
+                    &resource.type_name()[pos + 1..]
                 } else {
-                    &resource.type_name
+                    &resource.type_name()
                 };
                 format!("{resource_type_short}-{i}")
             };
@@ -197,13 +197,15 @@ pub fn add_resource_export_results_to_configuration(
 
 /// A resource supports native export filtering unless its manifest export method explicitly
 /// declares `supportsFiltering: false`.
-fn resource_supports_export_filtering(resource: &DscResource) -> bool {
-    !matches!(
-        resource.manifest.as_ref()
-            .and_then(|m| m.export.as_ref())
-            .and_then(|e| e.schema_or_filtering.as_ref()),
-        Some(ExportSchemaOrFiltering::SupportsFiltering(false))
-    )
+fn resource_supports_export_filtering(resource: &dyn ResourceInvoke) -> bool {
+    if let Some(manifest_kind) = resource.manifest() && let Ok(manifest) = manifest_kind.as_resource_manifest() {
+        !matches!(
+            manifest.export.as_ref().and_then(|e| e.schema_or_filtering.as_ref()),
+            Some(ExportSchemaOrFiltering::SupportsFiltering(false))
+        )
+    } else {
+        false
+    }
 }
 
 /// Parse export input into engine filters: a JSON object is a single filter while a JSON array
@@ -287,8 +289,8 @@ fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<
     Ok(Some(result))
 }
 
-fn add_metadata(dsc_resource: &DscResource, mut properties: Option<Map<String, Value>>, resource_metadata: Option<Metadata> ) -> Result<String, DscError> {
-    if dsc_resource.kind == Kind::Adapter && get_adapter_input_kind(dsc_resource)? == AdapterInputKind::Full {
+fn add_metadata(dsc_resource: &dyn ResourceInvoke, mut properties: Option<Map<String, Value>>, resource_metadata: Option<Metadata> ) -> Result<String, DscError> {
+    if dsc_resource.kind() == ResourceKind::Adapter && get_adapter_input_kind(dsc_resource)? == AdapterInputKind::Full {
         // add metadata to the properties so the adapter knows this is a config
         let mut metadata: Map<String, Value> = Map::new();
         if let Some(resource_metadata) = resource_metadata
@@ -577,7 +579,7 @@ impl Configurator {
         &mut self.discovery
     }
 
-    fn get_properties(&mut self, resource: &Resource, resource_kind: &DscResourceKind) -> Result<Option<Map<String, Value>>, DscError> {
+    fn get_properties(&mut self, resource: &Resource, dsc_resource: &dyn ResourceInvoke) -> Result<Option<Map<String, Value>>, DscError> {
         // Restore copy loop context from resource metadata under Microsoft.DSC/copyLoops if present
         if let Some(metadata) = &resource.metadata
             && let Some(microsoft) = &metadata.microsoft
@@ -590,22 +592,12 @@ impl Configurator {
                 }
             }
 
-        let result = match resource_kind {
-            DscResourceKind::Action(_) => {
+            let result = if dsc_resource.is_group() {
+                // if Group resource, we leave it to the resource to handle expressions
+                Ok(resource.properties.clone())
+            } else {
                 Ok(invoke_property_expressions(&mut self.statement_parser, &self.context, resource.properties.as_ref())?)
-            }
-            DscResourceKind::Resource(dsc_resource) => {
-                match dsc_resource.kind {
-                    Kind::Group => {
-                        // if Group resource, we leave it to the resource to handle expressions
-                        Ok(resource.properties.clone())
-                    },
-                    _ => {
-                    Ok(invoke_property_expressions(&mut self.statement_parser, &self.context, resource.properties.as_ref())?)
-                    },
-                }
-            },
-        };
+            };
 
         // Clear copy loop context after processing resource
         self.context.copy.clear();
@@ -642,72 +634,39 @@ impl Configurator {
             check_security_context(resource.metadata.as_ref(), directive_security_context)?;
             let adapter = get_require_adapter_from_directive(&resource.directives);
             find_resource_or_error!(dsc_resource, discovery, resource, adapter);
-            let properties = self.get_properties(&resource, &dsc_resource)?;
+            let properties = self.get_properties(&resource, &*dsc_resource)?;
             let start_datetime = chrono::Local::now();
-            let (get_result, execution_information, metadata) = match dsc_resource {
-                DscResourceKind::Action(dsc_action) => {
-                    let result = if dsc_action.supported_operations.contains(&SupportedOperations::Get) {
-                        let filter = serde_json::to_string(&properties).ok();
-                        match dsc_action.invoke(filter.as_deref(), &self.context.execution_type) {
-                            Ok(result) => result,
-                            Err(e) => {
-                                progress.set_failure(get_failure_from_error(&e));
-                                progress.write_increment(1);
-                                return Err(e);
-                            },
-                        }
-                    } else {
-                        info!("{}", t!("configure.mod.actionUnsupportedOperation", operation = "get", action = &dsc_action.type_name));
-                        Value::Null
-                    };
-                    let get_result_response = ResourceGetResponse {
-                        actual_state: result.clone(),
-                    };
-                    let end_datetime = chrono::Local::now();
-                    let execution_information = ExecutionInformation::new_with_duration(&start_datetime, &end_datetime);
-                    let metadata = Metadata {
-                        microsoft: Some(
-                            MicrosoftDscMetadata::new_with_duration(&start_datetime, &end_datetime)
-                        ),
-                        other: Map::new(),
-                    };
-                    (GetResult::Resource(get_result_response), execution_information, metadata)
-                }
-                DscResourceKind::Resource(dsc_resource) => {
-                    let filter = add_metadata(&dsc_resource, properties, resource.metadata.clone())?;
-                    let mut get_result = match dsc_resource.get(&filter) {
-                        Ok(result) => result,
-                        Err(e) => {
-                            progress.set_failure(get_failure_from_error(&e));
-                            progress.write_increment(1);
-                            return Err(e);
-                        },
-                    };
-                    let end_datetime = chrono::Local::now();
-                    let mut execution_information = ExecutionInformation::new_with_duration(&start_datetime, &end_datetime);
-                    let mut metadata = Metadata {
-                        microsoft: Some(
-                            MicrosoftDscMetadata::new_with_duration(&start_datetime, &end_datetime)
-                        ),
-                        other: Map::new(),
-                    };
-
-                    match get_result {
-                        GetResult::Resource(ref mut resource_result) => {
-                            self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), serde_json::to_value(&resource_result.actual_state)?);
-                            get_metadata_from_result(Some(&mut self.context), &mut resource_result.actual_state, &mut metadata, &mut execution_information)?;
-                        },
-                        GetResult::Group(ref group) => {
-                            let mut results = Vec::<Value>::new();
-                            for result in group {
-                                results.push(serde_json::to_value(&result.result)?);
-                            }
-                            self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), Value::Array(results.clone()));
-                        },
-                    }
-                    (get_result, execution_information, metadata)
-                }
+            let filter = add_metadata(&*dsc_resource, properties, resource.metadata.clone())?;
+            let mut get_result = match dsc_resource.get(&filter) {
+                Ok(result) => result,
+                Err(e) => {
+                    progress.set_failure(get_failure_from_error(&e));
+                    progress.write_increment(1);
+                    return Err(e);
+                },
             };
+            let end_datetime = chrono::Local::now();
+            let mut execution_information = ExecutionInformation::new_with_duration(&start_datetime, &end_datetime);
+            let mut metadata = Metadata {
+                microsoft: Some(
+                    MicrosoftDscMetadata::new_with_duration(&start_datetime, &end_datetime)
+                ),
+                other: Map::new(),
+            };
+
+            match get_result {
+                GetResult::Resource(ref mut resource_result) => {
+                    self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), serde_json::to_value(&resource_result.actual_state)?);
+                    get_metadata_from_result(Some(&mut self.context), &mut resource_result.actual_state, &mut metadata, &mut execution_information)?;
+                },
+                GetResult::Group(ref group) => {
+                    let mut results = Vec::<Value>::new();
+                    for result in group {
+                        results.push(serde_json::to_value(&result.result)?);
+                    }
+                    self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), Value::Array(results.clone()));
+                },
+            }
 
             let resource_result = config_result::ResourceGetResult {
                 execution_information: Some(execution_information),
@@ -767,65 +726,72 @@ impl Configurator {
             check_security_context(resource.metadata.as_ref(), directive_security_context)?;
             let adapter = get_require_adapter_from_directive(&resource.directives);
             find_resource_or_error!(dsc_resource, discovery, resource, adapter);
-            let properties = self.get_properties(&resource, &dsc_resource)?;
+            let properties = self.get_properties(&resource, &*dsc_resource)?;
             debug!("{}", t!("configure.mod.resourceType", resource_type = &resource.resource_type));
             let start_datetime = chrono::Local::now();
-            let (set_result, execution_information, metadata) = match dsc_resource {
-                DscResourceKind::Action(dsc_action) => {
-                    let result = if dsc_action.supported_operations.contains(&SupportedOperations::Set) {
-                        let filter = serde_json::to_string(&properties).ok();
-                        match dsc_action.invoke(filter.as_deref(), &self.context.execution_type) {
-                            Ok(result) => result,
-                            Err(e) => {
-                                progress.set_failure(get_failure_from_error(&e));
-                                progress.write_increment(1);
-                                return Err(e);
-                            },
-                        }
+            // see if the properties contains `_exist` and is false
+            let exist = match &properties {
+                Some(property_map) => {
+                    if let Some(exist) = property_map.get("_exist") {
+                        !matches!(exist, Value::Bool(false))
                     } else {
-                        info!("{}", t!("configure.mod.actionUnsupportedOperation", operation = "set", action = &dsc_action.type_name));
-                        Value::Null
-                    };
-                    let end_datetime = chrono::Local::now();
-                    let execution_information = ExecutionInformation::new_with_duration(&start_datetime, &end_datetime);
-                    let metadata = Metadata {
-                        microsoft: Some(
-                            MicrosoftDscMetadata::new_with_duration(&start_datetime, &end_datetime)
-                        ),
-                        other: Map::new(),
-                    };
-                    let set_response = ResourceSetResponse {
-                        before_state: result.clone(),
-                        after_state: result.clone(),
-                        changed_properties: None,
-                    };
-                    let set_result = SetResult::Resource(set_response);
-                    (set_result, execution_information, metadata)
+                        true
+                    }
+                },
+                _ => {
+                    true
                 }
-                DscResourceKind::Resource(dsc_resource) => {
-                    // see if the properties contains `_exist` and is false
-                    let exist = match &properties {
-                        Some(property_map) => {
-                            if let Some(exist) = property_map.get("_exist") {
-                                !matches!(exist, Value::Bool(false))
-                            } else {
-                                true
-                            }
-                        },
-                        _ => {
-                            true
+            };
+
+            let desired = add_metadata(&*dsc_resource, properties, resource.metadata.clone())?;
+            trace!("{}", t!("configure.mod.desired", state = desired));
+
+            let end_datetime;
+            let mut set_result;
+            let mut delete_what_if_metadata: Option<DeleteResult> = None;
+            if exist || dsc_resource.capabilities().contains(&Capability::SetHandlesExist) || dsc_resource.kind() == ResourceKind::Action {
+                debug!("{}", t!("configure.mod.handlesExist"));
+                set_result = match dsc_resource.set(&desired, skip_test, &self.context.execution_type) {
+                    Ok(result) => result,
+                    Err(e) => {
+                        progress.set_failure(get_failure_from_error(&e));
+                        progress.write_increment(1);
+                        return Err(e);
+                    },
+                };
+                end_datetime = chrono::Local::now();
+            } else if dsc_resource.capabilities().contains(&Capability::Delete) {
+                debug!("{}", t!("configure.mod.implementsDelete"));
+
+                let before_result = match dsc_resource.get(&desired) {
+                    Ok(result) => result,
+                    Err(e) => {
+                        progress.set_failure(get_failure_from_error(&e));
+                        progress.write_increment(1);
+                        return Err(e);
+                    },
+                };
+
+                let delete_result = match dsc_resource.delete(&desired, &self.context.execution_type) {
+                    Ok(result) => result,
+                    Err(e) => {
+                        progress.set_failure(get_failure_from_error(&e));
+                        progress.write_increment(1);
+                        return Err(e);
+                    },
+                };
+
+                match delete_result {
+                    DeleteResultKind::SyntheticWhatIf(test_result) => {
+                        end_datetime = chrono::Local::now();
+                        set_result = test_result.into();
+                    },
+                    _ => {
+                        if let DeleteResultKind::ResourceWhatIf(delete_res) = delete_result {
+                            delete_what_if_metadata = Some(delete_res);
                         }
-                    };
 
-                    let desired = add_metadata(&dsc_resource, properties, resource.metadata.clone())?;
-                    trace!("{}", t!("configure.mod.desired", state = desired));
-
-                    let end_datetime;
-                    let mut set_result;
-                    let mut delete_what_if_metadata: Option<DeleteResult> = None;
-                    if exist || dsc_resource.capabilities.contains(&Capability::SetHandlesExist) {
-                        debug!("{}", t!("configure.mod.handlesExist"));
-                        set_result = match dsc_resource.set(&desired, skip_test, &self.context.execution_type) {
+                        let after_result = match dsc_resource.get(&desired) {
                             Ok(result) => result,
                             Err(e) => {
                                 progress.set_failure(get_failure_from_error(&e));
@@ -834,108 +800,65 @@ impl Configurator {
                             },
                         };
                         end_datetime = chrono::Local::now();
-                    } else if dsc_resource.capabilities.contains(&Capability::Delete) {
-                        debug!("{}", t!("configure.mod.implementsDelete"));
 
-                        let before_result = match dsc_resource.get(&desired) {
-                            Ok(result) => result,
-                            Err(e) => {
-                                progress.set_failure(get_failure_from_error(&e));
-                                progress.write_increment(1);
-                                return Err(e);
-                            },
-                        };
-
-                        let delete_result = match dsc_resource.delete(&desired, &self.context.execution_type) {
-                            Ok(result) => result,
-                            Err(e) => {
-                                progress.set_failure(get_failure_from_error(&e));
-                                progress.write_increment(1);
-                                return Err(e);
-                            },
-                        };
-
-                        match delete_result {
-                            DeleteResultKind::SyntheticWhatIf(test_result) => {
-                                end_datetime = chrono::Local::now();
-                                set_result = test_result.into();
-                            },
-                            _ => {
-                                if let DeleteResultKind::ResourceWhatIf(delete_res) = delete_result {
-                                    delete_what_if_metadata = Some(delete_res);
+                        set_result = match before_result {
+                            GetResult::Resource(before_response) => {
+                                let GetResult::Resource(after_result) = after_result else {
+                                    return Err(DscError::NotSupported(t!("configure.mod.groupNotSupportedForDelete").to_string()))
+                                };
+                                let diff = get_diff(&before_response.actual_state, &after_result.actual_state);
+                                let mut before: Map<String, Value> = serde_json::from_value(before_response.actual_state)?;
+                                if before.contains_key("result") && !before.contains_key("resources") {
+                                    before.insert("resources".to_string(), before["result"].clone());
+                                    before.remove("result");
                                 }
-
-                                let after_result = match dsc_resource.get(&desired) {
-                                    Ok(result) => result,
-                                    Err(e) => {
-                                        progress.set_failure(get_failure_from_error(&e));
-                                        progress.write_increment(1);
-                                        return Err(e);
-                                    },
-                                };
-                                end_datetime = chrono::Local::now();
-
-                                set_result = match before_result {
-                                    GetResult::Resource(before_response) => {
-                                        let GetResult::Resource(after_result) = after_result else {
-                                            return Err(DscError::NotSupported(t!("configure.mod.groupNotSupportedForDelete").to_string()))
-                                        };
-                                        let diff = get_diff(&before_response.actual_state, &after_result.actual_state);
-                                        let mut before: Map<String, Value> = serde_json::from_value(before_response.actual_state)?;
-                                        if before.contains_key("result") && !before.contains_key("resources") {
-                                            before.insert("resources".to_string(), before["result"].clone());
-                                            before.remove("result");
-                                        }
-                                        let before_value = serde_json::to_value(&before)?;
-                                        SetResult::Resource(ResourceSetResponse {
-                                            before_state: before_value.clone(),
-                                            after_state: after_result.actual_state,
-                                            changed_properties: Some(diff),
-                                        })
-                                    },
-                                    GetResult::Group(_) => {
-                                        return Err(DscError::NotSupported(t!("configure.mod.groupNotSupportedForDelete").to_string()))
-                                    },
-                                };
+                                let before_value = serde_json::to_value(&before)?;
+                                SetResult::Resource(ResourceSetResponse {
+                                    before_state: before_value.clone(),
+                                    after_state: after_result.actual_state,
+                                    changed_properties: Some(diff),
+                                })
                             },
-                        }
-                    } else {
-                        return Err(DscError::NotImplemented(t!("configure.mod.deleteNotSupported", resource = resource.resource_type).to_string()));
-                    }
-
-                    // Process metadata - only add whatIf if we have ResourceWhatIf variant
-                    let mut execution_information = ExecutionInformation::new_with_duration(&start_datetime, &end_datetime);
-                    let mut other_metadata = Map::new();
-                    if self.context.execution_type == ExecutionKind::WhatIf
-                        && let Some(delete_res) = delete_what_if_metadata
-                        && let Some(metadata) = delete_res.metadata
-                        && let Some(what_if) = metadata.what_if {
-                            execution_information.what_if = Some(what_if.clone());
-                            other_metadata.insert("whatIf".to_string(), what_if);
-                        }
-
-                    let mut metadata = Metadata {
-                        microsoft: Some(
-                            MicrosoftDscMetadata::new_with_duration(&start_datetime, &end_datetime)
-                        ),
-                        other: other_metadata,
-                    };
-                    match &mut set_result {
-                        SetResult::Resource(resource_result) => {
-                            self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), serde_json::to_value(&resource_result.after_state)?);
-                            get_metadata_from_result(Some(&mut self.context), &mut resource_result.after_state, &mut metadata, &mut execution_information)?;
-                        },
-                        SetResult::Group(group) => {
-                            let mut results = Vec::<Value>::new();
-                            for result in group {
-                                results.push(serde_json::to_value(&result.result)?);
-                            }
-                            self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), Value::Array(results.clone()));
-                        },
-                    }
-                    (set_result, execution_information, metadata)
+                            GetResult::Group(_) => {
+                                return Err(DscError::NotSupported(t!("configure.mod.groupNotSupportedForDelete").to_string()))
+                            },
+                        };
+                    },
                 }
+            } else {
+                return Err(DscError::NotImplemented(t!("configure.mod.deleteNotSupported", resource = resource.resource_type).to_string()));
+            }
+
+            // Process metadata - only add whatIf if we have ResourceWhatIf variant
+            let mut execution_information = ExecutionInformation::new_with_duration(&start_datetime, &end_datetime);
+            let mut other_metadata = Map::new();
+            if self.context.execution_type == ExecutionKind::WhatIf
+                && let Some(delete_res) = delete_what_if_metadata
+                && let Some(metadata) = delete_res.metadata
+                && let Some(what_if) = metadata.what_if {
+                    execution_information.what_if = Some(what_if.clone());
+                    other_metadata.insert("whatIf".to_string(), what_if);
+                }
+
+            let mut metadata = Metadata {
+                microsoft: Some(
+                    MicrosoftDscMetadata::new_with_duration(&start_datetime, &end_datetime)
+                ),
+                other: other_metadata,
             };
+            match &mut set_result {
+                SetResult::Resource(resource_result) => {
+                    self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), serde_json::to_value(&resource_result.after_state)?);
+                    get_metadata_from_result(Some(&mut self.context), &mut resource_result.after_state, &mut metadata, &mut execution_information)?;
+                },
+                SetResult::Group(group) => {
+                    let mut results = Vec::<Value>::new();
+                    for result in group {
+                        results.push(serde_json::to_value(&result.result)?);
+                    }
+                    self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), Value::Array(results.clone()));
+                },
+            }
 
             let resource_result = config_result::ResourceSetResult {
                 execution_information: Some(execution_information),
@@ -991,78 +914,41 @@ impl Configurator {
             check_security_context(resource.metadata.as_ref(), directive_security_context)?;
             let adapter = get_require_adapter_from_directive(&resource.directives);
             find_resource_or_error!(dsc_resource, discovery, resource, adapter);
-            let properties = self.get_properties(&resource, &dsc_resource)?;
+            let properties = self.get_properties(&resource, &*dsc_resource)?;
             debug!("{}", t!("configure.mod.resourceType", resource_type = &resource.resource_type));
 
             let start_datetime = chrono::Local::now();
-            let (test_result, execution_information, metadata) = match dsc_resource {
-                DscResourceKind::Action(dsc_action) => {
-let result = if dsc_action.supported_operations.contains(&SupportedOperations::Test) {
-                        let filter = serde_json::to_string(&properties).ok();
-                        match dsc_action.invoke(filter.as_deref(), &self.context.execution_type) {
-                            Ok(result) => result,
-                            Err(e) => {
-                                progress.set_failure(get_failure_from_error(&e));
-                                progress.write_increment(1);
-                                return Err(e);
-                            },
-                        }
-                    } else {
-                        info!("{}", t!("configure.mod.actionUnsupportedOperation", operation = "test", action = &dsc_action.type_name));
-                        Value::Null
-                    };
-                    let end_datetime = chrono::Local::now();
-                    let execution_information = ExecutionInformation::new_with_duration(&start_datetime, &end_datetime);
-                    let metadata = Metadata {
-                        microsoft: Some(
-                            MicrosoftDscMetadata::new_with_duration(&start_datetime, &end_datetime)
-                        ),
-                        other: Map::new(),
-                    };
-                    let test_response = ResourceTestResponse {
-                        desired_state: result.clone(),
-                        actual_state: result.clone(),
-                        in_desired_state: true,
-                        diff_properties: Vec::new(),
-                    };
-                    let test_result = TestResult::Resource(test_response);
-                    (test_result, execution_information, metadata)
-                }
-                DscResourceKind::Resource(dsc_resource) => {
-                    let expected = add_metadata(&dsc_resource, properties, resource.metadata.clone())?;
-                    trace!("{}", t!("configure.mod.expectedState", state = expected));
-                    let mut test_result = match dsc_resource.test(&expected) {
-                        Ok(result) => result,
-                        Err(e) => {
-                            progress.set_failure(get_failure_from_error(&e));
-                            progress.write_increment(1);
-                            return Err(e);
-                        },
-                    };
-                    let end_datetime = chrono::Local::now();
-                    let mut execution_information = ExecutionInformation::new_with_duration(&start_datetime, &end_datetime);
-                    let mut metadata = Metadata {
-                        microsoft: Some(
-                            MicrosoftDscMetadata::new_with_duration(&start_datetime, &end_datetime)
-                        ),
-                        other: Map::new(),
-                    };
-                    match &mut test_result {
-                        TestResult::Resource(resource_test_result) => {
-                            self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), serde_json::to_value(&resource_test_result.actual_state)?);
-                            get_metadata_from_result(Some(&mut self.context), &mut resource_test_result.actual_state, &mut metadata, &mut execution_information)?;
-                        },
-                        TestResult::Group(group) => {
-                            let mut results = Vec::<Value>::new();
-                            for result in group {
-                                results.push(serde_json::to_value(&result.result)?);
-                            }
-                            self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), Value::Array(results.clone()));
-                        },
-                    }
-                    (test_result, execution_information, metadata)
-                }
+            let expected = add_metadata(&*dsc_resource, properties, resource.metadata.clone())?;
+            trace!("{}", t!("configure.mod.expectedState", state = expected));
+            let mut test_result = match dsc_resource.test(&expected) {
+                Ok(result) => result,
+                Err(e) => {
+                    progress.set_failure(get_failure_from_error(&e));
+                    progress.write_increment(1);
+                    return Err(e);
+                },
             };
+            let end_datetime = chrono::Local::now();
+            let mut execution_information = ExecutionInformation::new_with_duration(&start_datetime, &end_datetime);
+            let mut metadata = Metadata {
+                microsoft: Some(
+                    MicrosoftDscMetadata::new_with_duration(&start_datetime, &end_datetime)
+                ),
+                other: Map::new(),
+            };
+            match &mut test_result {
+                TestResult::Resource(resource_test_result) => {
+                    self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), serde_json::to_value(&resource_test_result.actual_state)?);
+                    get_metadata_from_result(Some(&mut self.context), &mut resource_test_result.actual_state, &mut metadata, &mut execution_information)?;
+                },
+                TestResult::Group(group) => {
+                    let mut results = Vec::<Value>::new();
+                    for result in group {
+                        results.push(serde_json::to_value(&result.result)?);
+                    }
+                    self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), Value::Array(results.clone()));
+                },
+            }
 
             let resource_result = config_result::ResourceTestResult {
                 execution_information: Some(execution_information),
@@ -1120,42 +1006,20 @@ let result = if dsc_action.supported_operations.contains(&SupportedOperations::T
             check_security_context(resource.metadata.as_ref(), directive_security_context)?;
             let adapter = get_require_adapter_from_directive(&resource.directives);
             find_resource_or_error!(dsc_resource, discovery, resource, adapter);
-            let properties = self.get_properties(resource, &dsc_resource)?;
+            let properties = self.get_properties(resource, &*dsc_resource)?;
             debug!("{}", t!("configure.mod.resourceType", resource_type = &resource.resource_type));
-            let export_result = match dsc_resource {
-                DscResourceKind::Action(dsc_action) => {
-                    let result = if dsc_action.supported_operations.contains(&SupportedOperations::Export) {
-                        let filter = serde_json::to_string(&properties).ok();
-                        match dsc_action.invoke(filter.as_deref(), &self.context.execution_type) {
-                            Ok(result) => result,
-                            Err(e) => {
-                                progress.set_failure(get_failure_from_error(&e));
-                                progress.write_increment(1);
-                                return Err(e);
-                            },
-                        }
-                    } else {
-                        info!("{}", t!("configure.mod.actionUnsupportedOperation", operation = "export", action = &dsc_action.type_name));
-                        Value::Null
-                    };
-                    ExportResult { actual_state: vec![result.clone()] }
-                }
-                DscResourceKind::Resource(dsc_resource) => {
-                    let input = add_metadata(&dsc_resource, properties, resource.metadata.clone())?;
-                    trace!("{}", t!("configure.mod.exportInput", input = input));
-                    match add_resource_export_results_to_configuration(
-                        &dsc_resource,
-                        &mut conf,
-                        input.as_str(),
-                    ) {
-                        Ok(result) => result,
-                        Err(e) => {
-                            progress.set_failure(get_failure_from_error(&e));
-                            progress.write_increment(1);
-                            return Err(e);
-                        },
-                    }
-                }
+            let input = serde_json::to_string(&properties)?;
+            let export_result = match add_resource_export_results_to_configuration(
+                &*dsc_resource,
+                &mut conf,
+                &input,
+            ) {
+                Ok(result) => result,
+                Err(e) => {
+                    progress.set_failure(get_failure_from_error(&e));
+                    progress.write_increment(1);
+                    return Err(e);
+                },
             };
             self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), serde_json::to_value(&export_result.actual_state)?);
             progress.set_result(&serde_json::to_value(export_result)?);
@@ -1699,6 +1563,7 @@ fn get_failure_from_error(err: &DscError) -> Option<Failure> {
 
 #[cfg(test)]
 mod tests {
+    use crate::dscresources::dscresource::DscResource;
     use super::*;
     use serde_json::json;
 

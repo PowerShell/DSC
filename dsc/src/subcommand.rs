@@ -6,8 +6,7 @@ use crate::resolve::{get_contents, Include};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
 use crate::util::{current_dsc_version, get_input, get_schema, in_desired_state, set_dscconfigroot, write_object, DSC_CONFIG_ROOT, EXIT_DSC_ASSERTION_FAILED, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_VALIDATION_FAILED};
-use dsc_lib::actions::action_manifest::{ActionManifest, SupportedOperations};
-use dsc_lib::discovery::DscResourceKind;
+use dsc_lib::actions::action_manifest::SupportedOperations;
 use dsc_lib::types::{FullyQualifiedTypeName, ResourceVersionReq, TypeNameFilter};
 use dsc_lib::{
     configure::{
@@ -23,18 +22,13 @@ use dsc_lib::{
     discovery::command_discovery::ImportedManifest,
     dscerror::DscError,
     DscManager,
-    dscresources::invoke_result::{
-        ResolveResult,
-        TestResult,
-        ValidateResult,
-    },
-    dscresources::dscresource::{Capability, validate_json, validate_properties},
+    dscresources::dscresource::{validate_json, validate_properties},
     extensions::dscextension::Capability as ExtensionCapability,
     functions::{FunctionCategory, FunctionDispatcher},
     progress::ProgressFormat,
+    resources::{invoke_result::{TestResult, ValidateResult, ResolveResult},resource_invoke::Capability},
     util::convert_wildcard_to_regex,
 };
-use jsonschema::Validator;
 use regex::RegexBuilder;
 use rust_i18n::t;
 use std::process::ExitCode;
@@ -543,24 +537,7 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
             return Err(DscError::Validation(format!("{}: '{type_name}'", t!("subcommand.resourceNotFound"))));
         };
 
-        match resource {
-            DscResourceKind::Action(action) => {
-                if let Some(input_schema) = &action.input_schema && resource_block["properties"] != serde_json::Value::Null {
-                    let compiled_schema = match Validator::new(input_schema) {
-                        Ok(schema) => schema,
-                        Err(e) => {
-                            return Err(DscError::Schema(e.to_string()));
-                        },
-                    };
-                    if let Err(err) = compiled_schema.validate(&resource_block["properties"]) {
-                        return Err(DscError::Schema(err.to_string()));
-                    }
-                }
-            }
-            DscResourceKind::Resource(resource) => {
-                validate_properties(&resource, &resource_block["properties"])?;
-            }
-        }
+        validate_properties(&*resource, &resource_block["properties"])?;
     }
 
     Ok(())
@@ -700,11 +677,8 @@ fn list_actions(dsc: &mut DscManager, action_name: &TypeNameFilter, format: Opti
 
     for manifest_resource in dsc.list_available(&DiscoveryKind::Action, action_name, None, progress_format) {
         if let ImportedManifest::Action(action) = manifest_resource {
-            let Ok(manifest) = serde_json::from_value::<ActionManifest>(action.manifest.clone()) else {
-                return Err(ExitCode::from(EXIT_DSC_ERROR));
-            };
             let mut operations_supported = "-".repeat(operation_types.len());
-            if let Some(supported_operations) = &manifest.supported_operations {
+            if let Some(supported_operations) = &action.manifest.supported_operations {
                 for (i, (operation, letter)) in operation_types.iter().enumerate() {
                     if supported_operations.contains(operation) {
                         operations_supported.replace_range(i..=i, letter);

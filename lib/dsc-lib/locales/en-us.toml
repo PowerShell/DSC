@@ -291,6 +291,7 @@ retrievedSchemaFromCache = "Retrieved schema for resource '%{resource}' with ver
 exportResult = "Export result: %{result}"
 json = "JSON: %{json}"
 schema = "Schema: %{schema}"
+invokeNotSupported = "Invoke operation is not supported for resource '%{resource}'"
 
 [dscresources.resource_manifest]
 resourceManifestSchemaTitle = "Resource manifest schema URI"
@@ -1047,6 +1048,10 @@ policyFolderNotSecure = "Policy folder '%{path}' is not secure, settings file wi
 policyFolderNotSecureLinux = "Only root should have write access (no group/other write bits)"
 policyFolderNotSecureWindows = "Only SYSTEM and Administrators should have write access"
 ignoreSettingsFile = "Ignoring settings file due to environment variable 'DSC_IGNORE_SETTINGS_FILE' being set or '--ignore-settings-file' flag being used"
+
+[resources]
+notAnAction = "Invalid request to retrieve action manifest from a non-action"
+notAResource = "Invalid request to retrieve resource manifest from a non-resource"
 
 [types.date_version]
 invalidDay = "day `%{day}` for month `%{month}` is invalid - must be between `01` and `%{max_days}`"

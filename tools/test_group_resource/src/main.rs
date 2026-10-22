@@ -5,8 +5,9 @@ mod args;
 
 use args::{Args, SubCommand};
 use clap::Parser;
-use dsc_lib::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
+use dsc_lib::dscresources::dscresource::{DscResource, ImplementedAs};
 use dsc_lib::dscresources::resource_manifest::{GetMethod, Kind, ResourceManifest};
+use dsc_lib::resources::resource_invoke::Capability;
 use dsc_lib::schemas::dsc_repo::DscRepoSchema;
 use std::path::PathBuf;
 

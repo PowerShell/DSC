@@ -6,7 +6,7 @@ use dsc_lib::{
     DscManager, configure::config_doc::ExecutionKind,
     discovery::{
         discovery_trait::DiscoveryFilter,
-        DscResourceKind,
+        ResourceKind,
     },
     types::FullyQualifiedTypeName
 };
@@ -55,11 +55,14 @@ description = "Invoke a DSC action with specified properties in JSON format. Set
             let Some(resource) = dsc.find_resource(&DiscoveryFilter::new(&type_name, None, None)).unwrap_or(None) else {
                 return Err(McpError::invalid_request(t!("server.invoke_dsc_action.actionNotFound", resource = type_name), None));
             };
-            let action = match resource {
-                DscResourceKind::Action(action) => action,
-                DscResourceKind::Resource(_) => return Err(McpError::invalid_request(t!("server.invoke_dsc_action.resourceNotSupported", resource = type_name), None)),
+            if resource.kind() != ResourceKind::Action {
+                return Err(McpError::invalid_request(t!("server.invoke_dsc_action.resourceNotSupported", resource = type_name), None));
+            }
+            let input = match properties_json {
+                Some(json) => json,
+                None => "".to_string(),
             };
-            match action.invoke(properties_json.as_deref(), &execution_kind) {
+            match resource.invoke(&input, &execution_kind) {
                 Ok(result) => Ok(result),
                 Err(e) => Err(McpError::internal_error(e.to_string(), None)),
             }

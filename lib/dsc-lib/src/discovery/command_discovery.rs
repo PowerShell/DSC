@@ -2,47 +2,29 @@
 // Licensed under the MIT License.
 
 use crate::{
-    actions::{
-        action_manifest::ActionManifest,
-        dscaction::{
-            DscAction,
-            load_action_manifest,
-        },
-    },
-    discovery::{
-        DiscoveryActionCache,
-        DiscoveryExtensionCache,
-        DiscoveryManifestCache,
-        DiscoveryResourceCache,
-        discovery_trait::{
-            DiscoveryFilter,
-            DiscoveryKind,
-            ResourceDiscovery
-        },
-        matches_adapter_requirement
-    },
-    dscresources::{
-        adapted_resource_manifest::AdaptedDscResourceManifest,
-        resource_manifest::SetDeleteArgKind
-    },
+    actions::{action_manifest::ActionManifest, dscaction::{DscAction, load_action_manifest}},
+    discovery::{DiscoveryExtensionCache, DiscoveryManifestCache, DiscoveryCache,
+    discovery_trait::{DiscoveryFilter, DiscoveryKind, ResourceDiscovery}, matches_adapter_requirement},
+    dscresources::{adapted_resource_manifest::AdaptedDscResourceManifest, resource_manifest::SetDeleteArgKind},
     parser::Statement,
-    types::{
-        FullyQualifiedTypeName,
-        TypeNameFilter
-    }
+    resources::resource_invoke::ResourceInvoke,
+    types::{FullyQualifiedTypeName, TypeNameFilter}
 };
 use crate::{locked_clear, locked_is_empty, locked_extend, locked_clone, locked_get};
 use crate::configure::{config_doc::ResourceDiscoveryMode, context::Context};
 use crate::dscresources::adapted_resource_manifest::AdaptedPathOrContent;
-use crate::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
+use crate::dscresources::dscresource::{DscResource, ImplementedAs};
 use crate::dscresources::resource_manifest::{Kind, ResourceManifest, SchemaKind};
 use crate::dscresources::command_resource::invoke_command;
 use crate::dscerror::DscError;
 use crate::extensions::dscextension::{self, DscExtension, Capability as ExtensionCapability};
 use crate::extensions::extension_manifest::ExtensionManifest;
 use crate::progress::{ProgressBar, ProgressFormat};
+use crate::resources::resource_invoke::Capability;
 use crate::schemas::dsc_repo::DscRepoSchema;
 use crate::schemas::transforms::idiomaticize_externally_tagged_enum;
+use crate::util::get_setting;
+use crate::util::{canonicalize_which, get_exe_path};
 use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::Deserialize;
@@ -55,8 +37,6 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use tracing::{debug, info, trace, warn};
 
-use crate::util::get_setting;
-use crate::util::{canonicalize_which, get_exe_path};
 
 // NOTE: if new types of file extensions are added, ensure they are added to `process_discover_args` in `lib/dsc-lib/src/extensions/discover.rs`
 pub const DSC_ACTION_EXTENSIONS: [&str; 3] = [".dsc.action.json", ".dsc.action.yaml", ".dsc.action.yml"];
@@ -65,11 +45,10 @@ pub const DSC_EXTENSION_EXTENSIONS: [&str; 3] = [".dsc.extension.json", ".dsc.ex
 pub const DSC_MANIFEST_LIST_EXTENSIONS: [&str; 3] = [".dsc.manifests.json", ".dsc.manifests.yaml", ".dsc.manifests.yml"];
 pub const DSC_RESOURCE_EXTENSIONS: [&str; 3] = [".dsc.resource.json", ".dsc.resource.yaml", ".dsc.resource.yml"];
 
-static ACTIONS: LazyLock<RwLock<DiscoveryActionCache>> = LazyLock::new(|| RwLock::new(DiscoveryActionCache::new()));
-static ADAPTERS: LazyLock<RwLock<DiscoveryResourceCache>> = LazyLock::new(|| RwLock::new(DiscoveryResourceCache::new()));
-static RESOURCES: LazyLock<RwLock<DiscoveryResourceCache>> = LazyLock::new(|| RwLock::new(DiscoveryResourceCache::new()));
+static ADAPTERS: LazyLock<RwLock<DiscoveryCache>> = LazyLock::new(|| RwLock::new(DiscoveryCache::new()));
+static RESOURCES: LazyLock<RwLock<DiscoveryCache>> = LazyLock::new(|| RwLock::new(DiscoveryCache::new()));
 static EXTENSIONS: LazyLock<RwLock<DiscoveryExtensionCache>> = LazyLock::new(|| RwLock::new(DiscoveryExtensionCache::new()));
-static ADAPTED_RESOURCES: LazyLock<RwLock<DiscoveryResourceCache>> = LazyLock::new(|| RwLock::new(DiscoveryResourceCache::new()));
+static ADAPTED_RESOURCES: LazyLock<RwLock<DiscoveryCache>> = LazyLock::new(|| RwLock::new(DiscoveryCache::new()));
 
 #[derive(Deserialize, JsonSchema, DscRepoSchema)]
 #[dsc_repo_schema(base_name = "list", folder_path = "manifests")]
@@ -131,9 +110,6 @@ impl CommandDiscovery {
 
     #[must_use]
     pub fn get_extensions(&self) -> DiscoveryExtensionCache { locked_clone!(EXTENSIONS) }
-
-    #[must_use]
-    pub fn get_actions(&self) -> DiscoveryActionCache { locked_clone!(ACTIONS) }
 
     fn get_resource_path_setting() -> Result<ResourcePathSetting, DscError>
     {
@@ -265,7 +241,6 @@ impl ResourceDiscovery for CommandDiscovery {
 if self.discovery_mode == ResourceDiscoveryMode::PreDeployment && kind == &DiscoveryKind::Resource && !locked_is_empty!(RESOURCES) {
             return Ok(());
         } else if self.discovery_mode == ResourceDiscoveryMode::DuringDeployment {
-            locked_clear!(ACTIONS);
             locked_clear!(ADAPTERS);
             locked_clear!(RESOURCES);
         }
@@ -291,9 +266,8 @@ if self.discovery_mode == ResourceDiscoveryMode::PreDeployment && kind == &Disco
             },
         }
 
-        let mut actions = DiscoveryActionCache::new();
-        let mut adapters = DiscoveryResourceCache::new();
-        let mut resources = DiscoveryResourceCache::new();
+        let mut adapters = DiscoveryCache::new();
+        let mut resources = DiscoveryCache::new();
         let mut extensions = DiscoveryExtensionCache::new();
 
         if let Ok(paths) = CommandDiscovery::get_resource_paths() {
@@ -335,7 +309,7 @@ if self.discovery_mode == ResourceDiscoveryMode::PreDeployment && kind == &Disco
                                         ImportedManifest::Action(action) => {
                                             if filter.is_match(&action.type_name) {
                                                 trace!("{}", t!("discovery.commandDiscovery.actionFound", action = action.type_name, version = action.version));
-                                                insert_action(&mut actions, &action);
+                                                insert_resource(&mut resources, Box::new(action));
                                             }
                                         },
                                         ImportedManifest::Extension(extension) => {
@@ -356,15 +330,15 @@ if self.discovery_mode == ResourceDiscoveryMode::PreDeployment && kind == &Disco
                                                 if let Some(manifest) = &resource.manifest {
                                                     if manifest.kind == Some(Kind::Adapter) {
                                                         trace!("{}", t!("discovery.commandDiscovery.adapterFound", adapter = resource.type_name, version = resource.version));
-                                                        insert_resource(&mut adapters, &resource);
+                                                        insert_resource(&mut adapters, Box::new(resource.clone()));
                                                     }
                                                     // also make sure to add adapters as a resource as well
                                                     trace!("{}", t!("discovery.commandDiscovery.resourceFound", resource = resource.type_name, version = resource.version));
-                                                    insert_resource(&mut resources, &resource);
+                                                    insert_resource(&mut resources, Box::new(resource.clone()));
                                                 }
                                                 if let Some(_adapter) = &resource.require_adapter {
                                                     trace!("{}", t!("discovery.commandDiscovery.adaptedResourceFound", resource = resource.type_name, version = resource.version));
-                                                    insert_resource(&mut resources, &resource);
+                                                    insert_resource(&mut resources, Box::new(resource.clone()));
                                                 }
                                             }
                                         }
@@ -380,13 +354,10 @@ if self.discovery_mode == ResourceDiscoveryMode::PreDeployment && kind == &Disco
         progress.write_increment(1);
 
         match kind {
-            DiscoveryKind::Action => {
-                locked_extend!(ACTIONS, actions);
-            }
             DiscoveryKind::Extension => {
                 locked_extend!(EXTENSIONS, extensions);
             }
-            DiscoveryKind::Resource => {
+            DiscoveryKind::Resource | DiscoveryKind::Action=> {
                 // Now we need to call discover extensions and add those resource to the list of resources
                 for extension in locked_clone!(EXTENSIONS).values() {
                     if extension.capabilities.contains(&ExtensionCapability::Discover) {
@@ -402,7 +373,7 @@ if self.discovery_mode == ResourceDiscoveryMode::PreDeployment && kind == &Disco
                         for resource in discovered_resources {
                             if filter.is_match(&resource.type_name) {
                                 trace!("{}", t!("discovery.commandDiscovery.extensionResourceFound", resource = resource.type_name));
-                                insert_resource(&mut resources, &resource);
+                                insert_resource(&mut resources, Box::new(resource));
                             }
                         }
                     }
@@ -436,7 +407,7 @@ if self.discovery_mode == ResourceDiscoveryMode::PreDeployment && kind == &Disco
         let mut progress = ProgressBar::new(adapters.len() as u64, self.progress_format)?;
         progress.write_activity("Searching for adapted resources");
 
-        let mut adapted_resources = DiscoveryResourceCache::new();
+        let mut adapted_resources = DiscoveryCache::new();
 
         let mut found_adapter: bool = false;
         for (adapter_name, adapters) in &adapters {
@@ -450,6 +421,9 @@ if self.discovery_mode == ResourceDiscoveryMode::PreDeployment && kind == &Disco
                 found_adapter = true;
                 let mut adapter_progress = ProgressBar::new(1, self.progress_format)?;
                 adapter_progress.write_activity(format!("Enumerating resources for adapter '{adapter_name}'").as_str());
+                let Some(adapter) = adapter.as_dsc_resource() else {
+                    return Err(DscError::AdapterNotFound(adapter_name.to_string()));
+                };
                 let Some(manifest) = &adapter.manifest else {
                     return Err(DscError::MissingManifest(adapter_name.to_string()));
                 };
@@ -482,7 +456,7 @@ if self.discovery_mode == ResourceDiscoveryMode::PreDeployment && kind == &Disco
                                 }
 
                                 if name_filter.is_match(&resource.type_name) {
-                                    insert_resource(&mut adapted_resources, &resource);
+                                    insert_resource(&mut adapted_resources, Box::new(resource));
                                     adapter_resources_count += 1;
                                 }
                             },
@@ -517,8 +491,14 @@ if self.discovery_mode == ResourceDiscoveryMode::PreDeployment && kind == &Disco
         match *kind {
             DiscoveryKind::Action => {
                 self.discover(kind, type_name_filter)?;
-                for (action_name, actions_vec) in &locked_clone!(ACTIONS) {
-                    resources.insert(action_name.clone(), actions_vec.iter().map(|a| ImportedManifest::Action(a.clone())).collect());
+                for (action_name, actions_vec) in &locked_clone!(RESOURCES) {
+                    let mut imported_manifests = Vec::new();
+                    for action in actions_vec {
+                        if let Some(action) = action.as_action() {
+                            imported_manifests.push(ImportedManifest::Action(action.clone()));
+                        }
+                    }
+                    resources.insert(action_name.clone(), imported_manifests);
                 }
             }
             DiscoveryKind::Extension => {
@@ -537,15 +517,33 @@ if self.discovery_mode == ResourceDiscoveryMode::PreDeployment && kind == &Disco
                     add_resources_to_lookup_table(&adapted_resources);
 
                     for (adapted_name, adapted_vec) in &adapted_resources {
-                        resources.insert(adapted_name.clone(), adapted_vec.iter().map(|r| ImportedManifest::Resource(r.clone())).collect());
+                        let mut imported_manifests = Vec::new();
+                        for adapted in adapted_vec {
+                            if let Some(resource) = adapted.as_dsc_resource() {
+                                imported_manifests.push(ImportedManifest::Resource(resource.clone()));
+                            }
+                        }
+                        resources.insert(adapted_name.clone(), imported_manifests);
                     }
                 } else {
                     self.discover(kind, type_name_filter)?;
                     for (resource_name, resources_vec) in &locked_clone!(RESOURCES) {
-                        resources.insert(resource_name.clone(), resources_vec.iter().map(|r| ImportedManifest::Resource(r.clone())).collect());
+                        let mut imported_manifests = Vec::new();
+                        for r in resources_vec {
+                            if let Some(resource) = r.as_dsc_resource() {
+                                imported_manifests.push(ImportedManifest::Resource(resource.clone()));
+                            }
+                        }
+                        resources.insert(resource_name.clone(), imported_manifests);
                     }
                     for (adapter_name, adapter_vec) in &locked_clone!(ADAPTERS) {
-                        resources.insert(adapter_name.clone(), adapter_vec.iter().map(|r| ImportedManifest::Resource(r.clone())).collect());
+                        let mut imported_manifests = Vec::new();
+                        for r in adapter_vec {
+                            if let Some(resource) = r.as_dsc_resource() {
+                                imported_manifests.push(ImportedManifest::Resource(resource.clone()));
+                            }
+                        }
+                        resources.insert(adapter_name.clone(), imported_manifests);
                     }
                 }
             },
@@ -554,46 +552,20 @@ if self.discovery_mode == ResourceDiscoveryMode::PreDeployment && kind == &Disco
         Ok(resources)
     }
 
-    fn find_actions(&mut self, required_action_types: &[DiscoveryFilter]) -> Result<DiscoveryActionCache, DscError> {
-        if self.discovery_mode == ResourceDiscoveryMode::DuringDeployment || locked_is_empty!(ACTIONS) {
-            self.discover(&DiscoveryKind::Action, &TypeNameFilter::default())?;
-        }
-        let mut found_actions = DiscoveryActionCache::new();
-        let mut required_actions = HashMap::<DiscoveryFilter, bool>::new();
-        for filter in required_action_types {
-            required_actions.insert(filter.clone(), false);
-        }
-
-        for filter in required_action_types {
-            if let Some(actions) = locked_get!(ACTIONS, filter.resource_type()) {
-                filter_actions(&mut found_actions, &mut required_actions, &actions, filter);
-            }
-            if required_actions.values().all(|&v| v) {
-                break;
-            }
-        }
-
-        if required_actions.values().all(|&v| v) {
-            return Ok(found_actions);
-        }
-
-        Ok(found_actions)
-    }
-
-    fn find_resources(&mut self, required_resource_types: &[DiscoveryFilter]) -> Result<DiscoveryResourceCache, DscError> {
+    fn find(&mut self, required_resource_types: &[DiscoveryFilter]) -> Result<DiscoveryCache, DscError> {
         debug!("{}", t!("discovery.commandDiscovery.searchingForResources", resources = required_resource_types : {:?}));
         if self.discovery_mode == ResourceDiscoveryMode::DuringDeployment || locked_is_empty!(RESOURCES) {
             self.discover(&DiscoveryKind::Resource, &TypeNameFilter::default())?;
         }
-        let mut found_resources = DiscoveryResourceCache::new();
+        let mut found_resources = DiscoveryCache::new();
         let mut required_resources = HashMap::<DiscoveryFilter, bool>::new();
         for filter in required_resource_types {
             required_resources.insert(filter.clone(), false);
         }
 
         for filter in required_resource_types {
-            if let Some(resources) = locked_get!(RESOURCES, filter.resource_type()) {
-                filter_resources(&mut found_resources, &mut required_resources, &resources, filter);
+            if let Some(resource) = locked_get!(RESOURCES, filter.resource_type()) {
+                filter_resources(&mut found_resources, &mut required_resources, &resource, filter);
             }
             if required_resources.values().all(|&v| v) {
                 break;
@@ -674,14 +646,7 @@ if self.discovery_mode == ResourceDiscoveryMode::PreDeployment && kind == &Disco
         Ok(found_resources)
     }
 
-    fn get_actions(&mut self) -> Result<DiscoveryActionCache, DscError> {
-        if locked_is_empty!(ACTIONS) {
-            self.discover(&DiscoveryKind::Action, &TypeNameFilter::default())?;
-        }
-        Ok(locked_clone!(ACTIONS))
-    }
-
-    fn get_extensions(&mut self) -> Result<DiscoveryExtensionCache, DscError> {
+    fn extensions(&mut self) -> Result<DiscoveryExtensionCache, DscError> {
         if locked_is_empty!(EXTENSIONS) {
             self.discover(&DiscoveryKind::Extension, &TypeNameFilter::default())?;
         }
@@ -693,16 +658,16 @@ if self.discovery_mode == ResourceDiscoveryMode::PreDeployment && kind == &Disco
     }
 }
 
-fn filter_resources(found_resources: &mut DiscoveryResourceCache, required_resources: &mut HashMap<DiscoveryFilter, bool>, resources: &[DscResource], filter: &DiscoveryFilter) {
+fn filter_resources(found_resources: &mut DiscoveryCache, required_resources: &mut HashMap<DiscoveryFilter, bool>, resources: &[Box<dyn ResourceInvoke>], filter: &DiscoveryFilter) {
     for resource in resources {
         if let Some(required_version) = filter.require_version() {
-            if required_version.matches(&resource.version) && matches_adapter_requirement(resource, filter) {
+            if required_version.matches(&resource.version()) && matches_adapter_requirement(resource.as_ref(), filter) {
                 found_resources.entry(filter.resource_type().clone()).or_default().push(resource.clone());
                 required_resources.insert(filter.clone(), true);
-                debug!("{}", t!("discovery.commandDiscovery.foundResourceWithVersion", resource = resource.type_name, version = resource.version));
+                debug!("{}", t!("discovery.commandDiscovery.foundResourceWithVersion", resource = resource.type_name(), version = resource.version()));
                 break;
             }
-        } else if matches_adapter_requirement(resource, filter) {
+        } else if matches_adapter_requirement(resource.as_ref(), filter) {
             found_resources.entry(filter.resource_type().clone()).or_default().push(resource.clone());
             required_resources.insert(filter.clone(), true);
             break;
@@ -713,56 +678,19 @@ fn filter_resources(found_resources: &mut DiscoveryResourceCache, required_resou
     }
 }
 
-fn filter_actions(found_actions: &mut DiscoveryActionCache, required_resources: &mut HashMap<DiscoveryFilter, bool>, actions: &[DscAction], filter: &DiscoveryFilter) {
-    for action in actions {
-        if let Some(required_version) = filter.require_version() {
-            if required_version.matches(&crate::types::ResourceVersion::Semantic(action.version.clone())) {
-                found_actions.entry(filter.resource_type().clone()).or_default().push(action.clone());
-                required_resources.insert(filter.clone(), true);
-                debug!("{}", t!("discovery.commandDiscovery.foundActionWithVersion", resource = action.type_name, version = action.version));
-                break;
-            }
-        } else {
-            found_actions.entry(filter.resource_type().clone()).or_default().push(action.clone());
-            required_resources.insert(filter.clone(), true);
-            break;
-        }
-        if required_resources.values().all(|&v| v) {
-            return;
-        }
-    }
-}
-
-fn insert_action(actions: &mut DiscoveryActionCache, action: &DscAction) {
-    if let Some(existing_actions) = actions.get_mut(&action.type_name) {
-        // compare the action versions and insert newest to oldest using semver
-        let mut insert_index = existing_actions.len();
-        for (index, action_instance) in existing_actions.iter().enumerate() {
-            if action_instance.version < action.version {
-                insert_index = index;
-                break;
-            }
-        }
-        existing_actions.insert(insert_index, action.clone());
-    } else {
-        actions.insert(action.type_name.clone(), vec![action.clone()]);
-    }
-}
-
-/// Inserts a resource into tree adding to vector if already exists
-fn insert_resource(resources: &mut DiscoveryResourceCache, resource: &DscResource) {
-    if let Some(resource_versions) = resources.get_mut(&resource.type_name) {
+fn insert_resource(resources: &mut DiscoveryCache, resource: Box<dyn ResourceInvoke>) {
+    if let Some(resource_versions) = resources.get_mut(&resource.type_name()) {
         // compare the resource versions and insert newest to oldest using semver
         let mut insert_index = resource_versions.len();
         for (index, resource_instance) in resource_versions.iter().enumerate() {
-            if resource_instance.version < resource.version {
+            if resource_instance.version() < resource.version() {
                 insert_index = index;
                 break;
             }
         }
-        resource_versions.insert(insert_index, resource.clone());
+        resource_versions.insert(insert_index, resource);
     } else {
-        resources.insert(resource.type_name.clone(), vec![resource.clone()]);
+        resources.insert(resource.type_name().clone(), vec![resource]);
     }
 }
 
@@ -1197,13 +1125,13 @@ pub fn verify_executable(resource: &str, operation: &str, executable: &str, dire
     }
 }
 
-fn add_resources_to_lookup_table(adapted_resources: &DiscoveryResourceCache)
+fn add_resources_to_lookup_table(adapted_resources: &DiscoveryCache)
 {
     let mut lookup_table = load_adapted_resources_lookup_table();
 
     let mut lookup_table_changed = false;
     for (resource_name, res_vec) in adapted_resources {
-        if let Some(adapter_name) = &res_vec[0].require_adapter {
+        if let Some(resource) = &res_vec[0].as_dsc_resource() && let Some(adapter_name) = &resource.require_adapter {
             let new_value = adapter_name.to_string();
             let oldvalue = lookup_table.insert(resource_name.to_string().to_lowercase(), new_value.clone());
             if !lookup_table_changed && (oldvalue.is_none() || oldvalue.is_some_and(|val| val != new_value)) {

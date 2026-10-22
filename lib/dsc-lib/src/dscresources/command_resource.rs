@@ -8,16 +8,12 @@ use rust_i18n::t;
 use serde::Deserialize;
 use serde_json::{Map, Value};
 use std::{collections::HashMap, env, path::Path, process::Stdio};
-use crate::{configure::{config_doc::{ExecutionKind, SecurityContextKind}, config_result::{ResourceGetResult, ResourceTestResult}, schema_cache::{RESOURCE_SCHEMAS, get_resource_schema}}, dscresources::{dscresource::Operation, resource_manifest::{ExportSchemaKind, ExportSchemaOrFiltering, SchemaArgKind}}, types::ExitCodesMap, util::canonicalize_which};
+use crate::{configure::{config_doc::{ExecutionKind, SecurityContextKind, Operation}, config_result::{ResourceGetResult, ResourceTestResult}, schema_cache::{RESOURCE_SCHEMAS, get_resource_schema}}, dscresources::{resource_manifest::{ExportSchemaKind, ExportSchemaOrFiltering, SchemaArgKind}}, types::ExitCodesMap, util::canonicalize_which};
 use crate::dscerror::DscError;
 use crate::locked_insert;
+use crate::resources::invoke_result::{DeleteResult, DeleteResultKind, GetResult, SetResult, TestResult, ValidateResult, ResolveResult, ExportResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse, get_in_desired_state};
 use super::{
     dscresource::{get_diff, get_diff_with_schema, redact, DscResource},
-    invoke_result::{
-        DeleteResult, DeleteResultKind, ExportResult,
-        GetResult, ResolveResult, SetResult, TestResult, ValidateResult,
-        ResourceGetResponse, ResourceSetResponse, ResourceTestResponse, get_in_desired_state
-    },
     resource_manifest::{
         GetArgKind, SetDeleteArgKind, InputKind, Kind, ReturnKind, SchemaKind
     }
