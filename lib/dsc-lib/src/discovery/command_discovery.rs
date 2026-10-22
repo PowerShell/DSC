@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{discovery::{DiscoveryExtensionCache, DiscoveryManifestCache, DiscoveryResourceCache, discovery_trait::{DiscoveryFilter, DiscoveryKind, ResourceDiscovery}, matches_adapter_requirement}, dscresources::{adapted_resource_manifest::AdaptedDscResourceManifest, resource_manifest::SetDeleteArgKind}, parser::Statement, types::{FullyQualifiedTypeName, TypeNameFilter}};
+use crate::{discovery::{DiscoveryExtensionCache, DiscoveryManifestCache, DiscoveryResourceCache, discovery_trait::{DiscoveryFilter, DiscoveryKind, ResourceDiscovery}, matches_adapter_requirement}, dscresources::{adapted_resource_manifest::AdaptedDscResourceManifest, resource_manifest::SetDeleteArgKind}, parser::Statement, settings::fields::ResourcePathResolvedSettings, types::{FullyQualifiedTypeName, TypeNameFilter}};
 use crate::{locked_clear, locked_is_empty, locked_extend, locked_clone, locked_get};
 use crate::configure::{config_doc::ResourceDiscoveryMode, context::Context};
 use crate::dscresources::adapted_resource_manifest::AdaptedPathOrContent;
@@ -14,6 +14,7 @@ use crate::extensions::extension_manifest::ExtensionManifest;
 use crate::progress::{ProgressBar, ProgressFormat};
 use crate::schemas::dsc_repo::DscRepoSchema;
 use crate::schemas::transforms::idiomaticize_externally_tagged_enum;
+use crate::settings::global as global_settings;
 use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::Deserialize;
@@ -23,10 +24,10 @@ use std::env;
 use std::ffi::OsStr;
 use std::fs::{create_dir_all, read, read_to_string, write};
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
+// use std::str::FromStr;
 use tracing::{debug, info, trace, warn};
 
-use crate::util::get_setting;
+// use crate::util::get_setting;
 use crate::util::{canonicalize_which, get_exe_path};
 
 // NOTE: if new types of file extensions are added, ensure they are added to `process_discover_args` in `lib/dsc-lib/src/extensions/discover.rs`
@@ -58,34 +59,20 @@ pub enum ImportedManifest {
     Extension(DscExtension),
 }
 
-
 #[derive(Clone)]
 pub struct CommandDiscovery {
     progress_format: ProgressFormat,
     discovery_mode: ResourceDiscoveryMode,
 }
 
-#[derive(Deserialize)]
-pub struct ResourcePathSetting {
-    /// whether to allow overriding with the `DSC_RESTRICTED_PATH` or `DSC_RESOURCE_PATH` environment variables
-    #[serde(rename = "allowEnvOverride")]
-    allow_env_override: bool,
-    /// whether to append the PATH environment variable to the list of resource directories
-    #[serde(rename = "appendEnvPath")]
-    append_env_path: bool,
-    /// array of directories that DSC should search for non-built-in resources
-    directories: Vec<String>
-}
-
-impl Default for ResourcePathSetting {
-    fn default() -> ResourcePathSetting {
-        ResourcePathSetting {
-            allow_env_override: true,
-            append_env_path: true,
-            directories: vec![],
-        }
-    }
-}
+/// Cache for resolved resource paths.
+///
+/// This cache enables us to compute the directories to search for manifests
+/// and executables once, making repeated lookups much quicker. It also
+/// avoids the potential munging of the PATH environment variable.
+///
+/// This cache is used and surfaced by [`CommandDiscovery::get_resource_paths`].
+static RESOLVED_RESOURCE_PATHS: LazyLock<RwLock<Vec<PathBuf>>> = LazyLock::new(|| RwLock::new(Vec::new()));
 
 impl CommandDiscovery {
     #[must_use]
@@ -99,121 +86,174 @@ impl CommandDiscovery {
     #[must_use]
     pub fn get_extensions(&self) -> DiscoveryExtensionCache { locked_clone!(EXTENSIONS) }
 
-    fn get_resource_path_setting() -> Result<ResourcePathSetting, DscError>
-    {
-        if let Ok(v) = get_setting("resourcePath") {
-            // if there is a policy value defined - use it; otherwise use setting value
-            if v.policy != serde_json::Value::Null {
-                match serde_json::from_value::<ResourcePathSetting>(v.policy) {
-                    Ok(v) => {
-                        return Ok(v);
-                    },
-                    Err(e) => { return Err(DscError::Setting(format!("{e}"))); }
-                }
-            } else if v.setting != serde_json::Value::Null {
-                match serde_json::from_value::<ResourcePathSetting>(v.setting) {
-                    Ok(v) => {
-                        return Ok(v);
-                    },
-                    Err(e) => { return Err(DscError::Setting(format!("{e}"))); }
-                }
+    /// Retrieves the resolved resource paths, computing and caching them if
+    /// necessary.
+    ///
+    /// This associated function first checks whether the resource paths have
+    /// already been resolved and cached. If they have, it returns the cached
+    /// paths immediately.
+    ///
+    /// When resolving the resource paths, the function retrieves the resolved
+    /// DSC settings and:
+    ///
+    /// 1. If `resourcePath.restricted` is `true`, overrides `PATH` with the
+    ///    value of `resourcePath.directories`.
+    /// 1. If `resourcePath.restricted` is `false`, ensures that the folder
+    ///    containing the DSC executable is included in both the `PATH`
+    ///    environment variable and the list of resource path directories.
+    ///
+    ///    If `resourcePath.appendEnvPath` is `true`, appends the directories
+    ///    in `PATH` to the list of resource path directories.
+    /// 1. Ensures the set of directories is unique, removing duplicates.
+    /// 1. Caches the resolved set of directories and returns them.
+    ///
+    /// # Returns
+    ///
+    /// Returns a `Result` containing the list of resolved resource paths if
+    /// successful, or a [`DscError`] if an error occurs.
+    ///
+    /// # Errors
+    ///
+    /// This function raises errors when:
+    ///
+    /// - `resourcePath.restricted` is `true` and `resourcePath.directories`
+    ///   is an empty list, because DSC won't be able to discover any manifests
+    ///   or invoke any commands.
+    /// - When the `PATH` environment variable isn't defined or is defined
+    ///   incorrectly.
+    /// - When joining the directories into a new `PATH` fails, which could
+    ///   occur due to invalid paths in `resourcePath.directories` or system
+    ///   limitations.
+    fn get_resource_paths() -> Result<Vec<PathBuf>, DscError> {
+        // Check if the resource paths have already been resolved and cached;
+        // if so, return the cached paths immediately to avoid redundant
+        // computation and potentially mutating PATH repeatedly.
+        if let Ok(resolved_paths) = RESOLVED_RESOURCE_PATHS.read()
+            && !resolved_paths.is_empty() {
+                return Ok(resolved_paths.clone());
             }
-        }
 
-        Err(DscError::Setting(t!("discovery.commandDiscovery.couldNotReadSetting").to_string()))
-    }
+        let ResourcePathResolvedSettings{
+            directories,
+            restricted,
+            append_env_path
+        } = &global_settings::get_or_init().resolved().resource_path.clone();
 
-    fn get_resource_paths() -> Result<Vec<PathBuf>, DscError>
-    {
-        let mut resource_path_setting = ResourcePathSetting::default();
+        let mut dirs = directories.value.clone();
 
-        match Self::get_resource_path_setting() {
-            Ok(v) => {
-                resource_path_setting = v;
-            },
-            Err(e) => {
-                debug!("{e}");
+        if restricted.value {
+            // If the resource path is restricted and directories is empty,
+            // raise error - DSC won't be able to invoke or discover any
+            // commands.
+            if directories.value.is_empty() {
+                let msg = t!("discovery.commandDiscovery.restrictedResourcePathEmptyDirectories").to_string();
+                return Err(DscError::Operation(msg));
             }
-        }
-
-        let mut paths: Vec<PathBuf> = vec![];
-
-        let dsc_restricted_path = env::var_os("DSC_RESTRICTED_PATH");
-        let dsc_resource_path = env::var_os("DSC_RESOURCE_PATH");
-        if resource_path_setting.allow_env_override && let Some(restricted_path) = &dsc_restricted_path {
-            debug!("{}", t!("discovery.commandDiscovery.restrictedPath", path = restricted_path.to_string_lossy() : {:?}));
-            paths.append(&mut env::split_paths(&restricted_path).collect::<Vec<_>>());
-
-            // when using restricted path, intent is to isolate the search of manifests and executables to the restricted path
-            // so we replace the PATH with the restricted path
-            if let Ok(new_path) = env::join_paths(paths.clone()) {
+            // If the directories doesn't include the DSC executable home, warn
+            // the user that no built-in manifests or commands will be usable.
+            if !dirs_contains_exe_home(&directories.value)? {
+                // Warning for not-included exe home in restricted directories
+                warn!("{}", t!(
+                    "discovery.commandDiscovery.warnExeHomeNotInRestrictedPath",
+                    dirs = serde_json::to_string_pretty(&directories.value).unwrap(),
+                    exe_home = get_exe_path()?.parent().unwrap_or_else(|| Path::new("")).to_string_lossy(),
+                ))
+            }
+            // when using restricted path, intent is to isolate the search of
+            // manifests and executables to the restricted path so we replace
+            // the PATH with `directories`
+            if let Ok(new_path) = env::join_paths(directories.value.clone()) {
+                trace!(
+                    "Setting resourcePath.restricted resolved as 'true'; overriding PATH with restricted directories: '{}'",
+                    new_path.display()
+                );
                 unsafe {
                     env::set_var("PATH", new_path);
                 }
             } else {
                 return Err(DscError::Operation(t!("discovery.commandDiscovery.failedJoinRestrictedPath").to_string()));
             }
-        } else if resource_path_setting.allow_env_override && let Some(resource_path) = &dsc_resource_path {
-            debug!("{}", t!("discovery.commandDiscovery.resourcePath", path = resource_path.to_string_lossy() : {:?}));
-            paths.append(&mut env::split_paths(&resource_path).collect::<Vec<_>>());
-
-            // just add exe home to PATH env var if not already in PATH env var
-            let env_paths = env::var_os("PATH").map(|paths| env::split_paths(&paths).collect::<Vec<_>>()).unwrap_or_default();
-            _ = add_exe_home_to_path(env_paths)?;
         } else {
-            for p in resource_path_setting.directories {
-                let v = PathBuf::from_str(&p);
-                paths.push(v.unwrap_or_default());
-            }
+            let Some(current_env_path) = env::var_os("PATH") else {
+                return Err(DscError::Operation(t!("discovery.commandDiscovery.failedGetEnvPath").to_string()));
+            };
 
-            if resource_path_setting.append_env_path {
-                debug!("{}", t!("discovery.commandDiscovery.appendingEnvPath"));
-                match env::var_os("PATH") {
-                    Some(value) => {
-                        trace!("{}", t!("discovery.commandDiscovery.originalPath", path = value.to_string_lossy()));
-                        paths.append(&mut env::split_paths(&value).collect::<Vec<_>>());
-                    },
-                    None => {
-                        return Err(DscError::Operation(t!("discovery.commandDiscovery.failedGetEnvPath").to_string()));
+            // if exe home is not already in PATH env var then add it to env var
+            // and list of searched paths
+            if let Some(exe_home) = get_exe_path()?.parent() {
+                let exe_home_pb = &exe_home.to_path_buf();
+                let mut env_paths = env::split_paths(&current_env_path).collect::<Vec<_>>();
+                if env_paths.contains(exe_home_pb) {
+                    trace!("{}", t!("discovery.commandDiscovery.exeHomeAlreadyInPath", path = exe_home.to_string_lossy()));
+                } else {
+                    trace!("{}", t!("discovery.commandDiscovery.addExeHomeToPath", path = exe_home.to_string_lossy()));
+
+                    env_paths.push(exe_home_pb.clone());
+
+                    if let Ok(new_path) = env::join_paths(env_paths) {
+                        unsafe {
+                            env::set_var("PATH", new_path);
+                        }
+                    } else {
+                        warn!("{}", t!("discovery.commandDiscovery.failedJoinEnvPath").to_string());
                     }
+                }
+
+                if !dirs.contains(exe_home_pb) {
+                    dirs.push(exe_home_pb.clone());
                 }
             }
 
-            // if exe home is not already in PATH env var then add it to env var and list of searched paths
-            paths = add_exe_home_to_path(paths)?;
+            // If `append_env_path` is true, append the current PATH to the list
+            // of directories to search
+            if append_env_path.value {
+                debug!("{}", t!("discovery.commandDiscovery.appendingEnvPath"));
+                trace!("{}", t!("discovery.commandDiscovery.originalPath", path = current_env_path.to_string_lossy()));
+                dirs.append(&mut env::split_paths(&current_env_path).collect::<Vec<_>>());
+            }
         }
 
         // remove duplicate entries
         let mut uniques: HashSet<PathBuf> = HashSet::new();
-        paths.retain(|e|uniques.insert((*e).clone()));
+        dirs.retain(|e|uniques.insert((*e).clone()));
 
-        if let Ok(final_resource_path) = env::join_paths(paths.clone()) {
+        if let Ok(final_resource_path) = env::join_paths(dirs.clone()) {
             debug!("{}", t!("discovery.commandDiscovery.usingResourcePath", path = final_resource_path.to_string_lossy()));
         }
 
-        Ok(paths)
+        // Cache the resolved resource paths for future use
+        if let Ok(mut resolved_paths) = RESOLVED_RESOURCE_PATHS.write() {
+            *resolved_paths = dirs.clone();
+        }
+
+        Ok(dirs)
     }
 }
 
-fn add_exe_home_to_path(mut paths: Vec<PathBuf>) -> Result<Vec<PathBuf>, DscError> {
+/// Indicates whether the given list of directories contains the DSC
+/// executable's home directory.
+///
+/// # Arguments
+///
+/// - `dirs` - A reference to a slice of `PathBuf` representing the directories
+///   to check.
+///
+/// # Returns
+///
+/// A `Result` with the value `true` if the executable's home directory is in
+/// the list of directories and `false` otherwise, or a [`DscError`] if an
+/// error occurs.
+/// 
+/// # Errors
+/// 
+/// This function raises an error when it fails to retrieve the DSC
+/// executable's home directory.
+fn dirs_contains_exe_home(dirs: &[PathBuf]) -> Result<bool, DscError> {
     if let Some(exe_home) = get_exe_path()?.parent() {
-        let exe_home_pb = exe_home.to_path_buf();
-        if paths.contains(&exe_home_pb) {
-            trace!("{}", t!("discovery.commandDiscovery.exeHomeAlreadyInPath", path = exe_home.to_string_lossy()));
-        } else {
-            trace!("{}", t!("discovery.commandDiscovery.addExeHomeToPath", path = exe_home.to_string_lossy()));
-            paths.push(exe_home_pb);
-
-            if let Ok(new_path) = env::join_paths(paths.clone()) {
-                unsafe {
-                    env::set_var("PATH", new_path);
-                }
-            } else {
-                warn!("{}", t!("discovery.commandDiscovery.failedJoinEnvPath").to_string());
-            }
-        }
+        Ok(dirs.contains(&exe_home.to_path_buf()))
+    } else {
+        Ok(false)
     }
-    Ok(paths)
 }
 
 impl Default for CommandDiscovery {
@@ -223,7 +263,6 @@ impl Default for CommandDiscovery {
 }
 
 impl ResourceDiscovery for CommandDiscovery {
-
     #[allow(clippy::too_many_lines)]
     fn discover(&mut self, kind: &DiscoveryKind, filter: &TypeNameFilter) -> Result<(), DscError> {
         if self.discovery_mode == ResourceDiscoveryMode::PreDeployment && !locked_is_empty!(RESOURCES) {

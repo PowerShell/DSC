@@ -4,7 +4,7 @@
 use args::{Args, SubCommand};
 use clap::{CommandFactory, Parser};
 use clap_complete::generate;
-use dsc_lib::{progress::ProgressFormat, util::DSC_IGNORE_SETTINGS_FILE};
+use dsc_lib::{progress::ProgressFormat, settings::{DscSettings, DscSettingsScope, global as global_settings, sources::EnvironmentData}};
 use server::start_server;
 use rust_i18n::{i18n, t};
 use std::{env::set_var, io, process::ExitCode};
@@ -78,14 +78,31 @@ fn dsc_main() -> Result<(), ExitCode> {
 
     let args = Args::parse();
 
-    // if args.ignore_settings_file is set, we create an env var called `DSC_IGNORE_SETTINGS_FILE` set to value 1
-    if args.ignore_settings_file {
-        unsafe {
-            set_var(DSC_IGNORE_SETTINGS_FILE, "1");
-        }
-    }
+    // Initialize with local settings; reload for global after tracing init
+    let mut settings = DscSettings::new_with_command_line((&args).into());
+    settings.load();
 
-    util::enable_tracing(args.trace_level.as_ref(), args.trace_format.as_ref());
+    util::enable_tracing(settings.resolved());
+
+    let mut global_settings = global_settings::get_or_init_with_command_line((&args).into());
+    global_settings.load();
+    global_settings.resolve_all();
+    // if ignoring settings files is set from CLI, we create an env var called
+    // `DSC_IGNORE_SETTINGS_FILE` set to value 1 for recursive invocations
+    if global_settings.ignoring_settings_files()
+        && global_settings.resolved().ignore_settings_file.scope == DscSettingsScope::CommandLine {
+            unsafe {
+                set_var(EnvironmentData::DSC_IGNORE_SETTINGS_FILE_ENV_VAR, "1");
+            }
+        }
+    // Set the DSC_TRACE_LEVEL environment variable for child processes
+    unsafe {
+        env::set_var(
+            EnvironmentData::DSC_TRACE_LEVEL_ENV_VAR,
+            global_settings.resolved().tracing.level.value.clone().to_string()
+        );
+    }
+    drop(global_settings);
 
     debug!("{}: {}", t!("main.usingDscVersion"), env!("CARGO_PKG_VERSION"));
 
