@@ -64,6 +64,8 @@ pub struct ResourceManifest {
     pub kind: Option<Kind>,
     /// The version of the resource using semantic versioning.
     pub version: ResourceVersion,
+    /// The author of the resource.
+    pub author: Option<String>,
     /// The description of the resource.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,

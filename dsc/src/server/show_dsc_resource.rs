@@ -2,12 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::server::mcp_server::McpServer;
-use dsc_lib::{
-    DscManager, discovery::{DscResourceKind, discovery_trait::DiscoveryFilter}, dscresources::{
-        dscresource::{Capability, Invoke},
-        resource_manifest::Kind
-    }, types::{FullyQualifiedTypeName, ResourceVersion},
-};
+use dsc_lib::{DscManager, discovery::discovery_trait::DiscoveryFilter, dscresources::resource_manifest::Kind, resources::resource_invoke::Capability, types::{FullyQualifiedTypeName, ResourceVersion}};
 use rmcp::{ErrorData as McpError, Json, tool, tool_router, handler::server::wrapper::Parameters};
 use rust_i18n::t;
 use schemars::{JsonSchema, json_schema};
@@ -64,14 +59,16 @@ impl McpServer {
             let Some(resource) = dsc.find_resource(&DiscoveryFilter::new(&r#type, None, None)).unwrap_or(None) else {
                 return Err(McpError::invalid_params(t!("server.show_dsc_resource.resourceNotFound", type_name = r#type), None))
             };
-            let resource = match resource {
-                DscResourceKind::Resource(res) => res,
-                DscResourceKind::Action(_) => return Err(McpError::invalid_params(t!("server.show_dsc_resource.actionNotSupported", type_name = r#type), None)),
-            };
+
             let schema = match resource.schema() {
                 Ok(schema_str) => serde_json::from_str(&schema_str).ok(),
                 Err(_) => None,
             };
+
+            let Some(resource) = resource.as_dsc_resource() else {
+                return Err(McpError::invalid_params(t!("server.show_dsc_resource.resourceNotSupported", type_name = r#type), None));
+            };
+
             Ok(DscResource {
                 r#type: resource.type_name.clone(),
                 kind: resource.kind.clone(),

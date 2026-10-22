@@ -5,21 +5,18 @@ use crate::args::{GetOutputFormat, OutputFormat};
 use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_JSON_ERROR, EXIT_DSC_RESOURCE_NOT_FOUND, write_object};
 use dsc_lib::configure::config_doc::{Configuration, ExecutionKind};
 use dsc_lib::configure::add_resource_export_results_to_configuration;
-use dsc_lib::discovery::DscResourceKind;
+use dsc_lib::discovery::ResourceKind;
 use dsc_lib::discovery::discovery_trait::DiscoveryFilter;
-use dsc_lib::dscresources::{resource_manifest::Kind, invoke_result::{DeleteResultKind, GetResult, ResourceGetResponse, ResourceSetResponse, SetResult}};
-use dsc_lib::dscresources::dscresource::{Capability, get_diff};
+use dsc_lib::DscManager;
+use dsc_lib::dscresources::dscresource::get_diff;
 use dsc_lib::dscerror::DscError;
+use dsc_lib::resources::{invoke_result::{DeleteResultKind, GetResult, ResourceGetResponse, SetResult, ResourceSetResponse}, resource_invoke::{Capability, ResourceInvoke}};
 use dsc_lib::types::{FullyQualifiedTypeName, ResourceVersionReq};
 use rust_i18n::t;
 use serde_json::Value;
 use std::process::ExitCode;
 use tracing::{debug, error, info};
 
-use dsc_lib::{
-    dscresources::dscresource::Invoke,
-    DscManager
-};
 
 pub fn get(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, version: Option<&ResourceVersionReq>, input: &str, format: Option<&GetOutputFormat>) -> Result<(), ExitCode> {
     let Some(resource) = get_resource(dsc, resource_type, version) else {
@@ -27,17 +24,8 @@ pub fn get(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, version
         return Err(ExitCode::from(EXIT_DSC_RESOURCE_NOT_FOUND));
     };
 
-    let resource = match resource {
-        DscResourceKind::Action(_) => {
-            error!("{}: {}", t!("resource_command.invalidOperationOnAction"), resource_type);
-            return Err(ExitCode::from(EXIT_DSC_ERROR));
-        }
-        DscResourceKind::Resource(resource) => resource,
-    };
-
-    debug!("{} {} {:?}", resource.type_name, t!("resource_command.implementedAs"), resource.implemented_as);
-    if resource.kind == Kind::Adapter {
-        error!("{}: {}", t!("resource_command.invalidOperationOnAdapter"), resource.type_name);
+    if resource.kind() == ResourceKind::Action || resource.kind() == ResourceKind::Adapter {
+        error!("{}", t!("resource_command.invalidOperation", resource = resource.type_name()));
         return Err(ExitCode::from(EXIT_DSC_ERROR));
     }
 
@@ -87,17 +75,8 @@ pub fn get_all(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, ver
         return Err(ExitCode::from(EXIT_DSC_RESOURCE_NOT_FOUND));
     };
 
-    let resource = match resource {
-        DscResourceKind::Action(_) => {
-            error!("{}: {}", t!("resource_command.invalidOperationOnAction"), resource_type);
-            return Err(ExitCode::from(EXIT_DSC_ERROR));
-        }
-        DscResourceKind::Resource(res) => res,
-    };
-
-    debug!("{} {} {:?}", resource.type_name, t!("resource_command.implementedAs"), resource.implemented_as);
-    if resource.kind == Kind::Adapter {
-        error!("{}: {}", t!("resource_command.invalidOperationOnAdapter"), resource.type_name);
+    if resource.kind() == ResourceKind::Action || resource.kind() == ResourceKind::Adapter {
+        error!("{}", t!("resource_command.invalidOperation", resource = resource.type_name()));
         return Err(ExitCode::from(EXIT_DSC_ERROR));
     }
 
@@ -158,17 +137,8 @@ pub fn set(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, version
         return Err(ExitCode::from(EXIT_DSC_RESOURCE_NOT_FOUND));
     };
 
-    let resource = match resource {
-        DscResourceKind::Action(_) => {
-            error!("{}: {}", t!("resource_command.invalidOperationOnAction"), resource_type);
-            return Err(ExitCode::from(EXIT_DSC_ERROR));
-        }
-        DscResourceKind::Resource(res) => res,
-    };
-
-    debug!("{} {} {:?}", resource.type_name, t!("resource_command.implementedAs"), resource.implemented_as);
-    if resource.kind == Kind::Adapter {
-        error!("{}: {}", t!("resource_command.invalidOperationOnAdapter"), resource.type_name);
+    if resource.kind() == ResourceKind::Action || resource.kind() == ResourceKind::Adapter {
+        error!("{}", t!("resource_command.invalidOperation", resource = resource.type_name()));
         return Err(ExitCode::from(EXIT_DSC_ERROR));
     }
 
@@ -185,7 +155,7 @@ pub fn set(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, version
         Err(_) => true,
     };
 
-    if !exist && resource.capabilities.contains(&Capability::Delete) && !resource.capabilities.contains(&Capability::SetHandlesExist) {
+    if !exist && resource.capabilities().contains(&Capability::Delete) && !resource.capabilities().contains(&Capability::SetHandlesExist) {
         debug!("{}", t!("resource_command.routingToDelete"));
 
         let before_state = match resource.get(input) {
@@ -261,17 +231,8 @@ pub fn test(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, versio
         return Err(ExitCode::from(EXIT_DSC_RESOURCE_NOT_FOUND));
     };
 
-    let resource = match resource {
-        DscResourceKind::Action(_) => {
-            error!("{}: {}", t!("resource_command.invalidOperationOnAction"), resource_type);
-            return Err(ExitCode::from(EXIT_DSC_ERROR));
-        }
-        DscResourceKind::Resource(res) => res,
-    };
-
-    debug!("{} {} {:?}", resource.type_name, t!("resource_command.implementedAs"), resource.implemented_as);
-    if resource.kind == Kind::Adapter {
-        error!("{}: {}", t!("resource_command.invalidOperationOnAdapter"), resource.type_name);
+    if resource.kind() == ResourceKind::Action || resource.kind() == ResourceKind::Adapter {
+        error!("{}", t!("resource_command.invalidOperation", resource = resource.type_name()));
         return Err(ExitCode::from(EXIT_DSC_ERROR));
     }
 
@@ -301,17 +262,8 @@ pub fn delete(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, vers
         return Err(ExitCode::from(EXIT_DSC_RESOURCE_NOT_FOUND));
     };
 
-    let resource = match resource {
-        DscResourceKind::Action(_) => {
-            error!("{}: {}", t!("resource_command.invalidOperationOnAction"), resource_type);
-            return Err(ExitCode::from(EXIT_DSC_ERROR));
-        }
-        DscResourceKind::Resource(res) => res,
-    };
-
-    debug!("{} {} {:?}", resource.type_name, t!("resource_command.implementedAs"), resource.implemented_as);
-    if resource.kind == Kind::Adapter {
-        error!("{}: {}", t!("resource_command.invalidOperationOnAdapter"), resource.type_name);
+    if resource.kind() == ResourceKind::Action || resource.kind() == ResourceKind::Adapter {
+        error!("{}", t!("resource_command.invalidOperation", resource = resource.type_name()));
         return Err(ExitCode::from(EXIT_DSC_ERROR));
     }
 
@@ -332,7 +284,7 @@ pub fn delete(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, vers
                     }
                 },
                 DeleteResultKind::SyntheticWhatIf(_) => {
-                    info!("{} {}", resource.type_name, t!("resource_command.syntheticWhatIf"));
+                    info!("{} {}", resource.type_name(), t!("resource_command.syntheticWhatIf"));
                 }
             }
         },
@@ -350,16 +302,8 @@ pub fn schema(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, vers
         return Err(ExitCode::from(EXIT_DSC_RESOURCE_NOT_FOUND));
     };
 
-    let resource = match resource {
-        DscResourceKind::Action(_) => {
-            error!("{}: {}", t!("resource_command.invalidOperationOnAction"), resource_type);
-            return Err(ExitCode::from(EXIT_DSC_ERROR));
-        }
-        DscResourceKind::Resource(res) => res,
-    };
-
-    if resource.kind == Kind::Adapter {
-        error!("{}: {}", t!("resource_command.invalidOperationOnAdapter"), resource.type_name);
+    if resource.kind() == ResourceKind::Action || resource.kind() == ResourceKind::Adapter {
+        error!("{}", t!("resource_command.invalidOperation", resource = resource.type_name()));
         return Err(ExitCode::from(EXIT_DSC_ERROR));
     }
 
@@ -389,21 +333,13 @@ pub fn export(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, vers
         return Err(ExitCode::from(EXIT_DSC_RESOURCE_NOT_FOUND));
     };
 
-    let dsc_resource = match dsc_resource {
-        DscResourceKind::Action(_) => {
-            error!("{}: {}", t!("resource_command.invalidOperationOnAction"), resource_type);
-            return Err(ExitCode::from(EXIT_DSC_ERROR));
-        }
-        DscResourceKind::Resource(res) => res,
-    };
-
-    if dsc_resource.kind == Kind::Adapter {
-        error!("{}: {}", t!("resource_command.invalidOperationOnAdapter"), dsc_resource.type_name);
+    if dsc_resource.kind() == ResourceKind::Action || dsc_resource.kind() == ResourceKind::Adapter {
+        error!("{}", t!("resource_command.invalidOperation", resource = dsc_resource.type_name()));
         return Err(ExitCode::from(EXIT_DSC_ERROR));
     }
 
     let mut conf = Configuration::new();
-    if let Err(err) = add_resource_export_results_to_configuration(&dsc_resource, &mut conf, input) {
+    if let Err(err) = add_resource_export_results_to_configuration(&*dsc_resource, &mut conf, input) {
         error!("{err}");
         return Err(ExitCode::from(EXIT_DSC_ERROR));
     }
@@ -420,7 +356,7 @@ pub fn export(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, vers
 }
 
 #[must_use]
-pub fn get_resource(dsc: & mut DscManager, resource: &FullyQualifiedTypeName, version: Option<&ResourceVersionReq>) -> Option<DscResourceKind> {
+pub fn get_resource(dsc: & mut DscManager, resource: &FullyQualifiedTypeName, version: Option<&ResourceVersionReq>) -> Option<Box<dyn ResourceInvoke>> {
     //TODO: add dynamically generated resource to dsc
     dsc.find_resource(&DiscoveryFilter::new(resource, version.cloned(), None)).unwrap_or(None)
 }
