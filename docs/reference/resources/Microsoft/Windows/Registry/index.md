@@ -1,6 +1,6 @@
 ---
 description: Microsoft.Windows/Registry resource reference documentation
-ms.date:     10/13/2026
+ms.date:     10/17/2026
 ms.topic:    reference
 title:       Microsoft.Windows/Registry
 ---
@@ -35,7 +35,7 @@ resources:
       keyPath: string
       # Instance properties
       _exist:
-      acl:
+      accessControlList:
       valueData:
       valueName:
 ```
@@ -68,12 +68,15 @@ The resource has the following capabilities:
 
 - `get` - You can use the resource to retrieve the actual state of an instance.
 - `set` - You can use the resource to enforce the desired state for an instance.
+- `test` - You can use the resource to determine whether an instance is in the desired state.
 - `whatIf` - The resource is able to report how it would change system state during a **Set**
   operation in what-if mode.
 - `delete` - You can use the resource to directly remove an instance from the system.
 
-This resource uses the synthetic test functionality of DSC to determine whether an instance is in
-the desired state. For more information about resource capabilities, see
+The resource implements its own **Test** operation rather than relying on the synthetic test
+functionality of DSC, so that the `accessControlList` property is compared using access control
+list semantics (principal normalization, alias-aware access mask comparison, and `_purge`-aware
+entry matching) instead of raw JSON equality. For more information about resource capabilities, see
 [DSC resource capabilities][02].
 
 ## Examples
@@ -108,7 +111,8 @@ The following list describes the properties for the resource.
   They define the desired state for an instance of the resource.
 
   - [_exist](#_exist) - Defines whether the registry key or value should exist.
-  - [acl](#acl) - Defines the registry key ACL in Security Descriptor Definition Language (SDDL).
+  - [accessControlList](#accesscontrollist) - Defines the registry key's discretionary and
+    system access control lists.
   - [valueData](#valuedata) - The data for a registry value.
   - [valueName](#valuename) - The name of the registry value.
 
@@ -116,6 +120,8 @@ The following list describes the properties for the resource.
   properties, but they aren't configurable. For more information about read-only properties, see
   the "Read-only resource properties" section in [DSC resource properties][08].
 
+  - [_inDesiredState](#_indesiredstate) - Indicates whether the instance is in the desired state.
+    Only returned by a **Test** operation.
   - [_metadata](#_metadata) - Defines metadata returned by the resource.
 
 ### keyPath
@@ -165,12 +171,12 @@ value for `_exist` is `true`, the resource adds or creates the instance if it do
 the value for `_exist` is `false`, the resource removes or deletes the instance if it does exist.
 The default value for this property when not specified for an instance is `true`.
 
-### acl
+### accessControlList
 
-<details><summary>Expand for <code>acl</code> property metadata</summary>
+<details><summary>Expand for <code>accessControlList</code> property metadata</summary>
 
 ```yaml
-Type             : string
+Type             : object
 IsRequired       : false
 IsKey            : false
 IsReadOnly       : false
@@ -179,13 +185,161 @@ IsWriteOnly      : false
 
 </details>
 
-Defines the registry key ACL in Security Descriptor Definition Language (SDDL). For **Get**
-operations, include the owner (`O:`), group (`G:`), or discretionary access control list (`D:`)
-section in the input to retrieve those sections. For **Set** operations, the resource applies only
-the sections specified in the SDDL string. System access control lists (`S:`) aren't supported.
+Defines the registry key's access control list (ACL) as typed arrays of access control entry (ACE)
+objects, instead of a raw Security Descriptor Definition Language (SDDL) string. The ACL has two
+independent sections, the discretionary access control list (DACL) and the system access control
+list (SACL). Both sections are optional. Omit a section to leave it unmanaged; the resource doesn't
+read, return, or change a section that isn't specified in the input. For **Get** operations,
+include a section (even as an empty array) to request that the resource return its current
+entries.
 
-This property applies to the key identified by `keyPath`, including when the instance also specifies
-a registry value. ACL operations aren't supported when using an offline registry hive.
+Reading or writing the `system` section requires the process invoking the resource to hold the
+`SeSecurityPrivilege` privilege. The resource enables this privilege automatically when needed and
+returns a clear error if it can't be enabled.
+
+Each entry's `principal` property accepts either a security identifier (SID) string, like
+`S-1-5-32-544`, or an account or group name, like `DOMAIN\User` or `Administrators`. The resource
+resolves names to a SID using the Windows security APIs; the value the resource returns for
+`principal` is always the normalized SID string, even when the input specified a name.
+
+This property applies to the key identified by `keyPath`, including when the instance also
+specifies a registry value. `accessControlList` operations aren't supported when using an offline
+registry hive. The resource doesn't manage the key's owner or primary group.
+
+`accessControlList` has the following properties:
+
+- [discretionary](#discretionary-accesscontrollist) - The discretionary access control list (DACL)
+  entries.
+- [discretionaryProtected](#discretionaryprotected-accesscontrollist) - Whether the DACL is
+  protected from inheriting entries from its parent.
+- [system](#system-accesscontrollist) - The system access control list (SACL) entries.
+- [systemProtected](#systemprotected-accesscontrollist) - Whether the SACL is protected from
+  inheriting entries from its parent.
+- [_purge](#_purge-accesscontrollist) - Whether to replace supplied sections, purge both sections,
+  or merge supplied sections.
+
+#### discretionary accessControlList
+
+<details><summary>Expand for <code>accessControlList.discretionary</code> subproperty metadata</summary>
+
+```yaml
+Type              : array
+ItemsType         : object
+ItemsMustBeUnique : false
+ItemsMinimumCount : 0
+```
+
+</details>
+
+Defines the discretionary access control list (DACL) entries for the key. Omit this property to
+leave the DACL unmanaged unless `_purge` is explicitly `true`, in which case omission clears the
+DACL. Specify an empty array to request the current entries without changing them, or during a
+**Set** operation, to clear every explicit entry from the DACL. Each item is an [access control
+entry object](#access-control-entry-object).
+
+#### discretionaryProtected accessControlList
+
+<details><summary>Expand for <code>accessControlList.discretionaryProtected</code> subproperty metadata</summary>
+
+```yaml
+Type : boolean
+```
+
+</details>
+
+Defines whether the DACL is protected from inheriting entries from its parent key. This is
+meaningful when `discretionary` is specified or `_purge` is explicitly `true`. For a managed DACL,
+omission uses `false` for replacement and preserves the current value for merge.
+
+#### system accessControlList
+
+<details><summary>Expand for <code>accessControlList.system</code> subproperty metadata</summary>
+
+```yaml
+Type              : array
+ItemsType         : object
+ItemsMustBeUnique : false
+ItemsMinimumCount : 0
+```
+
+</details>
+
+Defines the system access control list (SACL) entries for the key. Omit this property to leave the
+SACL unmanaged unless `_purge` is explicitly `true`, in which case omission clears the SACL.
+Specify an empty array to request the current entries without changing them, or during a **Set**
+operation, to clear every explicit entry from the SACL. Every entry must have a `type` of `audit`.
+Each item is an [access control entry object](#access-control-entry-object).
+
+#### systemProtected accessControlList
+
+<details><summary>Expand for <code>accessControlList.systemProtected</code> subproperty metadata</summary>
+
+```yaml
+Type : boolean
+```
+
+</details>
+
+Defines whether the SACL is protected from inheriting entries from its parent key. This is
+meaningful when `system` is specified or `_purge` is explicitly `true`. For a managed SACL,
+omission uses `false` for replacement and preserves the current value for merge.
+
+#### _purge accessControlList
+
+<details><summary>Expand for <code>accessControlList._purge</code> subproperty metadata</summary>
+
+```yaml
+Type : boolean
+```
+
+</details>
+
+When `_purge` is omitted, each supplied section replaces that section's entire content and each
+omitted section remains unmanaged. When `_purge` is explicitly `true`, both sections are replaced:
+an omitted `discretionary` or `system` property clears that section. A replaced section's omitted
+protection property resets to unprotected (`false`).
+
+When `false`, the entries supplied for a section are merged into that section's existing entries
+instead of replacing them: entries that already exist are left in place, newly supplied entries are
+appended, and semantic duplicates (the same normalized principal, ACE type, effective access mask,
+and inheritance/audit flags) aren't duplicated. After merging, the resulting `discretionary` section
+is canonicalized into Windows' canonical access control entry order: every explicit `deny` entry,
+then every explicit `allow` entry, then every inherited entry, preserving the inherited entries'
+existing relative order. In particular, an inherited `deny` entry is never moved ahead of an
+explicit `allow` entry, since Windows always places every explicit entry before any inherited entry
+regardless of allow/deny. A section that isn't supplied in a merge request remains unmanaged, and
+its corresponding protection property (if any) is preserved unchanged.
+
+For a **Test** operation, `_purge: false` is satisfied when every requested entry is present
+(after normalization) in the actual access control list; extra entries already present in the
+actual ACL don't cause a mismatch. Replacement behavior requires the same entries in the same
+order and count as `actual`, but each entry pair is compared semantically: an aliased
+permission name (for example `fullControl` versus the individual rights it implies) or a
+differently ordered `flags` list that is otherwise equivalent doesn't cause a mismatch.
+
+#### Access control entry object
+
+Each item in the `discretionary` and `system` arrays is an object with the following properties:
+
+- **principal** (required) - A SID string or an account or group name. The resource always
+  returns the normalized SID string for this property.
+- **type** (required) - Whether the entry allows, denies, or audits access. Must be `allow` or
+  `deny` for entries in `discretionary`, and `audit` for entries in `system`. Valid values are
+  `allow`, `deny`, and `audit`.
+- **accessMask** (required) - The permissions granted, denied, or audited by this entry. Must
+  specify at least one value. Valid values are `queryValue`, `setValue`, `createSubKey`,
+  `enumerateSubKeys`, `notify`, `createLink`, `delete`, `readPermissions`, `changePermissions`,
+  `takeOwnership`, `synchronize`, `read`, `write`, `execute`, `fullControl`, `genericRead`,
+  `genericWrite`, `genericExecute`, and `genericAll`. The `generic*` values represent the raw
+  `GENERIC_*` access mask bits; Windows maps them to the equivalent registry-specific rights (for
+  example `genericAll` to `fullControl`) and they're accepted so that an existing entry using them
+  can always be read back and represented, but there's normally no reason to specify them in a
+  request.
+- **flags** (optional) - Inheritance flags for the entry. Defaults to an empty array (no
+  inheritance). Valid values are `containerInherit`, `objectInherit`, `noPropagateInherit`,
+  `inheritOnly`, and `inherited`.
+- **auditFlags** (optional) - The audit conditions for the entry. Required (and non-empty) when
+  `type` is `audit`; must be empty otherwise. Valid values are `success` and `failure`.
 
 ### valueData
 
@@ -327,6 +481,23 @@ IsKey: false
 Defines the name of the value to manage for the registry key. This property is required when
 specifying the `valueData` property.
 
+### _inDesiredState
+
+<details><summary>Expand for <code>_inDesiredState</code> property metadata</summary>
+
+```yaml
+Type         : [boolean, 'null']
+IsRequired   : false
+IsKey        : false
+IsReadOnly   : true
+IsWriteOnly  : false
+```
+
+</details>
+
+Indicates whether the instance is in the desired state. This property is only returned by a
+**Test** operation.
+
 ### _metadata
 
 <details><summary>Expand for <code>_metadata</code> property metadata</summary>
@@ -390,6 +561,10 @@ non validating keywords are omitted.
       "type": "boolean",
       "default": true
     },
+    "_inDesiredState": {
+      "type": ["boolean", "null"],
+      "readOnly": true
+    },
     "_metadata": {
       "type": "object",
       "readOnly": true,
@@ -403,8 +578,69 @@ non validating keywords are omitted.
         }
       }
     },
-    "acl": {
-      "type": "string"
+    "accessControlList": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "discretionary": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["principal", "type", "accessMask"],
+            "additionalProperties": false,
+            "properties": {
+              "principal": {
+                "type": "string"
+              },
+              "type": {
+                "enum": ["allow", "deny", "audit"]
+              },
+              "accessMask": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "queryValue", "setValue", "createSubKey", "enumerateSubKeys", "notify",
+                    "createLink", "delete", "readPermissions",
+                    "changePermissions", "takeOwnership", "synchronize", "read", "write",
+                    "execute", "fullControl", "genericRead", "genericWrite", "genericExecute",
+                    "genericAll"
+                  ]
+                }
+              },
+              "flags": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "containerInherit", "objectInherit", "noPropagateInherit", "inheritOnly",
+                    "inherited"
+                  ]
+                }
+              },
+              "auditFlags": {
+                "type": "array",
+                "items": {
+                  "enum": ["success", "failure"]
+                }
+              }
+            }
+          }
+        },
+        "discretionaryProtected": {
+          "type": "boolean"
+        },
+        "system": {
+          "type": "array",
+          "items": {
+            "$ref": "#/properties/accessControlList/properties/discretionary/items"
+          }
+        },
+        "systemProtected": {
+          "type": "boolean"
+        },
+        "_purge": {
+          "type": "boolean"
+        }
+      }
     },
     "keyPath": {
       "type": "string",

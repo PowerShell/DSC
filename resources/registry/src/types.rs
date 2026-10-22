@@ -13,4 +13,8 @@ pub struct RegistryList {
     /// are performed against the offline hive instead of the live system registry.
     #[serde(rename = "registryFilePath", skip_serializing_if = "Option::is_none")]
     pub registry_file_path: Option<String>,
+    /// Whether every entry in `registryEntries` is in the desired state. Only returned by a
+    /// `test` operation.
+    #[serde(rename = "_inDesiredState", skip_serializing_if = "Option::is_none")]
+    pub in_desired_state: Option<bool>,
 }

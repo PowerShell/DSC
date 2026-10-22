@@ -57,6 +57,13 @@ pub enum ConfigSubCommand {
         #[clap(short = 'w', long, help = t!("args.configArgsWhatIfHelp").to_string())]
         what_if: bool,
     },
+    #[clap(name = "test", about = t!("args.configTestAbout").to_string())]
+    Test {
+        #[clap(short, long, required = true, help = t!("args.configArgsInputHelp").to_string())]
+        input: String,
+        #[clap(short, long, hide = true)]
+        list: bool,
+    },
     #[clap(name = "delete", about = t!("args.configDeleteAbout").to_string())]
     Delete {
         #[clap(short, long, required = true, help = t!("args.configArgsInputHelp").to_string())]

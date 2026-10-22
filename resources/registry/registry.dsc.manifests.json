@@ -34,6 +34,18 @@
                 ],
                 "whatIfReturns": "state"
             },
+            "test": {
+                "executable": "registry",
+                "args": [
+                    "config",
+                    "test",
+                    {
+                        "jsonInputArg": "--input",
+                        "mandatory": true
+                    }
+                ],
+                "return": "state"
+            },
             "delete": {
                 "executable": "registry",
                 "args": [
@@ -100,6 +112,19 @@
                 ],
                 "whatIfReturns": "state",
                 "handlesExist": true
+            },
+            "test": {
+                "executable": "registry",
+                "args": [
+                    "config",
+                    "test",
+                    "--list",
+                    {
+                        "jsonInputArg": "--input",
+                        "mandatory": true
+                    }
+                ],
+                "return": "state"
             },
             "exitCodes": {
                 "0": "Success",
