@@ -117,6 +117,8 @@
       "windows_firewall.exe",
       "windows_service.exe",
       "windows_service.dsc.resource.json",
+      "windows_security_policy.exe",
+      "windows_security_policy.dsc.manifests.json",
       "windows_feature.dsc.resource.json",
       "wmi.dsc.resource.json",
       "wmi.resource.ps1",

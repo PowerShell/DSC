@@ -1,0 +1,286 @@
+{
+    "resources": [
+        {
+            "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+            "type": "Microsoft.Windows/UserRightsAssignment",
+            "description": "Manage which accounts hold a Windows user right or privilege (Local Security Policy > User Rights Assignment).",
+            "tags": [
+                "Windows",
+                "Security",
+                "UserRights"
+            ],
+            "version": "0.1.0",
+            "get": {
+                "executable": "windows_security_policy",
+                "args": [
+                    "get",
+                    "user-right",
+                    {
+                        "jsonInputArg": "--input",
+                        "mandatory": true
+                    }
+                ],
+                "requireSecurityContext": "elevated"
+            },
+            "set": {
+                "executable": "windows_security_policy",
+                "args": [
+                    "set",
+                    "user-right",
+                    {
+                        "jsonInputArg": "--input",
+                        "mandatory": true
+                    },
+                    {
+                        "whatIfArg": "--what-if"
+                    }
+                ],
+                "implementsPretest": false,
+                "return": "state",
+                "requireSecurityContext": "elevated",
+                "whatIfReturns": "state"
+            },
+            "test": {
+                "executable": "windows_security_policy",
+                "args": [
+                    "test",
+                    "user-right",
+                    {
+                        "jsonInputArg": "--input",
+                        "mandatory": true
+                    }
+                ],
+                "return": "state",
+                "requireSecurityContext": "elevated"
+            },
+            "export": {
+                "executable": "windows_security_policy",
+                "args": [
+                    "export",
+                    "user-right"
+                ],
+                "supportsFiltering": false,
+                "requireSecurityContext": "elevated"
+            },
+            "exitCodes": {
+                "0": "Success",
+                "1": "Invalid arguments",
+                "2": "Invalid input",
+                "3": "Security policy error",
+                "4": "Elevation required: Reading or changing user rights assignments requires an elevated process"
+            },
+            "schema": {
+                "embedded": {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "title": "Windows User Rights Assignment",
+                    "description": "Manage which accounts hold a Windows user right or privilege.",
+                    "markdownDescription": "The `Microsoft.Windows/UserRightsAssignment` resource manages which accounts hold a Windows user right or privilege, the settings under **Local Policies > User Rights Assignment** in the Local Security Policy console.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/userrightsassignment/resource\n",
+                    "type": "object",
+                    "required": [
+                        "right"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "right": {
+                            "type": "string",
+                            "title": "User right",
+                            "description": "The user right or privilege constant, for example 'SeServiceLogonRight' (Log on as a service).",
+                            "markdownDescription": "The constant of the user right or privilege to manage, such as `SeServiceLogonRight` (_Log on as a service_). These are the names that the LSA, `secedit` templates, Group Policy and security benchmarks use. Each instance manages one right.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/userrightsassignment/resource#right\n",
+                            "x-dsc-key": true,
+                            "enum": [
+                                "SeTrustedCredManAccessPrivilege",
+                                "SeNetworkLogonRight",
+                                "SeTcbPrivilege",
+                                "SeMachineAccountPrivilege",
+                                "SeIncreaseQuotaPrivilege",
+                                "SeInteractiveLogonRight",
+                                "SeRemoteInteractiveLogonRight",
+                                "SeBackupPrivilege",
+                                "SeChangeNotifyPrivilege",
+                                "SeSystemtimePrivilege",
+                                "SeTimeZonePrivilege",
+                                "SeCreatePagefilePrivilege",
+                                "SeCreateTokenPrivilege",
+                                "SeCreateGlobalPrivilege",
+                                "SeCreatePermanentPrivilege",
+                                "SeCreateSymbolicLinkPrivilege",
+                                "SeDebugPrivilege",
+                                "SeDenyNetworkLogonRight",
+                                "SeDenyBatchLogonRight",
+                                "SeDenyServiceLogonRight",
+                                "SeDenyInteractiveLogonRight",
+                                "SeDenyRemoteInteractiveLogonRight",
+                                "SeEnableDelegationPrivilege",
+                                "SeRemoteShutdownPrivilege",
+                                "SeAuditPrivilege",
+                                "SeImpersonatePrivilege",
+                                "SeIncreaseWorkingSetPrivilege",
+                                "SeIncreaseBasePriorityPrivilege",
+                                "SeLoadDriverPrivilege",
+                                "SeLockMemoryPrivilege",
+                                "SeBatchLogonRight",
+                                "SeServiceLogonRight",
+                                "SeSecurityPrivilege",
+                                "SeRelabelPrivilege",
+                                "SeSystemEnvironmentPrivilege",
+                                "SeDelegateSessionUserImpersonatePrivilege",
+                                "SeManageVolumePrivilege",
+                                "SeProfileSingleProcessPrivilege",
+                                "SeSystemProfilePrivilege",
+                                "SeUndockPrivilege",
+                                "SeAssignPrimaryTokenPrivilege",
+                                "SeRestorePrivilege",
+                                "SeShutdownPrivilege",
+                                "SeSyncAgentPrivilege",
+                                "SeTakeOwnershipPrivilege"
+                            ],
+                            "markdownEnumDescriptions": [
+                                "_Access Credential Manager as a trusted caller_",
+                                "_Access this computer from the network_",
+                                "_Act as part of the operating system_",
+                                "_Add workstations to domain_",
+                                "_Adjust memory quotas for a process_",
+                                "_Allow log on locally_",
+                                "_Allow log on through Remote Desktop Services_",
+                                "_Back up files and directories_",
+                                "_Bypass traverse checking_",
+                                "_Change the system time_",
+                                "_Change the time zone_",
+                                "_Create a pagefile_",
+                                "_Create a token object_",
+                                "_Create global objects_",
+                                "_Create permanent shared objects_",
+                                "_Create symbolic links_",
+                                "_Debug programs_",
+                                "_Deny access to this computer from the network_",
+                                "_Deny log on as a batch job_",
+                                "_Deny log on as a service_",
+                                "_Deny log on locally_",
+                                "_Deny log on through Remote Desktop Services_",
+                                "_Enable computer and user accounts to be trusted for delegation_",
+                                "_Force shutdown from a remote system_",
+                                "_Generate security audits_",
+                                "_Impersonate a client after authentication_",
+                                "_Increase a process working set_",
+                                "_Increase scheduling priority_",
+                                "_Load and unload device drivers_",
+                                "_Lock pages in memory_",
+                                "_Log on as a batch job_",
+                                "_Log on as a service_",
+                                "_Manage auditing and security log_",
+                                "_Modify an object label_",
+                                "_Modify firmware environment values_",
+                                "_Obtain an impersonation token for another user in the same session_",
+                                "_Perform volume maintenance tasks_",
+                                "_Profile single process_",
+                                "_Profile system performance_",
+                                "_Remove computer from docking station_",
+                                "_Replace a process level token_",
+                                "_Restore files and directories_",
+                                "_Shut down the system_",
+                                "_Synchronize directory service data_",
+                                "_Take ownership of files or other objects_"
+                            ]
+                        },
+                        "identity": {
+                            "type": "array",
+                            "title": "Identities",
+                            "description": "The accounts that hold the right. Accepts 'DOMAIN\\Name', a bare account name, a well-known name such as 'Everyone', a SID string such as 'S-1-5-32-544', or the secedit form '*S-1-5-32-544'. Returned as the canonical 'DOMAIN\\Name', or as the SID string when the SID does not resolve to an account. An empty array means that no one holds the right. Required for set and test.",
+                            "markdownDescription": "The accounts that hold the right. Each entry can be an account name with its domain, a bare account name, a SID string, or a SID string prefixed with `*` as `secedit` exports it.\n\nThe resource reports each holder by its canonical name: `DOMAIN\\Name`, a bare name for accounts without a domain such as `Everyone`, or the SID string when the SID doesn't resolve to an account. Specify the canonical name to make the desired state match the actual state; the resource writes an informational message for any other spelling.\n\nAn empty array means that no one holds the right. Required for **Set** and **Test**.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/userrightsassignment/resource#identity\n",
+                            "uniqueItems": true,
+                            "items": {
+                                "type": "string",
+                                "title": "Identity",
+                                "description": "An account, as 'DOMAIN\\Name', a bare account name, a SID string or a SID string prefixed with '*'.",
+                                "examples": [
+                                    "BUILTIN\\Administrators",
+                                    "NT SERVICE\\ALL SERVICES",
+                                    "Everyone",
+                                    "S-1-5-32-544",
+                                    "*S-1-5-32-544"
+                                ],
+                                "oneOf": [
+                                    {
+                                        "title": "Account name with domain",
+                                        "description": "An account name qualified with its domain or authority, such as 'BUILTIN\\Administrators' or 'NT SERVICE\\ALL SERVICES'. This is the canonical form for accounts that have a domain.",
+                                        "markdownDescription": "An account name qualified with its domain or authority, such as `BUILTIN\\Administrators`, `NT SERVICE\\ALL SERVICES` or `CONTOSO\\svc-sql`. This is the canonical form for accounts that have a domain.",
+                                        "pattern": "^[^\\\\*]+\\\\[^\\\\*]+$"
+                                    },
+                                    {
+                                        "title": "Bare account name",
+                                        "description": "An account name without a domain, such as 'Administrators', or a well-known name that has no domain, such as 'Everyone'. Well-known names are localized, so use the name that the target system's language uses.",
+                                        "markdownDescription": "An account name without a domain, such as `Administrators`, or a well-known name that has no domain, such as `Everyone`. Well-known names are localized, so use the name that the target system's language uses. The resource reports an account that has a domain as `DOMAIN\\Name`.",
+                                        "pattern": "^[^\\\\*]+$",
+                                        "not": {
+                                            "pattern": "^[Ss]-1-[0-9]"
+                                        }
+                                    },
+                                    {
+                                        "title": "SID string",
+                                        "description": "A security identifier, such as 'S-1-5-32-544'. A SID that doesn't resolve to an account is accepted, because Windows keeps rights assigned to deleted accounts.",
+                                        "markdownDescription": "A security identifier, such as `S-1-5-32-544`. A SID that doesn't resolve to an account is accepted, because Windows keeps rights assigned to deleted accounts.",
+                                        "pattern": "^[Ss]-1-([0-9]+|0[Xx][0-9A-Fa-f]+)(-[0-9]+)*$"
+                                    },
+                                    {
+                                        "title": "secedit SID",
+                                        "description": "A SID string prefixed with '*', the form that 'secedit' exports, such as '*S-1-5-32-544'.",
+                                        "markdownDescription": "A SID string prefixed with `*`, the form that `secedit` exports, such as `*S-1-5-32-544`.",
+                                        "pattern": "^\\*[Ss]-1-([0-9]+|0[Xx][0-9A-Fa-f]+)(-[0-9]+)*$"
+                                    }
+                                ]
+                            }
+                        },
+                        "setAction": {
+                            "type": "string",
+                            "title": "Set action",
+                            "description": "How 'identity' is applied: 'replace' makes the listed accounts the only holders of the right, 'add' grants the right to the listed accounts and keeps the other holders, 'remove' revokes the right from the listed accounts only.",
+                            "markdownDescription": "How the **Set** operation applies `identity` and how the **Test** operation judges it. Defaults to `replace`. DSC doesn't compare this write-only property and it never appears in the actual state.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft.windows/userrightsassignment/resource#setaction\n",
+                            "writeOnly": true,
+                            "default": "replace",
+                            "enum": [
+                                "replace",
+                                "add",
+                                "remove"
+                            ],
+                            "markdownEnumDescriptions": [
+                                "The listed accounts become the only holders of the right; every other holder is revoked. An empty `identity` revokes the right from everyone.",
+                                "The listed accounts are granted the right; the other holders are kept.",
+                                "The listed accounts lose their direct assignment of the right; the other holders are kept. Members of a listed group can still hold the right through another group."
+                            ]
+                        },
+                        "_inDesiredState": {
+                            "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/inDesiredState.json"
+                        },
+                        "_metadata": {
+                            "type": "object",
+                            "title": "Metadata",
+                            "description": "Metadata returned by what-if operations describing the changes that would be applied.",
+                            "readOnly": true,
+                            "properties": {
+                                "whatIf": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "$defs": {
+                        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/inDesiredState.json": {
+                            "$schema": "https://json-schema.org/draft/2020-12/schema",
+                            "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/inDesiredState.json",
+                            "title": "Instance is in the Desired State",
+                            "description": "Indicates whether the instance is in the desired state. This property is only returned by the `test` method.",
+                            "type": [
+                                "boolean",
+                                "null"
+                            ],
+                            "readOnly": true
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}
