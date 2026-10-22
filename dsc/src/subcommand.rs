@@ -8,16 +8,8 @@ use crate::tablewriter::Table;
 use crate::util::{current_dsc_version, get_input, get_schema, in_desired_state, set_dscconfigroot, write_object, DSC_CONFIG_ROOT, EXIT_DSC_ASSERTION_FAILED, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_VALIDATION_FAILED};
 use dsc_lib::actions::action_manifest::SupportedOperations;
 use dsc_lib::types::{FullyQualifiedTypeName, ResourceVersionReq, TypeNameFilter};
-use dsc_lib::{
-    configure::{
-        config_doc::{
-            Configuration,
-            ExecutionKind,
-            Resource,
-        },
-        config_result::ResourceGetResult,
-        Configurator,
-    },
+use dsc_lib::{configure::{config_doc::{Configuration, ExecutionKind, Resource},
+    config_result::ResourceGetResult, Configurator},
     discovery::discovery_trait::{DiscoveryFilter, DiscoveryKind},
     discovery::command_discovery::ImportedManifest,
     dscerror::DscError,

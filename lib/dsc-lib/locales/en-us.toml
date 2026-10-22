@@ -8,6 +8,7 @@ actionManifestSchemaDescription = "Defines the JSON Schema the action manifest a
 inputSchemaNotAvailable = "Input schema is not available"
 outputSchemaNotAvailable = "Output schema is not available"
 whatIfNotSupported = "The action '%{type_name}' does not support WhatIf execution"
+actionUnsupportedOperation = "Unsupported operation '%{operation}' for action '%{action}'"
 
 [configure.config_doc]
 configurationDocumentSchemaTitle = "Configuration document schema URI"
@@ -60,7 +61,6 @@ implementsDelete = "Resource implements delete and _exist is false"
 groupNotSupportedForDelete = "Group resources not supported for delete"
 deleteNotSupported = "Resource '%{resource}' does not support `delete` and does not handle `_exist` as false"
 expectedState = "Expected state: %{state}"
-exportInput = "Export input: %{input}"
 engineExportFiltering = "Resource '%{resource}' does not support export filtering, the engine will filter the exported instances (experimental feature)"
 invalidExportFilterInput = "Invalid export filter input: %{error}"
 exportFilterNotObject = "Export filter input must be a JSON object or an array of JSON objects"
@@ -119,7 +119,6 @@ prefixUserPath = "Prefixing user PATH '%{value}' to system PATH '%{system_path}'
 systemPathNotFound = "System PATH not found, using user PATH '%{value}' as PATH"
 resourceType = "resource_type %{resource_type}"
 validatingParameter = "Validating parameter '%{name}'"
-actionUnsupportedOperation = "Unsupported operation '%{operation}' for action '%{action}'"
 
 [configure.parameters]
 importingParametersFromComplexInput = "Importing parameters from complex input"
@@ -161,7 +160,6 @@ extensionFoundResources = "Extension '%{extension}' found %{count} resources"
 invalidManifestVersion = "Manifest '%{path}' is defined with non-semantic version '%{version}'"
 importExtensionsEmpty = "Import extension '%{extension}' has no import extensions defined"
 searchingForResources = "Searching for resources: %{resources}"
-foundActionWithVersion = "Found matching action '%{action}' version %{version}"
 foundResourceWithVersion = "Found matching resource '%{resource}' version %{version}"
 foundNonAdapterResources = "Found %{count} non-adapter resources"
 skipAdapterSearchForNativeType = "Skipping adapter search for resource '%{resource}' (requested version: '%{required_version}'): type is known as a native command-based resource and no matching version was found natively"
