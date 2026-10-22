@@ -104,7 +104,7 @@ Describe 'tests for resource discovery' {
             $null = dsc -l info resource list 2> "$testdrive/error.txt"
             $LASTEXITCODE | Should -Be 0
             $errorTxt = Get-Content -Raw "$testdrive/error.txt"
-            $errorTxt | Should -Match 'INFO.*?invalid semantic version' -Because $errorTxt
+            $errorTxt | Should -Match 'WARN.*?invalid semantic version' -Because $errorTxt
         }
     }
 
@@ -366,7 +366,7 @@ Describe 'tests for resource discovery' {
             $LASTEXITCODE | Should -Be 0
             $out | Should -BeNullOrEmpty -Because (Get-Content -Raw -Path "$testdrive/error.txt")
             $errorLog = Get-Content -Raw -Path "$testdrive/error.txt"
-            $errorLog | Should -BeLike "*INFO Failed to load manifest: Invalid manifest for resource '*test.dsc.resource.json'*" -Because $errorLog
+            $errorLog | Should -BeLike "*WARN Failed to load manifest: Invalid manifest for resource '*test.dsc.resource.json'*" -Because $errorLog
         } finally {
             $env:DSC_RESTRICTED_PATH = $null
         }
