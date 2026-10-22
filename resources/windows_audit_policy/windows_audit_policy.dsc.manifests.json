@@ -1,0 +1,353 @@
+{
+    "resources": [
+        {
+            "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+            "type": "Microsoft.Windows/AuditPolicy",
+            "description": "Manage success and failure auditing for a Windows advanced audit policy subcategory.",
+            "tags": [
+                "Windows",
+                "Security",
+                "Audit"
+            ],
+            "version": "0.1.0",
+            "get": {
+                "executable": "windows_audit_policy",
+                "args": [
+                    "get",
+                    "subcategory",
+                    {
+                        "jsonInputArg": "--input",
+                        "mandatory": true
+                    }
+                ],
+                "requireSecurityContext": "elevated"
+            },
+            "set": {
+                "executable": "windows_audit_policy",
+                "args": [
+                    "set",
+                    "subcategory",
+                    {
+                        "jsonInputArg": "--input",
+                        "mandatory": true
+                    },
+                    {
+                        "whatIfArg": "--what-if"
+                    }
+                ],
+                "implementsPretest": false,
+                "return": "state",
+                "requireSecurityContext": "elevated",
+                "whatIfReturns": "state"
+            },
+            "export": {
+                "executable": "windows_audit_policy",
+                "args": [
+                    "export",
+                    "subcategory"
+                ],
+                "supportsFiltering": false,
+                "requireSecurityContext": "elevated"
+            },
+            "exitCodes": {
+                "0": "Success",
+                "1": "Invalid arguments",
+                "2": "Invalid input",
+                "3": "Audit policy error",
+                "4": "Elevation required: Reading or changing the audit policy requires an elevated process"
+            },
+            "schema": {
+                "embedded": {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "title": "Windows Audit Policy Subcategory",
+                    "description": "Manage success and failure auditing for a Windows advanced audit policy subcategory.",
+                    "type": "object",
+                    "required": [
+                        "subcategory"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "subcategory": {
+                            "type": "string",
+                            "title": "Subcategory",
+                            "description": "The audit subcategory, identified by its English name (case-insensitive, for example 'Logon') or by its GUID (for example '{0CCE9215-69AE-11D9-BED3-505054503030}').",
+                            "minLength": 1,
+                            "x-dsc-key": true
+                        },
+                        "success": {
+                            "type": "boolean",
+                            "title": "Audit success",
+                            "description": "Whether successful events in the subcategory are audited. When omitted from a set operation, the current setting is left unchanged."
+                        },
+                        "failure": {
+                            "type": "boolean",
+                            "title": "Audit failure",
+                            "description": "Whether failed events in the subcategory are audited. When omitted from a set operation, the current setting is left unchanged."
+                        },
+                        "guid": {
+                            "type": "string",
+                            "title": "Subcategory GUID",
+                            "description": "The GUID of the subcategory, in braces and upper-case.",
+                            "readOnly": true
+                        },
+                        "category": {
+                            "type": "string",
+                            "title": "Category",
+                            "description": "The English name of the audit policy category that contains the subcategory.",
+                            "readOnly": true
+                        },
+                        "_metadata": {
+                            "type": "object",
+                            "title": "Metadata",
+                            "description": "Metadata returned by what-if operations describing the changes that would be applied.",
+                            "readOnly": true,
+                            "properties": {
+                                "whatIf": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+            "type": "Microsoft.Windows/AuditPolicyList",
+            "description": "Manage success and failure auditing for several Windows advanced audit policy subcategories at once.",
+            "tags": [
+                "Windows",
+                "Security",
+                "Audit"
+            ],
+            "version": "0.1.0",
+            "get": {
+                "executable": "windows_audit_policy",
+                "args": [
+                    "get",
+                    "subcategory-list",
+                    {
+                        "jsonInputArg": "--input",
+                        "mandatory": true
+                    }
+                ],
+                "requireSecurityContext": "elevated"
+            },
+            "set": {
+                "executable": "windows_audit_policy",
+                "args": [
+                    "set",
+                    "subcategory-list",
+                    {
+                        "jsonInputArg": "--input",
+                        "mandatory": true
+                    },
+                    {
+                        "whatIfArg": "--what-if"
+                    }
+                ],
+                "implementsPretest": false,
+                "return": "state",
+                "requireSecurityContext": "elevated",
+                "whatIfReturns": "state"
+            },
+            "export": {
+                "executable": "windows_audit_policy",
+                "args": [
+                    "export",
+                    "subcategory-list"
+                ],
+                "supportsFiltering": false,
+                "requireSecurityContext": "elevated"
+            },
+            "exitCodes": {
+                "0": "Success",
+                "1": "Invalid arguments",
+                "2": "Invalid input",
+                "3": "Audit policy error",
+                "4": "Elevation required: Reading or changing the audit policy requires an elevated process"
+            },
+            "schema": {
+                "embedded": {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "title": "Windows Audit Policy Subcategory List",
+                    "description": "Manage success and failure auditing for several Windows advanced audit policy subcategories at once. The input is a single object that contains a policies array.",
+                    "type": "object",
+                    "required": [
+                        "policies"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "policies": {
+                            "type": "array",
+                            "title": "Policies",
+                            "description": "The subcategories to manage, each with the same properties as a Microsoft.Windows/AuditPolicy instance. List each subcategory once. The resource returns the entries in the order given.",
+                            "minItems": 1,
+                            "items": {
+                                "$ref": "#/$defs/policy"
+                            }
+                        },
+                        "_metadata": {
+                            "type": "object",
+                            "title": "Metadata",
+                            "description": "Metadata returned by what-if operations describing the changes that would be applied to every listed subcategory.",
+                            "readOnly": true,
+                            "properties": {
+                                "whatIf": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "$defs": {
+                        "policy": {
+                            "type": "object",
+                            "title": "Audit policy subcategory",
+                            "description": "The success and failure auditing of one audit policy subcategory.",
+                            "required": [
+                                "subcategory"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                                "subcategory": {
+                                    "type": "string",
+                                    "title": "Subcategory",
+                                    "description": "The audit subcategory, identified by its English name (case-insensitive, for example 'Logon') or by its GUID (for example '{0CCE9215-69AE-11D9-BED3-505054503030}').",
+                                    "minLength": 1
+                                },
+                                "success": {
+                                    "type": "boolean",
+                                    "title": "Audit success",
+                                    "description": "Whether successful events in the subcategory are audited. When omitted from a set operation, the current setting is left unchanged."
+                                },
+                                "failure": {
+                                    "type": "boolean",
+                                    "title": "Audit failure",
+                                    "description": "Whether failed events in the subcategory are audited. When omitted from a set operation, the current setting is left unchanged."
+                                },
+                                "guid": {
+                                    "type": "string",
+                                    "title": "Subcategory GUID",
+                                    "description": "The GUID of the subcategory, in braces and upper-case.",
+                                    "readOnly": true
+                                },
+                                "category": {
+                                    "type": "string",
+                                    "title": "Category",
+                                    "description": "The English name of the audit policy category that contains the subcategory.",
+                                    "readOnly": true
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+            "type": "Microsoft.Windows/AuditPolicyOption",
+            "description": "Manage Windows audit policy options stored under the LSA registry key.",
+            "tags": [
+                "Windows",
+                "Security",
+                "Audit"
+            ],
+            "version": "0.1.0",
+            "get": {
+                "executable": "windows_audit_policy",
+                "args": [
+                    "get",
+                    "option",
+                    {
+                        "jsonInputArg": "--input",
+                        "mandatory": true
+                    }
+                ]
+            },
+            "set": {
+                "executable": "windows_audit_policy",
+                "args": [
+                    "set",
+                    "option",
+                    {
+                        "jsonInputArg": "--input",
+                        "mandatory": true
+                    },
+                    {
+                        "whatIfArg": "--what-if"
+                    }
+                ],
+                "implementsPretest": false,
+                "return": "state",
+                "requireSecurityContext": "elevated",
+                "whatIfReturns": "state"
+            },
+            "export": {
+                "executable": "windows_audit_policy",
+                "args": [
+                    "export",
+                    "option"
+                ],
+                "supportsFiltering": false
+            },
+            "exitCodes": {
+                "0": "Success",
+                "1": "Invalid arguments",
+                "2": "Invalid input",
+                "3": "Audit policy error",
+                "4": "Elevation required: Changing audit policy options requires an elevated process"
+            },
+            "schema": {
+                "embedded": {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "title": "Windows Audit Policy Option",
+                    "description": "Manage a Windows audit policy option stored under HKLM\\SYSTEM\\CurrentControlSet\\Control\\Lsa.",
+                    "type": "object",
+                    "required": [
+                        "name"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "title": "Option name",
+                            "description": "The audit policy option to manage.",
+                            "x-dsc-key": true,
+                            "enum": [
+                                "CrashOnAuditFail",
+                                "FullPrivilegeAuditing",
+                                "AuditBaseObjects",
+                                "AuditBaseDirectories"
+                            ]
+                        },
+                        "enabled": {
+                            "type": "boolean",
+                            "title": "Enabled",
+                            "description": "Whether the option is enabled. Required for set. Changes take effect after a restart."
+                        },
+                        "_metadata": {
+                            "type": "object",
+                            "title": "Metadata",
+                            "description": "Metadata returned by what-if operations describing the changes that would be applied.",
+                            "readOnly": true,
+                            "properties": {
+                                "whatIf": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}
