@@ -177,19 +177,19 @@ impl ResourceInvoke for DscAction {
     }
 
     fn delete(&self, _filter: &str, _execution_type: &ExecutionKind) -> Result<DeleteResultKind, DscError> {
-        Err(DscError::NotSupported(t!("actions.dscaction.unsupported").to_string()))
+        Err(DscError::NotSupported(t!("actions.dscaction.actionUnsupportedOperation", operation = "delete", action = &self.type_name).to_string()))
     }
 
     fn resolve(&self, _input: &str) -> Result<ResolveResult, DscError> {
-        Err(DscError::NotSupported(t!("actions.dscaction.unsupported").to_string()))
+        Err(DscError::NotSupported(t!("actions.dscaction.actionUnsupportedOperation", operation = "resolve", action = &self.type_name).to_string()))
     }
 
     fn schema(&self) -> Result<String, DscError> {
-        Err(DscError::NotSupported(t!("actions.dscaction.unsupported").to_string()))
+        Err(DscError::NotSupported(t!("actions.dscaction.actionUnsupportedOperation", operation = "schema", action = &self.type_name).to_string()))
     }
 
     fn validate(&self, _config: &str) -> Result<ValidateResult, DscError> {
-        Err(DscError::NotSupported(t!("actions.dscaction.unsupported").to_string()))
+        Err(DscError::NotSupported(t!("actions.dscaction.actionUnsupportedOperation", operation = "validate", action = &self.type_name).to_string()))
     }
 
     fn kind(&self) -> crate::discovery::ResourceKind {
@@ -239,7 +239,7 @@ impl ResourceInvoke for DscAction {
     }
 
     fn set_target_resource(&mut self, _target: Box<DscResource>) -> Result<(), DscError> {
-        Err(DscError::NotSupported(t!("actions.dscaction.unsupported").to_string()))
+        Err(DscError::NotSupported(t!("actions.dscaction.actionUnsupportedOperation", operation = "set_target_resource", action = &self.type_name).to_string()))
     }
 
     fn as_action(&self) -> Option<&DscAction> {
