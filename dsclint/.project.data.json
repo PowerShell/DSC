@@ -1,0 +1,8 @@
+{
+    "Name": "dsclint",
+    "Kind": "CLI",
+    "IsRust": true,
+    "Binaries": [
+        "dsclint"
+    ]
+}

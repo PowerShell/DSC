@@ -102,21 +102,6 @@ fn dsc_main() -> Result<(), ExitCode> {
             let merged_parameters = merge_parameter_inputs(parameters, parameters_file.as_ref())?;
             subcommand::config(&subcommand, &merged_parameters, system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format)?;
         },
-        SubCommand::Lint { input, file, parameters, parameters_file, system_root, no_discovery, fail_on, rules, list_rules, output_format } => {
-            let merged_parameters = merge_parameter_inputs(parameters, parameters_file.as_ref())?;
-            let args = subcommand::LintArgs {
-                input: input.as_ref(),
-                files: &file,
-                parameters: merged_parameters.as_ref(),
-                system_root: system_root.as_ref(),
-                no_discovery,
-                fail_on,
-                rules: &rules,
-                list_rules,
-                output_format: output_format.as_ref(),
-            };
-            subcommand::lint(&args, progress_format)?;
-        },
         SubCommand::Extension { subcommand } => {
             subcommand::extension(&subcommand, progress_format)?;
         },

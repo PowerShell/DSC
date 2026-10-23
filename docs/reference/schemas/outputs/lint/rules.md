@@ -1,15 +1,15 @@
 ---
-description: JSON schema reference for the data returned by the 'dsc lint --list-rules' command.
-ms.date:     10/20/2026
+description: JSON schema reference for the data returned by the 'dsclint --list-rules' command.
+ms.date:     10/23/2026
 ms.topic:    reference
-title:       dsc lint rules schema reference
+title:       dsclint rules schema reference
 ---
 
-# dsc lint rules schema reference
+# dsclint rules schema reference
 
 ## Synopsis
 
-The output from the `dsc lint --list-rules` command.
+The output from the `dsclint --list-rules` command.
 
 ## Metadata
 
@@ -21,9 +21,10 @@ Type:          object
 
 ## Description
 
-The `dsc lint --list-rules` command returns an array of objects with this schema, one per rule,
+The `dsclint --list-rules` command returns an array of objects with this schema, one per rule,
 sorted by rule identifier. Each object describes the rule and the level it reports at after the
-settings file and any `--rule` overrides are applied.
+settings file and any `--rule` overrides are applied. The `dsc schema --type lint-rules` command
+returns this schema.
 
 ## Required properties
 

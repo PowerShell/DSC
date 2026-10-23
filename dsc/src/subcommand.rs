@@ -2,13 +2,12 @@
 // Licensed under the MIT License.
 
 use crate::args::{ConfigSubCommand, SchemaType, ExtensionSubCommand, FunctionSubCommand, GetOutputFormat, ListOutputFormat, OutputFormat, ResourceSubCommand};
-use crate::report::{render, render_lint_result};
+use crate::report::render;
 use crate::resolve::{get_contents, Include};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
-use crate::util::{current_dsc_version, get_input, get_input_with_source, get_schema, in_desired_state, read_input, set_dscconfigroot, write_object, DSC_CONFIG_ROOT, EXIT_DSC_ASSERTION_FAILED, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_VALIDATION_FAILED};
+use crate::util::{current_dsc_version, get_input, get_input_with_source, get_schema, in_desired_state, set_dscconfigroot, write_object, DSC_CONFIG_ROOT, EXIT_DSC_ASSERTION_FAILED, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_VALIDATION_FAILED};
 use dsc_lib::diagnostics::DocumentSource;
-use dsc_lib::lint::{LintError, LintLevel, LintOptions, LintResult, Linter, RuleLevelOverride};
 use dsc_lib::types::{FullyQualifiedTypeName, ResourceVersionReq, TypeNameFilter};
 use dsc_lib::{
     configure::{
@@ -41,7 +40,7 @@ use std::process::ExitCode;
 use std::{
     collections::HashMap,
     io::{self, IsTerminal},
-    path::{Path, PathBuf}
+    path::Path
 };
 use tracing::{debug, error, trace};
 
@@ -503,166 +502,6 @@ fn parse_parameters(parameters: &str) -> Result<serde_json::Value, ExitCode> {
             }
         }
     }
-}
-
-/// The arguments of the `dsc lint` command.
-pub struct LintArgs<'a> {
-    /// The inline document, if given.
-    pub input: Option<&'a String>,
-    /// The documents to read from files; `-` reads STDIN.
-    pub files: &'a [String],
-    /// The merged parameters, if any were given.
-    pub parameters: Option<&'a String>,
-    /// The system root the configuration targets, if not the running OS.
-    pub system_root: Option<&'a String>,
-    /// Whether to skip resource discovery and the rules that need it.
-    pub no_discovery: bool,
-    /// The lowest diagnostic level that makes the command fail; `error` when not given.
-    pub fail_on: Option<LintLevel>,
-    /// Rule level overrides for this run.
-    pub rules: &'a [RuleLevelOverride],
-    /// Whether to list the rules instead of linting.
-    pub list_rules: bool,
-    /// The output format.
-    pub output_format: Option<&'a OutputFormat>,
-}
-
-/// Lint one or more configuration documents.
-///
-/// # Arguments
-///
-/// * `args` - The command arguments.
-/// * `progress_format` - How to report progress during resource discovery.
-///
-/// # Errors
-///
-/// Returns `EXIT_INVALID_ARGS` for an unknown rule or missing input, `EXIT_INVALID_INPUT` when a
-/// document or the parameters can't be read, `EXIT_VALIDATION_FAILED` when a diagnostic at or
-/// above the `--fail-on` level was reported, `EXIT_JSON_ERROR` when the result can't be
-/// serialized, and `EXIT_DSC_ERROR` for other failures.
-pub fn lint(args: &LintArgs, progress_format: ProgressFormat) -> Result<(), ExitCode> {
-    let parameters = match args.parameters {
-        Some(parameters) => Some(parse_parameters(parameters)?),
-        None => None,
-    };
-    let options = LintOptions {
-        discovery: !args.no_discovery,
-        rule_levels: args.rules.to_vec(),
-        parameters,
-        system_root: args.system_root.map(PathBuf::from),
-        dsc_version: Some(current_dsc_version()),
-        progress_format,
-        ..LintOptions::default()
-    };
-    let mut linter = match Linter::new(options) {
-        Ok(linter) => linter,
-        Err(DscError::Lint(err @ (LintError::UnknownRule(_) | LintError::InvalidRuleOverride(_) | LintError::InvalidRuleLevel(_)))) => {
-            error!("{}: {err}", t!("subcommand.invalidLintRule"));
-            return Err(ExitCode::from(EXIT_INVALID_ARGS));
-        },
-        Err(err) => {
-            error!("{}: {err}", t!("subcommand.lintFailed"));
-            return Err(ExitCode::from(EXIT_DSC_ERROR));
-        },
-    };
-
-    if args.list_rules {
-        return list_lint_rules(&linter, args.output_format);
-    }
-
-    let mut documents: Vec<(Option<String>, String)> = Vec::new();
-    if let Some(input) = args.input {
-        documents.push((None, read_input(Some(input), None)?));
-    }
-    for file in args.files {
-        let document = read_input(None, Some(file))?;
-        let name = if file == "-" { None } else { Some(file.clone()) };
-        documents.push((name, document));
-    }
-    if documents.is_empty() {
-        error!("{}", t!("subcommand.lintNoInput"));
-        return Err(ExitCode::from(EXIT_INVALID_ARGS));
-    }
-
-    let mut result = LintResult::from_diagnostics(Vec::new(), true);
-    for (file, document) in &documents {
-        linter.set_file(file.clone());
-        let document_result = match linter.lint(document) {
-            Ok(document_result) => document_result,
-            Err(DscError::Lint(err @ LintError::InvalidParameters(_))) => {
-                error!("{}: {err}", t!("subcommand.lintFailed"));
-                return Err(ExitCode::from(EXIT_INVALID_INPUT));
-            },
-            Err(err) => {
-                error!("{}: {err}", t!("subcommand.lintFailed"));
-                return Err(ExitCode::from(EXIT_DSC_ERROR));
-            },
-        };
-        result.merge(document_result);
-    }
-
-    if args.output_format.is_none() && io::stdout().is_terminal() {
-        let descriptions = linter.rules().into_iter().map(|rule| (rule.id, rule.description)).collect();
-        print!("{}", render_lint_result(&result, &documents, &descriptions, true));
-    } else {
-        let json = match serde_json::to_string(&result) {
-            Ok(json) => json,
-            Err(err) => {
-                error!("JSON: {err}");
-                return Err(ExitCode::from(EXIT_JSON_ERROR));
-            }
-        };
-        write_object(&json, args.output_format, false)?;
-    }
-
-    let threshold = args.fail_on.unwrap_or(LintLevel::Error);
-    if result.has_diagnostic_at_least(threshold) {
-        return Err(ExitCode::from(EXIT_VALIDATION_FAILED));
-    }
-    Ok(())
-}
-
-/// Print the lint rules with the level each reports at in this run.
-///
-/// # Arguments
-///
-/// * `linter` - The linter whose rule levels to show.
-/// * `format` - The output format; a table when not given and stdout is a terminal.
-///
-/// # Errors
-///
-/// Returns `EXIT_JSON_ERROR` when the rules can't be serialized.
-fn list_lint_rules(linter: &Linter, format: Option<&OutputFormat>) -> Result<(), ExitCode> {
-    let rules = linter.rules();
-    if format.is_none() && io::stdout().is_terminal() {
-        let mut table = Table::new(&[
-            t!("subcommand.tableHeader_lintRule").to_string().as_ref(),
-            t!("subcommand.tableHeader_lintCategory").to_string().as_ref(),
-            t!("subcommand.tableHeader_lintLevel").to_string().as_ref(),
-            t!("subcommand.tableHeader_lintTier").to_string().as_ref(),
-            t!("subcommand.tableHeader_description").to_string().as_ref(),
-        ]);
-        for rule in rules {
-            table.add_row(vec![
-                rule.id,
-                rule.category.to_string(),
-                rule.level.to_string(),
-                rule.tier.to_string(),
-                rule.description,
-            ]);
-        }
-        table.print(true);
-        return Ok(());
-    }
-
-    let json = match serde_json::to_string(&rules) {
-        Ok(json) => json,
-        Err(err) => {
-            error!("JSON: {err}");
-            return Err(ExitCode::from(EXIT_JSON_ERROR));
-        }
-    };
-    write_object(&json, format, false)
 }
 
 /// Validate configuration.

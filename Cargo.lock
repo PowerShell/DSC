@@ -1070,6 +1070,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "dsclint"
+version = "3.4.0-preview.2"
+dependencies = [
+ "clap",
+ "crossterm",
+ "dsc-lib",
+ "dsc-lib-telemetry",
+ "miette",
+ "rust-i18n",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "syntect",
+ "tracing",
+]
+
+[[package]]
 name = "dsctest"
 version = "0.1.0"
 dependencies = [

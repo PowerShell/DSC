@@ -1,11 +1,11 @@
 ---
-description: Command line reference for the 'dsc lint' command
-ms.date:     10/20/2026
+description: Command line reference for the 'dsclint' command
+ms.date:     10/23/2026
 ms.topic:    reference
-title:       dsc lint
+title:       dsclint command reference
 ---
 
-# dsc lint
+# dsclint command reference
 
 ## Synopsis
 
@@ -16,37 +16,39 @@ Checks a configuration document for problems without applying it.
 ### Configuration document from file
 
 ```sh
-dsc lint [Options] --file <FILE>
+dsclint [Options] --file <FILE>
 ```
 
 ### Configuration document from option string
 
 ```sh
-dsc lint [Options] --input <INPUT>
+dsclint [Options] --input <INPUT>
 ```
 
 ### Configuration document from stdin
 
 ```sh
-cat <FILE> | dsc lint [Options] --file -
+cat <FILE> | dsclint [Options] --file -
 ```
 
 ### Several configuration documents
 
 ```sh
-dsc lint [Options] --file <FILE> --file <FILE>
+dsclint [Options] --file <FILE> --file <FILE>
 ```
 
 ### List the rules
 
 ```sh
-dsc lint --list-rules [--output-format <OUTPUT_FORMAT>]
+dsclint --list-rules [--output-format <OUTPUT_FORMAT>]
 ```
 
 ## Description
 
-The `lint` command analyzes a configuration document and reports problems as diagnostics. It never
-invokes a resource operation, so it's safe to run on any machine, including CI agents.
+The `dsclint` command analyzes a configuration document and reports problems as diagnostics. It
+never invokes a resource operation, so it's safe to run on any machine, including CI agents.
+`dsclint` ships with DSC and is installed alongside the `dsc` command. The same linter is available
+to agents as the `lint_dsc_config` tool of the [DSC MCP server][05].
 
 The command works in stages:
 
@@ -68,7 +70,7 @@ informational diagnostics instead. Use [--rule](#--rule) or the `lint` section o
 file to change the level of a rule or turn it off. A few rules have a fixed level that can't be
 changed: `parse-error`, `schema-invalid`, `unsupported-document-type`, and `discovery-failed`.
 
-For the list of rules and what each one checks, see [dsc lint rules][01].
+For the list of rules and what each one checks, see [dsclint rules][01].
 
 ## Examples
 
@@ -94,7 +96,7 @@ resources:
 ```
 
 ```sh
-dsc lint --file ./example.dsc.config.yaml
+dsclint --file ./example.dsc.config.yaml
 ```
 
 ```text
@@ -118,7 +120,7 @@ When the output is redirected, or when you specify [--output-format](#--output-f
 command emits the result as data instead:
 
 ```sh
-dsc lint --file ./example.dsc.config.yaml --output-format yaml
+dsclint --file ./example.dsc.config.yaml --output-format yaml
 ```
 
 ```yaml
@@ -149,7 +151,7 @@ an unused parameter as well as on an error. Discovery is skipped because the bui
 have the resources installed.
 
 ```sh
-dsc lint --file ./example.dsc.config.yaml --no-discovery --fail-on warning
+dsclint --file ./example.dsc.config.yaml --no-discovery --fail-on warning
 ```
 
 ### Example 3 - Change the level of a rule
@@ -160,7 +162,7 @@ The command turns off the `no-unused-parameters` rule and raises `missing-requir
 is off by default, to a warning.
 
 ```sh
-dsc lint --file ./example.dsc.config.yaml --rule no-unused-parameters=off --rule missing-require-version=warning
+dsclint --file ./example.dsc.config.yaml --rule no-unused-parameters=off --rule missing-require-version=warning
 ```
 
 ### Example 4 - Check a document that targets another system root
@@ -171,7 +173,7 @@ When you pass `--system-root`, the `system-root-unused` rule warns if no express
 calls the `systemRoot()` function, because the document wouldn't target the specified root.
 
 ```sh
-dsc lint --file ./example.dsc.config.yaml --system-root D:\
+dsclint --file ./example.dsc.config.yaml --system-root D:\
 ```
 
 ### Example 5 - List the rules
@@ -182,7 +184,7 @@ The command lists every rule with its category, the level it reports at, whether
 discovery, and a description.
 
 ```sh
-dsc lint --list-rules
+dsclint --list-rules
 ```
 
 ## Options
@@ -321,7 +323,7 @@ LongSyntax  : --rule <RULE=LEVEL>
 
 Lists the rules with the level each reports at in this run instead of linting a document. When
 the output isn't redirected, the command shows a table; otherwise it emits the list in the format
-specified by `--output-format`. For the schema of the list, see [dsc lint rules schema][03].
+specified by `--output-format`. For the schema of the list, see [dsclint rules schema][03].
 
 This option is mutually exclusive with the `--input` and `--file` options.
 
@@ -336,20 +338,20 @@ LongSyntax  : --list-rules
 <a id="-o"></a>
 <a id="--output-format"></a>
 
-The `--output-format` option controls which format DSC uses for the data the command returns. The
-available formats are:
+The `--output-format` option controls which format `dsclint` uses for the data the command returns.
+The available formats are:
 
 - `json` to emit the data as a [JSON Line][02].
 - `pretty-json` to emit the data as JSON with newlines, indentation, and spaces for readability.
 - `yaml` to emit the data as YAML.
 
-The default output depends on whether DSC detects that the output is being redirected or captured
-as a variable:
+The default output depends on whether `dsclint` detects that the output is being redirected or
+captured as a variable:
 
-- If the command isn't being redirected or captured, DSC renders each diagnostic in the console as
-  a report that shows the problem in the document text, with the rule identifier as the code and
-  what the rule requires as the help, followed by the counts of diagnostics by level.
-- If the command output is redirected or captured, DSC emits the data as the `json` format to
+- If the command isn't being redirected or captured, `dsclint` renders each diagnostic in the
+  console as a report that shows the problem in the document text, with the rule identifier as the
+  code and what the rule requires as the help, followed by the counts of diagnostics by level.
+- If the command output is redirected or captured, `dsclint` emits the data as the `json` format to
   stdout.
 
 Specify a format to get the data in the console too.
@@ -362,13 +364,107 @@ LongSyntax  : --output-format <OUTPUT_FORMAT>
 ShortSyntax : -o <OUTPUT_FORMAT>
 ```
 
+### -l, --trace-level
+
+<a id="-l"></a>
+<a id="--trace-level"></a>
+
+Defines the minimum message level `dsclint` should emit on stderr during a run. The levels are the
+same as for the `dsc` command, from highest to lowest: `error`, `warn` (default), `info`, `debug`,
+and `trace`.
+
+You can also set the trace level with the `DSC_TRACE_LEVEL` environment variable or the `tracing`
+section of the DSC settings file. The option takes precedence over both unless the policy settings
+file defines the tracing setting.
+
+```yaml
+Type         : string
+Mandatory    : false
+DefaultValue : warn
+ValidValues  : [error, warn, info, debug, trace]
+LongSyntax   : --trace-level <TRACE_LEVEL>
+ShortSyntax  : -l <TRACE_LEVEL>
+```
+
+### -t, --trace-format
+
+<a id="-t"></a>
+<a id="--trace-format"></a>
+
+Defines the output format to use when emitting trace messages on stderr:
+
+- `default` - Emits the message with ANSI console coloring for the timestamp, message level, and
+  line number.
+- `plaintext` - As `default` but without any console colors.
+- `json` - Emits each message as a compressed JSON object with the timestamp, level, message, and
+  line number as properties.
+
+```yaml
+Type         : string
+Mandatory    : false
+DefaultValue : default
+ValidValues  : [default, plaintext, json]
+LongSyntax   : --trace-format <TRACE_FORMAT>
+ShortSyntax  : -t <TRACE_FORMAT>
+```
+
+### --progress-format
+
+<a id="--progress-format"></a>
+
+Defines the progress format to use when emitting progress messages on stderr during resource
+discovery. This option has no short form because `-p` is used by [--parameters](#--parameters).
+
+- `default` - Shows a progress bar if `dsclint` detects that it's being called interactively.
+  Otherwise, no progress is shown.
+- `none` - Doesn't show any progress.
+- `json` - Emits progress as compressed JSON objects with the timestamp, level, message, and line
+  number as properties.
+
+```yaml
+Type         : string
+Mandatory    : false
+DefaultValue : default
+ValidValues  : [default, none, json]
+LongSyntax   : --progress-format <PROGRESS_FORMAT>
+```
+
+### --ignore-settings-file
+
+<a id="--ignore-settings-file"></a>
+
+Ignores the DSC settings file for this run. The `lint` and `tracing` sections of the settings file
+aren't applied, so every rule reports at its default level unless you override it with
+[--rule](#--rule).
+
+```yaml
+Type        : boolean
+Mandatory   : false
+LongSyntax  : --ignore-settings-file
+```
+
+### -V, --version
+
+<a id="-v"></a>
+<a id="--version"></a>
+
+Displays the version of the application. When you specify this option, the application ignores all
+options and arguments except for [--help](#--help), which overrides this option.
+
+```yaml
+Type        : boolean
+Mandatory   : false
+LongSyntax  : --version
+ShortSyntax : -V
+```
+
 ### -h, --help
 
 <a id="-h"></a>
 <a id="--help"></a>
 
-Displays the help for the current command or subcommand. When you specify this option, the
-application ignores all other options and arguments.
+Displays the help for the command. When you specify this option, the application ignores all other
+options and arguments.
 
 ```yaml
 Type        : boolean
@@ -383,7 +479,10 @@ This command returns the diagnostics for the document, counts of the diagnostics
 the document has no errors, and whether resource discovery ran. The command always writes the
 result to stdout, including when the document doesn't parse. In the console it renders the
 diagnostics as reports; otherwise, or when you specify [--output-format](#--output-format), it
-emits the result as data. For more information, see [dsc lint result schema][04].
+emits the result as data. For more information, see [dsclint result schema][04].
+
+The `dsc schema` command returns the JSON schemas for the output as the `lint-result` and
+`lint-rules` schema types.
 
 ## Exit codes
 
@@ -397,8 +496,10 @@ emits the result as data. For more information, see [dsc lint result schema][04]
 
 ## Settings
 
-The `lint` section of the DSC settings file sets the level of rules for every run. The same
-section in the policy settings file takes precedence over the `--rule` option.
+`dsclint` reads the DSC settings file (`dsc.settings.json`) and the policy settings file from the
+folder that contains the `dsclint` executable, which is the folder `dsc` is installed in. The
+`lint` section of the settings file sets the level of rules for every run. The same section in the
+policy settings file takes precedence over the `--rule` option.
 
 ```json
 {
@@ -416,3 +517,4 @@ section in the policy settings file takes precedence over the `--rule` option.
 [02]: https://jsonlines.org/
 [03]: ../../schemas/outputs/lint/rules.md
 [04]: ../../schemas/outputs/lint/result.md
+[05]: ../../cli/server/index.md

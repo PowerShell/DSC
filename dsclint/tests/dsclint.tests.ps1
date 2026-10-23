@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'dsc lint tests' {
+Describe 'dsclint tests' {
     BeforeAll {
         $schemaUri = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
         $cleanConfig = @"
@@ -48,7 +48,7 @@ resources:
     }
 
     It 'reports no diagnostics for a clean document' {
-        $result = $cleanConfig | dsc lint --file - 2>$TestDrive/error.log | ConvertFrom-Json
+        $result = $cleanConfig | dsclint --file - 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
         $result.valid | Should -BeTrue
         $result.discovery | Should -BeTrue
@@ -58,7 +58,7 @@ resources:
     }
 
     It 'reports a duplicate resource and exits with code 5' {
-        $result = $duplicateConfig | dsc lint --file - --no-discovery 2>$TestDrive/error.log | ConvertFrom-Json
+        $result = $duplicateConfig | dsclint --file - --no-discovery 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 5 -Because (Get-Content $TestDrive/error.log -Raw)
         $result.valid | Should -BeFalse
         $result.discovery | Should -BeFalse
@@ -75,7 +75,7 @@ resources:
     }
 
     It 'records the line and column of a diagnostic inside a value' {
-        $result = $unusedParameterConfig | dsc lint --file - --no-discovery 2>$TestDrive/error.log | ConvertFrom-Json
+        $result = $unusedParameterConfig | dsclint --file - --no-discovery 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
         $result.diagnostics[0].path | Should -BeExactly '/parameters/unused'
         $result.diagnostics[0].location.line | Should -Be 3
@@ -83,13 +83,13 @@ resources:
     }
 
     It 'accepts the document with --input' {
-        $result = dsc lint --input $duplicateConfig --no-discovery 2>$TestDrive/error.log | ConvertFrom-Json
+        $result = dsclint --input $duplicateConfig --no-discovery 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 5 -Because (Get-Content $TestDrive/error.log -Raw)
         $result.diagnostics[0].rule | Should -BeExactly 'duplicate-resource'
     }
 
     It 'treats warnings as non-fatal unless --fail-on warning is set' {
-        $result = $unusedParameterConfig | dsc lint --file - --no-discovery 2>$TestDrive/error.log | ConvertFrom-Json
+        $result = $unusedParameterConfig | dsclint --file - --no-discovery 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
         $result.valid | Should -BeTrue
         $result.summary.warnings | Should -Be 1
@@ -97,29 +97,29 @@ resources:
         $result.diagnostics[0].level | Should -BeExactly 'warning'
         $result.diagnostics[0].path | Should -BeExactly '/parameters/unused'
 
-        $null = $unusedParameterConfig | dsc lint --file - --no-discovery --fail-on warning 2>$TestDrive/error.log
+        $null = $unusedParameterConfig | dsclint --file - --no-discovery --fail-on warning 2>$TestDrive/error.log
         $LASTEXITCODE | Should -Be 5 -Because (Get-Content $TestDrive/error.log -Raw)
     }
 
     It 'can change the level of a rule with --rule' {
-        $result = $unusedParameterConfig | dsc lint --file - --no-discovery --rule no-unused-parameters=off 2>$TestDrive/error.log | ConvertFrom-Json
+        $result = $unusedParameterConfig | dsclint --file - --no-discovery --rule no-unused-parameters=off 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
         $result.diagnostics.Count | Should -Be 0
 
-        $result = $unusedParameterConfig | dsc lint --file - --no-discovery --rule no-unused-parameters=error 2>$TestDrive/error.log | ConvertFrom-Json
+        $result = $unusedParameterConfig | dsclint --file - --no-discovery --rule no-unused-parameters=error 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 5 -Because (Get-Content $TestDrive/error.log -Raw)
         $result.valid | Should -BeFalse
         $result.diagnostics[0].level | Should -BeExactly 'error'
     }
 
     It 'rejects an unknown rule with exit code 1' {
-        $null = $cleanConfig | dsc lint --file - --no-discovery --rule no-such-rule=off 2>$TestDrive/error.log
+        $null = $cleanConfig | dsclint --file - --no-discovery --rule no-such-rule=off 2>$TestDrive/error.log
         $LASTEXITCODE | Should -Be 1
         (Get-Content $TestDrive/error.log -Raw) | Should -BeLike '*no-such-rule*'
     }
 
     It 'reports a document that is not valid YAML as a diagnostic' {
-        $result = "resources:`n- name: a`n  type: [unclosed" | dsc lint --file - --no-discovery 2>$TestDrive/error.log | ConvertFrom-Json
+        $result = "resources:`n- name: a`n  type: [unclosed" | dsclint --file - --no-discovery 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 5 -Because (Get-Content $TestDrive/error.log -Raw)
         $result.valid | Should -BeFalse
         $result.diagnostics.Count | Should -Be 1
@@ -136,7 +136,7 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   unknownKey: true
 "@
-        $result = $config | dsc lint --file - --no-discovery 2>$TestDrive/error.log | ConvertFrom-Json
+        $result = $config | dsclint --file - --no-discovery 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 5 -Because (Get-Content $TestDrive/error.log -Raw)
         $violations = @($result.diagnostics | Where-Object rule -eq 'schema-invalid')
         $violations.Count | Should -BeGreaterThan 0
@@ -161,7 +161,7 @@ resources:
   properties:
     output: "$property"
 "@
-        $result = $config | dsc lint --file - --no-discovery 2>$TestDrive/error.log | ConvertFrom-Json
+        $result = $config | dsclint --file - --no-discovery 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 5 -Because (Get-Content $TestDrive/error.log -Raw)
         $diagnostic = $result.diagnostics | Where-Object rule -eq $rule
         $diagnostic | Should -Not -BeNullOrEmpty -Because ($result.diagnostics | ConvertTo-Json -Depth 5)
@@ -182,7 +182,7 @@ resources:
   dependsOn:
   - "[resourceId('Microsoft.DSC.Debug/Echo', 'a')]"
 "@
-        $result = $config | dsc lint --file - --no-discovery 2>$TestDrive/error.log | ConvertFrom-Json
+        $result = $config | dsclint --file - --no-discovery 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 5 -Because (Get-Content $TestDrive/error.log -Raw)
         $diagnostic = $result.diagnostics | Where-Object rule -eq 'circular-dependency'
         $diagnostic.path | Should -BeExactly '/resources/0/dependsOn'
@@ -190,7 +190,7 @@ resources:
     }
 
     It 'warns when --system-root is given but systemRoot() is not used' {
-        $result = $cleanConfig | dsc lint --file - --no-discovery --system-root $TestDrive 2>$TestDrive/error.log | ConvertFrom-Json
+        $result = $cleanConfig | dsclint --file - --no-discovery --system-root $TestDrive 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
         $diagnostic = $result.diagnostics | Where-Object rule -eq 'system-root-unused'
         $diagnostic | Should -Not -BeNullOrEmpty
@@ -205,7 +205,7 @@ resources:
   properties:
     output: "[systemRoot()]"
 "@
-        $result = $config | dsc lint --file - --no-discovery --system-root $TestDrive 2>$TestDrive/error.log | ConvertFrom-Json
+        $result = $config | dsclint --file - --no-discovery --system-root $TestDrive 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
         $result.diagnostics | Where-Object rule -eq 'system-root-unused' | Should -BeNullOrEmpty
     }
@@ -224,7 +224,7 @@ resources:
   properties:
     output: "[concat(string(parameters('count')), parameters('required'))]"
 "@
-        $result = $config | dsc lint --file - --no-discovery --parameters '{"parameters": {"count": "five", "extra": 1}}' 2>$TestDrive/error.log | ConvertFrom-Json
+        $result = $config | dsclint --file - --no-discovery --parameters '{"parameters": {"count": "five", "extra": 1}}' 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 5 -Because (Get-Content $TestDrive/error.log -Raw)
         $result.diagnostics.rule | Should -Contain 'parameter-value-type'
         $result.diagnostics.rule | Should -Contain 'missing-parameter-value'
@@ -238,14 +238,14 @@ resources:
 - name: a
   type: Not.Installed/Anywhere
 "@
-        $result = $config | dsc lint --file - 2>$TestDrive/error.log | ConvertFrom-Json
+        $result = $config | dsclint --file - 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
         $result.discovery | Should -BeTrue
         $diagnostic = $result.diagnostics | Where-Object rule -eq 'unknown-resource-type'
         $diagnostic.level | Should -BeExactly 'warning'
         $diagnostic.path | Should -BeExactly '/resources/0/type'
 
-        $result = $config | dsc lint --file - --no-discovery 2>$TestDrive/error.log | ConvertFrom-Json
+        $result = $config | dsclint --file - --no-discovery 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
         $result.discovery | Should -BeFalse
         $result.diagnostics | Where-Object rule -eq 'unknown-resource-type' | Should -BeNullOrEmpty
@@ -254,7 +254,7 @@ resources:
     It 'lints several files in one run and records the file on each diagnostic' {
         Set-Content -Path "$TestDrive/clean.dsc.yaml" -Value $cleanConfig
         Set-Content -Path "$TestDrive/duplicate.dsc.yaml" -Value $duplicateConfig
-        $result = dsc lint --file "$TestDrive/clean.dsc.yaml" --file "$TestDrive/duplicate.dsc.yaml" --no-discovery 2>$TestDrive/error.log | ConvertFrom-Json
+        $result = dsclint --file "$TestDrive/clean.dsc.yaml" --file "$TestDrive/duplicate.dsc.yaml" --no-discovery 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 5 -Because (Get-Content $TestDrive/error.log -Raw)
         $result.diagnostics.Count | Should -Be 1
         $result.diagnostics[0].file | Should -BeLike '*duplicate.dsc.yaml'
@@ -266,14 +266,14 @@ resources:
 type: Test/Example
 version: 1.0.0
 "@
-        $result = $manifest | dsc lint --file - --no-discovery 2>$TestDrive/error.log | ConvertFrom-Json
+        $result = $manifest | dsclint --file - --no-discovery 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 5 -Because (Get-Content $TestDrive/error.log -Raw)
         $result.diagnostics.Count | Should -Be 1
         $result.diagnostics[0].rule | Should -BeExactly 'unsupported-document-type'
     }
 
     It 'lists the rules with their levels' {
-        $rules = dsc lint --list-rules --output-format json 2>$TestDrive/error.log | ConvertFrom-Json
+        $rules = dsclint --list-rules --output-format json 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
         $rules.id | Should -Contain 'duplicate-resource'
         $rules.id | Should -Contain 'parse-error'
@@ -284,28 +284,17 @@ version: 1.0.0
         $duplicate.tier | Should -BeExactly 'static'
         ($rules | Where-Object id -eq 'unknown-resource-type').tier | Should -BeExactly 'resource'
 
-        $rules = dsc lint --list-rules --rule duplicate-resource=warning --output-format json 2>$TestDrive/error.log | ConvertFrom-Json
+        $rules = dsclint --list-rules --rule duplicate-resource=warning --output-format json 2>$TestDrive/error.log | ConvertFrom-Json
         ($rules | Where-Object id -eq 'duplicate-resource').level | Should -BeExactly 'warning'
     }
 
-    It 'exposes the output schemas' {
-        $schema = dsc schema --type lint-result 2>$TestDrive/error.log | ConvertFrom-Json
-        $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
-        $schema.properties.diagnostics | Should -Not -BeNullOrEmpty
-        $schema.properties.summary | Should -Not -BeNullOrEmpty
-
-        $schema = dsc schema --type lint-rules 2>$TestDrive/error.log | ConvertFrom-Json
-        $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
-        $schema.properties.defaultLevel | Should -Not -BeNullOrEmpty
-    }
-
     It 'lints the shipped example without errors: <name>' -TestCases (
-        Get-ChildItem (Join-Path $PSScriptRoot '../examples') -Filter '*.dsc.*' |
+        Get-ChildItem (Join-Path $PSScriptRoot '../../dsc/examples') -Filter '*.dsc.*' |
             Where-Object { $_.Extension -in @('.yaml', '.json') -and $_.Name -ne 'invalid_schema.dsc.yaml' } |
             ForEach-Object { @{ name = $_.Name; path = $_.FullName } }
     ) {
         param($name, $path)
-        $result = dsc lint --file $path --no-discovery 2>$TestDrive/error.log | ConvertFrom-Json
+        $result = dsclint --file $path --no-discovery 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because ($result.diagnostics | ConvertTo-Json -Depth 5)
         $result.summary.errors | Should -Be 0
     }

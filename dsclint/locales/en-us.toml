@@ -1,0 +1,59 @@
+_version = 1
+
+[args]
+about = "Check a DSC configuration document for problems without applying it"
+input = "The configuration document as JSON or YAML to lint"
+file = "The path to a configuration document to lint; specify multiple times to lint several documents. Use '-' to read from STDIN."
+parameters = "Parameters to pass to the configuration as JSON or YAML"
+parametersFile = "Parameters to pass to the configuration as a JSON or YAML file"
+systemRoot = "Specify the operating system root path if not targeting the current running OS"
+noDiscovery = "Skip resource discovery and the rules that inspect installed resources"
+failOn = "The lowest diagnostic level that makes the command fail (default: error)"
+rule = "Override the level of a rule, like 'no-unused-parameters=off'; specify multiple times for several rules"
+listRules = "List the lint rules and the level each reports at instead of linting"
+outputFormat = "The output format to use"
+traceFormat = "Trace format to use"
+traceLevel = "Trace level to use"
+progressFormat = "Progress format to use during resource discovery"
+ignoreSettingsFile = "Ignore the settings file when running the command"
+
+[main]
+failedToSpawnMain = "Failed to spawn dsclint main thread: %{error}"
+failedToJoinMain = "Failed to join dsclint main thread: %{error}"
+usingVersion = "Running dsclint version"
+
+[lint]
+mergingParameters = "Merging inline parameters with parameters file (inline takes precedence)"
+failedMergingParameters = "Failed to merge parameters"
+invalidParameters = "Invalid parameters"
+failedConvertJson = "Failed to convert YAML to JSON"
+noInput = "No configuration document specified; use '--file' or '--input'"
+lintFailed = "Linting failed"
+invalidLintRule = "Invalid lint rule option"
+tableHeader_rule = "Rule"
+tableHeader_category = "Category"
+tableHeader_level = "Level"
+tableHeader_tier = "Tier"
+tableHeader_description = "Description"
+
+[report]
+lintSummary = "errors: %{errors}, warnings: %{warnings}, info: %{info}"
+
+[util]
+failedToReadTracingSetting = "Could not read 'tracing' setting"
+invalidTraceLevel = "Default to 'warn', invalid DSC_TRACE_LEVEL value"
+failedToSetTracing = "Unable to set global default tracing subscriber.  Tracing is disabled."
+readingInput = "Reading input from command line parameter"
+inputIsFile = "Document provided is a file path, use '--file' instead"
+readingInputFromFile = "Reading input from file"
+readingInputFromStdin = "Reading input from STDIN"
+invalidUtf8 = "Invalid utf-8 input"
+failedToReadStdin = "Failed to read input from STDIN"
+failedToReadFile = "Failed to read input file"
+noInput = "No input provided"
+emptyInput = "Empty input provided"
+removingUtf8Bom = "Removing UTF-8 BOM from input"
+failedToParseFileParameters = "Failed to parse parameters file: %{error}"
+failedToParseInlineParameters = "Failed to parse inline parameters: %{error}"
+parametersNotObject = "Parameters must be an object"
+invalidVersion = "Unable to parse the dsclint version from the cargo manifest: %{error}"

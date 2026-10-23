@@ -141,7 +141,7 @@ param(
     [switch]$ExcludeRustTests,
     [string]$RustTestFilter,
     [switch]$ExcludePesterTests,
-    [ValidateSet("dsc", "adapters", "extensions", "grammars", "resources")]
+    [ValidateSet("dsc", "dsclint", "adapters", "extensions", "grammars", "resources")]
     [string[]]$PesterTestGroup,
     [switch]$GetPackageVersion,
     [switch]$SkipLinkCheck,

@@ -1,15 +1,15 @@
 ---
-description: JSON schema reference for the data returned by the 'dsc lint' command.
-ms.date:     10/20/2026
+description: JSON schema reference for the data returned by the 'dsclint' command and the 'lint_dsc_config' MCP tool.
+ms.date:     10/23/2026
 ms.topic:    reference
-title:       dsc lint result schema reference
+title:       dsclint result schema reference
 ---
 
-# dsc lint result schema reference
+# dsclint result schema reference
 
 ## Synopsis
 
-The result output from the `dsc lint` command.
+The result output from the `dsclint` command and the `lint_dsc_config` tool of the DSC MCP server.
 
 ## Metadata
 
@@ -21,10 +21,10 @@ Type:          object
 
 ## Description
 
-The output from the `dsc lint` command includes every diagnostic the rules reported, counts of the
+The output from the `dsclint` command includes every diagnostic the rules reported, counts of the
 diagnostics by level, whether the document is free of error-level diagnostics, and whether
 resource discovery ran. The command always emits this object, including when the document doesn't
-parse.
+parse. The `dsc schema --type lint-result` command returns this schema.
 
 ## Required properties
 

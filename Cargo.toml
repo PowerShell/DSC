@@ -5,6 +5,7 @@ resolver = "2"
 members = [
     "dsc",
     "dsc-bicep-ext",
+    "dsclint",
     "grammars/tree-sitter-dscexpression",
     "grammars/tree-sitter-ssh-server-config",
     "lib/dsc-lib-jsonschema-macros",
@@ -40,6 +41,7 @@ members = [
 default-members = [
     "dsc",
     "dsc-bicep-ext",
+    "dsclint",
     "grammars/tree-sitter-dscexpression",
     "grammars/tree-sitter-ssh-server-config",
     "lib/dsc-lib-jsonschema-macros",
@@ -76,6 +78,7 @@ default-members = [
 Windows = [
     "dsc",
     "dsc-bicep-ext",
+    "dsclint",
     "grammars/tree-sitter-dscexpression",
     "grammars/tree-sitter-ssh-server-config",
     "lib/dsc-lib-jsonschema-macros",
@@ -107,6 +110,7 @@ Windows = [
 macOS = [
     "dsc",
     "dsc-bicep-ext",
+    "dsclint",
     "grammars/tree-sitter-dscexpression",
     "grammars/tree-sitter-ssh-server-config",
     "lib/dsc-lib-jsonschema-macros",
@@ -129,6 +133,7 @@ macOS = [
 Linux = [
     "dsc",
     "dsc-bicep-ext",
+    "dsclint",
     "grammars/tree-sitter-dscexpression",
     "grammars/tree-sitter-ssh-server-config",
     "lib/dsc-lib-jsonschema-macros",
@@ -170,13 +175,13 @@ base64 = { version = "0.23.1" }
 bytes = { version = "1.12.1" }
 # dsc-lib, sshdconfig
 chrono = { version = "0.4.45" }
-# dsc, dsc-lib, dsc-bicep-ext, dscecho, registry, runcommandonset, sshdconfig, dsctest, test_group_resource
+# dsc, dsc-lib, dsc-bicep-ext, dsclint, dscecho, registry, runcommandonset, sshdconfig, dsctest, test_group_resource
 clap = { version = "4.6.7", features = ["derive"] }
 # dsc
 clap_complete = { version = "4.6.11" }
 # dsc-lib
 const-str = {version = "1.1" }
-# dsc, registry, dsc-lib-registry, sshdconfig
+# dsc, dsclint, registry, dsc-lib-registry, sshdconfig
 crossterm = { version = "0.29" }
 # dsc
 ctrlc = { version = "3.5.2" }
@@ -196,7 +201,7 @@ jsonschema = { version = "0.58.6", default-features = false }
 referencing = { version = "0.58.6" }
 # dsc-lib
 linked-hash-map = { version = "0.5" }
-# dsc, dsc-lib
+# dsc, dsc-lib, dsclint
 miette = { version = "7.6.0" }
 # dsc-lib
 murmurhash64 = { version = "0.3" }
@@ -228,7 +233,7 @@ rmcp = { version = "3.5.1" }
 roxmltree = { version = "0.21.1" }
 # dsc_lib
 rt-format = { version = "0.3" }
-# dsc, dsc-lib, dsc-bicep-ext, dscecho, registry, dsc-lib-registry, runcommandonset, sshdconfig
+# dsc, dsc-lib, dsc-bicep-ext, dsclint, dscecho, registry, dsc-lib-registry, runcommandonset, sshdconfig
 rust-i18n = { version = "4.2.4" }
 # dsc-lib
 saphyr-parser = { version = "0.2.2" }
@@ -238,17 +243,17 @@ schemars = { version = "1.2.2", features = ["preserve_order"] }
 semver = { version = "1.0.28" }
 # dsc-lib
 serial_test = { version = "4.0.1" }
-# dsc, dsc-lib, dscecho, dsc-lib-osinfo, process, registry, dsc-lib-registry, runcommandonset, sshdconfig, dsctest, test_group_resource
+# dsc, dsc-lib, dsclint, dscecho, dsc-lib-osinfo, process, registry, dsc-lib-registry, runcommandonset, sshdconfig, dsctest, test_group_resource
 serde = { version = "1.0.229", features = ["derive"] }
-# dsc, dsc-lib, dscecho, dsc-lib-osinfo, osinfo, process, registry, dsc-lib-registry, runcommandonset, sshdconfig, dsctest, test_group_resource, y2j
+# dsc, dsc-lib, dsclint, dscecho, dsc-lib-osinfo, osinfo, process, registry, dsc-lib-registry, runcommandonset, sshdconfig, dsctest, test_group_resource, y2j
 serde_json = { version = "1.0.151", features = ["preserve_order"] }
 # file_dsc
 sha2 = { version = "0.11.0" }
-# dsc, dsc-lib, y2j
+# dsc, dsc-lib, dsclint, y2j
 serde_yaml = { version = "0.9" }
 # dsc-lib-jsonschema-macros
 syn = { version = "3.0.6" }
-# dsc, y2j
+# dsc, dsclint, y2j
 syntect = { version = "5.3", features = ["default-fancy"], default-features = false }
 # dsc, process
 sysinfo = { version = "0.39.6" }
@@ -270,7 +275,7 @@ tonic = { version = "0.14.6" }
 tonic-prost = { version = "0.14.6" }
 # dsc-bicep-ext
 tonic-reflection = { version = "0.14.6" }
-# dsc, dsc-lib, dsc-bicep-ext, registry, dsc-lib-registry, runcommandonset, sshdconfig
+# dsc, dsc-lib, dsc-bicep-ext, dsclint, registry, dsc-lib-registry, runcommandonset, sshdconfig
 tracing = { version = "0.1.44" }
 # dsc, dsc-lib
 tracing-indicatif = { version = "0.3.14" }

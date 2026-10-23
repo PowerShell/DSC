@@ -77,19 +77,19 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
 ### Added
 
-- Added the `dsc lint` command, which checks a configuration document for problems without
-  applying it. The command validates the document against the configuration document schema and
-  runs a set of rules that report duplicate resource names, unresolved and circular dependencies,
-  expressions that don't parse or call unknown functions, undeclared or unused parameters and
-  variables, invalid parameter constraints, deprecated features, and, with resource discovery,
-  resource types that aren't installed or literal properties that don't match a resource's schema.
-  You can change the level of a rule for a run with the `--rule` option or for every run in the
-  new `lint` section of the settings file, and control which level makes the command fail with
-  `--fail-on`. The `dsc schema` command exposes the new `lint-result` and `lint-rules` schemas,
-  and the MCP server exposes the linter as the `lint_dsc_config` tool. Every diagnostic records
-  the line and column of the problem, and when the output isn't redirected the command renders
-  each diagnostic as a report that shows the problem in the document text with the rule's
-  identifier and what the rule requires.
+- Added the `dsclint` command, a standalone executable that ships with DSC and checks a
+  configuration document for problems without applying it. The command validates the document
+  against the configuration document schema and runs a set of rules that report duplicate resource
+  names, unresolved and circular dependencies, expressions that don't parse or call unknown
+  functions, undeclared or unused parameters and variables, invalid parameter constraints,
+  deprecated features, and, with resource discovery, resource types that aren't installed or
+  literal properties that don't match a resource's schema. You can change the level of a rule for
+  a run with the `--rule` option or for every run in the new `lint` section of the settings file,
+  and control which level makes the command fail with `--fail-on`. The `dsc schema` command
+  exposes the new `lint-result` and `lint-rules` schemas, and the MCP server exposes the linter as
+  the `lint_dsc_config` tool. Every diagnostic records the line and column of the problem, and
+  when the output isn't redirected the command renders each diagnostic as a report that shows the
+  problem in the document text with the rule's identifier and what the rule requires.
 
   <details><summary>Related work items</summary>
 

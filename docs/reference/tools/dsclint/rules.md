@@ -1,13 +1,13 @@
 ---
-description: Reference for the rules the 'dsc lint' command checks configuration documents against
-ms.date:     10/20/2026
+description: Reference for the rules the 'dsclint' command checks configuration documents against
+ms.date:     10/23/2026
 ms.topic:    reference
-title:       dsc lint rules
+title:       dsclint rules
 ---
 
-# dsc lint rules
+# dsclint rules
 
-The `dsc lint` command checks a configuration document against the rules on this page. Each rule
+The `dsclint` command checks a configuration document against the rules on this page. Each rule
 has an identifier you can use with the `--rule` option or in the `lint` section of the settings
 file, a category, a default level, and a tier:
 
@@ -304,7 +304,7 @@ run the document otherwise.
 ### dsc-version-unsatisfied
 
 The `directives.version` requirement should be satisfied by the version of DSC in use. The rule
-checks the version of the `dsc` command that runs the linter.
+checks the version of `dsclint`, which is the version of the `dsc` command it ships with.
 
 ## Environment rules
 

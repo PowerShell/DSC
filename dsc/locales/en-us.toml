@@ -40,13 +40,6 @@ version = "The version requirement for the resource, like '^1.2' or '>1.2.3, <1.
 serverAbout = "Use DSC as a server over JSON-RPC (useful as MCP server)"
 bicepAbout = "Use DSC as a Bicep server over gRPC"
 ignoreSettingsFile = "Ignore the settings file when running the command"
-lintAbout = "Check a configuration document for problems without applying it"
-lintInput = "The configuration document as JSON or YAML to lint"
-lintFile = "The path to a configuration document to lint; specify multiple times to lint several documents. Use '-' to read from STDIN."
-noDiscovery = "Skip resource discovery and the rules that inspect installed resources"
-failOn = "The lowest diagnostic level that makes the command fail (default: error)"
-rule = "Override the level of a rule, like 'no-unused-parameters=off'; specify multiple times for several rules"
-listRules = "List the lint rules and the level each reports at instead of linting"
 
 [main]
 failedToSpawnMain = "Failed to spawn dsc main thread: %{error}"
@@ -139,9 +132,6 @@ adapterNotFound = "Adapter '%{adapter}' does not exist"
 [server.show_dsc_resource]
 resourceNotFound = "Resource type '%{type_name}' does not exist"
 
-[report]
-lintSummary = "errors: %{errors}, warnings: %{warnings}, info: %{info}"
-
 [subcommand]
 actualStateNotObject = "actual_state is not an object"
 unexpectedTestResult = "Unexpected Group TestResult"
@@ -177,13 +167,6 @@ invalidFunctionDescriptionFilter = "Invalid function description filter"
 maxInt = "maxInt"
 invalidManifest = "Error in manifest for"
 jsonArrayNotSupported = "JSON array output format is only supported for `--all'"
-lintNoInput = "No configuration document specified; use '--file' or '--input'"
-lintFailed = "Linting failed"
-invalidLintRule = "Invalid lint rule option"
-tableHeader_lintRule = "Rule"
-tableHeader_lintCategory = "Category"
-tableHeader_lintLevel = "Level"
-tableHeader_lintTier = "Tier"
 
 [util]
 failedToConvertJsonToString = "Failed to convert JSON to string"
