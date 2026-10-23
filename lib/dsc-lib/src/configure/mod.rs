@@ -204,7 +204,7 @@ fn resource_supports_export_filtering(resource: &dyn ResourceInvoke) -> bool {
             Some(ExportSchemaOrFiltering::SupportsFiltering(false))
         )
     } else {
-        false
+        true
     }
 }
 
