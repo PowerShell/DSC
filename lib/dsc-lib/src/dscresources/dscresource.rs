@@ -287,7 +287,7 @@ impl DscResource {
     }
 
     fn get_adapter_resource(configurator: &mut Configurator, adapter: &FullyQualifiedTypeName) -> Result<Box<dyn ResourceInvoke>, DscError> {
-        if let Some(adapter_resource) = configurator.discovery().find_resource(&DiscoveryFilter::new(adapter, None, None))? && adapter_resource.kind() == ResourceKind::Resource {
+        if let Some(adapter_resource) = configurator.discovery().find_resource(&DiscoveryFilter::new(adapter, None, None))? && adapter_resource.kind() == ResourceKind::Adapter {
             return Ok(adapter_resource);
         }
         Err(DscError::Operation(t!("dscresources.dscresource.adapterResourceNotFound", adapter = adapter).to_string()))
