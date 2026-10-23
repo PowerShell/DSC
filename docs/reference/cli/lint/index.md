@@ -76,7 +76,8 @@ For the list of rules and what each one checks, see [dsc lint rules][01].
 
 <a id="example-1"></a>
 
-The command reports a duplicate resource name and exits with code `5`.
+The command reports a duplicate resource name and exits with code `5`. In the console, each
+diagnostic is rendered as a report that shows the problem in the document.
 
 ```yaml
 # example.dsc.config.yaml
@@ -96,6 +97,30 @@ resources:
 dsc lint --file ./example.dsc.config.yaml
 ```
 
+```text
+duplicate-resource
+
+  × Resource 'EnsureTest1Value' of type 'Microsoft.DSC.Debug/Echo' is declared more than once
+   ╭─[./example.dsc.config.yaml:7:3]
+ 5 │   properties:
+ 6 │     output: one
+ 7 │ - name: EnsureTest1Value
+   ·   ──────────────────────
+ 8 │   type: Microsoft.DSC.Debug/Echo
+ 9 │   properties:
+   ╰────
+  help: Resource names must be unique among resources of the same type at the same level.
+
+errors: 1, warnings: 0, info: 0
+```
+
+When the output is redirected, or when you specify [--output-format](#--output-format), the
+command emits the result as data instead:
+
+```sh
+dsc lint --file ./example.dsc.config.yaml --output-format yaml
+```
+
 ```yaml
 diagnostics:
 - level: error
@@ -104,6 +129,9 @@ diagnostics:
   message: Resource 'EnsureTest1Value' of type 'Microsoft.DSC.Debug/Echo' is declared more than once
   path: /resources/1
   file: ./example.dsc.config.yaml
+  location:
+    line: 7
+    column: 3
 summary:
   errors: 1
   warnings: 0
@@ -315,13 +343,16 @@ available formats are:
 - `pretty-json` to emit the data as JSON with newlines, indentation, and spaces for readability.
 - `yaml` to emit the data as YAML.
 
-The default output format depends on whether DSC detects that the output is being redirected or
-captured as a variable:
+The default output depends on whether DSC detects that the output is being redirected or captured
+as a variable:
 
-- If the command isn't being redirected or captured, DSC displays the output as the `yaml` format
-  in the console.
+- If the command isn't being redirected or captured, DSC renders each diagnostic in the console as
+  a report that shows the problem in the document text, with the rule identifier as the code and
+  what the rule requires as the help, followed by the counts of diagnostics by level.
 - If the command output is redirected or captured, DSC emits the data as the `json` format to
   stdout.
+
+Specify a format to get the data in the console too.
 
 ```yaml
 Type        : string
@@ -350,8 +381,9 @@ ShortSyntax : -h
 
 This command returns the diagnostics for the document, counts of the diagnostics by level, whether
 the document has no errors, and whether resource discovery ran. The command always writes the
-result to stdout, including when the document doesn't parse. For more information, see
-[dsc lint result schema][04].
+result to stdout, including when the document doesn't parse. In the console it renders the
+diagnostics as reports; otherwise, or when you specify [--output-format](#--output-format), it
+emits the result as data. For more information, see [dsc lint result schema][04].
 
 ## Exit codes
 

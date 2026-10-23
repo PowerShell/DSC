@@ -12,6 +12,7 @@ use dscresources::{dscresource::{DscResource, Invoke}, invoke_result::{GetResult
 use rust_i18n::i18n;
 
 pub mod configure;
+pub mod diagnostics;
 pub mod discovery;
 pub mod dscerror;
 pub mod dscresources;

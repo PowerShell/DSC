@@ -2,10 +2,12 @@
 // Licensed under the MIT License.
 
 use crate::args::{ConfigSubCommand, SchemaType, ExtensionSubCommand, FunctionSubCommand, GetOutputFormat, ListOutputFormat, OutputFormat, ResourceSubCommand};
+use crate::report::{render, render_lint_result};
 use crate::resolve::{get_contents, Include};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
-use crate::util::{current_dsc_version, get_input, get_schema, in_desired_state, read_input, set_dscconfigroot, write_object, DSC_CONFIG_ROOT, EXIT_DSC_ASSERTION_FAILED, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_VALIDATION_FAILED};
+use crate::util::{current_dsc_version, get_input, get_input_with_source, get_schema, in_desired_state, read_input, set_dscconfigroot, write_object, DSC_CONFIG_ROOT, EXIT_DSC_ASSERTION_FAILED, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_VALIDATION_FAILED};
+use dsc_lib::diagnostics::DocumentSource;
 use dsc_lib::lint::{LintError, LintLevel, LintOptions, LintResult, Linter, RuleLevelOverride};
 use dsc_lib::types::{FullyQualifiedTypeName, ResourceVersionReq, TypeNameFilter};
 use dsc_lib::{
@@ -71,7 +73,7 @@ pub fn config_get(configurator: &mut Configurator, format: Option<&OutputFormat>
             }
         },
         Err(err) => {
-            error!("{err}");
+            error!("{}", render(&err));
             return Err(ExitCode::from(EXIT_DSC_ERROR));
         }
     }
@@ -106,7 +108,7 @@ pub fn config_set(configurator: &mut Configurator, format: Option<&OutputFormat>
             }
         },
         Err(err) => {
-            error!("Error: {err}");
+            error!("Error: {}", render(&err));
             return Err(ExitCode::from(EXIT_DSC_ERROR));
         }
     }
@@ -207,7 +209,7 @@ pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat
             }
         },
         Err(err) => {
-            error!("{err}");
+            error!("{}", render(&err));
             let exit_code = config_test_exit_code(&err);
             return Err(ExitCode::from(exit_code));
         }
@@ -217,7 +219,7 @@ pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat
 
 fn config_test_exit_code(error: &DscError) -> u8 {
     match error {
-        DscError::Schema(_) => EXIT_VALIDATION_FAILED,
+        DscError::Schema(_) | DscError::SchemaValidation(_) => EXIT_VALIDATION_FAILED,
         _ => EXIT_DSC_ERROR,
     }
 }
@@ -225,10 +227,13 @@ fn config_test_exit_code(error: &DscError) -> u8 {
 #[cfg(test)]
 mod tests {
     use super::{config_test_exit_code, DscError, EXIT_DSC_ERROR, EXIT_VALIDATION_FAILED};
+    use dsc_lib::diagnostics::SchemaValidationError;
 
     #[test]
     fn schema_errors_use_validation_failed_exit_code() {
         assert_eq!(config_test_exit_code(&DscError::Schema("invalid value".to_string())), EXIT_VALIDATION_FAILED);
+        let violations = DscError::SchemaValidation(Box::new(SchemaValidationError::new("input for 'Test/Echo'", Vec::new())));
+        assert_eq!(config_test_exit_code(&violations), EXIT_VALIDATION_FAILED);
     }
 
     #[test]
@@ -259,7 +264,7 @@ pub fn config_export(configurator: &mut Configurator, format: Option<&OutputForm
             }
         },
         Err(err) => {
-            error!("{err}");
+            error!("{}", render(&err));
             return Err(ExitCode::from(EXIT_DSC_ERROR));
         }
     }
@@ -299,14 +304,14 @@ fn initialize_config_root(path: Option<&String>) -> Result<Option<String>, ExitC
 #[allow(clippy::too_many_lines)]
 #[allow(clippy::too_many_arguments)]
 pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounted_path: Option<&String>, as_group: &bool, as_assert: &bool, as_include: &bool, progress_format: ProgressFormat) -> Result<(), ExitCode> {
-    let (new_parameters, json_string) = match subcommand {
+    let (new_parameters, json_string, source) = match subcommand {
         ConfigSubCommand::Get { input, file, .. } |
         ConfigSubCommand::Set { input, file, .. } |
         ConfigSubCommand::Test { input, file, .. } |
         ConfigSubCommand::Validate { input, file, .. } |
         ConfigSubCommand::Export { input, file, .. } => {
             let new_path = initialize_config_root(file.as_ref())?;
-            let document = get_input(input.as_ref(), new_path.as_ref())?;
+            let (document, source) = get_input_with_source(input.as_ref(), new_path.as_ref())?;
             if *as_include {
                 let (new_parameters, config_json) = match get_contents(&document) {
                     Ok((parameters, config_json)) => (parameters, config_json),
@@ -315,9 +320,9 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
                         return Err(ExitCode::from(EXIT_DSC_ERROR));
                     }
                 };
-                (new_parameters, config_json)
+                (new_parameters, config_json, None)
             } else {
-                (None, document)
+                (None, document, source)
             }
         },
         ConfigSubCommand::Resolve { input, file, .. } => {
@@ -330,17 +335,20 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
                     return Err(ExitCode::from(EXIT_DSC_ERROR));
                 }
             };
-            (new_parameters, config_json)
+            (new_parameters, config_json, None)
         }
     };
 
     let mut configurator = match Configurator::new_with_dsc_version(&json_string, progress_format, current_dsc_version()) {
         Ok(configurator) => configurator,
         Err(err) => {
-            error!("Error: {err}");
+            error!("Error: {}", render(&err));
             return Err(ExitCode::from(EXIT_DSC_ERROR));
         }
     };
+    if let Some(source) = source {
+        configurator.set_source(source);
+    }
 
     if let ConfigSubCommand::Set { what_if , .. } = subcommand && *what_if {
         configurator.context.execution_type = ExecutionKind::WhatIf;
@@ -408,12 +416,12 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
                     }
                 }
             } else {
-                match validate_config(configurator.get_config(), progress_format) {
+                match validate_config(configurator.get_config(), configurator.source(), progress_format) {
                     Ok(()) => {
                         // valid, so do nothing
                     },
                     Err(err) => {
-                        error!("{err}");
+                        error!("{}", render(&err));
                         result.valid = false;
                     }
                 }
@@ -577,9 +585,9 @@ pub fn lint(args: &LintArgs, progress_format: ProgressFormat) -> Result<(), Exit
     }
 
     let mut result = LintResult::from_diagnostics(Vec::new(), true);
-    for (file, document) in documents {
-        linter.set_file(file);
-        let document_result = match linter.lint(&document) {
+    for (file, document) in &documents {
+        linter.set_file(file.clone());
+        let document_result = match linter.lint(document) {
             Ok(document_result) => document_result,
             Err(DscError::Lint(err @ LintError::InvalidParameters(_))) => {
                 error!("{}: {err}", t!("subcommand.lintFailed"));
@@ -593,14 +601,19 @@ pub fn lint(args: &LintArgs, progress_format: ProgressFormat) -> Result<(), Exit
         result.merge(document_result);
     }
 
-    let json = match serde_json::to_string(&result) {
-        Ok(json) => json,
-        Err(err) => {
-            error!("JSON: {err}");
-            return Err(ExitCode::from(EXIT_JSON_ERROR));
-        }
-    };
-    write_object(&json, args.output_format, false)?;
+    if args.output_format.is_none() && io::stdout().is_terminal() {
+        let descriptions = linter.rules().into_iter().map(|rule| (rule.id, rule.description)).collect();
+        print!("{}", render_lint_result(&result, &documents, &descriptions, true));
+    } else {
+        let json = match serde_json::to_string(&result) {
+            Ok(json) => json,
+            Err(err) => {
+                error!("JSON: {err}");
+                return Err(ExitCode::from(EXIT_JSON_ERROR));
+            }
+        };
+        write_object(&json, args.output_format, false)?;
+    }
 
     let threshold = args.fail_on.unwrap_or(LintLevel::Error);
     if result.has_diagnostic_at_least(threshold) {
@@ -657,6 +670,8 @@ fn list_lint_rules(linter: &Linter, format: Option<&OutputFormat>) -> Result<(),
 /// # Arguments
 ///
 /// * `config` - The configuration to validate.
+/// * `source` - The text the configuration was read from, so that errors point into it.
+/// * `progress_format` - How to report progress during resource discovery.
 ///
 /// # Returns
 ///
@@ -665,12 +680,12 @@ fn list_lint_rules(linter: &Linter, format: Option<&OutputFormat>) -> Result<(),
 /// # Errors
 ///
 /// * `DscError` - The error that occurred.
-pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) -> Result<(), DscError> {
+pub fn validate_config(config: &Configuration, source: Option<&DocumentSource>, progress_format: ProgressFormat) -> Result<(), DscError> {
     // first validate against the config schema
     debug!("{}", t!("subcommand.validatingConfiguration"));
     let schema = serde_json::to_value(get_schema(SchemaType::Configuration))?;
     let config_value = serde_json::to_value(config)?;
-    validate_json("Configuration", &schema, &config_value)?;
+    validate_json("Configuration", &schema, &config_value).map_err(|err| anchor_error(err, source, ""))?;
     let mut dsc = DscManager::new();
 
     // then validate each resource
@@ -693,7 +708,7 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
     }
     dsc.find_resources(&resource_types, progress_format)?;
 
-    for resource_block in resources {
+    for (index, resource_block) in resources.iter().enumerate() {
         let Some(type_name) = resource_block["type"].as_str() else {
             return Err(DscError::Validation(t!("subcommand.resourceTypeNotSpecified").to_string()));
         };
@@ -712,11 +727,28 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
 
         // see if the resource is command based
         if resource.implemented_as == Some(ImplementedAs::Command) {
-            validate_properties(resource, &resource_block["properties"])?;
+            validate_properties(resource, &resource_block["properties"])
+                .map_err(|err| anchor_error(err, source, &format!("/resources/{index}/properties")))?;
         }
     }
 
     Ok(())
+}
+
+/// Point a schema validation error at the document it was found in.
+///
+/// # Arguments
+///
+/// * `error` - The error.
+/// * `source` - The document text, when known.
+/// * `base` - The pointer in the document that the error's paths are relative to.
+fn anchor_error(error: DscError, source: Option<&DocumentSource>, base: &str) -> DscError {
+    match (error, source) {
+        (DscError::SchemaValidation(schema_error), Some(source)) => {
+            DscError::SchemaValidation(Box::new(schema_error.with_source(&source.text, &source.name, base)))
+        },
+        (error, _) => error,
+    }
 }
 
 pub fn extension(subcommand: &ExtensionSubCommand, progress_format: ProgressFormat) -> Result<(), ExitCode> {

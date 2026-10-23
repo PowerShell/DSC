@@ -116,6 +116,13 @@ importingParametersFromComplexInput = "Importing parameters from complex input"
 importingParametersFromInput = "Importing parameters from simple input"
 invalidParamsFormat = "Invalid parameters format: %{error}"
 
+[diagnostics.schema]
+unexpectedProperty = "'%{property}' isn't a known property"
+missingProperty = "missing required property '%{property}'"
+didYouMean = "Did you mean '%{suggestion}' instead of '%{property}'?"
+knownProperties = "Known properties: %{properties}"
+at = "at '%{path}'"
+
 [discovery.commandDiscovery]
 couldNotReadSetting = "Could not read 'resourcePath' setting"
 appendingEnvPath = "Appending PATH to resourcePath"
@@ -233,6 +240,10 @@ writingStdin = "Writing to command STDIN: %{input}"
 processTrace = "PID %{process_id}: %{message}"
 processTraceWithTarget = "PID %{process_id}: %{target}: %{line_number}: %{message}"
 redactedSchemaErrorMessage = "'secureString' and 'secureObject' values are not compatible with the schema, use '.secureString' or '.secureObject' in an expression to convert to string or object"
+schemaSubjectInput = "input for '%{resource}'"
+schemaSubjectOutput = "output from '%{resource}'"
+schemaSourceInput = "input"
+schemaSourceOutput = "output"
 
 [dscresources.dscresource]
 invokeGet = "Invoking get for '%{resource}'"
@@ -1121,6 +1132,9 @@ discoveryFailedDescription = "Resource discovery must succeed for the rules that
 documentKindConfiguration = "configuration document"
 documentKindResourceManifest = "resource manifest"
 documentKindExtensionManifest = "extension manifest"
+
+[lint.report]
+inputSourceName = "input"
 
 [lint.rules.document]
 duplicateResourceDescription = "Resource names must be unique among resources of the same type at the same level."

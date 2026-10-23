@@ -19,6 +19,7 @@ use crossterm::event;
 use std::env;
 
 pub mod args;
+pub mod report;
 pub mod resolve;
 pub mod resource_command;
 pub mod server;

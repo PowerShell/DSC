@@ -52,8 +52,9 @@ following properties:
 - `file` is the file the document was read from. The property is omitted for documents passed
   with `--input` or from stdin.
 - `location` is the position of the problem in the source text as an object with `line` and
-  `column` properties, both starting at `1`. The property is only present for problems that
-  prevented the document from parsing.
+  `column` properties, both starting at `1`. For a `path` the document doesn't spell out, like a
+  property that is missing, the location is that of the closest enclosing value. The property is
+  omitted when the linter is given an already parsed document, as the MCP server does.
 
 ```yaml
 Type:     array

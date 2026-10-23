@@ -69,6 +69,17 @@ resources:
         $result.diagnostics[0].category | Should -BeExactly 'document'
         $result.diagnostics[0].path | Should -BeExactly '/resources/2'
         $result.diagnostics[0].message | Should -BeLike "*EnsureTest1Value*"
+        # the third resource starts on line 11 of the document, after the leading `- `
+        $result.diagnostics[0].location.line | Should -Be 11
+        $result.diagnostics[0].location.column | Should -Be 3
+    }
+
+    It 'records the line and column of a diagnostic inside a value' {
+        $result = $unusedParameterConfig | dsc lint --file - --no-discovery 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+        $result.diagnostics[0].path | Should -BeExactly '/parameters/unused'
+        $result.diagnostics[0].location.line | Should -Be 3
+        $result.diagnostics[0].location.column | Should -Be 3
     }
 
     It 'accepts the document with --input' {

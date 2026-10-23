@@ -196,7 +196,7 @@ jsonschema = { version = "0.58.6", default-features = false }
 referencing = { version = "0.58.6" }
 # dsc-lib
 linked-hash-map = { version = "0.5" }
-# dsc-lib
+# dsc, dsc-lib
 miette = { version = "7.6.0" }
 # dsc-lib
 murmurhash64 = { version = "0.3" }
@@ -230,6 +230,8 @@ roxmltree = { version = "0.21.1" }
 rt-format = { version = "0.3" }
 # dsc, dsc-lib, dsc-bicep-ext, dscecho, registry, dsc-lib-registry, runcommandonset, sshdconfig
 rust-i18n = { version = "4.2.4" }
+# dsc-lib
+saphyr-parser = { version = "0.2.2" }
 # dsc, dsc-lib, dscecho, registry, dsc-lib-registry, sshdconfig, dsctest, test_group_resource
 schemars = { version = "1.2.2", features = ["preserve_order"] }
 # dsc, dsc-lib

@@ -33,6 +33,7 @@ use crate::{
         get_require_adapter_from_directive,
         parameters::import_parameters,
     },
+    diagnostics::SourceMap,
     discovery::discovery_trait::DiscoveryFilter,
     dscerror::DscError,
     dscresources::{dscresource::validate_json_all, resource_manifest::ResourceManifest},
@@ -48,12 +49,14 @@ pub mod diagnostic;
 pub mod expression_index;
 pub mod options;
 pub mod pointer;
+pub mod report;
 pub mod rule;
 pub mod rules;
 
 pub use diagnostic::{LintCategory, LintDiagnostic, LintLevel, LintResult, LintSummary, SourceLocation};
 pub use options::{DocumentKind, LintOptions, LintSettings, RuleLevel, RuleLevelOverride, RuleSetting};
 pub use pointer::JsonPointer;
+pub use report::LintDiagnosticReport;
 pub use rule::{CheckFn, DiagnosticSink, LintRuleInfo, Rule, RuleTier};
 
 use context::{collect_resource_sites, LintContext, ResolvedResource};
@@ -171,7 +174,7 @@ impl Linter {
     /// Lint a document given as JSON or YAML text.
     ///
     /// Problems in the document are reported as diagnostics, including a document that doesn't
-    /// parse.
+    /// parse. Every diagnostic gets the line and column of its location in the text.
     ///
     /// # Arguments
     ///
@@ -185,7 +188,13 @@ impl Linter {
     /// diagnostic.
     pub fn lint(&mut self, document: &str) -> Result<LintResult, DscError> {
         match parse_document(document) {
-            Ok(raw) => self.lint_parsed(&raw, Vec::new()),
+            Ok(raw) => {
+                let mut result = self.lint_parsed(&raw, Vec::new())?;
+                if let Some(map) = SourceMap::parse(document) {
+                    fill_locations(&mut result.diagnostics, &map);
+                }
+                Ok(result)
+            },
             Err(diagnostic) => Ok(LintResult::from_diagnostics(stamp_file(vec![*diagnostic], &self.options.file), false)),
         }
     }
@@ -478,6 +487,25 @@ fn stamp_file(mut diagnostics: Vec<LintDiagnostic>, file: &Option<String>) -> Ve
         }
     }
     diagnostics
+}
+
+/// Record the line and column of each diagnostic's path on diagnostics that don't have a
+/// location yet.
+///
+/// A path the document doesn't spell out, like a property that is missing, gets the location of
+/// its closest enclosing value.
+///
+/// # Arguments
+///
+/// * `diagnostics` - The diagnostics.
+/// * `map` - The source map of the document text.
+fn fill_locations(diagnostics: &mut [LintDiagnostic], map: &SourceMap) {
+    for diagnostic in diagnostics.iter_mut().filter(|diagnostic| diagnostic.location.is_none()) {
+        if let Some((_, span)) = map.nearest_span(&diagnostic.path) {
+            let (line, column) = map.location(span.start);
+            diagnostic.location = Some(SourceLocation { line, column });
+        }
+    }
 }
 
 /// Whether a rule's level is fixed.

@@ -139,6 +139,9 @@ adapterNotFound = "Adapter '%{adapter}' does not exist"
 [server.show_dsc_resource]
 resourceNotFound = "Resource type '%{type_name}' does not exist"
 
+[report]
+lintSummary = "errors: %{errors}, warnings: %{warnings}, info: %{info}"
+
 [subcommand]
 actualStateNotObject = "actual_state is not an object"
 unexpectedTestResult = "Unexpected Group TestResult"
@@ -197,6 +200,7 @@ failedToReadFile = "Failed to read input file"
 noInput = "No input provided"
 emptyInput = "Empty input provided"
 failedToParseInput = "Invalid JSON or YAML"
+inputSourceName = "input"
 failedToAbsolutizePath = "Error making config path absolute"
 failedToGetParentPath = "Error reading config path parent"
 dscConfigRootAlreadySet = "The current value of DSC_CONFIG_ROOT env var will be overridden"

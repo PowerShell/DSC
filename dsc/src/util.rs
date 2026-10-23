@@ -19,6 +19,7 @@ use dsc_lib::{
             ResourceTestResult,
         },
     },
+    diagnostics::DocumentSource,
     discovery::{
         command_discovery::ManifestList,
         Discovery,
@@ -449,6 +450,7 @@ pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Op
         tracing_level,
         stderr_format
     }.init_subscriber();
+    crate::report::set_stderr_format(stderr_format);
 
     drop(default_guard);
     if tracing::subscriber::set_global_default(subscriber).is_err() {
@@ -478,13 +480,40 @@ pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Op
 /// Returns `EXIT_INVALID_INPUT` when the document can't be read (see [`read_input`]) or isn't
 /// valid JSON or YAML.
 pub fn get_input(input: Option<&String>, file: Option<&String>) -> Result<String, ExitCode> {
-    let value = read_input(input, file)?;
-    if value.is_empty() {
-        return Ok(value);
+    get_input_with_source(input, file).map(|(json, _)| json)
+}
+
+/// Read an input document, converting it to a JSON string and keeping the text it was read from.
+///
+/// # Arguments
+///
+/// * `input` - The inline document, if provided.
+/// * `file` - The path to the document, or `-` to read it from STDIN.
+///
+/// # Returns
+///
+/// The document as JSON and, when there is a document, its text named after the file it was
+/// read from, or `input` for inline text and STDIN. Both are empty when neither argument is
+/// provided.
+///
+/// # Errors
+///
+/// Returns `EXIT_INVALID_INPUT` when the document can't be read (see [`read_input`]) or isn't
+/// valid JSON or YAML.
+pub fn get_input_with_source(input: Option<&String>, file: Option<&String>) -> Result<(String, Option<DocumentSource>), ExitCode> {
+    let text = read_input(input, file)?;
+    if text.is_empty() {
+        return Ok((text, None));
     }
 
-    match parse_input_to_json(&value) {
-        Ok(json) => Ok(json),
+    match parse_input_to_json(&text) {
+        Ok(json) => {
+            let name = match file {
+                Some(path) if path != "-" => path.clone(),
+                _ => t!("util.inputSourceName").to_string(),
+            };
+            Ok((json, Some(DocumentSource::new(name, text))))
+        },
         Err(err) => {
             error!("{}: {err}", t!("util.failedToParseInput"));
             Err(ExitCode::from(EXIT_INVALID_INPUT))

@@ -6,6 +6,7 @@ use crate::configure::context::{Context, ProcessMode};
 use crate::configure::parameters::{SecureObject, SecureString, import_parameters, is_secure_value};
 use crate::configure::{config_doc::{ExecutionKind, IntOrExpression, Metadata, Parameter, Resource, ResourceDiscoveryMode, RestartRequired, ValueOrCopy}};
 use crate::discovery::discovery_trait::DiscoveryFilter;
+use crate::diagnostics::DocumentSource;
 use crate::dscerror::DscError;
 use crate::dscresources::{
     {dscresource::{Capability, Invoke, get_diff, validate_properties, get_adapter_input_kind},
@@ -45,6 +46,7 @@ pub struct Configurator {
     discovery: Discovery,
     statement_parser: Statement,
     progress_format: ProgressFormat,
+    source: Option<DocumentSource>,
 }
 
 /// Invokes the [`Discovery::find_resource`] method to retrieve a specific resource or raise a
@@ -557,6 +559,7 @@ impl Configurator {
             discovery: discovery.clone(),
             statement_parser: Statement::new()?,
             progress_format,
+            source: None,
         };
         config.validate_config()?;
         for extension in discovery.extensions.values() {
@@ -573,6 +576,52 @@ impl Configurator {
     #[must_use]
     pub fn get_config(&self) -> &Configuration {
         &self.config
+    }
+
+    /// Record the text the configuration was read from, so that errors found in a resource's
+    /// properties point at the author's document rather than at the evaluated properties.
+    ///
+    /// # Arguments
+    ///
+    /// * `source` - The document text and how to name it.
+    pub fn set_source(&mut self, source: DocumentSource) {
+        self.source = Some(source);
+    }
+
+    /// The text the configuration was read from, when the host recorded it.
+    #[must_use]
+    pub fn source(&self) -> Option<&DocumentSource> {
+        self.source.as_ref()
+    }
+
+    /// Point a schema validation error from a resource at the resource's declaration in the
+    /// document.
+    ///
+    /// Resources are validated after their expressions are evaluated, so the error arrives
+    /// pointing at the evaluated properties. When the document text is known and the resource
+    /// is declared in it directly, the error is re-anchored to the resource's `properties` in the
+    /// document. Resources that a copy loop expands keep the evaluated view. Other errors pass
+    /// through unchanged.
+    ///
+    /// # Arguments
+    ///
+    /// * `error` - The error the resource operation returned.
+    /// * `resource` - The resource that was being invoked.
+    fn anchor_error(&self, error: DscError, resource: &Resource) -> DscError {
+        let DscError::SchemaValidation(schema_error) = error else {
+            return error;
+        };
+        let Some(source) = &self.source else {
+            return DscError::SchemaValidation(schema_error);
+        };
+        let declared = self.config.resources.iter().position(|declared| {
+            declared.name == resource.name && declared.resource_type == resource.resource_type
+        });
+        let Some(index) = declared else {
+            return DscError::SchemaValidation(schema_error);
+        };
+        let base = format!("/resources/{index}/properties");
+        DscError::SchemaValidation(Box::new(schema_error.with_source(&source.text, &source.name, &base)))
     }
 
     /// Get the discovery.
@@ -650,7 +699,7 @@ impl Configurator {
                 Err(e) => {
                     progress.set_failure(get_failure_from_error(&e));
                     progress.write_increment(1);
-                    return Err(e);
+                    return Err(self.anchor_error(e, &resource));
                 },
             };
             let end_datetime = chrono::Local::now();
@@ -764,7 +813,7 @@ impl Configurator {
                     Err(e) => {
                         progress.set_failure(get_failure_from_error(&e));
                         progress.write_increment(1);
-                        return Err(e);
+                        return Err(self.anchor_error(e, &resource));
                     },
                 };
                 end_datetime = chrono::Local::now();
@@ -776,7 +825,7 @@ impl Configurator {
                     Err(e) => {
                         progress.set_failure(get_failure_from_error(&e));
                         progress.write_increment(1);
-                        return Err(e);
+                        return Err(self.anchor_error(e, &resource));
                     },
                 };
 
@@ -786,7 +835,7 @@ impl Configurator {
                     Err(e) => {
                         progress.set_failure(get_failure_from_error(&e));
                         progress.write_increment(1);
-                        return Err(e);
+                        return Err(self.anchor_error(e, &resource));
                     },
                 };
 
@@ -805,7 +854,7 @@ impl Configurator {
                             Err(e) => {
                                 progress.set_failure(get_failure_from_error(&e));
                                 progress.write_increment(1);
-                                return Err(e);
+                                return Err(self.anchor_error(e, &resource));
                             },
                         };
                         end_datetime = chrono::Local::now();
@@ -932,7 +981,7 @@ impl Configurator {
                 Err(e) => {
                     progress.set_failure(get_failure_from_error(&e));
                     progress.write_increment(1);
-                    return Err(e);
+                    return Err(self.anchor_error(e, &resource));
                 },
             };
             let end_datetime = chrono::Local::now();
@@ -1025,7 +1074,7 @@ impl Configurator {
                 Err(e) => {
                     progress.set_failure(get_failure_from_error(&e));
                     progress.write_increment(1);
-                    return Err(e);
+                    return Err(self.anchor_error(e, resource));
                 },
             };
             self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), serde_json::to_value(&export_result.actual_state)?);

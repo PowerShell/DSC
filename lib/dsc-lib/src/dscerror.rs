@@ -152,6 +152,10 @@ pub enum DscError {
     #[error("{t}: {0}", t = t!("dscerror.schema"))]
     Schema(String),
 
+    #[error(transparent)]
+    #[diagnostic(transparent)]
+    SchemaValidation(Box<crate::diagnostics::SchemaValidationError>),
+
     #[error("{t}: {0}", t = t!("dscerror.schemaNotAvailable"))]
     SchemaNotAvailable(String),
 

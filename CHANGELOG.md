@@ -86,7 +86,10 @@ changes since the last release, see the [diff on GitHub][unreleased].
   You can change the level of a rule for a run with the `--rule` option or for every run in the
   new `lint` section of the settings file, and control which level makes the command fail with
   `--fail-on`. The `dsc schema` command exposes the new `lint-result` and `lint-rules` schemas,
-  and the MCP server exposes the linter as the `lint_dsc_config` tool.
+  and the MCP server exposes the linter as the `lint_dsc_config` tool. Every diagnostic records
+  the line and column of the problem, and when the output isn't redirected the command renders
+  each diagnostic as a report that shows the problem in the document text with the rule's
+  identifier and what the rule requires.
 
   <details><summary>Related work items</summary>
 
@@ -105,6 +108,22 @@ changes since the last release, see the [diff on GitHub][unreleased].
   invalid parameters error.
 
 ### Changed
+
+- Schema validation errors now show the problem in place. When the input to a resource or a
+  resource's properties in a configuration document don't match the resource's schema, DSC reports
+  every violation at once with its JSON pointer, renders a snippet of the input or the document
+  that highlights each offending property or value, and suggests the closest known property name
+  for a property it doesn't recognize. For a configuration document the snippet points at the
+  resource's declaration in your document rather than at its evaluated properties. The snippet
+  isn't rendered for the `json` trace format, which keeps one line per error, and is never
+  rendered for values the schema identifies as secure.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_
+  - PRs: [#1768][#1768]
+
+  </details>
 
 - Extensions that implement the `secret` capability must now define the `args` property for the
   `secret` command with exactly one secret name input argument (`nameArg`) and at most one vault
