@@ -75,6 +75,8 @@ pub enum ImportedManifest {
 pub struct CommandDiscovery {
     progress_format: ProgressFormat,
     discovery_mode: ResourceDiscoveryMode,
+    resources_discovered: bool,
+    extensions_discovered: bool,
 }
 
 #[derive(Deserialize)]
@@ -105,6 +107,8 @@ impl CommandDiscovery {
         CommandDiscovery {
             progress_format,
             discovery_mode: ResourceDiscoveryMode::PreDeployment,
+            resources_discovered: false,
+            extensions_discovered: false,
         }
     }
 
@@ -238,7 +242,7 @@ impl ResourceDiscovery for CommandDiscovery {
 
     #[allow(clippy::too_many_lines)]
     fn discover(&mut self, kind: &DiscoveryKind, filter: &TypeNameFilter) -> Result<(), DscError> {
-if self.discovery_mode == ResourceDiscoveryMode::PreDeployment && kind == &DiscoveryKind::Resource && !locked_is_empty!(RESOURCES) {
+        if self.discovery_mode == ResourceDiscoveryMode::PreDeployment && self.resources_discovered && self.extensions_discovered {
             return Ok(());
         } else if self.discovery_mode == ResourceDiscoveryMode::DuringDeployment {
             locked_clear!(ADAPTERS);
@@ -260,9 +264,11 @@ if self.discovery_mode == ResourceDiscoveryMode::PreDeployment && kind == &Disco
             }
             DiscoveryKind::Extension => {
                 progress.write_activity(t!("discovery.commandDiscovery.extensionSearching").to_string().as_str());
+                self.extensions_discovered = true;
             }
             DiscoveryKind::Resource => {
                 progress.write_activity(t!("discovery.commandDiscovery.progressSearching").to_string().as_str());
+                self.resources_discovered = true;
             },
         }
 
@@ -288,7 +294,7 @@ if self.discovery_mode == ResourceDiscoveryMode::PreDeployment && kind == &Disco
                             let file_name_lowercase = file_name.to_lowercase();
                             if DSC_MANIFEST_LIST_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)) ||
                                 (kind == &DiscoveryKind::Action && DSC_ACTION_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext))) ||
-                                (kind == &DiscoveryKind::Resource && (DSC_RESOURCE_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext))) || DSC_ADAPTED_RESOURCE_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext))) ||
+                                (kind == &DiscoveryKind::Resource && (DSC_RESOURCE_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)) || DSC_ADAPTED_RESOURCE_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)))) ||
                                 (kind == &DiscoveryKind::Extension && DSC_EXTENSION_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext))) {
                                 trace!("{}", t!("discovery.commandDiscovery.foundManifest", path = path.to_string_lossy()));
                                 let imported_manifests = match load_manifest(&path)
@@ -357,7 +363,7 @@ if self.discovery_mode == ResourceDiscoveryMode::PreDeployment && kind == &Disco
             DiscoveryKind::Extension => {
                 locked_extend!(EXTENSIONS, extensions);
             }
-            DiscoveryKind::Resource | DiscoveryKind::Action=> {
+            DiscoveryKind::Resource | DiscoveryKind::Action => {
                 // Now we need to call discover extensions and add those resource to the list of resources
                 for extension in locked_clone!(EXTENSIONS).values() {
                     if extension.capabilities.contains(&ExtensionCapability::Discover) {
@@ -554,7 +560,7 @@ if self.discovery_mode == ResourceDiscoveryMode::PreDeployment && kind == &Disco
 
     fn find(&mut self, required_resource_types: &[DiscoveryFilter]) -> Result<DiscoveryCache, DscError> {
         debug!("{}", t!("discovery.commandDiscovery.searchingForResources", resources = required_resource_types : {:?}));
-        if self.discovery_mode == ResourceDiscoveryMode::DuringDeployment || locked_is_empty!(RESOURCES) {
+        if self.discovery_mode == ResourceDiscoveryMode::DuringDeployment || !self.resources_discovered {
             self.discover(&DiscoveryKind::Resource, &TypeNameFilter::default())?;
         }
         let mut found_resources = DiscoveryCache::new();
