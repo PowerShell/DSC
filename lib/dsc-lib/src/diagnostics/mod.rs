@@ -9,14 +9,15 @@
 //!
 //! - [`SourceMap`] finds the byte span and line/column of any JSON pointer in JSON or YAML text.
 //! - [`SchemaValidationError`] is a [`miette::Diagnostic`] for JSON schema violations, with a
-//!   label on each violation when its source text is attached.
+//!   label on each violation when its source text is attached, and a [`JsonOrigin`] that says
+//!   whether the value was input to a resource or output from one.
 //! - [`DocumentSource`] carries the text and name of a document a host read, so library code
 //!   can anchor the problems it finds to the author's text.
 
 pub mod schema;
 pub mod source_map;
 
-pub use schema::SchemaValidationError;
+pub use schema::{JsonOrigin, SchemaValidationError};
 pub use source_map::SourceMap;
 
 /// The text a document was read from, for diagnostics that point into it.

@@ -56,7 +56,7 @@ pub mod rules;
 pub use diagnostic::{LintCategory, LintDiagnostic, LintLevel, LintResult, LintSummary, SourceLocation};
 pub use options::{DocumentKind, LintOptions, LintSettings, RuleLevel, RuleLevelOverride, RuleSetting};
 pub use pointer::JsonPointer;
-pub use report::LintDiagnosticReport;
+pub use report::{LintDiagnosticReport, redacted_source_map};
 pub use rule::{CheckFn, DiagnosticSink, LintRuleInfo, Rule, RuleTier};
 
 use context::{collect_resource_sites, LintContext, ResolvedResource};
@@ -326,7 +326,9 @@ impl Linter {
 /// Parse a document as JSON or YAML, reporting a failure as a diagnostic.
 ///
 /// Input that starts with `{` is reported with the JSON parser's message and position so the
-/// message matches what the author wrote; everything else uses the YAML parser's.
+/// message matches what the author wrote; everything else uses the YAML parser's. Text that is
+/// empty or only whitespace is reported as empty rather than as whatever the YAML parser makes
+/// of it.
 ///
 /// # Arguments
 ///
@@ -334,8 +336,19 @@ impl Linter {
 ///
 /// # Errors
 ///
-/// Returns the `parse-error` diagnostic when the text is neither valid JSON nor valid YAML.
+/// Returns the `parse-error` diagnostic when the text is empty or neither valid JSON nor valid
+/// YAML.
 fn parse_document(document: &str) -> Result<Value, Box<LintDiagnostic>> {
+    if document.trim().is_empty() {
+        return Err(Box::new(fixed_diagnostic(
+            PARSE_ERROR_RULE,
+            LintCategory::Document,
+            LintLevel::Error,
+            &JsonPointer::root(),
+            None,
+            t!("lint.mod.emptyDocument").to_string(),
+        )));
+    }
     let yaml_error = match parse_input_to_value(document) {
         Ok(value) => return Ok(value),
         Err(err) => err,
@@ -687,6 +700,16 @@ resources:
         assert_eq!(rule_paths(&result, PARSE_ERROR_RULE), vec![""]);
         assert!(result.diagnostics[0].location.is_some());
         assert!(!result.valid);
+    }
+
+    #[test]
+    fn reports_an_empty_document_as_a_parse_error() {
+        for document in ["", "  \n\t\n"] {
+            let result = lint_yaml(document);
+            assert_eq!(rule_paths(&result, PARSE_ERROR_RULE), vec![""], "{document:?}");
+            assert_eq!(result.diagnostics.len(), 1, "{document:?}");
+            assert!(!result.valid);
+        }
     }
 
     #[test]

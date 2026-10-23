@@ -21,6 +21,19 @@ const MAX_SUGGESTION_DISTANCE: usize = 2;
 /// The most property names to list when there is no close match.
 const MAX_LISTED_PROPERTIES: usize = 12;
 
+/// Where the value that was validated against a schema came from.
+///
+/// A host that knows the document a value was taken from can re-anchor an error about input to
+/// the document; an error about what a resource returned has no place in the document.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum JsonOrigin {
+    /// The desired state, filter, or properties a caller passed to the resource.
+    #[default]
+    Input,
+    /// The state the resource returned.
+    Output,
+}
+
 /// Every violation found when validating a value against a JSON schema.
 ///
 /// The error is a [`miette::Diagnostic`]: when source text is attached with
@@ -28,10 +41,15 @@ const MAX_LISTED_PROPERTIES: usize = 12;
 /// applies to, and unknown properties get a suggestion in the help text when the schema is
 /// attached with [`with_schema`](Self::with_schema). Without source text the error still lists
 /// every violation and its JSON pointer in its message.
+///
+/// An error that was [`redacted`](Self::redacted) because the value holds secure data never
+/// accepts source text again, so a host that re-anchors errors can't reintroduce the value.
 #[derive(Debug)]
 pub struct SchemaValidationError {
     subject: String,
     violations: Vec<SchemaViolation>,
+    origin: JsonOrigin,
+    redacted: bool,
     source: Option<NamedSource<String>>,
     labels: Vec<LabeledSpan>,
     help: Option<String>,
@@ -39,6 +57,9 @@ pub struct SchemaValidationError {
 
 impl SchemaValidationError {
     /// Create an error for a set of violations.
+    ///
+    /// The origin is [`JsonOrigin::Input`] until [`with_origin`](Self::with_origin) says
+    /// otherwise.
     ///
     /// # Arguments
     ///
@@ -50,10 +71,23 @@ impl SchemaValidationError {
         Self {
             subject: subject.into(),
             violations,
+            origin: JsonOrigin::default(),
+            redacted: false,
             source: None,
             labels: Vec::new(),
             help: None,
         }
+    }
+
+    /// Record where the validated value came from.
+    ///
+    /// # Arguments
+    ///
+    /// * `origin` - Whether the value was input to a resource or output from one.
+    #[must_use]
+    pub fn with_origin(mut self, origin: JsonOrigin) -> Self {
+        self.origin = origin;
+        self
     }
 
     /// Use the schema to suggest corrections for unknown properties in the help text.
@@ -104,9 +138,13 @@ impl SchemaValidationError {
     ///
     /// # Returns
     ///
-    /// The error with the text attached, or unchanged when the text can't be parsed.
+    /// The error with the text attached, or unchanged when the text can't be parsed or the error
+    /// was [`redacted`](Self::redacted).
     #[must_use]
     pub fn with_source(mut self, text: &str, name: &str, base: &str) -> Self {
+        if self.redacted {
+            return self;
+        }
         let Some(map) = SourceMap::parse(text) else {
             return self;
         };
@@ -125,6 +163,8 @@ impl SchemaValidationError {
     /// Replace every violation message and drop the source text, for a value that holds secure
     /// data the report must not echo.
     ///
+    /// The error stays redacted: a later [`with_source`](Self::with_source) is ignored.
+    ///
     /// # Arguments
     ///
     /// * `message` - The message to show in place of each violation's.
@@ -134,6 +174,7 @@ impl SchemaValidationError {
             violation.message = message.to_string();
             violation.alternatives.clear();
         }
+        self.redacted = true;
         self.source = None;
         self.labels.clear();
         self.help = None;
@@ -144,6 +185,18 @@ impl SchemaValidationError {
     #[must_use]
     pub fn subject(&self) -> &str {
         &self.subject
+    }
+
+    /// Where the validated value came from.
+    #[must_use]
+    pub fn origin(&self) -> JsonOrigin {
+        self.origin
+    }
+
+    /// Whether the error was [`redacted`](Self::redacted) because the value holds secure data.
+    #[must_use]
+    pub fn is_redacted(&self) -> bool {
+        self.redacted
     }
 
     /// The violations found.
@@ -366,9 +419,30 @@ mod tests {
     #[test]
     fn redaction_drops_source_and_messages() {
         let error = error_for("output: hi\nverbose: secret\n").redacted("redacted");
+        assert!(error.is_redacted());
         assert!(!error.has_source());
         assert!(error.labels().is_none());
+        assert!(error.help().is_none());
         assert_eq!(error.to_string(), "Schema: input for 'Test/Echo': redacted at '/verbose'");
+    }
+
+    #[test]
+    fn redaction_survives_attaching_source_again() {
+        let document = "resources:\n- name: a\n  type: Test/Echo\n  properties:\n    output: hi\n    verbose: secret\n";
+        let error = error_for("output: hi\nverbose: secret\n")
+            .redacted("redacted")
+            .with_source(document, "demo.dsc.yaml", "/resources/0/properties");
+        assert!(error.is_redacted());
+        assert!(!error.has_source());
+        assert!(error.labels().is_none());
+        assert!(!format!("{error:?}").contains("secret"));
+    }
+
+    #[test]
+    fn origin_defaults_to_input() {
+        let error = error_for("verbose: true\n");
+        assert_eq!(error.origin(), JsonOrigin::Input);
+        assert_eq!(error.with_origin(JsonOrigin::Output).origin(), JsonOrigin::Output);
     }
 
     #[test]

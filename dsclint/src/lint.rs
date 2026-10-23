@@ -8,7 +8,7 @@ use crate::report::render_lint_result;
 use crate::tablewriter::Table;
 use crate::util::{
     EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_VALIDATION_FAILED,
-    current_version, merge_parameters, parse_parameters, read_input, write_object,
+    current_version, merge_parameters, parse_parameters, read_document, read_input, write_object,
 };
 use dsc_lib::dscerror::DscError;
 use dsc_lib::lint::{LintError, LintLevel, LintOptions, LintResult, Linter};
@@ -31,7 +31,8 @@ use tracing::{error, info};
 /// Returns `EXIT_INVALID_ARGS` for an unknown rule or missing input, `EXIT_INVALID_INPUT` when a
 /// document or the parameters can't be read, `EXIT_VALIDATION_FAILED` when a diagnostic at or
 /// above the `--fail-on` level was reported, `EXIT_JSON_ERROR` when the result can't be
-/// serialized, and `EXIT_DSC_ERROR` for other failures.
+/// serialized, and `EXIT_DSC_ERROR` for other failures. A document that is empty or invalid is
+/// read successfully and reported in the result, not as an error.
 pub fn run(args: &Args) -> Result<(), ExitCode> {
     let parameters = resolve_parameters(args.parameters.as_ref(), args.parameters_file.as_ref())?;
     let options = LintOptions {
@@ -61,10 +62,10 @@ pub fn run(args: &Args) -> Result<(), ExitCode> {
 
     let mut documents: Vec<(Option<String>, String)> = Vec::new();
     if let Some(input) = &args.input {
-        documents.push((None, read_input(Some(input), None)?));
+        documents.push((None, read_document(Some(input), None)?));
     }
     for file in &args.file {
-        let document = read_input(None, Some(file))?;
+        let document = read_document(None, Some(file))?;
         let name = if file == "-" { None } else { Some(file.clone()) };
         documents.push((name, document));
     }

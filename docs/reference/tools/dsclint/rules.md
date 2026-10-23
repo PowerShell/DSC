@@ -73,7 +73,8 @@ Rules with a fixed level can't be changed or turned off.
 ### parse-error
 
 The document must be valid JSON or YAML. The diagnostic includes the parser's message and, when
-known, the line and column of the problem. This rule has a fixed level.
+known, the line and column of the problem. An empty document is reported by this rule too. This
+rule has a fixed level.
 
 ### schema-invalid
 

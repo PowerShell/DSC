@@ -124,6 +124,48 @@ impl SourceMap {
         }
     }
 
+    /// A map of the same document with the values at the given pointers replaced by a
+    /// placeholder, for text that is shown to a reader but holds values it must not show.
+    ///
+    /// The placeholder is written as a JSON string literal, which both grammars accept in place
+    /// of any value, so every other pointer in the document keeps its location. A pointer below
+    /// another listed pointer is covered by it.
+    ///
+    /// # Arguments
+    ///
+    /// * `pointers` - The JSON pointers of the values to replace.
+    /// * `placeholder` - The text shown in place of each value.
+    ///
+    /// # Returns
+    ///
+    /// The redacted map, or `None` when a pointer has no value in the document or the redacted
+    /// text can't be mapped, so the caller knows the text can't be shown safely.
+    #[must_use]
+    pub fn redacted(&self, pointers: &[String], placeholder: &str) -> Option<Self> {
+        let mut sorted: Vec<&str> = pointers.iter().map(String::as_str).collect();
+        sorted.sort_unstable();
+        sorted.dedup();
+        let mut spans: Vec<Range<usize>> = Vec::new();
+        for pointer in &sorted {
+            let covered = sorted.iter().any(|other| {
+                other != pointer && pointer.starts_with(other) && pointer[other.len()..].starts_with('/')
+            });
+            if !covered {
+                spans.push(self.value_span(pointer)?);
+            }
+        }
+        if spans.is_empty() {
+            return Some(self.clone());
+        }
+        let replacement = serde_json::to_string(placeholder).ok()?;
+        spans.sort_by_key(|span| std::cmp::Reverse(span.start));
+        let mut text = self.text.clone();
+        for span in spans {
+            text.replace_range(span, &replacement);
+        }
+        Self::parse(&text)
+    }
+
     /// The line and column of a byte offset, both starting at 1. Columns count characters.
     ///
     /// # Arguments
@@ -533,5 +575,42 @@ mod tests {
     #[test]
     fn invalid_text_has_no_map() {
         assert!(SourceMap::parse("a: [b").is_none());
+    }
+
+    #[test]
+    fn redacted_replaces_values_and_keeps_other_locations() {
+        let text = "parameters:\n  password:\n    type: secureString\n    defaultValue: hunter2\nresources:\n- name: a\n  properties:\n    token:\n      secureString: letmein\n    output: hi\n";
+        let map = SourceMap::parse(text).unwrap();
+        let pointers = [
+            "/parameters/password/defaultValue".to_string(),
+            "/resources/0/properties/token".to_string(),
+            "/resources/0/properties/token/secureString".to_string(),
+            "/resources/0/properties/token".to_string(),
+        ];
+        let redacted = map.redacted(&pointers, "<secureValue>").unwrap();
+        assert!(!redacted.text().contains("hunter2") && !redacted.text().contains("letmein"), "{}", redacted.text());
+        assert_eq!(text_at(&redacted, redacted.value_span("/parameters/password/defaultValue").unwrap()), "\"<secureValue>\"");
+        assert_eq!(text_at(&redacted, redacted.value_span("/resources/0/properties/token").unwrap()), "\"<secureValue>\"");
+        assert_eq!(text_at(&redacted, redacted.value_span("/resources/0/properties/output").unwrap()), "hi");
+        assert_eq!(redacted.location(redacted.key_span("/resources/0/properties/output").unwrap().start), (10, 5));
+        assert_eq!(text_at(&map, map.value_span("/parameters/password/defaultValue").unwrap()), "hunter2");
+    }
+
+    #[test]
+    fn redacted_json_stays_json() {
+        let text = r#"{"parameters": {"password": {"type": "secureString", "defaultValue": {"secureString": "hunter2"}}}, "resources": []}"#;
+        let map = SourceMap::parse(text).unwrap();
+        let redacted = map.redacted(&["/parameters/password/defaultValue".to_string()], "<secureValue>").unwrap();
+        assert!(!redacted.text().contains("hunter2"));
+        assert!(serde_json::from_str::<serde_json::Value>(redacted.text()).is_ok());
+        assert_eq!(text_at(&redacted, redacted.value_span("/parameters/password/defaultValue").unwrap()), "\"<secureValue>\"");
+        assert!(redacted.value_span("/resources").is_some());
+    }
+
+    #[test]
+    fn redacted_needs_every_pointer_in_the_document() {
+        let map = SourceMap::parse("a: 1\n").unwrap();
+        assert!(map.redacted(&["/missing".to_string()], "x").is_none());
+        assert_eq!(map.redacted(&[], "x").unwrap().text(), "a: 1\n");
     }
 }

@@ -265,7 +265,7 @@ pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Op
     info!("Trace-level is {:?}", tracing_setting.level);
 }
 
-/// Read an input document as text without parsing it.
+/// Read an input document as text without parsing it, rejecting an empty document.
 ///
 /// # Arguments
 ///
@@ -282,6 +282,34 @@ pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Op
 /// Returns `EXIT_INVALID_INPUT` when the inline input is actually a path to an existing file, the
 /// file can't be read, STDIN isn't valid UTF-8, or the document is empty.
 pub fn read_input(input: Option<&String>, file: Option<&String>) -> Result<String, ExitCode> {
+    let value = read_document(input, file)?;
+    if (input.is_some() || file.is_some()) && value.trim().is_empty() {
+        error!("{}", t!("util.emptyInput"));
+        return Err(ExitCode::from(EXIT_INVALID_INPUT));
+    }
+    Ok(value)
+}
+
+/// Read an input document as text without parsing it, including an empty document.
+///
+/// The linter reports an empty document as a diagnostic in its result, so the document is
+/// returned as read. Use [`read_input`] for input that must not be empty, like parameters.
+///
+/// # Arguments
+///
+/// * `input` - The inline document, if provided.
+/// * `file` - The path to the document, or `-` to read it from STDIN. Extensions with the
+///   `import` capability get the first chance to handle a file path.
+///
+/// # Returns
+///
+/// The document text, or an empty string when neither argument is provided.
+///
+/// # Errors
+///
+/// Returns `EXIT_INVALID_INPUT` when the inline input is actually a path to an existing file, the
+/// file can't be read, or STDIN isn't valid UTF-8.
+pub fn read_document(input: Option<&String>, file: Option<&String>) -> Result<String, ExitCode> {
     trace!("Input: {input:?}, File: {file:?}");
     let value = if let Some(input) = input {
         debug!("{}", t!("util.readingInput"));
@@ -342,13 +370,8 @@ pub fn read_input(input: Option<&String>, file: Option<&String>) -> Result<Strin
         }
     } else {
         debug!("{}", t!("util.noInput"));
-        return Ok(String::new());
+        String::new()
     };
-
-    if value.trim().is_empty() {
-        error!("{}", t!("util.emptyInput"));
-        return Err(ExitCode::from(EXIT_INVALID_INPUT));
-    }
 
     Ok(value)
 }

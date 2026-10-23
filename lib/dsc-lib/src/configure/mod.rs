@@ -6,7 +6,7 @@ use crate::configure::context::{Context, ProcessMode};
 use crate::configure::parameters::{SecureObject, SecureString, import_parameters, is_secure_value};
 use crate::configure::{config_doc::{ExecutionKind, IntOrExpression, Metadata, Parameter, Resource, ResourceDiscoveryMode, RestartRequired, ValueOrCopy}};
 use crate::discovery::discovery_trait::DiscoveryFilter;
-use crate::diagnostics::DocumentSource;
+use crate::diagnostics::{DocumentSource, JsonOrigin};
 use crate::dscerror::DscError;
 use crate::dscresources::{
     {dscresource::{Capability, Invoke, get_diff, validate_properties, get_adapter_input_kind},
@@ -594,13 +594,15 @@ impl Configurator {
         self.source.as_ref()
     }
 
-    /// Point a schema validation error from a resource at the resource's declaration in the
-    /// document.
+    /// Point a schema validation error about a resource's input at the resource's declaration in
+    /// the document.
     ///
     /// Resources are validated after their expressions are evaluated, so the error arrives
     /// pointing at the evaluated properties. When the document text is known and the resource
     /// is declared in it directly, the error is re-anchored to the resource's `properties` in the
-    /// document. Resources that a copy loop expands keep the evaluated view. Other errors pass
+    /// document. Resources that a copy loop expands keep the evaluated view. An error about what
+    /// the resource returned keeps pointing at that output, because the document doesn't hold the
+    /// offending value, and a redacted error stays without source text. Other errors pass
     /// through unchanged.
     ///
     /// # Arguments
@@ -611,6 +613,9 @@ impl Configurator {
         let DscError::SchemaValidation(schema_error) = error else {
             return error;
         };
+        if schema_error.origin() == JsonOrigin::Output || schema_error.is_redacted() {
+            return DscError::SchemaValidation(schema_error);
+        }
         let Some(source) = &self.source else {
             return DscError::SchemaValidation(schema_error);
         };
@@ -1620,6 +1625,9 @@ fn get_failure_from_error(err: &DscError) -> Option<Failure> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::diagnostics::SchemaValidationError;
+    use crate::dscresources::dscresource::validate_json_all;
+    use miette::Diagnostic;
     use serde_json::json;
 
     fn resource_with_export(export: Value) -> DscResource {
@@ -1696,5 +1704,61 @@ mod tests {
     #[test]
     fn filter_input_invalid_json_is_error() {
         assert!(parse_export_filter_input("not json").is_err());
+    }
+
+    /// A document whose resources aren't discovered, so a configurator can be created in a test.
+    const ANCHOR_DOCUMENT: &str = "$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json\ndirectives:\n  resourceDiscovery: duringDeployment\nresources:\n- name: a\n  type: Test/Echo\n  properties:\n    output: hi\n    verbose: nope\n";
+    /// The evaluated properties of the resource in `ANCHOR_DOCUMENT`, as a resource sees them.
+    const EVALUATED_PROPERTIES: &str = "{\n  \"output\": \"hi\",\n  \"verbose\": \"nope\"\n}";
+
+    fn anchored_configurator() -> Configurator {
+        let json = serde_json::to_string(&serde_yaml::from_str::<Value>(ANCHOR_DOCUMENT).unwrap()).unwrap();
+        let mut configurator = Configurator::new(&json, ProgressFormat::None).unwrap();
+        configurator.set_source(DocumentSource::new("demo.dsc.yaml", ANCHOR_DOCUMENT));
+        configurator
+    }
+
+    /// The error a resource reports for `EVALUATED_PROPERTIES`, before any text is attached.
+    fn verbose_type_error() -> SchemaValidationError {
+        let schema = json!({ "type": "object", "properties": { "output": { "type": "string" }, "verbose": { "type": "boolean" } } });
+        let violations = validate_json_all("Test/Echo", &schema, &serde_json::from_str(EVALUATED_PROPERTIES).unwrap()).unwrap();
+        SchemaValidationError::new("input for 'Test/Echo'", violations)
+    }
+
+    /// Run an error through `anchor_error` for the resource declared in `ANCHOR_DOCUMENT`.
+    fn anchored_schema_error(error: SchemaValidationError) -> SchemaValidationError {
+        let configurator = anchored_configurator();
+        let resource = configurator.get_config().resources[0].clone();
+        match configurator.anchor_error(DscError::SchemaValidation(Box::new(error)), &resource) {
+            DscError::SchemaValidation(error) => *error,
+            other => panic!("expected a schema validation error, got {other}"),
+        }
+    }
+
+    fn first_label_offset(error: &SchemaValidationError) -> usize {
+        error.labels().unwrap().next().unwrap().offset()
+    }
+
+    #[test]
+    fn anchor_error_points_input_errors_at_the_document() {
+        let error = anchored_schema_error(verbose_type_error().with_source(EVALUATED_PROPERTIES, "input", ""));
+        assert_eq!(error.origin(), JsonOrigin::Input);
+        assert_eq!(first_label_offset(&error), ANCHOR_DOCUMENT.find("nope").unwrap());
+    }
+
+    #[test]
+    fn anchor_error_keeps_output_errors_on_the_output() {
+        let error = anchored_schema_error(verbose_type_error().with_origin(JsonOrigin::Output).with_source(EVALUATED_PROPERTIES, "output", ""));
+        assert_eq!(error.origin(), JsonOrigin::Output);
+        assert_eq!(first_label_offset(&error), EVALUATED_PROPERTIES.find("\"nope\"").unwrap());
+    }
+
+    #[test]
+    fn anchor_error_keeps_redacted_errors_without_source() {
+        let error = anchored_schema_error(verbose_type_error().redacted("redacted"));
+        assert!(error.is_redacted());
+        assert!(!error.has_source());
+        assert!(error.labels().is_none());
+        assert!(!format!("{error:?}").contains("nope"));
     }
 }

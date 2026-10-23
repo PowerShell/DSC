@@ -128,6 +128,21 @@ resources:
         $result.diagnostics[0].location.line | Should -BeGreaterThan 0
     }
 
+    It 'reports an empty document as a diagnostic instead of failing to read it' {
+        $result = "`n" | dsclint --file - --no-discovery 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 5 -Because (Get-Content $TestDrive/error.log -Raw)
+        $result.valid | Should -BeFalse
+        $result.diagnostics.Count | Should -Be 1
+        $result.diagnostics[0].rule | Should -BeExactly 'parse-error'
+
+        [IO.File]::WriteAllText("$TestDrive/empty.dsc.yaml", '')
+        $result = dsclint --file "$TestDrive/empty.dsc.yaml" --no-discovery 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 5 -Because (Get-Content $TestDrive/error.log -Raw)
+        $result.diagnostics.Count | Should -Be 1
+        $result.diagnostics[0].rule | Should -BeExactly 'parse-error'
+        $result.diagnostics[0].file | Should -BeLike '*empty.dsc.yaml'
+    }
+
     It 'reports schema violations with the path of the problem' {
         $config = @"
 `$schema: $schemaUri

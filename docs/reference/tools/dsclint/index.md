@@ -79,7 +79,8 @@ For the list of rules and what each one checks, see [dsclint rules][01].
 <a id="example-1"></a>
 
 The command reports a duplicate resource name and exits with code `5`. In the console, each
-diagnostic is rendered as a report that shows the problem in the document.
+diagnostic is rendered as a report that shows the problem in the document. Secure values in the
+document, like the default value of a `secureString` parameter, are shown as `<secureValue>`.
 
 ```yaml
 # example.dsc.config.yaml

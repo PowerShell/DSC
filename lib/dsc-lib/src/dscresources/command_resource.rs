@@ -7,7 +7,7 @@ use rust_i18n::t;
 use serde::Deserialize;
 use serde_json::{Map, Value};
 use std::{collections::HashMap, env, path::Path, process::Stdio};
-use crate::{configure::{config_doc::{ExecutionKind, SecurityContextKind}, config_result::{ResourceGetResult, ResourceTestResult}, schema_cache::{RESOURCE_SCHEMAS, get_resource_schema}}, diagnostics::SchemaValidationError, dscresources::{dscresource::Operation, resource_manifest::{ExportSchemaKind, ExportSchemaOrFiltering, SchemaArgKind}}, types::ExitCodesMap, util::canonicalize_which};
+use crate::{configure::{config_doc::{ExecutionKind, SecurityContextKind}, config_result::{ResourceGetResult, ResourceTestResult}, schema_cache::{RESOURCE_SCHEMAS, get_resource_schema}}, diagnostics::{JsonOrigin, SchemaValidationError}, dscresources::{dscresource::Operation, resource_manifest::{ExportSchemaKind, ExportSchemaOrFiltering, SchemaArgKind}}, types::ExitCodesMap, util::canonicalize_which};
 use crate::dscerror::DscError;
 use crate::locked_insert;
 use super::{
@@ -1170,15 +1170,6 @@ fn get_command_input(input_kind: Option<&InputKind>, input: &str) -> Result<Comm
     })
 }
 
-/// Where the JSON that is validated against a resource's schema came from.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum JsonOrigin {
-    /// The desired state or filter a caller passed to the resource.
-    Input,
-    /// The state the resource returned.
-    Output,
-}
-
 fn verify_json_from_manifest(resource: &DscResource, json: &str, target_resource: Option<&DscResource>, origin: JsonOrigin) -> Result<(), DscError> {
     trace!("{}", t!("dscresources.commandResource.verifyJson", resource = resource.type_name, json = json));
     let Some(manifest) = &resource.manifest else {
@@ -1210,6 +1201,11 @@ fn verify_json_from_manifest(resource: &DscResource, json: &str, target_resource
 
 /// Validate JSON against a resource's schema, reporting every violation where it occurs.
 ///
+/// The error carries the origin, so a host can tell an error about its own input from one about
+/// what the resource returned. The text shown with the error has every `secureString` and
+/// `secureObject` value replaced, so a violation next to a secure value can't expose it; a
+/// violation that quotes a secure value in its message is redacted entirely.
+///
 /// # Arguments
 ///
 /// * `resource` - The resource whose schema it is
@@ -1237,14 +1233,14 @@ fn validate_against_schema(resource: &DscResource, schema: &Value, json: &Value,
             t!("dscresources.commandResource.schemaSourceOutput").to_string(),
         ),
     };
-    let mut error = SchemaValidationError::new(subject, violations).with_schema(schema);
-    // a message that quotes a "secureString" or "secureObject" value would expose it, as would the text
+    let mut error = SchemaValidationError::new(subject, violations).with_schema(schema).with_origin(origin);
+    // a message that quotes a "secureString" or "secureObject" value would expose it
     let holds_secure_value = error.violations().iter().any(|violation| {
         violation.message.contains("\"secureString\"") || violation.message.contains("\"secureObject\"")
     });
     if holds_secure_value {
         error = error.redacted(&t!("dscresources.commandResource.redactedSchemaErrorMessage"));
-    } else if let Ok(text) = serde_json::to_string_pretty(json) {
+    } else if let Ok(text) = serde_json::to_string_pretty(&redact(json)) {
         error = error.with_source(&text, &name, "");
     }
     Err(DscError::SchemaValidation(Box::new(error)))
@@ -1474,4 +1470,64 @@ struct Trace {
     _span: Option<HashMap<String, Value>>,
     #[serde(rename = "spans")]
     _spans: Option<Vec<HashMap<String, Value>>>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::configure::parameters::SECURE_VALUE_REDACTED;
+    use miette::Diagnostic;
+    use serde_json::json;
+
+    fn echo() -> DscResource {
+        let mut resource = DscResource::new();
+        resource.type_name = "Test/Echo".parse().unwrap();
+        resource
+    }
+
+    /// The schema validation error inside a `DscError`.
+    fn schema_error(error: DscError) -> SchemaValidationError {
+        match error {
+            DscError::SchemaValidation(error) => *error,
+            other => panic!("expected a schema validation error, got {other}"),
+        }
+    }
+
+    /// The whole text attached to an error.
+    fn attached_text(error: &SchemaValidationError) -> String {
+        let source = error.source_code().expect("the error has source text");
+        let contents = source.read_span(&(0..1).into(), 0, 1000).unwrap();
+        String::from_utf8_lossy(contents.data()).to_string()
+    }
+
+    #[test]
+    fn attached_input_has_secure_values_redacted_even_when_they_are_valid() {
+        let schema = json!({
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "password": { "type": ["string", "object"] },
+                "name": { "type": "string" }
+            }
+        });
+        let input = json!({ "password": { "secureString": "hunter2" }, "nmae": "x" });
+        let error = schema_error(validate_against_schema(&echo(), &schema, &input, JsonOrigin::Input).unwrap_err());
+        assert_eq!(error.origin(), JsonOrigin::Input);
+        assert!(!error.is_redacted());
+        let text = attached_text(&error);
+        assert!(!text.contains("hunter2"), "{text}");
+        assert!(text.contains(SECURE_VALUE_REDACTED), "{text}");
+        assert!(text.contains("nmae"), "{text}");
+    }
+
+    #[test]
+    fn secure_value_quoted_in_a_message_redacts_the_whole_error() {
+        let schema = json!({ "type": "object", "properties": { "password": { "type": "string" } } });
+        let output = json!({ "password": { "secureString": "hunter2" } });
+        let error = schema_error(validate_against_schema(&echo(), &schema, &output, JsonOrigin::Output).unwrap_err());
+        assert_eq!(error.origin(), JsonOrigin::Output);
+        assert!(error.is_redacted());
+        assert!(!error.has_source());
+        assert!(!error.to_string().contains("hunter2"), "{error}");
+    }
 }
