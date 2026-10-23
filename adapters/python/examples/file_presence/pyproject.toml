@@ -1,0 +1,19 @@
+[build-system]
+requires = ["hatchling", "ms-dsc"]
+build-backend = "hatchling.build"
+
+[project]
+name = "dsc-example-file-presence"
+version = "1.0.0"
+description = "Example DSC resource: ensures a file exists or does not exist."
+requires-python = ">=3.11"
+dependencies = []
+
+[project.entry-points."microsoft.dsc.resources"]
+"Example/FilePresence" = "file_presence.resource:FilePresenceResource"
+
+[tool.hatch.build.targets.wheel]
+packages = ["file_presence"]
+
+[tool.hatch.build.hooks.dsc]
+# Regenerates file_presence/dsc/*.dsc.adaptedResource.json at wheel-build time.

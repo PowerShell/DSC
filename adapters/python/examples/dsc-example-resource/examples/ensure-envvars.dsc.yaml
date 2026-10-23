@@ -1,0 +1,23 @@
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+# Example: ensure environment variables are present/absent.
+#
+# Usage:
+#   dsc config test --document ensure-envvars.dsc.yaml
+#   dsc config set  --document ensure-envvars.dsc.yaml
+#
+# Note: Environment variable changes are scoped to the DSC adapter process.
+# This example is illustrative; production resources would use the OS-level
+# environment management (registry on Windows, /etc/profile.d on Linux).
+resources:
+  - name: app-env
+    type: Example/EnvVar
+    properties:
+      name: APP_ENV
+      value: production
+      _exist: true
+
+  - name: debug-flag
+    type: Example/EnvVar
+    properties:
+      name: DEBUG
+      _exist: false

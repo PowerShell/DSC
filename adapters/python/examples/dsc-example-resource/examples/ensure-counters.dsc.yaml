@@ -1,0 +1,19 @@
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+# Example: enforce counter values and test/remediate drift.
+#
+# Usage:
+#   dsc config test   --document ensure-counters.dsc.yaml
+#   dsc config set    --document ensure-counters.dsc.yaml
+#   dsc config export --document ensure-counters.dsc.yaml
+resources:
+  - name: page-hits
+    type: Example/Counter
+    properties:
+      id: page-hits
+      value: 100
+
+  - name: error-count
+    type: Example/Counter
+    properties:
+      id: error-count
+      value: 0
