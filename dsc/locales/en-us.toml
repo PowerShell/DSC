@@ -116,6 +116,11 @@ functionInvocationFailed = "Function '%{function}' invocation failed: %{error}"
 resourceNotFound = "Resource type '%{resource}' does not exist"
 whatIfNotSupported = "what_if is only supported for the 'set' and 'delete' operations"
 
+[server.lint_dsc_config]
+invalidParameters = "Invalid parameters"
+failedConvertJson = "Failed to convert to JSON"
+lintFailed = "Failed to lint the configuration"
+
 [server.list_dsc_functions]
 invalidNamePattern = "Invalid function name pattern '%{pattern}'"
 invalidDescriptionPattern = "Invalid function description pattern '%{pattern}'"
@@ -178,6 +183,7 @@ failedToReadFile = "Failed to read input file"
 noInput = "No input provided"
 emptyInput = "Empty input provided"
 failedToParseInput = "Invalid JSON or YAML"
+inputSourceName = "input"
 failedToAbsolutizePath = "Error making config path absolute"
 failedToGetParentPath = "Error reading config path parent"
 dscConfigRootAlreadySet = "The current value of DSC_CONFIG_ROOT env var will be overridden"

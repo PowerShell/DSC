@@ -24,7 +24,7 @@ path-absolutize = { workspace = true }
 regex = { workspace = true }
 rt-format = { workspace = true }
 rust-i18n = { workspace = true }
-# reqwest = { version = "0.12.8", features = ["native-tls"], default-features = false }
+saphyr-parser = { workspace = true }
 schemars = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

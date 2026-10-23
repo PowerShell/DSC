@@ -318,6 +318,8 @@ pub enum SchemaType {
     FunctionDefinition,
     GetResult,
     Include,
+    LintResult,
+    LintRules,
     ManifestList,
     ResolveResult,
     Resource,

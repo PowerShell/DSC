@@ -199,6 +199,9 @@ Pester tests are organized into groups:
 # Run tests for DSC CLI
 ./build.ps1 -SkipBuild -Test -ExcludeRustTests -PesterTestGroup dsc
 
+# Run tests for the dsclint CLI
+./build.ps1 -SkipBuild -Test -ExcludeRustTests -PesterTestGroup dsclint
+
 # Run tests for adapters
 ./build.ps1 -SkipBuild -Test -ExcludeRustTests -PesterTestGroup adapters
 
@@ -413,7 +416,7 @@ The build script automatically installs these. If issues persist:
 | `-Project` | String[] | Build specific projects only |
 | `-ExcludeRustTests` | Switch | Skip Rust tests (use with -Test) |
 | `-ExcludePesterTests` | Switch | Skip Pester tests (use with -Test) |
-| `-PesterTestGroup` | String[] | Run specific Pester test groups (dsc, adapters, extensions, grammars, resources) |
+| `-PesterTestGroup` | String[] | Run specific Pester test groups (dsc, dsclint, adapters, extensions, grammars, resources) |
 | `-SkipLinkCheck` | Switch | Skip Windows C++ link tools check |
 | `-UseX64MakeAppx` | Switch | Use x64 version of MakeAppx.exe |
 | `-UseCFS` | Switch | Use Component Framework Service |

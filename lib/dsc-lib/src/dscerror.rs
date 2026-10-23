@@ -110,6 +110,9 @@ pub enum DscError {
     #[error("{t}: {0}", t = t!("dscerror.operation"))]
     Operation(String),
 
+    #[error(transparent)]
+    Lint(#[from] crate::lint::LintError),
+
     #[error("{t}: {0}", t = t!("dscerror.parser"))]
     Parser(String),
 
@@ -148,6 +151,10 @@ pub enum DscError {
 
     #[error("{t}: {0}", t = t!("dscerror.schema"))]
     Schema(String),
+
+    #[error(transparent)]
+    #[diagnostic(transparent)]
+    SchemaValidation(Box<crate::diagnostics::SchemaValidationError>),
 
     #[error("{t}: {0}", t = t!("dscerror.schemaNotAvailable"))]
     SchemaNotAvailable(String),

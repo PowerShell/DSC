@@ -9,6 +9,7 @@
       "dsc_default.settings.json",
       "dsc.settings.json",
       "dsc-bicep-ext",
+      "dsclint",
       "dscecho",
       "echo.dsc.resource.json",
       "file_dsc",
@@ -41,6 +42,7 @@
       "dsc_default.settings.json",
       "dsc.settings.json",
       "dsc-bicep-ext",
+      "dsclint",
       "dscecho",
       "echo.dsc.resource.json",
       "file_dsc",
@@ -76,6 +78,7 @@
       "dsc_default.settings.json",
       "dsc.settings.json",
       "dsc-bicep-ext.exe",
+      "dsclint.exe",
       "dscecho.exe",
       "echo.dsc.resource.json",
       "file_dsc.exe",
@@ -217,6 +220,15 @@
       "IsRust": true,
       "Binaries": [
         "dsc-bicep-ext"
+      ]
+    },
+    {
+      "Name": "dsclint",
+      "Kind": "CLI",
+      "RelativePath": "dsclint",
+      "IsRust": true,
+      "Binaries": [
+        "dsclint"
       ]
     },
     {

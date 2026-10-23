@@ -286,22 +286,7 @@ impl FunctionDispatcher {
 
         let metadata = function.get_metadata();
 
-        // check if arg number are valid
-        let min_args = metadata.min_args;
-        let max_args = metadata.max_args;
-        if args.len() < min_args || args.len() > max_args {
-            if max_args == 0 {
-                return Err(DscError::Parser(t!("functions.noArgsAccepted", name = name).to_string()));
-            }
-            else if min_args == max_args {
-                return Err(DscError::Parser(t!("functions.invalidArgCount", name = name, count = min_args).to_string()));
-            }
-            else if max_args == usize::MAX {
-                return Err(DscError::Parser(t!("functions.minArgsRequired", name = name, count = min_args).to_string()));
-            }
-
-            return Err(DscError::Parser(t!("functions.argCountRequired", name = name, min = min_args, max = max_args).to_string()));
-        }
+        Self::check_arg_count(name, &metadata, args.len())?;
 
         for (index, value) in args.iter().enumerate() {
             if index >= metadata.accepted_arg_ordered_types.len() {
@@ -328,6 +313,98 @@ impl FunctionDispatcher {
         } else {
             function.invoke(args, context)
         }
+    }
+
+    /// Get the metadata of a built-in function.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name of the function; names are case-sensitive.
+    ///
+    /// # Returns
+    ///
+    /// The metadata of the function, or `None` when no built-in function has that name.
+    #[must_use]
+    pub fn get_metadata(&self, name: &str) -> Option<FunctionMetadata> {
+        self.functions.get(name).map(|function| function.get_metadata())
+    }
+
+    /// Validate that a built-in function accepts the given number of arguments without invoking it.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name of the function; names are case-sensitive.
+    /// * `count` - The number of arguments that would be passed.
+    ///
+    /// # Errors
+    ///
+    /// Returns `DscError::Parser` when the function is unknown or the count is outside the range
+    /// the function accepts. The messages are the same ones [`invoke`](Self::invoke) raises.
+    pub fn validate_arg_count(&self, name: &str, count: usize) -> Result<(), DscError> {
+        let Some(metadata) = self.get_metadata(name) else {
+            return Err(DscError::Parser(t!("functions.unknownFunction", name = name).to_string()));
+        };
+        Self::check_arg_count(name, &metadata, count)
+    }
+
+    /// Validate literal arguments against the kinds a built-in function accepts without invoking it.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name of the function; names are case-sensitive.
+    /// * `args` - One entry per argument in order. `None` marks an argument whose value isn't
+    ///   known statically, such as a nested expression; those entries are skipped.
+    ///
+    /// # Errors
+    ///
+    /// Returns `DscError::Parser` when the function is unknown or a literal argument has a kind
+    /// the function doesn't accept at that position. The messages are the same ones
+    /// [`invoke`](Self::invoke) raises.
+    pub fn validate_literal_args(&self, name: &str, args: &[Option<&Value>]) -> Result<(), DscError> {
+        let Some(metadata) = self.get_metadata(name) else {
+            return Err(DscError::Parser(t!("functions.unknownFunction", name = name).to_string()));
+        };
+        for (index, arg) in args.iter().enumerate() {
+            let Some(value) = arg else {
+                continue;
+            };
+            if let Some(expected_types) = metadata.accepted_arg_ordered_types.get(index) {
+                Self::check_arg_against_expected_types(name, value, expected_types)?;
+            } else if let Some(remaining_types) = &metadata.remaining_arg_accepted_types {
+                Self::check_arg_against_expected_types(name, value, remaining_types)?;
+            }
+        }
+        Ok(())
+    }
+
+    /// Check that an argument count is within the range a function accepts.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name of the function, used in the error message.
+    /// * `metadata` - The metadata of the function.
+    /// * `count` - The number of arguments.
+    ///
+    /// # Errors
+    ///
+    /// Returns `DscError::Parser` describing the accepted range when `count` is outside it.
+    fn check_arg_count(name: &str, metadata: &FunctionMetadata, count: usize) -> Result<(), DscError> {
+        let min_args = metadata.min_args;
+        let max_args = metadata.max_args;
+        if count < min_args || count > max_args {
+            if max_args == 0 {
+                return Err(DscError::Parser(t!("functions.noArgsAccepted", name = name).to_string()));
+            }
+            else if min_args == max_args {
+                return Err(DscError::Parser(t!("functions.invalidArgCount", name = name, count = min_args).to_string()));
+            }
+            else if max_args == usize::MAX {
+                return Err(DscError::Parser(t!("functions.minArgsRequired", name = name, count = min_args).to_string()));
+            }
+
+            return Err(DscError::Parser(t!("functions.argCountRequired", name = name, min = min_args, max = max_args).to_string()));
+        }
+        Ok(())
     }
 
     fn check_arg_against_expected_types(name: &str, arg: &Value, expected_types: &[FunctionArgKind]) -> Result<(), DscError> {

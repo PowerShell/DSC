@@ -2856,7 +2856,7 @@ function Test-ProjectWithPester {
     [cmdletbinding()]
     param(
         [DscProjectDefinition[]]$Project,
-        [ValidateSet("dsc", "adapters", "extensions", "grammars", "resources")]
+        [ValidateSet("dsc", "dsclint", "adapters", "extensions", "grammars", "resources")]
         [string[]]$Group,
         [switch]$UsingADO
     )
@@ -3033,6 +3033,9 @@ function Build-DscDebPackage{
 
         $symlinkPath = Join-Path $debBuildRoot 'usr' 'bin' 'dsc-bicep-ext'
         New-Item -ItemType SymbolicLink -Path $symlinkPath -Target '/opt/dsc/dsc-bicep-ext' -Force > $null
+
+        $symlinkPath = Join-Path $debBuildRoot 'usr' 'bin' 'dsclint'
+        New-Item -ItemType SymbolicLink -Path $symlinkPath -Target '/opt/dsc/dsclint' -Force > $null
 
         # Read the control template and replace placeholders
         $controlTemplate = Get-Content "$PSScriptRoot/packaging/deb/control" -Raw

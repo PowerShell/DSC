@@ -30,6 +30,34 @@ impl Default for DscSettingValue {
     }
 }
 
+/// Parse a JSON or YAML string into a JSON value.
+///
+/// JSON is tried first; if that fails the input is parsed as YAML.
+///
+/// # Arguments
+///
+/// * `value` - A string slice that holds the input value
+///
+/// # Returns
+///
+/// The parsed value
+///
+/// # Errors
+///
+/// Returns `DscError::Yaml` with the YAML parser error when the input is neither valid JSON nor
+/// valid YAML.
+pub fn parse_input_to_value(value: &str) -> Result<Value, DscError> {
+    match serde_json::from_str::<Value>(value) {
+        Ok(json) => Ok(json),
+        Err(_) => {
+            match serde_yaml::from_str::<Value>(value) {
+                Ok(yaml) => Ok(yaml),
+                Err(err) => Err(DscError::Yaml(err)),
+            }
+        }
+    }
+}
+
 /// Return JSON string whether the input is JSON or YAML
 ///
 /// # Arguments

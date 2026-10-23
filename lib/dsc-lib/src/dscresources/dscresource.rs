@@ -1,12 +1,12 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}, context::ProcessMode, parameters::{SECURE_VALUE_REDACTED, is_secure_value}, schema_cache::get_resource_schema}, dscresources::{adapted_resource_manifest::AdaptedDscResourceManifest, resource_manifest::{AdapterInputKind, Kind}}, types::{FullyQualifiedTypeName, ResourceVersion}};
+use crate::{configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}, context::ProcessMode, parameters::{SECURE_VALUE_REDACTED, is_secure_value}, schema_cache::get_resource_schema}, diagnostics::SchemaValidationError, dscresources::{adapted_resource_manifest::AdaptedDscResourceManifest, resource_manifest::{AdapterInputKind, Kind}}, types::{FullyQualifiedTypeName, ResourceVersion}};
 use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse};
 use crate::schemas::transforms::idiomaticize_string_enum;
 use dscerror::DscError;
-use jsonschema::Validator;
+use jsonschema::{error::ValidationErrorKind, ValidationError, Validator};
 use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -909,7 +909,7 @@ pub fn validate_properties(resource: &DscResource, properties: &Value) -> Result
 ///
 /// # Arguments
 ///
-/// * `source` - The source of the JSON
+/// * `source` - The source of the JSON, as it should read in the error message
 /// * `schema` - The schema to validate against
 /// * `json` - The JSON to validate
 ///
@@ -919,10 +919,103 @@ pub fn validate_properties(resource: &DscResource, properties: &Value) -> Result
 ///
 /// # Errors
 ///
-/// * `DscError` - The JSON is invalid
+/// * `DscError::Validation` - The schema failed to compile
+/// * `DscError::SchemaValidation` - The JSON is invalid; the error lists every violation
 pub fn validate_json(source: &str, schema: &Value, json: &Value) -> Result<(), DscError> {
-    debug!("{}: {source}", t!("dscresources.dscresource.validatingSchema"));
     trace!("{}", t!("dscresources.dscresource.json", json = json));
+    let violations = validate_json_all(source, schema, json)?;
+    if violations.is_empty() {
+        return Ok(());
+    }
+    Err(DscError::SchemaValidation(Box::new(SchemaValidationError::new(source, violations).with_schema(schema))))
+}
+
+/// Extra information for the keywords whose message alone doesn't locate the problem.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub enum SchemaViolationDetail {
+    /// The message describes the problem fully.
+    #[default]
+    None,
+    /// For `additionalProperties` and `unevaluatedProperties`, the property names that aren't
+    /// allowed.
+    UnexpectedProperties(Vec<String>),
+    /// For `required`, the property that is missing.
+    MissingProperty(String),
+}
+
+/// A single violation found when validating JSON against a schema.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SchemaViolation {
+    /// JSON pointer (RFC 6901) to the location in the instance that failed validation.
+    pub instance_path: String,
+    /// JSON pointer to the keyword in the schema that the instance violated.
+    pub schema_path: String,
+    /// The keyword that failed, such as `type` or `anyOf`.
+    pub keyword: String,
+    /// The validation error message.
+    pub message: String,
+    /// What the keyword found, when the message alone doesn't locate the problem.
+    pub detail: SchemaViolationDetail,
+    /// For a failed `anyOf`, or a `oneOf` that no subschema matched, the violations of each
+    /// subschema in order; empty for every other keyword.
+    pub alternatives: Vec<Vec<SchemaViolation>>,
+}
+
+impl SchemaViolation {
+    /// Convert a validation error, including the violations of each `anyOf` or `oneOf`
+    /// subschema.
+    ///
+    /// # Arguments
+    ///
+    /// * `error` - The validation error.
+    fn from_error(error: &ValidationError<'_>) -> Self {
+        let alternatives = match error.kind() {
+            ValidationErrorKind::AnyOf { context } | ValidationErrorKind::OneOfNotValid { context } => {
+                context.iter().map(|branch| branch.iter().map(Self::from_error).collect()).collect()
+            },
+            _ => Vec::new(),
+        };
+        let detail = match error.kind() {
+            ValidationErrorKind::AdditionalProperties { unexpected } | ValidationErrorKind::UnevaluatedProperties { unexpected } => {
+                SchemaViolationDetail::UnexpectedProperties(unexpected.clone())
+            },
+            ValidationErrorKind::Required { property } => {
+                SchemaViolationDetail::MissingProperty(property.as_str().map_or_else(|| property.to_string(), str::to_string))
+            },
+            _ => SchemaViolationDetail::None,
+        };
+        Self {
+            instance_path: error.instance_path().to_string(),
+            schema_path: error.schema_path().to_string(),
+            keyword: error.kind().keyword().to_string(),
+            message: error.to_string(),
+            detail,
+            alternatives,
+        }
+    }
+}
+
+/// Validate the JSON against the schema and return every violation.
+///
+/// Unlike [`validate_json`], which stops at the first error, this function collects all
+/// violations so callers can report each one with its location. The JSON isn't traced because
+/// it can hold secure values.
+///
+/// # Arguments
+///
+/// * `source` - The source of the JSON, used for logging
+/// * `schema` - The schema to validate against
+/// * `json` - The JSON to validate
+///
+/// # Returns
+///
+/// Every violation found; an empty list means the JSON is valid.
+///
+/// # Errors
+///
+/// * `DscError::Validation` - The schema failed to compile
+pub fn validate_json_all(source: &str, schema: &Value, json: &Value) -> Result<Vec<SchemaViolation>, DscError> {
+    debug!("{}: {source}", t!("dscresources.dscresource.validatingSchema"));
     trace!("{}", t!("dscresources.dscresource.schema", schema = schema));
     let compiled_schema = match Validator::new(schema) {
         Ok(compiled_schema) => compiled_schema,
@@ -931,11 +1024,7 @@ pub fn validate_json(source: &str, schema: &Value, json: &Value) -> Result<(), D
         }
     };
 
-    if let Err(err) = compiled_schema.validate(json) {
-        return Err(DscError::Validation(format!("{}: '{source}' {err}", t!("dscresources.dscresource.validationFailed"))));
-    }
-
-    Ok(())
+    Ok(compiled_schema.iter_errors(json).map(|error| SchemaViolation::from_error(&error)).collect())
 }
 
 /// Compares two arrays independent of order

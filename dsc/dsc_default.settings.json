@@ -9,6 +9,9 @@
       "level": "WARN",
       "format": "Default",
       "allowOverride": true
+    },
+    "lint": {
+      "rules": {}
     }
   }
 }

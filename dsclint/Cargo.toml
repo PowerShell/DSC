@@ -1,0 +1,24 @@
+[package]
+name = "dsclint"
+# Keep in lockstep with the `dsc` crate: the linter checks `directives.version` against this value.
+version = "3.4.0-preview.2"
+edition = "2024"
+
+[[bin]]
+name = "dsclint"
+path = "src/main.rs"
+
+[dependencies]
+# external dependencies
+clap = { workspace = true }
+crossterm = { workspace = true }
+miette = { workspace = true, features = ["fancy-no-backtrace"] }
+rust-i18n = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+syntect = { workspace = true }
+tracing = { workspace = true }
+# workspace crate dependencies
+dsc-lib = { workspace = true }
+dsc-lib-telemetry = { workspace = true }

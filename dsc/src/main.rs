@@ -19,6 +19,7 @@ use crossterm::event;
 use std::env;
 
 pub mod args;
+pub mod report;
 pub mod resolve;
 pub mod resource_command;
 pub mod server;
@@ -98,31 +99,7 @@ fn dsc_main() -> Result<(), ExitCode> {
             generate(shell, &mut cmd, "dsc", &mut io::stdout());
         },
         SubCommand::Config { subcommand, parameters, parameters_file, system_root, as_group, as_assert, as_include } => {
-            let Ok(params) = get_input(None, parameters_file.as_ref()) else {
-                return Err(ExitCode::from(util::EXIT_INVALID_INPUT));
-            };
-            let file_params = if params.is_empty() {
-                None
-            } else {
-                Some(params)
-            };
-
-            let merged_parameters = match (file_params, parameters) {
-                (Some(file_content), Some(inline_content)) => {
-                    info!("{}", t!("main.mergingParameters"));
-                    match util::merge_parameters(&file_content, &inline_content) {
-                        Ok(merged) => Some(merged),
-                        Err(err) => {
-                            error!("{}: {err}", t!("main.failedMergingParameters"));
-                            return Err(ExitCode::from(util::EXIT_INVALID_INPUT))    ;
-                        }
-                    }
-                },
-                (Some(file_content), None) => Some(file_content),
-                (None, Some(inline_content)) => Some(inline_content),
-                (None, None) => None,
-            };
-
+            let merged_parameters = merge_parameter_inputs(parameters, parameters_file.as_ref())?;
             subcommand::config(&subcommand, &merged_parameters, system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format)?;
         },
         SubCommand::Extension { subcommand } => {
@@ -155,6 +132,48 @@ fn dsc_main() -> Result<(), ExitCode> {
     }
 
     Ok(())
+}
+
+/// Combine the inline parameters with the parameters file, if either was given.
+///
+/// # Arguments
+///
+/// * `parameters` - The inline parameters, as JSON or YAML.
+/// * `parameters_file` - The path to a parameters file, or `-` to read it from STDIN.
+///
+/// # Returns
+///
+/// The merged parameters as JSON, or `None` when neither was given. Inline values take precedence
+/// over values from the file.
+///
+/// # Errors
+///
+/// Returns `EXIT_INVALID_INPUT` when the file can't be read or the two inputs can't be merged.
+fn merge_parameter_inputs(parameters: Option<String>, parameters_file: Option<&String>) -> Result<Option<String>, ExitCode> {
+    let Ok(file_params) = get_input(None, parameters_file) else {
+        return Err(ExitCode::from(util::EXIT_INVALID_INPUT));
+    };
+    let file_params = if file_params.is_empty() {
+        None
+    } else {
+        Some(file_params)
+    };
+
+    match (file_params, parameters) {
+        (Some(file_content), Some(inline_content)) => {
+            info!("{}", t!("main.mergingParameters"));
+            match util::merge_parameters(&file_content, &inline_content) {
+                Ok(merged) => Ok(Some(merged)),
+                Err(err) => {
+                    error!("{}: {err}", t!("main.failedMergingParameters"));
+                    Err(ExitCode::from(util::EXIT_INVALID_INPUT))
+                }
+            }
+        },
+        (Some(file_content), None) => Ok(Some(file_content)),
+        (None, Some(inline_content)) => Ok(Some(inline_content)),
+        (None, None) => Ok(None),
+    }
 }
 
 fn ctrlc_handler() {

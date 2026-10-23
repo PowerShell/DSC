@@ -6,6 +6,7 @@ use crate::configure::context::{Context, ProcessMode};
 use crate::configure::parameters::{SecureObject, SecureString, import_parameters, is_secure_value};
 use crate::configure::{config_doc::{ExecutionKind, IntOrExpression, Metadata, Parameter, Resource, ResourceDiscoveryMode, RestartRequired, ValueOrCopy}};
 use crate::discovery::discovery_trait::DiscoveryFilter;
+use crate::diagnostics::{DocumentSource, JsonOrigin};
 use crate::dscerror::DscError;
 use crate::dscresources::{
     {dscresource::{Capability, Invoke, get_diff, validate_properties, get_adapter_input_kind},
@@ -45,6 +46,7 @@ pub struct Configurator {
     discovery: Discovery,
     statement_parser: Statement,
     progress_format: ProgressFormat,
+    source: Option<DocumentSource>,
 }
 
 /// Invokes the [`Discovery::find_resource`] method to retrieve a specific resource or raise a
@@ -331,7 +333,16 @@ fn add_metadata(dsc_resource: &DscResource, mut properties: Option<Map<String, V
     }
 }
 
-fn get_require_adapter_from_directive(resource_directives: &Option<ResourceDirective>) -> Option<FullyQualifiedTypeName> {
+/// Get the adapter a resource requires from its directives, if one is specified.
+///
+/// # Arguments
+///
+/// * `resource_directives` - The directives of the resource.
+///
+/// # Returns
+///
+/// The required adapter type name, or `None` when the directives don't require one.
+pub(crate) fn get_require_adapter_from_directive(resource_directives: &Option<ResourceDirective>) -> Option<FullyQualifiedTypeName> {
     if let Some(directives) = resource_directives
         && let Some(require_adapter) = &directives.require_adapter {
             return Some(require_adapter.clone());
@@ -548,6 +559,7 @@ impl Configurator {
             discovery: discovery.clone(),
             statement_parser: Statement::new()?,
             progress_format,
+            source: None,
         };
         config.validate_config()?;
         for extension in discovery.extensions.values() {
@@ -564,6 +576,57 @@ impl Configurator {
     #[must_use]
     pub fn get_config(&self) -> &Configuration {
         &self.config
+    }
+
+    /// Record the text the configuration was read from, so that errors found in a resource's
+    /// properties point at the author's document rather than at the evaluated properties.
+    ///
+    /// # Arguments
+    ///
+    /// * `source` - The document text and how to name it.
+    pub fn set_source(&mut self, source: DocumentSource) {
+        self.source = Some(source);
+    }
+
+    /// The text the configuration was read from, when the host recorded it.
+    #[must_use]
+    pub fn source(&self) -> Option<&DocumentSource> {
+        self.source.as_ref()
+    }
+
+    /// Point a schema validation error about a resource's input at the resource's declaration in
+    /// the document.
+    ///
+    /// Resources are validated after their expressions are evaluated, so the error arrives
+    /// pointing at the evaluated properties. When the document text is known and the resource
+    /// is declared in it directly, the error is re-anchored to the resource's `properties` in the
+    /// document. Resources that a copy loop expands keep the evaluated view. An error about what
+    /// the resource returned keeps pointing at that output, because the document doesn't hold the
+    /// offending value, and a redacted error stays without source text. Other errors pass
+    /// through unchanged.
+    ///
+    /// # Arguments
+    ///
+    /// * `error` - The error the resource operation returned.
+    /// * `resource` - The resource that was being invoked.
+    fn anchor_error(&self, error: DscError, resource: &Resource) -> DscError {
+        let DscError::SchemaValidation(schema_error) = error else {
+            return error;
+        };
+        if schema_error.origin() == JsonOrigin::Output || schema_error.is_redacted() {
+            return DscError::SchemaValidation(schema_error);
+        }
+        let Some(source) = &self.source else {
+            return DscError::SchemaValidation(schema_error);
+        };
+        let declared = self.config.resources.iter().position(|declared| {
+            declared.name == resource.name && declared.resource_type == resource.resource_type
+        });
+        let Some(index) = declared else {
+            return DscError::SchemaValidation(schema_error);
+        };
+        let base = format!("/resources/{index}/properties");
+        DscError::SchemaValidation(Box::new(schema_error.with_source(&source.text, &source.name, &base)))
     }
 
     /// Get the discovery.
@@ -641,7 +704,7 @@ impl Configurator {
                 Err(e) => {
                     progress.set_failure(get_failure_from_error(&e));
                     progress.write_increment(1);
-                    return Err(e);
+                    return Err(self.anchor_error(e, &resource));
                 },
             };
             let end_datetime = chrono::Local::now();
@@ -755,7 +818,7 @@ impl Configurator {
                     Err(e) => {
                         progress.set_failure(get_failure_from_error(&e));
                         progress.write_increment(1);
-                        return Err(e);
+                        return Err(self.anchor_error(e, &resource));
                     },
                 };
                 end_datetime = chrono::Local::now();
@@ -767,7 +830,7 @@ impl Configurator {
                     Err(e) => {
                         progress.set_failure(get_failure_from_error(&e));
                         progress.write_increment(1);
-                        return Err(e);
+                        return Err(self.anchor_error(e, &resource));
                     },
                 };
 
@@ -777,7 +840,7 @@ impl Configurator {
                     Err(e) => {
                         progress.set_failure(get_failure_from_error(&e));
                         progress.write_increment(1);
-                        return Err(e);
+                        return Err(self.anchor_error(e, &resource));
                     },
                 };
 
@@ -796,7 +859,7 @@ impl Configurator {
                             Err(e) => {
                                 progress.set_failure(get_failure_from_error(&e));
                                 progress.write_increment(1);
-                                return Err(e);
+                                return Err(self.anchor_error(e, &resource));
                             },
                         };
                         end_datetime = chrono::Local::now();
@@ -923,7 +986,7 @@ impl Configurator {
                 Err(e) => {
                     progress.set_failure(get_failure_from_error(&e));
                     progress.write_increment(1);
-                    return Err(e);
+                    return Err(self.anchor_error(e, &resource));
                 },
             };
             let end_datetime = chrono::Local::now();
@@ -1016,7 +1079,7 @@ impl Configurator {
                 Err(e) => {
                     progress.set_failure(get_failure_from_error(&e));
                     progress.write_increment(1);
-                    return Err(e);
+                    return Err(self.anchor_error(e, resource));
                 },
             };
             self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), serde_json::to_value(&export_result.actual_state)?);
@@ -1562,6 +1625,9 @@ fn get_failure_from_error(err: &DscError) -> Option<Failure> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::diagnostics::SchemaValidationError;
+    use crate::dscresources::dscresource::validate_json_all;
+    use miette::Diagnostic;
     use serde_json::json;
 
     fn resource_with_export(export: Value) -> DscResource {
@@ -1638,5 +1704,61 @@ mod tests {
     #[test]
     fn filter_input_invalid_json_is_error() {
         assert!(parse_export_filter_input("not json").is_err());
+    }
+
+    /// A document whose resources aren't discovered, so a configurator can be created in a test.
+    const ANCHOR_DOCUMENT: &str = "$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json\ndirectives:\n  resourceDiscovery: duringDeployment\nresources:\n- name: a\n  type: Test/Echo\n  properties:\n    output: hi\n    verbose: nope\n";
+    /// The evaluated properties of the resource in `ANCHOR_DOCUMENT`, as a resource sees them.
+    const EVALUATED_PROPERTIES: &str = "{\n  \"output\": \"hi\",\n  \"verbose\": \"nope\"\n}";
+
+    fn anchored_configurator() -> Configurator {
+        let json = serde_json::to_string(&serde_yaml::from_str::<Value>(ANCHOR_DOCUMENT).unwrap()).unwrap();
+        let mut configurator = Configurator::new(&json, ProgressFormat::None).unwrap();
+        configurator.set_source(DocumentSource::new("demo.dsc.yaml", ANCHOR_DOCUMENT));
+        configurator
+    }
+
+    /// The error a resource reports for `EVALUATED_PROPERTIES`, before any text is attached.
+    fn verbose_type_error() -> SchemaValidationError {
+        let schema = json!({ "type": "object", "properties": { "output": { "type": "string" }, "verbose": { "type": "boolean" } } });
+        let violations = validate_json_all("Test/Echo", &schema, &serde_json::from_str(EVALUATED_PROPERTIES).unwrap()).unwrap();
+        SchemaValidationError::new("input for 'Test/Echo'", violations)
+    }
+
+    /// Run an error through `anchor_error` for the resource declared in `ANCHOR_DOCUMENT`.
+    fn anchored_schema_error(error: SchemaValidationError) -> SchemaValidationError {
+        let configurator = anchored_configurator();
+        let resource = configurator.get_config().resources[0].clone();
+        match configurator.anchor_error(DscError::SchemaValidation(Box::new(error)), &resource) {
+            DscError::SchemaValidation(error) => *error,
+            other => panic!("expected a schema validation error, got {other}"),
+        }
+    }
+
+    fn first_label_offset(error: &SchemaValidationError) -> usize {
+        error.labels().unwrap().next().unwrap().offset()
+    }
+
+    #[test]
+    fn anchor_error_points_input_errors_at_the_document() {
+        let error = anchored_schema_error(verbose_type_error().with_source(EVALUATED_PROPERTIES, "input", ""));
+        assert_eq!(error.origin(), JsonOrigin::Input);
+        assert_eq!(first_label_offset(&error), ANCHOR_DOCUMENT.find("nope").unwrap());
+    }
+
+    #[test]
+    fn anchor_error_keeps_output_errors_on_the_output() {
+        let error = anchored_schema_error(verbose_type_error().with_origin(JsonOrigin::Output).with_source(EVALUATED_PROPERTIES, "output", ""));
+        assert_eq!(error.origin(), JsonOrigin::Output);
+        assert_eq!(first_label_offset(&error), EVALUATED_PROPERTIES.find("\"nope\"").unwrap());
+    }
+
+    #[test]
+    fn anchor_error_keeps_redacted_errors_without_source() {
+        let error = anchored_schema_error(verbose_type_error().redacted("redacted"));
+        assert!(error.is_redacted());
+        assert!(!error.has_source());
+        assert!(error.labels().is_none());
+        assert!(!format!("{error:?}").contains("nope"));
     }
 }
