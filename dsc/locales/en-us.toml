@@ -116,6 +116,7 @@ functionInvocationFailed = "Function '%{function}' invocation failed: %{error}"
 [server.invoke_dsc_resource]
 resourceNotFound = "Resource type '%{resource}' does not exist"
 whatIfNotSupported = "what_if is only supported for the 'set' and 'delete' operations"
+actionNotSupported = "The type '%{resource}' is an action or adapter and cannot be invoked as a resource"
 
 [server.list_dsc_functions]
 invalidNamePattern = "Invalid function name pattern '%{pattern}'"
@@ -125,12 +126,18 @@ invalidDescriptionPattern = "Invalid function description pattern '%{pattern}'"
 resourceNotAdapter = "The resource '%{adapter}' is not a valid adapter"
 adapterNotFound = "Adapter '%{adapter}' does not exist"
 
+[server.invoke_dsc_action]
+actionNotFound = "Action type '%{resource}' does not exist"
+resourceNotSupported = "The type '%{resource}' is not an action"
+
 [server.show_dsc_action]
-actionManifestNotFound = "Action manifest for '%{type_name}' not found"
+actionNotFound = "Action type '%{type_name}' does not exist"
+resourceNotSupported = "The type '%{type_name}' is not an action"
 
 [server.show_dsc_resource]
 resourceNotFound = "Resource type '%{type_name}' does not exist"
 resourceManifestNotFound = "Resource manifest for '%{type_name}' not found"
+resourceNotSupported = "The type '%{type_name}' is an action or adapter and cannot be shown as a resource"
 
 [subcommand]
 actualStateNotObject = "actual_state is not an object"
@@ -173,6 +180,7 @@ invalidManifest = "Error in manifest for"
 jsonArrayNotSupported = "JSON array output format is only supported for `--all'"
 yes = "Yes"
 no = "No"
+none = "None"
 
 [util]
 failedToConvertJsonToString = "Failed to convert JSON to string"

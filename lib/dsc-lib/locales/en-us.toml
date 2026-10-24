@@ -6,7 +6,6 @@ actionManifestSchemaDescription = "Defines the JSON Schema the action manifest a
 
 [actions.dscaction]
 inputSchemaNotAvailable = "Input schema is not available"
-outputSchemaNotAvailable = "Output schema is not available"
 whatIfNotSupported = "The action '%{type_name}' does not support WhatIf execution"
 actionUnsupportedOperation = "Unsupported operation '%{operation}' for action '%{action}'"
 
