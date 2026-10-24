@@ -26,9 +26,9 @@ pub struct InvokeDscActionResponse {
 pub struct InvokeDscActionRequest {
     #[schemars(description = "The type name of the DSC action to invoke")]
     pub r#type: FullyQualifiedTypeName,
-    #[schemars(description = "The properties to pass to the DSC action as JSON.  Must match the resource JSON schema from `show_dsc_action` tool.")]
+    #[schemars(description = "The properties to pass to the DSC action as JSON.  Must match the input schema from `show_dsc_action` tool.")]
     pub properties_json: Option<String>,
-    #[schemars(description = "When true and operation is 'set' or 'delete', simulate the change (what-if / dry-run) instead of applying it. Resources without native what-if support return a synthetic result derived from 'test'. Only valid with the 'set' and 'delete' operations.")]
+    #[schemars(description = "When true, request what-if (dry-run) execution. Only valid for actions that declare what-if support; otherwise the invocation fails.")]
     #[serde(default)]
     pub what_if: Option<bool>,
 }

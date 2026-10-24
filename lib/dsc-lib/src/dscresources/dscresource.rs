@@ -803,6 +803,10 @@ pub fn validate_properties(resource: &dyn ResourceInvoke, properties: &Value) ->
         let schema = serde_json::to_value(schema)?;
         return validate_json(&resource.type_name(), &schema, properties);
     }
+    if resource.kind() == ResourceKind::Action {
+        // an action without an input schema expects no input
+        return Ok(());
+    }
     if let Some(manifest) = resource.manifest() {
         if let Ok(manifest) = manifest.as_resource_manifest() && manifest.validate.is_some() {
             debug!("{}: {type_name} ", t!("dscresources.dscresource.resourceImplementsValidate"));

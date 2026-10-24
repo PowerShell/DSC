@@ -694,7 +694,7 @@ fn list_actions(dsc: &mut DscManager, action_name: &TypeNameFilter, format: Opti
 
             let require_security_context = match &action.invoke.require_security_context {
                 Some(security_context) => security_context.to_string(),
-                None => "None".to_string(),
+                None => t!("subcommand.none").to_string(),
             };
 
             if write_table {

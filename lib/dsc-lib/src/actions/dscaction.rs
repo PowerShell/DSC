@@ -20,7 +20,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::path::{Path, PathBuf};
-use tracing::{error, info};
+use tracing::error;
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -84,7 +84,7 @@ impl DscAction {
         }
 
         if let Some(input_schema) = &self.input_schema {
-            validate_json(input, input_schema)?;
+            validate_json(if input.is_empty() { "null" } else { input }, input_schema)?;
         } else if !input.is_empty() {
             error!("{}", t!("actions.dscaction.inputSchemaNotAvailable", type_name = self.type_name.to_string()).to_string());
             return Err(DscError::SchemaNotAvailable(self.type_name.to_string()));
@@ -101,13 +101,11 @@ impl DscAction {
         };
 
         let (_exit_code, stdout, _stderr) = invoke_command(&self.manifest.invoke.executable, args, input, Some(&self.directory), None, self.manifest.exit_codes.as_ref())?;
-        if !stdout.is_empty() {
-            if let Some(output_schema) = &self.output_schema {
-                validate_json(&stdout, output_schema)?;
-            } else {
-                error!("{}", t!("actions.dscaction.outputSchemaNotAvailable", type_name = self.type_name.to_string()).to_string());
-                return Err(DscError::SchemaNotAvailable(self.type_name.to_string()));
-            }
+        if stdout.trim().is_empty() {
+            return Ok(Value::Null);
+        }
+        if let Some(output_schema) = self.output_schema.as_ref().or(self.input_schema.as_ref()) {
+            validate_json(&stdout, output_schema)?;
         }
 
         let output = serde_json::from_str(&stdout)?;
@@ -120,8 +118,7 @@ impl ResourceInvoke for DscAction {
         let result = if self.supported_operations.contains(&SupportedOperations::Get) {
             self.invoke_action(filter, &ExecutionKind::Actual)?
         } else {
-            info!("{}", t!("actions.dscaction.actionUnsupportedOperation", operation = SupportedOperations::Get, action = &self.type_name).to_string());
-            Value::Null
+            return Err(DscError::NotSupported(t!("actions.dscaction.actionUnsupportedOperation", operation = SupportedOperations::Get, action = &self.type_name).to_string()));
         };
         let get_result_response = ResourceGetResponse {
             actual_state: result.clone()
@@ -133,8 +130,7 @@ impl ResourceInvoke for DscAction {
         let result = if self.supported_operations.contains(&SupportedOperations::Set) {
             self.invoke_action(desired, execution_type)?
         } else {
-            info!("{}", t!("actions.dscaction.actionUnsupportedOperation", operation = SupportedOperations::Set, action = &self.type_name).to_string());
-            Value::Null
+            return Err(DscError::NotSupported(t!("actions.dscaction.actionUnsupportedOperation", operation = SupportedOperations::Set, action = &self.type_name).to_string()));
         };
         let set_result_response = ResourceSetResponse {
             before_state: result.clone(),
@@ -148,8 +144,7 @@ impl ResourceInvoke for DscAction {
         let result = if self.supported_operations.contains(&SupportedOperations::Test) {
             self.invoke_action(expected, &ExecutionKind::Actual)?
         } else {
-            info!("{}", t!("actions.dscaction.actionUnsupportedOperation", operation = SupportedOperations::Test, action = &self.type_name).to_string());
-            Value::Null
+            return Err(DscError::NotSupported(t!("actions.dscaction.actionUnsupportedOperation", operation = SupportedOperations::Test, action = &self.type_name).to_string()));
         };
         let test_response = ResourceTestResponse {
             desired_state: result.clone(),
@@ -164,8 +159,7 @@ impl ResourceInvoke for DscAction {
         let result = if self.supported_operations.contains(&SupportedOperations::Export) {
             self.invoke_action(input, &ExecutionKind::Actual)?
         } else {
-            info!("{}", t!("actions.dscaction.actionUnsupportedOperation", operation = SupportedOperations::Export, action = &self.type_name).to_string());
-            Value::Null
+            return Err(DscError::NotSupported(t!("actions.dscaction.actionUnsupportedOperation", operation = SupportedOperations::Export, action = &self.type_name).to_string()));
         };
         Ok(ExportResult {
             actual_state: vec![result.clone()]
