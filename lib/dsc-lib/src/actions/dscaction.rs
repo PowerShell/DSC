@@ -38,7 +38,7 @@ pub struct DscAction {
     /// The output schema for the action.  If not defined, then the action does not produce output.
     pub output_schema: Option<Value>,
     /// The file path to the extension.
-    pub path: PathBuf,
+    pub path: Option<PathBuf>,
     /// The author of the extension.
     pub author: Option<String>,
     /// An optional message indicating the extension is deprecated.  If provided, the message will be shown when the extension is used.
@@ -68,7 +68,7 @@ impl DscAction {
             invoke: InvokeMethod::default(),
             input_schema: None,
             output_schema: None,
-            path: PathBuf::new(),
+            path: None,
             author: None,
             deprecation_message: None,
             description: None,
@@ -324,8 +324,8 @@ fn process_schema_args(args: Option<&Vec<SchemaArgKind>>) -> Option<Vec<String>>
     Some(processed_args)
 }
 
-pub(crate) fn load_action_manifest(path: &Path, manifest: &ActionManifest) -> Result<DscAction, DscError> {
-    verify_executable(&manifest.type_name, "invoke", &manifest.invoke.executable, path.parent().unwrap());
+pub(crate) fn load_action_manifest(path: Option<&Path>, manifest: &ActionManifest) -> Result<DscAction, DscError> {
+    verify_executable(&manifest.type_name, "invoke", &manifest.invoke.executable, path.and_then(|p| p.parent()));
     let mut supported_operations = Vec::new();
     if let Some(operations) = &manifest.supported_operations {
         supported_operations.extend(operations.clone());
@@ -333,12 +333,12 @@ pub(crate) fn load_action_manifest(path: &Path, manifest: &ActionManifest) -> Re
         supported_operations.push(SupportedOperations::Set);
     }
     let input_schema = if let Some(input_schema_kind) = manifest.invoke.input_schema.as_ref() {
-        Some(get_schema(input_schema_kind, path.parent().unwrap(), manifest.exit_codes.as_ref())?)
+        Some(get_schema(input_schema_kind, path.unwrap().parent().unwrap(), manifest.exit_codes.as_ref())?)
     } else {
         None
     };
     let output_schema = if let Some(output_schema_kind) = manifest.invoke.output_schema.as_ref() {
-        Some(get_schema(output_schema_kind, path.parent().unwrap(), manifest.exit_codes.as_ref())?)
+        Some(get_schema(output_schema_kind, path.unwrap().parent().unwrap(), manifest.exit_codes.as_ref())?)
     } else {
         None
     };
@@ -349,11 +349,11 @@ pub(crate) fn load_action_manifest(path: &Path, manifest: &ActionManifest) -> Re
         invoke: manifest.invoke.clone(),
         input_schema,
         output_schema,
-        path: path.to_path_buf(),
+        path: path.map(|p| p.to_path_buf()),
         author: manifest.author.clone(),
         deprecation_message: manifest.deprecation_message.clone(),
         description: manifest.description.clone(),
-        directory: path.parent().unwrap().to_path_buf(),
+        directory: path.and_then(|p| p.parent()).map(|p| p.to_path_buf()).unwrap_or_default(),
         supported_operations,
         manifest: manifest.clone(),
     };
