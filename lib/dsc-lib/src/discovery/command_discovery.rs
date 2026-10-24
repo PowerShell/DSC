@@ -261,6 +261,8 @@ impl ResourceDiscovery for CommandDiscovery {
         match kind {
             DiscoveryKind::Action => {
                 progress.write_activity(t!("discovery.commandDiscovery.actionSearching").to_string().as_str());
+                // resources and actions share a single cache and are discovered together
+                self.resources_discovered = true;
             }
             DiscoveryKind::Extension => {
                 progress.write_activity(t!("discovery.commandDiscovery.extensionSearching").to_string().as_str());
@@ -293,8 +295,7 @@ impl ResourceDiscovery for CommandDiscovery {
                             };
                             let file_name_lowercase = file_name.to_lowercase();
                             if DSC_MANIFEST_LIST_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)) ||
-                                (kind == &DiscoveryKind::Action && DSC_ACTION_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext))) ||
-                                (kind == &DiscoveryKind::Resource && (DSC_RESOURCE_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)) || DSC_ADAPTED_RESOURCE_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)))) ||
+                                (matches!(kind, DiscoveryKind::Action | DiscoveryKind::Resource) && (DSC_ACTION_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)) || DSC_RESOURCE_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)) || DSC_ADAPTED_RESOURCE_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)))) ||
                                 (kind == &DiscoveryKind::Extension && DSC_EXTENSION_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext))) {
                                 trace!("{}", t!("discovery.commandDiscovery.foundManifest", path = path.to_string_lossy()));
                                 let imported_manifests = match load_manifest(&path)
@@ -376,10 +377,21 @@ impl ResourceDiscovery for CommandDiscovery {
                             }
                         };
                         debug!("{}", t!("discovery.commandDiscovery.extensionFoundResources", extension = extension.type_name, count = discovered_resources.len()));
-                        for resource in discovered_resources {
-                            if filter.is_match(&resource.type_name) {
-                                trace!("{}", t!("discovery.commandDiscovery.extensionResourceFound", resource = resource.type_name));
-                                insert_resource(&mut resources, Box::new(resource));
+                        for manifest in discovered_resources {
+                            match manifest {
+                                ImportedManifest::Resource(resource) => {
+                                    if filter.is_match(&resource.type_name) {
+                                        trace!("{}", t!("discovery.commandDiscovery.extensionResourceFound", resource = resource.type_name));
+                                        insert_resource(&mut resources, Box::new(resource));
+                                    }
+                                },
+                                ImportedManifest::Action(action) => {
+                                    if filter.is_match(&action.type_name) {
+                                        trace!("{}", t!("discovery.commandDiscovery.actionFound", action = action.type_name, version = action.version));
+                                        insert_resource(&mut resources, Box::new(action));
+                                    }
+                                },
+                                ImportedManifest::Extension(_) => {},
                             }
                         }
                     }
@@ -725,7 +737,14 @@ fn evaluate_condition(condition: Option<&str>) -> Result<bool, DscError> {
 /// # Errors
 /// * Returns a `DscError` if the manifest could not be loaded or parsed.
 pub fn load_manifest_content(content: &Value) -> Result<Vec<ImportedManifest>, DscError> {
-    if let Ok(resource) = serde_json::from_value::<AdaptedDscResourceManifest>(content.clone()) {
+    if let Ok(action) = serde_json::from_value::<ActionManifest>(content.clone()) {
+        if !evaluate_condition(action.condition.as_deref())? {
+            debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = "manifest content", condition = action.condition.unwrap_or_default(), resource = action.type_name));
+            return Ok(vec![]);
+        }
+        let action = load_action_manifest(Path::new("manifest content"), &action)?;
+        return Ok(vec![ImportedManifest::Action(action)]);
+    } else if let Ok(resource) = serde_json::from_value::<AdaptedDscResourceManifest>(content.clone()) {
         if !evaluate_condition(resource.condition.as_deref())? {
             debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = "manifest content", condition = resource.condition.unwrap_or_default(), resource = resource.type_name));
             return Ok(vec![]);
