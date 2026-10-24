@@ -200,7 +200,7 @@ BeforeDiscovery {
         'y2j'
     )
     $localeFolders = $rootFolders | ForEach-Object -Process {
-        Get-ChildItem $PSScriptRoot/../../$_/locales -Recurse -Directory
+        Get-ChildItem $PSScriptRoot/../../../$_/locales -Recurse -Directory
     }
     
     $projects = @()

@@ -115,7 +115,7 @@ Describe 'tests for resource discovery' {
 
         # perform List on an adapter - this should create adapter lookup table file
         $oldPSModulePath = $env:PSModulePath
-        $TestClassResourcePath = Resolve-Path "$PSScriptRoot/../../adapters/powershell/Tests"
+        $TestClassResourcePath = Resolve-Path "$PSScriptRoot/../../../adapters/powershell/Tests"
         $env:DSC_RESTRICTED_PATH = $null
         $env:PSModulePath += [System.IO.Path]::PathSeparator + $TestClassResourcePath
         dsc resource list -a Microsoft.DSC/PowerShell | Out-Null
@@ -132,7 +132,7 @@ Describe 'tests for resource discovery' {
 
         # perform Get on an adapter - this should create adapter lookup table file
         $oldPSModulePath = $env:PSModulePath
-        $TestClassResourcePath = Resolve-Path "$PSScriptRoot/../../adapters/powershell/Tests"
+        $TestClassResourcePath = Resolve-Path "$PSScriptRoot/../../../adapters/powershell/Tests"
         $env:DSC_RESTRICTED_PATH = $null
         $env:PSModulePath += [System.IO.Path]::PathSeparator + $TestClassResourcePath
         "{'Name':'TestClassResource1'}" | dsc resource get -r 'TestClassResource/TestClassResource' -f - | Out-Null
@@ -145,7 +145,7 @@ Describe 'tests for resource discovery' {
     It 'Verify adapter lookup table is used on repeat invocations' {
 
         $oldPSModulePath = $env:PSModulePath
-        $TestClassResourcePath = Resolve-Path "$PSScriptRoot/../../adapters/powershell/Tests"
+        $TestClassResourcePath = Resolve-Path "$PSScriptRoot/../../../adapters/powershell/Tests"
         $env:DSC_RESTRICTED_PATH = $null
         $env:PSModulePath += [System.IO.Path]::PathSeparator + $TestClassResourcePath
 

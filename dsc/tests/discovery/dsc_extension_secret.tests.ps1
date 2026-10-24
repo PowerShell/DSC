@@ -4,7 +4,7 @@
 Describe 'Tests for the secret() function and extensions' {
     BeforeAll {
         $oldPath = $env:PATH
-        $toolPath = Resolve-Path -Path "$PSScriptRoot/../../extensions/test/secret"
+        $toolPath = Resolve-Path -Path "$PSScriptRoot/../../../extensions/test/secret"
         $env:PATH = "$toolPath" + [System.IO.Path]::PathSeparator + $oldPath
     }
 

@@ -8,7 +8,7 @@ Describe 'Tests for config using reference function' {
     ) {
         param($operation)
 
-        $out = dsc config $operation -f $PSScriptRoot/../examples/reference.dsc.yaml | ConvertFrom-Json
+        $out = dsc config $operation -f $PSScriptRoot/../../examples/reference.dsc.yaml | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $os = if ($IsWindows) {
             'Windows'

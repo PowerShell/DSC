@@ -7,7 +7,7 @@ Describe 'dsc config get tests' {
         @{ config = 'osinfo_registry.dsc.yaml' }
     ) {
         param($config)
-        $jsonPath = Join-Path $PSScriptRoot '../examples' $config
+        $jsonPath = Join-Path $PSScriptRoot '../../examples' $config
         $config = Get-Content $jsonPath -Raw
         $out = $config | dsc config get -f - | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
@@ -25,7 +25,7 @@ Describe 'dsc config get tests' {
     }
 
     It 'will fail if resource schema does not match' -Skip:(!$IsWindows) {
-        $jsonPath = Join-Path $PSScriptRoot '../examples/invalid_schema.dsc.yaml'
+        $jsonPath = Join-Path $PSScriptRoot '../../examples/invalid_schema.dsc.yaml'
         $testError = & {dsc config get -f $jsonPath 2>&1}
         $testError[0] | Should -match 'Schema:'
         $LASTEXITCODE | Should -Be 2

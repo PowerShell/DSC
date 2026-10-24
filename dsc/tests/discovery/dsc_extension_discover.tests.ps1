@@ -12,7 +12,7 @@ BeforeDiscovery {
 Describe 'Discover extension tests' {
     BeforeAll {
         $oldPath = $env:PATH
-        $toolPath = Resolve-Path -Path "$PSScriptRoot/../../extensions/test/discover"
+        $toolPath = Resolve-Path -Path "$PSScriptRoot/../../../extensions/test/discover"
         $env:PATH = "$toolPath" + [System.IO.Path]::PathSeparator + $oldPath
     }
 
