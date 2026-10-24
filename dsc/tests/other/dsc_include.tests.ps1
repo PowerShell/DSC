@@ -4,9 +4,9 @@
 Describe 'Include tests' {
     BeforeAll {
         $includePath = New-Item -ItemType Directory -Path (Join-Path $TestDrive 'include')
-        Copy-Item (Join-Path $PSScriptRoot '../examples/osinfo_parameters.dsc.yaml') -Destination $includePath
+        Copy-Item (Join-Path $PSScriptRoot '../../examples/osinfo_parameters.dsc.yaml') -Destination $includePath
         $osinfoConfigPath = Get-Item (Join-Path $includePath 'osinfo_parameters.dsc.yaml')
-        Copy-Item (Join-Path $PSScriptRoot '../examples/osinfo.parameters.yaml') -Destination $includePath
+        Copy-Item (Join-Path $PSScriptRoot '../../examples/osinfo.parameters.yaml') -Destination $includePath
         $osinfoParametersConfigPath = Get-Item (Join-Path $includePath 'osinfo.parameters.yaml')
 
         $logPath = Join-Path $TestDrive 'stderr.log'
@@ -91,7 +91,7 @@ Describe 'Include tests' {
     }
 
     It 'Include config JSON content with default parameters' {
-        $osinfoJsonPath = Join-Path $PSScriptRoot '../examples/osinfo_parameters.dsc.json'
+        $osinfoJsonPath = Join-Path $PSScriptRoot '../../examples/osinfo_parameters.dsc.json'
 
         # for JSON, we can just have it as a single line
         $includeContent = (Get-Content $osinfoJsonPath -Raw).Replace("`n", "").Replace('"', '\"')
@@ -144,7 +144,7 @@ Describe 'Include tests' {
     }
 
     It 'Include config with parameters content' {
-        $parametersContentFile = Join-Path $PSScriptRoot '../examples/osinfo.parameters.json'
+        $parametersContentFile = Join-Path $PSScriptRoot '../../examples/osinfo.parameters.json'
         $parametersContent = (Get-Content $parametersContentFile -Raw).Replace("`n", "").Replace('"', '\"')
 
         $config = @"
@@ -321,7 +321,7 @@ resources:
     }
 
     It 'Test with include works' {
-        $includeYaml = Join-Path $PSScriptRoot ../../dsc/examples/include.dsc.yaml
+        $includeYaml = Join-Path $PSScriptRoot ../../../dsc/examples/include.dsc.yaml
         $out = dsc config test -f $includeYaml | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.results[0].type | Should -BeExactly 'Microsoft.DSC/Include'

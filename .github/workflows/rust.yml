@@ -247,7 +247,24 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        group: [dsc, adapters, extensions, resources]
+        include:
+          - name: dsc-expressions
+            group: dsc/tests/expressions
+          - name: dsc-other
+            group: dsc/tests/other
+          - name: adapters
+            group: adapters
+          - name: extensions
+            group: extensions
+          - name: resources
+            group: resources
+            exclude: '*dism_dsc*'
+          - name: dism-windows-feature
+            group: resources/dism_dsc/tests/WindowsFeature
+          - name: dism-optional-feature
+            group: resources/dism_dsc/tests/OptionalFeature
+          - name: dism-feature-on-demand
+            group: resources/dism_dsc/tests/FeatureOnDemand
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -266,13 +283,16 @@ jobs:
           $profPattern = Join-Path $profDir.FullName '%m_%p.profraw'
           "LLVM_PROFILE_FILE=$profPattern" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_ENV
           "prof_dir=$($profDir.FullName)" | Out-File -Append -Encoding utf8 -FilePath $env:GITHUB_OUTPUT
-      - name: Test ${{matrix.group}}
+      - name: Test ${{matrix.name}}
         run: |-
           $params = @{
             SkipBuild        = $true
             Test             = $true
             ExcludeRustTests = $true
             Verbose          = $true
+          }
+          if ('${{matrix.exclude}}') {
+            $params.PesterExcludePath = '${{matrix.exclude}}'
           }
           ./build.ps1 @params -PesterTestGroup ${{matrix.group}}
       - name: Generate coverage report
@@ -299,7 +319,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: windows-pester-${{matrix.group}}-coverage
+          name: windows-pester-${{matrix.name}}-coverage
           path: pester-lcov.info
           if-no-files-found: ignore
 
