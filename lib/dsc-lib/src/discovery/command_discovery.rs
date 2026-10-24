@@ -767,6 +767,16 @@ pub fn load_manifest_content(content: &Value) -> Result<Vec<ImportedManifest>, D
         return Ok(vec![ImportedManifest::Extension(extension)]);
     } else if let Ok(manifest_list) = serde_json::from_value::<ManifestList>(content.clone()) {
         let mut resources: Vec<ImportedManifest> = vec![];
+        if let Some(actions) = manifest_list.actions {
+            for action_manifest in actions {
+                if !evaluate_condition(action_manifest.condition.as_deref())? {
+                    debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = "manifest content", condition = action_manifest.condition.unwrap_or_default(), resource = action_manifest.type_name));
+                    continue;
+                }
+                let action = load_action_manifest(Path::new("manifest content"), &action_manifest)?;
+                resources.push(ImportedManifest::Action(action));
+            }
+        }
         if let Some(adapted_resources) = manifest_list.adapted_resources {
             for adapted_resource in adapted_resources {
                 if !evaluate_condition(adapted_resource.condition.as_deref())? {

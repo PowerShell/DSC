@@ -124,29 +124,48 @@ impl Discovery {
     }
 
     pub fn find_resource(&mut self, filter: &DiscoveryFilter) -> Result<Option<Box<dyn ResourceInvoke>>, DscError> {
-        if self.refresh_cache || !self.discovery_completed {
+        let was_completed = self.discovery_completed;
+        if self.refresh_cache || !was_completed {
             self.find_resources(std::slice::from_ref(filter), ProgressFormat::None)?;
         }
 
+        let found = self.lookup_resource(filter);
+        if found.is_none() && was_completed && !self.refresh_cache {
+            // an earlier discovery may have only cached resources matching a different filter
+            let mut command_discovery = CommandDiscovery::new(ProgressFormat::None);
+            for (resource_name, resources) in command_discovery.find(std::slice::from_ref(filter))? {
+                let entry = self.resources.entry(resource_name).or_default();
+                for resource in resources {
+                    if !entry.iter().any(|r| r.version() == resource.version() && r.type_name() == resource.type_name()) {
+                        entry.push(resource);
+                    }
+                }
+            }
+            return Ok(self.lookup_resource(filter));
+        }
+        Ok(found)
+    }
+
+    fn lookup_resource(&self, filter: &DiscoveryFilter) -> Option<Box<dyn ResourceInvoke>> {
         let type_name = filter.resource_type();
         if let Some(resources) = self.resources.get(type_name) {
             if let Some(version_req) = filter.require_version() {
                 for resource in resources {
                     if version_req.matches(&resource.version()) && matches_adapter_requirement(resource.as_ref(), filter) {
-                        return Ok(Some(resource.clone()));
+                        return Some(resource.clone());
                     }
                 }
-                Ok(None)
+                None
             } else {
                 for resource in resources {
                     if matches_adapter_requirement(resource.as_ref(), filter) {
-                        return Ok(Some(resource.clone())) ;
+                        return Some(resource.clone());
                     }
                 }
-                Ok(None)
+                None
             }
         } else {
-            Ok(None)
+            None
         }
     }
 
@@ -194,15 +213,13 @@ impl Discovery {
 /// # Returns
 /// `true` if the resource matches the adapter requirement, `false` otherwise.
 pub fn matches_adapter_requirement(resource: &dyn ResourceInvoke, filter: &DiscoveryFilter) -> bool {
-    if let Some(resource) = resource.as_dsc_resource() && let Some(required_adapter) = filter.require_adapter() {
-        if let Some(resource_adapter) = &resource.require_adapter {
-            required_adapter == resource_adapter
-        } else {
-            false
-        }
-    } else {
-        true
-    }
+    let Some(required_adapter) = filter.require_adapter() else {
+        return true;
+    };
+    // only adapted resources can satisfy an adapter requirement
+    resource.as_dsc_resource()
+        .and_then(|resource| resource.require_adapter.as_ref())
+        .is_some_and(|resource_adapter| required_adapter == resource_adapter)
 }
 
 /// Fix the semantic versioning requirements of a given version requirements string.

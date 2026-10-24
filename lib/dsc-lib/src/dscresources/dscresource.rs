@@ -803,7 +803,7 @@ pub fn validate_properties(resource: &dyn ResourceInvoke, properties: &Value) ->
         let schema = serde_json::to_value(schema)?;
         return validate_json(&resource.type_name(), &schema, properties);
     }
-    if resource.kind() == ResourceKind::Action {
+    if resource.kind() == ResourceKind::Action && properties.is_null() {
         // an action without an input schema expects no input
         return Ok(());
     }

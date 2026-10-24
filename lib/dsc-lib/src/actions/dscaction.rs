@@ -325,7 +325,12 @@ fn process_schema_args(args: Option<&Vec<SchemaArgKind>>) -> Option<Vec<String>>
 }
 
 pub(crate) fn load_action_manifest(path: Option<&Path>, manifest: &ActionManifest) -> Result<DscAction, DscError> {
-    verify_executable(&manifest.type_name, "invoke", &manifest.invoke.executable, path.and_then(|p| p.parent()));
+    // inline manifests have no real file path, so fall back to the current directory
+    let directory = match path.parent() {
+        Some(parent) if !parent.as_os_str().is_empty() && parent.is_dir() => parent.to_path_buf(),
+        _ => std::env::current_dir()?,
+    };
+    verify_executable(&manifest.type_name, "invoke", &manifest.invoke.executable, Some(&directory));
     let mut supported_operations = Vec::new();
     if let Some(operations) = &manifest.supported_operations {
         supported_operations.extend(operations.clone());
@@ -333,12 +338,12 @@ pub(crate) fn load_action_manifest(path: Option<&Path>, manifest: &ActionManifes
         supported_operations.push(SupportedOperations::Set);
     }
     let input_schema = if let Some(input_schema_kind) = manifest.invoke.input_schema.as_ref() {
-        Some(get_schema(input_schema_kind, path.unwrap().parent().unwrap(), manifest.exit_codes.as_ref())?)
+        Some(get_schema(input_schema_kind, &directory, manifest.exit_codes.as_ref())?)
     } else {
         None
     };
     let output_schema = if let Some(output_schema_kind) = manifest.invoke.output_schema.as_ref() {
-        Some(get_schema(output_schema_kind, path.unwrap().parent().unwrap(), manifest.exit_codes.as_ref())?)
+        Some(get_schema(output_schema_kind, &directory, manifest.exit_codes.as_ref())?)
     } else {
         None
     };

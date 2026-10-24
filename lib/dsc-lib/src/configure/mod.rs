@@ -309,6 +309,14 @@ fn add_metadata(dsc_resource: &dyn ResourceInvoke, mut properties: Option<Map<St
         return Ok(serde_json::to_string(&properties)?);
     }
 
+    if dsc_resource.kind() == ResourceKind::Action && dsc_resource.schema_as_map().is_none() {
+        // actions without an input schema take no input, so metadata stays engine-side
+        return match properties {
+            Some(properties) => Ok(serde_json::to_string(&properties)?),
+            None => Ok(String::new()),
+        };
+    }
+
     if let Some(resource_metadata) = resource_metadata {
         let other_metadata = resource_metadata.other;
         let mut props = if let Some(props) = properties {

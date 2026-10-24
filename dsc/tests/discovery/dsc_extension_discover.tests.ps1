@@ -157,6 +157,56 @@ $action | ConvertTo-Json -Compress -Depth 10
         }
     }
 
+    It 'Extension can return an action manifest list as content' {
+        $extension_json = @'
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "type": "Test/DiscoverActionList",
+    "version": "0.1.0",
+    "description": "Test discover action list",
+    "discover": {
+        "executable": "pwsh",
+        "args": ["-NoLogo", "-NonInteractive", "-NoProfile", "-Command", "./discover.ps1"]
+    }
+}
+'@
+        $discoverScript = @'
+@{
+    manifestContent = @{
+        actions = @(
+            @{
+                '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/action/manifest.json'
+                type = 'Test/ListAction'
+                version = '1.0.0'
+                supportedOperations = @('get')
+                invoke = @{
+                    executable = 'pwsh'
+                    args = @('-NoLogo', '-NonInteractive', '-NoProfile', '-Command', '''{"Output": "From list"}''')
+                    outputSchema = @{ embedded = @{ type = 'object' } }
+                }
+            }
+        )
+    }
+} | ConvertTo-Json -Compress -Depth 10
+'@
+        Set-Content -Path "$TestDrive/test.dsc.extension.json" -Value $extension_json
+        Set-Content -Path "$TestDrive/discover.ps1" -Value $discoverScript
+        $env:DSC_RESTRICTED_PATH = "$TestDrive" + [System.IO.Path]::PathSeparator + (Split-Path (Get-Command pwsh).Source -Parent)
+        try {
+            $out = dsc action list | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $out.Count | Should -Be 1 -Because ($out | Out-String)
+            $out[0].type | Should -BeExactly 'Test/ListAction'
+            $out[0].outputSchema | Should -Not -BeNullOrEmpty
+            $config = '{"$schema":"https://aka.ms/dsc/schemas/v3/bundled/config/document.json","resources":[{"name":"a","type":"Test/ListAction"}]}'
+            $result = dsc config get -i $config | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $result.results[0].result.actualState.Output | Should -BeExactly 'From list'
+        } finally {
+            $env:DSC_RESTRICTED_PATH = $null
+        }
+    }
+
     It 'Relative path from discovery will fail' {
         $extension_json = @'
 {
