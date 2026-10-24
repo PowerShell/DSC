@@ -94,7 +94,9 @@ impl DscAction {
             return Err(DscError::Operation(t!("actions.dscaction.whatIfNotSupported", type_name = self.type_name.to_string()).to_string()));
         }
 
-        let input = if input.is_empty() {
+        // when the input is passed via a JSON argument, don't also write it to stdin to avoid pipe deadlocks
+        let passes_input_as_arg = self.manifest.invoke.args.as_ref().is_some_and(|args| args.iter().any(|arg| matches!(arg, ArgKind::Json { .. })));
+        let input = if input.is_empty() || passes_input_as_arg {
             None
         } else {
             Some(input)
