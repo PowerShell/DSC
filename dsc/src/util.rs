@@ -27,12 +27,6 @@ use dsc_lib::{
     dscresources::{
         command_resource::TraceLevel,
         dscresource::DscResource,
-        invoke_result::{
-            GetResult,
-            SetResult,
-            TestResult,
-            ResolveResult,
-        },
         resource_manifest::ResourceManifest
     },
     extensions::{
@@ -41,6 +35,7 @@ use dsc_lib::{
         extension_manifest::ExtensionManifest,
     },
     functions::FunctionDefinition,
+    resources::invoke_result::{GetResult, ResolveResult, SetResult, TestResult},
     schemas::dsc_repo::{DscRepoSchema, RecognizedSchemaVersion, SchemaForm, SchemaUriPrefix},
     types::SemanticVersion,
     util::{

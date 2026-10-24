@@ -8,6 +8,7 @@ use crate::configure::config_doc::ResourceDiscoveryMode;
 use crate::discovery::discovery_trait::{DiscoveryKind, ResourceDiscovery, DiscoveryFilter};
 use crate::dscerror::DscError;
 use crate::extensions::dscextension::{Capability, DscExtension};
+use crate::resources::resource_invoke::ResourceInvoke;
 use crate::types::{FullyQualifiedTypeName, TypeNameFilter};
 use crate::{dscresources::dscresource::DscResource, progress::ProgressFormat};
 use core::result::Result::Ok;
@@ -16,18 +17,24 @@ use std::collections::BTreeMap;
 use command_discovery::{CommandDiscovery, ImportedManifest};
 use tracing::error;
 
-/// Defines the caching [`BTreeMap`] for discovered DSC extensions.
+type DiscoveryCache = BTreeMap<FullyQualifiedTypeName, Vec<Box<dyn ResourceInvoke>>>;
 type DiscoveryExtensionCache = BTreeMap<FullyQualifiedTypeName, DscExtension>;
-/// Defines the caching [`BTreeMap`] for discovered DSC manifests of any type.
 type DiscoveryManifestCache = BTreeMap<FullyQualifiedTypeName, Vec<ImportedManifest>>;
-/// Defines the caching [`BTreeMap`] for discovered DSC resources.
-type DiscoveryResourceCache = BTreeMap<FullyQualifiedTypeName, Vec<DscResource>>;
+
+#[derive(PartialEq)]
+pub enum ResourceKind {
+    Action,
+    Adapter,
+    Exporter,
+    Resource,
+}
 
 #[derive(Clone)]
 pub struct Discovery {
-    pub resources: DiscoveryResourceCache,
+    pub resources: DiscoveryCache,
     pub extensions: DiscoveryExtensionCache,
     pub refresh_cache: bool,
+    pub discovery_completed: bool,
 }
 
 impl Discovery {
@@ -40,9 +47,10 @@ impl Discovery {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            resources: DiscoveryResourceCache::new(),
+            resources: DiscoveryCache::new(),
             extensions: DiscoveryExtensionCache::new(),
             refresh_cache: false,
+            discovery_completed: false,
         }
     }
 
@@ -83,18 +91,21 @@ impl Discovery {
             for (_resource_name, found_resources) in discovered_resources {
                 for manifest in found_resources {
                     let key = match &manifest {
-                        ImportedManifest::Resource(resource) => {
-                            format!("{}@{}", resource.type_name.to_lowercase(), resource.version)
-                        },
+                        ImportedManifest::Action(action) => {
+                            format!("{}@{}", action.type_name.to_lowercase(), action.version)
+                        }
                         ImportedManifest::Extension(extension) => {
                             format!("{}@{}", extension.type_name.to_lowercase(), extension.version)
                         }
+                        ImportedManifest::Resource(resource) => {
+                            format!("{}@{}", resource.type_name.to_lowercase(), resource.version)
+                        },
                     };
                     resources.insert(key, manifest);
                 }
             };
 
-            if let Ok(extensions) = discovery_type.get_extensions() {
+            if let Ok(extensions) = discovery_type.extensions() {
                 self.extensions.extend(extensions);
             }
         }
@@ -112,30 +123,49 @@ impl Discovery {
             .collect()
     }
 
-    pub fn find_resource(&mut self, filter: &DiscoveryFilter) -> Result<Option<&DscResource>, DscError> {
-        if self.refresh_cache || self.resources.is_empty() {
+    pub fn find_resource(&mut self, filter: &DiscoveryFilter) -> Result<Option<Box<dyn ResourceInvoke>>, DscError> {
+        let was_completed = self.discovery_completed;
+        if self.refresh_cache || !was_completed {
             self.find_resources(std::slice::from_ref(filter), ProgressFormat::None)?;
         }
 
+        let found = self.lookup_resource(filter);
+        if found.is_none() && was_completed && !self.refresh_cache {
+            // an earlier discovery may have only cached resources matching a different filter
+            let mut command_discovery = CommandDiscovery::new(ProgressFormat::None);
+            for (resource_name, resources) in command_discovery.find(std::slice::from_ref(filter))? {
+                let entry = self.resources.entry(resource_name).or_default();
+                for resource in resources {
+                    if !entry.iter().any(|r| r.version() == resource.version() && r.type_name() == resource.type_name()) {
+                        entry.push(resource);
+                    }
+                }
+            }
+            return Ok(self.lookup_resource(filter));
+        }
+        Ok(found)
+    }
+
+    fn lookup_resource(&self, filter: &DiscoveryFilter) -> Option<Box<dyn ResourceInvoke>> {
         let type_name = filter.resource_type();
         if let Some(resources) = self.resources.get(type_name) {
             if let Some(version_req) = filter.require_version() {
                 for resource in resources {
-                    if version_req.matches(&resource.version) && matches_adapter_requirement(resource, filter) {
-                        return Ok(Some(resource));
+                    if version_req.matches(&resource.version()) && matches_adapter_requirement(resource.as_ref(), filter) {
+                        return Some(resource.clone());
                     }
                 }
-                Ok(None)
+                None
             } else {
                 for resource in resources {
-                    if matches_adapter_requirement(resource, filter) {
-                        return Ok(Some(resource));
+                    if matches_adapter_requirement(resource.as_ref(), filter) {
+                        return Some(resource.clone());
                     }
                 }
-                Ok(None)
+                None
             }
         } else {
-            Ok(None)
+            None
         }
     }
 
@@ -145,8 +175,7 @@ impl Discovery {
     ///
     /// * `required_resource_types` - The required resource types.
     pub fn find_resources(&mut self, required_resource_types: &[DiscoveryFilter], progress_format: ProgressFormat) -> Result<(), DscError> {
-        if !self.refresh_cache && !self.resources.is_empty() {
-            // If resources are already discovered, no need to re-discover.
+        if !self.refresh_cache && self.discovery_completed {
             return Ok(());
         }
 
@@ -161,15 +190,16 @@ impl Discovery {
         ];
         for mut discovery_type in discovery_types {
 
-            let discovered_resources = discovery_type.find_resources(required_resource_types)?;
+            let discovered_resources = discovery_type.find(required_resource_types)?;
             for (resource_name, resources) in discovered_resources {
                 self.resources.entry(resource_name).or_default().extend(resources);
             }
 
-            if let Ok(extensions) = discovery_type.get_extensions() {
+            if let Ok(extensions) = discovery_type.extensions() {
                 self.extensions.extend(extensions);
             }
         }
+        self.discovery_completed = true;
         Ok(())
     }
 }
@@ -182,16 +212,14 @@ impl Discovery {
 ///
 /// # Returns
 /// `true` if the resource matches the adapter requirement, `false` otherwise.
-pub fn matches_adapter_requirement(resource: &DscResource, filter: &DiscoveryFilter) -> bool {
-    if let Some(required_adapter) = filter.require_adapter() {
-        if let Some(resource_adapter) = &resource.require_adapter {
-            required_adapter == resource_adapter
-        } else {
-            false
-        }
-    } else {
-        true
-    }
+pub fn matches_adapter_requirement(resource: &dyn ResourceInvoke, filter: &DiscoveryFilter) -> bool {
+    let Some(required_adapter) = filter.require_adapter() else {
+        return true;
+    };
+    // only adapted resources can satisfy an adapter requirement
+    resource.as_dsc_resource()
+        .and_then(|resource| resource.require_adapter.as_ref())
+        .is_some_and(|resource_adapter| required_adapter == resource_adapter)
 }
 
 /// Fix the semantic versioning requirements of a given version requirements string.

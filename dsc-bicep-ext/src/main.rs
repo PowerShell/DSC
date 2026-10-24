@@ -3,14 +3,9 @@
 
 use clap::Parser;
 use dsc_lib::{
-    configure::config_doc::ExecutionKind,
-    discovery::discovery_trait::DiscoveryFilter,
-    dscresources::{
-        dscresource::Invoke,
-        invoke_result::{GetResult, SetResult},
-    },
+    DscManager, configure::config_doc::ExecutionKind, discovery::{discovery_trait::DiscoveryFilter},
+    resources::invoke_result::{GetResult, SetResult},
     types::{FullyQualifiedTypeName, ResourceVersionReq},
-    DscManager,
 };
 use rust_i18n::{i18n, t};
 use std::{env, io, process};

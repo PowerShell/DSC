@@ -94,20 +94,23 @@ macro_rules! test_schema_for {
         #[allow(unused_must_use)]
         #[cfg(test)] mod dscresource {
             test_schema_for!(dsc_lib::dscresources::dscresource::DscResource);
-            test_schema_for!(dsc_lib::dscresources::dscresource::Capability);
             test_schema_for!(dsc_lib::dscresources::dscresource::ImplementedAs);
         }
         #[allow(unused_must_use)]
         #[cfg(test)] mod invoke_result {
-            test_schema_for!(dsc_lib::dscresources::invoke_result::GetResult);
-            test_schema_for!(dsc_lib::dscresources::invoke_result::ResourceGetResponse);
-            test_schema_for!(dsc_lib::dscresources::invoke_result::SetResult);
-            test_schema_for!(dsc_lib::dscresources::invoke_result::ResourceSetResponse);
-            test_schema_for!(dsc_lib::dscresources::invoke_result::TestResult);
-            test_schema_for!(dsc_lib::dscresources::invoke_result::ResourceTestResponse);
-            test_schema_for!(dsc_lib::dscresources::invoke_result::ValidateResult);
-            test_schema_for!(dsc_lib::dscresources::invoke_result::ExportResult);
-            test_schema_for!(dsc_lib::dscresources::invoke_result::ResolveResult);
+            test_schema_for!(dsc_lib::resources::invoke_result::GetResult);
+            test_schema_for!(dsc_lib::resources::invoke_result::ResourceGetResponse);
+            test_schema_for!(dsc_lib::resources::invoke_result::SetResult);
+            test_schema_for!(dsc_lib::resources::invoke_result::ResourceSetResponse);
+            test_schema_for!(dsc_lib::resources::invoke_result::TestResult);
+            test_schema_for!(dsc_lib::resources::invoke_result::ResourceTestResponse);
+            test_schema_for!(dsc_lib::resources::invoke_result::ValidateResult);
+            test_schema_for!(dsc_lib::resources::invoke_result::ExportResult);
+            test_schema_for!(dsc_lib::resources::invoke_result::ResolveResult);
+        }
+        #[allow(unused_must_use)]
+        #[cfg(test)] mod resource_invoke {
+            test_schema_for!(dsc_lib::resources::resource_invoke::Capability);
         }
         #[allow(unused_must_use)]
         #[cfg(test)] mod resource_manifest {

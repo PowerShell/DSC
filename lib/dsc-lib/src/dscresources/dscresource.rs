@@ -1,10 +1,20 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}, context::ProcessMode, parameters::{SECURE_VALUE_REDACTED, is_secure_value}, schema_cache::get_resource_schema}, dscresources::{adapted_resource_manifest::AdaptedDscResourceManifest, resource_manifest::{AdapterInputKind, Kind}}, types::{FullyQualifiedTypeName, ResourceVersion}};
-use crate::discovery::discovery_trait::DiscoveryFilter;
-use crate::dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse};
-use crate::schemas::transforms::idiomaticize_string_enum;
+use crate::{
+    actions::dscaction::DscAction,
+    configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource},
+        context::ProcessMode, parameters::{SECURE_VALUE_REDACTED, is_secure_value},
+        schema_cache::get_resource_schema
+    },
+    discovery::{discovery_trait::DiscoveryFilter, ResourceKind},
+    dscresources::{adapted_resource_manifest::AdaptedDscResourceManifest, resource_manifest::{AdapterInputKind, Kind}},
+    resources::{invoke_result::{GetResult, SetResult, TestResult, DeleteResultKind, ValidateResult, ExportResult, ResolveResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse},
+        ManifestKind, resource_invoke::{Capability, ResourceInvoke},
+    },
+    schemas::dsc_repo::DscRepoSchema,
+    types::{FullyQualifiedTypeName, ResourceVersion}
+};
 use dscerror::DscError;
 use jsonschema::Validator;
 use rust_i18n::t;
@@ -12,18 +22,12 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::collections::{HashMap, HashSet};
-use std::fmt::Display;
 use std::path::PathBuf;
 use tracing::{debug, info, trace, warn};
-
-use crate::schemas::dsc_repo::DscRepoSchema;
 
 use super::{
     command_resource,
     dscerror,
-    invoke_result::{
-        DeleteResultKind, ExportResult, GetResult, ResolveResult, ResourceTestResponse, SetResult, TestResult, ValidateResult
-    },
     resource_manifest::ResourceManifest,
 };
 
@@ -70,55 +74,6 @@ pub struct DscResource {
     pub adapted_manifest: Option<AdaptedDscResourceManifest>,
     /// The content of the adapted resource, if available.
     pub adapted_content: Option<Map<String, Value>>,
-}
-
-pub(crate) enum Operation {
-    Get,
-    Set,
-    Test,
-    Delete,
-    Export,
-}
-
-impl Display for Operation {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Operation::Get => write!(f, "get"),
-            Operation::Set => write!(f, "set"),
-            Operation::Test => write!(f, "test"),
-            Operation::Delete => write!(f, "delete"),
-            Operation::Export => write!(f, "export"),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Eq, Hash, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema, Ord, PartialOrd)]
-#[serde(rename_all = "camelCase")]
-#[dsc_repo_schema(base_name = "resourceCapabilities", folder_path = "definitions")]
-#[schemars(
-    transform = idiomaticize_string_enum,
-    transform = Capability::transform_export_schema_uris,
-    transform = Capability::transform_schema_docs
-)]
-pub enum Capability {
-    /// The resource supports retrieving configuration.
-    Get,
-    /// The resource supports applying configuration.
-    Set,
-    /// The resource supports the `_exist` property directly.
-    SetHandlesExist,
-    /// The resource supports simulating configuration directly for `set`
-    SetWhatIf,
-    /// The resource supports validating configuration.
-    Test,
-    /// The resource supports deleting configuration.
-    Delete,
-    /// The resource supports simulating configuration directly for `delete`
-    DeleteWhatIf,
-    /// The resource supports exporting configuration.
-    Export,
-    /// The resource supports resolving imported configuration.
-    Resolve,
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -184,8 +139,8 @@ impl DscResource {
     fn invoke_get_with_adapter(&self, adapter: &FullyQualifiedTypeName, target_resource: &DscResource, filter: &str) -> Result<GetResult, DscError> {
         let mut configurator = self.clone().create_config_for_adapter(adapter, filter)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
-        if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
-            adapter.target_resource = Some(Box::new(target_resource.clone()));
+        if get_adapter_input_kind(&*adapter)? == AdapterInputKind::Single {
+            adapter.set_target_resource(Box::new(target_resource.clone()))?;
             return adapter.get(filter);
         }
 
@@ -208,8 +163,8 @@ impl DscResource {
     fn invoke_set_with_adapter(&self, adapter: &FullyQualifiedTypeName, target_resource: &DscResource, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
         let mut configurator = self.clone().create_config_for_adapter(adapter, desired)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
-        if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
-            adapter.target_resource = Some(Box::new(target_resource.clone()));
+        if get_adapter_input_kind(&*adapter)? == AdapterInputKind::Single {
+            adapter.set_target_resource(Box::new(target_resource.clone()))?;
             return adapter.set(desired, skip_test, execution_type);
         }
 
@@ -241,8 +196,8 @@ impl DscResource {
     fn invoke_test_with_adapter(&self, adapter: &FullyQualifiedTypeName, target_resource: &DscResource, expected: &str) -> Result<TestResult, DscError> {
         let mut configurator = self.clone().create_config_for_adapter(adapter, expected)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
-        if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
-            adapter.target_resource = Some(Box::new(target_resource.clone()));
+        if get_adapter_input_kind(&*adapter)? == AdapterInputKind::Single {
+            adapter.set_target_resource(Box::new(target_resource.clone()))?;
             return adapter.test(expected);
         }
 
@@ -275,12 +230,12 @@ impl DscResource {
     fn invoke_delete_with_adapter(&self, adapter: &FullyQualifiedTypeName, target_resource: &DscResource, filter: &str, execution_type: &ExecutionKind) -> Result<DeleteResultKind, DscError> {
         let mut configurator = self.clone().create_config_for_adapter(adapter, filter)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
-        if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
-            if adapter.capabilities.contains(&Capability::Delete) {
-                adapter.target_resource = Some(Box::new(target_resource.clone()));
+        if get_adapter_input_kind(&*adapter)? == AdapterInputKind::Single {
+            if adapter.capabilities().contains(&Capability::Delete) {
+                adapter.set_target_resource(Box::new(target_resource.clone()))?;
                 return adapter.delete(filter, execution_type);
             }
-            return Err(DscError::NotSupported(t!("dscresources.dscresource.adapterDoesNotSupportDelete", adapter = adapter.type_name).to_string()));
+            return Err(DscError::NotSupported(t!("dscresources.dscresource.adapterDoesNotSupportDelete", adapter = adapter.type_name()).to_string()));
         }
 
         configurator.invoke_set(false)?;
@@ -290,8 +245,8 @@ impl DscResource {
     fn invoke_export_with_adapter(&self, adapter: &FullyQualifiedTypeName, target_resource: &DscResource,input: &str) -> Result<ExportResult, DscError> {
         let mut configurator = self.clone().create_config_for_adapter(adapter, input)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
-        if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
-            adapter.target_resource = Some(Box::new(target_resource.clone()));
+        if get_adapter_input_kind(&*adapter)? == AdapterInputKind::Single {
+            adapter.set_target_resource(Box::new(target_resource.clone()))?;
             return adapter.export(input);
         }
 
@@ -320,8 +275,8 @@ impl DscResource {
     fn invoke_schema_with_adapter(&self, adapter: &FullyQualifiedTypeName, target_resource: &DscResource) -> Result<String, DscError> {
         let mut configurator = self.clone().create_config_for_adapter(adapter, "")?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
-        if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
-            adapter.target_resource = Some(Box::new(target_resource.clone()));
+        if get_adapter_input_kind(&*adapter)? == AdapterInputKind::Single {
+            adapter.set_target_resource(Box::new(target_resource.clone()))?;
             return adapter.schema();
         }
 
@@ -331,9 +286,9 @@ impl DscResource {
         ).to_string()))
     }
 
-    fn get_adapter_resource(configurator: &mut Configurator, adapter: &FullyQualifiedTypeName) -> Result<DscResource, DscError> {
-        if let Some(adapter_resource) = configurator.discovery().find_resource(&DiscoveryFilter::new(adapter, None, None))? {
-            return Ok(adapter_resource.clone());
+    fn get_adapter_resource(configurator: &mut Configurator, adapter: &FullyQualifiedTypeName) -> Result<Box<dyn ResourceInvoke>, DscError> {
+        if let Some(adapter_resource) = configurator.discovery().find_resource(&DiscoveryFilter::new(adapter, None, None))? && adapter_resource.kind() == ResourceKind::Adapter {
+            return Ok(adapter_resource);
         }
         Err(DscError::Operation(t!("dscresources.dscresource.adapterResourceNotFound", adapter = adapter).to_string()))
     }
@@ -345,95 +300,7 @@ impl Default for DscResource {
     }
 }
 
-/// The interface for a DSC resource.
-pub trait Invoke {
-    /// Invoke the get operation on the resource.
-    ///
-    /// # Arguments
-    ///
-    /// * `filter` - The filter as JSON to apply to the resource.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if the underlying resource fails.
-    fn get(&self, filter: &str) -> Result<GetResult, DscError>;
-
-    /// Invoke the set operation on the resource.
-    ///
-    /// # Arguments
-    ///
-    /// * `desired` - The desired state as JSON to apply to the resource.
-    /// * `skip_test` - Whether to skip the test operation.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if the underlying resource fails.
-    fn set(&self, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError>;
-
-    /// Invoke the test operation on the resource.
-    ///
-    /// # Arguments
-    ///
-    /// * `expected` - The expected state as JSON to apply to the resource.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if the underlying resource fails.
-    fn test(&self, expected: &str) -> Result<TestResult, DscError>;
-
-    /// Invoke the delete operation on the resource.
-    ///
-    /// # Arguments
-    ///
-    /// * `filter` - The filter as JSON to apply to the resource.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if the underlying resource fails.
-    fn delete(&self, filter: &str, execution_type: &ExecutionKind) -> Result<DeleteResultKind, DscError>;
-
-    /// Invoke the validate operation on the resource.
-    ///
-    /// # Arguments
-    ///
-    /// * `config` - The configuration as JSON to have the resource validate.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if the underlying resource or validation fails.
-    fn validate(&self, config: &str) -> Result<ValidateResult, DscError>;
-
-    /// Get the schema for the resource.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if the underlying resource fails.
-    fn schema(&self) -> Result<String, DscError>;
-
-    /// Invoke the export operation on the resource.
-    ///
-    /// # Arguments
-    ///
-    /// * `input` - Input for export operation.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if the underlying resource fails.
-    fn export(&self, input: &str) -> Result<ExportResult, DscError>;
-
-    /// Invoke the resolve operation on the resource.
-    ///
-    /// # Arguments
-    ///
-    /// * `input` - The input to the operation to be resolved.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if the underlying resource fails.
-    fn resolve(&self, input: &str) -> Result<ResolveResult, DscError>;
-}
-
-impl Invoke for DscResource {
+impl ResourceInvoke for DscResource {
     fn get(&self, filter: &str) -> Result<GetResult, DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeGet", resource = self.type_name));
         if let Some(deprecation_message) = self.deprecation_message.as_ref() {
@@ -617,6 +484,59 @@ impl Invoke for DscResource {
 
         command_resource::invoke_resolve(self, input)
     }
+
+    fn invoke(&self, _input: &str, _execution_type: &ExecutionKind) -> Result<Value, DscError> {
+        Err(DscError::NotSupported(t!("dscresources.dscresource.invokeNotSupported", resource = self.type_name).to_string()))
+    }
+
+    fn kind(&self) -> ResourceKind {
+        match self.kind {
+            Kind::Adapter => ResourceKind::Adapter,
+            Kind::Exporter => ResourceKind::Exporter,
+            _ => ResourceKind::Resource,
+        }
+    }
+
+    fn version(&self) -> ResourceVersion {
+        self.version.clone()
+    }
+
+    fn is_group(&self) -> bool {
+        self.kind == Kind::Group
+    }
+
+    fn capabilities(&self) -> Vec<Capability> {
+        self.capabilities.clone()
+    }
+
+    fn type_name(&self) -> FullyQualifiedTypeName {
+        self.type_name.clone()
+    }
+
+    fn manifest(&self) -> Option<ManifestKind> {
+        self.manifest.as_ref().map(|manifest| ManifestKind::Resource(Box::new(manifest.clone())))
+    }
+
+    fn schema_as_map(&self) -> Option<Map<String, Value>> {
+        self.schema.clone()
+    }
+
+    fn set_target_resource(&mut self, target: Box<DscResource>) -> Result<(), DscError> {
+        self.target_resource = Some(target.clone());
+        Ok(())
+    }
+
+    fn as_dsc_resource(&self) -> Option<&DscResource> {
+        Some(self)
+    }
+
+    fn as_action(&self) -> Option<&DscAction> {
+        None
+    }
+
+    fn clone_box(&self) -> Box<dyn ResourceInvoke> {
+        Box::new(self.clone())
+    }
 }
 
 #[must_use]
@@ -666,11 +586,11 @@ pub fn redact(value: &Value) -> Value {
 ///
 /// # Errors
 /// * `DscError` - The adapter manifest is not found or invalid
-pub fn get_adapter_input_kind(adapter: &DscResource) -> Result<AdapterInputKind, DscError> {
-    if let Some(manifest) = &adapter.manifest && let Some(adapter_operation) = &manifest.adapter {
+pub fn get_adapter_input_kind(adapter: &dyn ResourceInvoke) -> Result<AdapterInputKind, DscError> {
+    if let Some(manifest) = &adapter.manifest() && let Some(adapter_operation) = &manifest.as_resource_manifest()?.adapter {
         return Ok(adapter_operation.input_kind.clone());
     }
-    Err(DscError::Operation(t!("dscresources.dscresource.adapterManifestNotFound", adapter = adapter.type_name).to_string()))
+    Err(DscError::Operation(t!("dscresources.dscresource.adapterManifestNotFound", adapter = adapter.type_name()).to_string()))
 }
 
 #[must_use]
@@ -875,16 +795,20 @@ fn is_schema_write_only(schema: Option<&Value>, property_name: &str) -> bool {
 /// # Errors
 ///
 /// * `DscError` - Error if the schema is invalid
-pub fn validate_properties(resource: &DscResource, properties: &Value) -> Result<(), DscError> {
+pub fn validate_properties(resource: &dyn ResourceInvoke, properties: &Value) -> Result<(), DscError> {
     // if so, see if it implements validate via the resource manifest
-    let type_name = resource.type_name.clone();
-    if let Some(schema) = &resource.schema {
+    let type_name = resource.type_name();
+    if let Some(schema) = &resource.schema_as_map() {
         debug!("{}: {type_name} ", t!("dscresources.dscresource.validatingAgainstSchema"));
         let schema = serde_json::to_value(schema)?;
-        return validate_json(&resource.type_name, &schema, properties);
+        return validate_json(&resource.type_name(), &schema, properties);
     }
-    if let Some(manifest) = resource.manifest.clone() {
-        if manifest.validate.is_some() {
+    if resource.kind() == ResourceKind::Action && properties.is_null() {
+        // an action without an input schema expects no input
+        return Ok(());
+    }
+    if let Some(manifest) = resource.manifest() {
+        if let Ok(manifest) = manifest.as_resource_manifest() && manifest.validate.is_some() {
             debug!("{}: {type_name} ", t!("dscresources.dscresource.resourceImplementsValidate"));
             let resource_config = properties.to_string();
             let result = resource.validate(&resource_config)?;
@@ -900,7 +824,7 @@ pub fn validate_properties(resource: &DscResource, properties: &Value) -> Result
             return Err(DscError::Validation(format!("{}: {type_name}", t!("dscresources.dscresource.noSchemaOrValidate"))));
         };
         let schema = serde_json::from_str(&schema)?;
-        return validate_json(&resource.type_name, &schema, properties)
+        return validate_json(&resource.type_name(), &schema, properties)
     }
     Err(DscError::Validation(format!("{}: {type_name}", t!("dscresources.dscresource.noManifest"))))
 }

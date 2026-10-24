@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+mod action;
 mod args;
 mod copy_resource;
 mod delete;
@@ -29,6 +30,7 @@ use args::{Args, RefreshEnvOperation, Schemas, SubCommand};
 use clap::Parser;
 use schemars::schema_for;
 use serde_json::Map;
+use crate::action::{ActionInput, ActionOutput};
 use crate::copy_resource::{CopyResource, copy_the_resource};
 use crate::delete::Delete;
 use crate::exist::{Exist, State};
@@ -65,6 +67,15 @@ fn main() -> ProcessExitCode {
 fn run() -> Result<(), u8> {
     let args = Args::parse();
     let json = match args.subcommand {
+        SubCommand::Action { input } => {
+            match action::invoke_action(&input) {
+                Ok(result) => result,
+                Err(err) => {
+                    eprintln!("Error invoking action: {err}");
+                    std::process::exit(1);
+                }
+            }
+        },
         SubCommand::Adapter { input , resource_type, resource_path, resource_version, operation } => {
             match adapter::adapt(&resource_type, &input, &operation, &resource_path, &resource_version) {
                 Ok(result) => result,
@@ -328,6 +339,12 @@ fn run() -> Result<(), u8> {
         },
         SubCommand::Schema { subcommand } => {
             let schema = match subcommand {
+                Schemas::ActionInput => {
+                    schema_for!(ActionInput)
+                },
+                Schemas::ActionOutput => {
+                    schema_for!(ActionOutput)
+                },
                 Schemas::Adapter => {
                     schema_for!(adapter::DscResource)
                 },

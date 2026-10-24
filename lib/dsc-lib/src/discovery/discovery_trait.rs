@@ -3,19 +3,21 @@
 
 use crate::{
     configure::config_doc::ResourceDiscoveryMode,
-    discovery::{DiscoveryExtensionCache, DiscoveryManifestCache, DiscoveryResourceCache},
+    discovery::{DiscoveryExtensionCache, DiscoveryManifestCache, DiscoveryCache},
     dscerror::DscError,
     types::{FullyQualifiedTypeName, ResourceVersionReq, SemanticVersionReq, TypeNameFilter}
 };
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub enum DiscoveryKind {
-    Resource,
+    Action,
     Extension,
+    Resource,
 }
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub struct DiscoveryFilter {
+    kind: Option<DiscoveryKind>,
     require_adapter: Option<FullyQualifiedTypeName>,
     r#type: FullyQualifiedTypeName,
     require_version: Option<ResourceVersionReq>,
@@ -43,6 +45,7 @@ impl DiscoveryFilter {
         require_adapter: Option<FullyQualifiedTypeName>
     ) -> Self {
         Self {
+            kind: Some(DiscoveryKind::Resource),
             require_adapter,
             r#type: type_name.clone(),
             require_version,
@@ -69,6 +72,7 @@ impl DiscoveryFilter {
         require_version: Option<SemanticVersionReq>,
     ) -> Self {
         Self {
+            kind: Some(DiscoveryKind::Extension),
             require_adapter: None,
             r#type: type_name.clone(),
             require_version: require_version.map(|r| r.into()),
@@ -88,6 +92,11 @@ impl DiscoveryFilter {
     #[must_use]
     pub fn require_version(&self) -> Option<&ResourceVersionReq> {
         self.require_version.as_ref()
+    }
+
+    #[must_use]
+    pub fn kind(&self) -> Option<&DiscoveryKind> {
+        self.kind.as_ref()
     }
 }
 
@@ -165,7 +174,7 @@ pub trait ResourceDiscovery {
     /// # Errors
     ///
     /// This function will return an error if the underlying discovery fails.
-    fn find_resources(&mut self, required_resource_types: &[DiscoveryFilter]) -> Result<DiscoveryResourceCache, DscError>;
+    fn find(&mut self, required_resource_types: &[DiscoveryFilter]) -> Result<DiscoveryCache, DscError>;
 
     /// Get the available extensions.
     ///
@@ -176,7 +185,7 @@ pub trait ResourceDiscovery {
     /// # Errors
     ///
     /// This function will return an error if the underlying discovery fails.
-    fn get_extensions(&mut self) -> Result<DiscoveryExtensionCache, DscError>;
+    fn extensions(&mut self) -> Result<DiscoveryExtensionCache, DscError>;
 
     /// Set the discovery mode.
     ///

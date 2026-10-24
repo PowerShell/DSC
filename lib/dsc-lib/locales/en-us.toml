@@ -1,5 +1,14 @@
 _version = 1
 
+[actions.action_manifest]
+actionManifestSchemaTitle = "Action manifest schema URI"
+actionManifestSchemaDescription = "Defines the JSON Schema the action manifest adheres to."
+
+[actions.dscaction]
+inputSchemaNotAvailable = "Input schema is not available"
+whatIfNotSupported = "The action '%{type_name}' does not support WhatIf execution"
+actionUnsupportedOperation = "Unsupported operation '%{operation}' for action '%{action}'"
+
 [configure.config_doc]
 configurationDocumentSchemaTitle = "Configuration document schema URI"
 configurationDocumentSchemaDescription = "Defines the JSON Schema the configuration document adheres to."
@@ -51,7 +60,6 @@ implementsDelete = "Resource implements delete and _exist is false"
 groupNotSupportedForDelete = "Group resources not supported for delete"
 deleteNotSupported = "Resource '%{resource}' does not support `delete` and does not handle `_exist` as false"
 expectedState = "Expected state: %{state}"
-exportInput = "Export input: %{input}"
 engineExportFiltering = "Resource '%{resource}' does not support export filtering, the engine will filter the exported instances (experimental feature)"
 invalidExportFilterInput = "Invalid export filter input: %{error}"
 exportFilterNotObject = "Export filter input must be a JSON object or an array of JSON objects"
@@ -127,15 +135,18 @@ exeHomeAlreadyInPath = "Exe home is already in path: %{path}"
 addExeHomeToPath = "Adding exe home to path: %{path}"
 usingResourcePath = "Using Resource Path: %{path}"
 discoverResources = "Discovering '%{kind}' using filter: %{filter}"
-progressSearching = "Searching for resources"
+actionSearching = "Searching for actions"
 extensionSearching = "Searching for extensions"
+progressSearching = "Searching for resources"
 foundManifest = "Found manifest: %{path}"
 adaptedResourceDeprecatedSchemaUri = "Adapted resource manifest '%{path}' uses the deprecated schema URI '%{uri}'. Update the `$schema` value to '%{default_uri}'"
+actionFound = "Action '%{action}' version %{version} found"
 extensionFound = "Extension '%{extension}' version %{version} found"
 adapterFound = "Resource adapter '%{adapter}' version %{version} found"
 resourceFound = "Resource '%{resource}' version %{version} found"
 adaptedResourceFound = "Adapted resource '%{resource}' version %{version} found"
 executableNotFound = "Executable '%{executable}' not found for operation '%{operation}' for resource '%{resource}'"
+invalidActionManifest = "Invalid manifest for action '%{action}': %{err}"
 invalidResourceManifest = "Invalid manifest for resource '%{resource}': %{err}"
 invalidExtensionManifest = "Invalid manifest for extension '%{resource}': %{err}"
 invalidAdaptedResourceManifest = "Invalid manifest for adapted resource '%{resource}': %{err}"
@@ -233,6 +244,7 @@ writingStdin = "Writing to command STDIN: %{input}"
 processTrace = "PID %{process_id}: %{message}"
 processTraceWithTarget = "PID %{process_id}: %{target}: %{line_number}: %{message}"
 redactedSchemaErrorMessage = "'secureString' and 'secureObject' values are not compatible with the schema, use '.secureString' or '.secureObject' in an expression to convert to string or object"
+invokeNotSupportedForResources = "Operation argument 'invoke' is not supported for resources"
 
 [dscresources.dscresource]
 invokeGet = "Invoking get for '%{resource}'"
@@ -276,6 +288,7 @@ retrievedSchemaFromCache = "Retrieved schema for resource '%{resource}' with ver
 exportResult = "Export result: %{result}"
 json = "JSON: %{json}"
 schema = "Schema: %{schema}"
+invokeNotSupported = "Invoke operation is not supported for resource '%{resource}'"
 
 [dscresources.resource_manifest]
 resourceManifestSchemaTitle = "Resource manifest schema URI"
@@ -1032,6 +1045,10 @@ policyFolderNotSecure = "Policy folder '%{path}' is not secure, settings file wi
 policyFolderNotSecureLinux = "Only root should have write access (no group/other write bits)"
 policyFolderNotSecureWindows = "Only SYSTEM and Administrators should have write access"
 ignoreSettingsFile = "Ignoring settings file due to environment variable 'DSC_IGNORE_SETTINGS_FILE' being set or '--ignore-settings-file' flag being used"
+
+[resources]
+notAnAction = "Invalid request to retrieve action manifest from a non-action"
+notAResource = "Invalid request to retrieve resource manifest from a non-resource"
 
 [types.date_version]
 invalidDay = "day `%{day}` for month `%{month}` is invalid - must be between `01` and `%{max_days}`"

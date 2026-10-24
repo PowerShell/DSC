@@ -4,9 +4,11 @@
 use crate::server::mcp_server::McpServer;
 use dsc_lib::{
     DscManager, configure::config_doc::ExecutionKind,
-    discovery::discovery_trait::DiscoveryFilter,
-    dscresources::{
-        dscresource::Invoke,
+    discovery::{
+        discovery_trait::DiscoveryFilter,
+        ResourceKind,
+    },
+    resources::{
         invoke_result::{
             DeleteResult,
             DeleteResultKind,
@@ -54,7 +56,8 @@ pub struct InvokeDscResourceRequest {
     #[schemars(description = "The operation to perform on the DSC resource")]
     pub operation: DscOperation,
     #[schemars(description = "The type name of the DSC resource to invoke")]
-    pub resource_type: FullyQualifiedTypeName,
+    #[serde(alias="resource_type")]
+    pub r#type: FullyQualifiedTypeName,
     #[schemars(description = "The properties to pass to the DSC resource as JSON.  Must match the resource JSON schema from `show_dsc_resource` tool.")]
     pub properties_json: String,
     #[schemars(description = "When true and operation is 'set' or 'delete', simulate the change (what-if / dry-run) instead of applying it. Resources without native what-if support return a synthetic result derived from 'test'. Only valid with the 'set' and 'delete' operations.")]
@@ -74,7 +77,7 @@ impl McpServer {
             open_world_hint = true,
         )
     )]
-    pub async fn invoke_dsc_resource(&self, Parameters(InvokeDscResourceRequest { operation, resource_type, properties_json, what_if }): Parameters<InvokeDscResourceRequest>) -> Result<Json<InvokeDscResourceResponse>, McpError> {
+    pub async fn invoke_dsc_resource(&self, Parameters(InvokeDscResourceRequest { operation, r#type, properties_json, what_if }): Parameters<InvokeDscResourceRequest>) -> Result<Json<InvokeDscResourceResponse>, McpError> {
         let result = task::spawn_blocking(move || {
             let execution_kind = if what_if.unwrap_or(false) {
                 if !matches!(operation, DscOperation::Set | DscOperation::Delete) {
@@ -85,9 +88,12 @@ impl McpServer {
                 ExecutionKind::Actual
             };
             let mut dsc = DscManager::new();
-            let Some(resource) = dsc.find_resource(&DiscoveryFilter::new(&resource_type, None, None)).unwrap_or(None) else {
-                return Err(McpError::invalid_request(t!("server.invoke_dsc_resource.resourceNotFound", resource = resource_type), None));
+            let Some(resource) = dsc.find_resource(&DiscoveryFilter::new(&r#type, None, None)).unwrap_or(None) else {
+                return Err(McpError::invalid_request(t!("server.invoke_dsc_resource.resourceNotFound", resource = r#type), None));
             };
+            if matches!(resource.kind(), ResourceKind::Action | ResourceKind::Adapter) {
+                return Err(McpError::invalid_request(t!("server.invoke_dsc_resource.actionNotSupported", resource = r#type), None));
+            }
             match operation {
                 DscOperation::Get => {
                     let result = match resource.get(&properties_json) {
