@@ -15,7 +15,6 @@ use crate::{
     dscerror::DscError,
     dscresources::{
         command_resource::invoke_command,
-        dscresource::DscResource
     },
     extensions::{
         dscextension::{
@@ -83,17 +82,17 @@ pub enum DiscoverArgKind {
 }
 
 impl DscExtension {
-    /// Perform discovery of resources using the extension.
+    /// Perform discovery of resources and actions using the extension.
     ///
     /// # Returns
     ///
-    /// A result containing a vector of discovered resources or an error.
+    /// A result containing a vector of discovered resource and action manifests or an error.
     ///
     /// # Errors
     ///
     /// This function will return an error if the discovery fails.
-    pub fn discover(&self) -> Result<Vec<DscResource>, DscError> {
-        let mut resources: Vec<DscResource> = Vec::new();
+    pub fn discover(&self) -> Result<Vec<ImportedManifest>, DscError> {
+        let mut resources: Vec<ImportedManifest> = Vec::new();
 
         if self.capabilities.contains(&Capability::Discover) {
             let extension = match serde_json::from_value::<ExtensionManifest>(self.manifest.clone()) {
@@ -133,8 +132,8 @@ impl DscExtension {
                             let imported_manifests = load_manifest_content(&manifest_value)?;
                             info!("{}", t!("extensions.dscextension.manifestImported", extension = self.type_name));
                             for imported_manifest in imported_manifests {
-                                if let ImportedManifest::Resource(resource) = imported_manifest {
-                                    resources.push(resource);
+                                if matches!(imported_manifest, ImportedManifest::Resource(_) | ImportedManifest::Action(_)) {
+                                    resources.push(imported_manifest);
                                 }
                             }
                         }
@@ -151,8 +150,8 @@ impl DscExtension {
                                 }
                             };
                             for imported_manifest in manifests {
-                                if let ImportedManifest::Resource(resource) = imported_manifest {
-                                    resources.push(resource);
+                                if matches!(imported_manifest, ImportedManifest::Resource(_) | ImportedManifest::Action(_)) {
+                                    resources.push(imported_manifest);
                                 }
                             }
                         }
