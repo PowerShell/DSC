@@ -3,7 +3,7 @@
 
 use crate::server::mcp_server::McpServer;
 use dsc_lib::{
-    DscManager, actions::{dscaction::get_schema}, configure::config_doc::SecurityContextKind, discovery::{command_discovery::ImportedManifest, discovery_trait::DiscoveryKind},
+    DscManager, configure::config_doc::SecurityContextKind, discovery::{command_discovery::ImportedManifest, discovery_trait::DiscoveryKind},
     progress::ProgressFormat, types::{FullyQualifiedTypeName, TypeNameFilter}
 };
 use rmcp::{ErrorData as McpError, Json, tool, tool_router};
@@ -45,20 +45,8 @@ description = "List summary of all DSC actions available on the local machine",
             let mut actions = Vec::<ActionSummary>::new();
             for action in dsc.list_available(&DiscoveryKind::Action, &TypeNameFilter::default(), None, ProgressFormat::None) {
                 if let ImportedManifest::Action(action) = action {
-                    let input_schema = match action.invoke.input_schema.as_ref() {
-                        Some(input_schema_kind) => match get_schema(input_schema_kind, &action.directory, action.manifest.exit_codes.as_ref()) {
-                            Ok(schema) => Some(schema),
-                            Err(err) => return Err(McpError::internal_error(err.to_string(), None)),
-                        },
-                        None => None,
-                    };
-                    let output_schema = match action.invoke.output_schema.as_ref() {
-                        Some(output_schema_kind) => match get_schema(output_schema_kind, &action.directory, action.manifest.exit_codes.as_ref()) {
-                            Ok(schema) => Some(schema),
-                            Err(err) => return Err(McpError::internal_error(err.to_string(), None)),
-                        },
-                        None => None,
-                    };
+                    let input_schema = action.input_schema.clone();
+                    let output_schema = action.output_schema.clone();
 
                     let summary = ActionSummary {
                         r#type: action.type_name.clone(),
