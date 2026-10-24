@@ -28,7 +28,7 @@ pub struct DscExtension {
     /// The import specifics.
     pub import: Option<ImportMethod>,
     /// The file path to the extension.
-    pub path: PathBuf,
+    pub path: Option<PathBuf>,
     /// An optional message indicating the extension is deprecated.  If provided, the message will be shown when the extension is used.
     pub deprecation_message: Option<String>,
     /// The description of the extension.
@@ -78,7 +78,7 @@ impl DscExtension {
             import: None,
             deprecation_message: None,
             description: None,
-            path: PathBuf::new(),
+            path: None,
             directory: PathBuf::new(),
             author: None,
             manifest: Value::Null,

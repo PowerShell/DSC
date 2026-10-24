@@ -742,28 +742,28 @@ pub fn load_manifest_content(content: &Value) -> Result<Vec<ImportedManifest>, D
             debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = "manifest content", condition = action.condition.unwrap_or_default(), resource = action.type_name));
             return Ok(vec![]);
         }
-        let action = load_action_manifest(Path::new("manifest content"), &action)?;
+        let action = load_action_manifest(None, &action)?;
         return Ok(vec![ImportedManifest::Action(action)]);
     } else if let Ok(resource) = serde_json::from_value::<AdaptedDscResourceManifest>(content.clone()) {
         if !evaluate_condition(resource.condition.as_deref())? {
             debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = "manifest content", condition = resource.condition.unwrap_or_default(), resource = resource.type_name));
             return Ok(vec![]);
         }
-        let resource = load_adapted_resource_manifest(Path::new("manifest content"), &resource)?;
+        let resource = load_adapted_resource_manifest(None, &resource)?;
         return Ok(vec![ImportedManifest::Resource(resource)]);
     } else if let Ok(resource) = serde_json::from_value::<ResourceManifest>(content.clone()) {
         if !evaluate_condition(resource.condition.as_deref())? {
             debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = "manifest content", condition = resource.condition.unwrap_or_default(), resource = resource.resource_type));
             return Ok(vec![]);
         }
-        let resource = load_resource_manifest(Path::new("manifest content"), &resource)?;
+        let resource = load_resource_manifest(None, &resource)?;
         return Ok(vec![ImportedManifest::Resource(resource)]);
     } else if let Ok(extension) = serde_json::from_value::<ExtensionManifest>(content.clone()) {
         if !evaluate_condition(extension.condition.as_deref())? {
             debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = "manifest content", condition = extension.condition.unwrap_or_default(), resource = extension.r#type));
             return Ok(vec![]);
         }
-        let extension = load_extension_manifest(Path::new("manifest content"), &extension)?;
+        let extension = load_extension_manifest(None, &extension)?;
         return Ok(vec![ImportedManifest::Extension(extension)]);
     } else if let Ok(manifest_list) = serde_json::from_value::<ManifestList>(content.clone()) {
         let mut resources: Vec<ImportedManifest> = vec![];
@@ -773,7 +773,7 @@ pub fn load_manifest_content(content: &Value) -> Result<Vec<ImportedManifest>, D
                     debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = "manifest content", condition = adapted_resource.condition.unwrap_or_default(), resource = adapted_resource.type_name));
                     continue;
                 }
-                let resource = load_adapted_resource_manifest(Path::new("manifest content"), &adapted_resource)?;
+                let resource = load_adapted_resource_manifest(None, &adapted_resource)?;
                 resources.push(ImportedManifest::Resource(resource));
             }
         }
@@ -783,7 +783,7 @@ pub fn load_manifest_content(content: &Value) -> Result<Vec<ImportedManifest>, D
                     debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = "manifest content", condition = resource_manifest.condition.unwrap_or_default(), resource = resource_manifest.resource_type));
                     continue;
                 }
-                let resource = load_resource_manifest(Path::new("manifest content"), &resource_manifest)?;
+                let resource = load_resource_manifest(None, &resource_manifest)?;
                 resources.push(ImportedManifest::Resource(resource));
             }
         }
@@ -793,7 +793,7 @@ pub fn load_manifest_content(content: &Value) -> Result<Vec<ImportedManifest>, D
                     debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = "manifest content", condition = extension_manifest.condition.unwrap_or_default(), resource = extension_manifest.r#type));
                     continue;
                 }
-                let extension = load_extension_manifest(Path::new("manifest content"), &extension_manifest)?;
+                let extension = load_extension_manifest(None, &extension_manifest)?;
                 resources.push(ImportedManifest::Extension(extension));
             }
         }
@@ -841,7 +841,7 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
             debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = path.to_string_lossy(), condition = action.condition.unwrap_or_default(), resource = action.type_name));
             return Ok(vec![]);
         }
-        let action = load_action_manifest(path, &action)?;
+        let action = load_action_manifest(Some(path), &action)?;
         return Ok(vec![ImportedManifest::Action(action)]);
     }
     if DSC_ADAPTED_RESOURCE_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)) {
@@ -864,7 +864,7 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
             debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = path.to_string_lossy(), condition = resource.condition.unwrap_or_default(), resource = resource.type_name));
             return Ok(vec![]);
         }
-        let resource = load_adapted_resource_manifest(path, &resource)?;
+        let resource = load_adapted_resource_manifest(Some(path), &resource)?;
         return Ok(vec![ImportedManifest::Resource(resource)]);
     }
     if DSC_RESOURCE_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)) {
@@ -887,7 +887,7 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
             debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = path.to_string_lossy(), condition = manifest.condition.unwrap_or_default(), resource = manifest.resource_type));
             return Ok(vec![]);
         }
-        let resource = load_resource_manifest(path, &manifest)?;
+        let resource = load_resource_manifest(Some(path), &manifest)?;
         return Ok(vec![ImportedManifest::Resource(resource)]);
     }
     if DSC_EXTENSION_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)) {
@@ -910,7 +910,7 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
                 debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = path.to_string_lossy(), condition = manifest.condition.unwrap_or_default(), resource = manifest.r#type));
                 return Ok(vec![]);
         }
-        let extension = load_extension_manifest(path, &manifest)?;
+        let extension = load_extension_manifest(Some(path), &manifest)?;
         return Ok(vec![ImportedManifest::Extension(extension)]);
     }
     if DSC_MANIFEST_LIST_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)) {
@@ -936,7 +936,7 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
                     debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = path.to_string_lossy(), condition = action.condition.as_ref() : {:?}, resource = action.type_name));
                     continue;
                 }
-                let action = load_action_manifest(path, action)?;
+                let action = load_action_manifest(Some(path), action)?;
                 resources.push(ImportedManifest::Action(action));
             }
         }
@@ -946,7 +946,7 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
                     debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = path.to_string_lossy(), condition = resource.condition.as_ref() : {:?}, resource = resource.type_name));
                     continue;
                 }
-                let resource = load_adapted_resource_manifest(path, resource)?;
+                let resource = load_adapted_resource_manifest(Some(path), resource)?;
                 resources.push(ImportedManifest::Resource(resource));
             }
         }
@@ -956,7 +956,7 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
                     debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = path.to_string_lossy(), condition = res_manifest.condition.as_ref() : {:?}, resource = res_manifest.resource_type));
                     continue;
                 }
-                let resource = load_resource_manifest(path, res_manifest)?;
+                let resource = load_resource_manifest(Some(path), res_manifest)?;
                 resources.push(ImportedManifest::Resource(resource));
             }
         }
@@ -966,7 +966,7 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
                     debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = path.to_string_lossy(), condition = ext_manifest.condition.as_ref() : {:?}, resource = ext_manifest.r#type));
                     continue;
                 }
-                let extension = load_extension_manifest(path, ext_manifest)?;
+                let extension = load_extension_manifest(Some(path), ext_manifest)?;
                 resources.push(ImportedManifest::Extension(extension));
             }
         }
@@ -975,11 +975,11 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
     Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.invalidManifestFile", resource = path.to_string_lossy()).to_string()))
 }
 
-pub fn load_adapted_resource_manifest(path: &Path, manifest: &AdaptedDscResourceManifest) -> Result<DscResource, DscError> {
+pub fn load_adapted_resource_manifest(path: Option<&Path>, manifest: &AdaptedDscResourceManifest) -> Result<DscResource, DscError> {
     if manifest.version.is_date_version() {
         warn!("{}", t!(
             "discovery.commandDiscovery.invalidManifestVersion",
-            path = path.to_string_lossy(),
+            path = path.map(|p| p.to_string_lossy()).unwrap_or_default(),
             version = manifest.version
         ));
     }
@@ -987,14 +987,14 @@ pub fn load_adapted_resource_manifest(path: &Path, manifest: &AdaptedDscResource
     if AdaptedDscResourceManifest::is_deprecated_schema_uri(&manifest.schema_version) {
         warn!("{}", t!(
             "discovery.commandDiscovery.adaptedResourceDeprecatedSchemaUri",
-            path = path.to_string_lossy(),
+            path = path.map(|p| p.to_string_lossy()).unwrap_or_default(),
             uri = manifest.schema_version,
             default_uri = AdaptedDscResourceManifest::default_schema_id_uri()
         ));
     }
 
     let mut resource = DscResource::new();
-    let directory = path.parent().unwrap();
+    let directory = path.and_then(|p| p.parent()).unwrap_or_else(|| Path::new("")).to_path_buf();
     match &manifest.path_or_content {
         AdaptedPathOrContent::Path(resource_path) => {
             let resource_path = directory.join(resource_path);
@@ -1004,7 +1004,7 @@ pub fn load_adapted_resource_manifest(path: &Path, manifest: &AdaptedDscResource
             resource.path = resource_path;
         },
         AdaptedPathOrContent::Content(content) => {
-            resource.path = path.to_path_buf();
+            resource.path = path.unwrap().to_path_buf();
             resource.adapted_content = Some(content.clone());
         }
     }
@@ -1025,11 +1025,11 @@ pub fn load_adapted_resource_manifest(path: &Path, manifest: &AdaptedDscResource
     Ok(resource)
 }
 
-fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<DscResource, DscError> {
+fn load_resource_manifest(path: Option<&Path>, manifest: &ResourceManifest) -> Result<DscResource, DscError> {
     if manifest.version.is_date_version() {
         warn!("{}", t!(
             "discovery.commandDiscovery.invalidManifestVersion",
-            path = path.to_string_lossy(),
+            path = path.map(|p| p.to_string_lossy()).unwrap_or_default(),
             version = manifest.version
         ));
     }
@@ -1043,12 +1043,13 @@ fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<Ds
     };
 
     let mut capabilities: HashSet<Capability> = HashSet::new();
+    let parent = path.and_then(|p| p.parent());
     if let Some(get) = &manifest.get {
-        verify_executable(&manifest.resource_type, "get", &get.executable, path.parent().unwrap());
+        verify_executable(&manifest.resource_type, "get", &get.executable, parent);
         capabilities.insert(Capability::Get);
     }
     if let Some(set) = &manifest.set {
-        verify_executable(&manifest.resource_type, "set", &set.executable, path.parent().unwrap());
+        verify_executable(&manifest.resource_type, "set", &set.executable, parent);
         capabilities.insert(Capability::Set);
         if set.handles_exist == Some(true) {
             capabilities.insert(Capability::SetHandlesExist);
@@ -1058,29 +1059,29 @@ fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<Ds
         }
     }
     if let Some(test) = &manifest.test {
-        verify_executable(&manifest.resource_type, "test", &test.executable, path.parent().unwrap());
+        verify_executable(&manifest.resource_type, "test", &test.executable, parent);
         capabilities.insert(Capability::Test);
     }
     if let Some(delete) = &manifest.delete {
-        verify_executable(&manifest.resource_type, "delete", &delete.executable, path.parent().unwrap());
+        verify_executable(&manifest.resource_type, "delete", &delete.executable, parent);
         capabilities.insert(Capability::Delete);
         if let Some(args) = &delete.args && args_contains_what_if(args) {
             capabilities.insert(Capability::DeleteWhatIf);
         }
     }
     if let Some(export) = &manifest.export {
-        verify_executable(&manifest.resource_type, "export", &export.executable, path.parent().unwrap());
+        verify_executable(&manifest.resource_type, "export", &export.executable, parent);
         capabilities.insert(Capability::Export);
     }
     if let Some(resolve) = &manifest.resolve {
-        verify_executable(&manifest.resource_type, "resolve", &resolve.executable, path.parent().unwrap());
+        verify_executable(&manifest.resource_type, "resolve", &resolve.executable, parent);
         capabilities.insert(Capability::Resolve);
     }
     if let Some(SchemaKind::Command(command)) = &manifest.schema {
-        verify_executable(&manifest.resource_type, "schema", &command.executable, path.parent().unwrap());
+        verify_executable(&manifest.resource_type, "schema", &command.executable, parent);
     }
     if let Some(what_if) = &manifest.what_if {
-        verify_executable(&manifest.resource_type, "what-if", &what_if.executable, path.parent().unwrap());
+        verify_executable(&manifest.resource_type, "what-if", &what_if.executable, parent);
         capabilities.insert(Capability::SetWhatIf);
     }
 
@@ -1094,8 +1095,8 @@ fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<Ds
     resource.description = manifest.description.clone();
     resource.version = manifest.version.clone();
     resource.capabilities = capabilities;
-    resource.path = path.to_path_buf();
-    resource.directory = path.parent().unwrap().to_path_buf();
+    resource.path = path.map(|p| p.to_path_buf()).unwrap_or_default();
+    resource.directory = path.and_then(|p| p.parent()).unwrap_or_else(|| Path::new("")).to_path_buf();
     resource.manifest = Some(manifest.clone());
 
     Ok(resource)
@@ -1105,18 +1106,19 @@ fn args_contains_what_if(args: &[SetDeleteArgKind]) -> bool {
     args.iter().any(|arg| matches!(arg, SetDeleteArgKind::WhatIf{ what_if_arg: _ }))
 }
 
-fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<DscExtension, DscError> {
+fn load_extension_manifest(path: Option<&Path>, manifest: &ExtensionManifest) -> Result<DscExtension, DscError> {
     let mut capabilities: Vec<dscextension::Capability> = vec![];
+    let parent = path.and_then(|p| p.parent());
     if let Some(discover) = &manifest.discover {
-        verify_executable(&manifest.r#type, "discover", &discover.executable, path.parent().unwrap());
+        verify_executable(&manifest.r#type, "discover", &discover.executable, parent);
         capabilities.push(dscextension::Capability::Discover);
     }
     if let Some(secret) = &manifest.secret {
-        verify_executable(&manifest.r#type, "secret", &secret.executable, path.parent().unwrap());
+        verify_executable(&manifest.r#type, "secret", &secret.executable, parent);
         capabilities.push(dscextension::Capability::Secret);
     }
     let import = if let Some(import) = &manifest.import {
-        verify_executable(&manifest.r#type, "import", &import.executable, path.parent().unwrap());
+        verify_executable(&manifest.r#type, "import", &import.executable, parent);
         capabilities.push(dscextension::Capability::Import);
         if import.file_extensions.is_empty() {
             warn!("{}", t!("discovery.commandDiscovery.importExtensionsEmpty", extension = manifest.r#type));
@@ -1135,8 +1137,8 @@ fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<
         version: manifest.version.clone(),
         capabilities,
         import,
-        path: path.to_path_buf(),
-        directory: path.parent().unwrap().to_path_buf(),
+        path: path.map(|p| p.to_path_buf()),
+        directory: path.and_then(|p| p.parent()).map(|p| p.to_path_buf()).unwrap_or_default(),
         manifest: serde_json::to_value(manifest)?,
         ..Default::default()
     };
@@ -1144,8 +1146,8 @@ fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<
     Ok(extension)
 }
 
-pub fn verify_executable(resource: &str, operation: &str, executable: &str, directory: &Path) {
-    if canonicalize_which(executable, Some(directory)).is_err() {
+pub fn verify_executable(resource: &str, operation: &str, executable: &str, directory: Option<&Path>) {
+    if canonicalize_which(executable, directory).is_err() {
         info!("{}", t!("discovery.commandDiscovery.executableNotFound", resource = resource, operation = operation, executable = executable));
     }
 }
