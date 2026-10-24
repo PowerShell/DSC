@@ -242,7 +242,7 @@ impl ResourceDiscovery for CommandDiscovery {
 
     #[allow(clippy::too_many_lines)]
     fn discover(&mut self, kind: &DiscoveryKind, filter: &TypeNameFilter) -> Result<(), DscError> {
-        if self.discovery_mode == ResourceDiscoveryMode::PreDeployment && self.resources_discovered && self.extensions_discovered {
+        if self.discovery_mode == ResourceDiscoveryMode::PreDeployment && !locked_is_empty!(RESOURCES) {
             return Ok(());
         } else if self.discovery_mode == ResourceDiscoveryMode::DuringDeployment {
             locked_clear!(ADAPTERS);
@@ -739,28 +739,28 @@ fn evaluate_condition(condition: Option<&str>) -> Result<bool, DscError> {
 pub fn load_manifest_content(content: &Value) -> Result<Vec<ImportedManifest>, DscError> {
     if let Ok(action) = serde_json::from_value::<ActionManifest>(content.clone()) {
         if !evaluate_condition(action.condition.as_deref())? {
-            debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = "manifest content", condition = action.condition.unwrap_or_default(), resource = action.type_name));
+            debug!("{}", t!("discovery.commandDiscovery.conditionNotMetManifestContent", condition = action.condition.unwrap_or_default(), resource = action.type_name));
             return Ok(vec![]);
         }
         let action = load_action_manifest(None, &action)?;
         return Ok(vec![ImportedManifest::Action(action)]);
     } else if let Ok(resource) = serde_json::from_value::<AdaptedDscResourceManifest>(content.clone()) {
         if !evaluate_condition(resource.condition.as_deref())? {
-            debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = "manifest content", condition = resource.condition.unwrap_or_default(), resource = resource.type_name));
+            debug!("{}", t!("discovery.commandDiscovery.conditionNotMetManifestContent", condition = resource.condition.unwrap_or_default(), resource = resource.type_name));
             return Ok(vec![]);
         }
         let resource = load_adapted_resource_manifest(None, &resource)?;
         return Ok(vec![ImportedManifest::Resource(resource)]);
     } else if let Ok(resource) = serde_json::from_value::<ResourceManifest>(content.clone()) {
         if !evaluate_condition(resource.condition.as_deref())? {
-            debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = "manifest content", condition = resource.condition.unwrap_or_default(), resource = resource.resource_type));
+            debug!("{}", t!("discovery.commandDiscovery.conditionNotMetManifestContent", condition = resource.condition.unwrap_or_default(), resource = resource.resource_type));
             return Ok(vec![]);
         }
         let resource = load_resource_manifest(None, &resource)?;
         return Ok(vec![ImportedManifest::Resource(resource)]);
     } else if let Ok(extension) = serde_json::from_value::<ExtensionManifest>(content.clone()) {
         if !evaluate_condition(extension.condition.as_deref())? {
-            debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = "manifest content", condition = extension.condition.unwrap_or_default(), resource = extension.r#type));
+            debug!("{}", t!("discovery.commandDiscovery.conditionNotMetManifestContent", condition = extension.condition.unwrap_or_default(), resource = extension.r#type));
             return Ok(vec![]);
         }
         let extension = load_extension_manifest(None, &extension)?;
@@ -770,17 +770,17 @@ pub fn load_manifest_content(content: &Value) -> Result<Vec<ImportedManifest>, D
         if let Some(actions) = manifest_list.actions {
             for action_manifest in actions {
                 if !evaluate_condition(action_manifest.condition.as_deref())? {
-                    debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = "manifest content", condition = action_manifest.condition.unwrap_or_default(), resource = action_manifest.type_name));
+                    debug!("{}", t!("discovery.commandDiscovery.conditionNotMetManifestContent", condition = action_manifest.condition.unwrap_or_default(), resource = action_manifest.type_name));
                     continue;
                 }
-                let action = load_action_manifest(Path::new("manifest content"), &action_manifest)?;
+                let action = load_action_manifest(None, &action_manifest)?;
                 resources.push(ImportedManifest::Action(action));
             }
         }
         if let Some(adapted_resources) = manifest_list.adapted_resources {
             for adapted_resource in adapted_resources {
                 if !evaluate_condition(adapted_resource.condition.as_deref())? {
-                    debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = "manifest content", condition = adapted_resource.condition.unwrap_or_default(), resource = adapted_resource.type_name));
+                    debug!("{}", t!("discovery.commandDiscovery.conditionNotMetManifestContent", condition = adapted_resource.condition.unwrap_or_default(), resource = adapted_resource.type_name));
                     continue;
                 }
                 let resource = load_adapted_resource_manifest(None, &adapted_resource)?;
@@ -790,7 +790,7 @@ pub fn load_manifest_content(content: &Value) -> Result<Vec<ImportedManifest>, D
         if let Some(resource_manifests) = manifest_list.resources {
             for resource_manifest in resource_manifests {
                 if !evaluate_condition(resource_manifest.condition.as_deref())? {
-                    debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = "manifest content", condition = resource_manifest.condition.unwrap_or_default(), resource = resource_manifest.resource_type));
+                    debug!("{}", t!("discovery.commandDiscovery.conditionNotMetManifestContent", condition = resource_manifest.condition.unwrap_or_default(), resource = resource_manifest.resource_type));
                     continue;
                 }
                 let resource = load_resource_manifest(None, &resource_manifest)?;
@@ -800,7 +800,7 @@ pub fn load_manifest_content(content: &Value) -> Result<Vec<ImportedManifest>, D
         if let Some(extension_manifests) = manifest_list.extensions {
             for extension_manifest in extension_manifests {
                 if !evaluate_condition(extension_manifest.condition.as_deref())? {
-                    debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = "manifest content", condition = extension_manifest.condition.unwrap_or_default(), resource = extension_manifest.r#type));
+                    debug!("{}", t!("discovery.commandDiscovery.conditionNotMetManifestContent", condition = extension_manifest.condition.unwrap_or_default(), resource = extension_manifest.r#type));
                     continue;
                 }
                 let extension = load_extension_manifest(None, &extension_manifest)?;
