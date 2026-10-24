@@ -46,7 +46,7 @@ pub struct DscAction {
     /// The description of the extension.
     pub description: Option<String>,
     /// The directory path to the extension.
-    pub directory: PathBuf,
+    pub directory: Option<PathBuf>,
     /// The operations supported by the action.
     pub supported_operations: Vec<SupportedOperations>,
     /// The manifest of the extension.
@@ -72,7 +72,7 @@ impl DscAction {
             author: None,
             deprecation_message: None,
             description: None,
-            directory: PathBuf::new(),
+            directory: None,
             supported_operations: Vec::new(),
             manifest: ActionManifest::default(),
         }
@@ -102,7 +102,7 @@ impl DscAction {
             Some(input)
         };
 
-        let (_exit_code, stdout, _stderr) = invoke_command(&self.manifest.invoke.executable, args, input, Some(&self.directory), None, self.manifest.exit_codes.as_ref())?;
+        let (_exit_code, stdout, _stderr) = invoke_command(&self.manifest.invoke.executable, args, input, self.directory.as_deref(), None, self.manifest.exit_codes.as_ref())?;
         if stdout.trim().is_empty() {
             return Ok(Value::Null);
         }
@@ -358,7 +358,7 @@ pub(crate) fn load_action_manifest(path: Option<&Path>, manifest: &ActionManifes
         author: manifest.author.clone(),
         deprecation_message: manifest.deprecation_message.clone(),
         description: manifest.description.clone(),
-        directory: path.and_then(|p| p.parent()).map(|p| p.to_path_buf()).unwrap_or_default(),
+        directory: path.and_then(|p| p.parent()).map(|p| p.to_path_buf()),
         supported_operations,
         manifest: manifest.clone(),
     };

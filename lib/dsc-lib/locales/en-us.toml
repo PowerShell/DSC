@@ -166,6 +166,7 @@ resourceMissingRequireAdapter = "Resource '%{resource}' is missing 'require_adap
 extensionDiscoverFailed = "Extension '%{extension}' failed to discover resources: %{error}"
 conditionNotBoolean = "Condition '%{condition}' did not evaluate to a boolean"
 conditionNotMet = "Condition '%{condition}' not met, skipping manifest at '%{path}' for resource '%{resource}'"
+conditionNotMetManifestContent = "Condition '%{condition}' not met, skipping manifest content for resource '%{resource}'"
 adaptedResourcePathNotFound = "Adapted resource '%{resource}' path not found: %{path}"
 invalidManifestFileName = "Invalid manifest file name '%{path}'"
 failedLoadManifest = "Failed to load manifest: %{err}"
