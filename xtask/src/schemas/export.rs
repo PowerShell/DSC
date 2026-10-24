@@ -110,6 +110,8 @@ pub(crate) fn export_schemas(
         dsc_lib::configure::config_result::ResourceTestResult,
         dsc_lib::dscresources::adapted_resource_manifest::AdaptedDscResourceManifest,
         dsc_lib::dscresources::dscresource::DscResource,
+        dsc_lib::actions::action_manifest::ActionManifest,
+        dsc_lib::actions::dscaction::DscAction,
         dsc_lib::resources::resource_invoke::Capability,
         dsc_lib::resources::invoke_result::DeleteResult,
         dsc_lib::resources::invoke_result::DeleteWhatIfResult,
