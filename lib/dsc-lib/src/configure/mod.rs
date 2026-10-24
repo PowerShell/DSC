@@ -1008,7 +1008,7 @@ impl Configurator {
             find_resource_or_error!(dsc_resource, discovery, resource, adapter);
             let properties = self.get_properties(resource, &*dsc_resource)?;
             debug!("{}", t!("configure.mod.resourceType", resource_type = &resource.resource_type));
-            let input = serde_json::to_string(&properties)?;
+            let input = add_metadata(&*dsc_resource, properties, resource.metadata.clone())?;
             let export_result = match add_resource_export_results_to_configuration(
                 &*dsc_resource,
                 &mut conf,
