@@ -91,7 +91,7 @@ impl McpServer {
             let Some(resource) = dsc.find_resource(&DiscoveryFilter::new(&r#type, None, None)).unwrap_or(None) else {
                 return Err(McpError::invalid_request(t!("server.invoke_dsc_resource.resourceNotFound", resource = r#type), None));
             };
-            if resource.kind() != ResourceKind::Resource {
+            if matches!(resource.kind(), ResourceKind::Action | ResourceKind::Adapter) {
                 return Err(McpError::invalid_request(t!("server.invoke_dsc_resource.actionNotSupported", resource = r#type), None));
             }
             match operation {
