@@ -250,6 +250,12 @@ jobs:
         include:
           - name: dsc-expressions
             group: dsc/tests/expressions
+          - name: dsc-functions
+            group: dsc/tests/functions
+          - name: dsc-discovery
+            group: dsc/tests/discovery
+          - name: dsc-config
+            group: dsc/tests/config
           - name: dsc-other
             group: dsc/tests/other
           - name: adapters
