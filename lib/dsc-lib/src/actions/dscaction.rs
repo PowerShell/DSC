@@ -251,11 +251,11 @@ impl ResourceInvoke for DscAction {
     }
 }
 
-pub fn get_schema(schema_kind: &SchemaKind, directory: &Path, exit_codes: &ExitCodesMap) -> Result<Value, DscError> {
+pub fn get_schema(schema_kind: &SchemaKind, directory: Option<&Path>, exit_codes: &ExitCodesMap) -> Result<Value, DscError> {
     match schema_kind {
         SchemaKind::Command(command) => {
             let args = process_schema_args(command.args.as_ref());
-            let (_exit_code, stdout, _stderr) = invoke_command(&command.executable, args, None, Some(directory), None, exit_codes)?;
+            let (_exit_code, stdout, _stderr) = invoke_command(&command.executable, args, None, directory, None, exit_codes)?;
             let schema_value: Value = serde_json::from_str(&stdout)?;
             Ok(schema_value)
         },
@@ -326,11 +326,16 @@ fn process_schema_args(args: Option<&Vec<SchemaArgKind>>) -> Option<Vec<String>>
 
 pub(crate) fn load_action_manifest(path: Option<&Path>, manifest: &ActionManifest) -> Result<DscAction, DscError> {
     // inline manifests have no real file path, so fall back to the current directory
-    let directory = match path.parent() {
-        Some(parent) if !parent.as_os_str().is_empty() && parent.is_dir() => parent.to_path_buf(),
-        _ => std::env::current_dir()?,
+    let parent = if let Some(path) = path && let Some(parent) = path.parent() {
+        if !parent.as_os_str().is_empty() && parent.is_dir() {
+            parent.to_path_buf()
+        } else {
+            std::env::current_dir()?
+        }
+    } else {
+        std::env::current_dir()?
     };
-    verify_executable(&manifest.type_name, "invoke", &manifest.invoke.executable, Some(&directory));
+    verify_executable(&manifest.type_name, "invoke", &manifest.invoke.executable, Some(&parent));
     let mut supported_operations = Vec::new();
     if let Some(operations) = &manifest.supported_operations {
         supported_operations.extend(operations.clone());
@@ -338,12 +343,12 @@ pub(crate) fn load_action_manifest(path: Option<&Path>, manifest: &ActionManifes
         supported_operations.push(SupportedOperations::Set);
     }
     let input_schema = if let Some(input_schema_kind) = manifest.invoke.input_schema.as_ref() {
-        Some(get_schema(input_schema_kind, &directory, manifest.exit_codes.as_ref())?)
+        Some(get_schema(input_schema_kind, Some(&parent), manifest.exit_codes.as_ref())?)
     } else {
         None
     };
     let output_schema = if let Some(output_schema_kind) = manifest.invoke.output_schema.as_ref() {
-        Some(get_schema(output_schema_kind, &directory, manifest.exit_codes.as_ref())?)
+        Some(get_schema(output_schema_kind, Some(&parent), manifest.exit_codes.as_ref())?)
     } else {
         None
     };
@@ -358,7 +363,7 @@ pub(crate) fn load_action_manifest(path: Option<&Path>, manifest: &ActionManifes
         author: manifest.author.clone(),
         deprecation_message: manifest.deprecation_message.clone(),
         description: manifest.description.clone(),
-        directory: path.and_then(|p| p.parent()).map(|p| p.to_path_buf()),
+        directory: Some(parent),
         supported_operations,
         manifest: manifest.clone(),
     };
