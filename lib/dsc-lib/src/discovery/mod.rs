@@ -137,7 +137,9 @@ impl Discovery {
                 let entry = self.resources.entry(resource_name).or_default();
                 for resource in resources {
                     if !entry.iter().any(|r| r.version() == resource.version() && r.type_name() == resource.type_name()) {
-                        entry.push(resource);
+                        // insert in descending order by version
+                        let pos = entry.iter().position(|r| r.version() < resource.version()).unwrap_or(entry.len());
+                        entry.insert(pos, resource);
                     }
                 }
             }
