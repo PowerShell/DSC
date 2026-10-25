@@ -449,7 +449,7 @@ impl ResourceDiscovery for CommandDiscovery {
                 let mut adapter_resources_count = 0;
                 // invoke the list command
                 if let Some(list_command) = &manifest.adapter.clone().unwrap().list {
-                    let (exit_code, stdout, stderr) = match invoke_command(&list_command.executable, list_command.args.clone(), None, Some(&adapter.directory), None, manifest.exit_codes.as_ref())
+                    let (exit_code, stdout, stderr) = match invoke_command(&list_command.executable, list_command.args.clone(), None, adapter.directory.as_deref(), None, manifest.exit_codes.as_ref())
                     {
                         Ok((exit_code, stdout, stderr)) => (exit_code, stdout, stderr),
                         Err(e) => {
@@ -1011,10 +1011,10 @@ pub fn load_adapted_resource_manifest(path: Option<&Path>, manifest: &AdaptedDsc
             if !resource_path.exists() {
                 return Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.adaptedResourcePathNotFound", path = resource_path.to_string_lossy(), resource = manifest.type_name).to_string()));
             }
-            resource.path = resource_path;
+            resource.path = Some(resource_path);
         },
         AdaptedPathOrContent::Content(content) => {
-            resource.path = path.unwrap().to_path_buf();
+            resource.path = None;
             resource.adapted_content = Some(content.clone());
         }
     }
@@ -1027,7 +1027,11 @@ pub fn load_adapted_resource_manifest(path: Option<&Path>, manifest: &AdaptedDsc
     resource.version = manifest.version.clone();
     resource.capabilities = manifest.capabilities.clone();
     resource.require_adapter = Some(manifest.require_adapter.clone());
-    resource.directory = directory.to_path_buf();
+    resource.directory = if directory.is_empty() {
+        None
+    } else {
+        Some(directory.to_path_buf())
+    };
     resource.manifest = None;
     resource.adapted_manifest = Some(manifest.clone());
     resource.schema = Some(manifest.schema.clone());
@@ -1105,8 +1109,8 @@ fn load_resource_manifest(path: Option<&Path>, manifest: &ResourceManifest) -> R
     resource.description = manifest.description.clone();
     resource.version = manifest.version.clone();
     resource.capabilities = capabilities;
-    resource.path = path.map(|p| p.to_path_buf()).unwrap_or_default();
-    resource.directory = path.and_then(|p| p.parent()).unwrap_or_else(|| Path::new("")).to_path_buf();
+    resource.path = path.map(|p| p.to_path_buf());
+    resource.directory = path.and_then(|p| p.parent()).map(|p| p.to_path_buf());
     resource.manifest = Some(manifest.clone());
 
     Ok(resource)

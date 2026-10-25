@@ -388,7 +388,7 @@ $action | ConvertTo-Json -Compress -Depth 10
         $env:DSC_RESTRICTED_PATH = "$TestDrive" + [System.IO.Path]::PathSeparator + (Split-Path (Get-Command pwsh).Source -Parent)
         try {
             $out = dsc resource list 2> $TestDrive/error.log | ConvertFrom-Json
-            $LASTEXITCODE | Should -Be 0
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log)
             foreach ($resource in $out) {
                 if ($resource.type.startsWith('TestDiscover/')) {
                     $extensions[$resource.adaptedContent.extension] = $true

@@ -51,11 +51,11 @@ pub struct DscResource {
     /// An optional message indicating the resource is deprecated.  If provided, the message will be shown when the resource is used.
     pub deprecation_message: Option<String>,
     /// The file path to the resource.
-    pub path: PathBuf,
+    pub path: Option<PathBuf>,
     /// The description of the resource.
     pub description: Option<String>,
     // The directory path to the resource.
-    pub directory: PathBuf,
+    pub directory: Option<PathBuf>,
     /// The implementation of the resource.
     pub implemented_as: Option<ImplementedAs>,
     /// The author of the resource.
@@ -96,8 +96,8 @@ impl DscResource {
             capabilities: Vec::new(),
             deprecation_message: None,
             description: None,
-            path: PathBuf::new(),
-            directory: PathBuf::new(),
+            path: None,
+            directory: None,
             implemented_as: Some(ImplementedAs::Command),
             author: None,
             properties: None,
