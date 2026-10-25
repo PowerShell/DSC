@@ -266,7 +266,11 @@ fn validate_json(input: &str, schema: &Map<String, Value>) -> Result<(), DscErro
     };
     let input_value = serde_json::from_str(input)?;
     if let Err(err) = compiled_schema.validate(&input_value) {
-        return Err(DscError::Schema(err.to_string()));
+        let mut error_message = err.to_string();
+        if error_message.contains("\"secureString\"") || error_message.contains("\"secureObject\"") {
+            error_message = t!("dscresources.commandResource.redactedSchemaErrorMessage").to_string();
+        }
+        return Err(DscError::Schema(error_message));
     }
     Ok(())
 }

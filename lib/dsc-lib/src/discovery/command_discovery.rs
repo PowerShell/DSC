@@ -1103,6 +1103,7 @@ fn load_resource_manifest(path: Option<&Path>, manifest: &ResourceManifest) -> R
     let mut capabilities: Vec<Capability> = capabilities.into_iter().collect();
     capabilities.sort();
     resource.type_name = manifest.resource_type.clone();
+    resource.author = manifest.author.clone();
     resource.kind = kind;
     resource.implemented_as = Some(ImplementedAs::Command);
     resource.deprecation_message = manifest.deprecation_message.clone();
