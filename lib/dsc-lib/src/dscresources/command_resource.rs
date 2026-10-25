@@ -55,7 +55,7 @@ pub fn invoke_get(resource: &DscResource, filter: &str, target_resource: Option<
     }
 
     info!("{}", t!("dscresources.commandResource.invokeGetUsing", resource = &resource.type_name, executable = &get.executable));
-    let (_exit_code, stdout, stderr) = invoke_command(&get.executable, args, command_input.stdin.as_deref(), Some(&resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
+    let (_exit_code, stdout, stderr) = invoke_command(&get.executable, args, command_input.stdin.as_deref(), resource.directory.as_deref(), command_input.env, manifest.exit_codes.as_ref())?;
     if resource.kind == Kind::Resource {
         debug!("{}", t!("dscresources.commandResource.verifyOutputUsing", resource = &resource.type_name, executable = &get.executable));
         verify_json_from_manifest(resource, &stdout, target_resource)?;
@@ -186,7 +186,7 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, execut
     let command_input = get_command_input(get.input.as_ref(), desired)?;
 
     info!("{}", t!("dscresources.commandResource.setGetCurrent", resource = &command_resource.type_name, executable = &get.executable));
-    let (exit_code, stdout, stderr) = invoke_command(&get.executable, args, command_input.stdin.as_deref(), Some(&resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
+    let (exit_code, stdout, stderr) = invoke_command(&get.executable, args, command_input.stdin.as_deref(), resource.directory.as_deref(), command_input.env, manifest.exit_codes.as_ref())?;
 
     if resource.kind == Kind::Resource {
         debug!("{}", t!("dscresources.commandResource.setVerifyGet", resource = &resource.type_name, executable = &get.executable));
@@ -227,7 +227,7 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, execut
         },
     }
 
-    let (exit_code, stdout, stderr) = invoke_command(&set.executable, args, input_desired, Some(&resource.directory), env, manifest.exit_codes.as_ref())?;
+    let (exit_code, stdout, stderr) = invoke_command(&set.executable, args, input_desired, resource.directory.as_deref(), env, manifest.exit_codes.as_ref())?;
 
     let return_kind = if execution_type == &ExecutionKind::WhatIf {
         set.what_if_returns.as_ref().or(set.returns.as_ref())
@@ -342,7 +342,7 @@ pub fn invoke_test(resource: &DscResource, expected: &str, target_resource: Opti
     let command_input = get_command_input(test.input.as_ref(), expected)?;
 
     info!("{}", t!("dscresources.commandResource.invokeTestUsing", resource = &command_resource.type_name, executable = &test.executable));
-    let (exit_code, stdout, stderr) = invoke_command(&test.executable, args, command_input.stdin.as_deref(), Some(&resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
+    let (exit_code, stdout, stderr) = invoke_command(&test.executable, args, command_input.stdin.as_deref(), resource.directory.as_deref(), command_input.env, manifest.exit_codes.as_ref())?;
 
     if command_resource.kind == Kind::Importer {
         debug!("{}", t!("dscresources.commandResource.testGroupTestResponse"));
@@ -517,7 +517,7 @@ pub fn invoke_delete(resource: &DscResource, filter: &str, target_resource: Opti
     let command_input = get_command_input(delete.input.as_ref(), filter)?;
 
     info!("{}", t!("dscresources.commandResource.invokeDeleteUsing", resource = &command_resource.type_name, executable = &delete.executable));
-    let (_exit_code, stdout, _stderr) = invoke_command(&delete.executable, args, command_input.stdin.as_deref(), Some(&resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
+    let (_exit_code, stdout, _stderr) = invoke_command(&delete.executable, args, command_input.stdin.as_deref(), resource.directory.as_deref(), command_input.env, manifest.exit_codes.as_ref())?;
     let result = if execution_type == &ExecutionKind::WhatIf {
         let delete_result: DeleteResult = serde_json::from_str(&stdout)?;
         DeleteResultKind::ResourceWhatIf(delete_result)
@@ -561,7 +561,7 @@ pub fn invoke_validate(resource: &DscResource, config: &str, target_resource: Op
     let command_input = get_command_input(validate.input.as_ref(), config)?;
 
     info!("{}", t!("dscresources.commandResource.invokeValidateUsing", resource = &resource.type_name, executable = &validate.executable));
-    let (_exit_code, stdout, _stderr) = invoke_command(&validate.executable, args, command_input.stdin.as_deref(), Some(&resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
+    let (_exit_code, stdout, _stderr) = invoke_command(&validate.executable, args, command_input.stdin.as_deref(), resource.directory.as_deref(), command_input.env, manifest.exit_codes.as_ref())?;
     let result: ValidateResult = serde_json::from_str(&stdout)?;
     Ok(result)
 }
@@ -603,7 +603,7 @@ pub fn get_schema(resource: &DscResource, target_resource: Option<&DscResource>)
     let (schema, schema_value) = match schema_kind {
         SchemaKind::Command(command) => {
             let args = process_schema_args(command.args.as_ref(), target_resource);
-            let (_exit_code, stdout, _stderr) = invoke_command(&command.executable, args, None, Some(&resource.directory), None, manifest.exit_codes.as_ref())?;
+            let (_exit_code, stdout, _stderr) = invoke_command(&command.executable, args, None, resource.directory.as_deref(), None, manifest.exit_codes.as_ref())?;
             let schema_value: Value = serde_json::from_str(&stdout)?;
             (stdout, schema_value)
         },
@@ -634,7 +634,7 @@ fn verify_with_export_schema(input: &str, resource: &DscResource, target_resourc
     let schema = match export.schema_or_filtering {
         Some(ExportSchemaOrFiltering::Schema(ExportSchemaKind::Command(ref command))) => {
             let args = process_schema_args(command.args.as_ref(), command_resource);
-            let (_exit_code, stdout, _stderr) = invoke_command(&command.executable, args, None, Some(&resource.directory), None, manifest.exit_codes.as_ref())?;
+            let (_exit_code, stdout, _stderr) = invoke_command(&command.executable, args, None, resource.directory.as_deref(), None, manifest.exit_codes.as_ref())?;
             stdout
         },
         Some(ExportSchemaOrFiltering::Schema(ExportSchemaKind::Embedded(ref schema))) => {
@@ -743,7 +743,7 @@ pub fn invoke_export(resource: &DscResource, input: Option<&str>, target_resourc
         args = process_get_args(export.args.as_ref(), "", command_resource);
     }
 
-    let (_exit_code, stdout, stderr) = invoke_command(&export.executable, args, command_input.stdin.as_deref(), Some(&resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
+    let (_exit_code, stdout, stderr) = invoke_command(&export.executable, args, command_input.stdin.as_deref(), resource.directory.as_deref(), command_input.env, manifest.exit_codes.as_ref())?;
     let mut instances: Vec<Value> = Vec::new();
     for line in stdout.lines()
     {
@@ -795,7 +795,7 @@ pub fn invoke_resolve(resource: &DscResource, input: &str) -> Result<ResolveResu
     let command_input = get_command_input(resolve.input.as_ref(), input)?;
 
     info!("{}", t!("dscresources.commandResource.invokeResolveUsing", resource = &resource.type_name, executable = &resolve.executable));
-    let (_exit_code, stdout, _stderr) = invoke_command(&resolve.executable, args, command_input.stdin.as_deref(), Some(&resource.directory), command_input.env, manifest.exit_codes.as_ref())?;
+    let (_exit_code, stdout, _stderr) = invoke_command(&resolve.executable, args, command_input.stdin.as_deref(), resource.directory.as_deref(), command_input.env, manifest.exit_codes.as_ref())?;
     let result: ResolveResult = serde_json::from_str(&stdout)?;
     Ok(result)
 }
@@ -1041,11 +1041,13 @@ pub fn process_get_args(args: Option<&Vec<GetArgKind>>, input: &str, resource: &
                 processed_args.push(resource.version.to_string());
             },
             GetArgKind::ResourcePath { resource_path_arg, include_quotes} => {
-                processed_args.push(resource_path_arg.clone());
-                if *include_quotes {
-                    processed_args.push(format!("\"{}\"", resource.path.to_string_lossy()));
-                } else {
-                    processed_args.push(resource.path.to_string_lossy().to_string());
+                if let Some(path) = &resource.path {
+                    processed_args.push(resource_path_arg.clone());
+                    if *include_quotes {
+                        processed_args.push(format!("\"{}\"", path.to_string_lossy()));
+                    } else {
+                        processed_args.push(path.to_string_lossy().to_string());
+                    }
                 }
             },
         }
@@ -1121,10 +1123,12 @@ fn process_set_delete_args(args: Option<&Vec<SetDeleteArgKind>>, input: &str, re
             },
             SetDeleteArgKind::ResourcePath { resource_path_arg, include_quotes} => {
                 processed_args.push(resource_path_arg.clone());
-                if *include_quotes {
-                    processed_args.push(format!("\"{}\"", resource.path.to_string_lossy()));
-                } else {
-                    processed_args.push(resource.path.to_string_lossy().to_string());
+                if let Some(path) = &resource.path {
+                    if *include_quotes {
+                        processed_args.push(format!("\"{}\"", path.to_string_lossy()));
+                    } else {
+                        processed_args.push(path.to_string_lossy().to_string());
+                    }
                 }
             },
             SetDeleteArgKind::ResourceType { resource_type_arg } => {
