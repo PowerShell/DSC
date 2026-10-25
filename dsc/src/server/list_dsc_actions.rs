@@ -9,7 +9,7 @@ use dsc_lib::{
 use rmcp::{ErrorData as McpError, Json, tool, tool_router};
 use schemars::JsonSchema;
 use serde::Serialize;
-use serde_json::Value;
+use serde_json::{Map, Value};
 use tokio::task;
 
 #[derive(Serialize, JsonSchema)]
@@ -21,8 +21,8 @@ pub struct ActionListResult {
 #[serde(rename_all = "camelCase")]
 pub struct ActionSummary {
     pub r#type: FullyQualifiedTypeName,
-    pub input_schema: Option<Value>,
-    pub output_schema: Option<Value>,
+    pub input_schema: Option<Map<String, Value>>,
+    pub output_schema: Option<Map<String, Value>>,
     pub require_security_context: Option<SecurityContextKind>,
     pub description: Option<String>,
 }

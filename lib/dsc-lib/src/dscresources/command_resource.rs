@@ -1122,8 +1122,8 @@ fn process_set_delete_args(args: Option<&Vec<SetDeleteArgKind>>, input: &str, re
                 processed_args.push(input.to_string());
             },
             SetDeleteArgKind::ResourcePath { resource_path_arg, include_quotes} => {
-                processed_args.push(resource_path_arg.clone());
                 if let Some(path) = &resource.path {
+                    processed_args.push(resource_path_arg.clone());
                     if *include_quotes {
                         processed_args.push(format!("\"{}\"", path.to_string_lossy()));
                     } else {
