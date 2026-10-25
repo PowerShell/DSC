@@ -34,9 +34,9 @@ pub struct DscAction {
     /// The invoke specifics.
     pub invoke: InvokeMethod,
     /// The input schema for the action.  If not defined, then the action does not expect input.
-    pub input_schema: Option<Value>,
+    pub input_schema: Option<Map<String, Value>>,
     /// The output schema for the action.  If not defined, then the action does not produce output.
-    pub output_schema: Option<Value>,
+    pub output_schema: Option<Map<String, Value>>,
     /// The file path to the extension.
     pub path: Option<PathBuf>,
     /// The author of the extension.
@@ -224,14 +224,7 @@ impl ResourceInvoke for DscAction {
     }
 
     fn schema_as_map(&self) -> Option<Map<String, Value>> {
-        // convert the input_schema as a Map<String, Value>
-        match &self.input_schema {
-            Some(value) => {
-                let map: Map<String, Value> = serde_json::from_value(value.clone()).ok()?;
-                Some(map)
-            },
-            None => None,
-        }
+        self.input_schema.clone()
     }
 
     fn set_target_resource(&mut self, _target: Box<DscResource>) -> Result<(), DscError> {
@@ -263,8 +256,9 @@ pub fn get_schema(schema_kind: &SchemaKind, directory: Option<&Path>, exit_codes
     }
 }
 
-fn validate_json(input: &str, schema: &Value) -> Result<(), DscError> {
-    let compiled_schema = match Validator::new(schema) {
+fn validate_json(input: &str, schema: &Map<String, Value>) -> Result<(), DscError> {
+    let schema = serde_json::to_value(schema)?;
+    let compiled_schema = match Validator::new(&schema) {
         Ok(schema) => schema,
         Err(e) => {
             return Err(DscError::Schema(e.to_string()));
@@ -343,12 +337,14 @@ pub(crate) fn load_action_manifest(path: Option<&Path>, manifest: &ActionManifes
         supported_operations.push(SupportedOperations::Set);
     }
     let input_schema = if let Some(input_schema_kind) = manifest.invoke.input_schema.as_ref() {
-        Some(get_schema(input_schema_kind, Some(&parent), manifest.exit_codes.as_ref())?)
+        let schema = get_schema(input_schema_kind, Some(&parent), manifest.exit_codes.as_ref())?;
+        Some(serde_json::from_value::<Map<String, Value>>(schema)?)
     } else {
         None
     };
     let output_schema = if let Some(output_schema_kind) = manifest.invoke.output_schema.as_ref() {
-        Some(get_schema(output_schema_kind, Some(&parent), manifest.exit_codes.as_ref())?)
+        let schema = get_schema(output_schema_kind, Some(&parent), manifest.exit_codes.as_ref())?;
+        Some(serde_json::from_value::<Map<String, Value>>(schema)?)
     } else {
         None
     };

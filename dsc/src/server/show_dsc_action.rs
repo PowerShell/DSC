@@ -9,7 +9,7 @@ use rmcp::{ErrorData as McpError, Json, tool, tool_router, handler::server::wrap
 use rust_i18n::t;
 use schemars::{JsonSchema, json_schema};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{Map, Value};
 use tokio::task;
 
 fn nullable_json_object_schema(_: &mut schemars::SchemaGenerator) -> schemars::Schema {
@@ -34,11 +34,11 @@ pub struct DscAction {
     pub author: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[schemars(schema_with = "nullable_json_object_schema")]
-    pub input_schema: Option<Value>,
+    pub input_schema: Option<Map<String, Value>>,
     /// The output schema of the action.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[schemars(schema_with = "nullable_json_object_schema")]
-    pub output_schema: Option<Value>,
+    pub output_schema: Option<Map<String, Value>>,
     /// The security context required by the action.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub require_security_context: Option<SecurityContextKind>,
