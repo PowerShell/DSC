@@ -34,6 +34,9 @@ enum SchemaEnsure {
 class SchemaBase {
     [DscProperty()]
     [string] $Inherited
+
+    [DscProperty()]
+    [SchemaEnsure] $InheritedEnsure
 }
 
 [DscResource()]
@@ -62,10 +65,17 @@ class TestSchemaResource : SchemaBase {
     [string] $Choice
 
     [DscProperty()]
+    [ValidateSet('One', 'Two')]
+    [string[]] $Choices
+
+    [DscProperty()]
     [string[]] $Names
 
     [DscProperty()]
     [SchemaEnsure] $Ensure
+
+    [DscProperty()]
+    [SchemaEnsure[]] $Ensures
 
     [DscProperty()]
     [hashtable] $Options
@@ -131,6 +141,8 @@ class TestSchemaResource : SchemaBase {
         $resource.schema.properties.PSObject.Properties.Name | Should -Contain 'Inherited'
         $resource.schema.properties.PSObject.Properties.Name | Should -Not -Contain 'NotDscProperty'
         $resource.schema.properties.Ensure.anyOf[0].enum | Should -Be @('Present', 'Absent')
+        $resource.schema.properties.InheritedEnsure.anyOf[0].enum | Should -Be @('Present', 'Absent')
+        $resource.schema.properties.Ensures.items.anyOf[0].enum | Should -Be @('Present', 'Absent')
     }
 
     It 'Accepts valid resource data including nullable and complex properties' {
@@ -146,6 +158,19 @@ class TestSchemaResource : SchemaBase {
     It 'Preserves case-insensitive enumeration values' {
         Test-Json -Json '{"Name":"test","RequiredValue":"value","Ensure":"present","Choice":"one","Selection":1}' -Schema $schema -ErrorAction Stop |
             Should -BeTrue
+    }
+
+    It 'Accepts nullable validation sets for <Case>' -ForEach @(
+        @{ Case = 'a scalar'; Json = '{"Name":"test","RequiredValue":"value","Choice":null}' }
+        @{ Case = 'an array'; Json = '{"Name":"test","RequiredValue":"value","Choices":null}' }
+        @{ Case = 'array items'; Json = '{"Name":"test","RequiredValue":"value","Choices":["One",null,"two"]}' }
+    ) {
+        Test-Json -Json $Json -Schema $schema -ErrorAction Stop | Should -BeTrue
+    }
+
+    It 'Preserves nested array and enumeration schemas during listing' {
+        $json = '{"Name":"test","RequiredValue":"value","Ensures":["Present","absent"],"InheritedEnsure":"present"}'
+        Test-Json -Json $json -Schema $schema -ErrorAction Stop | Should -BeTrue
     }
 
     It 'Accepts the serialized representation of a SecureString in resource output' {
@@ -164,6 +189,10 @@ class TestSchemaResource : SchemaBase {
         @{ Reason = 'an invalid enumeration'; Json = '{"Name":"test","RequiredValue":"value","Ensure":"Other"}' }
         @{ Reason = 'an invalid string validation set'; Json = '{"Name":"test","RequiredValue":"value","Choice":"Other"}' }
         @{ Reason = 'an invalid numeric validation set'; Json = '{"Name":"test","RequiredValue":"value","Selection":3}' }
+        @{ Reason = 'an invalid array validation-set item'; Json = '{"Name":"test","RequiredValue":"value","Choices":["Other"]}' }
+        @{ Reason = 'an invalid enum-array item'; Json = '{"Name":"test","RequiredValue":"value","Ensures":["Other"]}' }
+        @{ Reason = 'a null value for a non-nullable enum'; Json = '{"Name":"test","RequiredValue":"value","Ensure":null}' }
+        @{ Reason = 'a null numeric validation set'; Json = '{"Name":"test","RequiredValue":"value","Selection":null}' }
         @{ Reason = 'a non-object credential'; Json = '{"Name":"test","RequiredValue":"value","Credential":"secret"}' }
         @{ Reason = 'an incorrectly typed case-insensitive property'; Json = '{"name":"test","requiredvalue":"value","count":"bad"}' }
     ) {
@@ -175,6 +204,8 @@ class TestSchemaResource : SchemaBase {
             Where-Object -Property type -EQ 'TestSchemaResource/TestSchemaResource'
         Test-Json -Json '{"Name":"test","RequiredValue":"value","Count":"bad"}' -Schema ($cached.schema | ConvertTo-Json -Depth 100) -ErrorAction SilentlyContinue |
             Should -BeFalse
+        Test-Json -Json '{"Name":"test","RequiredValue":"value","Choice":null,"Choices":["one",null]}' -Schema ($cached.schema | ConvertTo-Json -Depth 100) -ErrorAction Stop |
+            Should -BeTrue
         $cached.schema.properties.Ensure.anyOf[0].enum | Should -Be @('Present', 'Absent')
     }
 
@@ -199,6 +230,8 @@ class TestSchemaResource : SchemaBase {
                 $windowsResource.schema.properties.Names.items.type | Should -Contain 'string'
                 $windowsSchema = $windowsResource.schema | ConvertTo-Json -Depth 100
                 Test-Json -Json '{"name":"test","requiredvalue":"value","Ensure":"present"}' -Schema $windowsSchema -ErrorAction Stop |
+                    Should -BeTrue
+                Test-Json -Json '{"Name":"test","RequiredValue":"value","Choice":null,"Choices":["One",null,"two"]}' -Schema $windowsSchema -ErrorAction Stop |
                     Should -BeTrue
                 Test-Json -Json '{"Name":"test","RequiredValue":"value","Count":"bad"}' -Schema $windowsSchema -ErrorAction SilentlyContinue |
                     Should -BeFalse

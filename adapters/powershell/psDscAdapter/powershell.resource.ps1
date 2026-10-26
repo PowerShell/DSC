@@ -194,6 +194,9 @@ $ps = [PowerShell]::Create().AddScript({
                         @{ enum = @($Values) }
                         @{ type = 'string'; pattern = '^(?i:' + (($Values | ForEach-Object { [regex]::Escape($_) }) -join '|') + ')$' }
                     )
+                    if ('null' -in $schema.type) {
+                        $schema.anyOf += @{ type = 'null' }
+                    }
                 }
             }
             return $schema
@@ -525,6 +528,7 @@ Start-Sleep -Milliseconds 200  # wait a bit to ensure all events are processed b
 Get-EventSubscriber | Where-Object { $_.SourceIdentifier -like 'PSAdapter.*' } | ForEach-Object { Unregister-Event -SourceIdentifier $_.SourceIdentifier }  # unregister before dispose
 Write-TraceQueue
 
+$serializationDepth = if ($Operation -eq 'List') { 100 } else { 10 }
 foreach ($obj in $outputCollection) {
-    $obj | ConvertTo-Json -Depth 100 -Compress
+    $obj | ConvertTo-Json -Depth $serializationDepth -Compress
 }

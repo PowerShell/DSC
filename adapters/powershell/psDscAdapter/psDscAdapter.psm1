@@ -44,15 +44,15 @@ function Get-DscModuleManifestList {
 
 function Add-AstMember {
     param(
-        $AllTypeDefinitions,
+        [hashtable]$TypeDefinitionsByName,
         $TypeAst,
         $Properties
     )
 
     foreach ($TypeConstraint in $TypeAst.BaseTypes) {
-        $t = $AllTypeDefinitions | Where-Object { $_.Name -eq $TypeConstraint.TypeName.Name }
+        $t = $TypeDefinitionsByName[$TypeConstraint.TypeName.Name]
         if ($t) {
-            Add-AstMember -AllTypeDefinitions $AllTypeDefinitions -TypeAst $t -Properties $Properties
+            Add-AstMember -TypeDefinitionsByName $TypeDefinitionsByName -TypeAst $t -Properties $Properties
         }
     }
 
@@ -62,13 +62,13 @@ function Add-AstMember {
             continue;
         }
         $skipProperty = $true
-        $isKeyProperty = $false
+        $isRequiredProperty = $false
         foreach ($attr in $property.Attributes) {
             if ($attr.TypeName.Name -eq 'DscProperty') {
                 $skipProperty = $false
                 foreach ($attrArg in $attr.NamedArguments) {
                     if ($attrArg.ArgumentName -in @('Key', 'Mandatory') -and $attrArg.Argument.SafeGetValue()) {
-                        $isKeyProperty = $true
+                        $isRequiredProperty = $true
                         break
                     }
                 }
@@ -81,9 +81,9 @@ function Add-AstMember {
         [DscResourcePropertyInfo]$prop = [DscResourcePropertyInfo]::new()
         $prop.Name = $property.Name
         $prop.PropertyType = $property.PropertyType.TypeName.Name
-        $prop.IsMandatory = $isKeyProperty
-        $enumType = $AllTypeDefinitions | Where-Object { $_.IsEnum -and $_.Name -eq ($prop.PropertyType -replace '\[\]$', '') }
-        if ($enumType) {
+        $prop.IsMandatory = $isRequiredProperty
+        $enumType = $TypeDefinitionsByName[($prop.PropertyType -replace '\[\]$', '')]
+        if ($enumType.IsEnum) {
             $prop.Values = @($enumType.Members.Name)
         }
         foreach ($attr in $property.Attributes) {
@@ -141,6 +141,11 @@ function FindAndParseResourceDefinitions {
         },
         $false);
 
+    $typeDefinitionsByName = @{}
+    foreach ($typeDefinition in $typeDefinitions) {
+        $typeDefinitionsByName[$typeDefinition.Name] = $typeDefinition
+    }
+
     $resourceList = [System.Collections.Generic.List[DscResourceInfo]]::new()
 
     foreach ($typeDefinitionAst in $typeDefinitions) {
@@ -160,7 +165,7 @@ function FindAndParseResourceDefinitions {
 
                 $DscResourceInfo.Properties = [System.Collections.Generic.List[DscResourcePropertyInfo]]::new()
                 $DscResourceInfo.Capabilities = GetClassBasedCapabilities $typeDefinitionAst.Members
-                Add-AstMember -AllTypeDefinitions $typeDefinitions -TypeAst $typeDefinitionAst -Properties $DscResourceInfo.Properties
+                Add-AstMember -TypeDefinitionsByName $typeDefinitionsByName -TypeAst $typeDefinitionAst -Properties $DscResourceInfo.Properties
 
                 $resourceList.Add($DscResourceInfo)
             }
