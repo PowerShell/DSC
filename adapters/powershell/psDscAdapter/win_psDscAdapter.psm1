@@ -6,7 +6,7 @@ $ErrorActionPreference = 'Stop'
 $script:CurrentCacheSchemaVersion = 2
 
 trap {
-    Write-Error ($_ | Format-List -Force | Out-String)
+    Write-Error -Message ($_ | Format-List -Force | Out-String)
 }
 
 # if the version of PowerShell is greater than 5, import the PSDesiredStateConfiguration module
@@ -17,12 +17,12 @@ if ($PSVersionTable.PSVersion.Major -gt 5) {
     if (-not $m) {
         throw "PSDesiredStateConfiguration module not found. Please install PSDesiredStateConfiguration from PowerShell Gallery or ensure it is available in the PSModulePath."
     }
-    $PSDesiredStateConfiguration = Import-Module $m -Force -PassThru
+    Import-Module $m -Force
 } else {
     $env:PSModulePath = "$env:windir\System32\WindowsPowerShell\v1.0\Modules;$env:PSModulePath"
-    $PSDesiredStateConfiguration = Import-Module -Name 'PSDesiredStateConfiguration' -RequiredVersion '1.1' -Force -PassThru -ErrorAction stop -ErrorVariable $importModuleError
+    Import-Module -Name 'PSDesiredStateConfiguration' -RequiredVersion '1.1' -Force -ErrorAction stop -ErrorVariable importModuleError
     if (-not [string]::IsNullOrEmpty($importModuleError)) {
-        Write-Error ('Could not import PSDesiredStateConfiguration 1.1 in Windows PowerShell. ' + $importModuleError)
+        Write-Error -Message "Could not import PSDesiredStateConfiguration 1.1 in Windows PowerShell. $importModuleError"
     }
 }
 
@@ -59,6 +59,7 @@ function Invoke-DscCacheRefresh {
         $Module
     )
 
+    process {
     $refreshCache = $false
     $namedModules = [System.Collections.Generic.List[Object]]::new()
     $cacheFilePath = Join-Path $env:LocalAppData "dsc\WindowsPSAdapterCache.json"
@@ -67,21 +68,25 @@ function Invoke-DscCacheRefresh {
     Repair-ValidPSModulePath
 
     if (Test-Path $cacheFilePath) {
-        Write-Verbose -Verbose ("Reading from Get-DscResource cache file $cacheFilePath")
+            Write-Verbose -Verbose -Message "Reading from Get-DscResource cache file $cacheFilePath"
 
         $cache = Get-Content -Raw $cacheFilePath | ConvertFrom-Json
         if ($cache.CacheSchemaVersion -ne $script:CurrentCacheSchemaVersion) {
             $refreshCache = $true
-            Write-Verbose -Verbose ("Incompatible version of cache in file '" + $cache.CacheSchemaVersion + "' (expected '" + $script:CurrentCacheSchemaVersion + "')")
+                $msg = "Incompatible version of cache in file '{0}' (expected '{1}')" -f @(
+                    $cache.CacheSchemaVersion
+                    $script:CurrentCacheSchemaVersion
+                )
+                Write-Verbose -Verbose -Message $msg
         } else {
             $dscResourceCacheEntries = $cache.ResourceCache
 
             if ($dscResourceCacheEntries.Count -eq 0) {
                 # if there is nothing in the cache file - refresh cache
                 $refreshCache = $true
-                Write-Debug -Debug ("Filtered DscResourceCache cache is empty")
+                    Write-Debug -Debug -Message "Filtered DscResourceCache cache is empty"
             } else {
-                Write-Debug -Debug ("Checking cache for stale PSModulePath")
+                    Write-Debug -Debug -Message "Checking cache for stale PSModulePath"
                 $m = $env:PSModulePath.Split([IO.Path]::PathSeparator, [System.StringSplitOptions]::RemoveEmptyEntries) | ForEach-Object { Get-ChildItem -Directory -Path $_ -Depth 1 -ErrorAction Ignore }
 
                 $hs_cache = [System.Collections.Generic.HashSet[string]]($cache.PSModulePaths)
@@ -89,30 +94,30 @@ function Invoke-DscCacheRefresh {
                 $hs_cache.SymmetricExceptWith($hs_live)
                 $diff = $hs_cache
 
-                Write-Debug -Debug ("PSModulePath diff '$diff'")
+                    Write-Debug -Debug -Message "PSModulePath diff '$diff'"
                 # TODO: Optimise for named module refresh
                 if ($diff.Count -gt 0) {
                     $refreshCache = $true
                 }
 
                 if (-not $refreshCache) {
-                    Write-Debug -Debug ("Checking cache for stale entries")
+                        Write-Debug -Debug -Message "Checking cache for stale entries"
 
                     foreach ($cacheEntry in $dscResourceCacheEntries) {
 
-                        foreach ($_ in $cacheEntry.LastWriteTimes.PSObject.Properties) {
+                            foreach ($cacheEntryItem in $cacheEntry.LastWriteTimes.PSObject.Properties) {
 
-                            if (Test-Path $_.Name) {
-                                $file_LastWriteTime = (Get-Item $_.Name).LastWriteTime.ToFileTime()
-                                $cache_LastWriteTime = [long]$_.Value
+                                if (Test-Path $cacheEntryItem.Name) {
+                                    $file_LastWriteTime = (Get-Item $cacheEntryItem.Name).LastWriteTime.ToFileTime()
+                                    $cache_LastWriteTime = [long]$cacheEntryItem.Value
 
                                 if ($file_LastWriteTime -ne $cache_LastWriteTime) {
-                                    Write-Debug -Debug ("Detected stale cache entry '$($_.Name)'")
+                                        Write-Debug -Debug -Message "Detected stale cache entry '$($cacheEntryItem.Name)'"
                                     $namedModules.Add($cacheEntry.DscResourceInfo.ModuleName)
                                     break
                                 }
                             } else {
-                                Write-Debug -Debug ("Detected non-existent cache entry '$($_.Name)'")
+                                    Write-Debug -Debug -Message "Detected non-existent cache entry '$($cacheEntryItem.Name)'"
                                 $namedModules.Add($cacheEntry.DscResourceInfo.ModuleName)
                                 break
                             }
@@ -125,31 +130,31 @@ function Invoke-DscCacheRefresh {
                         $namedModules.AddRange(@($Module))
                     }
                     $namedModules = $namedModules | Sort-Object -Unique
-                    Write-Debug -Debug ("Module list: $($namedModules -join ', ')")
+                        Write-Debug -Debug -Message "Module list: $($namedModules -join ', ')"
                 }
             }
         }
     } else {
-        Write-Verbose -Verbose ("Cache file not found '$cacheFilePath'")
+            Write-Verbose -Verbose -Message "Cache file not found '$cacheFilePath'"
         $refreshCache = $true
     }
 
     if ($refreshCache) {
-        Write-Verbose -Verbose ('Constructing Get-DscResource cache')
+            Write-Verbose -Verbose -Message "Constructing Get-DscResource cache"
 
         # create a list object to store cache of Get-DscResource
         $dscResourceCacheEntries = [System.Collections.Generic.List[dscResourceCacheEntry]]::new()
 
         # improve by performance by having the option to only get details for named modules
         # workaround for File and SignatureValidation resources that ship in Windows
-        Write-Debug -Debug ("Named module count: $($namedModules.Count)")
+            Write-Debug -Debug -Message "Named module count: $($namedModules.Count)"
         if ($namedModules.Count -gt 0) {
-            Write-Debug -Debug ("Modules specified, getting DSC resources from modules: $($namedModules -join ', ')")
+                Write-Debug -Debug -Message "Modules specified, getting DSC resources from modules: $($namedModules -join ', ')"
             $DscResources = [System.Collections.Generic.List[Object]]::new()
             $Modules = [System.Collections.Generic.List[Object]]::new()
             $filteredResources = @()
             foreach ($m in $namedModules) {
-                Write-Debug -Debug ("Getting DSC resources for module '$($m | Out-String)'")
+                    Write-Debug -Debug -Message "Getting DSC resources for module '$($m | Out-String)'"
                 $DscResources.AddRange(@(Get-DscResource -Module $m))
                 $Modules.AddRange(@(Get-Module -Name $m -ListAvailable))
             }
@@ -168,7 +173,7 @@ function Invoke-DscCacheRefresh {
             # Exclude the one module that was passed in as a parameter
             $existingDscResourceCacheEntries = @($cache.ResourceCache | Where-Object -Property Type -NotIn $filteredResources)
         } else {
-            Write-Debug -Debug ("No modules specified, getting all DSC resources")
+                Write-Debug -Debug -Message "No modules specified, getting all DSC resources"
             $DscResources = Get-DscResource
             $Modules = Get-Module -ListAvailable
         }
@@ -185,7 +190,7 @@ function Invoke-DscCacheRefresh {
             if ( $psdscVersion -ge '2.0.7' ) {
                 # only support known dscResourceType
                 if ([dscResourceType].GetEnumNames() -notcontains $dscResource.ImplementationDetail) {
-                    Write-Warning ('Implementation detail not found: ' + $dscResource.ImplementationDetail)
+                        Write-Warning -Message "Implementation detail not found: $($dscResource.ImplementationDetail)"
                     continue
                 }
             }
@@ -239,10 +244,10 @@ function Invoke-DscCacheRefresh {
                 $classBased = GetTypeInstanceFromModule -modulename $moduleName -classname $dscResource.Name
             }
             catch {
-                Write-Warning "Failed to get type instance from module '$moduleName': $_"
+                    Write-Warning -Message "Failed to get type instance from module '$moduleName': $_"
             }
             if ($classBased -and ($classBased.CustomAttributes.AttributeType.Name -eq 'DscResourceAttribute')) {
-                Write-Debug -Debug ("Detected class-based resource: $($dscResource.Name) => Type: $($classBased.BaseType.FullName)")
+                    Write-Debug -Debug -Message "Detected class-based resource: $($dscResource.Name) => Type: $($classBased.BaseType.FullName)"
                 $dscResourceInfo.ImplementationDetail = 'ClassBased'
                 $properties = GetClassBasedProperties -filePath $dscResource.Path -className $dscResource.Name
                 if ($null -ne $properties) {
@@ -280,12 +285,13 @@ function Invoke-DscCacheRefresh {
 
         # save cache for future use
         # TODO: replace this with a high-performance serializer
-        Write-Debug -Debug ("Saving Get-DscResource cache to '$cacheFilePath'")
+            Write-Debug -Debug -Message "Saving Get-DscResource cache to '$cacheFilePath'"
         $jsonCache = $cache | ConvertTo-Json -Depth 90
         New-Item -Force -Path $cacheFilePath -Value $jsonCache -Type File | Out-Null
     }
 
     return $dscResourceCacheEntries
+    }
 }
 
 # Convert the INPUT to a dscResourceObject object so configuration and resource are standardized as much as possible
@@ -296,6 +302,8 @@ function Get-DscResourceObject {
         [Parameter(Mandatory = $false)]
         $type
     )
+
+    process {
     # normalize the INPUT object to an array of dscResourceObject objects
     $inputObj = $jsonInput | ConvertFrom-Json
     if ($type) {
@@ -318,11 +326,17 @@ function Get-DscResourceObject {
     }
 
     return $desiredState
+    }
 }
 
 
 # Get the actual state using DSC Get method from any type of DSC resource
 function Invoke-DscOperation {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+        'PSAvoidUsingConvertToSecureStringWithPlainText',
+        '',
+        Justification = 'Required for handling plaintext input JSON'
+    )]
     param(
         [Parameter(Mandatory)]
         [ValidateSet('Get', 'Set', 'Test', 'Export')]
@@ -333,14 +347,15 @@ function Invoke-DscOperation {
         [dscResourceCacheEntry[]]$dscResourceCache
     )
 
+    process {
     $osVersion = [System.Environment]::OSVersion.VersionString
-    Write-Debug -Debug ("OS version: " + $osVersion)
+        Write-Debug -Debug -Message "OS version: $osVersion"
 
     $psVersion = $PSVersionTable.PSVersion.ToString()
-    Write-Debug -Debug ("PowerShell version: " + $psVersion)
+        Write-Debug -Debug -Message "PowerShell version: $psVersion"
 
     $moduleVersion = Get-Module PSDesiredStateConfiguration | ForEach-Object Version
-    Write-Debug -Debug ("PSDesiredStateConfiguration module version: " + $moduleVersion)
+        Write-Debug -Debug -Message "PSDesiredStateConfiguration module version: $moduleVersion"
 
     # get details from cache about the DSC resource, if it exists
     $cachedDscResourceInfo = $dscResourceCache | Where-Object Type -EQ $DesiredState.type | ForEach-Object DscResourceInfo | Select-Object -First 1
@@ -356,7 +371,7 @@ function Invoke-DscOperation {
             if ($_.TypeNameOfValue -EQ 'System.String') { $addToActualState.$($_.Name) = $DesiredState.($_.Name) }
         }
 
-        Write-Debug -Debug ("DSC resource implementation: " + [dscResourceType]$cachedDscResourceInfo.ImplementationDetail)
+            Write-Debug -Debug -Message "DSC resource implementation: $([dscResourceType]$cachedDscResourceInfo.ImplementationDetail)"
 
         # workaround: script based resources do not validate Get parameter consistency, so we need to remove any parameters the author chose not to include in Get-TargetResource
         switch ([dscResourceType]$cachedDscResourceInfo.ImplementationDetail) {
@@ -364,7 +379,7 @@ function Invoke-DscOperation {
 
                 # For Linux/MacOS, only class based resources are supported and are called directly.
                 if ($IsLinux) {
-                    Write-Error 'Script based resources are only supported on Windows.'
+                        Write-Error -Message 'Script based resources are only supported on Windows.'
                     exit 1
                 }
 
@@ -382,10 +397,13 @@ function Invoke-DscOperation {
                 }
 
                 # morph the INPUT object into a hashtable named "property" for the cmdlet Invoke-DscResource
-                $DesiredState.properties.psobject.properties | ForEach-Object -Begin { $property = @{} } -Process {
+                    $DesiredState.properties.psobject.properties | ForEach-Object -Begin {
+                        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '', Justification = 'False positive')]
+                        $property = @{}
+                    } -Process {
                     if ($_.Value -is [System.Management.Automation.PSCustomObject]) {
                         $validateProperty = $cachedDscResourceInfo.Properties | Where-Object -Property Name -EQ $_.Name
-                        Write-Debug -Debug ("Property type: $($validateProperty.PropertyType)")
+                            Write-Debug -Debug -Message "Property type: $($validateProperty.PropertyType)"
                         if ($validateProperty -and $validateProperty.PropertyType -eq '[PSCredential]') {
 
                             $hasSecureCred =
@@ -398,12 +416,12 @@ function Invoke-DscOperation {
                                 $_.Value.Password
 
                             if (-not $hasSecureCred -and -not $hasTextCred) {
-                                Write-Error ("Credential object '$($_.Name)' requires both 'username' and 'password' properties")
+                                    Write-Error -Message "Credential object '$($_.Name)' requires both 'username' and 'password' properties"
                                 exit 1
                             }
 
                             if ($hasSecureCred) {
-                                Write-Debug -Debug "Credential object '$($_.Name)' - SecureObject"
+                                    Write-Debug -Debug -Message "Credential object '$($_.Name)' - SecureObject"
 
                                 $username = $_.Value.secureObject.Username
                                 $password = $_.Value.secureObject.Password |
@@ -413,7 +431,7 @@ function Invoke-DscOperation {
                                     [System.Management.Automation.PSCredential]::new($username, $password)
                             }
                             elseif ($hasTextCred) {
-                                Write-Debug -Debug "Credential object '$($_.Name)' - Text"
+                                    Write-Debug -Debug -Message "Credential object '$($_.Name)' - Text"
 
                                 $username = $_.Value.Username
                                 $password = $_.Value.Password |
@@ -423,7 +441,14 @@ function Invoke-DscOperation {
                                     [System.Management.Automation.PSCredential]::new($username, $password)
                             }
                         } else {
-                            $property.$($_.Name) = $_.Value.psobject.properties | ForEach-Object -Begin { $propertyHash = @{} } -Process { $propertyHash[$_.Name] = $_.Value } -End { $propertyHash }
+                                $property.$($_.Name) = $_.Value.psobject.properties | ForEach-Object -Begin {
+                                    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '', Justification = 'False positive')]
+                                    $propertyHash = @{}
+                                } -Process {
+                                    $propertyHash[$_.Name] = $_.Value
+                                } -End {
+                                    $propertyHash
+                                }
                         }
                     } else {
                         $property[$_.Name] = $_.Value
@@ -432,24 +457,36 @@ function Invoke-DscOperation {
 
                 # using the cmdlet the appropriate dsc module, and handle errors
                 try {
-                    Write-Debug -Debug ("Module: $($cachedDscResourceInfo.ModuleName), Name: $($cachedDscResourceInfo.Name), Property: $($property | ConvertTo-Json -Compress)")
+                        Write-Debug -Debug -Message "Module: $($cachedDscResourceInfo.ModuleName), Name: $($cachedDscResourceInfo.Name), Property: $($property | ConvertTo-Json -Compress)"
                     $invokeResult = Invoke-DscResource -Method $Operation -ModuleName $cachedDscResourceInfo.ModuleName -Name $cachedDscResourceInfo.Name -Property $property -ErrorAction Stop
 
                     if ($invokeResult.GetType().Name -eq 'Hashtable') {
-                        $invokeResult.keys | ForEach-Object -Begin { $ResultProperties = @{} } -Process { $ResultProperties[$_] = $invokeResult.$_ }
+                            $invokeResult.keys | ForEach-Object -Begin {
+                                [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '', Justification = 'False positive')]
+                                $ResultProperties = @{}
+                            } -Process {
+                                $ResultProperties[$_] = $invokeResult.$_
+                            }
                     } else {
                         # the object returned by WMI is a CIM instance with a lot of additional data. only return DSC properties
-                        $invokeResult.psobject.Properties.name | Where-Object { 'CimClass', 'CimInstanceProperties', 'CimSystemProperties' -notcontains $_ } | ForEach-Object -Begin { $ResultProperties = @{} } -Process { $ResultProperties[$_] = $invokeResult.$_ }
+                            $invokeResult.psobject.Properties.name | Where-Object {
+                                'CimClass', 'CimInstanceProperties', 'CimSystemProperties' -notcontains $_
+                            } | ForEach-Object -Begin {
+                                [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '', Justification = 'False positive')]
+                                $ResultProperties = @{}
+                            } -Process {
+                                $ResultProperties[$_] = $invokeResult.$_
+                            }
                     }
 
                     # set the properties of the OUTPUT object from the result of Get-TargetResource
                     $addToActualState.properties = $ResultProperties
                 } catch {
-                    Write-Debug -Debug ($_.Exception | Format-List * -Force | Out-String)
+                        Write-Debug -Debug -Message ($_.Exception | Format-List * -Force | Out-String)
                     if ($_.Exception.MessageId -eq 'DscResourceNotFound') {
-                        Write-Warning 'For Windows PowerShell, DSC resources must be installed with scope AllUsers'
+                            Write-Warning -Message 'For Windows PowerShell, DSC resources must be installed with scope AllUsers'
                     }
-                    Write-Error ('Exception: ' + $_.Exception.Message)
+                        Write-Error -Message "Exception: $($_.Exception.Message)"
                     exit 1
                 }
             }
@@ -461,7 +498,7 @@ function Invoke-DscOperation {
 
                     $ValidProperties = $cachedDscResourceInfo.Properties.Name
 
-                    Write-Debug -Debug ($ValidProperties | ConvertTo-Json)
+                        Write-Debug -Debug -Message ($ValidProperties | ConvertTo-Json)
 
                     if ($DesiredState.properties) {
                         # set each property of $dscResourceInstance to the value of the property in the $desiredState INPUT object
@@ -469,7 +506,7 @@ function Invoke-DscOperation {
                             # handle input objects by converting them to a hash table
                             if ($_.Value -is [System.Management.Automation.PSCustomObject]) {
                                 $validateProperty = $cachedDscResourceInfo.Properties | Where-Object -Property Name -EQ $_.Name
-                                Write-Debug -Debug ("Property type: $($validateProperty.PropertyType)")
+                                    Write-Debug -Debug -Message "Property type: $($validateProperty.PropertyType)"
                                 if ($validateProperty.PropertyType -eq 'PSCredential') {
                                 $hasSecureCred =
                                     $_.Value.PSObject.Properties['secureObject'] -and
@@ -481,7 +518,7 @@ function Invoke-DscOperation {
                                     $_.Value.Password
 
                                 if (-not $hasSecureCred -and -not $hasTextCred) {
-                                    Write-Error ("Credential object '$($_.Name)' requires both 'username' and 'password' properties")
+                                        Write-Error -Message "Credential object '$($_.Name)' requires both 'username' and 'password' properties"
                                     exit 1
                                 }
 
@@ -503,7 +540,15 @@ function Invoke-DscOperation {
                                 }
 
                                 } else {
-                                    $dscResourceInstance.$($_.Name) = $_.Value.psobject.properties | ForEach-Object -Begin { $propertyHash = @{} } -Process { $propertyHash[$_.Name] = $_.Value } -End { $propertyHash }
+
+                                        $dscResourceInstance.$($_.Name) = $_.Value.psobject.properties | ForEach-Object -Begin {
+                                            [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '', Justification = 'False positive')]
+                                            $propertyHash = @{}
+                                        } -Process {
+                                            $propertyHash[$_.Name] = $_.Value
+                                        } -End {
+                                            $propertyHash
+                                        }
                                 }
                             } else {
                                 $dscResourceInstance.$($_.Name) = $_.Value
@@ -550,38 +595,48 @@ function Invoke-DscOperation {
                         }
                     }
                 } catch {
-                    Write-Debug -Debug ($_.Exception | Format-List * -Force | Out-String)
+                        Write-Debug -Debug -Message ($_.Exception | Format-List * -Force | Out-String)
                     if ($_.Exception.MessageId -eq 'DscResourceNotFound') {
-                        Write-Warning 'For Windows PowerShell, DSC resources must be installed with scope AllUsers'
+                            Write-Warning -Message 'For Windows PowerShell, DSC resources must be installed with scope AllUsers'
                     }
-                    Write-Error ('Exception: ' + $_.Exception.Message)
+                        Write-Error -Message "Exception: $($_.Exception.Message)"
                     exit 1
                 }
             }
             'Binary' {
                 if ($PSVersionTable.PSVersion.Major -gt 5) {
-                    Write-Debug -Debug 'To use a binary resource such as File, Log, or SignatureValidation, use the Microsoft.Windows/WindowsPowerShell adapter.'
+                        Write-Debug -Debug -Message 'To use a binary resource such as File, Log, or SignatureValidation, use the Microsoft.Windows/WindowsPowerShell adapter.'
                     exit 1
                 }
 
                 if (-not (($cachedDscResourceInfo.ImplementedAs -eq 'Binary') -and ('File', 'Log', 'SignatureValidation' -contains $cachedDscResourceInfo.Name))) {
-                    Write-Debug -Debug 'Only File, Log, and SignatureValidation are supported as Binary resources.'
+                        Write-Debug -Debug -Message 'Only File, Log, and SignatureValidation are supported as Binary resources.'
                     exit 1
                 }
 
                 # morph the INPUT object into a hashtable named "property" for the cmdlet Invoke-DscResource
-                $DesiredState.properties.psobject.properties | ForEach-Object -Begin { $property = @{} } -Process {
+                    $DesiredState.properties.psobject.properties | ForEach-Object -Begin {
+                        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '', Justification = 'False positive')]
+                        $property = @{}
+                    } -Process {
                     if ($_.Value -is [System.Management.Automation.PSCustomObject]) {
                         $validateProperty = $cachedDscResourceInfo.Properties | Where-Object -Property Name -EQ $_.Name
-                        Write-Debug -Debug ("Property type: $($validateProperty.PropertyType)")
+                            Write-Debug -Debug -Message "Property type: $($validateProperty.PropertyType)"
                         if ($validateProperty.PropertyType -eq '[PSCredential]') {
                             if (-not $_.Value.Username -or -not $_.Value.Password) {
-                                Write-Error ("Credential object '$($_.Name)' requires both 'username' and 'password' properties")
+                                    Write-Error -Message "Credential object '$($_.Name)' requires both 'username' and 'password' properties"
                                 exit 1
                             }
                             $property.$($_.Name) = [System.Management.Automation.PSCredential]::new($_.Value.Username, (ConvertTo-SecureString -AsPlainText $_.Value.Password -Force))
                         } else {
-                            $property.$($_.Name) = $_.Value.psobject.properties | ForEach-Object -Begin { $propertyHash = @{} } -Process { $propertyHash[$_.Name] = $_.Value } -End { $propertyHash }
+                                $property.$($_.Name) = $_.Value.psobject.properties | ForEach-Object -Begin {
+                                    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '', Justification = 'False positive')]
+                                    $propertyHash = @{}
+                                } -Process {
+                                    $propertyHash[$_.Name] = $_.Value
+                                } -End {
+                                    $propertyHash
+                                }
                         }
                     } else {
                         $property[$_.Name] = $_.Value
@@ -590,24 +645,36 @@ function Invoke-DscOperation {
 
                 # using the cmdlet from PSDesiredStateConfiguration module in Windows
                 try {
-                    Write-Debug -Debug "Module: $($cachedDscResourceInfo.ModuleName), Name: $($cachedDscResourceInfo.Name), Property: $($property | ConvertTo-Json -Compress)"
+                        Write-Debug -Debug -Message "Module: $($cachedDscResourceInfo.ModuleName), Name: $($cachedDscResourceInfo.Name), Property: $($property | ConvertTo-Json -Compress)"
                     $invokeResult = Invoke-DscResource -Method $Operation -ModuleName $cachedDscResourceInfo.ModuleName -Name $cachedDscResourceInfo.Name -Property $property
                     if ($invokeResult.GetType().Name -eq 'Hashtable') {
-                        $invokeResult.keys | ForEach-Object -Begin { $ResultProperties = @{} } -Process { $ResultProperties[$_] = $invokeResult.$_ }
+                            $invokeResult.keys | ForEach-Object -Begin {
+                                [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '', Justification = 'False positive')]
+                                $ResultProperties = @{}
+                            } -Process {
+                                $ResultProperties[$_] = $invokeResult.$_
+                            }
                     } else {
                         # the object returned by WMI is a CIM instance with a lot of additional data. only return DSC properties
-                        $invokeResult.psobject.Properties.name | Where-Object { 'CimClass', 'CimInstanceProperties', 'CimSystemProperties' -notcontains $_ } | ForEach-Object -Begin { $ResultProperties = @{} } -Process { $ResultProperties[$_] = $invokeResult.$_ }
+                            $invokeResult.psobject.Properties.name | Where-Object {
+                                'CimClass', 'CimInstanceProperties', 'CimSystemProperties' -notcontains $_
+                            } | ForEach-Object -Begin {
+                                [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '', Justification = 'False positive')]
+                                $ResultProperties = @{}
+                            } -Process {
+                                $ResultProperties[$_] = $invokeResult.$_
+                            }
                     }
 
                     # set the properties of the OUTPUT object from the result of Get-TargetResource
                     $addToActualState.properties = $ResultProperties
                 } catch {
-                    Write-Error ('Exception: ' + $_.Exception.Message)
+                        Write-Error -Message "Exception: $($_.Exception.Message)"
                     exit 1
                 }
             }
             Default {
-                Write-Error ('Can not find implementation of type: ' + $cachedDscResourceInfo.ImplementationDetail)
+                    Write-Error -Message "Can not find implementation of type: $($cachedDscResourceInfo.ImplementationDetail)"
                 exit 1
             }
         }
@@ -615,9 +682,11 @@ function Invoke-DscOperation {
         return $addToActualState
     } else {
         $dsJSON = $DesiredState | ConvertTo-Json -Depth 10
-        Write-Error ('Can not find type "' + $DesiredState.type + '" for resource "' + $dsJSON + '". Please ensure that Get-DscResource returns this resource type.')
+            Write-Error -Message "Can not find type '$($DesiredState.type)' for resource '$dsJSON'. Please ensure that Get-DscResource returns this resource type."
         exit 1
     }
+    }
+
 }
 
 # GetTypeInstanceFromModule function to get the type instance from the module
@@ -661,7 +730,7 @@ function ValidateMethod {
     }
 
     if ($null -eq $method) {
-        Write-Error ("Method '$operation' not implemented by resource '$($t.Name)'")
+        Write-Error -Message "Method '$operation' not implemented by resource '$($t.Name)'"
         exit 1
     }
 
@@ -807,7 +876,7 @@ function Repair-ValidPSModulePath {
 
     end {
         if (($env:PSModulePath -split [System.IO.Path]::PathSeparator) -contains '') {
-            Write-Debug -Debug "Removing empty entry from PSModulePath: '$env:PSModulePath'"
+            Write-Debug -Debug -Message "Removing empty entry from PSModulePath: '$env:PSModulePath'"
             $env:PSModulePath = [String]::Join([System.IO.Path]::PathSeparator, ($env:PSModulePath.Split([System.IO.Path]::PathSeparator, [System.StringSplitOptions]::RemoveEmptyEntries))).TrimEnd([System.IO.Path]::PathSeparator)
         }
     }

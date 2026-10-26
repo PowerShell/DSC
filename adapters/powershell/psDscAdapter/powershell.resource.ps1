@@ -1,6 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 [CmdletBinding()]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+    'PSUseProcessBlockForPipelineCommand',
+    ''
+)]
 param(
     [Parameter(Mandatory = $true, Position = 0, HelpMessage = 'Operation to perform. Choose from List, Get, Set, Test, Export, ClearCache.')]
     [ValidateSet('List', 'Get', 'Set', 'Test', 'Export', 'ClearCache')]
@@ -26,12 +30,14 @@ function Write-DscTrace {
         [switch]$Now
     )
 
+    process {
     $trace = @{$Operation.ToLower() = $Message }
 
     if ($Now) {
         $host.ui.WriteErrorLine(($trace | ConvertTo-Json -Compress -Depth 10))
     } else {
         $traceQueue.Enqueue($trace)
+    }
     }
 }
 
@@ -64,359 +70,361 @@ $ps = [PowerShell]::Create().AddScript({
         [string]$ScriptRoot
     )
 
-    # NOTE:
-    # The adapter explicitly suppresses Debug and Verbose output by default to avoid
-    # excessively noisy logs from DSC resources that call Write-Debug / Write-Verbose.
-    # As a result, plain:
-    #   Write-Verbose "message"
-    #   Write-Debug   "message"
-    # will NOT emit any output when invoked through this adapter.
-    #
-    # Resource authors who need to guarantee that diagnostic output is emitted MUST
-    # use the -Verbose / -Debug switches, for example:
-    #   Write-Verbose -Verbose "message"
-    #   Write-Debug   -Debug   "message"
-    #
-    # See the adapter's own usage below (e.g. Write-Debug -Debug 'PSVersion=...') for
-    # an example of this pattern.
-    $DebugPreference = 'SilentlyContinue'
-    $VerbosePreference = 'SilentlyContinue'
-    $ErrorActionPreference = 'Stop'
-    $InformationPreference = 'Continue'
-    $ProgressPreference = 'SilentlyContinue'
+    process {
+        # NOTE:
+        # The adapter explicitly suppresses Debug and Verbose output by default to avoid
+        # excessively noisy logs from DSC resources that call Write-Debug / Write-Verbose.
+        # As a result, plain:
+        #   Write-Verbose -Message "message"
+        #   Write-Debug   -Message "message"
+        # will NOT emit any output when invoked through this adapter.
+        #
+        # Resource authors who need to guarantee that diagnostic output is emitted MUST
+        # use the -Verbose / -Debug switches, for example:
+        #   Write-Verbose -Verbose -Message "message"
+        #   Write-Debug   -Debug   -Message "message"
+        #
+        # See the adapter's own usage below (e.g. Write-Debug -Debug 'PSVersion=...') for
+        # an example of this pattern.
+        $DebugPreference = 'SilentlyContinue'
+        $VerbosePreference = 'SilentlyContinue'
+        $ErrorActionPreference = 'Stop'
+        $InformationPreference = 'Continue'
+        $ProgressPreference = 'SilentlyContinue'
 
-    if ($Operation -eq 'ClearCache') {
-        $cacheFilePath = if ($IsWindows) {
-            # PS 6+ on Windows
-            Join-Path $env:LocalAppData "dsc\PSAdapterCache.json"
-        } else {
-            # either WinPS or PS 6+ on Linux/Mac
-            if ($PSVersionTable.PSVersion.Major -le 5) {
-                Join-Path $env:LocalAppData "dsc\WindowsPSAdapterCache.json"
+        if ($Operation -eq 'ClearCache') {
+            $cacheFilePath = if ($IsWindows) {
+                # PS 6+ on Windows
+                Join-Path -Path $env:LocalAppData -ChildPath "dsc\PSAdapterCache.json"
             } else {
-                Join-Path $env:HOME ".dsc" "PSAdapterCache.json"
-            }
-        }
-
-        Remove-Item -Force -ErrorAction Ignore -Path $cacheFilePath
-        return
-    }
-
-    # Adding some debug info to STDERR
-    Write-Debug -Debug ('PSVersion=' + $PSVersionTable.PSVersion.ToString())
-    Write-Debug -Debug ('PSHome=' + $PSHome)
-    Write-Debug -Debug ('PSModulePath=' + $env:PSModulePath)
-
-    if ($PSVersionTable.PSVersion.Major -le 5) {
-        # For Windows PowerShell, we want to remove any PowerShell 7 paths from PSModulePath
-        if ($pwshPath = Get-Command 'pwsh' -ErrorAction Ignore | Select-Object -ExpandProperty Source) {
-            $pwshDefaultModulePaths = @(
-                "$HOME\Documents\PowerShell\Modules"                # CurrentUser
-                "$Env:ProgramFiles\PowerShell\Modules"              # AllUsers
-                Join-Path $(Split-Path $pwshPath -Parent) 'Modules' # Builtin
-            )
-            $env:PSModulePath = ($env:PSModulePath -split ';' | Where-Object { $_ -notin $pwshDefaultModulePaths }) -join ';'
-        }
-    }
-
-    Write-Debug -Debug ("jsonInput=$jsonInput")
-
-    # load private functions of psDscAdapter stub module
-    if ($PSVersionTable.PSVersion.Major -le 5) {
-        $psDscAdapter = Import-Module "$ScriptRoot/win_psDscAdapter.psd1" -Force -PassThru
-    }
-    else {
-        $psDscAdapter = Import-Module "$ScriptRoot/psDscAdapter.psd1" -Force -PassThru
-    }
-
-    # initialize OUTPUT as array
-    $result = [System.Collections.Generic.List[Object]]::new()
-
-    function ConvertTo-PropertySchema {
-        param(
-            [string]$PropertyType,
-            [string[]]$Values
-        )
-
-        # Windows PowerShell metadata can wrap type names in brackets.
-        $typeName = $PropertyType -replace '^\[(.*)\]$', '$1'
-        if ($typeName.EndsWith('[]')) {
-            return @{
-                type = @('array', 'null')
-                items = ConvertTo-PropertySchema -PropertyType $typeName.Substring(0, $typeName.Length - 2) -Values $Values
-            }
-        }
-
-        $schema = switch -Regex ($typeName -replace '^System\.', '') {
-            '^(string|char|datetime|datetimeoffset|guid|uri)$' {
-                @{ type = @('string', 'null') }
-                break
-            }
-            '^(securestring|security\.securestring|timespan|version)$' {
-                # These accept string input but serialize as objects in resource output.
-                @{ type = @('string', 'object', 'null') }
-                break
-            }
-            '^(bool|boolean)$' {
-                @{ type = 'boolean' }
-                break
-            }
-            '^(byte|sbyte|short|ushort|int|uint|long|ulong|int16|uint16|int32|uint32|int64|uint64)$' {
-                @{ type = 'integer' }
-                break
-            }
-            '^(float|single|double|decimal)$' {
-                @{ type = 'number' }
-                break
-            }
-            '^(hashtable|collections\.hashtable|pscredential|management\.automation\.pscredential|ciminstance|microsoft\.management\.infrastructure\.ciminstance)$' {
-                @{ type = @('object', 'null') }
-                break
-            }
-            default {
-                # Custom and embedded types can have resource-specific JSON representations.
-                @{}
-            }
-        }
-
-        if ($Values.Count -gt 0) {
-            if ($schema.type -in @('integer', 'number')) {
-                $schema.enum = @($Values | ForEach-Object { [decimal]::Parse($_, [Globalization.CultureInfo]::InvariantCulture) })
-            } else {
-                $schema.anyOf = @(
-                    @{ enum = @($Values) }
-                    @{ type = 'string'; pattern = '^(?i:' + (($Values | ForEach-Object { [regex]::Escape($_) }) -join '|') + ')$' }
-                )
-            }
-        }
-        return $schema
-    }
-
-    if ($jsonInput) {
-        if ($jsonInput -ne '{}') {
-            $inputobj_pscustomobj = $jsonInput | ConvertFrom-Json
-        }
-        $new_psmodulepath = $inputobj_pscustomobj.psmodulepath
-        if ($new_psmodulepath)
-        {
-            $env:PSModulePath = $ExecutionContext.InvokeCommand.ExpandString($new_psmodulepath)
-        }
-    }
-
-    # process the operation requested to the script
-    switch ($Operation) {
-        'List' {
-            $dscResourceCache = Invoke-DscCacheRefresh
-
-            # cache was refreshed on script load
-            foreach ($dscResource in $dscResourceCache) {
-
-                # https://learn.microsoft.com/dotnet/api/system.management.automation.dscresourceinfo
-                $DscResourceInfo = $dscResource.DscResourceInfo
-
-                # Provide a way for existing resources to specify their capabilities, or default to Get, Set, Test
-                # TODO: for perf, it is better to take capabilities from psd1 in Invoke-DscCacheRefresh, not by extra call to Get-Module
-                if ($DscResourceInfo.ModuleName) {
-                    $module = Get-Module -Name $DscResourceInfo.ModuleName -ListAvailable | Sort-Object -Property Version -Descending | Select-Object -First 1
-                    # If the DscResourceInfo does have capabilities, use them or else use the module's capabilities
-                    if ($DscResourceInfo.Capabilities) {
-                        $capabilities = $DscResourceInfo.Capabilities
-                    } elseif ($module.PrivateData.PSData.DscCapabilities) {
-
-                        $capabilities = $module.PrivateData.PSData.DscCapabilities
-                    } else {
-                        $capabilities = @('get', 'set', 'test')
-                    }
-                }
-
-                # this text comes directly from the resource manifest for v3 native resources
-                if ($DscResourceInfo.Description) {
-                    $description = $DscResourceInfo.Description
-                }
-                elseif ($module.Description) {
-                    # some modules have long multi-line descriptions. to avoid issue, use only the first line.
-                    $description = ($module.Description -split '\r?\n')[0]
-                }
-                else {
-                    $description = ''
-                }
-
-                # match adapter to version of powershell
+                # either WinPS or PS 6+ on Linux/Mac
                 if ($PSVersionTable.PSVersion.Major -le 5) {
-                    if ($ResourceType) {
-                        $requireAdapter = 'Microsoft.Adapter/WindowsPowerShell'
-                    } else {
-                        $requireAdapter = 'Microsoft.Windows/WindowsPowerShell'
-                    }
-                }
-                else {
-                    if ($ResourceType) {
-                        $requireAdapter = 'Microsoft.Adapter/PowerShell'
-                    } else {
-                        $requireAdapter = 'Microsoft.DSC/PowerShell'
-                    }
-                }
-
-                $properties = @()
-                $propertySchemas = @{}
-                $propertyPatterns = @{}
-                $requiredProperties = @()
-                foreach ($prop in $DscResourceInfo.Properties) {
-                    $properties += $prop.Name
-                    $propertySchemas[$prop.Name] = ConvertTo-PropertySchema -PropertyType $prop.PropertyType -Values $prop.Values
-                    $pattern = '^(?i:' + [regex]::Escape($prop.Name) + ')$'
-                    $propertyPatterns[$pattern] = $propertySchemas[$prop.Name]
-                    if ($prop.IsMandatory) {
-                        # Require a matching property without making PowerShell names case sensitive.
-                        $requiredProperties += @{ not = @{ propertyNames = @{ not = @{ pattern = $pattern } } } }
-                    }
-                }
-
-                $resourceSchema = @{
-                    '$schema' = 'https://json-schema.org/draft/2020-12/schema'
-                    type = 'object'
-                    properties = $propertySchemas
-                    patternProperties = $propertyPatterns
-                }
-                if ($requiredProperties.Count -gt 0) {
-                    $resourceSchema.allOf = @($requiredProperties)
-                }
-
-                # OUTPUT dsc is expecting the following properties
-                [resourceOutput]@{
-                    type           = $dscResource.Type
-                    kind           = 'resource'
-                    version        = [string]$DscResourceInfo.version
-                    capabilities   = $capabilities
-                    path           = $DscResourceInfo.Path
-                    directory      = $DscResourceInfo.ParentPath
-                    implementedAs  = $DscResourceInfo.ImplementationDetail
-                    author         = $DscResourceInfo.CompanyName
-                    properties     = $properties
-                    requireAdapter = $requireAdapter
-                    description    = $description
-                    schema         = $resourceSchema
+                    Join-Path -Path $env:LocalAppData -ChildPath "dsc\WindowsPSAdapterCache.json"
+                } else {
+                    Join-Path -Path $env:HOME -ChildPath ".dsc\PSAdapterCache.json"
                 }
             }
+
+            Remove-Item -Force -ErrorAction Ignore -Path $cacheFilePath
+            return
         }
-        { @('Get','Set','Test','Export') -contains $_ } {
-            if ($ResourceType) {
-                Write-Debug -Debug ("Using resource type override: $ResourceType")
-                if ($ResourcePath) {
-                    Write-Debug -Debug ("Using resource path override: $ResourcePath")
-                    Import-Module -Name $ResourcePath -Global -Force -ErrorAction Stop
+
+        # Adding some debug info to STDERR
+        Write-Debug -Debug -Message "PSVersion=$($PSVersionTable.PSVersion.ToString())"
+        Write-Debug -Debug -Message "PSHome=$PSHome"
+        Write-Debug -Debug -Message "PSModulePath=$env:PSModulePath"
+
+        if ($PSVersionTable.PSVersion.Major -le 5) {
+            # For Windows PowerShell, we want to remove any PowerShell 7 paths from PSModulePath
+            if ($pwshPath = Get-Command 'pwsh' -ErrorAction Ignore | Select-Object -ExpandProperty Source) {
+                $pwshDefaultModulePaths = @(
+                    "$HOME\Documents\PowerShell\Modules"                # CurrentUser
+                    "$Env:ProgramFiles\PowerShell\Modules"              # AllUsers
+                    Join-Path $(Split-Path $pwshPath -Parent) 'Modules' # Builtin
+                )
+                $env:PSModulePath = ($env:PSModulePath -split ';' | Where-Object { $_ -notin $pwshDefaultModulePaths }) -join ';'
+            }
+        }
+
+        Write-Debug -Debug -Message "jsonInput=$jsonInput"
+
+        # load private functions of psDscAdapter stub module
+        if ($PSVersionTable.PSVersion.Major -le 5) {
+            $psDscAdapter = Import-Module "$ScriptRoot/win_psDscAdapter.psd1" -Force -PassThru
+        }
+        else {
+            $psDscAdapter = Import-Module "$ScriptRoot/psDscAdapter.psd1" -Force -PassThru
+        }
+
+        # initialize OUTPUT as array
+        $result = [System.Collections.Generic.List[Object]]::new()
+
+        function ConvertTo-PropertySchema {
+            param(
+                [string]$PropertyType,
+                [string[]]$Values
+            )
+
+            # Windows PowerShell metadata can wrap type names in brackets.
+            $typeName = $PropertyType -replace '^\[(.*)\]$', '$1'
+            if ($typeName.EndsWith('[]')) {
+                return @{
+                    type = @('array', 'null')
+                    items = ConvertTo-PropertySchema -PropertyType $typeName.Substring(0, $typeName.Length - 2) -Values $Values
+                }
+            }
+
+            $schema = switch -Regex ($typeName -replace '^System\.', '') {
+                '^(string|char|datetime|datetimeoffset|guid|uri)$' {
+                    @{ type = @('string', 'null') }
+                    break
+                }
+                '^(securestring|security\.securestring|timespan|version)$' {
+                    # These accept string input but serialize as objects in resource output.
+                    @{ type = @('string', 'object', 'null') }
+                    break
+                }
+                '^(bool|boolean)$' {
+                    @{ type = 'boolean' }
+                    break
+                }
+                '^(byte|sbyte|short|ushort|int|uint|long|ulong|int16|uint16|int32|uint32|int64|uint64)$' {
+                    @{ type = 'integer' }
+                    break
+                }
+                '^(float|single|double|decimal)$' {
+                    @{ type = 'number' }
+                    break
+                }
+                '^(hashtable|collections\.hashtable|pscredential|management\.automation\.pscredential|ciminstance|microsoft\.management\.infrastructure\.ciminstance)$' {
+                    @{ type = @('object', 'null') }
+                    break
+                }
+                default {
+                    # Custom and embedded types can have resource-specific JSON representations.
+                    @{}
+                }
+            }
+
+            if ($Values.Count -gt 0) {
+                if ($schema.type -in @('integer', 'number')) {
+                    $schema.enum = @($Values | ForEach-Object { [decimal]::Parse($_, [Globalization.CultureInfo]::InvariantCulture) })
+                } else {
+                    $schema.anyOf = @(
+                        @{ enum = @($Values) }
+                        @{ type = 'string'; pattern = '^(?i:' + (($Values | ForEach-Object { [regex]::Escape($_) }) -join '|') + ')$' }
+                    )
+                }
+            }
+            return $schema
+        }
+
+        if ($jsonInput) {
+            if ($jsonInput -ne '{}') {
+                $inputobj_pscustomobj = $jsonInput | ConvertFrom-Json
+            }
+            $new_psmodulepath = $inputobj_pscustomobj.psmodulepath
+            if ($new_psmodulepath)
+            {
+                $env:PSModulePath = $ExecutionContext.InvokeCommand.ExpandString($new_psmodulepath)
+            }
+        }
+
+        # process the operation requested to the script
+        switch ($Operation) {
+            'List' {
+                $dscResourceCache = Invoke-DscCacheRefresh
+
+                # cache was refreshed on script load
+                foreach ($dscResource in $dscResourceCache) {
+
+                    # https://learn.microsoft.com/dotnet/api/system.management.automation.dscresourceinfo
+                    $DscResourceInfo = $dscResource.DscResourceInfo
+
+                    # Provide a way for existing resources to specify their capabilities, or default to Get, Set, Test
+                    # TODO: for perf, it is better to take capabilities from psd1 in Invoke-DscCacheRefresh, not by extra call to Get-Module
+                    if ($DscResourceInfo.ModuleName) {
+                        $module = Get-Module -Name $DscResourceInfo.ModuleName -ListAvailable | Sort-Object -Property Version -Descending | Select-Object -First 1
+                        # If the DscResourceInfo does have capabilities, use them or else use the module's capabilities
+                        if ($DscResourceInfo.Capabilities) {
+                            $capabilities = $DscResourceInfo.Capabilities
+                        } elseif ($module.PrivateData.PSData.DscCapabilities) {
+
+                            $capabilities = $module.PrivateData.PSData.DscCapabilities
+                        } else {
+                            $capabilities = @('get', 'set', 'test')
+                        }
+                    }
+
+                    # this text comes directly from the resource manifest for v3 native resources
+                    if ($DscResourceInfo.Description) {
+                        $description = $DscResourceInfo.Description
+                    }
+                    elseif ($module.Description) {
+                        # some modules have long multi-line descriptions. to avoid issue, use only the first line.
+                        $description = ($module.Description -split '\r?\n')[0]
+                    }
+                    else {
+                        $description = ''
+                    }
+
+                    # match adapter to version of powershell
+                    if ($PSVersionTable.PSVersion.Major -le 5) {
+                        if ($ResourceType) {
+                            $requireAdapter = 'Microsoft.Adapter/WindowsPowerShell'
+                        } else {
+                            $requireAdapter = 'Microsoft.Windows/WindowsPowerShell'
+                        }
+                    }
+                    else {
+                        if ($ResourceType) {
+                            $requireAdapter = 'Microsoft.Adapter/PowerShell'
+                        } else {
+                            $requireAdapter = 'Microsoft.DSC/PowerShell'
+                        }
+                    }
+
+                    $properties = @()
+                    $propertySchemas = @{}
+                    $propertyPatterns = @{}
+                    $requiredProperties = @()
+                    foreach ($prop in $DscResourceInfo.Properties) {
+                        $properties += $prop.Name
+                        $propertySchemas[$prop.Name] = ConvertTo-PropertySchema -PropertyType $prop.PropertyType -Values $prop.Values
+                        $pattern = '^(?i:' + [regex]::Escape($prop.Name) + ')$'
+                        $propertyPatterns[$pattern] = $propertySchemas[$prop.Name]
+                        if ($prop.IsMandatory) {
+                            # Require a matching property without making PowerShell names case sensitive.
+                            $requiredProperties += @{ not = @{ propertyNames = @{ not = @{ pattern = $pattern } } } }
+                        }
+                    }
+
+                    $resourceSchema = @{
+                        '$schema' = 'https://json-schema.org/draft/2020-12/schema'
+                        type = 'object'
+                        properties = $propertySchemas
+                        patternProperties = $propertyPatterns
+                    }
+                    if ($requiredProperties.Count -gt 0) {
+                        $resourceSchema.allOf = @($requiredProperties)
+                    }
+
+                    # OUTPUT dsc is expecting the following properties
+                    [resourceOutput]@{
+                        type           = $dscResource.Type
+                        kind           = 'resource'
+                        version        = [string]$DscResourceInfo.version
+                        capabilities   = $capabilities
+                        path           = $DscResourceInfo.Path
+                        directory      = $DscResourceInfo.ParentPath
+                        implementedAs  = $DscResourceInfo.ImplementationDetail
+                        author         = $DscResourceInfo.CompanyName
+                        properties     = $properties
+                        requireAdapter = $requireAdapter
+                        description    = $description
+                        schema         = $resourceSchema
+                    }
+                }
+            }
+            { @('Get','Set','Test','Export') -contains $_ } {
+                if ($ResourceType) {
+                    Write-Debug -Debug -Message "Using resource type override: $ResourceType"
+                    if ($ResourcePath) {
+                        Write-Debug -Debug -Message "Using resource path override: $ResourcePath"
+                        Import-Module -Name $ResourcePath -Global -Force -ErrorAction Stop
+                    }
+
+                    $dscResourceCache = Invoke-DscCacheRefresh -Module $ResourceType.Split('/')[0]
+                    if ($null -eq $dscResourceCache) {
+                        throw ("DSC resource '{0}' module not found." -f $ResourceType)
+                    }
+
+                    $desiredState = $psDscAdapter.invoke(   { param($jsonInput, $type) Get-DscResourceObject -jsonInput $jsonInput -type $type }, $jsonInput, $ResourceType )
+                    if ($null -eq $desiredState) {
+                        Write-Error 'Failed to create configuration object from provided input JSON.'
+                        exit 1
+                    }
+
+                    $desiredState.Type = $ResourceType
+                    $inDesiredState = $true
+                    $actualState = $psDscAdapter.invoke( { param($op, $ds, $dscResourceCache) Invoke-DscOperation -Operation $op -DesiredState $ds -dscResourceCache $dscResourceCache }, $Operation, $desiredState, $dscResourceCache)
+                    if ($null -eq $actualState) {
+                        Write-Error -Message "Incomplete GET for resource $($desiredState.Name)"
+                        exit 1
+                    }
+                    if ($actualState.Properties.InDesiredState -eq $false) {
+                        $inDesiredState = $false
+                    }
+
+                    if ($Operation -in @('Set', 'Test')) {
+                        $actualState = $psDscAdapter.Invoke( { param($ds, $dscResourceCache) Invoke-DscOperation -Operation 'Get' -DesiredState $ds -dscResourceCache $dscResourceCache }, $desiredState, $dscResourceCache)
+                    }
+
+                    if ($Operation -eq 'Test') {
+                        $actualState.Properties | Add-Member -MemberType NoteProperty -Name _inDesiredState -Value $inDesiredState -Force
+                    }
+
+                    if ($Operation -eq 'Export') {
+                        foreach ($instance in $actualState) {
+                            $instance
+                        }
+                        exit 0
+                    }
+
+                    $result = $actualState.Properties
+                    return $result
                 }
 
-                $dscResourceCache = Invoke-DscCacheRefresh -Module $ResourceType.Split('/')[0]
-                if ($null -eq $dscResourceCache) {
-                    throw ("DSC resource '{0}' module not found." -f $ResourceType)
-                }
-
-                $desiredState = $psDscAdapter.invoke(   { param($jsonInput, $type) Get-DscResourceObject -jsonInput $jsonInput -type $type }, $jsonInput, $ResourceType )
+                $desiredState = $psDscAdapter.invoke(   { param($jsonInput) Get-DscResourceObject -jsonInput $jsonInput }, $jsonInput )
                 if ($null -eq $desiredState) {
                     Write-Error 'Failed to create configuration object from provided input JSON.'
                     exit 1
                 }
 
-                $desiredState.Type = $ResourceType
-                $inDesiredState = $true
-                $actualState = $psDscAdapter.invoke( { param($op, $ds, $dscResourceCache) Invoke-DscOperation -Operation $op -DesiredState $ds -dscResourceCache $dscResourceCache }, $Operation, $desiredState, $dscResourceCache)
-                if ($null -eq $actualState) {
-                    Write-Error 'Incomplete GET for resource ' + $desiredState.Name
+                # only need to cache the resources that are used
+                $dscResourceModules = $desiredState | ForEach-Object { $_.Type.Split('/')[0] }
+                if ($null -eq $dscResourceModules) {
+                    Write-Error 'Could not get list of DSC resource types from provided JSON.'
                     exit 1
                 }
-                if ($actualState.Properties.InDesiredState -eq $false) {
-                    $inDesiredState = $false
-                }
 
-                if ($Operation -in @('Set', 'Test')) {
-                    $actualState = $psDscAdapter.Invoke( { param($ds, $dscResourceCache) Invoke-DscOperation -Operation 'Get' -DesiredState $ds -dscResourceCache $dscResourceCache }, $desiredState, $dscResourceCache)
-                }
+                # get unique module names from the desiredState input
+                $moduleInput = $desiredState | Select-Object -ExpandProperty Type | Sort-Object -Unique
 
-                if ($Operation -eq 'Test') {
-                    $actualState.Properties | Add-Member -MemberType NoteProperty -Name _inDesiredState -Value $inDesiredState -Force
-                }
+                # refresh the cache with the modules that are available on the system
+                $dscResourceCache = Invoke-DscCacheRefresh -module $dscResourceModules
 
-                if ($Operation -eq 'Export') {
-                    foreach ($instance in $actualState) {
-                        $instance
+                # check if all the desired modules are in the cache
+                $moduleInput | ForEach-Object {
+                    if ($dscResourceCache.type -notcontains $_) {
+                        Write-Error ("DSC resource '{0}' module not found." -f $_)
+                        exit 1
                     }
-                    exit 0
                 }
 
-                $result = $actualState.Properties
+                $inDesiredState = $true
+                foreach ($ds in $desiredState) {
+                    # process the INPUT (desiredState) for each resource as dscresourceInfo and return the OUTPUT as actualState
+                    $actualState = $psDscAdapter.invoke( { param($op, $ds, $dscResourceCache) Invoke-DscOperation -Operation $op -DesiredState $ds -dscResourceCache $dscResourceCache }, $Operation, $ds, $dscResourceCache)
+                    if ($null -eq $actualState) {
+                        Write-Error ("Failed to invoke operation '{0}' for resource name '{1}'." -f $Operation, $ds.Name)
+                        exit 1
+                    }
+                    if ($null -ne $actualState.Properties -and $actualState.Properties.InDesiredState -eq $false) {
+                        $inDesiredState = $false
+                    }
+                    $result += $actualState
+                }
+
+                # OUTPUT json to stderr for debug, and to stdout
+                if ($Operation -eq 'Test') {
+                    $result = @{ result = $result; _inDesiredState = $inDesiredState }
+                }
+                else {
+                    $result = @{ result = $result }
+                }
                 return $result
             }
-
-            $desiredState = $psDscAdapter.invoke(   { param($jsonInput) Get-DscResourceObject -jsonInput $jsonInput }, $jsonInput )
-            if ($null -eq $desiredState) {
-                Write-Error 'Failed to create configuration object from provided input JSON.'
-                exit 1
+            Default {
+                Write-Error 'Unsupported operation. Please use one of the following: List, Get, Set, Test, Export, ClearCache'
             }
-
-            # only need to cache the resources that are used
-            $dscResourceModules = $desiredState | ForEach-Object { $_.Type.Split('/')[0] }
-            if ($null -eq $dscResourceModules) {
-                Write-Error 'Could not get list of DSC resource types from provided JSON.'
-                exit 1
-            }
-
-            # get unique module names from the desiredState input
-            $moduleInput = $desiredState | Select-Object -ExpandProperty Type | Sort-Object -Unique
-
-            # refresh the cache with the modules that are available on the system
-            $dscResourceCache = Invoke-DscCacheRefresh -module $dscResourceModules
-
-            # check if all the desired modules are in the cache
-            $moduleInput | ForEach-Object {
-                if ($dscResourceCache.type -notcontains $_) {
-                    Write-Error ("DSC resource '{0}' module not found." -f $_)
-                    exit 1
-                }
-            }
-
-            $inDesiredState = $true
-            foreach ($ds in $desiredState) {
-                # process the INPUT (desiredState) for each resource as dscresourceInfo and return the OUTPUT as actualState
-                $actualState = $psDscAdapter.invoke( { param($op, $ds, $dscResourceCache) Invoke-DscOperation -Operation $op -DesiredState $ds -dscResourceCache $dscResourceCache }, $Operation, $ds, $dscResourceCache)
-                if ($null -eq $actualState) {
-                    Write-Error ("Failed to invoke operation '{0}' for resource name '{1}'." -f $Operation, $ds.Name)
-                    exit 1
-                }
-                if ($null -ne $actualState.Properties -and $actualState.Properties.InDesiredState -eq $false) {
-                    $inDesiredState = $false
-                }
-                $result += $actualState
-            }
-
-            # OUTPUT json to stderr for debug, and to stdout
-            if ($Operation -eq 'Test') {
-                $result = @{ result = $result; _inDesiredState = $inDesiredState }
-            }
-            else {
-                $result = @{ result = $result }
-            }
-            return $result
         }
-        Default {
-            Write-Error 'Unsupported operation. Please use one of the following: List, Get, Set, Test, Export, ClearCache'
-        }
-    }
 
-    # output format for resource list
-    class resourceOutput {
-        [string] $type
-        [string] $kind
-        [string] $version
-        [string[]] $capabilities
-        [string] $path
-        [string] $directory
-        [string] $implementedAs
-        [string] $author
-        [string[]] $properties
-        [string] $requireAdapter
-        [string] $description
-        [hashtable] $schema
+        # output format for resource list
+        class resourceOutput {
+            [string] $type
+            [string] $kind
+            [string] $version
+            [string[]] $capabilities
+            [string] $path
+            [string] $directory
+            [string] $implementedAs
+            [string] $author
+            [string[]] $properties
+            [string] $requireAdapter
+            [string] $description
+            [hashtable] $schema
+        }
     }
 }).AddParameter('Operation', $Operation).AddParameter('jsonInput', $jsonInput).AddParameter('ResourceType', $ResourceType).AddParameter('ResourcePath', $ResourcePath).AddParameter('ScriptRoot', $PSScriptRoot)
 
