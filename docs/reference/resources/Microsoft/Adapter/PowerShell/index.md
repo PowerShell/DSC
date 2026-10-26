@@ -82,7 +82,7 @@ for each platform.
 |  macOS   | `$HOME/.dsc/PSAdapterCache.json`         |
 | Windows  | `%LOCALAPPDATA%\dsc\PSAdapterCache.json` |
 
-The adapter versions the cache. The current version is `2`. If the version of the cache on a
+The adapter versions the cache. The current version is `4`. If the version of the cache on a
 machine differs from the current version, the adapter refreshes the cache.
 
 The adapter checks whether the cache is stale on each run and refreshes it if:
@@ -160,14 +160,18 @@ configuration document with the following exceptions:
    For more information about type names in DSC, see
    [DSC Resource fully qualified type name schema reference][07].
 
-1. The `properties` field for the instance is validated at runtime when the adapter tries to invoke
-   the adapted PSDSC resource instance. This adapter doesn't support static linting for adapted
-   instance properties in a configuration document.
+1. Discovered resources include an embedded JSON schema describing their DSC properties. DSC uses
+   this schema to validate property types, key and mandatory properties, and enumeration values
+   before invoking the resource. You can retrieve the schema with `dsc resource schema`.
 
    Each property name must be a configurable property of the PSDSC resource. The property name
    isn't case sensitive. The value for each property must be valid for that property. If you
    specify an invalid property name or value, the adapter raises an error when it tries to invoke
    the resource.
+
+   Property names and enumeration values remain case insensitive. Custom and embedded property
+   types without a known JSON representation are validated by the underlying PowerShell resource.
+   The adapter doesn't implement a separate `validate` operation.
 
 ## Exit codes
 

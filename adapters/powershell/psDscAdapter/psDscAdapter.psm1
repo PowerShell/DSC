@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-$script:CurrentCacheSchemaVersion = 3
+$script:CurrentCacheSchemaVersion = 4
 $ErrorActionPreference = 'Stop'
 
 function Import-PSDSCModule {
@@ -67,7 +67,7 @@ function Add-AstMembers {
             if ($attr.TypeName.Name -eq 'DscProperty') {
                 $skipProperty = $false
                 foreach ($attrArg in $attr.NamedArguments) {
-                    if ($attrArg.ArgumentName -eq 'Key') {
+                    if ($attrArg.ArgumentName -in @('Key', 'Mandatory') -and $attrArg.Argument.SafeGetValue()) {
                         $isKeyProperty = $true
                         break
                     }
@@ -82,6 +82,15 @@ function Add-AstMembers {
         $prop.Name = $property.Name
         $prop.PropertyType = $property.PropertyType.TypeName.Name
         $prop.IsMandatory = $isKeyProperty
+        $enumType = $AllTypeDefinitions | Where-Object { $_.IsEnum -and $_.Name -eq ($prop.PropertyType -replace '\[\]$', '') }
+        if ($enumType) {
+            $prop.Values = @($enumType.Members.Name)
+        }
+        foreach ($attr in $property.Attributes) {
+            if ($attr.TypeName.Name -eq 'ValidateSet') {
+                $prop.Values = @($attr.PositionalArguments | ForEach-Object { $_.SafeGetValue() })
+            }
+        }
         $Properties.Add($prop)
     }
 }

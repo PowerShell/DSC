@@ -3,7 +3,7 @@
 
 $global:ProgressPreference = 'SilentlyContinue'
 $ErrorActionPreference = 'Stop'
-$script:CurrentCacheSchemaVersion = 1
+$script:CurrentCacheSchemaVersion = 2
 
 trap {
     Write-Error ($_ | Format-List -Force | Out-String)
@@ -713,7 +713,7 @@ function GetClassBasedProperties {
                 if ($attr.TypeName.Name -eq 'DscProperty') {
                     $skipProperty = $false
                     foreach ($attrArg in $attr.NamedArguments) {
-                        if ($attrArg.ArgumentName -eq 'Key') {
+                        if ($attrArg.ArgumentName -in @('Key', 'Mandatory') -and $attrArg.Argument.SafeGetValue()) {
                             $isKeyProperty = $true
                             break
                         }
@@ -728,6 +728,15 @@ function GetClassBasedProperties {
             $prop.Name = $property.Name
             $prop.PropertyType = $property.PropertyType.TypeName.Name
             $prop.IsMandatory = $isKeyProperty
+            $enumType = $typeDefinitions | Where-Object { $_.IsEnum -and $_.Name -eq ($prop.PropertyType -replace '\[\]$', '') }
+            if ($enumType) {
+                $prop.Values = @($enumType.Members.Name)
+            }
+            foreach ($attr in $property.Attributes) {
+                if ($attr.TypeName.Name -eq 'ValidateSet') {
+                    $prop.Values = @($attr.PositionalArguments | ForEach-Object { $_.SafeGetValue() })
+                }
+            }
             $properties.Add($prop)
         }
         return $properties

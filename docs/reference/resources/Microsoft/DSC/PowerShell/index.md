@@ -68,7 +68,7 @@ for each platform.
 |  macOS   | `$HOME/.dsc/PSAdapterCache.json`         |
 | Windows  | `%LOCALAPPDATA%\dsc\PSAdapterCache.json` |
 
-The adapter versions the cache. The current version is `2`. If the version of the cache on a
+The adapter versions the cache. The current version is `4`. If the version of the cache on a
 machine differs from the current version, the adapter refreshes the cache.
 
 The adapter checks whether the cache is stale on each run and refreshes it if:

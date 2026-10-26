@@ -31,6 +31,10 @@ Describe 'PowerShell adapter resource tests' {
         ($resources | Where-Object { $_.Type -eq 'TestClassResource/TestClassResource' }).Count | Should -Be 1
         ($resources | Where-Object -Property type -EQ 'TestClassResource/TestClassResource').capabilities | Should -BeIn @('get', 'set', 'test', 'export')
         ($resources | Where-Object -Property type -EQ 'TestClassResource/NoExport').capabilities | Should -BeIn @('get', 'set', 'test')
+        $resourceSchema = ($resources | Where-Object -Property type -EQ 'TestClassResource/TestClassResource').schema
+        $resourceSchema.type | Should -BeExactly 'object'
+        $resourceSchema.properties.BaseProperty.type | Should -Contain 'string'
+        $resourceSchema.properties.PSObject.Properties.Name | Should -Not -Contain 'NonDscProperty'
     }
 
     It 'Get works on class-based resource' {
