@@ -96,17 +96,12 @@ impl Bridge {
         if class.partitions.iter().any(|p| p == expected) {
             Ok(())
         } else {
-            Err(AdapterError::Resource(
-                t!(
-                    if system {
-                        "adapter.userRequired"
-                    } else {
-                        "adapter.systemRequired"
-                    },
-                    name = class.name
-                )
-                .to_string(),
-            ))
+            let message = if system {
+                t!("adapter.userRequired", name = class.name)
+            } else {
+                t!("adapter.systemRequired", name = class.name)
+            };
+            Err(AdapterError::Resource(message.to_string()))
         }
     }
 
