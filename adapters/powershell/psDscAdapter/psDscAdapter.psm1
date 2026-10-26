@@ -264,181 +264,181 @@ function Invoke-DscCacheRefresh {
     )
 
     process {
-    # if the module is already imported and has DSC resources, we can skip refreshing the cache and return the resources directly
-    if ($Module -and $Module.Count -eq 1) {
-        $importedModule = Get-Module -Name $Module -ErrorAction Ignore
-        if ($null -ne $importedModule -and $importedModule.ExportedDscResources.Count -gt 0) {
-            [dscResourceCacheEntry[]]$dscResourceCacheEntries = [System.Collections.Generic.List[Object]]::new()
-            $DscResources = [System.Collections.Generic.List[DscResourceInfo]]::new()
-            [System.Collections.Generic.List[DscResourceInfo]]$r = LoadPowerShellClassResourcesFromModule -moduleInfo $importedModule
-            if ($r) {
-                $DscResources.AddRange($r)
-            }
-            foreach ($dscResource in $DscResources) {
-                $moduleName = $dscResource.ModuleName
-                $dscResourceCacheEntries += [dscResourceCacheEntry]@{
-                    Type            = "$moduleName/$($dscResource.Name)"
-                    DscResourceInfo = $dscResource
-                    LastWriteTimes  = [pscustomobject]@{} # we aren't caching file timestamps in this fast path
+        # if the module is already imported and has DSC resources, we can skip refreshing the cache and return the resources directly
+        if ($Module -and $Module.Count -eq 1) {
+            $importedModule = Get-Module -Name $Module -ErrorAction Ignore
+            if ($null -ne $importedModule -and $importedModule.ExportedDscResources.Count -gt 0) {
+                [dscResourceCacheEntry[]]$dscResourceCacheEntries = [System.Collections.Generic.List[Object]]::new()
+                $DscResources = [System.Collections.Generic.List[DscResourceInfo]]::new()
+                [System.Collections.Generic.List[DscResourceInfo]]$r = LoadPowerShellClassResourcesFromModule -moduleInfo $importedModule
+                if ($r) {
+                    $DscResources.AddRange($r)
                 }
+                foreach ($dscResource in $DscResources) {
+                    $moduleName = $dscResource.ModuleName
+                    $dscResourceCacheEntries += [dscResourceCacheEntry]@{
+                        Type            = "$moduleName/$($dscResource.Name)"
+                        DscResourceInfo = $dscResource
+                        LastWriteTimes  = [pscustomobject]@{} # we aren't caching file timestamps in this fast path
+                    }
+                }
+                return $dscResourceCacheEntries
             }
-            return $dscResourceCacheEntries
         }
-    }
 
-    $refreshCache = $false
+        $refreshCache = $false
 
-    $cacheFilePath = if ($IsWindows) {
-        # PS 6+ on Windows
+        $cacheFilePath = if ($IsWindows) {
+            # PS 6+ on Windows
             Join-Path -Path $env:LocalAppData -ChildPath "dsc\PSAdapterCache.json"
-    }
-    else {
-        # PS 6+ on Linux/Mac
+        }
+        else {
+            # PS 6+ on Linux/Mac
             Join-Path -Path $env:HOME -ChildPath ".dsc\PSAdapterCache.json"
-    }
+        }
 
-    if (Test-Path $cacheFilePath) {
+        if (Test-Path $cacheFilePath) {
             Write-Verbose -Verbose -Message "Reading from Get-DscResource cache file $cacheFilePath"
 
             $cache = Get-Content -Raw -Path $cacheFilePath | ConvertFrom-Json
 
-        if ($cache.CacheSchemaVersion -ne $script:CurrentCacheSchemaVersion) {
-            $refreshCache = $true
+            if ($cache.CacheSchemaVersion -ne $script:CurrentCacheSchemaVersion) {
+                $refreshCache = $true
                 $msg = "Incompatible version of cache in file '{0}' (expected '{1}')" -f @(
                     $cache.CacheSchemaVersion
                     $script:CurrentCacheSchemaVersion
                 )
                 Write-Verbose -Verbose -Message $msg
-        }
-        else {
-            $dscResourceCacheEntries = $cache.ResourceCache
-
-            if ($dscResourceCacheEntries.Count -eq 0) {
-                # if there is nothing in the cache file - refresh cache
-                $refreshCache = $true
-
-                    Write-Debug -Debug -Message "Filtered DscResourceCache cache is empty"
             }
             else {
+                $dscResourceCacheEntries = $cache.ResourceCache
+
+                if ($dscResourceCacheEntries.Count -eq 0) {
+                    # if there is nothing in the cache file - refresh cache
+                    $refreshCache = $true
+
+                    Write-Debug -Debug -Message "Filtered DscResourceCache cache is empty"
+                }
+                else {
                     Write-Debug -Debug -Message "Checking cache for stale entries"
 
-                foreach ($cacheEntry in $dscResourceCacheEntries) {
+                    foreach ($cacheEntry in $dscResourceCacheEntries) {
 
-                    $cacheEntry.LastWriteTimes.PSObject.Properties | ForEach-Object {
+                        $cacheEntry.LastWriteTimes.PSObject.Properties | ForEach-Object {
 
-                        if (Test-Path $_.Name) {
-                            $file_LastWriteTime = (Get-Item $_.Name).LastWriteTime
-                            # Truncate DateTime to seconds
-                            $file_LastWriteTime = $file_LastWriteTime.AddTicks( - ($file_LastWriteTime.Ticks % [TimeSpan]::TicksPerSecond));
+                            if (Test-Path $_.Name) {
+                                $file_LastWriteTime = (Get-Item $_.Name).LastWriteTime
+                                # Truncate DateTime to seconds
+                                $file_LastWriteTime = $file_LastWriteTime.AddTicks( - ($file_LastWriteTime.Ticks % [TimeSpan]::TicksPerSecond));
 
-                            $cache_LastWriteTime = [DateTime]$_.Value
-                            # Truncate DateTime to seconds
-                            $cache_LastWriteTime = $cache_LastWriteTime.AddTicks( - ($cache_LastWriteTime.Ticks % [TimeSpan]::TicksPerSecond));
+                                $cache_LastWriteTime = [DateTime]$_.Value
+                                # Truncate DateTime to seconds
+                                $cache_LastWriteTime = $cache_LastWriteTime.AddTicks( - ($cache_LastWriteTime.Ticks % [TimeSpan]::TicksPerSecond));
 
-                            if (-not ($file_LastWriteTime.Equals($cache_LastWriteTime))) {
+                                if (-not ($file_LastWriteTime.Equals($cache_LastWriteTime))) {
                                     Write-Debug -Debug -Message "Detected stale cache entry '$($_.Name)'"
                                     [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                                         'PSUseDeclaredVarsMoreThanAssignments',
                                         '',
                                         Justification = 'False positive'
                                     )]
+                                    $refreshCache = $true
+                                    break
+                                }
+                            }
+                            else {
+                                Write-Debug -Debug -Message "Detected non-existent cache entry '$($_.Name)'"
                                 $refreshCache = $true
                                 break
                             }
                         }
-                        else {
-                                Write-Debug -Debug -Message "Detected non-existent cache entry '$($_.Name)'"
-                            $refreshCache = $true
-                            break
-                        }
+
+                        if ($refreshCache) { break }
                     }
 
-                    if ($refreshCache) { break }
-                }
-
-                if (-not $refreshCache) {
+                    if (-not $refreshCache) {
                         Write-Debug -Debug -Message "Checking cache for stale PSModulePath"
 
-                    $m = $env:PSModulePath.Split([IO.Path]::PathSeparator, [System.StringSplitOptions]::RemoveEmptyEntries) | ForEach-Object { Get-ChildItem -Directory -LiteralPath $_ -Depth 1 -ErrorAction Ignore }
+                        $m = $env:PSModulePath.Split([IO.Path]::PathSeparator, [System.StringSplitOptions]::RemoveEmptyEntries) | ForEach-Object { Get-ChildItem -Directory -LiteralPath $_ -Depth 1 -ErrorAction Ignore }
 
-                    $hs_cache = [System.Collections.Generic.HashSet[string]]($cache.PSModulePaths)
-                    $hs_live = [System.Collections.Generic.HashSet[string]]($m.FullName)
-                    $hs_cache.SymmetricExceptWith($hs_live)
-                    $diff = $hs_cache
+                        $hs_cache = [System.Collections.Generic.HashSet[string]]($cache.PSModulePaths)
+                        $hs_live = [System.Collections.Generic.HashSet[string]]($m.FullName)
+                        $hs_cache.SymmetricExceptWith($hs_live)
+                        $diff = $hs_cache
 
                         Write-Debug -Debug -Message "PSModulePath diff '$diff'"
-                    if ($diff.Count -gt 0) {
-                        $refreshCache = $true
+                        if ($diff.Count -gt 0) {
+                            $refreshCache = $true
+                        }
                     }
                 }
             }
         }
-    }
-    else {
+        else {
             Write-Verbose -Verbose -Message "Cache file not found '$cacheFilePath'"
-        $refreshCache = $true
-    }
+            $refreshCache = $true
+        }
 
-    if ($refreshCache) {
+        if ($refreshCache) {
             Write-Verbose -Verbose -Message "Constructing Get-DscResource cache"
 
-        # create a list object to store cache of Get-DscResource
-        [dscResourceCacheEntry[]]$dscResourceCacheEntries = [System.Collections.Generic.List[Object]]::new()
+            # create a list object to store cache of Get-DscResource
+            [dscResourceCacheEntry[]]$dscResourceCacheEntries = [System.Collections.Generic.List[Object]]::new()
 
-        $DscResources = [System.Collections.Generic.List[DscResourceInfo]]::new()
+            $DscResources = [System.Collections.Generic.List[DscResourceInfo]]::new()
             $dscResourceModulePsd1s = Get-DscModuleManifestList
-        if ($null -ne $dscResourceModulePsd1s) {
-            $modules = Get-Module -ListAvailable -Name ($dscResourceModulePsd1s) -ErrorAction Ignore
-            $processedModuleNames = @{}
-            foreach ($mod in $modules) {
-                if (-not ($processedModuleNames.ContainsKey($mod.Name))) {
-                    $processedModuleNames.Add($mod.Name, $true)
+            if ($null -ne $dscResourceModulePsd1s) {
+                $modules = Get-Module -ListAvailable -Name ($dscResourceModulePsd1s) -ErrorAction Ignore
+                $processedModuleNames = @{}
+                foreach ($mod in $modules) {
+                    if (-not ($processedModuleNames.ContainsKey($mod.Name))) {
+                        $processedModuleNames.Add($mod.Name, $true)
 
-                    # from several modules with the same name select the one with the highest version
-                    $selectedMod = $modules | Where-Object Name -EQ $mod.Name
-                    if ($selectedMod.Count -gt 1) {
+                        # from several modules with the same name select the one with the highest version
+                        $selectedMod = $modules | Where-Object Name -EQ $mod.Name
+                        if ($selectedMod.Count -gt 1) {
                             Write-Debug -Debug -Message "Found $($selectedMod.Count) modules with name '$($mod.Name)'"
-                        $selectedMod = $selectedMod | Sort-Object -Property Version -Descending | Select-Object -First 1
-                    }
+                            $selectedMod = $selectedMod | Sort-Object -Property Version -Descending | Select-Object -First 1
+                        }
 
-                    [System.Collections.Generic.List[DscResourceInfo]]$r = LoadPowerShellClassResourcesFromModule -moduleInfo $selectedMod
-                    if ($r) {
-                        $DscResources.AddRange($r)
+                        [System.Collections.Generic.List[DscResourceInfo]]$r = LoadPowerShellClassResourcesFromModule -moduleInfo $selectedMod
+                        if ($r) {
+                            $DscResources.AddRange($r)
+                        }
                     }
                 }
             }
-        }
 
-        foreach ($dscResource in $DscResources) {
-            $moduleName = $dscResource.ModuleName
+            foreach ($dscResource in $DscResources) {
+                $moduleName = $dscResource.ModuleName
 
-            # fill in resource files (and their last-write-times) that will be used for up-do-date checks
-            $lastWriteTimes = @{}
-            Get-ChildItem -Recurse -File -LiteralPath $dscResource.ParentPath -Include "*.ps1", "*.psd1", "*.psm1", "*.mof" -ErrorAction Ignore | ForEach-Object {
-                $lastWriteTimes.Add($_.FullName, $_.LastWriteTime)
+                # fill in resource files (and their last-write-times) that will be used for up-do-date checks
+                $lastWriteTimes = @{}
+                Get-ChildItem -Recurse -File -LiteralPath $dscResource.ParentPath -Include "*.ps1", "*.psd1", "*.psm1", "*.mof" -ErrorAction Ignore | ForEach-Object {
+                    $lastWriteTimes.Add($_.FullName, $_.LastWriteTime)
+                }
+
+                $dscResourceCacheEntries += [dscResourceCacheEntry]@{
+                    Type            = "$moduleName/$($dscResource.Name)"
+                    DscResourceInfo = $dscResource
+                    LastWriteTimes  = $lastWriteTimes
+                }
             }
 
-            $dscResourceCacheEntries += [dscResourceCacheEntry]@{
-                Type            = "$moduleName/$($dscResource.Name)"
-                DscResourceInfo = $dscResource
-                LastWriteTimes  = $lastWriteTimes
-            }
-        }
+            [dscResourceCache]$cache = [dscResourceCache]::new()
+            $cache.ResourceCache = $dscResourceCacheEntries
+            $m = $env:PSModulePath.Split([IO.Path]::PathSeparator, [System.StringSplitOptions]::RemoveEmptyEntries) | ForEach-Object { Get-ChildItem -Directory -LiteralPath $_ -Depth 1 -ErrorAction Ignore }
+            $cache.PSModulePaths = $m.FullName
+            $cache.CacheSchemaVersion = $script:CurrentCacheSchemaVersion
 
-        [dscResourceCache]$cache = [dscResourceCache]::new()
-        $cache.ResourceCache = $dscResourceCacheEntries
-        $m = $env:PSModulePath.Split([IO.Path]::PathSeparator, [System.StringSplitOptions]::RemoveEmptyEntries) | ForEach-Object { Get-ChildItem -Directory -LiteralPath $_ -Depth 1 -ErrorAction Ignore }
-        $cache.PSModulePaths = $m.FullName
-        $cache.CacheSchemaVersion = $script:CurrentCacheSchemaVersion
-
-        # save cache for future use
-        # TODO: replace this with a high-performance serializer
+            # save cache for future use
+            # TODO: replace this with a high-performance serializer
             Write-Debug -Debug -Message "Saving Get-DscResource cache to '$cacheFilePath'"
-        $jsonCache = $cache | ConvertTo-Json -Depth 90
-        New-Item -Force -Path $cacheFilePath -Value $jsonCache -Type File | Out-Null
-    }
+            $jsonCache = $cache | ConvertTo-Json -Depth 90
+            New-Item -Force -Path $cacheFilePath -Value $jsonCache -Type File | Out-Null
+        }
 
-    return $dscResourceCacheEntries
+        return $dscResourceCacheEntries
     }
 }
 
@@ -452,28 +452,28 @@ function Get-DscResourceObject {
     )
 
     process {
-    # normalize the INPUT object to an array of dscResourceObject objects
-    $inputObj = $jsonInput | ConvertFrom-Json
-    if ($type) {
-        $desiredState = [dscResourceObject]@{
-            name       = ''
-            type       = $type
-            properties = $inputObj
-        }
-    }
-    else {
-        $desiredState = [System.Collections.Generic.List[Object]]::new()
-
-        $inputObj.resources | ForEach-Object -Process {
-            $desiredState += [dscResourceObject]@{
-                name       = $_.name
-                type       = $_.type
-                properties = $_.properties
+        # normalize the INPUT object to an array of dscResourceObject objects
+        $inputObj = $jsonInput | ConvertFrom-Json
+        if ($type) {
+            $desiredState = [dscResourceObject]@{
+                name       = ''
+                type       = $type
+                properties = $inputObj
             }
         }
-    }
+        else {
+            $desiredState = [System.Collections.Generic.List[Object]]::new()
 
-    return $desiredState
+            $inputObj.resources | ForEach-Object -Process {
+                $desiredState += [dscResourceObject]@{
+                    name       = $_.name
+                    type       = $_.type
+                    properties = $_.properties
+                }
+            }
+        }
+
+        return $desiredState
     }
 }
 
@@ -495,82 +495,82 @@ function Invoke-DscOperation {
     )
 
     process {
-    $osVersion = [System.Environment]::OSVersion.VersionString
+        $osVersion = [System.Environment]::OSVersion.VersionString
         Write-Debug -Debug -Message "OS version: $osVersion"
 
-    $psVersion = $PSVersionTable.PSVersion.ToString()
+        $psVersion = $PSVersionTable.PSVersion.ToString()
         Write-Debug -Debug -Message "PowerShell version: $psVersion"
 
-    # get details from cache about the DSC resource, if it exists
-    $cachedDscResourceInfo = $dscResourceCache | Where-Object Type -EQ $DesiredState.type | ForEach-Object DscResourceInfo | Select-Object -First 1
+        # get details from cache about the DSC resource, if it exists
+        $cachedDscResourceInfo = $dscResourceCache | Where-Object Type -EQ $DesiredState.type | ForEach-Object DscResourceInfo | Select-Object -First 1
 
-    # if the resource is found in the cache, get the actual state
-    if ($cachedDscResourceInfo) {
+        # if the resource is found in the cache, get the actual state
+        if ($cachedDscResourceInfo) {
 
-        # formated OUTPUT of each resource
-        $addToActualState = [dscResourceObject]@{}
+            # formated OUTPUT of each resource
+            $addToActualState = [dscResourceObject]@{}
 
-        # set top level properties of the OUTPUT object from INPUT object
-        $DesiredState.psobject.properties | ForEach-Object -Process {
-            if ($_.TypeNameOfValue -EQ 'System.String') { $addToActualState.$($_.Name) = $DesiredState.($_.Name) }
-        }
+            # set top level properties of the OUTPUT object from INPUT object
+            $DesiredState.psobject.properties | ForEach-Object -Process {
+                if ($_.TypeNameOfValue -EQ 'System.String') { $addToActualState.$($_.Name) = $DesiredState.($_.Name) }
+            }
 
-        # workaround: script based resources do not validate Get parameter consistency, so we need to remove any parameters the author chose not to include in Get-TargetResource
-        switch ([dscResourceType]$cachedDscResourceInfo.ImplementationDetail) {
+            # workaround: script based resources do not validate Get parameter consistency, so we need to remove any parameters the author chose not to include in Get-TargetResource
+            switch ([dscResourceType]$cachedDscResourceInfo.ImplementationDetail) {
 
-            'ClassBased' {
-                try {
-                    # load powershell class from external module
-                    $resource = GetTypeInstanceFromModule -modulename $cachedDscResourceInfo.ModuleName -classname $cachedDscResourceInfo.Name
-                    $dscResourceInstance = $resource::New()
+                'ClassBased' {
+                    try {
+                        # load powershell class from external module
+                        $resource = GetTypeInstanceFromModule -modulename $cachedDscResourceInfo.ModuleName -classname $cachedDscResourceInfo.Name
+                        $dscResourceInstance = $resource::New()
 
-                    $ValidProperties = $cachedDscResourceInfo.Properties.Name
+                        $ValidProperties = $cachedDscResourceInfo.Properties.Name
 
                         Write-Debug -Debug -Message "Valid properties: $($ValidProperties | ConvertTo-Json)"
 
-                    if ($DesiredState.properties) {
-                        # set each property of $dscResourceInstance to the value of the property in the $desiredState INPUT object
-                        $DesiredState.properties.psobject.properties | ForEach-Object -Process {
-                            # handle input objects by converting them to a hash table
-                            $validateProperty = $cachedDscResourceInfo.Properties | Where-Object -Property Name -EQ $_.Name
-                            if ($_.Value -is [System.Management.Automation.PSCustomObject]) {
-                                if ($validateProperty -and $validateProperty.PropertyType -in @('PSCredential', 'System.Management.Automation.PSCredential')) {
-                                $hasSecureCred =
-                                    $_.Value.PSObject.Properties['secureObject'] -and
-                                    $_.Value.secureObject.Username -and
-                                    $_.Value.secureObject.Password
+                        if ($DesiredState.properties) {
+                            # set each property of $dscResourceInstance to the value of the property in the $desiredState INPUT object
+                            $DesiredState.properties.psobject.properties | ForEach-Object -Process {
+                                # handle input objects by converting them to a hash table
+                                $validateProperty = $cachedDscResourceInfo.Properties | Where-Object -Property Name -EQ $_.Name
+                                if ($_.Value -is [System.Management.Automation.PSCustomObject]) {
+                                    if ($validateProperty -and $validateProperty.PropertyType -in @('PSCredential', 'System.Management.Automation.PSCredential')) {
+                                    $hasSecureCred =
+                                        $_.Value.PSObject.Properties['secureObject'] -and
+                                        $_.Value.secureObject.Username -and
+                                        $_.Value.secureObject.Password
 
-                                $hasTextCred =
-                                    $_.Value.Username -and
-                                    $_.Value.Password
+                                    $hasTextCred =
+                                        $_.Value.Username -and
+                                        $_.Value.Password
 
-                                    if (-not $hasSecureCred -and -not $hasTextCred) {
+                                        if (-not $hasSecureCred -and -not $hasTextCred) {
                                             Write-Error -Message "Credential object '$($_.Name)' requires both 'username' and 'password' properties"
-                                        exit 1
-                                    }
+                                            exit 1
+                                        }
 
-                                    if ($hasSecureCred) {
+                                        if ($hasSecureCred) {
                                         Write-Debug -Debug -Message "Credential object '$($_.Name)' - SecureObject"
 
-                                        $username = $_.Value.secureObject.Username
-                                        $password = $_.Value.secureObject.Password |
-                                            ConvertTo-SecureString -AsPlainText -Force
+                                            $username = $_.Value.secureObject.Username
+                                            $password = $_.Value.secureObject.Password |
+                                                ConvertTo-SecureString -AsPlainText -Force
 
-                                        $dscResourceInstance.$($_.Name) =
-                                            [System.Management.Automation.PSCredential]::new($username, $password)
-                                    }
-                                    elseif ($hasTextCred) {
+                                            $dscResourceInstance.$($_.Name) =
+                                                [System.Management.Automation.PSCredential]::new($username, $password)
+                                        }
+                                        elseif ($hasTextCred) {
                                             Write-Debug -Debug -Message "Credential object '$($_.Name)' - Text"
 
-                                        $username = $_.Value.Username
-                                        $password = $_.Value.Password |
-                                            ConvertTo-SecureString -AsPlainText -Force
+                                            $username = $_.Value.Username
+                                            $password = $_.Value.Password |
+                                                ConvertTo-SecureString -AsPlainText -Force
 
-                                        $dscResourceInstance.$($_.Name) =
-                                            [System.Management.Automation.PSCredential]::new($username, $password)
+                                            $dscResourceInstance.$($_.Name) =
+                                                [System.Management.Automation.PSCredential]::new($username, $password)
+                                        }
                                     }
-                                }
-                                else {
+                                    else {
                                         $dscResourceInstance.$($_.Name) = $_.Value.psobject.properties | ForEach-Object -Begin {
                                             [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
                                                 'PSUseDeclaredVarsMoreThanAssignments',
@@ -581,90 +581,90 @@ function Invoke-DscOperation {
                                         } -Process {
                                             $propertyHash[$_.Name] = $_.Value
                                         } -End { $propertyHash }
-                                }
-                            }
-                            else {
-                                if ($validateProperty -and $validateProperty.PropertyType -in @('SecureString', 'System.Security.SecureString') -and -not [string]::IsNullOrEmpty($_.Value)) {
-                                    $dscResourceInstance.$($_.Name) = ConvertTo-SecureString -AsPlainText $_.Value -Force
-                                } else {
-                                    $dscResourceInstance.$($_.Name) = $_.Value
-                                }
-                            }
-                        }
-                    }
-
-                    switch ($Operation) {
-                        'Get' {
-                            $Result = @{}
-                            $raw_obj = $dscResourceInstance.Get()
-                            $ValidProperties | ForEach-Object {
-                                if ($raw_obj.$_ -is [System.Enum]) {
-                                    $Result[$_] = $raw_obj.$_.ToString()
-
+                                    }
                                 }
                                 else {
-                                    $Result[$_] = $raw_obj.$_
+                                    if ($validateProperty -and $validateProperty.PropertyType -in @('SecureString', 'System.Security.SecureString') -and -not [string]::IsNullOrEmpty($_.Value)) {
+                                        $dscResourceInstance.$($_.Name) = ConvertTo-SecureString -AsPlainText $_.Value -Force
+                                    } else {
+                                        $dscResourceInstance.$($_.Name) = $_.Value
+                                    }
                                 }
                             }
-                            $addToActualState.properties = $Result
                         }
-                        'Set' {
-                            $dscResourceInstance.Set()
-                        }
-                        'Test' {
-                            $Result = $dscResourceInstance.Test()
-                            $addToActualState.properties = [psobject]@{'InDesiredState' = $Result }
-                        }
-                        'Export' {
-                            $t = $dscResourceInstance.GetType()
-                            $hasFilter = $null -ne $DesiredState.properties -and
-                            ($DesiredState.properties.PSObject.Properties | Measure-Object).Count -gt 0
 
-                            $method = GetExportMethod -ResourceType $t -HasFilterProperties $hasFilter -ResourceTypeName $DesiredState.Type
-
-                            $resultArray = @()
-                            if ($hasFilter) {
-                                $raw_obj_array = $method.Invoke($null, @($dscResourceInstance))
-                            } else {
-                                $raw_obj_array = $method.Invoke($null, $null)
-                            }
-
-                            foreach ($raw_obj in $raw_obj_array) {
-                                $Result_obj = @{}
+                        switch ($Operation) {
+                            'Get' {
+                                $Result = @{}
+                                $raw_obj = $dscResourceInstance.Get()
                                 $ValidProperties | ForEach-Object {
                                     if ($raw_obj.$_ -is [System.Enum]) {
-                                        $Result_obj[$_] = $raw_obj.$_.ToString()
+                                        $Result[$_] = $raw_obj.$_.ToString()
+
                                     }
                                     else {
-                                        $Result_obj[$_] = $raw_obj.$_
+                                        $Result[$_] = $raw_obj.$_
                                     }
                                 }
-                                $resultArray += $Result_obj
+                                $addToActualState.properties = $Result
                             }
-                            $addToActualState = $resultArray
+                            'Set' {
+                                $dscResourceInstance.Set()
+                            }
+                            'Test' {
+                                $Result = $dscResourceInstance.Test()
+                                $addToActualState.properties = [psobject]@{'InDesiredState' = $Result }
+                            }
+                            'Export' {
+                                $t = $dscResourceInstance.GetType()
+                                $hasFilter = $null -ne $DesiredState.properties -and
+                                ($DesiredState.properties.PSObject.Properties | Measure-Object).Count -gt 0
+
+                                $method = GetExportMethod -ResourceType $t -HasFilterProperties $hasFilter -ResourceTypeName $DesiredState.Type
+
+                                $resultArray = @()
+                                if ($hasFilter) {
+                                    $raw_obj_array = $method.Invoke($null, @($dscResourceInstance))
+                                } else {
+                                    $raw_obj_array = $method.Invoke($null, $null)
+                                }
+
+                                foreach ($raw_obj in $raw_obj_array) {
+                                    $Result_obj = @{}
+                                    $ValidProperties | ForEach-Object {
+                                        if ($raw_obj.$_ -is [System.Enum]) {
+                                            $Result_obj[$_] = $raw_obj.$_.ToString()
+                                        }
+                                        else {
+                                            $Result_obj[$_] = $raw_obj.$_
+                                        }
+                                    }
+                                    $resultArray += $Result_obj
+                                }
+                                $addToActualState = $resultArray
+                            }
                         }
                     }
-                }
-                catch {
+                    catch {
 
-                    Write-Error ('Exception: ' + $_.Exception.Message)
+                        Write-Error ('Exception: ' + $_.Exception.Message)
+                        exit 1
+                    }
+                }
+                Default {
+                    Write-Error ('Resource ImplementationDetail not supported: ' + $cachedDscResourceInfo.ImplementationDetail)
                     exit 1
                 }
             }
-            Default {
-                Write-Error ('Resource ImplementationDetail not supported: ' + $cachedDscResourceInfo.ImplementationDetail)
-                exit 1
-            }
-        }
 
             Write-Debug -Debug -Message "Output: $($addToActualState | ConvertTo-Json -Depth 10 -Compress)"
-        return $addToActualState
-    }
-    else {
-        $dsJSON = $DesiredState | ConvertTo-Json -Depth 10
-        Write-Error ('Can not find type "' + $DesiredState.type + '" for resource "' + $dsJSON + '". Please ensure that Get-DscResource returns this resource type.')
-        exit 1
-    }
+            return $addToActualState
+        }
+        else {
+            $dsJSON = $DesiredState | ConvertTo-Json -Depth 10
+            Write-Error ('Can not find type "' + $DesiredState.type + '" for resource "' + $dsJSON + '". Please ensure that Get-DscResource returns this resource type.')
+            exit 1
+        }
     }
 }
 
