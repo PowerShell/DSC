@@ -85,7 +85,7 @@ impl Bridge {
                     .chain(["_exist", "_inDesiredState"]).collect::<Vec<_>>(),
                 "requireAdapter": ADAPTER_TYPE,
                 "description": t!("adapter.description", name = class.name, partition = class.partitions.join(", ")),
-                "schema": {"embedded": class.schema()?}
+                "schema": class.schema()?
             }))
         }).collect()
     }
@@ -196,7 +196,22 @@ fn state(
         .iter()
         .filter(|p| p.readable && (!export || !class.writable() || p.key || p.writable))
     {
-        let value = object.get_property(&property.name)?;
+        let mut native_value = VARIANT::default();
+        let mut cim_type = 0;
+        unsafe {
+            object.inner.Get(
+                &HSTRING::from(&property.name),
+                0,
+                &raw mut native_value,
+                Some(&raw mut cim_type),
+                None,
+            )?;
+        }
+        // wmi's get_property converts null CIM arrays to empty arrays.
+        let value = match Variant::from_variant(&native_value)? {
+            Variant::Empty | Variant::Null => Variant::Null,
+            value => value.convert_into_cim_type(CIMTYPE_ENUMERATION(cim_type))?,
+        };
         state.insert(
             property.name.clone(),
             serde_json::to_value(value)
@@ -425,6 +440,52 @@ mod tests {
                 json!({"Setting":serde_json::from_value::<f32>(value).unwrap(), "_exist":true});
             let desired = normalize_input(&class, &input).unwrap();
             assert!(crate::model::diff(&desired, actual.as_object().unwrap()).is_empty());
+        }
+    }
+
+    #[test]
+    fn round_trips_null_and_populated_arrays_without_persisting_changes() {
+        let connection = WMIConnection::with_namespace_path(r"root\cimv2").unwrap();
+        let object = connection
+            .get_object("Win32_NetworkAdapterConfiguration")
+            .unwrap()
+            .spawn_instance()
+            .unwrap();
+        let class = Class {
+            name: "Win32_NetworkAdapterConfiguration".to_string(),
+            partitions: vec!["local-user".to_string()],
+            properties: vec![Property {
+                name: "IPAddress".to_string(),
+                cim_type: 8 | 0x2000,
+                key: false,
+                readable: true,
+                writable: true,
+            }],
+        };
+        for value in [Value::Null, json!(["192.0.2.1"]), Value::Null] {
+            let input = json!({"IPAddress": value}).as_object().unwrap().clone();
+            class.validate_set(&input).unwrap();
+            object
+                .put_property(
+                    "IPAddress",
+                    to_variant(&class.properties[0], &value).unwrap(),
+                )
+                .unwrap();
+            let actual = state(&class, &object, false).unwrap();
+            assert_eq!(actual["IPAddress"], value);
+            let desired = normalize_input(&class, &input).unwrap();
+            assert!(crate::model::diff(&desired, &actual).is_empty());
+
+            let exported = state(&class, &object, true).unwrap();
+            assert_eq!(exported["IPAddress"], value);
+            let exported = class
+                .parse_input(&serde_json::to_string(&exported).unwrap(), false)
+                .unwrap();
+            class.validate_set(&exported).unwrap();
+            assert_eq!(
+                to_variant(&class.properties[0], &exported["IPAddress"]).unwrap(),
+                to_variant(&class.properties[0], &value).unwrap()
+            );
         }
     }
 }

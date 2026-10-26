@@ -11,7 +11,6 @@ Describe 'Rust build and test project selection' {
             Mock Set-DefaultWorkspaceMemberGroup {}
             Mock Reset-DefaultWorkspaceMemberGroup {}
             Mock Get-DefaultWorkspaceMemberGroup { 'workspace defaults' }
-            Mock Test-ShouldSkipProject { $false }
             Mock Test-ShouldSkipProjectTesting { $false }
             Mock cargo { $global:LASTEXITCODE = 0 }
             $selected = [DscProjectDefinition]@{
@@ -72,6 +71,47 @@ Describe 'Rust build and test project selection' {
             Test-RustProject -Project $selected
 
             Should -Invoke cargo -Exactly 0
+        }
+
+        It 'Filters selected packages for explicit target <Architecture>' -ForEach @(
+            @{ Architecture = 'x86_64-unknown-linux-musl'; OperatingSystem = 'Linux'; UnsupportedOS = 'Windows' }
+            @{ Architecture = 'aarch64-unknown-linux-musl'; OperatingSystem = 'Linux'; UnsupportedOS = 'Windows' }
+            @{ Architecture = 'x86_64-unknown-linux-gnu'; OperatingSystem = 'Linux'; UnsupportedOS = 'Windows' }
+            @{ Architecture = 'aarch64-unknown-linux-gnu'; OperatingSystem = 'Linux'; UnsupportedOS = 'Windows' }
+            @{ Architecture = 'x86_64-pc-windows-msvc'; OperatingSystem = 'Windows'; UnsupportedOS = 'Linux' }
+            @{ Architecture = 'aarch64-pc-windows-msvc'; OperatingSystem = 'Windows'; UnsupportedOS = 'Linux' }
+            @{ Architecture = 'x86_64-apple-darwin'; OperatingSystem = 'MacOS'; UnsupportedOS = 'Windows' }
+            @{ Architecture = 'aarch64-apple-darwin'; OperatingSystem = 'MacOS'; UnsupportedOS = 'Windows' }
+        ) {
+            $selected.SupportedPlatformOS = [DscSupportedPlatformOS]$OperatingSystem
+            $unsupported = [DscProjectDefinition]@{
+                Name = 'unsupported'
+                IsRust = $true
+                SupportedPlatformOS = [DscSupportedPlatformOS]$UnsupportedOS
+            }
+            $projects = @($selected, $unsupported, $nonRust)
+
+            Build-RustProject -Project $projects -Architecture $Architecture
+            Test-RustProject -Project $projects -Architecture $Architecture
+
+            Should -Invoke cargo -Exactly 2 -ParameterFilter {
+                $args -contains '--target' -and $args -contains $Architecture -and
+                $args -contains 'selected-package' -and
+                $args -notcontains 'unsupported' -and $args -notcontains 'script'
+            }
+
+            Build-RustProject -Project $unsupported -Architecture $Architecture
+            Test-RustProject -Project $unsupported -Architecture $Architecture
+
+            Should -Invoke cargo -Exactly 2
+        }
+
+        It 'Accepts projects supporting multiple operating systems' {
+            $selected.SupportedPlatformOS = [DscSupportedPlatformOS]'Windows, Linux'
+            Build-RustProject -Project $selected -Architecture 'x86_64-unknown-linux-musl'
+            Test-RustProject -Project $selected -Architecture 'x86_64-pc-windows-msvc'
+
+            Should -Invoke cargo -Exactly 2 -ParameterFilter { $args -contains 'selected-package' }
         }
     }
 }

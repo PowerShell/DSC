@@ -1404,16 +1404,16 @@ function Test-ShouldSkipProject {
     begin {}
 
     process {
-        if ($Architecture -eq 'current') {
-            if ($Project.SupportedPlatformOS -eq [DscSupportedPlatformOS]::Windows) {
-                return -not $IsWindows
-            } elseif ($Project.SupportedPlatformOS -eq [DscSupportedPlatformOS]::MacOS) {
-                return -not $IsMacOS
-            } elseif ($Project.SupportedPlatformOS -eq [DscSupportedPlatformOS]::Linux) {
-                return -not $IsLinux
-            }
+        $operatingSystem = if ($Architecture -like '*-windows-*' -or ($Architecture -eq 'current' -and $IsWindows)) {
+            [DscSupportedPlatformOS]::Windows
+        } elseif ($Architecture -like '*-apple-darwin' -or ($Architecture -eq 'current' -and $IsMacOS)) {
+            [DscSupportedPlatformOS]::MacOS
+        } elseif ($Architecture -like '*-linux-*' -or ($Architecture -eq 'current' -and $IsLinux)) {
+            [DscSupportedPlatformOS]::Linux
+        } else {
+            throw "Unsupported architecture '$Architecture'"
         }
-        return $false
+        return -not $Project.SupportedPlatformOS.HasFlag($operatingSystem)
     }
 }
 

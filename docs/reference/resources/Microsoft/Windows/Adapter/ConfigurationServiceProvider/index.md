@@ -219,8 +219,8 @@ existence, and `false` otherwise. Do not include this property in desired input.
 
 ## Instance validating schema
 
-Each discovered resource includes an embedded schema generated from its installed class. CIM
-integer widths determine numeric ranges; Boolean values remain JSON booleans, string values
+Each discovered resource includes a JSON Schema directly in its `schema` field, generated from
+its installed class. CIM integer widths determine numeric ranges; Boolean values remain JSON booleans, string values
 remain strings, and CIM arrays become typed JSON arrays. Unknown properties and incompatible
 types are rejected. Non-key properties can be null.
 
@@ -229,7 +229,7 @@ To inspect an actual schema on the target machine:
 ```powershell
 $resource = dsc resource list 'Microsoft.Windows.CSP/MDM_Policy_Config01_Wifi02' `
     --adapter Microsoft.Windows.Adapter/ConfigurationServiceProvider | ConvertFrom-Json
-$resource.schema.embedded | ConvertTo-Json -Depth 20
+$resource.schema | ConvertTo-Json -Depth 20
 ```
 
 Keys are checked per operation rather than marked globally required in the schema, because export

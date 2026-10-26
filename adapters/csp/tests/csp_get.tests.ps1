@@ -17,16 +17,26 @@ Describe 'CSP get and discovery' -Skip:(!$IsWindows) {
         $resources | ForEach-Object {
             $_.type | Should -Match '^Microsoft\.Windows\.CSP/MDM_\w+$'
             $_.requireAdapter | Should -BeExactly $adapterType
-            $_.schema.embedded.additionalProperties | Should -BeFalse
+            $_.schema.type | Should -BeExactly 'object'
+            $_.schema.additionalProperties | Should -BeFalse
             $_.capabilities | Should -Contain 'get'
             $_.capabilities | Should -Contain 'test'
             $_.capabilities | Should -Contain 'export'
-            if (@($_.schema.embedded.properties.psobject.Properties |
+            if (@($_.schema.properties.psobject.Properties |
                 Where-Object { $_.Name -notin 'InstanceID', 'ParentID', '_exist', '_inDesiredState' -and
                     !$_.Value.readOnly }).Count -eq 0) {
                 $_.capabilities | Should -Not -Contain 'set'
             }
         }
+    }
+
+    It 'Returns an effective JSON Schema through DSC' {
+        $schema = dsc resource schema -r $resourceType 2>$TestDrive/error.log | Out-String
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+        $inputJson | Test-Json -Schema $schema | Should -BeTrue
+        '{"UnknownProperty":true}' | Test-Json -Schema $schema -ErrorAction Ignore | Should -BeFalse
+        '{"AllowEAPCertSSO":"not-an-integer"}' | Test-Json -Schema $schema -ErrorAction Ignore | Should -BeFalse
+        '{"AllowEAPCertSSO":2147483648}' | Test-Json -Schema $schema -ErrorAction Ignore | Should -BeFalse
     }
 
     It 'Gets the same current-user instance as the native bridge' {
