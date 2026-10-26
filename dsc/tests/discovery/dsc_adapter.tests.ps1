@@ -5,7 +5,7 @@ Describe 'Tests for adapter support' {
     Context 'Adapter support single resource' {
         BeforeAll {
             $OldPSModulePath = $env:PSModulePath
-            $env:PSModulePath += [System.IO.Path]::PathSeparator + (Resolve-Path "$PSScriptRoot/../../adapters/powershell/Tests")
+            $env:PSModulePath += [System.IO.Path]::PathSeparator + (Resolve-Path "$PSScriptRoot/../../../adapters/powershell/Tests")
         }
 
         AfterAll {

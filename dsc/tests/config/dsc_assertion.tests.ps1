@@ -10,7 +10,7 @@ Describe 'Assertion resource tests' -Skip:(!$IsWindows) {
 #        @{ operation = 'export' }
     ) {
         param($operation)
-        $jsonPath = Join-Path $PSScriptRoot '../examples/assertion.dsc.yaml'
+        $jsonPath = Join-Path $PSScriptRoot '../../examples/assertion.dsc.yaml'
         $out = dsc config $operation -f $jsonPath 2> "$TestDrive/trace.log"
         $LASTEXITCODE | Should -Be 2
         $out | Should -BeNullOrEmpty

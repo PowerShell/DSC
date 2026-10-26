@@ -254,7 +254,7 @@ resources:
     }
 
     It 'passing filepath to document arg should error' {
-        $configFile = Resolve-Path $PSScriptRoot/../examples/osinfo.dsc.json
+        $configFile = Resolve-Path $PSScriptRoot/../../examples/osinfo.dsc.json
         $stderr = dsc config get -i $configFile 2>&1
         $stderr | Should -Match '.*?--file.*?'
     }
@@ -312,7 +312,7 @@ resources:
     }
 
     It 'Invalid --system-root' {
-        dsc config --system-root /invalid/path get -f "$PSScriptRoot/../examples/groups.dsc.yaml" 2> $TestDrive/tracing.txt
+        dsc config --system-root /invalid/path get -f "$PSScriptRoot/../../examples/groups.dsc.yaml" 2> $TestDrive/tracing.txt
         $LASTEXITCODE | Should -Be 1
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Target path does not exist: '/invalid/path'"
     }

@@ -2856,8 +2856,8 @@ function Test-ProjectWithPester {
     [cmdletbinding()]
     param(
         [DscProjectDefinition[]]$Project,
-        [ValidateSet("dsc", "adapters", "extensions", "grammars", "resources")]
         [string[]]$Group,
+        [string[]]$ExcludePath,
         [switch]$UsingADO
     )
 
@@ -2929,6 +2929,9 @@ function Test-ProjectWithPester {
             Write-Verbose "Invoking pester for projects: [$($Project.Name -join ', ')]"
         } else {
             Write-Verbose "Invoking pester for all groups and projects"
+        }
+        if ($ExcludePath) {
+            $pesterParams.ExcludePath = $ExcludePath
         }
         Invoke-Pester @pesterParams
     }

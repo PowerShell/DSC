@@ -284,7 +284,7 @@ Describe 'Parameters tests' {
     ) {
       param($operation, $property)
 
-      $out = dsc -l trace config -f $PSScriptRoot/../examples/secure_parameters.parameters.yaml $operation -f $PSScriptRoot/../examples/secure_parameters.dsc.yaml 2> $TestDrive/error.log | ConvertFrom-Json
+      $out = dsc -l trace config -f $PSScriptRoot/../../examples/secure_parameters.parameters.yaml $operation -f $PSScriptRoot/../../examples/secure_parameters.dsc.yaml 2> $TestDrive/error.log | ConvertFrom-Json
       $LASTEXITCODE | Should -Be 0
       if ($operation -eq 'export') {
         $out.resources.Count | Should -Be 5
@@ -314,7 +314,7 @@ Describe 'Parameters tests' {
     ) {
       param($operation, $property)
 
-      $out = dsc config -f $PSScriptRoot/../examples/secure_parameters_shown.parameters.yaml $operation -f $PSScriptRoot/../examples/secure_parameters.dsc.yaml | ConvertFrom-Json
+      $out = dsc config -f $PSScriptRoot/../../examples/secure_parameters_shown.parameters.yaml $operation -f $PSScriptRoot/../../examples/secure_parameters.dsc.yaml | ConvertFrom-Json
       $LASTEXITCODE | Should -Be 0
       if ($operation -eq 'export') {
         $out.resources.Count | Should -Be 5 -Because ($out | ConvertTo-Json -Dep 10 | Out-String)
@@ -380,7 +380,7 @@ Describe 'Parameters tests' {
         }
       } | ConvertTo-Json -Compress
 
-      $out = $params | dsc config -f - test -f "$PSScriptRoot/../examples/osinfo_parameters.dsc.yaml" 2> $TestDrive/error.log | ConvertFrom-Json
+      $out = $params | dsc config -f - test -f "$PSScriptRoot/../../examples/osinfo_parameters.dsc.yaml" 2> $TestDrive/error.log | ConvertFrom-Json
       $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log | Out-String)
       $out.results[0].result.desiredState.family | Should -BeExactly 'Windows'
       $out.results[0].result.inDesiredState | Should -Be $IsWindows
@@ -464,7 +464,7 @@ Describe 'Parameters tests' {
         osFamily = 'Windows'
       } | ConvertTo-Json -Compress
 
-      $out = $params | dsc config -f - test -f "$PSScriptRoot/../examples/osinfo_parameters.dsc.yaml" 2> $TestDrive/error.log
+      $out = $params | dsc config -f - test -f "$PSScriptRoot/../../examples/osinfo_parameters.dsc.yaml" 2> $TestDrive/error.log
       $LASTEXITCODE | Should -Be 4
       $out | Should -BeNullOrEmpty
       $errorMessage = Get-Content -Path $TestDrive/error.log -Raw
