@@ -100,6 +100,10 @@ translate CSP URI paths into WMI class names. It does not apply XML/HTML encodin
 string payloads must follow the selected CSP's documented format. Provider errors are propagated.
 Operations are not transactional across resources.
 
+DSC passes operation input to the adapter over standard input, avoiding the Windows command-line
+length limit for large CSP XML and string payloads. The adapter's `--input -` option reads JSON
+from standard input; direct JSON arguments remain supported. Export without input uses no filters.
+
 The `wmi` crate converts an empty array to native `null` when writing. The adapter explicitly
 rejects empty-array writes instead of silently changing their meaning. A JSON `null` is a WMI
 null value, not a request to delete a CSP node; use `_exist: false` for instance deletion.

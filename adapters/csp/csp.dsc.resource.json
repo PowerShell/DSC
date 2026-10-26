@@ -17,16 +17,18 @@
         "args": [
             "get",
             {"resourceTypeArg": "--resource-type"},
-            {"jsonInputArg": "--input", "mandatory": true}
-        ]
+            "--input", "-"
+        ],
+        "input": "stdin"
     },
     "set": {
         "executable": "csp",
         "args": [
             "set",
             {"resourceTypeArg": "--resource-type"},
-            {"jsonInputArg": "--input", "mandatory": true}
+            "--input", "-"
         ],
+        "input": "stdin",
         "implementsPretest": false,
         "handlesExist": true,
         "return": "state"
@@ -36,8 +38,9 @@
         "args": [
             "test",
             {"resourceTypeArg": "--resource-type"},
-            {"jsonInputArg": "--input", "mandatory": true}
+            "--input", "-"
         ],
+        "input": "stdin",
         "return": "stateAndDiff"
     },
     "export": {
@@ -45,8 +48,9 @@
         "args": [
             "export",
             {"resourceTypeArg": "--resource-type"},
-            {"jsonInputArg": "--input", "mandatory": false}
-        ]
+            "--input", "-"
+        ],
+        "input": "stdin"
     },
     "exitCodes": {
         "0": "Success",

@@ -58,6 +58,28 @@ Describe 'CSP get and discovery' -Skip:(!$IsWindows) {
         }
     }
 
+    It 'Passes inputs larger than the Windows command-line limit to the adapter' {
+        if ($isSystem) {
+            Set-ItResult -Skipped -Because 'This test requires the current user rather than LocalSystem.'
+            return
+        }
+        $instanceID = 'DSC_CSP_Nonexistent_Instance'
+        $json = @{
+            ParentID = './Vendor/MSFT/Policy/Config'
+            InstanceID = $instanceID
+            StartLayout = '<LayoutModificationTemplate><!--' + ('x' * 40000) + '--></LayoutModificationTemplate>'
+        } | ConvertTo-Json -Compress
+        $json.Length | Should -BeGreaterThan 32767
+        $inputPath = Join-Path $TestDrive 'large-input.json'
+        Set-Content -LiteralPath $inputPath -Value $json -Encoding utf8
+        $out = dsc resource get -r 'Microsoft.Windows.CSP/MDM_Policy_User_Config01_Start02' `
+            -f $inputPath 2>$TestDrive/error.log
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+        $actual = ($out | ConvertFrom-Json).actualState
+        $actual.InstanceID | Should -BeExactly $instanceID
+        $actual._exist | Should -BeFalse
+    }
+
     It 'Rejects missing keys rather than getting an arbitrary instance' {
         '{}' | dsc resource get -r $resourceType -f - 2>$TestDrive/error.log
         $LASTEXITCODE | Should -Not -Be 0

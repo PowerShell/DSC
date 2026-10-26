@@ -13,7 +13,7 @@ use windows::{
         },
         System::{
             Threading::{GetCurrentProcess, GetCurrentThread, OpenProcessToken, OpenThreadToken},
-            Variant::VARIANT,
+            Variant::{VARIANT, VariantClear},
             Wmi::{CIMTYPE_ENUMERATION, IWbemQualifierSet, WBEM_E_NOT_FOUND},
         },
     },
@@ -22,6 +22,17 @@ use windows::{
 use wmi::{IWbemClassWrapper, Variant, WMIConnection};
 
 const NAMESPACE: &str = r"root\cimv2\mdm\dmmap";
+
+#[derive(Default)]
+struct SafeVariant(VARIANT);
+
+impl Drop for SafeVariant {
+    fn drop(&mut self) {
+        if let Err(error) = unsafe { VariantClear(&raw mut self.0) } {
+            crate::write_error(t!("adapter.variantClear", error = error).as_ref());
+        }
+    }
+}
 
 impl From<wmi::WMIError> for AdapterError {
     fn from(error: wmi::WMIError) -> Self {
@@ -35,8 +46,35 @@ impl From<windows::core::Error> for AdapterError {
     }
 }
 
-pub struct Bridge {
-    connection: WMIConnection,
+pub trait InstanceStore {
+    fn query(&self, query: &str) -> Result<Vec<IWbemClassWrapper>, AdapterError>;
+    fn spawn(&self, class: &str) -> Result<IWbemClassWrapper, AdapterError>;
+    fn put(&self, object: &IWbemClassWrapper) -> Result<(), AdapterError>;
+    fn delete(&self, object: &IWbemClassWrapper) -> Result<(), AdapterError>;
+}
+
+impl InstanceStore for WMIConnection {
+    fn query(&self, query: &str) -> Result<Vec<IWbemClassWrapper>, AdapterError> {
+        self.exec_query(query)?
+            .map(|object| object.map_err(AdapterError::from))
+            .collect()
+    }
+
+    fn spawn(&self, class: &str) -> Result<IWbemClassWrapper, AdapterError> {
+        Ok(self.get_object(class)?.spawn_instance()?)
+    }
+
+    fn put(&self, object: &IWbemClassWrapper) -> Result<(), AdapterError> {
+        Ok(self.put_instance(object)?)
+    }
+
+    fn delete(&self, object: &IWbemClassWrapper) -> Result<(), AdapterError> {
+        Ok(self.delete_instance(&object.path()?)?)
+    }
+}
+
+pub struct Bridge<S = WMIConnection> {
+    connection: S,
 }
 
 impl Bridge {
@@ -104,16 +142,15 @@ impl Bridge {
             Err(AdapterError::Resource(message.to_string()))
         }
     }
+}
 
+impl<S: InstanceStore> Bridge<S> {
     fn instances(
         &self,
         class: &Class,
         input: &Map<String, Value>,
     ) -> Result<Vec<IWbemClassWrapper>, AdapterError> {
-        self.connection
-            .exec_query(class.query(input))?
-            .map(|object| object.map_err(AdapterError::from))
-            .collect()
+        self.connection.query(&class.query(input))
     }
 
     fn instance(
@@ -150,12 +187,12 @@ impl Bridge {
         let object = self.instance(class, input)?;
         if input.get("_exist") == Some(&json!(false)) {
             if let Some(object) = object {
-                self.connection.delete_instance(&object.path()?)?;
+                self.connection.delete(&object)?;
             }
         } else {
             let object = match object {
                 Some(object) => object,
-                None => self.connection.get_object(&class.name)?.spawn_instance()?,
+                None => self.connection.spawn(&class.name)?,
             };
             // Mutate the existing object so omitted properties retain their provider values.
             for property in &class.properties {
@@ -163,7 +200,7 @@ impl Bridge {
                     object.put_property(&property.name, to_variant(property, value)?)?;
                 }
             }
-            self.connection.put_instance(&object)?;
+            self.connection.put(&object)?;
         }
         self.get(class, input)
     }
@@ -191,19 +228,19 @@ fn state(
         .iter()
         .filter(|p| p.readable && (!export || !class.writable() || p.key || p.writable))
     {
-        let mut native_value = VARIANT::default();
+        let mut native_value = SafeVariant::default();
         let mut cim_type = 0;
         unsafe {
             object.inner.Get(
                 &HSTRING::from(&property.name),
                 0,
-                &raw mut native_value,
+                &raw mut native_value.0,
                 Some(&raw mut cim_type),
                 None,
             )?;
         }
         // wmi's get_property converts null CIM arrays to empty arrays.
-        let value = match Variant::from_variant(&native_value)? {
+        let value = match Variant::from_variant(&native_value.0)? {
             Variant::Empty | Variant::Null => Variant::Null,
             value => value.convert_into_cim_type(CIMTYPE_ENUMERATION(cim_type))?,
         };
@@ -253,18 +290,18 @@ pub fn normalize_input(
 }
 
 fn qualifier(set: &IWbemQualifierSet, name: &str) -> Result<Option<Value>, AdapterError> {
-    let mut value = VARIANT::default();
-    // COM wrappers own returned VARIANTs and interfaces; the output pointers live through each call.
+    let mut value = SafeVariant::default();
+    // SafeVariant releases native allocations even if conversion or the provider call fails.
     match unsafe {
         set.Get(
             &HSTRING::from(name),
             0,
-            &raw mut value,
+            &raw mut value.0,
             std::ptr::null_mut(),
         )
     } {
         Ok(()) => Ok(Some(
-            serde_json::to_value(Variant::from_variant(&value)?)
+            serde_json::to_value(Variant::from_variant(&value.0)?)
                 .map_err(|error| AdapterError::Resource(error.to_string()))?,
         )),
         Err(error) if error.code().0 == WBEM_E_NOT_FOUND.0 => Ok(None),
@@ -305,13 +342,13 @@ fn metadata(object: &IWbemClassWrapper) -> Result<Option<Class>, AdapterError> {
         if name.starts_with("__") {
             continue;
         }
-        let mut value = VARIANT::default();
+        let mut value = SafeVariant::default();
         let mut cim_type = 0;
         let qualifiers = unsafe {
             object.inner.Get(
                 &HSTRING::from(&name),
                 0,
-                &raw mut value,
+                &raw mut value.0,
                 Some(&raw mut cim_type),
                 None,
             )?;
@@ -381,6 +418,188 @@ fn is_local_system() -> Result<bool, AdapterError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::cell::{Cell, RefCell};
+
+    struct MemoryStore {
+        connection: WMIConnection,
+        saved: RefCell<Option<IWbemClassWrapper>>,
+        calls: RefCell<Vec<&'static str>>,
+        fail_on: Cell<Option<&'static str>>,
+    }
+
+    impl MemoryStore {
+        fn record(&self, operation: &'static str) -> Result<(), AdapterError> {
+            self.calls.borrow_mut().push(operation);
+            if self.fail_on.get() == Some(operation) {
+                return Err(AdapterError::Resource(format!(
+                    "injected {operation} failure"
+                )));
+            }
+            Ok(())
+        }
+
+        fn snapshot(object: &IWbemClassWrapper) -> Result<IWbemClassWrapper, AdapterError> {
+            Ok(IWbemClassWrapper::new(unsafe { object.inner.Clone()? }))
+        }
+    }
+
+    impl InstanceStore for MemoryStore {
+        fn query(&self, _query: &str) -> Result<Vec<IWbemClassWrapper>, AdapterError> {
+            self.record("query")?;
+            self.saved.borrow().as_ref().map_or_else(
+                || Ok(Vec::new()),
+                |object| Ok(vec![Self::snapshot(object)?]),
+            )
+        }
+
+        fn spawn(&self, class: &str) -> Result<IWbemClassWrapper, AdapterError> {
+            self.record("spawn")?;
+            Ok(self.connection.get_object(class)?.spawn_instance()?)
+        }
+
+        fn put(&self, object: &IWbemClassWrapper) -> Result<(), AdapterError> {
+            self.record("put")?;
+            *self.saved.borrow_mut() = Some(Self::snapshot(object)?);
+            Ok(())
+        }
+
+        fn delete(&self, _object: &IWbemClassWrapper) -> Result<(), AdapterError> {
+            self.record("delete")?;
+            *self.saved.borrow_mut() = None;
+            Ok(())
+        }
+    }
+
+    fn persistence_fixture() -> (Bridge<MemoryStore>, Class) {
+        let bridge = Bridge {
+            connection: MemoryStore {
+                connection: WMIConnection::with_namespace_path(r"root\cimv2").unwrap(),
+                saved: RefCell::new(None),
+                calls: RefCell::new(Vec::new()),
+                fail_on: Cell::new(None),
+            },
+        };
+        let class = Class {
+            name: "Win32_Process".to_string(),
+            partitions: vec!["local-user".to_string()],
+            properties: ["Handle", "Caption", "Description"]
+                .into_iter()
+                .map(|name| Property {
+                    name: name.to_string(),
+                    cim_type: 8,
+                    key: name == "Handle",
+                    readable: true,
+                    writable: name != "Handle",
+                })
+                .collect(),
+        };
+        (bridge, class)
+    }
+
+    fn existing_input() -> Map<String, Value> {
+        json!({
+            "Handle": "DSC-CSP-Test",
+            "Caption": "original",
+            "Description": "preserved"
+        })
+        .as_object()
+        .unwrap()
+        .clone()
+    }
+
+    #[test]
+    fn set_creates_and_rereads_an_instance_without_live_writes() {
+        let (bridge, class) = persistence_fixture();
+        let input = existing_input();
+        let actual = bridge.set(&class, &input).unwrap();
+        assert_eq!(actual["Handle"], input["Handle"]);
+        assert_eq!(actual["Caption"], input["Caption"]);
+        assert_eq!(actual["Description"], input["Description"]);
+        assert_eq!(actual["_exist"], true);
+        assert_eq!(
+            *bridge.connection.calls.borrow(),
+            ["query", "spawn", "put", "query"]
+        );
+    }
+
+    #[test]
+    fn set_updates_without_replacing_omitted_properties() {
+        let (bridge, class) = persistence_fixture();
+        bridge.set(&class, &existing_input()).unwrap();
+        bridge.connection.calls.borrow_mut().clear();
+        let input = json!({"Handle": "DSC-CSP-Test", "Caption": "updated"});
+        let actual = bridge.set(&class, input.as_object().unwrap()).unwrap();
+        assert_eq!(actual["Caption"], "updated");
+        assert_eq!(actual["Description"], "preserved");
+        assert_eq!(*bridge.connection.calls.borrow(), ["query", "put", "query"]);
+        assert_eq!(
+            bridge.get(&class, input.as_object().unwrap()).unwrap(),
+            actual
+        );
+    }
+
+    #[test]
+    fn set_deletes_existing_instances_and_skips_absent_instances() {
+        let (bridge, class) = persistence_fixture();
+        bridge.set(&class, &existing_input()).unwrap();
+        let input = json!({"Handle": "DSC-CSP-Test", "_exist": false});
+        let input = input.as_object().unwrap();
+        bridge.connection.calls.borrow_mut().clear();
+        assert_eq!(bridge.set(&class, input).unwrap(), *input);
+        assert!(bridge.connection.saved.borrow().is_none());
+        assert_eq!(
+            *bridge.connection.calls.borrow(),
+            ["query", "delete", "query"]
+        );
+
+        bridge.connection.calls.borrow_mut().clear();
+        assert_eq!(bridge.set(&class, input).unwrap(), *input);
+        assert_eq!(*bridge.connection.calls.borrow(), ["query", "query"]);
+    }
+
+    #[test]
+    fn set_propagates_create_update_and_delete_failures() {
+        for operation in ["spawn", "create", "update", "delete"] {
+            let (bridge, class) = persistence_fixture();
+            if matches!(operation, "update" | "delete") {
+                bridge.set(&class, &existing_input()).unwrap();
+            }
+            let failure = if matches!(operation, "create" | "update") {
+                "put"
+            } else {
+                operation
+            };
+            bridge.connection.fail_on.set(Some(failure));
+            bridge.connection.calls.borrow_mut().clear();
+            let input = if operation == "delete" {
+                json!({"Handle": "DSC-CSP-Test", "_exist": false})
+            } else {
+                json!({"Handle": "DSC-CSP-Test", "Caption": "changed"})
+            };
+            let error = bridge.set(&class, input.as_object().unwrap()).unwrap_err();
+            assert!(matches!(error, AdapterError::Resource(_)));
+            assert_eq!(error.to_string(), format!("injected {failure} failure"));
+            assert_eq!(bridge.connection.calls.borrow().last(), Some(&failure));
+
+            bridge.connection.fail_on.set(None);
+            let actual = bridge.get(&class, input.as_object().unwrap()).unwrap();
+            if matches!(operation, "update" | "delete") {
+                assert_eq!(actual["Caption"], "original");
+                assert_eq!(actual["Description"], "preserved");
+            } else {
+                assert_eq!(actual["_exist"], false);
+            }
+        }
+    }
+
+    #[test]
+    fn set_does_not_treat_query_failures_as_missing_instances() {
+        let (bridge, class) = persistence_fixture();
+        bridge.connection.fail_on.set(Some("query"));
+        let error = bridge.set(&class, &existing_input()).unwrap_err();
+        assert_eq!(error.to_string(), "injected query failure");
+        assert_eq!(*bridge.connection.calls.borrow(), ["query"]);
+    }
 
     #[test]
     fn converts_cim_values_without_coercing_or_truncating_inputs() {

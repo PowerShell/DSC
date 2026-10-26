@@ -64,6 +64,21 @@ fn print_json(value: &Value) -> Result<(), model::AdapterError> {
     writeln!(output).map_err(|error| model::AdapterError::Resource(error.to_string()))
 }
 
+#[cfg(windows)]
+fn read_input(input: &str) -> Result<String, model::AdapterError> {
+    use std::io::Read;
+    if input != "-" {
+        return Ok(input.to_string());
+    }
+    let mut input = String::new();
+    std::io::stdin()
+        .read_to_string(&mut input)
+        .map_err(|error| {
+            model::AdapterError::Input(t!("adapter.readInput", error = error).to_string())
+        })?;
+    Ok(input)
+}
+
 fn main() -> ExitCode {
     let args = match Args::try_parse() {
         Ok(args) => args,
@@ -112,7 +127,11 @@ fn run(operation: Operation) -> Result<(), model::AdapterError> {
             input,
         } => {
             let class = bridge.class(&resource_type)?;
-            let input = class.parse_input(input.as_deref().unwrap_or("{}"), true)?;
+            let mut json = read_input(input.as_deref().unwrap_or("{}"))?;
+            if input.as_deref() == Some("-") && json.is_empty() {
+                json = "{}".to_string();
+            }
+            let input = class.parse_input(&json, true)?;
             bridge::Bridge::check_context(&class)?;
             for state in bridge.export(&class, &input)? {
                 print_json(&Value::Object(state))?;
@@ -129,7 +148,7 @@ fn invoke_instance(
     args: &ResourceArgs,
 ) -> Result<(), model::AdapterError> {
     let class = bridge.class(&args.resource_type)?;
-    let input = class.parse_input(&args.input, false)?;
+    let input = class.parse_input(&read_input(&args.input)?, false)?;
     class.require_keys(&input)?;
     bridge::Bridge::check_context(&class)?;
     let mut actual = if operation == "set" {
