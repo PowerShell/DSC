@@ -18,6 +18,7 @@ This document lists the available resources and links to the reference documenta
 - [Microsoft.DSC.Transitional/PowerShellScript](./Microsoft/DSC/Transitional/PowerShellScript/index.md)
 - [Microsoft.DSC.Transitional/RunCommandOnSet](./Microsoft/DSC/Transitional/RunCommandOnSet/index.md)
 - [Microsoft.DSC.Transitional/WindowsPowerShellScript](./Microsoft/DSC/Transitional/WindowsPowerShellScript/index.md)
+- [Microsoft.Windows.Adapter/ConfigurationServiceProvider](./Microsoft/Windows/Adapter/ConfigurationServiceProvider/index.md)
 - [Microsoft.Windows/FeatureOnDemandList](./Microsoft/Windows/FeatureOnDemandList/index.md)
 - [Microsoft.Windows/FirewallRuleList](./Microsoft/Windows/FirewallRuleList/index.md)
 - [Microsoft.Windows/OptionalFeatureList](./Microsoft/Windows/OptionalFeatureList/index.md)
@@ -44,6 +45,7 @@ Manifest:
 - [Microsoft.Adapter/PowerShell](./Microsoft/Adapter/PowerShell/index.md)
 - [Microsoft.Adapter/WindowsPowerShell](./Microsoft/Adapter/WindowsPowerShell/index.md)
 - [Microsoft.DSC/PowerShell](./Microsoft/DSC/PowerShell/index.md)
+- [Microsoft.Windows.Adapter/ConfigurationServiceProvider](./Microsoft/Windows/Adapter/ConfigurationServiceProvider/index.md)
 - [Microsoft.Windows/WindowsPowerShell](./Microsoft/Windows/WindowsPowerShell/index.md)
 - [Microsoft.Windows/WMI](./Microsoft/Windows/WMI/index.md)
 

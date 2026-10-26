@@ -27,6 +27,7 @@ members = [
     "resources/windows_service",
     "resources/WindowsUpdate",
     "resources/environment_variable",
+    "adapters/csp",
     "adapters/group_policy_template",
     "tools/dsctest",
     "tools/test_group_resource",
@@ -62,6 +63,7 @@ default-members = [
     "resources/windows_service",
     "resources/WindowsUpdate",
     "resources/environment_variable",
+    "adapters/csp",
     "adapters/group_policy_template",
     "tools/dsctest",
     "tools/test_group_resource",
@@ -98,6 +100,7 @@ Windows = [
     "resources/windows_service",
     "resources/WindowsUpdate",
     "resources/environment_variable",
+    "adapters/csp",
     "adapters/group_policy_template",
     "tools/dsctest",
     "tools/test_group_resource",
@@ -305,8 +308,12 @@ windows = { version = "0.62", features = [
     "Win32_System_Services",
     "Win32_System_Variant",
     "Win32_System_UpdateAgent",
+    "Win32_System_Threading",
+    "Win32_System_Wmi",
     "Win32_Globalization"
 ] }
+# csp
+wmi = { version = "0.18.4", default-features = false }
 
 # build-only dependencies
 # dsc-lib, dsc-lib-registry, sshdconfig, tree-sitter-dscexpression, tree-sitter-ssh-server-config
