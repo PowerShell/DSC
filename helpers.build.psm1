@@ -1657,7 +1657,20 @@ function Build-RustProject {
             Test-Clippy @clippyParams
         }
 
-        $members = Get-DefaultWorkspaceMemberGroup
+        if ($Project) {
+            $rustProjects = @($Project | Where-Object {
+                $_.IsRust -and -not (Test-ShouldSkipProject -Project $_ -Architecture $Architecture)
+            })
+            if ($rustProjects.Count -eq 0) {
+                return
+            }
+            foreach ($rustProject in $rustProjects) {
+                $flags += $rustProject.ToPackageFlags()
+            }
+            $members = $rustProjects.Name -join ', '
+        } else {
+            $members = Get-DefaultWorkspaceMemberGroup
+        }
         Write-Verbose -Verbose "Building rust projects: [$members]"
         Write-Verbose "Invoking cargo:`n`tcargo build $flags"
         cargo build @flags
@@ -2830,7 +2843,23 @@ function Test-RustProject {
     }
 
     process {
-        $members = Get-DefaultWorkspaceMemberGroup
+        if ($Project) {
+            $rustProjects = @($Project | Where-Object {
+                $_.IsRust -and
+                -not $_.SkipTestProject -and
+                -not (Test-ShouldSkipProject -Project $_ -Architecture $Architecture) -and
+                -not (Test-ShouldSkipProjectTesting -Project $_)
+            })
+            if ($rustProjects.Count -eq 0) {
+                return
+            }
+            foreach ($rustProject in $rustProjects) {
+                $flags += $rustProject.ToPackageFlags()
+            }
+            $members = $rustProjects.Name -join ', '
+        } else {
+            $members = Get-DefaultWorkspaceMemberGroup
+        }
         if ($Docs) {
             Write-Verbose -Verbose "Testing documentation for rust projects: [$members]"
         } else {

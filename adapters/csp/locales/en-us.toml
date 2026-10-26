@@ -1,0 +1,30 @@
+_version = 1
+
+[main]
+about = "Manage Windows CSPs through the MDM Bridge WMI provider"
+list = "Discover installed MDM Bridge classes"
+get = "Get a CSP instance"
+set = "Create, update, or delete a CSP instance"
+test = "Compare specified properties with a CSP instance"
+export = "Export readable properties of CSP instances"
+resourceType = "Discovered Microsoft.Windows.CSP/MDM_* resource type"
+input = "JSON object using the WMI property names"
+windowsOnly = "The CSP adapter is only supported on Windows."
+
+[adapter]
+invalidType = "Invalid CSP resource type '%{name}'; expected Microsoft.Windows.CSP/MDM_<class>."
+invalidInput = "Invalid JSON input: %{error}"
+unknownProperty = "Unknown or output-only property '%{name}'."
+invalidValue = "Property '%{name}' does not match CIM type %{cimType}, or is outside its numeric range."
+missingKey = "A non-null value for key property '%{name}' is required."
+readOnly = "CSP property '%{name}' is read-only."
+readOnlyClass = "Class '%{name}' has no writable properties."
+notBridgeClass = "Class '%{name}' is not a device/current-user MDM Bridge class."
+unsupportedType = "Unsupported CIM type %{cimType} on property '%{name}'."
+emptyArray = "Property '%{name}' is an empty array. The wmi crate cannot write an empty array without converting it to null; this value is not supported."
+systemRequired = "Class '%{name}' requires LocalSystem (S-1-5-18). An elevated administrator is not sufficient. Run DSC as LocalSystem for device-scoped CSPs."
+userRequired = "Class '%{name}' requires the target user's own identity. Run DSC in that user's context, not as LocalSystem. Cross-user SID targeting is not supported."
+wmi = "WMI Bridge operation failed: %{error}. Verify the CSP's Windows version, edition, access requirements, and supported operations."
+io = "Could not determine the adapter executable path: %{error}"
+multipleInstances = "The key properties for class '%{name}' matched more than one instance."
+description = "Windows CSP bridge class %{name}; partition: %{partition}. Uses the caller's identity."

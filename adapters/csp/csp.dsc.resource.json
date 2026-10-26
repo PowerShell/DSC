@@ -1,0 +1,57 @@
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "type": "Microsoft.Windows.Adapter/ConfigurationServiceProvider",
+    "version": "0.1.0",
+    "kind": "adapter",
+    "description": "Adapts installed Windows MDM Bridge WMI classes into DSC resources.",
+    "tags": ["Windows", "CSP", "MDM", "WMI"],
+    "adapter": {
+        "list": {
+            "executable": "csp",
+            "args": ["list"]
+        },
+        "inputKind": "single"
+    },
+    "get": {
+        "executable": "csp",
+        "args": [
+            "get",
+            {"resourceTypeArg": "--resource-type"},
+            {"jsonInputArg": "--input", "mandatory": true}
+        ]
+    },
+    "set": {
+        "executable": "csp",
+        "args": [
+            "set",
+            {"resourceTypeArg": "--resource-type"},
+            {"jsonInputArg": "--input", "mandatory": true}
+        ],
+        "implementsPretest": false,
+        "handlesExist": true,
+        "return": "state"
+    },
+    "test": {
+        "executable": "csp",
+        "args": [
+            "test",
+            {"resourceTypeArg": "--resource-type"},
+            {"jsonInputArg": "--input", "mandatory": true}
+        ],
+        "return": "stateAndDiff"
+    },
+    "export": {
+        "executable": "csp",
+        "args": [
+            "export",
+            {"resourceTypeArg": "--resource-type"},
+            {"jsonInputArg": "--input", "mandatory": false}
+        ]
+    },
+    "exitCodes": {
+        "0": "Success",
+        "1": "Invalid command-line arguments",
+        "2": "Invalid resource type, input, or unsupported property",
+        "3": "WMI Bridge operation or execution-context check failed"
+    }
+}
