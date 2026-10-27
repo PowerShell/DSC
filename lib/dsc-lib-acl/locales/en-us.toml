@@ -17,7 +17,6 @@ system = "system"
 [validation]
 discretionaryType = "discretionary access control entries must have type 'allow' or 'deny'"
 discretionaryAuditFlags = "discretionary access control entries must not set auditFlags"
-accessMaskRequired = "an access control entry must specify at least one accessMask value"
 systemType = "system access control entries must have type 'audit'"
 systemAuditFlags = "system access control entries must set at least one auditFlags value"
 

@@ -155,9 +155,6 @@ impl<P: AccessMask> AccessControlEntry<P> {
         if !self.audit_flags.is_empty() {
             errors.push(InvalidEntryError::DiscretionaryAuditFlags);
         }
-        if self.access_mask.is_empty() {
-            errors.push(InvalidEntryError::MissingAccessMask);
-        }
         errors
     }
 
@@ -168,9 +165,6 @@ impl<P: AccessMask> AccessControlEntry<P> {
         }
         if self.audit_flags.is_empty() {
             errors.push(InvalidEntryError::SystemAuditFlags);
-        }
-        if self.access_mask.is_empty() {
-            errors.push(InvalidEntryError::MissingAccessMask);
         }
         errors
     }
@@ -309,7 +303,7 @@ impl<P: AccessMask> AccessControlList<P> {
 /// explicit entries remain distinct because Windows applies and orders them differently.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct AceSemanticKey {
-    principal: Principal,
+    principal: String,
     ace_type: AceType,
     mask_bits: u32,
     flags: Vec<AceFlag>,
@@ -336,7 +330,7 @@ fn normalized_audit_flags(flags: &[AuditFlag]) -> Vec<AuditFlag> {
 
 fn semantic_key<P: AccessMask>(entry: &AccessControlEntry<P>) -> AceSemanticKey {
     AceSemanticKey {
-        principal: entry.principal.clone(),
+        principal: entry.principal.as_str().to_owned(),
         ace_type: entry.ace_type,
         mask_bits: effective_mask_bits(&entry.access_mask),
         flags: normalized_flags(&entry.flags),
@@ -362,10 +356,9 @@ fn entries_semantically_equal<P: AccessMask>(
 
 /// Returns whether `desired` and `actual` contain the same access control entries in the same
 /// order (see [`entries_semantically_equal`] for what "same" means for a single entry pair).
-/// Used to compare a `_purge: true` section, which (unlike a `_purge: false` merge) must match
-/// position-for-position: a purge write replaces the section outright, verbatim and in the
-/// order given, so convergence requires the same count, order, and inherited status throughout,
-/// not merely an equivalent unordered set of entries.
+/// Used to compare the full effective section produced by [`merge_access_control_list`].
+/// Replacement writes use the requested order, while merge writes canonicalize ACE order, so
+/// convergence always requires the same count, order, and inherited status throughout.
 fn entries_match_in_order<P: AccessMask>(
     desired: &[AccessControlEntry<P>],
     actual: &[AccessControlEntry<P>],
@@ -502,27 +495,23 @@ pub fn merge_access_control_list<P: AccessMask>(
 /// than only the partial, newly requested entries, and a protection flag omitted from the
 /// original request has already been resolved to its effective value).
 ///
-/// A section that is `None` in `desired` is always satisfied (it is unmanaged). Under replacement
-/// semantics, a managed section must match `actual` entry-for-entry, in
-/// the same order and with the same count and inherited status throughout (since a purge write
-/// replaces the section outright, verbatim and in the order given) -- but each entry pair is
-/// compared *semantically* (see [`entries_semantically_equal`]), so an aliased permission name
-/// (for example `fullControl` versus the individual rights it implies) or a differently ordered
-/// flag list that is otherwise equivalent does not cause a false mismatch. When `false`, it is
-/// enough for `actual` to contain a semantic duplicate (see [`AceSemanticKey`]) of every entry in
-/// `desired`; additional entries present only in `actual` do not cause a mismatch. A protection
-/// flag that is not explicitly supplied in `desired` is always considered satisfied.
+/// A section that is `None` in `desired` is always satisfied (it is unmanaged). A managed section
+/// must match `actual` entry-for-entry in the same order and with the same count and inherited
+/// status. Each entry pair is compared *semantically* (see [`entries_semantically_equal`]), so an
+/// aliased permission name (for example `fullControl` versus the individual rights it implies) or
+/// a differently ordered flag list that is otherwise equivalent does not cause a false mismatch.
+/// This ordered comparison is also required for merge mode because the effective desired ACL is
+/// canonicalized before this function is called. A protection flag that is not explicitly
+/// supplied in `desired` is always considered satisfied.
 #[must_use]
 pub fn is_satisfied<P: AccessMask>(desired: &AccessControlList<P>, actual: &AccessControlList<P>) -> bool {
-    let purge = desired.purge();
-    section_satisfied(purge, &desired.discretionary, &actual.discretionary)
+    section_satisfied(&desired.discretionary, &actual.discretionary)
         && protected_satisfied(desired.discretionary_protected, actual.discretionary_protected)
-        && section_satisfied(purge, &desired.system, &actual.system)
+        && section_satisfied(&desired.system, &actual.system)
         && protected_satisfied(desired.system_protected, actual.system_protected)
 }
 
 fn section_satisfied<P: AccessMask>(
-    purge: bool,
     desired: &Option<Vec<AccessControlEntry<P>>>,
     actual: &Option<Vec<AccessControlEntry<P>>>,
 ) -> bool {
@@ -532,13 +521,7 @@ fn section_satisfied<P: AccessMask>(
     let Some(actual_entries) = actual else {
         return false;
     };
-    if purge {
-        entries_match_in_order(desired_entries, actual_entries)
-    } else {
-        let desired_keys: HashSet<_> = desired_entries.iter().map(semantic_key).collect();
-        let actual_keys: HashSet<_> = actual_entries.iter().map(semantic_key).collect();
-        desired_keys == actual_keys
-    }
+    entries_match_in_order(desired_entries, actual_entries)
 }
 
 fn protected_satisfied(desired: Option<bool>, actual: Option<bool>) -> bool {
@@ -650,12 +633,35 @@ mod tests {
             vec![
                 InvalidEntryError::DiscretionaryType,
                 InvalidEntryError::DiscretionaryAuditFlags,
-                InvalidEntryError::MissingAccessMask,
                 InvalidEntryError::SystemType,
                 InvalidEntryError::SystemAuditFlags,
-                InvalidEntryError::MissingAccessMask,
             ]
         );
+    }
+
+    #[test]
+    fn validation_accepts_zero_access_masks() {
+        let discretionary = AccessControlEntry {
+            principal: Principal::from_sid("S-1-1-0").unwrap(),
+            ace_type: AceType::Allow,
+            access_mask: Vec::<TestRight>::new(),
+            flags: Vec::new(),
+            audit_flags: Vec::new(),
+        };
+        let system = AccessControlEntry {
+            principal: Principal::from_sid("S-1-1-0").unwrap(),
+            ace_type: AceType::Audit,
+            access_mask: Vec::<TestRight>::new(),
+            flags: Vec::new(),
+            audit_flags: vec![AuditFlag::Success],
+        };
+        let acl = AccessControlList {
+            discretionary: Some(vec![discretionary]),
+            system: Some(vec![system]),
+            ..Default::default()
+        };
+
+        acl.validate().unwrap();
     }
 
     #[test]
@@ -869,6 +875,25 @@ mod tests {
             ..Default::default()
         };
         let effective_desired = merge_access_control_list(&actual, &desired);
+
+        assert!(!is_satisfied(&effective_desired, &actual));
+    }
+
+    #[test]
+    fn is_satisfied_is_false_when_merge_would_canonicalize_entry_order() {
+        let allow = entry("S-1-1-0", AceType::Allow, vec![TestRight::Read]);
+        let deny = entry("S-1-5-18", AceType::Deny, vec![TestRight::Read]);
+        let actual = AccessControlList {
+            discretionary: Some(vec![allow, deny.clone()]),
+            discretionary_protected: Some(false),
+            ..Default::default()
+        };
+        let requested = AccessControlList {
+            discretionary: Some(vec![deny]),
+            purge: Some(false),
+            ..Default::default()
+        };
+        let effective_desired = merge_access_control_list(&actual, &requested);
 
         assert!(!is_satisfied(&effective_desired, &actual));
     }

@@ -6,16 +6,17 @@ use schemars::{JsonSchema, Schema, SchemaGenerator};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{Display, Formatter};
 use std::hash::{Hash, Hasher};
+use std::sync::OnceLock;
 
 /// A validated Windows security principal.
 ///
 /// Principals deserialize from either a SID or an account/group name. On Windows, construction
-/// resolves the input immediately and stores its canonical SID plus an optional display name.
-/// Serialization and display always emit the SID.
+/// resolves the input immediately and stores its canonical SID. The optional account/group
+/// display name is resolved lazily on first request. Serialization and display always emit the SID.
 #[derive(Debug, Clone)]
 pub struct Principal {
     sid: String,
-    display_name: Option<String>,
+    display_name: OnceLock<Option<String>>,
 }
 
 impl Principal {
@@ -58,7 +59,20 @@ impl Principal {
     /// Returns the resolved account or group name when Windows can provide one.
     #[must_use]
     pub fn display_name(&self) -> Option<String> {
-        self.display_name.clone()
+        self.display_name
+            .get_or_init(|| {
+                #[cfg(windows)]
+                {
+                    let sid = crate::win32::sid::parse_sid(&self.sid).ok()?;
+                    // SAFETY: `sid` owns a valid SID buffer for the duration of this call.
+                    unsafe { crate::win32::sid::sid_to_account_name(sid.as_psid()) }
+                }
+                #[cfg(not(windows))]
+                {
+                    None
+                }
+            })
+            .clone()
     }
 
     /// Returns the canonical SID string.
@@ -89,13 +103,11 @@ impl Principal {
 
     #[cfg(windows)]
     fn from_owned_sid(sid: &crate::win32::sid::OwnedSid) -> Result<Self, AclError> {
-        // SAFETY: `sid` owns a valid SID buffer for the duration of both calls.
+        // SAFETY: `sid` owns a valid SID buffer for the duration of this call.
         let sid_text = unsafe { crate::win32::sid::sid_to_string(sid.as_psid()) }?;
-        // SAFETY: same as above. Account lookup failure only means no display name is available.
-        let display_name = unsafe { crate::win32::sid::sid_to_account_name(sid.as_psid()) };
         Ok(Self {
             sid: sid_text,
-            display_name,
+            display_name: OnceLock::new(),
         })
     }
 
@@ -108,11 +120,9 @@ impl Principal {
     pub(crate) unsafe fn from_psid(sid: windows::Win32::Security::PSID) -> Result<Self, AclError> {
         // SAFETY: upheld by the caller.
         let sid_text = unsafe { crate::win32::sid::sid_to_string(sid) }?;
-        // SAFETY: upheld by the caller. A failed account lookup is represented by `None`.
-        let display_name = unsafe { crate::win32::sid::sid_to_account_name(sid) };
         Ok(Self {
             sid: sid_text,
-            display_name,
+            display_name: OnceLock::new(),
         })
     }
 }
@@ -171,8 +181,7 @@ impl PartialEq<str> for Principal {
     fn eq(&self, other: &str) -> bool {
         self.sid.eq_ignore_ascii_case(other)
             || self
-                .display_name
-                .as_deref()
+                .display_name()
                 .is_some_and(|name| name.eq_ignore_ascii_case(other))
     }
 }
@@ -243,10 +252,13 @@ mod tests {
     }
 
     #[test]
-    fn name_construction_caches_a_display_name_and_compares_by_name_or_sid() {
+    fn name_construction_resolves_display_name_lazily_and_compares_by_name_or_sid() {
         let principal = Principal::from_name("SYSTEM").unwrap();
+        assert!(principal.display_name.get().is_none());
+
         let display_name = principal.display_name().unwrap();
 
+        assert_eq!(principal.display_name.get(), Some(&Some(display_name.clone())));
         assert_eq!(principal, "S-1-5-18");
         assert_eq!(display_name, principal);
     }

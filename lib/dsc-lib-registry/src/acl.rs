@@ -730,6 +730,23 @@ mod tests {
         assert!(!is_satisfied(&requested, &actual).unwrap());
     }
 
+    #[test]
+    fn is_satisfied_reports_false_when_merge_would_canonicalize_entry_order() {
+        let deny = entry(AceType::Deny);
+        let actual = RegistryAccessControlList {
+            discretionary: Some(vec![entry(AceType::Allow), deny.clone()]),
+            discretionary_protected: Some(false),
+            ..Default::default()
+        };
+        let requested = RegistryAccessControlList {
+            discretionary: Some(vec![deny]),
+            purge: Some(false),
+            ..Default::default()
+        };
+
+        assert!(!is_satisfied(&requested, &actual).unwrap());
+    }
+
     fn disable_security_privilege() {
         let mut token = HANDLE::default();
         // SAFETY: the current-process pseudo-handle is valid and token is a writable local.

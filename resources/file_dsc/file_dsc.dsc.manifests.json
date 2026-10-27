@@ -251,7 +251,6 @@
                   "type": "array",
                   "title": "Access mask",
                   "description": "The permissions granted, denied, or audited by this entry. The 'generic*' values represent the raw GENERIC_* access mask bits; Windows maps them to the equivalent file-specific rights (for example 'genericAll' to 'fullControl') and they're accepted so that an existing entry using them can always be read back and represented, but there's normally no reason to specify them in a request.",
-                  "minItems": 1,
                   "items": {
                     "type": "string",
                     "enum": [

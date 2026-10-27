@@ -15,10 +15,6 @@ pub enum InvalidEntryError {
     #[error("{t}", t = t!("validation.discretionaryType"))]
     DiscretionaryType,
 
-    /// An entry has no access mask values.
-    #[error("{t}", t = t!("validation.accessMaskRequired"))]
-    MissingAccessMask,
-
     /// A system entry has no audit flags.
     #[error("{t}", t = t!("validation.systemAuditFlags"))]
     SystemAuditFlags,
