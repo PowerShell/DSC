@@ -124,6 +124,10 @@ invalidDescriptionPattern = "Invalid function description pattern '%{pattern}'"
 resourceNotAdapter = "The resource '%{adapter}' is not a valid adapter"
 adapterNotFound = "Adapter '%{adapter}' does not exist"
 
+[server.query_dsc_config]
+invalidConfiguration = "Invalid configuration document"
+jsonConversion = "Failed to convert JSON to configuration"
+
 [server.show_dsc_resource]
 resourceNotFound = "Resource type '%{type_name}' does not exist"
 

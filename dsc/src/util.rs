@@ -619,7 +619,7 @@ pub fn in_desired_state(test_result: &ResourceTestResult) -> bool {
 /// # Errors
 ///
 /// This function will return an error if the input cannot be parsed as valid JSON or YAML
-fn parse_input_to_json_value(input: &str, context: &str) -> Result<serde_json::Value, DscError> {
+pub fn parse_input_to_json_value(input: &str, context: &str) -> Result<serde_json::Value, DscError> {
     match serde_json::from_str(input) {
         Ok(json) => Ok(json),
         Err(_) => {
