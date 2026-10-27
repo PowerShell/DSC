@@ -922,8 +922,8 @@ resources:
 
         $response = Send-McpRequest -request $mcpRequest
         $response.id | Should -Be 17
-        $response.error.code | Should -Be -32603
-        $response.error.message | Should -Match 'Failed to convert to JSON'
+        $response.error.code | Should -Be -32600
+        $response.error.message | Should -Match 'Invalid configuration document'
     }
 
     It 'Calling invoke_dsc_config with invalid parameters returns error' {
