@@ -1,6 +1,6 @@
 ---
 description: Microsoft.Windows/Registry resource reference documentation
-ms.date:     10/17/2026
+ms.date:     10/27/2026
 ms.topic:    reference
 title:       Microsoft.Windows/Registry
 ---
@@ -310,12 +310,13 @@ explicit `allow` entry, since Windows always places every explicit entry before 
 regardless of allow/deny. A section that isn't supplied in a merge request remains unmanaged, and
 its corresponding protection property (if any) is preserved unchanged.
 
-For a **Test** operation, `_purge: false` is satisfied when every requested entry is present
-(after normalization) in the actual access control list; extra entries already present in the
-actual ACL don't cause a mismatch. Replacement behavior requires the same entries in the same
-order and count as `actual`, but each entry pair is compared semantically: an aliased
-permission name (for example `fullControl` versus the individual rights it implies) or a
-differently ordered `flags` list that is otherwise equivalent doesn't cause a mismatch.
+For a **Test** operation, the resource first computes the complete effective access control list
+that a **Set** operation would produce. The effective list must have the same entries in the same
+order and count as `actual`. This means `_purge: false` detects changes caused by removing semantic
+duplicates or canonicalizing entry order, even when every requested entry is already present.
+Each entry pair is compared semantically: an aliased permission name (for example `fullControl`
+versus the individual rights it implies) or a differently ordered `flags` list that is otherwise
+equivalent doesn't cause a mismatch.
 
 #### Access control entry object
 
@@ -326,8 +327,9 @@ Each item in the `discretionary` and `system` arrays is an object with the follo
 - **type** (required) - Whether the entry allows, denies, or audits access. Must be `allow` or
   `deny` for entries in `discretionary`, and `audit` for entries in `system`. Valid values are
   `allow`, `deny`, and `audit`.
-- **accessMask** (required) - The permissions granted, denied, or audited by this entry. Must
-  specify at least one value. Valid values are `queryValue`, `setValue`, `createSubKey`,
+- **accessMask** (required) - The permissions granted, denied, or audited by this entry. An empty
+  array represents a zero access mask and enables existing native zero-mask entries to be returned
+  and managed without loss. Valid values are `queryValue`, `setValue`, `createSubKey`,
   `enumerateSubKeys`, `notify`, `createLink`, `delete`, `readPermissions`, `changePermissions`,
   `takeOwnership`, `synchronize`, `read`, `write`, `execute`, `fullControl`, `genericRead`,
   `genericWrite`, `genericExecute`, and `genericAll`. The `generic*` values represent the raw
