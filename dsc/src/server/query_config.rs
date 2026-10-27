@@ -59,9 +59,12 @@ impl McpServer {
                     ));
                 }
             };
-            let Ok(config) = serde_json::from_value::<Configuration>(config_value) else {
-                return Err(McpError::internal_error(t!("server.query_dsc_config.jsonConversion"), None));
-            };
+            let config = serde_json::from_value::<Configuration>(config_value).map_err(|e| {
+                McpError::invalid_request(
+                    t!("server.query_dsc_config.invalidConfiguration"),
+                    Some(serde_json::Value::String(e.to_string())),
+                )
+            })?;
 
             match query_kind {
                 QueryKind::MetaData => {

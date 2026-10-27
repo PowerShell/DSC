@@ -91,9 +91,12 @@ impl McpServer {
                     ));
                 }
             };
-            let Ok(config) = serde_json::from_value::<Configuration>(config_value) else {
-                return Err(McpError::internal_error(t!("server.invoke_dsc_config.failedConvertJson"), None))
-            };
+            let config = serde_json::from_value::<Configuration>(config_value).map_err(|e| {
+                McpError::invalid_request(
+                    t!("server.invoke_dsc_config.invalidConfiguration"),
+                    Some(serde_json::Value::String(e.to_string())),
+                )
+            })?;
 
             let config_json = match serde_json::to_string(&config) {
                 Ok(json) => json,
