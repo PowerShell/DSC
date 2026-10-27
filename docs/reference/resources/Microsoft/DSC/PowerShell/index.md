@@ -183,6 +183,12 @@ property must be an object. The specified properties are validated at runtime wh
 tries to invoke the adapted PSDSC resource instance. This adapter doesn't support static linting
 for adapted instance properties in a configuration document.
 
+The adapter's manifest schema validates the enclosing `resources` array, but doesn't apply each
+discovered resource's schema to the nested instance properties. To use per-resource schema
+validation before invocation, define resources directly in the configuration document with
+[Microsoft.Adapter/PowerShell](../../Adapter/PowerShell/index.md). Neither adapter implements a
+separate `validate` operation.
+
 Each name for each property must be a configurable property of the PSDSC resource. The property
 name isn't case sensitive. The value for each property must be valid for that property. If you
 specify an invalid property name or value, the adapter raises an error when it tries to invoke the

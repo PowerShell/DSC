@@ -116,18 +116,19 @@ The resource adapter has the following capabilities:
 
 ## Properties
 
-Unlike standard resources, the `Microsoft.Windows/WindowsPowerShell` resource adapter doesn't have directly exposed properties
-in its schema because it acts as a bridge to PowerShell DSC resource. Instead, the adapter:
+The `Microsoft.Windows/WindowsPowerShell` adapter accepts a `resources` array containing nested
+PowerShell DSC resource instances. Its manifest schema describes this wrapper, not the properties
+of each nested resource. The adapter:
 
-1. Dynamically discovers the property schema for each PowerShell DSC resource
-2. Stores the schema properties in a cache file for improved performance in subsequent operations
+1. Discovers property metadata for each PowerShell DSC resource
+2. Caches the metadata to improve performance in subsequent operations
 3. Passes properties to the underlying PowerShell DSC resource
 
-The adapter maintains a cache of resource schemas at:
+The adapter maintains its resource metadata cache at:
 
 - Windows: `%LOCALAPPDATA%\dsc\WindowsPSAdapterCache.json`
 
-To list the schema properties for a PowerShell DSC resource, you can run the following command:
+To list the property names for a PowerShell DSC resource, replace the placeholders in:
 
 ```powershell
 dsc resource list --adapter Microsoft.Windows/WindowsPowerShell <moduleName>/<resourceName> |
@@ -135,7 +136,10 @@ dsc resource list --adapter Microsoft.Windows/WindowsPowerShell <moduleName>/<re
     Select-Object properties
 ```
 
-You can also retrieve more information by directly reading it from the cache file:
+Discovered resources also include a JSON schema generated from their cached property metadata.
+To view this schema, select `schema` instead of `properties` in the preceding command.
+
+You can inspect the underlying property metadata by reading the cache file:
 
 ```powershell
 $cache = Get-Content -Path "$env:LOCALAPPDATA\dsc\WindowsPSAdapterCache.json" |
@@ -222,6 +226,12 @@ The `properties` of an adapted resource instance define its desired state. The v
 property must be an object. The specified properties are validated at runtime when the adapter
 tries to invoke the adapted PSDSC resource instance. This adapter doesn't support static linting
 for adapted instance properties in a configuration document.
+
+The adapter's manifest schema validates the enclosing `resources` array, but doesn't apply each
+discovered resource's schema to the nested instance properties. To use per-resource schema
+validation before invocation, define resources directly in the configuration document with
+[Microsoft.Adapter/WindowsPowerShell](../../Adapter/WindowsPowerShell/index.md). Neither adapter
+implements a separate `validate` operation.
 
 Each name for each property must be a configurable property of the PSDSC resource. The property
 name isn't case sensitive. The value for each property must be valid for that property. If you

@@ -172,7 +172,11 @@ configuration document with the following exceptions:
 
 1. Discovered resources include an embedded JSON schema describing their DSC properties. DSC uses
    this schema to validate property types, key and mandatory properties, and enumeration values
-   before invoking the resource. You can retrieve the schema with `dsc resource schema`.
+   before invoking the resource. To retrieve a resource's schema, replace the placeholders in:
+
+   ```powershell
+   dsc resource schema -r '<moduleName>/<resourceName>'
+   ```
 
    Each property name must be a configurable property of the PSDSC resource. The property name
    isn't case sensitive. The value for each property must be valid for that property. If you
@@ -182,6 +186,11 @@ configuration document with the following exceptions:
    Property names and enumeration values remain case insensitive. Custom and embedded property
    types without a known JSON representation are validated by the underlying PowerShell resource.
    The adapter doesn't implement a separate `validate` operation.
+
+   Schemas also enforce discovered `ValidateSet` constraints, including constraints on array
+   items. Nullable property types accept `null`, including nullable strings with a `ValidateSet`
+   constraint. Non-nullable enumeration and numeric types reject `null`, even when they have a
+   validation set.
 
 ## Exit codes
 
