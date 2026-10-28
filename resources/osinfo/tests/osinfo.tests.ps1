@@ -81,11 +81,13 @@ Describe 'osinfo test subcommand version operator tests' {
     }
 
     Context 'valid version constraints' {
-        It 'version constraint "<constraint>" (<description>) should report inDesiredState = <expectedState>' -ForEach $versionTestCases -Skip:$skip {
-            $json = "{`"version`": `"$constraint`"}"
-            $out = $json | dsc resource test -r Microsoft/OSInfo -f - | ConvertFrom-Json
-            $LASTEXITCODE | Should -Be 0
-            $out.inDesiredState | Should -Be $expectedState
+        foreach ($versionTestCase in $versionTestCases) {
+            It 'version constraint "<constraint>" (<description>) should report inDesiredState = <expectedState>' -ForEach @($versionTestCase) -Skip:$versionTestCase.skip {
+                $json = "{`"version`": `"$constraint`"}"
+                $out = $json | dsc resource test -r Microsoft/OSInfo -f - | ConvertFrom-Json
+                $LASTEXITCODE | Should -Be 0
+                $out.inDesiredState | Should -Be $expectedState
+            }
         }
     }
 
