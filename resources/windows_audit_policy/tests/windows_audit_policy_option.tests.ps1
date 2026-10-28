@@ -84,6 +84,29 @@ Describe 'Windows audit policy option tests' -Skip:(!$IsWindows) {
             $null = $json | dsc resource get -r $resourceType -f - 2>&1
             $LASTEXITCODE | Should -Not -Be 0
         }
+
+        It 'Reports an instance with custom metadata in the desired state' {
+            $enabled = if ((Get-OptionState -Name 'AuditBaseObjects').enabled) { 'true' } else { 'false' }
+            $yaml = @"
+`$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+  - name: Audit base objects
+    type: $resourceType
+    metadata:
+      owner: DSC-team
+    properties:
+      name: AuditBaseObjects
+      enabled: $enabled
+"@
+            $configPath = Join-Path $testdrive 'auditpolicyoption-metadata.config.dsc.yaml'
+            Set-Content -Path $configPath -Value $yaml
+
+            $out = dsc config test -f $configPath 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
+            $result = ($out | ConvertFrom-Json).results[0].result
+            $result.inDesiredState | Should -BeTrue
+            $result.differingProperties | Should -BeNullOrEmpty
+        }
     }
 
     Context 'Export' {
@@ -121,10 +144,14 @@ Describe 'Windows audit policy option tests' -Skip:(!$IsWindows) {
             Restore-RawOptionValue -Name 'FullPrivilegeAuditing' -Raw $script:originalFullPrivilegeAuditing
         }
 
-        It 'Enables AuditBaseObjects' {
+        It 'Enables AuditBaseObjects and reports that a restart is required' {
+            # Start disabled so the asserted call is the one that writes the change.
+            $null = Set-OptionState -Name 'AuditBaseObjects' -Enabled $false
             $result = (Set-OptionState -Name 'AuditBaseObjects' -Enabled $true).afterState
             $result.name | Should -BeExactly 'AuditBaseObjects'
             $result.enabled | Should -BeTrue
+            $result._restartRequired.Count | Should -Be 1
+            $result._restartRequired[0].system | Should -BeExactly $env:COMPUTERNAME
             Get-RawOptionValue -Name 'AuditBaseObjects' | Should -Be 1
         }
 
@@ -139,6 +166,7 @@ Describe 'Windows audit policy option tests' -Skip:(!$IsWindows) {
             $null = Set-OptionState -Name 'AuditBaseObjects' -Enabled $false
             $output = Set-OptionState -Name 'AuditBaseObjects' -Enabled $false
             $output.afterState.enabled | Should -BeFalse
+            $output.afterState._restartRequired | Should -BeNullOrEmpty
             $output.changedProperties | Should -BeNullOrEmpty
         }
 

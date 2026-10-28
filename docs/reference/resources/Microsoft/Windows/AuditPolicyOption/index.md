@@ -64,8 +64,9 @@ only uses the type from the table when the value doesn't exist yet.
 - The resource is only usable on a Windows system.
 - **Set** operations require an elevated (administrator) process context.
 - The Local Security Authority reads these values when the system starts. A change made with the
-  **Set** operation takes effect after the next restart, and the resource writes a warning to say
-  so.
+  **Set** operation takes effect after the next restart. The operation reports this in the
+  read-only [_restartRequired](#_restartrequired) property, which DSC aggregates for the
+  [restartRequired()][07] configuration function, and the resource also writes a warning to say so.
 
 > [!WARNING]
 > Enabling `CrashOnAuditFail` causes Windows to halt with a `STOP` error whenever it can't write
@@ -108,6 +109,13 @@ The following list describes the properties for the resource.
 
   - [enabled](#enabled) - Whether the option is enabled.
 
+- **Read-only properties:** <a id="read-only-properties"></a> The resource returns the following
+  properties, but they aren't configurable. For more information about read-only properties, see
+  the "Read-only resource properties" section in [DSC resource properties][06].
+
+  - [_restartRequired](#_restartrequired) - Indicates that the system must restart before a change
+    takes effect.
+
 ### name
 
 <details><summary>Expand for <code>name</code> property metadata</summary>
@@ -143,6 +151,27 @@ IsWriteOnly : false
 Defines whether the option is enabled. This property is optional for the **Get** operation and
 required for the **Set** operation. A change takes effect after the next restart.
 
+### _restartRequired
+
+<details><summary>Expand for <code>_restartRequired</code> property metadata</summary>
+
+```yaml
+Type        : array
+IsRequired  : false
+IsKey       : false
+IsReadOnly  : true
+IsWriteOnly : false
+```
+
+</details>
+
+Returned by the **Set** operation after it changed the option. Each entry is an object whose
+`system` property names the computer that must restart before the Local Security Authority reads
+the new value. DSC adds the entries to the `restartRequired` execution information of the
+operation, so a configuration document can query `[restartRequired('system')]` after this resource
+has run. The property is omitted when the option was already in the desired state and in what-if
+mode.
+
 ## Instance validating schema
 
 The following snippet contains the JSON Schema that validates an instance of the resource.
@@ -170,10 +199,25 @@ The following snippet contains the JSON Schema that validates an instance of the
     "_metadata": {
       "type": "object",
       "readOnly": true,
+      "additionalProperties": false,
       "properties": {
         "whatIf": {
           "type": "array",
           "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "_restartRequired": {
+      "type": "array",
+      "readOnly": true,
+      "items": {
+        "type": "object",
+        "required": ["system"],
+        "additionalProperties": false,
+        "properties": {
+          "system": {
             "type": "string"
           }
         }
@@ -231,3 +275,4 @@ policy option requires an elevated process.
 [04]: ../AuditPolicy/index.md
 [05]: ../Registry/index.md
 [06]: ../../../../../concepts/resources/properties.md
+[07]: ../../../../schemas/config/functions/restartRequired.md

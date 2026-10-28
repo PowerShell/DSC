@@ -101,6 +101,7 @@
                             "title": "Metadata",
                             "description": "Metadata returned by what-if operations describing the changes that would be applied.",
                             "readOnly": true,
+                            "additionalProperties": false,
                             "properties": {
                                 "whatIf": {
                                     "type": "array",
@@ -195,6 +196,7 @@
                             "title": "Metadata",
                             "description": "Metadata returned by what-if operations describing the changes that would be applied to every listed subcategory.",
                             "readOnly": true,
+                            "additionalProperties": false,
                             "properties": {
                                 "whatIf": {
                                     "type": "array",
@@ -336,11 +338,32 @@
                             "title": "Metadata",
                             "description": "Metadata returned by what-if operations describing the changes that would be applied.",
                             "readOnly": true,
+                            "additionalProperties": false,
                             "properties": {
                                 "whatIf": {
                                     "type": "array",
                                     "items": {
                                         "type": "string"
+                                    }
+                                }
+                            }
+                        },
+                        "_restartRequired": {
+                            "type": "array",
+                            "title": "Restart required",
+                            "description": "Returned by set after it changed the option. The Local Security Authority only reads the option at startup, so the system must restart before the change takes effect. Each entry names the computer to restart in its system property.",
+                            "readOnly": true,
+                            "items": {
+                                "type": "object",
+                                "required": [
+                                    "system"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                    "system": {
+                                        "type": "string",
+                                        "title": "System",
+                                        "description": "The name of the computer that must restart."
                                     }
                                 }
                             }

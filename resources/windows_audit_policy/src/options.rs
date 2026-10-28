@@ -3,10 +3,10 @@
 
 //! Reads and writes the audit policy options stored as values under the LSA registry key.
 //! These are the same values that `secedit` and Group Policy write; the LSA reads them at
-//! startup, so a change takes effect after a restart.
+//! startup, so a change takes effect after a restart, which `set` reports in `_restartRequired`.
 
 use crate::audit::require_elevated;
-use crate::types::{AuditError, AuditOptionName, AuditPolicyOption, Metadata};
+use crate::types::{AuditError, AuditOptionName, AuditPolicyOption, Metadata, RestartRequired};
 use dsc_lib_registry::{RegistryHelper, config::RegistryValueData};
 use rust_i18n::t;
 
@@ -60,6 +60,7 @@ fn state(name: AuditOptionName, enabled: bool, metadata: Option<Metadata>) -> Au
         name,
         enabled: Some(enabled),
         metadata,
+        restart_required: None,
     }
 }
 
@@ -74,7 +75,8 @@ pub fn get_option(input: &AuditPolicyOption) -> Result<AuditPolicyOption, AuditE
 }
 
 /// Set one option. In what-if mode nothing is changed and the projected state carries
-/// `_metadata.whatIf`.
+/// `_metadata.whatIf`. After a change is written the returned state carries `_restartRequired`,
+/// because the LSA only reads the value at startup.
 ///
 /// # Errors
 ///
@@ -112,7 +114,10 @@ pub fn set_option(input: &AuditPolicyOption, what_if: bool) -> Result<AuditPolic
         "{}",
         serde_json::json!({ "warn": t!("option.restartRequired", name = input.name.to_string()).to_string() })
     );
-    get_option(input)
+    Ok(AuditPolicyOption {
+        restart_required: Some(vec![RestartRequired::local_system()]),
+        ..get_option(input)?
+    })
 }
 
 /// Export the state of every option.
@@ -128,6 +133,7 @@ pub fn export_options() -> Result<Vec<AuditPolicyOption>, AuditError> {
                 name: *name,
                 enabled: None,
                 metadata: None,
+                restart_required: None,
             })
         })
         .collect()

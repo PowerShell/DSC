@@ -46,7 +46,8 @@ Describe 'Windows audit policy set tests' -Skip:(!$IsWindows) {
                     success     = $Original.success
                     failure     = $Original.failure
                 } | ConvertTo-Json -Compress
-                $json | dsc resource set -r $resourceType -f - 2>$testdrive/error.log
+                $null = $json | dsc resource set -r $resourceType -f - 2>$testdrive/error.log
+                $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
             }
         }
     }

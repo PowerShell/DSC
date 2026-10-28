@@ -270,6 +270,7 @@ The following snippet contains the JSON Schema that validates an instance of the
     "_metadata": {
       "type": "object",
       "readOnly": true,
+      "additionalProperties": false,
       "properties": {
         "whatIf": {
           "type": "array",

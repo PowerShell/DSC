@@ -170,6 +170,7 @@ Describe 'Windows audit policy whatif tests' -Skip:(!$IsWindows) {
             $result.name | Should -BeExactly 'AuditBaseObjects'
             $result.enabled | Should -Be $desired
             $result._metadata.whatIf | Should -Match "Would change audit policy option 'AuditBaseObjects'"
+            $result._restartRequired | Should -BeNullOrEmpty
 
             Get-RawOptionValue -Name 'AuditBaseObjects' | Should -Be $rawBefore
         }

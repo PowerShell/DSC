@@ -11,13 +11,18 @@ Describe 'Windows audit policy list tests' -Skip:(!$IsWindows) {
         else {
             $false
         }
+        # The DS Access subcategory used below only generates events on domain controllers, so the
+        # contexts that change it are skipped there rather than briefly disabling real replication
+        # auditing. DomainRole 4 and 5 are backup and primary domain controllers.
+        $isDomainController = $IsWindows -and (Get-CimInstance -ClassName Win32_ComputerSystem).DomainRole -ge 4
+        $canChangePolicy = $isAdmin -and -not $isDomainController
     }
 
     BeforeAll {
         $resourceType = 'Microsoft.Windows/AuditPolicyList'
         # 'Other Privilege Use Events' is documented by Microsoft as not currently in use, and the
-        # DS Access subcategories only generate events on domain controllers, so toggling their
-        # auditing briefly is safe.
+        # DS Access subcategories only generate events on domain controllers, where the contexts
+        # that change them are skipped, so toggling their auditing briefly is safe.
         $first = 'Other Privilege Use Events'
         $firstGuid = '{0CCE922A-69AE-11D9-BED3-505054503030}'
         $second = 'Detailed Directory Service Replication'
@@ -63,11 +68,12 @@ Describe 'Windows audit policy list tests' -Skip:(!$IsWindows) {
                     })
                 } | ConvertTo-Json -Compress -Depth 5
                 $null = windows_audit_policy set subcategory-list --input $json 2>$testdrive/error.log
+                $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
             }
         }
     }
 
-    Context 'Get, set and test' -Skip:(!$isAdmin) {
+    Context 'Get, set and test' -Skip:(!$canChangePolicy) {
         BeforeAll {
             $script:originalState = Get-Flags
         }
@@ -162,7 +168,7 @@ resources:
         }
     }
 
-    Context 'What-if' -Skip:(!$isAdmin) {
+    Context 'What-if' -Skip:(!$canChangePolicy) {
         BeforeAll {
             $script:originalState = Get-Flags
         }
@@ -218,7 +224,7 @@ resources:
         }
     }
 
-    Context 'Input validation' -Skip:(!$isAdmin) {
+    Context 'Input validation' -Skip:(!$canChangePolicy) {
         BeforeAll {
             $script:originalState = Get-Flags
         }

@@ -106,6 +106,8 @@ metadata:
 results:
 - executionInformation:
     duration: PT0.0587219S
+    restartRequired:
+    - system: MYCOMPUTER
   metadata:
     Microsoft.DSC:
       duration: PT0.0587219S
@@ -118,8 +120,11 @@ results:
     afterState:
       name: FullPrivilegeAuditing
       enabled: true
+      _restartRequired:
+      - system: MYCOMPUTER
     changedProperties:
     - enabled
+    - _restartRequired
 - executionInformation:
     duration: PT0.0276594S
   metadata:
@@ -143,10 +148,13 @@ messages:
 hadErrors: false
 ```
 
-The first instance changed `enabled` and the resource emitted a warning that the change takes
-effect after a restart. The second instance was already in the desired state, so DSC didn't invoke
-the **Set** operation for it.
+The first instance changed `enabled`, so its `afterState` carries `_restartRequired` and DSC
+records the restart in the `restartRequired` execution information, where the
+[restartRequired()][03] function can read it. The resource also emitted a warning that the change
+takes effect after a restart. The second instance was already in the desired state, so DSC didn't
+invoke the **Set** operation for it.
 
 <!-- Link definitions -->
 [01]: ../../../../../cli/config/test.md
 [02]: ../../../../../cli/config/set.md
+[03]: ../../../../../schemas/config/functions/restartRequired.md

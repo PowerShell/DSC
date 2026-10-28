@@ -105,6 +105,11 @@ pub struct AuditPolicyOption {
     /// Metadata returned by what-if operations describing the changes that would be applied.
     #[serde(rename = "_metadata", skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Metadata>,
+
+    /// Read-only: returned by `set` after it wrote a change. The LSA only reads the options at
+    /// startup, so DSC aggregates these entries into `restartRequired('system')`.
+    #[serde(rename = "_restartRequired", skip_serializing_if = "Option::is_none")]
+    pub restart_required: Option<Vec<RestartRequired>>,
 }
 
 /// Metadata returned by what-if operations.
@@ -125,6 +130,25 @@ impl Metadata {
         } else {
             Some(Self { what_if: Some(messages) })
         }
+    }
+}
+
+/// One entry of the `_restartRequired` property, in the shape DSC's `executionInformation`
+/// schema expects: `{"system": "<computer name>"}`. An audit policy option only ever needs the
+/// system to restart.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum RestartRequired {
+    /// The named computer must restart before the change takes effect.
+    System(String),
+}
+
+impl RestartRequired {
+    /// A restart of this computer, named by `COMPUTERNAME` (or `localhost` when that is unset),
+    /// as the other built-in Windows resources report it.
+    #[must_use]
+    pub fn local_system() -> Self {
+        Self::System(std::env::var("COMPUTERNAME").unwrap_or_else(|_| "localhost".to_string()))
     }
 }
 
@@ -268,6 +292,23 @@ mod tests {
             serde_json::from_str(r#"{"name":"AuditBaseObjects","enabled":false}"#).unwrap();
         assert_eq!(option.name, AuditOptionName::AuditBaseObjects);
         assert_eq!(option.enabled, Some(false));
+        assert!(option.restart_required.is_none());
+    }
+
+    #[test]
+    fn option_serializes_restart_required_as_system_entries() {
+        let option = AuditPolicyOption {
+            name: AuditOptionName::AuditBaseObjects,
+            enabled: Some(true),
+            metadata: None,
+            restart_required: Some(vec![RestartRequired::System("HOST".to_string())]),
+        };
+        assert_eq!(
+            serde_json::to_string(&option).unwrap(),
+            r#"{"name":"AuditBaseObjects","enabled":true,"_restartRequired":[{"system":"HOST"}]}"#
+        );
+        let RestartRequired::System(name) = RestartRequired::local_system();
+        assert!(!name.is_empty());
     }
 
     #[test]
