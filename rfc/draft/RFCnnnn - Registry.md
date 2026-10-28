@@ -95,7 +95,10 @@ install:
 
 One of the args will be `cacheArg` which provides the disk location to save the resource or configuration.
 
-Resources in the cache directory will use the required convention `resource/<resourceType>/<version>` as subfolders.
+Resources in the cache directory will use the required convention `resource/<packageName>/<resourceType>/<version>` as subfolders.
+
+Since a single package can contain multiple resources, the package name just needs to be unique.
+
 Extensions will use the required convention `extension/<extensionType>/<version>` as subfolders.
 Configurations in the cache will be stored under the `configuration` folder.
 
