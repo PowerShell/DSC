@@ -47,7 +47,7 @@ pub trait DscRepoSchema : JsonSchema {
     const SCHEMA_SHOULD_BUNDLE: bool;
 
     /// Defines the translation root key to use when resolving translations for JSON Schema keywords.
-    /// 
+    ///
     /// All bundled schemas must include documentation keywords like `title` and `description`.
     const SCHEMA_I18N_ROOT_KEY: &'static str;
 
@@ -84,7 +84,7 @@ pub trait DscRepoSchema : JsonSchema {
     /// function overrides this default when exporting schemas for various versions and forms.
     ///
     /// [`generate_exportable_schema()`]: DscRepoSchema::generate_exportable_schema
-    #[must_use] 
+    #[must_use]
     fn default_export_schema_id_uri() -> String {
         Self::get_schema_id_uri(
             RecognizedSchemaVersion::VNext,
@@ -97,14 +97,14 @@ pub trait DscRepoSchema : JsonSchema {
     ///
     /// Use this to define the `$schema` keyword when deriving or manually implementing the
     /// [`schemars::JsonSchema`] trait.
-    #[must_use] 
+    #[must_use]
     fn default_export_meta_schema_uri() -> String {
         "https://json-schema.org/draft/2020-12/schema".to_string()
     }
 
     /// Generates the JSON schema for a given version and form. This function is
     /// useful for exporting the JSON Schema to disk.
-    #[must_use] 
+    #[must_use]
     fn generate_exportable_schema(
         schema_version: RecognizedSchemaVersion,
         schema_form: SchemaForm
@@ -113,7 +113,7 @@ pub trait DscRepoSchema : JsonSchema {
     }
 
     /// Generates the JSON Schema for a given version, form, and URI prefix.
-    #[must_use] 
+    #[must_use]
     fn generate_schema(
         schema_version: RecognizedSchemaVersion,
         schema_form: SchemaForm,
@@ -176,7 +176,7 @@ pub trait DscRepoSchema : JsonSchema {
     }
 
     /// Returns the path for a schema relative to the `schemas` folder.
-    #[must_use] 
+    #[must_use]
     fn get_schema_relative_path(
         schema_version: RecognizedSchemaVersion,
         schema_form: SchemaForm
@@ -338,7 +338,7 @@ pub trait DscRepoSchema : JsonSchema {
     ///
     /// - If the value is `true`, all schema forms are valid for the type.
     /// - If the value is `false`, only [`SchemaForm::Canonical`] is valid for the type.
-    #[must_use] 
+    #[must_use]
     fn get_valid_schema_forms() -> Vec<SchemaForm> {
         if Self::SCHEMA_SHOULD_BUNDLE {
             vec![SchemaForm::VSCode, SchemaForm::Bundled, SchemaForm::Canonical]
@@ -347,31 +347,36 @@ pub trait DscRepoSchema : JsonSchema {
         }
     }
 
-    /// Retrieves a translation string using a dot-path relative to the [`SCHEMA_I18N_ROOT_KEY`].
-    /// 
+    /// Retrieves a translation string using a dot-path relative to the
+    /// [`SCHEMA_I18N_ROOT_KEY`].
+    ///
     /// # Arguments
-    /// 
-    /// - `suffix` - The string to append to the root key, like `items.description`.
-    /// 
+    ///
+    /// - `suffix` - The string to append to the root key, like
+    ///   `items.description`.
+    ///
     /// # Errors
-    /// 
-    /// Returns a [`DscRepoSchemaMissingTranslationError`] error if the translation key doesn't exist.
+    ///
+    /// Returns a [`DscRepoSchemaMissingTranslationError`] error if the
+    /// translation key doesn't exist.
+    ///
+    /// [`SCHEMA_I18N_ROOT_KEY`]: Self::SCHEMA_I18N_ROOT_KEY
     fn schema_i18n(suffix: &str) -> Result<String, DscRepoSchemaMissingTranslationError>;
 
     /// Transforms the `$schema` and `$id` fields of the given schema to use the default export URIs.
-    /// 
+    ///
     /// This associated function modifies the given schema in-place to use the default export URIs for the `$schema`
     /// and `$id` fields.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// - `schema` - The mutable reference to the schema to be transformed.
-    /// 
+    ///
     /// # Example
     ///
     /// The first definition shows how you must manually define the `$schema` and `$id` fields
     /// without this transformer.
-    /// 
+    ///
     /// ```ignore
     /// # // Ignore the example because derive doesn't work in the crate doc tests
     /// #[derive(Debug, Clone, JsonSchema, DscRepoSchema)]
@@ -386,9 +391,9 @@ pub trait DscRepoSchema : JsonSchema {
     ///     pub field: String,
     /// }
     /// ```
-    /// 
+    ///
     /// With this transform, the definition is much shorter:
-    /// 
+    ///
     /// ```ignore
     /// # // Ignore the example because derive doesn't work in the crate doc tests
     /// #[derive(Debug, Clone, JsonSchema, DscRepoSchema)]
@@ -405,17 +410,17 @@ pub trait DscRepoSchema : JsonSchema {
 
     /// Inserts the localized documentation (title, description, and markdown description) into the
     /// schema if available.
-    /// 
+    ///
     /// This transform overrides the following keywords in the schema if the matching localized
     /// documentation is available:
-    /// 
+    ///
     /// - `title`
     /// - `description`
     /// - `markdownDescription`
-    /// 
-    /// To panic on missing translations, use the [`transform_schema_docs_strict`] associated 
+    ///
+    /// To panic on missing translations, use the [`transform_schema_docs_strict`] associated
     /// function instead.
-    /// 
+    ///
     /// [`transform_schema_docs_strict`]: Self::transform_schema_docs_strict
     fn transform_schema_docs(schema: &mut schemars::Schema) {
         use super::super::vscode::VSCodeSchemaExtensions;
@@ -433,22 +438,22 @@ pub trait DscRepoSchema : JsonSchema {
 
     /// Inserts the localized documentation (title, description, and markdown description) into the
     /// schema and panics if any translations are missing.
-    /// 
+    ///
     /// This transform overrides the following keywords in the schema if the matching localized
     /// documentation is available:
-    /// 
+    ///
     /// - `title`
     /// - `description`
     /// - `markdownDescription`
-    /// 
-    /// To silently ignore missing translations, use the [`transform_schema_docs`] associated 
+    ///
+    /// To silently ignore missing translations, use the [`transform_schema_docs`] associated
     /// function instead.
-    /// 
+    ///
     /// # Panics
     ///
     /// This function will panic if any of the localized documentation translations are missing for
     /// any of the keywords.
-    /// 
+    ///
     /// [`transform_schema_docs`]: Self::transform_schema_docs
     fn transform_schema_docs_strict(schema: &mut schemars::Schema) {
         use super::super::vscode::VSCodeSchemaExtensions;

@@ -141,8 +141,8 @@ param(
     [switch]$ExcludeRustTests,
     [string]$RustTestFilter,
     [switch]$ExcludePesterTests,
-    [ValidateSet("dsc", "adapters", "extensions", "grammars", "resources")]
     [string[]]$PesterTestGroup,
+    [string[]]$PesterExcludePath,
     [switch]$GetPackageVersion,
     [switch]$SkipLinkCheck,
     [switch]$UseX64MakeAppx,
@@ -378,6 +378,9 @@ process {
             }
             if ($null -ne $PesterTestGroup) {
                 $pesterParams.Group = $PesterTestGroup
+            }
+            if ($null -ne $PesterExcludePath) {
+                $pesterParams.ExcludePath = $PesterExcludePath
             }
             Write-BuildProgress @progressParams -Status "Installing PowerShell test prerequisites"
             Install-PowerShellTestPrerequisite @installParams @VerboseParam

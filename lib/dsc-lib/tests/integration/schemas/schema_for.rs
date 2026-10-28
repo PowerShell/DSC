@@ -159,5 +159,26 @@ macro_rules! test_schema_for {
             test_schema_for!(dsc_lib::extensions::secret::SecretMethod);
         }
     }
-
+    mod settings {
+        test_schema_for!(dsc_lib::settings::DscSettings);
+        test_schema_for!(dsc_lib::settings::DscSettingsScope);
+        test_schema_for!(dsc_lib::settings::DscSettingsResolved);
+        mod fields {
+            test_schema_for!(dsc_lib::settings::fields::ForbidIgnoreSettingsFileField);
+            test_schema_for!(dsc_lib::settings::fields::IgnoreSettingsFileField);
+            test_schema_for!(dsc_lib::settings::fields::ResourcePathFileData);
+            test_schema_for!(dsc_lib::settings::fields::ResourcePathResolvedSettings);
+            test_schema_for!(dsc_lib::settings::fields::TracingFileData);
+            test_schema_for!(dsc_lib::settings::fields::TracingFormatField);
+            test_schema_for!(dsc_lib::settings::fields::TracingLevelField);
+            test_schema_for!(dsc_lib::settings::fields::TracingResolvedSettings);
+        }
+        mod sources {
+            test_schema_for!(dsc_lib::settings::sources::DscSettingsCodeDefaults);
+            test_schema_for!(dsc_lib::settings::sources::CommandLineData);
+            test_schema_for!(dsc_lib::settings::sources::EnvironmentData);
+            test_schema_for!(dsc_lib::settings::sources::PolicyFileData);
+            test_schema_for!(dsc_lib::settings::sources::PreferenceFileData);
+        }
+    }
 }

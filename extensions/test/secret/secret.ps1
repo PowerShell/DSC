@@ -21,6 +21,9 @@ $secretsOne = @{
     }
     Vault2 = @{
         AnotherSecret = 'Foo'
+        SecretObject = @{
+            Hello = 'World'
+        } | ConvertTo-Json -Compress
     }
 }
 

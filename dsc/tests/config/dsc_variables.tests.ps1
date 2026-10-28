@@ -1,0 +1,44 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
+Describe 'Configruation variables tests' {
+  It 'Variables example config works' {
+    $configFile = "$PSScriptRoot/../../examples/variables.dsc.yaml"
+    $out = dsc config get -f $configFile | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0
+    $out.results[0].result.actualState.output | Should -BeExactly 'myOutput is: Hello world!, myObject is: baz'
+  }
+
+  It 'Duplicated variable takes last value' {
+    $configYaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+variables:
+  myVariable: foo
+  myVariable: bar
+resources:
+- name: test
+  type: Microsoft.DSC.Debug/Echo
+  properties:
+    output: "[variables('myVariable')]"
+'@
+    $out = dsc config get -i $configYaml | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0
+    $out.results[0].result.actualState.output | Should -Be 'bar'
+  }
+
+  It 'Missing variable returns error' {
+    $configYaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+variables:
+  hello: world
+resources:
+- name: test
+  type: Microsoft.DSC.Debug/Echo
+  properties:
+    output: "[variables('myVariable')]"
+'@
+    $out = dsc config get -i $configYaml 2>&1 | Out-String
+    $LASTEXITCODE | Should -Be 2
+    $out | Should -BeLike "*Variable 'myVariable' does not exist or has not been initialized yet*"
+  }
+}

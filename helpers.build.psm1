@@ -1404,16 +1404,16 @@ function Test-ShouldSkipProject {
     begin {}
 
     process {
-        if ($Architecture -eq 'current') {
-            if ($Project.SupportedPlatformOS -eq [DscSupportedPlatformOS]::Windows) {
-                return -not $IsWindows
-            } elseif ($Project.SupportedPlatformOS -eq [DscSupportedPlatformOS]::MacOS) {
-                return -not $IsMacOS
-            } elseif ($Project.SupportedPlatformOS -eq [DscSupportedPlatformOS]::Linux) {
-                return -not $IsLinux
-            }
+        $operatingSystem = if ($Architecture -like '*-windows-*' -or ($Architecture -eq 'current' -and $IsWindows)) {
+            [DscSupportedPlatformOS]::Windows
+        } elseif ($Architecture -like '*-apple-darwin' -or ($Architecture -eq 'current' -and $IsMacOS)) {
+            [DscSupportedPlatformOS]::MacOS
+        } elseif ($Architecture -like '*-linux-*' -or ($Architecture -eq 'current' -and $IsLinux)) {
+            [DscSupportedPlatformOS]::Linux
+        } else {
+            throw "Unsupported architecture '$Architecture'"
         }
-        return $false
+        return -not $Project.SupportedPlatformOS.HasFlag($operatingSystem)
     }
 }
 
@@ -1657,7 +1657,20 @@ function Build-RustProject {
             Test-Clippy @clippyParams
         }
 
-        $members = Get-DefaultWorkspaceMemberGroup
+        if ($Project) {
+            $rustProjects = @($Project | Where-Object {
+                $_.IsRust -and -not (Test-ShouldSkipProject -Project $_ -Architecture $Architecture)
+            })
+            if ($rustProjects.Count -eq 0) {
+                return
+            }
+            foreach ($rustProject in $rustProjects) {
+                $flags += $rustProject.ToPackageFlags()
+            }
+            $members = $rustProjects.Name -join ', '
+        } else {
+            $members = Get-DefaultWorkspaceMemberGroup
+        }
         Write-Verbose -Verbose "Building rust projects: [$members]"
         Write-Verbose "Invoking cargo:`n`tcargo build $flags"
         cargo build @flags
@@ -2830,7 +2843,23 @@ function Test-RustProject {
     }
 
     process {
-        $members = Get-DefaultWorkspaceMemberGroup
+        if ($Project) {
+            $rustProjects = @($Project | Where-Object {
+                $_.IsRust -and
+                -not $_.SkipTestProject -and
+                -not (Test-ShouldSkipProject -Project $_ -Architecture $Architecture) -and
+                -not (Test-ShouldSkipProjectTesting -Project $_)
+            })
+            if ($rustProjects.Count -eq 0) {
+                return
+            }
+            foreach ($rustProject in $rustProjects) {
+                $flags += $rustProject.ToPackageFlags()
+            }
+            $members = $rustProjects.Name -join ', '
+        } else {
+            $members = Get-DefaultWorkspaceMemberGroup
+        }
         if ($Docs) {
             Write-Verbose -Verbose "Testing documentation for rust projects: [$members]"
         } else {
@@ -2856,8 +2885,8 @@ function Test-ProjectWithPester {
     [cmdletbinding()]
     param(
         [DscProjectDefinition[]]$Project,
-        [ValidateSet("dsc", "adapters", "extensions", "grammars", "resources")]
         [string[]]$Group,
+        [string[]]$ExcludePath,
         [switch]$UsingADO
     )
 
@@ -2929,6 +2958,9 @@ function Test-ProjectWithPester {
             Write-Verbose "Invoking pester for projects: [$($Project.Name -join ', ')]"
         } else {
             Write-Verbose "Invoking pester for all groups and projects"
+        }
+        if ($ExcludePath) {
+            $pesterParams.ExcludePath = $ExcludePath
         }
         Invoke-Pester @pesterParams
     }
