@@ -62,14 +62,15 @@ Describe 'osinfo test subcommand version operator tests' {
     BeforeDiscovery {
         $osGetResult = dsc resource get -r Microsoft/OSInfo | ConvertFrom-Json
         $currentVersion = $osGetResult.actualState.version
+        $skipVersionOperators = $currentVersion -notmatch '^[0-9]'
 
         $versionTestCases = @(
-            @{ constraint = $currentVersion;          expectedState = $true;  description = 'exact version without operator' }
-            @{ constraint = "= $currentVersion";      expectedState = $true;  description = 'exact version with = operator' }
-            @{ constraint = ">= $currentVersion";     expectedState = $true;  description = '>= current version' }
-            @{ constraint = "<= $currentVersion";     expectedState = $true;  description = '<= current version' }
-            @{ constraint = "> $currentVersion";      expectedState = $false; description = '> current version' }
-            @{ constraint = "< $currentVersion";      expectedState = $false; description = '< current version' }
+            @{ constraint = $currentVersion;          expectedState = $true;  description = 'exact version without operator'; skip = $false }
+            @{ constraint = "= $currentVersion";      expectedState = $true;  description = 'exact version with = operator'; skip = $skipVersionOperators }
+            @{ constraint = ">= $currentVersion";     expectedState = $true;  description = '>= current version'; skip = $skipVersionOperators }
+            @{ constraint = "<= $currentVersion";     expectedState = $true;  description = '<= current version'; skip = $skipVersionOperators }
+            @{ constraint = "> $currentVersion";      expectedState = $false; description = '> current version'; skip = $skipVersionOperators }
+            @{ constraint = "< $currentVersion";      expectedState = $false; description = '< current version'; skip = $skipVersionOperators }
         )
 
         $invalidSyntaxCases = @(
@@ -80,7 +81,7 @@ Describe 'osinfo test subcommand version operator tests' {
     }
 
     Context 'valid version constraints' {
-        It 'version constraint "<constraint>" (<description>) should report inDesiredState = <expectedState>' -ForEach $versionTestCases {
+        It 'version constraint "<constraint>" (<description>) should report inDesiredState = <expectedState>' -ForEach $versionTestCases -Skip:$skip {
             $json = "{`"version`": `"$constraint`"}"
             $out = $json | dsc resource test -r Microsoft/OSInfo -f - | ConvertFrom-Json
             $LASTEXITCODE | Should -Be 0
@@ -99,6 +100,10 @@ Describe 'osinfo test subcommand version operator tests' {
 }
 
 Describe 'osinfo test subcommand property tests' {
+    BeforeDiscovery {
+        $hasCodename = -not [string]::IsNullOrEmpty((dsc resource get -r Microsoft/OSInfo | ConvertFrom-Json).actualState.codename)
+    }
+
     BeforeAll {
         $actual = (dsc resource get -r Microsoft/OSInfo | ConvertFrom-Json).actualState
     }
@@ -119,7 +124,7 @@ Describe 'osinfo test subcommand property tests' {
         }
     }
 
-    Context 'codename property' -Skip:(-not $IsLinux) {
+    Context 'codename property' -Skip:(-not $hasCodename) {
         It 'should be in desired state when codename matches actual' {
             $json = @{ codename = $actual.codename } | ConvertTo-Json -Compress
             $out = $json | dsc resource test -r Microsoft/OSInfo -f - | ConvertFrom-Json
@@ -133,6 +138,15 @@ Describe 'osinfo test subcommand property tests' {
             $LASTEXITCODE | Should -Be 0
             $out.inDesiredState | Should -BeFalse
         }
+    }
+
+    It 'should not be in desired state when a requested codename is not reported' -Skip:$hasCodename {
+        $json = @{ codename = 'nonexistentcodename' } | ConvertTo-Json -Compress
+        $out = $json | dsc resource test -r Microsoft/OSInfo -f - | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.inDesiredState | Should -BeFalse
+        $out.actualState._inDesiredState | Should -BeFalse
+        $out.differingProperties | Should -Contain 'codename'
     }
 
     Context 'bitness property' {
