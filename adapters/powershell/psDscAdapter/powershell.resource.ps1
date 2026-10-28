@@ -6,8 +6,8 @@
     ''
 )]
 param(
-    [Parameter(Mandatory = $true, Position = 0, HelpMessage = 'Operation to perform. Choose from List, Get, Set, Test, Export, Validate, ClearCache.')]
-    [ValidateSet('List', 'Get', 'Set', 'Test', 'Export', 'Validate', 'ClearCache')]
+    [Parameter(Mandatory = $true, Position = 0, HelpMessage = 'Operation to perform. Choose from List, Get, Set, Test, Export, ClearCache.')]
+    [ValidateSet('List', 'Get', 'Set', 'Test', 'Export', 'ClearCache')]
     [string]$Operation,
     [Parameter(Mandatory = $false, Position = 1, ValueFromPipeline = $true, HelpMessage = 'Configuration or resource input in JSON format.')]
     [string]$jsonInput = '{}',
@@ -31,13 +31,13 @@ function Write-DscTrace {
     )
 
     process {
-        $trace = @{$Operation.ToLower() = $Message }
+    $trace = @{$Operation.ToLower() = $Message }
 
-        if ($Now) {
-            $host.ui.WriteErrorLine(($trace | ConvertTo-Json -Compress -Depth 10))
-        } else {
-            $traceQueue.Enqueue($trace)
-        }
+    if ($Now) {
+        $host.ui.WriteErrorLine(($trace | ConvertTo-Json -Compress -Depth 10))
+    } else {
+        $traceQueue.Enqueue($trace)
+    }
     }
 }
 
@@ -57,8 +57,8 @@ function Write-TraceQueue() {
 $ps = [PowerShell]::Create().AddScript({
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true, Position = 0, HelpMessage = 'Operation to perform. Choose from List, Get, Set, Test, Export, Validate, ClearCache.')]
-        [ValidateSet('List', 'Get', 'Set', 'Test', 'Export', 'Validate', 'ClearCache')]
+        [Parameter(Mandatory = $true, Position = 0, HelpMessage = 'Operation to perform. Choose from List, Get, Set, Test, Export, ClearCache.')]
+        [ValidateSet('List', 'Get', 'Set', 'Test', 'Export', 'ClearCache')]
         [string]$Operation,
         [Parameter(Mandatory = $false, Position = 1, ValueFromPipeline = $true, HelpMessage = 'Configuration or resource input in JSON format.')]
         [string]$jsonInput = '{}',
@@ -126,19 +126,80 @@ $ps = [PowerShell]::Create().AddScript({
             }
         }
 
-        if ('Validate' -ne $Operation) {
-            Write-Debug -Debug -Message "jsonInput=$jsonInput"
+        Write-Debug -Debug -Message "jsonInput=$jsonInput"
 
-            # load private functions of psDscAdapter stub module
-            if ($PSVersionTable.PSVersion.Major -le 5) {
-                $psDscAdapter = Import-Module "$ScriptRoot/win_psDscAdapter.psd1" -Force -PassThru
-            }
-            else {
-                $psDscAdapter = Import-Module "$ScriptRoot/psDscAdapter.psd1" -Force -PassThru
+        # load private functions of psDscAdapter stub module
+        if ($PSVersionTable.PSVersion.Major -le 5) {
+            $psDscAdapter = Import-Module "$ScriptRoot/win_psDscAdapter.psd1" -Force -PassThru
+        }
+        else {
+            $psDscAdapter = Import-Module "$ScriptRoot/psDscAdapter.psd1" -Force -PassThru
+        }
+
+        # initialize OUTPUT as array
+        $result = [System.Collections.Generic.List[Object]]::new()
+
+        function ConvertTo-PropertySchema {
+            param(
+                [string]$PropertyType,
+                [string[]]$Values
+            )
+
+            # Windows PowerShell metadata can wrap type names in brackets.
+            $typeName = $PropertyType -replace '^\[(.*)\]$', '$1'
+            if ($typeName.EndsWith('[]')) {
+                return @{
+                    type = @('array', 'null')
+                    items = ConvertTo-PropertySchema -PropertyType $typeName.Substring(0, $typeName.Length - 2) -Values $Values
+                }
             }
 
-            # initialize OUTPUT as array
-            $result = [System.Collections.Generic.List[Object]]::new()
+            $schema = switch -Regex ($typeName -replace '^System\.', '') {
+                '^(string|char|datetime|datetimeoffset|guid|uri)$' {
+                    @{ type = @('string', 'null') }
+                    break
+                }
+                '^(securestring|security\.securestring|timespan|version)$' {
+                    # These accept string input but serialize as objects in resource output.
+                    @{ type = @('string', 'object', 'null') }
+                    break
+                }
+                '^(bool|boolean)$' {
+                    @{ type = 'boolean' }
+                    break
+                }
+                '^(byte|sbyte|short|ushort|int|uint|long|ulong|int16|uint16|int32|uint32|int64|uint64)$' {
+                    @{ type = 'integer' }
+                    break
+                }
+                '^(float|single|double|decimal)$' {
+                    @{ type = 'number' }
+                    break
+                }
+                '^(hashtable|collections\.hashtable|pscredential|management\.automation\.pscredential|ciminstance|microsoft\.management\.infrastructure\.ciminstance)$' {
+                    @{ type = @('object', 'null') }
+                    break
+                }
+                default {
+                    # Custom and embedded types can have resource-specific JSON representations.
+                    @{}
+                }
+            }
+
+            if ($Values.Count -gt 0) {
+                if ($schema.type -in @('integer', 'number')) {
+                    $schema.enum = @($Values | ForEach-Object { [decimal]::Parse($_, [Globalization.CultureInfo]::InvariantCulture) })
+                } else {
+                    $schema.anyOf = @(
+                        @{ enum = @($Values) }
+                        @{ type = 'string'; pattern = '^(?i:' + (($Values | ForEach-Object { [regex]::Escape($_) }) -join '|') + ')$' }
+                    )
+                    if ('null' -in $schema.type) {
+                        $schema.anyOf += @{ type = 'null' }
+                    }
+                }
+            }
+            return $schema
         }
 
         if ($jsonInput) {
@@ -207,8 +268,28 @@ $ps = [PowerShell]::Create().AddScript({
                     }
 
                     $properties = @()
+                    $propertySchemas = @{}
+                    $propertyPatterns = @{}
+                    $requiredProperties = @()
                     foreach ($prop in $DscResourceInfo.Properties) {
                         $properties += $prop.Name
+                        $propertySchemas[$prop.Name] = ConvertTo-PropertySchema -PropertyType $prop.PropertyType -Values $prop.Values
+                        $pattern = '^(?i:' + [regex]::Escape($prop.Name) + ')$'
+                        $propertyPatterns[$pattern] = $propertySchemas[$prop.Name]
+                        if ($prop.IsMandatory) {
+                            # Require a matching property without making PowerShell names case sensitive.
+                            $requiredProperties += @{ not = @{ propertyNames = @{ not = @{ pattern = $pattern } } } }
+                        }
+                    }
+
+                    $resourceSchema = @{
+                        '$schema' = 'https://json-schema.org/draft/2020-12/schema'
+                        type = 'object'
+                        properties = $propertySchemas
+                        patternProperties = $propertyPatterns
+                    }
+                    if ($requiredProperties.Count -gt 0) {
+                        $resourceSchema.allOf = @($requiredProperties)
                     }
 
                     # OUTPUT dsc is expecting the following properties
@@ -224,6 +305,7 @@ $ps = [PowerShell]::Create().AddScript({
                         properties     = $properties
                         requireAdapter = $requireAdapter
                         description    = $description
+                        schema         = $resourceSchema
                     }
                 }
             }
@@ -326,14 +408,8 @@ $ps = [PowerShell]::Create().AddScript({
                 }
                 return $result
             }
-            'Validate' {
-                # VALIDATE not implemented
-
-                # OUTPUT
-                @{ valid = $true }
-            }
             Default {
-                Write-Error 'Unsupported operation. Please use one of the following: List, Get, Set, Test, Export, Validate'
+                Write-Error 'Unsupported operation. Please use one of the following: List, Get, Set, Test, Export, ClearCache'
             }
         }
 
@@ -350,6 +426,7 @@ $ps = [PowerShell]::Create().AddScript({
             [string[]] $properties
             [string] $requireAdapter
             [string] $description
+            [hashtable] $schema
         }
     }
 }).AddParameter('Operation', $Operation).AddParameter('jsonInput', $jsonInput).AddParameter('ResourceType', $ResourceType).AddParameter('ResourcePath', $ResourcePath).AddParameter('ScriptRoot', $PSScriptRoot)
@@ -451,6 +528,7 @@ Start-Sleep -Milliseconds 200  # wait a bit to ensure all events are processed b
 Get-EventSubscriber | Where-Object { $_.SourceIdentifier -like 'PSAdapter.*' } | ForEach-Object { Unregister-Event -SourceIdentifier $_.SourceIdentifier }  # unregister before dispose
 Write-TraceQueue
 
+$serializationDepth = if ($Operation -eq 'List') { 100 } else { 10 }
 foreach ($obj in $outputCollection) {
-    $obj | ConvertTo-Json -Depth 10 -Compress
+    $obj | ConvertTo-Json -Depth $serializationDepth -Compress
 }
