@@ -146,12 +146,22 @@ fn enable_security_privilege() -> Result<(), AuditError> {
     unsafe { AdjustTokenPrivileges(token.0, false, Some(ptr::from_ref(&privileges)), 0, None, None) }
         .map_err(privilege_error)?;
     // AdjustTokenPrivileges succeeds even when the token does not hold the privilege at all;
-    // only the last error reveals that.
+    // only the last error reveals that. Capture it before any other call can overwrite it.
     // SAFETY: reading the calling thread's last error has no preconditions.
-    if unsafe { GetLastError() } == ERROR_NOT_ALL_ASSIGNED {
-        return Err(AuditError::ElevationRequired);
+    if unsafe { GetLastError() } != ERROR_NOT_ALL_ASSIGNED {
+        return Ok(());
     }
-    Ok(())
+    let error = last_error();
+    // A non-elevated token never holds the privilege, so elevating fixes it. An elevated token
+    // only lacks it when policy withholds the "Manage auditing and security log" user right,
+    // which elevating again cannot fix: name the missing privilege instead.
+    if get_security_context() == SecurityContext::Admin {
+        Err(AuditError::Audit(
+            t!("audit.privilegeMissing", error = error.to_string()).to_string(),
+        ))
+    } else {
+        Err(AuditError::ElevationRequired)
+    }
 }
 
 fn enumerate_categories() -> Result<AuditBuffer<GUID>, AuditError> {

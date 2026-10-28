@@ -67,6 +67,10 @@ For the list of categories and subcategories, see the [AuditPolicy][01] resource
 - All operations, including **Get** and **Export**, require an elevated (administrator) process
   context because reading the audit policy requires the `SeSecurityPrivilege` privilege. DSC
   refuses to invoke the resource from a non-elevated process.
+- The account running the elevated process must hold the **Manage auditing and security log**
+  user right. When policy removes that right, the elevated process still lacks
+  `SeSecurityPrivilege` and the resource fails with [exit code 3](#exit-code-3) and an error
+  that names the missing privilege.
 - When the audit policy is managed by Group Policy, the domain or local Group Policy setting
   overwrites the local setting at the next policy refresh. Manage the setting through Group
   Policy instead, or exclude the subcategories from Group Policy.

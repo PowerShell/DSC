@@ -16,6 +16,7 @@ elevationRequired = "Managing the Windows audit policy requires elevation. Run D
 
 [audit]
 privilegeFailed = "Failed to enable SeSecurityPrivilege: %{error}"
+privilegeMissing = "The process is elevated but its token does not hold SeSecurityPrivilege. Grant the account the 'Manage auditing and security log' user right: %{error}"
 unknownSubcategory = "Unknown audit policy subcategory '%{subcategory}'. Specify the English subcategory name or its GUID."
 duplicateSubcategory = "The audit policy subcategory '%{subcategory}' is listed more than once. List each subcategory once."
 enumerateCategoriesFailed = "Failed to enumerate audit policy categories: %{error}"
