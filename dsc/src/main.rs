@@ -220,7 +220,11 @@ fn check_debug() {
 fn check_store() -> Result<(), ExitCode> {
     use std::io::Read;
 
-    let sys = System::new_with_specifics(RefreshKind::nothing().with_processes(ProcessRefreshKind::everything()));
+    let Ok(sys) = System::new_with_specifics(RefreshKind::nothing().with_processes(ProcessRefreshKind::everything())) else {
+        warn!("{}", t!("main.failedToGetSystem"));
+        return Ok(());
+    };
+
     // get current process
     let Ok(current_pid) = get_current_pid() else {
         return Ok(());
