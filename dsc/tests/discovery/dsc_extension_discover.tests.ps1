@@ -79,6 +79,134 @@ Describe 'Discover extension tests' {
         $out.results[1].result.actualState.Output | Should -BeExactly 'Hello Two'
     }
 
+    It 'Extension discovered actions are listed by path' {
+        $out = dsc action list '*Discovered*' | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.Count | Should -Be 1 -Because ($out | Out-String)
+        $out[0].type | Should -BeExactly 'Test/DiscoveredAction'
+        $out[0].supportedOperations | Should -Be @('get')
+    }
+
+    It 'Extension discovered actions can be used in config' {
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            contentVersion: 1.0.0.0
+            resources:
+            - name: Action
+              type: Test/DiscoveredAction
+"@
+        $out = dsc config get -i $config_yaml | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results.Count | Should -Be 1
+        $out.results[0].type | Should -BeExactly 'Test/DiscoveredAction'
+        $out.results[0].result.actualState.Output | Should -BeExactly 'Hello Action'
+    }
+
+    It 'Extension discovered actions are not listed as resources' {
+        $out = dsc resource list 'Test/DiscoveredAction' | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out | Should -BeNullOrEmpty
+    }
+
+    It 'Extension can return action manifest content' {
+        $extension_json = @'
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "type": "Test/DiscoverActionContent",
+    "version": "0.1.0",
+    "description": "Test discover action content",
+    "discover": {
+        "executable": "pwsh",
+        "args": [
+            "-NoLogo",
+            "-NonInteractive",
+            "-NoProfile",
+            "-Command",
+            "./discover.ps1"
+            ]
+    }
+}
+'@
+        $discoverScript = @'
+$action = @{
+    manifestContent = @{
+        '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/action/manifest.json'
+        type = 'Test/ContentAction'
+        version = '1.2.3'
+        description = 'Action from manifest content'
+        supportedOperations = @('get')
+        invoke = @{
+            executable = 'pwsh'
+            args = @('-NoLogo', '-NonInteractive', '-NoProfile', '-Command', '''{"Output": "From content"}''')
+        }
+    }
+}
+$action | ConvertTo-Json -Compress -Depth 10
+'@
+        Set-Content -Path "$TestDrive/test.dsc.extension.json" -Value $extension_json
+        Set-Content -Path "$TestDrive/discover.ps1" -Value $discoverScript
+        $env:DSC_RESTRICTED_PATH = "$TestDrive" + [System.IO.Path]::PathSeparator + (Split-Path (Get-Command pwsh).Source -Parent)
+        try {
+            $out = dsc action list | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $out.Count | Should -Be 1 -Because ($out | Out-String)
+            $out[0].type | Should -BeExactly 'Test/ContentAction'
+            $out[0].version | Should -BeExactly '1.2.3'
+        } finally {
+            $env:DSC_RESTRICTED_PATH = $null
+        }
+    }
+
+    It 'Extension can return an action manifest list as content' {
+        $extension_json = @'
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "type": "Test/DiscoverActionList",
+    "version": "0.1.0",
+    "description": "Test discover action list",
+    "discover": {
+        "executable": "pwsh",
+        "args": ["-NoLogo", "-NonInteractive", "-NoProfile", "-Command", "./discover.ps1"]
+    }
+}
+'@
+        $discoverScript = @'
+@{
+    manifestContent = @{
+        actions = @(
+            @{
+                '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/action/manifest.json'
+                type = 'Test/ListAction'
+                version = '1.0.0'
+                supportedOperations = @('get')
+                invoke = @{
+                    executable = 'pwsh'
+                    args = @('-NoLogo', '-NonInteractive', '-NoProfile', '-Command', '''{"Output": "From list"}''')
+                    outputSchema = @{ embedded = @{ type = 'object' } }
+                }
+            }
+        )
+    }
+} | ConvertTo-Json -Compress -Depth 10
+'@
+        Set-Content -Path "$TestDrive/test.dsc.extension.json" -Value $extension_json
+        Set-Content -Path "$TestDrive/discover.ps1" -Value $discoverScript
+        $env:DSC_RESTRICTED_PATH = "$TestDrive" + [System.IO.Path]::PathSeparator + (Split-Path (Get-Command pwsh).Source -Parent)
+        try {
+            $out = dsc action list | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $out.Count | Should -Be 1 -Because ($out | Out-String)
+            $out[0].type | Should -BeExactly 'Test/ListAction'
+            $out[0].outputSchema | Should -Not -BeNullOrEmpty
+            $config = '{"$schema":"https://aka.ms/dsc/schemas/v3/bundled/config/document.json","resources":[{"name":"a","type":"Test/ListAction"}]}'
+            $result = dsc config get -i $config | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $result.results[0].result.actualState.Output | Should -BeExactly 'From list'
+        } finally {
+            $env:DSC_RESTRICTED_PATH = $null
+        }
+    }
+
     It 'Relative path from discovery will fail' {
         $extension_json = @'
 {
@@ -238,6 +366,9 @@ Describe 'Discover extension tests' {
 '@
 
         $extensions = @{
+            '.dsc.action.yml' = $false
+            '.dsc.action.yaml' = $false
+            '.dsc.action.json' = $false
             '.dsc.manifests.yml' = $false
             '.dsc.manifests.yaml' = $false
             '.dsc.manifests.json' = $false
@@ -257,7 +388,7 @@ Describe 'Discover extension tests' {
         $env:DSC_RESTRICTED_PATH = "$TestDrive" + [System.IO.Path]::PathSeparator + (Split-Path (Get-Command pwsh).Source -Parent)
         try {
             $out = dsc resource list 2> $TestDrive/error.log | ConvertFrom-Json
-            $LASTEXITCODE | Should -Be 0
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log)
             foreach ($resource in $out) {
                 if ($resource.type.startsWith('TestDiscover/')) {
                     $extensions[$resource.adaptedContent.extension] = $true

@@ -5,8 +5,9 @@ mod args;
 
 use args::{Args, SubCommand};
 use clap::Parser;
-use dsc_lib::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
+use dsc_lib::dscresources::dscresource::{DscResource, ImplementedAs};
 use dsc_lib::dscresources::resource_manifest::{GetMethod, Kind, ResourceManifest};
+use dsc_lib::resources::resource_invoke::Capability;
 use dsc_lib::schemas::dsc_repo::DscRepoSchema;
 use std::path::PathBuf;
 
@@ -22,8 +23,8 @@ fn main() {
                 deprecation_message: None,
                 description: Some("This is a test resource.".to_string()),
                 implemented_as: Some(ImplementedAs::Custom("TestResource".to_string())),
-                path: PathBuf::from("test_resource1"),
-                directory: PathBuf::from("test_directory"),
+                path: Some(PathBuf::from("test_resource1")),
+                directory: Some(PathBuf::from("test_directory")),
                 author: Some("Microsoft".to_string()),
                 properties: Some(vec!["Property1".to_string(), "Property2".to_string()]),
                 require_adapter: Some("Test/TestGroup".parse().unwrap()),
@@ -52,8 +53,8 @@ fn main() {
                 deprecation_message: None,
                 description: Some("This is a test resource.".to_string()),
                 implemented_as: Some(ImplementedAs::Custom("TestResource".to_string())),
-                path: PathBuf::from("test_resource2"),
-                directory: PathBuf::from("test_directory"),
+                path: Some(PathBuf::from("test_resource2")),
+                directory: Some(PathBuf::from("test_directory")),
                 author: Some("Microsoft".to_string()),
                 properties: Some(vec!["Property1".to_string(), "Property2".to_string()]),
                 require_adapter: Some("Test/TestGroup".parse().unwrap()),
@@ -86,8 +87,8 @@ fn main() {
                 deprecation_message: None,
                 description: Some("This is a test resource.".to_string()),
                 implemented_as: Some(ImplementedAs::Custom("TestResource".to_string())),
-                path: PathBuf::from("test_resource1"),
-                directory: PathBuf::from("test_directory"),
+                path: Some(PathBuf::from("test_resource1")),
+                directory: Some(PathBuf::from("test_directory")),
                 author: Some("Microsoft".to_string()),
                 properties: Some(vec!["Property1".to_string(), "Property2".to_string()]),
                 require_adapter: None,

@@ -3,13 +3,10 @@
 
 use crate::{
     configure::config_doc::SecurityContextKind,
-    dscresources::{
-        dscresource::Capability, resource_manifest::{Kind, ResourceManifest}
-    }, 
-    types::ResourceVersion};
-use crate::{
+    dscresources::resource_manifest::{Kind, ResourceManifest},
+    resources::resource_invoke::Capability,
     schemas::dsc_repo::DscRepoSchema,
-    types::FullyQualifiedTypeName,
+    types::{FullyQualifiedTypeName, ResourceVersion},
 };
 use rust_i18n::t;
 use schemars::JsonSchema;

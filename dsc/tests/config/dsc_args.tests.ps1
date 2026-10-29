@@ -278,37 +278,37 @@ resources:
     It 'Get operation on the adapter itself should fail' {
         dsc resource get -r Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
         $LASTEXITCODE | Should -Be 2
-        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Can not perform this operation on the adapter'
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Can not perform this operation on Microsoft.DSC/PowerShell'
     }
 
     It 'Get-all operation on the adapter itself should fail' {
         dsc resource get --all -r Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
         $LASTEXITCODE | Should -Be 2
-        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Can not perform this operation on the adapter'
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Can not perform this operation on Microsoft.DSC/PowerShell'
     }
 
     It 'Set operation on the adapter itself should fail' {
         'abc' | dsc resource set -r Microsoft.DSC/PowerShell -f - 2> $TestDrive/tracing.txt
         $LASTEXITCODE | Should -Be 2
-        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Can not perform this operation on the adapter'
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Can not perform this operation on Microsoft.DSC/PowerShell'
     }
 
     It 'Test operation on the adapter itself should fail' {
         'abc' | dsc resource test -r Microsoft.DSC/PowerShell -f - 2> $TestDrive/tracing.txt
         $LASTEXITCODE | Should -Be 2
-        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Can not perform this operation on the adapter'
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Can not perform this operation on Microsoft.DSC/PowerShell'
     }
 
     It 'Export operation on the adapter itself should fail' {
         dsc resource export -r Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
         $LASTEXITCODE | Should -Be 2
-        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Can not perform this operation on the adapter'
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Can not perform this operation on Microsoft.DSC/PowerShell'
     }
 
     It 'Delete operation on the adapter itself should fail' {
         dsc resource delete -r Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
         $LASTEXITCODE | Should -Be 2
-        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Can not perform this operation on the adapter'
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Can not perform this operation on Microsoft.DSC/PowerShell'
     }
 
     It 'Invalid --system-root' {
