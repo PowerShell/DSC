@@ -5,14 +5,15 @@ mod process_info;
 use std::env;
 use std::process::ExitCode;
 use std::io::{self, Read};
-use sysinfo::{ProcessesToUpdate, System};
+use sysinfo::{ProcessRefreshKind, RefreshKind, System, UpdateKind};
 use crate::process_info::ProcessInfo;
 
-fn get_task_list() -> Vec<ProcessInfo>
+fn get_task_list() -> Result<Vec<ProcessInfo>, ExitCode>
 {
     let mut result = Vec::new();
-    let mut s = System::new();
-    s.refresh_processes(ProcessesToUpdate::All, true);
+    let Ok(s) = System::new_with_specifics(RefreshKind::nothing().with_processes(ProcessRefreshKind::nothing().with_cmd(UpdateKind::Always))) else {
+        return Err(ExitCode::FAILURE);
+    };
     let mut count = 0;
     for (pid, process) in s.processes() {
         let mut p = ProcessInfo::new();
@@ -27,7 +28,7 @@ fn get_task_list() -> Vec<ProcessInfo>
         }
     }
 
-    result
+    Ok(result)
 }
 
 fn help() {
@@ -47,12 +48,16 @@ fn main() -> ExitCode {
         // one argument passed
         match args[1].as_str() {
             "list" => {
-                for p in get_task_list()
-                {
-                    let json = serde_json::to_string(&p).unwrap();
-                    println!("{json}");
+                match get_task_list() {
+                    Ok(processes) => {
+                        for p in processes {
+                            let json = serde_json::to_string(&p).unwrap();
+                            println!("{json}");
+                        }
+                        ExitCode::SUCCESS
+                    }
+                    Err(code) => code,
                 }
-                ExitCode::SUCCESS
             },
             "get" | "set" | "test" => { // used for testing only
                 print_input();

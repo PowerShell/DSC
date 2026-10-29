@@ -162,7 +162,10 @@ fn ctrlc_handler() {
     warn!("{}", t!("main.ctrlCReceived"));
 
     // get process tree for current process and terminate all processes
-    let sys = System::new_with_specifics(RefreshKind::nothing().with_processes(ProcessRefreshKind::everything()));
+    let Ok(sys) = System::new_with_specifics(RefreshKind::nothing().with_processes(ProcessRefreshKind::everything())) else {
+        error!("{}", t!("main.failedToGetSystem"));
+        exit(i32::from(util::EXIT_CTRL_C))
+    };
     info!("{}: {}", t!("main.foundProcesses"), sys.processes().len());
     let Ok(current_pid) = get_current_pid() else {
         error!("{}", t!("main.failedToGetPid"));
