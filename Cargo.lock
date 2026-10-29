@@ -588,9 +588,11 @@ name = "csp"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "is_elevated",
  "rust-i18n",
  "serde",
  "serde_json",
+ "test-case",
  "windows 0.62.2",
  "wmi",
 ]
