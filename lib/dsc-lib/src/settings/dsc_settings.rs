@@ -1215,7 +1215,7 @@ impl DscSettings {
                 warn!("{}", t!(
                     "settings.dsc_settings.warnCliIgnoreSetting",
                     cli_arg = "--ignore-settings-file",
-                    policy_field = "forbid_ignore_settings_file"
+                    policy_field = "forbidIgnoreSettingsFile"
                 ));
             } else {
                 if resolving.ignore_settings_file.scope < scope {
@@ -1275,7 +1275,7 @@ impl DscSettings {
                 warn!("{}", t!(
                     "settings.dsc_settings.warnEnvIgnoreSetting",
                     env_var = "DSC_IGNORE_SETTINGS_FILE",
-                    policy_field = "forbid_ignore_settings_file"
+                    policy_field = "forbidIgnoreSettingsFile"
                 ));
             } else {
                 if resolving.ignore_settings_file.scope < scope {
@@ -1357,8 +1357,8 @@ impl DscSettings {
                 if *forbid_ignore && *ignore{
                     warn!("{}", t!(
                         "settings.dsc_settings.warnPolicyIgnoreSetting",
-                        ignore_settings_file = "ignore_settings_file",
-                        forbid_ignore_settings_file = "forbid_ignore_settings_file"
+                        ignore_settings_file = "ignoreSettingsFile",
+                        forbid_ignore_settings_file = "forbidIgnoreSettingsFile"
                     ));
                 } else {
                     resolving.ignore_settings_file = DscSettingsResolvedField::for_policy(ignore);

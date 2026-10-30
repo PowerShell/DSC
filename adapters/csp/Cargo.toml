@@ -13,6 +13,12 @@ serde_json = { workspace = true }
 windows = { workspace = true }
 wmi = { workspace = true }
 
+[dev-dependencies]
+test-case = { workspace = true }
+
+[target.'cfg(windows)'.dev-dependencies]
+is_elevated = { workspace = true }
+
 [package.metadata.i18n]
 available-locales = ["en-us"]
 default-locale = "en-us"

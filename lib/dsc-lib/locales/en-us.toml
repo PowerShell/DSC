@@ -117,7 +117,6 @@ importingParametersFromInput = "Importing parameters from simple input"
 invalidParamsFormat = "Invalid parameters format: %{error}"
 
 [discovery.commandDiscovery]
-couldNotReadSetting = "Could not read 'resourcePath' setting"
 appendingEnvPath = "Appending PATH to resourcePath"
 originalPath = "Original PATH: %{path}"
 failedGetEnvPath = "Failed to get PATH environment variable"
@@ -158,8 +157,6 @@ conditionNotMet = "Condition '%{condition}' not met, skipping manifest at '%{pat
 adaptedResourcePathNotFound = "Adapted resource '%{resource}' path not found: %{path}"
 invalidManifestFileName = "Invalid manifest file name '%{path}'"
 failedLoadManifest = "Failed to load manifest: %{err}"
-restrictedPath = "DSC_RESTRICTED_PATH: %{path}"
-resourcePath = "DSC_RESOURCE_PATH: %{path}"
 adapterNameFilter = "Using type name filter '%{filter}' as filter for adapter name"
 adapterNameFilterForDiscovery = "Using type name filter '%{filter}' for adapter name"
 resourceNameFilter = "Using type name filter '%{filter}' as filter for resource name"
@@ -172,6 +169,8 @@ failedCreateLookupTableDirectory = "Unable to create parent directories of the l
 failedGetLookupTableDirectory = "Unable to get directory of the lookup_table file %{path}"
 failedSerializeLookupTable = "Unable to serialize lookup_table to json"
 readLookupTable = "Read %{count} items into lookup table from %{path}"
+restrictedResourcePathEmptyDirectories = "unable to discover any manifests - DSC setting `%{restricted_setting}` is `true` and `%{directories_setting}` is empty"
+warnExeHomeNotInRestrictedPath = "cannot discover or invoke built-in resources or extensions - DSC executable home '%{exe_home}' is not included in the restricted resource path directories (%{dirs})"
 
 [dscresources.commandResource]
 invokeGet = "Invoking get for '%{resource}'"
@@ -920,6 +919,7 @@ booleanConversion = "Function boolean argument conversion"
 exitCode = "exit code"
 commandResource = "Command: Resource"
 commandExecutable = "Command: Executable"
+commandNotInRestrictedDirs = "unable to invoke `%{name}` - DSC setting `resourcePath.restricted` is `true` and executable parent folder `%{parent}` is not in `resourcePath.directories` (%{dirs})"
 manifestDescription = "manifest description"
 commandOperation = "Command: Operation"
 forExecutable = "for executable"
@@ -990,10 +990,10 @@ policyFolderNotSecureLinux = "Only root should have write access (no group/other
 policyFolderNotSecureWindows = "Only SYSTEM and Administrators should have write access"
 traceResolved = "resolved settings from all loaded sources: %{effective}"
 traceResolvedScope = "resolved settings after applying %{scope}: %{effective}"
-warnCliIgnoreSetting = "ignoring the command line argument `%{cli_arg}` because '%{policy_field}' is set to true"
-warnEnvIgnoreSetting = "ignoring the environment variable `%{env_var}` because '%{policy_field}' is set to true"
+warnCliIgnoreSetting = "ignoring the command line argument `%{cli_arg}` because the `%{policy_field}` policy  is set to `true`"
+warnEnvIgnoreSetting = "ignoring the environment variable `%{env_var}` because the `%{policy_field}` policy  is set to `true`"
 warnLoadScopeFailed = "failed to load %{scope} settings: %{error}"
-warnPolicyIgnoreSetting = "ignoring the policy setting `%{ignore_settings_file}` because `%{forbid_ignore_settings_file}` is set to true"
+warnPolicyIgnoreSetting = "ignoring the policy setting `%{ignore_settings_file}` because the `%{forbid_ignore_settings_file}` policy is set to `true`"
 
 [settings.errors]
 invalidScope = "unable to case-insensitively parse '%{text}' as a valid DSC settings scope - valid scopes are: %{variant_list}, and %{variant_last}"
@@ -1021,17 +1021,10 @@ debugLoadingFile = "trying to load %{scope} file from '%{file_path}' for setting
 debugLoadingFile = "trying to load preference file for %{scope} scope from '%{file_path}' for settings..."
 
 [util]
-foundSetting = "Found setting '%{name}' in %{path}"
-notFoundSetting = "Setting '%{name}' not found in %{path}"
 failedToGetExePath = "Can't get 'dsc' executable path"
-settingNotFound = "Setting '%{name}' not found"
 failedToAbsolutizePath = "Failed to absolutize path '%{path}'"
 executableNotFoundInWorkingDirectory = "Executable '%{executable}' not found with working directory '%{cwd}'"
 executableNotFound = "Executable '%{executable}' not found"
-policyFolderNotSecure = "Policy folder '%{path}' is not secure, settings file will not be used. Required permissions: %{required}"
-policyFolderNotSecureLinux = "Only root should have write access (no group/other write bits)"
-policyFolderNotSecureWindows = "Only SYSTEM and Administrators should have write access"
-ignoreSettingsFile = "Ignoring settings file due to environment variable 'DSC_IGNORE_SETTINGS_FILE' being set or '--ignore-settings-file' flag being used"
 
 [types.date_version]
 invalidDay = "day `%{day}` for month `%{month}` is invalid - must be between `01` and `%{max_days}`"
