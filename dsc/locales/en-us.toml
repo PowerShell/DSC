@@ -125,6 +125,10 @@ invalidDescriptionPattern = "Invalid function description pattern '%{pattern}'"
 resourceNotAdapter = "The resource '%{adapter}' is not a valid adapter"
 adapterNotFound = "Adapter '%{adapter}' does not exist"
 
+[server.query_dsc_config]
+invalidConfiguration = "Invalid configuration document"
+jsonConversion = "Failed to convert JSON to configuration"
+
 [server.show_dsc_resource]
 resourceNotFound = "Resource type '%{type_name}' does not exist"
 
@@ -178,6 +182,7 @@ failedToReadStdin = "Failed to read input from STDIN"
 failedToReadFile = "Failed to read input file"
 noInput = "No input provided"
 emptyInput = "Empty input provided"
+failedToParseConfiguration = "Invalid JSON or YAML Configuration"
 failedToParseInput = "Invalid JSON or YAML"
 failedToAbsolutizePath = "Error making config path absolute"
 failedToGetParentPath = "Error reading config path parent"

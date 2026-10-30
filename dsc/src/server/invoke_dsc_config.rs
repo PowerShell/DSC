@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::server::mcp_server::McpServer;
-use crate::util::current_dsc_version;
+use crate::util::{current_dsc_version, parse_input_to_json_value};
 use dsc_lib::{
     configure::{
         config_doc::{Configuration, ExecutionKind},
@@ -82,40 +82,21 @@ impl McpServer {
         }): Parameters<InvokeDscConfigRequest>,
     ) -> Result<Json<InvokeDscConfigResponse>, McpError> {
         let result = task::spawn_blocking(move || {
-            let config: Configuration = match serde_yaml::from_str::<serde_yaml::Value>(&configuration) {
-                Ok(yaml_value) => match serde_json::to_value(yaml_value) {
-                    Ok(json_value) => match serde_json::from_value(json_value) {
-                        Ok(config) => config,
-                        Err(e) => {
-                            return Err(McpError::invalid_request(
-                                format!(
-                                    "{}: {e}",
-                                    t!("server.invoke_dsc_config.invalidConfiguration")
-                                ),
-                                None,
-                            ))
-                        }
-                    },
-                    Err(e) => {
-                        return Err(McpError::invalid_request(
-                            format!(
-                                "{}: {e}",
-                                t!("server.invoke_dsc_config.failedConvertJson")
-                            ),
-                            None,
-                        ))
-                    }
-                },
+            let config_value = match parse_input_to_json_value(&configuration, "Configuration") {
+                Ok(value) => value,
                 Err(e) => {
                     return Err(McpError::invalid_request(
-                        format!(
-                            "{}: {e}",
-                            t!("server.invoke_dsc_config.invalidConfiguration")
-                        ),
-                        None,
-                    ))
+                        t!("server.invoke_dsc_config.invalidConfiguration"),
+                        Some(serde_json::Value::String(e.to_string())),
+                    ));
                 }
             };
+            let config = serde_json::from_value::<Configuration>(config_value).map_err(|e| {
+                McpError::invalid_request(
+                    t!("server.invoke_dsc_config.invalidConfiguration"),
+                    Some(serde_json::Value::String(e.to_string())),
+                )
+            })?;
 
             let config_json = match serde_json::to_string(&config) {
                 Ok(json) => json,
