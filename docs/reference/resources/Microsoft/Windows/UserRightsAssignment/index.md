@@ -267,10 +267,9 @@ from obtaining the right through another holder. To deny a right regardless of g
 assign the matching `SeDeny*` right instead; a deny right always takes precedence over the
 matching allow right.
 
-Because this property is write-only, DSC doesn't compare it and it never appears in the actual
-state. When you use `add` or `remove`, the `differingProperties` list that DSC reports may still
-name `identity` even though the resource reports the instance as in the desired state; rely on
-`inDesiredState` for the verdict.
+Because this property is write-only, it never appears in the actual state or in
+`differingProperties`. The resource lists `identity` under `differingProperties` only when the
+holders don't satisfy `identity` under the chosen `setAction`.
 
 ### _inDesiredState
 

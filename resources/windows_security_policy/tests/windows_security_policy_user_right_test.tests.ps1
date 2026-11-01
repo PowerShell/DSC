@@ -92,6 +92,27 @@ Describe 'User rights assignment test tests' -Skip:(!$IsWindows) {
             (Test-UserRightState -Properties @{ right = $testRight; identity = @($guests); setAction = 'remove' }).inDesiredState | Should -BeFalse
         }
 
+        It 'Reports no differing properties when in the desired state with <description>' -TestCases @(
+            @{ description = 'an explicit replace'; properties = @{ identity = @('BUILTIN\Guests'); setAction = 'replace' } }
+            @{ description = 'another spelling of the account'; properties = @{ identity = @('S-1-5-32-546') } }
+            @{ description = 'an add of an account that holds the right'; properties = @{ identity = @('BUILTIN\Guests'); setAction = 'add' } }
+            @{ description = 'a remove of an account that does not hold the right'; properties = @{ identity = @('NT AUTHORITY\ANONYMOUS LOGON'); setAction = 'remove' } }
+        ) {
+            $result = Test-UserRightState -Properties (@{ right = $testRight } + $properties)
+            $result.inDesiredState | Should -BeTrue
+            $result.differingProperties | Should -BeNullOrEmpty
+        }
+
+        It 'Reports only identity as differing with setAction <setAction>' -TestCases @(
+            @{ setAction = 'replace'; identity = @('NT AUTHORITY\ANONYMOUS LOGON') }
+            @{ setAction = 'add'; identity = @('NT AUTHORITY\ANONYMOUS LOGON') }
+            @{ setAction = 'remove'; identity = @('BUILTIN\Guests') }
+        ) {
+            $result = Test-UserRightState -Properties @{ right = $testRight; identity = $identity; setAction = $setAction }
+            $result.inDesiredState | Should -BeFalse
+            @($result.differingProperties) | Should -Be @('identity')
+        }
+
         It 'Fails when identity is missing' {
             $null = windows_security_policy test user-right --input "{`"right`":`"$testRight`"}" 2>$testdrive/error.log
             $LASTEXITCODE | Should -Be 2

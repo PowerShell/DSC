@@ -89,13 +89,11 @@ actualState:
   - NT AUTHORITY\NETWORK SERVICE
   _inDesiredState: true
 inDesiredState: true
-differingProperties:
-- identity
+differingProperties: []
 ```
 
-The resource reports `inDesiredState: true` because `Everyone` holds the right. DSC still lists
-`identity` under `differingProperties` because the arrays differ; rely on `inDesiredState` when
-you use `add` or `remove`.
+The resource reports `inDesiredState: true` and no differing properties because `Everyone` holds
+the right. With `setAction: add`, the other holders don't count as a difference.
 
 ## Export every right
 
@@ -131,6 +129,6 @@ Applying an exported document with `dsc config set` makes every right match the 
 because `setAction` defaults to `replace`.
 
 <!-- Link definitions -->
-[01]: ../../../../../../cli/resource/get.md
-[02]: ../../../../../../cli/resource/test.md
-[03]: ../../../../../../cli/resource/export.md
+[01]: ../../../../../cli/resource/get.md
+[02]: ../../../../../cli/resource/test.md
+[03]: ../../../../../cli/resource/export.md

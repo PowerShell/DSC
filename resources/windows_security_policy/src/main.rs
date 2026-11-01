@@ -77,7 +77,10 @@ fn main() -> ExitCode {
         ("set", "user-right") => {
             with_input(options.input, |input: UserRightsAssignment| user_rights::set(&input, options.what_if))
         }
-        ("test", "user-right") => with_input(options.input, |input: UserRightsAssignment| user_rights::test(&input)),
+        ("test", "user-right") => match require_input::<UserRightsAssignment>(options.input) {
+            Ok(input) => finish_state_and_diff(user_rights::test(&input)),
+            Err(code) => code,
+        },
         ("export", "user-right") => finish_many(user_rights::export()),
         (_, target) => {
             write_error(&t!("main.unknownTarget", target = target));
@@ -144,6 +147,22 @@ fn exit_code_for(error: &types::SecurityPolicyError) -> ExitCode {
 fn finish<T: serde::Serialize>(result: Result<T, types::SecurityPolicyError>) -> ExitCode {
     match result {
         Ok(value) => match print_json(&value) {
+            Ok(()) => ExitCode::from(EXIT_SUCCESS),
+            Err(code) => code,
+        },
+        Err(error) => {
+            write_error(&error.to_string());
+            exit_code_for(&error)
+        }
+    }
+}
+
+/// Print the two lines of a `stateAndDiff` result, the state and then the JSON array of the
+/// properties that differ, or write the error and return its exit code.
+#[cfg(windows)]
+fn finish_state_and_diff<T: serde::Serialize>(result: Result<(T, Vec<String>), types::SecurityPolicyError>) -> ExitCode {
+    match result {
+        Ok((state, differing)) => match print_json(&state).and_then(|()| print_json(&differing)) {
             Ok(()) => ExitCode::from(EXIT_SUCCESS),
             Err(code) => code,
         },

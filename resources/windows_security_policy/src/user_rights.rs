@@ -129,14 +129,30 @@ pub fn get(input: &UserRightsAssignment) -> Result<UserRightsAssignment, Securit
     Ok(state(&input.right, &current_identities(&policy, right)?))
 }
 
+/// The properties that differ from the desired state. `identity` is the only comparable
+/// property: `right` is the key and `setAction` is write-only.
+///
+/// # Arguments
+///
+/// * `grant` - The accounts that `diff` would grant the right to.
+/// * `revoke` - The accounts that `diff` would revoke the right from.
+fn differing_properties(grant: &[&ResolvedIdentity], revoke: &[&ResolvedIdentity]) -> Vec<String> {
+    if grant.is_empty() && revoke.is_empty() {
+        Vec::new()
+    } else {
+        vec!["identity".to_string()]
+    }
+}
+
 /// Test whether the holders of a right satisfy `identity` under `setAction`, comparing SIDs so
-/// that any accepted spelling of an account matches.
+/// that any accepted spelling of an account matches. Returns the actual state and the properties
+/// that differ from the desired state.
 ///
 /// # Errors
 ///
 /// Returns an error when the process is not elevated, the right or an identity is unknown,
 /// `identity` is missing, or an LSA call fails.
-pub fn test(input: &UserRightsAssignment) -> Result<UserRightsAssignment, SecurityPolicyError> {
+pub fn test(input: &UserRightsAssignment) -> Result<(UserRightsAssignment, Vec<String>), SecurityPolicyError> {
     require_elevated()?;
     let right = find_right(&input.right)?;
     let desired = sid::resolve_identities(require_identity(input)?)?;
@@ -145,7 +161,7 @@ pub fn test(input: &UserRightsAssignment) -> Result<UserRightsAssignment, Securi
     let (grant, revoke) = diff(&current, &desired, input.set_action);
     let mut result = state(&input.right, &current);
     result.in_desired_state = Some(grant.is_empty() && revoke.is_empty());
-    Ok(result)
+    Ok((result, differing_properties(&grant, &revoke)))
 }
 
 /// Apply `identity` to a right under `setAction`. In what-if mode nothing is changed and the
@@ -161,19 +177,7 @@ pub fn set(input: &UserRightsAssignment, what_if: bool) -> Result<UserRightsAssi
     // Resolve first so that bad input fails even in what-if mode.
     let desired = sid::resolve_identities(require_identity(input)?)?;
     let policy = LsaPolicy::open(if what_if { POLICY_READ } else { POLICY_WRITE })?;
-
-    let current = match current_identities(&policy, right) {
-        Ok(current) => current,
-        Err(error) if what_if => {
-            return Ok(UserRightsAssignment {
-                right: input.right.clone(),
-                identity: input.identity.clone(),
-                metadata: Metadata::from_messages(vec![error.to_string()]),
-                ..UserRightsAssignment::default()
-            });
-        }
-        Err(error) => return Err(error),
-    };
+    let current = current_identities(&policy, right)?;
 
     if what_if {
         return Ok(preview(input, right, &current, &desired));
@@ -278,6 +282,23 @@ mod tests {
         assert_eq!(project(&current, &[], &[]), ["alpha", "Zed"]);
     }
 
+    #[test]
+    fn differing_properties_follow_the_set_action_not_the_arrays() {
+        let current = [identity("A", 1), identity("B", 2)];
+        let differing = |desired: &[ResolvedIdentity], action| {
+            let (grant, revoke) = diff(&current, desired, action);
+            differing_properties(&grant, &revoke)
+        };
+        let none: [&str; 0] = [];
+
+        assert_eq!(differing(&[identity("A", 1)], SetAction::Add), none, "other holders are kept");
+        assert_eq!(differing(&[identity("C", 3)], SetAction::Remove), none, "absent accounts are already removed");
+        assert_eq!(differing(&[identity("b-alias", 2), identity("a-alias", 1)], SetAction::Replace), none, "SIDs are compared");
+        assert_eq!(differing(&[identity("C", 3)], SetAction::Add), ["identity"]);
+        assert_eq!(differing(&[identity("A", 1)], SetAction::Remove), ["identity"]);
+        assert_eq!(differing(&[identity("A", 1)], SetAction::Replace), ["identity"]);
+    }
+
     fn what_if_request(set_action: SetAction) -> UserRightsAssignment {
         UserRightsAssignment {
             right: "sedenybatchlogonright".to_string(),
@@ -354,8 +375,9 @@ mod tests {
             let current = get(&input).unwrap();
             assert_eq!(current.right, "SeChangeNotifyPrivilege");
             assert!(current.identity.unwrap().iter().any(|name| name == "Everyone"));
-            let tested = test(&UserRightsAssignment { set_action: SetAction::Add, ..input.clone() }).unwrap();
+            let (tested, differing) = test(&UserRightsAssignment { set_action: SetAction::Add, ..input.clone() }).unwrap();
             assert_eq!(tested.in_desired_state, Some(true));
+            assert!(differing.is_empty());
             assert_eq!(export().unwrap().len(), USER_RIGHTS.len());
         } else {
             assert!(matches!(get(&input), Err(SecurityPolicyError::ElevationRequired)));

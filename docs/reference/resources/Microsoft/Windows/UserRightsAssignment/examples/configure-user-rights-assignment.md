@@ -113,8 +113,7 @@ results:
       - NT VIRTUAL MACHINE\Virtual Machines
       _inDesiredState: true
     inDesiredState: true
-    differingProperties:
-    - identity
+    differingProperties: []
 - executionInformation:
     duration: PT0.0511306S
   metadata:
@@ -144,8 +143,8 @@ hadErrors: false
 ```
 
 The second instance is in the desired state because `ALL SERVICES` already holds the right. The
-resource decides `inDesiredState` from `setAction`; DSC still lists `identity` under
-`differingProperties` because the arrays differ.
+resource decides both `inDesiredState` and `differingProperties` from `setAction`, so the other
+holder doesn't count as a difference.
 
 ## Set the configuration
 
@@ -322,5 +321,5 @@ describes no change. The third instance uses `remove`, so the preview revokes on
 keeps the other holders.
 
 <!-- Link definitions -->
-[01]: ../../../../../../cli/config/test.md
-[02]: ../../../../../../cli/config/set.md
+[01]: ../../../../../cli/config/test.md
+[02]: ../../../../../cli/config/set.md

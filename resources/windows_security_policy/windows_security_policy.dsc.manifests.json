@@ -50,7 +50,7 @@
                         "mandatory": true
                     }
                 ],
-                "return": "state",
+                "return": "stateAndDiff",
                 "requireSecurityContext": "elevated"
             },
             "export": {
