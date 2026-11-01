@@ -62,6 +62,7 @@ Visit https://aka.ms/dscv3-docs for more information on how to use DSC.exe.
 
 Press any key to close this window"""
 failedToStartServer = "Failed to start server: %{error}"
+failedToGetSystem = "Failed to get system information"
 
 [resolve]
 processingInclude = "Processing Include input"

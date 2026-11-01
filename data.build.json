@@ -69,6 +69,8 @@
       "y2j"
     ],
     "Windows": [
+      "csp.exe",
+      "csp.dsc.resource.json",
       "appx.dsc.extension.json",
       "appx-discover.ps1",
       "dism_dsc.exe",

@@ -134,7 +134,7 @@ pub(crate) fn get_recognized_uris_subschema(
         "title",
         "description",
         "markdownDescription",
-        "enumMarkdownDescriptions",
+        "markdownEnumDescriptions",
         "enumDescriptions",
         "completionDetail",
         "defaultSnippets",

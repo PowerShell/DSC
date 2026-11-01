@@ -1,0 +1,13 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+  - name: Disable Wi-Fi internet sharing
+    type: Microsoft.Windows.CSP/MDM_Policy_Config01_Wifi02
+    properties:
+      ParentID: ./Vendor/MSFT/Policy/Config
+      InstanceID: WiFi
+      AllowInternetSharing: 0
+    directives:
+      requireAdapter: Microsoft.Windows.Adapter/ConfigurationServiceProvider
