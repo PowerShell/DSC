@@ -1027,7 +1027,7 @@ pub fn load_adapted_resource_manifest(path: Option<&Path>, manifest: &AdaptedDsc
     resource.version = manifest.version.clone();
     resource.capabilities = manifest.capabilities.clone();
     resource.require_adapter = Some(manifest.require_adapter.clone());
-    resource.directory = if directory.is_empty() {
+    resource.directory = if directory.as_os_str().is_empty() {
         None
     } else {
         Some(directory.to_path_buf())

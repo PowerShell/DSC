@@ -24,6 +24,10 @@ use tracing::error;
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
+#[schemars(
+    transform = Self::transform_export_schema_uris,
+    transform = Self::transform_schema_docs
+)]
 #[dsc_repo_schema(base_name = "list", folder_path = "outputs/action")]
 pub struct DscAction {
     /// The namespaced name of the extension.

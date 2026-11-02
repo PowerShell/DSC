@@ -12,6 +12,10 @@ use std::fmt::Display;
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
+#[schemars(
+    transform = Self::transform_export_schema_uris,
+    transform = Self::transform_schema_docs,
+)]
 #[dsc_repo_schema(
     base_name = "manifest",
     folder_path = "action",
@@ -56,6 +60,10 @@ pub struct ActionManifest {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
+#[schemars(
+    transform = Self::transform_export_schema_uris,
+    transform = Self::transform_schema_docs,
+)]
 #[dsc_repo_schema(base_name = "supportedOperations.action", folder_path = "definitions")]
 pub enum SupportedOperations {
     Get,
@@ -77,6 +85,10 @@ impl Display for SupportedOperations {
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
+#[schemars(
+    transform = Self::transform_export_schema_uris,
+    transform = Self::transform_schema_docs,
+)]
 #[dsc_repo_schema(base_name = "manifest.invoke", folder_path = "action")]
 pub struct InvokeMethod {
     /// The executable to run on action invocation.
@@ -91,9 +103,9 @@ pub struct InvokeMethod {
     pub require_security_context: Option<SecurityContextKind>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(untagged)]
-#[dsc_repo_schema(base_name = "commandArgs.action", folder_path = "definitions")]
+#[schemars(inline)]
 pub enum ArgKind {
     String(String),
     Json {
@@ -111,16 +123,16 @@ pub enum ArgKind {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(untagged)]
-#[dsc_repo_schema(base_name = "commandArgs.action", folder_path = "definitions")]
+#[schemars(inline)]
 pub enum SchemaArgKind {
     String(String),
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
-#[dsc_repo_schema(base_name = "command.schema", folder_path = "definitions")]
+#[schemars(inline)]
 pub struct SchemaCommand {
     /// The command to run to get the schema.
     pub executable: String,
@@ -129,12 +141,15 @@ pub struct SchemaCommand {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[serde(rename_all = "camelCase")]
+#[schemars(
+    transform = Self::transform_export_schema_uris,
+    transform = Self::transform_schema_docs
+)]
 #[dsc_repo_schema(base_name = "manifest.schema", folder_path = "action")]
 pub enum SchemaKind {
     /// The schema is returned by running a command.
-    #[serde(rename = "command")]
     Command(SchemaCommand),
     /// The schema is embedded in the manifest.
-    #[serde(rename = "embedded")]
     Embedded(Value),
 }
