@@ -8,7 +8,7 @@ use rust_i18n::t;
 use serde::Deserialize;
 use serde_json::{Map, Value};
 use std::{collections::HashMap, env, path::Path, process::Stdio};
-use crate::{configure::{config_doc::{ExecutionKind, SecurityContextKind, Operation}, config_result::{ResourceGetResult, ResourceTestResult}, schema_cache::{RESOURCE_SCHEMAS, get_resource_schema}}, dscresources::{resource_manifest::{ExportSchemaKind, ExportSchemaOrFiltering, SchemaArgKind}}, types::ExitCodesMap, util::canonicalize_which};
+use crate::{configure::{config_doc::{ExecutionKind, SecurityContextKind}, config_result::{ResourceGetResult, ResourceTestResult}, context::Context, schema_cache::{RESOURCE_SCHEMAS, get_resource_schema}}, dscresources::{dscresource::Operation, resource_manifest::{ExportSchemaKind, ExportSchemaOrFiltering, SchemaArgKind}}, parser::Statement, types::ExitCodesMap, util::canonicalize_which};
 use crate::dscerror::DscError;
 use crate::locked_insert;
 use crate::resources::invoke_result::{DeleteResult, DeleteResultKind, GetResult, SetResult, TestResult, ValidateResult, ResolveResult, ExportResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse, get_in_desired_state};
@@ -34,7 +34,7 @@ pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
 /// # Errors
 ///
 /// Error returned if the resource does not successfully get the current state
-pub fn invoke_get(resource: &DscResource, filter: &str, target_resource: Option<&DscResource>) -> Result<GetResult, DscError> {
+pub fn invoke_get(resource: &DscResource, filter: &str, context: &Context) -> Result<GetResult, DscError> {
     debug!("{}", t!("dscresources.commandResource.invokeGet", resource = &resource.type_name));
     let Some(manifest) = &resource.manifest else {
         return Err(DscError::MissingManifest(resource.type_name.to_string()));
@@ -43,14 +43,14 @@ pub fn invoke_get(resource: &DscResource, filter: &str, target_resource: Option<
     let Some(get) = &manifest.get else {
         return Err(DscError::NotImplemented("get".to_string()));
     };
-    let command_resource = match target_resource {
+    let command_resource = match context.target_resource {
         Some(target) => target,
         None => resource
     };
-    validate_security_context(target_resource, &get.require_security_context, &command_resource.type_name, &Operation::Get)?;
-    let args = process_get_args(get.args.as_ref(), filter, command_resource);
+    validate_security_context(context.target_resource, &get.require_security_context, &command_resource.type_name, &Operation::Get)?;
+    let args = process_get_args(get.args.as_ref(), filter, command_resource, &context)?;
     if !filter.is_empty() {
-        verify_json_from_manifest(resource, filter, target_resource)?;
+        verify_json_from_manifest(resource, filter, context.target_resource)?;
         command_input = get_command_input(get.input.as_ref(), filter)?;
     }
 
@@ -58,7 +58,7 @@ pub fn invoke_get(resource: &DscResource, filter: &str, target_resource: Option<
     let (_exit_code, stdout, stderr) = invoke_command(&get.executable, args, command_input.stdin.as_deref(), resource.directory.as_deref(), command_input.env, manifest.exit_codes.as_ref())?;
     if resource.kind == Kind::Resource {
         debug!("{}", t!("dscresources.commandResource.verifyOutputUsing", resource = &resource.type_name, executable = &get.executable));
-        verify_json_from_manifest(resource, &stdout, target_resource)?;
+        verify_json_from_manifest(resource, &stdout, context.target_resource)?;
     }
 
     let result: GetResult = if let Ok(group_response) = serde_json::from_str::<Vec<ResourceGetResult>>(&stdout) {
@@ -997,10 +997,10 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
 /// # Returns
 ///
 /// A vector of strings representing the processed arguments
-pub fn process_get_args(args: Option<&Vec<GetArgKind>>, input: &str, resource: &DscResource) -> Option<Vec<String>> {
+pub fn process_get_args(args: Option<&Vec<GetArgKind>>, input: &str, resource: &DscResource, context: &Context) -> Result<Option<Vec<String>>, DscError> {
     let Some(arg_values) = args else {
         debug!("{}", t!("dscresources.commandResource.noArgs"));
-        return None;
+        return Ok(None);
     };
 
     let mut processed_args = Vec::<String>::new();
@@ -1022,6 +1022,26 @@ pub fn process_get_args(args: Option<&Vec<GetArgKind>>, input: &str, resource: &
                     }
                 } else {
                     debug!("{}", t!("dscresources.commandResource.noAdaptedContent", resource = &resource.type_name));
+                }
+            },
+            GetArgKind::Expression { arg, expression, mandatory } => {
+                if input.is_empty() && *mandatory != Some(true) {
+                    continue;
+                }
+
+                if let Some(arg) = arg {
+                    processed_args.push(arg.clone());
+                }
+                let mut parser = Statement::new()?;
+                let result = parser.parse_and_execute(expression, context)?;
+                if result.is_null() && *mandatory != Some(true) {
+                    continue;
+                }
+                if result.is_null() {
+                    processed_args.push(String::new());
+                    continue;
+                } else {
+                    processed_args.push(serde_json::to_string(&result)?);
                 }
             },
             GetArgKind::Json { json_input_arg, mandatory } => {

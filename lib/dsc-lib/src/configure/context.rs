@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use chrono::{DateTime, Local};
-use crate::{configure::config_doc::{ExecutionKind, Operation, UserFunctionDefinition}, extensions::dscextension::DscExtension};
+use crate::{configure::config_doc::{ExecutionKind, Operation, UserFunctionDefinition}, dscresources::dscresource::DscResource,extensions::dscextension::DscExtension};
 use crate::types::SemanticVersion;
 use dsc_lib_security_context::{get_security_context, SecurityContext};
 use serde_json::{Map, Value};
@@ -48,6 +48,7 @@ pub struct Context {
     pub state_changed: HashMap<String, bool>,
     pub stdout: Option<String>,
     pub system_root: PathBuf,
+    pub target_resource: Option<&DscResource>,
     pub user_functions: HashMap<String, UserFunctionDefinition>,
     pub variables: Map<String, Value>,
 }
@@ -80,6 +81,7 @@ impl Context {
             state_changed: HashMap::new(),
             stdout: None,
             system_root: get_default_os_system_root(),
+            target_resource: None,
             user_functions: HashMap::new(),
             variables: Map::new(),
         }
