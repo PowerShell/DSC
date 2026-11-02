@@ -166,7 +166,7 @@ resources:
 
     It 'resource tracing shows up' -Skip:(!$IsWindows) {
         # Assumption here is that DSC/PowerShellGroup provider is visible
-        dsc -l trace resource list * -a *PowerShell* 2> $TestDrive/tracing.txt
+        dsc -l trace resource list '*' -a '*PowerShell*' 2> $TestDrive/tracing.txt
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'PSModulePath'
         $LASTEXITCODE | Should -Be 0
     }
@@ -236,7 +236,9 @@ resources:
 
     It 'verify `dsc resource list * adapter_filter`' {
         # return all resources of adapters that match adapter_filter filter
-        $a = dsc resource list '*' -a Test* -o json | ConvertFrom-Json
+        $a = dsc resource list '*' -a 'Test*' -o json | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $a | Should -Not -BeNullOrEmpty
         foreach ($r in $a) {
             $r.requireAdapter.StartsWith("Test") | Should -Be $true
             $r.kind | Should -Be "resource"
@@ -245,7 +247,7 @@ resources:
 
     It 'verify `dsc resource list resource_filter adapter_filter`' {
         # same as previous but also apply resource_filter filter to resource types
-        $a = dsc resource list *TestResource2 -a *TestGroup -o json | ConvertFrom-Json
+        $a = dsc resource list '*TestResource2' -a '*TestGroup' -o json | ConvertFrom-Json
         $a.Count | Should -Be 1
         $r = $a[0]
         $r.requireAdapter | Should -Not -BeNullOrEmpty
