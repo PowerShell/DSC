@@ -42,9 +42,9 @@ Describe 'Windows Update Export operation tests' -Skip:(!$IsWindows) {
 
         It 'should filter by isInstalled=false' -Skip:(!$IsWindows) {
             $json = '{"updates":[{"isInstalled": false}]}'
-            $out = $json | dsc resource export -r $resourceType -f - -o json 2>&1
+            $out = $json | dsc resource export -r $resourceType -f - -o json 2>$TestDrive/Error.log
 
-            $LASTEXITCODE | Should -Be 0
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/Error.log)
             $config = $out | ConvertFrom-Json
             $result = $config.resources[0].properties
             if ($result.updates.Count -gt 0) {
