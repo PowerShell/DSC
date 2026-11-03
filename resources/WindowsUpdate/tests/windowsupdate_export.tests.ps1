@@ -90,19 +90,16 @@ Describe 'Windows Update Export operation tests' -Skip:(!$IsWindows) {
             }
         }
 
-        It 'should fail when wildcard filter has no matches' -Skip:(!$IsWindows) {
+        It 'should return empty array when wildcard filter has no matches' -Skip:(!$IsWindows) {
             $json = '{"updates":[{"title": "ThisUpdateShouldNeverExist99999*"}]}'
-            $stderr = $json | dsc resource export -r $resourceType -f - -o json 2>&1
+            $out = $json | dsc resource export -r $resourceType -f - -o json 2>$null
 
-            # Should fail because the filter has criteria but no matches
-            $LASTEXITCODE | Should -Not -Be 0
-
-            # Check for error message in stderr
-            $errorText = $stderr | Out-String
-            $errorText | Should -Match 'No matching update found'
+            $LASTEXITCODE | Should -Be 0
+            $config = $out | ConvertFrom-Json
+            @($config.resources[0].properties.updates).Count | Should -Be 0
         }
 
-        It 'should fail if filter with specific exact title has no matches' -Skip:(!$IsWindows) {
+        It 'should return empty array if filter with specific exact title has no matches' -Skip:(!$IsWindows) {
             # Use a very specific title that won't match (no wildcard)
             $json = @{
                 updates = @(
@@ -111,14 +108,11 @@ Describe 'Windows Update Export operation tests' -Skip:(!$IsWindows) {
                     }
                 )
             } | ConvertTo-Json -Depth 10 -Compress
-            $stderr = $json | dsc resource export -r $resourceType -f - 2>&1
+            $out = $json | dsc resource export -r $resourceType -f - -o json 2>$null
 
-            # Should fail because the filter has criteria but no matches
-            $LASTEXITCODE | Should -Not -Be 0
-
-            # Check for error message in stderr
-            $errorText = $stderr | Out-String
-            $errorText | Should -Match 'No matching update found'
+            $LASTEXITCODE | Should -Be 0
+            $config = $out | ConvertFrom-Json
+            @($config.resources[0].properties.updates).Count | Should -Be 0
         }
 
         It 'should succeed with empty filter object (no criteria)' -Skip:(!$IsWindows) {
@@ -136,7 +130,7 @@ Describe 'Windows Update Export operation tests' -Skip:(!$IsWindows) {
             $result.updates.Count | Should -BeGreaterThan 0
         }
 
-        It 'should fail if any filter with criteria has no matches' -Skip:(!$IsWindows) {
+        It 'should still return matches when another filter has no matches' -Skip:(!$IsWindows) {
             # Get an actual update
             $allOut = '{"updates":[{}]}' | dsc resource export -r $resourceType -f - -o json 2>&1
 
@@ -157,14 +151,11 @@ Describe 'Windows Update Export operation tests' -Skip:(!$IsWindows) {
                             }
                         )
                     } | ConvertTo-Json -Depth 10 -Compress
-                    $stderr = $json | dsc resource export -r $resourceType -f - 2>&1
+                    $out = $json | dsc resource export -r $resourceType -f - -o json 2>$null
 
-                    # Should fail because second filter has no matches
-                    $LASTEXITCODE | Should -Not -Be 0
-
-                    # Check for error message in stderr
-                    $errorText = $stderr | Out-String
-                    $errorText | Should -Match 'No matching update found'
+                    $LASTEXITCODE | Should -Be 0
+                    $config = $out | ConvertFrom-Json
+                    @($config.resources[0].properties.updates).Count | Should -Be 1
                 }
             }
         }
