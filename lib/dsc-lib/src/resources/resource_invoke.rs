@@ -2,61 +2,61 @@
 // Licensed under the MIT License.
 
 use crate::{
-    actions::dscaction::DscAction, configure::config_doc::ExecutionKind, discovery::ResourceKind, dscerror::DscError, dscresources::dscresource::DscResource, resources::{ManifestKind, invoke_result::{DeleteResultKind, ExportResult, GetResult, ResolveResult, SetResult, TestResult, ValidateResult}}, schemas::{dsc_repo::DscRepoSchema, transforms::idiomaticize_string_enum}, types::{FullyQualifiedTypeName, ResourceVersion},
+    actions::{action_manifest::SupportedOperation, dscaction::DscAction},
+    configure::config_doc::ExecutionKind,
+    discovery::ResourceKind,
+    dscerror::DscError,
+    dscresources::dscresource::{DscResource, ResourceCapability},
+    resources::{
+        ManifestKind,
+        invoke_result::{DeleteResultKind, ExportResult, GetResult, ResolveResult, SetResult, TestResult, ValidateResult}
+    },
+    types::{FullyQualifiedTypeName, ResourceVersion},
 };
 
-use schemars::JsonSchema;
+// use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
-use std::fmt::Display;
+// use std::fmt::Display;
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema, Ord, PartialOrd)]
-#[serde(rename_all = "camelCase")]
-#[dsc_repo_schema(base_name = "resourceCapabilities", folder_path = "definitions")]
-#[schemars(
-    transform = idiomaticize_string_enum,
-    transform = Capability::transform_export_schema_uris,
-    transform = Capability::transform_schema_docs
-)]
-pub enum Capability {
-    /// The resource supports retrieving configuration.
-    Get,
-    /// The resource supports applying configuration.
-    Set,
-    /// The resource supports the `_exist` property directly.
-    SetHandlesExist,
-    /// The resource supports simulating configuration directly for `set`
-    SetWhatIf,
-    /// The resource supports validating configuration.
-    Test,
-    /// The resource supports deleting configuration.
-    Delete,
-    /// The resource supports simulating configuration directly for `delete`
-    DeleteWhatIf,
-    /// The resource supports exporting configuration.
-    Export,
-    /// The resource supports resolving imported configuration.
-    Resolve,
-    /// The resource supports invoking an action.
-    Invoke,
+#[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum Capabilities {
+    Action(Vec<SupportedOperation>),
+    Resource(Vec<ResourceCapability>)
 }
 
-impl Display for Capability {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Capabilities {
+    pub fn as_action(&self) -> Option<&Vec<SupportedOperation>> {
         match self {
-            Capability::Get => write!(f, "get"),
-            Capability::Set => write!(f, "set"),
-            Capability::SetHandlesExist => write!(f, "setHandlesExist"),
-            Capability::SetWhatIf => write!(f, "setWhatIf"),
-            Capability::Test => write!(f, "test"),
-            Capability::Delete => write!(f, "delete"),
-            Capability::DeleteWhatIf => write!(f, "deleteWhatIf"),
-            Capability::Export => write!(f, "export"),
-            Capability::Resolve => write!(f, "resolve"),
-            Capability::Invoke => write!(f, "invoke"),
+            Capabilities::Action(ops) => Some(ops),
+            _ => None,
+        }
+    }
+    pub fn as_resource(&self) -> Option<&Vec<ResourceCapability>> {
+        match self {
+            Capabilities::Resource(caps) => Some(caps),
+            _ => None,
         }
     }
 }
+
+// impl Display for Capability {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         match self {
+//             Capability::Get => write!(f, "get"),
+//             Capability::Set => write!(f, "set"),
+//             Capability::SetHandlesExist => write!(f, "setHandlesExist"),
+//             Capability::SetWhatIf => write!(f, "setWhatIf"),
+//             Capability::Test => write!(f, "test"),
+//             Capability::Delete => write!(f, "delete"),
+//             Capability::DeleteWhatIf => write!(f, "deleteWhatIf"),
+//             Capability::Export => write!(f, "export"),
+//             Capability::Resolve => write!(f, "resolve"),
+//             Capability::Invoke => write!(f, "invoke"),
+//         }
+//     }
+// }
 
 /// The interface for a Resource.
 pub trait ResourceInvoke: Send + Sync {
@@ -176,7 +176,7 @@ pub trait ResourceInvoke: Send + Sync {
     /// # Returns
     ///
     /// The capabilities of the resource.
-    fn capabilities(&self) -> Vec<Capability>;
+    fn capabilities(&self) -> Capabilities;
 
     /// Get the manifest of the resource.
     ///
@@ -237,6 +237,36 @@ pub trait ResourceInvoke: Send + Sync {
     ///
     /// The cloned boxed trait object.
     fn clone_box(&self) -> Box<dyn ResourceInvoke>;
+
+    /// Checks whether the resource has the specified [`ResourceCapability`].
+    ///
+    /// # Arguments
+    ///
+    /// - `cap` - The resource capability to check.
+    ///
+    /// # Returns
+    ///
+    /// `true` if the resource has the specified capability, `false` otherwise.
+    fn has_resource_capability(&self, cap: &ResourceCapability) -> bool {
+        self.capabilities()
+            .as_resource()
+            .is_some_and(|caps| caps.contains(cap))
+    }
+
+    /// Checks whether the resource supports the specified [`SupportedOperation`].
+    ///
+    /// # Arguments
+    ///
+    /// - `op` - The action operation to check.
+    ///
+    /// # Returns
+    ///
+    /// `true` if the resource supports the specified operation, `false` otherwise.
+    fn supports_action_operation(&self, op: &SupportedOperation) -> bool {
+        self.capabilities()
+            .as_action()
+            .is_some_and(|ops| ops.contains(op))
+    }
 }
 
 impl Clone for Box<dyn ResourceInvoke> {

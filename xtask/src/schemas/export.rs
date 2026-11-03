@@ -114,7 +114,6 @@ pub(crate) fn export_schemas(
         dsc_lib::actions::action_manifest::InvokeMethod,
         dsc_lib::actions::action_manifest::SchemaKind,
         dsc_lib::actions::dscaction::DscAction,
-        dsc_lib::resources::resource_invoke::Capability,
         dsc_lib::resources::invoke_result::DeleteResult,
         dsc_lib::resources::invoke_result::DeleteWhatIfResult,
         dsc_lib::resources::invoke_result::ExportResult,

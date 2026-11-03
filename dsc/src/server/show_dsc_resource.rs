@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::server::mcp_server::McpServer;
-use dsc_lib::{DscManager, discovery::discovery_trait::DiscoveryFilter, dscresources::resource_manifest::Kind, resources::resource_invoke::Capability, types::{FullyQualifiedTypeName, ResourceVersion}};
+use dsc_lib::{DscManager, discovery::discovery_trait::DiscoveryFilter, dscresources::{dscresource::ResourceCapability, resource_manifest::Kind}, types::{FullyQualifiedTypeName, ResourceVersion}};
 use rmcp::{ErrorData as McpError, Json, tool, tool_router, handler::server::wrapper::Parameters};
 use rust_i18n::t;
 use schemars::{JsonSchema, json_schema};
@@ -23,7 +23,7 @@ pub struct DscResource {
     /// The version of the resource.
     pub version: ResourceVersion,
     /// The capabilities of the resource.
-    pub capabilities: Vec<Capability>,
+    pub capabilities: Vec<ResourceCapability>,
     /// The description of the resource.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,

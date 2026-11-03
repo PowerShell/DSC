@@ -2,14 +2,14 @@
 // Licensed under the MIT License.
 
 use crate::{
-    actions::action_manifest::{ActionManifest, ArgKind, InvokeMethod, SchemaArgKind, SchemaKind, SupportedOperations},
+    actions::action_manifest::{ActionManifest, ArgKind, InvokeMethod, SchemaArgKind, SchemaKind, SupportedOperation},
     configure::config_doc::{ExecutionKind, Operation},
     discovery::{command_discovery::verify_executable, ResourceKind},
     dscerror::DscError,
     dscresources::{command_resource::{invoke_command, validate_security_context}, dscresource::DscResource},
     resources::{
         invoke_result::{DeleteResultKind, GetResult, SetResult, ExportResult, ResolveResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse, TestResult, ValidateResult},
-        ManifestKind, resource_invoke::{Capability, ResourceInvoke},
+        ManifestKind, resource_invoke::{Capabilities, ResourceInvoke},
     },
     schemas::dsc_repo::DscRepoSchema,
     types::{ExitCodesMap, FullyQualifiedTypeName, ResourceVersion,SemanticVersion}
@@ -52,7 +52,7 @@ pub struct DscAction {
     /// The directory path to the extension.
     pub directory: Option<PathBuf>,
     /// The operations supported by the action.
-    pub supported_operations: Vec<SupportedOperations>,
+    pub supported_operations: Vec<SupportedOperation>,
     /// The manifest of the extension.
     pub manifest: ActionManifest,
 }
@@ -121,10 +121,10 @@ impl DscAction {
 
 impl ResourceInvoke for DscAction {
     fn get(&self, filter: &str) -> Result<GetResult, DscError> {
-        let result = if self.supported_operations.contains(&SupportedOperations::Get) {
+        let result = if self.supported_operations.contains(&SupportedOperation::Get) {
             self.invoke_action(filter, &ExecutionKind::Actual)?
         } else {
-            return Err(DscError::NotSupported(t!("actions.dscaction.actionUnsupportedOperation", operation = SupportedOperations::Get, action = &self.type_name).to_string()));
+            return Err(DscError::NotSupported(t!("actions.dscaction.actionUnsupportedOperation", operation = SupportedOperation::Get, action = &self.type_name).to_string()));
         };
         let get_result_response = ResourceGetResponse {
             actual_state: result.clone()
@@ -133,10 +133,10 @@ impl ResourceInvoke for DscAction {
     }
 
     fn set(&self, desired: &str, _skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
-        let result = if self.supported_operations.contains(&SupportedOperations::Set) {
+        let result = if self.supported_operations.contains(&SupportedOperation::Set) {
             self.invoke_action(desired, execution_type)?
         } else {
-            return Err(DscError::NotSupported(t!("actions.dscaction.actionUnsupportedOperation", operation = SupportedOperations::Set, action = &self.type_name).to_string()));
+            return Err(DscError::NotSupported(t!("actions.dscaction.actionUnsupportedOperation", operation = SupportedOperation::Set, action = &self.type_name).to_string()));
         };
         let set_result_response = ResourceSetResponse {
             before_state: result.clone(),
@@ -147,10 +147,10 @@ impl ResourceInvoke for DscAction {
     }
 
     fn test(&self, expected: &str) -> Result<TestResult, DscError> {
-        let result = if self.supported_operations.contains(&SupportedOperations::Test) {
+        let result = if self.supported_operations.contains(&SupportedOperation::Test) {
             self.invoke_action(expected, &ExecutionKind::Actual)?
         } else {
-            return Err(DscError::NotSupported(t!("actions.dscaction.actionUnsupportedOperation", operation = SupportedOperations::Test, action = &self.type_name).to_string()));
+            return Err(DscError::NotSupported(t!("actions.dscaction.actionUnsupportedOperation", operation = SupportedOperation::Test, action = &self.type_name).to_string()));
         };
         let test_response = ResourceTestResponse {
             desired_state: result.clone(),
@@ -162,10 +162,10 @@ impl ResourceInvoke for DscAction {
     }
 
     fn export(&self, input: &str) -> Result<ExportResult, DscError> {
-        let result = if self.supported_operations.contains(&SupportedOperations::Export) {
+        let result = if self.supported_operations.contains(&SupportedOperation::Export) {
             self.invoke_action(input, &ExecutionKind::Actual)?
         } else {
-            return Err(DscError::NotSupported(t!("actions.dscaction.actionUnsupportedOperation", operation = SupportedOperations::Export, action = &self.type_name).to_string()));
+            return Err(DscError::NotSupported(t!("actions.dscaction.actionUnsupportedOperation", operation = SupportedOperation::Export, action = &self.type_name).to_string()));
         };
         Ok(ExportResult {
             actual_state: vec![result.clone()]
@@ -200,18 +200,8 @@ impl ResourceInvoke for DscAction {
         false
     }
 
-    fn capabilities(&self) -> Vec<Capability> {
-        // convert the supported_operations to capabilities
-        let mut capabilties = vec![];
-        for op in &self.supported_operations {
-            match op {
-                SupportedOperations::Get => capabilties.push(Capability::Get),
-                SupportedOperations::Set => capabilties.push(Capability::Set),
-                SupportedOperations::Test => capabilties.push(Capability::Test),
-                SupportedOperations::Export => capabilties.push(Capability::Export),
-            }
-        }
-        capabilties
+    fn capabilities(&self) -> Capabilities {
+        Capabilities::Action(self.supported_operations.clone())
     }
 
 
@@ -342,7 +332,7 @@ pub(crate) fn load_action_manifest(path: Option<&Path>, manifest: &ActionManifes
     if let Some(operations) = &manifest.supported_operations {
         supported_operations.extend(operations.clone());
     } else {
-        supported_operations.push(SupportedOperations::Set);
+        supported_operations.push(SupportedOperation::Set);
     }
     let input_schema = if let Some(input_schema_kind) = manifest.invoke.input_schema.as_ref() {
         let schema = get_schema(input_schema_kind, Some(&parent), manifest.exit_codes.as_ref())?;

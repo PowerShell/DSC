@@ -6,7 +6,8 @@ use crate::resolve::{get_contents, Include};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
 use crate::util::{current_dsc_version, get_input, get_schema, in_desired_state, set_dscconfigroot, write_object, DSC_CONFIG_ROOT, EXIT_DSC_ASSERTION_FAILED, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_VALIDATION_FAILED};
-use dsc_lib::actions::action_manifest::SupportedOperations;
+use dsc_lib::actions::action_manifest::SupportedOperation;
+use dsc_lib::dscresources::dscresource::ResourceCapability;
 use dsc_lib::types::{FullyQualifiedTypeName, ResourceVersionReq, TypeNameFilter};
 use dsc_lib::{configure::{config_doc::{Configuration, ExecutionKind, Resource},
     config_result::ResourceGetResult, Configurator},
@@ -18,7 +19,7 @@ use dsc_lib::{configure::{config_doc::{Configuration, ExecutionKind, Resource},
     extensions::dscextension::Capability as ExtensionCapability,
     functions::{FunctionCategory, FunctionDispatcher},
     progress::ProgressFormat,
-    resources::{invoke_result::{TestResult, ValidateResult, ResolveResult},resource_invoke::Capability},
+    resources::invoke_result::{TestResult, ValidateResult, ResolveResult},
     util::convert_wildcard_to_regex,
 };
 use regex::RegexBuilder;
@@ -661,10 +662,10 @@ fn list_actions(dsc: &mut DscManager, action_name: &TypeNameFilter, format: Opti
 
     let mut include_separator = false;
     let operation_types = [
-        (SupportedOperations::Get, "g"),
-        (SupportedOperations::Set, "s"),
-        (SupportedOperations::Test, "t"),
-        (SupportedOperations::Export, "e"),
+        (SupportedOperation::Get, "g"),
+        (SupportedOperation::Set, "s"),
+        (SupportedOperation::Test, "t"),
+        (SupportedOperation::Export, "e"),
     ];
 
     for manifest_resource in dsc.list_available(&DiscoveryKind::Action, action_name, None, progress_format) {
@@ -919,15 +920,15 @@ pub fn list_resources(
     for manifest_resource in dsc.list_available(&DiscoveryKind::Resource, resource_name, adapter_name, progress_format) {
         if let ImportedManifest::Resource(resource) = manifest_resource {
             let capability_types = [
-                (Capability::Get, "g"),
-                (Capability::Set, "s"),
-                (Capability::SetWhatIf, "w"),
-                (Capability::SetHandlesExist, "x"),
-                (Capability::Test, "t"),
-                (Capability::Delete, "d"),
-                (Capability::DeleteWhatIf, "W"),
-                (Capability::Export, "e"),
-                (Capability::Resolve, "r"),
+                (ResourceCapability::Get, "g"),
+                (ResourceCapability::Set, "s"),
+                (ResourceCapability::SetWhatIf, "w"),
+                (ResourceCapability::SetHandlesExist, "x"),
+                (ResourceCapability::Test, "t"),
+                (ResourceCapability::Delete, "d"),
+                (ResourceCapability::DeleteWhatIf, "W"),
+                (ResourceCapability::Export, "e"),
+                (ResourceCapability::Resolve, "r"),
             ];
             let mut capabilities = "-".repeat(capability_types.len());
 

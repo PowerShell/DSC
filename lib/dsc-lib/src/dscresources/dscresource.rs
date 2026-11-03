@@ -10,7 +10,7 @@ use crate::{
     discovery::{discovery_trait::DiscoveryFilter, ResourceKind},
     dscresources::{adapted_resource_manifest::AdaptedDscResourceManifest, resource_manifest::{AdapterInputKind, Kind}},
     resources::{invoke_result::{GetResult, SetResult, TestResult, DeleteResultKind, ValidateResult, ExportResult, ResolveResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse},
-        ManifestKind, resource_invoke::{Capability, ResourceInvoke},
+        ManifestKind, resource_invoke::{Capabilities, ResourceInvoke},
     },
     schemas::dsc_repo::DscRepoSchema,
     types::{FullyQualifiedTypeName, ResourceVersion}
@@ -47,7 +47,7 @@ pub struct DscResource {
     /// The version of the resource.
     pub version: ResourceVersion,
     /// The capabilities of the resource.
-    pub capabilities: Vec<Capability>,
+    pub capabilities: Vec<ResourceCapability>,
     /// An optional message indicating the resource is deprecated.  If provided, the message will be shown when the resource is used.
     pub deprecation_message: Option<String>,
     /// The file path to the resource.
@@ -74,6 +74,35 @@ pub struct DscResource {
     pub adapted_manifest: Option<AdaptedDscResourceManifest>,
     /// The content of the adapted resource, if available.
     pub adapted_content: Option<Map<String, Value>>,
+}
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema, Ord, PartialOrd)]
+#[serde(rename_all = "camelCase")]
+#[dsc_repo_schema(base_name = "resourceCapabilities", folder_path = "definitions")]
+#[schemars(
+    transform = crate::schemas::transforms::idiomaticize_string_enum,
+    transform = Self::transform_export_schema_uris,
+    transform = Self::transform_schema_docs
+)]
+pub enum ResourceCapability {
+    /// The resource supports retrieving configuration.
+    Get,
+    /// The resource supports applying configuration.
+    Set,
+    /// The resource supports the `_exist` property directly.
+    SetHandlesExist,
+    /// The resource supports simulating configuration directly for `set`
+    SetWhatIf,
+    /// The resource supports validating configuration.
+    Test,
+    /// The resource supports deleting configuration.
+    Delete,
+    /// The resource supports simulating configuration directly for `delete`
+    DeleteWhatIf,
+    /// The resource supports exporting configuration.
+    Export,
+    /// The resource supports resolving imported configuration.
+    Resolve,
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -231,7 +260,7 @@ impl DscResource {
         let mut configurator = self.clone().create_config_for_adapter(adapter, filter)?;
         let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&*adapter)? == AdapterInputKind::Single {
-            if adapter.capabilities().contains(&Capability::Delete) {
+            if adapter.has_resource_capability(&ResourceCapability::Delete) {
                 adapter.set_target_resource(Box::new(target_resource.clone()))?;
                 return adapter.delete(filter, execution_type);
             }
@@ -505,8 +534,8 @@ impl ResourceInvoke for DscResource {
         self.kind == Kind::Group
     }
 
-    fn capabilities(&self) -> Vec<Capability> {
-        self.capabilities.clone()
+    fn capabilities(&self) -> Capabilities {
+        Capabilities::Resource(self.capabilities.clone())
     }
 
     fn type_name(&self) -> FullyQualifiedTypeName {

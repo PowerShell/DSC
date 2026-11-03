@@ -3,7 +3,7 @@
 
 use crate::server::mcp_server::McpServer;
 use dsc_lib::{
-    DscManager, actions::action_manifest::SupportedOperations, configure::config_doc::SecurityContextKind, discovery::discovery_trait::DiscoveryFilter, types::{FullyQualifiedTypeName, SemanticVersion},
+    DscManager, actions::action_manifest::SupportedOperation, configure::config_doc::SecurityContextKind, discovery::discovery_trait::DiscoveryFilter, types::{FullyQualifiedTypeName, SemanticVersion},
 };
 use rmcp::{ErrorData as McpError, Json, tool, tool_router, handler::server::wrapper::Parameters};
 use rust_i18n::t;
@@ -25,7 +25,7 @@ pub struct DscAction {
     /// The version of the action.
     pub version: SemanticVersion,
     /// The supported operations of the action.
-    pub supported_operations: Vec<SupportedOperations>,
+    pub supported_operations: Vec<SupportedOperation>,
     /// The description of the action.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,

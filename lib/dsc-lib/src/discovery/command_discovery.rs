@@ -2,13 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::{
-    actions::{action_manifest::ActionManifest, dscaction::{DscAction, load_action_manifest}},
-    discovery::{DiscoveryExtensionCache, DiscoveryManifestCache, DiscoveryCache,
-    discovery_trait::{DiscoveryFilter, DiscoveryKind, ResourceDiscovery}, matches_adapter_requirement},
-    dscresources::{adapted_resource_manifest::AdaptedDscResourceManifest, resource_manifest::SetDeleteArgKind},
-    parser::Statement,
-    resources::resource_invoke::ResourceInvoke,
-    types::{FullyQualifiedTypeName, TypeNameFilter}
+    actions::{action_manifest::ActionManifest, dscaction::{DscAction, load_action_manifest}}, discovery::{DiscoveryCache, DiscoveryExtensionCache, DiscoveryManifestCache, discovery_trait::{DiscoveryFilter, DiscoveryKind, ResourceDiscovery}, matches_adapter_requirement}, dscresources::{adapted_resource_manifest::AdaptedDscResourceManifest, dscresource::ResourceCapability, resource_manifest::SetDeleteArgKind}, parser::Statement, resources::resource_invoke::ResourceInvoke, types::{FullyQualifiedTypeName, TypeNameFilter}
 };
 use crate::{locked_clear, locked_is_empty, locked_extend, locked_clone, locked_get};
 use crate::configure::{config_doc::ResourceDiscoveryMode, context::Context};
@@ -20,7 +14,6 @@ use crate::dscerror::DscError;
 use crate::extensions::dscextension::{self, DscExtension, Capability as ExtensionCapability};
 use crate::extensions::extension_manifest::ExtensionManifest;
 use crate::progress::{ProgressBar, ProgressFormat};
-use crate::resources::resource_invoke::Capability;
 use crate::schemas::dsc_repo::DscRepoSchema;
 use crate::schemas::transforms::idiomaticize_externally_tagged_enum;
 use crate::util::get_setting;
@@ -1056,51 +1049,51 @@ fn load_resource_manifest(path: Option<&Path>, manifest: &ResourceManifest) -> R
         Kind::Resource
     };
 
-    let mut capabilities: HashSet<Capability> = HashSet::new();
+    let mut capabilities: HashSet<ResourceCapability> = HashSet::new();
     let parent = path.and_then(|p| p.parent());
     if let Some(get) = &manifest.get {
         verify_executable(&manifest.resource_type, "get", &get.executable, parent);
-        capabilities.insert(Capability::Get);
+        capabilities.insert(ResourceCapability::Get);
     }
     if let Some(set) = &manifest.set {
         verify_executable(&manifest.resource_type, "set", &set.executable, parent);
-        capabilities.insert(Capability::Set);
+        capabilities.insert(ResourceCapability::Set);
         if set.handles_exist == Some(true) {
-            capabilities.insert(Capability::SetHandlesExist);
+            capabilities.insert(ResourceCapability::SetHandlesExist);
         }
         if let Some(args) = &set.args && args_contains_what_if(args) {
-            capabilities.insert(Capability::SetWhatIf);
+            capabilities.insert(ResourceCapability::SetWhatIf);
         }
     }
     if let Some(test) = &manifest.test {
         verify_executable(&manifest.resource_type, "test", &test.executable, parent);
-        capabilities.insert(Capability::Test);
+        capabilities.insert(ResourceCapability::Test);
     }
     if let Some(delete) = &manifest.delete {
         verify_executable(&manifest.resource_type, "delete", &delete.executable, parent);
-        capabilities.insert(Capability::Delete);
+        capabilities.insert(ResourceCapability::Delete);
         if let Some(args) = &delete.args && args_contains_what_if(args) {
-            capabilities.insert(Capability::DeleteWhatIf);
+            capabilities.insert(ResourceCapability::DeleteWhatIf);
         }
     }
     if let Some(export) = &manifest.export {
         verify_executable(&manifest.resource_type, "export", &export.executable, parent);
-        capabilities.insert(Capability::Export);
+        capabilities.insert(ResourceCapability::Export);
     }
     if let Some(resolve) = &manifest.resolve {
         verify_executable(&manifest.resource_type, "resolve", &resolve.executable, parent);
-        capabilities.insert(Capability::Resolve);
+        capabilities.insert(ResourceCapability::Resolve);
     }
     if let Some(SchemaKind::Command(command)) = &manifest.schema {
         verify_executable(&manifest.resource_type, "schema", &command.executable, parent);
     }
     if let Some(what_if) = &manifest.what_if {
         verify_executable(&manifest.resource_type, "what-if", &what_if.executable, parent);
-        capabilities.insert(Capability::SetWhatIf);
+        capabilities.insert(ResourceCapability::SetWhatIf);
     }
 
     let mut resource = DscResource::new();
-    let mut capabilities: Vec<Capability> = capabilities.into_iter().collect();
+    let mut capabilities: Vec<ResourceCapability> = capabilities.into_iter().collect();
     capabilities.sort();
     resource.type_name = manifest.resource_type.clone();
     resource.author = manifest.author.clone();

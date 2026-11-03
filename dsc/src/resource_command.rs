@@ -8,9 +8,9 @@ use dsc_lib::configure::add_resource_export_results_to_configuration;
 use dsc_lib::discovery::ResourceKind;
 use dsc_lib::discovery::discovery_trait::DiscoveryFilter;
 use dsc_lib::DscManager;
-use dsc_lib::dscresources::dscresource::get_diff;
+use dsc_lib::dscresources::dscresource::{ResourceCapability, get_diff};
 use dsc_lib::dscerror::DscError;
-use dsc_lib::resources::{invoke_result::{DeleteResultKind, GetResult, ResourceGetResponse, SetResult, ResourceSetResponse}, resource_invoke::{Capability, ResourceInvoke}};
+use dsc_lib::resources::{invoke_result::{DeleteResultKind, GetResult, ResourceGetResponse, SetResult, ResourceSetResponse}, resource_invoke::ResourceInvoke};
 use dsc_lib::types::{FullyQualifiedTypeName, ResourceVersionReq};
 use rust_i18n::t;
 use serde_json::Value;
@@ -155,7 +155,7 @@ pub fn set(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, version
         Err(_) => true,
     };
 
-    if !exist && resource.capabilities().contains(&Capability::Delete) && !resource.capabilities().contains(&Capability::SetHandlesExist) {
+    if !exist && resource.has_resource_capability(&ResourceCapability::Delete) && !resource.has_resource_capability(&ResourceCapability::SetHandlesExist) {
         debug!("{}", t!("resource_command.routingToDelete"));
 
         let before_state = match resource.get(input) {

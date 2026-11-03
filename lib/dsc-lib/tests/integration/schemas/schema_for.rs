@@ -109,10 +109,6 @@ macro_rules! test_schema_for {
             test_schema_for!(dsc_lib::resources::invoke_result::ResolveResult);
         }
         #[allow(unused_must_use)]
-        #[cfg(test)] mod resource_invoke {
-            test_schema_for!(dsc_lib::resources::resource_invoke::Capability);
-        }
-        #[allow(unused_must_use)]
         #[cfg(test)] mod resource_manifest {
             test_schema_for!(dsc_lib::dscresources::resource_manifest::Kind);
             test_schema_for!(dsc_lib::dscresources::resource_manifest::GetArgKind);

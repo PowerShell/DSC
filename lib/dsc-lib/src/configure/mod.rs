@@ -7,6 +7,7 @@ use crate::configure::parameters::{SecureObject, SecureString, import_parameters
 use crate::configure::{config_doc::{ExecutionKind, IntOrExpression, Metadata, Parameter, Resource, ResourceDiscoveryMode, RestartRequired, ValueOrCopy}};
 use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscerror::DscError;
+use crate::dscresources::dscresource::ResourceCapability;
 use crate::dscresources::{
     dscresource::{get_diff, validate_properties, get_adapter_input_kind},
     resource_manifest::{AdapterInputKind, ExportSchemaOrFiltering},
@@ -16,7 +17,7 @@ use crate::parser::Statement;
 use crate::progress::{Failure, ProgressBar, ProgressFormat};
 use crate::resources::{
     invoke_result::{DeleteResult, DeleteResultKind, GetResult, SetResult, TestResult, ExportResult, ResourceSetResponse},
-    resource_invoke::{Capability, ResourceInvoke},
+    resource_invoke::ResourceInvoke,
 };
 use crate::types::{FullyQualifiedTypeName, SemanticVersion};
 use crate::util::resource_id;
@@ -757,7 +758,7 @@ impl Configurator {
             let end_datetime;
             let mut set_result;
             let mut delete_what_if_metadata: Option<DeleteResult> = None;
-            if exist || dsc_resource.capabilities().contains(&Capability::SetHandlesExist) || dsc_resource.kind() == ResourceKind::Action {
+            if exist || dsc_resource.has_resource_capability(&ResourceCapability::SetHandlesExist) || dsc_resource.kind() == ResourceKind::Action {
                 debug!("{}", t!("configure.mod.handlesExist"));
                 set_result = match dsc_resource.set(&desired, skip_test, &self.context.execution_type) {
                     Ok(result) => result,
@@ -768,7 +769,7 @@ impl Configurator {
                     },
                 };
                 end_datetime = chrono::Local::now();
-            } else if dsc_resource.capabilities().contains(&Capability::Delete) {
+            } else if dsc_resource.has_resource_capability(&ResourceCapability::Delete) {
                 debug!("{}", t!("configure.mod.implementsDelete"));
 
                 let before_result = match dsc_resource.get(&desired) {

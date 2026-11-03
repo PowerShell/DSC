@@ -52,33 +52,33 @@ pub struct ActionManifest {
     /// Details how to invoke this action.
     pub invoke: InvokeMethod,
     /// The operations supported by this action.  If not specified, only `set` is assumed.
-    pub supported_operations: Option<Vec<SupportedOperations>>,
+    pub supported_operations: Option<Vec<SupportedOperation>>,
     /// Mapping of exit codes to descriptions.  Zero is always success and non-zero is always failure.
     #[serde(skip_serializing_if = "ExitCodesMap::is_empty_or_default", default)]
     pub exit_codes: ExitCodesMap,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(rename_all = "camelCase")]
 #[schemars(
     transform = Self::transform_export_schema_uris,
     transform = Self::transform_schema_docs,
 )]
-#[dsc_repo_schema(base_name = "supportedOperations.action", folder_path = "definitions")]
-pub enum SupportedOperations {
+#[dsc_repo_schema(base_name = "supportedOperations", folder_path = "definitions/actions")]
+pub enum SupportedOperation {
     Get,
     Set,
     Test,
     Export,
 }
 
-impl Display for SupportedOperations {
+impl Display for SupportedOperation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SupportedOperations::Get => write!(f, "Get"),
-            SupportedOperations::Set => write!(f, "Set"),
-            SupportedOperations::Test => write!(f, "Test"),
-            SupportedOperations::Export => write!(f, "Export"),
+            SupportedOperation::Get => write!(f, "Get"),
+            SupportedOperation::Set => write!(f, "Set"),
+            SupportedOperation::Test => write!(f, "Test"),
+            SupportedOperation::Export => write!(f, "Export"),
         }
     }
 }

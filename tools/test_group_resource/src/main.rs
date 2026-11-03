@@ -5,9 +5,8 @@ mod args;
 
 use args::{Args, SubCommand};
 use clap::Parser;
-use dsc_lib::dscresources::dscresource::{DscResource, ImplementedAs};
+use dsc_lib::dscresources::dscresource::{DscResource, ImplementedAs, ResourceCapability};
 use dsc_lib::dscresources::resource_manifest::{GetMethod, Kind, ResourceManifest};
-use dsc_lib::resources::resource_invoke::Capability;
 use dsc_lib::schemas::dsc_repo::DscRepoSchema;
 use std::path::PathBuf;
 
@@ -19,7 +18,7 @@ fn main() {
                 type_name: "Test/TestResource1".parse().unwrap(),
                 kind: Kind::Resource,
                 version: "1.0.0".parse().unwrap(),
-                capabilities: vec![Capability::Get, Capability::Set],
+                capabilities: vec![ResourceCapability::Get, ResourceCapability::Set],
                 deprecation_message: None,
                 description: Some("This is a test resource.".to_string()),
                 implemented_as: Some(ImplementedAs::Custom("TestResource".to_string())),
@@ -49,7 +48,7 @@ fn main() {
                 type_name: "Test/TestResource2".parse().unwrap(),
                 kind: Kind::Resource,
                 version: "1.0.1".parse().unwrap(),
-                capabilities: vec![Capability::Get, Capability::Set],
+                capabilities: vec![ResourceCapability::Get, ResourceCapability::Set],
                 deprecation_message: None,
                 description: Some("This is a test resource.".to_string()),
                 implemented_as: Some(ImplementedAs::Custom("TestResource".to_string())),
@@ -83,7 +82,7 @@ fn main() {
                 type_name: "Test/InvalidResource".parse().unwrap(),
                 kind: Kind::Resource,
                 version: "1.0.0".parse().unwrap(),
-                capabilities: vec![Capability::Get],
+                capabilities: vec![ResourceCapability::Get],
                 deprecation_message: None,
                 description: Some("This is a test resource.".to_string()),
                 implemented_as: Some(ImplementedAs::Custom("TestResource".to_string())),
