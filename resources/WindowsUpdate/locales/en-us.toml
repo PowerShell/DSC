@@ -9,18 +9,7 @@ errorReadingInput = "Error reading input: %{err}"
 
 [export]
 failedParseInput = "Failed to parse input: %{err}"
-noMatchingUpdateForFilter = "No matching update found for filter %{index}: %{criteria}"
 failedSerializeOutput = "Failed to serialize output: %{err}"
-criteriaTitle = "title '%{value}'"
-criteriaId = "id '%{value}'"
-criteriaIsInstalled = "is_installed %{value}"
-criteriaDescription = "description '%{value}'"
-criteriaIsUninstallable = "is_uninstallable %{value}"
-criteriaKbArticleIds = "kb_article_ids %{value}"
-criteriaRecommendedHardDiskSpace = "recommended_hard_disk_space %{value}"
-criteriaMsrcSeverity = "msrc_severity %{value}"
-criteriaSecurityBulletinIds = "security_bulletin_ids %{value}"
-criteriaUpdateType = "update_type %{value}"
 
 [get]
 failedParseInput = "Failed to parse input: %{err}"
