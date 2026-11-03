@@ -3,12 +3,18 @@
 
 use crate::{
     discovery::command_discovery::{
-        DSC_ADAPTED_RESOURCE_EXTENSIONS, DSC_EXTENSION_EXTENSIONS, DSC_MANIFEST_LIST_EXTENSIONS, DSC_RESOURCE_EXTENSIONS, ImportedManifest, load_manifest, load_manifest_content
+        DSC_ACTION_EXTENSIONS,
+        DSC_ADAPTED_RESOURCE_EXTENSIONS,
+        DSC_EXTENSION_EXTENSIONS,
+        DSC_MANIFEST_LIST_EXTENSIONS,
+        DSC_RESOURCE_EXTENSIONS,
+        ImportedManifest,
+        load_manifest,
+        load_manifest_content
     },
     dscerror::DscError,
     dscresources::{
         command_resource::invoke_command,
-        dscresource::DscResource
     },
     extensions::{
         dscextension::{
@@ -65,7 +71,7 @@ pub struct DiscoverResult {
 #[schemars(inline)]
 pub enum DiscoverArgKind {
     String(String),
-    Extensions {
+    FileExtensions {
         /// The argument that accepts the extensions list.  The extensions list will be passed as a comma separated list of extensions.
         #[serde(rename = "extensionsArg")]
         extensions_arg: String,
@@ -76,17 +82,17 @@ pub enum DiscoverArgKind {
 }
 
 impl DscExtension {
-    /// Perform discovery of resources using the extension.
+    /// Perform discovery of resources and actions using the extension.
     ///
     /// # Returns
     ///
-    /// A result containing a vector of discovered resources or an error.
+    /// A result containing a vector of discovered resource and action manifests or an error.
     ///
     /// # Errors
     ///
     /// This function will return an error if the discovery fails.
-    pub fn discover(&self) -> Result<Vec<DscResource>, DscError> {
-        let mut resources: Vec<DscResource> = Vec::new();
+    pub fn discover(&self) -> Result<Vec<ImportedManifest>, DscError> {
+        let mut resources: Vec<ImportedManifest> = Vec::new();
 
         if self.capabilities.contains(&Capability::Discover) {
             let extension = match serde_json::from_value::<ExtensionManifest>(self.manifest.clone()) {
@@ -126,8 +132,8 @@ impl DscExtension {
                             let imported_manifests = load_manifest_content(&manifest_value)?;
                             info!("{}", t!("extensions.dscextension.manifestImported", extension = self.type_name));
                             for imported_manifest in imported_manifests {
-                                if let ImportedManifest::Resource(resource) = imported_manifest {
-                                    resources.push(resource);
+                                if matches!(imported_manifest, ImportedManifest::Resource(_) | ImportedManifest::Action(_)) {
+                                    resources.push(imported_manifest);
                                 }
                             }
                         }
@@ -144,8 +150,8 @@ impl DscExtension {
                                 }
                             };
                             for imported_manifest in manifests {
-                                if let ImportedManifest::Resource(resource) = imported_manifest {
-                                    resources.push(resource);
+                                if matches!(imported_manifest, ImportedManifest::Resource(_) | ImportedManifest::Action(_)) {
+                                    resources.push(imported_manifest);
                                 }
                             }
                         }
@@ -174,9 +180,10 @@ fn process_discover_args(args: Option<&Vec<DiscoverArgKind>>) -> Result<Option<V
             DiscoverArgKind::String(s) => {
                 processed_args.push(s.clone());
             }
-            DiscoverArgKind::Extensions { extensions_arg, include_quotes } => {
+            DiscoverArgKind::FileExtensions { extensions_arg, include_quotes } => {
                 processed_args.push(extensions_arg.clone());
                 let mut extensions = Vec::<String>::new();
+                extensions.extend(DSC_ACTION_EXTENSIONS.iter().map(|s| s.to_string()));
                 extensions.extend(DSC_ADAPTED_RESOURCE_EXTENSIONS.iter().map(|s| s.to_string()));
                 extensions.extend(DSC_EXTENSION_EXTENSIONS.iter().map(|s| s.to_string()));
                 extensions.extend(DSC_MANIFEST_LIST_EXTENSIONS.iter().map(|s| s.to_string()));
