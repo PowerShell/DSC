@@ -132,32 +132,33 @@ Describe 'Windows Update Export operation tests' -Skip:(!$IsWindows) {
 
         It 'should still return matches when another filter has no matches' -Skip:(!$IsWindows) {
             # Get an actual update
-            $allOut = '{"updates":[{}]}' | dsc resource export -r $resourceType -f - -o json 2>&1
-
-            if ($LASTEXITCODE -eq 0) {
-                $allConfig = $allOut | ConvertFrom-Json
-                $allResult = $allConfig.resources[0].properties
-                if ($allResult.updates.Count -gt 0) {
-                    $update1 = $allResult.updates[0]
-
-                    # One valid filter, one invalid filter
-                    $json = @{
-                        updates = @(
-                            @{
-                                id = $update1.id
-                            },
-                            @{
-                                title = 'ThisUpdateShouldNeverExist12345XYZ'
-                            }
-                        )
-                    } | ConvertTo-Json -Depth 10 -Compress
-                    $out = $json | dsc resource export -r $resourceType -f - -o json 2>$null
-
-                    $LASTEXITCODE | Should -Be 0
-                    $config = $out | ConvertFrom-Json
-                    @($config.resources[0].properties.updates).Count | Should -Be 1
-                }
+            $allOut = '{"updates":[{}]}' | dsc resource export -r $resourceType -f - -o json 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
+            $allResult = ($allOut | ConvertFrom-Json).resources[0].properties
+            if (@($allResult.updates).Count -eq 0) {
+                Set-ItResult -Skipped -Because 'No updates available to use as a fixture'
+                return
             }
+            $update1 = $allResult.updates[0]
+
+            # One valid filter, one filter with no matches
+            $json = @{
+                updates = @(
+                    @{
+                        id = $update1.id
+                    },
+                    @{
+                        title = 'ThisUpdateShouldNeverExist12345XYZ'
+                    }
+                )
+            } | ConvertTo-Json -Depth 10 -Compress
+            $out = $json | dsc resource export -r $resourceType -f - -o json 2>$testdrive/error.log
+
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
+            $config = $out | ConvertFrom-Json
+            $updates = @($config.resources[0].properties.updates)
+            $updates.Count | Should -Be 1
+            $updates[0].id | Should -Be $update1.id
         }
 
         It 'should return results when all filters find matches' -Skip:(!$IsWindows) {
