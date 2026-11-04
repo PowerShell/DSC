@@ -3,7 +3,7 @@
 
 use miette::Diagnostic;
 use rust_i18n::t;
-use std::str::Utf8Error;
+use std::{path::PathBuf, str::Utf8Error};
 
 use indicatif::style::TemplateError;
 use thiserror::Error;
@@ -28,6 +28,18 @@ pub enum DscError {
 
     #[error("{0}")]
     CommandNotFound(String),
+
+    #[error("{t}", t = t!(
+        "dscerror.commandNotInRestrictedDirs",
+        name = exe_name,
+        parent = exe_folder.to_string_lossy(),
+        dirs = serde_json::to_string(&restricted_dirs).unwrap()
+    ))]
+    CommandNotInRestrictedDirs {
+        exe_name: String,
+        exe_folder: PathBuf,
+        restricted_dirs: Vec<PathBuf>,
+    },
 
     #[error("{t} {0} {t2} '{1}'", t = t!("dscerror.commandOperation"), t2 = t!("dscerror.forExecutable"))]
     CommandOperation(String, String),
