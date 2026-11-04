@@ -20,6 +20,16 @@ Describe 'Tests for PS adapted manifests' {
         $out.actualState.Value | Should -Be 42
     }
 
+    It 'Rejects input that does not match the adapted resource embedded schema' -ForEach @(
+        @{ Json = '{"name":42}' }
+        @{ Json = '{"name":"hello","value":"invalid"}' }
+        @{ Json = '{"name":"hello","unknown":true}' }
+    ) {
+        $null = dsc resource get -r 'PSAdaptedTestClassResource/PSAdaptedTestClass' -i $Json 2> (Join-Path $TestDrive 'schema-error.log')
+        $LASTEXITCODE | Should -Not -Be 0
+        Get-Content -Raw (Join-Path $TestDrive 'schema-error.log') | Should -Match 'schema|properties'
+    }
+
     It 'Get operation works if adapted resource is in a path with spaces' {
         $resourcePath = Join-Path -Path $TestDrive -ChildPath 'Path with spaces'
         New-Item -Path $resourcePath -ItemType Directory | Out-Null

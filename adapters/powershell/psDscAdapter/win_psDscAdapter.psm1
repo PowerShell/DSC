@@ -3,7 +3,7 @@
 
 $global:ProgressPreference = 'SilentlyContinue'
 $ErrorActionPreference = 'Stop'
-$script:CurrentCacheSchemaVersion = 1
+$script:CurrentCacheSchemaVersion = 2
 
 trap {
     Write-Error -Message ($_ | Format-List -Force | Out-String)
@@ -769,7 +769,11 @@ function GetClassBasedProperties {
             },
             $false);
 
-        $typeDefinition = $typeDefinitions | Where-Object -Property Name -EQ $className
+        $typeDefinitionsByName = @{}
+        foreach ($definition in $typeDefinitions) {
+            $typeDefinitionsByName[$definition.Name] = $definition
+        }
+        $typeDefinition = $typeDefinitionsByName[$className]
 
         foreach ($member in $typeDefinition.Members) {
             $property = $member -as [System.Management.Automation.Language.PropertyMemberAst]
@@ -777,13 +781,13 @@ function GetClassBasedProperties {
                 continue;
             }
             $skipProperty = $true
-            $isKeyProperty = $false
+            $isRequiredProperty = $false
             foreach ($attr in $property.Attributes) {
                 if ($attr.TypeName.Name -eq 'DscProperty') {
                     $skipProperty = $false
                     foreach ($attrArg in $attr.NamedArguments) {
-                        if ($attrArg.ArgumentName -eq 'Key') {
-                            $isKeyProperty = $true
+                        if ($attrArg.ArgumentName -in @('Key', 'Mandatory') -and $attrArg.Argument.SafeGetValue()) {
+                            $isRequiredProperty = $true
                             break
                         }
                     }
@@ -796,7 +800,16 @@ function GetClassBasedProperties {
             [DscResourcePropertyInfo]$prop = [DscResourcePropertyInfo]::new()
             $prop.Name = $property.Name
             $prop.PropertyType = $property.PropertyType.TypeName.Name
-            $prop.IsMandatory = $isKeyProperty
+            $prop.IsMandatory = $isRequiredProperty
+            $enumType = $typeDefinitionsByName[($prop.PropertyType -replace '\[\]$', '')]
+            if ($enumType.IsEnum) {
+                $prop.Values = @($enumType.Members.Name)
+            }
+            foreach ($attr in $property.Attributes) {
+                if ($attr.TypeName.Name -eq 'ValidateSet') {
+                    $prop.Values = @($attr.PositionalArguments | ForEach-Object { $_.SafeGetValue() })
+                }
+            }
             $properties.Add($prop)
         }
         return $properties
