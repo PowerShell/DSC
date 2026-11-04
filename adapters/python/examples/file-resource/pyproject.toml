@@ -1,0 +1,21 @@
+[build-system]
+requires = ["hatchling", "ms-dsc"]
+build-backend = "hatchling.build"
+
+[project]
+name = "file-resource"
+version = "1.0.0"
+description = "Example DSC resource: manages the existence and text content of a file."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = []
+
+[project.entry-points."microsoft.dsc.resources"]
+"Example/File" = "file_resource.resource:FileResource"
+"Example/ManagedFile" = "file_resource.resource:ManagedFileResource"
+
+[tool.hatch.build.targets.wheel]
+packages = ["file_resource"]
+
+

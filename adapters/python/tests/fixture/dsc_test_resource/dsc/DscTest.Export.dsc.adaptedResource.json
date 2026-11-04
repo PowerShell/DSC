@@ -1,0 +1,35 @@
+{
+  "$schema": "https://aka.ms/dsc/schemas/v3/bundled/adaptedresource/manifest.json",
+  "type": "DscTest/Export",
+  "kind": "resource",
+  "version": "0.1.0",
+  "capabilities": [
+    "export"
+  ],
+  "requireAdapter": "Microsoft.Adapter/Python",
+  "content": {
+    "module": "dsc_test_resource.resources",
+    "class": "ExportResource"
+  },
+  "description": "Export-only fixture resource returning a fixed list of items.",
+  "schema": {
+    "embedded": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Unique name of the test instance."
+        },
+        "_exist": {
+          "type": "boolean",
+          "description": "Whether the instance should exist."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ]
+    }
+  }
+}

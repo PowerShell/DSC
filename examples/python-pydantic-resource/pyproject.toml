@@ -1,0 +1,26 @@
+[build-system]
+requires = ["hatchling", "ms-dsc"]
+build-backend = "hatchling.build"
+
+[project]
+name = "my-package"
+version = "1.0.0"
+description = "Example DSC resource using Pydantic"
+dependencies = [
+    "ms-dsc",
+    "pydantic>=2.0,<3",  # Pydantic is required for this resource
+]
+
+[project.entry-points."microsoft.dsc.resources"]
+"MyPackage/MyResource" = "my_package.my_resource:MyResource"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["my_package*"]
+
+[tool.setuptools.package-data]
+my_package = ["dsc/*.json"]
+
+[tool.hatch.build.hooks.dsc]
+# Generates adapted resource manifests at build time
+# output_dir = "my_package/dsc"  # defaults to <package_name>/dsc/
