@@ -3,13 +3,13 @@
 
 use crate::{
     actions::action_manifest::{ActionManifest, ArgKind, InvokeMethod, SchemaArgKind, SchemaKind, SupportedOperation},
-    configure::config_doc::{ExecutionKind, Operation},
+    configure::{config_doc::{ExecutionKind, Operation}, context::Context},
     discovery::{command_discovery::verify_executable, ResourceKind},
     dscerror::DscError,
     dscresources::{command_resource::{invoke_command, validate_security_context}, dscresource::DscResource},
     resources::{
         invoke_result::{DeleteResultKind, GetResult, SetResult, ExportResult, ResolveResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse, TestResult, ValidateResult},
-        ManifestKind, resource_invoke::{Capabilities, ResourceInvoke},
+        ManifestKind, resource_invoke::{Capabilities, ResourceInvoke, process_expression_arg},
     },
     schemas::dsc_repo::DscRepoSchema,
     types::{ExitCodesMap, FullyQualifiedTypeName, ResourceVersion,SemanticVersion}
@@ -93,7 +93,7 @@ impl DscAction {
             error!("{}", t!("actions.dscaction.inputSchemaNotAvailable", type_name = self.type_name.to_string()).to_string());
             return Err(DscError::SchemaNotAvailable(self.type_name.to_string()));
         }
-        let (args, supports_whatif) = process_invoke_args(self.manifest.invoke.args.as_ref(), input, execution_type);
+        let (args, supports_whatif) = process_invoke_args(self.manifest.invoke.args.as_ref(), input, execution_type)?;
         if execution_type == &ExecutionKind::WhatIf && !supports_whatif {
             return Err(DscError::Operation(t!("actions.dscaction.whatIfNotSupported", type_name = self.type_name.to_string()).to_string()));
         }
@@ -120,7 +120,7 @@ impl DscAction {
 }
 
 impl ResourceInvoke for DscAction {
-    fn get(&self, filter: &str) -> Result<GetResult, DscError> {
+    fn get(&self, filter: &str, _context: &Context) -> Result<GetResult, DscError> {
         let result = if self.supported_operations.contains(&SupportedOperation::Get) {
             self.invoke_action(filter, &ExecutionKind::Actual)?
         } else {
@@ -132,9 +132,9 @@ impl ResourceInvoke for DscAction {
         Ok(GetResult::Resource(get_result_response))
     }
 
-    fn set(&self, desired: &str, _skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
+    fn set(&self, desired: &str, _skip_test: bool, _context: &Context) -> Result<SetResult, DscError> {
         let result = if self.supported_operations.contains(&SupportedOperation::Set) {
-            self.invoke_action(desired, execution_type)?
+            self.invoke_action(desired, &ExecutionKind::Actual)?
         } else {
             return Err(DscError::NotSupported(t!("actions.dscaction.actionUnsupportedOperation", operation = SupportedOperation::Set, action = &self.type_name).to_string()));
         };
@@ -146,7 +146,7 @@ impl ResourceInvoke for DscAction {
         Ok(SetResult::Resource(set_result_response))
     }
 
-    fn test(&self, expected: &str) -> Result<TestResult, DscError> {
+    fn test(&self, expected: &str, _context: &Context) -> Result<TestResult, DscError> {
         let result = if self.supported_operations.contains(&SupportedOperation::Test) {
             self.invoke_action(expected, &ExecutionKind::Actual)?
         } else {
@@ -161,7 +161,7 @@ impl ResourceInvoke for DscAction {
         Ok(TestResult::Resource(test_response))
     }
 
-    fn export(&self, input: &str) -> Result<ExportResult, DscError> {
+    fn export(&self, input: &str, _context: &Context) -> Result<ExportResult, DscError> {
         let result = if self.supported_operations.contains(&SupportedOperation::Export) {
             self.invoke_action(input, &ExecutionKind::Actual)?
         } else {
@@ -172,23 +172,23 @@ impl ResourceInvoke for DscAction {
         })
     }
 
-    fn invoke(&self, input: &str, execution_type: &ExecutionKind) -> Result<Value, DscError> {
-        self.invoke_action(input, execution_type)
+    fn invoke(&self, input: &str, context: &Context) -> Result<Value, DscError> {
+        self.invoke_action(input, &context.execution_type)
     }
 
-    fn delete(&self, _filter: &str, _execution_type: &ExecutionKind) -> Result<DeleteResultKind, DscError> {
+    fn delete(&self, _filter: &str, _context: &Context) -> Result<DeleteResultKind, DscError> {
         Err(DscError::NotSupported(t!("actions.dscaction.actionUnsupportedOperation", operation = "delete", action = &self.type_name).to_string()))
     }
 
-    fn resolve(&self, _input: &str) -> Result<ResolveResult, DscError> {
+    fn resolve(&self, _input: &str, _context: &Context) -> Result<ResolveResult, DscError> {
         Err(DscError::NotSupported(t!("actions.dscaction.actionUnsupportedOperation", operation = "resolve", action = &self.type_name).to_string()))
     }
 
-    fn schema(&self) -> Result<String, DscError> {
+    fn schema(&self, _context: &Context) -> Result<String, DscError> {
         Err(DscError::NotSupported(t!("actions.dscaction.actionUnsupportedOperation", operation = "schema", action = &self.type_name).to_string()))
     }
 
-    fn validate(&self, _config: &str) -> Result<ValidateResult, DscError> {
+    fn validate(&self, _config: &str, _context: &Context) -> Result<ValidateResult, DscError> {
         Err(DscError::NotSupported(t!("actions.dscaction.actionUnsupportedOperation", operation = "validate", action = &self.type_name).to_string()))
     }
 
@@ -221,10 +221,6 @@ impl ResourceInvoke for DscAction {
         self.input_schema.clone()
     }
 
-    fn set_target_resource(&mut self, _target: Box<DscResource>) -> Result<(), DscError> {
-        Err(DscError::NotSupported(t!("actions.dscaction.actionUnsupportedOperation", operation = "set_target_resource", action = &self.type_name).to_string()))
-    }
-
     fn as_action(&self) -> Option<&DscAction> {
         Some(self)
     }
@@ -241,7 +237,7 @@ impl ResourceInvoke for DscAction {
 pub fn get_schema(schema_kind: &SchemaKind, directory: Option<&Path>, exit_codes: &ExitCodesMap) -> Result<Value, DscError> {
     match schema_kind {
         SchemaKind::Command(command) => {
-            let args = process_schema_args(command.args.as_ref());
+            let args = process_schema_args(command.args.as_ref())?;
             let (_exit_code, stdout, _stderr) = invoke_command(&command.executable, args, None, directory, None, exit_codes)?;
             let schema_value: Value = serde_json::from_str(&stdout)?;
             Ok(schema_value)
@@ -269,9 +265,9 @@ fn validate_json(input: &str, schema: &Map<String, Value>) -> Result<(), DscErro
     Ok(())
 }
 
-fn process_invoke_args(args: Option<&Vec<ArgKind>>, input: &str, execution_type: &ExecutionKind) -> (Option<Vec<String>>, bool) {
+fn process_invoke_args(args: Option<&Vec<ArgKind>>, input: &str, execution_type: &ExecutionKind) -> Result<(Option<Vec<String>>, bool), DscError> {
     let Some(arg_values) = args else {
-        return (None, false);
+        return Ok((None, false));
     };
 
     let mut supports_whatif = false;
@@ -280,6 +276,9 @@ fn process_invoke_args(args: Option<&Vec<ArgKind>>, input: &str, execution_type:
         match arg {
             ArgKind::String(s) => {
                 processed_args.push(s.clone());
+            },
+            ArgKind::Expression { arg, expression, mandatory } => {
+                process_expression_arg(&mut processed_args, expression, &Context::default(), &DscResource::default(), arg, mandatory)?;
             },
             ArgKind::Json{ json_input_arg, mandatory } => {
                 if input.is_empty() && *mandatory != Some(true) {
@@ -298,11 +297,13 @@ fn process_invoke_args(args: Option<&Vec<ArgKind>>, input: &str, execution_type:
         }
     }
 
-    (Some(processed_args), supports_whatif)
+    Ok((Some(processed_args), supports_whatif))
 }
 
-fn process_schema_args(args: Option<&Vec<SchemaArgKind>>) -> Option<Vec<String>> {
-    let arg_values = args?;
+fn process_schema_args(args: Option<&Vec<SchemaArgKind>>) -> Result<Option<Vec<String>>, DscError> {
+    let Some(arg_values) = args else {
+        return Ok(None);
+    };
 
     let mut processed_args = Vec::<String>::new();
     for arg in arg_values {
@@ -313,7 +314,7 @@ fn process_schema_args(args: Option<&Vec<SchemaArgKind>>) -> Option<Vec<String>>
         }
     }
 
-    Some(processed_args)
+    Ok(Some(processed_args))
 }
 
 pub(crate) fn load_action_manifest(path: Option<&Path>, manifest: &ActionManifest) -> Result<DscAction, DscError> {

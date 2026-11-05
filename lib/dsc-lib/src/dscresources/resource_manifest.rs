@@ -222,6 +222,14 @@ pub enum SetDeleteArgKind {
 )]
 #[dsc_repo_schema(base_name = "commandArgs.schema", folder_path = "definitions")]
 pub enum SchemaArgKind {
+    Expression {
+        /// The argument that accepts the result of the expression.
+        arg: Option<String>,
+        /// The expression to be evaluated.  `null` result becomes an empty string.
+        expression: String,
+        /// Indicates if the argument is mandatory.  Default is false.
+        mandatory: Option<bool>,
+    },
     /// The argument is a string.
     String(String),
     #[serde(rename_all = "camelCase")]

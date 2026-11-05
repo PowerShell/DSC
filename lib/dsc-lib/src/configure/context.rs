@@ -41,6 +41,7 @@ pub struct Context {
     pub process_expressions: bool,
     pub process_mode: ProcessMode,
     pub processing_parameter_defaults: bool,
+    pub properties: Option<Map<String, Value>>,
     pub references: Map<String, Value>,
     pub restart_required: Option<Vec<RestartRequired>>,
     pub security_context: SecurityContextKind,
@@ -48,7 +49,7 @@ pub struct Context {
     pub state_changed: HashMap<String, bool>,
     pub stdout: Option<String>,
     pub system_root: PathBuf,
-    pub target_resource: Option<&DscResource>,
+    pub target_resource: Option<DscResource>,
     pub user_functions: HashMap<String, UserFunctionDefinition>,
     pub variables: Map<String, Value>,
 }
@@ -71,6 +72,7 @@ impl Context {
             process_expressions: true,
             process_mode: ProcessMode::Normal,
             processing_parameter_defaults: false,
+            properties: None,
             references: Map::new(),
             restart_required: None,
             security_context: match get_security_context() {

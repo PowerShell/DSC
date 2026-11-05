@@ -507,6 +507,82 @@
     },
     {
       "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/ExpressionArg",
+      "version": "0.1.0",
+      "kind": "resource",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "expression-arg",
+          {
+            "Arg": "--arg1",
+            "expression": "[properties().first]",
+            "mandatory": true
+          },
+          {
+            "expression": "[properties().second]",
+            "mandatory": true
+          },
+          {
+            "Arg": "--arg3",
+            "expression": "[properties().third]",
+            "mandatory": false
+          }
+        ]
+      },
+      "set": {
+        "executable": "dsctest",
+        "args": [
+          "expression-arg",
+          {
+            "Arg": "--arg1",
+            "expression": "[properties().first]",
+            "mandatory": true
+          },
+          {
+            "expression": "[properties().second]",
+            "mandatory": true
+          },
+          {
+            "Arg": "--arg3",
+            "expression": "[properties().third]",
+            "mandatory": false
+          }
+        ]
+      },
+      "export": {
+        "executable": "dsctest",
+        "args": [
+          "expression-arg",
+          {
+            "Arg": "--arg1",
+            "expression": "[properties().first]",
+            "mandatory": true
+          },
+          {
+            "expression": "[properties().second]",
+            "mandatory": true
+          },
+          {
+            "Arg": "--arg3",
+            "expression": "[properties().third]",
+            "mandatory": false
+          }
+        ]
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "expression-arg"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
       "type": "Test/Get",
       "version": "0.1.0",
       "get": {

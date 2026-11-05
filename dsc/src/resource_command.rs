@@ -5,6 +5,7 @@ use crate::args::{GetOutputFormat, OutputFormat};
 use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_JSON_ERROR, EXIT_DSC_RESOURCE_NOT_FOUND, write_object};
 use dsc_lib::configure::config_doc::{Configuration, ExecutionKind};
 use dsc_lib::configure::add_resource_export_results_to_configuration;
+use dsc_lib::configure::context::Context;
 use dsc_lib::discovery::ResourceKind;
 use dsc_lib::discovery::discovery_trait::DiscoveryFilter;
 use dsc_lib::DscManager;
@@ -29,7 +30,8 @@ pub fn get(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, version
         return Err(ExitCode::from(EXIT_DSC_ERROR));
     }
 
-    match resource.get(input) {
+    let context = Context::new();
+    match resource.get(input, &context) {
         Ok(result) => {
             if let GetResult::Resource(response) = &result
                 && format == Some(&GetOutputFormat::PassThrough) {
@@ -80,7 +82,8 @@ pub fn get_all(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, ver
         return Err(ExitCode::from(EXIT_DSC_ERROR));
     }
 
-    let export_result = match resource.export(&input) {
+    let context = Context::new();
+    let export_result = match resource.export(&input, &context) {
         Ok(export) => { export }
         Err(err) => {
             error!("{err}");
@@ -155,10 +158,11 @@ pub fn set(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, version
         Err(_) => true,
     };
 
+    let mut context = Context::new();
     if !exist && resource.has_resource_capability(&ResourceCapability::Delete) && !resource.has_resource_capability(&ResourceCapability::SetHandlesExist) {
         debug!("{}", t!("resource_command.routingToDelete"));
 
-        let before_state = match resource.get(input) {
+        let before_state = match resource.get(input, &context) {
             Ok(GetResult::Resource(response)) => response.actual_state,
             Ok(_) => unreachable!(),
             Err(err) => {
@@ -167,12 +171,12 @@ pub fn set(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, version
             }
         };
 
-        if let Err(err) = resource.delete(input, &ExecutionKind::Actual) {
+        if let Err(err) = resource.delete(input, &context) {
             error!("{err}");
             return Err(ExitCode::from(EXIT_DSC_ERROR));
         }
 
-        let after_state = match resource.get(input) {
+        let after_state = match resource.get(input, &context) {
             Ok(GetResult::Resource(response)) => response.actual_state,
             Ok(_) => unreachable!(),
             Err(err) => {
@@ -200,7 +204,8 @@ pub fn set(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, version
         return Ok(());
     }
 
-    match resource.set(input, true, &execution_kind) {
+    context.execution_type = execution_kind;
+    match resource.set(input, true, &context) {
         Ok(result) => {
             // convert to json
             let json = match serde_json::to_string(&result) {
@@ -236,7 +241,8 @@ pub fn test(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, versio
         return Err(ExitCode::from(EXIT_DSC_ERROR));
     }
 
-    match resource.test(input) {
+    let context = Context::new();
+    match resource.test(input, &context) {
         Ok(result) => {
             // convert to json
             let json = match serde_json::to_string(&result) {
@@ -269,7 +275,9 @@ pub fn delete(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, vers
 
     let execution_kind = if what_if { ExecutionKind::WhatIf } else { ExecutionKind::Actual };
 
-    match resource.delete(input, &execution_kind) {
+    let mut context = Context::new();
+    context.execution_type = execution_kind;
+    match resource.delete(input, &context) {
         Ok(result) => {
             match result {
                 DeleteResultKind::ResourceActual => {
@@ -307,7 +315,8 @@ pub fn schema(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, vers
         return Err(ExitCode::from(EXIT_DSC_ERROR));
     }
 
-    match resource.schema() {
+    let context = Context::new();
+    match resource.schema(&context) {
         Ok(json) => {
             // verify is json
             match serde_json::from_str::<serde_json::Value>(json.as_str()) {
@@ -339,7 +348,8 @@ pub fn export(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, vers
     }
 
     let mut conf = Configuration::new();
-    if let Err(err) = add_resource_export_results_to_configuration(&*dsc_resource, &mut conf, input) {
+    let context = Context::new();
+    if let Err(err) = add_resource_export_results_to_configuration(&*dsc_resource, &mut conf, input, &context) {
         error!("{err}");
         return Err(ExitCode::from(EXIT_DSC_ERROR));
     }

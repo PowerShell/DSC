@@ -3,7 +3,7 @@
 
 use crate::server::mcp_server::McpServer;
 use dsc_lib::{
-    DscManager, configure::config_doc::ExecutionKind,
+    DscManager, configure::{config_doc::ExecutionKind, context::Context},
     discovery::{
         discovery_trait::DiscoveryFilter,
         ResourceKind,
@@ -94,30 +94,32 @@ impl McpServer {
             if matches!(resource.kind(), ResourceKind::Action | ResourceKind::Adapter) {
                 return Err(McpError::invalid_request(t!("server.invoke_dsc_resource.actionNotSupported", resource = r#type), None));
             }
+            let mut context = Context::new();
+            context.execution_type = execution_kind;
             match operation {
                 DscOperation::Get => {
-                    let result = match resource.get(&properties_json) {
+                    let result = match resource.get(&properties_json, &context) {
                         Ok(res) => res,
                         Err(e) => return Err(McpError::internal_error(e.to_string(), None)),
                     };
                     Ok(ResourceOperationResult::GetResult(result))
                 },
                 DscOperation::Set => {
-                    let result = match resource.set(&properties_json, false, &execution_kind) {
+                    let result = match resource.set(&properties_json, false, &context) {
                         Ok(res) => res,
                         Err(e) => return Err(McpError::internal_error(e.to_string(), None)),
                     };
                     Ok(ResourceOperationResult::SetResult(result))
                 },
                 DscOperation::Test => {
-                    let result = match resource.test(&properties_json) {
+                    let result = match resource.test(&properties_json, &context) {
                         Ok(res) => res,
                         Err(e) => return Err(McpError::internal_error(e.to_string(), None)),
                     };
                     Ok(ResourceOperationResult::TestResult(result))
                 },
                 DscOperation::Delete => {
-                    match resource.delete(&properties_json, &execution_kind) {
+                    match resource.delete(&properties_json, &context) {
                         Ok(DeleteResultKind::ResourceActual) => Ok(ResourceOperationResult::DeleteResult { success: true }),
                         Ok(DeleteResultKind::ResourceWhatIf(delete_result)) => Ok(ResourceOperationResult::DeleteWhatIfResult(delete_result)),
                         Ok(DeleteResultKind::SyntheticWhatIf(test_result)) => Ok(ResourceOperationResult::TestResult(test_result)),
@@ -125,7 +127,7 @@ impl McpServer {
                     }
                 },
                 DscOperation::Export => {
-                    let result = match resource.export(&properties_json) {
+                    let result = match resource.export(&properties_json, &context) {
                         Ok(res) => res,
                         Err(e) => return Err(McpError::internal_error(e.to_string(), None)),
                     };

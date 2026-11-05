@@ -16,6 +16,7 @@ pub enum Schemas {
     ExportGetSchema,
     ExportSchema,
     Exporter,
+    ExpressionArg,
     Get,
     InDesiredState,
     Metadata,
@@ -64,6 +65,7 @@ pub enum SubCommand {
     Action {
         #[clap(name = "input", short, long, help = "The input to the action command as JSON")]
         input: String,
+        expression: Option<String>,
     },
 
     #[clap(name = "adapter", about = "Resource adapter")]
@@ -120,6 +122,13 @@ pub enum SubCommand {
     Exporter {
         #[clap(name = "input", short, long, help = "The input to the exporter command as JSON")]
         input: String,
+    },
+
+    #[clap(name = "expression-arg", about = "Provide expression arguments")]
+    ExpressionArg {
+        arg1: String,
+        arg2: String,
+        arg3: Option<String>,
     },
 
     #[clap(name = "get", about = "Get a resource")]

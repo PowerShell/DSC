@@ -10,7 +10,7 @@ use dsc_lib::actions::action_manifest::SupportedOperation;
 use dsc_lib::dscresources::dscresource::ResourceCapability;
 use dsc_lib::types::{FullyQualifiedTypeName, ResourceVersionReq, TypeNameFilter};
 use dsc_lib::{configure::{config_doc::{Configuration, ExecutionKind, Resource},
-    config_result::ResourceGetResult, Configurator},
+    config_result::ResourceGetResult, Configurator, context::Context},
     discovery::discovery_trait::{DiscoveryFilter, DiscoveryKind},
     discovery::command_discovery::ImportedManifest,
     dscerror::DscError,
@@ -530,7 +530,8 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
             return Err(DscError::Validation(format!("{}: '{type_name}'", t!("subcommand.resourceNotFound"))));
         };
 
-        validate_properties(&*resource, &resource_block["properties"])?;
+        let context = Context::new();
+        validate_properties(&*resource, &resource_block["properties"], &context)?;
     }
 
     Ok(())

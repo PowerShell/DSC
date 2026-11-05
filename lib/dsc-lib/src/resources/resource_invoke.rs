@@ -3,10 +3,11 @@
 
 use crate::{
     actions::{action_manifest::SupportedOperation, dscaction::DscAction},
-    configure::config_doc::ExecutionKind,
+    configure::context::Context,
     discovery::ResourceKind,
     dscerror::DscError,
     dscresources::dscresource::{DscResource, ResourceCapability},
+    parser::Statement,
     resources::{
         ManifestKind,
         invoke_result::{DeleteResultKind, ExportResult, GetResult, ResolveResult, SetResult, TestResult, ValidateResult}
@@ -14,10 +15,10 @@ use crate::{
     types::{FullyQualifiedTypeName, ResourceVersion},
 };
 
-// use schemars::JsonSchema;
+use rust_i18n::t;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
-// use std::fmt::Display;
+use tracing::debug;
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 #[serde(untagged)]
@@ -41,23 +42,6 @@ impl Capabilities {
     }
 }
 
-// impl Display for Capability {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         match self {
-//             Capability::Get => write!(f, "get"),
-//             Capability::Set => write!(f, "set"),
-//             Capability::SetHandlesExist => write!(f, "setHandlesExist"),
-//             Capability::SetWhatIf => write!(f, "setWhatIf"),
-//             Capability::Test => write!(f, "test"),
-//             Capability::Delete => write!(f, "delete"),
-//             Capability::DeleteWhatIf => write!(f, "deleteWhatIf"),
-//             Capability::Export => write!(f, "export"),
-//             Capability::Resolve => write!(f, "resolve"),
-//             Capability::Invoke => write!(f, "invoke"),
-//         }
-//     }
-// }
-
 /// The interface for a Resource.
 pub trait ResourceInvoke: Send + Sync {
     /// Invoke the get operation on the resource.
@@ -69,7 +53,7 @@ pub trait ResourceInvoke: Send + Sync {
     /// # Errors
     ///
     /// This function will return an error if the underlying resource fails.
-    fn get(&self, filter: &str) -> Result<GetResult, DscError>;
+    fn get(&self, filter: &str, context: &Context) -> Result<GetResult, DscError>;
 
     /// Invoke the set operation on the resource.
     ///
@@ -81,7 +65,7 @@ pub trait ResourceInvoke: Send + Sync {
     /// # Errors
     ///
     /// This function will return an error if the underlying resource fails.
-    fn set(&self, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError>;
+    fn set(&self, desired: &str, skip_test: bool, context: &Context) -> Result<SetResult, DscError>;
 
     /// Invoke the test operation on the resource.
     ///
@@ -92,7 +76,7 @@ pub trait ResourceInvoke: Send + Sync {
     /// # Errors
     ///
     /// This function will return an error if the underlying resource fails.
-    fn test(&self, expected: &str) -> Result<TestResult, DscError>;
+    fn test(&self, expected: &str, context: &Context) -> Result<TestResult, DscError>;
 
     /// Invoke the delete operation on the resource.
     ///
@@ -103,7 +87,7 @@ pub trait ResourceInvoke: Send + Sync {
     /// # Errors
     ///
     /// This function will return an error if the underlying resource fails.
-    fn delete(&self, filter: &str, execution_type: &ExecutionKind) -> Result<DeleteResultKind, DscError>;
+    fn delete(&self, filter: &str, context: &Context) -> Result<DeleteResultKind, DscError>;
 
     /// Invoke the invoke operation on the resource.
     ///
@@ -115,7 +99,7 @@ pub trait ResourceInvoke: Send + Sync {
     /// # Errors
     ///
     /// This function will return an error if the underlying resource fails.
-    fn invoke(&self, input: &str, execution_type: &ExecutionKind) -> Result<Value, DscError>;
+    fn invoke(&self, input: &str, context: &Context) -> Result<Value, DscError>;
 
     /// Invoke the validate operation on the resource.
     ///
@@ -126,14 +110,14 @@ pub trait ResourceInvoke: Send + Sync {
     /// # Errors
     ///
     /// This function will return an error if the underlying resource or validation fails.
-    fn validate(&self, config: &str) -> Result<ValidateResult, DscError>;
+    fn validate(&self, config: &str, context: &Context) -> Result<ValidateResult, DscError>;
 
     /// Get the schema for the resource.
     ///
     /// # Errors
     ///
     /// This function will return an error if the underlying resource fails.
-    fn schema(&self) -> Result<String, DscError>;
+    fn schema(&self, context: &Context) -> Result<String, DscError>;
 
     /// Invoke the export operation on the resource.
     ///
@@ -144,7 +128,7 @@ pub trait ResourceInvoke: Send + Sync {
     /// # Errors
     ///
     /// This function will return an error if the underlying resource fails.
-    fn export(&self, input: &str) -> Result<ExportResult, DscError>;
+    fn export(&self, input: &str, context: &Context) -> Result<ExportResult, DscError>;
 
     /// Invoke the resolve operation on the resource.
     ///
@@ -155,7 +139,7 @@ pub trait ResourceInvoke: Send + Sync {
     /// # Errors
     ///
     /// This function will return an error if the underlying resource fails.
-    fn resolve(&self, input: &str) -> Result<ResolveResult, DscError>;
+    fn resolve(&self, input: &str, context: &Context) -> Result<ResolveResult, DscError>;
 
     /// Get the kind of the resource (e.g., Action or Resource).
     ///
@@ -205,17 +189,6 @@ pub trait ResourceInvoke: Send + Sync {
     ///
     /// The version of the resource.
     fn version(&self) -> ResourceVersion;
-
-    /// Set the target resource for this resource.
-    ///
-    /// # Arguments
-    ///
-    /// * `target` - The target resource to be set.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if setting the target resource fails.
-    fn set_target_resource(&mut self, target: Box<DscResource>) -> Result<(), DscError>;
 
     /// Get the underlying DSC resource, if available.
     ///
@@ -273,4 +246,37 @@ impl Clone for Box<dyn ResourceInvoke> {
     fn clone(&self) -> Box<dyn ResourceInvoke> {
         self.clone_box()
     }
+}
+
+pub fn process_expression_arg(processed_args: &mut Vec<String>, expression: &str, context: &Context, resource: &DscResource, arg: &Option<String>, mandatory: &Option<bool>) -> Result<(), DscError> {
+    let mut parser = Statement::new()?;
+    // if mandatory is false, we can ignore errors and continue
+    let result = match parser.parse_and_execute(expression, context) {
+        Ok(value) => value,
+        Err(e) => {
+            debug!("{}", t!("resources.resource_invoke.invalidExpression", resource = &resource.type_name, error = e));
+            if mandatory == &Some(true) {
+                return Err(e);
+            }
+            serde_json::Value::Null
+        }
+    };
+    if result.is_null() && *mandatory != Some(true) {
+        return Ok(());
+    }
+    if let Some(arg) = arg {
+        processed_args.push(arg.clone());
+    }
+    if result.is_null() {
+        processed_args.push(String::new());
+        return Ok(());
+    } else {
+        // if result is a string, use as_str() to remove the enclosed quotes
+        if let Some(s) = result.as_str() {
+            processed_args.push(s.to_string());
+        } else {
+            processed_args.push(serde_json::to_string(&result)?);
+        }
+    }
+    Ok(())
 }
