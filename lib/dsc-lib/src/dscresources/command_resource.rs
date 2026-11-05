@@ -1006,7 +1006,7 @@ pub fn process_get_args(args: Option<&Vec<GetArgKind>>, input: &str, resource: &
                 }
             },
             GetArgKind::Expression { arg, expression, mandatory } => {
-                process_expression_arg(&mut processed_args, expression, context, resource, arg, mandatory)?;
+                process_expression_arg(&mut processed_args, expression, context, arg, mandatory)?;
             },
             GetArgKind::Json { json_input_arg, mandatory } => {
                 if input.is_empty() && *mandatory != Some(true) {
@@ -1050,7 +1050,7 @@ fn process_schema_args(args: Option<&Vec<SchemaArgKind>>, command_resource: &Dsc
     for arg in arg_values {
         match arg {
             SchemaArgKind::Expression { arg, expression, mandatory} => {
-                process_expression_arg(&mut processed_args, expression, context, command_resource, arg, mandatory)?;
+                process_expression_arg(&mut processed_args, expression, context, arg, mandatory)?;
             }
             SchemaArgKind::String(s) => {
                 processed_args.push(s.clone());
@@ -1090,7 +1090,7 @@ fn process_set_delete_args(args: Option<&Vec<SetDeleteArgKind>>, input: &str, re
     for arg in arg_values {
         match arg {
             SetDeleteArgKind::Expression { arg, expression, mandatory } => {
-                process_expression_arg(&mut processed_args, expression, context, resource, arg, mandatory)?;
+                process_expression_arg(&mut processed_args, expression, context, arg, mandatory)?;
             },
             SetDeleteArgKind::String(s) => {
                 processed_args.push(s.clone());

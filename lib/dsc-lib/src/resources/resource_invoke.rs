@@ -248,13 +248,13 @@ impl Clone for Box<dyn ResourceInvoke> {
     }
 }
 
-pub fn process_expression_arg(processed_args: &mut Vec<String>, expression: &str, context: &Context, resource: &DscResource, arg: &Option<String>, mandatory: &Option<bool>) -> Result<(), DscError> {
+pub fn process_expression_arg(processed_args: &mut Vec<String>, expression: &str, context: &Context, arg: &Option<String>, mandatory: &Option<bool>) -> Result<(), DscError> {
     let mut parser = Statement::new()?;
     // if mandatory is false, we can ignore errors and continue
     let result = match parser.parse_and_execute(expression, context) {
         Ok(value) => value,
         Err(e) => {
-            debug!("{}", t!("resources.resource_invoke.invalidExpression", resource = &resource.type_name, error = e));
+            debug!("{}", t!("resources.resource_invoke.invalidExpression", expression = expression, error = e));
             if mandatory == &Some(true) {
                 return Err(e);
             }

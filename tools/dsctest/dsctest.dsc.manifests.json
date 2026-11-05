@@ -23,6 +23,11 @@
           {
             "jsonInputArg": "--input",
             "mandatory": true
+          },
+          {
+            "arg": "--expression",
+            "expression": "[concat(properties().expression, ' foo')]",
+            "mandatory": false
           }
         ],
         "requireSecurityContext": "current",

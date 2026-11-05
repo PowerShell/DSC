@@ -1055,8 +1055,8 @@ ignoreSettingsFile = "Ignoring settings file due to environment variable 'DSC_IG
 notAnAction = "Invalid request to retrieve action manifest from a non-action"
 notAResource = "Invalid request to retrieve resource manifest from a non-resource"
 
-[resource.resource_invoke]
-invalidExpression = "Invalid expression '%{expression}' for resource '%{resource}': %{error}"
+[resources.resource_invoke]
+invalidExpression = "Invalid expression '%{expression}' in resource manifest: %{error}"
 
 [types.date_version]
 invalidDay = "day `%{day}` for month `%{month}` is invalid - must be between `01` and `%{max_days}`"

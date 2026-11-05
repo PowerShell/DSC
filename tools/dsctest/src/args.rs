@@ -65,6 +65,7 @@ pub enum SubCommand {
     Action {
         #[clap(name = "input", short, long, help = "The input to the action command as JSON")]
         input: String,
+        #[clap(name = "expression", long)]
         expression: Option<String>,
     },
 
