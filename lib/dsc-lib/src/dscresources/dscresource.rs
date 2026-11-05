@@ -327,7 +327,10 @@ impl ResourceInvoke for DscResource {
             warn!("{}", t!("dscresources.dscresource.deprecationMessage", resource = self.type_name, message = deprecation_message));
         }
         if let Some(adapter) = &self.require_adapter {
-            return self.invoke_get_with_adapter(adapter, filter, context);
+            let mut context = context.clone();
+            context.target_resource = Some(self.clone());
+            context.properties = Some(convert_input_to_map(filter)?);
+            return self.invoke_get_with_adapter(adapter, filter, &context);
         }
 
         match &self.implemented_as {
@@ -346,7 +349,10 @@ impl ResourceInvoke for DscResource {
             warn!("{}", t!("dscresources.dscresource.deprecationMessage", resource = self.type_name, message = deprecation_message));
         }
         if let Some(adapter) = &self.require_adapter {
-            return self.invoke_set_with_adapter(adapter, desired, skip_test, context);
+            let mut context = context.clone();
+            context.target_resource = Some(self.clone());
+            context.properties = Some(convert_input_to_map(desired)?);
+            return self.invoke_set_with_adapter(adapter, desired, skip_test, &context);
         }
 
         match &self.implemented_as {
@@ -365,7 +371,10 @@ impl ResourceInvoke for DscResource {
             warn!("{}", t!("dscresources.dscresource.deprecationMessage", resource = self.type_name, message = deprecation_message));
         }
         if let Some(adapter) = &self.require_adapter {
-            return self.invoke_test_with_adapter(adapter, expected, context);
+            let mut context = context.clone();
+            context.target_resource = Some(self.clone());
+            context.properties = Some(convert_input_to_map(expected)?);
+            return self.invoke_test_with_adapter(adapter, expected, &context);
         }
 
         match &self.implemented_as {
@@ -421,7 +430,10 @@ impl ResourceInvoke for DscResource {
             warn!("{}", t!("dscresources.dscresource.deprecationMessage", resource = self.type_name, message = deprecation_message));
         }
         if let Some(adapter) = &self.require_adapter {
-            return self.invoke_delete_with_adapter(adapter, filter, context);
+            let mut context = context.clone();
+            context.target_resource = Some(self.clone());
+            context.properties = Some(convert_input_to_map(filter)?);
+            return self.invoke_delete_with_adapter(adapter, filter, &context);
         }
 
         match &self.implemented_as {
@@ -487,7 +499,10 @@ impl ResourceInvoke for DscResource {
             warn!("{}", t!("dscresources.dscresource.deprecationMessage", resource = self.type_name, message = deprecation_message));
         }
         if let Some(adapter) = &self.require_adapter {
-            return self.invoke_export_with_adapter(adapter, input, context);
+            let mut context = context.clone();
+            context.target_resource = Some(self.clone());
+            context.properties = Some(convert_input_to_map(input)?);
+            return self.invoke_export_with_adapter(adapter, input, &context);
         }
 
         command_resource::invoke_export(self, Some(input), context)
@@ -937,6 +952,19 @@ fn array_contains(array: &Vec<Value>, find: &Value) -> bool {
     }
 
     false
+}
+
+fn convert_input_to_map(input: &str) -> Result<Map<String, Value>, DscError> {
+    if input.is_empty() {
+        return Ok(Map::new());
+    }
+
+    match serde_json::from_str::<Map<String, Value>>(input) {
+        Ok(map) => Ok(map),
+        Err(err) => {
+            Err(DscError::Validation(t!("dscresources.dscresource.invalidPropertiesJson", err = err).to_string()))
+        }
+    }
 }
 
 #[test]

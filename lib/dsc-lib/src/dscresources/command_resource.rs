@@ -1086,7 +1086,7 @@ fn process_set_delete_args(args: Option<&Vec<SetDeleteArgKind>>, input: &str, re
     };
 
     let mut processed_args = Vec::<String>::new();
-    let mut supports_whatif = context.execution_type == ExecutionKind::WhatIf;
+    let mut supports_whatif = false;
     for arg in arg_values {
         match arg {
             SetDeleteArgKind::Expression { arg, expression, mandatory } => {

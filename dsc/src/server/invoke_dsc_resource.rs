@@ -23,6 +23,7 @@ use rmcp::{ErrorData as McpError, Json, tool, tool_router, handler::server::wrap
 use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
 use tokio::task;
 
 #[derive(Deserialize, JsonSchema)]
@@ -96,6 +97,13 @@ impl McpServer {
             }
             let mut context = Context::new();
             context.execution_type = execution_kind;
+            if !properties_json.is_empty() {
+                let json_map = match serde_json::from_str::<Map<String, Value>>(&properties_json) {
+                    Ok(map) => map,
+                    Err(e) => return Err(McpError::invalid_params(t!("server.invoke_dsc_resource.invalidPropertiesJson", error = e.to_string()), None)),
+                };
+                context.properties = Some(json_map);
+            }
             match operation {
                 DscOperation::Get => {
                     let result = match resource.get(&properties_json, &context) {

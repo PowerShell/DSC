@@ -290,6 +290,7 @@ exportResult = "Export result: %{result}"
 json = "JSON: %{json}"
 schema = "Schema: %{schema}"
 invokeNotSupported = "Invoke operation is not supported for resource '%{resource}'"
+invalidPropertiesJson = "Invalid properties JSON: %{err}"
 
 [dscresources.resource_manifest]
 resourceManifestSchemaTitle = "Resource manifest schema URI"

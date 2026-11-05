@@ -3,7 +3,7 @@
 
 use crate::{
     actions::{action_manifest::SupportedOperation, dscaction::DscAction},
-    configure::context::Context,
+    configure::context::{Context, ProcessMode},
     discovery::ResourceKind,
     dscerror::DscError,
     dscresources::dscresource::{DscResource, ResourceCapability},
@@ -251,7 +251,9 @@ impl Clone for Box<dyn ResourceInvoke> {
 pub fn process_expression_arg(processed_args: &mut Vec<String>, expression: &str, context: &Context, arg: &Option<String>, mandatory: &Option<bool>) -> Result<(), DscError> {
     let mut parser = Statement::new()?;
     // if mandatory is false, we can ignore errors and continue
-    let result = match parser.parse_and_execute(expression, context) {
+    let mut expression_context = context.clone();
+    expression_context.process_mode = ProcessMode::Normal;
+    let result = match parser.parse_and_execute(expression, &expression_context) {
         Ok(value) => value,
         Err(e) => {
             debug!("{}", t!("resources.resource_invoke.invalidExpression", expression = expression, error = e));

@@ -14,7 +14,7 @@ use dsc_lib::dscerror::DscError;
 use dsc_lib::resources::{invoke_result::{DeleteResultKind, GetResult, ResourceGetResponse, SetResult, ResourceSetResponse}, resource_invoke::ResourceInvoke};
 use dsc_lib::types::{FullyQualifiedTypeName, ResourceVersionReq};
 use rust_i18n::t;
-use serde_json::Value;
+use serde_json::{Map, Value};
 use std::process::ExitCode;
 use tracing::{debug, error, info};
 
@@ -30,7 +30,8 @@ pub fn get(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, version
         return Err(ExitCode::from(EXIT_DSC_ERROR));
     }
 
-    let context = Context::new();
+    let mut context = Context::new();
+    context.properties = Some(convert_input_to_map(input)?);
     match resource.get(input, &context) {
         Ok(result) => {
             if let GetResult::Resource(response) = &result
@@ -82,7 +83,8 @@ pub fn get_all(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, ver
         return Err(ExitCode::from(EXIT_DSC_ERROR));
     }
 
-    let context = Context::new();
+    let mut context = Context::new();
+    context.properties = Some(convert_input_to_map(&input)?);
     let export_result = match resource.export(&input, &context) {
         Ok(export) => { export }
         Err(err) => {
@@ -159,6 +161,7 @@ pub fn set(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, version
     };
 
     let mut context = Context::new();
+    context.properties = Some(convert_input_to_map(input)?);
     if !exist && resource.has_resource_capability(&ResourceCapability::Delete) && !resource.has_resource_capability(&ResourceCapability::SetHandlesExist) {
         debug!("{}", t!("resource_command.routingToDelete"));
 
@@ -241,7 +244,8 @@ pub fn test(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, versio
         return Err(ExitCode::from(EXIT_DSC_ERROR));
     }
 
-    let context = Context::new();
+    let mut context = Context::new();
+    context.properties = Some(convert_input_to_map(input)?);
     match resource.test(input, &context) {
         Ok(result) => {
             // convert to json
@@ -277,6 +281,7 @@ pub fn delete(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, vers
 
     let mut context = Context::new();
     context.execution_type = execution_kind;
+    context.properties = Some(convert_input_to_map(input)?);
     match resource.delete(input, &context) {
         Ok(result) => {
             match result {
@@ -348,7 +353,8 @@ pub fn export(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, vers
     }
 
     let mut conf = Configuration::new();
-    let context = Context::new();
+    let mut context = Context::new();
+    context.properties = Some(convert_input_to_map(input)?);
     if let Err(err) = add_resource_export_results_to_configuration(&*dsc_resource, &mut conf, input, &context) {
         error!("{err}");
         return Err(ExitCode::from(EXIT_DSC_ERROR));
@@ -369,4 +375,18 @@ pub fn export(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, vers
 pub fn get_resource(dsc: & mut DscManager, resource: &FullyQualifiedTypeName, version: Option<&ResourceVersionReq>) -> Option<Box<dyn ResourceInvoke>> {
     //TODO: add dynamically generated resource to dsc
     dsc.find_resource(&DiscoveryFilter::new(resource, version.cloned(), None)).unwrap_or(None)
+}
+
+fn convert_input_to_map(input: &str) -> Result<Map<String, Value>, ExitCode> {
+    if input.is_empty() {
+        return Ok(Map::new());
+    }
+
+    match serde_json::from_str::<Map<String, Value>>(input) {
+        Ok(map) => Ok(map),
+        Err(err) => {
+            error!("{}", t!("resource_command.invalidPropertiesJson", err = err));
+            Err(ExitCode::from(EXIT_JSON_ERROR))
+        }
+    }
 }

@@ -11,8 +11,7 @@ use serde_json::Value;
 pub struct Properties {}
 
 /// Implements the `properties` function.
-/// Accepts a variable number of arguments, each of which is a string.
-/// Returns a string that is the concatenation of the arguments, separated by the platform's path separator.
+/// Returns the properties from the context as a JSON object.
 impl Function for Properties {
     fn get_metadata(&self) -> FunctionMetadata {
         FunctionMetadata {
