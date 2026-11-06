@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::server::mcp_server::McpServer;
-use dsc_lib::{DscManager, discovery::discovery_trait::DiscoveryFilter, dscresources::{dscresource::ResourceCapability, resource_manifest::Kind}, types::{FullyQualifiedTypeName, ResourceVersion}};
+use dsc_lib::{DscManager, discovery::discovery_trait::DiscoveryFilter, dscresources::{dscresource::ResourceCapability, resource_manifest::Kind}, types::{FullyQualifiedTypeName, ResourceVersion}, configure::context::Context};
 use rmcp::{ErrorData as McpError, Json, tool, tool_router, handler::server::wrapper::Parameters};
 use rust_i18n::t;
 use schemars::{JsonSchema, json_schema};
@@ -60,7 +60,8 @@ impl McpServer {
                 return Err(McpError::invalid_params(t!("server.show_dsc_resource.resourceNotFound", type_name = r#type), None))
             };
 
-            let schema = match resource.schema() {
+            let context = Context::new();
+            let schema = match resource.schema(&context) {
                 Ok(schema_str) => serde_json::from_str(&schema_str).ok(),
                 Err(_) => None,
             };
