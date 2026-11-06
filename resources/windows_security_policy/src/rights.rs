@@ -35,7 +35,10 @@ const fn right(constant: &'static str, display_name: fn() -> Cow<'static, str>) 
 }
 
 /// Every user right, ordered by English display name. This is also the order `export` reports them in.
-pub const USER_RIGHTS: [UserRight; 45] = [
+///
+/// A `static` rather than a `const`, so that `find` and `export` borrow the one table instead of
+/// materialising a copy at every use.
+pub static USER_RIGHTS: [UserRight; 45] = [
     right("SeTrustedCredManAccessPrivilege", || t!("rights.displayName.SeTrustedCredManAccessPrivilege")),
     right("SeNetworkLogonRight", || t!("rights.displayName.SeNetworkLogonRight")),
     right("SeTcbPrivilege", || t!("rights.displayName.SeTcbPrivilege")),

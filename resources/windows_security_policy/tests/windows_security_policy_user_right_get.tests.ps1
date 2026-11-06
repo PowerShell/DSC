@@ -59,11 +59,18 @@ Describe 'User rights assignment get tests' -Skip:(!$IsWindows) {
             }
         }
 
-        It 'Echoes the input casing when called directly' {
+        It 'Returns the canonical casing of the right when called directly' {
             # DSC validates the schema enum, so a lower-case right only reaches the binary directly.
+            # The output uses the canonical casing so that it satisfies the enum too.
             $out = windows_security_policy get user-right --input '{"right":"seservicelogonright"}' 2>$testdrive/error.log
             $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
-            ($out | ConvertFrom-Json).right | Should -BeExactly 'seservicelogonright'
+            ($out | ConvertFrom-Json).right | Should -BeExactly 'SeServiceLogonRight'
+        }
+
+        It 'Rejects --what-if, which only set supports' {
+            $null = windows_security_policy get user-right --input '{"right":"SeServiceLogonRight"}' --what-if 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 1
+            Get-Content -Raw $testdrive/error.log | Should -Match "'--what-if' is not supported by the 'get' operation"
         }
 
         It 'Returns an empty identity list for a right that no one holds' {

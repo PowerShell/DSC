@@ -64,7 +64,7 @@ fn main() -> ExitCode {
         return ExitCode::from(EXIT_INVALID_ARGS);
     };
 
-    let options = match parse_options(&args) {
+    let options = match parse_options(operation, &args) {
         Ok(options) => options,
         Err(error) => {
             write_error(&error.to_string());
@@ -210,6 +210,8 @@ enum ArgError {
     MissingInputValue,
     /// An argument that is neither a known option nor the value of `--input`.
     UnknownOption(String),
+    /// A known option that the operation does not support, such as `--what-if` with `get`.
+    UnsupportedOption { option: String, operation: String },
 }
 
 #[cfg(windows)]
@@ -218,27 +220,50 @@ impl std::fmt::Display for ArgError {
         match self {
             Self::MissingInputValue => f.write_str(&t!("main.missingInputValue")),
             Self::UnknownOption(option) => f.write_str(&t!("main.unknownOption", option = option)),
+            Self::UnsupportedOption { option, operation } => {
+                f.write_str(&t!("main.unsupportedOption", option = option, operation = operation))
+            }
         }
     }
 }
 
 /// Parse every argument after the operation and the target (arguments 1 and 2).
 ///
-/// Only `--input <json>` / `-i <json>` and `--what-if` / `-w` are accepted, in any order. Every
-/// other argument is an error, so that a misspelled option can never be ignored.
+/// Only `--input <json>` / `-i <json>` and `--what-if` / `-w` are accepted, in any order, and
+/// only for the operations that use them: `--input` for everything but `export`, `--what-if` for
+/// `set` alone. Every other argument is an error, so that a misspelled or misplaced option can
+/// never be ignored.
+///
+/// # Arguments
+///
+/// * `operation` - The operation given as argument 1, already known to be valid.
+/// * `args` - The full argument list, including the executable.
 ///
 /// # Errors
 ///
-/// Returns `MissingInputValue` when `--input` has no value and `UnknownOption` for any argument
-/// that isn't a known option or the value of `--input`.
+/// Returns `MissingInputValue` when `--input` has no value, `UnsupportedOption` for a known
+/// option that `operation` does not use, and `UnknownOption` for any argument that isn't a known
+/// option or the value of `--input`.
 #[cfg(windows)]
-fn parse_options(args: &[String]) -> Result<Options, ArgError> {
+fn parse_options(operation: &str, args: &[String]) -> Result<Options, ArgError> {
+    let unsupported = |option: &str| ArgError::UnsupportedOption { option: option.to_string(), operation: operation.to_string() };
     let mut options = Options::default();
     let mut remaining = args.iter().skip(3);
     while let Some(arg) = remaining.next() {
         match arg.as_str() {
-            "--input" | "-i" => options.input = Some(remaining.next().ok_or(ArgError::MissingInputValue)?.clone()),
-            "--what-if" | "-w" => options.what_if = true,
+            option @ ("--input" | "-i") => {
+                let value = remaining.next().ok_or(ArgError::MissingInputValue)?;
+                if operation == "export" {
+                    return Err(unsupported(option));
+                }
+                options.input = Some(value.clone());
+            }
+            option @ ("--what-if" | "-w") => {
+                if operation != "set" {
+                    return Err(unsupported(option));
+                }
+                options.what_if = true;
+            }
             unknown => return Err(ArgError::UnknownOption(unknown.to_string())),
         }
     }
@@ -251,16 +276,21 @@ mod tests {
 
     fn parse(list: &[&str]) -> Result<Options, ArgError> {
         let args: Vec<String> = list.iter().map(ToString::to_string).collect();
-        parse_options(&args)
+        parse_options(list[1], &args)
     }
 
     fn options(input: Option<&str>, what_if: bool) -> Options {
         Options { input: input.map(ToString::to_string), what_if }
     }
 
+    fn unsupported(option: &str, operation: &str) -> Result<Options, ArgError> {
+        Err(ArgError::UnsupportedOption { option: option.to_string(), operation: operation.to_string() })
+    }
+
     #[test]
     fn accepts_input_and_what_if_in_any_order() {
         assert_eq!(parse(&["exe", "get", "user-right", "--input", "{}"]), Ok(options(Some("{}"), false)));
+        assert_eq!(parse(&["exe", "test", "user-right", "-i", "{}"]), Ok(options(Some("{}"), false)));
         assert_eq!(parse(&["exe", "set", "user-right", "-w", "-i", "[]"]), Ok(options(Some("[]"), true)));
         assert_eq!(parse(&["exe", "set", "user-right", "--input", "{}", "--what-if"]), Ok(options(Some("{}"), true)));
         assert_eq!(parse(&["exe", "export", "user-right"]), Ok(options(None, false)));
@@ -279,6 +309,20 @@ mod tests {
         assert_eq!(parse(&["exe", "set", "user-right", "--input", "{}", "--whatif"]), unknown("--whatif"));
         assert_eq!(parse(&["exe", "set", "user-right", "--input", "{}", "extra"]), unknown("extra"));
         assert_eq!(parse(&["exe", "export", "user-right", "-x"]), unknown("-x"));
+    }
+
+    #[test]
+    fn what_if_is_only_accepted_by_set() {
+        assert_eq!(parse(&["exe", "get", "user-right", "--input", "{}", "--what-if"]), unsupported("--what-if", "get"));
+        assert_eq!(parse(&["exe", "test", "user-right", "-w", "--input", "{}"]), unsupported("-w", "test"));
+        assert_eq!(parse(&["exe", "export", "user-right", "--what-if"]), unsupported("--what-if", "export"));
+    }
+
+    #[test]
+    fn input_is_not_accepted_by_export() {
+        assert_eq!(parse(&["exe", "export", "user-right", "--input", "{}"]), unsupported("--input", "export"));
+        assert_eq!(parse(&["exe", "export", "user-right", "-i", "{}"]), unsupported("-i", "export"));
+        assert_eq!(parse(&["exe", "export", "user-right", "--input"]), Err(ArgError::MissingInputValue));
     }
 
     #[test]

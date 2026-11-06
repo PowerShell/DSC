@@ -8,6 +8,7 @@
 
 use crate::sid::Sid;
 use crate::types::SecurityPolicyError;
+use dsc_lib_security_context::{SecurityContext, get_security_context};
 use rust_i18n::t;
 use std::ffi::c_void;
 use std::ptr;
@@ -34,12 +35,26 @@ fn nt_error(status: NTSTATUS) -> String {
     windows::core::Error::from_hresult(WIN32_ERROR(win32).to_hresult()).to_string()
 }
 
-/// Map an `NTSTATUS` to a resource error. Access denied means the process is not elevated.
+/// Map an `NTSTATUS` to a resource error.
+///
+/// Access denied from a non-elevated process is reported as `ElevationRequired`. An elevated
+/// process can still be denied, for example when the policy object is locked by an MDM provider
+/// or hardened by a custom DACL, and then the real Win32 error is reported as a policy error so
+/// that the exit code and message don't claim that elevation would help.
+///
+/// # Arguments
+///
+/// * `status` - The status an `Lsa*` API returned.
+/// * `context` - Builds the policy error message from the Win32 error message.
+///
+/// # Errors
+///
+/// Returns `ElevationRequired` or a policy error for any status other than `STATUS_SUCCESS`.
 fn check(status: NTSTATUS, context: impl FnOnce(String) -> String) -> Result<(), SecurityPolicyError> {
     if status == STATUS_SUCCESS {
         return Ok(());
     }
-    if status == STATUS_ACCESS_DENIED {
+    if status == STATUS_ACCESS_DENIED && get_security_context() != SecurityContext::Admin {
         return Err(SecurityPolicyError::ElevationRequired);
     }
     Err(SecurityPolicyError::Policy(context(nt_error(status))))
@@ -113,7 +128,8 @@ impl LsaPolicy {
     ///
     /// # Errors
     ///
-    /// Returns `ElevationRequired` when access is denied, or a policy error.
+    /// Returns `ElevationRequired` when access is denied to a non-elevated process, or a policy
+    /// error.
     pub fn open(access: u32) -> Result<Self, SecurityPolicyError> {
         let attributes = LSA_OBJECT_ATTRIBUTES::default();
         let mut handle = LSA_HANDLE::default();
@@ -159,7 +175,8 @@ impl LsaPolicy {
     ///
     /// # Errors
     ///
-    /// Returns `ElevationRequired` or a policy error.
+    /// Returns `ElevationRequired` when access is denied to a non-elevated process, or a policy
+    /// error.
     pub fn add_right(&self, sid: &Sid, right: &str) -> Result<(), SecurityPolicyError> {
         let name = LsaString::new(right)?;
         // SAFETY: `sid` and `name` are valid for the duration of the call.
@@ -172,7 +189,8 @@ impl LsaPolicy {
     ///
     /// # Errors
     ///
-    /// Returns `ElevationRequired` or a policy error.
+    /// Returns `ElevationRequired` when access is denied to a non-elevated process, or a policy
+    /// error.
     pub fn remove_right(&self, sid: &Sid, right: &str) -> Result<(), SecurityPolicyError> {
         let name = LsaString::new(right)?;
         // `allrights` is always false: `true` would strip every right from the account.
@@ -199,7 +217,20 @@ impl Drop for LsaPolicy {
 mod tests {
     use super::*;
     use crate::sid::parse_string_sid;
-    use dsc_lib_security_context::{SecurityContext, get_security_context};
+
+    #[test]
+    fn access_denied_means_elevation_only_outside_an_elevated_process() {
+        let context = |error: String| format!("context: {error}");
+        assert!(check(STATUS_SUCCESS, context).is_ok());
+        let denied = check(STATUS_ACCESS_DENIED, context).unwrap_err();
+        if get_security_context() == SecurityContext::Admin {
+            assert!(matches!(&denied, SecurityPolicyError::Policy(message) if message.starts_with("context: ")), "{denied}");
+        } else {
+            assert!(matches!(denied, SecurityPolicyError::ElevationRequired));
+        }
+        let other = check(STATUS_NO_SUCH_PRIVILEGE, context).unwrap_err();
+        assert!(matches!(&other, SecurityPolicyError::Policy(message) if message.starts_with("context: ")), "{other}");
+    }
 
     #[test]
     fn lsa_strings_count_bytes() {

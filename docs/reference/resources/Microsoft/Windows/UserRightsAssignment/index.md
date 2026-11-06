@@ -187,8 +187,8 @@ Enum        : [SeTrustedCredManAccessPrivilege, SeNetworkLogonRight, SeTcbPrivil
 The constant of the user right or privilege to manage, such as `SeServiceLogonRight`. These are
 the names that the LSA, `secedit` templates, Group Policy and security benchmarks use; the table
 in the [Description](#description) maps them to the names shown in the Local Security Policy
-console. The resource returns the value exactly as you specified it, and **Export** returns the
-canonical casing.
+console. The resource matches the value without regard to case and always returns the constant
+with its canonical casing.
 
 ### identity
 
@@ -226,7 +226,10 @@ accounts. Entries that resolve to the same SID count once.
 
 On **Get** and **Export**, the resource returns each holder by its canonical name: `DOMAIN\Name`,
 a bare name when the account has no domain (for example `Everyone`), or the SID string when the
-SID no longer resolves to an account. An empty array means that no one holds the right.
+SID no longer resolves to an account. When a name can't be looked up for another reason, for
+example because the domain controller is unreachable, the resource also returns the SID string
+and writes an informational message with the lookup error. An empty array means that no one holds
+the right.
 
 The resource compares accounts by SID, but DSC compares the `identity` arrays as text. When an
 entry isn't the canonical name of its account, such as `Administrators` or `S-1-5-32-544` for
@@ -375,12 +378,17 @@ was omitted from a **Set** or **Test** operation.
 ### Exit code 3
 
 Indicates the resource operation failed due to an error raised by the Local Security Authority or
-another Windows API, or the result could not be serialized.
+another Windows API, or the result could not be serialized. When a **Set** operation can apply
+only some of its changes, the error message lists every change that failed and the accounts that
+hold the right after the operation. The resource grants before it revokes and skips the revokes
+when a grant fails, so a failed **Set** never leaves a right with fewer holders than before.
 
 ### Exit code 4
 
 Indicates the resource operation failed because the process isn't elevated. Reading or changing
-user rights assignments requires an elevated process.
+user rights assignments requires an elevated process. Access denied to an elevated process, for
+example when the security policy is locked by a device management provider, is reported as
+[exit code 3](#exit-code-3) with the Windows error instead.
 
 ## See also
 

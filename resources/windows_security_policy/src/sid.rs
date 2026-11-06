@@ -7,7 +7,7 @@
 
 use crate::types::SecurityPolicyError;
 use rust_i18n::t;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::ffi::c_void;
 use windows::Win32::Foundation::{ERROR_INSUFFICIENT_BUFFER, ERROR_NONE_MAPPED, HLOCAL, LocalFree, WIN32_ERROR};
 use windows::Win32::Security::Authorization::{ConvertSidToStringSidW, ConvertStringSidToSidW};
@@ -182,15 +182,24 @@ pub fn lookup_account_sid(sid: &Sid) -> Result<(String, String), windows::core::
 /// The canonical display form of a SID: `DOMAIN\Name`, bare `Name` when the domain is empty
 /// (e.g. `Everyone`), or the SID string when it does not resolve.
 ///
+/// A lookup that fails for a reason other than an unknown SID, such as an unreachable domain
+/// controller, also falls back to the SID string and writes an informational message, so that one
+/// unresolvable holder never prevents the rights themselves from being read or changed.
+///
 /// # Errors
 ///
-/// Returns an error when the lookup fails for a reason other than an unknown SID.
+/// Returns an error when the SID cannot be converted to a string.
 pub fn display_name(sid: &Sid) -> Result<String, SecurityPolicyError> {
     match lookup_account_sid(sid) {
         Ok((domain, name)) if domain.is_empty() => Ok(name),
         Ok((domain, name)) => Ok(format!("{domain}\\{name}")),
-        Err(error) if is_win32(&error, ERROR_NONE_MAPPED) => sid_to_string(sid).map_err(sid_to_string_error),
-        Err(error) => Err(SecurityPolicyError::Policy(t!("sid.lookupSidFailed", error = error.to_string()).to_string())),
+        Err(error) => {
+            let text = sid_to_string(sid).map_err(sid_to_string_error)?;
+            if !is_win32(&error, ERROR_NONE_MAPPED) {
+                crate::write_info(&t!("sid.lookupSidFallback", sid = text, error = error.to_string()));
+            }
+            Ok(text)
+        }
     }
 }
 
@@ -202,10 +211,35 @@ fn sid_to_string_error(error: windows::core::Error) -> SecurityPolicyError {
 ///
 /// # Errors
 ///
-/// Returns an error when the SID cannot be converted to a string or looked up.
+/// Returns an error when the SID cannot be converted to a string.
 pub fn describe(sid: Sid) -> Result<ResolvedIdentity, SecurityPolicyError> {
     let name = display_name(&sid)?;
     Ok(ResolvedIdentity { sid, name })
+}
+
+/// Display names looked up so far, so that an account holding many rights is resolved once per
+/// process rather than once per right. Each lookup of a domain SID can be a round trip to a
+/// domain controller.
+#[derive(Debug, Default)]
+pub struct NameCache(HashMap<Sid, String>);
+
+impl NameCache {
+    /// Describe a SID obtained from the LSA, reusing the name from an earlier call for the same SID.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the SID cannot be converted to a string.
+    pub fn describe(&mut self, sid: Sid) -> Result<ResolvedIdentity, SecurityPolicyError> {
+        let name = match self.0.get(&sid) {
+            Some(name) => name.clone(),
+            None => {
+                let name = display_name(&sid)?;
+                self.0.insert(sid.clone(), name.clone());
+                name
+            }
+        };
+        Ok(ResolvedIdentity { sid, name })
+    }
 }
 
 /// Whether `text` has the shape of a SID string (`S-1-<digit>...`).
@@ -214,17 +248,18 @@ fn looks_like_sid(text: &str) -> bool {
     bytes.len() >= 5 && bytes[0].eq_ignore_ascii_case(&b'S') && &bytes[1..4] == b"-1-" && bytes[4].is_ascii_digit()
 }
 
-/// Resolve one `identity` entry: a name, a SID string, or the secedit `*S-1-...` form.
+/// Resolve one `identity` entry: a name, a SID string, or the secedit `*S-1-...` form. The entry
+/// is taken as is: surrounding whitespace is not trimmed, matching the patterns in the instance
+/// schema, so that the binary never accepts an entry that DSC rejects.
 ///
 /// # Errors
 ///
 /// Returns `InvalidInput` for an empty entry, an entry with an embedded NUL character, a
 /// malformed SID string (including `*` followed by anything but a SID) or an unknown account name.
 pub fn resolve_identity(input: &str) -> Result<ResolvedIdentity, SecurityPolicyError> {
-    let trimmed = input.trim();
-    let (text, secedit_form) = match trimmed.strip_prefix('*') {
-        Some(rest) => (rest.trim(), true),
-        None => (trimmed, false),
+    let (text, secedit_form) = match input.strip_prefix('*') {
+        Some(rest) => (rest, true),
+        None => (input, false),
     };
     if text.is_empty() {
         return Err(SecurityPolicyError::InvalidInput(t!("sid.emptyIdentity").to_string()));
@@ -252,8 +287,9 @@ pub fn resolve_identity(input: &str) -> Result<ResolvedIdentity, SecurityPolicyE
 }
 
 /// Resolve every entry, dropping duplicates that resolve to the same SID (first occurrence wins).
-/// Writes an informational message for every entry that isn't the canonical name of its account,
-/// because the resource reports holders by their canonical name and DSC compares `identity` as text.
+/// Writes an informational message for every kept entry that isn't the canonical name of its
+/// account, because the resource reports holders by their canonical name and DSC compares
+/// `identity` as text. Dropped duplicates produce no message.
 ///
 /// # Errors
 ///
@@ -263,12 +299,13 @@ pub fn resolve_identities(inputs: &[String]) -> Result<Vec<ResolvedIdentity>, Se
     let mut identities = Vec::with_capacity(inputs.len());
     for input in inputs {
         let identity = resolve_identity(input)?;
+        if !seen.insert(identity.sid.clone()) {
+            continue;
+        }
         if let Some(message) = non_canonical_message(input, &identity) {
             crate::write_info(&message);
         }
-        if seen.insert(identity.sid.clone()) {
-            identities.push(identity);
-        }
+        identities.push(identity);
     }
     Ok(identities)
 }
@@ -323,7 +360,7 @@ mod tests {
 
     #[test]
     fn identities_resolve_from_every_accepted_form() {
-        for input in ["Administrators", "BUILTIN\\Administrators", "builtin\\administrators", ADMINISTRATORS, "*S-1-5-32-544", "  s-1-5-32-544 "] {
+        for input in ["Administrators", "BUILTIN\\Administrators", "builtin\\administrators", ADMINISTRATORS, "s-1-5-32-544", "*S-1-5-32-544"] {
             let resolved = resolve_identity(input).unwrap_or_else(|e| panic!("{input}: {e}"));
             assert_eq!(resolved.name, "BUILTIN\\Administrators", "{input}");
             assert_eq!(sid_to_string(&resolved.sid).unwrap(), ADMINISTRATORS, "{input}");
@@ -333,8 +370,21 @@ mod tests {
     }
 
     #[test]
+    fn cached_descriptions_match_uncached_ones() {
+        let mut cache = NameCache::default();
+        let administrators = parse_string_sid(ADMINISTRATORS).unwrap();
+        let first = cache.describe(administrators.clone()).unwrap();
+        let second = cache.describe(administrators.clone()).unwrap();
+        assert_eq!(first.name, "BUILTIN\\Administrators");
+        assert_eq!(second.name, first.name);
+        assert_eq!(cache.0.len(), 1, "the same SID is looked up once");
+        assert_eq!(describe(administrators).unwrap().name, first.name);
+    }
+
+    #[test]
     fn invalid_identities_are_invalid_input() {
-        for input in ["", "   ", "*", "S-1-X", "S-1-5-32-abc", "NoSuchAccount_zz_12345", "*Administrators"] {
+        // Padded entries are rejected because the instance schema rejects them too.
+        for input in ["", "   ", "*", "* S-1-5-32-544", "  S-1-5-32-544 ", "S-1-X", "S-1-5-32-abc", "NoSuchAccount_zz_12345", "*Administrators"] {
             assert!(
                 matches!(resolve_identity(input), Err(SecurityPolicyError::InvalidInput(_))),
                 "{input:?} should be invalid input"
@@ -377,7 +427,7 @@ mod tests {
     fn only_non_canonical_entries_produce_a_message() {
         let administrators = resolve_identity("BUILTIN\\Administrators").unwrap();
         assert!(non_canonical_message("BUILTIN\\Administrators", &administrators).is_none());
-        for input in ["Administrators", "builtin\\administrators", ADMINISTRATORS, "*S-1-5-32-544", " BUILTIN\\Administrators "] {
+        for input in ["Administrators", "builtin\\administrators", ADMINISTRATORS, "*S-1-5-32-544"] {
             let expected = t!("sid.nonCanonical", identity = input, canonical = "BUILTIN\\Administrators").to_string();
             assert_eq!(non_canonical_message(input, &administrators), Some(expected), "{input:?}");
         }

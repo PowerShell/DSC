@@ -21,7 +21,8 @@ pub enum SetAction {
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct UserRightsAssignment {
-    /// The user right constant, e.g. `SeServiceLogonRight`. Matched case-insensitively and echoed as given.
+    /// The user right constant, e.g. `SeServiceLogonRight`. Matched case-insensitively on input and
+    /// reported with its canonical casing, so that every output satisfies the schema's `enum`.
     pub right: String,
 
     /// The accounts that hold the right. Required for `set` and `test`; an empty list means "No One".
@@ -83,12 +84,6 @@ impl std::fmt::Display for SecurityPolicyError {
 }
 
 impl std::error::Error for SecurityPolicyError {}
-
-impl From<String> for SecurityPolicyError {
-    fn from(message: String) -> Self {
-        Self::Policy(message)
-    }
-}
 
 #[cfg(test)]
 mod tests {
