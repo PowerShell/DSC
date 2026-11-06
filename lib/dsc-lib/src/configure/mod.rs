@@ -3,7 +3,7 @@
 
 use crate::configure::config_doc::{ExecutionInformation, ResourceDirective};
 use crate::configure::context::{Context, ProcessMode};
-use crate::configure::parameters::{SecureObject, SecureString, import_parameters, is_secure_value};
+use crate::configure::parameters::{SecureObject, SecureString, import_parameters, contains_secure_value};
 use crate::configure::{config_doc::{ExecutionKind, IntOrExpression, Metadata, Parameter, Resource, ResourceDiscoveryMode, RestartRequired, ValueOrCopy}};
 use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscerror::DscError;
@@ -127,14 +127,16 @@ pub fn add_resource_export_results_to_configuration(
 ) -> Result<ExportResult, DscError> {
     let mut resource_input = input;
     let mut input_filters: Option<Vec<Map<String, Value>>> = None;
+    let mut context = context.clone();
     if !input.is_empty() && !resource_supports_export_filtering(resource) {
         input_filters = Some(parse_export_filter_input(input)?);
         resource_input = "";
+        context.properties = None;
         info!("{}", t!("configure.mod.engineExportFiltering", resource = resource.type_name()));
     }
 
     let start_datetime = chrono::Local::now();
-    let mut export_result = resource.export(resource_input, context)?;
+    let mut export_result = resource.export(resource_input, &context)?;
     let end_datetime = chrono::Local::now();
 
     if let Some(filters) = input_filters.as_deref() {
@@ -1232,12 +1234,12 @@ impl Configurator {
                         default_value.clone()
                     };
 
-                    if parameter.parameter_type == DataType::SecureString && value.is_string() && !is_secure_value(&value){
+                    if parameter.parameter_type == DataType::SecureString && value.is_string() && !contains_secure_value(&value){
                         let secure_string = SecureString {
                             secure_string: value.as_str().unwrap().to_string(),
                         };
                         value = serde_json::to_value(secure_string)?;
-                    } else if parameter.parameter_type == DataType::SecureObject && value.is_object() && !is_secure_value(&value) {
+                    } else if parameter.parameter_type == DataType::SecureObject && value.is_object() && !contains_secure_value(&value) {
                         let secure_object = SecureObject {
                             secure_object: value.clone(),
                         };

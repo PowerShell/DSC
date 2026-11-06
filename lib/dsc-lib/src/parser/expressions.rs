@@ -7,7 +7,7 @@ use tracing::{debug, trace};
 use tree_sitter::Node;
 
 use crate::configure::context::Context;
-use crate::configure::parameters::is_secure_value;
+use crate::configure::parameters::contains_secure_value;
 use crate::dscerror::DscError;
 use crate::functions::FunctionDispatcher;
 use crate::parser::functions::Function;
@@ -128,7 +128,7 @@ impl Expression {
     /// This function will return an error if the expression fails to execute.
     pub fn invoke(&self, function_dispatcher: &FunctionDispatcher, context: &Context) -> Result<Value, DscError> {
         let result = self.function.invoke(function_dispatcher, context)?;
-        let is_secure = is_secure_value(&result);
+        let is_secure = contains_secure_value(&result);
         if self.function.name() != "secret" && !is_secure {
             let result_json = serde_json::to_string(&result)?;
             trace!("{}", t!("parser.expression.functionResult", results = result_json));

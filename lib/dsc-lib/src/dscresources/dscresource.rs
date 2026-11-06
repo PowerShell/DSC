@@ -4,7 +4,7 @@
 use crate::{
     actions::dscaction::DscAction,
     configure::{Configurator, config_doc::{Configuration, Resource},
-        context::{Context, ProcessMode}, parameters::{SECURE_VALUE_REDACTED, is_secure_value},
+        context::{Context, ProcessMode}, parameters::{SECURE_VALUE_REDACTED, contains_secure_value},
         schema_cache::get_resource_schema
     },
     discovery::{discovery_trait::DiscoveryFilter, ResourceKind},
@@ -588,7 +588,7 @@ pub fn get_well_known_properties() -> HashMap<String, Value> {
 ///
 /// Original value if not sensitive, otherwise a redacted value
 pub fn redact(value: &Value) -> Value {
-    if is_secure_value(value) {
+    if contains_secure_value(value) {
         return Value::String(SECURE_VALUE_REDACTED.to_string());
     }
 
@@ -681,7 +681,7 @@ pub(crate) fn get_diff_with_schema(expected: &Value, actual: &Value, schema: Opt
                 continue;
             }
 
-            if is_secure_value(value) {
+            if contains_secure_value(value) {
                 // skip secure values as they are not comparable
                 continue;
             }
