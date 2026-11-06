@@ -1,0 +1,5 @@
+{
+    "Name": "dsc-lib-acl",
+    "Kind": "Library",
+    "IsRust": true
+}

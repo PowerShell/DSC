@@ -15,6 +15,7 @@ members = [
     "lib/dsc-lib-security_context",
     "lib/dsc-lib-telemetry",
     "lib/dsc-lib",
+    "lib/dsc-lib-acl",
     "resources/dism_dsc",
     "resources/dscecho",
     "resources/file_dsc",
@@ -51,6 +52,7 @@ default-members = [
     "lib/dsc-lib-security_context",
     "lib/dsc-lib-telemetry",
     "lib/dsc-lib",
+    "lib/dsc-lib-acl",
     "resources/dism_dsc",
     "resources/dscecho",
     "resources/file_dsc",
@@ -88,6 +90,7 @@ Windows = [
     "lib/dsc-lib-security_context",
     "lib/dsc-lib-telemetry",
     "lib/dsc-lib",
+    "lib/dsc-lib-acl",
     "resources/dism_dsc",
     "resources/dscecho",
     "resources/file_dsc",
@@ -118,6 +121,7 @@ macOS = [
     "lib/dsc-lib-security_context",
     "lib/dsc-lib-telemetry",
     "lib/dsc-lib",
+    "lib/dsc-lib-acl",
     "resources/dscecho",
     "resources/file_dsc",
     "resources/osinfo",
@@ -140,6 +144,7 @@ Linux = [
     "lib/dsc-lib-security_context",
     "lib/dsc-lib-telemetry",
     "lib/dsc-lib",
+    "lib/dsc-lib-acl",
     "resources/dscecho",
     "resources/file_dsc",
     "resources/osinfo",
@@ -306,6 +311,7 @@ windows = { version = "0.62", features = [
     "Win32_System_Ole",
     "Win32_System_Registry",
     "Win32_System_Services",
+    "Win32_System_Threading",
     "Win32_System_Variant",
     "Win32_System_UpdateAgent",
     "Win32_System_Threading",
@@ -335,5 +341,6 @@ dsc-lib-osinfo = { path = "lib/dsc-lib-osinfo" }
 dsc-lib-registry = { path = "lib/dsc-lib-registry" }
 dsc-lib-security_context = { path = "lib/dsc-lib-security_context" }
 dsc-lib-telemetry = { path = "lib/dsc-lib-telemetry" }
+dsc-lib-acl = { path = "lib/dsc-lib-acl" }
 tree-sitter-dscexpression = { path = "grammars/tree-sitter-dscexpression" }
 tree-sitter-ssh-server-config = { path = "grammars/tree-sitter-ssh-server-config" }
