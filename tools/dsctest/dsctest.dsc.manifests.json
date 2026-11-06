@@ -520,18 +520,18 @@
         "args": [
           "expression-arg",
           {
-            "Arg": "--arg1",
-            "expression": "[properties().first]",
-            "mandatory": true
+            "arg": "--arg3",
+            "expression": "[properties().third]",
+            "mandatory": false
           },
           {
+            "arg": "--arg2",
             "expression": "[properties().second]",
             "mandatory": true
           },
           {
-            "Arg": "--arg3",
-            "expression": "[properties().third]",
-            "mandatory": false
+            "expression": "[properties().first]",
+            "mandatory": true
           }
         ]
       },
@@ -540,18 +540,18 @@
         "args": [
           "expression-arg",
           {
-            "Arg": "--arg1",
-            "expression": "[properties().first]",
-            "mandatory": true
+            "arg": "--arg3",
+            "expression": "[properties().third]",
+            "mandatory": false
           },
           {
+            "arg": "--arg2",
             "expression": "[properties().second]",
             "mandatory": true
           },
           {
-            "Arg": "--arg3",
-            "expression": "[properties().third]",
-            "mandatory": false
+            "expression": "[properties().first]",
+            "mandatory": true
           }
         ]
       },
@@ -560,18 +560,18 @@
         "args": [
           "expression-arg",
           {
-            "Arg": "--arg1",
-            "expression": "[properties().first]",
-            "mandatory": true
+            "arg": "--arg3",
+            "expression": "[properties().third]",
+            "mandatory": false
           },
           {
+            "arg": "--arg2",
             "expression": "[properties().second]",
             "mandatory": true
           },
           {
-            "Arg": "--arg3",
-            "expression": "[properties().third]",
-            "mandatory": false
+            "expression": "[properties().first]",
+            "mandatory": true
           }
         ]
       },

@@ -127,10 +127,10 @@ pub enum SubCommand {
 
     #[clap(name = "expression-arg", about = "Provide expression arguments")]
     ExpressionArg {
-        #[clap(name = "arg1", long, help = "The first expression argument")]
         arg1: String,
+        #[arg(required = true, long)]
         arg2: String,
-        #[clap(name = "arg3", long, help = "The third expression argument")]
+        #[arg(long)]
         arg3: Option<String>,
     },
 

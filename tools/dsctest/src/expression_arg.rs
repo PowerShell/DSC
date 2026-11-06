@@ -9,5 +9,6 @@ use serde::{Deserialize, Serialize};
 pub struct ExpressionArg {
     pub first: String,
     pub second: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub third: Option<String>,
 }
