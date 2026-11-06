@@ -477,6 +477,49 @@ pub fn canonicalize_which(executable: &str, cwd: Option<&Path>) -> Result<String
     Ok(executable.to_string())
 }
 
+pub(crate)fn is_secure_value(value: &Value) -> bool {
+    if let Some(obj) = value.as_object() && obj.len() == 1
+        && (obj.contains_key("secureString") || obj.contains_key("secureObject")) {
+        return true;
+    }
+
+    false
+}
+
+/// Check if a given JSON contains a secure value (either `secureString` or `secureObject`).
+///
+/// # Arguments
+///
+/// * `value` - The JSON value to check.
+///
+/// # Returns
+///
+/// `true` if the value is a secure value, `false` otherwise.
+#[must_use]
+pub(crate) fn contains_secure_value(value: &Value) -> bool {
+    if let Some(obj) = value.as_object() {
+        for (p, v) in obj {
+            if p == "secureString" || p == "secureObject" {
+                return true;
+            }
+
+            if contains_secure_value(v) {
+                return true;
+            }
+        }
+    }
+
+    if let Some(array) = value.as_array() {
+        for v in array {
+            if contains_secure_value(v) {
+                return true;
+            }
+        }
+    }
+
+    false
+}
+
 #[macro_export]
 macro_rules! locked_clear {
     ($lockable:expr) => {{

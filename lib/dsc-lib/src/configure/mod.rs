@@ -3,7 +3,7 @@
 
 use crate::configure::config_doc::{ExecutionInformation, ResourceDirective};
 use crate::configure::context::{Context, ProcessMode};
-use crate::configure::parameters::{SecureObject, SecureString, import_parameters, contains_secure_value};
+use crate::configure::parameters::{SecureObject, SecureString, import_parameters};
 use crate::configure::{config_doc::{ExecutionKind, IntOrExpression, Metadata, Parameter, Resource, ResourceDiscoveryMode, RestartRequired, ValueOrCopy}};
 use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscerror::DscError;
@@ -20,7 +20,7 @@ use crate::resources::{
     resource_invoke::ResourceInvoke,
 };
 use crate::types::{FullyQualifiedTypeName, SemanticVersion};
-use crate::util::resource_id;
+use crate::util::{resource_id, is_secure_value};
 use self::config_doc::{Configuration, DataType, MicrosoftDscMetadata, Operation, SecurityContextKind};
 use self::depends_on::get_resource_invocation_order;
 use self::config_result::{ConfigurationExportResult, ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult};
@@ -1234,12 +1234,12 @@ impl Configurator {
                         default_value.clone()
                     };
 
-                    if parameter.parameter_type == DataType::SecureString && value.is_string() && !contains_secure_value(&value){
+                    if parameter.parameter_type == DataType::SecureString && value.is_string() && !is_secure_value(&value){
                         let secure_string = SecureString {
                             secure_string: value.as_str().unwrap().to_string(),
                         };
                         value = serde_json::to_value(secure_string)?;
-                    } else if parameter.parameter_type == DataType::SecureObject && value.is_object() && !contains_secure_value(&value) {
+                    } else if parameter.parameter_type == DataType::SecureObject && value.is_object() && !is_secure_value(&value) {
                         let secure_object = SecureObject {
                             secure_object: value.clone(),
                         };

@@ -7,10 +7,10 @@ use tracing::{debug, trace};
 use tree_sitter::Node;
 
 use crate::configure::context::Context;
-use crate::configure::parameters::contains_secure_value;
 use crate::dscerror::DscError;
 use crate::functions::FunctionDispatcher;
 use crate::parser::functions::Function;
+use crate::util::contains_secure_value;
 
 #[derive(Clone, Debug)]
 pub enum Accessor {

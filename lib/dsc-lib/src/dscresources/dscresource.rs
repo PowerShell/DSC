@@ -4,7 +4,7 @@
 use crate::{
     actions::dscaction::DscAction,
     configure::{Configurator, config_doc::{Configuration, Resource},
-        context::{Context, ProcessMode}, parameters::{SECURE_VALUE_REDACTED, contains_secure_value},
+        context::{Context, ProcessMode}, parameters::{SECURE_VALUE_REDACTED},
         schema_cache::get_resource_schema
     },
     discovery::{discovery_trait::DiscoveryFilter, ResourceKind},
@@ -13,7 +13,8 @@ use crate::{
         ManifestKind, resource_invoke::{Capabilities, ResourceInvoke},
     },
     schemas::dsc_repo::DscRepoSchema,
-    types::{FullyQualifiedTypeName, ResourceVersion}
+    types::{FullyQualifiedTypeName, ResourceVersion},
+    util::{contains_secure_value, is_secure_value},
 };
 use dscerror::DscError;
 use jsonschema::Validator;
@@ -588,7 +589,7 @@ pub fn get_well_known_properties() -> HashMap<String, Value> {
 ///
 /// Original value if not sensitive, otherwise a redacted value
 pub fn redact(value: &Value) -> Value {
-    if contains_secure_value(value) {
+    if is_secure_value(value) {
         return Value::String(SECURE_VALUE_REDACTED.to_string());
     }
 
