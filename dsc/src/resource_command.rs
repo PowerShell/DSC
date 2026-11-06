@@ -354,7 +354,9 @@ pub fn export(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, vers
 
     let mut conf = Configuration::new();
     let mut context = Context::new();
-    context.properties = Some(convert_input_to_map(input)?);
+    context.properties = serde_json::from_str::<Value>(input)
+        .ok()
+        .and_then(|value| value.as_object().cloned());
     if let Err(err) = add_resource_export_results_to_configuration(&*dsc_resource, &mut conf, input, &context) {
         error!("{err}");
         return Err(ExitCode::from(EXIT_DSC_ERROR));

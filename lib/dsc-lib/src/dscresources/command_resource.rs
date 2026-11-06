@@ -589,7 +589,7 @@ pub fn get_schema(resource: &DscResource, context: &Context) -> Result<String, D
 
     let (schema, schema_value) = match schema_kind {
         SchemaKind::Command(command) => {
-            let args = process_schema_args(command.args.as_ref(), target_resource, context)?;
+            let args = process_schema_args(command.args.as_ref(), target_resource)?;
             let (_exit_code, stdout, _stderr) = invoke_command(&command.executable, args, None, resource.directory.as_deref(), None, manifest.exit_codes.as_ref())?;
             let schema_value: Value = serde_json::from_str(&stdout)?;
             (stdout, schema_value)
@@ -617,7 +617,7 @@ fn verify_with_export_schema(input: &str, resource: &DscResource, context: &Cont
 
     let schema = match export.schema_or_filtering {
         Some(ExportSchemaOrFiltering::Schema(ExportSchemaKind::Command(ref command))) => {
-            let args = process_schema_args(command.args.as_ref(), command_resource, context)?;
+            let args = process_schema_args(command.args.as_ref(), command_resource)?;
             let (_exit_code, stdout, _stderr) = invoke_command(&command.executable, args, None, resource.directory.as_deref(), None, manifest.exit_codes.as_ref())?;
             stdout
         },
@@ -1040,7 +1040,7 @@ pub fn process_get_args(args: Option<&Vec<GetArgKind>>, input: &str, resource: &
     Ok(Some(processed_args))
 }
 
-fn process_schema_args(args: Option<&Vec<SchemaArgKind>>, command_resource: &DscResource, context: &Context) -> Result<Option<Vec<String>>, DscError> {
+fn process_schema_args(args: Option<&Vec<SchemaArgKind>>, command_resource: &DscResource) -> Result<Option<Vec<String>>, DscError> {
     let Some(arg_values) = args else {
         debug!("{}", t!("dscresources.commandResource.noArgs"));
         return Ok(None);
@@ -1049,9 +1049,6 @@ fn process_schema_args(args: Option<&Vec<SchemaArgKind>>, command_resource: &Dsc
     let mut processed_args = Vec::<String>::new();
     for arg in arg_values {
         match arg {
-            SchemaArgKind::Expression { arg, expression, mandatory} => {
-                process_expression_arg(&mut processed_args, expression, context, arg, mandatory)?;
-            }
             SchemaArgKind::String(s) => {
                 processed_args.push(s.clone());
             },

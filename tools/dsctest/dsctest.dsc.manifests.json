@@ -537,6 +537,7 @@
       },
       "set": {
         "executable": "dsctest",
+        "implementsPretest": true,
         "args": [
           "expression-arg",
           {

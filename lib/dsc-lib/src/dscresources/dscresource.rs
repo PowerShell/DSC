@@ -480,7 +480,9 @@ impl ResourceInvoke for DscResource {
             return Ok(serde_json::to_string(schema)?);
         }
         if let Some(adapter) = &self.require_adapter {
-            return self.invoke_schema_with_adapter(adapter, context);
+            let mut context = context.clone();
+            context.target_resource = Some(self.clone());
+            return self.invoke_schema_with_adapter(adapter, &context);
         }
 
         match &self.implemented_as {
