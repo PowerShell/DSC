@@ -77,6 +77,20 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
 ### Added
 
+- Added the `Microsoft.Windows/UserRightsAssignment` built-in resource for managing which accounts
+  hold a Windows user right or privilege (Local Security Policy > User Rights Assignment) natively
+  through the LSA account-rights APIs, as the first part of a replacement for the
+  `SecurityPolicyDsc` PowerShell module. Identities can be given as names or SIDs, the
+  `setAction` property chooses between replacing, adding or removing holders, and the resource
+  supports `get`, `set`, `test`, `export`, and `--what-if`.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#1755][#1755]
+  - PRs: [#1759][#1759]
+
+  </details>
+
 - Added what-if support to the MCP server tools. The `invoke_dsc_config` tool now accepts a
   `what_if` option for the `set` operation, and the `invoke_dsc_resource` tool accepts `what_if`
   for the `set` and `delete` operations. This mirrors the `--what-if` flag on the `dsc config set`,
@@ -2000,4 +2014,6 @@ Version `3.0.0` is the first generally available release of DSC.
 [#1558]: https://github.com/PowerShell/DSC/issues/1558
 [#1562]: https://github.com/PowerShell/DSC/issues/1562
 [#1729]: https://github.com/PowerShell/DSC/issues/1729
+[#1755]: https://github.com/PowerShell/DSC/issues/1755
+[#1759]: https://github.com/PowerShell/DSC/issues/1759
 
