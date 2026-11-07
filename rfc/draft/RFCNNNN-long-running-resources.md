@@ -53,7 +53,20 @@ jsonrpc:
 The existing fields per operation such as `get` which also declare requirements like `requireSecurityContext` will be respected via JSONRPC.
 Only JSONRPC version 2.0 is supported.
 
-Resources implement a JSONRPC api:
+Resources implement a JSONRPC APIs:
+
+At the start, the engine will send an `initialize` request to the resource to allow it to perform any necessary setup before handling subsequent `dsc_invoke` requests.
+This API is optional.
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "initialize"
+}
+```
+
+The `dsc_invoke` API is used to perform operations on the resource. It requires the operation name, resource type, context, and properties as parameters.
+The `context` is needed to provide additional information to adapters.
 
 ```json
 {
@@ -72,7 +85,29 @@ Resources implement a JSONRPC api:
 }
 ```
 
-The `context` is needed to provide additional information to adapters.
+Before the process is terminated, the engine will send a `shutdown` request to the resource to allow it to perform any necessary cleanup.
+This API is also optional.
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "shutdown"
+}
+```
+
+The engine will allow for a timeout of 500ms for the `initialize` and `shutdown` requests.
+
+> Open Questions:
+>
+> - Should the timeout be configurable by the resource in the manifest?  Seems to be hard for the resource to know what type of system it is running on
+
+### Engine Behavior
+
+The DSC engine will instantiate a new process for the resource as it does today on first invocation.
+If the `ReuseResource` directive is set to `true` (or not specified), the engine will keep the resource process alive and reuse it for subsequent invocations within the same configuration.
+If the `ReuseResource` directive is set to `false`, the engine will terminate the resource process after each invocation, ensuring process isolation.
+
+At the end of the configuration, the engine will terminate any remaining resource processes that were kept alive for reuse.
 
 ## Alternate Proposals and Considerations
 
