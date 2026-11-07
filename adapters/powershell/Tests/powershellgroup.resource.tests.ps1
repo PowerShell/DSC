@@ -441,4 +441,56 @@ Describe 'PowerShell adapter resource tests' {
             $logContent | Should -Match 'INFO .*? This is an Information message' -Because $logContent
         }
     }
+
+    It 'Class resource discovery works' {
+        $moduleManifest = @'
+@{
+    ModuleVersion = '1.0.0'
+    GUID = '796aed88-af35-4f32-92d6-80079ccc04bf'
+    Author = 'Sample'
+    NestedModules = @("SampleResource.psm1")
+    FunctionsToExport = @()
+    CmdletsToExport = @()
+    VariablesToExport = '*'
+    DscResourcesToExport = @("SampleResource")
+}
+'@
+        $moduleScript = @'
+[DscResource()]
+class SampleResource {
+    [DscProperty(Key)]
+    [string]$Key
+
+    [bool] Test() {
+        return $false
+    }
+
+    [SampleResource] Get() {
+        return $this
+    }
+
+    [void] Set() {
+
+    }
+}
+'@
+
+        New-Item -Path $TestDrive -Name 'SampleResource' -ItemType Directory -Force | Out-Null
+        Set-Content -Path (Join-Path $TestDrive 'SampleResource\SampleResource.psm1') -Value $moduleScript -Force
+        Set-Content -Path (Join-Path $TestDrive 'SampleResource\SampleResource.psd1') -Value $moduleManifest -Force
+
+        $OldPSModulePath = $env:PSModulePath
+        try {
+            $env:PSModulePath = "$TestDrive" + [System.IO.Path]::PathSeparator + "$env:PSModulePath"
+            $out = dsc resource list -a Microsoft.Adapter/PowerShell 'SampleResource/SampleResource' 2>$TestDrive/error.log | ConvertFrom-Json -Depth 10
+            $errorlog = Get-Content -Path $TestDrive/error.log -Raw
+            $LASTEXITCODE | Should -Be 0 -Because $errorlog
+            $out.Count | Should -Be 1 -Because $errorlog
+            $out.type | Should -BeExactly 'SampleResource/SampleResource'
+            $out.requireAdapter | Should -BeExactly 'Microsoft.Adapter/PowerShell'
+        }
+        finally {
+            $env:PSModulePath = $OldPSModulePath
+        }
+    }
 }
