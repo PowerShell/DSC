@@ -62,12 +62,17 @@ Resources implement a JSONRPC api:
   "params": {
     "operation": "<operation_name>",
     "resourceType": "<resource_type>",
+    "context": {
+        "targetResource": "<target_resource>"
+    },
     "properties": {
       "<property_name>": "<property_value>"
     }
   },
 }
 ```
+
+The `context` is needed to provide additional information to adapters.
 
 ## Alternate Proposals and Considerations
 
