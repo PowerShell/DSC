@@ -28,7 +28,8 @@ Describe 'Windows audit policy option tests' -Skip:(!$IsWindows) {
                 return $false
             }
             if ($Raw -is [byte[]]) {
-                return ($Raw.Length -gt 0 -and $Raw[0] -ne 0)
+                # Like the resource: any non-zero byte means enabled, whatever the length.
+                return @($Raw | Where-Object { $_ -ne 0 }).Count -gt 0
             }
             return ($Raw -ne 0)
         }
@@ -129,14 +130,6 @@ resources:
         BeforeAll {
             $script:originalAuditBaseObjects = Get-RawOptionValue -Name 'AuditBaseObjects'
             $script:originalFullPrivilegeAuditing = Get-RawOptionValue -Name 'FullPrivilegeAuditing'
-            # The resource preserves an existing value type and only creates a missing value as
-            # REG_BINARY, so the expected kind depends on the starting state.
-            $script:expectedFullPrivilegeAuditingKind = if ($null -eq $script:originalFullPrivilegeAuditing) {
-                [Microsoft.Win32.RegistryValueKind]::Binary
-            }
-            else {
-                (Get-Item -Path $lsaKey).GetValueKind('FullPrivilegeAuditing')
-            }
         }
 
         AfterAll {
@@ -170,13 +163,26 @@ resources:
             $output.changedProperties | Should -BeNullOrEmpty
         }
 
-        It 'Enables FullPrivilegeAuditing and preserves the registry value type' {
+        It 'Enables FullPrivilegeAuditing and writes it as REG_BINARY' {
+            # Start disabled so the asserted call is the one that writes the change.
+            $null = Set-OptionState -Name 'FullPrivilegeAuditing' -Enabled $false
             $result = (Set-OptionState -Name 'FullPrivilegeAuditing' -Enabled $true).afterState
             $result.enabled | Should -BeTrue
             $raw = Get-RawOptionValue -Name 'FullPrivilegeAuditing'
             $raw | Should -Not -BeNullOrEmpty
             ConvertTo-Enabled -Raw $raw | Should -BeTrue
-            (Get-Item -Path $lsaKey).GetValueKind('FullPrivilegeAuditing') | Should -Be $script:expectedFullPrivilegeAuditingKind
+            # The LSA reads a REG_BINARY here, so the resource writes that type whatever was there before.
+            (Get-Item -Path $lsaKey).GetValueKind('FullPrivilegeAuditing') | Should -Be ([Microsoft.Win32.RegistryValueKind]::Binary)
+        }
+
+        It 'Writes AuditBaseObjects as REG_DWORD even when another type was stored' {
+            # Some hardening tools store the option as REG_QWORD, which the LSA doesn't read.
+            Set-ItemProperty -Path $lsaKey -Name 'AuditBaseObjects' -Value ([uint64]0) -Type QWord
+            (Get-Item -Path $lsaKey).GetValueKind('AuditBaseObjects') | Should -Be ([Microsoft.Win32.RegistryValueKind]::QWord)
+            $result = (Set-OptionState -Name 'AuditBaseObjects' -Enabled $true).afterState
+            $result.enabled | Should -BeTrue
+            (Get-Item -Path $lsaKey).GetValueKind('AuditBaseObjects') | Should -Be ([Microsoft.Win32.RegistryValueKind]::DWord)
+            Get-RawOptionValue -Name 'AuditBaseObjects' | Should -Be 1
         }
 
         It 'Fails when enabled is missing' {

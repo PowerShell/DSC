@@ -49,9 +49,11 @@ is also where the corresponding **Security Options** of the Local Security Polic
 | `AuditBaseDirectories`  | Audit the access of global system directories (no Security Options policy)  | `REG_DWORD`         |
 
 The resource reports an option as enabled when its registry value is present and non-zero, and as
-disabled when the value is absent or zero. The value may be stored as `REG_DWORD`, `REG_QWORD`, or
-`REG_BINARY`. When the resource sets an option, it preserves the existing registry value type and
-only uses the type from the table when the value doesn't exist yet.
+disabled when the value is absent or zero. When reading, the resource accepts a value stored as
+`REG_DWORD`, `REG_QWORD`, or `REG_BINARY` of any length; a `REG_BINARY` value is enabled when any
+of its bytes is non-zero. When the resource sets an option, it always writes the type from the
+table, because that is the type the LSA reads and that `secedit` and Group Policy write. A value
+that another tool stored with a different type is rewritten with the type from the table.
 
 > [!NOTE]
 > This resource is installed with DSC itself on Windows systems.
@@ -243,8 +245,9 @@ Indicates the resource operation completed without errors.
 
 ### Exit code 1
 
-Indicates the resource operation failed because required arguments were missing or the operation
-name was not recognized.
+Indicates the resource operation failed because required arguments were missing, the operation
+name was not recognized, or an argument isn't valid for the operation, such as `--what-if` with
+an operation other than **Set**.
 
 ### Exit code 2
 

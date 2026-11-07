@@ -119,8 +119,16 @@ pub(crate) fn require_elevated() -> Result<(), AuditError> {
 }
 
 /// Enable `SeSecurityPrivilege` on the process token. The audit APIs need the privilege, and an
-/// elevated token holds it but does not enable it by default.
+/// elevated token holds it but does not enable it by default. This is the single elevation check
+/// of the audit operations: a non-elevated process is refused before any token work.
+///
+/// # Errors
+///
+/// Returns `ElevationRequired` when the process is not elevated, and an audit error when the
+/// token cannot be adjusted or, although elevated, does not hold the privilege because policy
+/// withholds the "Manage auditing and security log" user right.
 fn enable_security_privilege() -> Result<(), AuditError> {
+    require_elevated()?;
     let privilege_error =
         |error: windows::core::Error| AuditError::Audit(t!("audit.privilegeFailed", error = error.to_string()).to_string());
 
@@ -151,17 +159,10 @@ fn enable_security_privilege() -> Result<(), AuditError> {
     if unsafe { GetLastError() } != ERROR_NOT_ALL_ASSIGNED {
         return Ok(());
     }
-    let error = last_error();
-    // A non-elevated token never holds the privilege, so elevating fixes it. An elevated token
-    // only lacks it when policy withholds the "Manage auditing and security log" user right,
-    // which elevating again cannot fix: name the missing privilege instead.
-    if get_security_context() == SecurityContext::Admin {
-        Err(AuditError::Audit(
-            t!("audit.privilegeMissing", error = error.to_string()).to_string(),
-        ))
-    } else {
-        Err(AuditError::ElevationRequired)
-    }
+    // The process is elevated (checked above), so the token only lacks the privilege when policy
+    // withholds the "Manage auditing and security log" user right, which elevating again cannot
+    // fix: name the missing privilege.
+    Err(AuditError::Audit(t!("audit.privilegeMissing", error = last_error().to_string()).to_string()))
 }
 
 fn enumerate_categories() -> Result<AuditBuffer<GUID>, AuditError> {
@@ -269,16 +270,24 @@ fn resolve_subcategory(input: &str) -> Result<Resolved, AuditError> {
     }
 
     // Fall back to the localized names the LSA reports, so localized input and subcategories
-    // newer than the table still resolve.
+    // newer than the table still resolve. A GUID whose name can't be looked up is skipped rather
+    // than failing the whole resolution: it can't be the one the input names.
     let wanted = input.trim();
     let all = enumerate_subcategories(None)?;
     for guid in all.as_slice() {
-        let name = lookup_subcategory_name(guid)?;
+        let Ok(name) = lookup_subcategory_name(guid) else {
+            continue;
+        };
         if names_match(&name, wanted) {
             return Ok(Resolved { guid: *guid, name, category: None });
         }
     }
     Err(unknown())
+}
+
+/// The names of `resolved`, quoted and comma-separated, for error messages.
+fn quoted_names<'a>(resolved: impl Iterator<Item = &'a Resolved>) -> String {
+    resolved.map(|entry| format!("'{}'", entry.name)).collect::<Vec<_>>().join(", ")
 }
 
 /// Query the effective policy for a set of subcategories.
@@ -312,18 +321,51 @@ fn policy_from_info(info: &AUDIT_POLICY_INFORMATION, subcategory: String, catego
     })
 }
 
+/// A subcategory to query together with the `subcategory` input value to echo in its state.
+type QueryTarget<'a> = (&'a Resolved, &'a str);
+
+/// The error for a failed query of `targets`.
+fn query_error(targets: &[QueryTarget<'_>], error: &str) -> AuditError {
+    let names = quoted_names(targets.iter().map(|(resolved, _)| *resolved));
+    AuditError::Audit(t!("audit.queryFailed", subcategories = names, error = error).to_string())
+}
+
+/// Query every target with a single `AuditQuerySystemPolicy` call. Each result pairs the raw
+/// policy information with the state built from it, in the order of `targets`.
+///
+/// # Arguments
+///
+/// * `targets` - The resolved subcategories and, for each, the `subcategory` value to echo.
+///
+/// # Errors
+///
+/// Returns an error when the LSA query fails, returns fewer entries than asked for, or a category
+/// name cannot be looked up.
+fn query_many(targets: &[QueryTarget<'_>]) -> Result<Vec<(AUDIT_POLICY_INFORMATION, AuditPolicy)>, AuditError> {
+    let guids: Vec<GUID> = targets.iter().map(|(resolved, _)| resolved.guid).collect();
+    let buffer = query_policy(&guids).map_err(|error| query_error(targets, &error.to_string()))?;
+    let infos = buffer.as_slice();
+    if infos.len() != targets.len() {
+        return Err(query_error(targets, &t!("audit.queryEmpty")));
+    }
+    infos
+        .iter()
+        .zip(targets)
+        .map(|(info, (resolved, echo))| {
+            let policy = policy_from_info(info, (*echo).to_string(), resolved.category.as_deref())?;
+            Ok((*info, policy))
+        })
+        .collect()
+}
+
 /// Query one resolved subcategory, echoing `echo` as the `subcategory` value.
+///
+/// # Errors
+///
+/// Returns an error when the LSA query fails or returns nothing.
 fn query_one(resolved: &Resolved, echo: &str) -> Result<(AUDIT_POLICY_INFORMATION, AuditPolicy), AuditError> {
-    let query_error =
-        |error: String| AuditError::Audit(t!("audit.queryFailed", subcategory = resolved.name, error = error).to_string());
-    let buffer = query_policy(&[resolved.guid]).map_err(|error| query_error(error.to_string()))?;
-    let info = buffer
-        .as_slice()
-        .first()
-        .copied()
-        .ok_or_else(|| query_error(t!("audit.queryEmpty").to_string()))?;
-    let policy = policy_from_info(&info, echo.to_string(), resolved.category.as_deref())?;
-    Ok((info, policy))
+    let targets = [(resolved, echo)];
+    query_many(&targets)?.into_iter().next().ok_or_else(|| query_error(&targets, &t!("audit.queryEmpty")))
 }
 
 /// Resolve the `subcategory` of every list entry, in order.
@@ -403,6 +445,19 @@ struct Change {
 }
 
 impl Change {
+    /// Work out how `input` would change the queried state of `resolved`.
+    ///
+    /// # Arguments
+    ///
+    /// * `resolved` - The subcategory that `input.subcategory` names.
+    /// * `info` - The queried policy information of the subcategory.
+    /// * `current` - The current state built from `info`, echoing `subcategory` as given.
+    /// * `input` - The desired state.
+    fn new(resolved: Resolved, info: AUDIT_POLICY_INFORMATION, current: AuditPolicy, input: &AuditPolicy) -> Self {
+        let (desired, messages) = desired_flags(&resolved.name, AuditFlags::from_bits(info.AuditingInformation), input);
+        Self { resolved, info, current, desired, messages }
+    }
+
     /// Query `resolved` and work out how `input` would change it.
     ///
     /// # Arguments
@@ -416,8 +471,29 @@ impl Change {
     /// create a subcategory, so there is no verified current state to project a change from.
     fn plan(resolved: Resolved, input: &AuditPolicy) -> Result<Self, AuditError> {
         let (info, current) = query_one(&resolved, &input.subcategory)?;
-        let (desired, messages) = desired_flags(&resolved.name, AuditFlags::from_bits(info.AuditingInformation), input);
-        Ok(Self { resolved, info, current, desired, messages })
+        Ok(Self::new(resolved, info, current, input))
+    }
+
+    /// Query every entry with a single call and work out how each input would change it.
+    ///
+    /// # Arguments
+    ///
+    /// * `resolved` - The subcategories that the entries of `inputs` name, in the same order.
+    /// * `inputs` - The desired state of every entry.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the LSA query fails.
+    fn plan_all(resolved: Vec<Resolved>, inputs: &[AuditPolicy]) -> Result<Vec<Self>, AuditError> {
+        let targets: Vec<QueryTarget<'_>> =
+            resolved.iter().zip(inputs).map(|(resolved, input)| (resolved, input.subcategory.as_str())).collect();
+        let queried = query_many(&targets)?;
+        Ok(resolved
+            .into_iter()
+            .zip(queried)
+            .zip(inputs)
+            .map(|((resolved, (info, current)), input)| Self::new(resolved, info, current, input))
+            .collect())
     }
 
     /// Whether the subcategory isn't in the desired state yet.
@@ -446,6 +522,36 @@ impl Change {
             Ok(self.current)
         }
     }
+
+    /// The state of every change after `apply`, as `set` reports it: the changed entries are
+    /// queried again with a single call, the others keep their current state.
+    ///
+    /// # Arguments
+    ///
+    /// * `changes` - The planned changes, after the needed ones were applied.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the LSA query fails.
+    fn applied_all(changes: Vec<Self>) -> Result<Vec<AuditPolicy>, AuditError> {
+        let targets: Vec<QueryTarget<'_>> = changes
+            .iter()
+            .filter(|change| change.is_needed())
+            .map(|change| (&change.resolved, change.current.subcategory.as_str()))
+            .collect();
+        let mut requeried = query_many(&targets)?.into_iter().map(|(_, policy)| policy);
+        Ok(changes
+            .into_iter()
+            .map(|change| {
+                if change.is_needed() {
+                    // `query_many` returns one entry per target, so the fallback is never taken.
+                    requeried.next().unwrap_or_else(|| change.projected())
+                } else {
+                    change.current
+                }
+            })
+            .collect())
+    }
 }
 
 /// Apply `changes` with a single `AuditSetSystemPolicy` call. Does nothing when `changes` is empty.
@@ -472,7 +578,7 @@ fn apply(changes: &[&Change]) -> Result<(), AuditError> {
     // SAFETY: the slice holds fully initialised policy entries for the duration of the call.
     if !unsafe { AuditSetSystemPolicy(&policies) } {
         let error = last_error();
-        let names = changes.iter().map(|change| format!("'{}'", change.resolved.name)).collect::<Vec<_>>().join(", ");
+        let names = quoted_names(changes.iter().map(|change| &change.resolved));
         return Err(AuditError::Audit(t!("audit.setFailed", subcategories = names, error = error.to_string()).to_string()));
     }
     Ok(())
@@ -485,7 +591,6 @@ fn apply(changes: &[&Change]) -> Result<(), AuditError> {
 /// Returns an error when the process is not elevated, the subcategory is unknown, or the LSA
 /// query fails.
 pub fn get_audit_policy(input: &AuditPolicy) -> Result<AuditPolicy, AuditError> {
-    require_elevated()?;
     enable_security_privilege()?;
     let resolved = resolve_subcategory(&input.subcategory)?;
     let (_, policy) = query_one(&resolved, &input.subcategory)?;
@@ -500,7 +605,6 @@ pub fn get_audit_policy(input: &AuditPolicy) -> Result<AuditPolicy, AuditError> 
 /// Returns an error when the process is not elevated, the subcategory is unknown, or an LSA
 /// call fails.
 pub fn set_audit_policy(input: &AuditPolicy, what_if: bool) -> Result<AuditPolicy, AuditError> {
-    require_elevated()?;
     enable_security_privilege()?;
     let change = Change::plan(resolve_subcategory(&input.subcategory)?, input)?;
     if what_if {
@@ -515,24 +619,24 @@ pub fn set_audit_policy(input: &AuditPolicy, what_if: bool) -> Result<AuditPolic
     change.applied()
 }
 
-/// Get the current auditing of every listed subcategory, in the order given.
+/// Get the current auditing of every listed subcategory, in the order given, with a single
+/// `AuditQuerySystemPolicy` call.
 ///
 /// # Errors
 ///
 /// Returns an error when the process is not elevated, a subcategory is unknown or listed twice,
-/// or an LSA query fails.
+/// or the LSA query fails.
 pub fn get_audit_policy_list(input: &AuditPolicyList) -> Result<AuditPolicyList, AuditError> {
-    require_elevated()?;
     enable_security_privilege()?;
-    let policies = resolve_list(&input.policies)?
-        .iter()
-        .zip(&input.policies)
-        .map(|(resolved, entry)| query_one(resolved, &entry.subcategory).map(|(_, policy)| policy))
-        .collect::<Result<_, _>>()?;
+    let resolved = resolve_list(&input.policies)?;
+    let targets: Vec<QueryTarget<'_>> =
+        resolved.iter().zip(&input.policies).map(|(resolved, entry)| (resolved, entry.subcategory.as_str())).collect();
+    let policies = query_many(&targets)?.into_iter().map(|(_, policy)| policy).collect();
     Ok(AuditPolicyList { policies, metadata: None })
 }
 
-/// Set the auditing of every listed subcategory with a single `AuditSetSystemPolicy` call. Flags
+/// Set the auditing of every listed subcategory with a single `AuditSetSystemPolicy` call, after
+/// a single query of the current state and before a single query of the changed entries. Flags
 /// omitted from an entry keep their current value. In what-if mode nothing is changed, every entry
 /// reports its projected state, and the list carries the messages for all of them in
 /// `_metadata.whatIf`.
@@ -542,13 +646,8 @@ pub fn get_audit_policy_list(input: &AuditPolicyList) -> Result<AuditPolicyList,
 /// Returns an error when the process is not elevated, a subcategory is unknown or listed twice,
 /// or an LSA call fails. Nothing is changed when any entry is invalid.
 pub fn set_audit_policy_list(input: &AuditPolicyList, what_if: bool) -> Result<AuditPolicyList, AuditError> {
-    require_elevated()?;
     enable_security_privilege()?;
-    let changes = resolve_list(&input.policies)?
-        .into_iter()
-        .zip(&input.policies)
-        .map(|(resolved, entry)| Change::plan(resolved, entry))
-        .collect::<Result<Vec<_>, _>>()?;
+    let changes = Change::plan_all(resolve_list(&input.policies)?, &input.policies)?;
 
     if what_if {
         let messages = changes.iter().flat_map(|change| change.messages.iter().cloned()).collect();
@@ -559,8 +658,7 @@ pub fn set_audit_policy_list(input: &AuditPolicyList, what_if: bool) -> Result<A
     }
 
     apply(&changes.iter().filter(|change| change.is_needed()).collect::<Vec<_>>())?;
-    let policies = changes.into_iter().map(Change::applied).collect::<Result<_, _>>()?;
-    Ok(AuditPolicyList { policies, metadata: None })
+    Ok(AuditPolicyList { policies: Change::applied_all(changes)?, metadata: None })
 }
 
 /// Export the auditing of every subcategory, grouped by category.
@@ -569,7 +667,6 @@ pub fn set_audit_policy_list(input: &AuditPolicyList, what_if: bool) -> Result<A
 ///
 /// Returns an error when the process is not elevated or an LSA call fails.
 pub fn export_audit_policies() -> Result<Vec<AuditPolicy>, AuditError> {
-    require_elevated()?;
     enable_security_privilege()?;
 
     let categories = enumerate_categories()?;
@@ -763,6 +860,16 @@ mod tests {
         if is_elevated() {
             privilege.unwrap();
             assert_eq!(query.unwrap().as_slice().len(), 1);
+
+            let logon = resolve_subcategory("Logon").unwrap();
+            let logoff = resolve_subcategory("Logoff").unwrap();
+            let many = query_many(&[(&logon, "logon as given"), (&logoff, "Logoff")]).unwrap();
+            assert_eq!(many.len(), 2);
+            assert_eq!(many[0].1.subcategory, "logon as given", "each target echoes its own input");
+            assert_eq!(many[0].0.AuditSubCategoryGuid.to_u128(), LOGON_GUID);
+            assert_eq!(many[1].1.subcategory, "Logoff");
+            assert!(query_many(&[]).unwrap().is_empty());
+
             let policy = get_audit_policy(&input).unwrap();
             assert_eq!(policy.guid.as_deref(), Some("{0CCE9215-69AE-11D9-BED3-505054503030}"));
             assert_eq!(policy.category.as_deref(), Some("Logon/Logoff"));
@@ -797,5 +904,14 @@ mod tests {
     #[test]
     fn empty_query_returns_an_empty_buffer() {
         assert!(query_policy(&[]).unwrap().as_slice().is_empty());
+    }
+
+    #[test]
+    fn query_errors_name_every_target() {
+        let logon = resolve_subcategory("Logon").unwrap();
+        let logoff = resolve_subcategory("Logoff").unwrap();
+        let message = query_error(&[(&logon, "Logon"), (&logoff, "Logoff")], "boom").to_string();
+        assert_eq!(message, t!("audit.queryFailed", subcategories = "'Logon', 'Logoff'", error = "boom"));
+        assert_eq!(quoted_names(std::iter::empty()), "");
     }
 }

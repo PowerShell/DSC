@@ -55,7 +55,7 @@ fn main() -> ExitCode {
         return ExitCode::from(EXIT_INVALID_ARGS);
     };
 
-    let Arguments { input: input_json, what_if } = match parse_arguments(&args) {
+    let Arguments { input: input_json, what_if } = match parse_arguments(operation, &args) {
         Ok(arguments) => arguments,
         Err(code) => return code,
     };
@@ -180,8 +180,9 @@ struct Arguments {
 }
 
 /// Parse every argument after the operation and the target (arguments 1 and 2). Only
-/// `--input <json>` and `--what-if` are accepted; anything else is rejected before any operation
-/// is dispatched, so a misspelled preview flag can never turn into a real change.
+/// `--input <json>` and `--what-if` are accepted, and `--what-if` only with `set`; anything else
+/// is rejected before any operation is dispatched, so a misspelled or misplaced preview flag can
+/// never turn into a real change or be silently ignored.
 ///
 /// The value of `--input` can't start with `-`, so a missing value never swallows the next flag
 /// (`--input --what-if`), and `--input` can only be given once, so a later `--input` can't
@@ -189,13 +190,15 @@ struct Arguments {
 ///
 /// # Arguments
 ///
+/// * `operation` - The operation given as argument 1, already known to be valid.
 /// * `args` - The full command line, including the executable, the operation and the target.
 ///
 /// # Errors
 ///
-/// Returns the exit code to use when `--input` has no value, is repeated, or an argument is unknown.
+/// Returns the exit code to use when `--input` has no value, is repeated, `--what-if` is given
+/// with an operation other than `set`, or an argument is unknown.
 #[cfg(windows)]
-fn parse_arguments(args: &[String]) -> Result<Arguments, ExitCode> {
+fn parse_arguments(operation: &str, args: &[String]) -> Result<Arguments, ExitCode> {
     let mut arguments = Arguments::default();
     let mut index = 3;
     while index < args.len() {
@@ -212,7 +215,11 @@ fn parse_arguments(args: &[String]) -> Result<Arguments, ExitCode> {
                 arguments.input = Some(value.clone());
                 index += 2;
             }
-            "--what-if" | "-w" => {
+            argument @ ("--what-if" | "-w") => {
+                if operation != "set" {
+                    write_error(&t!("main.whatIfNotSupported", argument = argument, operation = operation));
+                    return Err(ExitCode::from(EXIT_INVALID_ARGS));
+                }
                 arguments.what_if = true;
                 index += 1;
             }
@@ -230,8 +237,10 @@ mod tests {
     use super::{Arguments, EXIT_INVALID_ARGS, parse_arguments};
     use std::process::ExitCode;
 
-    fn args(list: &[&str]) -> Vec<String> {
-        list.iter().map(ToString::to_string).collect()
+    /// Parse `list` as the command line, taking the operation from its second element.
+    fn parse(list: &[&str]) -> Result<Arguments, ExitCode> {
+        let args: Vec<String> = list.iter().map(ToString::to_string).collect();
+        parse_arguments(list[1], &args)
     }
 
     fn parsed(input: Option<&str>, what_if: bool) -> Arguments {
@@ -243,37 +252,30 @@ mod tests {
 
     #[test]
     fn finds_long_and_short_input_arguments_after_the_target() {
-        assert_eq!(
-            parse_arguments(&args(&["exe", "get", "subcategory", "--input", "{}"])),
-            Ok(parsed(Some("{}"), false))
-        );
-        assert_eq!(
-            parse_arguments(&args(&["exe", "set", "option", "-w", "-i", "[]"])),
-            Ok(parsed(Some("[]"), true))
-        );
-        assert_eq!(parse_arguments(&args(&["exe", "export", "subcategory"])), Ok(parsed(None, false)));
-        assert_eq!(
-            parse_arguments(&args(&["exe", "get", "subcategory", "--input"])),
-            Err(ExitCode::from(EXIT_INVALID_ARGS))
-        );
+        assert_eq!(parse(&["exe", "get", "subcategory", "--input", "{}"]), Ok(parsed(Some("{}"), false)));
+        assert_eq!(parse(&["exe", "set", "option", "-w", "-i", "[]"]), Ok(parsed(Some("[]"), true)));
+        assert_eq!(parse(&["exe", "export", "subcategory"]), Ok(parsed(None, false)));
+        assert_eq!(parse(&["exe", "get", "subcategory", "--input"]), Err(ExitCode::from(EXIT_INVALID_ARGS)));
     }
 
     #[test]
     fn finds_what_if_flag_after_the_target() {
-        assert_eq!(
-            parse_arguments(&args(&["exe", "set", "subcategory", "--what-if", "--input", "{}"])),
-            Ok(parsed(Some("{}"), true))
-        );
-        assert_eq!(
-            parse_arguments(&args(&["exe", "set", "option", "--input", "{}", "-w"])),
-            Ok(parsed(Some("{}"), true))
-        );
-        assert_eq!(
-            parse_arguments(&args(&["exe", "set", "subcategory", "--input", "{}"])),
-            Ok(parsed(Some("{}"), false))
-        );
+        assert_eq!(parse(&["exe", "set", "subcategory", "--what-if", "--input", "{}"]), Ok(parsed(Some("{}"), true)));
+        assert_eq!(parse(&["exe", "set", "option", "--input", "{}", "-w"]), Ok(parsed(Some("{}"), true)));
+        assert_eq!(parse(&["exe", "set", "subcategory", "--input", "{}"]), Ok(parsed(Some("{}"), false)));
         // The operation and target positions are never read as flags.
-        assert_eq!(parse_arguments(&args(&["exe", "-w", "subcategory"])), Ok(parsed(None, false)));
+        assert_eq!(parse(&["exe", "-w", "subcategory"]), Ok(parsed(None, false)));
+    }
+
+    #[test]
+    fn rejects_what_if_for_every_operation_but_set() {
+        let invalid = Err(ExitCode::from(EXIT_INVALID_ARGS));
+        for flag in ["--what-if", "-w"] {
+            assert_eq!(parse(&["exe", "get", "subcategory", "--input", "{}", flag]), invalid, "{flag}");
+            assert_eq!(parse(&["exe", "get", "option", flag, "--input", "{}"]), invalid, "{flag}");
+            assert_eq!(parse(&["exe", "export", "subcategory", flag]), invalid, "{flag}");
+            assert_eq!(parse(&["exe", "export", "subcategory-list", flag]), invalid, "{flag}");
+        }
     }
 
     #[test]
@@ -281,24 +283,24 @@ mod tests {
         let invalid = Err(ExitCode::from(EXIT_INVALID_ARGS));
         let json = r#"{"name":"CrashOnAuditFail","enabled":true}"#;
         for flag in ["--what-if", "-w", "--input", "-i", "--whatif"] {
-            assert_eq!(parse_arguments(&args(&["exe", "set", "option", "--input", flag, "--input", json])), invalid, "{flag}");
-            assert_eq!(parse_arguments(&args(&["exe", "set", "option", "-i", flag])), invalid, "{flag}");
+            assert_eq!(parse(&["exe", "set", "option", "--input", flag, "--input", json]), invalid, "{flag}");
+            assert_eq!(parse(&["exe", "set", "option", "-i", flag]), invalid, "{flag}");
         }
     }
 
     #[test]
     fn rejects_input_given_more_than_once() {
         let invalid = Err(ExitCode::from(EXIT_INVALID_ARGS));
-        assert_eq!(parse_arguments(&args(&["exe", "set", "subcategory", "--input", "{}", "--input", "{}"])), invalid);
-        assert_eq!(parse_arguments(&args(&["exe", "set", "subcategory", "-i", "{}", "-w", "-i", "{}"])), invalid);
+        assert_eq!(parse(&["exe", "set", "subcategory", "--input", "{}", "--input", "{}"]), invalid);
+        assert_eq!(parse(&["exe", "set", "subcategory", "-i", "{}", "-w", "-i", "{}"]), invalid);
     }
 
     #[test]
     fn rejects_unknown_arguments_before_and_after_input() {
         let invalid = Err(ExitCode::from(EXIT_INVALID_ARGS));
-        assert_eq!(parse_arguments(&args(&["exe", "set", "option", "--whatif", "--input", "{}"])), invalid);
-        assert_eq!(parse_arguments(&args(&["exe", "set", "option", "--input", "{}", "--whatif"])), invalid);
-        assert_eq!(parse_arguments(&args(&["exe", "set", "subcategory", "--input", "{}", "extra"])), invalid);
-        assert_eq!(parse_arguments(&args(&["exe", "get", "subcategory", "-x"])), invalid);
+        assert_eq!(parse(&["exe", "set", "option", "--whatif", "--input", "{}"]), invalid);
+        assert_eq!(parse(&["exe", "set", "option", "--input", "{}", "--whatif"]), invalid);
+        assert_eq!(parse(&["exe", "set", "subcategory", "--input", "{}", "extra"]), invalid);
+        assert_eq!(parse(&["exe", "get", "subcategory", "-x"]), invalid);
     }
 }

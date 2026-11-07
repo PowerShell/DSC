@@ -13,9 +13,22 @@ Describe 'Windows audit policy list tests' -Skip:(!$IsWindows) {
         }
         # The DS Access subcategory used below only generates events on domain controllers, so the
         # contexts that change it are skipped there rather than briefly disabling real replication
-        # auditing. DomainRole 4 and 5 are backup and primary domain controllers.
-        $isDomainController = $IsWindows -and (Get-CimInstance -ClassName Win32_ComputerSystem).DomainRole -ge 4
-        $canChangePolicy = $isAdmin -and -not $isDomainController
+        # auditing. DomainRole 0 to 3 are workstations and member servers; 4 and 5 are backup and
+        # primary domain controllers. A role that can't be read is treated as a domain controller,
+        # so the mutating contexts only run when a non-controller role was positively identified.
+        $domainRole = if ($IsWindows) {
+            try {
+                (Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction Stop).DomainRole
+            }
+            catch {
+                $null
+            }
+        }
+        else {
+            $null
+        }
+        $isMemberOrWorkstation = $null -ne $domainRole -and [int]$domainRole -lt 4
+        $canChangePolicy = $isAdmin -and $isMemberOrWorkstation
     }
 
     BeforeAll {

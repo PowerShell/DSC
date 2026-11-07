@@ -155,6 +155,21 @@ Describe 'Windows audit policy whatif tests' -Skip:(!$IsWindows) {
             $LASTEXITCODE | Should -Be 1
             Get-Content -Raw $testdrive/error.log | Should -Match "Unknown argument: '--verbose'"
         }
+
+        It 'Rejects <flag> on the <operation> operation, which has no preview' -TestCases @(
+            @{ operation = 'get'; target = 'option'; flag = '--what-if' }
+            @{ operation = 'get'; target = 'subcategory'; flag = '-w' }
+            @{ operation = 'export'; target = 'subcategory'; flag = '--what-if' }
+            @{ operation = 'export'; target = 'subcategory-list'; flag = '-w' }
+        ) {
+            $arguments = @($operation, $target, $flag)
+            if ($operation -eq 'get') {
+                $arguments += @('--input', $optionJson)
+            }
+            $null = windows_audit_policy @arguments 2>$testdrive/error.log
+            $LASTEXITCODE | Should -Be 1
+            Get-Content -Raw $testdrive/error.log | Should -Match "'$flag' is only supported by the set operation"
+        }
     }
 
     Context 'Option what-if' -Skip:(!$isAdmin) {

@@ -12,14 +12,35 @@ use rust_i18n::t;
 
 const LSA_KEY: &str = r"HKLM\SYSTEM\CurrentControlSet\Control\Lsa";
 
-fn helper(name: AuditOptionName, data: Option<RegistryValueData>) -> Result<RegistryHelper, AuditError> {
-    RegistryHelper::new(LSA_KEY, Some(name.value_name().to_string()), data).map_err(|error| {
-        AuditError::Audit(t!("option.readFailed", name = name.to_string(), error = error.to_string()).to_string())
-    })
+/// The error for a failed read of `name`.
+fn read_error(name: AuditOptionName, error: &str) -> AuditError {
+    AuditError::Audit(t!("option.readFailed", name = name.to_string(), error = error).to_string())
+}
+
+/// The error for a failed write of `name`.
+fn write_error(name: AuditOptionName, error: &str) -> AuditError {
+    AuditError::Audit(t!("option.writeFailed", name = name.to_string(), error = error).to_string())
+}
+
+/// A registry helper for the value backing `name`.
+///
+/// # Arguments
+///
+/// * `name` - The option whose value the helper addresses.
+/// * `data` - The data to write, for a helper used by `set`.
+/// * `error` - Builds the error for the operation the helper is for, so that a failure on the
+///   write path is never reported as a failed read.
+fn helper(
+    name: AuditOptionName,
+    data: Option<RegistryValueData>,
+    error: fn(AuditOptionName, &str) -> AuditError,
+) -> Result<RegistryHelper, AuditError> {
+    RegistryHelper::new(LSA_KEY, Some(name.value_name().to_string()), data).map_err(|e| error(name, &e.to_string()))
 }
 
 /// Interpret a registry value as an option state. A missing value means disabled, and any
 /// non-zero value (including `CrashOnAuditFail = 2`, the "already crashed" marker) means enabled.
+/// A `REG_BINARY` value is enabled when any of its bytes is non-zero, whatever its length.
 ///
 /// # Errors
 ///
@@ -29,29 +50,25 @@ pub fn enabled_from_data(name: AuditOptionName, data: Option<&RegistryValueData>
         None | Some(RegistryValueData::None) => Ok(false),
         Some(RegistryValueData::DWord(value)) => Ok(*value != 0),
         Some(RegistryValueData::QWord(value)) => Ok(*value != 0),
-        Some(RegistryValueData::Binary(bytes)) => Ok(bytes.first().is_some_and(|byte| *byte != 0)),
+        Some(RegistryValueData::Binary(bytes)) => Ok(bytes.iter().any(|byte| *byte != 0)),
         Some(_) => Err(AuditError::Audit(t!("option.unsupportedType", name = name.to_string()).to_string())),
     }
 }
 
-/// The registry data to write for an option. An existing `REG_DWORD`, `REG_QWORD` or `REG_BINARY`
-/// value keeps its type (every type `enabled_from_data` accepts); otherwise the canonical type for
-/// the option is used.
+/// The registry data to write for an option: always the canonical type for the option, the one
+/// the LSA reads and `secedit` and Group Policy write. Reading is lenient about the type, but
+/// writing another type back would report the option as enabled while the LSA ignores it.
 #[must_use]
-pub fn data_for(name: AuditOptionName, enabled: bool, current: Option<&RegistryValueData>) -> RegistryValueData {
-    match current {
-        Some(RegistryValueData::Binary(_)) => RegistryValueData::Binary(vec![u8::from(enabled)]),
-        Some(RegistryValueData::DWord(_)) => RegistryValueData::DWord(u32::from(enabled)),
-        Some(RegistryValueData::QWord(_)) => RegistryValueData::QWord(u64::from(enabled)),
-        _ if name.is_binary() => RegistryValueData::Binary(vec![u8::from(enabled)]),
-        _ => RegistryValueData::DWord(u32::from(enabled)),
+pub fn data_for(name: AuditOptionName, enabled: bool) -> RegistryValueData {
+    if name.is_binary() {
+        RegistryValueData::Binary(vec![u8::from(enabled)])
+    } else {
+        RegistryValueData::DWord(u32::from(enabled))
     }
 }
 
 fn read_current(name: AuditOptionName) -> Result<Option<RegistryValueData>, AuditError> {
-    let state = helper(name, None)?.get().map_err(|error| {
-        AuditError::Audit(t!("option.readFailed", name = name.to_string(), error = error.to_string()).to_string())
-    })?;
+    let state = helper(name, None, read_error)?.get().map_err(|error| read_error(name, &error.to_string()))?;
     Ok(state.value_data)
 }
 
@@ -105,11 +122,9 @@ pub fn set_option(input: &AuditPolicyOption, what_if: bool) -> Result<AuditPolic
         return Ok(state(input.name, desired, Metadata::from_messages(vec![message])));
     }
 
-    helper(input.name, Some(data_for(input.name, desired, current_data.as_ref())))?
+    helper(input.name, Some(data_for(input.name, desired)), write_error)?
         .set()
-        .map_err(|error| {
-            AuditError::Audit(t!("option.writeFailed", name = input.name.to_string(), error = error.to_string()).to_string())
-        })?;
+        .map_err(|error| write_error(input.name, &error.to_string()))?;
     eprintln!(
         "{}",
         serde_json::json!({ "warn": t!("option.restartRequired", name = input.name.to_string()).to_string() })
@@ -154,42 +169,29 @@ mod tests {
         assert!(enabled_from_data(name, Some(&RegistryValueData::QWord(1))).unwrap());
         assert!(!enabled_from_data(name, Some(&RegistryValueData::Binary(Vec::new()))).unwrap());
         assert!(!enabled_from_data(name, Some(&RegistryValueData::Binary(vec![0]))).unwrap());
+        assert!(!enabled_from_data(name, Some(&RegistryValueData::Binary(vec![0, 0, 0, 0]))).unwrap());
         assert!(enabled_from_data(name, Some(&RegistryValueData::Binary(vec![1]))).unwrap());
+        assert!(enabled_from_data(name, Some(&RegistryValueData::Binary(vec![0, 1]))).unwrap(), "every byte counts");
+        assert!(enabled_from_data(name, Some(&RegistryValueData::Binary(vec![0, 0, 0, 1]))).unwrap());
         assert!(enabled_from_data(name, Some(&RegistryValueData::String("1".to_string()))).is_err());
     }
 
     #[test]
-    fn data_preserves_existing_type_or_uses_the_canonical_one() {
-        let dword = RegistryValueData::DWord(0);
-        let qword = RegistryValueData::QWord(0);
-        let binary = RegistryValueData::Binary(vec![0]);
-        assert_eq!(
-            data_for(AuditOptionName::AuditBaseObjects, true, Some(&dword)),
-            RegistryValueData::DWord(1)
-        );
-        assert_eq!(
-            data_for(AuditOptionName::AuditBaseObjects, true, Some(&qword)),
-            RegistryValueData::QWord(1)
-        );
-        assert_eq!(
-            data_for(AuditOptionName::FullPrivilegeAuditing, false, Some(&qword)),
-            RegistryValueData::QWord(0)
-        );
-        assert_eq!(
-            data_for(AuditOptionName::AuditBaseObjects, false, Some(&binary)),
-            RegistryValueData::Binary(vec![0])
-        );
-        assert_eq!(
-            data_for(AuditOptionName::AuditBaseObjects, true, None),
-            RegistryValueData::DWord(1)
-        );
-        assert_eq!(
-            data_for(AuditOptionName::FullPrivilegeAuditing, true, None),
-            RegistryValueData::Binary(vec![1])
-        );
-        assert_eq!(
-            data_for(AuditOptionName::FullPrivilegeAuditing, false, Some(&dword)),
-            RegistryValueData::DWord(0)
-        );
+    fn data_always_uses_the_canonical_type() {
+        assert_eq!(data_for(AuditOptionName::AuditBaseObjects, true), RegistryValueData::DWord(1));
+        assert_eq!(data_for(AuditOptionName::AuditBaseObjects, false), RegistryValueData::DWord(0));
+        assert_eq!(data_for(AuditOptionName::AuditBaseDirectories, true), RegistryValueData::DWord(1));
+        assert_eq!(data_for(AuditOptionName::CrashOnAuditFail, true), RegistryValueData::DWord(1));
+        assert_eq!(data_for(AuditOptionName::FullPrivilegeAuditing, true), RegistryValueData::Binary(vec![1]));
+        assert_eq!(data_for(AuditOptionName::FullPrivilegeAuditing, false), RegistryValueData::Binary(vec![0]));
+    }
+
+    #[test]
+    fn helper_reports_failures_for_the_operation_it_is_built_for() {
+        let name = AuditOptionName::AuditBaseObjects;
+        assert_eq!(read_error(name, "boom").to_string(), t!("option.readFailed", name = "AuditBaseObjects", error = "boom"));
+        assert_eq!(write_error(name, "boom").to_string(), t!("option.writeFailed", name = "AuditBaseObjects", error = "boom"));
+        assert!(helper(name, None, read_error).is_ok());
+        assert!(helper(name, Some(data_for(name, true)), write_error).is_ok());
     }
 }

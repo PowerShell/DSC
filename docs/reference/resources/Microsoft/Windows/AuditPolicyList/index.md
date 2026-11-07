@@ -260,8 +260,9 @@ Indicates the resource operation completed without errors.
 
 ### Exit code 1
 
-Indicates the resource operation failed because required arguments were missing or the operation
-name was not recognized.
+Indicates the resource operation failed because required arguments were missing, the operation
+name was not recognized, or an argument isn't valid for the operation, such as `--what-if` with
+an operation other than **Set**.
 
 ### Exit code 2
 
