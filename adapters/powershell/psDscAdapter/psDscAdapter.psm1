@@ -122,7 +122,7 @@ function FindAndParseResourceDefinitions {
     [System.Management.Automation.Language.ParseError[]] $errors = $null
     $ast = [System.Management.Automation.Language.Parser]::ParseFile($filePath, [ref]$tokens, [ref]$errors)
     foreach ($e in $errors) {
-        $e | Out-String | Write-Error
+        Write-Error -Message ($e | Out-String)
     }
 
     $typeDefinitions = $ast.FindAll(
@@ -157,7 +157,6 @@ function FindAndParseResourceDefinitions {
             }
         }
     }
-
     return $resourceList
 }
 
@@ -220,13 +219,21 @@ function LoadPowerShellClassResourcesFromModule {
     }
 
     $version = if ($moduleInfo.Version) { $moduleInfo.Version } else { [version]'0.0.0' }
-    $Resources = FindAndParseResourceDefinitions $scriptPath $version
+    $Resources = [System.Collections.Generic.List[DscResourceInfo]]::new()
+    $FoundResources = FindAndParseResourceDefinitions $scriptPath $version
+    if ($FoundResources) {
+        foreach ($res in $FoundResources) {
+            $Resources.Add($res)
+        }
+    }
 
     if ($moduleInfo.NestedModules) {
         foreach ($nestedModule in $moduleInfo.NestedModules) {
             $resourcesOfNestedModules = LoadPowerShellClassResourcesFromModule $nestedModule
             if ($resourcesOfNestedModules) {
-                $Resources.AddRange($resourcesOfNestedModules)
+                foreach ($res in $resourcesOfNestedModules) {
+                    $Resources.Add($res)
+                }
             }
         }
     }
