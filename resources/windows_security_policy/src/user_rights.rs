@@ -180,23 +180,58 @@ pub fn test(input: &UserRightsAssignment) -> Result<(UserRightsAssignment, Vec<S
     Ok((result, differing_properties(&grant, &revoke)))
 }
 
-/// Apply every grant and then every revoke, attempting each change even when an earlier one
-/// failed, and collect the failures.
+/// The changes [`apply`] makes to the local security policy. [`LsaPolicy`] implements it for real
+/// changes, and the unit tests implement it to make chosen changes fail without touching policy.
+pub(crate) trait RightsWriter {
+    /// Grant `right` to `identity`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error naming the right and the account when the grant fails.
+    fn add_right(&self, identity: &ResolvedIdentity, right: &str) -> Result<(), SecurityPolicyError>;
+
+    /// Revoke `right` from `identity`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error naming the right and the account when the revoke fails.
+    fn remove_right(&self, identity: &ResolvedIdentity, right: &str) -> Result<(), SecurityPolicyError>;
+}
+
+impl RightsWriter for LsaPolicy {
+    fn add_right(&self, identity: &ResolvedIdentity, right: &str) -> Result<(), SecurityPolicyError> {
+        LsaPolicy::add_right(self, identity, right)
+    }
+
+    fn remove_right(&self, identity: &ResolvedIdentity, right: &str) -> Result<(), SecurityPolicyError> {
+        LsaPolicy::remove_right(self, identity, right)
+    }
+}
+
+/// Apply every grant and then every revoke, and collect the failures.
 ///
-/// Grants come first so that a logon right never has fewer holders part-way through than it had
-/// before; for the same reason, the revokes are skipped altogether when any grant fails.
+/// Grants come first, so new holders are in place before any holder is removed. Every grant is
+/// attempted even when an earlier one failed, but the revokes are skipped altogether when any
+/// grant fails, so a failed grant never removes a holder. A failed revoke does not stop the
+/// other revokes. Changes that succeeded are not rolled back, so a failed revoke can leave the
+/// right with fewer holders than before, and the holder count can drop during a replace.
 ///
 /// # Arguments
 ///
-/// * `policy` - An open policy handle with `POLICY_WRITE` access.
+/// * `writer` - Makes the changes, an open policy handle with `POLICY_WRITE` access outside tests.
 /// * `right` - The right to change.
 /// * `grant` - The accounts to grant the right to.
 /// * `revoke` - The accounts to revoke the right from.
-fn apply(policy: &LsaPolicy, right: &UserRight, grant: &[&ResolvedIdentity], revoke: &[&ResolvedIdentity]) -> Vec<SecurityPolicyError> {
+fn apply(
+    writer: &impl RightsWriter,
+    right: &UserRight,
+    grant: &[&ResolvedIdentity],
+    revoke: &[&ResolvedIdentity],
+) -> Vec<SecurityPolicyError> {
     let mut failures: Vec<SecurityPolicyError> =
-        grant.iter().filter_map(|identity| policy.add_right(&identity.sid, right.constant).err()).collect();
+        grant.iter().filter_map(|identity| writer.add_right(identity, right.constant).err()).collect();
     if failures.is_empty() {
-        failures.extend(revoke.iter().filter_map(|identity| policy.remove_right(&identity.sid, right.constant).err()));
+        failures.extend(revoke.iter().filter_map(|identity| writer.remove_right(identity, right.constant).err()));
     }
     failures
 }
@@ -417,6 +452,98 @@ mod tests {
         let message = grant_message(right, "NT SERVICE\\ALL SERVICES");
         assert!(message.contains("SeServiceLogonRight"), "{message}");
         assert!(message.contains(right.display_name().as_ref()), "{message}");
+    }
+
+    /// Records every change in order and fails the ones for the accounts in `failing`.
+    #[derive(Default)]
+    struct RecordingWriter {
+        failing: Vec<&'static str>,
+        calls: std::cell::RefCell<Vec<String>>,
+    }
+
+    impl RecordingWriter {
+        fn failing(names: &[&'static str]) -> Self {
+            Self { failing: names.to_vec(), ..Self::default() }
+        }
+
+        fn record(&self, change: &str, identity: &ResolvedIdentity) -> Result<(), SecurityPolicyError> {
+            let call = format!("{change} {}", identity.name);
+            self.calls.borrow_mut().push(call.clone());
+            if self.failing.contains(&identity.name.as_str()) {
+                Err(SecurityPolicyError::Policy(format!("{call} failed")))
+            } else {
+                Ok(())
+            }
+        }
+
+        fn calls(&self) -> Vec<String> {
+            self.calls.borrow().clone()
+        }
+    }
+
+    impl RightsWriter for RecordingWriter {
+        fn add_right(&self, identity: &ResolvedIdentity, _right: &str) -> Result<(), SecurityPolicyError> {
+            self.record("grant", identity)
+        }
+
+        fn remove_right(&self, identity: &ResolvedIdentity, _right: &str) -> Result<(), SecurityPolicyError> {
+            self.record("revoke", identity)
+        }
+    }
+
+    fn failure_messages(failures: &[SecurityPolicyError]) -> Vec<String> {
+        failures.iter().map(ToString::to_string).collect()
+    }
+
+    #[test]
+    fn apply_grants_before_it_revokes() {
+        let right = rights::find("SeServiceLogonRight").unwrap();
+        let (a, b, c, d) = (identity("A", 1), identity("B", 2), identity("C", 3), identity("D", 4));
+        let writer = RecordingWriter::default();
+        let failures = apply(&writer, right, &[&a, &b], &[&c, &d]);
+        assert!(failures.is_empty());
+        assert_eq!(writer.calls(), ["grant A", "grant B", "revoke C", "revoke D"]);
+    }
+
+    #[test]
+    fn failed_grant_skips_every_revoke_but_attempts_the_other_grants() {
+        let right = rights::find("SeServiceLogonRight").unwrap();
+        let (a, b, c, d) = (identity("A", 1), identity("B", 2), identity("C", 3), identity("D", 4));
+        let writer = RecordingWriter::failing(&["A"]);
+        let failures = apply(&writer, right, &[&a, &b], &[&c, &d]);
+        assert_eq!(writer.calls(), ["grant A", "grant B"], "no revoke after a failed grant");
+        assert_eq!(failure_messages(&failures), ["grant A failed"]);
+    }
+
+    #[test]
+    fn every_failed_grant_is_reported() {
+        let right = rights::find("SeServiceLogonRight").unwrap();
+        let (a, b, c) = (identity("A", 1), identity("B", 2), identity("C", 3));
+        let writer = RecordingWriter::failing(&["A", "B"]);
+        let failures = apply(&writer, right, &[&a, &b], &[&c]);
+        assert_eq!(writer.calls(), ["grant A", "grant B"]);
+        assert_eq!(failure_messages(&failures), ["grant A failed", "grant B failed"]);
+    }
+
+    #[test]
+    fn failed_revoke_does_not_stop_the_other_revokes() {
+        let right = rights::find("SeServiceLogonRight").unwrap();
+        let (a, c, d, e) = (identity("A", 1), identity("C", 3), identity("D", 4), identity("E", 5));
+        let writer = RecordingWriter::failing(&["C"]);
+        let failures = apply(&writer, right, &[&a], &[&c, &d, &e]);
+        assert_eq!(writer.calls(), ["grant A", "revoke C", "revoke D", "revoke E"]);
+        assert_eq!(failure_messages(&failures), ["revoke C failed"]);
+    }
+
+    #[test]
+    fn lsa_failure_messages_name_the_account() {
+        let grant = t!("lsa.addFailed", right = "SeServiceLogonRight", account = "CONTOSO\\svc", error = "boom");
+        let revoke = t!("lsa.removeFailed", right = "SeServiceLogonRight", account = "CONTOSO\\svc", error = "boom");
+        for message in [grant, revoke] {
+            assert!(message.contains("SeServiceLogonRight"), "{message}");
+            assert!(message.contains("CONTOSO\\svc"), "{message}");
+            assert!(message.contains("boom"), "{message}");
+        }
     }
 
     #[test]

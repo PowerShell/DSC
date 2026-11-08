@@ -6,7 +6,7 @@
 //! Every buffer handed out by an `Lsa*` API is owned by the LSA and must be released with
 //! `LsaFreeMemory`; the RAII guards below do that on drop so early returns cannot leak.
 
-use crate::sid::Sid;
+use crate::sid::{ResolvedIdentity, Sid};
 use crate::types::SecurityPolicyError;
 use dsc_lib_security_context::{SecurityContext, get_security_context};
 use rust_i18n::t;
@@ -171,36 +171,36 @@ impl LsaPolicy {
         Ok(sids)
     }
 
-    /// Grant `right` to the account with `sid`.
+    /// Grant `right` to `identity`. Its name is only used to identify the account in an error.
     ///
     /// # Errors
     ///
     /// Returns `ElevationRequired` when access is denied to a non-elevated process, or a policy
     /// error.
-    pub fn add_right(&self, sid: &Sid, right: &str) -> Result<(), SecurityPolicyError> {
+    pub fn add_right(&self, identity: &ResolvedIdentity, right: &str) -> Result<(), SecurityPolicyError> {
         let name = LsaString::new(right)?;
-        // SAFETY: `sid` and `name` are valid for the duration of the call.
-        let status = unsafe { LsaAddAccountRights(self.0, sid.as_psid(), std::slice::from_ref(name.as_raw())) };
-        check(status, |error| t!("lsa.addFailed", right = right, error = error).to_string())
+        // SAFETY: `identity.sid` and `name` are valid for the duration of the call.
+        let status = unsafe { LsaAddAccountRights(self.0, identity.sid.as_psid(), std::slice::from_ref(name.as_raw())) };
+        check(status, |error| t!("lsa.addFailed", right = right, account = identity.name, error = error).to_string())
     }
 
-    /// Revoke `right` from the account with `sid`. Revoking from an account that holds no rights
-    /// at all is treated as already done.
+    /// Revoke `right` from `identity`. Its name is only used to identify the account in an error.
+    /// Revoking from an account that holds no rights at all is treated as already done.
     ///
     /// # Errors
     ///
     /// Returns `ElevationRequired` when access is denied to a non-elevated process, or a policy
     /// error.
-    pub fn remove_right(&self, sid: &Sid, right: &str) -> Result<(), SecurityPolicyError> {
+    pub fn remove_right(&self, identity: &ResolvedIdentity, right: &str) -> Result<(), SecurityPolicyError> {
         let name = LsaString::new(right)?;
         // `allrights` is always false: `true` would strip every right from the account.
-        // SAFETY: `sid` and `name` are valid for the duration of the call.
+        // SAFETY: `identity.sid` and `name` are valid for the duration of the call.
         let status =
-            unsafe { LsaRemoveAccountRights(self.0, sid.as_psid(), false, Some(std::slice::from_ref(name.as_raw()))) };
+            unsafe { LsaRemoveAccountRights(self.0, identity.sid.as_psid(), false, Some(std::slice::from_ref(name.as_raw()))) };
         if status == STATUS_OBJECT_NAME_NOT_FOUND {
             return Ok(());
         }
-        check(status, |error| t!("lsa.removeFailed", right = right, error = error).to_string())
+        check(status, |error| t!("lsa.removeFailed", right = right, account = identity.name, error = error).to_string())
     }
 }
 

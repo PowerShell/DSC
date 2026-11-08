@@ -78,8 +78,8 @@ sidToStringFailed = "Failed to convert a SID to a string: %{error}"
 openPolicyFailed = "Failed to open the local security policy: %{error}"
 stringTooLong = "The value '%{value}' is too long for the Local Security Authority"
 enumerateFailed = "Failed to enumerate the accounts holding '%{right}': %{error}"
-addFailed = "Failed to grant '%{right}': %{error}"
-removeFailed = "Failed to revoke '%{right}': %{error}"
+addFailed = "Failed to grant '%{right}' to '%{account}': %{error}"
+removeFailed = "Failed to revoke '%{right}' from '%{account}': %{error}"
 
 [userRights]
 identityRequired = "'identity' is required for the set and test operations"

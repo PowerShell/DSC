@@ -379,9 +379,12 @@ was omitted from a **Set** or **Test** operation.
 
 Indicates the resource operation failed due to an error raised by the Local Security Authority or
 another Windows API, or the result could not be serialized. When a **Set** operation can apply
-only some of its changes, the error message lists every change that failed and the accounts that
-hold the right after the operation. The resource grants before it revokes and skips the revokes
-when a grant fails, so a failed **Set** never leaves a right with fewer holders than before.
+only some of its changes, the error message lists every change that failed, naming the account
+for each, and the accounts that hold the right after the operation. The resource grants before it
+revokes, so new holders are in place before any holder is removed. When a grant fails, the
+resource skips every revoke, so a failed grant never removes a holder. A failed revoke doesn't
+stop the other revokes. Changes that succeeded aren't rolled back, so a failed revoke can leave
+the right with fewer holders than before.
 
 ### Exit code 4
 
