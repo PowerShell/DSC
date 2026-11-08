@@ -68,8 +68,7 @@ pub fn handle_export(input: &str) -> Result<String> {
         let mut all_found_updates: Vec<UpdateInfo> = Vec::new();
 
         // Process each filter in the array (OR logic between filters)
-        for (filter_index, filter) in filters.iter().enumerate() {
-            let mut filter_found_match = false;
+        for filter in filters.iter() {
             
             // Collect matching updates for this specific filter
             for i in 0..count {
@@ -165,70 +164,11 @@ pub fn handle_export(input: &str) -> Result<String> {
                 }
 
                 if matches {
-                    filter_found_match = true;
                     // Only add to results if we haven't seen this update ID before
                     if !matched_update_ids.contains(&update_id) {
                         matched_update_ids.insert(update_id);
                         all_found_updates.push(update_info);
                     }
-                }
-            }
-            
-            // Check if this filter found at least one match
-            if !filter_found_match {
-                // Only check if the filter has at least one criterion specified
-                let has_criteria = filter.title.is_some()
-                    || filter.id.is_some()
-                    || filter.is_installed.is_some()
-                    || filter.description.is_some()
-                    || filter.is_uninstallable.is_some()
-                    || filter.kb_article_ids.is_some()
-                    || filter.recommended_hard_disk_space.is_some()
-                    || filter.msrc_severity.is_some()
-                    || filter.security_bulletin_ids.is_some()
-                    || filter.update_type.is_some();
-                
-                if has_criteria {
-                    // Construct error message with filter criteria
-                    let mut criteria_parts = Vec::new();
-                    if let Some(title) = &filter.title {
-                        criteria_parts.push(t!("export.criteriaTitle", value = title).to_string());
-                    }
-                    if let Some(id) = &filter.id {
-                        criteria_parts.push(t!("export.criteriaId", value = id).to_string());
-                    }
-                    if let Some(is_installed) = filter.is_installed {
-                        criteria_parts.push(t!("export.criteriaIsInstalled", value = is_installed).to_string());
-                    }
-                    if let Some(description) = &filter.description {
-                        criteria_parts.push(t!("export.criteriaDescription", value = description).to_string());
-                    }
-                    if let Some(is_uninstallable) = filter.is_uninstallable {
-                        criteria_parts.push(t!("export.criteriaIsUninstallable", value = is_uninstallable).to_string());
-                    }
-                    if let Some(kb_ids) = &filter.kb_article_ids {
-                        criteria_parts.push(t!("export.criteriaKbArticleIds", value = format!("{:?}", kb_ids)).to_string());
-                    }
-                    if let Some(space) = filter.recommended_hard_disk_space {
-                        criteria_parts.push(t!("export.criteriaRecommendedHardDiskSpace", value = space).to_string());
-                    }
-                    if let Some(severity) = &filter.msrc_severity {
-                        criteria_parts.push(t!("export.criteriaMsrcSeverity", value = format!("{:?}", severity)).to_string());
-                    }
-                    if let Some(bulletin_ids) = &filter.security_bulletin_ids {
-                        criteria_parts.push(t!("export.criteriaSecurityBulletinIds", value = format!("{:?}", bulletin_ids)).to_string());
-                    }
-                    if let Some(update_type) = &filter.update_type {
-                        criteria_parts.push(t!("export.criteriaUpdateType", value = format!("{:?}", update_type)).to_string());
-                    }
-                    
-                    let criteria_str = criteria_parts.join(", ");
-                    let error_msg = t!("export.noMatchingUpdateForFilter", index = filter_index, criteria = criteria_str).to_string();
-                    
-                    // Emit JSON error to stderr
-                    eprintln!("{{\"error\":\"{}\"}}", error_msg);
-                    
-                    return Err(Error::new(E_FAIL, error_msg));
                 }
             }
         }

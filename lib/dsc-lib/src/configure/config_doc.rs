@@ -52,8 +52,10 @@ impl Display for SecurityContextKind {
 pub enum Operation {
     Get,
     Set,
+    Delete,
     Test,
     Export,
+    Invoke,
 }
 
 impl Display for Operation {
@@ -61,8 +63,10 @@ impl Display for Operation {
         let operation_str = match self {
             Operation::Get => "get",
             Operation::Set => "set",
+            Operation::Delete => "delete",
             Operation::Test => "test",
             Operation::Export => "export",
+            Operation::Invoke => "invoke",
         };
         write!(f, "{operation_str}")
     }

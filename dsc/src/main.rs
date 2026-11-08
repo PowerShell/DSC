@@ -125,6 +125,9 @@ fn dsc_main() -> Result<(), ExitCode> {
 
             subcommand::config(&subcommand, &merged_parameters, system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format)?;
         },
+        SubCommand::Action { subcommand } => {
+            subcommand::action(&subcommand, progress_format)?;
+        },
         SubCommand::Extension { subcommand } => {
             subcommand::extension(&subcommand, progress_format)?;
         },
@@ -162,7 +165,10 @@ fn ctrlc_handler() {
     warn!("{}", t!("main.ctrlCReceived"));
 
     // get process tree for current process and terminate all processes
-    let sys = System::new_with_specifics(RefreshKind::nothing().with_processes(ProcessRefreshKind::everything()));
+    let Ok(sys) = System::new_with_specifics(RefreshKind::nothing().with_processes(ProcessRefreshKind::everything())) else {
+        error!("{}", t!("main.failedToGetSystem"));
+        exit(i32::from(util::EXIT_CTRL_C))
+    };
     info!("{}: {}", t!("main.foundProcesses"), sys.processes().len());
     let Ok(current_pid) = get_current_pid() else {
         error!("{}", t!("main.failedToGetPid"));
@@ -217,7 +223,11 @@ fn check_debug() {
 fn check_store() -> Result<(), ExitCode> {
     use std::io::Read;
 
-    let sys = System::new_with_specifics(RefreshKind::nothing().with_processes(ProcessRefreshKind::everything()));
+    let Ok(sys) = System::new_with_specifics(RefreshKind::nothing().with_processes(ProcessRefreshKind::everything())) else {
+        warn!("{}", t!("main.failedToGetSystem"));
+        return Ok(());
+    };
+
     // get current process
     let Ok(current_pid) = get_current_pid() else {
         return Ok(());

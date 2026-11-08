@@ -234,6 +234,7 @@ someError = "Failed to do something: %{error}"
 - Errors are written as a JSONLine to stderr using the format: `{"error": "Error message here"}`
 - Warnings are written as a JSONLine to stderr using the format: `{"warn": "Warning message here"}`
 - A non-zero exit code should be returned for any operation that encounters an error, while warnings should not affect the exit code
+- A valid `export` filter that matches no results is not an error: return a zero exit code with an empty array (e.g., `{"updates":[]}`) and do not write an error to stderr. Reserve errors for invalid input or operational failures.
 - Use different exit codes for different types of errors. Define named constants (e.g., `EXIT_INVALID_ARGS`, `EXIT_INVALID_INPUT`) and document each in the resource manifest `exitCodes` section.
 
 #### Testing Instructions
