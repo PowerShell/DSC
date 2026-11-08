@@ -306,6 +306,8 @@ resources:
 
 - [Anatomy of a DSC command resource][05] to learn about authoring resources in your language
   of choice.
+- [Author class-based PSDSC resources for DSC v3][08] to learn about adapting PowerShell
+  class-based resources to the DSC v3 contract.
 - [DSC configuration documents][06] to learn about using resources in a configuration document.
 - [Command line reference for the 'dsc resource' command][07]
 
@@ -316,3 +318,4 @@ resources:
 [05]: ./anatomy.md
 [06]: ../configuration-documents/overview.md
 [07]: ../../reference/cli/resource/index.md
+[08]: ./class-based-psdsc-v3.md
