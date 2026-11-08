@@ -15,7 +15,8 @@ Describe 'Windows audit policy option tests' -Skip:(!$IsWindows) {
 
     BeforeAll {
         $resourceType = 'Microsoft.Windows/AuditPolicyOption'
-        $lsaKey = 'HKLM:\SYSTEM\CurrentControlSet\Control\Lsa'
+        $lsaSubKey = 'SYSTEM\CurrentControlSet\Control\Lsa'
+        $lsaKey = "HKLM:\$lsaSubKey"
 
         function Get-RawOptionValue {
             param([string]$Name)
@@ -23,8 +24,13 @@ Describe 'Windows audit policy option tests' -Skip:(!$IsWindows) {
         }
 
         function ConvertTo-Enabled {
-            param($Raw)
+            param([string]$Name, $Raw)
             if ($null -eq $Raw) {
+                return $false
+            }
+            # Like the resource: the LSA ignores a value of another type, so it counts as disabled.
+            $canonicalKind = if ($Name -eq 'FullPrivilegeAuditing') { 'Binary' } else { 'DWord' }
+            if ((Get-Item -Path $lsaKey).GetValueKind($Name) -ne $canonicalKind) {
                 return $false
             }
             if ($Raw -is [byte[]]) {
@@ -34,13 +40,45 @@ Describe 'Windows audit policy option tests' -Skip:(!$IsWindows) {
             return ($Raw -ne 0)
         }
 
-        function Restore-RawOptionValue {
-            param([string]$Name, $Raw)
-            if ($null -eq $Raw) {
-                Remove-ItemProperty -Path $lsaKey -Name $Name -ErrorAction SilentlyContinue
+        function Save-RawOptionValue {
+            # Tests rewrite the value type, so keep existence, kind and data to restore it exactly.
+            param([string]$Name)
+            $key = [Microsoft.Win32.Registry]::LocalMachine.OpenSubKey($lsaSubKey)
+            try {
+                $exists = $key.GetValueNames() -contains $Name
+                $kind = $null
+                $data = $null
+                if ($exists) {
+                    # Assigned directly: emitting a byte array from an if expression would unroll it,
+                    # turning an empty binary value into null and a one byte value into a plain byte.
+                    $kind = $key.GetValueKind($Name)
+                    $data = $key.GetValue($Name, $null, [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)
+                }
+                return [pscustomobject]@{
+                    Name   = $Name
+                    Exists = $exists
+                    Kind   = $kind
+                    Data   = $data
+                }
             }
-            else {
-                Set-ItemProperty -Path $lsaKey -Name $Name -Value $Raw
+            finally {
+                $key.Dispose()
+            }
+        }
+
+        function Restore-RawOptionValue {
+            param([pscustomobject]$Snapshot)
+            $key = [Microsoft.Win32.Registry]::LocalMachine.OpenSubKey($lsaSubKey, $true)
+            try {
+                if ($Snapshot.Exists) {
+                    $key.SetValue($Snapshot.Name, $Snapshot.Data, $Snapshot.Kind)
+                }
+                else {
+                    $key.DeleteValue($Snapshot.Name, $false)
+                }
+            }
+            finally {
+                $key.Dispose()
             }
         }
 
@@ -71,7 +109,7 @@ Describe 'Windows audit policy option tests' -Skip:(!$IsWindows) {
             $result = Get-OptionState -Name $name
             $result.name | Should -BeExactly $name
             $result.enabled | Should -BeOfType [bool]
-            $result.enabled | Should -Be (ConvertTo-Enabled -Raw (Get-RawOptionValue -Name $name))
+            $result.enabled | Should -Be (ConvertTo-Enabled -Name $name -Raw (Get-RawOptionValue -Name $name))
         }
 
         It 'Fails for an unknown option name' {
@@ -128,13 +166,13 @@ resources:
 
     Context 'Set' -Skip:(!$isAdmin) {
         BeforeAll {
-            $script:originalAuditBaseObjects = Get-RawOptionValue -Name 'AuditBaseObjects'
-            $script:originalFullPrivilegeAuditing = Get-RawOptionValue -Name 'FullPrivilegeAuditing'
+            $script:originalAuditBaseObjects = Save-RawOptionValue -Name 'AuditBaseObjects'
+            $script:originalFullPrivilegeAuditing = Save-RawOptionValue -Name 'FullPrivilegeAuditing'
         }
 
         AfterAll {
-            Restore-RawOptionValue -Name 'AuditBaseObjects' -Raw $script:originalAuditBaseObjects
-            Restore-RawOptionValue -Name 'FullPrivilegeAuditing' -Raw $script:originalFullPrivilegeAuditing
+            Restore-RawOptionValue -Snapshot $script:originalAuditBaseObjects
+            Restore-RawOptionValue -Snapshot $script:originalFullPrivilegeAuditing
         }
 
         It 'Enables AuditBaseObjects and reports that a restart is required' {
@@ -170,7 +208,7 @@ resources:
             $result.enabled | Should -BeTrue
             $raw = Get-RawOptionValue -Name 'FullPrivilegeAuditing'
             $raw | Should -Not -BeNullOrEmpty
-            ConvertTo-Enabled -Raw $raw | Should -BeTrue
+            ConvertTo-Enabled -Name 'FullPrivilegeAuditing' -Raw $raw | Should -BeTrue
             # The LSA reads a REG_BINARY here, so the resource writes that type whatever was there before.
             (Get-Item -Path $lsaKey).GetValueKind('FullPrivilegeAuditing') | Should -Be ([Microsoft.Win32.RegistryValueKind]::Binary)
         }
@@ -183,6 +221,43 @@ resources:
             $result.enabled | Should -BeTrue
             (Get-Item -Path $lsaKey).GetValueKind('AuditBaseObjects') | Should -Be ([Microsoft.Win32.RegistryValueKind]::DWord)
             Get-RawOptionValue -Name 'AuditBaseObjects' | Should -Be 1
+        }
+
+        It 'Reports REG_QWORD 1 for AuditBaseObjects as drift and rewrites it as REG_DWORD' {
+            # The LSA ignores a REG_QWORD, so a non zero one must not pass the synthetic test.
+            Set-ItemProperty -Path $lsaKey -Name 'AuditBaseObjects' -Value ([uint64]1) -Type QWord
+            (Get-OptionState -Name 'AuditBaseObjects').enabled | Should -BeFalse
+
+            $json = @{ name = 'AuditBaseObjects'; enabled = $true } | ConvertTo-Json -Compress
+            $test = $json | dsc resource test -r $resourceType -f - 2>$testdrive/error.log | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
+            $test.inDesiredState | Should -BeFalse
+            $test.differingProperties | Should -Contain 'enabled'
+
+            $result = (Set-OptionState -Name 'AuditBaseObjects' -Enabled $true).afterState
+            $result.enabled | Should -BeTrue
+            $result._restartRequired.Count | Should -Be 1
+            (Get-Item -Path $lsaKey).GetValueKind('AuditBaseObjects') | Should -Be ([Microsoft.Win32.RegistryValueKind]::DWord)
+            Get-RawOptionValue -Name 'AuditBaseObjects' | Should -Be 1
+        }
+
+        It 'Rewrites REG_QWORD 0 for AuditBaseObjects as REG_DWORD when disabled is desired' {
+            # Called directly: the applied state already matches, so through dsc the synthetic test passes.
+            Set-ItemProperty -Path $lsaKey -Name 'AuditBaseObjects' -Value ([uint64]0) -Type QWord
+            $json = '{"name":"AuditBaseObjects","enabled":false}'
+
+            $projected = windows_audit_policy set option -w --input $json 2>$testdrive/error.log | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
+            $projected._metadata.whatIf | Should -HaveCount 1
+            $projected._metadata.whatIf[0] | Should -Match 'REG_DWORD'
+            (Get-Item -Path $lsaKey).GetValueKind('AuditBaseObjects') | Should -Be ([Microsoft.Win32.RegistryValueKind]::QWord)
+
+            $result = windows_audit_policy set option --input $json 2>$testdrive/error.log | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
+            $result.enabled | Should -BeFalse
+            $result._restartRequired.Count | Should -Be 1
+            (Get-Item -Path $lsaKey).GetValueKind('AuditBaseObjects') | Should -Be ([Microsoft.Win32.RegistryValueKind]::DWord)
+            Get-RawOptionValue -Name 'AuditBaseObjects' | Should -Be 0
         }
 
         It 'Fails when enabled is missing' {

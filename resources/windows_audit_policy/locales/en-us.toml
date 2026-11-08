@@ -36,4 +36,5 @@ readFailed = "Failed to read audit policy option '%{name}' from the registry: %{
 writeFailed = "Failed to write audit policy option '%{name}' to the registry: %{error}"
 unsupportedType = "Audit policy option '%{name}' has an unsupported registry value type; expected REG_DWORD, REG_QWORD or REG_BINARY"
 whatIfChangeEnabled = "Would change audit policy option '%{name}' from enabled %{current} to %{desired}"
+whatIfNormalizeType = "Would rewrite audit policy option '%{name}' as %{kind}, the registry type the Local Security Authority reads"
 restartRequired = "A restart is required for the change to audit policy option '%{name}' to take effect"

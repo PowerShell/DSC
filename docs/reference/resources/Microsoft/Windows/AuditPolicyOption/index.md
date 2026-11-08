@@ -48,12 +48,15 @@ is also where the corresponding **Security Options** of the Local Security Polic
 | `AuditBaseObjects`      | Audit: Audit the access of global system objects                            | `REG_DWORD`         |
 | `AuditBaseDirectories`  | Audit the access of global system directories (no Security Options policy)  | `REG_DWORD`         |
 
-The resource reports an option as enabled when its registry value is present and non-zero, and as
-disabled when the value is absent or zero. When reading, the resource accepts a value stored as
-`REG_DWORD`, `REG_QWORD`, or `REG_BINARY` of any length; a `REG_BINARY` value is enabled when any
-of its bytes is non-zero. When the resource sets an option, it always writes the type from the
-table, because that is the type the LSA reads and that `secedit` and Group Policy write. A value
-that another tool stored with a different type is rewritten with the type from the table.
+The resource reports the state the LSA applies. An option is enabled when its registry value has
+the type from the table and is non-zero. A `REG_BINARY` value of any length is non-zero when any of
+its bytes is non-zero. An option is disabled when the value is absent or zero, and also when it is
+stored as another `REG_DWORD`, `REG_QWORD`, or `REG_BINARY` type, because the LSA ignores such a
+value. That way a value with the wrong type shows up as drift in a **Test** operation. When the
+resource sets an option, it always writes the type from the table, because that is the type the
+LSA reads and that `secedit` and Group Policy write. A value that another tool stored with a
+different type is rewritten with the type from the table, even when it already holds the desired
+state.
 
 > [!NOTE]
 > This resource is installed with DSC itself on Windows systems.
