@@ -53,6 +53,34 @@ Describe 'Microsoft.Windows/OptionalFeatureList - set operation' -Skip:(!$IsWind
         $feature.displayName | Should -Not -BeNullOrEmpty
     }
 
+    It 'enables required parent features automatically' -Skip:(!$isElevated) {
+        $getJson = '{"features":[{"featureName":"IIS-WebServer"},{"featureName":"IIS-WebServerRole"}]}'
+        $before = dsc resource get -r Microsoft.Windows/OptionalFeatureList -i $getJson | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        if (@($before.actualState.features | Where-Object { $_.state -ne 'NotPresent' }).Count -gt 0) {
+            Set-ItResult -Skipped -Because 'The IIS feature and its parent must initially be disabled.'
+            return
+        }
+
+        try {
+            $inputJson = '{"features":[{"featureName":"IIS-WebServer","state":"Installed"}]}'
+            $output = dsc resource set -r Microsoft.Windows/OptionalFeatureList -i $inputJson | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $output.afterState.features.Count | Should -Be 1
+            $output.afterState.features[0].featureName | Should -BeExactly 'IIS-WebServer'
+            $output.afterState.features[0].state | Should -BeIn @('Installed', 'InstallPending')
+
+            $after = dsc resource get -r Microsoft.Windows/OptionalFeatureList -i $getJson | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $parent = $after.actualState.features | Where-Object { $_.featureName -eq 'IIS-WebServerRole' }
+            $parent.state | Should -BeIn @('Installed', 'InstallPending')
+        } finally {
+            $restoreJson = '{"features":[{"featureName":"IIS-WebServer","state":"NotPresent"},{"featureName":"IIS-WebServerRole","state":"NotPresent"}]}'
+            dsc resource set -r Microsoft.Windows/OptionalFeatureList -i $restoreJson | Out-Null
+            $LASTEXITCODE | Should -Be 0
+        }
+    }
+
     It 'can disable a feature with NotPresent and returns updated state' -Skip:(!$isElevated) {
         $inputJson = '{"features":[{"featureName":"Printing-PrintToPDFServices-Features","state":"NotPresent"}]}'
         $output = dsc resource set -r Microsoft.Windows/OptionalFeatureList -i $inputJson | ConvertFrom-Json
