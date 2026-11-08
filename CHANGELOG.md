@@ -101,6 +101,19 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
   </details>
 
+- The security check for the policy settings folder now also requires the folder to be owned by
+  `SYSTEM` or `Administrators` on Windows, matching the existing root ownership requirement on
+  Linux and macOS. The warning for an insecure policy folder now states which owner or principal
+  caused the failure. The check moved into the new `dsc-lib-path_security` crate so that other
+  components can validate files and folders at machine or user scope with the same rules.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#1760][#1760]
+  - PRs: _None_
+
+  </details>
+
 ## [v3.2.2][release-v3.2.2] - 2026-06-16
 
 This section includes a summary of changes for the `3.2.2` release. For the full list of changes
@@ -2000,4 +2013,5 @@ Version `3.0.0` is the first generally available release of DSC.
 [#1558]: https://github.com/PowerShell/DSC/issues/1558
 [#1562]: https://github.com/PowerShell/DSC/issues/1562
 [#1729]: https://github.com/PowerShell/DSC/issues/1729
+[#1760]: https://github.com/PowerShell/DSC/issues/1760
 

@@ -300,13 +300,16 @@ pub enum DscSettingsError {
     #[error("{t}", t = t!(
         "settings.errors.policyFolderNotSecure",
         path = path,
-        required = required
+        required = required,
+        reason = reason
     ))]
     PolicyFolderNotSecure {
         /// The path to the policy folder that is not secure.
         path: String,
         /// The required security configuration for the policy folder.
         required: String,
+        /// The reason the policy folder is not secure.
+        reason: String,
     }
 }
 

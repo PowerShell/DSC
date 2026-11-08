@@ -24,7 +24,7 @@ Paths in this table are relative to the root of the repo, not this SKILL.md file
 | CLI | `dsc/src/` | `skills/code-review/cli.instructions.md` |
 | Tests | `**/*.tests.ps1`, `**/tests/`, `**/test/`, `**/Tests/` | `skills/code-review/tests.instructions.md` |
 | Libraries | `lib/` | `skills/code-review/library.instructions.md` |
-| Security | `lib/dsc-lib/src/util.rs`, `lib/dsc-lib-security_context/`, `lib/dsc-lib-registry/`, `resources/registry/`, `resources/windows_firewall/`, `resources/windows_service/`, `resources/dism_dsc/` | `skills/code-review/security.instructions.md` |
+| Security | `lib/dsc-lib/src/util.rs`, `lib/dsc-lib-security_context/`, `lib/dsc-lib-path_security/`, `lib/dsc-lib-registry/`, `resources/registry/`, `resources/windows_firewall/`, `resources/windows_service/`, `resources/dism_dsc/` | `skills/code-review/security.instructions.md` |
 | Performance | Any `*.rs` file in hot paths | `skills/code-review/performance.instructions.md` |
 | Windows | `resources/windows_*`, `resources/dism_dsc/`, `resources/registry/`, `lib/dsc-lib-registry/`, `lib/dsc-lib-pal/` | `skills/code-review/windows.instructions.md` |
 | Linux/macOS | `resources/apt/`, `resources/sshdconfig/`, `resources/brew/`, `lib/dsc-lib-pal/` | `skills/code-review/linux.instructions.md` |

@@ -1,0 +1,5 @@
+{
+    "Name": "dsc-lib-path_security",
+    "Kind": "Library",
+    "IsRust": true
+}

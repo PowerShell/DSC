@@ -1,0 +1,12 @@
+_version = 1
+
+[error]
+pathNotFound = "Path '%{path}' does not exist"
+securityInfoRead = "Unable to read security information for '%{path}': %{reason}"
+nullDacl = "'%{path}' has no DACL, which grants full access to everyone"
+untrustedWriter = "'%{path}' grants write access to untrusted principal '%{principal}'"
+untrustedOwner = "'%{path}' is owned by untrusted principal '%{principal}'"
+unsupportedFileType = "'%{path}' is not a file or a folder"
+missingOwner = "The security descriptor has no owner"
+noParentFolder = "The path has no containing folder"
+win32 = "%{operation} failed with error code %{code}"

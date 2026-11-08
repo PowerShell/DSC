@@ -13,6 +13,7 @@ use std::{
 };
 use tracing::{debug, warn};
 use which::which;
+use dsc_lib_path_security::{PathSecurityScope, validate_path};
 
 pub const DSC_IGNORE_SETTINGS_FILE: &str = "DSC_IGNORE_SETTINGS_FILE";
 
@@ -108,59 +109,6 @@ mod tests {
         let wildcard = "a+b(c)[d]^e$f|g\\h";
         let regex = convert_wildcard_to_regex(wildcard);
         assert_eq!(regex, r"^a\+b\(c\)\[d\]\^e\$f\|g\\h$");
-    }
-
-    #[cfg(not(target_os = "windows"))]
-    mod linux_permission_tests {
-        use super::*;
-        use std::fs as stdfs;
-
-        #[test]
-        fn test_verify_linux_permissions_nonexistent_path() {
-            let result = verify_linux_permissions(Path::new("/nonexistent/path/that/does/not/exist"));
-            assert!(!result, "nonexistent path should return false (fail closed)");
-        }
-
-        #[test]
-        fn test_verify_linux_permissions_non_root_owned() {
-            // A temp dir is owned by the current (non-root) user on CI
-            let dir = stdfs::canonicalize(env::temp_dir()).expect("temp dir");
-            let test_dir = dir.join("dsc_test_permissions");
-            let _ = stdfs::create_dir(&test_dir);
-            let result = verify_linux_permissions(&test_dir);
-            let _ = stdfs::remove_dir(&test_dir);
-            // On CI (non-root), the temp dir is not owned by root
-            if nix::unistd::Uid::effective().is_root() {
-                // If running as root, dir is root-owned, check mode bits instead
-                return;
-            }
-            assert!(!result, "directory not owned by root should return false");
-        }
-
-        #[test]
-        fn test_get_settings_policy_file_path_returns_some_when_dir_missing() {
-            // If /etc/dsc doesn't exist, the function should return Some with the path
-            // (the file may not exist but the path is still returned for attempted loading)
-            if Path::new("/etc/dsc").exists() {
-                // Can't test this case when the dir exists
-                return;
-            }
-            let result = get_settings_policy_file_path();
-            assert!(result.is_some(), "should return Some when /etc/dsc doesn't exist");
-            let path = result.unwrap();
-            assert!(path.to_string_lossy().contains("dsc.settings.json"));
-        }
-
-        #[test]
-        fn test_get_settings_policy_file_path_with_insecure_dir() {
-            // When /etc/dsc exists but is not root-owned, returns None
-            if !Path::new("/etc/dsc").exists() || nix::unistd::Uid::effective().is_root() {
-                return;
-            }
-            // /etc/dsc exists and we're not root - if it's owned by root
-            // it should return Some; this test just exercises the code path
-            let _result = get_settings_policy_file_path();
-        }
     }
 }
 
@@ -282,125 +230,13 @@ fn get_settings_policy_file_path() -> Option<PathBuf>
         return Some(PathBuf::from(settings_path));
     }
 
-    if !verify_windows_acl(&dsc_folder) {
+    if let Err(reason) = validate_path(&dsc_folder, PathSecurityScope::Machine) {
         let required = t!("util.policyFolderNotSecureWindows", path = dsc_folder.display());
-        warn!("{}", t!("util.policyFolderNotSecure", path = dsc_folder.display(), required = required));
+        warn!("{}", t!("util.policyFolderNotSecure", path = dsc_folder.display(), reason = reason, required = required));
         return None;
     }
 
     Some(PathBuf::from(settings_path))
-}
-
-/// Returns `true` if only SYSTEM and Administrators have write access; `false` otherwise.
-#[cfg(target_os = "windows")]
-fn verify_windows_acl(dsc_folder: &Path) -> bool {
-    use windows::Win32::Security::{
-        Authorization::{GetNamedSecurityInfoW, SE_FILE_OBJECT},
-        IsWellKnownSid, GetAce,
-        WinBuiltinAdministratorsSid, WinLocalSystemSid,
-        ACL, ACCESS_ALLOWED_ACE, PSECURITY_DESCRIPTOR,
-    };
-    use windows::Win32::Foundation::{LocalFree, HLOCAL};
-    use windows::core::PCWSTR;
-    use std::ptr;
-
-    const FILE_WRITE_DATA: u32 = 0x0002;
-    const FILE_APPEND_DATA: u32 = 0x0004;
-    const WRITE_DAC: u32 = 0x0004_0000;
-    const WRITE_OWNER: u32 = 0x0008_0000;
-    const GENERIC_WRITE: u32 = 0x4000_0000;
-    const GENERIC_ALL: u32 = 0x1000_0000;
-    const WRITE_MASK: u32 = FILE_WRITE_DATA | FILE_APPEND_DATA | WRITE_DAC | WRITE_OWNER | GENERIC_WRITE | GENERIC_ALL;
-
-    const INHERIT_ONLY_ACE: u8 = 0x08;
-
-    let folder_wide: Vec<u16> = dsc_folder
-        .to_string_lossy()
-        .encode_utf16()
-        .chain(std::iter::once(0))
-        .collect();
-
-    let mut p_sd: PSECURITY_DESCRIPTOR = PSECURITY_DESCRIPTOR(ptr::null_mut());
-    let mut p_dacl: *mut ACL = ptr::null_mut();
-
-    let result = unsafe {
-        GetNamedSecurityInfoW(
-            PCWSTR(folder_wide.as_ptr()),
-            SE_FILE_OBJECT,
-            windows::Win32::Security::DACL_SECURITY_INFORMATION,
-            None,
-            None,
-            Some(&mut p_dacl),
-            None,
-            &mut p_sd,
-        )
-    };
-
-    // Fail closed: if we can't read the security descriptor, treat as insecure
-    if result.is_err() {
-        return false;
-    }
-
-    // A NULL DACL means full access to everyone
-    if p_dacl.is_null() {
-        unsafe { let _ = LocalFree(Some(HLOCAL(p_sd.0.cast()))); }
-        return false;
-    }
-
-    let ace_count = unsafe { (*p_dacl).AceCount };
-
-    for i in 0..ace_count {
-        let mut ace_ptr: *mut core::ffi::c_void = ptr::null_mut();
-        let ok = unsafe { GetAce(p_dacl, i as u32, &mut ace_ptr) };
-        if ok.is_err() {
-            // Fail closed: if we can't read an ACE, treat as insecure
-            unsafe { let _ = LocalFree(Some(HLOCAL(p_sd.0.cast()))); }
-            return false;
-        }
-
-        let header = unsafe { &*(ace_ptr as *const windows::Win32::Security::ACE_HEADER) };
-
-        // Skip inherit-only ACEs as they don't apply to this folder
-        if (header.AceFlags & INHERIT_ONLY_ACE) != 0 {
-            continue;
-        }
-
-        // Skip deny ACEs (types 1, 6, 10) - they restrict access, not grant it
-        if header.AceType == 1 || header.AceType == 6 || header.AceType == 10 {
-            continue;
-        }
-
-        // For ACCESS_ALLOWED_ACE_TYPE (0), check the SID
-        if header.AceType == 0 {
-            let ace = unsafe { &*(ace_ptr as *const ACCESS_ALLOWED_ACE) };
-            if (ace.Mask & WRITE_MASK) == 0 {
-                continue;
-            }
-
-            let sid_ptr = &ace.SidStart as *const u32 as *const core::ffi::c_void;
-            let psid = windows::Win32::Security::PSID(sid_ptr as *mut core::ffi::c_void);
-
-            let is_system = unsafe { IsWellKnownSid(psid, WinLocalSystemSid).as_bool() };
-            let is_admin = unsafe { IsWellKnownSid(psid, WinBuiltinAdministratorsSid).as_bool() };
-
-            if !is_system && !is_admin {
-                unsafe { let _ = LocalFree(Some(HLOCAL(p_sd.0.cast()))); }
-                return false;
-            }
-            continue;
-        }
-
-        // For any other allow-type ACE (callback, object, etc.) we cannot
-        // reliably extract the SID, so fail closed to be safe
-        let ace = unsafe { &*(ace_ptr as *const ACCESS_ALLOWED_ACE) };
-        if (ace.Mask & WRITE_MASK) != 0 {
-            unsafe { let _ = LocalFree(Some(HLOCAL(p_sd.0.cast()))); }
-            return false;
-        }
-    }
-
-    unsafe { let _ = LocalFree(Some(HLOCAL(p_sd.0.cast()))); }
-    true
 }
 
 #[cfg(not(target_os = "windows"))]
@@ -415,30 +251,13 @@ fn get_settings_policy_file_path() -> Option<PathBuf>
         return Some(settings_path);
     }
 
-    if !verify_linux_permissions(&dsc_folder) {
+    if let Err(reason) = validate_path(&dsc_folder, PathSecurityScope::Machine) {
         let required = t!("util.policyFolderNotSecureLinux");
-        warn!("{}", t!("util.policyFolderNotSecure", path = dsc_folder.display(), required = required));
+        warn!("{}", t!("util.policyFolderNotSecure", path = dsc_folder.display(), reason = reason, required = required));
         return None;
     }
 
     Some(settings_path)
-}
-
-/// Returns `true` if the folder is owned by root and has no group/other write bits; `false` otherwise.
-#[cfg(not(target_os = "windows"))]
-fn verify_linux_permissions(folder: &Path) -> bool {
-    use std::os::unix::fs::MetadataExt;
-
-    // Fail closed: if we can't read metadata, treat as insecure
-    let Ok(metadata) = fs::metadata(folder) else {
-        return false;
-    };
-
-    let mode = metadata.mode();
-    let uid = metadata.uid();
-
-    // Verify owner is root and no group or other write bits are set
-    uid == 0 && (mode & 0o020) == 0 && (mode & 0o002) == 0
 }
 
 /// Generates a resource ID from the specified type and name.
