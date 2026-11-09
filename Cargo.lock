@@ -1012,6 +1012,8 @@ dependencies = [
 name = "dsc-resource-process"
 version = "0.1.0"
 dependencies = [
+ "regex",
+ "rust-i18n",
  "serde",
  "serde_json",
  "sysinfo",

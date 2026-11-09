@@ -1,0 +1,23 @@
+_version = 1
+
+[main]
+usage = "Usage: process <get|export|terminate> --input <json>. Only export permits omitted input."
+unknownOperation = "Unknown operation '%{operation}'. Expected get, export, or terminate."
+serializationFailed = "Failed to serialize process information: %{error}"
+
+[input]
+invalidJson = "Invalid JSON input: %{error}"
+emptyName = "The process name must not be empty."
+missingIdentity = "Specify a process pid or name."
+exactlyOneIdentity = "Specify exactly one of pid or name to terminate processes."
+wildcardOnlyExport = "The '*' wildcard is supported only by export, not by get or terminate."
+invalidFilter = "Invalid process name filter: %{error}"
+
+[process]
+enumerationFailed = "Failed to enumerate processes: %{error}"
+notFound = "No matching process was found."
+ambiguous = "More than one process matches. Specify pid for get, or use export to retrieve all matches."
+
+[terminate]
+unsafeTarget = "Cannot terminate process 0 or the process executing this action."
+failed = "Failed to terminate processes with these PIDs: %{pids}. Check permissions and whether they are still running. Other matching processes may already have been terminated."

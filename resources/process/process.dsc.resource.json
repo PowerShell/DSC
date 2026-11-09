@@ -1,55 +1,36 @@
 {
     "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
-    "description": "Returns information about running processes.",
-    "type": "Microsoft/Process",
+    "description": "Returns information about running processes on Windows, Linux, and macOS.",
+    "type": "Microsoft.System/Process",
+    "author": "Microsoft",
+    "tags": ["Windows", "Linux", "macOS", "Process"],
     "version": "0.1.0",
     "get": {
         "executable": "process",
-        "args": [
-          "get"
-        ]
-    },
-    "set": {
-        "executable": "process",
-        "args": [
-          "set"
-        ],
-        "input": "stdin",
-        "implementsPretest": false,
-        "return": "state"
-    },
-    "test": {
-      "executable": "process",
-      "args": [
-        "test"
-      ],
-      "input": "stdin",
-      "return": "state"
+        "args": ["get", { "jsonInputArg": "--input", "mandatory": true }]
     },
     "export": {
-      "executable": "process",
-      "args": [
-        "list"
-      ]
+        "executable": "process",
+        "args": ["export", { "jsonInputArg": "--input", "mandatory": false }],
+        "supportsFiltering": true
+    },
+    "exitCodes": {
+        "0": "Success",
+        "1": "Invalid arguments",
+        "2": "Invalid input",
+        "3": "Process query failed"
     },
     "schema": {
-      "embedded": {
-        "$schema": "http://json-schema.org/draft-07/schema#",
-        "title": "Process",
-        "type": "object",
-        "required": [],
-        "properties": {
-            "pid": {
-              "type": "integer"
+        "embedded": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "Process",
+            "type": "object",
+            "properties": {
+                "pid": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+                "name": { "type": "string", "minLength": 1 },
+                "cmdline": { "type": "array", "items": { "type": "string" }, "readOnly": true }
             },
-            "name": {
-              "type": "string"
-            },
-            "cmdline": {
-              "type": "string"
-            }
-        },
-        "additionalProperties": false
-      }
+            "additionalProperties": false
+        }
     }
 }

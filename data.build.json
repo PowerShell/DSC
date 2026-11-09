@@ -21,6 +21,9 @@
       "NOTICE.txt",
       "osinfo",
       "osinfo.dsc.resource.json",
+      "process",
+      "process.dsc.resource.json",
+      "terminateprocess.dsc.action.json",
       "powershell.dsc.extension.json",
       "powershell.discover.ps1",
       "powershell.dsc.resource.json",
@@ -53,6 +56,9 @@
       "NOTICE.txt",
       "osinfo",
       "osinfo.dsc.resource.json",
+      "process",
+      "process.dsc.resource.json",
+      "terminateprocess.dsc.action.json",
       "powershell.dsc.extension.json",
       "powershell.discover.ps1",
       "powershell.dsc.resource.json",
@@ -92,6 +98,9 @@
       "optionalfeature.dsc.resource.json",
       "osinfo.exe",
       "osinfo.dsc.resource.json",
+      "process.exe",
+      "process.dsc.resource.json",
+      "terminateprocess.dsc.action.json",
       "powershell.dsc.extension.json",
       "powershell.discover.ps1",
       "powershell.dsc.resource.json",
@@ -383,7 +392,8 @@
       ],
       "CopyFiles": {
         "All": [
-          "process.dsc.resource.json"
+          "process.dsc.resource.json",
+          "terminateprocess.dsc.action.json"
         ]
       }
     },
