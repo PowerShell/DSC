@@ -164,7 +164,7 @@ Describe 'Windows Service restart action tests' -Skip:(!$IsWindows) {
             $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
             $output = $out | ConvertFrom-Json
             $output.hadErrors | Should -BeFalse
-            $output.results[0].result.afterState._metadata.whatIf |
+            $output.results[0].metadata.whatIf |
                 Should -Contain "Would restart service '$testServiceName'"
             $after = Get-SpoolerProcess
             $after.State | Should -BeExactly $before.State
