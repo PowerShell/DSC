@@ -53,8 +53,11 @@ fn process_info(pid: Pid, process: &Process) -> ProcessInfo {
 
 pub fn snapshot() -> Result<System, String> {
     System::new_with_specifics(
-        RefreshKind::nothing()
-            .with_processes(ProcessRefreshKind::nothing().with_cmd(UpdateKind::Always)),
+        RefreshKind::nothing().with_processes(
+            ProcessRefreshKind::nothing()
+                .without_tasks()
+                .with_cmd(UpdateKind::Always),
+        ),
     )
     .map_err(|error| t!("process.enumerationFailed", error = error).to_string())
 }
@@ -226,5 +229,33 @@ mod tests {
             ..filter
         };
         assert!(matching(&system, &filter).unwrap().is_empty());
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn snapshot_excludes_threads() {
+        let barrier = std::sync::Barrier::new(2);
+        std::thread::scope(|scope| {
+            let (sender, receiver) = std::sync::mpsc::channel();
+            let barrier = &barrier;
+            scope.spawn(move || {
+                let tid = std::fs::read_link("/proc/thread-self")
+                    .unwrap()
+                    .file_name()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .parse::<u32>()
+                    .unwrap();
+                sender.send(tid).unwrap();
+                barrier.wait();
+            });
+            let tid = receiver.recv().unwrap();
+            let system = snapshot();
+            barrier.wait();
+            let system = system.unwrap();
+            assert!(system.process(Pid::from_u32(std::process::id())).is_some());
+            assert!(system.process(Pid::from_u32(tid)).is_none());
+        });
     }
 }

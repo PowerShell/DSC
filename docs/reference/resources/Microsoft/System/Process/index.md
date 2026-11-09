@@ -110,7 +110,8 @@ IsWriteOnly: false
 
 </details>
 
-The operating-system process name, not an executable path. Must not be empty.
+The operating-system process name, not an executable path. A selector must not be empty,
+but returned state can contain an empty name if the operating system reports one.
 For export only, `*` matches zero or more characters.
 
 ### cmdline
@@ -128,7 +129,8 @@ IsWriteOnly: false
 </details>
 
 An array of strings containing the command-line arguments reported by the operating system.
-Filtering compares the entire array exactly, without wildcard expansion.
+Export filtering compares the entire array exactly, without wildcard expansion. Get ignores
+this property and returns the actual arguments so synthetic testing can compare them.
 
 ## Instance validating schema
 
@@ -137,7 +139,7 @@ Filtering compares the entire array exactly, without wildcard expansion.
   "type": "object",
   "properties": {
     "pid": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
-    "name": { "type": "string", "minLength": 1 },
+    "name": { "type": "string" },
     "cmdline": { "type": "array", "items": { "type": "string" }, "readOnly": true }
   },
   "additionalProperties": false

@@ -27,7 +27,7 @@
             "type": "object",
             "properties": {
                 "pid": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
-                "name": { "type": "string", "minLength": 1 },
+                "name": { "type": "string" },
                 "cmdline": { "type": "array", "items": { "type": "string" }, "readOnly": true }
             },
             "additionalProperties": false

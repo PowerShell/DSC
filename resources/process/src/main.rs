@@ -74,13 +74,16 @@ fn run() -> Result<(), u8> {
         return print_json(&serde_json::json!({ "terminated": terminated }));
     }
 
-    let input: ProcessInfo = require_input(&input)?;
+    let mut input: ProcessInfo = require_input(&input)?;
     if operation == "get" {
         input.validate_identity()
     } else {
         input.validate()
     }
     .map_err(|message| invalid_input(&message))?;
+    if operation == "get" {
+        input.cmdline = None;
+    }
     let system = snapshot().map_err(|message| resource_error(&message))?;
     let processes = matching(&system, &input).map_err(|message| resource_error(&message))?;
     if operation == "get" {
