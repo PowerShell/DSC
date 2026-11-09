@@ -3,7 +3,7 @@
 
 Describe 'DSC Actions' {
     It 'Actions should be listed' {
-        $out = dsc action list | ConvertFrom-Json
+        $out = dsc action list 'Test/*' | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.count | Should -Be 2
         $out[0].type | Should -BeExactly 'Test/Action2'
