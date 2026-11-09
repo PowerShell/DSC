@@ -13,7 +13,7 @@ BeforeDiscovery {
 
 Describe 'Windows Service restart action tests' -Skip:(!$IsWindows) {
     BeforeAll {
-        $actionType = 'Microsoft.Windows.Actions/RestartService'
+        $actionType = 'Microsoft.Windows.Action/RestartService'
         $resourceType = 'Microsoft.Windows/Service'
         $testServiceName = 'Spooler'
 

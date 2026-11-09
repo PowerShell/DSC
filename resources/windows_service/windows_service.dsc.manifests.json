@@ -133,7 +133,7 @@
     "actions": [
         {
             "$schema": "https://aka.ms/dsc/schemas/v3/bundled/action/manifest.json",
-            "type": "Microsoft.Windows.Actions/RestartService",
+            "type": "Microsoft.Windows.Action/RestartService",
             "description": "Restart a Windows service, or start it if it is stopped.",
             "tags": [
                 "Windows"

@@ -79,7 +79,7 @@ the desired state. For more information about resource capabilities, see
 
 ### Restart a service
 
-The companion `Microsoft.Windows.Actions/RestartService` action restarts a service even when it is
+The companion `Microsoft.Windows.Action/RestartService` action restarts a service even when it is
 already running. Unlike setting `status: Running`, the action stops the service, waits for it to
 stop, and starts it again. If the service is already stopped, the action starts it.
 
@@ -89,7 +89,7 @@ elevated Windows process and a `name` property containing the service key name:
 ```yaml
 resources:
   - name: Restart Print Spooler
-    type: Microsoft.Windows.Actions/RestartService
+    type: Microsoft.Windows.Action/RestartService
     properties:
       name: Spooler
 ```
