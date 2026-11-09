@@ -213,6 +213,10 @@ murmurhash64 = { version = "0.3" }
 nix = { version = "0.31.3" }
 # dsc-lib
 num-traits = { version = "0.2" }
+futures-util = { version = "0.3" }
+opentelemetry = { version = "0.33" }
+opentelemetry_sdk = { version = "0.33" }
+opentelemetry-semantic-conventions = { version = "0.33" }
 # dsc-lib-osinfo
 os_info = { version = "3.15" }
 # dsc-lib-osinfo
@@ -281,6 +285,9 @@ tonic-reflection = { version = "0.14.9" }
 tracing = { version = "0.1.44" }
 # dsc, dsc-lib
 tracing-indicatif = { version = "0.3.14" }
+# dsc-lib-telemetry
+tracing-log = { version = "0.2" }
+tracing-opentelemetry = { version = "0.34.0" }
 # dsc, dsc-bicep-ext, registry, dsc-lib-registry, runcommandonset, sshdconfig
 tracing-subscriber = { version = "0.3.23", features = ["ansi", "env-filter", "json"] }
 # dsc-lib, sshdconfig, tree-sitter-dscexpression, tree-sitter-ssh-server-config
