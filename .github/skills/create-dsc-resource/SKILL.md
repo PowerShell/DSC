@@ -35,7 +35,7 @@ Management tasks or operations are specific to the resource type, but may includ
 ### 1. Required Setup
 
 - Use `cargo new --bin <resource_name>` to create a new Rust binary project for the resource under the `resources` directory
-- Create a resource manifest JSON file named `<resource_name>.dsc.resource.json` in the same directory using `./resources/windows_service/windows_service.dsc.resource.json` as an example
+- Create a resource manifest JSON file named `<resource_name>.dsc.resource.json` in the same directory using the resource entry in `./resources/windows_service/windows_service.dsc.manifests.json` as an example
 - Create a `.project.data.json` file in the root of the resource project directory
 - Create a `locales/en-us.toml` file for localized strings
 - Add the resource executable and manifest to the applicable `PackageFiles` platform list in the root `data.build.json` (for example, `<resource_name>.exe` and `<resource_name>.dsc.resource.json` under `PackageFiles.Windows`)

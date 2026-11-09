@@ -9,7 +9,7 @@ mod service;
 use rust_i18n::t;
 use std::process::ExitCode;
 
-use types::WindowsService;
+use types::{RestartService, WindowsService};
 
 /// Write a JSON error object to stderr: `{"error":"<message>"}`
 fn write_error(message: &str) {
@@ -23,8 +23,8 @@ const EXIT_INVALID_ARGS: u8 = 1;
 const EXIT_INVALID_INPUT: u8 = 2;
 const EXIT_SERVICE_ERROR: u8 = 3;
 
-/// Deserialize the required JSON input into a `WindowsService`, or return an exit code.
-fn require_input(input_json: Option<String>) -> Result<WindowsService, ExitCode> {
+/// Deserialize the required JSON input, or return an exit code.
+fn require_input<T: serde::de::DeserializeOwned>(input_json: Option<String>) -> Result<T, ExitCode> {
     let json = match input_json {
         Some(j) => j,
         None => {
@@ -79,7 +79,7 @@ fn main() -> ExitCode {
 
     match operation {
         "get" => {
-            let input = match require_input(input_json) {
+            let input = match require_input::<WindowsService>(input_json) {
                 Ok(input) => input,
                 Err(code) => return code,
             };
@@ -98,7 +98,7 @@ fn main() -> ExitCode {
             }
         }
         "set" => {
-            let input = match require_input(input_json) {
+            let input = match require_input::<WindowsService>(input_json) {
                 Ok(input) => input,
                 Err(code) => return code,
             };
@@ -121,6 +121,25 @@ fn main() -> ExitCode {
             }
 
             match service::set_service(&input, what_if) {
+                Ok(result) => {
+                    if let Err(code) = print_json(&result) {
+                        return code;
+                    }
+                    ExitCode::from(EXIT_SUCCESS)
+                }
+                Err(e) => {
+                    write_error(&e.to_string());
+                    ExitCode::from(EXIT_SERVICE_ERROR)
+                }
+            }
+        }
+        "restart" => {
+            let input = match require_input::<RestartService>(input_json) {
+                Ok(input) => input,
+                Err(code) => return code,
+            };
+
+            match service::restart_service(&input, what_if) {
                 Ok(result) => {
                     if let Err(code) = print_json(&result) {
                         return code;

@@ -1,8 +1,8 @@
 _version = 1
 
 [main]
-missingOperation = "Missing operation. Usage: windows_service get --input <json> | set [--what-if] --input <json> | export [--input <json>]"
-unknownOperation = "Unknown operation: '%{operation}'. Expected: get, set, or export"
+missingOperation = "Missing operation. Usage: windows_service get --input <json> | set [--what-if] --input <json> | restart [--what-if] --input <json> | export [--input <json>]"
+unknownOperation = "Unknown operation: '%{operation}'. Expected: get, set, restart, or export"
 missingInput = "Missing --input argument"
 missingInputValue = "Missing value for --input argument"
 invalidJson = "Invalid JSON input: %{error}"
@@ -45,3 +45,7 @@ whatIfChangeDependencies = "Would set dependencies to '%{desired}'"
 whatIfChangeStatus = "Would change status from '%{current}' to '%{desired}'"
 whatIfDeleteService = "Would delete service '%{name}'"
 whatIfDeleteServiceNotFound = "Service '%{name}' does not exist; no delete needed"
+
+[restart]
+invalidName = "'name' must be a non-empty service name without null characters"
+whatIfRestartService = "Would restart service '%{name}'"

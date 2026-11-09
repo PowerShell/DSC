@@ -77,6 +77,32 @@ the desired state. For more information about resource capabilities, see
 
 ## Examples
 
+### Restart a service
+
+The companion `Microsoft.Windows.Action/RestartService` action restarts a service even when it is
+already running. Unlike setting `status: Running`, the action stops the service, waits for it to
+stop, and starts it again. If the service is already stopped, the action starts it.
+
+Use the action in a configuration document and invoke it with `dsc config set`. It requires an
+elevated Windows process and a `name` property containing the service key name:
+
+```yaml
+resources:
+  - name: Restart Print Spooler
+    type: Microsoft.Windows.Action/RestartService
+    properties:
+      name: Spooler
+```
+
+The action returns `name` and `status: Running` after the service reaches the running state.
+It doesn't change the service configuration or restart dependent services. Missing services,
+disabled services, failures to stop or start, and status transition timeouts are reported as errors.
+The action supports only `set`; it doesn't restart services during `get`, `test`, or `export`.
+Use `dsc config set --what-if` to preview a restart without changing the service. The projected
+result includes `_metadata.whatIf` describing the restart.
+
+### Service configuration examples
+
 1. [Get service status][02] - Shows how to retrieve the current state of a Windows service with the
    `dsc resource` commands.
 1. [Configure a Windows service][03] - Shows how to enforce the desired configuration of a Windows
