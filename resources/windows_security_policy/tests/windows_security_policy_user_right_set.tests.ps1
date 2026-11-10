@@ -43,7 +43,8 @@ Describe 'User rights assignment set tests' -Skip:(!$IsWindows) {
             param($Original)
             if ($Original) {
                 $json = @{ right = $testRight; identity = @($Original.identity) } | ConvertTo-Json -Compress
-                $json | dsc resource set -r $resourceType -f - 2>$testdrive/error.log
+                $null = $json | dsc resource set -r $resourceType -f - 2>$testdrive/error.log
+                $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $testdrive/error.log)
             }
         }
 
