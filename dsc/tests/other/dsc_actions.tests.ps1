@@ -3,7 +3,7 @@
 
 Describe 'DSC Actions' {
     It 'Actions should be listed' {
-        $out = dsc action list | ConvertFrom-Json
+        $out = dsc action list 'Test/*' | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.count | Should -Be 2
         $out[0].type | Should -BeExactly 'Test/Action2'
@@ -113,5 +113,27 @@ Describe 'DSC Actions' {
         $errorlog = Get-Content $TestDrive/error.log -Raw
         $LASTEXITCODE | Should -Be 2 -Because $errorlog
         $errorlog | Should -BeLike '*ERROR Schema: "inputText" is a required property*'
+    }
+
+    It 'Action with arg expression works correct' {
+        $config = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+            resources = @(
+                @{
+                    name = 'Action Test'
+                    type = 'Test/Action'
+                    properties = @{
+                        inputText = 'Hello world'
+                        expression = 'some expression'
+                    }
+                }
+            )
+        }
+
+        $out = dsc config get -i ($config | ConvertTo-Json -Depth 5) | ConvertFrom-Json -Depth 5
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].type | Should -BeExactly 'Test/Action'
+        $out.results[0].result.actualState.outputText | Should -BeExactly 'Hello world'
+        $out.results[0].result.actualState.expression | Should -BeExactly 'some expression foo'
     }
 }

@@ -123,6 +123,14 @@ pub enum GetArgKind {
         #[serde(rename = "adaptedContentArg")]
         adapted_content_arg: String,
     },
+    Expression {
+        /// The argument that accepts the result of the expression.
+        arg: Option<String>,
+        /// The expression to be evaluated.  `null` result becomes an empty string.
+        expression: String,
+        /// Indicates if the argument is mandatory.  Default is false.
+        mandatory: Option<bool>,
+    },
     Json {
         /// The argument that accepts the JSON input object.
         #[serde(rename = "jsonInputArg")]
@@ -164,6 +172,14 @@ pub enum SetDeleteArgKind {
         /// The argument that accepts the JSON content from the manifest.
         #[serde(rename = "adaptedContentArg")]
         adapted_content_arg: String,
+    },
+    Expression {
+        /// The argument that accepts the result of the expression.
+        arg: Option<String>,
+        /// The expression to be evaluated.  `null` result becomes an empty string.
+        expression: String,
+        /// Indicates if the argument is mandatory.  Default is false.
+        mandatory: Option<bool>,
     },
     Json {
         /// The argument that accepts the JSON input object.

@@ -5,21 +5,20 @@ Describe 'resource export tests' {
 
     It 'Export can be called on individual resource' {
 
-        $out = dsc resource export -r Microsoft/Process
+        $out = dsc resource export -r Test/Export -i '{"count":3}'
         $LASTEXITCODE | Should -Be 0
-        $config_with_process_list = $out | ConvertFrom-Json
-        $config_with_process_list.'$schema' | Should -BeExactly 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
-        $config_with_process_list.'resources' | Should -Not -BeNullOrEmpty
-        $config_with_process_list.resources.count | Should -BeGreaterThan 1
+        $exportedConfig = $out | ConvertFrom-Json
+        $exportedConfig.'$schema' | Should -BeExactly 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+        $exportedConfig.resources | Should -HaveCount 3
     }
 
     It 'get --all can be called on individual resource' {
 
-        $out = dsc resource get --all -r Microsoft/Process
+        $out = dsc resource get --all -r Test/ExportSchemaEmbedded
         $LASTEXITCODE | Should -Be 0
-        $process_list = $out | ConvertFrom-Json
-        $process_list.resources.count | Should -BeGreaterThan 1
-        $process_list | % {$_.actualState | Should -Not -BeNullOrEmpty}
+        $instances = $out | ConvertFrom-Json
+        $instances | Should -HaveCount 3
+        $instances | ForEach-Object {$_.actualState | Should -Not -BeNullOrEmpty}
     }
 
     It 'Export can be called on a configuration' {
@@ -28,37 +27,36 @@ Describe 'resource export tests' {
             $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             contentVersion: 1.2.3
             resources:
-            - name: Processes
-              type: Microsoft/Process
+            - name: Instances
+              type: Test/Export
               properties:
-                pid: 0
+                count: 3
 '@
         $out = $yaml | dsc config export -f -
         $LASTEXITCODE | Should -Be 0
-        $config_with_process_list = $out | ConvertFrom-Json
-        $config_with_process_list.'$schema' | Should -BeExactly 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
-        $config_with_process_list.'resources' | Should -Not -BeNullOrEmpty
-        $config_with_process_list.resources.count | Should -BeGreaterThan 1
-        $config_with_process_list.metadata.'Microsoft.DSC'.operation | Should -BeExactly 'export'
+        $exportedConfig = $out | ConvertFrom-Json
+        $exportedConfig.'$schema' | Should -BeExactly 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+        $exportedConfig.resources | Should -HaveCount 3
+        $exportedConfig.metadata.'Microsoft.DSC'.operation | Should -BeExactly 'export'
         # contentVersion on export is always 1.0.0
-        $config_with_process_list.contentVersion | Should -BeExactly '1.0.0'
-        $config_with_process_list.resources.name | Should -BeLike 'Process-*'
+        $exportedConfig.contentVersion | Should -BeExactly '1.0.0'
+        $exportedConfig.resources.name | Should -BeExactly @('TestName', 'TestName', 'TestName')
     }
 
-    It 'Configuration Export can be piped to configuration Set' -Skip:(!$IsWindows) {
+    It 'Configuration Export can be piped to configuration Set' {
 
         $yaml = @'
             $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
-            - name: Processes
-              type: Microsoft/Process
-              properties:
-                pid: 0
+            - name: First instance
+              type: Test/Set
+            - name: Second instance
+              type: Test/WhatIf
 '@
         $out = $yaml | dsc config export -f - | dsc config set -f -
         $LASTEXITCODE | Should -Be 0
         $set_results = $out | ConvertFrom-Json
-        $set_results.results.count | Should -BeGreaterThan 1
+        $set_results.results | Should -HaveCount 2
     }
 
     It 'Duplicate resource types in Configuration Export should not result in error' {
@@ -66,14 +64,14 @@ Describe 'resource export tests' {
         $yaml = @'
             $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
-            - name: Processes
-              type: Microsoft/Process
+            - name: First instances
+              type: Test/Export
               properties:
-                pid: 0
-            - name: Processes
-              type: Microsoft/Process
+                count: 3
+            - name: Second instances
+              type: Test/Export
               properties:
-                pid: 0
+                count: 3
 '@
         $null = $yaml | dsc config export -f - 2>&1
         $LASTEXITCODE | Should -Be 0
@@ -81,12 +79,11 @@ Describe 'resource export tests' {
 
     It 'Export can be called on individual resource with the use of --output-format as a subcommand' {
 
-      $out = dsc resource export -r Microsoft/Process -o pretty-json
+      $out = dsc resource export -r Test/Export -i '{"count":3}' -o pretty-json
       $LASTEXITCODE | Should -Be 0
-      $config_with_process_list = $out | ConvertFrom-Json
-      $config_with_process_list.'$schema' | Should -BeExactly 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
-      $config_with_process_list.'resources' | Should -Not -BeNullOrEmpty
-      $config_with_process_list.resources.count | Should -BeGreaterThan 1
+      $exportedConfig = $out | ConvertFrom-Json
+      $exportedConfig.'$schema' | Should -BeExactly 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+      $exportedConfig.resources | Should -HaveCount 3
     }
 
     It 'Export can be called on resource with input' {
@@ -106,17 +103,16 @@ Describe 'resource export tests' {
       $yaml = @'
           $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
           resources:
-          - name: Processes
-            type: Microsoft/Process
+          - name: Instances
+            type: Test/Export
             properties:
-              pid: 0
+              count: 3
 '@
       $out = $yaml | dsc config export -o pretty-json -f -
       $LASTEXITCODE | Should -Be 0
-      $config_with_process_list = $out | ConvertFrom-Json
-      $config_with_process_list.'$schema' | Should -BeExactly 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
-      $config_with_process_list.'resources' | Should -Not -BeNullOrEmpty
-      $config_with_process_list.resources.count | Should -BeGreaterThan 1
+      $exportedConfig = $out | ConvertFrom-Json
+      $exportedConfig.'$schema' | Should -BeExactly 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+      $exportedConfig.resources | Should -HaveCount 3
     }
 
     It 'Export for config preserves metadata' {

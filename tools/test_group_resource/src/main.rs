@@ -28,7 +28,6 @@ fn main() {
                 properties: Some(vec!["Property1".to_string(), "Property2".to_string()]),
                 require_adapter: Some("Test/TestGroup".parse().unwrap()),
                 adapted_content: None,
-                target_resource: None,
                 schema: None,
                 manifest: Some(ResourceManifest {
                     description: Some("This is a test resource.".to_string()),
@@ -58,7 +57,6 @@ fn main() {
                 properties: Some(vec!["Property1".to_string(), "Property2".to_string()]),
                 require_adapter: Some("Test/TestGroup".parse().unwrap()),
                 adapted_content: None,
-                target_resource: None,
                 schema: None,
                 manifest: Some(ResourceManifest {
                     description: Some("This is a test resource.".to_string()),
@@ -92,7 +90,6 @@ fn main() {
                 properties: Some(vec!["Property1".to_string(), "Property2".to_string()]),
                 require_adapter: None,
                 adapted_content: None,
-                target_resource: None,
                 manifest: None,
                 adapted_manifest: None,
                 schema: None,

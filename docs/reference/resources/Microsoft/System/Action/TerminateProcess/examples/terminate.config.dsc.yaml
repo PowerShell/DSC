@@ -1,0 +1,9 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+  - name: Terminate selected process
+    type: Microsoft.System.Action/TerminateProcess
+    properties:
+      pid: 1234
