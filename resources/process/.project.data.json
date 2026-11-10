@@ -8,8 +8,7 @@
     ],
     "CopyFiles": {
         "All": [
-            "process.dsc.resource.json",
-            "terminateprocess.dsc.action.json"
+            "process.dsc.manifests.json"
         ]
     }
 }
