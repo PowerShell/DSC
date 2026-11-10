@@ -27,6 +27,7 @@ members = [
     "resources/windows_service",
     "resources/WindowsUpdate",
     "resources/environment_variable",
+    "resources/windows_audit_policy",
     "resources/windows_security_policy",
     "adapters/csp",
     "adapters/group_policy_template",
@@ -64,6 +65,7 @@ default-members = [
     "resources/windows_service",
     "resources/WindowsUpdate",
     "resources/environment_variable",
+    "resources/windows_audit_policy",
     "resources/windows_security_policy",
     "adapters/csp",
     "adapters/group_policy_template",
@@ -102,6 +104,7 @@ Windows = [
     "resources/windows_service",
     "resources/WindowsUpdate",
     "resources/environment_variable",
+    "resources/windows_audit_policy",
     "resources/windows_security_policy",
     "adapters/csp",
     "adapters/group_policy_template",
@@ -298,7 +301,7 @@ urlencoding = { version = "2.1" }
 which = { version = "8.0.6" }
 # dsc-lib
 ipnetwork = { version = "0.21" }
-# WindowsUpdate, windows_service, windows_security_policy, dsc-lib (ACL checks), dsc-lib-registry
+# WindowsUpdate, windows_service, windows_audit_policy, windows_security_policy, dsc-lib (ACL checks), dsc-lib-registry
 windows = { version = "0.62", features = [
     "Win32_Foundation",
     "Win32_NetworkManagement_WindowsFirewall",
@@ -310,9 +313,9 @@ windows = { version = "0.62", features = [
     "Win32_System_Ole",
     "Win32_System_Registry",
     "Win32_System_Services",
+    "Win32_System_Threading",
     "Win32_System_Variant",
     "Win32_System_UpdateAgent",
-    "Win32_System_Threading",
     "Win32_System_Wmi",
     "Win32_Globalization"
 ] }

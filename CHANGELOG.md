@@ -77,6 +77,22 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
 ### Added
 
+- Added the `Microsoft.Windows/AuditPolicy`, `Microsoft.Windows/AuditPolicyList`, and
+  `Microsoft.Windows/AuditPolicyOption` built-in resources for managing the Windows advanced audit
+  policy natively, as a replacement for the `AuditPolicyDsc` PowerShell module. `AuditPolicy`
+  manages success and failure auditing per subcategory (by English name or GUID) through the LSA
+  audit APIs, `AuditPolicyList` manages many subcategories in one instance and applies them with a
+  single API call, and `AuditPolicyOption` manages the `CrashOnAuditFail`,
+  `FullPrivilegeAuditing`, `AuditBaseObjects`, and `AuditBaseDirectories` options. All three
+  resources support `get`, `set`, `export`, and `--what-if`.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#1755][#1755]
+  - PRs: [#1758][#1758]
+
+  </details>
+
 - Added the `Microsoft.Windows/UserRightsAssignment` built-in resource for managing which accounts
   hold a Windows user right or privilege (Local Security Policy > User Rights Assignment) natively
   through the LSA account-rights APIs, as the first part of a replacement for the
@@ -2015,5 +2031,5 @@ Version `3.0.0` is the first generally available release of DSC.
 [#1562]: https://github.com/PowerShell/DSC/issues/1562
 [#1729]: https://github.com/PowerShell/DSC/issues/1729
 [#1755]: https://github.com/PowerShell/DSC/issues/1755
+[#1758]: https://github.com/PowerShell/DSC/issues/1758
 [#1759]: https://github.com/PowerShell/DSC/issues/1759
-

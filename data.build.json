@@ -125,6 +125,8 @@
       "windows_firewall.exe",
       "windows_service.exe",
       "windows_service.dsc.resource.json",
+      "windows_audit_policy.exe",
+      "windows_audit_policy.dsc.manifests.json",
       "windows_security_policy.exe",
       "windows_security_policy.dsc.manifests.json",
       "windows_feature.dsc.resource.json",
