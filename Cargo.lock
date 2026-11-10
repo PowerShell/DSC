@@ -4540,6 +4540,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "240948bc05c5e7c6dabba28bf89d89ffce3e303022809e73deaefe4f6ec56c66"
 
 [[package]]
+name = "windows_security_policy"
+version = "0.1.0"
+dependencies = [
+ "dsc-lib-security_context",
+ "rust-i18n",
+ "serde",
+ "serde_json",
+ "windows 0.62.2",
+]
+
+[[package]]
 name = "windows_service"
 version = "0.1.0"
 dependencies = [
