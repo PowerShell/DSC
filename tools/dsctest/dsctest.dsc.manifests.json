@@ -23,6 +23,11 @@
           {
             "jsonInputArg": "--input",
             "mandatory": true
+          },
+          {
+            "arg": "--expression",
+            "expression": "[concat(properties().expression, ' foo')]",
+            "mandatory": false
           }
         ],
         "requireSecurityContext": "current",
@@ -501,6 +506,83 @@
             "schema",
             "-s",
             "exporter"
+          ]
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/ExpressionArg",
+      "version": "0.1.0",
+      "kind": "resource",
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "expression-arg",
+          {
+            "arg": "--arg3",
+            "expression": "[properties().third]",
+            "mandatory": false
+          },
+          {
+            "arg": "--arg2",
+            "expression": "[properties().second]",
+            "mandatory": true
+          },
+          {
+            "expression": "[properties().first]",
+            "mandatory": true
+          }
+        ]
+      },
+      "set": {
+        "executable": "dsctest",
+        "implementsPretest": true,
+        "args": [
+          "expression-arg",
+          {
+            "arg": "--arg3",
+            "expression": "[properties().third]",
+            "mandatory": false
+          },
+          {
+            "arg": "--arg2",
+            "expression": "[properties().second]",
+            "mandatory": true
+          },
+          {
+            "expression": "[properties().first]",
+            "mandatory": true
+          }
+        ]
+      },
+      "export": {
+        "executable": "dsctest",
+        "args": [
+          "expression-arg",
+          {
+            "arg": "--arg3",
+            "expression": "[properties().third]",
+            "mandatory": false
+          },
+          {
+            "arg": "--arg2",
+            "expression": "[properties().second]",
+            "mandatory": true
+          },
+          {
+            "expression": "[properties().first]",
+            "mandatory": true
+          }
+        ]
+      },
+      "schema": {
+        "command": {
+          "executable": "dsctest",
+          "args": [
+            "schema",
+            "-s",
+            "expression-arg"
           ]
         }
       }

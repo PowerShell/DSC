@@ -114,4 +114,26 @@ Describe 'DSC Actions' {
         $LASTEXITCODE | Should -Be 2 -Because $errorlog
         $errorlog | Should -BeLike '*ERROR Schema: "inputText" is a required property*'
     }
+
+    It 'Action with arg expression works correct' {
+        $config = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+            resources = @(
+                @{
+                    name = 'Action Test'
+                    type = 'Test/Action'
+                    properties = @{
+                        inputText = 'Hello world'
+                        expression = 'some expression'
+                    }
+                }
+            )
+        }
+
+        $out = dsc config get -i ($config | ConvertTo-Json -Depth 5) | ConvertFrom-Json -Depth 5
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].type | Should -BeExactly 'Test/Action'
+        $out.results[0].result.actualState.outputText | Should -BeExactly 'Hello world'
+        $out.results[0].result.actualState.expression | Should -BeExactly 'some expression foo'
+    }
 }

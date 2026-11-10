@@ -290,6 +290,7 @@ exportResult = "Export result: %{result}"
 json = "JSON: %{json}"
 schema = "Schema: %{schema}"
 invokeNotSupported = "Invoke operation is not supported for resource '%{resource}'"
+invalidPropertiesJson = "Invalid properties JSON: %{err}"
 
 [dscresources.resource_manifest]
 resourceManifestSchemaTitle = "Resource manifest schema URI"
@@ -695,6 +696,10 @@ syntax = "path( <string>, <string>, ... )"
 traceArgs = "Executing path function with args: %{args}"
 argsMustBeStrings = "Arguments must all be strings"
 
+[functions.properties]
+description = "Retrieves the properties of the current resourcecontext"
+syntax = "properties()"
+
 [functions.range]
 description = "Creates an array of integers from a starting integer and containing a number of items"
 invoked = "range function"
@@ -1050,6 +1055,9 @@ ignoreSettingsFile = "Ignoring settings file due to environment variable 'DSC_IG
 [resources]
 notAnAction = "Invalid request to retrieve action manifest from a non-action"
 notAResource = "Invalid request to retrieve resource manifest from a non-resource"
+
+[resources.resource_invoke]
+invalidExpression = "Invalid expression '%{expression}' in resource manifest: %{error}"
 
 [types.date_version]
 invalidDay = "day `%{day}` for month `%{month}` is invalid - must be between `01` and `%{max_days}`"
