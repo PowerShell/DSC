@@ -20,7 +20,7 @@ Describe 'Windows audit policy option tests' -Skip:(!$IsWindows) {
 
         function Get-RawOptionValue {
             param([string]$Name)
-            (Get-ItemProperty -Path $lsaKey -Name $Name -ErrorAction SilentlyContinue).$Name
+            return ,((Get-ItemProperty -Path $lsaKey -Name $Name -ErrorAction SilentlyContinue).$Name)
         }
 
         function ConvertTo-Enabled {
