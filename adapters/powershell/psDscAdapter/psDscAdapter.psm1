@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-$script:CurrentCacheSchemaVersion = 4
+$script:CurrentCacheSchemaVersion = 5
 $ErrorActionPreference = 'Stop'
 
 function Import-PSDSCModule {
@@ -82,11 +82,15 @@ function Add-AstMember {
         $prop.Name = $property.Name
         $prop.PropertyType = $property.PropertyType.TypeName.Name
         $prop.IsMandatory = $isRequiredProperty
-        $enumType = $TypeDefinitionsByName[($prop.PropertyType -replace '\[\]$', '')]
+        $enumTypeName = $prop.PropertyType -replace '^(?:System\.)?Nullable\[(.*)\]$', '$1' -replace '\[\]$', ''
+        $enumType = $TypeDefinitionsByName[$enumTypeName]
         if ($enumType.IsEnum) {
             $prop.Values = @($enumType.Members.Name)
         }
         foreach ($attr in $property.Attributes) {
+            if ($attr.TypeName.Name -match '^(System\.Management\.Automation\.)?AllowNull(Attribute)?$') {
+                $prop.AllowNull = $true
+            }
             if ($attr.TypeName.Name -eq 'ValidateSet') {
                 $prop.Values = @($attr.PositionalArguments | ForEach-Object { $_.SafeGetValue() })
             }
@@ -748,6 +752,7 @@ class DscResourcePropertyInfo {
     [string] $Name
     [string] $PropertyType
     [bool] $IsMandatory
+    [bool] $AllowNull
     [System.Collections.Generic.List[string]] $Values
 }
 

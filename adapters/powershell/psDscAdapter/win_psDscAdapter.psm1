@@ -3,7 +3,7 @@
 
 $global:ProgressPreference = 'SilentlyContinue'
 $ErrorActionPreference = 'Stop'
-$script:CurrentCacheSchemaVersion = 2
+$script:CurrentCacheSchemaVersion = 3
 
 trap {
     Write-Error -Message ($_ | Format-List -Force | Out-String)
@@ -801,11 +801,15 @@ function GetClassBasedProperties {
             $prop.Name = $property.Name
             $prop.PropertyType = $property.PropertyType.TypeName.Name
             $prop.IsMandatory = $isRequiredProperty
-            $enumType = $typeDefinitionsByName[($prop.PropertyType -replace '\[\]$', '')]
+            $enumTypeName = $prop.PropertyType -replace '^(?:System\.)?Nullable\[(.*)\]$', '$1' -replace '\[\]$', ''
+            $enumType = $typeDefinitionsByName[$enumTypeName]
             if ($enumType.IsEnum) {
                 $prop.Values = @($enumType.Members.Name)
             }
             foreach ($attr in $property.Attributes) {
+                if ($attr.TypeName.Name -match '^(System\.Management\.Automation\.)?AllowNull(Attribute)?$') {
+                    $prop.AllowNull = $true
+                }
                 if ($attr.TypeName.Name -eq 'ValidateSet') {
                     $prop.Values = @($attr.PositionalArguments | ForEach-Object { $_.SafeGetValue() })
                 }
@@ -919,6 +923,7 @@ class DscResourcePropertyInfo {
     [string] $Name
     [string] $PropertyType
     [bool] $IsMandatory
+    [bool] $AllowNull
     [System.Collections.Generic.List[string]] $Values
 }
 

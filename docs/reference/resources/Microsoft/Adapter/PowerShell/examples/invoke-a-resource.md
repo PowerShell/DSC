@@ -77,8 +77,8 @@ whether the Windows Terminal package is installed:
 ```powershell
 $resource = 'Microsoft.WinGet.DSC/WinGetPackage'
 $instance = @{
-  Id     = 'Microsoft.WindowsTerminal'
-  Ensure = 'Present'
+  id     = 'Microsoft.WindowsTerminal'
+  ensure = 'Present'
 } | ConvertTo-Json -Compress
 
 dsc resource test --resource $resource  --input $instance
@@ -88,23 +88,22 @@ When the package isn't installed, DSC returns the following result:
 
 ```yaml
 desiredState:
-  Id: Microsoft.WindowsTerminal
-  Ensure: Present
+  id: Microsoft.WindowsTerminal
+  ensure: Present
 actualState:
-  Id: Microsoft.WindowsTerminal
-  InstallMode: Silent
-  Version: null
-  Ensure: Absent
-  MatchOption: EqualsCaseInsensitive
-  Source: ''
-  UseLatest: false
+  id: Microsoft.WindowsTerminal
+  installMode: Silent
+  ensure: Absent
+  matchOption: EqualsCaseInsensitive
+  source: ''
+  useLatest: false
   _inDesiredState: false
 inDesiredState: false
 differingProperties:
-- Ensure
+- ensure
 ```
 
-The `inDesiredState` field is `false` and `differingProperties` shows that `Ensure` differs between
+The `inDesiredState` field is `false` and `differingProperties` shows that `ensure` differs between
 the desired state and the actual state.
 
 ## Set an instance to the desired state
@@ -114,8 +113,8 @@ Use the [`dsc config set`][04] command to enforce the desired state for the reso
 ```powershell
 $resource = 'Microsoft.WinGet.DSC/WinGetPackage'
 $instance = @{
-  Id     = 'Microsoft.WindowsTerminal'
-  Ensure = 'Present'
+  id     = 'Microsoft.WindowsTerminal'
+  ensure = 'Present'
 } | ConvertTo-Json -Compress
 
 dsc resource set --resource $resource  --input $instance
@@ -125,26 +124,25 @@ When the resource installs the package, DSC returns the following result:
 
 ```yaml
 beforeState:
-  Ensure: Absent
-  UseLatest: false
-  InstallMode: Silent
-  Version: null
-  Id: Microsoft.WindowsTerminal
-  MatchOption: EqualsCaseInsensitive
-  Source: ''
+  ensure: Absent
+  useLatest: false
+  installMode: Silent
+  id: Microsoft.WindowsTerminal
+  matchOption: EqualsCaseInsensitive
+  source: ''
 afterState:
-  Version: 1.24.10921.0
-  MatchOption: EqualsCaseInsensitive
-  Ensure: Present
-  Id: Microsoft.WindowsTerminal
-  UseLatest: true
-  InstallMode: Silent
-  Source: winget
+  version: 1.24.10921.0
+  matchOption: EqualsCaseInsensitive
+  ensure: Present
+  id: Microsoft.WindowsTerminal
+  useLatest: true
+  installMode: Silent
+  source: winget
 changedProperties:
-- Version
-- Ensure
-- UseLatest
-- Source
+- version
+- ensure
+- useLatest
+- source
 ```
 
 ## Cleanup
@@ -154,8 +152,8 @@ To remove the installed package, define the desired state for the `Ensure` prope
 ```powershell
 $resource = 'Microsoft.WinGet.DSC/WinGetPackage'
 $instance = @{
-  Id     = 'Microsoft.WindowsTerminal'
-  Ensure = 'Absent'
+  id     = 'Microsoft.WindowsTerminal'
+  ensure = 'Absent'
 } | ConvertTo-Json -Compress
 
 dsc resource set --resource $resource  --input $instance

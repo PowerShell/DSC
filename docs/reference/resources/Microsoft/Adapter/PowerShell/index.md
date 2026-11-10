@@ -168,19 +168,23 @@ configuration document with the following exceptions:
    dsc resource schema -r '<moduleName>/<resourceName>'
    ```
 
-   Each property name must be a configurable property of the PSDSC resource. The property name
-   isn't case sensitive. The value for each property must be valid for that property. If you
+   Each property name must be a configurable property of the PSDSC resource. Schemas use camelCase
+   property names, preserving names that contain nonalphanumeric characters. Use the spelling
+   shown in the schema, including for key and mandatory properties listed in `required`. If you
    specify an invalid property name or value, the adapter raises an error when it tries to invoke
    the resource.
 
-   Property names and enumeration values remain case insensitive. Custom and embedded property
+   Enumeration values remain case insensitive. Custom and embedded property
    types without a known JSON representation are validated by the underlying PowerShell resource.
    The adapter doesn't implement a separate `validate` operation.
 
    Schemas also enforce discovered `ValidateSet` constraints, including constraints on array
-   items. Nullable property types accept `null`, including nullable strings with a `ValidateSet`
-   constraint. Non-nullable enumeration and numeric types reject `null`, even when they have a
-   validation set.
+   items. For known JSON types, properties accept explicit `null` only when they have an
+   `[AllowNull()]` attribute or are both required and declared with a `Nullable[<PropertyType>]`
+   type. Optional nullable value types can be omitted but don't accept explicit `null`. The adapter
+   returns camelCase property names and omits unset optional null properties unless they explicitly
+   allow null. Allowing a null array doesn't allow null array items, and allowing null doesn't
+   bypass validation sets for non-null values.
 
 ## Exit codes
 

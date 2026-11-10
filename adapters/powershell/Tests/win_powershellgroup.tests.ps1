@@ -378,8 +378,8 @@ resources:
   - name: Cred test
     type: PSClassResource/PSClassResource
     properties:
-      Name: Test
-      Credential:
+      name: Test
+      credential:
         UserName: 'MyUser'
         Password: 'MyPassword'
 '@
@@ -395,8 +395,8 @@ resources:
         - name: Service info
           type: PsDesiredStateConfiguration/Service
           properties:
-            Name: Spooler
-            Credential:
+            name: Spooler
+            credential:
               UserName: 'User'
               OtherProperty: 'Password'
 '@
@@ -473,16 +473,16 @@ $out | Should -BeNullOrEmpty
   }
 
   It 'Get works with class-based PS DSC resources' {
-    $out = dsc resource get -r PSClassResource/PSClassResource --input (@{Name = 'TestName' } | ConvertTo-Json) 2> "$testdrive/error.log" | ConvertFrom-Json
+    $out = dsc resource get -r PSClassResource/PSClassResource --input (@{name = 'TestName' } | ConvertTo-Json) 2> "$testdrive/error.log" | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path "$testdrive/error.log" -Raw | Out-String)
     $out.actualState.Name | Should -Be 'TestName'
     $out.actualState.Ensure | Should -Be 'Present'
     $propCount = $out.actualState | Get-Member -MemberType NoteProperty
-    $propCount.Count | Should -Be 3 -Because ($out | Out-String)
+    $propCount.Count | Should -Be 2 -Because ($out | Out-String)
   }
 
   It 'Set works with class-based PS DSC resources' {
-    $out = dsc resource set -r PSClassResource/PSClassResource --input (@{Name = 'TestName'; Credential = @{"UserName" = "MyUser"; "Password" = "MyPassword"} } | ConvertTo-Json) 2> "$testdrive/error.log" | ConvertFrom-Json
+    $out = dsc resource set -r PSClassResource/PSClassResource --input (@{name = 'TestName'; credential = @{"UserName" = "MyUser"; "Password" = "MyPassword"} } | ConvertTo-Json) 2> "$testdrive/error.log" | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path "$testdrive/error.log" -Raw | Out-String)
     $out.changedProperties.Count | Should -Be 0 -Because ($out | ConvertTo-Json -Depth 10 | Out-String)
   }
@@ -516,8 +516,8 @@ $out | Should -BeNullOrEmpty
               directives:
                 $directive$adapter
               properties:
-                Name: TestInstance
-                Credential:
+                name: TestInstance
+                credential:
                   UserName: 'MyUser'
                   Password: 'MyPassword'
 "@

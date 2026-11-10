@@ -52,7 +52,7 @@ Describe 'WindowsPowerShell adapter resource tests - requires elevated permissio
 
     $testFile = "$testdrive\test.txt"
     'test' | Set-Content -Path $testFile -Force
-    $r = '{"DestinationPath":"' + $testFile.replace('\', '\\') + '"}' | dsc resource get -r 'PSDesiredStateConfiguration/File' -f -
+    $r = '{"destinationPath":"' + $testFile.replace('\', '\\') + '"}' | dsc resource get -r 'PSDesiredStateConfiguration/File' -f -
     $LASTEXITCODE | Should -Be 0
     $res = $r | ConvertFrom-Json
     $res.actualState.DestinationPath | Should -Be "$testFile"
@@ -61,7 +61,7 @@ Describe 'WindowsPowerShell adapter resource tests - requires elevated permissio
   It 'Set works on Binary "File" resource' {
 
     $testFile = "$testdrive\test.txt"
-    $null = '{"DestinationPath":"' + $testFile.replace('\', '\\') + '", type: File, contents: HelloWorld, Ensure: present}' | dsc resource set -r 'PSDesiredStateConfiguration/File' -f -
+    $null = '{"destinationPath":"' + $testFile.replace('\', '\\') + '", type: File, contents: HelloWorld, ensure: present}' | dsc resource set -r 'PSDesiredStateConfiguration/File' -f -
     $LASTEXITCODE | Should -Be 0
     Get-Content -Raw -Path $testFile | Should -Be "HelloWorld"
   }
@@ -70,7 +70,7 @@ Describe 'WindowsPowerShell adapter resource tests - requires elevated permissio
 
     $testFile = "$testdrive\test.txt"
     'test' | Set-Content -Path $testFile -Force
-    $r = '{"GetScript": "@{result = $(Get-Content ' + $testFile.replace('\', '\\') + ')}", "SetScript": "throw", "TestScript": "throw"}' | dsc resource get -r 'PSDesiredStateConfiguration/Script' -f -
+    $r = '{"getScript": "@{result = $(Get-Content ' + $testFile.replace('\', '\\') + ')}", "setScript": "throw", "testScript": "throw"}' | dsc resource get -r 'PSDesiredStateConfiguration/Script' -f -
     $LASTEXITCODE | Should -Be 0
     $res = $r | ConvertFrom-Json
     $res.actualState.result | Should -Be 'test'
