@@ -168,7 +168,7 @@ resources:
   - name: TestPSRepository
     type: PSTestModule/TestPSRepository
     properties:
-      Name: NuGet
+      name: NuGet
     dependsOn:
       - "[resourceId('Microsoft.Windows/WindowsPowerShell', 'File')]"
       - "[resourceId('Microsoft.DSC/Assertion', 'File present')]"
@@ -177,7 +177,7 @@ resources:
     $filePath = "$testdrive\test.assertion.dsc.resource.yaml"
     $yaml | Set-Content -Path $filePath -Force
     dsc config test -f $filePath 2> "$TestDrive/error.txt"
-    $LASTEXITCODE | Should -Be 2
+    $LASTEXITCODE | Should -Be 2 -Because (Get-Content -Raw "$TestDrive/error.txt")
 
     $cache = Get-Content -Path $cacheFilePath_v5 -Raw | ConvertFrom-Json
     $cache.ResourceCache.Type | Should -Contain 'PSTestModule/TestPSRepository'

@@ -296,7 +296,15 @@ class TestNullableResource {
 
     It 'Produces usable Windows PowerShell schemas from live and cached metadata' -Skip:(!$IsWindows) {
         try {
-            $env:PSModulePath += [IO.Path]::PathSeparator + $PSScriptRoot
+            $windowsModuleRoot = Join-Path $TestDrive 'WindowsModules'
+            $windowsModulePath = Join-Path $windowsModuleRoot 'TestSchemaResource'
+            New-Item -Path $windowsModuleRoot -ItemType Directory | Out-Null
+            Copy-Item -Path $modulePath -Destination $windowsModulePath -Recurse
+            # Windows PowerShell's MOF parser cannot represent hyphenated property names.
+            $windowsModuleFile = Join-Path $windowsModulePath 'TestSchemaResource.psm1'
+            (Get-Content -Raw $windowsModuleFile).Replace('${Resource-Name}', '$ResourceName') |
+                Set-Content -Path $windowsModuleFile
+            $env:PSModulePath = $windowsModuleRoot + [IO.Path]::PathSeparator + $PSScriptRoot
             foreach ($iteration in 1..2) {
                 $windowsResources = & powershell -NoProfile -ExecutionPolicy Bypass -File $scriptPath -Operation List -ResourceType Single 2> (Join-Path $TestDrive 'windows-schema-error.log')
                 $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw (Join-Path $TestDrive 'windows-schema-error.log'))
