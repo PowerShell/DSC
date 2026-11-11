@@ -294,23 +294,26 @@ class TestNullableResource {
             Should -BeFalse
     }
 
-    It 'Produces usable Windows PowerShell schemas from live and cached metadata' -Skip:(!$IsWindows) {
+    It 'Produces usable platform-compatible schemas from live and cached metadata' {
         try {
             $windowsModuleRoot = Join-Path $TestDrive 'WindowsModules'
             $windowsModulePath = Join-Path $windowsModuleRoot 'TestSchemaResource'
             New-Item -Path $windowsModuleRoot -ItemType Directory | Out-Null
             Copy-Item -Path $modulePath -Destination $windowsModulePath -Recurse
-            # Windows PowerShell's MOF parser cannot represent hyphenated property names.
+            # The MOF parser rejects hyphenated names and nullable enums defined in the module.
             $windowsModuleFile = Join-Path $windowsModulePath 'TestSchemaResource.psm1'
-            (Get-Content -Raw $windowsModuleFile).Replace('${Resource-Name}', '$ResourceName') |
+            (Get-Content -Raw $windowsModuleFile).Replace('${Resource-Name}', '$ResourceName').
+                Replace('[Nullable[SchemaEnsure]]', '[SchemaEnsure]') |
                 Set-Content -Path $windowsModuleFile
             $env:PSModulePath = $windowsModuleRoot + [IO.Path]::PathSeparator + $PSScriptRoot
+            $executable = if ($IsWindows) { 'powershell' } else { 'pwsh' }
+            $expectedAdapter = if ($IsWindows) { 'Microsoft.Adapter/WindowsPowerShell' } else { 'Microsoft.Adapter/PowerShell' }
             foreach ($iteration in 1..2) {
-                $windowsResources = & powershell -NoProfile -ExecutionPolicy Bypass -File $scriptPath -Operation List -ResourceType Single 2> (Join-Path $TestDrive 'windows-schema-error.log')
+                $windowsResources = & $executable -NoProfile -ExecutionPolicy Bypass -File $scriptPath -Operation List -ResourceType Single 2> (Join-Path $TestDrive 'windows-schema-error.log')
                 $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw (Join-Path $TestDrive 'windows-schema-error.log'))
                 $windowsResource = $windowsResources | ConvertFrom-Json |
                     Where-Object -Property type -EQ 'TestSchemaResource/TestSchemaResource'
-                $windowsResource.requireAdapter | Should -BeExactly 'Microsoft.Adapter/WindowsPowerShell'
+                $windowsResource.requireAdapter | Should -BeExactly $expectedAdapter
                 $windowsResource.schema.properties.Count.type | Should -BeExactly 'integer'
                 $windowsResource.schema.properties.Names.items.type | Should -Contain 'string'
                 $windowsSchema = $windowsResource.schema | ConvertTo-Json -Depth 100
@@ -319,20 +322,25 @@ class TestNullableResource {
                 $windowsNullable = $windowsResources | ConvertFrom-Json |
                     Where-Object -Property type -EQ 'TestSchemaResource/TestNullableResource'
                 $windowsNullableSchema = $windowsNullable.schema | ConvertTo-Json -Depth 100
-                Test-Json -Json '{"name":"test","requiredCount":null,"requiredEnsure":null,"choice":null,"choices":null}' -Schema $windowsNullableSchema -ErrorAction Stop |
+                $windowsNullable.schema.properties.requiredEnsure.anyOf[0].enum | Should -Be @('Present', 'Absent')
+                Test-Json -Json '{"name":"test","requiredCount":null,"requiredEnsure":"Present","choice":null,"choices":null}' -Schema $windowsNullableSchema -ErrorAction Stop |
                     Should -BeTrue
-                Test-Json -Json '{"name":"test","requiredCount":1,"requiredEnsure":null,"enabled":null}' -Schema $windowsNullableSchema -ErrorAction Ignore |
+                Test-Json -Json '{"name":"test","requiredCount":1,"requiredEnsure":"Present","enabled":null}' -Schema $windowsNullableSchema -ErrorAction Ignore |
+                    Should -BeFalse
+                Test-Json -Json '{"name":"test","requiredCount":1,"requiredEnsure":null}' -Schema $windowsNullableSchema -ErrorAction Ignore |
                     Should -BeFalse
                 Test-Json -Json '{"name":"test","requiredValue":"value","count":"bad"}' -Schema $windowsSchema -ErrorAction Ignore |
                     Should -BeFalse
-                $scriptResource = $windowsResources | ConvertFrom-Json |
-                    Where-Object -Property type -EQ 'TestScriptBaseDSC/CredentialValidation'
-                $scriptResource.schema.properties.Credential.type | Should -Contain 'object'
-                $scriptSchema = $scriptResource.schema | ConvertTo-Json -Depth 100
-                Test-Json -Json '{"name":"test","credential":{"username":"user","password":"secret"}}' -Schema $scriptSchema -ErrorAction Stop |
-                    Should -BeTrue
-                Test-Json -Json '{"name":"test"}' -Schema $scriptSchema -ErrorAction Ignore |
-                    Should -BeFalse
+                if ($IsWindows) {
+                    $scriptResource = $windowsResources | ConvertFrom-Json |
+                        Where-Object -Property type -EQ 'TestScriptBaseDSC/CredentialValidation'
+                    $scriptResource.schema.properties.Credential.type | Should -Contain 'object'
+                    $scriptSchema = $scriptResource.schema | ConvertTo-Json -Depth 100
+                    Test-Json -Json '{"name":"test","credential":{"username":"user","password":"secret"}}' -Schema $scriptSchema -ErrorAction Stop |
+                        Should -BeTrue
+                    Test-Json -Json '{"name":"test"}' -Schema $scriptSchema -ErrorAction Ignore |
+                        Should -BeFalse
+                }
             }
         } finally {
             $env:PSModulePath = $TestDrive
