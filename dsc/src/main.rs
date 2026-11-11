@@ -15,7 +15,6 @@ use crate::util::get_input;
 
 #[cfg(debug_assertions)]
 use crossterm::event;
-#[cfg(debug_assertions)]
 use std::env;
 
 pub mod args;
