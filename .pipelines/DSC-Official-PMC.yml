@@ -21,6 +21,8 @@ variables:
     value: ${{ parameters.PublishToPMC }}
   - name: RustVersion
     value: ms-prod-1.97.1
+  - name: WindowsContainerImage
+    value: 'onebranch.azurecr.io/windows/ltsc2022/vse2022:latest'
   - name: LinuxContainerImage
     value: 'onebranch.azurecr.io/linux/ubuntu-2204:latest'
   - name: RepoRoot
@@ -40,6 +42,9 @@ extends:
   template: v2/OneBranch.Official.CrossPlat.yml@onebranchTemplates
   parameters:
     featureFlags:
+      WindowsHostVersion:
+        Version: 2022
+        Network: Netlock
       linuxEsrpSigning: true
     customTags: 'ES365AIMigrationTooling'
     globalSdl:
@@ -194,7 +199,7 @@ extends:
       - job: PrepareAndPublishToPMC
         displayName: Prepare EV2 artifacts for PMC publishing
         pool:
-          type: linux
+          type: Windows
         templateContext:
           inputs:
             - input: pipelineArtifact
@@ -244,7 +249,6 @@ extends:
 
         - task: PipAuthenticate@1
           inputs:
-            # artifactFeeds: 'One/DSC-Compute-PMC'
             artifactFeeds: 'One/azsecpack-pmc-cli'
           displayName: 'Pip Authenticate'
           env:
