@@ -48,19 +48,20 @@ Describe 'Registry list get tests' {
         $out.results.result[0].actualState.registryEntries[3]._exist | Should -BeFalse
     }
 
-    It 'Can get ACLs in a registry list' -Skip:(!$IsWindows) {
+    It 'Can get access control lists in a registry list' -Skip:(!$IsWindows) {
         $json = @{
             registryEntries = @(
                 @{
                     keyPath = 'HKCU\1\AclListGet'
-                    acl = 'D:'
+                    accessControlList = @{ discretionary = @() }
                 }
             )
-        } | ConvertTo-Json -Depth 5 -Compress
+        } | ConvertTo-Json -Depth 10 -Compress
 
         $result = registry config get --list --input $json 2>$TestDrive/error.log | ConvertFrom-Json
 
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw)
-        $result.registryEntries[0].acl | Should -Match '^D:'
+        $result.registryEntries[0].accessControlList.discretionary.Count | Should -BeGreaterThan 0
+        $result.registryEntries[0].accessControlList.discretionary[0].principal | Should -Match '^S-1-'
     }
 }

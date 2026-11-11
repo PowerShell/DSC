@@ -55,26 +55,42 @@ Describe 'Registry list set tests' -Skip:(!$IsWindows) {
         (Get-ItemProperty -Path 'HKCU:\1\2\6' -Name 'Hello4' -ErrorAction Ignore).Hello4 | Should -BeNullOrEmpty
     }
 
-    It 'Can set ACLs in a registry list' -Skip:(!$IsWindows) {
+    It 'Can set access control lists in a registry list' -Skip:(!$IsWindows) {
         New-Item -Path 'HKCU:\1\AclListSet' -Force | Out-Null
-        $registryAcl = Get-Acl -Path 'HKCU:\1\AclListSet'
-        $registryAcl.SetAccessRuleProtection($true, $true)
-        $desiredAcl = $registryAcl.GetSecurityDescriptorSddlForm(
-            [System.Security.AccessControl.AccessControlSections]::Access)
         $json = @{
             registryEntries = @(
                 @{
                     keyPath = 'HKCU\1\AclListSet'
-                    acl = $desiredAcl
+                    accessControlList = @{
+                        discretionary          = @(
+                            @{
+                                principal  = $env:USERNAME
+                                type       = 'allow'
+                                accessMask = @('fullControl')
+                            }
+                        )
+                        discretionaryProtected = $true
+                    }
                 }
             )
-        } | ConvertTo-Json -Depth 5 -Compress
+        } | ConvertTo-Json -Depth 10 -Compress
 
         registry config set --list --input $json 2>$TestDrive/error.log
 
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw)
-        (Get-Acl -Path 'HKCU:\1\AclListSet').AreAccessRulesProtected | Should -BeTrue
-        $result = registry config get --list --input $json 2>$TestDrive/error.log | ConvertFrom-Json
-        $result.registryEntries[0].acl | Should -BeExactly $desiredAcl
+
+        $getJson = @{
+            registryEntries = @(
+                @{
+                    keyPath = 'HKCU\1\AclListSet'
+                    accessControlList = @{ discretionary = @() }
+                }
+            )
+        } | ConvertTo-Json -Depth 10 -Compress
+        $result = registry config get --list --input $getJson 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw)
+        $result.registryEntries[0].accessControlList.discretionaryProtected | Should -BeTrue
+        $result.registryEntries[0].accessControlList.discretionary.Count | Should -Be 1
+        $result.registryEntries[0].accessControlList.discretionary[0].accessMask | Should -Contain 'fullControl'
     }
 }

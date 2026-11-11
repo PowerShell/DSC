@@ -84,7 +84,7 @@ fn main() -> ExitCode {
             match subcommand {
                 ConfigSubCommand::Get{input, list} => {
                     trace!("Get input: {input}");
-                    let mut output = RegistryList { registry_entries: vec![], registry_file_path: None };
+                    let mut output = RegistryList { registry_entries: vec![], registry_file_path: None, in_desired_state: None };
                     let Ok(reg_list) = import_input(&input, list) else {
                         return ExitCode::from(EXIT_INVALID_INPUT);
                     };
@@ -118,7 +118,7 @@ fn main() -> ExitCode {
                 },
                 ConfigSubCommand::Set{input, list, what_if} => {
                     trace!("Set input: {input}, what_if: {what_if}");
-                    let mut output = RegistryList { registry_entries: vec![], registry_file_path: None };
+                    let mut output = RegistryList { registry_entries: vec![], registry_file_path: None, in_desired_state: None };
                     let Ok(reg_list) = import_input(&input, list) else {
                         return ExitCode::from(EXIT_INVALID_INPUT);
                     };
@@ -177,6 +177,47 @@ fn main() -> ExitCode {
                         let json = serde_json::to_string(&output).unwrap();
                         println!("{json}");
                     }
+                    return ExitCode::from(EXIT_SUCCESS);
+                },
+                ConfigSubCommand::Test{input, list} => {
+                    trace!("Test input: {input}");
+                    let mut output = RegistryList {
+                        registry_entries: vec![],
+                        registry_file_path: None,
+                        in_desired_state: Some(true),
+                    };
+                    let Ok(reg_list) = import_input(&input, list) else {
+                        return ExitCode::from(EXIT_INVALID_INPUT);
+                    };
+                    for reg in reg_list.registry_entries {
+                        let reg_helper = match RegistryHelper::new_from_registry(&reg) {
+                            Ok(helper) => helper,
+                            Err(err) => {
+                                error!("{err}");
+                                return ExitCode::from(EXIT_INVALID_INPUT);
+                            }
+                        };
+                        match reg_helper.test() {
+                            Ok(reg_result) => {
+                                if reg_result.in_desired_state == Some(false) {
+                                    output.in_desired_state = Some(false);
+                                }
+                                if list {
+                                    output.registry_entries.push(reg_result);
+                                } else {
+                                    let json = serde_json::to_string(&reg_result).unwrap();
+                                    println!("{json}");
+                                    return ExitCode::from(EXIT_SUCCESS);
+                                }
+                            },
+                            Err(err) => {
+                                error!("{err}");
+                                return ExitCode::from(EXIT_REGISTRY_ERROR);
+                            }
+                        }
+                    }
+                    let json = serde_json::to_string(&output).unwrap();
+                    println!("{json}");
                     return ExitCode::from(EXIT_SUCCESS);
                 },
                 ConfigSubCommand::Delete{input, what_if} => {
@@ -238,7 +279,7 @@ fn import_input(input: &str, list: bool) -> Result<RegistryList, ExitCode> {
         }
     } else {
         match serde_json::from_str::<Registry>(input) {
-            Ok(reg) => Ok(RegistryList { registry_entries: vec![reg], registry_file_path: None }),
+            Ok(reg) => Ok(RegistryList { registry_entries: vec![reg], registry_file_path: None, in_desired_state: None }),
             Err(err) => {
                 error!("{err}");
                 Err(ExitCode::from(EXIT_INVALID_INPUT))
