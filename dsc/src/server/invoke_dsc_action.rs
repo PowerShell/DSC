@@ -3,7 +3,7 @@
 
 use crate::server::mcp_server::McpServer;
 use dsc_lib::{
-    DscManager, configure::config_doc::ExecutionKind,
+    DscManager, configure::{config_doc::ExecutionKind, context::Context},
     discovery::{
         discovery_trait::DiscoveryFilter,
         ResourceKind,
@@ -62,7 +62,9 @@ description = "Invoke a DSC action with specified properties in JSON format. Set
                 Some(json) => json,
                 None => "".to_string(),
             };
-            match resource.invoke(&input, &execution_kind) {
+            let mut context = Context::new();
+            context.execution_type = execution_kind;
+            match resource.invoke(&input, &context) {
                 Ok(result) => Ok(result),
                 Err(e) => Err(McpError::internal_error(e.to_string(), None)),
             }

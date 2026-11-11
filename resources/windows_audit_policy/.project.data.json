@@ -1,0 +1,14 @@
+{
+    "Name": "windows_audit_policy",
+    "Kind": "Resource",
+    "IsRust": true,
+    "SupportedPlatformOS": "Windows",
+    "Binaries": [
+        "windows_audit_policy"
+    ],
+    "CopyFiles": {
+        "Windows": [
+            "windows_audit_policy.dsc.manifests.json"
+        ]
+    }
+}

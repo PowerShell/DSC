@@ -1126,17 +1126,19 @@ resources:
         $response = Send-McpRequest -request $mcpRequest
         $response.id | Should -Be 25
         $response.result.isError | Should -Be $false
-        $response.result.structuredContent.actions.count | Should -Be 2
-        $response.result.structuredContent.actions[0].type | Should -BeExactly 'Test/Action2'
-        $response.result.structuredContent.actions[0].inputSchema | Should -BeNullOrEmpty
-        $response.result.structuredContent.actions[0].outputSchema | Should -BeNullOrEmpty
-        $response.result.structuredContent.actions[0].requireSecurityContext | Should -BeNullOrEmpty
-        $response.result.structuredContent.actions[0].description | Should -BeExactly 'An action for testing.'
-        $response.result.structuredContent.actions[1].type | Should -BeExactly 'Test/Action'
-        $response.result.structuredContent.actions[1].inputSchema | Should -Not -BeNullOrEmpty
-        $response.result.structuredContent.actions[1].outputSchema | Should -Not -BeNullOrEmpty
-        $response.result.structuredContent.actions[1].description | Should -BeExactly 'An action for testing.'
-        $response.result.structuredContent.actions[1].requireSecurityContext | Should -BeExactly 'current'
+        $response.result.structuredContent.actions.type | Should -Contain 'Microsoft.System.Action/TerminateProcess'
+        $actions = @($response.result.structuredContent.actions | Where-Object type -Like 'Test/*')
+        $actions.Count | Should -Be 2
+        $actions[0].type | Should -BeExactly 'Test/Action2'
+        $actions[0].inputSchema | Should -BeNullOrEmpty
+        $actions[0].outputSchema | Should -BeNullOrEmpty
+        $actions[0].requireSecurityContext | Should -BeNullOrEmpty
+        $actions[0].description | Should -BeExactly 'An action for testing.'
+        $actions[1].type | Should -BeExactly 'Test/Action'
+        $actions[1].inputSchema | Should -Not -BeNullOrEmpty
+        $actions[1].outputSchema | Should -Not -BeNullOrEmpty
+        $actions[1].description | Should -BeExactly 'An action for testing.'
+        $actions[1].requireSecurityContext | Should -BeExactly 'current'
     }
 
     It 'Calling invoke_dsc_action works' {

@@ -6,30 +6,11 @@ use rust_i18n::t;
 use serde_json::Value;
 use std::{
     fs,
-    fs::{canonicalize, File},
-    io::BufReader,
+    fs::canonicalize,
     path::{Path, PathBuf},
     env,
 };
-use tracing::{debug, warn};
 use which::which;
-use dsc_lib_path_security::{PathSecurityScope, validate_path};
-
-pub const DSC_IGNORE_SETTINGS_FILE: &str = "DSC_IGNORE_SETTINGS_FILE";
-
-pub struct DscSettingValue {
-    pub setting:  Value,
-    pub policy: Value,
-}
-
-impl Default for DscSettingValue {
-    fn default() -> DscSettingValue {
-        DscSettingValue {
-            setting: Value::Null,
-            policy: Value::Null,
-        }
-    }
-}
 
 /// Return JSON string whether the input is JSON or YAML
 ///
@@ -112,94 +93,6 @@ mod tests {
     }
 }
 
-/// Will search setting files for the specified setting.
-/// Performance implication: Use this function economically as every call opens/reads several config files.
-/// TODO: cache the config
-///
-/// # Arguments
-///
-/// * `value_name` - The name of the setting.
-///
-/// # Errors
-///
-/// Will return `Err` if could not find requested setting.
-pub fn get_setting(value_name: &str) -> Result<DscSettingValue, DscError> {
-
-    const SETTINGS_FILE_NAME: &str = "dsc.settings.json";
-    // Note that default settings file has root nodes as settings schema version that is specific to this version of dsc
-    const DEFAULT_SETTINGS_FILE_NAME: &str = "dsc_default.settings.json";
-    const DEFAULT_SETTINGS_SCHEMA_VERSION: &str = "1";
-
-    let mut result: DscSettingValue = DscSettingValue::default();
-    let mut settings_file_path : PathBuf;
-
-    if env::var(DSC_IGNORE_SETTINGS_FILE).is_ok() {
-        warn!("{}", t!("util.ignoreSettingsFile"));
-        return Ok(result);
-    }
-
-    if let Some(exe_home) = get_exe_path()?.parent() {
-        // First, get setting from the default settings file
-        settings_file_path = exe_home.join(DEFAULT_SETTINGS_FILE_NAME);
-        if let Ok(v) = load_value_from_json(&settings_file_path, DEFAULT_SETTINGS_SCHEMA_VERSION) {
-            if let Some(n) = v.get(value_name) {
-                result.setting = n.clone();
-                debug!("{}", t!("util.foundSetting", name = value_name, path = settings_file_path.to_string_lossy()));
-            }
-        } else {
-            debug!("{}", t!("util.notFoundSetting", name = value_name, path = settings_file_path.to_string_lossy()));
-        }
-
-        // Second, get setting from the active settings file overwriting previous value
-        settings_file_path = exe_home.join(SETTINGS_FILE_NAME);
-        if let Ok(v) = load_value_from_json(&settings_file_path, value_name) {
-            result.setting = v;
-            debug!("{}", t!("util.foundSetting", name = value_name, path = settings_file_path.to_string_lossy()));
-        } else {
-            debug!("{}", t!("util.notFoundSetting", name = value_name, path = settings_file_path.to_string_lossy()));
-        }
-    } else {
-        debug!("{}", t!("util.failedToGetExePath"));
-    }
-
-    // Third, get setting from the policy
-    if let Some(settings_file_path) = get_settings_policy_file_path() {
-        if let Ok(v) = load_value_from_json(&settings_file_path, value_name) {
-            result.policy = v;
-            debug!("{}", t!("util.foundSetting", name = value_name, path = settings_file_path.to_string_lossy()));
-        } else {
-            debug!("{}", t!("util.notFoundSetting", name = value_name, path = settings_file_path.to_string_lossy()));
-        }
-    }
-
-    if (result.setting == serde_json::Value::Null) && (result.policy == serde_json::Value::Null) {
-        return Err(DscError::NotSupported(t!("util.settingNotFound", name = value_name).to_string()));
-    }
-
-    Ok(result)
-}
-
-fn load_value_from_json(path: &PathBuf, value_name: &str) -> Result<serde_json::Value, DscError> {
-    let file = File::open(path)?;
-    let reader = BufReader::new(file);
-    let root: serde_json::Value = match serde_json::from_reader(reader) {
-        Ok(j) => j,
-        Err(err) => {
-            return Err(DscError::Json(err));
-        }
-    };
-
-    if let Some(r) = root.as_object() {
-        for (key, value) in r {
-            if *key == value_name {
-                return Ok(value.clone())
-            }
-        }
-    }
-
-    Err(DscError::NotSupported(value_name.to_string()))
-}
-
 /// Gets path to the current dsc process.
 /// If dsc is started using a symlink, this functon returns target of the symlink.
 ///
@@ -216,48 +109,6 @@ pub fn get_exe_path() -> Result<PathBuf, DscError> {
     }
 
     Err(DscError::NotSupported(t!("util.failedToGetExePath").to_string()))
-}
-
-#[cfg(target_os = "windows")]
-fn get_settings_policy_file_path() -> Option<PathBuf>
-{
-    // $env:ProgramData+"\dsc\dsc.settings.json"
-    let Ok(local_program_data_path) = std::env::var("ProgramData") else { return None; };
-    let dsc_folder = Path::new(&local_program_data_path).join("dsc");
-    let settings_path = dsc_folder.join("dsc.settings.json").display().to_string();
-
-    if !dsc_folder.exists() {
-        return Some(PathBuf::from(settings_path));
-    }
-
-    if let Err(reason) = validate_path(&dsc_folder, PathSecurityScope::Machine) {
-        let required = t!("util.policyFolderNotSecureWindows", path = dsc_folder.display());
-        warn!("{}", t!("util.policyFolderNotSecure", path = dsc_folder.display(), reason = reason, required = required));
-        return None;
-    }
-
-    Some(PathBuf::from(settings_path))
-}
-
-#[cfg(not(target_os = "windows"))]
-fn get_settings_policy_file_path() -> Option<PathBuf>
-{
-    // "/etc/dsc/dsc.settings.json"
-    // This location is writable only by root, but readable by all users
-    let dsc_folder = Path::new("/etc").join("dsc");
-    let settings_path = dsc_folder.join("dsc.settings.json");
-
-    if !dsc_folder.exists() {
-        return Some(settings_path);
-    }
-
-    if let Err(reason) = validate_path(&dsc_folder, PathSecurityScope::Machine) {
-        let required = t!("util.policyFolderNotSecureLinux");
-        warn!("{}", t!("util.policyFolderNotSecure", path = dsc_folder.display(), reason = reason, required = required));
-        return None;
-    }
-
-    Some(settings_path)
 }
 
 /// Generates a resource ID from the specified type and name.
@@ -284,16 +135,78 @@ pub fn canonicalize_which(executable: &str, cwd: Option<&Path>) -> Result<String
     if cfg!(target_os = "windows") && executable_path.extension().is_none() {
         executable_path.set_extension("exe");
     }
-    if which(executable).is_err() {
-        if let Some(cwd_path) = cwd {
-            if let Ok(canonical_path) = canonicalize(cwd_path.join(&executable_path)) {
-                return Ok(canonical_path.to_string_lossy().to_string());
-            }
-            return Err(DscError::CommandOperation(t!("util.executableNotFoundInWorkingDirectory", executable = &executable, cwd = cwd_path.display()).to_string(), executable_path.to_string_lossy().to_string()));
-        }
-        return Err(DscError::CommandOperation(t!("util.executableNotFound", executable = &executable).to_string(), executable.to_string()));
+    if let Ok(bin_path) = which(executable) {
+        return Ok(bin_path.to_string_lossy().to_string());
     }
-    Ok(executable.to_string())
+
+    if let Some(cwd_path) = cwd {
+        if let Ok(mut canonical_path) = canonicalize(cwd_path.join(&executable_path)).map(|p| p.to_string_lossy().to_string()) {
+            if cfg!(target_os = "windows") {
+                // For comparing to configured resource directories, we need to
+                // strip the `\\?\` prefix and revert UNC paths to their normal
+                // representation.
+                canonical_path = canonical_path
+                    .replace(r"\\?\UNC\", r"\\")
+                    .trim_start_matches(r"\\?\")
+                    .to_string();
+            }
+            return Ok(canonical_path);
+        }
+        return Err(DscError::CommandOperation(t!(
+            "util.executableNotFoundInWorkingDirectory",
+            executable = &executable,
+            cwd = cwd_path.display()).to_string(),
+            executable_path.to_string_lossy().to_string()
+        ));
+    }
+
+    Err(DscError::CommandOperation(
+        t!("util.executableNotFound", executable = &executable).to_string(),
+        executable.to_string()
+    ))
+}
+
+pub(crate)fn is_secure_value(value: &Value) -> bool {
+    if let Some(obj) = value.as_object() && obj.len() == 1
+        && (obj.contains_key("secureString") || obj.contains_key("secureObject")) {
+        return true;
+    }
+
+    false
+}
+
+/// Check if a given JSON contains a secure value (either `secureString` or `secureObject`).
+///
+/// # Arguments
+///
+/// * `value` - The JSON value to check.
+///
+/// # Returns
+///
+/// `true` if the value is a secure value, `false` otherwise.
+#[must_use]
+pub(crate) fn contains_secure_value(value: &Value) -> bool {
+    if let Some(obj) = value.as_object() {
+        for (p, v) in obj {
+            if p == "secureString" || p == "secureObject" {
+                return true;
+            }
+
+            if contains_secure_value(v) {
+                return true;
+            }
+        }
+    }
+
+    if let Some(array) = value.as_array() {
+        for v in array {
+            if contains_secure_value(v) {
+                return true;
+            }
+        }
+    }
+
+    false
 }
 
 #[macro_export]

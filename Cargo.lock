@@ -588,9 +588,11 @@ name = "csp"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "is_elevated",
  "rust-i18n",
  "serde",
  "serde_json",
+ "test-case",
  "windows 0.62.2",
  "wmi",
 ]
@@ -1024,6 +1026,8 @@ dependencies = [
 name = "dsc-resource-process"
 version = "0.1.0"
 dependencies = [
+ "regex",
+ "rust-i18n",
  "serde",
  "serde_json",
  "sysinfo",
@@ -4522,6 +4526,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09ec2a7bb152e2252b53fa7803150007879548bc709c039df7627cabbd05d469"
 
 [[package]]
+name = "windows_audit_policy"
+version = "0.1.0"
+dependencies = [
+ "dsc-lib-registry",
+ "dsc-lib-security_context",
+ "rust-i18n",
+ "serde",
+ "serde_json",
+ "windows 0.62.2",
+]
+
+[[package]]
 name = "windows_firewall"
 version = "0.3.0"
 dependencies = [
@@ -4548,6 +4564,17 @@ name = "windows_i686_msvc"
 version = "0.52.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "240948bc05c5e7c6dabba28bf89d89ffce3e303022809e73deaefe4f6ec56c66"
+
+[[package]]
+name = "windows_security_policy"
+version = "0.1.0"
+dependencies = [
+ "dsc-lib-security_context",
+ "rust-i18n",
+ "serde",
+ "serde_json",
+ "windows 0.62.2",
+]
 
 [[package]]
 name = "windows_service"
