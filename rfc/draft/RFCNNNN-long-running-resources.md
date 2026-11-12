@@ -4,7 +4,7 @@ Author:       @SteveL-MSFT
 Sponsor:      null    # <@GitHubUserName>
 Status:       Draft   # <Draft | Experimental | Accepted | Final>
 SupercededBy: null    # <Superceding RFC Number>
-Version:      1.2     # <Major>.<Minor>
+Version:      1.3     # <Major>.<Minor>
 Area:         Resources
 CommentsDue:  December 10, 2026
 ---
@@ -266,30 +266,37 @@ specification.
 - The engine starts the process with `jsonrpc.executable` and `jsonrpc.args`, with the working
   directory set to the manifest directory, and the same environment it passes to resources today
   (`DSC_CONFIG_ROOT`, `DSC_TRACE_LEVEL`, `DSC_TRACE_FORMAT`, ...).
-- Messages flow over stdin (engine to resource) and stdout (resource to engine).
+- Messages flow over stdin (engine to resource) and stdout (resource to engine). Resource stdout
+  carries responses and the tracing/progress notifications defined below.
 - Framing is newline delimited JSON: each message is a single JSON object serialized on one line
   and terminated by `\n`. Receivers also accept `\r\n`. Messages must not contain unescaped
   newlines. Both peers must flush each message after writing it; they cannot wait for EOF.
+  Resource writers must serialize access to stdout so notifications from background work cannot
+  interleave bytes with another notification or the final response.
 - stdout is reserved for protocol messages. Any line on stdout that is not a valid JSON-RPC 2.0
-  response permitted by this profile is a protocol error: the engine logs a diagnostic, terminates
-  the process, and fails the current resource instance. Diagnostics must not expose unredacted
-  resource properties or raw stdout that may contain secrets.
+  response or notification permitted by this profile is a protocol error: the engine logs a
+  diagnostic, terminates the process, and fails the current resource instance. Diagnostics must
+  not expose unredacted resource properties or raw stdout that may contain secrets.
 - stderr keeps today's contract: structured trace lines (`{"level": "...", "fields": {"message":
   ...}}`) or the simple `{"error"|"warn"|"info"|"debug"|"trace": "..."}` objects are logged by the
   engine as they arrive, attributed to the process id. Resources must not use stderr for results.
 - Only JSON-RPC 2.0 is supported, so every message carries `"jsonrpc": "2.0"`.
 - The engine assigns a unique positive integer `id` to each request for the lifetime of the
-  process. The resource must return that same `id`, with exactly one of `result` or `error`.
+  process. The resource's response must return that same `id`, with exactly one of `result` or `error`.
   A missing, mismatched, or duplicate response id is a protocol error. JSON-RPC parse/invalid-request
   error responses may use `id: null`; receiving one fails the outstanding call.
-- The engine sends only named parameters (an object), not positional parameters. Batches,
-  resource-originated requests, and resource-originated notifications are outside this profile.
-  The engine never sends batches; unsolicited stdout messages fail the call. Logs use stderr.
+- The engine sends only named parameters (an object), not positional parameters. Batches and
+  resource-originated requests requiring a response are outside this profile. The engine never
+  sends batches. Resources may send only the `dsc_trace` and `dsc_progress` notifications defined
+  below, and only during an outstanding `dsc_invoke`. Other unsolicited stdout messages fail the
+  call; the engine must not respond to notifications, including unsupported ones.
   The only engine notification in this version is `exit`, to which the resource must not reply.
 - The engine sends requests strictly sequentially for a given process: it does not send a new
   request until the previous response has been received. Resources may therefore be implemented
   as a simple read, handle, write loop. Concurrent requests are outside protocol version 1;
-  additional processes would be required for concurrent execution.
+  additional processes would be required for concurrent execution. While waiting for a response,
+  the engine continuously reads stdout and stderr and dispatches notifications without completing
+  the outstanding request. Notifications do not require concurrent invocation support.
 
 #### Lifecycle
 
@@ -299,6 +306,7 @@ engine                                resource
   │  initialize (request) ─────────────► │
   │  ◄───────────────────── initialize result
   │  dsc_invoke (request) ─────────────► │   repeated 0..n times
+  │  ◄───────────────────── dsc_trace / dsc_progress (notifications, optional 0..n)
   │  ◄───────────────────── result / error
   │  shutdown (request) ───────────────► │
   │  ◄───────────────────── shutdown result
@@ -427,7 +435,60 @@ meaning. A shape or schema validation failure fails the operation.
 ```
 
 If the effective `requestTimeoutMS` is nonzero and no complete response arrives in time, the engine
-terminates the process and fails the resource instance. Stderr activity does not reset this timeout.
+terminates the process and fails the resource instance. Neither stderr activity nor tracing/progress
+notifications reset this timeout.
+
+#### Tracing and progress notifications
+
+While a `dsc_invoke` request is executing, a resource may emit `dsc_trace` and `dsc_progress`
+notifications on stdout. These are DSC-defined methods using the JSON-RPC 2.0 notification
+mechanism, not partial responses or additional invocations. They have no top-level `id`, `result`,
+or `error`, and the engine must not acknowledge them.
+
+Both methods require an object `params` with `requestId` equal to the outstanding `dsc_invoke`
+request's integer id. This is application-level correlation data, not a notification request id.
+The engine attributes the event to that invocation's instance and process. Notifications must be
+written before the final response; a missing or mismatched `requestId`, an invalid payload, or a
+notification outside an outstanding invocation is a protocol error under this DSC profile.
+Tracing during initialization, shutdown, or idle time continues to use stderr.
+
+| Method | Additional parameters | Meaning |
+| ------ | --------------------- | ------- |
+| `dsc_trace` | Required `level`: one of `error`, `warn`, `info`, `debug`, `trace`; required `message`: string. | A trace event, subject to the engine's configured trace-level filtering. |
+| `dsc_progress` | Required `message`: string; optional `completed`: finite nonnegative number; optional `total`: finite positive number. | Progress for the outstanding invocation, not the overall configuration. |
+
+If `total` is present, `completed` must also be present and satisfy `0 <= completed <= total`.
+The units are resource-defined but must be consistent within an invocation. Omit `total` when the
+amount of work is unknown; `completed` may also be omitted for an indeterminate activity message.
+When reporting numeric progress, keep `completed` nondecreasing and a reported `total` stable for
+that invocation. A final response ends the activity; reaching `total` does not complete the request.
+
+For example, after DSC sends this invocation:
+
+```json
+{"jsonrpc":"2.0","id":2,"method":"dsc_invoke","params":{"operation":"set","executionType":"actual","resourceType":"Contoso/Package","properties":{"name":"Example","installed":true},"context":{"targetResource":null}}}
+```
+
+The resource can write these separate, newline-terminated stdout messages over time, assuming its
+set operation declares `return: state`:
+
+```json
+{"jsonrpc":"2.0","method":"dsc_trace","params":{"requestId":2,"level":"info","message":"Downloading package"}}
+{"jsonrpc":"2.0","method":"dsc_progress","params":{"requestId":2,"message":"Downloading package","completed":40,"total":100}}
+{"jsonrpc":"2.0","id":2,"result":{"name":"Example","installed":true}}
+```
+
+The engine forwards progress through its progress-reporting path and traces through its logging
+path, applying existing secret-redaction rules. Resources must not include secrets in either
+payload. Notifications are optional and informational: they do not alter operation results or
+enter the resource state/CLI result envelope. In particular, an `error`-level trace is not a failed
+operation, and progress is not a heartbeat that extends the request deadline. Exactly one final
+response, containing `result` or `error`, determines the invocation outcome.
+
+Existing stderr tracing remains supported and is drained while the invocation runs. Resource
+authors should use either stderr or `dsc_trace` for a given trace event, not both, to avoid duplicate
+logs. Resources should rate-limit notifications so progress reporting does not overwhelm the engine
+or delay the final response.
 
 #### Errors
 
