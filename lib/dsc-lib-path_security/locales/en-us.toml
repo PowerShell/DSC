@@ -9,4 +9,13 @@ untrustedOwner = "'%{path}' is owned by untrusted principal '%{principal}'"
 unsupportedFileType = "'%{path}' is not a file or a folder"
 missingOwner = "The security descriptor has no owner"
 noParentFolder = "The path has no containing folder"
+tooManyLinks = "The path goes through more than %{limit} links"
+linkTargetMismatch = "Following the links in the path ends at '%{resolved}', but the operating system resolves the path to a different file or folder"
 win32 = "%{operation} failed with error code %{code}"
+
+[principal]
+root = "root (uid %{uid})"
+user = "uid %{uid}"
+group = "group %{gid}"
+otherUsers = "other users"
+aceType = "ACE type %{ace_type}"

@@ -20,7 +20,8 @@ fn effective_uid() -> u32 {
 
 /// Reads the owner and mode bits of a path into a security model.
 ///
-/// Symbolic links are followed, so the model describes the link target.
+/// A symbolic link at the end of the path is not followed, which matches the Windows
+/// implementation. The caller resolves links before reading the object they point to.
 ///
 /// # Arguments
 ///
@@ -31,7 +32,7 @@ fn effective_uid() -> u32 {
 /// Returns [`PathSecurityError::PathNotFound`] when the path does not exist and
 /// [`PathSecurityError::SecurityInfoRead`] when the metadata cannot be read.
 fn read_security_model(path: &Path) -> Result<SecurityModel, PathSecurityError> {
-    let metadata = std::fs::metadata(path).map_err(|error| io_error(path, &error))?;
+    let metadata = std::fs::symlink_metadata(path).map_err(|error| io_error(path, &error))?;
     Ok(model::unix::model_from_mode(
         path,
         metadata.uid(),
@@ -42,6 +43,9 @@ fn read_security_model(path: &Path) -> Result<SecurityModel, PathSecurityError> 
 }
 
 /// Validates one existing file or folder without looking at its containing folder.
+///
+/// A symbolic link at the end of the path is not followed. The caller resolves links before
+/// validating the object they point to.
 ///
 /// # Arguments
 ///
@@ -60,7 +64,7 @@ pub(crate) fn validate_object(path: &Path, scope: PathSecurityScope) -> Result<(
 #[cfg(test)]
 mod tests {
     use std::fs::{self, Permissions};
-    use std::os::unix::fs::PermissionsExt;
+    use std::os::unix::fs::{PermissionsExt, symlink};
 
     use tempfile::TempDir;
 
@@ -180,16 +184,89 @@ mod tests {
         set_mode(&target, 0o644);
         set_mode(target_dir.path(), 0o707);
         let link = link_dir.path().join("policy.json");
-        std::os::unix::fs::symlink(&target, &link).expect("create symlink");
+        symlink(&target, &link).expect("create symlink");
 
-        let canonical_target_dir = fs::canonicalize(target_dir.path()).expect("canonical target dir");
         assert_eq!(
             validate_path(&link, PathSecurityScope::User),
             Err(PathSecurityError::UntrustedWriter {
-                path: path_of(&canonical_target_dir),
+                path: path_of(target_dir.path()),
                 principal: "other users".into(),
             })
         );
+    }
+
+    #[test]
+    fn intermediate_symbolic_link_validates_its_folder() {
+        let link_dir = TempDir::new().expect("temp dir for link");
+        let hop_dir = TempDir::new().expect("temp dir for hop");
+        let target_dir = TempDir::new().expect("temp dir for target");
+        let target = target_dir.path().join("policy.json");
+        fs::write(&target, b"{}").expect("write file");
+        set_mode(&target, 0o644);
+        let hop = hop_dir.path().join("hop.json");
+        symlink(&target, &hop).expect("create hop symlink");
+        let link = link_dir.path().join("policy.json");
+        symlink(&hop, &link).expect("create symlink");
+        set_mode(hop_dir.path(), 0o707);
+
+        assert_eq!(
+            validate_path(&link, PathSecurityScope::User),
+            Err(PathSecurityError::UntrustedWriter {
+                path: path_of(hop_dir.path()),
+                principal: "other users".into(),
+            })
+        );
+    }
+
+    #[test]
+    fn chain_of_secure_symbolic_links_is_secure() {
+        let link_dir = TempDir::new().expect("temp dir for link");
+        let target_dir = TempDir::new().expect("temp dir for target");
+        let target = target_dir.path().join("policy.json");
+        fs::write(&target, b"{}").expect("write file");
+        set_mode(&target, 0o644);
+        // A relative link in a subfolder of the target folder and an absolute link in another
+        // folder.
+        let sub_dir = target_dir.path().join("sub");
+        fs::create_dir(&sub_dir).expect("create subfolder");
+        set_mode(&sub_dir, 0o755);
+        let alias = sub_dir.join("alias.json");
+        symlink("../policy.json", &alias).expect("create relative symlink");
+        let link = link_dir.path().join("policy.json");
+        symlink(&alias, &link).expect("create symlink");
+
+        assert_eq!(validate_path(&link, PathSecurityScope::User), Ok(()));
+    }
+
+    #[test]
+    fn symbolic_link_to_a_folder_validates_the_target() {
+        let link_dir = TempDir::new().expect("temp dir for link");
+        let target_dir = TempDir::new().expect("temp dir for target");
+        set_mode(target_dir.path(), 0o707);
+        let link = link_dir.path().join("folder");
+        symlink(target_dir.path(), &link).expect("create symlink");
+
+        assert_eq!(
+            validate_path(&link, PathSecurityScope::User),
+            Err(PathSecurityError::UntrustedWriter {
+                path: path_of(target_dir.path()),
+                principal: "other users".into(),
+            })
+        );
+    }
+
+    #[test]
+    fn symbolic_link_cycle_is_insecure() {
+        let dir = TempDir::new().expect("temp dir");
+        let first = dir.path().join("first");
+        let second = dir.path().join("second");
+        symlink(&second, &first).expect("create first symlink");
+        symlink(&first, &second).expect("create second symlink");
+
+        match validate_path(&first, PathSecurityScope::User) {
+            Err(PathSecurityError::SecurityInfoRead { path, .. }) => assert_eq!(path, path_of(&first)),
+            other => panic!("expected the cycle to be reported, got {other:?}"),
+        }
     }
 
     #[test]

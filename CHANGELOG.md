@@ -134,8 +134,10 @@ changes since the last release, see the [diff on GitHub][unreleased].
 - The security check for the policy settings folder now also requires the folder to be owned by
   `SYSTEM` or `Administrators` on Windows, matching the existing root ownership requirement on
   Linux and macOS. The warning for an insecure policy folder now states which owner or principal
-  caused the failure. The check moved into the new `dsc-lib-path_security` crate so that other
-  components can validate files and folders at machine or user scope with the same rules.
+  caused the failure. When the policy folder is a symbolic link or a junction, the check now
+  validates the folder the link points to and, on Windows, the link itself. The check moved into
+  the new `dsc-lib-path_security` crate so that other components can validate files and folders
+  at machine or user scope with the same rules.
 
   <details><summary>Related work items</summary>
 

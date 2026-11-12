@@ -224,6 +224,8 @@ pub(crate) mod ace {
 pub(crate) mod unix {
     use std::path::Path;
 
+    use rust_i18n::t;
+
     use super::{AccessEntry, EntryKind, Principal, PrincipalKind, SecurityModel};
 
     /// Mode bit that grants the owner write access.
@@ -253,11 +255,11 @@ pub(crate) mod unix {
     /// The security model for the path.
     pub(crate) fn model_from_mode(path: &Path, uid: u32, gid: u32, mode: u32, effective_uid: u32) -> SecurityModel {
         let owner = if uid == 0 {
-            Principal::new(PrincipalKind::Administrators, "root (uid 0)")
+            Principal::new(PrincipalKind::Administrators, t!("principal.root", uid = uid))
         } else if uid == effective_uid {
-            Principal::new(PrincipalKind::CurrentUser, format!("uid {uid}"))
+            Principal::new(PrincipalKind::CurrentUser, t!("principal.user", uid = uid))
         } else {
-            Principal::new(PrincipalKind::Other, format!("uid {uid}"))
+            Principal::new(PrincipalKind::Other, t!("principal.user", uid = uid))
         };
 
         let entry = |principal: Principal, write_bit: u32| AccessEntry {
@@ -269,8 +271,8 @@ pub(crate) mod unix {
 
         let entries = vec![
             entry(owner.clone(), OWNER_WRITE),
-            entry(Principal::new(PrincipalKind::Other, format!("group {gid}")), GROUP_WRITE),
-            entry(Principal::new(PrincipalKind::Other, "other users"), OTHER_WRITE),
+            entry(Principal::new(PrincipalKind::Other, t!("principal.group", gid = gid)), GROUP_WRITE),
+            entry(Principal::new(PrincipalKind::Other, t!("principal.otherUsers")), OTHER_WRITE),
         ];
 
         SecurityModel {

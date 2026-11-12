@@ -247,11 +247,12 @@ fn current_user_sid(path: &Path) -> Result<OwnedSid, PathSecurityError> {
 
 /// Reads the owner and access control entries of one path into a security model.
 ///
-/// Symbolic links are followed, so the model describes the link target.
+/// A symbolic link or junction at the end of the path is not followed, so for such a path the
+/// model describes the link itself and not the object the link points to.
 ///
 /// # Arguments
 ///
-/// 1. `path`: the absolute path of the file or folder.
+/// 1. `path`: the absolute path of the file, folder, or link.
 /// 1. `scope`: the scope whose trust rules apply. The current user SID is only read for the
 ///    user scope.
 ///
@@ -331,7 +332,7 @@ fn read_security_model(path: &Path, scope: PathSecurityScope) -> Result<Security
             let sid_pointer = unsafe { &raw const (*typed_pointer).SidStart };
             classify_sid(PSID(sid_pointer.cast_mut().cast::<c_void>()), current_psid, path)?
         } else {
-            Principal::new(PrincipalKind::Other, format!("ACE type {}", entry.Header.AceType))
+            Principal::new(PrincipalKind::Other, t!("principal.aceType", ace_type = entry.Header.AceType))
         };
         entries.push(ace::classify(entry.Header.AceType, entry.Header.AceFlags, entry.Mask, principal));
     }
@@ -343,11 +344,16 @@ fn read_security_model(path: &Path, scope: PathSecurityScope) -> Result<Security
     })
 }
 
-/// Validates one existing file or folder without looking at its containing folder.
+/// Validates one existing file, folder, or link without looking at its containing folder.
+///
+/// A symbolic link or junction at the end of the path is not followed. For such a path the link
+/// itself is validated, which matters because a principal that owns a link or has write access
+/// to it can point the link somewhere else. The caller resolves links before validating the
+/// object they point to.
 ///
 /// # Arguments
 ///
-/// 1. `path`: the absolute path of the file or folder.
+/// 1. `path`: the absolute path of the file, folder, or link.
 /// 1. `scope`: the scope whose trust rules apply.
 ///
 /// # Errors
@@ -362,6 +368,9 @@ pub(crate) fn validate_object(path: &Path, scope: PathSecurityScope) -> Result<(
 #[cfg(test)]
 mod tests {
     use std::fs;
+    use std::os::windows::fs::{symlink_dir, symlink_file};
+    use std::path::PathBuf;
+    use std::process::{Command, Stdio};
 
     use dsc_lib_security_context::{SecurityContext, get_security_context};
     use tempfile::TempDir;
@@ -381,8 +390,12 @@ mod tests {
     const SDDL_REVISION: u32 = 1;
     /// Allow entries every test folder carries so SYSTEM and Administrators keep full control.
     const TRUSTED: &str = "(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)";
+    /// Inheritable allow entry that makes a folder and its children writable by everyone.
+    const EVERYONE_FULL: &str = "(A;OICI;FA;;;WD)";
     const EVERYONE: &str = "S-1-1-0";
     const USERS: &str = "S-1-5-32-545";
+    /// The Win32 error for creating a symbolic link without the privilege to do so.
+    const ERROR_PRIVILEGE_NOT_HELD: i32 = 1314;
 
     /// The result of a validation reduced to the facts the tests compare.
     #[derive(Debug, PartialEq, Eq)]
@@ -602,6 +615,190 @@ mod tests {
                 principal: EVERYONE.into(),
             })
         );
+    }
+
+    /// Creates a temp folder whose children inherit a DACL that only trusts SYSTEM,
+    /// Administrators and the current user.
+    fn secure_root() -> TempDir {
+        let dir = TempDir::new().expect("temp dir");
+        apply_sddl(dir.path(), &user_folder_sddl(""));
+        dir
+    }
+
+    /// Creates a folder below the root with the trusted entries, the current user and the given
+    /// extra entries.
+    fn child_folder(root: &TempDir, name: &str, extra: &str) -> PathBuf {
+        let path = root.path().join(name);
+        fs::create_dir(&path).expect("create folder");
+        apply_sddl(&path, &user_folder_sddl(extra));
+        path
+    }
+
+    /// Creates a file whose protected DACL has the trusted entries, the current user and the
+    /// given extra entries.
+    fn child_file(folder: &Path, name: &str, extra: &str) -> PathBuf {
+        let path = folder.join(name);
+        fs::write(&path, b"{}").expect("write file");
+        apply_sddl(
+            &path,
+            &format!("D:P(A;;FA;;;SY)(A;;FA;;;BA)(A;;FA;;;{}){extra}", current_sid_string()),
+        );
+        path
+    }
+
+    /// Creates a junction, which unlike a symbolic link needs no privilege.
+    fn create_junction(link: &Path, target: &Path) {
+        let status = Command::new("cmd")
+            .args(["/C", "mklink", "/J"])
+            .arg(link)
+            .arg(target)
+            .stdout(Stdio::null())
+            .status()
+            .expect("run mklink");
+        assert!(status.success(), "mklink /J failed for {}", link.display());
+    }
+
+    /// Reports whether a symbolic link was created. Creating one needs a privilege that regular
+    /// users only hold in developer mode, so the tests that need a symbolic link skip without it.
+    fn linked(result: std::io::Result<()>) -> bool {
+        match result {
+            Ok(()) => true,
+            Err(error) if error.raw_os_error() == Some(ERROR_PRIVILEGE_NOT_HELD) => {
+                eprintln!("skipping: creating a symbolic link requires elevation or developer mode");
+                false
+            }
+            Err(error) => panic!("create symbolic link: {error}"),
+        }
+    }
+
+    #[test]
+    fn junction_validates_the_folder_it_points_to() {
+        let root = secure_root();
+        let target = child_folder(&root, "target", EVERYONE_FULL);
+        let link = root.path().join("link");
+        create_junction(&link, &target);
+        let link_alone = validate_object(&link, PathSecurityScope::User);
+        let result = validate_path(&link, PathSecurityScope::User);
+        root.close().expect("remove temp dir");
+        assert_eq!(link_alone, Ok(()), "the junction itself only has trusted entries");
+        assert_eq!(outcome(result), Outcome::UntrustedWriter(EVERYONE.into()));
+    }
+
+    #[test]
+    fn junction_itself_must_be_secure() {
+        let root = secure_root();
+        let target = child_folder(&root, "target", "");
+        let link = root.path().join("link");
+        create_junction(&link, &target);
+        apply_sddl(&link, &user_folder_sddl(EVERYONE_FULL));
+        let target_alone = validate_path(&target, PathSecurityScope::User);
+        let result = validate_path(&link, PathSecurityScope::User);
+        root.close().expect("remove temp dir");
+        assert_eq!(target_alone, Ok(()), "the folder the junction points to stays secure");
+        assert_eq!(
+            result,
+            Err(PathSecurityError::UntrustedWriter {
+                path: path_string(&link),
+                principal: EVERYONE.into(),
+            })
+        );
+    }
+
+    #[test]
+    fn symbolic_link_validates_the_folder_it_points_to() {
+        let root = secure_root();
+        let target = child_folder(&root, "target", EVERYONE_FULL);
+        let link = root.path().join("link");
+        if !linked(symlink_dir(&target, &link)) {
+            return;
+        }
+        let result = validate_path(&link, PathSecurityScope::User);
+        root.close().expect("remove temp dir");
+        assert_eq!(outcome(result), Outcome::UntrustedWriter(EVERYONE.into()));
+    }
+
+    #[test]
+    fn symbolic_link_validates_the_file_it_points_to() {
+        let root = secure_root();
+        let target_folder = child_folder(&root, "target", "");
+        let file = child_file(&target_folder, "policy.json", "(A;;FA;;;WD)");
+        let link_folder = child_folder(&root, "links", "");
+        let link = link_folder.join("policy.json");
+        if !linked(symlink_file(&file, &link)) {
+            return;
+        }
+        let result = validate_path(&link, PathSecurityScope::User);
+        root.close().expect("remove temp dir");
+        assert_eq!(outcome(result), Outcome::UntrustedWriter(EVERYONE.into()));
+    }
+
+    #[test]
+    fn intermediate_symbolic_link_validates_its_folder() {
+        let root = secure_root();
+        let target_folder = child_folder(&root, "target", "");
+        let file = child_file(&target_folder, "policy.json", "");
+        let hop_folder = child_folder(&root, "hop", EVERYONE_FULL);
+        let hop = hop_folder.join("hop.json");
+        let link_folder = child_folder(&root, "links", "");
+        let link = link_folder.join("policy.json");
+        if !linked(symlink_file(&file, &hop)) || !linked(symlink_file(&hop, &link)) {
+            return;
+        }
+        let result = validate_path(&link, PathSecurityScope::User);
+        root.close().expect("remove temp dir");
+        match result {
+            Err(PathSecurityError::UntrustedWriter { path, principal }) => {
+                assert_eq!(principal, EVERYONE);
+                assert!(Path::new(&path).ends_with("hop"), "expected the hop folder, got {path}");
+            }
+            other => panic!("expected an untrusted writer on the hop folder, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn chain_of_secure_links_is_secure() {
+        let root = secure_root();
+        let target_folder = child_folder(&root, "target", "");
+        let file = child_file(&target_folder, "policy.json", "");
+        // A relative link next to the file and an absolute link in another folder.
+        let alias = target_folder.join("alias.json");
+        let link_folder = child_folder(&root, "links", "");
+        let link = link_folder.join("policy.json");
+        if !linked(symlink_file("policy.json", &alias)) || !linked(symlink_file(&alias, &link)) {
+            return;
+        }
+        let file_alone = validate_path(&file, PathSecurityScope::User);
+        let result = validate_path(&link, PathSecurityScope::User);
+        root.close().expect("remove temp dir");
+        assert_eq!(file_alone, Ok(()));
+        assert_eq!(result, Ok(()));
+    }
+
+    #[test]
+    fn link_chain_that_resolves_differently_is_insecure() {
+        // Behind a folder symbolic link, Windows resolves the relative target of link.json
+        // against the real folder. Joining the target to the path of the folder link instead
+        // ends at the decoy file, which must not be accepted in place of the file that is read.
+        let root = secure_root();
+        let real = child_folder(&root, "real", "");
+        child_file(root.path(), "policy.json", "");
+        let outer = child_folder(&root, "outer", "");
+        child_file(&outer, "policy.json", "");
+        let folder_link = outer.join("inner");
+        if !linked(symlink_dir(&real, &folder_link))
+            || !linked(symlink_file(r"..\policy.json", real.join("link.json")))
+        {
+            return;
+        }
+        let through_link = folder_link.join("link.json");
+        let result = validate_path(&through_link, PathSecurityScope::User);
+        root.close().expect("remove temp dir");
+        match result {
+            Err(PathSecurityError::SecurityInfoRead { path, .. }) => {
+                assert_eq!(path, path_string(&through_link));
+            }
+            other => panic!("expected the mismatch to be reported, got {other:?}"),
+        }
     }
 
     #[test]
