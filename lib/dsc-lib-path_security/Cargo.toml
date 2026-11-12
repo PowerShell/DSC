@@ -1,0 +1,29 @@
+[package]
+name = "dsc-lib-path_security"
+version = "0.1.0"
+edition = "2024"
+
+[package.metadata.i18n]
+available-locales = ["en-us"]
+default-locale = "en-us"
+load-path = "locales"
+
+[lib]
+doctest = false
+
+[dependencies]
+rust-i18n = { workspace = true }
+thiserror = { workspace = true }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+windows = { workspace = true }
+
+[target.'cfg(not(target_os = "windows"))'.dependencies]
+nix = { workspace = true, features = ["user"] }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+test-case = { workspace = true }
+
+[target.'cfg(target_os = "windows")'.dev-dependencies]
+dsc-lib-security_context = { workspace = true }

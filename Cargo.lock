@@ -873,6 +873,7 @@ dependencies = [
  "derive_builder",
  "dsc-lib-jsonschema",
  "dsc-lib-osinfo",
+ "dsc-lib-path_security",
  "dsc-lib-security_context",
  "indicatif",
  "ipnetwork",
@@ -880,7 +881,6 @@ dependencies = [
  "linked-hash-map",
  "miette",
  "murmurhash64",
- "nix",
  "num-traits",
  "path-absolutize",
  "pretty_assertions",
@@ -906,7 +906,6 @@ dependencies = [
  "urlencoding",
  "uuid",
  "which",
- "windows 0.62.2",
 ]
 
 [[package]]
@@ -953,6 +952,19 @@ name = "dsc-lib-pal"
 version = "0.1.0"
 dependencies = [
  "cc",
+]
+
+[[package]]
+name = "dsc-lib-path_security"
+version = "0.1.0"
+dependencies = [
+ "dsc-lib-security_context",
+ "nix",
+ "rust-i18n",
+ "tempfile",
+ "test-case",
+ "thiserror 2.0.21",
+ "windows 0.62.2",
 ]
 
 [[package]]

@@ -305,6 +305,12 @@
       "IsRust": true
     },
     {
+      "Name": "dsc-lib-path_security",
+      "Kind": "Library",
+      "RelativePath": "lib/dsc-lib-path_security",
+      "IsRust": true
+    },
+    {
       "Name": "dsc-lib-registry",
       "Kind": "Library",
       "RelativePath": "lib/dsc-lib-registry",

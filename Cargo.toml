@@ -11,6 +11,7 @@ members = [
     "lib/dsc-lib-jsonschema",
     "lib/dsc-lib-osinfo",
     "lib/dsc-lib-pal",
+    "lib/dsc-lib-path_security",
     "lib/dsc-lib-registry",
     "lib/dsc-lib-security_context",
     "lib/dsc-lib-telemetry",
@@ -49,6 +50,7 @@ default-members = [
     "lib/dsc-lib-jsonschema",
     "lib/dsc-lib-osinfo",
     "lib/dsc-lib-pal",
+    "lib/dsc-lib-path_security",
     "lib/dsc-lib-registry",
     "lib/dsc-lib-security_context",
     "lib/dsc-lib-telemetry",
@@ -88,6 +90,7 @@ Windows = [
     "lib/dsc-lib-jsonschema",
     "lib/dsc-lib-osinfo",
     "lib/dsc-lib-pal",
+    "lib/dsc-lib-path_security",
     "lib/dsc-lib-registry",
     "lib/dsc-lib-security_context",
     "lib/dsc-lib-telemetry",
@@ -121,6 +124,7 @@ macOS = [
     "lib/dsc-lib-jsonschema-macros",
     "lib/dsc-lib-jsonschema",
     "lib/dsc-lib-osinfo",
+    "lib/dsc-lib-path_security",
     "lib/dsc-lib-security_context",
     "lib/dsc-lib-telemetry",
     "lib/dsc-lib",
@@ -143,6 +147,7 @@ Linux = [
     "lib/dsc-lib-jsonschema-macros",
     "lib/dsc-lib-jsonschema",
     "lib/dsc-lib-osinfo",
+    "lib/dsc-lib-path_security",
     "lib/dsc-lib-security_context",
     "lib/dsc-lib-telemetry",
     "lib/dsc-lib",
@@ -209,7 +214,7 @@ linked-hash-map = { version = "0.5" }
 miette = { version = "7.6.0" }
 # dsc-lib
 murmurhash64 = { version = "0.3" }
-# dsc-lib-security_context::not_windows
+# dsc-lib-security_context::not_windows, dsc-lib-path_security::not_windows
 nix = { version = "0.31.3" }
 # dsc-lib
 num-traits = { version = "0.2" }
@@ -237,7 +242,7 @@ rmcp = { version = "3.8.0" }
 roxmltree = { version = "0.21.2" }
 # dsc_lib
 rt-format = { version = "0.3" }
-# dsc, dsc-lib, dsc-bicep-ext, dscecho, registry, dsc-lib-registry, runcommandonset, sshdconfig
+# dsc, dsc-lib, dsc-bicep-ext, dscecho, registry, dsc-lib-registry, runcommandonset, sshdconfig, dsc-lib-path_security
 rust-i18n = { version = "4.2.4" }
 # dsc, dsc-lib, dscecho, registry, dsc-lib-registry, sshdconfig, dsctest, test_group_resource
 schemars = { version = "1.2.3", features = ["preserve_order"] }
@@ -259,9 +264,9 @@ syn = { version = "3.0.9" }
 syntect = { version = "5.3", features = ["default-fancy"], default-features = false }
 # dsc, process
 sysinfo = { version = "0.40.0" }
-# sshdconfig
+# sshdconfig, dsc-lib-path_security
 tempfile = { version = "3.27" }
-# dsc, dsc-lib, registry, dsc-lib-registry, sshdconfig
+# dsc, dsc-lib, registry, dsc-lib-registry, sshdconfig, dsc-lib-path_security
 thiserror = { version = "2.0.21" }
 # used by other crates
 time = { version = "0.3.55" }
@@ -301,7 +306,7 @@ urlencoding = { version = "2.1" }
 which = { version = "8.0.6" }
 # dsc-lib
 ipnetwork = { version = "0.21" }
-# WindowsUpdate, windows_service, windows_audit_policy, windows_security_policy, dsc-lib (ACL checks), dsc-lib-registry
+# WindowsUpdate, windows_service, windows_audit_policy, windows_security_policy, dsc-lib-path_security, dsc-lib-registry
 windows = { version = "0.62", features = [
     "Win32_Foundation",
     "Win32_NetworkManagement_WindowsFirewall",
@@ -331,7 +336,7 @@ tonic-prost-build = { version = "0.14.9" }
 # test-only dependencies
 # dsc-lib-jsonschema, dsc-lib
 pretty_assertions = { version = "1.4.1" }
-# dsc-lib
+# dsc-lib, dsc-lib-path_security
 test-case = { version = "3.4.0" }
 
 # Workspace crates as dependencies
@@ -339,6 +344,7 @@ dsc-lib = { path = "lib/dsc-lib" }
 dsc-lib-jsonschema = { path = "lib/dsc-lib-jsonschema" }
 dsc-lib-jsonschema-macros = { path = "lib/dsc-lib-jsonschema-macros" }
 dsc-lib-osinfo = { path = "lib/dsc-lib-osinfo" }
+dsc-lib-path_security = { path = "lib/dsc-lib-path_security" }
 dsc-lib-registry = { path = "lib/dsc-lib-registry" }
 dsc-lib-security_context = { path = "lib/dsc-lib-security_context" }
 dsc-lib-telemetry = { path = "lib/dsc-lib-telemetry" }

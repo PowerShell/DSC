@@ -419,43 +419,38 @@ impl DscSettings {
     }
 
     /// Checks whether the policy folder has secure permissions.
-    /// 
-    /// DSC requires that the policy folder has secure permissions to prevent
-    /// unauthorized access or modifications. If the folder doesn't have secure
-    /// permissions, DSC won't load the policy file.
-    /// 
-    /// This function checks the permissions for the folder depending on the
-    /// platform:
-    /// 
-    /// - On Windows:
-    /// 
-    ///   1. The folder must be owned by the Administrators group or the Local
-    ///      System account.
-    ///   1. The write permissions for the folder must be limited to the owner.
-    ///   1. No inheritedd ACEs (Access Control Entries) should grant write
-    ///      permissions to other users.
-    /// 
-    /// - On Linux and macOS:
     ///
-    ///   1. The folder must be owned by the root user.
-    ///   1. The folder must not have group or other write permissions.
-    /// 
+    /// DSC requires that the policy folder has secure permissions to prevent
+    /// unauthorized access or modifications. If the folder does not have secure
+    /// permissions, DSC will not load the policy file.
+    ///
+    /// The check is delegated to the `dsc_lib_path_security` crate at machine
+    /// scope, which applies these rules:
+    ///
+    /// 1. On Windows, the folder must be owned by the Administrators group or
+    ///    the Local System account, and no access control entry that applies
+    ///    to the folder itself may grant write permissions to any other
+    ///    principal. Inherit only entries and deny entries are ignored.
+    /// 1. On Linux and macOS, the folder must be owned by the root user and
+    ///    must not have group or other write permissions.
+    ///
     /// # Returns
-    /// 
+    ///
     /// If the policy folder has secure permissions, this function returns
-    /// `Ok(())`. If the folder doesn't have secure permissions, the function
-    /// returns an `Err` with [`DscSettingsError::PolicyFolderNotSecure`].
+    /// `Ok(())`. If the folder does not have secure permissions, the function
+    /// returns an `Err` with [`DscSettingsError::PolicyFolderNotSecure`] that
+    /// includes the reason reported by the check.
     pub fn validate_policy_folder_security() -> Result<(), DscSettingsError> {
         let folder_path = POLICY_SETTINGS_FILE_PATH.as_path().parent()
             .expect("policy settings file always has a parent folder");
-        
-        // The folder not existing is fine, since we won't try to load the
+
+        // The folder not existing is fine, since we will not try to load the
         // policy file.
         if !folder_path.exists() {
             return Ok(());
         }
-        
-        if !Self::policy_folder_has_secure_permissions(folder_path) {
+
+        if let Err(reason) = Self::policy_folder_has_secure_permissions(folder_path) {
             #[cfg(target_os = "windows")]
             let required = t!(
                 "settings.dsc_settings.policyFolderNotSecureWindows",
@@ -469,6 +464,7 @@ impl DscSettings {
 
             return Err(DscSettingsError::PolicyFolderNotSecure {
                 path: folder_path.display().to_string(),
+                reason,
                 required: required.to_string(),
             });
         }
@@ -1375,180 +1371,56 @@ impl DscSettings {
 
     /// Indicates whether the folder containing the DSC policy settings file has
     /// secure permissions.
-    /// 
-    /// This function verifies the following ACL rules:
-    /// 
-    /// 1. The folder is owned by the Administrators group or the Local System
-    ///    account.
-    /// 1. Only the owner has write permissions.
-    /// 1. No inherited ACEs grant write permissions to other users.
-    /// 
+    ///
+    /// The check is delegated to `dsc_lib_path_security::validate_path` at
+    /// machine scope, so only administrators may own or write to the folder.
+    ///
     /// # Arguments
-    /// 
-    /// - `folder_path`: The path to the folder containing the DSC policy
-    ///   settings file.
     ///
-    /// # Returns
+    /// 1. `folder_path`: the path to the folder containing the DSC policy
+    ///    settings file.
     ///
-    /// `true` if the folder has secure permissions according to the rules and
-    /// `false` otherwise.
-    #[cfg(all(target_os = "windows", not(test)))]
-    fn policy_folder_has_secure_permissions(folder_path: &Path) -> bool {
-        use windows::Win32::Security::{
-            Authorization::{GetNamedSecurityInfoW, SE_FILE_OBJECT},
-            IsWellKnownSid, GetAce,
-            WinBuiltinAdministratorsSid, WinLocalSystemSid,
-            ACL, ACCESS_ALLOWED_ACE, PSECURITY_DESCRIPTOR,
-        };
-        use windows::Win32::Foundation::{LocalFree, HLOCAL};
-        use windows::core::PCWSTR;
-        use std::ptr;
+    /// # Errors
+    ///
+    /// Returns the rendered validation error when the folder is not secure or
+    /// when its permissions cannot be read.
+    #[cfg(not(test))]
+    fn policy_folder_has_secure_permissions(folder_path: &Path) -> Result<(), String> {
+        use dsc_lib_path_security::{PathSecurityScope, validate_path};
 
-        const FILE_WRITE_DATA: u32 = 0x0002;
-        const FILE_APPEND_DATA: u32 = 0x0004;
-        const WRITE_DAC: u32 = 0x0004_0000;
-        const WRITE_OWNER: u32 = 0x0008_0000;
-        const GENERIC_WRITE: u32 = 0x4000_0000;
-        const GENERIC_ALL: u32 = 0x1000_0000;
-        const WRITE_MASK: u32 = FILE_WRITE_DATA | FILE_APPEND_DATA | WRITE_DAC | WRITE_OWNER | GENERIC_WRITE | GENERIC_ALL;
-
-        const INHERIT_ONLY_ACE: u8 = 0x08;
-
-        let folder_wide: Vec<u16> = folder_path
-            .to_string_lossy()
-            .encode_utf16()
-            .chain(std::iter::once(0))
-            .collect();
-
-        let mut p_sd: PSECURITY_DESCRIPTOR = PSECURITY_DESCRIPTOR(ptr::null_mut());
-        let mut p_dacl: *mut ACL = ptr::null_mut();
-
-        let result = unsafe {
-            GetNamedSecurityInfoW(
-                PCWSTR(folder_wide.as_ptr()),
-                SE_FILE_OBJECT,
-                windows::Win32::Security::DACL_SECURITY_INFORMATION,
-                None,
-                None,
-                Some(&mut p_dacl),
-                None,
-                &mut p_sd,
-            )
-        };
-
-        // Fail closed: if we can't read the security descriptor, treat as insecure
-        if result.is_err() {
-            return false;
-        }
-
-        // A NULL DACL means full access to everyone
-        if p_dacl.is_null() {
-            unsafe { let _ = LocalFree(Some(HLOCAL(p_sd.0.cast()))); }
-            return false;
-        }
-
-        let ace_count = unsafe { (*p_dacl).AceCount };
-
-        for i in 0..ace_count {
-            let mut ace_ptr: *mut core::ffi::c_void = ptr::null_mut();
-            let ok = unsafe { GetAce(p_dacl, i as u32, &mut ace_ptr) };
-            if ok.is_err() {
-                // Fail closed: if we can't read an ACE, treat as insecure
-                unsafe { let _ = LocalFree(Some(HLOCAL(p_sd.0.cast()))); }
-                return false;
-            }
-
-            let header = unsafe { &*(ace_ptr as *const windows::Win32::Security::ACE_HEADER) };
-
-            // Skip inherit-only ACEs as they don't apply to this folder
-            if (header.AceFlags & INHERIT_ONLY_ACE) != 0 {
-                continue;
-            }
-
-            // Skip deny ACEs (types 1, 6, 10) - they restrict access, not grant it
-            if header.AceType == 1 || header.AceType == 6 || header.AceType == 10 {
-                continue;
-            }
-
-            // For ACCESS_ALLOWED_ACE_TYPE (0), check the SID
-            if header.AceType == 0 {
-                let ace = unsafe { &*(ace_ptr as *const ACCESS_ALLOWED_ACE) };
-                if (ace.Mask & WRITE_MASK) == 0 {
-                    continue;
-                }
-
-                let sid_ptr = &ace.SidStart as *const u32 as *const core::ffi::c_void;
-                let psid = windows::Win32::Security::PSID(sid_ptr as *mut core::ffi::c_void);
-
-                let is_system = unsafe { IsWellKnownSid(psid, WinLocalSystemSid).as_bool() };
-                let is_admin = unsafe { IsWellKnownSid(psid, WinBuiltinAdministratorsSid).as_bool() };
-
-                if !is_system && !is_admin {
-                    unsafe { let _ = LocalFree(Some(HLOCAL(p_sd.0.cast()))); }
-                    return false;
-                }
-                continue;
-            }
-
-            // For any other allow-type ACE (callback, object, etc.) we cannot
-            // reliably extract the SID, so fail closed to be safe
-            let ace = unsafe { &*(ace_ptr as *const ACCESS_ALLOWED_ACE) };
-            if (ace.Mask & WRITE_MASK) != 0 {
-                unsafe { let _ = LocalFree(Some(HLOCAL(p_sd.0.cast()))); }
-                return false;
-            }
-        }
-
-        unsafe { let _ = LocalFree(Some(HLOCAL(p_sd.0.cast()))); }
-        true
+        validate_path(folder_path, PathSecurityScope::Machine).map_err(|error| error.to_string())
     }
 
     /// Indicates whether the folder containing the DSC policy settings file has
     /// secure permissions.
-    /// 
-    /// This function verifies the following permissions per Unix conventions:
-    /// 
-    /// - The folder must be owned by the root user.
-    /// - The folder must not have group or other write permissions.
-    /// 
+    ///
+    /// In tests the result is controlled by [`TEST_POLICY_FOLDER_IS_SECURE`].
+    ///
     /// # Arguments
     ///
-    /// - `folder_path`: The path to the folder containing the DSC policy
-    ///   settings file.
-    /// 
-    /// # Returns
+    /// 1. `_folder_path`: ignored, the stub does not inspect the filesystem.
     ///
-    /// `true` if the folder has secure permissions according to the rules and
-    /// `false` otherwise.
-    #[cfg(all(not(target_os = "windows"), not(test)))]
-    fn policy_folder_has_secure_permissions(folder_path: &Path) -> bool {
-        use std::os::unix::fs::MetadataExt;
-
-        // Fail closed: if we can't read metadata, treat as insecure
-        let Ok(metadata) = std::fs::metadata(folder_path) else {
-            return false;
-        };
-
-        let mode = metadata.mode();
-        let uid = metadata.uid();
-
-        // Verify owner is root and no group or other write bits are set
-        uid == 0 && (mode & 0o020) == 0 && (mode & 0o002) == 0
-    }
-
-    /// Indicates whether the folder containing the DSC policy settings file has
-    /// secure permissions.
+    /// # Errors
+    ///
+    /// Returns a placeholder reason when the stub is set to insecure.
+    ///
+    /// # Panics
+    ///
+    /// Panics when [`TEST_POLICY_FOLDER_IS_SECURE`] has not been initialized.
     #[cfg(test)]
-    fn policy_folder_has_secure_permissions(_folder_path: &Path) -> bool {
-        // In tests, we can assume the folder has secure permissions
+    fn policy_folder_has_secure_permissions(_folder_path: &Path) -> Result<(), String> {
         match TEST_POLICY_FOLDER_IS_SECURE.get() {
-                Some(mutex) => {
-                    *mutex.lock().unwrap()
-                },
-                None => {
-                    panic!("TEST_POLICY_FOLDER_IS_SECURE has not been initialized");
+            Some(mutex) => {
+                if *mutex.lock().unwrap() {
+                    Ok(())
+                } else {
+                    Err(String::from("stubbed insecure policy folder"))
                 }
+            },
+            None => {
+                panic!("TEST_POLICY_FOLDER_IS_SECURE has not been initialized");
             }
+        }
     }
 }
 

@@ -48,13 +48,13 @@ which = { workspace = true }
 ipnetwork = { workspace = true }
 # workspace crate dependencies
 dsc-lib-osinfo = { workspace = true }
+dsc-lib-path_security = { workspace = true }
 dsc-lib-security_context = { workspace = true }
 dsc-lib-jsonschema = { workspace = true }
 tree-sitter-dscexpression = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
 registry = { workspace = true }
-windows = { workspace = true }
 
 [dev-dependencies]
 serde_yaml = { workspace = true }
@@ -64,9 +64,6 @@ pretty_assertions = { workspace = true }
 test-case = { workspace = true }
 # Enables serializing test execution for shared context stubs
 serial_test = { workspace = true }
-
-[target.'cfg(not(target_os = "windows"))'.dev-dependencies]
-nix = { workspace = true, features = ["user"] }
 
 [build-dependencies]
 cc = { workspace = true }
