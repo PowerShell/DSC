@@ -384,8 +384,10 @@
       "version": "0.1.0",
       "jsonrpc": {"executable": "dsctest", "args": ["jsonrpc"], "initializeTimeoutMS": 2000},
       "get": {},
-      "validate": {},
-      "schema": {"embedded": {"type": "object"}}
+      "validate": {
+        "executable": "dsctest",
+        "args": ["jsonrpc", "--operation", "validate", {"jsonInputArg": "--input"}]
+      }
     },
     {
       "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",

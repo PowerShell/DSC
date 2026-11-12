@@ -330,9 +330,13 @@ fn add_metadata(dsc_resource: &dyn ResourceInvoke, mut properties: Option<Map<St
         };
         props.insert("_metadata".to_string(), Value::Object(other_metadata));
         let modified_props = Value::from(props.clone());
-        if let Ok(()) = validate_properties(dsc_resource, &modified_props, context) {} else {
-            info!("{}", t!("configure.mod.schemaExcludesMetadata"));
-            props.remove("_metadata");
+        match validate_properties(dsc_resource, &modified_props, context) {
+            Ok(()) => {},
+            Err(DscError::Validation(_)) => {
+                info!("{}", t!("configure.mod.schemaExcludesMetadata"));
+                props.remove("_metadata");
+            },
+            Err(err) => return Err(err),
         }
         return Ok(serde_json::to_string(&props)?);
     }
@@ -464,6 +468,10 @@ fn get_metadata_from_result(mut context: Option<&mut Context>, properties: &mut 
                             unsafe {
                                 std::env::set_var(&key, &value);
                             }
+                        }
+                        // Persistent children retain their original environment, so retire them before reuse.
+                        if let Some(context) = context.as_ref() {
+                            context.complete_resource_operation(Ok(()))?;
                         }
                     }
                 }
@@ -1595,6 +1603,10 @@ pub fn validate_parameter_type(name: &str, value: &Value, parameter_type: &DataT
 
 fn get_failure_from_error(err: &DscError) -> Option<Failure> {
     match err {
+        DscError::JsonRpc { code, message, .. } => Some(Failure {
+            message: message.clone(),
+            exit_code: *code,
+        }),
         DscError::CommandExit(_resource, exit_code, reason) => {
             Some(Failure {
                 message: reason.to_string(),

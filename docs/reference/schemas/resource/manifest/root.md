@@ -288,6 +288,11 @@ ItemsPattern:      ^\w+$
 
 ### jsonrpc
 
+Use the rolling `https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json` schema for JSON-RPC
+manifests. This bundle is generated from the engine's Rust manifest types with
+`dsc schema --type resource-manifest --output-format pretty-json`. The legacy YAML schema sources
+in `schemas/src` target v3.1.0 and don't define this transport.
+
 The optional `jsonrpc` object defines a persistent JSON-RPC 2.0 process over newline-delimited
 stdin and stdout. It requires a nonempty `executable` and accepts a static string array `args`.
 The optional `initializeTimeoutMS` and `shutdownTimeoutMS` fields are positive integers and default

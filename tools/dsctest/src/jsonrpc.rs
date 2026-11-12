@@ -36,7 +36,10 @@ fn schema() -> Value {
 fn invoke(params: &Value, state: &mut Value, count: u64, transport: &str) -> Value {
     let operation = params["operation"].as_str().unwrap_or_default();
     if operation == "schema" { return schema(); }
-    if operation == "validate" { return json!({"valid": true}); }
+    if operation == "validate" {
+        return json!({"valid": !(params["properties"]["rejectMetadata"] == true
+            && params["properties"].get("_metadata").is_some())});
+    }
     if operation == "resolve" {
         return json!({"configuration": params["properties"]["configuration"], "parameters": null});
     }
@@ -45,6 +48,9 @@ fn invoke(params: &Value, state: &mut Value, count: u64, transport: &str) -> Val
     actual["processId"] = json!(std::process::id());
     actual["requestCount"] = json!(count);
     actual["transport"] = json!(transport);
+    if let Some(name) = actual["environmentName"].as_str() {
+        actual["environmentValue"] = json!(std::env::var(name).ok());
+    }
     let desired = params["properties"].get("value").cloned().unwrap_or(json!(0));
     let diff = if actual["value"] == desired { json!([]) } else { json!(["value"]) };
     let result = match operation {

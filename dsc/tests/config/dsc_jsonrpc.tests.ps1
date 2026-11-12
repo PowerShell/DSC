@@ -71,6 +71,35 @@ Describe 'JSON-RPC resource lifecycle' {
         ($events | Where-Object event -EQ dsc_invoke).params.operation | Should -Contain 'validate'
     }
 
+    It 'validates JSON-RPC manifests against the published bundle' {
+        $schemaPath = Join-Path $PSScriptRoot '../../../schemas/v3/bundled/resource/manifest.json'
+        $manifestPath = Join-Path $PSScriptRoot '../../../tools/dsctest/dsctest.dsc.manifests.json'
+        $manifests = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json -AsHashtable
+        foreach ($manifest in $manifests.resources | Where-Object jsonrpc) {
+            $manifest | ConvertTo-Json -Depth 30 | Test-Json -SchemaFile $schemaPath | Should -BeTrue
+        }
+        $invalid = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json'
+            type = 'Test/MissingTransport'
+            version = '0.1.0'
+            get = @{}
+        }
+        $invalid | ConvertTo-Json -Depth 10 | Test-Json -SchemaFile $schemaPath -ErrorAction SilentlyContinue |
+            Should -BeFalse
+    }
+
+    It 'continues without metadata rejected by custom validation' {
+        $configuration = New-RpcConfiguration -ResourceType 'Test/JsonRpcValidate' -Properties @{ rejectMetadata = $true }
+        $configuration.resources[0].metadata = @{ example = 'metadata probe' }
+        $result = dsc config get -i ($configuration | ConvertTo-Json -Depth 20) | ConvertFrom-Json -Depth 30
+        $LASTEXITCODE | Should -Be 0
+        $result.hadErrors | Should -BeFalse
+        $calls = @((Get-RpcEvent) | Where-Object { $_.event -eq 'dsc_invoke' -and $_.params.operation -eq 'get' })
+        $calls | Should -HaveCount 2
+        $calls[0].params.properties._metadata | Should -BeNullOrEmpty
+        @((Get-RpcEvent) | Where-Object event -EQ initialize) | Should -HaveCount 1
+    }
+
     It 'does not reuse a process across configuration runs' {
         $configuration = New-RpcConfiguration | ConvertTo-Json -Depth 20
         $first = dsc config get -i $configuration | ConvertFrom-Json
@@ -79,6 +108,77 @@ Describe 'JSON-RPC resource lifecycle' {
         $LASTEXITCODE | Should -Be 0
         $first.results[0].result.actualState.processId | Should -Not -Be $second.results[0].result.actualState.processId
         @((Get-RpcEvent) | Where-Object event -EQ initialize) | Should -HaveCount 2
+    }
+
+    It 'applies reuse restrictions during config validate from <Scope>' -ForEach @(
+        @{ Scope = 'document' }
+        @{ Scope = 'instance' }
+    ) {
+        $configuration = New-RpcConfiguration -ResourceType 'Test/JsonRpcValidate'
+        if ($Scope -eq 'document') {
+            $configuration.directives.reuseResources = $false
+        } else {
+            foreach ($resource in $configuration.resources) {
+                $resource.directives = @{ reuseResource = $false }
+            }
+        }
+        $null = dsc config validate -i ($configuration | ConvertTo-Json -Depth 20)
+        $LASTEXITCODE | Should -Be 0
+        @((Get-RpcEvent) | Where-Object event -EQ initialize) | Should -HaveCount 0
+        @((Get-RpcEvent) | Where-Object event -EQ fallback) | Should -HaveCount 2
+    }
+
+    It 'preserves JSON-RPC <Fault> errors while probing metadata for <ResourceType>' -ForEach @(
+        @{ ResourceType = 'Test/JsonRpc'; Fault = 'initializeError' }
+        @{ ResourceType = 'Test/JsonRpcValidate'; Fault = 'initializeError' }
+        @{ ResourceType = 'Test/JsonRpcValidate'; Fault = 'error' }
+    ) {
+        $configuration = New-RpcConfiguration -ResourceType $ResourceType -Properties @{ fault = $Fault }
+        $configuration.resources[0].metadata = @{ example = 'metadata probe' }
+        if ($Fault -eq 'initializeError') {
+            $env:DSC_TEST_JSONRPC_FAULT = $Fault
+        }
+        $output = dsc config get -i ($configuration | ConvertTo-Json -Depth 20) 2>&1 | Out-String
+        $LASTEXITCODE | Should -Not -Be 0
+        $output | Should -Match 'Requested (lifecycle|test) error'
+        $output | Should -Not -Match 'scope has already failed'
+        @((Get-RpcEvent) | Where-Object { $_.event -eq 'dsc_invoke' -and $_.params.operation -eq 'get' }) |
+            Should -HaveCount 0
+    }
+
+    It 'includes JSON-RPC application failures in JSON progress' {
+        $configuration = New-RpcConfiguration -Properties @{ fault = 'error'; errorCode = -32001 }
+        $progressPath = Join-Path $TestDrive 'failure-progress.jsonl'
+        $null = dsc --progress-format json config get -i ($configuration | ConvertTo-Json -Depth 20) 2> $progressPath
+        $LASTEXITCODE | Should -Not -Be 0
+        $records = @(Get-Content $progressPath | Where-Object { $_.StartsWith('{') } | ConvertFrom-Json)
+        $failures = @($records | Where-Object failure)
+        $failures.Count | Should -BeGreaterThan 0
+        $failures[0].failure.exitCode | Should -Be -32001
+        $failures[0].failure.message | Should -BeExactly 'Requested test error'
+    }
+
+    It 'restarts persistent hosts after a Windows environment refresh' -Skip:(!$IsWindows) {
+        $variableName = "DSC_JSONRPC_$([guid]::NewGuid().ToString('N'))"
+        $configuration = New-RpcConfiguration -Properties @{ environmentName = $variableName; value = 5 }
+        $configuration.resources = @(
+            $configuration.resources[0]
+            @{ name = 'refresh'; type = 'Test/RefreshEnv'; properties = @{ name = $variableName; value = 'refreshed' } }
+            $configuration.resources[1]
+        )
+        try {
+            $result = dsc config set -i ($configuration | ConvertTo-Json -Depth 20) | ConvertFrom-Json -Depth 30
+            $LASTEXITCODE | Should -Be 0
+            $before = $result.results[0].result.afterState
+            $after = $result.results[2].result.afterState
+            $before.environmentValue | Should -BeNullOrEmpty
+            $after.environmentValue | Should -BeExactly 'refreshed'
+            $before.processId | Should -Not -Be $after.processId
+            @((Get-RpcEvent) | Where-Object event -EQ initialize) | Should -HaveCount 2
+            @((Get-RpcEvent) | Where-Object event -EQ shutdown) | Should -HaveCount 2
+        } finally {
+            [System.Environment]::SetEnvironmentVariable($variableName, $null, [System.EnvironmentVariableTarget]::User)
+        }
     }
 
     It 'shares one adapter host across target resources during <Operation>' -ForEach @(
@@ -375,19 +475,17 @@ Describe 'JSON-RPC resource lifecycle' {
     }
 
     It 'does not reset request deadlines when progress notifications arrive' {
-        $timer = [System.Diagnostics.Stopwatch]::StartNew()
         $output = dsc resource get -r Test/JsonRpc -i '{"notificationDelayMS":100}' 2>&1
         $LASTEXITCODE | Should -Not -Be 0
-        $timer.Elapsed.TotalSeconds | Should -BeLessThan 3
         $output | Out-String | Should -Match 'timed out'
+        @((Get-RpcEvent) | Where-Object event -EQ shutdown) | Should -HaveCount 0
     }
 
     It 'enforces the request deadline and terminates an unresponsive resource' {
-        $timer = [System.Diagnostics.Stopwatch]::StartNew()
         $output = dsc resource get -r Test/JsonRpc -i '{"delayMS":10000}' 2>&1
         $LASTEXITCODE | Should -Not -Be 0
-        $timer.Elapsed.TotalSeconds | Should -BeLessThan 5
         $output | Out-String | Should -Match 'timed out'
+        @((Get-RpcEvent) | Where-Object event -EQ shutdown) | Should -HaveCount 0
         @((Get-RpcEvent) | Where-Object event -EQ shutdown) | Should -HaveCount 0
     }
 

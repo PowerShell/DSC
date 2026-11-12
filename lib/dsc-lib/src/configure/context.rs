@@ -59,6 +59,12 @@ pub struct Context {
 }
 
 impl Context {
+    /// Apply document and instance reuse restrictions without overriding an inherited prohibition.
+    pub fn restrict_resource_reuse(&mut self, document: Option<bool>, instance: Option<bool>) {
+        self.reuse_resources &= document.unwrap_or(true);
+        self.reuse_resource = instance.unwrap_or(true);
+    }
+
     /// Finish an invocation scope, preserving its original failure if cleanup also fails.
     pub fn complete_resource_operation<T>(&self, result: Result<T, crate::DscError>) -> Result<T, crate::DscError> {
         let cleanup = self.resource_processes.lock().unwrap().finish();

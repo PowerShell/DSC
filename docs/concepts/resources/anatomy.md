@@ -145,6 +145,10 @@ the `exit` notification, and waits for process termination. Standalone `dsc reso
 the same transport preference and clean up before returning. Malformed protocol messages,
 initialization failures, or timeouts terminate the process without retrying.
 
+On Windows, a set result requesting `_metadata._refreshEnv` also shuts down cached resource
+processes after refreshing the environment. Later operations start new processes so they receive
+the updated environment.
+
 #### Reuse and timeout settings
 
 `resourceReuse` defaults to `true`. Preference files and policy can set it, and
