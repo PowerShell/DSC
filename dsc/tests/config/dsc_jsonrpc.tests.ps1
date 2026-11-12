@@ -100,6 +100,72 @@ Describe 'JSON-RPC resource lifecycle' {
         @((Get-RpcEvent) | Where-Object event -EQ initialize) | Should -HaveCount 1
     }
 
+    It 'rejects an empty export executable in the published bundle with JSON-RPC <UseJsonRpc>' -ForEach @(
+        @{ UseJsonRpc = $true }
+        @{ UseJsonRpc = $false }
+    ) {
+        $schemaPath = Join-Path $PSScriptRoot '../../../schemas/v3/bundled/resource/manifest.json'
+        $manifest = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json'
+            type = 'Test/EmptyExportExecutable'
+            version = '0.1.0'
+            get = @{ executable = 'dsctest' }
+            export = @{ executable = '' }
+        }
+        if ($UseJsonRpc) {
+            $manifest.jsonrpc = @{ executable = 'dsctest' }
+        }
+        $manifest | ConvertTo-Json -Depth 10 | Test-Json -SchemaFile $schemaPath -ErrorAction SilentlyContinue |
+            Should -BeFalse
+    }
+
+    It 'handles <Fault> during a synthetic test schema request' -ForEach @(
+        @{ Fault = 'schemaError'; ExpectedError = 'Requested schema error' }
+        @{ Fault = 'schemaTimeout'; ExpectedError = 'timed out' }
+        @{ Fault = 'noSchema'; ExpectedError = $null }
+    ) {
+        $manifest = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json'
+            type = 'Test/JsonRpcSyntheticSchema'
+            version = '0.1.0'
+            jsonrpc = @{
+                executable = 'dsctest'
+                args = @('jsonrpc')
+                initializeTimeoutMS = 2000
+                requestTimeoutMS = 200
+            }
+            get = @{}
+            validate = @{}
+        }
+        if ($Fault -ne 'noSchema') {
+            $manifest.schema = @{ command = @{} }
+        }
+        $manifestPath = Join-Path $TestDrive 'synthetic-schema.dsc.resource.json'
+        $manifest | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $manifestPath
+        $previousResourcePath = $env:DSC_RESOURCE_PATH
+        $env:DSC_TEST_JSONRPC_FAULT = $Fault
+        try {
+            $env:DSC_RESOURCE_PATH = (@($TestDrive, $previousResourcePath) | Where-Object { $_ }) -join [IO.Path]::PathSeparator
+            $output = dsc resource test -r $manifest.type -i '{"value":0}' 2>&1 | Out-String
+            if ($ExpectedError) {
+                $LASTEXITCODE | Should -Not -Be 0
+                $output | Should -Match $ExpectedError
+                $output | Should -Not -Match '"inDesiredState"'
+            } else {
+                $LASTEXITCODE | Should -Be 0
+                ($output | ConvertFrom-Json).inDesiredState | Should -BeTrue
+            }
+            $calls = @((Get-RpcEvent) | Where-Object event -EQ dsc_invoke)
+            $calls.params.operation | Should -Contain 'validate'
+            $calls.params.operation | Should -Contain 'get'
+            if ($ExpectedError) {
+                $calls[-1].params.operation | Should -BeExactly 'schema'
+            }
+        } finally {
+            $env:DSC_RESOURCE_PATH = $previousResourcePath
+        }
+    }
+
     It 'does not reuse a process across configuration runs' {
         $configuration = New-RpcConfiguration | ConvertTo-Json -Depth 20
         $first = dsc config get -i $configuration | ConvertFrom-Json

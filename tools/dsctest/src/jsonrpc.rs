@@ -139,6 +139,17 @@ pub fn serve() -> Result<(), Box<dyn std::error::Error>> {
             },
             "dsc_invoke" if initialized && !shutting_down => {
                 count += 1;
+                if params["operation"] == "schema" {
+                    match lifecycle_fault.as_deref() {
+                        Some("schemaError") => {
+                            write_message(&mut output, &json!({"jsonrpc": "2.0", "id": id,
+                                "error": {"code": -32001, "message": "Requested schema error"}}))?;
+                            continue;
+                        },
+                        Some("schemaTimeout") => thread::sleep(Duration::from_secs(10)),
+                        _ => {},
+                    }
+                }
                 let properties = &params["properties"];
                 if let Some(milliseconds) = properties["delayMS"].as_u64() {
                     thread::sleep(Duration::from_millis(milliseconds));

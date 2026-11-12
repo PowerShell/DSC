@@ -568,11 +568,11 @@ impl ResourceManifest {
             "if": {"not": {"required": ["executable"]}},
             "then": {"properties": {"args": {"type": "null"}}}
         }}}));
-        properties.get_mut("export").unwrap()["properties"] = serde_json::json!({"schema": {"properties": {"command": {
+        properties.get_mut("export").unwrap()["properties"]["schema"] = serde_json::json!({"properties": {"command": {
             "properties": {"executable": {"minLength": 1}},
             "if": {"not": {"required": ["executable"]}},
             "then": {"properties": {"args": {"type": "null"}}}
-        }}}});
+        }}});
         constraints.push(serde_json::json!({"properties": properties}));
         constraints.push(serde_json::json!({
             "if": {"required": ["jsonrpc"], "properties": {"jsonrpc": {"type": "object"}}},
@@ -701,6 +701,7 @@ mod test {
         }
         for update in [
             json!({"get": {"executable": ""}}),
+            json!({"export": {"executable": ""}}),
             json!({"schema": {"command": {"executable": ""}}}),
             json!({"export": {"schema": {"command": {"executable": ""}}}}),
         ] {

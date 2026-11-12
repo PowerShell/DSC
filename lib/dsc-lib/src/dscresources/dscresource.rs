@@ -402,9 +402,14 @@ impl ResourceInvoke for DscResource {
                         }
                     };
                     let schema: Option<Value> = if let Some(s) = &self.schema {
-                        serde_json::to_value(s).ok()
+                        Some(serde_json::to_value(s)?)
                     } else {
-                        self.schema(context).ok().and_then(|s| serde_json::from_str(&s).ok())
+                        match self.schema(context) {
+                            Ok(schema) => Some(serde_json::from_str(&schema)?),
+                            Err(DscError::SchemaNotAvailable(_)) => None,
+                            Err(err) if manifest.jsonrpc.is_some() => return Err(err),
+                            Err(_) => None,
+                        }
                     };
                     let diff_properties = get_diff_with_schema( &desired_state, &actual_state, schema.as_ref());
                     desired_state = redact(&desired_state);

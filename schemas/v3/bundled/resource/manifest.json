@@ -622,6 +622,9 @@
         },
         "export": {
           "properties": {
+            "executable": {
+              "minLength": 1
+            },
             "schema": {
               "properties": {
                 "command": {
