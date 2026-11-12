@@ -4,7 +4,7 @@ Author:       @SteveL-MSFT
 Sponsor:      null    # <@GitHubUserName>
 Status:       Draft   # <Draft | Experimental | Accepted | Final>
 SupercededBy: null    # <Superceding RFC Number>
-Version:      1.3     # <Major>.<Minor>
+Version:      1.4     # <Major>.<Minor>
 Area:         Resources
 CommentsDue:  December 10, 2026
 ---
@@ -478,7 +478,7 @@ set operation declares `return: state`:
 {"jsonrpc":"2.0","id":2,"result":{"name":"Example","installed":true}}
 ```
 
-The engine forwards progress through its progress-reporting path and traces through its logging
+The engine maps progress to its renderer as specified below and forwards traces through its logging
 path, applying existing secret-redaction rules. Resources must not include secrets in either
 payload. Notifications are optional and informational: they do not alter operation results or
 enter the resource state/CLI result envelope. In particular, an `error`-level trace is not a failed
@@ -489,6 +489,59 @@ Existing stderr tracing remains supported and is drained while the invocation ru
 authors should use either stderr or `dsc_trace` for a given trace event, not both, to avoid duplicate
 logs. Resources should rate-limit notifications so progress reporting does not overwhelm the engine
 or delay the final response.
+
+#### Mapping notifications to engine progress
+
+Today's configuration renderer owns one progress record/bar whose `totalItems` is the number of
+resource instances and whose `completedItems` advances when an instance completes or is skipped.
+It also owns the progress UUID (`id`), `resourceName`, `resourceType`, result, and failure fields.
+These remain engine-owned. Resource-defined work units must never replace or increment the
+configuration counters, set an overall percentage, or mark an instance complete.
+
+A `dsc_progress` notification's `message` updates the current resource's activity text while
+preserving the engine's operation and instance name. For example, `Set 'Example package'` becomes
+`Set 'Example package': Downloading package`. Message-only updates fit the current activity
+rendering model. Numeric invocation progress is a new subordinate capability, not a direct mapping
+to the existing integer configuration counters.
+
+The renderer handles the selected `--progress-format` as follows:
+
+| Format | Mapping |
+| ------ | ------- |
+| `default` | In interactive mode, update the main bar's activity text and append invocation-local numbers, such as `Downloading package (40/100)`, when available. With only `completed`, display the count without a percentage. Keep the main bar's position and length unchanged. Noninteractive default mode continues to suppress progress. |
+| `json` | Emit the existing engine progress record on stderr with updated `activity` and an optional new `resourceProgress` object for invocation-local numbers. Preserve existing field meanings and the engine-generated UUID and resource identity. |
+| `none` | Consume and validate notifications but suppress progress output. |
+
+`resourceProgress` contains optional `completed` and `total` fields with the numeric types and
+constraints defined for `dsc_progress`; it is omitted for message-only updates. Each notification
+is a snapshot of the subordinate display, not a patch to the previous notification. Numeric
+values may be fractional and must not be cast to the `u64` configuration counters.
+
+For example, if one of three configuration instances is already complete and the current instance
+is named `Example package`, the notification above could produce this JSON progress record on
+DSC's stderr:
+
+```json
+{"id":"45b79df3-ea40-49ab-a869-a03fc5b19c55","activity":"Set 'Example package': Downloading package","totalItems":3,"completedItems":1,"resourceName":"Example package","resourceType":"Contoso/Package","resourceProgress":{"completed":40,"total":100}}
+```
+
+The resource's `params.requestId` is resolved internally using the process and invocation context;
+it does not replace the progress record's UUID. Progress output is independent of trace-level
+filtering and uses the progress format, not the trace format. Traces continue through the logging
+path and do not update the progress bar.
+
+The engine clears `resourceProgress` and restores the engine-owned activity after every underlying
+invocation completes, fails, times out, or is cancelled, before emitting any subsequent progress
+record. A set workflow can invoke test, get, set, and get again; subordinate progress resets between
+those calls without advancing the configuration counter. The outer workflow alone records the
+instance's result or failure and advances the configuration progress as it does today.
+
+This requires new invocation-scoped event forwarding from the JSON-RPC reader to the
+`Configurator`-owned renderer, with the current resource identity and progress format attached.
+The reader must continue draining messages while the resource operation is outstanding; simply
+logging notifications or waiting for the synchronous operation to return would not provide live
+progress. Updating the renderer and extending JSON progress with `resourceProgress` are explicit
+implementation work in this RFC, not capabilities already supplied by today's command runner.
 
 #### Errors
 
