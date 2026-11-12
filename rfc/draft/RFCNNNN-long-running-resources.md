@@ -41,7 +41,7 @@ as `[reference(...)]` to a single item become awkward.
 Existing resources keep today's behavior. A resource that opts into long running operation is
 reused automatically without changing the configuration's instance properties or results. Authors
 who need fresh-process isolation for every operation on a specific instance opt out with a resource
-directive:
+directive, unless DSC policy enforces reuse:
 
 ```yaml
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
@@ -58,8 +58,9 @@ resources:
     keyPath: HKCU\Example\Two
 ```
 
-Operators can disable reuse for an entire configuration run through a configuration level
-directive or through DSC settings (see [Engine behavior](#engine-behavior)).
+Operators can choose the default reuse behavior through DSC settings, enforce it through policy,
+or override non-policy settings with a configuration level directive
+(see [Settings and directive precedence](#settings-and-directive-precedence)).
 
 ### Resource authors
 
@@ -95,9 +96,10 @@ set:
 A new field `reuseResource` (boolean) is added to the resource `directives` object
 (`ResourceDirective`), alongside the existing `requireAdapter` and `securityContext` directives.
 
-- Default: `true`. The engine reuses a long running process for this instance if one is available
-  or can be started.
-- `false`: each underlying operation for this instance runs in a fresh process, not in the pool.
+- Omitted or `true`: inherit the effective document behavior. `true` cannot enable reuse when it
+  is disabled for the document.
+- `false`: opt out of reuse for this instance, unless policy enforces reuse. When effective,
+  each underlying operation for this instance runs in a fresh process, not in the pool.
   If that operation declares an executable fallback, the engine uses it. Otherwise, the engine
   starts a dedicated JSON-RPC process, initializes it, sends one `dsc_invoke`, and shuts it down.
   One instance can require several underlying calls, such as test, get-before, set, and get-after.
@@ -106,19 +108,56 @@ A new field `reuseResource` (boolean) is added to the resource `directives` obje
 
 #### Configuration directive
 
-A new field `reuseResources` (boolean, default `true`) is added to the document level
-`directives` object (`ConfigDirective`). When `false`, every resource in the document behaves as if
-`reuseResource: false` were set. A resource level `reuseResource: true` cannot override a
-document level `false`. Both new directive fields require updated configuration schemas; the
+A new field `reuseResources` (boolean) is added to the document level
+`directives` object (`ConfigDirective`). When omitted, the document inherits the resolved
+`resourceReuse` setting, whose default is `true`. An explicit document value overrides non-policy
+settings in either direction. When effective, `false` disables reuse for every resource in the
+document; a resource level `reuseResource: true` cannot override it. Policy takes precedence over
+both directives. Both new directive fields require updated configuration schemas; the
 configuration schema URI in the example must resolve to a version that includes them.
 
 #### Settings
 
-A new setting `resourceReuse` (boolean, default `true`) is added to DSC settings with the same
-effect as the document level directive, so an operator can enforce isolation machine wide without
-editing configuration documents. The most restrictive of setting, document directive, and resource
-directive wins. The setting is resolved through DSC's existing settings scopes and policy
-precedence; it is not a separate machine-only settings mechanism.
+A new setting `resourceReuse` (boolean, default `true`) is added to DSC settings. The setting is
+resolved through DSC's existing settings scopes and policy precedence; it is not a separate
+machine-only settings mechanism. Its resolved value and source scope determine whether it is an
+overridable default or enforced policy.
+
+#### Settings and directive precedence
+
+1. If `resourceReuse` is explicitly defined in the policy scope, its value is authoritative for
+   every instance. Neither a document nor a resource directive can override it, including an
+   instance opt-out when policy is `true`.
+2. Otherwise, an explicit document `reuseResources` value overrides the resolved setting, subject
+   to any inherited document restriction described under [Nested invocations](#nested-invocations).
+   If omitted, use the resolved setting, including the default `true` when no scope defines it.
+3. Unless policy applies, resource `reuseResource: false` disables reuse for that instance.
+   Omitted or `true` inherits the effective document value; it never re-enables reuse.
+
+Thus `reuseResource: true` explicitly documents inheritance, but has the same behavior as omitting
+the field. It is not an override. Processes are started lazily only when a native call needs them;
+enabling reuse does not eagerly start every discovered JSON-RPC resource.
+
+The following examples assume no inherited restriction from a parent document:
+
+| Resolved setting | Source scope | Document `reuseResources` | Resource `reuseResource` | Effective reuse |
+| ---------------- | ------------ | ------------------------- | ------------------------ | --------------- |
+| `true` | default | omitted | omitted | `true` |
+| `false` | non-policy | omitted | `true` | `false` |
+| `false` | non-policy | `true` | omitted | `true` |
+| `true` | non-policy | `false` | `true` | `false` |
+| `true` | non-policy | omitted | `false` | `false` |
+| `false` | non-policy | `true` | `false` | `false` |
+| `false` | policy | `true` | `true` | `false` |
+| `true` | policy | `false` | `false` | `true` |
+
+DSC emits a warning when a directive conflicts with policy, identifying the directive and enforced
+value. When a document directive overrides a different value explicitly resolved from a non-default,
+non-policy settings scope, DSC emits a debug trace identifying that scope and the overriding value.
+If a resource explicitly requests `true` while effective document behavior disables reuse, DSC
+emits an info trace that the resource directive is ignored; use the policy warning instead when
+policy is the reason. These diagnostics follow configured trace-level filtering. Inherited
+document restrictions are described under [Nested invocations](#nested-invocations).
 
 #### Behavior matrix
 
@@ -236,11 +275,57 @@ schema:
 
 #### What-if capabilities
 
-A new optional `supportsWhatIf` boolean on `set` and `delete` declares native JSON-RPC what-if
-support when `jsonrpc` is present. Its default is `false`. Existing `whatIf` argument declarations
-on executable commands also continue to declare native what-if support for dual-transport
-resources, and a separate top-level `whatIf` object continues to declare a set what-if operation.
-A resource using either declaration must implement the advertised behavior over JSON-RPC.
+A new optional `supportsWhatIf` boolean on `set` and `delete` declares native what-if support.
+For each operation, its effective value is the explicit boolean when present; otherwise it is
+`true` if `args` contains a `whatIfArg` declaration and `false` if it does not. This preserves
+capability discovery for existing executable manifests without requiring the new field.
+
+Manifest validation rejects inconsistent declarations before invocation:
+
+- `supportsWhatIf: false` forbids a `whatIfArg` in that operation's `args`.
+- `supportsWhatIf: true` requires a `whatIfArg` when that operation declares an executable,
+  including an executable fallback on a JSON-RPC resource.
+- Without an executable, `supportsWhatIf: true` is valid only for a JSON-RPC operation, consistent
+  with the operation declaration rules above; it requires no executable arguments.
+
+| `supportsWhatIf` | Operation executable | `whatIfArg` in `args` | Effective native what-if support |
+| --------------- | -------------------- | -------------------- | ------------------------------- |
+| omitted | absent (JSON-RPC only) | absent | `false` |
+| `true` | absent (JSON-RPC only) | absent | `true` |
+| `false` | absent (JSON-RPC only) | absent | `false` |
+| omitted | present | absent | `false` |
+| omitted | present | present | `true` |
+| `true` | present | present | `true` |
+| `false` | present | absent | `false` |
+| `false` | present | present | Invalid manifest: forbidden what-if argument. |
+| `true` | present | absent | Invalid manifest: missing what-if argument. |
+
+For example, these operation fragments illustrate inference, JSON-RPC-only support, and validation:
+
+```yaml
+---
+set: # effective supportsWhatIf: true, inferred from args
+  executable: example
+  args: ["set", { whatIfArg: "--dry-run" }]
+---
+set: # effective supportsWhatIf: true, requires top-level jsonrpc
+  supportsWhatIf: true
+---
+set: # invalid: supportsWhatIf: false forbids the what-if argument
+  supportsWhatIf: false
+  executable: example
+  args: ["set", { whatIfArg: "--dry-run" }]
+---
+set: # invalid: supportsWhatIf: true requires a what-if argument for the executable
+  supportsWhatIf: true
+  executable: example
+  args: ["set"]
+```
+
+For a JSON-RPC resource, effective native support applies to JSON-RPC as well as any executable
+fallback for that operation. A separate top-level `whatIf` object continues to declare a set
+what-if operation, independently of native support on `set`; when `jsonrpc` is present, that
+operation must also be implemented over JSON-RPC.
 
 For set what-if, the engine preserves today's selection order: native set what-if first, then the
 separate `whatIf` operation, then synthetic test-based what-if. Native set what-if uses
@@ -250,9 +335,7 @@ Native delete what-if uses `operation: "delete"` and `executionType: "whatIf"`; 
 uses today's synthetic delete what-if. Merely supporting `set` or `delete` does not advertise
 what-if support. No actual mutation is dispatched during synthetic what-if.
 
-If `supportsWhatIf: true` is declared and an executable fallback is provided for the same operation,
-that fallback must also declare a `whatIf` argument. This ensures disabling reuse cannot remove
-the advertised native what-if behavior.
+These validation rules ensure disabling reuse cannot remove advertised native what-if behavior.
 
 ### Protocol
 
@@ -703,12 +786,22 @@ resources run a nested `dsc config --as-group ...` process which owns its own po
 both inside and outside a group therefore runs as (at least) two processes. Sharing a pool across
 nested engines is out of scope for this RFC.
 
-A document-level `reuseResources: false` also constrains nested DSC runs created for that document.
-The engine propagates an inherited reuse prohibition in the internal run context, including across
-nested DSC process boundaries. A nested document or instance cannot override it with `true`.
-Settings and any additional nested restrictions are still evaluated. An instance-level
-`reuseResource: false` isolates calls to that instance, including a group host, but does not by
-itself disable reuse among the group's child instances.
+An effective document-level `reuseResources: false` also constrains nested DSC runs created for
+that document. The engine propagates an inherited reuse prohibition in the internal run context,
+including across nested DSC process boundaries. Without policy, a nested document or instance
+cannot override that inherited restriction with `true`; DSC emits an info trace when an explicit
+`true` is ignored for this reason. Settings and any additional nested restrictions are still
+evaluated. A non-policy setting alone does not impose an inherited prohibition: a nested document
+can override that setting unless an ancestor document explicitly disabled reuse.
+
+Policy remains authoritative across nested runs: the engine propagates the resolved policy value
+and its provenance so nested directives cannot circumvent it. In particular, policy `true` causes
+a conflicting document `false` to be ignored with a warning, not propagated as an inherited
+prohibition. Policy `false` forbids reuse throughout the nested runs.
+
+An effective instance-level `reuseResource: false` isolates calls to that instance, including a
+group host, but does not by itself disable reuse among the group's child instances. Under policy
+`true`, that instance opt-out is ignored with a warning like any other conflicting directive.
 
 #### State isolation
 
@@ -717,7 +810,7 @@ directory, caches, module-scope variables. Resource authors MUST treat each `dsc
 independent and MUST NOT rely on incidental process-local state or ordering to identify an instance.
 This does not remove DSC's `dependsOn` and reference ordering guarantees. The engine makes no
 guarantee about which instances share a process beyond the pool key. This is the primary reason the
-opt-out exists and documentation for resource authors must call it out.
+opt-out exists, subject to policy, and documentation for resource authors must call it out.
 
 ## Open Questions
 
@@ -735,7 +828,7 @@ opt-out exists and documentation for resource authors must call it out.
 
 `reuseResource: false` is a boolean that negates the default. An alternative is a positively named
 directive such as `processIsolation: true` / `isolated: true`, which reads more naturally in a
-document and avoids `reuseResource: true` meaning "the default". The WG should pick one. The
+document and avoids `reuseResource: true` meaning "inherit". The WG should pick one. The
 semantics are identical.
 
 ### Batch input instead of a long running process
