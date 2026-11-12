@@ -119,7 +119,7 @@ changes since the last release, see the [diff on GitHub][unreleased].
   <details><summary>Related work items</summary>
 
   - Issues: [#1655][#1655]
-  - PRs: _None_
+  - PRs: [#1802][#1802]
 
   </details>
 
@@ -2050,3 +2050,4 @@ Version `3.0.0` is the first generally available release of DSC.
 [#1755]: https://github.com/PowerShell/DSC/issues/1755
 [#1758]: https://github.com/PowerShell/DSC/issues/1758
 [#1759]: https://github.com/PowerShell/DSC/issues/1759
+[#1802]: https://github.com/PowerShell/DSC/issues/1802
