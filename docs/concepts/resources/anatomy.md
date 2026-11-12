@@ -133,7 +133,8 @@ Return the existing logical operation output as a single `result` value. For `st
 without declared return output and actual delete return `null`. Schema commands return a JSON
 Schema value. Existing group results remain arrays. Native set or delete what-if requires
 `supportsWhatIf: true`; if that operation also has an executable fallback, it must retain a
-`whatIfArg` in its fallback arguments.
+`whatIfArg` in its fallback arguments. A fallback's `whatIfArg` only declares what-if support for
+executable invocation; it doesn't enable native JSON-RPC what-if.
 
 During an invocation, the resource can send `dsc_trace` or `dsc_progress` notifications correlated
 by `params.requestId`. Progress accepts a message and optional fractional `completed` and `total`.

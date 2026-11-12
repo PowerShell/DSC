@@ -150,8 +150,12 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, contex
             operation_type = "whatif".to_string();
             // Check if set supports native what-if
             let has_native_whatif = manifest.set.as_ref().is_some_and(|set| {
-                set.supports_what_if == Some(true) || set.args.as_ref().is_some_and(|args|
-                    args.iter().any(|arg| matches!(arg, SetDeleteArgKind::WhatIf { .. })))
+                if use_jsonrpc(resource, &set.executable, context) {
+                    set.supports_what_if == Some(true)
+                } else {
+                    set.args.as_ref().is_some_and(|args|
+                        args.iter().any(|arg| matches!(arg, SetDeleteArgKind::WhatIf { .. })))
+                }
             });
 
             if has_native_whatif {
@@ -551,8 +555,7 @@ pub fn invoke_delete(resource: &DscResource, filter: &str, context: &Context) ->
     let command_resource = context.target_resource.as_ref().unwrap_or(resource);
     validate_security_context(context.target_resource.as_ref(), &delete.require_security_context, &command_resource.type_name, &Operation::Delete)?;
     let (args, supports_whatif) = if use_jsonrpc(resource, &delete.executable, context) {
-        (None, delete.supports_what_if == Some(true) || delete.args.as_ref().is_some_and(|args|
-            args.iter().any(|arg| matches!(arg, SetDeleteArgKind::WhatIf { .. }))))
+        (None, delete.supports_what_if == Some(true))
     } else { process_set_delete_args(delete.args.as_ref(), filter, command_resource, context)? };
     if context.execution_type == ExecutionKind::WhatIf && !supports_whatif {
         // perform a synthetic what-if by calling test and wrapping the TestResult in DeleteResultKind::SyntheticWhatIf

@@ -349,6 +349,69 @@ Describe 'JSON-RPC resource lifecycle' {
         $export.resources[0].properties.transport | Should -BeExactly 'jsonrpc'
     }
 
+    It 'uses <ExpectedOperation> for hybrid <Operation> what-if with reuse <Reuse> and separate what-if <SeparateWhatIf>' -ForEach @(
+        @{ Operation = 'set'; Reuse = $true; SeparateWhatIf = $false; ExpectedOperation = 'test' }
+        @{ Operation = 'set'; Reuse = $true; SeparateWhatIf = $true; ExpectedOperation = 'whatIf' }
+        @{ Operation = 'set'; Reuse = $false; SeparateWhatIf = $false; ExpectedOperation = 'fallback' }
+        @{ Operation = 'delete'; Reuse = $true; SeparateWhatIf = $false; ExpectedOperation = 'test' }
+        @{ Operation = 'delete'; Reuse = $false; SeparateWhatIf = $false; ExpectedOperation = 'fallback' }
+    ) {
+        $manifest = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json'
+            type = 'Test/JsonRpcHybridWhatIf'
+            version = '0.1.0'
+            jsonrpc = @{ executable = 'dsctest'; args = @('jsonrpc'); initializeTimeoutMS = 2000 }
+            get = @{}
+            test = @{ return = 'stateAndDiff' }
+            set = @{
+                executable = 'dsctest'
+                args = @('whatif', '--state-and-diff', @{ whatIfArg = '-w' })
+                return = 'stateAndDiff'
+            }
+            delete = @{
+                executable = 'dsctest'
+                args = @('whatif-delete', @{ whatIfArg = '-w' })
+            }
+            schema = @{ embedded = @{ type = 'object'; additionalProperties = $true } }
+        }
+        if ($SeparateWhatIf) {
+            $manifest.whatIf = @{ return = 'stateAndDiff' }
+        }
+        $manifestPath = Join-Path $TestDrive 'hybrid.dsc.resource.json'
+        $manifest | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $manifestPath
+        $properties = @{ value = 5 }
+        if ($Operation -eq 'delete') {
+            $properties._exist = $false
+        }
+        $configuration = New-RpcConfiguration -ResourceType $manifest.type -Properties $properties -Directives @{ reuseResources = $Reuse }
+        $previousResourcePath = $env:DSC_RESOURCE_PATH
+        try {
+            $env:DSC_RESOURCE_PATH = (@($TestDrive, $previousResourcePath) | Where-Object { $_ }) -join [IO.Path]::PathSeparator
+            $result = dsc config set -w -i ($configuration | ConvertTo-Json -Depth 20) | ConvertFrom-Json -Depth 30
+            $LASTEXITCODE | Should -Be 0
+            $result.hadErrors | Should -BeFalse
+            $calls = @((Get-RpcEvent) | Where-Object event -EQ dsc_invoke)
+            $calls.params.operation | Should -Not -Contain 'set'
+            $calls.params.operation | Should -Not -Contain 'delete'
+            if ($ExpectedOperation -eq 'fallback') {
+                if ($Operation -eq 'set') {
+                    $result.results[0].result.afterState.executionType | Should -BeExactly 'WhatIf'
+                    $result.results[0].result.afterState.fromResource | Should -BeExactly 'ResourceProvidedDiff'
+                } else {
+                    $result.results[0].metadata.whatIf | Should -Contain 'Delete what-if message 1'
+                }
+            } else {
+                $selectedCalls = @($calls | Where-Object { $_.params.operation -eq $ExpectedOperation })
+                $selectedCalls | Should -HaveCount 2
+                if ($SeparateWhatIf) {
+                    $selectedCalls.params.executionType | Select-Object -Unique | Should -BeExactly 'whatIf'
+                }
+            }
+        } finally {
+            $env:DSC_RESOURCE_PATH = $previousResourcePath
+        }
+    }
+
     It 'preserves follow-up get, synthetic export, and synthetic what-if semantics' {
         $set = dsc resource set -r Test/JsonRpcSynthetic -i '{"value":5}' | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
