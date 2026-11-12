@@ -155,7 +155,7 @@ double quotes, to the `-ResourcePath` argument. DSC sends the instance propertie
 
 ## Required properties
 
-The `get` definition must include these properties:
+Unless the manifest defines [jsonrpc](root.md#jsonrpc), the `get` definition must include:
 
 - [executable](#executable)
 
@@ -170,7 +170,7 @@ executable.
 
 ```yaml
 Type:     string
-Required: true
+Required: true unless jsonrpc is defined
 ```
 
 ### args

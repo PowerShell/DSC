@@ -61,8 +61,10 @@ impl McpServer {
             };
 
             let context = Context::new();
-            let schema = match resource.schema(&context) {
+            let schema = match context.complete_resource_operation(resource.schema(&context)) {
                 Ok(schema_str) => serde_json::from_str(&schema_str).ok(),
+                Err(err) if resource.as_dsc_resource().and_then(|resource| resource.manifest.as_ref()).is_some_and(|manifest| manifest.jsonrpc.is_some()) =>
+                    return Err(McpError::internal_error(err.to_string(), None)),
                 Err(_) => None,
             };
 

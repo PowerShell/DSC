@@ -242,6 +242,7 @@ impl PolicyFileDataBuilder {
             ignore_settings_file: self.ignore_settings_file,
             tracing: self.tracing,
             resource_path: self.resource_path,
+            ..Default::default()
         }
     }
 }
@@ -301,6 +302,7 @@ impl PreferenceFileDataBuilder {
         PreferenceFileData {
             tracing: self.tracing,
             resource_path: self.resource_path,
+            ..Default::default()
         }
     }
 }
@@ -487,6 +489,7 @@ impl EnvironmentDataBuilder {
             dsc_resource_path: self.dsc_resource_path,
             dsc_restricted_path: self.dsc_restricted_path,
             dsc_ignore_settings_file: self.dsc_ignore_settings_file,
+            ..Default::default()
         }
     }
 }

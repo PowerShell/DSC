@@ -11,6 +11,8 @@ use tree_sitter::LanguageError;
 
 #[derive(Error, Debug, Diagnostic)]
 pub enum DscError {
+    #[error("{t}: {resource} ({code}): {message}", t = t!("dscresources.jsonrpc.applicationError"))]
+    JsonRpc { resource: String, code: i32, message: String, data: Option<Box<serde_json::Value>> },
     #[error("{t}: {0}", t = t!("dscerror.adapterNotFound"))]
     AdapterNotFound(String),
 

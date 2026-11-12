@@ -131,7 +131,7 @@ capability.
 
 ## Required properties
 
-The `whatIf` definition must include these properties:
+Unless the manifest defines [jsonrpc](root.md#jsonrpc), the `whatIf` definition must include:
 
 - [executable](#executable)
 
@@ -146,7 +146,7 @@ executable.
 
 ```yaml
 Type:     string
-Required: true
+Required: true unless jsonrpc is defined
 ```
 
 ### args

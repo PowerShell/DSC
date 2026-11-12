@@ -531,7 +531,7 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
         };
 
         let context = Context::new();
-        validate_properties(&*resource, &resource_block["properties"], &context)?;
+        context.complete_resource_operation(validate_properties(&*resource, &resource_block["properties"], &context))?;
     }
 
     Ok(())

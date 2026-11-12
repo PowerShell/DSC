@@ -7,3 +7,4 @@ pub mod dscresource;
 pub mod resource_manifest;
 
 use super::dscerror;
+pub(crate) mod jsonrpc;

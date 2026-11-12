@@ -92,7 +92,7 @@ Because the manifest defines the what-if argument, the resource has the `deleteW
 
 ## Required properties
 
-The `delete` definition must include these properties:
+Unless the manifest defines [jsonrpc](root.md#jsonrpc), the `delete` definition must include:
 
 - [executable](#executable)
 
@@ -107,8 +107,15 @@ executable.
 
 ```yaml
 Type:     string
-Required: true
+Required: true unless jsonrpc is defined
 ```
+
+### supportsWhatIf
+
+Set `supportsWhatIf` to `true` when the JSON-RPC `delete` operation supports
+`executionType: whatIf` without removing the instance. This advertises the `deleteWhatIf`
+capability and requires `jsonrpc`. If an executable fallback is declared, its `args` must also
+include a [what-if argument](#what-if-argument). The default is `false`.
 
 ### args
 

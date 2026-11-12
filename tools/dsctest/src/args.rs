@@ -61,6 +61,13 @@ pub enum RefreshEnvOperation {
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
 pub enum SubCommand {
+    #[clap(name = "jsonrpc", about = "Run the JSON-RPC test server or executable fallback")]
+    Jsonrpc {
+        #[clap(long)]
+        operation: Option<String>,
+        #[clap(long)]
+        input: Option<String>,
+    },
     #[clap(name = "action", about = "Invoke action")]
     Action {
         #[clap(name = "input", short, long, help = "The input to the action command as JSON")]

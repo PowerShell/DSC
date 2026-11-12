@@ -37,11 +37,12 @@ DSC sends data to the command in three ways:
 1. When the `args` array includes a JSON input argument definition, DSC sends the data as a string
    representing the data as a compressed JSON object to the specified argument.
 
-If you don't define the `input` property and don't define a JSON input argument, DSC can't pass the
-desired state to the resource. You can only define one JSON input argument for a command.
+For executable calls, if you don't define the `input` property and don't define a JSON input
+argument, DSC can't pass the desired state to the resource. You can only define one JSON input
+argument for a command.
 
-You must define the `input` property, one JSON input argument in the `args` property array, or
-both.
+For executable calls, define the `input` property, one JSON input argument in the `args` property
+array, or both. JSON-RPC sends the object directly as `params.properties`.
 
 When the `args` array includes a [what-if argument](#what-if-argument), the resource has the
 `setWhatIf` capability. DSC calls the `set` command with the what-if argument when a user invokes
@@ -124,7 +125,7 @@ Because the manifest defines the what-if argument, the resource has the `setWhat
 
 ## Required properties
 
-The `set` definition must include these properties:
+Unless the manifest defines [jsonrpc](root.md#jsonrpc), the `set` definition must include:
 
 - [executable](#executable)
 
@@ -139,8 +140,15 @@ executable.
 
 ```yaml
 Type:     string
-Required: true
+Required: true unless jsonrpc is defined
 ```
+
+### supportsWhatIf
+
+Set `supportsWhatIf` to `true` when the JSON-RPC `set` operation supports
+`executionType: whatIf` without modifying the system. This advertises the `setWhatIf` capability
+and requires `jsonrpc`. If an executable fallback is declared, its `args` must also include a
+[what-if argument](#what-if-argument). The default is `false`.
 
 ### args
 

@@ -3,6 +3,9 @@
 
 //! Defines the fields used in DSC settings.
 
+mod resource_timeouts;
+pub use resource_timeouts::*;
+
 #[cfg(doc)]
 pub(super) mod _implementation_guidance {
     //! This documentation describes the structure and provides guidance for implementing new

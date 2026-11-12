@@ -135,6 +135,23 @@ Required: false
 
 You can define the following directives for a resource instance:
 
+#### reuseResource
+
+Set `reuseResource` to `false` to prevent this instance from using a reused JSON-RPC resource
+process. DSC uses an executable fallback when the selected operation defines one. Otherwise, each
+underlying invocation gets a separate JSON-RPC process, including schema, validation, and follow-up
+get calls. Disabling reuse for one instance doesn't discard a process used by other instances.
+
+The default is `true`. This directive can't override a `resourceReuse: false` setting, a document's
+`reuseResources: false` directive, or an inherited prohibition. Unlike the document directive, an
+instance-only restriction doesn't automatically disable reuse inside a nested configuration.
+
+```yaml
+Type:     boolean
+Required: false
+Default:  true
+```
+
 #### requireAdapter
 
 The `requireAdapter` directive indicates that DSC should use the specified adapter to invoke the

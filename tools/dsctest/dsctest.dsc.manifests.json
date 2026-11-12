@@ -336,6 +336,71 @@
   "resources": [
     {
       "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/JsonRpcAdapter",
+      "kind": "adapter",
+      "version": "0.1.0",
+      "jsonrpc": {"executable": "dsctest", "args": ["jsonrpc"], "initializeTimeoutMS": 2000},
+      "adapter": {
+        "inputKind": "single",
+        "list": {"executable": "dsctest", "args": ["jsonrpc", "--operation", "list"]}
+      },
+      "get": {},
+      "set": {"return": "stateAndDiff", "implementsPretest": true},
+      "test": {"return": "stateAndDiff"},
+      "export": {"schema": {"command": {}}},
+      "schema": {"command": {}}
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/JsonRpcSynthetic",
+      "version": "0.1.0",
+      "jsonrpc": {"executable": "dsctest", "args": ["jsonrpc"], "initializeTimeoutMS": 2000},
+      "get": {},
+      "set": {},
+      "test": {},
+      "schema": {"command": {}}
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/JsonRpc",
+      "version": "0.1.0",
+      "jsonrpc": {
+        "executable": "dsctest",
+        "args": ["jsonrpc"],
+        "initializeTimeoutMS": 2000,
+        "requestTimeoutMS": 1000,
+        "shutdownTimeoutMS": 2000
+      },
+      "get": {},
+      "set": {"return": "stateAndDiff", "implementsPretest": true, "supportsWhatIf": true},
+      "test": {"return": "stateAndDiff"},
+      "delete": {"supportsWhatIf": true},
+      "export": {"schema": {"embedded": {"type": "object"}}},
+      "schema": {"command": {}}
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/JsonRpcValidate",
+      "version": "0.1.0",
+      "jsonrpc": {"executable": "dsctest", "args": ["jsonrpc"], "initializeTimeoutMS": 2000},
+      "get": {},
+      "validate": {},
+      "schema": {"embedded": {"type": "object"}}
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/JsonRpcFallback",
+      "version": "0.1.0",
+      "jsonrpc": {"executable": "dsctest", "args": ["jsonrpc"], "initializeTimeoutMS": 2000},
+      "get": {
+        "executable": "dsctest",
+        "args": ["jsonrpc", "--operation", "get", {"jsonInputArg": "--input"}],
+        "input": "env"
+      },
+      "schema": {"embedded": {"type": "object", "additionalProperties": true}}
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
       "type": "Test/CopyResource",
       "version": "0.1.0",
       "get": {

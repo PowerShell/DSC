@@ -72,7 +72,8 @@ mod serde {
                     PathBuf::from("/dsc/extensions")
                 ]),
                 ..Default::default()
-            })
+            }),
+            ..Default::default()
         },
         json!({
             "resourcePath": {

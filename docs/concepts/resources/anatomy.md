@@ -87,7 +87,93 @@ application or a shell script. A resource can use different executables for diff
 For DSC to use an executable, it must be discoverable in the `PATH` environment variable. DSC calls
 the executable once per operation, using the exit code returned by the executable to determine if
 the command was successful. DSC treats exit code `0` as a success and all other exit codes as an
-error.
+error. Resources can instead opt into a reusable JSON-RPC process.
+
+### JSON-RPC resources
+
+Declare a `jsonrpc` entry point to let DSC invoke multiple operations in one process:
+
+```json
+{
+  "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+  "type": "Example/Reusable",
+  "version": "1.0.0",
+  "jsonrpc": {
+    "executable": "example-resource",
+    "args": ["jsonrpc"],
+    "initializeTimeoutMS": 250,
+    "requestTimeoutMS": 0,
+    "shutdownTimeoutMS": 250
+  },
+  "get": {},
+  "set": {"return": "stateAndDiff", "supportsWhatIf": true},
+  "schema": {"embedded": {"type": "object"}}
+}
+```
+
+Operation declarations still determine which operations are available. An empty declaration like
+`get: {}` uses JSON-RPC without an executable fallback. An operation can also declare its existing
+`executable`, `args`, and `input` as a fallback. These fields only apply to executable invocation;
+the JSON-RPC entry point accepts static string arguments and receives properties in request params.
+Without `jsonrpc`, operations still require an executable. JSON-RPC adapters must use
+`inputKind: single`; adapter enumeration continues to use its executable command.
+
+DSC prefers JSON-RPC while reuse is enabled. It starts the process on first use, sends `initialize`,
+and invokes operations sequentially through `dsc_invoke`. Messages are UTF-8 JSON-RPC 2.0 objects,
+one complete JSON value per newline, flushed after writing. Request IDs are integers. The resource
+must respond with the same ID and exactly one of `result` or `error`.
+
+An initialize response selects `protocolVersion: 1`. An invocation includes `operation`,
+`executionType` (`actual` or `whatIf`), `resourceType`, optional object `properties`, and `context`.
+For adapted resources, `context.targetResource` describes the target while the process belongs to
+the adapter host. Schema requests set `context.schemaKind` to `resource` or `exportInput`.
+
+Return the existing logical operation output as a single `result` value. For `stateAndDiff`, return
+`{"actualState": {...}, "diff": ["propertyName"]}`. Export returns an array of instances. Operations
+without declared return output and actual delete return `null`. Schema commands return a JSON
+Schema value. Existing group results remain arrays. Native set or delete what-if requires
+`supportsWhatIf: true`; if that operation also has an executable fallback, it must retain a
+`whatIfArg` in its fallback arguments.
+
+During an invocation, the resource can send `dsc_trace` or `dsc_progress` notifications correlated
+by `params.requestId`. Progress accepts a message and optional fractional `completed` and `total`.
+Completed work must be nonnegative and nondecreasing. A total requires completed work, must be
+positive and stable, and can't be below completed work. Notifications don't extend request deadlines.
+
+After configuration completion or failure, DSC sends `shutdown`, expects `result: null`, sends
+the `exit` notification, and waits for process termination. Standalone `dsc resource` commands use
+the same transport preference and clean up before returning. Malformed protocol messages,
+initialization failures, or timeouts terminate the process without retrying.
+
+#### Reuse and timeout settings
+
+`resourceReuse` defaults to `true`. Preference files and policy can set it, and
+`DSC_RESOURCE_REUSE=false` disables reuse through the environment setting. Existing settings
+precedence applies, including policy enforcement. A document can further restrict reuse with
+`directives.reuseResources: false`, and an instance with `directives.reuseResource: false`.
+Restrictions combine: an inner scope can't re-enable reuse forbidden by an outer scope.
+
+When reuse is disabled, DSC prefers the selected operation's executable fallback. Without a
+fallback, it initializes a fresh JSON-RPC process for each underlying call and shuts it down
+immediately afterward. Nested configurations have their own process pools. A document-wide
+prohibition is inherited by nested engines; an instance-only prohibition isn't.
+
+Preference files and policy can override individual timeout fields:
+
+```json
+{
+  "resourceReuse": true,
+  "resourceTimeouts": {
+    "initializeTimeoutMS": 500,
+    "requestTimeoutMS": 30000,
+    "shutdownTimeoutMS": 500
+  }
+}
+```
+
+An explicitly configured timeout overrides the manifest value, even when it is smaller.
+Otherwise, DSC uses the manifest value, then the defaults shown in the manifest example above.
+Initialize and shutdown timeouts must be positive; a request timeout of `0` means no deadline.
 
 ### Inputs
 
