@@ -4,7 +4,7 @@ Author:       @SteveL-MSFT
 Sponsor:      null    # <@GitHubUserName>
 Status:       Draft   # <Draft | Experimental | Accepted | Final>
 SupercededBy: null    # <Superceding RFC Number>
-Version:      1.4     # <Major>.<Minor>
+Version:      0.4     # <Major>.<Minor>
 Area:         Resources
 CommentsDue:  December 10, 2026
 ---
