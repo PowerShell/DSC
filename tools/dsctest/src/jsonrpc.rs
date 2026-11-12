@@ -14,7 +14,9 @@ fn write_message(output: &mut impl Write, value: &Value) -> Result<(), Box<dyn s
 fn record(event: &str, params: &Value) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(path) = std::env::var_os("DSC_TEST_JSONRPC_LOG") {
         let mut file = OpenOptions::new().create(true).append(true).open(path)?;
-        writeln!(file, "{}", json!({"pid": std::process::id(), "event": event, "params": params}))?;
+        let mut entry = serde_json::to_vec(&json!({"pid": std::process::id(), "event": event, "params": params}))?;
+        entry.push(b'\n');
+        file.write_all(&entry)?;
     }
     Ok(())
 }

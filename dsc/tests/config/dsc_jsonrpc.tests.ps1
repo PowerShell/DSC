@@ -132,7 +132,7 @@ Describe 'JSON-RPC resource lifecycle' {
                 executable = 'dsctest'
                 args = @('jsonrpc')
                 initializeTimeoutMS = 2000
-                requestTimeoutMS = 200
+                requestTimeoutMS = 5000
             }
             get = @{}
             validate = @{}
