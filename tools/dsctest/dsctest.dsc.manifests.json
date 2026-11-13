@@ -409,6 +409,78 @@
           }
         }
       }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/adapted/manifest.json",
+      "type": "AdaptedReturn/Inherit",
+      "kind": "resource",
+      "version": "1.0.0",
+      "capabilities": [
+        "get",
+        "set",
+        "test"
+      ],
+      "description": "An adapted resource that inherits the return kind 'stateAndDiff' its adapter defines.",
+      "author": "DSC Team",
+      "requireAdapter": "Test/AdapterReturn",
+      "path": "adaptedTest.dsc.adaptedResource.json",
+      "schema": {
+        "embedded": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "$id": "https://github.com/powershell/dsc",
+          "title": "AdaptedReturn/Inherit",
+          "description": "An adapted resource for testing.",
+          "type": "object",
+          "required": [],
+          "additionalProperties": false,
+          "properties": {
+            "one": {
+              "type": "string",
+              "title": "Property One",
+              "description": "This is property one of the adapted resource."
+            }
+          }
+        }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/adapted/manifest.json",
+      "type": "AdaptedReturn/Override",
+      "kind": "resource",
+      "version": "1.0.0",
+      "capabilities": [
+        "get",
+        "set",
+        "test"
+      ],
+      "description": "An adapted resource that overrides the return kind 'stateAndDiff' its adapter defines with 'state'.",
+      "author": "DSC Team",
+      "requireAdapter": "Test/AdapterReturn",
+      "path": "adaptedTest.dsc.adaptedResource.json",
+      "set": {
+        "return": "state"
+      },
+      "test": {
+        "return": "state"
+      },
+      "schema": {
+        "embedded": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "$id": "https://github.com/powershell/dsc",
+          "title": "AdaptedReturn/Override",
+          "description": "An adapted resource for testing.",
+          "type": "object",
+          "required": [],
+          "additionalProperties": false,
+          "properties": {
+            "one": {
+              "type": "string",
+              "title": "Property One",
+              "description": "This is property one of the adapted resource."
+            }
+          }
+        }
+      }
     }
   ],
   "resources": [
@@ -1444,6 +1516,79 @@
             "metadata"
           ]
         }
+      }
+    },
+    {
+      "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+      "type": "Test/AdapterReturn",
+      "version": "0.1.0",
+      "kind": "adapter",
+      "description": "An adapter that defines the return kind 'stateAndDiff' for set, test and the legacy whatIf method.",
+      "adapter": {
+        "inputKind": "single"
+      },
+      "get": {
+        "executable": "dsctest",
+        "args": [
+          "adapter",
+          "--operation",
+          "get",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          },
+          {
+            "resourceTypeArg": "--resource-type"
+          }
+        ]
+      },
+      "set": {
+        "executable": "dsctest",
+        "args": [
+          "adapter",
+          "--operation",
+          "set",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          },
+          {
+            "resourceTypeArg": "--resource-type"
+          }
+        ],
+        "return": "stateAndDiff"
+      },
+      "whatIf": {
+        "executable": "dsctest",
+        "args": [
+          "adapter",
+          "--operation",
+          "what-if",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          },
+          {
+            "resourceTypeArg": "--resource-type"
+          }
+        ],
+        "return": "stateAndDiff"
+      },
+      "test": {
+        "executable": "dsctest",
+        "args": [
+          "adapter",
+          "--operation",
+          "test",
+          {
+            "jsonInputArg": "--input",
+            "mandatory": true
+          },
+          {
+            "resourceTypeArg": "--resource-type"
+          }
+        ],
+        "return": "stateAndDiff"
       }
     },
     {

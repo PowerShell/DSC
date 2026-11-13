@@ -101,6 +101,7 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, contex
     };
     let operation_type: String;
     let mut is_synthetic_what_if = false;
+    let mut is_legacy_what_if = false;
     let command_resource = match context.target_resource.as_ref() {
         Some(target) => target,
         None => resource
@@ -124,6 +125,7 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, contex
                 &manifest.set
             } else if manifest.what_if.is_some() {
                 warn!("{}", t!("dscresources.commandResource.whatIfWarning", resource = &command_resource.type_name));
+                is_legacy_what_if = true;
                 &manifest.what_if
             } else {
                 is_synthetic_what_if = true;
@@ -227,7 +229,13 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, contex
 
     let (exit_code, stdout, stderr) = invoke_command(&set.executable, args, input_desired, resource.directory.as_deref(), env, manifest.exit_codes.as_ref())?;
 
-    let returns = resolve_return_kind(context.target_resource.as_ref(), set.returns.as_ref(), &Operation::Set);
+    // The adapted resource manifest defines `return` for the `set` method. The legacy `whatIf`
+    // method is a separate command with its own `return`, so the override doesn't apply to it.
+    let returns = if is_legacy_what_if {
+        set.returns.as_ref()
+    } else {
+        resolve_return_kind(context.target_resource.as_ref(), set.returns.as_ref(), &Operation::Set)
+    };
     let return_kind = if context.execution_type == ExecutionKind::WhatIf {
         set.what_if_returns.as_ref().or(returns)
     } else {
@@ -1374,6 +1382,9 @@ pub fn log_stderr_line<'a>(process_id: &u32, trace_line: &'a str) -> &'a str
 /// it does, that value takes precedence over the `return` defined for the same method in the
 /// manifest of the adapter that invokes the command. Otherwise the adapted resource inherits
 /// the value from the adapter's manifest.
+///
+/// The override describes the output of the adapter's `set` and `test` methods. Don't call this
+/// function for the legacy `whatIf` method, which defines its own `return`.
 ///
 /// # Arguments
 ///
