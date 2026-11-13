@@ -1,0 +1,32 @@
+# Registers DSC as an SSH subsystem so that `dsc --target ssh://<host> config ...` can reach
+# this machine. Apply it from an elevated session, then restart the SSH service:
+#
+#   dsc config set --file ssh_subsystem.dsc.yaml
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+metadata:
+  Microsoft.DSC:
+    securityContext: elevated
+parameters:
+  dscPath:
+    type: string
+    defaultValue: "[tryWhich('dsc')]"
+    metadata:
+      description: Full path of the dsc executable that sshd starts.
+  traceLevel:
+    type: string
+    defaultValue: warn
+    allowedValues:
+    - error
+    - warn
+    - info
+    metadata:
+      description: Highest trace level the target sends to remote clients.
+resources:
+- name: DSC subsystem
+  type: Microsoft.OpenSSH.SSHD/Subsystem
+  properties:
+    subsystem:
+      name: dsc
+      # The path is quoted because sshd fails to start a subsystem whose unquoted path has a space.
+      value: >-
+        [concat('"', parameters('dscPath'), '" --trace-format json --trace-level ', parameters('traceLevel'), ' server')]

@@ -4,12 +4,15 @@
 use rmcp::{
     ErrorData as McpError,
     handler::server::tool::ToolRouter,
-    model::{InitializeResult, InitializeRequestParams, ServerCapabilities, ServerConfig},
+    model::{Implementation, InitializeResult, InitializeRequestParams, ServerCapabilities, ServerConfig},
     service::{RequestContext, RoleServer},
     ServerHandler,
     tool_handler,
 };
 use rust_i18n::t;
+
+/// The name the server reports for itself in the `initialize` result.
+pub const SERVER_NAME: &str = "dsc";
 
 #[derive(Debug, Clone)]
 pub struct McpServer {
@@ -51,6 +54,9 @@ impl ServerHandler for McpServer {
                 .build()
         );
         info.instructions = Some(t!("server.mod.instructions").to_string());
+        // Report DSC itself instead of the MCP library, so a client can check which version of
+        // DSC it's talking to before it sends an operation.
+        info.server_info = Implementation::new(SERVER_NAME, env!("CARGO_PKG_VERSION"));
         info
     }
 

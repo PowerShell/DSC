@@ -839,6 +839,8 @@ dependencies = [
  "tracing",
  "tracing-indicatif",
  "tracing-subscriber",
+ "url",
+ "urlencoding",
 ]
 
 [[package]]
@@ -2923,6 +2925,7 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.21",
  "tokio",
+ "tokio-stream",
  "tokio-util",
  "tracing",
  "url",
