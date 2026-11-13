@@ -128,6 +128,43 @@ Describe 'Tests for adapted resources' {
             $out.results[0].result.differingProperties | Should -Be @('fromAdapter')
         }
 
+        It 'Inherits the return kind the adapter defines for <operation> when the adapted resource does not define it' -TestCases @(
+            @{ operation = 'test'; stateProperty = 'actualState'; diffProperty = 'differingProperties' }
+            @{ operation = 'set'; stateProperty = 'afterState'; diffProperty = 'changedProperties' }
+        ) {
+            param($operation, $stateProperty, $diffProperty)
+
+            $out = dsc -l debug resource $operation -r AdaptedReturn/Inherit -i $desired 2>$TestDrive/error.txt | ConvertFrom-Json
+            $errorTxt = Get-Content -Path $TestDrive/error.txt -Raw
+            $LASTEXITCODE | Should -Be 0 -Because $errorTxt
+            $out.$stateProperty.one | Should -BeExactly 'fromOperation'
+            $out.$diffProperty | Should -Be @('fromAdapter')
+            $errorTxt | Should -Not -BeLike "*Adapted resource 'AdaptedReturn/Inherit' defines return kind*"
+        }
+
+        It 'Prefers the return kind of the adapted resource over the one the adapter defines for <operation>' -TestCases @(
+            @{ operation = 'test'; stateProperty = 'actualState'; diffProperty = 'differingProperties' }
+            @{ operation = 'set'; stateProperty = 'afterState'; diffProperty = 'changedProperties' }
+        ) {
+            param($operation, $stateProperty, $diffProperty)
+
+            $out = dsc -l debug resource $operation -r AdaptedReturn/Override -i $desired 2>$TestDrive/error.txt | ConvertFrom-Json
+            $errorTxt = Get-Content -Path $TestDrive/error.txt -Raw
+            $LASTEXITCODE | Should -Be 0 -Because $errorTxt
+            $out.$stateProperty.one | Should -BeExactly 'fromOperation'
+            $out.$diffProperty | Should -Be @('one')
+            $errorTxt | Should -BeLike "*Adapted resource 'AdaptedReturn/Override' defines return kind 'state' for operation '$operation'*"
+        }
+
+        It 'Uses the return kind of the legacy whatIf method of the adapter instead of the one the adapted resource defines for set' {
+            $out = dsc -l debug resource set --what-if -r AdaptedReturn/Override -i $desired 2>$TestDrive/error.txt | ConvertFrom-Json
+            $errorTxt = Get-Content -Path $TestDrive/error.txt -Raw
+            $LASTEXITCODE | Should -Be 0 -Because $errorTxt
+            $out.afterState.one | Should -BeExactly 'fromWhatIf'
+            $out.changedProperties | Should -Be @('fromWhatIf')
+            $errorTxt | Should -Not -BeLike "*Adapted resource 'AdaptedReturn/Override' defines return kind 'state' for operation 'set'*"
+        }
+
         It 'Rejects an adapted resource manifest with an invalid return kind for <operation>' -TestCases @(
             @{ operation = 'set' }
             @{ operation = 'test' }
@@ -150,7 +187,10 @@ Describe 'Tests for adapted resources' {
             Set-Content -Path (Join-Path $manifestDir 'invalidReturn.dsc.adaptedResource.json') -Value $manifest
 
             $oldPath = $env:DSC_RESOURCE_PATH
+            $oldRestrictedPath = $env:DSC_RESTRICTED_PATH
             try {
+                # DSC_RESTRICTED_PATH takes precedence over DSC_RESOURCE_PATH
+                $env:DSC_RESTRICTED_PATH = $null
                 $env:DSC_RESOURCE_PATH = $manifestDir + [System.IO.Path]::PathSeparator + (Split-Path (Get-Command dsctest).Source)
                 $out = dsc resource list 'Adapted/InvalidReturn' 2>$TestDrive/error.txt
                 $out | Should -BeNullOrEmpty
@@ -158,6 +198,7 @@ Describe 'Tests for adapted resources' {
             }
             finally {
                 $env:DSC_RESOURCE_PATH = $oldPath
+                $env:DSC_RESTRICTED_PATH = $oldRestrictedPath
             }
         }
     }
