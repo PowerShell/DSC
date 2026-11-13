@@ -149,7 +149,7 @@ pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation, res
                     };
                     Ok(serde_json::to_string(&adapted_security_context_current).unwrap())
                 },
-                "Adapted/ReturnState" | "Adapted/ReturnStateAndDiff" => {
+                "Adapted/ReturnState" | "Adapted/ReturnStateAndDiff" | "AdaptedReturn/Inherit" | "AdaptedReturn/Override" => {
                     Ok(serde_json::json!({ "one": "fromGet" }).to_string())
                 },
                 _ => Err(format!("Unknown resource type: {resource_type}")),
@@ -193,12 +193,22 @@ pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation, res
                         .map_err(|e| format!("Failed to parse input for Adapted/SecurityContextCurrent: {e}"))?;
                     Ok(serde_json::to_string(&adapted_security_context_current).unwrap())
                 },
-                "Adapted/ReturnState" => {
+                "Adapted/ReturnState" | "AdaptedReturn/Override" => {
                     Ok(serde_json::json!({ "one": "fromOperation" }).to_string())
                 },
-                "Adapted/ReturnStateAndDiff" => {
+                "Adapted/ReturnStateAndDiff" | "AdaptedReturn/Inherit" => {
                     println!("{}", serde_json::json!({ "one": "fromOperation" }));
                     println!("{}", serde_json::json!(["fromAdapter"]));
+                    Ok(String::new())
+                },
+                _ => Err(format!("Unknown resource type: {resource_type}")),
+            }
+        },
+        AdapterOperation::WhatIf => {
+            match resource_type {
+                "AdaptedReturn/Inherit" | "AdaptedReturn/Override" => {
+                    println!("{}", serde_json::json!({ "one": "fromWhatIf" }));
+                    println!("{}", serde_json::json!(["fromWhatIf"]));
                     Ok(String::new())
                 },
                 _ => Err(format!("Unknown resource type: {resource_type}")),

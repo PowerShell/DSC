@@ -51,6 +51,7 @@ pub enum AdapterOperation {
     Export,
     Validate,
     Schema,
+    WhatIf,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
