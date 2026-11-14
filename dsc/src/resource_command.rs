@@ -32,7 +32,7 @@ pub fn get(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, version
 
     let mut context = Context::new();
     context.properties = Some(convert_input_to_map(input)?);
-    match resource.get(input, &context) {
+    match context.complete_resource_operation(resource.get(input, &context)) {
         Ok(result) => {
             if let GetResult::Resource(response) = &result
                 && format == Some(&GetOutputFormat::PassThrough) {
@@ -85,7 +85,7 @@ pub fn get_all(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, ver
 
     let mut context = Context::new();
     context.properties = Some(convert_input_to_map(&input)?);
-    let export_result = match resource.export(&input, &context) {
+    let export_result = match context.complete_resource_operation(resource.export(&input, &context)) {
         Ok(export) => { export }
         Err(err) => {
             error!("{err}");
@@ -161,6 +161,7 @@ pub fn set(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, version
     };
 
     let mut context = Context::new();
+    context.execution_type = execution_kind;
     context.properties = Some(convert_input_to_map(input)?);
     if !exist && resource.has_resource_capability(&ResourceCapability::Delete) && !resource.has_resource_capability(&ResourceCapability::SetHandlesExist) {
         debug!("{}", t!("resource_command.routingToDelete"));
@@ -189,6 +190,10 @@ pub fn set(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, version
         };
 
         let diff = get_diff(&before_state, &after_state);
+        if let Err(err) = context.complete_resource_operation(Ok(())) {
+            error!("{err}");
+            return Err(ExitCode::from(EXIT_DSC_ERROR));
+        }
 
         let result = SetResult::Resource(ResourceSetResponse {
             before_state,
@@ -207,8 +212,7 @@ pub fn set(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, version
         return Ok(());
     }
 
-    context.execution_type = execution_kind;
-    match resource.set(input, true, &context) {
+    match context.complete_resource_operation(resource.set(input, true, &context)) {
         Ok(result) => {
             // convert to json
             let json = match serde_json::to_string(&result) {
@@ -246,7 +250,7 @@ pub fn test(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, versio
 
     let mut context = Context::new();
     context.properties = Some(convert_input_to_map(input)?);
-    match resource.test(input, &context) {
+    match context.complete_resource_operation(resource.test(input, &context)) {
         Ok(result) => {
             // convert to json
             let json = match serde_json::to_string(&result) {
@@ -282,7 +286,7 @@ pub fn delete(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, vers
     let mut context = Context::new();
     context.execution_type = execution_kind;
     context.properties = Some(convert_input_to_map(input)?);
-    match resource.delete(input, &context) {
+    match context.complete_resource_operation(resource.delete(input, &context)) {
         Ok(result) => {
             match result {
                 DeleteResultKind::ResourceActual => {
@@ -321,7 +325,7 @@ pub fn schema(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, vers
     }
 
     let context = Context::new();
-    match resource.schema(&context) {
+    match context.complete_resource_operation(resource.schema(&context)) {
         Ok(json) => {
             // verify is json
             match serde_json::from_str::<serde_json::Value>(json.as_str()) {
@@ -357,7 +361,7 @@ pub fn export(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, vers
     context.properties = serde_json::from_str::<Value>(input)
         .ok()
         .and_then(|value| value.as_object().cloned());
-    if let Err(err) = add_resource_export_results_to_configuration(&*dsc_resource, &mut conf, input, &context) {
+    if let Err(err) = context.complete_resource_operation(add_resource_export_results_to_configuration(&*dsc_resource, &mut conf, input, &context)) {
         error!("{err}");
         return Err(ExitCode::from(EXIT_DSC_ERROR));
     }

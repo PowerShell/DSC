@@ -286,6 +286,33 @@ ItemsType:         string
 ItemsPattern:      ^\w+$
 ```
 
+### jsonrpc
+
+Use the rolling `https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json` schema for JSON-RPC
+manifests. This bundle is generated from the engine's Rust manifest types with
+`dsc schema --type resource-manifest --output-format pretty-json`. The legacy YAML schema sources
+in `schemas/src` target v3.1.0 and don't define this transport.
+
+The optional `jsonrpc` object defines a persistent JSON-RPC 2.0 process over newline-delimited
+stdin and stdout. It requires a nonempty `executable` and accepts a static string array `args`.
+The optional `initializeTimeoutMS` and `shutdownTimeoutMS` fields are positive integers and default
+to `250`. `requestTimeoutMS` is a nonnegative integer and defaults to `0`, meaning no deadline.
+Explicit timeout settings override these manifest values.
+
+Operation objects still declare capabilities and return contracts. When `jsonrpc` is defined, an
+operation or schema command can omit `executable`; in that case, it must also omit `args` and
+`input`. A declared executable is the operation's fallback when reuse is disabled. Embedded
+schemas remain local. Adapter enumeration always uses an executable, and JSON-RPC adapters must
+use `inputKind: single`.
+
+For lifecycle, messages, settings, and examples, see
+[JSON-RPC resources](../../../../concepts/resources/anatomy.md#json-rpc-resources).
+
+```yaml
+Type:     object
+Required: false
+```
+
 ### get
 
 The `get` property defines how to call the resource to get the current state of an instance.
@@ -295,8 +322,9 @@ retrieve the current state of the resource's instances or synthesize results for
 `set` operations.
 
 The value of this property must be an object. The object's `executable` property, defining the name
-of the command to call, is mandatory. The `args`, `input`, and `requireSecurityContext` properties
-are optional. For more information, see [DSC Resource manifest get property schema reference][05].
+of the command to call, is mandatory unless `jsonrpc` is defined. The `args`, `input`, and
+`requireSecurityContext` properties are optional. For more information, see
+[DSC Resource manifest get property schema reference][05].
 
 ```yaml
 Type:     object
@@ -311,8 +339,9 @@ defined, the DSC can't manage instances of the resource. It can only get their c
 test whether the instance is in the desired state.
 
 The value of this property must be an object. The `executable` property, defining the name of the
-command to call, is mandatory. The `args`, `input`, `implementsPretest`, `handlesExist`, `return`,
-`requireSecurityContext`, and `whatIfReturns` properties are optional. For more information, see
+command to call, is mandatory unless `jsonrpc` is defined. The `args`, `input`, `implementsPretest`,
+`handlesExist`, `return`, `requireSecurityContext`, `whatIfReturns`, and `supportsWhatIf` properties
+are optional. For more information, see
 [DSC Resource manifest set property schema reference][06].
 
 ```yaml
@@ -334,8 +363,9 @@ the manifest defines neither, DSC synthesizes the what-if result by converting t
 `test` operation for the resource into a set result.
 
 The value of this property must be an object. The `executable` property, defining the name of the
-command to call, is mandatory. The `args`, `input`, `implementsPretest`, `handlesExist`, `return`,
-`requireSecurityContext`, and `whatIfReturns` properties are optional. For more information, see
+command to call, is mandatory unless `jsonrpc` is defined. The `args`, `input`, `implementsPretest`,
+`handlesExist`, `return`, `requireSecurityContext`, and `whatIfReturns` properties are optional.
+For more information, see
 [DSC Resource manifest whatIf property schema reference][08].
 
 ```yaml
@@ -350,8 +380,8 @@ state. It also defines how to process the output from the resource for this meth
 property isn't defined, DSC performs a basic synthetic test for instances of the DSC Resource.
 
 The value of this property must be an object. The object's `executable` property, defining the name
-of the command to call, is mandatory. The `args`, `input`, `return`, and `requireSecurityContext`
-properties are optional. For more information, see
+of the command to call, is mandatory unless `jsonrpc` is defined. The `args`, `input`, `return`, and
+`requireSecurityContext` properties are optional. For more information, see
 [DSC Resource manifest test property schema reference][09].
 
 ```yaml
@@ -368,8 +398,8 @@ removing an instance when `_exist` is `false`, define the `handlesExist` propert
 method as `true` instead.
 
 The value of this property must be an object. The object's `executable` property, defining the name
-of the command to call, is mandatory. The `args`, `input`, and `requireSecurityContext` properties
-are optional. For more information, see
+of the command to call, is mandatory unless `jsonrpc` is defined. The `args`, `input`,
+`requireSecurityContext`, and `supportsWhatIf` properties are optional. For more information, see
 [DSC Resource manifest delete property schema reference][11].
 
 ```yaml
@@ -390,8 +420,9 @@ When this property is defined, the resource has the `export` capability and user
   the current state for every instance of the resource.
 
 The value of this property must be an object. The object's `executable` property, defining the name
-of the command to call, is mandatory. The `args`, `input`, `requireSecurityContext`, `schema`, and
-`supportsFiltering` properties are optional. For more information, see
+of the command to call, is mandatory unless `jsonrpc` is defined. The `args`, `input`,
+`requireSecurityContext`, `schema`, and `supportsFiltering` properties are optional. For more
+information, see
 [DSC Resource manifest export property schema reference][16].
 
 ```yaml
@@ -407,8 +438,8 @@ capability. Define this property for [importer resources][04] and set the `kind`
 `importer`.
 
 The value of this property must be an object. The object's `executable` property, defining the name
-of the command to call, is mandatory. The `args` and `input` properties are optional. For more
-information, see [DSC Resource manifest resolve property schema reference][17].
+of the command to call, is mandatory unless `jsonrpc` is defined. The `args` and `input` properties
+are optional. For more information, see [DSC Resource manifest resolve property schema reference][17].
 
 ```yaml
 Type:     object
@@ -424,8 +455,8 @@ and resource adapters process nested resource instances that don't share a singl
 Always define this property for those resources.
 
 The value of this property must be an object. The object's `executable` property, defining the name
-of the command to call, is mandatory. The `args` and `input` properties are optional. For more
-information, see [DSC Resource manifest validate property schema reference][18].
+of the command to call, is mandatory unless `jsonrpc` is defined. The `args` and `input` properties
+are optional. For more information, see [DSC Resource manifest validate property schema reference][18].
 
 ```yaml
 Type:     object

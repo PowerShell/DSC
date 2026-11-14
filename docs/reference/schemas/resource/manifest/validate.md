@@ -78,7 +78,7 @@ dsc --trace-format pass-through config validate --input "{ ... }"
 
 ## Required properties
 
-The `validate` definition must include these properties:
+Unless the manifest defines [jsonrpc](root.md#jsonrpc), the `validate` definition must include:
 
 - [executable](#executable)
 
@@ -93,7 +93,7 @@ executable.
 
 ```yaml
 Type:     string
-Required: true
+Required: true unless jsonrpc is defined
 ```
 
 ### args

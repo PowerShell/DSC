@@ -32,6 +32,12 @@ crate::macros::test_dsc_repo_schema! {
     test_validation: {
         with_all_defined_is_valid => {
             input_json: json!({
+                "resourceReuse": {"value": true, "scope": "default"},
+                "resourceTimeouts": {
+                    "initializeTimeoutMS": {"value": 250, "scope": "default"},
+                    "requestTimeoutMS": {"value": 0, "scope": "default"},
+                    "shutdownTimeoutMS": {"value": 250, "scope": "default"}
+                },
                 "forbidIgnoreSettingsFile": {
                     "value": false,
                     "scope": "policy"
@@ -92,6 +98,7 @@ mod serde {
                 directories: DscSettingsResolvedField::for_policy(vec!["/dsc/resources".into(), "/dsc/extensions".into()]),
                 restricted: DscSettingsResolvedField::for_policy(true.into()),
             },
+            ..Default::default()
         };
 
         serde_json::to_value(&settings)

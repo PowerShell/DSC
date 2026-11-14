@@ -128,7 +128,9 @@ The `schema` definition must include exactly one of these properties:
 ### command
 
 The `command` property defines how DSC must call the resource to get the JSON schema that validates
-its instances. The value of this property must be an object and define the `executable` property.
+its instances. The value must be an object and define `executable` unless the manifest defines
+[jsonrpc](../root.md#jsonrpc). A JSON-RPC-only schema command is `{}` and uses
+`context.schemaKind: resource`; without an executable, it can't define `args`.
 
 When publishing a manifest with the `command` property, Microsoft recommends publishing the JSON
 schema to a publicly available URI that matches the `$id` property of the instance schema. This
@@ -152,7 +154,7 @@ executable.
 
 ```yaml
 Type:     string
-Required: true
+Required: true unless jsonrpc is defined
 ```
 
 #### args

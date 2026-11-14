@@ -22,6 +22,10 @@ pub enum ProcessMode {
 
 #[derive(Clone, Debug)]
 pub struct Context {
+    pub(crate) resource_processes: std::sync::Arc<std::sync::Mutex<crate::dscresources::jsonrpc::ProcessPool>>,
+    pub(crate) reuse_resources: bool,
+    pub(crate) reuse_resource: bool,
+    pub(crate) resource_progress: Option<crate::progress::ProgressBar>,
     pub copy: HashMap<String, i64>,
     pub copy_current_loop_name: String,
     /// The semantic version of DSC that is processing the configuration.
@@ -55,9 +59,32 @@ pub struct Context {
 }
 
 impl Context {
+    /// Apply document and instance reuse restrictions without overriding an inherited prohibition.
+    pub fn restrict_resource_reuse(&mut self, document: Option<bool>, instance: Option<bool>) {
+        self.reuse_resources &= document.unwrap_or(true);
+        self.reuse_resource = instance.unwrap_or(true);
+    }
+
+    /// Finish an invocation scope, preserving its original failure if cleanup also fails.
+    pub fn complete_resource_operation<T>(&self, result: Result<T, crate::DscError>) -> Result<T, crate::DscError> {
+        let cleanup = self.resource_processes.lock().unwrap().finish();
+        match (result, cleanup) {
+            (Err(err), cleanup) => {
+                if let Err(cleanup) = cleanup { tracing::warn!("{cleanup}"); }
+                Err(err)
+            },
+            (Ok(_), Err(err)) => Err(err),
+            (Ok(value), Ok(())) => Ok(value),
+        }
+    }
     #[must_use]
     pub fn new() -> Self {
         Self {
+            resource_processes: Default::default(),
+            reuse_resources: std::env::var("DSC_RESOURCE_REUSE_FORBIDDEN").as_deref() != Ok("1")
+                && crate::settings::global::get_or_init().resolved().resource_reuse.value,
+            reuse_resource: true,
+            resource_progress: None,
             copy: HashMap::new(),
             copy_current_loop_name: String::new(),
             dsc_version: dsc_lib_version(),

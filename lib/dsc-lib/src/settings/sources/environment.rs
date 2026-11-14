@@ -126,6 +126,8 @@ pub(in crate::settings) mod _implementation_guidance {
     )
 )]
 pub struct EnvironmentData {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dsc_resource_reuse: Option<bool>,
     /// `DSC_TRACE_LEVEL` - Defines the trace level to use.
     ///
     /// This environment variable can be set to one of the following values
@@ -287,6 +289,14 @@ pub struct EnvironmentData {
 }
 
 impl EnvironmentData {
+    pub fn get_env_resource_reuse() -> Result<Option<bool>, DscSettingsError> {
+        let Ok(value) = get_env_var("DSC_RESOURCE_REUSE") else { return Ok(None); };
+        Self::parse_boolean_env_var(&value).map(Some).map_err(|source| DscSettingsError::LoadEnvironmentError {
+            env_var: "DSC_RESOURCE_REUSE",
+            source: Box::new(source),
+        })
+    }
+
     /// The name of the environment variable for the `DSC_TRACE_LEVEL` setting.
     pub const DSC_TRACE_LEVEL_ENV_VAR: &str = "DSC_TRACE_LEVEL";
     /// The name of the environment variable for the `DSC_TRACE_FORMAT` setting.
@@ -518,6 +528,10 @@ impl EnvironmentData {
     /// [`try_from_env()`]: Self::try_from_env
     pub fn from_env() -> Self {
         Self {
+            dsc_resource_reuse: match Self::get_env_resource_reuse() {
+                Ok(value) => value,
+                Err(err) => { warn!("{err}"); None },
+            },
             dsc_trace_level: match Self::get_env_trace_level() {
                 Ok(level) => level,
                 Err(err) => {
@@ -572,6 +586,10 @@ impl EnvironmentData {
         let mut errors = Vec::new();
         let mut data = Self::default();
 
+        match Self::get_env_resource_reuse() {
+            Ok(value) => data.dsc_resource_reuse = value,
+            Err(err) => errors.push(err),
+        }
         match Self::get_env_trace_level() {
             Ok(level) => data.dsc_trace_level = level,
             Err(err) => errors.push(err),
@@ -652,6 +670,7 @@ impl EnvironmentData {
     /// `true` if any of the environment variable fields are populated,
     /// otherwise `false`.
     pub(crate) fn any_defined(&self) -> bool {
+        if self.dsc_resource_reuse.is_some() { return true; }
         self.dsc_trace_format.is_some() ||
         self.dsc_trace_level.is_some() ||
         self.dsc_resource_path.is_some() ||

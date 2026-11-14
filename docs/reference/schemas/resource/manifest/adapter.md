@@ -109,6 +109,10 @@ The `adapter` definition must include these properties:
 
 ## Properties
 
+Adapters that define [jsonrpc](root.md#jsonrpc) must use `inputKind: single`. Enumeration through
+`adapter.list` remains executable-based. All adapted resource targets share their adapter host's
+JSON-RPC process within the configuration operation, subject to reuse restrictions.
+
 ### inputKind
 
 The `inputKind` property defines how the adapter expects to receive resource configurations. The

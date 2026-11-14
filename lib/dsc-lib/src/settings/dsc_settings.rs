@@ -1246,6 +1246,10 @@ impl DscSettings {
         };
         let scope = DscSettingsScope::Environment;
 
+        if let Some(value) = env_data.dsc_resource_reuse
+            && resolving.resource_reuse.scope < scope {
+            resolving.resource_reuse = DscSettingsResolvedField::for_environment(value);
+        }
         if let Some(level) = env_data.dsc_trace_level.as_ref()
             && resolving.tracing.level.scope < scope {
                 resolving.tracing.level = DscSettingsResolvedField::for_environment(level.clone());
@@ -1317,6 +1321,8 @@ impl DscSettings {
         // issues.
         macros::define_preference_resolver!(resolving, file_data, source, $);
 
+        resolve_field!(resource_reuse);
+        resolve_field!(resource_timeouts => [initialize_timeout_ms, request_timeout_ms, shutdown_timeout_ms]);
         resolve_field!(tracing => [level, format]);
         resolve_field!(resource_path => [append_env_path, directories, restricted]);
     }
@@ -1369,6 +1375,8 @@ impl DscSettings {
         }
 
         // Resolve remaining fields as normal.
+        resolve_field!(resource_reuse);
+        resolve_field!(resource_timeouts => [initialize_timeout_ms, request_timeout_ms, shutdown_timeout_ms]);
         resolve_field!(tracing => [level, format]);
         resolve_field!(resource_path => [append_env_path, directories, restricted]);
     }

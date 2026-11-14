@@ -1,122 +1,1721 @@
 {
+  "$id": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.json",
-  "title": "DSC resource manifest",
-  "description": "Defines the information DSC and integrating require to process and call a DSC command resource.",
+  "title": "ResourceManifest",
   "type": "object",
+  "properties": {
+    "jsonrpc": {
+      "description": "Persistent JSON-RPC entry point. Operation commands are optional fallbacks.",
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "executable": {
+          "type": "string",
+          "minLength": 1
+        },
+        "args": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "initializeTimeoutMS": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 1
+        },
+        "requestTimeoutMS": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        },
+        "shutdownTimeoutMS": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "executable"
+      ]
+    },
+    "$schema": {
+      "title": "Resource manifest schema URI",
+      "description": "The version of the resource manifest schema.",
+      "type": "string",
+      "format": "uri",
+      "enum": [
+        "https://aka.ms/dsc/schemas/vNext/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.3/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.3.0/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.2/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.2.3/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.2.2/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.2.1/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.2.0/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.1/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.1.3/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.1.2/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.1.1/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.1.0/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.0/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.0.2/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.0.1/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.0.0/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/vNext/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.3/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.3.0/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.2/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.2.3/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.2.2/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.2.1/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.2.0/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.1/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.1.3/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.1.2/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.1.1/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.1.0/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.0/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.0.2/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.0.1/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.0.0/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/vNext/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.3/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.3.0/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.2/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.2.3/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.2.2/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.2.1/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.2.0/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.1/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.1.3/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.1.2/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.1.1/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.1.0/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.0/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.0.2/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.0.1/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.0.0/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/vNext/bundled/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.3/bundled/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.3.0/bundled/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2/bundled/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.3/bundled/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.2/bundled/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.1/bundled/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.0/bundled/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/bundled/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.3/bundled/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.2/bundled/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.1/bundled/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/bundled/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/bundled/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/bundled/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/vNext/bundled/resource/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/resource/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.3/bundled/resource/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.3.0/bundled/resource/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2/bundled/resource/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.3/bundled/resource/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.2/bundled/resource/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.1/bundled/resource/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.0/bundled/resource/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/bundled/resource/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.3/bundled/resource/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.2/bundled/resource/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.1/bundled/resource/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/bundled/resource/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/resource/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/bundled/resource/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/bundled/resource/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/resource/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/vNext/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.3/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.3.0/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.3/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.2/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.1/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.2.0/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.3/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.2/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.1/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/manifest.json"
+      ]
+    },
+    "type": {
+      "description": "The namespaced name of the resource.",
+      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/resourceType.json"
+    },
+    "condition": {
+      "description": "An optional condition for the resource to be active.  If the condition evaluates to false, the resource is skipped.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "deprecationMessage": {
+      "description": "An optional message indicating the resource is deprecated.  If provided, the message will be shown when the resource is used.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "kind": {
+      "description": "The kind of resource.",
+      "anyOf": [
+        {
+          "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/resourceKind.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "version": {
+      "description": "The version of the resource using semantic versioning.",
+      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/resourceVersion.json"
+    },
+    "author": {
+      "description": "The author of the resource.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "description": {
+      "description": "The description of the resource.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "tags": {
+      "description": "Tags for the resource.",
+      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/tags.json"
+    },
+    "get": {
+      "description": "Details how to call the Get method of the resource.",
+      "anyOf": [
+        {
+          "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.get.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "set": {
+      "description": "Details how to call the Set method of the resource.",
+      "anyOf": [
+        {
+          "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.set.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "whatIf": {
+      "description": "Details how to call the `WhatIf` method of the resource.",
+      "anyOf": [
+        {
+          "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.set.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "test": {
+      "description": "Details how to call the Test method of the resource.",
+      "anyOf": [
+        {
+          "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.test.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "delete": {
+      "description": "Details how to call the Delete method of the resource.",
+      "anyOf": [
+        {
+          "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.delete.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "export": {
+      "description": "Details how to call the Export method of the resource.",
+      "anyOf": [
+        {
+          "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.export.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "resolve": {
+      "description": "Details how to call the Resolve method of the resource.",
+      "anyOf": [
+        {
+          "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.resolve.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "validate": {
+      "description": "Details how to call the Validate method of the resource.",
+      "anyOf": [
+        {
+          "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.validate.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "adapter": {
+      "description": "Indicates the resource is a adapter of other resources.",
+      "anyOf": [
+        {
+          "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.adapter.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "exitCodes": {
+      "description": "Mapping of exit codes to descriptions.  Zero is always success and non-zero is always failure.",
+      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/exitCodes.json"
+    },
+    "schema": {
+      "description": "Details how to get the schema of the resource.",
+      "anyOf": [
+        {
+          "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.schema.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "metadata": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false,
   "required": [
     "$schema",
     "type",
     "version"
   ],
-  "properties": {
-    "$schema": {
-      "title": "Manifest Schema",
-      "description": "This property must be the canonical URL of the Command-based DSC resource Manifest schema that the manifest is implemented for.",
+  "allOf": [
+    {
+      "if": {
+        "not": {
+          "properties": {
+            "jsonrpc": {
+              "type": "object"
+            }
+          },
+          "required": [
+            "jsonrpc"
+          ]
+        }
+      },
+      "then": {
+        "properties": {
+          "get": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "required": [
+                  "executable"
+                ]
+              }
+            ]
+          },
+          "set": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "required": [
+                  "executable"
+                ]
+              }
+            ]
+          },
+          "whatIf": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "required": [
+                  "executable"
+                ]
+              }
+            ]
+          },
+          "test": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "required": [
+                  "executable"
+                ]
+              }
+            ]
+          },
+          "delete": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "required": [
+                  "executable"
+                ]
+              }
+            ]
+          },
+          "export": {
+            "properties": {
+              "schema": {
+                "properties": {
+                  "command": {
+                    "anyOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "required": [
+                          "executable"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "required": [
+                  "executable"
+                ]
+              }
+            ]
+          },
+          "resolve": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "required": [
+                  "executable"
+                ]
+              }
+            ]
+          },
+          "validate": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "required": [
+                  "executable"
+                ]
+              }
+            ]
+          },
+          "schema": {
+            "properties": {
+              "command": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "required": [
+                      "executable"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "get": {
+          "properties": {
+            "executable": {
+              "minLength": 1
+            }
+          },
+          "if": {
+            "not": {
+              "required": [
+                "executable"
+              ]
+            }
+          },
+          "then": {
+            "properties": {
+              "args": {
+                "type": "null"
+              },
+              "input": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        "set": {
+          "properties": {
+            "executable": {
+              "minLength": 1
+            }
+          },
+          "if": {
+            "not": {
+              "required": [
+                "executable"
+              ]
+            }
+          },
+          "then": {
+            "properties": {
+              "args": {
+                "type": "null"
+              },
+              "input": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        "whatIf": {
+          "properties": {
+            "executable": {
+              "minLength": 1
+            }
+          },
+          "if": {
+            "not": {
+              "required": [
+                "executable"
+              ]
+            }
+          },
+          "then": {
+            "properties": {
+              "args": {
+                "type": "null"
+              },
+              "input": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        "test": {
+          "properties": {
+            "executable": {
+              "minLength": 1
+            }
+          },
+          "if": {
+            "not": {
+              "required": [
+                "executable"
+              ]
+            }
+          },
+          "then": {
+            "properties": {
+              "args": {
+                "type": "null"
+              },
+              "input": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        "delete": {
+          "properties": {
+            "executable": {
+              "minLength": 1
+            }
+          },
+          "if": {
+            "not": {
+              "required": [
+                "executable"
+              ]
+            }
+          },
+          "then": {
+            "properties": {
+              "args": {
+                "type": "null"
+              },
+              "input": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        "export": {
+          "properties": {
+            "executable": {
+              "minLength": 1
+            },
+            "schema": {
+              "properties": {
+                "command": {
+                  "properties": {
+                    "executable": {
+                      "minLength": 1
+                    }
+                  },
+                  "if": {
+                    "not": {
+                      "required": [
+                        "executable"
+                      ]
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "args": {
+                        "type": "null"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "if": {
+            "not": {
+              "required": [
+                "executable"
+              ]
+            }
+          },
+          "then": {
+            "properties": {
+              "args": {
+                "type": "null"
+              },
+              "input": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        "resolve": {
+          "properties": {
+            "executable": {
+              "minLength": 1
+            }
+          },
+          "if": {
+            "not": {
+              "required": [
+                "executable"
+              ]
+            }
+          },
+          "then": {
+            "properties": {
+              "args": {
+                "type": "null"
+              },
+              "input": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        "validate": {
+          "properties": {
+            "executable": {
+              "minLength": 1
+            }
+          },
+          "if": {
+            "not": {
+              "required": [
+                "executable"
+              ]
+            }
+          },
+          "then": {
+            "properties": {
+              "args": {
+                "type": "null"
+              },
+              "input": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        "schema": {
+          "properties": {
+            "command": {
+              "properties": {
+                "executable": {
+                  "minLength": 1
+                }
+              },
+              "if": {
+                "not": {
+                  "required": [
+                    "executable"
+                  ]
+                }
+              },
+              "then": {
+                "properties": {
+                  "args": {
+                    "type": "null"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "jsonrpc": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "jsonrpc"
+        ]
+      },
+      "then": {
+        "properties": {
+          "adapter": {
+            "properties": {
+              "inputKind": {
+                "const": "single"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "set": {
+            "type": "object",
+            "properties": {
+              "supportsWhatIf": {
+                "const": true
+              }
+            },
+            "required": [
+              "supportsWhatIf"
+            ]
+          }
+        },
+        "required": [
+          "set"
+        ]
+      },
+      "then": {
+        "properties": {
+          "jsonrpc": {
+            "type": "object"
+          },
+          "set": {
+            "if": {
+              "required": [
+                "executable"
+              ]
+            },
+            "then": {
+              "properties": {
+                "args": {
+                  "type": "array",
+                  "contains": {
+                    "type": "object",
+                    "required": [
+                      "whatIfArg"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "args"
+              ]
+            }
+          }
+        },
+        "required": [
+          "jsonrpc"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "delete": {
+            "type": "object",
+            "properties": {
+              "supportsWhatIf": {
+                "const": true
+              }
+            },
+            "required": [
+              "supportsWhatIf"
+            ]
+          }
+        },
+        "required": [
+          "delete"
+        ]
+      },
+      "then": {
+        "properties": {
+          "jsonrpc": {
+            "type": "object"
+          },
+          "delete": {
+            "if": {
+              "required": [
+                "executable"
+              ]
+            },
+            "then": {
+              "properties": {
+                "args": {
+                  "type": "array",
+                  "contains": {
+                    "type": "object",
+                    "required": [
+                      "whatIfArg"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "args"
+              ]
+            }
+          }
+        },
+        "required": [
+          "jsonrpc"
+        ]
+      }
+    }
+  ],
+  "$defs": {
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/resourceType.json": {
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/resourceType.json",
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Fully qualified type name",
+      "description": "Uniquely identifies a DSC resource or extension.",
       "type": "string",
-      "format": "uri",
+      "pattern": "^\\w+(\\.\\w+)*\\/\\w+$"
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/resourceKind.json": {
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/resourceKind.json",
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "string",
       "enum": [
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.json",
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/resource/manifest.json",
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/resource/manifest.vscode.json",
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/resource/manifest.json",
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/bundled/resource/manifest.json",
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/bundled/resource/manifest.vscode.json",
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/resource/manifest.json",
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/bundled/resource/manifest.json",
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/bundled/resource/manifest.vscode.json",
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/manifest.json",
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/resource/manifest.json",
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/resource/manifest.vscode.json",
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/manifest.json",
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/resource/manifest.json",
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/resource/manifest.vscode.json",
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/resource/manifest.json",
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/bundled/resource/manifest.json",
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/bundled/resource/manifest.vscode.json",
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/resource/manifest.json",
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/bundled/resource/manifest.json",
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/bundled/resource/manifest.vscode.json",
-        "https://aka.ms/dsc/schemas/v3/resource/manifest.json",
-        "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
-        "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.vscode.json",
-        "https://aka.ms/dsc/schemas/v3.1/resource/manifest.json",
-        "https://aka.ms/dsc/schemas/v3.1/bundled/resource/manifest.json",
-        "https://aka.ms/dsc/schemas/v3.1/bundled/resource/manifest.vscode.json",
-        "https://aka.ms/dsc/schemas/v3.1.0/resource/manifest.json",
-        "https://aka.ms/dsc/schemas/v3.1.0/bundled/resource/manifest.json",
-        "https://aka.ms/dsc/schemas/v3.1.0/bundled/resource/manifest.vscode.json",
-        "https://aka.ms/dsc/schemas/v3.0/resource/manifest.json",
-        "https://aka.ms/dsc/schemas/v3.0/bundled/resource/manifest.json",
-        "https://aka.ms/dsc/schemas/v3.0/bundled/resource/manifest.vscode.json",
-        "https://aka.ms/dsc/schemas/v3.0.0/resource/manifest.json",
-        "https://aka.ms/dsc/schemas/v3.0.0/bundled/resource/manifest.json",
-        "https://aka.ms/dsc/schemas/v3.0.0/bundled/resource/manifest.vscode.json",
-        "https://aka.ms/dsc/schemas/v3.0.1/resource/manifest.json",
-        "https://aka.ms/dsc/schemas/v3.0.1/bundled/resource/manifest.json",
-        "https://aka.ms/dsc/schemas/v3.0.1/bundled/resource/manifest.vscode.json",
-        "https://aka.ms/dsc/schemas/v3.0.2/resource/manifest.json",
-        "https://aka.ms/dsc/schemas/v3.0.2/bundled/resource/manifest.json",
-        "https://aka.ms/dsc/schemas/v3.0.2/bundled/resource/manifest.vscode.json"
+        "adapter",
+        "exporter",
+        "group",
+        "importer",
+        "resource"
       ]
     },
-    "type": {
-      "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/resourceType.json"
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/resourceVersion.json": {
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/resourceVersion.json",
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Resource version",
+      "description": "Defines the version of a DSC resource as a semantic version or arbitrary string.",
+      "anyOf": [
+        {
+          "title": "Semantic resource version",
+          "description": "Defines the resource's version as a valid semantic version.",
+          "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/semver.json"
+        },
+        {
+          "title": "Date resource version",
+          "description": "Defines the resource's version as a date version.",
+          "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/dateVersion.json",
+          "deprecated": true
+        }
+      ]
     },
-    "version": {
-      "title": "Resource Semantic Version",
-      "description": "The semantic version (semver) of the DSC resource. This version identifies the DSC resource, not the version of the application it manages.",
-      "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/semver.json"
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/semver.json": {
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/semver.json",
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Semantic version",
+      "description": "Defines a valid semantic version (semver) as a string.\n\nFor reference, see https://semver.org/",
+      "type": "string",
+      "pattern": "^(?<major>(?:0|[1-9]\\d*))\\.(?<minor>(?:0|[1-9]\\d*))\\.(?<patch>(?:0|[1-9]\\d*))(?:-(?<prerelease>(?:(?:0|[1-9]\\d*)|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:(?:0|[1-9]\\d*)|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+(?<buildmetadata>[0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
     },
-    "description": {
-      "title": "Resource Description",
-      "description": "A short synopsis of the DSC resource's purpose.",
-      "type": "string"
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/dateVersion.json": {
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/dateVersion.json",
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Date version",
+      "description": "Defines the version for a resource as a date instead of a semantic version.",
+      "type": "string",
+      "pattern": "^(?<year>[1-9][0-9]{3})-(?<month>0[1-9]|1[0-2])-(?<day>0[1-9]|[1-2][0-9]|3[0-1])(?:-(?<prerelease>[a-zA-Z]+))?$"
     },
-    "kind": {
-      "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/resourceKind.json"
-    },
-    "tags": {
-      "title": "Tags",
-      "description": "Defines a list of searchable terms for the resource.",
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/tags.json": {
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/tags.json",
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Tag list",
+      "description": "Defines a set of short search terms for a DSC resource or extension.",
       "type": "array",
       "uniqueItems": true,
       "items": {
-        "type": "string",
-        "pattern": "^\\w+$"
+        "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/tag.json"
       }
     },
-    "get": {
-      "$ref": "/PowerShell/DSC/main/schemas/v3/resource/manifest.get.json"
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/tag.json": {
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/tag.json",
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Tag",
+      "description": "Defines a short search term for a DSC resource or extension.",
+      "type": "string",
+      "pattern": "^\\w+$"
     },
-    "set": {
-      "$ref": "/PowerShell/DSC/main/schemas/v3/resource/manifest.set.json"
-    },
-    "whatIf": {
-      "$ref": "/PowerShell/DSC/main/schemas/v3/resource/manifest.whatIf.json"
-    },
-    "test": {
-      "$ref": "/PowerShell/DSC/main/schemas/v3/resource/manifest.test.json"
-    },
-    "delete": {
-      "$ref": "/PowerShell/DSC/main/schemas/v3/resource/manifest.delete.json"
-    },
-    "export": {
-      "$ref": "/PowerShell/DSC/main/schemas/v3/resource/manifest.export.json"
-    },
-    "validate": {
-      "$ref": "/PowerShell/DSC/main/schemas/v3/resource/manifest.validate.json"
-    },
-    "resolve": {
-      "$ref": "/PowerShell/DSC/main/schemas/v3/resource/manifest.resolve.json"
-    },
-    "adapter": {
-      "$ref": "/PowerShell/DSC/main/schemas/v3/resource/manifest.adapter.json"
-    },
-    "exitCodes": {
-      "title": "Exit Codes",
-      "description": "This property defines a map of valid exit codes for the DSC resource. DSC always interprets exit code `0` as a successful operation and any other exit code as an error. Use this property to indicate human-readable semantic meanings for the DSC resource's exit codes.",
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.get.json": {
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.get.json",
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
+      "properties": {
+        "executable": {
+          "description": "The command to run to get the state of the resource.",
+          "type": "string"
+        },
+        "args": {
+          "description": "The arguments to pass to the command to perform a Get.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/commandArgs.get.json"
+          }
+        },
+        "input": {
+          "description": "How to pass optional input for a Get.",
+          "anyOf": [
+            {
+              "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/inputKind.json"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requireSecurityContext": {
+          "description": "The security context required to run the Get method.  Default if not specified is `current`.",
+          "anyOf": [
+            {
+              "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/executionInformation/securityContext.json"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/commandArgs.get.json": {
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/commandArgs.get.json",
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "anyOf": [
+        {
+          "description": "The argument is a string.",
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "adaptedContentArg": {
+              "description": "The argument that accepts the JSON content from the manifest.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "adaptedContentArg"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "arg": {
+              "description": "The argument that accepts the result of the expression.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "expression": {
+              "description": "The expression to be evaluated.  `null` result becomes an empty string.",
+              "type": "string"
+            },
+            "mandatory": {
+              "description": "Indicates if the argument is mandatory.  Default is false.",
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "expression"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "jsonInputArg": {
+              "description": "The argument that accepts the JSON input object.",
+              "type": "string"
+            },
+            "mandatory": {
+              "description": "Indicates if argument is mandatory which will pass an empty string if no JSON input is provided.  Default is false.",
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "jsonInputArg"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "resourcePathArg": {
+              "description": "The argument that accepts the resource path.",
+              "type": "string"
+            },
+            "includeQuotes": {
+              "description": "Indicates if the argument should be wrapped in quotes.  Default is false.",
+              "type": "boolean",
+              "default": false
+            }
+          },
+          "required": [
+            "resourcePathArg"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "resourceTypeArg": {
+              "description": "The argument that accepts the resource type name.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "resourceTypeArg"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "resourceVersionArg": {
+              "description": "The argument that accepts the resource version.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "resourceVersionArg"
+          ]
+        }
+      ]
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/inputKind.json": {
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/inputKind.json",
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "string",
+      "enum": [
+        "env",
+        "stdin"
+      ]
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/executionInformation/securityContext.json": {
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/executionInformation/securityContext.json",
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "string",
+      "enum": [
+        "current",
+        "elevated",
+        "restricted"
+      ]
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.set.json": {
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.set.json",
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "supportsWhatIf": {
+          "description": "Whether JSON-RPC set supports native what-if.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "executable": {
+          "description": "The command to run to set the state of the resource.",
+          "type": "string"
+        },
+        "args": {
+          "description": "The arguments to pass to the command to perform a Set.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/commandArgs.setDelete.json"
+          }
+        },
+        "input": {
+          "description": "How to pass required input for a Set.",
+          "anyOf": [
+            {
+              "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/inputKind.json"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "implementsPretest": {
+          "description": "Whether to run the Test method before the Set method.  True means the resource will perform its own test before running the Set method.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "handlesExist": {
+          "description": "Indicates that the resource directly handles `_exist` as a property.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "return": {
+          "description": "The type of return value expected from the Set method.",
+          "anyOf": [
+            {
+              "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/returnKind.json"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requireSecurityContext": {
+          "description": "The security context required to run the Set method.  Default if not specified is `current`.",
+          "anyOf": [
+            {
+              "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/executionInformation/securityContext.json"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "whatIfReturns": {
+          "description": "The type of return value expected from the Set method when running in what-if mode. When specified, this overrides the `return` property during what-if execution.",
+          "anyOf": [
+            {
+              "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/returnKind.json"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/commandArgs.setDelete.json": {
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/commandArgs.setDelete.json",
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "anyOf": [
+        {
+          "description": "The argument is a string.",
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "adaptedContentArg": {
+              "description": "The argument that accepts the JSON content from the manifest.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "adaptedContentArg"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "arg": {
+              "description": "The argument that accepts the result of the expression.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "expression": {
+              "description": "The expression to be evaluated.  `null` result becomes an empty string.",
+              "type": "string"
+            },
+            "mandatory": {
+              "description": "Indicates if the argument is mandatory.  Default is false.",
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "expression"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "jsonInputArg": {
+              "description": "The argument that accepts the JSON input object.",
+              "type": "string"
+            },
+            "mandatory": {
+              "description": "Indicates if argument is mandatory which will pass an empty string if no JSON input is provided.  Default is false.",
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "jsonInputArg"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "resourcePathArg": {
+              "description": "The argument that accepts the resource path.",
+              "type": "string"
+            },
+            "includeQuotes": {
+              "description": "Indicates if the resource path should be passed with quotes.  Default is false.",
+              "type": "boolean",
+              "default": false
+            }
+          },
+          "required": [
+            "resourcePathArg"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "resourceTypeArg": {
+              "description": "The argument that accepts the resource type name.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "resourceTypeArg"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "resourceVersionArg": {
+              "description": "The argument that accepts the resource version.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "resourceVersionArg"
+          ]
+        },
+        {
+          "description": "The argument is passed when the resource is invoked in what-if mode.",
+          "type": "object",
+          "properties": {
+            "whatIfArg": {
+              "description": "The argument to pass when in what-if mode.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "whatIfArg"
+          ]
+        }
+      ]
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/returnKind.json": {
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/returnKind.json",
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "string",
+      "enum": [
+        "state",
+        "stateAndDiff"
+      ]
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.test.json": {
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.test.json",
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "executable": {
+          "description": "The command to run to test the state of the resource.",
+          "type": "string"
+        },
+        "args": {
+          "description": "The arguments to pass to the command to perform a Test.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/commandArgs.get.json"
+          }
+        },
+        "input": {
+          "description": "How to pass required input for a Test.",
+          "anyOf": [
+            {
+              "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/inputKind.json"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "return": {
+          "description": "The type of return value expected from the Test method.",
+          "anyOf": [
+            {
+              "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/returnKind.json"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requireSecurityContext": {
+          "description": "The security context required to run the Test method.  Default if not specified is `current`.",
+          "anyOf": [
+            {
+              "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/executionInformation/securityContext.json"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.delete.json": {
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.delete.json",
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "supportsWhatIf": {
+          "description": "Whether JSON-RPC delete supports native what-if.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "executable": {
+          "description": "The command to run to delete the state of the resource.",
+          "type": "string"
+        },
+        "args": {
+          "description": "The arguments to pass to the command to perform a Delete.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/commandArgs.setDelete.json"
+          }
+        },
+        "input": {
+          "description": "How to pass required input for a Delete.",
+          "anyOf": [
+            {
+              "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/inputKind.json"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requireSecurityContext": {
+          "description": "The security context required to run the Delete method.  Default if not specified is `current`.",
+          "anyOf": [
+            {
+              "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/executionInformation/securityContext.json"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.export.json": {
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.export.json",
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "executable": {
+          "description": "The command to run to enumerate instances of the resource.",
+          "type": "string"
+        },
+        "args": {
+          "description": "The arguments to pass to the command to perform a Export.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/commandArgs.get.json"
+          }
+        },
+        "input": {
+          "description": "How to pass input for a Export.",
+          "anyOf": [
+            {
+              "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/inputKind.json"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requireSecurityContext": {
+          "description": "The security context required to run the Export method.  Default if not specified is `current`.",
+          "anyOf": [
+            {
+              "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/executionInformation/securityContext.json"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "anyOf": [
+        {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "schema": {
+                  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/manifest.exportSchema.json"
+                }
+              },
+              "required": [
+                "schema"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "supportsFiltering": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "supportsFiltering"
+              ]
+            }
+          ]
+        },
+        {}
+      ]
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/manifest.exportSchema.json": {
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/manifest.exportSchema.json",
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "oneOf": [
+        {
+          "description": "The export schema is returned by running a command.",
+          "type": "object",
+          "properties": {
+            "command": {
+              "type": "object",
+              "properties": {
+                "executable": {
+                  "description": "The command to run to get the schema.",
+                  "type": "string"
+                },
+                "args": {
+                  "description": "The arguments to pass to the command.",
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/commandArgs.schema.json"
+                  }
+                }
+              }
+            }
+          },
+          "required": [
+            "command"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "The export schema is embedded in the manifest.",
+          "type": "object",
+          "properties": {
+            "embedded": true
+          },
+          "required": [
+            "embedded"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/commandArgs.schema.json": {
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/commandArgs.schema.json",
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "anyOf": [
+        {
+          "description": "The argument is a string.",
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "resourceTypeArg": {
+              "description": "The argument that accepts the resource type name.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "resourceTypeArg"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "resourceVersionArg": {
+              "description": "The argument that accepts the resource version.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "resourceVersionArg"
+          ]
+        }
+      ]
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.resolve.json": {
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.resolve.json",
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "executable": {
+          "description": "The command to run to enumerate instances of the resource.",
+          "type": "string"
+        },
+        "args": {
+          "description": "The arguments to pass to the command to perform a Export.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/commandArgs.get.json"
+          }
+        },
+        "input": {
+          "description": "How to pass input for a Export.",
+          "anyOf": [
+            {
+              "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/inputKind.json"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.validate.json": {
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.validate.json",
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "executable": {
+          "description": "The command to run to validate the state of the resource.",
+          "type": "string"
+        },
+        "args": {
+          "description": "The arguments to pass to the command to perform a Validate.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/commandArgs.get.json"
+          }
+        },
+        "input": {
+          "description": "How to pass required input for a Validate.",
+          "anyOf": [
+            {
+              "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/inputKind.json"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.adapter.json": {
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.adapter.json",
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "list": {
+          "description": "The way to list adapter supported resources.",
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "executable": {
+              "description": "The command to run to list resources supported by a group resource.",
+              "type": "string"
+            },
+            "args": {
+              "description": "The arguments to pass to the command to perform a List.",
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "executable"
+          ]
+        },
+        "inputKind": {
+          "description": "Defines how the adapter supports accepting configuration.",
+          "type": "string",
+          "enum": [
+            "full",
+            "sequence",
+            "single"
+          ]
+        }
+      },
+      "required": [
+        "inputKind"
+      ]
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/exitCodes.json": {
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/exitCodes.json",
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Exit codes",
+      "description": "Defines a map of valid exit codes for operation commands.",
+      "type": "object",
+      "examples": [
+        {
+          "0": "Success",
+          "1": "Invalid parameter",
+          "2": "Invalid input",
+          "3": "Registry error",
+          "4": "JSON serialization failed"
+        }
+      ],
+      "minProperties": 1,
       "propertyNames": {
         "pattern": "^-?[0-9]+$"
       },
@@ -127,1323 +1726,55 @@
       },
       "unevaluatedProperties": false,
       "default": {
-        "0": "Success",
-        "1": "Error"
-      },
-      "examples": [
-        {
-          "0": "Success",
-          "1": "Invalid parameter",
-          "2": "Invalid input",
-          "3": "Registry error",
-          "4": "JSON serialization failed"
-        }
-      ]
-    },
-    "schema": {
-      "$ref": "/PowerShell/DSC/main/schemas/v3/resource/manifest.schema.json"
-    }
-  },
-  "allOf": [
-    {
-      "if": {
-        "properties": {
-          "kind": {
-            "const": "adapter"
-          }
-        },
-        "required": [
-          "kind"
-        ]
-      },
-      "then": {
-        "required": [
-          "adapter",
-          "get",
-          "test",
-          "set"
-        ]
+        "1": "Error",
+        "0": "Success"
       }
-    },
-    {
-      "if": {
-        "properties": {
-          "kind": {
-            "const": "importer"
-          }
-        },
-        "required": [
-          "kind"
-        ]
-      },
-      "then": {
-        "required": [
-          "resolve"
-        ],
-        "not": {
-          "anyOf": [
-            {
-              "required": [
-                "adapter"
-              ]
-            },
-            {
-              "required": [
-                "delete"
-              ]
-            },
-            {
-              "required": [
-                "get"
-              ]
-            },
-            {
-              "required": [
-                "export"
-              ]
-            },
-            {
-              "required": [
-                "set"
-              ]
-            },
-            {
-              "required": [
-                "test"
-              ]
-            },
-            {
-              "required": [
-                "validate"
-              ]
-            },
-            {
-              "required": [
-                "whatIf"
-              ]
-            }
-          ]
-        }
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "kind": {
-            "const": "exporter"
-          }
-        },
-        "required": [
-          "kind"
-        ]
-      },
-      "then": {
-        "required": [
-          "export"
-        ],
-        "not": {
-          "anyOf": [
-            {
-              "required": [
-                "adapter"
-              ]
-            },
-            {
-              "required": [
-                "delete"
-              ]
-            },
-            {
-              "required": [
-                "get"
-              ]
-            },
-            {
-              "required": [
-                "resolve"
-              ]
-            },
-            {
-              "required": [
-                "set"
-              ]
-            },
-            {
-              "required": [
-                "test"
-              ]
-            },
-            {
-              "required": [
-                "validate"
-              ]
-            },
-            {
-              "required": [
-                "whatIf"
-              ]
-            }
-          ]
-        }
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "kind": {
-            "enum": [
-              "resource",
-              "adapter",
-              "group"
-            ]
-          }
-        },
-        "required": [
-          "kind"
-        ]
-      },
-      "then": {
-        "required": [
-          "get"
-        ]
-      }
-    }
-  ],
-  "$defs": {
-    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/resourceType.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/resourceType.json",
-      "title": "DSC resource fully qualified type name",
-      "description": "The namespaced name of the DSC resource, using the syntax:\n\n<owner>[.<group>][.<area>][.<subarea>]/<name>\n\nFor example:\n\n- Microsoft/OSInfo\n- Microsoft.SqlServer/Database\n- Microsoft.SqlServer.Database/User\n",
-      "type": "string",
-      "pattern": "^\\w+(\\.\\w+){0,3}\\/\\w+$"
-    },
-    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/semver.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/semver.json",
-      "type": "string",
-      "title": "Semantic Version",
-      "description": "A valid semantic version (semver) string.\n\nFor reference, see https://semver.org/\n",
-      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
-      "$comment": "A valid semantic version ([semver][01]) string.\n\nThis value uses the [suggested regular expression][02] to validate whether the string is valid\nsemver. This is the same pattern, made multi-line for easier readability:\n\n```regex\n^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\n(?:-(\n  (?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)\n  (?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))\n*))?\n(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$\n```\n\nThe first line matches the `major.minor.patch` components of the version. The middle lines match\nthe pre-release components. The last line matches the build metadata component.\n\n[01]: https://semver.org/\n[02]: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string\n"
-    },
-    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/resourceKind.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/resourceKind.json",
-      "title": "Resource kind",
-      "description": "Defines whether the resource is a normal DSC resource, a group resource, or an adapter resource. This property is only required for group resources.",
-      "type": "string",
-      "enum": [
-        "resource",
-        "adapter",
-        "group",
-        "importer",
-        "exporter"
-      ]
-    },
-    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.get.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.get.json",
-      "title": "Get Method",
-      "description": "Defines how DSC must call the DSC resource to get the current state of an instance.",
-      "type": "object",
-      "required": [
-        "executable"
-      ],
-      "properties": {
-        "executable": {
-          "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/commandExecutable.json"
-        },
-        "args": {
-          "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/commandArgs.json"
-        },
-        "input": {
-          "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/inputKind.json"
-        }
-      },
-      "oneOf": [
-        {
-          "required": [
-            "input"
-          ],
-          "not": {
-            "properties": {
-              "args": {
-                "contains": {
-                  "type": "object"
-                }
-              }
-            }
-          }
-        },
-        {
-          "not": {
-            "required": [
-              "input"
-            ]
-          },
-          "properties": {
-            "args": {
-              "contains": {
-                "type": "object"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            }
-          }
-        },
-        {
-          "required": [
-            "input"
-          ],
-          "properties": {
-            "args": {
-              "contains": {
-                "type": "object"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            }
-          }
-        }
-      ]
-    },
-    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.set.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.set.json",
-      "title": "Set Method",
-      "description": "Defines how DSC must call the DSC resource to set the desired state of an instance and how to process the output from the DSC resource.",
-      "type": "object",
-      "required": [
-        "executable"
-      ],
-      "properties": {
-        "executable": {
-          "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/commandExecutable.json"
-        },
-        "args": {
-          "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/commandArgs.json"
-        },
-        "input": {
-          "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/inputKind.json"
-        },
-        "implementsPretest": {
-          "title": "Resource performs pre-test",
-          "description": "Defines whether the DSC resource performs its own test to ensure idempotency when calling the `set` command. Set this value to `true` if the DSC resource tests input before modifying system state.",
-          "type": "boolean",
-          "default": false
-        },
-        "handlesExist": {
-          "title": "Resource handles `_exist` property",
-          "description": "Defines whether the DSC resource has its own built-in handling for the `_exist` common property. Set this value to `true` if the DSC resource handles instance deletion internally when receiving a `set` command where the instance defines the `_exist` property as `false`.",
-          "type": "boolean",
-          "default": false
-        },
-        "return": {
-          "description": "Defines whether the command returns a JSON blob of the DSC resource's state after the set operation or the state and an array of the properties the DSC resource modified.",
-          "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/returnKind.json"
-        }
-      },
-      "oneOf": [
-        {
-          "required": [
-            "input"
-          ],
-          "not": {
-            "properties": {
-              "args": {
-                "contains": {
-                  "type": "object"
-                }
-              }
-            }
-          }
-        },
-        {
-          "not": {
-            "required": [
-              "input"
-            ]
-          },
-          "properties": {
-            "args": {
-              "contains": {
-                "type": "object"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            }
-          }
-        },
-        {
-          "required": [
-            "input"
-          ],
-          "properties": {
-            "args": {
-              "contains": {
-                "type": "object"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            }
-          }
-        }
-      ]
-    },
-    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.whatIf.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.whatIf.json",
-      "title": "What-if method",
-      "description": "Defines how DSC must call the DSC resource to indicate whether and how the set command will modify an instance and how to process the output from the DSC resource.",
-      "type": "object",
-      "required": [
-        "executable",
-        "return"
-      ],
-      "properties": {
-        "executable": {
-          "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/commandExecutable.json"
-        },
-        "args": {
-          "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/commandArgs.json"
-        },
-        "input": {
-          "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/inputKind.json"
-        },
-        "implementsPretest": {
-          "title": "Resource performs pre-test",
-          "description": "Defines whether the DSC resource performs its own test to ensure idempotency when calling the `set --what-if` command. Set this value to `true` if the DSC resource tests input before processing how it will modify system state.",
-          "type": "boolean",
-          "default": false
-        },
-        "handlesExist": {
-          "title": "Resource handles `_exist` property",
-          "description": "Defines whether the DSC resource has its own built-in handling for the `_exist` common property. Set this value to `true` if the DSC resource handles instance deletion internally when receiving a `set --what-if` command where the instance defines the `_exist` property as `false`.",
-          "type": "boolean",
-          "default": false
-        },
-        "return": {
-          "description": "Defines whether the command returns a JSON blob of the DSC resource's expected state after a set operation in what-if mode or the state and an array of the properties the DSC resource would modify.",
-          "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/returnKind.json"
-        }
-      },
-      "oneOf": [
-        {
-          "required": [
-            "input"
-          ],
-          "not": {
-            "properties": {
-              "args": {
-                "contains": {
-                  "type": "object"
-                }
-              }
-            }
-          }
-        },
-        {
-          "not": {
-            "required": [
-              "input"
-            ]
-          },
-          "properties": {
-            "args": {
-              "contains": {
-                "type": "object"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            }
-          }
-        },
-        {
-          "required": [
-            "input"
-          ],
-          "properties": {
-            "args": {
-              "contains": {
-                "type": "object"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            }
-          }
-        }
-      ]
-    },
-    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.test.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.test.json",
-      "title": "Test Method",
-      "description": "Defines how DSC must call the DSC resource to test if an instance is in the desired state and how to process the output from the DSC resource.",
-      "type": "object",
-      "required": [
-        "executable"
-      ],
-      "properties": {
-        "executable": {
-          "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/commandExecutable.json"
-        },
-        "args": {
-          "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/commandArgs.json"
-        },
-        "input": {
-          "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/inputKind.json"
-        },
-        "return": {
-          "title": "Test Command Return Type",
-          "description": "Defines whether the command returns a JSON blob of the DSC resource's current state or the state and an array of the properties that are out of the desired state.",
-          "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/returnKind.json",
-          "default": "state"
-        }
-      },
-      "oneOf": [
-        {
-          "required": [
-            "input"
-          ],
-          "not": {
-            "properties": {
-              "args": {
-                "contains": {
-                  "type": "object"
-                }
-              }
-            }
-          }
-        },
-        {
-          "not": {
-            "required": [
-              "input"
-            ]
-          },
-          "properties": {
-            "args": {
-              "contains": {
-                "type": "object"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            }
-          }
-        },
-        {
-          "required": [
-            "input"
-          ],
-          "properties": {
-            "args": {
-              "contains": {
-                "type": "object"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            }
-          }
-        }
-      ]
-    },
-    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.delete.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.delete.json",
-      "title": "Delete method",
-      "description": "Defines how DSC must call the DSC resource to delete an instance. Define this method for resources as an alternative to handling the `_exist` property in a `set` operation, which can lead to highly complex code. If the `set` operation for the resource is able to handle deleting an instance when `_exist` is `false`, set the `handlesExist` property of the set method definition to `true` instead.",
-      "type": "object",
-      "required": [
-        "executable"
-      ],
-      "properties": {
-        "executable": {
-          "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/commandExecutable.json"
-        },
-        "args": {
-          "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/commandArgs.json"
-        },
-        "input": {
-          "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/inputKind.json"
-        }
-      },
-      "oneOf": [
-        {
-          "required": [
-            "input"
-          ],
-          "not": {
-            "properties": {
-              "args": {
-                "contains": {
-                  "type": "object"
-                }
-              }
-            }
-          }
-        },
-        {
-          "not": {
-            "required": [
-              "input"
-            ]
-          },
-          "properties": {
-            "args": {
-              "contains": {
-                "type": "object"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            }
-          }
-        },
-        {
-          "required": [
-            "input"
-          ],
-          "properties": {
-            "args": {
-              "contains": {
-                "type": "object"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            }
-          }
-        }
-      ]
-    },
-    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.export.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.export.json",
-      "title": "Export Method",
-      "description": "Defines how DSC must call the DSC resource to get the current state of every instance.",
-      "type": "object",
-      "required": [
-        "executable"
-      ],
-      "properties": {
-        "executable": {
-          "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/commandExecutable.json"
-        },
-        "args": {
-          "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/commandArgs.json"
-        },
-        "input": {
-          "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/inputKind.json"
-        }
-      },
-      "oneOf": [
-        {
-          "required": [
-            "input"
-          ],
-          "not": {
-            "properties": {
-              "args": {
-                "contains": {
-                  "type": "object"
-                }
-              }
-            }
-          }
-        },
-        {
-          "not": {
-            "required": [
-              "input"
-            ]
-          },
-          "properties": {
-            "args": {
-              "contains": {
-                "type": "object"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            }
-          }
-        },
-        {
-          "required": [
-            "input"
-          ],
-          "properties": {
-            "args": {
-              "contains": {
-                "type": "object"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            }
-          }
-        }
-      ]
-    },
-    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.validate.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.validate.json",
-      "title": "Validate Method",
-      "description": "Defines how DSC must call the DSC resource to validate the state of an instance. This method is mandatory for DSC group resources. It's ignored for all other DSC resources.",
-      "type": "object",
-      "required": [
-        "executable"
-      ],
-      "properties": {
-        "executable": {
-          "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/commandExecutable.json"
-        },
-        "args": {
-          "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/commandArgs.json"
-        },
-        "input": {
-          "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/inputKind.json"
-        }
-      },
-      "oneOf": [
-        {
-          "required": [
-            "input"
-          ],
-          "not": {
-            "properties": {
-              "args": {
-                "contains": {
-                  "type": "object"
-                }
-              }
-            }
-          }
-        },
-        {
-          "not": {
-            "required": [
-              "input"
-            ]
-          },
-          "properties": {
-            "args": {
-              "contains": {
-                "type": "object"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            }
-          }
-        },
-        {
-          "required": [
-            "input"
-          ],
-          "properties": {
-            "args": {
-              "contains": {
-                "type": "object"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            }
-          }
-        }
-      ]
-    },
-    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.resolve.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.resolve.json",
-      "title": "Resolve method",
-      "description": "Defines how DSC must call the DSC resource to resolve a nested configuration document from an external source. Define this method for importer resources where the resource kind is set to `importer`.",
-      "type": "object",
-      "required": [
-        "executable"
-      ],
-      "properties": {
-        "executable": {
-          "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/commandExecutable.json"
-        },
-        "args": {
-          "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/commandArgs.json"
-        },
-        "input": {
-          "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/inputKind.json"
-        }
-      },
-      "oneOf": [
-        {
-          "required": [
-            "input"
-          ],
-          "not": {
-            "properties": {
-              "args": {
-                "contains": {
-                  "type": "object"
-                }
-              }
-            }
-          }
-        },
-        {
-          "not": {
-            "required": [
-              "input"
-            ]
-          },
-          "properties": {
-            "args": {
-              "contains": {
-                "type": "object"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            }
-          }
-        },
-        {
-          "required": [
-            "input"
-          ],
-          "properties": {
-            "args": {
-              "contains": {
-                "type": "object"
-              },
-              "minContains": 1,
-              "maxContains": 1
-            }
-          }
-        }
-      ]
-    },
-    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.adapter.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.adapter.json",
-      "title": "Adapter",
-      "description": "Defines the DSC resource as a DSC resource adapter. A DSC resource adapter enables users to manage resources that don't have their own manifests with DSC.",
-      "type": "object",
-      "required": [
-        "list",
-        "config"
-      ],
-      "properties": {
-        "list": {
-          "title": "List Command",
-          "description": "Defines how DSC must call the DSC resource adapter to list its supported DSC resources.",
-          "type": "object",
-          "required": [
-            "executable"
-          ],
-          "properties": {
-            "executable": {
-              "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/commandExecutable.json"
-            },
-            "args": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              },
-              "title": "Command arguments",
-              "description": "Defines the list of arguments to pass to the command to return the list of supported DSC resources."
-            }
-          }
-        },
-        "config": {
-          "title": "Expected Configuration",
-          "description": "Defines whether the adapter expects to receive a full and unprocessed configuration as a single JSON blob over stdin or a sequence of JSON Lines for each child resource's configurations.",
-          "type": "string",
-          "enum": [
-            "full",
-            "sequence"
-          ]
-        }
-      },
-      "examples": [
-        {
-          "config": "full",
-          "list": {
-            "executable": "pwsh",
-            "args": [
-              "-NoLogo",
-              "-NonInteractive",
-              "-NoProfile",
-              "-Command",
-              "./powershellgroup.resource.ps1 List"
-            ]
-          }
-        }
-      ]
     },
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.schema.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
       "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.schema.json",
-      "title": "Instance Schema",
-      "description": "Defines how DSC must validate a JSON blob representing an instance of the DSC resource.",
-      "type": "object",
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
       "oneOf": [
         {
-          "required": [
-            "command"
-          ]
-        },
-        {
-          "required": [
-            "embedded"
-          ]
-        }
-      ],
-      "properties": {
-        "command": {
-          "title": "Instance Schema Command",
-          "description": "Defines how DSC must call the DSC resource to get the JSON Schema for validating a JSON blob representing an instance of the DSC resource.",
+          "description": "The schema is returned by running a command.",
           "type": "object",
-          "required": [
-            "executable"
-          ],
           "properties": {
-            "executable": {
-              "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/commandExecutable.json"
-            },
-            "args": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              },
-              "title": "Command arguments",
-              "description": "Defines the list of arguments to pass to the command to return the JSON Schema for the resource."
-            }
-          }
-        },
-        "embedded": {
-          "title": "Embedded Instance Schema",
-          "description": "Defines the JSON Schema DSC must use to validate a JSON blob representing an instance of the DSC resource.",
-          "type": "object",
-          "required": [
-            "$schema",
-            "type",
-            "properties"
-          ],
-          "properties": {
-            "type": {
-              "title": "Instance Type",
-              "description": "Defines the JSON type for an instance of the DSC resource. DSC resource instances always have the `object` type.",
-              "const": "object"
-            },
-            "$schema": {
-              "title": "DSC resource instance schema dialect",
-              "description": "Defines which dialect of JSON Schema the DSC resource is using to validate instances.",
-              "type": "string",
-              "format": "uri-reference",
-              "enum": [
-                "https://json-schema.org/draft/2020-12/schema",
-                "https://json-schema.org/draft/2019-09/schema",
-                "http://json-schema.org/draft-07/schema#"
-              ]
-            },
-            "$id": {
-              "title": "DSC resource instance schema ID",
-              "description": "Defines the unique ID for the DSC resource's instance schema. If the instance schema is published to its own public URI, set this keyword to that URI.",
-              "type": "string",
-              "format": "uri-reference"
-            },
-            "properties": {
-              "title": "Instance Properties",
-              "description": "Defines the properties that DSC can retrieve and manage for the resource's instances. This keyword must define at least one property as a key-value pair. The key is the property's name. The value is a subschema that validates the property.",
+            "command": {
               "type": "object",
-              "minProperties": 1,
-              "unevaluatedProperties": {
-                "anyOf": [
-                  {
-                    "$ref": "https://json-schema.org/draft/2020-12/schema"
-                  },
-                  {
-                    "$ref": "https://json-schema.org/draft/2019-09/schema"
-                  },
-                  {
-                    "$ref": "http://json-schema.org/draft-07/schema#"
-                  }
-                ]
-              },
-              "additionalProperties": {},
               "properties": {
-                "_exist": {
-                  "title": "Standard Property: _exist",
-                  "description": "Indicates that the DSC resource uses the standard `_exist` property to specify whether an instance should exist as a boolean value that defaults to `true`.",
-                  "enum": [
-                    {
-                      "$ref": "https://aka.ms/dsc/schemas/v3/resource/properties/exist.json"
-                    },
-                    {
-                      "$ref": "https://aka.ms/dsc/schemas/v3.1/resource/properties/exist.json"
-                    },
-                    {
-                      "$ref": "https://aka.ms/dsc/schemas/v3.1.0/resource/properties/exist.json"
-                    },
-                    {
-                      "$ref": "https://aka.ms/dsc/schemas/v3.0/resource/properties/exist.json"
-                    },
-                    {
-                      "$ref": "https://aka.ms/dsc/schemas/v3.0.0/resource/properties/exist.json"
-                    },
-                    {
-                      "$ref": "https://aka.ms/dsc/schemas/v3.0.1/resource/properties/exist.json"
-                    },
-                    {
-                      "$ref": "https://aka.ms/dsc/schemas/v3.0.2/resource/properties/exist.json"
-                    },
-                    {
-                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/exist.json"
-                    },
-                    {
-                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/resource/properties/exist.json"
-                    },
-                    {
-                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/resource/properties/exist.json"
-                    },
-                    {
-                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/properties/exist.json"
-                    },
-                    {
-                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/properties/exist.json"
-                    },
-                    {
-                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/resource/properties/exist.json"
-                    },
-                    {
-                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/resource/properties/exist.json"
-                    }
-                  ]
+                "executable": {
+                  "description": "The command to run to get the schema.",
+                  "type": "string"
                 },
-                "_inDesiredState": {
-                  "title": "Standard Property: _inDesiredState",
-                  "description": "Indicates that the DSC resource returns this value for it's own `test` method. This read-only property is mandatory when the manifest defines the `test` property. It shouldn't be included if the DSC resource relies on DSC's synthetic testing.",
-                  "enum": [
-                    {
-                      "$ref": "https://aka.ms/dsc/schemas/v3/resource/properties/inDesiredState.json"
-                    },
-                    {
-                      "$ref": "https://aka.ms/dsc/schemas/v3.1/resource/properties/inDesiredState.json"
-                    },
-                    {
-                      "$ref": "https://aka.ms/dsc/schemas/v3.1.0/resource/properties/inDesiredState.json"
-                    },
-                    {
-                      "$ref": "https://aka.ms/dsc/schemas/v3.0/resource/properties/inDesiredState.json"
-                    },
-                    {
-                      "$ref": "https://aka.ms/dsc/schemas/v3.0.0/resource/properties/inDesiredState.json"
-                    },
-                    {
-                      "$ref": "https://aka.ms/dsc/schemas/v3.0.1/resource/properties/inDesiredState.json"
-                    },
-                    {
-                      "$ref": "https://aka.ms/dsc/schemas/v3.0.2/resource/properties/inDesiredState.json"
-                    },
-                    {
-                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/inDesiredState.json"
-                    },
-                    {
-                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/resource/properties/inDesiredState.json"
-                    },
-                    {
-                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/resource/properties/inDesiredState.json"
-                    },
-                    {
-                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/properties/inDesiredState.json"
-                    },
-                    {
-                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/properties/inDesiredState.json"
-                    },
-                    {
-                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/resource/properties/inDesiredState.json"
-                    },
-                    {
-                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/resource/properties/inDesiredState.json"
-                    }
-                  ]
-                },
-                "_purge": {
-                  "title": "Standard Property: _purge",
-                  "description": "Indicates that the DSC resource uses the standard `_purge` property to specify whether the DSC resource should remove all non-specified members when it manages an array of members or values.",
-                  "enum": [
-                    {
-                      "$ref": "https://aka.ms/dsc/schemas/v3/resource/properties/purge.json"
-                    },
-                    {
-                      "$ref": "https://aka.ms/dsc/schemas/v3.1/resource/properties/purge.json"
-                    },
-                    {
-                      "$ref": "https://aka.ms/dsc/schemas/v3.1.0/resource/properties/purge.json"
-                    },
-                    {
-                      "$ref": "https://aka.ms/dsc/schemas/v3.0/resource/properties/purge.json"
-                    },
-                    {
-                      "$ref": "https://aka.ms/dsc/schemas/v3.0.0/resource/properties/purge.json"
-                    },
-                    {
-                      "$ref": "https://aka.ms/dsc/schemas/v3.0.1/resource/properties/purge.json"
-                    },
-                    {
-                      "$ref": "https://aka.ms/dsc/schemas/v3.0.2/resource/properties/purge.json"
-                    },
-                    {
-                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/purge.json"
-                    },
-                    {
-                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/resource/properties/purge.json"
-                    },
-                    {
-                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/resource/properties/purge.json"
-                    },
-                    {
-                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/properties/purge.json"
-                    },
-                    {
-                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/properties/purge.json"
-                    },
-                    {
-                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/resource/properties/purge.json"
-                    },
-                    {
-                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/resource/properties/purge.json"
-                    }
-                  ]
-                },
-                "_rebootRequested": {
-                  "title": "Standard property: _rebootRequested",
-                  "description": "Indicates whether a resource instance requires a reboot after a set operation. To use DSC's built-in reboot notification processing, resources must define this property in their manifest.",
-                  "enum": [
-                    {
-                      "$ref": "https://aka.ms/dsc/schemas/v3/resource/properties/rebootRequested.json"
-                    },
-                    {
-                      "$ref": "https://aka.ms/dsc/schemas/v3.1/resource/properties/rebootRequested.json"
-                    },
-                    {
-                      "$ref": "https://aka.ms/dsc/schemas/v3.1.0/resource/properties/rebootRequested.json"
-                    },
-                    {
-                      "$ref": "https://aka.ms/dsc/schemas/v3.0/resource/properties/rebootRequested.json"
-                    },
-                    {
-                      "$ref": "https://aka.ms/dsc/schemas/v3.0.0/resource/properties/rebootRequested.json"
-                    },
-                    {
-                      "$ref": "https://aka.ms/dsc/schemas/v3.0.1/resource/properties/rebootRequested.json"
-                    },
-                    {
-                      "$ref": "https://aka.ms/dsc/schemas/v3.0.2/resource/properties/rebootRequested.json"
-                    },
-                    {
-                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/rebootRequested.json"
-                    },
-                    {
-                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/resource/properties/rebootRequested.json"
-                    },
-                    {
-                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/resource/properties/rebootRequested.json"
-                    },
-                    {
-                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/properties/rebootRequested.json"
-                    },
-                    {
-                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/properties/rebootRequested.json"
-                    },
-                    {
-                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/resource/properties/rebootRequested.json"
-                    },
-                    {
-                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/resource/properties/rebootRequested.json"
-                    }
-                  ]
+                "args": {
+                  "description": "The arguments to pass to the command.",
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/commandArgs.schema.json"
+                  }
                 }
               }
             }
-          }
-        }
-      },
-      "examples": [
-        {
-          "command": {
-            "executable": "registry",
-            "args": [
-              "schema"
-            ]
-          }
+          },
+          "required": [
+            "command"
+          ],
+          "additionalProperties": false
         },
         {
-          "embedded": {
-            "$schema": "http://json-schema.org/draft-07/schema#",
-            "title": "OSInfo",
-            "type": "object",
-            "required": [],
-            "properties": {
-              "$id": {
-                "type": "string"
-              },
-              "architecture": {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              },
-              "bitness": {
-                "$ref": "#/definitions/Bitness"
-              },
-              "codename": {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              },
-              "edition": {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              },
-              "family": {
-                "$ref": "#/definitions/Family"
-              },
-              "version": {
-                "type": "string"
-              }
-            },
-            "additionalProperties": false,
-            "definitions": {
-              "Bitness": {
-                "type": "string",
-                "enum": [
-                  "32",
-                  "64",
-                  "unknown"
-                ]
-              },
-              "Family": {
-                "type": "string",
-                "enum": [
-                  "Linux",
-                  "macOS",
-                  "Windows"
-                ]
-              }
-            }
-          }
+          "description": "The schema is embedded in the manifest.",
+          "type": "object",
+          "properties": {
+            "embedded": true
+          },
+          "required": [
+            "embedded"
+          ],
+          "additionalProperties": false
         }
       ]
-    },
-    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/commandExecutable.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/commandExecutable.json",
-      "title": "Executable Command Name",
-      "description": "The name of the command to run.",
-      "type": "string"
-    },
-    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/commandArgs.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/commandArgs.json",
-      "title": "Executable Command Arguments",
-      "description": "The list of arguments to pass to the command. The arguments can be any number of strings. If you want to pass the JSON object representing the property bag for the resource to an argument, you can define a single item in the array as a JSON object, indicating the name of the argument with the `jsonInputArg` string property and whether the argument is mandatory for the command with the `mandatory` boolean property.",
-      "type": "array",
-      "items": {
-        "oneOf": [
-          {
-            "type": "string",
-            "title": "String argument",
-            "description": "Any item in the argument array can be a string representing a static argument to pass to the command."
-          },
-          {
-            "type": "object",
-            "title": "JSON input argument",
-            "description": "Defines an argument for the command that accepts the JSON input object as a string. DSC passes the JSON input to the named argument when available. You can define the `mandatory` property to indicate whether DSC should always pass the argument to the command, even when there's no JSON input for the command. In that case, DSC passes an empty string to the JSON input argument. You can only define one JSON input argument per arguments array.",
-            "required": [
-              "jsonInputArg"
-            ],
-            "unevaluatedProperties": false,
-            "properties": {
-              "jsonInputArg": {
-                "title": "JSON input argument name",
-                "description": "Defines the argument that accepts the JSON property bag for the resource as input.",
-                "type": "string"
-              },
-              "mandatory": {
-                "title": "Mandatory argument",
-                "description": "Defines whether the argument is mandatory. If this property is set to `true`, DSC passes an empty string when no JSON input is provided. The default value is `false`.",
-                "type": "boolean",
-                "default": false
-              }
-            }
-          }
-        ]
-      }
-    },
-    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/inputKind.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/inputKind.json",
-      "title": "Executable Command Input Type",
-      "description": "Defines how DSC should pass input to the command, either as environment variables or JSON over stdin. When this value isn't defined, DSC doesn't send the resource any input.",
-      "type": "string",
-      "enum": [
-        "env",
-        "stdin"
-      ]
-    },
-    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/returnKind.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/returnKind.json",
-      "title": "Return Kind",
-      "type": "string",
-      "enum": [
-        "state",
-        "stateAndDiff"
-      ],
-      "$comment": "While the enumeration for return kind is the same for the `set` and `test`\nmethod, the way it changes the behavior of the command isn't. The description\nkeyword isn't included here because the respective schemas for those methods\ndocument the behavior themselves."
-    },
-    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/exist.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/exist.json",
-      "title": "Instance should exist",
-      "description": "Indicates whether the DSC resource instance should exist.",
-      "type": "boolean",
-      "default": true,
-      "enum": [
-        false,
-        true
-      ]
-    },
-    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/inDesiredState.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/inDesiredState.json",
-      "title": "Instance is in the Desired State",
-      "description": "Indicates whether the instance is in the desired state. This property is only returned by the `test` method.",
-      "type": [
-        "boolean",
-        "null"
-      ],
-      "readOnly": true
-    },
-    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/purge.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/purge.json",
-      "title": "Purge",
-      "description": "Indicates that only the components described in the DSC resource should exist. If other components exist, the DSC resource is out of the desired state. When enforcing desired state, the DSC resource removes unmanaged components.",
-      "type": [
-        "boolean",
-        "null"
-      ],
-      "writeOnly": true
-    },
-    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/rebootRequested.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/rebootRequested.json",
-      "title": "Reboot Requested",
-      "description": "Indicates that the set operation requires a reboot before it's fully complete.",
-      "type": [
-        "boolean",
-        "null"
-      ],
-      "readOnly": true
     }
   }
 }
